@@ -34,6 +34,17 @@ impl AppError {
         }
     }
 
+    pub fn probe_failed(
+        message: impl Into<String>,
+        diagnostics: Option<impl Into<String>>,
+    ) -> Self {
+        Self {
+            code: "probe_failed",
+            message: message.into(),
+            diagnostics: diagnostics.map(Into::into),
+        }
+    }
+
     pub fn io_failed(message: impl Into<String>) -> Self {
         Self {
             code: "io_failed",

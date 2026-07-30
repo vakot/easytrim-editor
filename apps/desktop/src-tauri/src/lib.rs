@@ -18,6 +18,7 @@ pub fn run() {
         .manage(AppState::default())
         .invoke_handler(tauri::generate_handler![
             commands::capabilities::check_media_capabilities,
+            commands::media::inspect_media,
             commands::source::choose_source
         ])
         .on_webview_event(|webview, event| {
