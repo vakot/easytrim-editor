@@ -1,0 +1,9 @@
+[workspace]
+members = ["apps/desktop/src-tauri"]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+authors = ["Vadym Kotliar"]
+edition = "2024"
+rust-version = "1.97.1"

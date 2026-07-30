@@ -1,0 +1,17 @@
+[package]
+name = "easy-cut-desktop"
+version.workspace = true
+description = "Easy Cut desktop application"
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[lib]
+name = "easy_cut_desktop_lib"
+crate-type = ["rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.6.3", features = [] }
+
+[dependencies]
+tauri = { version = "2.11.5", features = [] }

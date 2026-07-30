@@ -8,6 +8,7 @@ coverage/
 # Rust and Tauri
 target/
 src-tauri/target/
+src-tauri/gen/
 
 # Local environment
 .env
