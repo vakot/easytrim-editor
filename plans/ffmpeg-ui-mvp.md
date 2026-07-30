@@ -33,7 +33,8 @@ The first version is intentionally a single-clip editor. No project files, autos
 - React is widely understood by coding agents and suitable for a small reducer-driven single-screen workflow;
 - timeline handles and audio-track toggles require no external state-management library;
 - CSS-based layout and controls to keep the visual system simple and fast;
-- no top navigation bar; the only compact configuration area is the in-memory preset control.
+- compact top toolbar for the direct `Open video` action and in-memory preset control; no
+  dropdown navigation or context menus.
 
 ### Repository workspace
 
@@ -76,7 +77,9 @@ This avoids forcing every input through a full conversion while still allowing u
 
 The main screen contains only the controls needed for the current cut:
 
-1. **Import area** — drop a file anywhere in the window or click `Open video`.
+1. **Import flow** — before selection, a full-workspace landing view accepts a drop or picker
+   action. After selection, `Open video` remains directly available in the compact top toolbar,
+   and dragging a file over the editor shows a clear replacement overlay.
 2. **Preview** — full source playback with play/pause, current time, and duration.
 3. **Timeline** — one video row and one row for each audio stream. A shaded region identifies the selected export segment. Dragging the left or right handle trims only the start or end.
 4. **Audio rows** — track label, codec/channel information, waveform, and an enabled checkbox. Track ordering follows FFprobe stream order.
@@ -84,6 +87,9 @@ The main screen contains only the controls needed for the current cut:
 6. **Two primary buttons** — `Fast cut` and `Optimized render`, always visible and side by side. No submenu is required to choose the export route.
 
 Importing another file immediately replaces the current source, resets trim handles and audio selections, and preserves the currently selected FFmpeg preset in memory.
+
+After import, source metadata and audio-stream details occupy one narrow, vertically scrollable
+left sidebar. The remaining main area is reserved for the video preview and timeline.
 
 All discovered audio tracks start enabled. A failed replacement remains the current failed import and does not restore the previous source. Waveform generation failure is non-blocking and can be retried per track.
 

@@ -1,85 +1,74 @@
 import type { SessionState } from "../../app/session-state";
 import type { BinaryCapability, FrameRate, MediaInfo } from "../../lib/tauri/media";
 
-interface ImportSourcePanelProps {
+interface SourceWorkspaceProps {
   session: SessionState;
   isChoosingSource: boolean;
+  isSourceDragActive: boolean;
   onChooseSource: () => void;
 }
 
-export function ImportSourcePanel({
+export function SourceWorkspace({
   session,
   isChoosingSource,
+  isSourceDragActive,
   onChooseSource,
-}: ImportSourcePanelProps) {
-  const hasSource = session.source !== null;
+}: SourceWorkspaceProps) {
+  if (!session.source) {
+    return (
+      <section className="import-landing" aria-labelledby="import-title">
+        <div className="import-card">
+          <p className="section-label">Start a new cut</p>
+          <h1 id="import-title">Open a video</h1>
+          <p>Drop a supported video here, or select one from your computer.</p>
+          <button
+            className="primary-button"
+            type="button"
+            onClick={onChooseSource}
+            disabled={isChoosingSource}
+          >
+            {isChoosingSource ? "Opening…" : "Select video"}
+          </button>
+          <p className="supported-formats">
+            MP4, MOV, MKV, WebM, AVI, TS, MTS, M2TS, M4V, WMV, FLV
+          </p>
+        </div>
+
+        {session.lastError ? <SourceError error={session.lastError} /> : null}
+        {isSourceDragActive ? <DropOverlay /> : null}
+      </section>
+    );
+  }
 
   return (
-    <section className="workspace" aria-labelledby="workspace-title">
-      <div className="import-panel">
-        <div>
-          <p className="section-label">Source</p>
-          <h2 id="workspace-title">{hasSource ? "Replace video" : "Import a video"}</h2>
-          <p>Drop a supported video anywhere in this window, or select one from your computer.</p>
+    <section className="editor-workspace" aria-label="Video editor workspace">
+      <aside className="source-sidebar" aria-labelledby="source-title">
+        <div className="source-heading">
+          <p className="section-label">Source details</p>
+          <h1 id="source-title" title={session.source.selection.displayName}>
+            {session.source.selection.displayName}
+          </h1>
+          {session.status === "loading-source" ? (
+            <span className="loading-label" role="status">
+              Inspecting…
+            </span>
+          ) : null}
         </div>
-        <button
-          className="primary-button"
-          type="button"
-          onClick={onChooseSource}
-          disabled={isChoosingSource}
-        >
-          {isChoosingSource ? "Opening…" : hasSource ? "Open another video" : "Open video"}
-        </button>
-        <p className="supported-formats">MP4, MOV, MKV, WebM, AVI, TS, MTS, M2TS, M4V, WMV, FLV</p>
-      </div>
 
-      <div className="source-panel">
-        <CapabilityStatus capabilities={session.capabilities} />
-
-        {session.status === "idle" ? (
-          <div className="empty-state">
-            <span aria-hidden="true">＋</span>
-            <h2>No video selected</h2>
-            <p>Source details and audio streams will appear here.</p>
-          </div>
-        ) : null}
-
-        {session.source ? (
-          <div className="source-heading">
-            <div>
-              <p className="section-label">Current source</p>
-              <h2>{session.source.selection.displayName}</h2>
-            </div>
-            {session.status === "loading-source" ? (
-              <span className="loading-label" role="status">
-                Inspecting…
-              </span>
-            ) : null}
-          </div>
-        ) : null}
-
-        {session.lastError ? (
-          <div className="error-card" role="alert">
-            <strong>Could not load this video</strong>
-            <p>{session.lastError.message}</p>
-            {session.lastError.diagnostics ? (
-              <details>
-                <summary>Technical details</summary>
-                <pre>{session.lastError.diagnostics}</pre>
-              </details>
-            ) : null}
-          </div>
-        ) : null}
-
-        {session.status === "ready" && session.source?.media ? (
+        {session.lastError ? <SourceError error={session.lastError} /> : null}
+        {session.status === "ready" && session.source.media ? (
           <MediaDetails media={session.source.media} />
         ) : null}
+      </aside>
+
+      <div className="editor-stage" aria-label="Video preview and timeline area">
+        {isSourceDragActive ? <DropOverlay /> : null}
       </div>
     </section>
   );
 }
 
-function CapabilityStatus({ capabilities }: { capabilities: SessionState["capabilities"] }) {
+export function CapabilityStatus({ capabilities }: { capabilities: SessionState["capabilities"] }) {
   if (capabilities.status === "checking") {
     return (
       <p className="capability capability-checking" role="status">
@@ -109,10 +98,44 @@ function CapabilityStatus({ capabilities }: { capabilities: SessionState["capabi
     );
   }
 
+  const message = missing.join(" ");
   return (
-    <div className="capability capability-missing" role="status">
-      <strong>Media tools unavailable</strong>
-      <span>{missing.join(" ")}</span>
+    <p
+      className="capability capability-missing"
+      role="status"
+      aria-label={`Media tools unavailable. ${message}`}
+      title={message}
+    >
+      Media tools unavailable
+    </p>
+  );
+}
+
+function DropOverlay() {
+  return (
+    <div className="drop-overlay" role="status" aria-label="Drop video to open" aria-live="polite">
+      <div>
+        <span className="drop-icon" aria-hidden="true">
+          +
+        </span>
+        <strong>Drop video to open</strong>
+        <span>The current edit will be reset.</span>
+      </div>
+    </div>
+  );
+}
+
+function SourceError({ error }: { error: NonNullable<SessionState["lastError"]> }) {
+  return (
+    <div className="error-card" role="alert">
+      <strong>Could not load this video</strong>
+      <p>{error.message}</p>
+      {error.diagnostics ? (
+        <details>
+          <summary>Technical details</summary>
+          <pre>{error.diagnostics}</pre>
+        </details>
+      ) : null}
     </div>
   );
 }
@@ -126,7 +149,7 @@ function MediaDetails({ media }: { media: MediaInfo }) {
 
   return (
     <div className="media-details">
-      <dl className="metadata-grid" aria-label="Video metadata">
+      <dl className="metadata-list" aria-label="Video metadata">
         <Metadata label="Container" value={media.formatLongName ?? media.formatName} />
         <Metadata label="Duration" value={formatDuration(media.durationMicros)} />
         <Metadata label="Resolution" value={`${media.video.width} × ${media.video.height}`} />
@@ -139,7 +162,7 @@ function MediaDetails({ media }: { media: MediaInfo }) {
 
       <section className="audio-section" aria-labelledby="audio-title">
         <div className="audio-heading">
-          <h3 id="audio-title">Audio streams</h3>
+          <h2 id="audio-title">Audio streams</h2>
           <span>{media.audioStreams.length}</span>
         </div>
         {media.audioStreams.length === 0 ? (
@@ -148,7 +171,7 @@ function MediaDetails({ media }: { media: MediaInfo }) {
           <ul className="audio-list">
             {media.audioStreams.map((audio) => (
               <li key={audio.streamIndex}>
-                <div>
+                <div className="audio-title">
                   <strong>{audio.title ?? audio.language ?? `Audio ${audio.streamIndex}`}</strong>
                   {audio.isDefault ? <span className="default-tag">Default</span> : null}
                 </div>

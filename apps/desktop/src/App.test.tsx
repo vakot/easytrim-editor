@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type {
   MediaCapabilities,
   MediaInfo,
+  SourceDragEvent,
   SourceImportEvent,
   SourceSelection,
 } from "./lib/tauri/media";
@@ -13,8 +14,10 @@ const mocks = vi.hoisted(() => ({
   checkMediaCapabilities: vi.fn(),
   chooseSource: vi.fn(),
   inspectMedia: vi.fn(),
+  listenForSourceDrag: vi.fn(),
   listenForSourceImports: vi.fn(),
-  unlisten: vi.fn(),
+  unlistenDrag: vi.fn(),
+  unlistenImport: vi.fn(),
 }));
 
 vi.mock("./lib/tauri/media", async (importOriginal) => {
@@ -24,6 +27,7 @@ vi.mock("./lib/tauri/media", async (importOriginal) => {
     checkMediaCapabilities: mocks.checkMediaCapabilities,
     chooseSource: mocks.chooseSource,
     inspectMedia: mocks.inspectMedia,
+    listenForSourceDrag: mocks.listenForSourceDrag,
     listenForSourceImports: mocks.listenForSourceImports,
   };
 });
@@ -73,22 +77,38 @@ const media: MediaInfo = {
 };
 
 let sourceImportListener: ((event: SourceImportEvent) => void) | undefined;
+let sourceDragListener: ((event: SourceDragEvent) => void) | undefined;
 
 beforeEach(() => {
   vi.clearAllMocks();
   sourceImportListener = undefined;
+  sourceDragListener = undefined;
   mocks.checkMediaCapabilities.mockResolvedValue(capabilities);
   mocks.chooseSource.mockResolvedValue(null);
   mocks.inspectMedia.mockResolvedValue(media);
   mocks.listenForSourceImports.mockImplementation(
     async (listener: (event: SourceImportEvent) => void) => {
       sourceImportListener = listener;
-      return mocks.unlisten;
+      return mocks.unlistenImport;
+    },
+  );
+  mocks.listenForSourceDrag.mockImplementation(
+    async (listener: (event: SourceDragEvent) => void) => {
+      sourceDragListener = listener;
+      return mocks.unlistenDrag;
     },
   );
 });
 
 describe("App", () => {
+  it("starts with a full workspace import view", async () => {
+    render(<App />);
+
+    expect(screen.getByRole("heading", { name: "Open a video" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Select video" })).toBeInTheDocument();
+    expect(screen.queryByLabelText("Video editor workspace")).not.toBeInTheDocument();
+  });
+
   it("imports a selected video and renders source metadata", async () => {
     mocks.chooseSource.mockResolvedValue(selection);
     const user = userEvent.setup();
@@ -101,6 +121,8 @@ describe("App", () => {
     expect(screen.getByText("59.94 fps")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Audio streams" })).toBeInTheDocument();
     expect(screen.getByText(/AAC/)).toBeInTheDocument();
+    expect(screen.getByLabelText("Video preview and timeline area")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Open a video" })).not.toBeInTheDocument();
   });
 
   it("keeps the current source when the picker is cancelled", async () => {
@@ -111,7 +133,7 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: "Open video" }));
     expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Open another video" }));
+    await user.click(screen.getByRole("button", { name: "Open video" }));
 
     expect(screen.getByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
     expect(mocks.inspectMedia).toHaveBeenCalledTimes(1);
@@ -125,7 +147,9 @@ describe("App", () => {
     render(<App />);
 
     expect(await screen.findByText("Media tools unavailable")).toBeInTheDocument();
-    expect(screen.getByText(/FFprobe: ffprobe is not installed/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("status", { name: /FFprobe: ffprobe is not installed/ }),
+    ).toBeInTheDocument();
   });
 
   it("replaces the current source with a failed dropped import", async () => {
@@ -147,12 +171,31 @@ describe("App", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("This file type is not supported yet.");
   });
 
-  it("cleans up the native drop listener on unmount", async () => {
+  it("shows the native drag overlay over the editor stage", async () => {
+    mocks.chooseSource.mockResolvedValue(selection);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Open video" }));
+    expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
+
+    act(() => sourceDragListener?.({ active: true }));
+    expect(screen.getByRole("status", { name: "Drop video to open" })).toBeInTheDocument();
+
+    act(() => sourceDragListener?.({ active: false }));
+    expect(screen.queryByRole("status", { name: "Drop video to open" })).not.toBeInTheDocument();
+  });
+
+  it("cleans up native source listeners on unmount", async () => {
     const view = render(<App />);
-    await waitFor(() => expect(sourceImportListener).toBeDefined());
+    await waitFor(() => {
+      expect(sourceImportListener).toBeDefined();
+      expect(sourceDragListener).toBeDefined();
+    });
 
     view.unmount();
 
-    expect(mocks.unlisten).toHaveBeenCalledOnce();
+    expect(mocks.unlistenImport).toHaveBeenCalledOnce();
+    expect(mocks.unlistenDrag).toHaveBeenCalledOnce();
   });
 });

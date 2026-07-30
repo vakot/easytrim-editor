@@ -81,6 +81,10 @@ export interface MediaInfo {
 export type SourceImportEvent =
   { status: "selected"; source: SourceSelection } | { status: "failed"; error: AppError };
 
+export interface SourceDragEvent {
+  active: boolean;
+}
+
 export async function chooseSource(): Promise<SourceSelection | null> {
   try {
     const value = await invoke<unknown>("choose_source");
@@ -118,6 +122,18 @@ export async function listenForSourceImports(
   });
 }
 
+export async function listenForSourceDrag(
+  onDrag: (event: SourceDragEvent) => void,
+): Promise<UnlistenFn> {
+  return listen<unknown>("source-drag", (event) => {
+    try {
+      onDrag(parseSourceDragEvent(event.payload));
+    } catch {
+      onDrag({ active: false });
+    }
+  });
+}
+
 export function normalizeAppError(error: unknown): AppError {
   const value = asRecord(error);
   if (value && typeof value.code === "string" && typeof value.message === "string") {
@@ -145,6 +161,14 @@ function parseSourceImportEvent(value: unknown): SourceImportEvent {
     return { status: "failed", error: normalizeAppError(event.error) };
   }
   throw invalidResponse("source import event");
+}
+
+function parseSourceDragEvent(value: unknown): SourceDragEvent {
+  const event = requireRecord(value, "source drag event");
+  if (typeof event.active !== "boolean") {
+    throw invalidResponse("source drag event");
+  }
+  return { active: event.active };
 }
 
 function parseSourceSelection(value: unknown): SourceSelection {
