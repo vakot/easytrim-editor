@@ -1,0 +1,30 @@
+{
+  "name": "easy-cut",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "packageManager": "pnpm@11.18.0",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @easy-cut/desktop tauri dev",
+    "build": "pnpm --filter @easy-cut/desktop build",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint . --max-warnings 0",
+    "typecheck": "pnpm --filter @easy-cut/desktop typecheck",
+    "test": "pnpm --filter @easy-cut/desktop test",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "tauri": "pnpm --filter @easy-cut/desktop tauri"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "eslint": "10.8.0",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "eslint-plugin-react-refresh": "0.5.3",
+    "globals": "17.8.0",
+    "prettier": "3.9.6",
+    "typescript-eslint": "8.65.0"
+  }
+}

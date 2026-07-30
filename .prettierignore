@@ -1,0 +1,5 @@
+**/dist/
+**/target/
+**/src-tauri/gen/
+Cargo.lock
+pnpm-lock.yaml

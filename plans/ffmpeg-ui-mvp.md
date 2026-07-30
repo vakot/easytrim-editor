@@ -35,6 +35,15 @@ The first version is intentionally a single-clip editor. No project files, autos
 - CSS-based layout and controls to keep the visual system simple and fast;
 - no top navigation bar; the only compact configuration area is the in-memory preset control.
 
+### Repository workspace
+
+**pnpm workspace + Cargo workspace**
+
+- root scripts provide one entry point for formatting, linting, type checking, tests, and builds;
+- `apps/desktop` contains the coupled React frontend and Tauri native application;
+- shared packages are introduced only when a second real consumer exists;
+- JavaScript and Rust dependency versions are pinned through committed lockfiles.
+
 ### Agent development skills
 
 Project-local skills under `.agents/skills/` define the implementation and review standards:
@@ -245,12 +254,17 @@ easy-cut/
 ├─ .agents/
 │  ├─ rules/         # Shared repository-wide policies
 │  └─ skills/        # Stack and domain workflows
+├─ apps/
+│  └─ desktop/
+│     ├─ public/     # Static packaged frontend assets
+│     ├─ src/        # React/TypeScript UI
+│     └─ src-tauri/  # Rust/Tauri application core
 ├─ plans/
 │  └─ ffmpeg-ui-mvp.md
 ├─ .github/
 │  └─ pull_request_template.md
-├─ src-tauri/       # Rust/Tauri application core
-├─ src/              # React/TypeScript UI
-├─ public/           # static UI assets
+├─ Cargo.toml        # Rust workspace
+├─ package.json      # Root scripts and shared JavaScript tooling
+├─ pnpm-workspace.yaml
 └─ README.md
 ```

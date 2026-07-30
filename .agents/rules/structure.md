@@ -12,47 +12,54 @@ easy-cut/
 ├─ .agents/
 │  ├─ rules/                         # Shared auto-applied repository policy
 │  └─ skills/                        # Task-specific agent workflows
-├─ .codex/
-│  └─ plans/                         # Product and implementation plans
 ├─ .github/
 │  └─ pull_request_template.md
-├─ public/                            # Static packaged frontend assets only
+├─ apps/
+│  └─ desktop/
+│     ├─ public/                      # Static packaged frontend assets only
+│     ├─ src/
+│     │  ├─ app/                      # Composition, session reducer, app shell
+│     │  ├─ components/               # Reusable presentational components
+│     │  ├─ features/
+│     │  │  ├─ import-source/
+│     │  │  ├─ preview/
+│     │  │  ├─ timeline/
+│     │  │  ├─ audio-tracks/
+│     │  │  └─ export/
+│     │  ├─ lib/
+│     │  │  └─ tauri/                 # Typed IPC adapter; no generic invoke use
+│     │  ├─ styles/                   # Tokens, reset, and shared layout styles
+│     │  ├─ test/                     # Frontend test setup and shared factories
+│     │  ├─ types/                    # Truly cross-feature TypeScript contracts
+│     │  └─ main.tsx
+│     └─ src-tauri/
+│        ├─ binaries/                 # Pinned packaged sidecars
+│        ├─ capabilities/             # Explicit Tauri permissions
+│        ├─ src/
+│        │  ├─ application/           # Use-case orchestration
+│        │  ├─ commands/              # Thin Tauri IPC adapters
+│        │  ├─ domain/                # Framework-independent types/invariants
+│        │  ├─ media/                 # Probe, preview, waveform, export builders
+│        │  ├─ process/               # Child lifecycle, progress, cancellation
+│        │  ├─ error.rs
+│        │  ├─ lib.rs
+│        │  ├─ main.rs                # Minimal desktop entry point
+│        │  └─ state.rs
+│        └─ tests/                    # Native integration tests
+├─ packages/                          # Shared packages after a second consumer exists
+├─ plans/                             # Product and implementation plans
 ├─ scripts/                           # Deterministic repository automation
-├─ src/
-│  ├─ app/                            # Composition, session reducer, app shell
-│  ├─ components/                     # Reusable presentational components
-│  ├─ features/
-│  │  ├─ import-source/
-│  │  ├─ preview/
-│  │  ├─ timeline/
-│  │  ├─ audio-tracks/
-│  │  └─ export/
-│  ├─ lib/
-│  │  └─ tauri/                       # Typed IPC adapter; no generic invoke use
-│  ├─ styles/                         # Tokens, reset, and shared layout styles
-│  ├─ test/                           # Frontend test setup and shared factories
-│  ├─ types/                          # Truly cross-feature TypeScript contracts
-│  └─ main.tsx
-├─ src-tauri/
-│  ├─ binaries/                       # Pinned packaged sidecars
-│  ├─ capabilities/                   # Explicit Tauri permissions
-│  ├─ src/
-│  │  ├─ application/                 # Use-case orchestration
-│  │  ├─ commands/                    # Thin Tauri IPC adapters
-│  │  ├─ domain/                      # Framework-independent types/invariants
-│  │  ├─ media/                       # Probe, preview, waveform, export builders
-│  │  ├─ process/                     # Child lifecycle, progress, cancellation
-│  │  ├─ error.rs
-│  │  ├─ lib.rs
-│  │  ├─ main.rs                      # Minimal desktop entry point
-│  │  └─ state.rs
-│  └─ tests/                          # Native integration tests
 └─ tests/
    └─ fixtures/
       └─ media/                        # Tiny generated/redistributable fixtures
 ```
 
 Do not create empty directories merely to match the diagram. Add a directory when its first owned file is needed.
+
+The root pnpm workspace owns shared tooling and scripts. `apps/desktop` owns its runtime
+dependencies and the coupled React/Tauri application. Add a package under `packages/` only when
+at least two workspace consumers need a stable shared contract; do not split code merely to make
+the repository appear modular.
 
 ## Dependency direction
 
@@ -64,8 +71,8 @@ main -> app -> features -> components/lib/types
 
 - A feature may import shared components, the typed Tauri adapter, and shared types.
 - Do not import another feature's internal files. Promote genuinely shared behavior to a narrowly named shared module.
-- Keep IPC calls in `src/lib/tauri/`; components and reducers consume typed functions, not generic `invoke`.
-- Keep product state in `src/app/` or the owning feature. Keep visual-only state local to components.
+- Keep IPC calls in `apps/desktop/src/lib/tauri/`; components and reducers consume typed functions, not generic `invoke`.
+- Keep product state in `apps/desktop/src/app/` or the owning feature. Keep visual-only state local to components.
 
 Native:
 
