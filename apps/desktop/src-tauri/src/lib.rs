@@ -7,7 +7,9 @@ mod process;
 mod state;
 
 use application::import_source::import_source;
-use commands::source::{SOURCE_IMPORT_EVENT, SourceImportEvent};
+use commands::source::{
+    SOURCE_DRAG_EVENT, SOURCE_IMPORT_EVENT, SourceDragEvent, SourceImportEvent,
+};
 use state::AppState;
 use tauri::{Emitter, Manager};
 
@@ -22,22 +24,46 @@ pub fn run() {
             commands::source::choose_source
         ])
         .on_webview_event(|webview, event| {
-            let tauri::WebviewEvent::DragDrop(tauri::DragDropEvent::Drop { paths, .. }) = event
-            else {
-                return;
-            };
-            let Some(path) = paths.first() else {
+            let tauri::WebviewEvent::DragDrop(event) = event else {
                 return;
             };
 
-            let state = webview.state::<AppState>();
-            let event = match import_source(&state, path.clone()) {
-                Ok(source) => SourceImportEvent::Selected { source },
-                Err(error) => SourceImportEvent::Failed { error },
-            };
+            match event {
+                tauri::DragDropEvent::Enter { .. } => {
+                    if let Err(error) =
+                        webview.emit(SOURCE_DRAG_EVENT, SourceDragEvent { active: true })
+                    {
+                        eprintln!("failed to emit source drag event: {error}");
+                    }
+                }
+                tauri::DragDropEvent::Leave => {
+                    if let Err(error) =
+                        webview.emit(SOURCE_DRAG_EVENT, SourceDragEvent { active: false })
+                    {
+                        eprintln!("failed to emit source drag event: {error}");
+                    }
+                }
+                tauri::DragDropEvent::Drop { paths, .. } => {
+                    if let Err(error) =
+                        webview.emit(SOURCE_DRAG_EVENT, SourceDragEvent { active: false })
+                    {
+                        eprintln!("failed to emit source drag event: {error}");
+                    }
 
-            if let Err(error) = webview.emit(SOURCE_IMPORT_EVENT, event) {
-                eprintln!("failed to emit source import event: {error}");
+                    let Some(path) = paths.first() else {
+                        return;
+                    };
+                    let state = webview.state::<AppState>();
+                    let event = match import_source(&state, path.clone()) {
+                        Ok(source) => SourceImportEvent::Selected { source },
+                        Err(error) => SourceImportEvent::Failed { error },
+                    };
+
+                    if let Err(error) = webview.emit(SOURCE_IMPORT_EVENT, event) {
+                        eprintln!("failed to emit source import event: {error}");
+                    }
+                }
+                _ => {}
             }
         })
         .run(tauri::generate_context!())
