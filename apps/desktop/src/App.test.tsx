@@ -104,6 +104,11 @@ describe("App", () => {
   it("starts with a full workspace import view", async () => {
     render(<App />);
 
+    expect(screen.getByText("Local video editor")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Easy Cut" })).toBeInTheDocument();
+    expect(
+      screen.getByText("Import a video to inspect its source and prepare a precise cut."),
+    ).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Open a video" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Select video" })).toBeInTheDocument();
     expect(screen.queryByLabelText("Video editor workspace")).not.toBeInTheDocument();
@@ -123,6 +128,11 @@ describe("App", () => {
     expect(screen.getByText(/AAC/)).toBeInTheDocument();
     expect(screen.getByLabelText("Video preview and timeline area")).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Open a video" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Local video editor")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Import a video to inspect its source and prepare a precise cut."),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("toolbar", { name: "Application toolbar" })).toBeInTheDocument();
   });
 
   it("keeps the current source when the picker is cancelled", async () => {

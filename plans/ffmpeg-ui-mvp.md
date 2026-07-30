@@ -78,8 +78,9 @@ This avoids forcing every input through a full conversion while still allowing u
 The main screen contains only the controls needed for the current cut:
 
 1. **Import flow** — before selection, a full-workspace landing view accepts a drop or picker
-   action. After selection, `Open video` remains directly available in the compact top toolbar,
-   and dragging a file over the editor shows a clear replacement overlay.
+   action beneath a concise product introduction. The introduction disappears after selection;
+   `Open video` remains directly available in the compact top toolbar, and dragging a file over
+   the editor shows a clear replacement overlay.
 2. **Preview** — full source playback with play/pause, current time, and duration.
 3. **Timeline** — one video row and one row for each audio stream. A shaded region identifies the selected export segment. Dragging the left or right handle trims only the start or end.
 4. **Audio rows** — track label, codec/channel information, waveform, and an enabled checkbox. Track ordering follows FFprobe stream order.

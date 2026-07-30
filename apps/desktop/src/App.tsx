@@ -18,6 +18,7 @@ function App() {
   const [isChoosingSource, setIsChoosingSource] = useState(false);
   const [isSourceDragActive, setIsSourceDragActive] = useState(false);
   const [dropListenerError, setDropListenerError] = useState<string | null>(null);
+  const hasSource = session.source !== null;
 
   const inspectSource = useCallback((source: SourceSelection) => {
     dispatch({ type: "source-selected", source });
@@ -139,24 +140,35 @@ function App() {
   }
 
   return (
-    <main className="app-shell">
-      <header className="app-toolbar" aria-label="Application toolbar">
-        <div className="app-brand">
-          <span className="brand-mark" aria-hidden="true" />
-          <span>Easy Cut</span>
+    <main className={`app-shell ${hasSource ? "has-source" : "is-empty"}`}>
+      {hasSource ? (
+        <div className="app-toolbar" role="toolbar" aria-label="Application toolbar">
+          <div className="toolbar-actions">
+            <CapabilityStatus capabilities={session.capabilities} />
+            <OpenVideoButton
+              isChoosingSource={isChoosingSource}
+              onChooseSource={() => void handleChooseSource()}
+            />
+          </div>
         </div>
-        <div className="toolbar-actions">
-          <CapabilityStatus capabilities={session.capabilities} />
-          <button
-            className="toolbar-button"
-            type="button"
-            onClick={() => void handleChooseSource()}
-            disabled={isChoosingSource}
-          >
-            {isChoosingSource ? "Opening…" : "Open video"}
-          </button>
-        </div>
-      </header>
+      ) : (
+        <header className="welcome-header">
+          <div>
+            <p className="eyebrow">Local video editor</p>
+            <h1>Easy Cut</h1>
+          </div>
+          <div className="welcome-summary">
+            <p>Import a video to inspect its source and prepare a precise cut.</p>
+            <div className="toolbar-actions">
+              <CapabilityStatus capabilities={session.capabilities} />
+              <OpenVideoButton
+                isChoosingSource={isChoosingSource}
+                onChooseSource={() => void handleChooseSource()}
+              />
+            </div>
+          </div>
+        </header>
+      )}
 
       {dropListenerError ? (
         <p className="inline-alert" role="alert">
@@ -171,6 +183,25 @@ function App() {
         onChooseSource={() => void handleChooseSource()}
       />
     </main>
+  );
+}
+
+function OpenVideoButton({
+  isChoosingSource,
+  onChooseSource,
+}: {
+  isChoosingSource: boolean;
+  onChooseSource: () => void;
+}) {
+  return (
+    <button
+      className="toolbar-button"
+      type="button"
+      onClick={onChooseSource}
+      disabled={isChoosingSource}
+    >
+      {isChoosingSource ? "Opening…" : "Open video"}
+    </button>
   );
 }
 

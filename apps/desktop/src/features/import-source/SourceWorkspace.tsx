@@ -19,7 +19,7 @@ export function SourceWorkspace({
       <section className="import-landing" aria-labelledby="import-title">
         <div className="import-card">
           <p className="section-label">Start a new cut</p>
-          <h1 id="import-title">Open a video</h1>
+          <h2 id="import-title">Open a video</h2>
           <p>Drop a supported video here, or select one from your computer.</p>
           <button
             className="primary-button"

@@ -53,11 +53,23 @@ p {
 
 .app-shell {
   display: grid;
-  width: 100%;
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  max-width: none;
   height: 100vh;
-  grid-template-rows: 4rem minmax(0, 1fr);
+  height: 100dvh;
+  margin: 0;
   overflow: hidden;
   background: #0c0c0e;
+}
+
+.app-shell.is-empty {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.app-shell.has-source {
+  grid-template-rows: 4rem minmax(0, 1fr);
 }
 
 .app-toolbar {
@@ -65,36 +77,61 @@ p {
   display: flex;
   min-width: 0;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 1rem;
   padding: 0 1.25rem;
   border-bottom: 1px solid #29292e;
   background: #111114;
 }
 
-.app-brand,
 .toolbar-actions {
   display: flex;
   align-items: center;
 }
 
-.app-brand {
-  gap: 0.65rem;
-  font-weight: 750;
-  letter-spacing: -0.02em;
-}
-
-.brand-mark {
-  width: 0.8rem;
-  height: 0.8rem;
-  border-radius: 0.2rem;
-  background: #e4ae4e;
-  box-shadow: 0 0 1.25rem rgb(228 174 78 / 28%);
-}
-
 .toolbar-actions {
   min-width: 0;
   gap: 0.75rem;
+}
+
+.welcome-header {
+  z-index: 10;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 3rem;
+  padding: clamp(1.5rem, 4vw, 3.5rem);
+  border-bottom: 1px solid #29292e;
+  background: #111114;
+}
+
+.welcome-header h1 {
+  margin-bottom: 0;
+  font-size: clamp(2.5rem, 6vw, 5rem);
+  line-height: 0.9;
+  letter-spacing: -0.06em;
+}
+
+.eyebrow {
+  margin: 0 0 0.6rem;
+  color: #e4ae4e;
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.welcome-summary {
+  display: grid;
+  max-width: 31rem;
+  justify-items: end;
+  gap: 1rem;
+}
+
+.welcome-summary > p {
+  margin-bottom: 0;
+  color: #a1a1aa;
+  text-align: right;
 }
 
 .toolbar-button,
@@ -203,7 +240,7 @@ p {
   box-shadow: 0 1.5rem 5rem rgb(0 0 0 / 28%);
 }
 
-.import-card h1 {
+.import-card h2 {
   margin-bottom: 0.75rem;
   font-size: clamp(2.25rem, 6vw, 4.75rem);
   line-height: 0.95;
@@ -462,16 +499,30 @@ p {
   }
 
   .app-shell {
-    min-height: 100vh;
-    height: auto;
+    min-height: 100dvh;
   }
 
   .capability {
     display: none;
   }
 
+  .welcome-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .welcome-summary {
+    width: 100%;
+    max-width: none;
+    justify-items: start;
+  }
+
+  .welcome-summary > p {
+    text-align: left;
+  }
+
   .editor-workspace {
-    min-height: calc(100vh - 4rem);
     grid-template-columns: 15rem minmax(0, 1fr);
   }
 }
