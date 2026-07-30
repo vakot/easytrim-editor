@@ -1,0 +1,11 @@
+<type>(<scope>): <description>
+
+# Allowed types:
+# feature, fix, refactor, perf, docs, test, build, ci, chore, revert
+#
+# Example:
+# feature(export): integrate initial export functionality
+#
+# Optional body: explain why, constraints, migration, or compatibility impact.
+# Optional footer:
+# BREAKING CHANGE: <description>
