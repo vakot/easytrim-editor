@@ -2,6 +2,8 @@ mod application;
 mod commands;
 mod domain;
 mod error;
+mod media;
+mod process;
 mod state;
 
 use application::import_source::import_source;
@@ -14,7 +16,10 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .manage(AppState::default())
-        .invoke_handler(tauri::generate_handler![commands::source::choose_source])
+        .invoke_handler(tauri::generate_handler![
+            commands::capabilities::check_media_capabilities,
+            commands::source::choose_source
+        ])
         .on_webview_event(|webview, event| {
             let tauri::WebviewEvent::DragDrop(tauri::DragDropEvent::Drop { paths, .. }) = event
             else {
