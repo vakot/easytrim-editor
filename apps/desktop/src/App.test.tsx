@@ -517,7 +517,7 @@ describe("App", () => {
     expect(video.currentTime).toBe(30);
   });
 
-  it("snaps the dragged segment to playhead points allowed by the safe-trim state", async () => {
+  it("snaps all dragged segment points regardless of the safe-trim state", async () => {
     mocks.chooseSource.mockResolvedValue(selection);
     const user = userEvent.setup();
     render(<App />);
@@ -560,6 +560,17 @@ describe("App", () => {
       clientX: clientXForSeconds(24.5),
       pointerId: 33,
     });
+    expect(segmentHandle).not.toHaveAttribute("data-snap-point");
+    expect(screen.getByRole("slider", { name: "Trim start" })).toHaveAttribute(
+      "aria-valuenow",
+      "19500000",
+    );
+
+    fireEvent.pointerMove(segmentHandle, {
+      clientX: clientXForSeconds(24.5),
+      pointerId: 33,
+      shiftKey: true,
+    });
     expect(segmentHandle).toHaveAttribute("data-snap-point", "end");
     expect(screen.getByRole("slider", { name: "Trim start" })).toHaveAttribute(
       "aria-valuenow",
@@ -567,8 +578,26 @@ describe("App", () => {
     );
 
     fireEvent.pointerMove(segmentHandle, {
+      clientX: clientXForSeconds(24.5),
+      pointerId: 33,
+    });
+    expect(segmentHandle).not.toHaveAttribute("data-snap-point");
+    expect(screen.getByRole("slider", { name: "Trim start" })).toHaveAttribute(
+      "aria-valuenow",
+      "19500000",
+    );
+
+    fireEvent.pointerMove(segmentHandle, {
+      clientX: clientXForSeconds(24.5),
+      pointerId: 33,
+      shiftKey: true,
+    });
+    expect(segmentHandle).toHaveAttribute("data-snap-point", "end");
+
+    fireEvent.pointerMove(segmentHandle, {
       clientX: clientXForSeconds(29.5),
       pointerId: 33,
+      shiftKey: true,
     });
     expect(segmentHandle).toHaveAttribute("data-snap-point", "center");
     expect(screen.getByRole("slider", { name: "Trim start" })).toHaveAttribute(
@@ -579,6 +608,7 @@ describe("App", () => {
     fireEvent.pointerMove(segmentHandle, {
       clientX: clientXForSeconds(35.5),
       pointerId: 33,
+      shiftKey: true,
     });
     expect(segmentHandle).toHaveAttribute("data-snap-point", "start");
     expect(screen.getByRole("slider", { name: "Trim start" })).toHaveAttribute(
@@ -588,6 +618,7 @@ describe("App", () => {
     fireEvent.pointerUp(segmentHandle, {
       clientX: clientXForSeconds(35.5),
       pointerId: 33,
+      shiftKey: true,
     });
     expect(playhead).toHaveAttribute("aria-valuenow", "30000000");
 
@@ -601,24 +632,27 @@ describe("App", () => {
     fireEvent.pointerMove(segmentHandle, {
       clientX: clientXForSeconds(30.5),
       pointerId: 34,
+      shiftKey: true,
     });
-    expect(segmentHandle).not.toHaveAttribute("data-snap-point");
+    expect(segmentHandle).toHaveAttribute("data-snap-point", "end");
     expect(screen.getByRole("slider", { name: "Trim end" })).toHaveAttribute(
       "aria-valuenow",
-      "35500000",
+      "35000000",
     );
     fireEvent.pointerUp(segmentHandle, {
       clientX: clientXForSeconds(30.5),
       pointerId: 34,
+      shiftKey: true,
     });
 
     fireEvent.pointerDown(segmentHandle, {
-      clientX: clientXForSeconds(30.5),
+      clientX: clientXForSeconds(30),
       pointerId: 35,
     });
     fireEvent.pointerMove(segmentHandle, {
       clientX: clientXForSeconds(34.5),
       pointerId: 35,
+      shiftKey: true,
     });
     expect(segmentHandle).toHaveAttribute("data-snap-point", "center");
     expect(screen.getByRole("slider", { name: "Trim start" })).toHaveAttribute(
@@ -628,6 +662,7 @@ describe("App", () => {
     fireEvent.pointerUp(segmentHandle, {
       clientX: clientXForSeconds(34.5),
       pointerId: 35,
+      shiftKey: true,
     });
 
     video.currentTime = 45;
@@ -639,6 +674,7 @@ describe("App", () => {
     fireEvent.pointerMove(segmentHandle, {
       clientX: clientXForSeconds(39.5),
       pointerId: 36,
+      shiftKey: true,
     });
     expect(segmentHandle).toHaveAttribute("data-snap-point", "end");
     expect(screen.getByRole("slider", { name: "Trim end" })).toHaveAttribute(
@@ -648,6 +684,7 @@ describe("App", () => {
     fireEvent.pointerUp(segmentHandle, {
       clientX: clientXForSeconds(39.5),
       pointerId: 36,
+      shiftKey: true,
     });
     expect(playhead).toHaveAttribute("aria-valuenow", "45000000");
   });

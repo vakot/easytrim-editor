@@ -71,7 +71,7 @@ describe("trim domain", () => {
     });
   });
 
-  it("snaps all three segment points when safe snapping is disabled", () => {
+  it("snaps all three segment points to the playhead", () => {
     const range = {
       startMicros: 10_000_000,
       endMicros: 20_000_000,
@@ -79,47 +79,26 @@ describe("trim domain", () => {
     };
 
     expect(
-      snapMovedTrimRangeToPlayhead(
-        range,
-        moveTrimRange(range, 30_500_000),
-        30_000_000,
-        1_000_000,
-        false,
-        1,
-      ),
+      snapMovedTrimRangeToPlayhead(moveTrimRange(range, 30_500_000), 30_000_000, 1_000_000),
     ).toEqual({
       range: { ...range, startMicros: 30_000_000, endMicros: 40_000_000 },
       point: "start",
     });
     expect(
-      snapMovedTrimRangeToPlayhead(
-        range,
-        moveTrimRange(range, 24_500_000),
-        30_000_000,
-        1_000_000,
-        false,
-        1,
-      ),
+      snapMovedTrimRangeToPlayhead(moveTrimRange(range, 24_500_000), 30_000_000, 1_000_000),
     ).toEqual({
       range: { ...range, startMicros: 25_000_000, endMicros: 35_000_000 },
       point: "center",
     });
     expect(
-      snapMovedTrimRangeToPlayhead(
-        range,
-        moveTrimRange(range, 19_500_000),
-        30_000_000,
-        1_000_000,
-        false,
-        1,
-      ),
+      snapMovedTrimRangeToPlayhead(moveTrimRange(range, 19_500_000), 30_000_000, 1_000_000),
     ).toEqual({
       range: { ...range, startMicros: 20_000_000, endMicros: 30_000_000 },
       point: "end",
     });
   });
 
-  it("keeps center snapping safe and gates borders by outside approach", () => {
+  it("snaps borders regardless of playhead position or movement direction", () => {
     const range = {
       startMicros: 10_000_000,
       endMicros: 20_000_000,
@@ -127,69 +106,16 @@ describe("trim domain", () => {
     };
 
     expect(
-      snapMovedTrimRangeToPlayhead(
-        range,
-        moveTrimRange(range, 10_500_000),
-        15_000_000,
-        1_000_000,
-        true,
-        1,
-      ),
+      snapMovedTrimRangeToPlayhead(moveTrimRange(range, 9_500_000), 19_000_000, 1_000_000),
     ).toEqual({
-      range,
-      point: "center",
-    });
-    expect(
-      snapMovedTrimRangeToPlayhead(
-        range,
-        moveTrimRange(range, 9_500_000),
-        19_000_000,
-        1_000_000,
-        true,
-        -1,
-      ),
-    ).toEqual({
-      range: { ...range, startMicros: 9_500_000, endMicros: 19_500_000 },
-      point: null,
-    });
-    expect(
-      snapMovedTrimRangeToPlayhead(
-        range,
-        moveTrimRange(range, 19_500_000),
-        30_000_000,
-        1_000_000,
-        true,
-        1,
-      ),
-    ).toEqual({
-      range: { ...range, startMicros: 20_000_000, endMicros: 30_000_000 },
+      range: { ...range, startMicros: 9_000_000, endMicros: 19_000_000 },
       point: "end",
     });
     expect(
-      snapMovedTrimRangeToPlayhead(
-        range,
-        moveTrimRange(range, 5_500_000),
-        5_000_000,
-        1_000_000,
-        true,
-        -1,
-      ),
+      snapMovedTrimRangeToPlayhead(moveTrimRange(range, 10_500_000), 9_000_000, 2_000_000),
     ).toEqual({
-      range: { ...range, startMicros: 5_000_000, endMicros: 15_000_000 },
+      range: { ...range, startMicros: 9_000_000, endMicros: 19_000_000 },
       point: "start",
-    });
-    expect(
-      snapMovedTrimRangeToPlayhead(
-        range,
-        moveTrimRange(range, 10_500_000),
-        9_000_000,
-        2_000_000,
-        true,
-        1,
-      ),
-    ).toEqual({
-      range: { ...range, startMicros: 10_500_000, endMicros: 20_500_000 },
-      point: null,
     });
   });
 

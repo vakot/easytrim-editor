@@ -336,7 +336,6 @@ export function EditorStage({
         playheadMicros={displayedPlayheadMicros}
         playheadRef={playheadRef}
         frameRate={frameRate}
-        safeTrimFollowingEnabled={safeTrimFollowingEnabled}
         playbackControls={
           preview.status === "ready" ? (
             <PlaybackControls

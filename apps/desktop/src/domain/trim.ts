@@ -7,7 +7,6 @@ export interface TrimRange {
 }
 
 export type SegmentSnapPoint = TrimBoundary | "center";
-export type SegmentDragDirection = -1 | 0 | 1;
 
 export interface SegmentSnapResult {
   range: TrimRange;
@@ -59,28 +58,13 @@ export function moveTrimRange(range: TrimRange, requestedStartMicros: number): T
 }
 
 export function snapMovedTrimRangeToPlayhead(
-  previousRange: TrimRange,
   movedRange: TrimRange,
   playheadMicros: number,
   snapReachMicros: number,
-  safeSnapEnabled: boolean,
-  dragDirection: SegmentDragDirection,
 ): SegmentSnapResult {
-  if (dragDirection === 0) {
-    return { range: movedRange, point: null };
-  }
-
   const playhead = clampInteger(playheadMicros, 0, movedRange.sourceDurationMicros);
   const reach = Number.isFinite(snapReachMicros) ? Math.max(0, snapReachMicros) : 0;
-  const eligiblePoints: SegmentSnapPoint[] = ["center"];
-
-  if (!safeSnapEnabled) {
-    eligiblePoints.push("start", "end");
-  } else if (dragDirection < 0 && playhead <= previousRange.startMicros) {
-    eligiblePoints.push("start");
-  } else if (dragDirection > 0 && playhead >= previousRange.endMicros) {
-    eligiblePoints.push("end");
-  }
+  const eligiblePoints: SegmentSnapPoint[] = ["center", "start", "end"];
 
   let closestPoint: SegmentSnapPoint | null = null;
   let closestDistance = Number.POSITIVE_INFINITY;
