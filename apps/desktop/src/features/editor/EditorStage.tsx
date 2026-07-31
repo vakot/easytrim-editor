@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-import type { PreviewState } from "../../app/session-state";
+import type { AudioTrackState, PreviewState } from "../../app/session-state";
 import {
   clampPlaybackMicros,
   formatPlaybackTime,
@@ -14,7 +14,8 @@ import {
   type TrimBoundary,
   type TrimRange,
 } from "../../domain/trim";
-import type { FrameRate } from "../../lib/tauri/media";
+import type { AudioStream, FrameRate } from "../../lib/tauri/media";
+import { AudioTracks } from "../audio-tracks/AudioTracks";
 import { PlaybackControls, PlaybackTimecode } from "../preview/PlaybackControls";
 import { VideoPreview } from "../preview/VideoPreview";
 import { TrimTimeline } from "../timeline/TrimTimeline";
@@ -24,8 +25,15 @@ interface EditorStageProps {
   preview: PreviewState;
   trim: TrimRange;
   frameRate?: FrameRate;
+  audioStreams: AudioStream[];
+  audioTracks: AudioTrackState[];
+  mergeAudio: boolean;
   onPreviewPlaybackError: (sourceId: string, previewKind: "source" | "proxy") => void;
   onTrimChange: (trim: TrimRange) => void;
+  onPrepareWaveforms: (streamIndexes: number[], width: number) => void;
+  onToggleAudioTrack: (streamIndex: number) => void;
+  onToggleAudioMerge: () => void;
+  onWaveformImageError: (streamIndex: number) => void;
 }
 
 interface EditorShortcutActions {
@@ -40,8 +48,15 @@ export function EditorStage({
   preview,
   trim,
   frameRate,
+  audioStreams,
+  audioTracks,
+  mergeAudio,
   onPreviewPlaybackError,
   onTrimChange,
+  onPrepareWaveforms,
+  onToggleAudioTrack,
+  onToggleAudioMerge,
+  onWaveformImageError,
 }: EditorStageProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const playheadRef = useRef<HTMLButtonElement>(null);
@@ -367,6 +382,18 @@ export function EditorStage({
               onToggleSafeTrimFollowing={() => setSafeTrimFollowingEnabled((enabled) => !enabled)}
             />
           ) : null
+        }
+        audioRows={
+          <AudioTracks
+            streams={audioStreams}
+            tracks={audioTracks}
+            range={trim}
+            mergeAudio={mergeAudio}
+            onToggleTrack={onToggleAudioTrack}
+            onToggleMerge={onToggleAudioMerge}
+            onPrepareWaveforms={onPrepareWaveforms}
+            onWaveformImageError={onWaveformImageError}
+          />
         }
         onChange={handleTrimBoundaryChange}
         onMoveSegment={handleSegmentMove}

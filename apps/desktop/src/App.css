@@ -564,7 +564,7 @@ p {
 .timeline-scale {
   display: flex;
   justify-content: space-between;
-  margin: 0.8rem 0 0.3rem 4rem;
+  margin: 0.8rem 0 0.3rem 9.5rem;
   color: #62626a;
   font-size: 0.62rem;
   font-variant-numeric: tabular-nums;
@@ -573,7 +573,7 @@ p {
 .timeline-row {
   display: grid;
   min-width: 0;
-  grid-template-columns: 3.25rem minmax(0, 1fr);
+  grid-template-columns: 8.75rem minmax(0, 1fr);
   gap: 0.75rem;
   align-items: center;
 }
@@ -582,6 +582,162 @@ p {
   color: #a1a1aa;
   font-size: 0.72rem;
   font-weight: 700;
+}
+
+.timeline-audio {
+  margin-top: 0.8rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid #29292e;
+}
+
+.timeline-audio-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.65rem;
+}
+
+.timeline-audio-heading h3,
+.timeline-audio-heading p {
+  margin: 0;
+}
+
+.timeline-audio-heading h3 {
+  color: #d4d4d8;
+  font-size: 0.78rem;
+}
+
+.timeline-audio-heading p {
+  margin-top: 0.15rem;
+  color: #85858e;
+  font-size: 0.68rem;
+}
+
+.merge-audio-control,
+.audio-track-label {
+  cursor: pointer;
+}
+
+.merge-audio-control {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.45rem;
+  color: #c4c4cc;
+  font-size: 0.72rem;
+}
+
+.merge-audio-control input,
+.audio-track-label input {
+  margin: 0;
+  accent-color: #e4ae4e;
+}
+
+.audio-track-list {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.audio-track-label {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 0.45rem;
+  align-items: center;
+}
+
+.audio-track-label input {
+  grid-row: 1 / span 2;
+}
+
+.audio-track-title,
+.audio-track-meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.audio-track-title {
+  color: #d4d4d8;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.audio-track-meta {
+  color: #71717a;
+  font-size: 0.62rem;
+}
+
+.audio-waveform-track {
+  position: relative;
+  height: 2.6rem;
+  overflow: hidden;
+  border: 1px solid #303036;
+  border-radius: 0.4rem;
+  background: #19191e;
+}
+
+.audio-waveform-track[data-enabled="false"] {
+  opacity: 0.42;
+}
+
+.waveform-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  opacity: 0.82;
+  object-fit: fill;
+  user-select: none;
+}
+
+.audio-trim-selection {
+  position: absolute;
+  inset-block: 0;
+  border-inline: 1px solid rgb(228 174 78 / 70%);
+  background: rgb(228 174 78 / 9%);
+  box-shadow: 0 0 0 100vmax rgb(0 0 0 / 38%);
+  clip-path: inset(0 -100vmax);
+  pointer-events: none;
+}
+
+.waveform-status,
+.waveform-failure {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #777780;
+  font-size: 0.66rem;
+}
+
+.waveform-failure {
+  z-index: 1;
+  gap: 0.55rem;
+}
+
+.waveform-failure button {
+  padding: 0.2rem 0.45rem;
+  border: 1px solid #4a4a52;
+  border-radius: 0.3rem;
+  color: #d4d4d8;
+  background: #25252b;
+  font: inherit;
+  cursor: pointer;
+}
+
+.waveform-failure button:hover {
+  border-color: #e4ae4e;
+  color: #f7d798;
+}
+
+.timeline-empty-audio {
+  margin: 0.8rem 0 0 9.5rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid #29292e;
+  color: #71717a;
+  font-size: 0.7rem;
 }
 
 .timeline-track {

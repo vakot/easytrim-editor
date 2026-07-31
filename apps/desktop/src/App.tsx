@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useReducer, useState } from "react";
+import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 
 import { initialSessionState, sessionReducer } from "./app/session-state";
 import type { TrimRange } from "./domain/trim";
@@ -11,6 +11,7 @@ import {
   normalizeAppError,
   prepareProxyPreview,
   prepareSourcePreview,
+  prepareWaveforms,
   type PreviewKind,
   type SourceSelection,
 } from "./lib/tauri/media";
@@ -21,6 +22,7 @@ function App() {
   const [isChoosingSource, setIsChoosingSource] = useState(false);
   const [isSourceDragActive, setIsSourceDragActive] = useState(false);
   const [dropListenerError, setDropListenerError] = useState<string | null>(null);
+  const waveformJobSequence = useRef(0);
   const hasSource = session.source !== null;
 
   const inspectSource = useCallback((source: SourceSelection) => {
@@ -83,6 +85,43 @@ function App() {
 
   const handleTrimChange = useCallback((sourceId: string, trim: TrimRange) => {
     dispatch({ type: "trim-changed", sourceId, trim });
+  }, []);
+
+  const handlePrepareWaveforms = useCallback(
+    (sourceId: string, streamIndexes: number[], width: number) => {
+      if (streamIndexes.length === 0) {
+        return;
+      }
+      const jobId = `waveform-${++waveformJobSequence.current}`;
+      dispatch({ type: "waveforms-loading", sourceId, jobId, width, streamIndexes });
+      void prepareWaveforms(sourceId, jobId, streamIndexes, width)
+        .then((results) => {
+          results.forEach((result) => dispatch({ type: "waveform-result", result }));
+        })
+        .catch((error: unknown) => {
+          dispatch({
+            type: "waveforms-failed",
+            sourceId,
+            jobId,
+            width,
+            streamIndexes,
+            error: normalizeAppError(error),
+          });
+        });
+    },
+    [],
+  );
+
+  const handleToggleAudioTrack = useCallback((sourceId: string, streamIndex: number) => {
+    dispatch({ type: "audio-track-toggled", sourceId, streamIndex });
+  }, []);
+
+  const handleToggleAudioMerge = useCallback((sourceId: string) => {
+    dispatch({ type: "audio-merge-toggled", sourceId });
+  }, []);
+
+  const handleWaveformImageError = useCallback((sourceId: string, streamIndex: number) => {
+    dispatch({ type: "waveform-display-failed", sourceId, streamIndex });
   }, []);
 
   useEffect(() => {
@@ -211,6 +250,10 @@ function App() {
         onChooseSource={() => void handleChooseSource()}
         onPreviewPlaybackError={handlePreviewPlaybackError}
         onTrimChange={handleTrimChange}
+        onPrepareWaveforms={handlePrepareWaveforms}
+        onToggleAudioTrack={handleToggleAudioTrack}
+        onToggleAudioMerge={handleToggleAudioMerge}
+        onWaveformImageError={handleWaveformImageError}
       />
     </main>
   );

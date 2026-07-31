@@ -73,6 +73,7 @@ type SessionAction =
       streamIndexes: number[];
     }
   | { type: "waveform-result"; result: WaveformResult }
+  | { type: "waveform-display-failed"; sourceId: string; streamIndex: number }
   | {
       type: "waveforms-failed";
       sourceId: string;
@@ -266,6 +267,32 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
                     },
             };
           }),
+        },
+      };
+    case "waveform-display-failed":
+      if (state.source?.selection.sourceId !== action.sourceId) {
+        return state;
+      }
+      return {
+        ...state,
+        source: {
+          ...state.source,
+          audioTracks: state.source.audioTracks.map((track) =>
+            track.streamIndex === action.streamIndex && track.waveform.status === "ready"
+              ? {
+                  ...track,
+                  waveform: {
+                    status: "failed",
+                    jobId: track.waveform.jobId,
+                    width: track.waveform.width,
+                    error: {
+                      code: "waveform_failed",
+                      message: "The waveform preview could not be displayed.",
+                    },
+                  },
+                }
+              : track,
+          ),
         },
       };
     case "waveforms-failed":
