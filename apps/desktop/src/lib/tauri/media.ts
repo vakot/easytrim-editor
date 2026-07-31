@@ -79,6 +79,14 @@ export interface MediaInfo {
   chapters: ChapterInfo[];
 }
 
+export type PreviewKind = "source" | "proxy";
+
+export interface PreviewDescriptor {
+  sourceId: string;
+  url: string;
+  kind: PreviewKind;
+}
+
 export type SourceImportEvent =
   { status: "selected"; source: SourceSelection } | { status: "failed"; error: AppError };
 
@@ -104,6 +112,30 @@ export async function checkMediaCapabilities(): Promise<MediaCapabilities> {
 export async function inspectMedia(sourceId: string): Promise<MediaInfo> {
   try {
     return parseMediaInfo(await invoke<unknown>("inspect_media", { sourceId }));
+  } catch (error: unknown) {
+    throw normalizeAppError(error);
+  }
+}
+
+export async function prepareSourcePreview(sourceId: string): Promise<PreviewDescriptor> {
+  try {
+    return parsePreviewDescriptor(
+      await invoke<unknown>("prepare_source_preview", {
+        sourceId,
+      }),
+    );
+  } catch (error: unknown) {
+    throw normalizeAppError(error);
+  }
+}
+
+export async function prepareProxyPreview(sourceId: string): Promise<PreviewDescriptor> {
+  try {
+    return parsePreviewDescriptor(
+      await invoke<unknown>("prepare_proxy_preview", {
+        sourceId,
+      }),
+    );
   } catch (error: unknown) {
     throw normalizeAppError(error);
   }
@@ -216,6 +248,19 @@ function parseMediaInfo(value: unknown): MediaInfo {
     video: parseVideoStream(media.video),
     audioStreams: requireArray(media.audioStreams, "audio streams").map(parseAudioStream),
     chapters: requireArray(media.chapters, "chapters").map(parseChapter),
+  };
+}
+
+function parsePreviewDescriptor(value: unknown): PreviewDescriptor {
+  const preview = requireRecord(value, "preview descriptor");
+  const kind = preview.kind;
+  if (kind !== "source" && kind !== "proxy") {
+    throw invalidResponse("preview kind");
+  }
+  return {
+    sourceId: requireString(preview.sourceId, "source ID"),
+    url: requireString(preview.url, "preview URL"),
+    kind,
   };
 }
 

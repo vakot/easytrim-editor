@@ -70,4 +70,55 @@ describe("sessionReducer", () => {
     expect(failed.source?.selection).toEqual(secondSource);
     expect(failed.source?.media).toBeNull();
   });
+
+  it("ignores a preview prepared for a replaced source", () => {
+    const loadingFirst = sessionReducer(initialSessionState, {
+      type: "source-selected",
+      source: firstSource,
+    });
+    const loadingSecond = sessionReducer(loadingFirst, {
+      type: "source-selected",
+      source: secondSource,
+    });
+    const stalePreview = sessionReducer(loadingSecond, {
+      type: "preview-ready",
+      sourceId: firstSource.sourceId,
+      preview: {
+        sourceId: firstSource.sourceId,
+        url: "http://easycut-media.localhost/source-1?variant=source",
+        kind: "source",
+      },
+    });
+
+    expect(stalePreview).toBe(loadingSecond);
+  });
+
+  it("tracks direct preview fallback without failing inspected metadata", () => {
+    const loading = sessionReducer(initialSessionState, {
+      type: "source-selected",
+      source: firstSource,
+    });
+    const ready = sessionReducer(loading, {
+      type: "source-ready",
+      sourceId: firstSource.sourceId,
+      media: media(firstSource.sourceId),
+    });
+    const preparingProxy = sessionReducer(ready, {
+      type: "preview-loading",
+      sourceId: firstSource.sourceId,
+      kind: "proxy",
+    });
+    const failedProxy = sessionReducer(preparingProxy, {
+      type: "preview-failed",
+      sourceId: firstSource.sourceId,
+      error: { code: "preview_failed", message: "Preview failed." },
+    });
+
+    expect(failedProxy.status).toBe("ready");
+    expect(failedProxy.source?.media).toEqual(media(firstSource.sourceId));
+    expect(failedProxy.source?.preview).toEqual({
+      status: "failed",
+      error: { code: "preview_failed", message: "Preview failed." },
+    });
+  });
 });

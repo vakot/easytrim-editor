@@ -10,7 +10,13 @@ vi.mock("@tauri-apps/api/webview", () => ({
   getCurrentWebview: () => ({ onDragDropEvent: mocks.onDragDropEvent }),
 }));
 
-import { chooseSource, inspectMedia, listenForSourceDrops } from "./media";
+import {
+  chooseSource,
+  inspectMedia,
+  listenForSourceDrops,
+  prepareProxyPreview,
+  prepareSourcePreview,
+} from "./media";
 
 type NativeDropEvent =
   | { payload: { type: "enter"; paths: string[] } }
@@ -53,6 +59,42 @@ describe("media IPC adapter", () => {
     await expect(inspectMedia("source-3")).rejects.toEqual({
       code: "internal",
       message: "The native application returned an invalid duration.",
+    });
+  });
+
+  it("parses direct and proxy preview descriptors through narrow commands", async () => {
+    mocks.invoke
+      .mockResolvedValueOnce({
+        sourceId: "source-3",
+        url: "http://easycut-media.localhost/source-3?variant=source",
+        kind: "source",
+      })
+      .mockResolvedValueOnce({
+        sourceId: "source-3",
+        url: "http://easycut-media.localhost/source-3?variant=proxy",
+        kind: "proxy",
+      });
+
+    await expect(prepareSourcePreview("source-3")).resolves.toMatchObject({ kind: "source" });
+    await expect(prepareProxyPreview("source-3")).resolves.toMatchObject({ kind: "proxy" });
+    expect(mocks.invoke).toHaveBeenNthCalledWith(1, "prepare_source_preview", {
+      sourceId: "source-3",
+    });
+    expect(mocks.invoke).toHaveBeenNthCalledWith(2, "prepare_proxy_preview", {
+      sourceId: "source-3",
+    });
+  });
+
+  it("rejects an unknown preview kind at the IPC boundary", async () => {
+    mocks.invoke.mockResolvedValue({
+      sourceId: "source-3",
+      url: "http://easycut-media.localhost/source-3",
+      kind: "filesystem",
+    });
+
+    await expect(prepareSourcePreview("source-3")).rejects.toEqual({
+      code: "internal",
+      message: "The native application returned an invalid preview kind.",
     });
   });
 
