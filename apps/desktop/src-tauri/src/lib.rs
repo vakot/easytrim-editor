@@ -19,6 +19,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::capabilities::check_media_capabilities,
             commands::media::inspect_media,
+            commands::media::prepare_proxy_preview,
             commands::media::prepare_source_preview,
             commands::source::choose_source,
             commands::source::import_dropped_source

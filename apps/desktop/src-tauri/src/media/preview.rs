@@ -27,12 +27,12 @@ pub fn respond<R: Runtime>(app: &AppHandle<R>, request: Request<Vec<u8>>) -> Res
     }
 
     let state = app.state::<AppState>();
-    let Ok(source) = state.resolve_source(source_id) else {
+    let Ok(path) = state.resolve_preview_path(source_id) else {
         return empty_response(StatusCode::NOT_FOUND);
     };
 
     read_media_response(
-        &source.path,
+        &path,
         request.method() == Method::HEAD,
         request.headers().get("range"),
     )
