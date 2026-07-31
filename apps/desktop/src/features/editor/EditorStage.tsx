@@ -75,11 +75,14 @@ export function EditorStage({
     function handleEditorShortcut(event: globalThis.KeyboardEvent) {
       const actions = shortcutActionsRef.current;
       const shortcut = editorShortcutFromEvent(event);
+      if (!actions?.enabled || !shortcut) {
+        return;
+      }
+
+      const isPriorityShortcut = shortcut === "toggle-playback";
       if (
-        !actions?.enabled ||
-        !shortcut ||
-        event.defaultPrevented ||
-        isShortcutBlockedTarget(event.target)
+        !isPriorityShortcut &&
+        (event.defaultPrevented || isShortcutBlockedTarget(event.target))
       ) {
         return;
       }
@@ -108,8 +111,8 @@ export function EditorStage({
       }
     }
 
-    window.addEventListener("keydown", handleEditorShortcut);
-    return () => window.removeEventListener("keydown", handleEditorShortcut);
+    window.addEventListener("keydown", handleEditorShortcut, true);
+    return () => window.removeEventListener("keydown", handleEditorShortcut, true);
   }, []);
 
   function commitSeek(micros: number) {

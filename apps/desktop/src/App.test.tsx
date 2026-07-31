@@ -193,7 +193,7 @@ describe("App", () => {
     expect(screen.getByLabelText("Current playback time")).toHaveTextContent("00:00:00.000");
   });
 
-  it("maps global transport shortcuts without intercepting text entry", async () => {
+  it("prioritizes playback while keeping other shortcuts locked during text entry", async () => {
     mocks.chooseSource.mockResolvedValue(selection);
     const user = userEvent.setup();
     render(<App />);
@@ -221,14 +221,17 @@ describe("App", () => {
     pause.mockClear();
     fireEvent.keyDown(window, { key: " " });
     expect(pause).toHaveBeenCalledOnce();
+    fireEvent.pause(video);
 
     const input = document.createElement("input");
     document.body.append(input);
     input.focus();
     play.mockClear();
+    pause.mockClear();
     fireEvent.keyDown(input, { key: " " });
     fireEvent.keyDown(input, { key: "ArrowRight" });
-    expect(play).not.toHaveBeenCalled();
+    expect(play).toHaveBeenCalledOnce();
+    expect(pause).not.toHaveBeenCalled();
     expect(screen.getByRole("slider", { name: "Playback position" })).toHaveAttribute(
       "aria-valuenow",
       "0",
@@ -246,7 +249,7 @@ describe("App", () => {
     await screen.findByLabelText("Source video preview");
     view.unmount();
 
-    expect(removeEventListener).toHaveBeenCalledWith("keydown", expect.any(Function));
+    expect(removeEventListener).toHaveBeenCalledWith("keydown", expect.any(Function), true);
     removeEventListener.mockRestore();
   });
 
