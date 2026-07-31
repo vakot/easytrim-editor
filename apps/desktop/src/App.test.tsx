@@ -173,6 +173,17 @@ describe("App", () => {
     ).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Trim" })).not.toBeInTheDocument();
     expect(screen.getByLabelText("Video preview and timeline area")).toBeInTheDocument();
+    const videoTimelineRow = screen.getByLabelText("Video trim timeline").closest(".timeline-row");
+    expect(videoTimelineRow).not.toBeNull();
+    const videoToolbar = within(videoTimelineRow as HTMLElement).getByRole("toolbar", {
+      name: "Video timeline tools",
+    });
+    expect(screen.getByText("Tools")).toHaveClass("timeline-toolbar-title");
+    expect(videoToolbar).toHaveClass("timeline-row-toolbar");
+    expect(within(videoToolbar).getByRole("button", { name: "Safe trim following" })).toBe(
+      screen.getByRole("button", { name: "Safe trim following" }),
+    );
+    expect(within(videoTimelineRow as HTMLElement).queryByText("Video")).not.toBeInTheDocument();
     expect(screen.getByTestId("source-details-panel")).toContainElement(
       screen.getByRole("heading", { name: "holiday.mp4" }),
     );

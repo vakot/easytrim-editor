@@ -18,7 +18,7 @@ import {
 } from "../../domain/trim";
 import type { AudioStream, FrameRate } from "../../lib/tauri/media";
 import { AudioTracks } from "../audio-tracks/AudioTracks";
-import { PlaybackControls, PlaybackTimecode } from "../preview/PlaybackControls";
+import { PlaybackControls, PlaybackTimecode, TimelineTools } from "../preview/PlaybackControls";
 import { VideoPreview } from "../preview/VideoPreview";
 import { TrimTimeline } from "../timeline/TrimTimeline";
 
@@ -426,6 +426,12 @@ export function EditorStage({
                 <PlaybackTimecode
                   currentMicros={displayedPlayheadMicros}
                   sourceDurationMicros={trim.sourceDurationMicros}
+                />
+              ) : null
+            }
+            videoToolbar={
+              preview.status === "ready" ? (
+                <TimelineTools
                   safeTrimFollowingEnabled={safeTrimFollowingEnabled}
                   onToggleSafeTrimFollowing={() =>
                     setSafeTrimFollowingEnabled((enabled) => !enabled)
