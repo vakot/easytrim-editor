@@ -203,10 +203,11 @@ function volumePercentToDecibels(volumePercent: number): number {
   if (volumePercent <= 0) {
     return MIN_SLIDER_DECIBELS;
   }
-  return Math.max(
+  const decibels = Math.max(
     MIN_SLIDER_DECIBELS,
     Math.min(MAX_SLIDER_DECIBELS, 20 * Math.log10(volumePercent / 50)),
   );
+  return Math.round(decibels * 10) / 10;
 }
 
 function decibelsToVolumePercent(decibels: number): number {
