@@ -69,7 +69,7 @@ Repository-wide conventions are auto-loaded through `AGENTS.md`. Shared rules un
 
 1. Try the source file directly in the embedded video element.
 2. If the WebView cannot play it, generate a temporary 720p-or-smaller H.264/AAC proxy with FFmpeg.
-3. Keep timeline positions in source seconds; the proxy is only a viewing aid and is never used as the export source.
+3. Keep timeline positions in integer source microseconds; the proxy is only a viewing aid and is never used as the export source.
 
 This avoids forcing every input through a full conversion while still allowing uncommon codecs and containers to be reviewed.
 
@@ -81,8 +81,10 @@ The main screen contains only the controls needed for the current cut:
    action beneath a concise product introduction. The introduction disappears after selection;
    `Open video` remains directly available in the compact top toolbar, and dragging a file over
    the editor shows a clear replacement overlay.
-2. **Preview** — full source playback with play/pause, current time, and duration.
-3. **Timeline** — one video row and one row for each audio stream. A shaded region identifies the selected export segment. Dragging the left or right handle trims only the start or end.
+2. **Preview** — an undecorated video surface with compact app-owned play/pause, previous-frame,
+   next-frame, set-segment-start/end, current-time, and duration controls. Space toggles playback,
+   Left/Right Arrow steps frames, and `I`/`O` set segment boundaries at the playhead.
+3. **Timeline** — one video row and one row for each audio stream. A shaded region identifies the selected export segment. Dragging the left or right handle trims only the start or end. The playback marker is independently draggable and continuously seeks the preview while moving.
 4. **Audio rows** — track label, codec/channel information, waveform, and an enabled checkbox. Track ordering follows FFprobe stream order.
 5. **Export settings** — output name, optimized resolution/framerate controls, merge-audio toggle, and a named in-memory FFmpeg preset field.
 6. **Two primary buttons** — `Fast cut` and `Optimized render`, always visible and side by side. No submenu is required to choose the export route.
@@ -102,7 +104,7 @@ Use one in-memory application state object:
 
 - source path and FFprobe metadata;
 - proxy path and waveform paths;
-- `trimStart` and `trimEnd` in source seconds;
+- `trimStart` and `trimEnd` in integer source microseconds;
 - audio stream enabled flags and merge-audio flag;
 - optimized width/height and output frame rate;
 - current FFmpeg argument string;
@@ -176,14 +178,17 @@ Keep the Tauri boundary small and typed:
 
 - `choose_source() -> SourceSelection`;
 - `inspect_media(source_id) -> MediaInfo`;
-- `prepare_preview(source_id) -> PreviewInfo`;
+- `prepare_source_preview(source_id) -> PreviewInfo`;
+- `prepare_proxy_preview(source_id) -> PreviewInfo`;
 - `prepare_waveforms(source_id, audio_streams, width) -> WaveformInfo[]`;
-- `cancel_source_tasks(source_id)`;
 - `choose_output_path(default_name) -> Path`;
 - `render_fast(request) -> OperationId`;
 - `render_optimized(request) -> OperationId`;
 - `cancel_operation(operation_id)`;
 - `subscribe_operation_progress(operation_id)`.
+
+Source replacement cancels source-bound preview and waveform helpers through the active source
+token; no separate frontend cancellation command is needed for replacement.
 
 All FFmpeg processes should be cancellable, capture stderr for diagnostics, and parse `-progress pipe:1` into elapsed time, total duration, speed, and completion percentage.
 
@@ -205,8 +210,13 @@ All FFmpeg processes should be cancellable, capture stderr for diagnostics, and 
 
 ### Phase 2 — preview and trim UI
 
+Status: implemented on the Phase 2 topic branch; real-file WebView codec coverage remains part of
+the validation matrix.
+
 - direct source preview with proxy fallback;
 - timeline scale, playback cursor, and draggable start/end handles;
+- app-owned playback/frame and set-in/out controls, global editor shortcuts, and continuously
+  draggable playhead seeking;
 - keyboard-accessible handle adjustments and numeric time readouts;
 - clamp trim values and reject empty selections.
 

@@ -1,3 +1,3 @@
 mod runner;
 
-pub use runner::run_bounded;
+pub use runner::{ProcessOutput, run_bounded, run_bounded_cancellable};

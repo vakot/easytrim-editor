@@ -1,11 +1,15 @@
 import type { SessionState } from "../../app/session-state";
+import type { TrimRange } from "../../domain/trim";
 import type { BinaryCapability, FrameRate, MediaInfo } from "../../lib/tauri/media";
+import { EditorStage } from "../editor/EditorStage";
 
 interface SourceWorkspaceProps {
   session: SessionState;
   isChoosingSource: boolean;
   isSourceDragActive: boolean;
   onChooseSource: () => void;
+  onPreviewPlaybackError: (sourceId: string, previewKind: "source" | "proxy") => void;
+  onTrimChange: (sourceId: string, trim: TrimRange) => void;
 }
 
 export function SourceWorkspace({
@@ -13,6 +17,8 @@ export function SourceWorkspace({
   isChoosingSource,
   isSourceDragActive,
   onChooseSource,
+  onPreviewPlaybackError,
+  onTrimChange,
 }: SourceWorkspaceProps) {
   if (!session.source) {
     return (
@@ -39,6 +45,7 @@ export function SourceWorkspace({
       </section>
     );
   }
+  const sourceId = session.source.selection.sourceId;
 
   return (
     <section className="editor-workspace" aria-label="Video editor workspace">
@@ -62,6 +69,20 @@ export function SourceWorkspace({
       </aside>
 
       <div className="editor-stage" aria-label="Video preview and timeline area">
+        {session.status === "ready" && session.source.media && session.source.trim ? (
+          <EditorStage
+            key={sourceId}
+            sourceId={sourceId}
+            preview={session.source.preview}
+            trim={session.source.trim}
+            frameRate={
+              session.source.media.video.averageFrameRate ??
+              session.source.media.video.realFrameRate
+            }
+            onPreviewPlaybackError={onPreviewPlaybackError}
+            onTrimChange={(trim) => onTrimChange(sourceId, trim)}
+          />
+        ) : null}
         {isSourceDragActive ? <DropOverlay /> : null}
       </div>
     </section>
