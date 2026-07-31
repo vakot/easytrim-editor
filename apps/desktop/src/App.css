@@ -74,6 +74,7 @@ p {
 
 .app-toolbar {
   z-index: 10;
+  position: relative;
   display: flex;
   min-width: 0;
   align-items: center;
@@ -89,6 +90,12 @@ p {
   min-width: 0;
   align-items: center;
   gap: 1rem;
+}
+
+.toolbar-capability {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .app-brand {
@@ -467,7 +474,7 @@ p {
 
 .toolbar-button,
 .primary-button {
-  min-height: 2.5rem;
+  min-height: 2.25rem;
   border: 0;
   border-radius: 0.55rem;
   color: #17130a;
@@ -478,7 +485,7 @@ p {
 
 .toolbar-button {
   min-width: 7.5rem;
-  padding: 0.55rem 1rem;
+  padding: 0.4rem 1rem;
 }
 
 .toolbar-button:hover:not(:disabled),

@@ -224,6 +224,8 @@ function App() {
               <img src="/logo.svg" alt="" />
               ClipKit
             </h1>
+          </div>
+          <div className="toolbar-capability">
             <CapabilityStatus capabilities={session.capabilities} />
           </div>
           <div className="toolbar-actions">
