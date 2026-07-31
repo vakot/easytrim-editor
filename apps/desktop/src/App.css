@@ -555,16 +555,29 @@ p {
   z-index: 2;
   position: absolute;
   top: -0.3rem;
-  bottom: -0.3rem;
-  width: 2px;
-  margin-left: -1px;
-  background: #f5f5f4;
-  pointer-events: none;
+  width: 2.75rem;
+  height: calc(100% + 0.6rem);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: ew-resize;
+  touch-action: none;
+  transform: translateX(-50%);
 }
 
 .playhead::before {
   position: absolute;
-  top: -0.15rem;
+  inset-block: 0;
+  left: 50%;
+  width: 2px;
+  background: #f5f5f4;
+  content: "";
+  transform: translateX(-50%);
+}
+
+.playhead::after {
+  position: absolute;
+  top: -0.05rem;
   left: 50%;
   width: 0.45rem;
   height: 0.45rem;
@@ -572,6 +585,11 @@ p {
   background: #f5f5f4;
   content: "";
   transform: translateX(-50%);
+}
+
+.playhead:focus-visible {
+  outline: 3px solid rgb(245 245 244 / 70%);
+  outline-offset: 2px;
 }
 
 .trim-handle {

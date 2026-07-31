@@ -1,4 +1,4 @@
-import { useRef, type KeyboardEvent, type PointerEvent } from "react";
+import { useRef, type KeyboardEvent, type PointerEvent, type RefObject } from "react";
 
 import {
   clampPlaybackMicros,
@@ -17,19 +17,28 @@ import type { FrameRate } from "../../lib/tauri/media";
 interface TrimTimelineProps {
   range: TrimRange;
   playheadMicros: number;
+  playheadRef: RefObject<HTMLButtonElement | null>;
   frameRate?: FrameRate;
   onChange: (range: TrimRange) => void;
   onSeek: (micros: number) => void;
+  onScrubStart: () => void;
+  onScrub: (micros: number) => void;
+  onScrubEnd: () => void;
 }
 
 export function TrimTimeline({
   range,
   playheadMicros,
+  playheadRef,
   frameRate,
   onChange,
   onSeek,
+  onScrubStart,
+  onScrub,
+  onScrubEnd,
 }: TrimTimelineProps) {
   const trackRef = useRef<HTMLDivElement>(null);
+  const scrubPointerIdRef = useRef<number | null>(null);
   const startPercent = timelinePercent(range.startMicros, range.sourceDurationMicros);
   const endPercent = timelinePercent(range.endMicros, range.sourceDurationMicros);
   const playheadPercent = timelinePercent(
@@ -101,6 +110,84 @@ export function TrimTimeline({
     onSeek(boundary === "start" ? next.startMicros : next.endMicros);
   }
 
+  function scrubMicros(clientX: number): number | null {
+    const bounds = trackRef.current?.getBoundingClientRect();
+    if (!bounds) {
+      return null;
+    }
+    return microsFromTimelinePosition(
+      clientX,
+      bounds.left,
+      bounds.width,
+      range.sourceDurationMicros,
+    );
+  }
+
+  function startScrub(event: PointerEvent<HTMLElement>, captureTarget: HTMLElement) {
+    event.preventDefault();
+    event.stopPropagation();
+    scrubPointerIdRef.current = event.pointerId;
+    captureTarget.setPointerCapture?.(event.pointerId);
+    onScrubStart();
+    const micros = scrubMicros(event.clientX);
+    if (micros !== null) {
+      onScrub(micros);
+    }
+  }
+
+  function moveScrub(event: PointerEvent<HTMLElement>) {
+    if (scrubPointerIdRef.current !== event.pointerId) {
+      return;
+    }
+    event.preventDefault();
+    const micros = scrubMicros(event.clientX);
+    if (micros !== null) {
+      onScrub(micros);
+    }
+  }
+
+  function finishScrub(event: PointerEvent<HTMLElement>, includePosition: boolean) {
+    if (scrubPointerIdRef.current !== event.pointerId) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    if (includePosition) {
+      const micros = scrubMicros(event.clientX);
+      if (micros !== null) {
+        onScrub(micros);
+      }
+    }
+    scrubPointerIdRef.current = null;
+    onScrubEnd();
+  }
+
+  function handlePlayheadKeyboard(event: KeyboardEvent<HTMLButtonElement>) {
+    const step = event.shiftKey ? 1_000_000 : frameDurationMicros(frameRate);
+    let requested: number | null = null;
+    switch (event.key) {
+      case "ArrowLeft":
+        requested = playheadMicros - step;
+        break;
+      case "ArrowRight":
+        requested = playheadMicros + step;
+        break;
+      case "Home":
+        requested = 0;
+        break;
+      case "End":
+        requested = range.sourceDurationMicros;
+        break;
+    }
+    if (requested === null) {
+      return;
+    }
+    event.preventDefault();
+    onScrubStart();
+    onSeek(clampPlaybackMicros(requested, range.sourceDurationMicros));
+    onScrubEnd();
+  }
+
   return (
     <section className="timeline-panel" aria-labelledby="timeline-title">
       <div className="timeline-heading">
@@ -133,29 +220,35 @@ export function TrimTimeline({
             if (event.target !== event.currentTarget) {
               return;
             }
-            const bounds = event.currentTarget.getBoundingClientRect();
-            onSeek(
-              microsFromTimelinePosition(
-                event.clientX,
-                bounds.left,
-                bounds.width,
-                range.sourceDurationMicros,
-              ),
-            );
+            startScrub(event, event.currentTarget);
           }}
+          onPointerMove={moveScrub}
+          onPointerUp={(event) => finishScrub(event, true)}
+          onPointerCancel={(event) => finishScrub(event, false)}
+          onLostPointerCapture={(event) => finishScrub(event, false)}
         >
           <div
             className="trim-selection"
             style={{ left: `${startPercent}%`, right: `${100 - endPercent}%` }}
           />
-          <div
+          <button
+            ref={playheadRef}
             className="playhead"
+            type="button"
             style={{ left: `${playheadPercent}%` }}
-            role="progressbar"
-            aria-label={`Playback position ${formatAccessibleTime(playheadMicros)}`}
+            role="slider"
+            aria-label="Playback position"
             aria-valuemin={0}
             aria-valuemax={range.sourceDurationMicros}
             aria-valuenow={clampPlaybackMicros(playheadMicros, range.sourceDurationMicros)}
+            aria-valuetext={formatAccessibleTime(playheadMicros)}
+            title={formatPlaybackTime(playheadMicros)}
+            onPointerDown={(event) => startScrub(event, event.currentTarget)}
+            onPointerMove={moveScrub}
+            onPointerUp={(event) => finishScrub(event, true)}
+            onPointerCancel={(event) => finishScrub(event, false)}
+            onLostPointerCapture={(event) => finishScrub(event, false)}
+            onKeyDown={handlePlayheadKeyboard}
           />
           <TrimHandle
             boundary="start"

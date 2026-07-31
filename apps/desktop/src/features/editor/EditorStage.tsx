@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 
 import type { PreviewState } from "../../app/session-state";
-import { clampPlaybackMicros, frameDurationMicros } from "../../domain/playback";
+import {
+  clampPlaybackMicros,
+  formatPlaybackTime,
+  frameDurationMicros,
+} from "../../domain/playback";
 import type { TrimRange } from "../../domain/trim";
 import type { FrameRate } from "../../lib/tauri/media";
 import { PlaybackControls } from "../preview/PlaybackControls";
@@ -26,9 +30,15 @@ export function EditorStage({
   onTrimChange,
 }: EditorStageProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const animationFrameRef = useRef<number | null>(null);
+  const playheadRef = useRef<HTMLButtonElement>(null);
+  const playbackFrameRef = useRef<number | null>(null);
+  const scrubFrameRef = useRef<number | null>(null);
+  const pendingScrubMicrosRef = useRef<number | null>(null);
+  const resumeAfterScrubRef = useRef(false);
+  const lastPlaybackCommitAtRef = useRef(0);
   const trimRef = useRef(trim);
   trimRef.current = trim;
+
   const [playheadMicros, setPlayheadMicros] = useState(trim.startMicros);
   const [isPlaying, setIsPlaying] = useState(false);
   const [transportError, setTransportError] = useState<string | null>(null);
@@ -36,51 +46,112 @@ export function EditorStage({
 
   useEffect(
     () => () => {
-      if (animationFrameRef.current !== null) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
+      cancelFrame(playbackFrameRef);
+      cancelFrame(scrubFrameRef);
     },
     [],
   );
 
-  function handleSeek(micros: number) {
+  function commitSeek(micros: number) {
     const clamped = clampPlaybackMicros(micros, trimRef.current.sourceDurationMicros);
+    syncPlayheadElement(playheadRef.current, clamped, trimRef.current.sourceDurationMicros);
     setPlayheadMicros(clamped);
     seekVideo(videoRef.current, clamped);
   }
 
-  function handleTimeUpdate(seconds: number) {
-    const currentTrim = trimRef.current;
-    const currentMicros = Math.round(seconds * 1_000_000);
-    if (currentMicros >= currentTrim.sourceDurationMicros) {
-      stopPlayheadAnimation();
-      handleSeek(currentTrim.sourceDurationMicros);
+  function queueScrubSeek(micros: number) {
+    pendingScrubMicrosRef.current = clampPlaybackMicros(
+      micros,
+      trimRef.current.sourceDurationMicros,
+    );
+    if (scrubFrameRef.current !== null) {
       return;
     }
-    setPlayheadMicros(clampPlaybackMicros(currentMicros, currentTrim.sourceDurationMicros));
+    scrubFrameRef.current = requestAnimationFrame(() => {
+      scrubFrameRef.current = null;
+      const pendingMicros = pendingScrubMicrosRef.current;
+      pendingScrubMicrosRef.current = null;
+      if (pendingMicros !== null) {
+        commitSeek(pendingMicros);
+      }
+    });
+  }
+
+  function flushScrubSeek() {
+    cancelFrame(scrubFrameRef);
+    const pendingMicros = pendingScrubMicrosRef.current;
+    pendingScrubMicrosRef.current = null;
+    if (pendingMicros !== null) {
+      commitSeek(pendingMicros);
+    }
+  }
+
+  function handleScrubStart() {
+    resumeAfterScrubRef.current = isPlaying;
+    videoRef.current?.pause();
+    setIsPlaying(false);
+    stopPlayheadAnimation();
+  }
+
+  function handleScrubEnd() {
+    flushScrubSeek();
+    const shouldResume = resumeAfterScrubRef.current;
+    resumeAfterScrubRef.current = false;
+    if (shouldResume) {
+      startMediaPlayback();
+    }
+  }
+
+  function handleTimeUpdate(seconds: number) {
+    const durationMicros = trimRef.current.sourceDurationMicros;
+    const currentMicros = clampPlaybackMicros(seconds * 1_000_000, durationMicros);
+    syncPlayheadElement(playheadRef.current, currentMicros, durationMicros);
+    setPlayheadMicros(currentMicros);
+    if (currentMicros >= durationMicros) {
+      stopPlayheadAnimation();
+    }
   }
 
   function startPlayheadAnimation() {
     stopPlayheadAnimation();
-    const update = () => {
+    const update = (timestamp: number) => {
       const video = videoRef.current;
       if (!video || video.paused) {
-        animationFrameRef.current = null;
+        playbackFrameRef.current = null;
         return;
       }
-      handleTimeUpdate(video.currentTime);
-      if (!video.paused) {
-        animationFrameRef.current = requestAnimationFrame(update);
+
+      const durationMicros = trimRef.current.sourceDurationMicros;
+      const currentMicros = clampPlaybackMicros(video.currentTime * 1_000_000, durationMicros);
+      syncPlayheadElement(playheadRef.current, currentMicros, durationMicros);
+      if (timestamp - lastPlaybackCommitAtRef.current >= 100) {
+        lastPlaybackCommitAtRef.current = timestamp;
+        setPlayheadMicros(currentMicros);
       }
+
+      if (currentMicros >= durationMicros) {
+        playbackFrameRef.current = null;
+        return;
+      }
+      playbackFrameRef.current = requestAnimationFrame(update);
     };
-    animationFrameRef.current = requestAnimationFrame(update);
+    playbackFrameRef.current = requestAnimationFrame(update);
   }
 
   function stopPlayheadAnimation() {
-    if (animationFrameRef.current !== null) {
-      cancelAnimationFrame(animationFrameRef.current);
-      animationFrameRef.current = null;
+    cancelFrame(playbackFrameRef);
+  }
+
+  function startMediaPlayback() {
+    const video = videoRef.current;
+    if (!video) {
+      return;
     }
+    setTransportError(null);
+    void video.play().catch(() => {
+      setIsPlaying(false);
+      setTransportError("Playback could not start.");
+    });
   }
 
   function handleTogglePlayback() {
@@ -94,19 +165,16 @@ export function EditorStage({
       return;
     }
     if (displayedPlayheadMicros >= trimRef.current.sourceDurationMicros) {
-      handleSeek(0);
+      commitSeek(0);
     }
-    void video.play().catch(() => {
-      setIsPlaying(false);
-      setTransportError("Playback could not start.");
-    });
+    startMediaPlayback();
   }
 
   function handleStepFrame(direction: -1 | 1) {
     videoRef.current?.pause();
     setIsPlaying(false);
     stopPlayheadAnimation();
-    handleSeek(displayedPlayheadMicros + direction * frameDurationMicros(frameRate));
+    commitSeek(displayedPlayheadMicros + direction * frameDurationMicros(frameRate));
   }
 
   return (
@@ -117,7 +185,7 @@ export function EditorStage({
           preview={preview}
           videoRef={videoRef}
           onPlaybackError={onPreviewPlaybackError}
-          onLoadedMetadata={() => handleSeek(displayedPlayheadMicros)}
+          onLoadedMetadata={() => commitSeek(displayedPlayheadMicros)}
           onTogglePlayback={handleTogglePlayback}
           onPlay={() => {
             setIsPlaying(true);
@@ -147,9 +215,13 @@ export function EditorStage({
       <TrimTimeline
         range={trim}
         playheadMicros={displayedPlayheadMicros}
+        playheadRef={playheadRef}
         frameRate={frameRate}
         onChange={onTrimChange}
-        onSeek={handleSeek}
+        onSeek={commitSeek}
+        onScrubStart={handleScrubStart}
+        onScrub={queueScrubSeek}
+        onScrubEnd={handleScrubEnd}
       />
     </div>
   );
@@ -163,5 +235,27 @@ function seekVideo(video: HTMLVideoElement | null, micros: number) {
     video.currentTime = micros / 1_000_000;
   } catch {
     // Metadata may not be ready yet; loadedmetadata retries the seek.
+  }
+}
+
+function syncPlayheadElement(
+  playhead: HTMLButtonElement | null,
+  micros: number,
+  durationMicros: number,
+) {
+  if (!playhead) {
+    return;
+  }
+  const percent = durationMicros > 0 ? (micros / durationMicros) * 100 : 0;
+  playhead.style.left = `${percent}%`;
+  playhead.setAttribute("aria-valuenow", micros.toString());
+  playhead.setAttribute("aria-valuetext", `${(micros / 1_000_000).toFixed(3)} seconds`);
+  playhead.title = formatPlaybackTime(micros);
+}
+
+function cancelFrame(frameRef: { current: number | null }) {
+  if (frameRef.current !== null) {
+    cancelAnimationFrame(frameRef.current);
+    frameRef.current = null;
   }
 }

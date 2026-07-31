@@ -166,7 +166,7 @@ describe("App", () => {
 
     await user.click(screen.getByRole("button", { name: "Next frame" }));
     expect(pause).toHaveBeenCalled();
-    expect(screen.getByLabelText("Playback position 0.017 seconds")).toHaveAttribute(
+    expect(screen.getByRole("slider", { name: "Playback position" })).toHaveAttribute(
       "aria-valuenow",
       "16683",
     );
@@ -245,6 +245,41 @@ describe("App", () => {
     expect(screen.getAllByText("00:00:16.250")).not.toHaveLength(0);
   });
 
+  it("scrubs the playhead continuously and seeks the preview before release", async () => {
+    mocks.chooseSource.mockResolvedValue(selection);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Open video" }));
+    const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
+    const play = vi.spyOn(video, "play").mockResolvedValue();
+    vi.spyOn(video, "pause").mockImplementation(() => undefined);
+    const timeline = screen.getByLabelText("Video trim timeline");
+    vi.spyOn(timeline, "getBoundingClientRect").mockReturnValue({
+      x: 100,
+      y: 0,
+      left: 100,
+      top: 0,
+      right: 1100,
+      bottom: 52,
+      width: 1000,
+      height: 52,
+      toJSON: () => ({}),
+    });
+    const playhead = screen.getByRole("slider", { name: "Playback position" });
+    fireEvent.play(video);
+
+    fireEvent.pointerDown(playhead, { clientX: 100, pointerId: 7 });
+    fireEvent.pointerMove(playhead, { clientX: 600, pointerId: 7 });
+
+    await waitFor(() => expect(video.currentTime).toBe(32.5));
+    expect(playhead).toHaveAttribute("aria-valuenow", "32500000");
+    expect(screen.getByLabelText("Current playback time")).toHaveTextContent("00:00:32.500");
+
+    fireEvent.pointerUp(playhead, { clientX: 600, pointerId: 7 });
+    expect(play).toHaveBeenCalledOnce();
+  });
+
   it("synchronizes the timeline playhead with video playback", async () => {
     mocks.chooseSource.mockResolvedValue(selection);
     const user = userEvent.setup();
@@ -255,9 +290,13 @@ describe("App", () => {
     video.currentTime = 12.5;
     fireEvent.timeUpdate(video);
 
-    expect(screen.getByLabelText("Playback position 12.500 seconds")).toHaveStyle({
+    expect(screen.getByRole("slider", { name: "Playback position" })).toHaveStyle({
       left: "19.230769230769234%",
     });
+    expect(screen.getByRole("slider", { name: "Playback position" })).toHaveAttribute(
+      "aria-valuenow",
+      "12500000",
+    );
   });
 
   it("reports a compatible preview playback failure without dropping metadata", async () => {
