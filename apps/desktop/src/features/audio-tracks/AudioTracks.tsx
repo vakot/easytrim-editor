@@ -9,15 +9,16 @@ const WAVEFORM_RENDER_WIDTH = 4096;
 interface AudioTracksProps {
   streams: AudioStream[];
   tracks: AudioTrackState[];
+  masterEnabled: boolean;
   masterVolumePercent: number;
   range: TrimRange;
   playheadMicros: number;
   playheadRef: RefObject<HTMLDivElement | null>;
   mergeAudio: boolean;
   onToggleTrack: (streamIndex: number) => void;
-  onSetAllTracksEnabled: (enabled: boolean) => void;
   onTrackVolumeChange: (streamIndex: number, volumePercent: number) => void;
-  onSetAllTracksVolume: (volumePercent: number) => void;
+  onToggleMaster: () => void;
+  onMasterVolumeChange: (volumePercent: number) => void;
   onToggleMerge: () => void;
   onPrepareWaveforms: (streamIndexes: number[], width: number) => void;
   onWaveformImageError: (streamIndex: number) => void;
@@ -26,15 +27,16 @@ interface AudioTracksProps {
 export function AudioTracks({
   streams,
   tracks,
+  masterEnabled,
   masterVolumePercent,
   range,
   playheadMicros,
   playheadRef,
   mergeAudio,
   onToggleTrack,
-  onSetAllTracksEnabled,
   onTrackVolumeChange,
-  onSetAllTracksVolume,
+  onToggleMaster,
+  onMasterVolumeChange,
   onToggleMerge,
   onPrepareWaveforms,
   onWaveformImageError,
@@ -44,7 +46,6 @@ export function AudioTracks({
   const playheadPercent = timelinePercent(playheadMicros, range.sourceDurationMicros);
   const enabledCount = tracks.filter((track) => track.enabled).length;
   const outputSummary = audioOutputSummary(enabledCount, mergeAudio);
-  const allTracksEnabled = enabledCount === tracks.length;
 
   useEffect(() => {
     const pending = tracks
@@ -66,15 +67,12 @@ export function AudioTracks({
       </h3>
       <div className="timeline-row timeline-audio-heading">
         <div className="audio-master-control">
-          <VolumeButton
-            enabled={allTracksEnabled}
-            label="All audio tracks"
-            onClick={() => onSetAllTracksEnabled(!allTracksEnabled)}
-          />
+          <VolumeButton enabled={masterEnabled} label="All audio tracks" onClick={onToggleMaster} />
           <AudioLevelControl
             label="All audio tracks volume"
-            volumePercent={allTracksEnabled ? masterVolumePercent : 0}
-            onChange={onSetAllTracksVolume}
+            volumePercent={masterEnabled ? masterVolumePercent : 0}
+            onChange={onMasterVolumeChange}
+            className="audio-master-level-control"
           />
           <div>
             <span className="audio-track-title">All tracks</span>
@@ -101,25 +99,31 @@ export function AudioTracks({
           return (
             <div className="timeline-row audio-track-row" key={stream.streamIndex}>
               <div className="audio-track-label">
-                <VolumeButton
-                  enabled={track.enabled}
-                  label={`${track.enabled ? "Mute" : "Enable"} ${title}`}
-                  onClick={() => onToggleTrack(stream.streamIndex)}
-                />
-                <AudioLevelControl
-                  label={`${title} volume`}
-                  volumePercent={track.enabled ? track.volumePercent : 0}
-                  onChange={(volumePercent) =>
-                    onTrackVolumeChange(stream.streamIndex, volumePercent)
-                  }
-                />
-                <span className="audio-track-title" title={title}>
-                  {title}
-                </span>
-                <span className="audio-track-meta">
-                  #{stream.streamIndex} · {stream.codecName.toUpperCase()} ·{" "}
-                  {formatChannels(stream)}
-                </span>
+                <div className="audio-volume-anchor">
+                  <VolumeButton
+                    enabled={track.enabled}
+                    label={`${track.enabled ? "Mute" : "Enable"} ${title}`}
+                    onClick={() => onToggleTrack(stream.streamIndex)}
+                  />
+                  <div className="audio-volume-popover">
+                    <AudioLevelControl
+                      label={`${title} volume`}
+                      volumePercent={track.enabled ? track.volumePercent : 0}
+                      onChange={(volumePercent) =>
+                        onTrackVolumeChange(stream.streamIndex, volumePercent)
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="audio-track-copy">
+                  <span className="audio-track-title" title={title}>
+                    {title}
+                  </span>
+                  <span className="audio-track-meta">
+                    #{stream.streamIndex} · {stream.codecName.toUpperCase()} ·{" "}
+                    {formatChannels(stream)}
+                  </span>
+                </div>
               </div>
               <div className="audio-waveform-track" data-enabled={track.enabled}>
                 <WaveformContent
@@ -157,13 +161,15 @@ function AudioLevelControl({
   label,
   volumePercent,
   onChange,
+  className,
 }: {
   label: string;
   volumePercent: number;
   onChange: (volumePercent: number) => void;
+  className?: string;
 }) {
   return (
-    <div className="audio-level-control">
+    <div className={`audio-level-control${className ? ` ${className}` : ""}`}>
       <input
         className="audio-volume-slider"
         type="range"

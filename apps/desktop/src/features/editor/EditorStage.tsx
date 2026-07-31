@@ -29,15 +29,16 @@ interface EditorStageProps {
   frameRate?: FrameRate;
   audioStreams: AudioStream[];
   audioTracks: AudioTrackState[];
+  masterEnabled: boolean;
   masterVolumePercent: number;
   mergeAudio: boolean;
   onPreviewPlaybackError: (sourceId: string, previewKind: "source" | "proxy") => void;
   onTrimChange: (trim: TrimRange) => void;
   onPrepareWaveforms: (streamIndexes: number[], width: number) => void;
   onToggleAudioTrack: (streamIndex: number) => void;
-  onSetAllAudioTracksEnabled: (enabled: boolean) => void;
   onAudioTrackVolumeChange: (streamIndex: number, volumePercent: number) => void;
-  onAllAudioTracksVolumeChange: (volumePercent: number) => void;
+  onToggleAudioMaster: () => void;
+  onMasterVolumeChange: (volumePercent: number) => void;
   onToggleAudioMerge: () => void;
   onWaveformImageError: (streamIndex: number) => void;
 }
@@ -56,15 +57,16 @@ export function EditorStage({
   frameRate,
   audioStreams,
   audioTracks,
+  masterEnabled,
   masterVolumePercent,
   mergeAudio,
   onPreviewPlaybackError,
   onTrimChange,
   onPrepareWaveforms,
   onToggleAudioTrack,
-  onSetAllAudioTracksEnabled,
   onAudioTrackVolumeChange,
-  onAllAudioTracksVolumeChange,
+  onToggleAudioMaster,
+  onMasterVolumeChange,
   onToggleAudioMerge,
   onWaveformImageError,
 }: EditorStageProps) {
@@ -96,6 +98,12 @@ export function EditorStage({
     },
     [],
   );
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.volume = masterEnabled ? Math.min(1, masterVolumePercent / 50) : 0;
+  }, [masterEnabled, masterVolumePercent, preview.status]);
 
   useEffect(() => {
     function handleEditorShortcut(event: globalThis.KeyboardEvent) {
@@ -449,15 +457,16 @@ export function EditorStage({
               <AudioTracks
                 streams={audioStreams}
                 tracks={audioTracks}
+                masterEnabled={masterEnabled}
                 masterVolumePercent={masterVolumePercent}
                 range={trim}
                 playheadMicros={displayedPlayheadMicros}
                 playheadRef={audioPlayheadRef}
                 mergeAudio={mergeAudio}
                 onToggleTrack={onToggleAudioTrack}
-                onSetAllTracksEnabled={onSetAllAudioTracksEnabled}
                 onTrackVolumeChange={onAudioTrackVolumeChange}
-                onSetAllTracksVolume={onAllAudioTracksVolumeChange}
+                onToggleMaster={onToggleAudioMaster}
+                onMasterVolumeChange={onMasterVolumeChange}
                 onToggleMerge={onToggleAudioMerge}
                 onPrepareWaveforms={onPrepareWaveforms}
                 onWaveformImageError={onWaveformImageError}

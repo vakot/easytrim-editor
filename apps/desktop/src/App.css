@@ -1048,8 +1048,7 @@ p {
 }
 
 .audio-master-control,
-.merge-audio-control,
-.audio-track-label {
+.merge-audio-control {
   cursor: pointer;
 }
 
@@ -1066,7 +1065,7 @@ p {
 .audio-master-control {
   display: grid;
   min-width: 0;
-  grid-template-columns: auto minmax(6rem, 8rem) minmax(0, 1fr);
+  grid-template-columns: auto minmax(14rem, 18rem) minmax(0, 1fr);
   column-gap: 0.45rem;
   align-items: center;
 }
@@ -1118,9 +1117,49 @@ p {
 .audio-track-label {
   display: grid;
   min-width: 0;
-  grid-template-columns: auto minmax(6rem, 8rem) minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr);
   column-gap: 0.45rem;
   align-items: center;
+}
+
+.audio-volume-anchor {
+  position: relative;
+  display: grid;
+}
+
+.audio-volume-popover {
+  position: absolute;
+  z-index: 10;
+  bottom: calc(100% + 0.5rem);
+  left: 0;
+  width: 16rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #45454d;
+  border-radius: 0.45rem;
+  background: #19191e;
+  box-shadow: 0 0.6rem 1.4rem rgb(0 0 0 / 35%);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(0.25rem);
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease,
+    visibility 120ms ease;
+}
+
+.audio-volume-anchor:hover .audio-volume-popover,
+.audio-volume-anchor:focus-within .audio-volume-popover {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.audio-track-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
 }
 
 .audio-volume-button {
@@ -1166,6 +1205,10 @@ p {
   width: 100%;
   min-width: 0;
   accent-color: #e4ae4e;
+}
+
+.audio-master-level-control .audio-volume-slider {
+  min-width: 14rem;
 }
 
 .audio-level-control output {

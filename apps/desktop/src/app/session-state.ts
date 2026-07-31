@@ -42,6 +42,7 @@ export interface SessionState {
     preview: PreviewState;
     trim: TrimRange | null;
     audioTracks: AudioTrackState[];
+    masterEnabled: boolean;
     masterVolumePercent: number;
     mergeAudio: boolean;
   } | null;
@@ -67,13 +68,14 @@ type SessionAction =
   | { type: "trim-changed"; sourceId: string; trim: TrimRange }
   | { type: "audio-track-toggled"; sourceId: string; streamIndex: number }
   | { type: "audio-tracks-set-enabled"; sourceId: string; enabled: boolean }
+  | { type: "audio-master-toggled"; sourceId: string }
+  | { type: "audio-master-volume-changed"; sourceId: string; volumePercent: number }
   | {
       type: "audio-track-volume-changed";
       sourceId: string;
       streamIndex: number;
       volumePercent: number;
     }
-  | { type: "audio-tracks-volume-set"; sourceId: string; volumePercent: number }
   | { type: "audio-merge-toggled"; sourceId: string }
   | {
       type: "waveforms-loading";
@@ -115,6 +117,7 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
           preview: { status: "idle" },
           trim: null,
           audioTracks: [],
+          masterEnabled: true,
           masterVolumePercent: 50,
           mergeAudio: false,
         },
@@ -252,7 +255,7 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
           ),
         },
       };
-    case "audio-tracks-volume-set":
+    case "audio-master-toggled":
       if (state.source?.selection.sourceId !== action.sourceId) {
         return state;
       }
@@ -260,12 +263,19 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
         ...state,
         source: {
           ...state.source,
+          masterEnabled: !state.source.masterEnabled,
+        },
+      };
+    case "audio-master-volume-changed":
+      if (state.source?.selection.sourceId !== action.sourceId) {
+        return state;
+      }
+      return {
+        ...state,
+        source: {
+          ...state.source,
+          masterEnabled: action.volumePercent > 0,
           masterVolumePercent: action.volumePercent,
-          audioTracks: state.source.audioTracks.map((track) => ({
-            ...track,
-            enabled: action.volumePercent > 0,
-            volumePercent: action.volumePercent,
-          })),
         },
       };
     case "audio-merge-toggled":

@@ -118,10 +118,6 @@ function App() {
     dispatch({ type: "audio-track-toggled", sourceId, streamIndex });
   }, []);
 
-  const handleSetAllAudioTracksEnabled = useCallback((sourceId: string, enabled: boolean) => {
-    dispatch({ type: "audio-tracks-set-enabled", sourceId, enabled });
-  }, []);
-
   const handleAudioTrackVolumeChange = useCallback(
     (sourceId: string, streamIndex: number, volumePercent: number) => {
       dispatch({ type: "audio-track-volume-changed", sourceId, streamIndex, volumePercent });
@@ -129,12 +125,13 @@ function App() {
     [],
   );
 
-  const handleAllAudioTracksVolumeChange = useCallback(
-    (sourceId: string, volumePercent: number) => {
-      dispatch({ type: "audio-tracks-volume-set", sourceId, volumePercent });
-    },
-    [],
-  );
+  const handleToggleAudioMaster = useCallback((sourceId: string) => {
+    dispatch({ type: "audio-master-toggled", sourceId });
+  }, []);
+
+  const handleMasterVolumeChange = useCallback((sourceId: string, volumePercent: number) => {
+    dispatch({ type: "audio-master-volume-changed", sourceId, volumePercent });
+  }, []);
 
   const handleToggleAudioMerge = useCallback((sourceId: string) => {
     dispatch({ type: "audio-merge-toggled", sourceId });
@@ -244,6 +241,8 @@ function App() {
                 sourceName={session.source.selection.displayName}
                 trim={session.source.trim}
                 audioTracks={session.source.audioTracks}
+                masterEnabled={session.source.masterEnabled}
+                masterVolumePercent={session.source.masterVolumePercent}
                 mergeAudio={session.source.mergeAudio}
                 queue={exportQueue}
                 setQueue={setExportQueue}
@@ -285,9 +284,9 @@ function App() {
         onTrimChange={handleTrimChange}
         onPrepareWaveforms={handlePrepareWaveforms}
         onToggleAudioTrack={handleToggleAudioTrack}
-        onSetAllAudioTracksEnabled={handleSetAllAudioTracksEnabled}
         onAudioTrackVolumeChange={handleAudioTrackVolumeChange}
-        onAllAudioTracksVolumeChange={handleAllAudioTracksVolumeChange}
+        onToggleAudioMaster={handleToggleAudioMaster}
+        onMasterVolumeChange={handleMasterVolumeChange}
         onToggleAudioMerge={handleToggleAudioMerge}
         onWaveformImageError={handleWaveformImageError}
         exportQueue={exportQueue}
