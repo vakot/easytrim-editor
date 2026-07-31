@@ -69,7 +69,7 @@ Repository-wide conventions are auto-loaded through `AGENTS.md`. Shared rules un
 
 1. Try the source file directly in the embedded video element.
 2. If the WebView cannot play it, generate a temporary 720p-or-smaller H.264/AAC proxy with FFmpeg.
-3. Keep timeline positions in source seconds; the proxy is only a viewing aid and is never used as the export source.
+3. Keep timeline positions in integer source microseconds; the proxy is only a viewing aid and is never used as the export source.
 
 This avoids forcing every input through a full conversion while still allowing uncommon codecs and containers to be reviewed.
 
@@ -102,7 +102,7 @@ Use one in-memory application state object:
 
 - source path and FFprobe metadata;
 - proxy path and waveform paths;
-- `trimStart` and `trimEnd` in source seconds;
+- `trimStart` and `trimEnd` in integer source microseconds;
 - audio stream enabled flags and merge-audio flag;
 - optimized width/height and output frame rate;
 - current FFmpeg argument string;
@@ -176,14 +176,17 @@ Keep the Tauri boundary small and typed:
 
 - `choose_source() -> SourceSelection`;
 - `inspect_media(source_id) -> MediaInfo`;
-- `prepare_preview(source_id) -> PreviewInfo`;
+- `prepare_source_preview(source_id) -> PreviewInfo`;
+- `prepare_proxy_preview(source_id) -> PreviewInfo`;
 - `prepare_waveforms(source_id, audio_streams, width) -> WaveformInfo[]`;
-- `cancel_source_tasks(source_id)`;
 - `choose_output_path(default_name) -> Path`;
 - `render_fast(request) -> OperationId`;
 - `render_optimized(request) -> OperationId`;
 - `cancel_operation(operation_id)`;
 - `subscribe_operation_progress(operation_id)`.
+
+Source replacement cancels source-bound preview and waveform helpers through the active source
+token; no separate frontend cancellation command is needed for replacement.
 
 All FFmpeg processes should be cancellable, capture stderr for diagnostics, and parse `-progress pipe:1` into elapsed time, total duration, speed, and completion percentage.
 
@@ -204,6 +207,9 @@ All FFmpeg processes should be cancellable, capture stderr for diagnostics, and 
 - verify that no project or configuration files are created.
 
 ### Phase 2 — preview and trim UI
+
+Status: implemented on the Phase 2 topic branch; real-file WebView codec coverage remains part of
+the validation matrix.
 
 - direct source preview with proxy fallback;
 - timeline scale, playback cursor, and draggable start/end handles;

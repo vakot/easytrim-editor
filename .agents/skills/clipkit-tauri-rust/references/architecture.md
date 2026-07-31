@@ -11,9 +11,9 @@ Use typed requests and results. Names may evolve, but responsibilities stay narr
 ```text
 choose_source() -> SourceSelection
 inspect_media(source_id) -> MediaInfo
-prepare_preview(source_id, width) -> PreviewInfo
+prepare_source_preview(source_id) -> PreviewInfo
+prepare_proxy_preview(source_id) -> PreviewInfo
 prepare_waveforms(source_id, stream_indexes, width) -> WaveformInfo[]
-cancel_source_tasks(source_id) -> CancelResult
 render_fast(request, progress_channel) -> OperationResult
 render_optimized(request, progress_channel) -> OperationResult
 cancel_operation(operation_id) -> CancelResult
@@ -25,6 +25,10 @@ The native picker canonicalizes and registers its selected path directly. Tauri'
 drop event adapter forwards a dropped path immediately to a narrow native import command; the
 feature UI and session state receive only a source ID and display filename. Later commands resolve
 the path from in-memory native state.
+
+Direct preview returns a path-opaque custom-protocol URL. Proxy preparation is invoked only after
+direct WebView playback fails; source replacement cancels its child process through the active
+source token and invalidates stale completion.
 
 ## Core DTO rules
 
