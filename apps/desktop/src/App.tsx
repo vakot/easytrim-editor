@@ -219,12 +219,14 @@ function App() {
     <main className={`app-shell ${hasSource ? "has-source" : "is-empty"}`}>
       {hasSource ? (
         <div className="app-toolbar" role="toolbar" aria-label="Application toolbar">
-          <h1 className="app-brand">
-            <img src="/logo.svg" alt="" />
-            ClipKit
-          </h1>
-          <div className="toolbar-actions">
+          <div className="toolbar-brand-group">
+            <h1 className="app-brand">
+              <img src="/logo.svg" alt="" />
+              ClipKit
+            </h1>
             <CapabilityStatus capabilities={session.capabilities} />
+          </div>
+          <div className="toolbar-actions">
             <OpenVideoButton
               isChoosingSource={isChoosingSource}
               onChooseSource={() => void handleChooseSource()}

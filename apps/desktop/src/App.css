@@ -84,6 +84,13 @@ p {
   background: #111114;
 }
 
+.toolbar-brand-group {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 1rem;
+}
+
 .app-brand {
   display: flex;
   flex: 0 0 auto;
@@ -91,14 +98,14 @@ p {
   gap: 0.55rem;
   margin: 0;
   color: #e4ae4e;
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   letter-spacing: 0.02em;
 }
 
 .app-brand img,
 .welcome-logo {
-  width: 1.8rem;
-  height: 1.8rem;
+  width: 2.5rem;
+  height: 2.5rem;
   object-fit: contain;
 }
 
@@ -460,7 +467,7 @@ p {
 
 .toolbar-button,
 .primary-button {
-  min-height: 2.75rem;
+  min-height: 2.5rem;
   border: 0;
   border-radius: 0.55rem;
   color: #17130a;
