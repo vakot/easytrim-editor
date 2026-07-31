@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useReducer, useState } from "react";
 
 import { initialSessionState, sessionReducer } from "./app/session-state";
+import type { TrimRange } from "./domain/trim";
 import { CapabilityStatus, SourceWorkspace } from "./features/import-source/SourceWorkspace";
 import {
   checkMediaCapabilities,
@@ -78,6 +79,10 @@ function App() {
           error: normalizeAppError(error),
         });
       });
+  }, []);
+
+  const handleTrimChange = useCallback((sourceId: string, trim: TrimRange) => {
+    dispatch({ type: "trim-changed", sourceId, trim });
   }, []);
 
   useEffect(() => {
@@ -205,6 +210,7 @@ function App() {
         isSourceDragActive={isSourceDragActive}
         onChooseSource={() => void handleChooseSource()}
         onPreviewPlaybackError={handlePreviewPlaybackError}
+        onTrimChange={handleTrimChange}
       />
     </main>
   );

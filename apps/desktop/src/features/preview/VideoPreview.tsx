@@ -1,14 +1,26 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 
 import type { PreviewState } from "../../app/session-state";
 
 interface VideoPreviewProps {
   sourceId: string;
   preview: PreviewState;
+  videoRef: RefObject<HTMLVideoElement | null>;
   onPlaybackError: (sourceId: string, previewKind: "source" | "proxy") => void;
+  onLoadedMetadata: () => void;
+  onPlay: () => void;
+  onTimeUpdate: (seconds: number) => void;
 }
 
-export function VideoPreview({ sourceId, preview, onPlaybackError }: VideoPreviewProps) {
+export function VideoPreview({
+  sourceId,
+  preview,
+  videoRef,
+  onPlaybackError,
+  onLoadedMetadata,
+  onPlay,
+  onTimeUpdate,
+}: VideoPreviewProps) {
   const reportedUrl = useRef<string | null>(null);
   const readyUrl = preview.status === "ready" ? preview.value.url : null;
 
@@ -51,6 +63,7 @@ export function VideoPreview({ sourceId, preview, onPlaybackError }: VideoPrevie
   return (
     <div className="video-preview">
       <video
+        ref={videoRef}
         key={value.url}
         className="preview-video"
         src={value.url}
@@ -58,6 +71,9 @@ export function VideoPreview({ sourceId, preview, onPlaybackError }: VideoPrevie
         preload="metadata"
         aria-label="Source video preview"
         data-preview-kind={value.kind}
+        onLoadedMetadata={onLoadedMetadata}
+        onPlay={onPlay}
+        onTimeUpdate={(event) => onTimeUpdate(event.currentTarget.currentTime)}
         onError={() => {
           if (reportedUrl.current === value.url) {
             return;

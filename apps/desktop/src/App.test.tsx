@@ -160,6 +160,71 @@ describe("App", () => {
     );
   });
 
+  it("exposes keyboard-accessible trim handles and updates the source range", async () => {
+    mocks.chooseSource.mockResolvedValue(selection);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Open video" }));
+    const startHandle = await screen.findByRole("slider", { name: "Trim start" });
+    const endHandle = screen.getByRole("slider", { name: "Trim end" });
+
+    expect(startHandle).toHaveAttribute("aria-valuenow", "0");
+    expect(endHandle).toHaveAttribute("aria-valuenow", "65000000");
+
+    await user.click(startHandle);
+    await user.keyboard("{ArrowRight}");
+
+    expect(startHandle).toHaveAttribute("aria-valuenow", "16683");
+    expect(screen.getByText("00:00:00.016")).toBeInTheDocument();
+  });
+
+  it("maps pointer movement on a trim handle to source time", async () => {
+    mocks.chooseSource.mockResolvedValue(selection);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Open video" }));
+    const timeline = await screen.findByLabelText("Video trim timeline");
+    vi.spyOn(timeline, "getBoundingClientRect").mockReturnValue({
+      x: 100,
+      y: 0,
+      left: 100,
+      top: 0,
+      right: 1100,
+      bottom: 52,
+      width: 1000,
+      height: 52,
+      toJSON: () => ({}),
+    });
+
+    fireEvent.pointerDown(screen.getByRole("slider", { name: "Trim start" }), {
+      clientX: 350,
+      pointerId: 1,
+    });
+
+    expect(screen.getByRole("slider", { name: "Trim start" })).toHaveAttribute(
+      "aria-valuenow",
+      "16250000",
+    );
+    expect(screen.getAllByText("00:00:16.250")).not.toHaveLength(0);
+  });
+
+  it("synchronizes the timeline playhead with video playback", async () => {
+    mocks.chooseSource.mockResolvedValue(selection);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Open video" }));
+    const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
+    video.currentTime = 12.5;
+    fireEvent.timeUpdate(video);
+
+    expect(screen.getByLabelText("Playback position 12.500 seconds")).toHaveStyle({
+      left: "19.230769230769234%",
+    });
+  });
+
   it("reports a compatible preview playback failure without dropping metadata", async () => {
     mocks.chooseSource.mockResolvedValue(selection);
     const user = userEvent.setup();
