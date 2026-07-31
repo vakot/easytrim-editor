@@ -1,4 +1,4 @@
-import { useEffect, type RefObject } from "react";
+import { useEffect, type CSSProperties, type RefObject } from "react";
 
 import type { AudioTrackState } from "../../app/session-state";
 import { timelinePercent, type TrimRange } from "../../domain/trim";
@@ -182,6 +182,7 @@ function AudioLevelControl({
           value={volumePercentToDecibels(volumePercent)}
           onChange={(event) => onChange(decibelsToVolumePercent(Number(event.target.value)))}
           onDoubleClick={() => onChange(50)}
+          style={{ "--slider-fill": `${sliderFillPercent(volumePercent)}%` } as CSSProperties}
           aria-label={label}
           title="0 dB is the original level"
         />
@@ -211,6 +212,11 @@ function decibelsToVolumePercent(decibels: number): number {
     return 0;
   }
   return Math.round(50 * 10 ** (decibels / 20));
+}
+
+function sliderFillPercent(volumePercent: number): number {
+  const decibels = volumePercentToDecibels(volumePercent);
+  return ((decibels - MIN_SLIDER_DECIBELS) / (MAX_SLIDER_DECIBELS - MIN_SLIDER_DECIBELS)) * 100;
 }
 
 function VolumeButton({
