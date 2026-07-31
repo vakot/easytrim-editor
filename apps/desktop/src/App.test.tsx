@@ -178,6 +178,7 @@ describe("App", () => {
     const videoToolbar = within(videoTimelineRow as HTMLElement).getByRole("toolbar", {
       name: "Video timeline tools",
     });
+    expect(screen.getByText("Tools")).toHaveClass("timeline-toolbar-title");
     expect(videoToolbar).toHaveClass("timeline-row-toolbar");
     expect(within(videoToolbar).getByRole("button", { name: "Safe trim following" })).toBe(
       screen.getByRole("button", { name: "Safe trim following" }),

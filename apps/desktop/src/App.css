@@ -633,10 +633,22 @@ p {
 .timeline-scale {
   display: flex;
   justify-content: space-between;
-  margin: 0.8rem 0 0.3rem calc(var(--timeline-label-width) + var(--timeline-column-gap));
   color: #62626a;
   font-size: 0.62rem;
   font-variant-numeric: tabular-nums;
+}
+
+.timeline-scale-row {
+  margin: 0.8rem 0 0.3rem;
+  align-items: end;
+}
+
+.timeline-toolbar-title {
+  color: #62626a;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .timeline-row {

@@ -444,12 +444,15 @@ export function TrimTimeline({
         </dl>
       </div>
 
-      <div className="timeline-scale" aria-hidden="true">
-        {[0, 0.25, 0.5, 0.75, 1].map((fraction) => (
-          <span key={fraction}>
-            {formatPlaybackTime(Math.round(range.sourceDurationMicros * fraction))}
-          </span>
-        ))}
+      <div className="timeline-row timeline-scale-row" aria-hidden="true">
+        <span className="timeline-toolbar-title">Tools</span>
+        <div className="timeline-scale">
+          {[0, 0.25, 0.5, 0.75, 1].map((fraction) => (
+            <span key={fraction}>
+              {formatPlaybackTime(Math.round(range.sourceDurationMicros * fraction))}
+            </span>
+          ))}
+        </div>
       </div>
 
       <div className="timeline-row">
