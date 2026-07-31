@@ -1130,7 +1130,7 @@ p {
 .audio-volume-popover {
   position: absolute;
   z-index: 10;
-  bottom: calc(100% + 0.5rem);
+  bottom: calc(100% - 0.35rem);
   left: 0;
   width: 16rem;
   padding: 0.6rem 0.75rem;
@@ -1148,8 +1148,7 @@ p {
     visibility 120ms ease;
 }
 
-.audio-volume-anchor:hover .audio-volume-popover,
-.audio-volume-anchor:focus-within .audio-volume-popover {
+.audio-volume-anchor:hover .audio-volume-popover {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;

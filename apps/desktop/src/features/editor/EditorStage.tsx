@@ -71,6 +71,9 @@ export function EditorStage({
   onWaveformImageError,
 }: EditorStageProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const audioGainRef = useRef<GainNode | null>(null);
+  const audioSourceRef = useRef<MediaElementAudioSourceNode | null>(null);
   const playheadRef = useRef<HTMLButtonElement>(null);
   const audioPlayheadRef = useRef<HTMLDivElement>(null);
   const playbackFrameRef = useRef<number | null>(null);
@@ -102,8 +105,54 @@ export function EditorStage({
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-    video.volume = masterEnabled ? Math.min(1, masterVolumePercent / 50) : 0;
-  }, [masterEnabled, masterVolumePercent, preview.status]);
+    const AudioContextConstructor =
+      window.AudioContext ??
+      (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioContextConstructor) {
+      return;
+    }
+
+    try {
+      if (!audioSourceRef.current) {
+        const context = new AudioContextConstructor();
+        const source = context.createMediaElementSource(video);
+        const gain = context.createGain();
+        source.connect(gain).connect(context.destination);
+        audioContextRef.current = context;
+        audioSourceRef.current = source;
+        audioGainRef.current = gain;
+      }
+    } catch {
+      // Some WebViews do not expose MediaElementSource. The gain effect below
+      // falls back to the native volume property in that case.
+    }
+
+    return () => {
+      audioGainRef.current?.disconnect();
+      audioSourceRef.current?.disconnect();
+      void audioContextRef.current?.close().catch(() => undefined);
+      audioGainRef.current = null;
+      audioSourceRef.current = null;
+      audioContextRef.current = null;
+    };
+  }, [preview.status]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const enabledTracks = audioTracks.filter((track) => track.enabled && track.volumePercent > 0);
+    const trackGain =
+      enabledTracks.length > 0
+        ? enabledTracks.reduce((sum, track) => sum + track.volumePercent / 50, 0) /
+          enabledTracks.length
+        : 0;
+    const gainValue = masterEnabled ? (masterVolumePercent / 50) * trackGain : 0;
+    if (audioGainRef.current) {
+      audioGainRef.current.gain.value = gainValue;
+    } else {
+      video.volume = Math.min(1, gainValue);
+    }
+  }, [audioTracks, masterEnabled, masterVolumePercent]);
 
   useEffect(() => {
     function handleEditorShortcut(event: globalThis.KeyboardEvent) {
@@ -263,6 +312,7 @@ export function EditorStage({
       return;
     }
     setTransportError(null);
+    void audioContextRef.current?.resume().catch(() => undefined);
     void video.play().catch(() => {
       setIsPlaying(false);
       setTransportError("Playback could not start.");
