@@ -41,6 +41,7 @@ interface ExportPanelProps {
   mergeAudio: boolean;
   queue: ExportToast[];
   setQueue: Dispatch<SetStateAction<ExportToast[]>>;
+  onNativeDialogStateChange: (open: boolean) => void;
 }
 
 export function ExportPanel({
@@ -50,6 +51,7 @@ export function ExportPanel({
   audioTracks,
   mergeAudio,
   setQueue,
+  onNativeDialogStateChange,
 }: ExportPanelProps) {
   const defaults = useMemo(() => outputDefaults(sourceName), [sourceName]);
   const [isOptimizedOpen, setIsOptimizedOpen] = useState(false);
@@ -100,6 +102,7 @@ export function ExportPanel({
     request: FastExportRequest | OptimizedExportRequest,
   ) {
     setLaunchError(null);
+    onNativeDialogStateChange(true);
     try {
       const output = await chooseOutputPath(defaultName);
       if (output) {
@@ -107,6 +110,8 @@ export function ExportPanel({
       }
     } catch (nextError: unknown) {
       setLaunchError(normalizeAppError(nextError).message);
+    } finally {
+      onNativeDialogStateChange(false);
     }
   }
 

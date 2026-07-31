@@ -21,6 +21,7 @@ import "./App.css";
 function App() {
   const [session, dispatch] = useReducer(sessionReducer, initialSessionState);
   const [isChoosingSource, setIsChoosingSource] = useState(false);
+  const [isNativeDialogOpen, setIsNativeDialogOpen] = useState(false);
   const [isSourceDragActive, setIsSourceDragActive] = useState(false);
   const [dropListenerError, setDropListenerError] = useState<string | null>(null);
   const [exportQueue, setExportQueue] = useState<ExportToast[]>([]);
@@ -200,6 +201,7 @@ function App() {
     }
 
     setIsChoosingSource(true);
+    setIsNativeDialogOpen(true);
     try {
       const source = await chooseSource();
       if (source) {
@@ -209,6 +211,7 @@ function App() {
       dispatch({ type: "source-failed", error: normalizeAppError(error) });
     } finally {
       setIsChoosingSource(false);
+      setIsNativeDialogOpen(false);
     }
   }
 
@@ -236,6 +239,7 @@ function App() {
                 mergeAudio={session.source.mergeAudio}
                 queue={exportQueue}
                 setQueue={setExportQueue}
+                onNativeDialogStateChange={setIsNativeDialogOpen}
               />
             ) : null}
           </div>
@@ -262,6 +266,8 @@ function App() {
         </header>
       )}
 
+      {isNativeDialogOpen ? <NativeDialogOverlay /> : null}
+
       {dropListenerError ? (
         <p className="inline-alert" role="alert">
           Drag and drop is unavailable: {dropListenerError}
@@ -283,6 +289,18 @@ function App() {
         exportQueue={exportQueue}
       />
     </main>
+  );
+}
+
+function NativeDialogOverlay() {
+  return (
+    <div className="native-dialog-overlay" role="status" aria-live="polite">
+      <div className="native-dialog-card">
+        <span className="native-dialog-spinner" aria-hidden="true" />
+        <strong>Waiting for system dialog</strong>
+        <span>Choose a file location to continue.</span>
+      </div>
+    </div>
   );
 }
 

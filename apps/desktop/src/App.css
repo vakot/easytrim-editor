@@ -715,6 +715,49 @@ p {
   margin: 0;
 }
 
+.native-dialog-overlay {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgb(12 12 14 / 72%);
+  cursor: wait;
+}
+
+.native-dialog-card {
+  display: grid;
+  justify-items: center;
+  gap: 0.65rem;
+  min-width: 16rem;
+  padding: 1.25rem 1.5rem;
+  border: 1px solid #3b3b43;
+  border-radius: 0.7rem;
+  color: #f4f4f5;
+  background: #19191d;
+  box-shadow: 0 1rem 3rem rgb(0 0 0 / 38%);
+}
+
+.native-dialog-card > span:last-child {
+  color: #a1a1aa;
+  font-size: 0.78rem;
+}
+
+.native-dialog-spinner {
+  width: 1.2rem;
+  height: 1.2rem;
+  border: 2px solid #3b3b43;
+  border-top-color: #e4ae4e;
+  border-radius: 50%;
+  animation: native-dialog-spin 800ms linear infinite;
+}
+
+@keyframes native-dialog-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .editor-stage-content {
   width: 100%;
   height: 100%;
