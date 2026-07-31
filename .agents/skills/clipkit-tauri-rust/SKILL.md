@@ -1,9 +1,9 @@
 ---
-name: easy-cut-tauri-rust
-description: Build and review Easy Cut's Rust and Tauri 2 native core. Use for changes under src-tauri, Cargo manifests, Tauri commands and IPC, application state, file dialogs and drag-drop plumbing, FFmpeg child-process lifecycle, progress/cancellation, temporary files, capabilities/CSP, Windows packaging, native tests, or Rust architecture. Pair with easy-cut-ffmpeg-pipeline when media commands or metadata change and with easy-cut-react-interface when IPC contracts affect the UI.
+name: clipkit-tauri-rust
+description: Build and review ClipKit's Rust and Tauri 2 native core. Use for changes under src-tauri, Cargo manifests, Tauri commands and IPC, application state, file dialogs and drag-drop plumbing, FFmpeg child-process lifecycle, progress/cancellation, temporary files, capabilities/CSP, Windows packaging, native tests, or Rust architecture. Pair with clipkit-ffmpeg-pipeline when media commands or metadata change and with clipkit-react-interface when IPC contracts affect the UI.
 ---
 
-# Easy Cut Tauri and Rust
+# ClipKit Tauri and Rust
 
 Own the native implementation so the frontend remains a typed, reviewable client.
 
@@ -18,7 +18,7 @@ Follow the auto-loaded `AGENTS.md`. Before native changes, read:
 
 Read `plans/ffmpeg-ui-mvp.md`, inspect the current manifests/lockfiles and affected TypeScript IPC types, and confirm actual Rust/Tauri versions before using an API.
 
-Use `easy-cut-ffmpeg-pipeline` for media behavior and `easy-cut-react-interface` when an IPC contract changes the UI.
+Use `clipkit-ffmpeg-pipeline` for media behavior and `clipkit-react-interface` when an IPC contract changes the UI.
 
 ## Keep framework boundaries thin
 

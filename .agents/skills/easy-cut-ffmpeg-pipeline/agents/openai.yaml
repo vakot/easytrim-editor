@@ -1,4 +1,0 @@
-interface:
-  display_name: "Easy Cut FFmpeg Pipeline"
-  short_description: "Implement correct video and audio processing"
-  default_prompt: "Use $easy-cut-ffmpeg-pipeline to implement or review Easy Cut media inspection, preview, trimming, and export."
