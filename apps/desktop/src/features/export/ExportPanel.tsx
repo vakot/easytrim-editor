@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 
+import type { AudioTrackState } from "../../app/session-state";
 import type { TrimRange } from "../../domain/trim";
 import {
   cancelOperation,
@@ -13,7 +14,6 @@ import {
   type MediaInfo,
   type OptimizedExportRequest,
 } from "../../lib/tauri/media";
-import type { AudioTrackState } from "../../app/session-state";
 
 const DEFAULT_ARGUMENTS =
   "-c:v hevc_nvenc -preset p5 -tune hq -rc vbr -cq 24 -b:v 0 -spatial_aq 1 -temporal_aq 1 -aq-strength 8 -pix_fmt yuv420p -c:a aac -b:a 160k";
@@ -35,7 +35,7 @@ export function ExportPanel({
 }: ExportPanelProps) {
   const sourceRate = source.video.averageFrameRate ?? source.video.realFrameRate;
   const defaults = useMemo(() => outputDefaults(sourceName), [sourceName]);
-  const [outputName, setOutputName] = useState(defaults.fast);
+  const [isOptimizedOpen, setIsOptimizedOpen] = useState(false);
   const [resolution, setResolution] = useState({
     width: source.video.width,
     height: source.video.height,
@@ -51,19 +51,20 @@ export function ExportPanel({
   const selectedAudio = audioTracks
     .filter((track) => track.enabled)
     .map((track) => track.streamIndex);
-  const rendering = isStarting || operationId !== null;
+  const isBusy = isStarting || operationId !== null;
 
-  async function startFast() {
+  async function handleFastCut() {
     const request: FastExportRequest = {
       sourceId: source.sourceId,
       trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
       audioStreamIndexes: selectedAudio,
       mergeAudio,
     };
-    await startRender("fast", defaults.fast, request);
+    await runExport("fast", defaults.fast, request);
   }
 
-  async function startOptimized() {
+  async function handleOptimizedRender() {
+    setIsOptimizedOpen(false);
     const request: OptimizedExportRequest = {
       sourceId: source.sourceId,
       trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
@@ -75,29 +76,23 @@ export function ExportPanel({
         : undefined,
       arguments: argumentsText,
     };
-    await startRender("optimized", defaults.optimized, request);
+    await runExport("optimized", defaults.optimized, request);
   }
 
-  async function startRender(
+  async function runExport(
     route: "fast" | "optimized",
-    fallbackName: string,
+    defaultName: string,
     request: FastExportRequest | OptimizedExportRequest,
   ) {
-    if (rendering || outputName.trim().length === 0) {
-      setError("Enter an output name before exporting.");
-      return;
-    }
+    if (isBusy) return;
     setError(null);
     setStatus(null);
+    setProgress(null);
     setIsStarting(true);
     try {
-      const requestedName =
-        outputName === defaults.fast && route === "optimized"
-          ? defaults.optimized
-          : outputName.trim() || fallbackName;
-      const output = await chooseOutputPath(requestedName);
+      const output = await chooseOutputPath(defaultName);
       if (!output) return;
-      setOutputName(output.displayName);
+
       const onProgress = (next: ExportProgress) => {
         setProgress(next);
         setOperationId(next.operationId);
@@ -133,110 +128,127 @@ export function ExportPanel({
   }
 
   return (
-    <section className="export-panel" aria-labelledby="export-title">
-      <div className="section-heading-row">
-        <div>
-          <p className="section-label">Export</p>
-          <h2 id="export-title">Save selected segment</h2>
-        </div>
-        {progress ? (
-          <span className="export-progress-label" role="status">
-            {Math.round(progress.percentage)}%{progress.speed ? ` · ${progress.speed}` : ""}
-          </span>
-        ) : null}
-      </div>
-
-      <label className="export-field">
-        <span>Output name</span>
-        <input
-          value={outputName}
-          onChange={(event) => setOutputName(event.target.value)}
-          required
-        />
-      </label>
-
-      <div className="export-route-grid">
+    <div className="export-toolbar-group">
+      <div className="toolbar-divider" aria-hidden="true" />
+      <button
+        className="toolbar-button export-button"
+        type="button"
+        onClick={() => void handleFastCut()}
+        disabled={isBusy}
+      >
+        Fast cut
+      </button>
+      <div className="export-config-anchor">
         <button
-          className="primary-button"
+          className="toolbar-button export-button"
           type="button"
-          onClick={() => void startFast()}
-          disabled={rendering}
-        >
-          Fast cut
-          <small>Copy video · source size/FPS</small>
-        </button>
-        <button
-          className="primary-button"
-          type="button"
-          onClick={() => void startOptimized()}
-          disabled={rendering}
+          onClick={() => {
+            setError(null);
+            setIsOptimizedOpen((open) => !open);
+          }}
+          disabled={isBusy}
+          aria-haspopup="dialog"
+          aria-expanded={isOptimizedOpen}
         >
           Optimized render
-          <small>Scale, FPS, and codec settings</small>
         </button>
+        {isOptimizedOpen ? (
+          <div className="export-dialog" role="dialog" aria-labelledby="optimized-export-title">
+            <div className="export-dialog-header">
+              <div>
+                <p className="section-label">Export</p>
+                <h2 id="optimized-export-title">Optimized render</h2>
+              </div>
+              <button
+                className="icon-button"
+                type="button"
+                onClick={() => setIsOptimizedOpen(false)}
+                aria-label="Close optimized render settings"
+              >
+                ×
+              </button>
+            </div>
+            <div className="optimized-options">
+              <label className="export-field">
+                <span>Resolution</span>
+                <select
+                  value={`${resolution.width}x${resolution.height}`}
+                  onChange={(event) => {
+                    const [width, height] = event.target.value.split("x").map(Number);
+                    if (width && height) setResolution({ width, height });
+                  }}
+                >
+                  {resolutionOptions(source).map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="export-field">
+                <span>Frame rate</span>
+                <select
+                  value={frameRate ? `${frameRate.numerator}/${frameRate.denominator}` : "source"}
+                  onChange={(event) => setFrameRate(rateFromValue(event.target.value, sourceRate))}
+                >
+                  <option value="source">Source FPS</option>
+                  {[24, 25, 30, 50, 60, 120].map((rate) => (
+                    <option key={rate} value={`${rate}/1`}>
+                      {rate} FPS
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <label className="export-field export-arguments">
+              <span>FFmpeg arguments</span>
+              <textarea
+                value={argumentsText}
+                onChange={(event) => setArgumentsText(event.target.value)}
+                rows={4}
+              />
+            </label>
+            <p className="export-note">The native save dialog opens after confirmation.</p>
+            <div className="export-dialog-actions">
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() => setIsOptimizedOpen(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="primary-button"
+                type="button"
+                onClick={() => void handleOptimizedRender()}
+              >
+                Choose output path
+              </button>
+            </div>
+          </div>
+        ) : null}
       </div>
-
-      <div className="optimized-options">
-        <label className="export-field">
-          <span>Resolution</span>
-          <select
-            value={`${resolution.width}x${resolution.height}`}
-            onChange={(event) => {
-              const [width, height] = event.target.value.split("x").map(Number);
-              if (width && height) {
-                setResolution({ width, height });
-              }
-            }}
-          >
-            {resolutionOptions(source).map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="export-field">
-          <span>Frame rate</span>
-          <select
-            value={frameRate ? `${frameRate.numerator}/${frameRate.denominator}` : "source"}
-            onChange={(event) => setFrameRate(rateFromValue(event.target.value, sourceRate))}
-          >
-            <option value="source">Source FPS</option>
-            {[24, 25, 30, 50, 60, 120].map((rate) => (
-              <option key={rate} value={`${rate}/1`}>
-                {rate} FPS
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="export-field export-arguments">
-          <span>FFmpeg arguments</span>
-          <textarea
-            value={argumentsText}
-            onChange={(event) => setArgumentsText(event.target.value)}
-            rows={2}
-          />
-        </label>
-      </div>
-
-      {rendering ? (
-        <div className="export-running">
-          <progress max={100} value={progress?.percentage ?? 0} />
-          <button className="secondary-button" type="button" onClick={() => void handleCancel()}>
-            Cancel
-          </button>
-        </div>
+      {progress ? (
+        <span className="export-progress-label" role="status">
+          {Math.round(progress.percentage)}%
+        </span>
       ) : null}
-      {status ? <p className="export-status">{status}</p> : null}
+      {isBusy ? (
+        <button
+          className="toolbar-button export-cancel-button"
+          type="button"
+          onClick={() => void handleCancel()}
+        >
+          Cancel
+        </button>
+      ) : null}
+      {status ? <span className="export-status">{status}</span> : null}
       {error ? (
-        <p className="inline-alert" role="alert">
+        <span className="export-error" role="alert">
           {error}
-        </p>
+        </span>
       ) : null}
-      <p className="export-note">
-        Only the selected segment and enabled audio tracks will be exported.
-      </p>
-    </section>
+    </div>
   );
 }
 

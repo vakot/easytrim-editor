@@ -5,7 +5,6 @@ import { PaneResizeHandle } from "../../components/PaneResizeHandle";
 import type { TrimRange } from "../../domain/trim";
 import type { BinaryCapability, FrameRate, MediaInfo } from "../../lib/tauri/media";
 import { EditorStage } from "../editor/EditorStage";
-import { ExportPanel } from "../export/ExportPanel";
 
 interface SourceWorkspaceProps {
   session: SessionState;
@@ -130,14 +129,6 @@ export function SourceWorkspace({
                 }
                 onToggleAudioMerge={() => onToggleAudioMerge(sourceId)}
                 onWaveformImageError={(streamIndex) => onWaveformImageError(sourceId, streamIndex)}
-              />
-              <ExportPanel
-                key={`export-${sourceId}`}
-                source={session.source.media}
-                sourceName={session.source.selection.displayName}
-                trim={session.source.trim}
-                audioTracks={session.source.audioTracks}
-                mergeAudio={session.source.mergeAudio}
               />
             </>
           ) : null}

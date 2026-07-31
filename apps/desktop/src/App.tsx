@@ -3,6 +3,7 @@ import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { initialSessionState, sessionReducer } from "./app/session-state";
 import type { TrimRange } from "./domain/trim";
 import { CapabilityStatus, SourceWorkspace } from "./features/import-source/SourceWorkspace";
+import { ExportPanel } from "./features/export/ExportPanel";
 import {
   checkMediaCapabilities,
   chooseSource,
@@ -220,6 +221,16 @@ function App() {
               isChoosingSource={isChoosingSource}
               onChooseSource={() => void handleChooseSource()}
             />
+            {session.status === "ready" && session.source?.media && session.source.trim ? (
+              <ExportPanel
+                key={`export-${session.source.selection.sourceId}`}
+                source={session.source.media}
+                sourceName={session.source.selection.displayName}
+                trim={session.source.trim}
+                audioTracks={session.source.audioTracks}
+                mergeAudio={session.source.mergeAudio}
+              />
+            ) : null}
           </div>
         </div>
       ) : (
