@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react";
+import type { Dispatch, SetStateAction } from "react";
 
 import type { AudioTrackState } from "../../app/session-state";
 import type { TrimRange } from "../../domain/trim";
@@ -18,11 +19,9 @@ import {
 
 const DEFAULT_ARGUMENTS =
   "-c:v hevc_nvenc -preset p5 -tune hq -rc vbr -cq 24 -b:v 0 -spatial_aq 1 -temporal_aq 1 -aq-strength 8 -pix_fmt yuv420p -c:a aac -b:a 160k";
-const TOAST_REMOVE_DELAY_MS = 3_500;
+type ToastStatus = "rendering" | "completed" | "failed" | "canceled";
 
-type ToastStatus = "rendering" | "completed" | "failed";
-
-interface ExportToast {
+export interface ExportToast {
   id: string;
   operationId: string | null;
   filename: string;
@@ -30,6 +29,7 @@ interface ExportToast {
   percentage: number;
   status: ToastStatus;
   error?: string;
+  onCancel?: () => void;
 }
 
 interface ExportPanelProps {
@@ -38,6 +38,8 @@ interface ExportPanelProps {
   trim: TrimRange;
   audioTracks: AudioTrackState[];
   mergeAudio: boolean;
+  queue: ExportToast[];
+  setQueue: Dispatch<SetStateAction<ExportToast[]>>;
 }
 
 export function ExportPanel({
@@ -46,6 +48,7 @@ export function ExportPanel({
   trim,
   audioTracks,
   mergeAudio,
+  setQueue,
 }: ExportPanelProps) {
   const defaults = useMemo(() => outputDefaults(sourceName), [sourceName]);
   const [isOptimizedOpen, setIsOptimizedOpen] = useState(false);
@@ -55,9 +58,9 @@ export function ExportPanel({
   });
   const [frameRate, setFrameRate] = useState<FrameRate | undefined>();
   const [argumentsText, setArgumentsText] = useState(DEFAULT_ARGUMENTS);
-  const [queue, setQueue] = useState<ExportToast[]>([]);
   const [launchError, setLaunchError] = useState<string | null>(null);
   const canceledRef = useRef(new Set<string>());
+  const operationIdsRef = useRef(new Map<string, string>());
   const toastSequence = useRef(0);
 
   const selectedAudio = audioTracks
@@ -121,6 +124,7 @@ export function ExportPanel({
         path: output.displayPath,
         percentage: 0,
         status: "rendering",
+        onCancel: () => handleCancel(id),
       },
     ]);
     void renderQueuedExport(id, route, request, output);
@@ -142,6 +146,7 @@ export function ExportPanel({
         operationId: next.operationId,
         percentage: Math.round(next.percentage),
       }));
+      operationIdsRef.current.set(id, next.operationId);
     };
 
     try {
@@ -156,16 +161,18 @@ export function ExportPanel({
         path: result.displayPath,
         percentage: 100,
         status: "completed",
+        onCancel: undefined,
       }));
-      removeToastLater(id);
     } catch (nextError: unknown) {
       if (canceledRef.current.has(id)) return;
+      const normalized = normalizeAppError(nextError);
+      const wasCanceled = normalized.code === "cancelled" || normalized.code === "source_replaced";
       updateToast(id, (toast) => ({
         ...toast,
-        status: "failed",
-        error: normalizeAppError(nextError).message,
+        status: wasCanceled ? "canceled" : "failed",
+        error: wasCanceled ? "Export canceled." : normalized.message,
+        onCancel: undefined,
       }));
-      removeToastLater(id);
     }
   }
 
@@ -173,17 +180,17 @@ export function ExportPanel({
     setQueue((current) => current.map((toast) => (toast.id === id ? update(toast) : toast)));
   }
 
-  function removeToastLater(id: string) {
-    window.setTimeout(() => {
-      setQueue((current) => current.filter((toast) => toast.id !== id));
-    }, TOAST_REMOVE_DELAY_MS);
-  }
-
-  function handleCancel(toast: ExportToast) {
-    canceledRef.current.add(toast.id);
-    setQueue((current) => current.filter((item) => item.id !== toast.id));
-    if (toast.operationId) {
-      void cancelOperation(toast.operationId).catch(() => undefined);
+  function handleCancel(id: string) {
+    canceledRef.current.add(id);
+    updateToast(id, (toast) => ({
+      ...toast,
+      status: "canceled",
+      error: "Export canceled.",
+      onCancel: undefined,
+    }));
+    const operationId = operationIdsRef.current.get(id);
+    if (operationId) {
+      void cancelOperation(operationId).catch(() => undefined);
     }
   }
 
@@ -281,7 +288,7 @@ export function ExportPanel({
                   type="button"
                   onClick={() => void handleOptimizedRender()}
                 >
-                  Choose output path
+                  Export
                 </button>
               </div>
             </div>
@@ -293,42 +300,51 @@ export function ExportPanel({
           </span>
         ) : null}
       </div>
-      {queue.length > 0 ? (
-        <div className="export-queue" role="status" aria-live="polite">
-          {queue.map((toast) => (
-            <div className={`export-toast export-toast-${toast.status}`} key={toast.id}>
-              <div className="export-toast-copy">
-                <div className="export-toast-title">
-                  <strong>{toast.filename}</strong>
-                  <span>· {toast.percentage}%</span>
-                </div>
-                <span className="export-toast-path" title={toast.path}>
-                  {toast.path}
-                </span>
-                {toast.error ? <span className="export-toast-error">{toast.error}</span> : null}
-              </div>
-              <div className="export-toast-actions">
-                {toast.status === "rendering" ? (
-                  <button
-                    type="button"
-                    onClick={() => handleCancel(toast)}
-                    aria-label={`Cancel ${toast.filename}`}
-                  >
-                    Cancel
-                  </button>
-                ) : (
-                  <span
-                    aria-label={toast.status === "completed" ? "Export complete" : "Export failed"}
-                  >
-                    {toast.status === "completed" ? "✓" : "!"}
-                  </span>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : null}
     </>
+  );
+}
+
+export function ExportQueue({ queue }: { queue: ExportToast[] }) {
+  if (queue.length === 0) return null;
+
+  return (
+    <section className="export-queue" aria-labelledby="export-queue-title">
+      <div className="export-queue-heading">
+        <h2 id="export-queue-title">Export queue</h2>
+        <span>{queue.length}</span>
+      </div>
+      <div className="export-queue-list" role="status" aria-live="polite">
+        {queue.map((toast) => (
+          <div className={`export-toast export-toast-${toast.status}`} key={toast.id}>
+            <div className="export-toast-copy">
+              <div className="export-toast-title">
+                <strong>{toast.filename}</strong>
+                <span>· {toast.percentage}%</span>
+              </div>
+              <span className="export-toast-path" title={toast.path}>
+                {toast.path}
+              </span>
+              {toast.error ? <span className="export-toast-error">{toast.error}</span> : null}
+            </div>
+            <div className="export-toast-actions">
+              {toast.onCancel ? (
+                <button
+                  type="button"
+                  onClick={toast.onCancel}
+                  aria-label={`Cancel ${toast.filename}`}
+                >
+                  Cancel
+                </button>
+              ) : (
+                <span aria-label={`${toast.status} export`}>
+                  {toast.status === "completed" ? "✓" : toast.status === "failed" ? "!" : "×"}
+                </span>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 

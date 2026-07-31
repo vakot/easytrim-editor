@@ -5,6 +5,7 @@ import { PaneResizeHandle } from "../../components/PaneResizeHandle";
 import type { TrimRange } from "../../domain/trim";
 import type { BinaryCapability, FrameRate, MediaInfo } from "../../lib/tauri/media";
 import { EditorStage } from "../editor/EditorStage";
+import { ExportQueue, type ExportToast } from "../export/ExportPanel";
 
 interface SourceWorkspaceProps {
   session: SessionState;
@@ -18,6 +19,7 @@ interface SourceWorkspaceProps {
   onSetAllAudioTracksEnabled: (sourceId: string, enabled: boolean) => void;
   onToggleAudioMerge: (sourceId: string) => void;
   onWaveformImageError: (sourceId: string, streamIndex: number) => void;
+  exportQueue: ExportToast[];
 }
 
 export function SourceWorkspace({
@@ -32,6 +34,7 @@ export function SourceWorkspace({
   onSetAllAudioTracksEnabled,
   onToggleAudioMerge,
   onWaveformImageError,
+  exportQueue,
 }: SourceWorkspaceProps) {
   if (!session.source) {
     return (
@@ -93,6 +96,7 @@ export function SourceWorkspace({
           {session.status === "ready" && session.source.media ? (
             <MediaDetails media={session.source.media} />
           ) : null}
+          <ExportQueue queue={exportQueue} />
         </aside>
       </Panel>
 
@@ -228,34 +232,9 @@ function MediaDetails({ media }: { media: MediaInfo }) {
         <Metadata label="Video codec" value={media.video.codecName.toUpperCase()} />
         <Metadata label="File size" value={formatBytes(media.sizeBytes)} />
         <Metadata label="Bitrate" value={formatBitrate(media.bitrate)} />
+        <Metadata label="Audio streams" value={String(media.audioStreams.length)} />
         <Metadata label="Video stream" value={`#${media.video.streamIndex}`} />
       </dl>
-
-      <section className="audio-section" aria-labelledby="audio-title">
-        <div className="audio-heading">
-          <h2 id="audio-title">Audio streams</h2>
-          <span>{media.audioStreams.length}</span>
-        </div>
-        {media.audioStreams.length === 0 ? (
-          <p className="no-audio">No audio streams found.</p>
-        ) : (
-          <ul className="audio-list">
-            {media.audioStreams.map((audio) => (
-              <li key={audio.streamIndex}>
-                <div className="audio-title">
-                  <strong>{audio.title ?? audio.language ?? `Audio ${audio.streamIndex}`}</strong>
-                  {audio.isDefault ? <span className="default-tag">Default</span> : null}
-                </div>
-                <span>
-                  #{audio.streamIndex} · {audio.codecName.toUpperCase()} ·{" "}
-                  {audio.channelLayout ?? formatChannels(audio.channels)}
-                  {audio.sampleRateHz ? ` · ${Math.round(audio.sampleRateHz / 1_000)} kHz` : ""}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
     </div>
   );
 }
@@ -301,10 +280,4 @@ function formatBytes(bytes: number | undefined): string {
 
 function formatBitrate(bitrate: number | undefined): string {
   return bitrate === undefined ? "Unknown" : `${(bitrate / 1_000_000).toFixed(2)} Mbps`;
-}
-
-function formatChannels(channels: number | undefined): string {
-  return channels === undefined
-    ? "Unknown layout"
-    : `${channels} channel${channels === 1 ? "" : "s"}`;
 }

@@ -139,8 +139,8 @@ describe("App", () => {
     expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
     expect(await screen.findByText("3840 × 2160")).toBeInTheDocument();
     expect(screen.getByText("59.94 fps")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Audio streams" })).toBeInTheDocument();
-    expect(screen.getAllByText(/AAC/)).toHaveLength(2);
+    const audioStreamMetadata = screen.getByText("Audio streams");
+    expect(audioStreamMetadata.nextElementSibling).toHaveTextContent("1");
     expect(screen.getByLabelText("Source video preview")).toHaveAttribute(
       "src",
       "http://clipkit-media.localhost/source-1?variant=source",
