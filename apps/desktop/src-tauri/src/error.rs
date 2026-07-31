@@ -56,6 +56,25 @@ impl AppError {
         }
     }
 
+    pub fn waveform_failed(
+        message: impl Into<String>,
+        diagnostics: Option<impl Into<String>>,
+    ) -> Self {
+        Self {
+            code: "waveform_failed",
+            message: message.into(),
+            diagnostics: diagnostics.map(Into::into),
+        }
+    }
+
+    pub fn cancelled(message: impl Into<String>) -> Self {
+        Self {
+            code: "cancelled",
+            message: message.into(),
+            diagnostics: None,
+        }
+    }
+
     pub fn io_failed(message: impl Into<String>) -> Self {
         Self {
             code: "io_failed",

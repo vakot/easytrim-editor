@@ -507,6 +507,9 @@ p {
 }
 
 .timeline-panel {
+  --timeline-label-width: 8.75rem;
+  --timeline-column-gap: 0.75rem;
+
   min-width: 0;
   padding: 1rem 1.25rem 1.25rem;
   border-top: 1px solid #29292e;
@@ -564,7 +567,7 @@ p {
 .timeline-scale {
   display: flex;
   justify-content: space-between;
-  margin: 0.8rem 0 0.3rem 4rem;
+  margin: 0.8rem 0 0.3rem calc(var(--timeline-label-width) + var(--timeline-column-gap));
   color: #62626a;
   font-size: 0.62rem;
   font-variant-numeric: tabular-nums;
@@ -573,8 +576,8 @@ p {
 .timeline-row {
   display: grid;
   min-width: 0;
-  grid-template-columns: 3.25rem minmax(0, 1fr);
-  gap: 0.75rem;
+  grid-template-columns: var(--timeline-label-width) minmax(0, 1fr);
+  gap: var(--timeline-column-gap);
   align-items: center;
 }
 
@@ -582,6 +585,189 @@ p {
   color: #a1a1aa;
   font-size: 0.72rem;
   font-weight: 700;
+}
+
+.timeline-audio {
+  --audio-track-gap: 0.45rem;
+  --audio-playhead-overhang: 0.225rem;
+
+  margin-top: 0.8rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid #29292e;
+}
+
+.timeline-audio-heading {
+  margin-bottom: var(--audio-track-gap);
+}
+
+.audio-master-control,
+.merge-audio-control,
+.audio-track-label {
+  cursor: pointer;
+}
+
+.timeline-audio-summary,
+.merge-audio-control {
+  display: flex;
+  align-items: center;
+}
+
+.timeline-audio-summary {
+  justify-content: flex-end;
+}
+
+.audio-master-control {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 0.45rem;
+  align-items: center;
+}
+
+.merge-audio-control {
+  gap: 0.45rem;
+  color: #c4c4cc;
+  font-size: 0.72rem;
+}
+
+.merge-audio-control {
+  flex: 0 0 auto;
+}
+
+.audio-master-control input,
+.merge-audio-control input,
+.audio-track-label input {
+  margin: 0;
+  accent-color: #e4ae4e;
+}
+
+.audio-track-list {
+  position: relative;
+  display: grid;
+  gap: var(--audio-track-gap);
+}
+
+.audio-playhead-layer {
+  z-index: 3;
+  position: absolute;
+  inset: calc(0rem - var(--audio-playhead-overhang)) 0 calc(0rem - var(--audio-playhead-overhang))
+    calc(var(--timeline-label-width) + var(--timeline-column-gap));
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.audio-playhead {
+  position: absolute;
+  inset-block: 0;
+  width: 1px;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgb(245 245 244 / 88%) 0 5px,
+    transparent 5px 9px
+  );
+  transform: translateX(-50%);
+}
+
+.audio-track-label {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 0.45rem;
+  align-items: center;
+}
+
+.audio-master-control input,
+.audio-track-label input {
+  grid-row: 1 / span 2;
+}
+
+.audio-track-title,
+.audio-track-meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.audio-track-title {
+  color: #d4d4d8;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.audio-track-meta {
+  color: #71717a;
+  font-size: 0.62rem;
+}
+
+.audio-waveform-track {
+  position: relative;
+  height: 2.6rem;
+  overflow: hidden;
+  border: 1px solid #303036;
+  border-radius: 0.4rem;
+  background: #19191e;
+}
+
+.audio-waveform-track[data-enabled="false"] {
+  opacity: 0.42;
+}
+
+.waveform-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  opacity: 0.82;
+  object-fit: fill;
+  user-select: none;
+}
+
+.audio-trim-selection {
+  position: absolute;
+  inset-block: 0;
+  border-inline: 1px solid rgb(228 174 78 / 70%);
+  background: rgb(228 174 78 / 9%);
+  box-shadow: 0 0 0 100vmax rgb(0 0 0 / 38%);
+  clip-path: inset(0 -100vmax);
+  pointer-events: none;
+}
+
+.waveform-status,
+.waveform-failure {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #777780;
+  font-size: 0.66rem;
+}
+
+.waveform-failure {
+  z-index: 1;
+  gap: 0.55rem;
+}
+
+.waveform-failure button {
+  padding: 0.2rem 0.45rem;
+  border: 1px solid #4a4a52;
+  border-radius: 0.3rem;
+  color: #d4d4d8;
+  background: #25252b;
+  font: inherit;
+  cursor: pointer;
+}
+
+.waveform-failure button:hover {
+  border-color: #e4ae4e;
+  color: #f7d798;
+}
+
+.timeline-empty-audio {
+  margin: 0.8rem 0 0 calc(var(--timeline-label-width) + var(--timeline-column-gap));
+  padding-top: 0.8rem;
+  border-top: 1px solid #29292e;
+  color: #71717a;
+  font-size: 0.7rem;
 }
 
 .timeline-track {

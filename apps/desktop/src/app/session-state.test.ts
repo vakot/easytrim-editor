@@ -36,6 +36,30 @@ function media(sourceId: string): MediaInfo {
   };
 }
 
+function mediaWithAudio(sourceId: string): MediaInfo {
+  return {
+    ...media(sourceId),
+    audioStreams: [
+      {
+        streamIndex: 2,
+        codecName: "aac",
+        channels: 2,
+        channelLayout: "stereo",
+        language: "eng",
+        isDefault: true,
+      },
+      {
+        streamIndex: 4,
+        codecName: "ac3",
+        channels: 6,
+        channelLayout: "5.1",
+        title: "Surround",
+        isDefault: false,
+      },
+    ],
+  };
+}
+
 describe("sessionReducer", () => {
   it("ignores metadata from a source that has already been replaced", () => {
     const loadingFirst = sessionReducer(initialSessionState, {
@@ -85,7 +109,7 @@ describe("sessionReducer", () => {
       sourceId: firstSource.sourceId,
       preview: {
         sourceId: firstSource.sourceId,
-        url: "http://easycut-media.localhost/source-1?variant=source",
+        url: "http://clipkit-media.localhost/source-1?variant=source",
         kind: "source",
       },
     });
@@ -148,5 +172,150 @@ describe("sessionReducer", () => {
       sourceDurationMicros: 5_000_000,
     });
     expect(invalidUpdate).toBe(ready);
+  });
+
+  it("enables discovered audio tracks and keeps selections in session memory", () => {
+    const loading = sessionReducer(initialSessionState, {
+      type: "source-selected",
+      source: firstSource,
+    });
+    const ready = sessionReducer(loading, {
+      type: "source-ready",
+      sourceId: firstSource.sourceId,
+      media: mediaWithAudio(firstSource.sourceId),
+    });
+    const trackDisabled = sessionReducer(ready, {
+      type: "audio-track-toggled",
+      sourceId: firstSource.sourceId,
+      streamIndex: 4,
+    });
+    const mergeEnabled = sessionReducer(trackDisabled, {
+      type: "audio-merge-toggled",
+      sourceId: firstSource.sourceId,
+    });
+    const allDisabled = sessionReducer(mergeEnabled, {
+      type: "audio-tracks-set-enabled",
+      sourceId: firstSource.sourceId,
+      enabled: false,
+    });
+    const allEnabled = sessionReducer(allDisabled, {
+      type: "audio-tracks-set-enabled",
+      sourceId: firstSource.sourceId,
+      enabled: true,
+    });
+
+    expect(ready.source?.audioTracks).toEqual([
+      { streamIndex: 2, enabled: true, waveform: { status: "idle" } },
+      { streamIndex: 4, enabled: true, waveform: { status: "idle" } },
+    ]);
+    expect(mergeEnabled.source?.audioTracks[1]?.enabled).toBe(false);
+    expect(mergeEnabled.source?.mergeAudio).toBe(true);
+    expect(allDisabled.source?.audioTracks.every((track) => !track.enabled)).toBe(true);
+    expect(allEnabled.source?.audioTracks.every((track) => track.enabled)).toBe(true);
+  });
+
+  it("ignores stale waveform completions after regeneration", () => {
+    const loading = sessionReducer(initialSessionState, {
+      type: "source-selected",
+      source: firstSource,
+    });
+    const ready = sessionReducer(loading, {
+      type: "source-ready",
+      sourceId: firstSource.sourceId,
+      media: mediaWithAudio(firstSource.sourceId),
+    });
+    const firstJob = sessionReducer(ready, {
+      type: "waveforms-loading",
+      sourceId: firstSource.sourceId,
+      jobId: "waveform-1",
+      width: 800,
+      streamIndexes: [2, 4],
+    });
+    const secondJob = sessionReducer(firstJob, {
+      type: "waveforms-loading",
+      sourceId: firstSource.sourceId,
+      jobId: "waveform-2",
+      width: 1200,
+      streamIndexes: [2, 4],
+    });
+    const staleResult = sessionReducer(secondJob, {
+      type: "waveform-result",
+      result: {
+        status: "ready",
+        sourceId: firstSource.sourceId,
+        jobId: "waveform-1",
+        streamIndex: 2,
+        width: 800,
+        url: "http://clipkit-media.localhost/source-1?variant=waveform&stream=2&width=800",
+      },
+    });
+    const currentResult = sessionReducer(staleResult, {
+      type: "waveform-result",
+      result: {
+        status: "failed",
+        sourceId: firstSource.sourceId,
+        jobId: "waveform-2",
+        streamIndex: 2,
+        width: 1200,
+        error: { code: "waveform_failed", message: "Unavailable." },
+      },
+    });
+
+    expect(staleResult).toEqual(secondJob);
+    expect(currentResult.source?.audioTracks[0]?.waveform).toEqual({
+      status: "failed",
+      jobId: "waveform-2",
+      width: 1200,
+      error: { code: "waveform_failed", message: "Unavailable." },
+    });
+  });
+
+  it("turns a failed waveform image into a retryable track visualization", () => {
+    const loading = sessionReducer(initialSessionState, {
+      type: "source-selected",
+      source: firstSource,
+    });
+    const ready = sessionReducer(loading, {
+      type: "source-ready",
+      sourceId: firstSource.sourceId,
+      media: mediaWithAudio(firstSource.sourceId),
+    });
+    const preparing = sessionReducer(ready, {
+      type: "waveforms-loading",
+      sourceId: firstSource.sourceId,
+      jobId: "waveform-1",
+      width: 800,
+      streamIndexes: [2],
+    });
+    const prepared = sessionReducer(preparing, {
+      type: "waveform-result",
+      result: {
+        status: "ready",
+        sourceId: firstSource.sourceId,
+        jobId: "waveform-1",
+        streamIndex: 2,
+        width: 800,
+        url: "http://clipkit-media.localhost/source-1?variant=waveform&stream=2&width=800",
+      },
+    });
+    const failedDisplay = sessionReducer(prepared, {
+      type: "waveform-display-failed",
+      sourceId: firstSource.sourceId,
+      streamIndex: 2,
+    });
+
+    expect(failedDisplay.source?.audioTracks[0]).toEqual({
+      streamIndex: 2,
+      enabled: true,
+      waveform: {
+        status: "failed",
+        jobId: "waveform-1",
+        width: 800,
+        error: {
+          code: "waveform_failed",
+          message: "The waveform preview could not be displayed.",
+        },
+      },
+    });
   });
 });

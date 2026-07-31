@@ -3,6 +3,7 @@ use crate::{
     media::{
         probe::{MediaInfo, inspect_media as probe_media},
         proxy::generate_preview,
+        waveform::{generate_waveform, validate_waveform_request},
     },
     state::{AppState, PreviewStreamSelection},
 };
@@ -24,6 +25,27 @@ pub struct PreviewDescriptor {
     pub kind: PreviewKind,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum WaveformStatus {
+    Ready,
+    Failed,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WaveformResult {
+    pub source_id: String,
+    pub job_id: String,
+    pub stream_index: u32,
+    pub width: u32,
+    pub status: WaveformStatus,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<AppError>,
+}
+
 #[tauri::command]
 pub async fn inspect_media(
     source_id: String,
@@ -43,14 +65,110 @@ pub async fn inspect_media(
         .find(|stream| stream.is_default)
         .or_else(|| result.audio_streams.first())
         .map(|stream| stream.stream_index);
-    state.remember_preview_streams(
+    let audio_stream_indexes = result
+        .audio_streams
+        .iter()
+        .map(|stream| stream.stream_index)
+        .collect();
+    state.remember_inspected_streams(
         &source_id,
         PreviewStreamSelection {
             video_stream_index: result.video.stream_index,
             audio_stream_index,
         },
+        audio_stream_indexes,
     )?;
     Ok(result)
+}
+
+#[tauri::command]
+pub async fn prepare_waveforms(
+    source_id: String,
+    job_id: String,
+    stream_indexes: Vec<u32>,
+    width: u32,
+    state: State<'_, AppState>,
+) -> Result<Vec<WaveformResult>, AppError> {
+    if stream_indexes.is_empty() || stream_indexes.len() > 32 {
+        return Err(AppError::invalid_request(
+            "Select between one and 32 audio streams for waveform generation.",
+        ));
+    }
+    let mut unique_stream_indexes = stream_indexes.clone();
+    unique_stream_indexes.sort_unstable();
+    unique_stream_indexes.dedup();
+    if unique_stream_indexes.len() != stream_indexes.len() {
+        return Err(AppError::invalid_request(
+            "Waveform stream indexes must be unique.",
+        ));
+    }
+
+    let waveform_source = state.begin_waveform_job(&source_id, job_id.clone())?;
+    for stream_index in &stream_indexes {
+        validate_waveform_request(
+            &waveform_source.source.audio_stream_indexes,
+            *stream_index,
+            width,
+        )?;
+    }
+
+    let mut results = Vec::with_capacity(stream_indexes.len());
+    let mut pending_stream_indexes = Vec::new();
+    for stream_index in stream_indexes {
+        if state.waveform_is_ready(&source_id, stream_index, width)? {
+            results.push(ready_waveform(&source_id, &job_id, stream_index, width));
+        } else {
+            pending_stream_indexes.push(stream_index);
+        }
+    }
+
+    let generated = tauri::async_runtime::spawn_blocking(move || {
+        let mut generated = Vec::with_capacity(pending_stream_indexes.len());
+        for stream_index in pending_stream_indexes {
+            match generate_waveform(&waveform_source, stream_index, width) {
+                Err(error) if error.code == "cancelled" || error.code == "source_replaced" => {
+                    return Err(error);
+                }
+                result => generated.push((stream_index, result)),
+            }
+        }
+        Ok::<_, AppError>(generated)
+    })
+    .await
+    .map_err(|_| AppError::internal("Waveform generation stopped unexpectedly."))??;
+
+    for (stream_index, generated) in generated {
+        match generated {
+            Ok(artifact) => {
+                state.install_waveform(&source_id, &job_id, stream_index, width, artifact)?;
+                results.push(ready_waveform(&source_id, &job_id, stream_index, width));
+            }
+            Err(error) => results.push(WaveformResult {
+                source_id: source_id.clone(),
+                job_id: job_id.clone(),
+                stream_index,
+                width,
+                status: WaveformStatus::Failed,
+                url: None,
+                error: Some(error),
+            }),
+        }
+    }
+
+    results.sort_by_key(|result| result.stream_index);
+    Ok(results)
+}
+
+fn ready_waveform(source_id: &str, job_id: &str, stream_index: u32, width: u32) -> WaveformResult {
+    WaveformResult {
+        source_id: source_id.to_owned(),
+        job_id: job_id.to_owned(),
+        stream_index,
+        width,
+        status: WaveformStatus::Ready,
+        url: Some(waveform_url(source_id, stream_index, width)),
+        error: None,
+    }
 }
 
 #[tauri::command]
@@ -93,7 +211,7 @@ pub async fn prepare_proxy_preview(
 #[cfg(any(target_os = "windows", target_os = "android"))]
 fn preview_url(source_id: &str, kind: PreviewKind) -> String {
     format!(
-        "http://easycut-media.localhost/{source_id}?variant={}",
+        "http://clipkit-media.localhost/{source_id}?variant={}",
         preview_kind_name(kind)
     )
 }
@@ -101,8 +219,22 @@ fn preview_url(source_id: &str, kind: PreviewKind) -> String {
 #[cfg(not(any(target_os = "windows", target_os = "android")))]
 fn preview_url(source_id: &str, kind: PreviewKind) -> String {
     format!(
-        "easycut-media://localhost/{source_id}?variant={}",
+        "clipkit-media://localhost/{source_id}?variant={}",
         preview_kind_name(kind)
+    )
+}
+
+#[cfg(any(target_os = "windows", target_os = "android"))]
+fn waveform_url(source_id: &str, stream_index: u32, width: u32) -> String {
+    format!(
+        "http://clipkit-media.localhost/{source_id}?variant=waveform&stream={stream_index}&width={width}"
+    )
+}
+
+#[cfg(not(any(target_os = "windows", target_os = "android")))]
+fn waveform_url(source_id: &str, stream_index: u32, width: u32) -> String {
+    format!(
+        "clipkit-media://localhost/{source_id}?variant=waveform&stream={stream_index}&width={width}"
     )
 }
 
@@ -115,13 +247,21 @@ fn preview_kind_name(kind: PreviewKind) -> &'static str {
 
 #[cfg(test)]
 mod tests {
-    use super::{PreviewKind, preview_url};
+    use super::{PreviewKind, preview_url, waveform_url};
 
     #[test]
     fn preview_url_contains_only_the_opaque_source_id() {
         let url = preview_url("source-17", PreviewKind::Source);
 
         assert!(url.ends_with("/source-17?variant=source"));
+        assert!(!url.contains('\\'));
+    }
+
+    #[test]
+    fn waveform_url_contains_only_opaque_and_numeric_identifiers() {
+        let url = waveform_url("source-17", 4, 1_280);
+
+        assert!(url.ends_with("/source-17?variant=waveform&stream=4&width=1280"));
         assert!(!url.contains('\\'));
     }
 }

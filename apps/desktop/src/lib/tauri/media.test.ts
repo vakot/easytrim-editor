@@ -16,6 +16,7 @@ import {
   listenForSourceDrops,
   prepareProxyPreview,
   prepareSourcePreview,
+  prepareWaveforms,
 } from "./media";
 
 type NativeDropEvent =
@@ -66,12 +67,12 @@ describe("media IPC adapter", () => {
     mocks.invoke
       .mockResolvedValueOnce({
         sourceId: "source-3",
-        url: "http://easycut-media.localhost/source-3?variant=source",
+        url: "http://clipkit-media.localhost/source-3?variant=source",
         kind: "source",
       })
       .mockResolvedValueOnce({
         sourceId: "source-3",
-        url: "http://easycut-media.localhost/source-3?variant=proxy",
+        url: "http://clipkit-media.localhost/source-3?variant=proxy",
         kind: "proxy",
       });
 
@@ -88,13 +89,71 @@ describe("media IPC adapter", () => {
   it("rejects an unknown preview kind at the IPC boundary", async () => {
     mocks.invoke.mockResolvedValue({
       sourceId: "source-3",
-      url: "http://easycut-media.localhost/source-3",
+      url: "http://clipkit-media.localhost/source-3",
       kind: "filesystem",
     });
 
     await expect(prepareSourcePreview("source-3")).rejects.toEqual({
       code: "internal",
       message: "The native application returned an invalid preview kind.",
+    });
+  });
+
+  it("parses per-stream waveform results and preserves structured failures", async () => {
+    mocks.invoke.mockResolvedValue([
+      {
+        status: "ready",
+        sourceId: "source-3",
+        jobId: "waveform-7",
+        streamIndex: 2,
+        width: 1280,
+        url: "http://clipkit-media.localhost/source-3?variant=waveform&stream=2&width=1280",
+      },
+      {
+        status: "failed",
+        sourceId: "source-3",
+        jobId: "waveform-7",
+        streamIndex: 4,
+        width: 1280,
+        error: {
+          code: "waveform_failed",
+          message: "Waveform generation failed for audio stream #4.",
+        },
+      },
+    ]);
+
+    await expect(prepareWaveforms("source-3", "waveform-7", [2, 4], 1280)).resolves.toEqual([
+      expect.objectContaining({ status: "ready", streamIndex: 2 }),
+      expect.objectContaining({
+        status: "failed",
+        streamIndex: 4,
+        error: expect.objectContaining({ code: "waveform_failed" }),
+      }),
+    ]);
+    expect(mocks.invoke).toHaveBeenCalledWith("prepare_waveforms", {
+      sourceId: "source-3",
+      jobId: "waveform-7",
+      streamIndexes: [2, 4],
+      width: 1280,
+    });
+  });
+
+  it("rejects malformed waveform results at the IPC boundary", async () => {
+    mocks.invoke.mockResolvedValue([
+      {
+        status: "ready",
+        sourceId: "source-3",
+        jobId: "waveform-7",
+        streamIndex: 2,
+        width: 0,
+        url: "http://clipkit-media.localhost/source-3",
+      },
+    ]);
+
+    await expect(prepareWaveforms("source-3", "waveform-7", [2], 1280)).rejects.toEqual({
+      code: "internal",
+      message: "The native application returned an invalid waveform width.",
+      diagnostics: undefined,
     });
   });
 

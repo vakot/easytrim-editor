@@ -87,6 +87,24 @@ export interface PreviewDescriptor {
   kind: PreviewKind;
 }
 
+export type WaveformResult =
+  | {
+      status: "ready";
+      sourceId: string;
+      jobId: string;
+      streamIndex: number;
+      width: number;
+      url: string;
+    }
+  | {
+      status: "failed";
+      sourceId: string;
+      jobId: string;
+      streamIndex: number;
+      width: number;
+      error: AppError;
+    };
+
 export type SourceImportEvent =
   { status: "selected"; source: SourceSelection } | { status: "failed"; error: AppError };
 
@@ -136,6 +154,27 @@ export async function prepareProxyPreview(sourceId: string): Promise<PreviewDesc
         sourceId,
       }),
     );
+  } catch (error: unknown) {
+    throw normalizeAppError(error);
+  }
+}
+
+export async function prepareWaveforms(
+  sourceId: string,
+  jobId: string,
+  streamIndexes: number[],
+  width: number,
+): Promise<WaveformResult[]> {
+  try {
+    return requireArray(
+      await invoke<unknown>("prepare_waveforms", {
+        sourceId,
+        jobId,
+        streamIndexes,
+        width,
+      }),
+      "waveform results",
+    ).map(parseWaveformResult);
   } catch (error: unknown) {
     throw normalizeAppError(error);
   }
@@ -264,6 +303,40 @@ function parsePreviewDescriptor(value: unknown): PreviewDescriptor {
   };
 }
 
+function parseWaveformResult(value: unknown): WaveformResult {
+  const waveform = requireRecord(value, "waveform result");
+  const common = {
+    sourceId: requireString(waveform.sourceId, "waveform source ID"),
+    jobId: requireString(waveform.jobId, "waveform job ID"),
+    streamIndex: requireInteger(waveform.streamIndex, "waveform stream index"),
+    width: requirePositiveInteger(waveform.width, "waveform width"),
+  };
+  if (waveform.status === "ready") {
+    return {
+      ...common,
+      status: "ready",
+      url: requireString(waveform.url, "waveform URL"),
+    };
+  }
+  if (waveform.status === "failed") {
+    return {
+      ...common,
+      status: "failed",
+      error: parseAppError(waveform.error, "waveform error"),
+    };
+  }
+  throw invalidResponse("waveform status");
+}
+
+function parseAppError(value: unknown, label: string): AppError {
+  const error = requireRecord(value, label);
+  return {
+    code: requireString(error.code, `${label} code`),
+    message: requireString(error.message, `${label} message`),
+    diagnostics: optionalString(error.diagnostics),
+  };
+}
+
 function parseVideoStream(value: unknown): VideoStream {
   const video = requireRecord(value, "video stream");
   return {
@@ -367,6 +440,14 @@ function requireInteger(value: unknown, label: string): number {
     throw invalidResponse(label);
   }
   return value;
+}
+
+function requirePositiveInteger(value: unknown, label: string): number {
+  const integer = requireInteger(value, label);
+  if (integer <= 0) {
+    throw invalidResponse(label);
+  }
+  return integer;
 }
 
 function optionalInteger(value: unknown, label: string): number | undefined {

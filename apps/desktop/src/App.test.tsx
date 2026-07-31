@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
   listenForSourceDrops: vi.fn(),
   prepareProxyPreview: vi.fn(),
   prepareSourcePreview: vi.fn(),
+  prepareWaveforms: vi.fn(),
   unlistenDrops: vi.fn(),
 }));
 
@@ -29,6 +30,7 @@ vi.mock("./lib/tauri/media", async (importOriginal) => {
     listenForSourceDrops: mocks.listenForSourceDrops,
     prepareProxyPreview: mocks.prepareProxyPreview,
     prepareSourcePreview: mocks.prepareSourcePreview,
+    prepareWaveforms: mocks.prepareWaveforms,
   };
 });
 
@@ -86,14 +88,25 @@ beforeEach(() => {
   mocks.inspectMedia.mockResolvedValue(media);
   mocks.prepareSourcePreview.mockResolvedValue({
     sourceId: selection.sourceId,
-    url: "http://easycut-media.localhost/source-1?variant=source",
+    url: "http://clipkit-media.localhost/source-1?variant=source",
     kind: "source",
   });
   mocks.prepareProxyPreview.mockResolvedValue({
     sourceId: selection.sourceId,
-    url: "http://easycut-media.localhost/source-1?variant=proxy",
+    url: "http://clipkit-media.localhost/source-1?variant=proxy",
     kind: "proxy",
   });
+  mocks.prepareWaveforms.mockImplementation(
+    async (sourceId: string, jobId: string, streamIndexes: number[], width: number) =>
+      streamIndexes.map((streamIndex) => ({
+        status: "ready" as const,
+        sourceId,
+        jobId,
+        streamIndex,
+        width,
+        url: `http://clipkit-media.localhost/${sourceId}?variant=waveform&stream=${streamIndex}&width=${width}`,
+      })),
+  );
   mocks.listenForSourceDrops.mockImplementation(
     async (listener: (event: SourceDropEvent) => void) => {
       sourceDropListener = listener;
@@ -127,15 +140,18 @@ describe("App", () => {
     expect(await screen.findByText("3840 × 2160")).toBeInTheDocument();
     expect(screen.getByText("59.94 fps")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Audio streams" })).toBeInTheDocument();
-    expect(screen.getByText(/AAC/)).toBeInTheDocument();
+    expect(screen.getAllByText(/AAC/)).toHaveLength(2);
     expect(screen.getByLabelText("Source video preview")).toHaveAttribute(
       "src",
-      "http://easycut-media.localhost/source-1?variant=source",
+      "http://clipkit-media.localhost/source-1?variant=source",
     );
     expect(screen.getByLabelText("Source video preview")).not.toHaveAttribute("controls");
     expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Previous frame" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Next frame" })).toBeInTheDocument();
+    const audioPlayhead = document.querySelector(".audio-playhead");
+    expect(audioPlayhead).toBeInTheDocument();
+    expect(audioPlayhead?.parentElement).toHaveAttribute("aria-hidden", "true");
     expect(
       screen.getByRole("button", { name: "Set segment start to current position" }),
     ).toHaveAttribute("aria-keyshortcuts", "I");
@@ -165,6 +181,132 @@ describe("App", () => {
     expect(screen.getByRole("toolbar", { name: "Application toolbar" })).toBeInTheDocument();
   });
 
+  it("prepares aligned waveforms and keeps audio output choices in memory", async () => {
+    const bounds = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
+      width: 1_024,
+      height: 42,
+      top: 0,
+      right: 1_024,
+      bottom: 42,
+      left: 0,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    });
+    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.inspectMedia.mockResolvedValue({
+      ...media,
+      audioStreams: [
+        ...media.audioStreams,
+        {
+          streamIndex: 2,
+          codecName: "ac3",
+          channels: 6,
+          channelLayout: "5.1",
+          sampleRateHz: 48_000,
+          title: "Commentary",
+          isDefault: false,
+        },
+      ],
+    });
+    const user = userEvent.setup();
+
+    try {
+      render(<App />);
+      await user.click(screen.getByRole("button", { name: "Open video" }));
+
+      expect(await screen.findByRole("heading", { name: "Audio tracks" })).toBeInTheDocument();
+      const allTracks = screen.getByRole("checkbox", { name: "All audio tracks" });
+      expect(allTracks).toBeChecked();
+      expect(allTracks.closest(".timeline-row")).toHaveClass("timeline-audio-heading");
+      expect(allTracks.parentElement).toHaveTextContent("All tracks");
+      expect(allTracks.parentElement).not.toHaveTextContent("Audio tracks");
+      expect(screen.getByRole("checkbox", { name: "Include eng" })).toBeChecked();
+      expect(screen.getByRole("checkbox", { name: "Include Commentary" })).toBeChecked();
+      await waitFor(() =>
+        expect(mocks.prepareWaveforms).toHaveBeenCalledWith(
+          selection.sourceId,
+          expect.stringMatching(/^waveform-/),
+          [1, 2],
+          1_024,
+        ),
+      );
+      await waitFor(() => expect(document.querySelectorAll(".waveform-image")).toHaveLength(2));
+
+      await user.click(screen.getByRole("checkbox", { name: "Include Commentary" }));
+      expect(allTracks).toBePartiallyChecked();
+      expect(screen.getByText("1 selected track kept separately.")).toBeInTheDocument();
+      await user.click(screen.getByRole("checkbox", { name: "Merge selected tracks" }));
+      expect(screen.getByText("One selected track — no merge is needed.")).toBeInTheDocument();
+      await user.click(allTracks);
+      expect(allTracks).toBeChecked();
+      expect(
+        screen.getByText("Fast cut + audio merge — video stays copied; selected audio is encoded."),
+      ).toBeInTheDocument();
+      await user.click(allTracks);
+      expect(screen.getByRole("checkbox", { name: "Include eng" })).not.toBeChecked();
+      expect(screen.getByRole("checkbox", { name: "Include Commentary" })).not.toBeChecked();
+      expect(screen.getByText("Video-only output")).toBeInTheDocument();
+      await user.click(allTracks);
+      expect(screen.getByRole("checkbox", { name: "Include eng" })).toBeChecked();
+      expect(screen.getByRole("checkbox", { name: "Include Commentary" })).toBeChecked();
+    } finally {
+      bounds.mockRestore();
+    }
+  });
+
+  it("keeps tracks enabled when waveform preparation fails and retries per track", async () => {
+    const bounds = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
+      width: 896,
+      height: 42,
+      top: 0,
+      right: 896,
+      bottom: 42,
+      left: 0,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    });
+    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.prepareWaveforms
+      .mockImplementationOnce(
+        async (sourceId: string, jobId: string, streamIndexes: number[], width: number) =>
+          streamIndexes.map((streamIndex) => ({
+            status: "failed" as const,
+            sourceId,
+            jobId,
+            streamIndex,
+            width,
+            error: { code: "waveform_failed", message: "Could not decode this track." },
+          })),
+      )
+      .mockImplementationOnce(
+        async (sourceId: string, jobId: string, streamIndexes: number[], width: number) =>
+          streamIndexes.map((streamIndex) => ({
+            status: "ready" as const,
+            sourceId,
+            jobId,
+            streamIndex,
+            width,
+            url: `http://clipkit-media.localhost/${sourceId}?variant=waveform&stream=${streamIndex}&width=${width}`,
+          })),
+      );
+    const user = userEvent.setup();
+
+    try {
+      render(<App />);
+      await user.click(screen.getByRole("button", { name: "Open video" }));
+
+      const retry = await screen.findByRole("button", { name: "Retry" });
+      expect(screen.getByRole("checkbox", { name: "Include eng" })).toBeChecked();
+      await user.click(retry);
+      await waitFor(() => expect(document.querySelector(".waveform-image")).not.toBeNull());
+      expect(mocks.prepareWaveforms).toHaveBeenCalledTimes(2);
+    } finally {
+      bounds.mockRestore();
+    }
+  });
+
   it("plays, pauses, and steps by the source fractional frame rate", async () => {
     mocks.chooseSource.mockResolvedValue(selection);
     const user = userEvent.setup();
@@ -183,14 +325,19 @@ describe("App", () => {
 
     await user.click(screen.getByRole("button", { name: "Next frame" }));
     expect(pause).toHaveBeenCalled();
-    expect(screen.getByRole("slider", { name: "Playback position" })).toHaveAttribute(
-      "aria-valuenow",
-      "16683",
-    );
+    const playhead = screen.getByRole("slider", { name: "Playback position" });
+    const audioPlayhead = document.querySelector(".audio-playhead") as HTMLElement;
+    expect(playhead).toHaveAttribute("aria-valuenow", "16683");
+    expect(audioPlayhead.style.left).toBe(playhead.style.left);
     expect(screen.getByLabelText("Current playback time")).toHaveTextContent("00:00:00.016");
 
     await user.click(screen.getByRole("button", { name: "Previous frame" }));
     expect(screen.getByLabelText("Current playback time")).toHaveTextContent("00:00:00.000");
+    expect(audioPlayhead.style.left).toBe(playhead.style.left);
+
+    video.currentTime = 10;
+    fireEvent.timeUpdate(video);
+    expect(audioPlayhead.style.left).toBe(playhead.style.left);
   });
 
   it("prioritizes playback while keeping other shortcuts locked during text entry", async () => {
@@ -317,7 +464,7 @@ describe("App", () => {
     expect(await screen.findByText("720p preview")).toBeInTheDocument();
     expect(screen.getByLabelText("Source video preview")).toHaveAttribute(
       "src",
-      "http://easycut-media.localhost/source-1?variant=proxy",
+      "http://clipkit-media.localhost/source-1?variant=proxy",
     );
   });
 

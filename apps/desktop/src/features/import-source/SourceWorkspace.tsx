@@ -10,6 +10,11 @@ interface SourceWorkspaceProps {
   onChooseSource: () => void;
   onPreviewPlaybackError: (sourceId: string, previewKind: "source" | "proxy") => void;
   onTrimChange: (sourceId: string, trim: TrimRange) => void;
+  onPrepareWaveforms: (sourceId: string, streamIndexes: number[], width: number) => void;
+  onToggleAudioTrack: (sourceId: string, streamIndex: number) => void;
+  onSetAllAudioTracksEnabled: (sourceId: string, enabled: boolean) => void;
+  onToggleAudioMerge: (sourceId: string) => void;
+  onWaveformImageError: (sourceId: string, streamIndex: number) => void;
 }
 
 export function SourceWorkspace({
@@ -19,6 +24,11 @@ export function SourceWorkspace({
   onChooseSource,
   onPreviewPlaybackError,
   onTrimChange,
+  onPrepareWaveforms,
+  onToggleAudioTrack,
+  onSetAllAudioTracksEnabled,
+  onToggleAudioMerge,
+  onWaveformImageError,
 }: SourceWorkspaceProps) {
   if (!session.source) {
     return (
@@ -79,8 +89,18 @@ export function SourceWorkspace({
               session.source.media.video.averageFrameRate ??
               session.source.media.video.realFrameRate
             }
+            audioStreams={session.source.media.audioStreams}
+            audioTracks={session.source.audioTracks}
+            mergeAudio={session.source.mergeAudio}
             onPreviewPlaybackError={onPreviewPlaybackError}
             onTrimChange={(trim) => onTrimChange(sourceId, trim)}
+            onPrepareWaveforms={(streamIndexes, width) =>
+              onPrepareWaveforms(sourceId, streamIndexes, width)
+            }
+            onToggleAudioTrack={(streamIndex) => onToggleAudioTrack(sourceId, streamIndex)}
+            onSetAllAudioTracksEnabled={(enabled) => onSetAllAudioTracksEnabled(sourceId, enabled)}
+            onToggleAudioMerge={() => onToggleAudioMerge(sourceId)}
+            onWaveformImageError={(streamIndex) => onWaveformImageError(sourceId, streamIndex)}
           />
         ) : null}
         {isSourceDragActive ? <DropOverlay /> : null}

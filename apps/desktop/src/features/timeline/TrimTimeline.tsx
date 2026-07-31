@@ -39,6 +39,7 @@ interface TrimTimelineProps {
   frameRate?: FrameRate;
   playbackControls: ReactNode;
   playbackTimecode: ReactNode;
+  audioRows: ReactNode;
   onChange: (boundary: TrimBoundary, range: TrimRange) => TrimBoundary | null;
   onMoveSegment: (range: TrimRange) => TrimBoundary | null;
   onSegmentDragStart: () => void;
@@ -56,6 +57,7 @@ export function TrimTimeline({
   frameRate,
   playbackControls,
   playbackTimecode,
+  audioRows,
   onChange,
   onMoveSegment,
   onSegmentDragStart,
@@ -530,6 +532,7 @@ export function TrimTimeline({
           />
         </div>
       </div>
+      {audioRows}
     </section>
   );
 }
