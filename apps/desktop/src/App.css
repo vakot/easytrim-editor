@@ -588,13 +588,16 @@ p {
 }
 
 .timeline-audio {
+  --audio-track-gap: 0.45rem;
+  --audio-playhead-overhang: 0.225rem;
+
   margin-top: 0.8rem;
   padding-top: 0.8rem;
   border-top: 1px solid #29292e;
 }
 
 .timeline-audio-heading {
-  margin-bottom: 0.65rem;
+  margin-bottom: var(--audio-track-gap);
 }
 
 .audio-master-control,
@@ -640,9 +643,6 @@ p {
 }
 
 .audio-track-list {
-  --audio-track-gap: 0.45rem;
-  --audio-playhead-overhang: 0.225rem;
-
   position: relative;
   display: grid;
   gap: var(--audio-track-gap);
