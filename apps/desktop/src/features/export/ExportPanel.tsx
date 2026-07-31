@@ -16,7 +16,7 @@ import {
 import type { AudioTrackState } from "../../app/session-state";
 
 const DEFAULT_ARGUMENTS =
-  "-c:v hevc_nvenc -preset p5 -tune hq -rc vbr -cq 24 -b:v 0 -spatial_aq 1 -temporal_aq 1 -aq-strength 8 -pix_fmt yuv420p -c:a aac -b:a 160k -movflags +faststart";
+  "-c:v hevc_nvenc -preset p5 -tune hq -rc vbr -cq 24 -b:v 0 -spatial_aq 1 -temporal_aq 1 -aq-strength 8 -pix_fmt yuv420p -c:a aac -b:a 160k";
 
 interface ExportPanelProps {
   source: MediaInfo;
@@ -44,13 +44,14 @@ export function ExportPanel({
   const [argumentsText, setArgumentsText] = useState(DEFAULT_ARGUMENTS);
   const [progress, setProgress] = useState<ExportProgress | null>(null);
   const [operationId, setOperationId] = useState<string | null>(null);
+  const [isStarting, setIsStarting] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const selectedAudio = audioTracks
     .filter((track) => track.enabled)
     .map((track) => track.streamIndex);
-  const rendering = operationId !== null;
+  const rendering = isStarting || operationId !== null;
 
   async function startFast() {
     const request: FastExportRequest = {
@@ -88,8 +89,13 @@ export function ExportPanel({
     }
     setError(null);
     setStatus(null);
+    setIsStarting(true);
     try {
-      const output = await chooseOutputPath(outputName.trim() || fallbackName);
+      const requestedName =
+        outputName === defaults.fast && route === "optimized"
+          ? defaults.optimized
+          : outputName.trim() || fallbackName;
+      const output = await chooseOutputPath(requestedName);
       if (!output) return;
       setOutputName(output.displayName);
       const onProgress = (next: ExportProgress) => {
@@ -111,6 +117,8 @@ export function ExportPanel({
     } catch (nextError: unknown) {
       setOperationId(null);
       setError(normalizeAppError(nextError).message);
+    } finally {
+      setIsStarting(false);
     }
   }
 

@@ -10,7 +10,6 @@ use crate::{
     error::AppError,
     media::export::{
         FastExportRequest, OptimizedExportRequest, build_fast_arguments, build_optimized_arguments,
-        output_name_defaults,
     },
     process::run_progress_cancellable,
     state::AppState,
@@ -236,8 +235,4 @@ fn output_display_name(path: &std::path::Path) -> Result<String, AppError> {
         .and_then(|value| value.to_str())
         .map(ToOwned::to_owned)
         .ok_or_else(|| AppError::invalid_request("The output name is required."))
-}
-
-pub fn default_output_names(source_name: &str) -> crate::media::export::OutputNameDefaults {
-    output_name_defaults(source_name)
 }

@@ -1,6 +1,6 @@
 use std::{ffi::OsString, path::Path};
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 use crate::{error::AppError, media::probe::MediaInfo};
 
@@ -46,27 +46,6 @@ pub struct OptimizedExportRequest {
     pub resolution: ResolutionSelection,
     pub frame_rate: Option<FrameRateSelection>,
     pub arguments: String,
-}
-
-#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub struct OutputNameDefaults {
-    pub fast: String,
-    pub optimized: String,
-}
-
-pub fn output_name_defaults(source_name: &str) -> OutputNameDefaults {
-    let path = Path::new(source_name);
-    let stem = path
-        .file_stem()
-        .and_then(|value| value.to_str())
-        .filter(|value| !value.is_empty())
-        .unwrap_or("clip");
-
-    OutputNameDefaults {
-        fast: format!("{stem}-cut.mkv"),
-        optimized: format!("{stem}-optimized.mp4"),
-    }
 }
 
 pub fn build_fast_arguments(
@@ -166,11 +145,28 @@ pub fn build_optimized_arguments(
         OsString::from("-map"),
         OsString::from(format!("0:{}", source.video.stream_index)),
     ]);
-    for stream_index in &request.audio_stream_indexes {
+    if request.merge_audio && request.audio_stream_indexes.len() > 1 {
+        let audio_inputs = request
+            .audio_stream_indexes
+            .iter()
+            .map(|stream_index| format!("[0:{stream_index}]"))
+            .collect::<String>();
         arguments.extend([
+            OsString::from("-filter_complex"),
+            OsString::from(format!(
+                "{audio_inputs}amix=inputs={}:duration=longest:dropout_transition=0:normalize=1[aout]",
+                request.audio_stream_indexes.len()
+            )),
             OsString::from("-map"),
-            OsString::from(format!("0:{stream_index}")),
+            OsString::from("[aout]"),
         ]);
+    } else {
+        for stream_index in &request.audio_stream_indexes {
+            arguments.extend([
+                OsString::from("-map"),
+                OsString::from(format!("0:{stream_index}")),
+            ]);
+        }
     }
     if request.audio_stream_indexes.is_empty() {
         arguments.push(OsString::from("-an"));
@@ -191,13 +187,8 @@ pub fn build_optimized_arguments(
             )),
         ]);
     }
-    if request.merge_audio && request.audio_stream_indexes.len() > 1 {
-        return Err(AppError::invalid_request(
-            "Optimized merged audio is not available until the audio filter mapping is configured.",
-        ));
-    }
-
     let user_arguments = parse_arguments(&request.arguments)?;
+    validate_user_arguments(&user_arguments)?;
     arguments.extend(user_arguments);
     arguments.extend([
         OsString::from("-sn"),
@@ -283,6 +274,34 @@ fn parse_arguments(value: &str) -> Result<Vec<OsString>, AppError> {
     Ok(arguments)
 }
 
+fn validate_user_arguments(arguments: &[OsString]) -> Result<(), AppError> {
+    const RESERVED: &[&str] = &[
+        "-i",
+        "-ss",
+        "-sseof",
+        "-t",
+        "-to",
+        "-map",
+        "-map_channel",
+        "-filter_complex",
+        "-filter_complex_script",
+        "-vf",
+        "-progress",
+        "-y",
+        "-n",
+        "-f",
+    ];
+    if arguments.iter().any(|argument| {
+        let value = argument.to_string_lossy();
+        value.starts_with('@') || RESERVED.iter().any(|reserved| *reserved == value)
+    }) {
+        return Err(AppError::invalid_request(
+            "Optimized arguments cannot override input, trim, mapping, filter, or output options.",
+        ));
+    }
+    Ok(())
+}
+
 fn format_seconds(micros: i64) -> String {
     format_seconds_f64(micros as f64 / MICROS_PER_SECOND)
 }
@@ -297,7 +316,7 @@ mod tests {
 
     use super::{
         FastExportRequest, FrameRateSelection, OptimizedExportRequest, ResolutionSelection,
-        TrimSelection, build_fast_arguments, build_optimized_arguments, output_name_defaults,
+        TrimSelection, build_fast_arguments, build_optimized_arguments,
     };
     use crate::media::probe::{AudioStream, MediaInfo, VideoStream};
 
@@ -449,9 +468,29 @@ mod tests {
     }
 
     #[test]
-    fn output_defaults_keep_unicode_stem_and_route_suffixes() {
-        let defaults = output_name_defaults("旅行 footage.mkv");
-        assert_eq!(defaults.fast, "旅行 footage-cut.mkv");
-        assert_eq!(defaults.optimized, "旅行 footage-optimized.mp4");
+    fn optimized_arguments_cannot_override_application_owned_inputs_or_outputs() {
+        let request = OptimizedExportRequest {
+            source_id: "source-1".to_owned(),
+            trim: TrimSelection {
+                start_micros: 0,
+                end_micros: 2_000_000,
+            },
+            audio_stream_indexes: vec![1],
+            merge_audio: false,
+            resolution: ResolutionSelection {
+                width: 1920,
+                height: 1080,
+            },
+            frame_rate: None,
+            arguments: "-c:v libx264 -i another.mp4".to_owned(),
+        };
+        let error = build_optimized_arguments(
+            &media(),
+            &request,
+            Path::new("source.mkv"),
+            Path::new("out.mp4"),
+        )
+        .expect_err("user input must not override the source");
+        assert_eq!(error.code, "invalid_request");
     }
 }
