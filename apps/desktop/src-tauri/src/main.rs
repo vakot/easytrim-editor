@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    easy_cut_desktop_lib::run()
+    clipkit_desktop_lib::run()
 }

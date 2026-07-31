@@ -1,4 +1,0 @@
-interface:
-  display_name: "Easy Cut Tauri and Rust"
-  short_description: "Build the safe native Easy Cut application core"
-  default_prompt: "Use $easy-cut-tauri-rust to implement or review the Rust and Tauri side of Easy Cut."

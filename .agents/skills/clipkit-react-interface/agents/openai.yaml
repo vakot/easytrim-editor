@@ -1,0 +1,4 @@
+interface:
+  display_name: "ClipKit React Interface"
+  short_description: "Build the minimal reviewable ClipKit UI"
+  default_prompt: "Use $clipkit-react-interface to implement or review the React and TypeScript interface for ClipKit."

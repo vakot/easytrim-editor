@@ -1,6 +1,6 @@
-# Easy Cut
+# ClipKit
 
-Easy Cut is a Windows-first desktop video trimmer built with Tauri 2, Rust, React, TypeScript, Vite, and FFmpeg.
+ClipKit is a Windows-first desktop video trimmer built with Tauri 2, Rust, React, TypeScript, Vite, and FFmpeg.
 
 The repository is a pnpm monorepo. The initial workspace contains one desktop application:
 

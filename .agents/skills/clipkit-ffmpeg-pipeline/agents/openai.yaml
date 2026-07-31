@@ -1,0 +1,4 @@
+interface:
+  display_name: "ClipKit FFmpeg Pipeline"
+  short_description: "Implement correct video and audio processing"
+  default_prompt: "Use $clipkit-ffmpeg-pipeline to implement or review ClipKit media inspection, preview, trimming, and export."

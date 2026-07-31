@@ -1,4 +1,0 @@
-interface:
-  display_name: "Easy Cut React Interface"
-  short_description: "Build the minimal reviewable Easy Cut UI"
-  default_prompt: "Use $easy-cut-react-interface to implement or review the React and TypeScript interface for Easy Cut."

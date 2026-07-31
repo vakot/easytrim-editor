@@ -132,7 +132,7 @@ function App() {
         <header className="welcome-header">
           <div>
             <p className="eyebrow">Local video editor</p>
-            <h1>Easy Cut</h1>
+            <h1>ClipKit</h1>
           </div>
           <div className="welcome-summary">
             <p>Import a video to inspect its source and prepare a precise cut.</p>
