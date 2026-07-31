@@ -1226,7 +1226,7 @@ p {
 .audio-slider-track::after {
   position: absolute;
   top: 50%;
-  height: 0.25rem;
+  height: 0.35rem;
   border-radius: 999px;
   content: "";
   pointer-events: none;
@@ -1258,7 +1258,7 @@ p {
 }
 
 .audio-volume-slider::-webkit-slider-runnable-track {
-  height: 0.25rem;
+  height: 0.35rem;
   background: transparent;
 }
 
@@ -1273,7 +1273,7 @@ p {
 }
 
 .audio-volume-slider::-moz-range-track {
-  height: 0.25rem;
+  height: 0.35rem;
   background: transparent;
 }
 

@@ -172,7 +172,10 @@ function AudioLevelControl({
 }) {
   return (
     <div className={`audio-level-control${className ? ` ${className}` : ""}`}>
-      <div className="audio-slider-track">
+      <div
+        className="audio-slider-track"
+        style={{ "--slider-fill": `${sliderFillPercent(volumePercent)}%` } as CSSProperties}
+      >
         <input
           className="audio-volume-slider"
           type="range"
@@ -182,7 +185,6 @@ function AudioLevelControl({
           value={volumePercentToDecibels(volumePercent)}
           onChange={(event) => onChange(decibelsToVolumePercent(Number(event.target.value)))}
           onDoubleClick={() => onChange(50)}
-          style={{ "--slider-fill": `${sliderFillPercent(volumePercent)}%` } as CSSProperties}
           aria-label={label}
           title="0 dB is the original level"
         />
