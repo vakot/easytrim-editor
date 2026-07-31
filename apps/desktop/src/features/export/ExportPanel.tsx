@@ -344,7 +344,7 @@ export function ExportQueue({ queue }: { queue: ExportToast[] }) {
               <div className="export-toast-copy">
                 <div className="export-toast-title">
                   <strong>{toast.filename}</strong>
-                  <span>· {toast.percentage}%</span>
+                  <span>· {toast.status === "canceled" ? "Canceled" : `${toast.percentage}%`}</span>
                 </div>
                 <span className="export-toast-path" title={toast.path}>
                   {toast.path}

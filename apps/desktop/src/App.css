@@ -288,8 +288,11 @@ p {
 }
 
 .export-toast-canceled {
-  border-left-color: #71717a;
-  opacity: 0.8;
+  border-left-color: #d8796b;
+}
+
+.export-toast-canceled .export-toast-title span {
+  color: #d8796b;
 }
 
 .export-toast-copy {
@@ -364,8 +367,8 @@ p {
 }
 
 .export-toast-canceled .export-toast-actions span {
-  color: #f4f4f5;
-  background: #52525b;
+  color: #fff;
+  background: #d8796b;
 }
 
 .welcome-header {
