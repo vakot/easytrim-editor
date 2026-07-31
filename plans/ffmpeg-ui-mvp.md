@@ -180,7 +180,7 @@ Keep the Tauri boundary small and typed:
 - `inspect_media(source_id) -> MediaInfo`;
 - `prepare_source_preview(source_id) -> PreviewInfo`;
 - `prepare_proxy_preview(source_id) -> PreviewInfo`;
-- `prepare_waveforms(source_id, audio_streams, width) -> WaveformInfo[]`;
+- `prepare_waveforms(source_id, job_id, stream_indexes, width) -> WaveformResult[]`;
 - `choose_output_path(default_name) -> Path`;
 - `render_fast(request) -> OperationId`;
 - `render_optimized(request) -> OperationId`;
@@ -222,10 +222,16 @@ the validation matrix.
 
 ### Phase 3 — audio tracks
 
+Status: implemented on the Phase 3 topic branch; broader real-file validation across unusual audio
+layouts and long sources remains part of the media matrix.
+
 - list all audio streams;
-- generate and display aligned waveform rows;
-- add per-track enable/disable controls;
-- add optional merge-to-one-audio behavior with explicit fast/hybrid labeling.
+- generate source-aligned, visible-width waveform images through a cancellable source/job contract;
+- display one timeline row per global audio stream index with compact metadata and retryable,
+  non-blocking waveform failures;
+- enable every discovered track by default and keep per-track enable/disable state in memory;
+- add optional merge-to-one-audio state with explicit fast/hybrid labeling for multiple selected
+  tracks; export routing consumes this state in Phase 4.
 
 ### Phase 4 — exports
 
