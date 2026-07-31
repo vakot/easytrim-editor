@@ -1044,6 +1044,7 @@ p {
 }
 
 .timeline-audio-heading {
+  grid-template-columns: minmax(0, 1fr) auto;
   margin-bottom: var(--audio-track-gap);
 }
 
@@ -1207,7 +1208,8 @@ p {
 }
 
 .audio-master-level-control .audio-volume-slider {
-  min-width: 14rem;
+  width: 100%;
+  min-width: 0;
 }
 
 .audio-level-control output {
