@@ -5,6 +5,7 @@ import { PaneResizeHandle } from "../../components/PaneResizeHandle";
 import type { TrimRange } from "../../domain/trim";
 import type { BinaryCapability, FrameRate, MediaInfo } from "../../lib/tauri/media";
 import { EditorStage } from "../editor/EditorStage";
+import { ExportPanel } from "../export/ExportPanel";
 
 interface SourceWorkspaceProps {
   session: SessionState;
@@ -105,30 +106,40 @@ export function SourceWorkspace({
       <Panel id="editor-content-panel" minSize="44rem" className="workspace-pane-content">
         <div className="editor-stage" aria-label="Video preview and timeline area">
           {session.status === "ready" && session.source.media && session.source.trim ? (
-            <EditorStage
-              key={sourceId}
-              sourceId={sourceId}
-              preview={session.source.preview}
-              trim={session.source.trim}
-              frameRate={
-                session.source.media.video.averageFrameRate ??
-                session.source.media.video.realFrameRate
-              }
-              audioStreams={session.source.media.audioStreams}
-              audioTracks={session.source.audioTracks}
-              mergeAudio={session.source.mergeAudio}
-              onPreviewPlaybackError={onPreviewPlaybackError}
-              onTrimChange={(trim) => onTrimChange(sourceId, trim)}
-              onPrepareWaveforms={(streamIndexes, width) =>
-                onPrepareWaveforms(sourceId, streamIndexes, width)
-              }
-              onToggleAudioTrack={(streamIndex) => onToggleAudioTrack(sourceId, streamIndex)}
-              onSetAllAudioTracksEnabled={(enabled) =>
-                onSetAllAudioTracksEnabled(sourceId, enabled)
-              }
-              onToggleAudioMerge={() => onToggleAudioMerge(sourceId)}
-              onWaveformImageError={(streamIndex) => onWaveformImageError(sourceId, streamIndex)}
-            />
+            <>
+              <EditorStage
+                key={sourceId}
+                sourceId={sourceId}
+                preview={session.source.preview}
+                trim={session.source.trim}
+                frameRate={
+                  session.source.media.video.averageFrameRate ??
+                  session.source.media.video.realFrameRate
+                }
+                audioStreams={session.source.media.audioStreams}
+                audioTracks={session.source.audioTracks}
+                mergeAudio={session.source.mergeAudio}
+                onPreviewPlaybackError={onPreviewPlaybackError}
+                onTrimChange={(trim) => onTrimChange(sourceId, trim)}
+                onPrepareWaveforms={(streamIndexes, width) =>
+                  onPrepareWaveforms(sourceId, streamIndexes, width)
+                }
+                onToggleAudioTrack={(streamIndex) => onToggleAudioTrack(sourceId, streamIndex)}
+                onSetAllAudioTracksEnabled={(enabled) =>
+                  onSetAllAudioTracksEnabled(sourceId, enabled)
+                }
+                onToggleAudioMerge={() => onToggleAudioMerge(sourceId)}
+                onWaveformImageError={(streamIndex) => onWaveformImageError(sourceId, streamIndex)}
+              />
+              <ExportPanel
+                key={`export-${sourceId}`}
+                source={session.source.media}
+                sourceName={session.source.selection.displayName}
+                trim={session.source.trim}
+                audioTracks={session.source.audioTracks}
+                mergeAudio={session.source.mergeAudio}
+              />
+            </>
           ) : null}
           {isSourceDragActive ? <DropOverlay /> : null}
         </div>
