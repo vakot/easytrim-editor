@@ -6,7 +6,12 @@ import {
   formatPlaybackTime,
   frameDurationMicros,
 } from "../../domain/playback";
-import type { TrimRange } from "../../domain/trim";
+import {
+  canSetTrimBoundaryAtPlayhead,
+  setTrimBoundaryAtPlayhead,
+  type TrimBoundary,
+  type TrimRange,
+} from "../../domain/trim";
 import type { FrameRate } from "../../lib/tauri/media";
 import { PlaybackControls, PlaybackTimecode } from "../preview/PlaybackControls";
 import { VideoPreview } from "../preview/VideoPreview";
@@ -19,6 +24,13 @@ interface EditorStageProps {
   frameRate?: FrameRate;
   onPreviewPlaybackError: (sourceId: string, previewKind: "source" | "proxy") => void;
   onTrimChange: (trim: TrimRange) => void;
+}
+
+interface EditorShortcutActions {
+  enabled: boolean;
+  togglePlayback: () => void;
+  stepFrame: (direction: -1 | 1) => void;
+  setSegmentBoundary: (boundary: TrimBoundary) => void;
 }
 
 export function EditorStage({
@@ -37,6 +49,8 @@ export function EditorStage({
   const resumeAfterScrubRef = useRef(false);
   const lastPlaybackCommitAtRef = useRef(0);
   const trimRef = useRef(trim);
+  const currentPlayheadMicrosRef = useRef(trim.startMicros);
+  const shortcutActionsRef = useRef<EditorShortcutActions | null>(null);
   trimRef.current = trim;
 
   const [playheadMicros, setPlayheadMicros] = useState(trim.startMicros);
@@ -52,8 +66,50 @@ export function EditorStage({
     [],
   );
 
+  useEffect(() => {
+    function handleEditorShortcut(event: globalThis.KeyboardEvent) {
+      const actions = shortcutActionsRef.current;
+      const shortcut = editorShortcutFromEvent(event);
+      if (
+        !actions?.enabled ||
+        !shortcut ||
+        event.defaultPrevented ||
+        isShortcutBlockedTarget(event.target)
+      ) {
+        return;
+      }
+
+      event.preventDefault();
+      if (event.repeat && shortcut !== "previous-frame" && shortcut !== "next-frame") {
+        return;
+      }
+
+      switch (shortcut) {
+        case "toggle-playback":
+          actions.togglePlayback();
+          break;
+        case "previous-frame":
+          actions.stepFrame(-1);
+          break;
+        case "next-frame":
+          actions.stepFrame(1);
+          break;
+        case "set-segment-start":
+          actions.setSegmentBoundary("start");
+          break;
+        case "set-segment-end":
+          actions.setSegmentBoundary("end");
+          break;
+      }
+    }
+
+    window.addEventListener("keydown", handleEditorShortcut);
+    return () => window.removeEventListener("keydown", handleEditorShortcut);
+  }, []);
+
   function commitSeek(micros: number) {
     const clamped = clampPlaybackMicros(micros, trimRef.current.sourceDurationMicros);
+    currentPlayheadMicrosRef.current = clamped;
     syncPlayheadElement(playheadRef.current, clamped, trimRef.current.sourceDurationMicros);
     setPlayheadMicros(clamped);
     seekVideo(videoRef.current, clamped);
@@ -105,6 +161,7 @@ export function EditorStage({
   function handleTimeUpdate(seconds: number) {
     const durationMicros = trimRef.current.sourceDurationMicros;
     const currentMicros = clampPlaybackMicros(seconds * 1_000_000, durationMicros);
+    currentPlayheadMicrosRef.current = currentMicros;
     syncPlayheadElement(playheadRef.current, currentMicros, durationMicros);
     setPlayheadMicros(currentMicros);
     if (currentMicros >= durationMicros) {
@@ -123,6 +180,7 @@ export function EditorStage({
 
       const durationMicros = trimRef.current.sourceDurationMicros;
       const currentMicros = clampPlaybackMicros(video.currentTime * 1_000_000, durationMicros);
+      currentPlayheadMicrosRef.current = currentMicros;
       syncPlayheadElement(playheadRef.current, currentMicros, durationMicros);
       if (timestamp - lastPlaybackCommitAtRef.current >= 100) {
         lastPlaybackCommitAtRef.current = timestamp;
@@ -164,7 +222,7 @@ export function EditorStage({
       video.pause();
       return;
     }
-    if (displayedPlayheadMicros >= trimRef.current.sourceDurationMicros) {
+    if (currentPlayheadMicrosRef.current >= trimRef.current.sourceDurationMicros) {
       commitSeek(0);
     }
     startMediaPlayback();
@@ -174,8 +232,26 @@ export function EditorStage({
     videoRef.current?.pause();
     setIsPlaying(false);
     stopPlayheadAnimation();
-    commitSeek(displayedPlayheadMicros + direction * frameDurationMicros(frameRate));
+    commitSeek(currentPlayheadMicrosRef.current + direction * frameDurationMicros(frameRate));
   }
+
+  function handleSetSegmentBoundary(boundary: TrimBoundary) {
+    const currentTrim = trimRef.current;
+    const currentPlayheadMicros = currentPlayheadMicrosRef.current;
+    if (!canSetTrimBoundaryAtPlayhead(currentTrim, boundary, currentPlayheadMicros)) {
+      return;
+    }
+    const nextTrim = setTrimBoundaryAtPlayhead(currentTrim, boundary, currentPlayheadMicros);
+    trimRef.current = nextTrim;
+    onTrimChange(nextTrim);
+  }
+
+  shortcutActionsRef.current = {
+    enabled: preview.status === "ready",
+    togglePlayback: handleTogglePlayback,
+    stepFrame: handleStepFrame,
+    setSegmentBoundary: handleSetSegmentBoundary,
+  };
 
   return (
     <div className="editor-stage-content">
@@ -212,8 +288,15 @@ export function EditorStage({
             <PlaybackControls
               isPlaying={isPlaying}
               error={transportError}
+              canSetSegmentStart={canSetTrimBoundaryAtPlayhead(
+                trim,
+                "start",
+                displayedPlayheadMicros,
+              )}
+              canSetSegmentEnd={canSetTrimBoundaryAtPlayhead(trim, "end", displayedPlayheadMicros)}
               onTogglePlayback={handleTogglePlayback}
               onStepFrame={handleStepFrame}
+              onSetSegmentBoundary={handleSetSegmentBoundary}
             />
           ) : null
         }
@@ -266,4 +349,36 @@ function cancelFrame(frameRef: { current: number | null }) {
     cancelAnimationFrame(frameRef.current);
     frameRef.current = null;
   }
+}
+
+type EditorShortcut =
+  "toggle-playback" | "previous-frame" | "next-frame" | "set-segment-start" | "set-segment-end";
+
+function editorShortcutFromEvent(event: globalThis.KeyboardEvent): EditorShortcut | null {
+  if (event.altKey || event.ctrlKey || event.metaKey) {
+    return null;
+  }
+  switch (event.key.toLowerCase()) {
+    case " ":
+      return "toggle-playback";
+    case "arrowleft":
+      return "previous-frame";
+    case "arrowright":
+      return "next-frame";
+    case "i":
+      return "set-segment-start";
+    case "o":
+      return "set-segment-end";
+    default:
+      return null;
+  }
+}
+
+function isShortcutBlockedTarget(target: EventTarget | null): boolean {
+  return (
+    target instanceof Element &&
+    target.closest(
+      "input, textarea, select, button, [contenteditable]:not([contenteditable='false'])",
+    ) !== null
+  );
 }

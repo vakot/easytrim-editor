@@ -425,6 +425,13 @@ p {
   background: #202025;
 }
 
+.transport-button:disabled {
+  border-color: transparent;
+  color: #55555e;
+  background: transparent;
+  cursor: not-allowed;
+}
+
 .transport-button-primary {
   color: #17130a;
   background: #e4ae4e;
@@ -440,6 +447,11 @@ p {
   width: 1.25rem;
   height: 1.25rem;
   fill: currentColor;
+}
+
+.transport-button-mark {
+  font-size: 0.72rem;
+  font-weight: 800;
 }
 
 .playback-time {

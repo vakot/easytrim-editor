@@ -136,6 +136,12 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Previous frame" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Next frame" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Set segment start to current position" }),
+    ).toHaveAttribute("aria-keyshortcuts", "I");
+    expect(
+      screen.getByRole("button", { name: "Set segment end to current position" }),
+    ).toHaveAttribute("aria-keyshortcuts", "O");
     expect(screen.getByLabelText("Current playback time")).toHaveTextContent(
       "00:00:00.000 / 00:01:05.000",
     );
@@ -185,6 +191,112 @@ describe("App", () => {
 
     await user.click(screen.getByRole("button", { name: "Previous frame" }));
     expect(screen.getByLabelText("Current playback time")).toHaveTextContent("00:00:00.000");
+  });
+
+  it("maps global transport shortcuts without intercepting text entry", async () => {
+    mocks.chooseSource.mockResolvedValue(selection);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Open video" }));
+    const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
+    const play = vi.spyOn(video, "play").mockResolvedValue();
+    const pause = vi.spyOn(video, "pause").mockImplementation(() => undefined);
+
+    fireEvent.keyDown(window, { key: "ArrowRight" });
+    expect(screen.getByRole("slider", { name: "Playback position" })).toHaveAttribute(
+      "aria-valuenow",
+      "16683",
+    );
+
+    fireEvent.keyDown(window, { key: "ArrowLeft" });
+    expect(screen.getByRole("slider", { name: "Playback position" })).toHaveAttribute(
+      "aria-valuenow",
+      "0",
+    );
+
+    fireEvent.keyDown(window, { key: " " });
+    expect(play).toHaveBeenCalledOnce();
+    fireEvent.play(video);
+    pause.mockClear();
+    fireEvent.keyDown(window, { key: " " });
+    expect(pause).toHaveBeenCalledOnce();
+
+    const input = document.createElement("input");
+    document.body.append(input);
+    input.focus();
+    play.mockClear();
+    fireEvent.keyDown(input, { key: " " });
+    fireEvent.keyDown(input, { key: "ArrowRight" });
+    expect(play).not.toHaveBeenCalled();
+    expect(screen.getByRole("slider", { name: "Playback position" })).toHaveAttribute(
+      "aria-valuenow",
+      "0",
+    );
+    input.remove();
+  });
+
+  it("removes the editor shortcut listener when the preview unmounts", async () => {
+    mocks.chooseSource.mockResolvedValue(selection);
+    const removeEventListener = vi.spyOn(window, "removeEventListener");
+    const user = userEvent.setup();
+    const view = render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Open video" }));
+    await screen.findByLabelText("Source video preview");
+    view.unmount();
+
+    expect(removeEventListener).toHaveBeenCalledWith("keydown", expect.any(Function));
+    removeEventListener.mockRestore();
+  });
+
+  it("sets segment boundaries at the playhead with crossing and edge safeguards", async () => {
+    mocks.chooseSource.mockResolvedValue(selection);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Open video" }));
+    const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
+    const startHandle = screen.getByRole("slider", { name: "Trim start" });
+    const endHandle = screen.getByRole("slider", { name: "Trim end" });
+    const setStart = screen.getByRole("button", {
+      name: "Set segment start to current position",
+    });
+    const setEnd = screen.getByRole("button", {
+      name: "Set segment end to current position",
+    });
+
+    expect(setEnd).toBeDisabled();
+
+    video.currentTime = 10;
+    fireEvent.timeUpdate(video);
+    fireEvent.keyDown(window, { key: "i" });
+    expect(startHandle).toHaveAttribute("aria-valuenow", "10000000");
+
+    video.currentTime = 5;
+    fireEvent.timeUpdate(video);
+    fireEvent.keyDown(window, { key: "o" });
+    expect(startHandle).toHaveAttribute("aria-valuenow", "0");
+    expect(endHandle).toHaveAttribute("aria-valuenow", "5000000");
+
+    video.currentTime = 20;
+    fireEvent.timeUpdate(video);
+    await user.click(setStart);
+    expect(startHandle).toHaveAttribute("aria-valuenow", "20000000");
+    expect(endHandle).toHaveAttribute("aria-valuenow", "65000000");
+
+    video.currentTime = 15;
+    fireEvent.timeUpdate(video);
+    await user.click(setEnd);
+    expect(startHandle).toHaveAttribute("aria-valuenow", "0");
+    expect(endHandle).toHaveAttribute("aria-valuenow", "15000000");
+
+    video.currentTime = 65;
+    fireEvent.timeUpdate(video);
+    expect(setStart).toBeDisabled();
+    video.currentTime = 0;
+    fireEvent.timeUpdate(video);
+    expect(setEnd).toBeDisabled();
   });
 
   it("falls back to a compatible proxy when direct playback fails", async () => {

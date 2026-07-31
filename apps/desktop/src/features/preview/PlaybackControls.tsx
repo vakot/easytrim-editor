@@ -1,26 +1,49 @@
+import type { TrimBoundary } from "../../domain/trim";
 import { formatPlaybackTime } from "../../domain/playback";
 
 interface PlaybackControlsProps {
   isPlaying: boolean;
   error: string | null;
+  canSetSegmentStart: boolean;
+  canSetSegmentEnd: boolean;
   onTogglePlayback: () => void;
   onStepFrame: (direction: -1 | 1) => void;
+  onSetSegmentBoundary: (boundary: TrimBoundary) => void;
 }
 
 export function PlaybackControls({
   isPlaying,
   error,
+  canSetSegmentStart,
+  canSetSegmentEnd,
   onTogglePlayback,
   onStepFrame,
+  onSetSegmentBoundary,
 }: PlaybackControlsProps) {
   return (
     <div className="playback-controls" aria-label="Preview playback controls">
       <div className="transport-buttons">
         <button
+          className="transport-button transport-button-mark"
+          type="button"
+          aria-label="Set segment start to current position"
+          aria-keyshortcuts="I"
+          title={
+            canSetSegmentStart
+              ? "Set segment start to current position (I)"
+              : "Move before the source end to set segment start"
+          }
+          disabled={!canSetSegmentStart}
+          onClick={() => onSetSegmentBoundary("start")}
+        >
+          <span aria-hidden="true">I</span>
+        </button>
+        <button
           className="transport-button"
           type="button"
           aria-label="Previous frame"
-          title="Previous frame"
+          aria-keyshortcuts="ArrowLeft"
+          title="Previous frame (Left Arrow)"
           onClick={() => onStepFrame(-1)}
         >
           <PreviousFrameIcon />
@@ -29,7 +52,8 @@ export function PlaybackControls({
           className="transport-button transport-button-primary"
           type="button"
           aria-label={isPlaying ? "Pause" : "Play"}
-          title={isPlaying ? "Pause" : "Play"}
+          aria-keyshortcuts="Space"
+          title={`${isPlaying ? "Pause" : "Play"} (Space)`}
           onClick={onTogglePlayback}
         >
           {isPlaying ? <PauseIcon /> : <PlayIcon />}
@@ -38,10 +62,26 @@ export function PlaybackControls({
           className="transport-button"
           type="button"
           aria-label="Next frame"
-          title="Next frame"
+          aria-keyshortcuts="ArrowRight"
+          title="Next frame (Right Arrow)"
           onClick={() => onStepFrame(1)}
         >
           <NextFrameIcon />
+        </button>
+        <button
+          className="transport-button transport-button-mark"
+          type="button"
+          aria-label="Set segment end to current position"
+          aria-keyshortcuts="O"
+          title={
+            canSetSegmentEnd
+              ? "Set segment end to current position (O)"
+              : "Move after the source start to set segment end"
+          }
+          disabled={!canSetSegmentEnd}
+          onClick={() => onSetSegmentBoundary("end")}
+        >
+          <span aria-hidden="true">O</span>
         </button>
       </div>
 

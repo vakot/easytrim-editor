@@ -60,6 +60,11 @@ Use the canonical integer unit shared with native DTOs. Make the minimum gap exp
 - Keep dragging responsive when media seeking lags.
 - Use `requestAnimationFrame` for visual playhead movement; commit lower-frequency canonical time updates to React state.
 - Do not silently redefine the selected range during playback.
+- Map Space to play/pause and Left/Right Arrow to previous/next frame when focus is not in an
+  editable or independently keyboard-controlled element.
+- `I` sets trim start at the playhead and resets trim end to source end when crossed; `O` sets trim
+  end and resets trim start to zero when crossed. Disable source-edge actions that would create an
+  empty segment.
 
 ## 4. Audio rows
 

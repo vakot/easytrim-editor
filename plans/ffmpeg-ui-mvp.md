@@ -82,7 +82,8 @@ The main screen contains only the controls needed for the current cut:
    `Open video` remains directly available in the compact top toolbar, and dragging a file over
    the editor shows a clear replacement overlay.
 2. **Preview** — an undecorated video surface with compact app-owned play/pause, previous-frame,
-   next-frame, current-time, and duration controls.
+   next-frame, set-segment-start/end, current-time, and duration controls. Space toggles playback,
+   Left/Right Arrow steps frames, and `I`/`O` set segment boundaries at the playhead.
 3. **Timeline** — one video row and one row for each audio stream. A shaded region identifies the selected export segment. Dragging the left or right handle trims only the start or end. The playback marker is independently draggable and continuously seeks the preview while moving.
 4. **Audio rows** — track label, codec/channel information, waveform, and an enabled checkbox. Track ordering follows FFprobe stream order.
 5. **Export settings** — output name, optimized resolution/framerate controls, merge-audio toggle, and a named in-memory FFmpeg preset field.
@@ -214,7 +215,8 @@ the validation matrix.
 
 - direct source preview with proxy fallback;
 - timeline scale, playback cursor, and draggable start/end handles;
-- app-owned playback/frame controls and continuously draggable playhead seeking;
+- app-owned playback/frame and set-in/out controls, global editor shortcuts, and continuously
+  draggable playhead seeking;
 - keyboard-accessible handle adjustments and numeric time readouts;
 - clamp trim values and reject empty selections.
 
