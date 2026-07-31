@@ -459,9 +459,13 @@ p {
 }
 
 .toolbar-button.secondary-button {
-  border-color: #e4ae4e;
+  border: 1px solid #e4ae4e;
   color: #e4ae4e;
   background: transparent;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease;
 }
 
 .toolbar-button.secondary-button:hover:not(:disabled) {
