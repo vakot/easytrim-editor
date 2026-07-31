@@ -187,7 +187,7 @@ function AudioLevelControl({
         />
         <span
           className="audio-slider-original-marker"
-          style={{ left: `${ORIGINAL_SLIDER_POSITION}%` }}
+          style={{ left: `calc(${ORIGINAL_SLIDER_POSITION}% - 0.35rem)` }}
           aria-hidden="true"
         />
       </div>
