@@ -363,6 +363,17 @@ p {
   font-weight: 800;
 }
 
+.export-toast-actions svg {
+  display: block;
+  width: 0.9rem;
+  height: 0.9rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.25;
+}
+
 .export-toast-failed .export-toast-actions span {
   color: #fff;
   background: #d8796b;

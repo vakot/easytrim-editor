@@ -364,7 +364,18 @@ export function ExportQueue({ queue }: { queue: ExportToast[] }) {
                   </button>
                 ) : (
                   <span aria-label={`${toast.status} export`}>
-                    {toast.status === "completed" ? "✓" : toast.status === "failed" ? "!" : "×"}
+                    <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                      {toast.status === "completed" ? (
+                        <path d="m3 8 3 3 7-7" />
+                      ) : toast.status === "failed" ? (
+                        <path d="M8 3v6m0 3v1" />
+                      ) : (
+                        <>
+                          <path d="m4 4 8 8" />
+                          <path d="m12 4-8 8" />
+                        </>
+                      )}
+                    </svg>
                   </span>
                 )}
               </div>
