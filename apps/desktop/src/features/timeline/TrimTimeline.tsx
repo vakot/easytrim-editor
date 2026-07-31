@@ -1,4 +1,10 @@
-import { useRef, type KeyboardEvent, type PointerEvent, type RefObject } from "react";
+import {
+  useRef,
+  type KeyboardEvent,
+  type PointerEvent,
+  type ReactNode,
+  type RefObject,
+} from "react";
 
 import {
   clampPlaybackMicros,
@@ -19,6 +25,8 @@ interface TrimTimelineProps {
   playheadMicros: number;
   playheadRef: RefObject<HTMLButtonElement | null>;
   frameRate?: FrameRate;
+  playbackControls: ReactNode;
+  playbackTimecode: ReactNode;
   onChange: (range: TrimRange) => void;
   onSeek: (micros: number) => void;
   onScrubStart: () => void;
@@ -31,6 +39,8 @@ export function TrimTimeline({
   playheadMicros,
   playheadRef,
   frameRate,
+  playbackControls,
+  playbackTimecode,
   onChange,
   onSeek,
   onScrubStart,
@@ -191,10 +201,13 @@ export function TrimTimeline({
   return (
     <section className="timeline-panel" aria-labelledby="timeline-title">
       <div className="timeline-heading">
-        <div>
-          <p className="section-label">Selected segment</p>
-          <h2 id="timeline-title">Trim</h2>
+        <div className="timeline-heading-summary">
+          <h2 id="timeline-title" className="section-label">
+            Selected Segment
+          </h2>
+          {playbackTimecode}
         </div>
+        <div className="timeline-heading-controls">{playbackControls}</div>
         <dl className="trim-readouts" aria-label="Trim time values">
           <TimeValue label="Start" micros={range.startMicros} />
           <TimeValue label="End" micros={range.endMicros} />

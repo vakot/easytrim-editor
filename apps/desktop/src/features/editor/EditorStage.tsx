@@ -8,7 +8,7 @@ import {
 } from "../../domain/playback";
 import type { TrimRange } from "../../domain/trim";
 import type { FrameRate } from "../../lib/tauri/media";
-import { PlaybackControls } from "../preview/PlaybackControls";
+import { PlaybackControls, PlaybackTimecode } from "../preview/PlaybackControls";
 import { VideoPreview } from "../preview/VideoPreview";
 import { TrimTimeline } from "../timeline/TrimTimeline";
 
@@ -201,22 +201,30 @@ export function EditorStage({
           }}
           onTimeUpdate={handleTimeUpdate}
         />
-        {preview.status === "ready" ? (
-          <PlaybackControls
-            isPlaying={isPlaying}
-            currentMicros={displayedPlayheadMicros}
-            sourceDurationMicros={trim.sourceDurationMicros}
-            error={transportError}
-            onTogglePlayback={handleTogglePlayback}
-            onStepFrame={handleStepFrame}
-          />
-        ) : null}
       </div>
       <TrimTimeline
         range={trim}
         playheadMicros={displayedPlayheadMicros}
         playheadRef={playheadRef}
         frameRate={frameRate}
+        playbackControls={
+          preview.status === "ready" ? (
+            <PlaybackControls
+              isPlaying={isPlaying}
+              error={transportError}
+              onTogglePlayback={handleTogglePlayback}
+              onStepFrame={handleStepFrame}
+            />
+          ) : null
+        }
+        playbackTimecode={
+          preview.status === "ready" ? (
+            <PlaybackTimecode
+              currentMicros={displayedPlayheadMicros}
+              sourceDurationMicros={trim.sourceDurationMicros}
+            />
+          ) : null
+        }
         onChange={onTrimChange}
         onSeek={commitSeek}
         onScrubStart={handleScrubStart}

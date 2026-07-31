@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -139,6 +139,17 @@ describe("App", () => {
     expect(screen.getByLabelText("Current playback time")).toHaveTextContent(
       "00:00:00.000 / 00:01:05.000",
     );
+    const timelineHeading = screen.getByRole("heading", {
+      name: "Selected Segment",
+    }).parentElement?.parentElement;
+    expect(timelineHeading).not.toBeNull();
+    expect(within(timelineHeading as HTMLElement).getByLabelText("Current playback time")).toBe(
+      screen.getByLabelText("Current playback time"),
+    );
+    expect(
+      within(timelineHeading as HTMLElement).getByLabelText("Preview playback controls"),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Trim" })).not.toBeInTheDocument();
     expect(screen.getByLabelText("Video preview and timeline area")).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Open a video" })).not.toBeInTheDocument();
     expect(screen.queryByText("Local video editor")).not.toBeInTheDocument();

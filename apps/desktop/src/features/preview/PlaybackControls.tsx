@@ -2,8 +2,6 @@ import { formatPlaybackTime } from "../../domain/playback";
 
 interface PlaybackControlsProps {
   isPlaying: boolean;
-  currentMicros: number;
-  sourceDurationMicros: number;
   error: string | null;
   onTogglePlayback: () => void;
   onStepFrame: (direction: -1 | 1) => void;
@@ -11,8 +9,6 @@ interface PlaybackControlsProps {
 
 export function PlaybackControls({
   isPlaying,
-  currentMicros,
-  sourceDurationMicros,
   error,
   onTogglePlayback,
   onStepFrame,
@@ -49,17 +45,26 @@ export function PlaybackControls({
         </button>
       </div>
 
-      <output className="playback-time" aria-label="Current playback time">
-        {formatPlaybackTime(currentMicros)}
-        <span> / {formatPlaybackTime(sourceDurationMicros)}</span>
-      </output>
-
       {error ? (
         <span className="transport-error" role="alert">
           {error}
         </span>
       ) : null}
     </div>
+  );
+}
+
+interface PlaybackTimecodeProps {
+  currentMicros: number;
+  sourceDurationMicros: number;
+}
+
+export function PlaybackTimecode({ currentMicros, sourceDurationMicros }: PlaybackTimecodeProps) {
+  return (
+    <output className="playback-time" aria-label="Current playback time">
+      {formatPlaybackTime(currentMicros)}
+      <span> / {formatPlaybackTime(sourceDurationMicros)}</span>
+    </output>
   );
 }
 
