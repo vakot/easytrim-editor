@@ -39,6 +39,7 @@ interface TrimTimelineProps {
   frameRate?: FrameRate;
   playbackControls: ReactNode;
   playbackTimecode: ReactNode;
+  videoToolbar: ReactNode;
   audioRows: ReactNode;
   onChange: (boundary: TrimBoundary, range: TrimRange) => TrimBoundary | null;
   onMoveSegment: (range: TrimRange) => TrimBoundary | null;
@@ -57,6 +58,7 @@ export function TrimTimeline({
   frameRate,
   playbackControls,
   playbackTimecode,
+  videoToolbar,
   audioRows,
   onChange,
   onMoveSegment,
@@ -451,7 +453,9 @@ export function TrimTimeline({
       </div>
 
       <div className="timeline-row">
-        <span className="timeline-row-label">Video</span>
+        <div className="timeline-row-toolbar" role="toolbar" aria-label="Video timeline tools">
+          {videoToolbar}
+        </div>
         <div
           ref={trackRef}
           className="timeline-track"

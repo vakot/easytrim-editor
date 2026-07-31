@@ -97,37 +97,41 @@ export function PlaybackControls({
 interface PlaybackTimecodeProps {
   currentMicros: number;
   sourceDurationMicros: number;
+}
+
+export function PlaybackTimecode({ currentMicros, sourceDurationMicros }: PlaybackTimecodeProps) {
+  return (
+    <output className="playback-time" aria-label="Current playback time">
+      {formatPlaybackTime(currentMicros)}
+      <span> / {formatPlaybackTime(sourceDurationMicros)}</span>
+    </output>
+  );
+}
+
+interface TimelineToolsProps {
   safeTrimFollowingEnabled: boolean;
   onToggleSafeTrimFollowing: () => void;
 }
 
-export function PlaybackTimecode({
-  currentMicros,
-  sourceDurationMicros,
+export function TimelineTools({
   safeTrimFollowingEnabled,
   onToggleSafeTrimFollowing,
-}: PlaybackTimecodeProps) {
+}: TimelineToolsProps) {
   return (
-    <div className="playback-time-toolbar">
-      <output className="playback-time" aria-label="Current playback time">
-        {formatPlaybackTime(currentMicros)}
-        <span> / {formatPlaybackTime(sourceDurationMicros)}</span>
-      </output>
-      <button
-        className="timeline-tool-button"
-        type="button"
-        aria-label="Safe trim following"
-        aria-pressed={safeTrimFollowingEnabled}
-        title={
-          safeTrimFollowingEnabled
-            ? "Safe trim following: on — playhead follows a trim border once caught"
-            : "Safe trim following: off — playhead stays in place"
-        }
-        onClick={onToggleSafeTrimFollowing}
-      >
-        <LinkPlayheadIcon />
-      </button>
-    </div>
+    <button
+      className="timeline-tool-button"
+      type="button"
+      aria-label="Safe trim following"
+      aria-pressed={safeTrimFollowingEnabled}
+      title={
+        safeTrimFollowingEnabled
+          ? "Safe trim following: on — playhead follows a trim border once caught"
+          : "Safe trim following: off — playhead stays in place"
+      }
+      onClick={onToggleSafeTrimFollowing}
+    >
+      <LinkPlayheadIcon />
+    </button>
   );
 }
 
