@@ -503,26 +503,38 @@ p {
   z-index: 3;
   position: absolute;
   top: -0.15rem;
-  width: 1.15rem;
+  width: 2.75rem;
   height: calc(100% + 0.3rem);
   padding: 0;
   border: 0;
   color: #17130a;
-  background: #e4ae4e;
+  background: transparent;
   cursor: ew-resize;
   touch-action: none;
   transform: translateX(-50%);
 }
 
-.trim-handle-start {
+.trim-handle::before {
+  position: absolute;
+  inset-block: 0;
+  left: 50%;
+  width: 1.15rem;
+  background: #e4ae4e;
+  content: "";
+  transform: translateX(-50%);
+}
+
+.trim-handle-start::before {
   border-radius: 0.35rem 0 0 0.35rem;
 }
 
-.trim-handle-end {
+.trim-handle-end::before {
   border-radius: 0 0.35rem 0.35rem 0;
 }
 
 .trim-handle > span {
+  position: relative;
+  z-index: 1;
   display: block;
   width: 2px;
   height: 1rem;

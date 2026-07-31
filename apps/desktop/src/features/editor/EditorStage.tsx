@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import type { PreviewState } from "../../app/session-state";
 import { clampToTrim, type TrimRange } from "../../domain/trim";
@@ -24,23 +24,60 @@ export function EditorStage({
   onTrimChange,
 }: EditorStageProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const animationFrameRef = useRef<number | null>(null);
+  const trimRef = useRef(trim);
+  trimRef.current = trim;
   const [playheadMicros, setPlayheadMicros] = useState(trim.startMicros);
   const displayedPlayheadMicros = clampToTrim(playheadMicros, trim);
 
+  useEffect(
+    () => () => {
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    },
+    [],
+  );
+
   function handleSeek(micros: number) {
-    const clamped = clampToTrim(micros, trim);
+    const clamped = clampToTrim(micros, trimRef.current);
     setPlayheadMicros(clamped);
     seekVideo(videoRef.current, clamped);
   }
 
   function handleTimeUpdate(seconds: number) {
+    const currentTrim = trimRef.current;
     const currentMicros = Math.round(seconds * 1_000_000);
-    if (currentMicros >= trim.endMicros) {
+    if (currentMicros >= currentTrim.endMicros) {
       videoRef.current?.pause();
-      handleSeek(trim.endMicros);
+      stopPlayheadAnimation();
+      handleSeek(currentTrim.endMicros);
       return;
     }
-    setPlayheadMicros(clampToTrim(currentMicros, trim));
+    setPlayheadMicros(clampToTrim(currentMicros, currentTrim));
+  }
+
+  function startPlayheadAnimation() {
+    stopPlayheadAnimation();
+    const update = () => {
+      const video = videoRef.current;
+      if (!video || video.paused) {
+        animationFrameRef.current = null;
+        return;
+      }
+      handleTimeUpdate(video.currentTime);
+      if (!video.paused) {
+        animationFrameRef.current = requestAnimationFrame(update);
+      }
+    };
+    animationFrameRef.current = requestAnimationFrame(update);
+  }
+
+  function stopPlayheadAnimation() {
+    if (animationFrameRef.current !== null) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
   }
 
   return (
@@ -56,7 +93,9 @@ export function EditorStage({
           if (currentMicros >= trim.endMicros || currentMicros < trim.startMicros) {
             handleSeek(trim.startMicros);
           }
+          startPlayheadAnimation();
         }}
+        onPause={stopPlayheadAnimation}
         onTimeUpdate={handleTimeUpdate}
       />
       <TrimTimeline

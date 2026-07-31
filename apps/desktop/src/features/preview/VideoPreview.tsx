@@ -9,6 +9,7 @@ interface VideoPreviewProps {
   onPlaybackError: (sourceId: string, previewKind: "source" | "proxy") => void;
   onLoadedMetadata: () => void;
   onPlay: () => void;
+  onPause: () => void;
   onTimeUpdate: (seconds: number) => void;
 }
 
@@ -19,6 +20,7 @@ export function VideoPreview({
   onPlaybackError,
   onLoadedMetadata,
   onPlay,
+  onPause,
   onTimeUpdate,
 }: VideoPreviewProps) {
   const reportedUrl = useRef<string | null>(null);
@@ -73,6 +75,7 @@ export function VideoPreview({
         data-preview-kind={value.kind}
         onLoadedMetadata={onLoadedMetadata}
         onPlay={onPlay}
+        onPause={onPause}
         onTimeUpdate={(event) => onTimeUpdate(event.currentTarget.currentTime)}
         onError={() => {
           if (reportedUrl.current === value.url) {
