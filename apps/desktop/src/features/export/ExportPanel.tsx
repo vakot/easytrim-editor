@@ -38,6 +38,8 @@ interface ExportPanelProps {
   sourceName: string;
   trim: TrimRange;
   audioTracks: AudioTrackState[];
+  masterEnabled: boolean;
+  masterVolumePercent: number;
   mergeAudio: boolean;
   queue: ExportToast[];
   setQueue: Dispatch<SetStateAction<ExportToast[]>>;
@@ -48,6 +50,8 @@ export function ExportPanel({
   sourceName,
   trim,
   audioTracks,
+  masterEnabled,
+  masterVolumePercent,
   mergeAudio,
   setQueue,
 }: ExportPanelProps) {
@@ -64,12 +68,14 @@ export function ExportPanel({
   const operationIdsRef = useRef(new Map<string, string>());
   const toastSequence = useRef(0);
 
+  const masterGain = masterEnabled ? masterVolumePercent / 50 : 0;
   const selectedAudio = audioTracks
-    .filter((track) => track.enabled && track.volumePercent > 0)
+    .filter((track) => track.enabled && track.volumePercent > 0 && masterGain > 0)
     .map((track) => ({
       streamIndex: track.streamIndex,
-      volumePercent: track.volumePercent,
-    }));
+      volumePercent: Math.min(200, Math.round(track.volumePercent * masterGain)),
+    }))
+    .filter((track) => track.volumePercent > 0);
 
   async function handleFastCut() {
     const request: FastExportRequest = {

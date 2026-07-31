@@ -40,7 +40,7 @@ pub struct FastExportRequest {
 #[serde(rename_all = "camelCase")]
 pub struct AudioTrackSelection {
     pub stream_index: u32,
-    pub volume_percent: u8,
+    pub volume_percent: u16,
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
@@ -255,7 +255,7 @@ fn validate_common_request(
     }
     if audio_tracks.iter().any(|track| {
         track.volume_percent == 0
-            || track.volume_percent > 100
+            || track.volume_percent > 200
             || !source
                 .audio_streams
                 .iter()
