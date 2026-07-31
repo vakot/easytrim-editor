@@ -35,6 +35,43 @@ export function moveTrimBoundary(
   };
 }
 
+export function setTrimBoundaryAtPlayhead(
+  range: TrimRange,
+  boundary: TrimBoundary,
+  playheadMicros: number,
+): TrimRange {
+  const target = clampInteger(playheadMicros, 0, range.sourceDurationMicros);
+
+  if (boundary === "start") {
+    if (target >= range.sourceDurationMicros) {
+      return range;
+    }
+    return {
+      ...range,
+      startMicros: target,
+      endMicros: target >= range.endMicros ? range.sourceDurationMicros : range.endMicros,
+    };
+  }
+
+  if (target <= 0) {
+    return range;
+  }
+  return {
+    ...range,
+    startMicros: target <= range.startMicros ? 0 : range.startMicros,
+    endMicros: target,
+  };
+}
+
+export function canSetTrimBoundaryAtPlayhead(
+  range: TrimRange,
+  boundary: TrimBoundary,
+  playheadMicros: number,
+): boolean {
+  const target = clampInteger(playheadMicros, 0, range.sourceDurationMicros);
+  return boundary === "start" ? target < range.sourceDurationMicros : target > 0;
+}
+
 export function microsFromTimelinePosition(
   clientX: number,
   timelineLeft: number,

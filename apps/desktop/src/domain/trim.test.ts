@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  canSetTrimBoundaryAtPlayhead,
   clampToTrim,
   createFullTrimRange,
   isValidTrimRange,
   microsFromTimelinePosition,
   moveTrimBoundary,
+  setTrimBoundaryAtPlayhead,
   timelinePercent,
 } from "./trim";
 
@@ -26,6 +28,52 @@ describe("trim domain", () => {
     expect(movedStart.startMicros).toBe(4_999_999);
     expect(movedEnd.endMicros).toBe(5_000_000);
     expect(isValidTrimRange(movedEnd)).toBe(true);
+  });
+
+  it("sets trim boundaries at the playhead and resets a crossed opposite boundary", () => {
+    const range = {
+      startMicros: 2_000_000,
+      endMicros: 8_000_000,
+      sourceDurationMicros: 10_000_000,
+    };
+
+    expect(setTrimBoundaryAtPlayhead(range, "start", 4_000_000)).toEqual({
+      ...range,
+      startMicros: 4_000_000,
+    });
+    expect(setTrimBoundaryAtPlayhead(range, "start", 9_000_000)).toEqual({
+      ...range,
+      startMicros: 9_000_000,
+      endMicros: 10_000_000,
+    });
+    expect(setTrimBoundaryAtPlayhead(range, "start", 8_000_000)).toEqual({
+      ...range,
+      startMicros: 8_000_000,
+      endMicros: 10_000_000,
+    });
+    expect(setTrimBoundaryAtPlayhead(range, "end", 6_000_000)).toEqual({
+      ...range,
+      endMicros: 6_000_000,
+    });
+    expect(setTrimBoundaryAtPlayhead(range, "end", 1_000_000)).toEqual({
+      ...range,
+      startMicros: 0,
+      endMicros: 1_000_000,
+    });
+    expect(setTrimBoundaryAtPlayhead(range, "end", 2_000_000)).toEqual({
+      ...range,
+      startMicros: 0,
+      endMicros: 2_000_000,
+    });
+  });
+
+  it("gates source-edge marks that would create an empty segment", () => {
+    const range = createFullTrimRange(10_000_000);
+
+    expect(canSetTrimBoundaryAtPlayhead(range, "start", 10_000_000)).toBe(false);
+    expect(canSetTrimBoundaryAtPlayhead(range, "end", 0)).toBe(false);
+    expect(setTrimBoundaryAtPlayhead(range, "start", 10_000_000)).toBe(range);
+    expect(setTrimBoundaryAtPlayhead(range, "end", 0)).toBe(range);
   });
 
   it("maps pointer positions to bounded source time", () => {
