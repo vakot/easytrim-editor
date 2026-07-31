@@ -216,7 +216,10 @@ function App() {
     <main className={`app-shell ${hasSource ? "has-source" : "is-empty"}`}>
       {hasSource ? (
         <div className="app-toolbar" role="toolbar" aria-label="Application toolbar">
-          <h1 className="app-brand">ClipKit</h1>
+          <h1 className="app-brand">
+            <img src="/logo.svg" alt="" />
+            ClipKit
+          </h1>
           <div className="toolbar-actions">
             <CapabilityStatus capabilities={session.capabilities} />
             <OpenVideoButton
@@ -241,7 +244,10 @@ function App() {
         <header className="welcome-header">
           <div>
             <p className="eyebrow">Local video editor</p>
-            <h1>ClipKit</h1>
+            <h1>
+              <img className="welcome-logo" src="/logo.svg" alt="" />
+              ClipKit
+            </h1>
           </div>
           <div className="welcome-summary">
             <p>Import a video to inspect its source and prepare a precise cut.</p>
