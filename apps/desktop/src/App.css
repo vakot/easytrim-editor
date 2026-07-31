@@ -1161,7 +1161,7 @@ p {
     visibility 120ms ease;
 }
 
-.audio-volume-anchor:hover .audio-volume-popover {
+.audio-track-label:hover .audio-volume-popover {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
