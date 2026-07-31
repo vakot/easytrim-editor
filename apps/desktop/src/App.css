@@ -77,11 +77,19 @@ p {
   display: flex;
   min-width: 0;
   align-items: center;
-  justify-content: flex-end;
-  gap: 1rem;
+  justify-content: space-between;
+  gap: 2rem;
   padding: 0 1.25rem;
   border-bottom: 1px solid #29292e;
   background: #111114;
+}
+
+.app-brand {
+  flex: 0 0 auto;
+  margin: 0;
+  color: #e4ae4e;
+  font-size: 1.25rem;
+  letter-spacing: 0.02em;
 }
 
 .toolbar-actions {
@@ -94,12 +102,17 @@ p {
   gap: 0.75rem;
 }
 
+.app-toolbar > .toolbar-actions {
+  flex: 1 1 auto;
+  justify-content: flex-end;
+}
+
 .export-toolbar-group {
   position: relative;
   display: flex;
   min-width: 0;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
 }
 
 .toolbar-divider {

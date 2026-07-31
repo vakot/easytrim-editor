@@ -216,6 +216,7 @@ function App() {
     <main className={`app-shell ${hasSource ? "has-source" : "is-empty"}`}>
       {hasSource ? (
         <div className="app-toolbar" role="toolbar" aria-label="Application toolbar">
+          <h1 className="app-brand">ClipKit</h1>
           <div className="toolbar-actions">
             <CapabilityStatus capabilities={session.capabilities} />
             <OpenVideoButton
