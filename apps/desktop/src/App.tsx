@@ -289,7 +289,7 @@ function OpenVideoButton({
 }) {
   return (
     <button
-      className="toolbar-button"
+      className="toolbar-button secondary-button"
       type="button"
       onClick={onChooseSource}
       disabled={isChoosingSource}

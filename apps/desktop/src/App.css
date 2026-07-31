@@ -458,6 +458,17 @@ p {
   background: #f0bd61;
 }
 
+.toolbar-button.secondary-button {
+  border-color: #e4ae4e;
+  color: #e4ae4e;
+  background: transparent;
+}
+
+.toolbar-button.secondary-button:hover:not(:disabled) {
+  color: #17130a;
+  background: #e4ae4e;
+}
+
 .toolbar-button:disabled,
 .primary-button:disabled {
   opacity: 0.65;
