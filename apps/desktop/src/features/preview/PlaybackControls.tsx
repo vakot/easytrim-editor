@@ -120,8 +120,8 @@ export function PlaybackTimecode({
         aria-pressed={safeTrimFollowingEnabled}
         title={
           safeTrimFollowingEnabled
-            ? "Safe trim following: on — playhead follows a trim border once caught"
-            : "Safe trim following: off — playhead stays in place"
+            ? "Safe trim following: on — center always snaps; borders snap safely"
+            : "Safe trim following: off — center and both borders snap"
         }
         onClick={onToggleSafeTrimFollowing}
       >

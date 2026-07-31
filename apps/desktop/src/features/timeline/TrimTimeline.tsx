@@ -18,13 +18,16 @@ import {
   minimumSelectionMicros,
   moveTrimBoundary,
   moveTrimRange,
+  snapMovedTrimRangeToPlayhead,
   timelinePercent,
+  type SegmentDragDirection,
+  type SegmentSnapPoint,
   type TrimBoundary,
   type TrimRange,
 } from "../../domain/trim";
 import type { FrameRate } from "../../lib/tauri/media";
 
-const TRIM_SNAP_REACH_PX = 12;
+const TIMELINE_SNAP_REACH_PX = 12;
 
 interface TrimTimelineProps {
   range: TrimRange;
@@ -33,6 +36,7 @@ interface TrimTimelineProps {
   frameRate?: FrameRate;
   playbackControls: ReactNode;
   playbackTimecode: ReactNode;
+  safeTrimFollowingEnabled: boolean;
   onChange: (boundary: TrimBoundary, range: TrimRange) => void;
   onMoveSegment: (range: TrimRange) => void;
   onSegmentDragStart: () => void;
@@ -50,6 +54,7 @@ export function TrimTimeline({
   frameRate,
   playbackControls,
   playbackTimecode,
+  safeTrimFollowingEnabled,
   onChange,
   onMoveSegment,
   onSegmentDragStart,
@@ -64,8 +69,10 @@ export function TrimTimeline({
   const segmentDragRef = useRef<{
     pointerId: number;
     grabOffsetMicros: number;
+    lastPointerMicros: number;
   } | null>(null);
   const [segmentDragging, setSegmentDragging] = useState(false);
+  const [segmentSnapPoint, setSegmentSnapPoint] = useState<SegmentSnapPoint | null>(null);
   const [trimDragState, setTrimDragState] = useState<{
     boundary: TrimBoundary;
     snapActive: boolean;
@@ -168,43 +175,64 @@ export function TrimTimeline({
     onChange(boundary, moveTrimBoundary(range, boundary, requestedMicros));
   }
 
-  function segmentPointerMicros(clientX: number): number | null {
+  function segmentPointerPosition(
+    clientX: number,
+  ): { pointerMicros: number; snapReachMicros: number } | null {
     const bounds = trackRef.current?.getBoundingClientRect();
     if (!bounds) {
       return null;
     }
-    return microsFromTimelinePosition(
-      clientX,
-      bounds.left,
-      bounds.width,
-      range.sourceDurationMicros,
-    );
+    return {
+      pointerMicros: microsFromTimelinePosition(
+        clientX,
+        bounds.left,
+        bounds.width,
+        range.sourceDurationMicros,
+      ),
+      snapReachMicros:
+        bounds.width > 0 ? (TIMELINE_SNAP_REACH_PX / bounds.width) * range.sourceDurationMicros : 0,
+    };
   }
 
-  function updateSegmentFromPointer(pointerMicros: number) {
+  function updateSegmentFromPointer(pointerMicros: number, snapReachMicros: number) {
     const drag = segmentDragRef.current;
     if (!drag) {
       return;
     }
+    const pointerDeltaMicros = pointerMicros - drag.lastPointerMicros;
+    if (pointerDeltaMicros === 0) {
+      return;
+    }
+    drag.lastPointerMicros = pointerMicros;
     const requestedStartMicros = pointerMicros - drag.grabOffsetMicros - segmentDurationMicros / 2;
-    onMoveSegment(moveTrimRange(range, requestedStartMicros));
+    const movedRange = moveTrimRange(range, requestedStartMicros);
+    const snapped = snapMovedTrimRangeToPlayhead(
+      range,
+      movedRange,
+      playheadMicros,
+      snapReachMicros,
+      safeTrimFollowingEnabled,
+      Math.sign(pointerDeltaMicros) as SegmentDragDirection,
+    );
+    setSegmentSnapPoint(snapped.point);
+    onMoveSegment(snapped.range);
   }
 
   function startSegmentDrag(event: PointerEvent<HTMLButtonElement>) {
     event.preventDefault();
     event.stopPropagation();
-    const pointerMicros = segmentPointerMicros(event.clientX);
-    if (pointerMicros === null) {
+    const pointer = segmentPointerPosition(event.clientX);
+    if (!pointer) {
       return;
     }
     segmentDragRef.current = {
       pointerId: event.pointerId,
-      grabOffsetMicros: pointerMicros - segmentCenterMicros,
+      grabOffsetMicros: pointer.pointerMicros - segmentCenterMicros,
+      lastPointerMicros: pointer.pointerMicros,
     };
     setSegmentDragging(true);
     onSegmentDragStart();
     event.currentTarget.setPointerCapture?.(event.pointerId);
-    updateSegmentFromPointer(pointerMicros);
   }
 
   function moveSegmentDrag(event: PointerEvent<HTMLButtonElement>) {
@@ -213,9 +241,9 @@ export function TrimTimeline({
     }
     event.preventDefault();
     event.stopPropagation();
-    const pointerMicros = segmentPointerMicros(event.clientX);
-    if (pointerMicros !== null) {
-      updateSegmentFromPointer(pointerMicros);
+    const pointer = segmentPointerPosition(event.clientX);
+    if (pointer) {
+      updateSegmentFromPointer(pointer.pointerMicros, pointer.snapReachMicros);
     }
   }
 
@@ -226,13 +254,14 @@ export function TrimTimeline({
     event.preventDefault();
     event.stopPropagation();
     if (includePosition) {
-      const pointerMicros = segmentPointerMicros(event.clientX);
-      if (pointerMicros !== null) {
-        updateSegmentFromPointer(pointerMicros);
+      const pointer = segmentPointerPosition(event.clientX);
+      if (pointer) {
+        updateSegmentFromPointer(pointer.pointerMicros, pointer.snapReachMicros);
       }
     }
     segmentDragRef.current = null;
     setSegmentDragging(false);
+    setSegmentSnapPoint(null);
     onSegmentDragEnd();
   }
 
@@ -394,6 +423,7 @@ export function TrimTimeline({
             range={range}
             percent={segmentCenterPercent}
             dragging={segmentDragging}
+            snapPoint={segmentSnapPoint}
             onPointerDown={startSegmentDrag}
             onPointerMove={moveSegmentDrag}
             onPointerUp={(event) => finishSegmentDrag(event, true)}
@@ -458,6 +488,7 @@ interface SegmentDragHandleProps {
   range: TrimRange;
   percent: number;
   dragging: boolean;
+  snapPoint: SegmentSnapPoint | null;
   onPointerDown: (event: PointerEvent<HTMLButtonElement>) => void;
   onPointerMove: (event: PointerEvent<HTMLButtonElement>) => void;
   onPointerUp: (event: PointerEvent<HTMLButtonElement>) => void;
@@ -470,6 +501,7 @@ function SegmentDragHandle({
   range,
   percent,
   dragging,
+  snapPoint,
   onPointerDown,
   onPointerMove,
   onPointerUp,
@@ -490,6 +522,8 @@ function SegmentDragHandle({
       aria-valuetext={`Starts at ${formatAccessibleTime(range.startMicros)}`}
       title="Drag to move the selected segment"
       data-dragging={dragging ? "true" : undefined}
+      data-snap-active={snapPoint ? "true" : undefined}
+      data-snap-point={snapPoint ?? undefined}
       style={{ left: `${percent}%` }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
@@ -597,7 +631,7 @@ function isPointerNearPlayhead(
   }
   const clampedPlayhead = clampPlaybackMicros(playheadMicros, sourceDurationMicros);
   const playheadX = timelineLeft + (clampedPlayhead / sourceDurationMicros) * timelineWidth;
-  return Math.abs(clientX - playheadX) <= TRIM_SNAP_REACH_PX;
+  return Math.abs(clientX - playheadX) <= TIMELINE_SNAP_REACH_PX;
 }
 
 function formatAccessibleTime(micros: number): string {

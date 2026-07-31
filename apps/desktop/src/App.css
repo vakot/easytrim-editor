@@ -641,6 +641,12 @@ p {
   transform: translate(-50%, -50%) scale(1.06);
 }
 
+.segment-drag-handle[data-snap-active="true"] {
+  box-shadow:
+    0 0 0 2px rgb(245 245 244 / 68%),
+    0 0 0.95rem rgb(228 174 78 / 72%);
+}
+
 .segment-drag-handle:focus-visible {
   outline: 2px solid rgb(245 245 244 / 72%);
   outline-offset: 2px;
