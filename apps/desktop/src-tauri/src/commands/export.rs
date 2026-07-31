@@ -1,5 +1,6 @@
 use std::{
-    collections::HashMap, ffi::OsStr, fs, path::PathBuf, sync::atomic::Ordering, time::Duration,
+    collections::HashMap, ffi::OsStr, fs, path::PathBuf, process::Command, sync::atomic::Ordering,
+    time::Duration,
 };
 
 use serde::Serialize;
@@ -145,6 +146,34 @@ pub async fn render_optimized(
 #[tauri::command]
 pub fn cancel_operation(operation_id: String, state: State<'_, AppState>) -> Result<(), AppError> {
     state.cancel_operation(&operation_id)
+}
+
+#[tauri::command]
+pub fn reveal_in_explorer(path: String) -> Result<(), AppError> {
+    let path = PathBuf::from(path);
+    if !path.is_file() {
+        return Err(AppError::io_failed(
+            "The exported file is no longer available.",
+        ));
+    }
+
+    #[cfg(target_os = "windows")]
+    let result = Command::new("explorer.exe")
+        .arg("/select,")
+        .arg(&path)
+        .spawn();
+
+    #[cfg(target_os = "macos")]
+    let result = Command::new("open").arg("-R").arg(&path).spawn();
+
+    #[cfg(all(unix, not(target_os = "macos")))]
+    let result = Command::new("xdg-open")
+        .arg(path.parent().unwrap_or_else(|| std::path::Path::new(".")))
+        .spawn();
+
+    result
+        .map(|_| ())
+        .map_err(|error| AppError::io_failed(format!("Could not open the file location: {error}")))
 }
 
 fn duration_micros(trim: &crate::media::export::TrimSelection) -> i64 {

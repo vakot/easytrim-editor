@@ -206,6 +206,14 @@ export async function cancelOperation(operationId: string): Promise<void> {
   }
 }
 
+export async function revealInExplorer(path: string): Promise<void> {
+  try {
+    await invoke("reveal_in_explorer", { path });
+  } catch (error: unknown) {
+    throw normalizeAppError(error);
+  }
+}
+
 async function render(
   command: "render_fast" | "render_optimized",
   request: FastExportRequest | OptimizedExportRequest,

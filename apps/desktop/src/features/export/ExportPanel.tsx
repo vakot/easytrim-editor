@@ -9,6 +9,7 @@ import {
   normalizeAppError,
   renderFast,
   renderOptimized,
+  revealInExplorer,
   type ExportProgress,
   type FastExportRequest,
   type FrameRate,
@@ -316,7 +317,30 @@ export function ExportQueue({ queue }: { queue: ExportToast[] }) {
       ) : (
         <div className="export-queue-list" role="status" aria-live="polite">
           {queue.map((toast) => (
-            <div className={`export-toast export-toast-${toast.status}`} key={toast.id}>
+            <div
+              className={`export-toast export-toast-${toast.status} ${
+                toast.status === "completed" ? "export-toast-clickable" : ""
+              }`}
+              key={toast.id}
+              role={toast.status === "completed" ? "button" : undefined}
+              tabIndex={toast.status === "completed" ? 0 : undefined}
+              title={toast.status === "completed" ? "Reveal file in Explorer" : undefined}
+              onClick={
+                toast.status === "completed"
+                  ? () => void revealInExplorer(toast.path).catch(() => undefined)
+                  : undefined
+              }
+              onKeyDown={
+                toast.status === "completed"
+                  ? (event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        void revealInExplorer(toast.path).catch(() => undefined);
+                      }
+                    }
+                  : undefined
+              }
+            >
               <div className="export-toast-copy">
                 <div className="export-toast-title">
                   <strong>{toast.filename}</strong>

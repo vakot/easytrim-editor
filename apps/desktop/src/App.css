@@ -265,6 +265,20 @@ p {
   box-shadow: 0 0.75rem 2rem rgb(0 0 0 / 32%);
 }
 
+.export-toast-clickable {
+  cursor: pointer;
+}
+
+.export-toast-clickable:hover {
+  border-color: #686871;
+  background: #202026;
+}
+
+.export-toast-clickable:focus-visible {
+  outline: 2px solid #e4ae4e;
+  outline-offset: 2px;
+}
+
 .export-toast-completed {
   border-left-color: #72b18a;
 }
