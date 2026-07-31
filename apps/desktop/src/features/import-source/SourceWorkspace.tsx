@@ -1,11 +1,13 @@
 import type { SessionState } from "../../app/session-state";
 import type { BinaryCapability, FrameRate, MediaInfo } from "../../lib/tauri/media";
+import { VideoPreview } from "../preview/VideoPreview";
 
 interface SourceWorkspaceProps {
   session: SessionState;
   isChoosingSource: boolean;
   isSourceDragActive: boolean;
   onChooseSource: () => void;
+  onPreviewPlaybackError: (sourceId: string, previewKind: "source" | "proxy") => void;
 }
 
 export function SourceWorkspace({
@@ -13,6 +15,7 @@ export function SourceWorkspace({
   isChoosingSource,
   isSourceDragActive,
   onChooseSource,
+  onPreviewPlaybackError,
 }: SourceWorkspaceProps) {
   if (!session.source) {
     return (
@@ -62,6 +65,13 @@ export function SourceWorkspace({
       </aside>
 
       <div className="editor-stage" aria-label="Video preview and timeline area">
+        {session.status === "ready" && session.source.media ? (
+          <VideoPreview
+            sourceId={session.source.selection.sourceId}
+            preview={session.source.preview}
+            onPlaybackError={onPreviewPlaybackError}
+          />
+        ) : null}
         {isSourceDragActive ? <DropOverlay /> : null}
       </div>
     </section>

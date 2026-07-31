@@ -8,6 +8,9 @@ import {
   inspectMedia,
   listenForSourceDrops,
   normalizeAppError,
+  prepareProxyPreview,
+  prepareSourcePreview,
+  type PreviewKind,
   type SourceSelection,
 } from "./lib/tauri/media";
 import "./App.css";
@@ -24,11 +27,54 @@ function App() {
     void inspectMedia(source.sourceId)
       .then((media) => {
         dispatch({ type: "source-ready", sourceId: source.sourceId, media });
+        dispatch({ type: "preview-loading", sourceId: source.sourceId, kind: "source" });
+        return prepareSourcePreview(source.sourceId);
+      })
+      .then((preview) => {
+        dispatch({ type: "preview-ready", sourceId: source.sourceId, preview });
+      })
+      .catch((error: unknown) => {
+        const normalized = normalizeAppError(error);
+        dispatch(
+          normalized.code === "probe_failed" ||
+            normalized.code === "unsupported_media" ||
+            normalized.code === "io_failed"
+            ? {
+                type: "source-failed",
+                sourceId: source.sourceId,
+                error: normalized,
+              }
+            : {
+                type: "preview-failed",
+                sourceId: source.sourceId,
+                error: normalized,
+              },
+        );
+      });
+  }, []);
+
+  const handlePreviewPlaybackError = useCallback((sourceId: string, previewKind: PreviewKind) => {
+    if (previewKind === "proxy") {
+      dispatch({
+        type: "preview-failed",
+        sourceId,
+        error: {
+          code: "preview_playback_failed",
+          message: "The compatible preview could not be played.",
+        },
+      });
+      return;
+    }
+
+    dispatch({ type: "preview-loading", sourceId, kind: "proxy" });
+    void prepareProxyPreview(sourceId)
+      .then((preview) => {
+        dispatch({ type: "preview-ready", sourceId, preview });
       })
       .catch((error: unknown) => {
         dispatch({
-          type: "source-failed",
-          sourceId: source.sourceId,
+          type: "preview-failed",
+          sourceId,
           error: normalizeAppError(error),
         });
       });
@@ -158,6 +204,7 @@ function App() {
         isChoosingSource={isChoosingSource}
         isSourceDragActive={isSourceDragActive}
         onChooseSource={() => void handleChooseSource()}
+        onPreviewPlaybackError={handlePreviewPlaybackError}
       />
     </main>
   );

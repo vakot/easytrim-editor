@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -14,6 +14,8 @@ const mocks = vi.hoisted(() => ({
   chooseSource: vi.fn(),
   inspectMedia: vi.fn(),
   listenForSourceDrops: vi.fn(),
+  prepareProxyPreview: vi.fn(),
+  prepareSourcePreview: vi.fn(),
   unlistenDrops: vi.fn(),
 }));
 
@@ -25,6 +27,8 @@ vi.mock("./lib/tauri/media", async (importOriginal) => {
     chooseSource: mocks.chooseSource,
     inspectMedia: mocks.inspectMedia,
     listenForSourceDrops: mocks.listenForSourceDrops,
+    prepareProxyPreview: mocks.prepareProxyPreview,
+    prepareSourcePreview: mocks.prepareSourcePreview,
   };
 });
 
@@ -80,6 +84,16 @@ beforeEach(() => {
   mocks.checkMediaCapabilities.mockResolvedValue(capabilities);
   mocks.chooseSource.mockResolvedValue(null);
   mocks.inspectMedia.mockResolvedValue(media);
+  mocks.prepareSourcePreview.mockResolvedValue({
+    sourceId: selection.sourceId,
+    url: "http://easycut-media.localhost/source-1?variant=source",
+    kind: "source",
+  });
+  mocks.prepareProxyPreview.mockResolvedValue({
+    sourceId: selection.sourceId,
+    url: "http://easycut-media.localhost/source-1?variant=proxy",
+    kind: "proxy",
+  });
   mocks.listenForSourceDrops.mockImplementation(
     async (listener: (event: SourceDropEvent) => void) => {
       sourceDropListener = listener;
@@ -114,6 +128,10 @@ describe("App", () => {
     expect(screen.getByText("59.94 fps")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Audio streams" })).toBeInTheDocument();
     expect(screen.getByText(/AAC/)).toBeInTheDocument();
+    expect(screen.getByLabelText("Source video preview")).toHaveAttribute(
+      "src",
+      "http://easycut-media.localhost/source-1?variant=source",
+    );
     expect(screen.getByLabelText("Video preview and timeline area")).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Open a video" })).not.toBeInTheDocument();
     expect(screen.queryByText("Local video editor")).not.toBeInTheDocument();
@@ -121,6 +139,42 @@ describe("App", () => {
       screen.queryByText("Import a video to inspect its source and prepare a precise cut."),
     ).not.toBeInTheDocument();
     expect(screen.getByRole("toolbar", { name: "Application toolbar" })).toBeInTheDocument();
+  });
+
+  it("falls back to a compatible proxy when direct playback fails", async () => {
+    mocks.chooseSource.mockResolvedValue(selection);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Open video" }));
+    const directPreview = await screen.findByLabelText("Source video preview");
+    fireEvent.error(directPreview);
+
+    await waitFor(() => {
+      expect(mocks.prepareProxyPreview).toHaveBeenCalledWith(selection.sourceId);
+    });
+    expect(await screen.findByText("720p preview")).toBeInTheDocument();
+    expect(screen.getByLabelText("Source video preview")).toHaveAttribute(
+      "src",
+      "http://easycut-media.localhost/source-1?variant=proxy",
+    );
+  });
+
+  it("reports a compatible preview playback failure without dropping metadata", async () => {
+    mocks.chooseSource.mockResolvedValue(selection);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Open video" }));
+    fireEvent.error(await screen.findByLabelText("Source video preview"));
+    const proxyPreview = await screen.findByText("720p preview");
+    expect(proxyPreview).toBeInTheDocument();
+    fireEvent.error(screen.getByLabelText("Source video preview"));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "The compatible preview could not be played.",
+    );
+    expect(screen.getByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
   });
 
   it("keeps the current source when the picker is cancelled", async () => {
