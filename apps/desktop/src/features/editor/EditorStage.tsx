@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
+import { Group, Panel } from "react-resizable-panels";
 
 import type { AudioTrackState, PreviewState } from "../../app/session-state";
+import { PaneResizeHandle } from "../../components/PaneResizeHandle";
 import {
   clampPlaybackMicros,
   formatPlaybackTime,
@@ -345,87 +347,119 @@ export function EditorStage({
   };
 
   return (
-    <div className="editor-stage-content">
-      <div className="preview-workspace">
-        <VideoPreview
-          sourceId={sourceId}
-          preview={preview}
-          videoRef={videoRef}
-          onPlaybackError={onPreviewPlaybackError}
-          onLoadedMetadata={() => commitSeek(displayedPlayheadMicros)}
-          onTogglePlayback={handleTogglePlayback}
-          onPlay={() => {
-            setIsPlaying(true);
-            startPlayheadAnimation();
-          }}
-          onPause={() => {
-            setIsPlaying(false);
-            stopPlayheadAnimation();
-            const video = videoRef.current;
-            if (video) {
-              handleTimeUpdate(video.currentTime);
-            }
-          }}
-          onTimeUpdate={handleTimeUpdate}
-        />
-      </div>
-      <TrimTimeline
-        range={trim}
-        playheadMicros={displayedPlayheadMicros}
-        playheadRef={playheadRef}
-        frameRate={frameRate}
-        playbackControls={
-          preview.status === "ready" ? (
-            <PlaybackControls
-              isPlaying={isPlaying}
-              error={transportError}
-              canSetSegmentStart={canSetTrimBoundaryAtPlayhead(
-                trim,
-                "start",
-                displayedPlayheadMicros,
-              )}
-              canSetSegmentEnd={canSetTrimBoundaryAtPlayhead(trim, "end", displayedPlayheadMicros)}
-              onTogglePlayback={handleTogglePlayback}
-              onStepFrame={handleStepFrame}
-              onSetSegmentBoundary={handleSetSegmentBoundary}
-            />
-          ) : null
-        }
-        playbackTimecode={
-          preview.status === "ready" ? (
-            <PlaybackTimecode
-              currentMicros={displayedPlayheadMicros}
-              sourceDurationMicros={trim.sourceDurationMicros}
-              safeTrimFollowingEnabled={safeTrimFollowingEnabled}
-              onToggleSafeTrimFollowing={() => setSafeTrimFollowingEnabled((enabled) => !enabled)}
-            />
-          ) : null
-        }
-        audioRows={
-          <AudioTracks
-            streams={audioStreams}
-            tracks={audioTracks}
+    <Group
+      id="editor-stage-panels"
+      orientation="vertical"
+      className="editor-stage-content"
+      resizeTargetMinimumSize={{ fine: 8, coarse: 24 }}
+      aria-label="Preview and timeline panes"
+    >
+      <Panel id="preview-panel" minSize="14rem" className="editor-pane-content">
+        <div className="preview-workspace">
+          <VideoPreview
+            sourceId={sourceId}
+            preview={preview}
+            videoRef={videoRef}
+            onPlaybackError={onPreviewPlaybackError}
+            onLoadedMetadata={() => commitSeek(displayedPlayheadMicros)}
+            onTogglePlayback={handleTogglePlayback}
+            onPlay={() => {
+              setIsPlaying(true);
+              startPlayheadAnimation();
+            }}
+            onPause={() => {
+              setIsPlaying(false);
+              stopPlayheadAnimation();
+              const video = videoRef.current;
+              if (video) {
+                handleTimeUpdate(video.currentTime);
+              }
+            }}
+            onTimeUpdate={handleTimeUpdate}
+          />
+        </div>
+      </Panel>
+
+      <PaneResizeHandle
+        id="preview-timeline-resize-handle"
+        label="Resize preview and timeline"
+        orientation="horizontal"
+      />
+
+      <Panel
+        id="timeline-panel"
+        defaultSize="22rem"
+        minSize="10rem"
+        maxSize="70%"
+        groupResizeBehavior="preserve-pixel-size"
+        className="editor-pane-content"
+      >
+        <div className="timeline-pane-scroll">
+          <TrimTimeline
             range={trim}
             playheadMicros={displayedPlayheadMicros}
-            playheadRef={audioPlayheadRef}
-            mergeAudio={mergeAudio}
-            onToggleTrack={onToggleAudioTrack}
-            onSetAllTracksEnabled={onSetAllAudioTracksEnabled}
-            onToggleMerge={onToggleAudioMerge}
-            onPrepareWaveforms={onPrepareWaveforms}
-            onWaveformImageError={onWaveformImageError}
+            playheadRef={playheadRef}
+            frameRate={frameRate}
+            playbackControls={
+              preview.status === "ready" ? (
+                <PlaybackControls
+                  isPlaying={isPlaying}
+                  error={transportError}
+                  canSetSegmentStart={canSetTrimBoundaryAtPlayhead(
+                    trim,
+                    "start",
+                    displayedPlayheadMicros,
+                  )}
+                  canSetSegmentEnd={canSetTrimBoundaryAtPlayhead(
+                    trim,
+                    "end",
+                    displayedPlayheadMicros,
+                  )}
+                  onTogglePlayback={handleTogglePlayback}
+                  onStepFrame={handleStepFrame}
+                  onSetSegmentBoundary={handleSetSegmentBoundary}
+                />
+              ) : null
+            }
+            playbackTimecode={
+              preview.status === "ready" ? (
+                <PlaybackTimecode
+                  currentMicros={displayedPlayheadMicros}
+                  sourceDurationMicros={trim.sourceDurationMicros}
+                  safeTrimFollowingEnabled={safeTrimFollowingEnabled}
+                  onToggleSafeTrimFollowing={() =>
+                    setSafeTrimFollowingEnabled((enabled) => !enabled)
+                  }
+                />
+              ) : null
+            }
+            audioRows={
+              <AudioTracks
+                streams={audioStreams}
+                tracks={audioTracks}
+                range={trim}
+                playheadMicros={displayedPlayheadMicros}
+                playheadRef={audioPlayheadRef}
+                mergeAudio={mergeAudio}
+                onToggleTrack={onToggleAudioTrack}
+                onSetAllTracksEnabled={onSetAllAudioTracksEnabled}
+                onToggleMerge={onToggleAudioMerge}
+                onPrepareWaveforms={onPrepareWaveforms}
+                onWaveformImageError={onWaveformImageError}
+              />
+            }
+            onChange={handleTrimBoundaryChange}
+            onMoveSegment={handleSegmentMove}
+            onSegmentDragStart={handleSegmentDragStart}
+            onSegmentDragEnd={handleSegmentDragEnd}
+            onSeek={commitSeek}
+            onScrubStart={handleScrubStart}
+            onScrub={queueScrubSeek}
+            onScrubEnd={handleScrubEnd}
           />
-        }
-        onChange={handleTrimBoundaryChange}
-        onMoveSegment={handleSegmentMove}
-        onSegmentDragStart={handleSegmentDragStart}
-        onSegmentDragEnd={handleSegmentDragEnd}
-        onSeek={commitSeek}
-        onScrubStart={handleScrubStart}
-        onScrub={queueScrubSeek}
-        onScrubEnd={handleScrubEnd}
-      />
-    </div>
+        </div>
+      </Panel>
+    </Group>
   );
 }
 

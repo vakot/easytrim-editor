@@ -1,4 +1,7 @@
+import { Group, Panel } from "react-resizable-panels";
+
 import type { SessionState } from "../../app/session-state";
+import { PaneResizeHandle } from "../../components/PaneResizeHandle";
 import type { TrimRange } from "../../domain/trim";
 import type { BinaryCapability, FrameRate, MediaInfo } from "../../lib/tauri/media";
 import { EditorStage } from "../editor/EditorStage";
@@ -58,54 +61,79 @@ export function SourceWorkspace({
   const sourceId = session.source.selection.sourceId;
 
   return (
-    <section className="editor-workspace" aria-label="Video editor workspace">
-      <aside className="source-sidebar" aria-labelledby="source-title">
-        <div className="source-heading">
-          <p className="section-label">Source details</p>
-          <h1 id="source-title" title={session.source.selection.displayName}>
-            {session.source.selection.displayName}
-          </h1>
-          {session.status === "loading-source" ? (
-            <span className="loading-label" role="status">
-              Inspecting…
-            </span>
+    <Group
+      id="editor-workspace-panels"
+      orientation="horizontal"
+      className="editor-workspace"
+      resizeTargetMinimumSize={{ fine: 8, coarse: 24 }}
+      aria-label="Video editor workspace"
+    >
+      <Panel
+        id="source-details-panel"
+        defaultSize="20rem"
+        minSize="15rem"
+        maxSize="30rem"
+        groupResizeBehavior="preserve-pixel-size"
+        className="workspace-pane-content"
+      >
+        <aside className="source-sidebar" aria-labelledby="source-title">
+          <div className="source-heading">
+            <p className="section-label">Source details</p>
+            <h1 id="source-title" title={session.source.selection.displayName}>
+              {session.source.selection.displayName}
+            </h1>
+            {session.status === "loading-source" ? (
+              <span className="loading-label" role="status">
+                Inspecting…
+              </span>
+            ) : null}
+          </div>
+
+          {session.lastError ? <SourceError error={session.lastError} /> : null}
+          {session.status === "ready" && session.source.media ? (
+            <MediaDetails media={session.source.media} />
           ) : null}
+        </aside>
+      </Panel>
+
+      <PaneResizeHandle
+        id="source-details-resize-handle"
+        label="Resize source details"
+        orientation="vertical"
+      />
+
+      <Panel id="editor-content-panel" minSize="44rem" className="workspace-pane-content">
+        <div className="editor-stage" aria-label="Video preview and timeline area">
+          {session.status === "ready" && session.source.media && session.source.trim ? (
+            <EditorStage
+              key={sourceId}
+              sourceId={sourceId}
+              preview={session.source.preview}
+              trim={session.source.trim}
+              frameRate={
+                session.source.media.video.averageFrameRate ??
+                session.source.media.video.realFrameRate
+              }
+              audioStreams={session.source.media.audioStreams}
+              audioTracks={session.source.audioTracks}
+              mergeAudio={session.source.mergeAudio}
+              onPreviewPlaybackError={onPreviewPlaybackError}
+              onTrimChange={(trim) => onTrimChange(sourceId, trim)}
+              onPrepareWaveforms={(streamIndexes, width) =>
+                onPrepareWaveforms(sourceId, streamIndexes, width)
+              }
+              onToggleAudioTrack={(streamIndex) => onToggleAudioTrack(sourceId, streamIndex)}
+              onSetAllAudioTracksEnabled={(enabled) =>
+                onSetAllAudioTracksEnabled(sourceId, enabled)
+              }
+              onToggleAudioMerge={() => onToggleAudioMerge(sourceId)}
+              onWaveformImageError={(streamIndex) => onWaveformImageError(sourceId, streamIndex)}
+            />
+          ) : null}
+          {isSourceDragActive ? <DropOverlay /> : null}
         </div>
-
-        {session.lastError ? <SourceError error={session.lastError} /> : null}
-        {session.status === "ready" && session.source.media ? (
-          <MediaDetails media={session.source.media} />
-        ) : null}
-      </aside>
-
-      <div className="editor-stage" aria-label="Video preview and timeline area">
-        {session.status === "ready" && session.source.media && session.source.trim ? (
-          <EditorStage
-            key={sourceId}
-            sourceId={sourceId}
-            preview={session.source.preview}
-            trim={session.source.trim}
-            frameRate={
-              session.source.media.video.averageFrameRate ??
-              session.source.media.video.realFrameRate
-            }
-            audioStreams={session.source.media.audioStreams}
-            audioTracks={session.source.audioTracks}
-            mergeAudio={session.source.mergeAudio}
-            onPreviewPlaybackError={onPreviewPlaybackError}
-            onTrimChange={(trim) => onTrimChange(sourceId, trim)}
-            onPrepareWaveforms={(streamIndexes, width) =>
-              onPrepareWaveforms(sourceId, streamIndexes, width)
-            }
-            onToggleAudioTrack={(streamIndex) => onToggleAudioTrack(sourceId, streamIndex)}
-            onSetAllAudioTracksEnabled={(enabled) => onSetAllAudioTracksEnabled(sourceId, enabled)}
-            onToggleAudioMerge={() => onToggleAudioMerge(sourceId)}
-            onWaveformImageError={(streamIndex) => onWaveformImageError(sourceId, streamIndex)}
-          />
-        ) : null}
-        {isSourceDragActive ? <DropOverlay /> : null}
-      </div>
-    </section>
+      </Panel>
+    </Group>
   );
 }
 

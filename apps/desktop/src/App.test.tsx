@@ -173,6 +173,27 @@ describe("App", () => {
     ).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Trim" })).not.toBeInTheDocument();
     expect(screen.getByLabelText("Video preview and timeline area")).toBeInTheDocument();
+    expect(screen.getByTestId("source-details-panel")).toContainElement(
+      screen.getByRole("heading", { name: "holiday.mp4" }),
+    );
+    expect(screen.getByTestId("preview-panel")).toContainElement(
+      screen.getByLabelText("Source video preview"),
+    );
+    expect(screen.getByTestId("timeline-panel")).toContainElement(
+      screen.getByRole("heading", { name: "Selected Segment" }),
+    );
+    const sourceResizeHandle = screen.getByRole("separator", { name: "Resize source details" });
+    const timelineResizeHandle = screen.getByRole("separator", {
+      name: "Resize preview and timeline",
+    });
+    expect(sourceResizeHandle).toHaveAttribute("aria-orientation", "vertical");
+    expect(sourceResizeHandle).toHaveAttribute("tabindex", "0");
+    expect(timelineResizeHandle).toHaveAttribute("aria-orientation", "horizontal");
+    expect(timelineResizeHandle).toHaveAttribute("tabindex", "0");
+    expect(screen.getAllByRole("separator")).toHaveLength(2);
+    expect(
+      screen.getByTestId("timeline-panel").querySelector(".timeline-pane-scroll"),
+    ).not.toBeNull();
     expect(screen.queryByRole("heading", { name: "Open a video" })).not.toBeInTheDocument();
     expect(screen.queryByText("Local video editor")).not.toBeInTheDocument();
     expect(
@@ -480,7 +501,7 @@ describe("App", () => {
     expect(startHandle).toHaveAttribute("aria-valuenow", "0");
     expect(endHandle).toHaveAttribute("aria-valuenow", "65000000");
 
-    await user.click(startHandle);
+    startHandle.focus();
     await user.keyboard("{ArrowRight}");
 
     expect(startHandle).toHaveAttribute("aria-valuenow", "16683");
