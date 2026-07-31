@@ -269,7 +269,7 @@ describe("App", () => {
       expect(screen.getByText("+6.0 dB")).toBeInTheDocument();
       await user.dblClick(engVolume);
       expect(engVolume).toHaveValue("50");
-      expect(screen.getByText("+0.0 dB")).toBeInTheDocument();
+      expect(engVolume.parentElement).toHaveTextContent("+0.0 dB");
       await user.click(screen.getByRole("button", { name: "Mute eng" }));
       expect(screen.getByRole("button", { name: "Enable eng" })).toHaveAttribute(
         "aria-pressed",
