@@ -257,4 +257,53 @@ describe("sessionReducer", () => {
       error: { code: "waveform_failed", message: "Unavailable." },
     });
   });
+
+  it("turns a failed waveform image into a retryable track visualization", () => {
+    const loading = sessionReducer(initialSessionState, {
+      type: "source-selected",
+      source: firstSource,
+    });
+    const ready = sessionReducer(loading, {
+      type: "source-ready",
+      sourceId: firstSource.sourceId,
+      media: mediaWithAudio(firstSource.sourceId),
+    });
+    const preparing = sessionReducer(ready, {
+      type: "waveforms-loading",
+      sourceId: firstSource.sourceId,
+      jobId: "waveform-1",
+      width: 800,
+      streamIndexes: [2],
+    });
+    const prepared = sessionReducer(preparing, {
+      type: "waveform-result",
+      result: {
+        status: "ready",
+        sourceId: firstSource.sourceId,
+        jobId: "waveform-1",
+        streamIndex: 2,
+        width: 800,
+        url: "http://clipkit-media.localhost/source-1?variant=waveform&stream=2&width=800",
+      },
+    });
+    const failedDisplay = sessionReducer(prepared, {
+      type: "waveform-display-failed",
+      sourceId: firstSource.sourceId,
+      streamIndex: 2,
+    });
+
+    expect(failedDisplay.source?.audioTracks[0]).toEqual({
+      streamIndex: 2,
+      enabled: true,
+      waveform: {
+        status: "failed",
+        jobId: "waveform-1",
+        width: 800,
+        error: {
+          code: "waveform_failed",
+          message: "The waveform preview could not be displayed.",
+        },
+      },
+    });
+  });
 });
