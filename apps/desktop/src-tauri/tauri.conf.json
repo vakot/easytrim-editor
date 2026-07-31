@@ -22,8 +22,8 @@
     ],
     "security": {
       "capabilities": ["default"],
-      "csp": "default-src 'self'; connect-src ipc: http://ipc.localhost; img-src 'self' asset: http://asset.localhost; media-src 'self' easycut-media: http://easycut-media.localhost; style-src 'self'",
-      "devCsp": "default-src 'self'; connect-src ipc: http://ipc.localhost ws://localhost:1421; img-src 'self' asset: http://asset.localhost; media-src 'self' easycut-media: http://easycut-media.localhost; style-src 'self'"
+      "csp": "default-src 'self'; connect-src ipc: http://ipc.localhost; img-src 'self' asset: http://asset.localhost clipkit-media: http://clipkit-media.localhost; media-src 'self' clipkit-media: http://clipkit-media.localhost; style-src 'self'",
+      "devCsp": "default-src 'self'; connect-src ipc: http://ipc.localhost ws://localhost:1421; img-src 'self' asset: http://asset.localhost clipkit-media: http://clipkit-media.localhost; media-src 'self' clipkit-media: http://clipkit-media.localhost; style-src 'self'"
     }
   },
   "bundle": {

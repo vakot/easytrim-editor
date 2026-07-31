@@ -12,7 +12,7 @@ use state::AppState;
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
-        .register_uri_scheme_protocol("easycut-media", |context, request| {
+        .register_uri_scheme_protocol("clipkit-media", |context, request| {
             media::preview::respond(context.app_handle(), request)
         })
         .manage(AppState::default())
@@ -21,6 +21,7 @@ pub fn run() {
             commands::media::inspect_media,
             commands::media::prepare_proxy_preview,
             commands::media::prepare_source_preview,
+            commands::media::prepare_waveforms,
             commands::source::choose_source,
             commands::source::import_dropped_source
         ])

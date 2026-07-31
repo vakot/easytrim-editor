@@ -27,7 +27,17 @@ pub fn respond<R: Runtime>(app: &AppHandle<R>, request: Request<Vec<u8>>) -> Res
     }
 
     let state = app.state::<AppState>();
-    let Ok(path) = state.resolve_preview_path(source_id) else {
+    let path = if query_parameter(request.uri().query(), "variant") == Some("waveform") {
+        let Some(stream_index) = query_parameter(request.uri().query(), "stream")
+            .and_then(|value| value.parse::<u32>().ok())
+        else {
+            return empty_response(StatusCode::NOT_FOUND);
+        };
+        state.resolve_waveform_path(source_id, stream_index)
+    } else {
+        state.resolve_preview_path(source_id)
+    };
+    let Ok(path) = path else {
         return empty_response(StatusCode::NOT_FOUND);
     };
 
@@ -36,6 +46,13 @@ pub fn respond<R: Runtime>(app: &AppHandle<R>, request: Request<Vec<u8>>) -> Res
         request.method() == Method::HEAD,
         request.headers().get("range"),
     )
+}
+
+fn query_parameter<'a>(query: Option<&'a str>, name: &str) -> Option<&'a str> {
+    query?.split('&').find_map(|entry| {
+        let (key, value) = entry.split_once('=')?;
+        (key == name).then_some(value)
+    })
 }
 
 fn read_media_response(
@@ -164,6 +181,7 @@ fn content_type(path: &Path) -> &'static str {
         Some("flv") => "video/x-flv",
         Some("mkv") => "video/x-matroska",
         Some("mov") => "video/quicktime",
+        Some("png") => "image/png",
         Some("ts" | "mts" | "m2ts") => "video/mp2t",
         Some("webm") => "video/webm",
         Some("wmv") => "video/x-ms-wmv",
@@ -217,7 +235,7 @@ fn insert_owned_header(
 
 #[cfg(test)]
 mod tests {
-    use super::{ByteRange, MAX_RESPONSE_BYTES, parse_range};
+    use super::{ByteRange, MAX_RESPONSE_BYTES, parse_range, query_parameter};
 
     #[test]
     fn parses_bounded_open_and_suffix_ranges() {
@@ -233,6 +251,15 @@ mod tests {
             parse_range("bytes=-10", 100),
             Some(ByteRange { start: 90, end: 99 })
         );
+    }
+
+    #[test]
+    fn parses_waveform_query_parameters_without_paths() {
+        let query = Some("variant=waveform&stream=4&width=1280");
+
+        assert_eq!(query_parameter(query, "variant"), Some("waveform"));
+        assert_eq!(query_parameter(query, "stream"), Some("4"));
+        assert_eq!(query_parameter(query, "missing"), None);
     }
 
     #[test]
