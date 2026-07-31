@@ -1,6 +1,24 @@
+mod application;
+mod commands;
+mod domain;
+mod error;
+mod media;
+mod process;
+mod state;
+
+use state::AppState;
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
+        .manage(AppState::default())
+        .invoke_handler(tauri::generate_handler![
+            commands::capabilities::check_media_capabilities,
+            commands::media::inspect_media,
+            commands::source::choose_source,
+            commands::source::import_dropped_source
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

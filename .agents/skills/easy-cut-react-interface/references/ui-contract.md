@@ -106,6 +106,7 @@ Both routes:
 - Use one accent color for trim selection and primary actions.
 - Keep touch-oriented targets at least 44 by 44 CSS pixels where practical.
 - Communicate selected/disabled state without relying on color alone.
-- Add no context menus or top application menu for editor actions.
+- Keep the compact top toolbar limited to direct actions such as `Open video`; add no dropdown
+  navigation or context menus for editor actions.
 - Reserve motion for direct manipulation and progress.
 - Keep export buttons visible at the minimum supported window size.

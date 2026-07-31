@@ -21,7 +21,10 @@ cancel_operation(operation_id) -> CancelResult
 
 Prefer one command invocation that owns an operation through completion while streaming progress through a channel. If a command returns immediately, define exactly one registry owner for background tasks and child handles.
 
-The native picker and native window drag/drop handler canonicalize and register the selected path. Frontend code receives only a source ID and display filename; later commands resolve the path from in-memory native state.
+The native picker canonicalizes and registers its selected path directly. Tauri's official webview
+drop event adapter forwards a dropped path immediately to a narrow native import command; the
+feature UI and session state receive only a source ID and display filename. Later commands resolve
+the path from in-memory native state.
 
 ## Core DTO rules
 
