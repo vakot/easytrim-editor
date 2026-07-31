@@ -267,6 +267,9 @@ describe("App", () => {
       fireEvent.change(engVolume, { target: { value: "100" } });
       expect(engVolume).toHaveValue("100");
       expect(screen.getByText("+6.0 dB")).toBeInTheDocument();
+      await user.dblClick(engVolume);
+      expect(engVolume).toHaveValue("50");
+      expect(screen.getByText("+0.0 dB")).toBeInTheDocument();
       await user.click(screen.getByRole("button", { name: "Mute eng" }));
       expect(screen.getByRole("button", { name: "Enable eng" })).toHaveAttribute(
         "aria-pressed",
@@ -278,7 +281,7 @@ describe("App", () => {
         "aria-pressed",
         "true",
       );
-      expect(engVolume).toHaveValue("100");
+      expect(engVolume).toHaveValue("50");
       await waitFor(() =>
         expect(mocks.prepareWaveforms).toHaveBeenCalledWith(
           selection.sourceId,

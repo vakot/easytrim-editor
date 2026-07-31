@@ -177,6 +177,7 @@ function AudioLevelControl({
         step="1"
         value={volumePercent}
         onChange={(event) => onChange(Number(event.target.value))}
+        onDoubleClick={() => onChange(50)}
         aria-label={label}
         title="50% is the original level"
       />
