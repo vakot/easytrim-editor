@@ -18,7 +18,7 @@ describe("playback domain", () => {
     expect(clampPlaybackMicros(8_000_000, 5_000_000)).toBe(5_000_000);
   });
 
-  it("formats source time with millisecond precision", () => {
-    expect(formatPlaybackTime(3_723_456_789)).toBe("01:02:03.456");
+  it("formats source time with frame precision", () => {
+    expect(formatPlaybackTime(70_500_000, { numerator: 60, denominator: 1 })).toBe("00:01:10:30f");
   });
 });

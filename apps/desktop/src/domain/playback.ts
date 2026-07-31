@@ -15,15 +15,31 @@ export function clampPlaybackMicros(micros: number, sourceDurationMicros: number
   return Math.min(sourceDurationMicros, Math.max(0, integer));
 }
 
-export function formatPlaybackTime(micros: number): string {
-  const totalMilliseconds = Math.max(0, Math.floor(micros / 1_000));
-  const hours = Math.floor(totalMilliseconds / 3_600_000);
-  const minutes = Math.floor((totalMilliseconds % 3_600_000) / 60_000);
-  const seconds = Math.floor((totalMilliseconds % 60_000) / 1_000);
-  const milliseconds = totalMilliseconds % 1_000;
+export function formatPlaybackTime(
+  micros: number,
+  frameRate: PlaybackFrameRate | undefined,
+): string {
+  const frameDuration = frameDurationMicros(frameRate);
+  const totalFrames = Math.max(
+    0,
+    frameRate && frameRate.numerator > 0 && frameRate.denominator > 0
+      ? Math.round(((micros / 1_000_000) * frameRate.numerator) / frameRate.denominator)
+      : Math.round(micros / frameDuration),
+  );
+  const framesPerSecond = Math.max(
+    1,
+    frameRate && frameRate.numerator > 0 && frameRate.denominator > 0
+      ? Math.round(frameRate.numerator / frameRate.denominator)
+      : 10,
+  );
+  const wholeSeconds = Math.floor(totalFrames / framesPerSecond);
+  const frames = totalFrames - Math.round(wholeSeconds * framesPerSecond);
+  const hours = Math.floor(wholeSeconds / 3_600);
+  const minutes = Math.floor((wholeSeconds % 3_600) / 60);
+  const seconds = wholeSeconds % 60;
   return `${hours.toString().padStart(2, "0")}:${minutes
     .toString()
-    .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}.${milliseconds
+    .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}:${frames
     .toString()
-    .padStart(3, "0")}`;
+    .padStart(2, "0")}f`;
 }

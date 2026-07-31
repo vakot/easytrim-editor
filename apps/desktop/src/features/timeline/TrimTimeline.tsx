@@ -438,9 +438,13 @@ export function TrimTimeline({
         </div>
         <div className="timeline-heading-controls">{playbackControls}</div>
         <dl className="trim-readouts" aria-label="Trim time values">
-          <TimeValue label="Start" micros={range.startMicros} />
-          <TimeValue label="End" micros={range.endMicros} />
-          <TimeValue label="Duration" micros={range.endMicros - range.startMicros} />
+          <TimeValue label="Start" micros={range.startMicros} frameRate={frameRate} />
+          <TimeValue label="End" micros={range.endMicros} frameRate={frameRate} />
+          <TimeValue
+            label="Duration"
+            micros={range.endMicros - range.startMicros}
+            frameRate={frameRate}
+          />
         </dl>
       </div>
 
@@ -449,7 +453,7 @@ export function TrimTimeline({
         <div className="timeline-scale">
           {[0, 0.25, 0.5, 0.75, 1].map((fraction) => (
             <span key={fraction}>
-              {formatPlaybackTime(Math.round(range.sourceDurationMicros * fraction))}
+              {formatPlaybackTime(Math.round(range.sourceDurationMicros * fraction), frameRate)}
             </span>
           ))}
         </div>
@@ -501,7 +505,7 @@ export function TrimTimeline({
             aria-valuemax={range.sourceDurationMicros}
             aria-valuenow={clampPlaybackMicros(playheadMicros, range.sourceDurationMicros)}
             aria-valuetext={formatAccessibleTime(playheadMicros)}
-            title={formatPlaybackTime(playheadMicros)}
+            title={formatPlaybackTime(playheadMicros, frameRate)}
             onPointerDown={(event) => startScrub(event, event.currentTarget)}
             onPointerMove={moveScrub}
             onPointerUp={(event) => finishScrub(event, true)}
@@ -656,11 +660,19 @@ function TrimHandle({
   );
 }
 
-function TimeValue({ label, micros }: { label: string; micros: number }) {
+function TimeValue({
+  label,
+  micros,
+  frameRate,
+}: {
+  label: string;
+  micros: number;
+  frameRate?: FrameRate;
+}) {
   return (
     <div>
       <dt>{label}</dt>
-      <dd>{formatPlaybackTime(micros)}</dd>
+      <dd>{formatPlaybackTime(micros, frameRate)}</dd>
     </div>
   );
 }

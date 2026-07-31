@@ -1,5 +1,6 @@
 import type { TrimBoundary } from "../../domain/trim";
 import { formatPlaybackTime } from "../../domain/playback";
+import type { FrameRate } from "../../lib/tauri/media";
 
 interface PlaybackControlsProps {
   isPlaying: boolean;
@@ -97,13 +98,18 @@ export function PlaybackControls({
 interface PlaybackTimecodeProps {
   currentMicros: number;
   sourceDurationMicros: number;
+  frameRate?: FrameRate;
 }
 
-export function PlaybackTimecode({ currentMicros, sourceDurationMicros }: PlaybackTimecodeProps) {
+export function PlaybackTimecode({
+  currentMicros,
+  sourceDurationMicros,
+  frameRate,
+}: PlaybackTimecodeProps) {
   return (
     <output className="playback-time" aria-label="Current playback time">
-      {formatPlaybackTime(currentMicros)}
-      <span> / {formatPlaybackTime(sourceDurationMicros)}</span>
+      {formatPlaybackTime(currentMicros, frameRate)}
+      <span> / {formatPlaybackTime(sourceDurationMicros, frameRate)}</span>
     </output>
   );
 }
