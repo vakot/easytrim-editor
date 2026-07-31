@@ -3,12 +3,13 @@ use std::{
     io::{self, Read},
     process::{Command, ExitStatus, Stdio},
     thread,
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 use wait_timeout::ChildExt;
 
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+const PROCESS_POLL_INTERVAL: Duration = Duration::from_millis(100);
 
 #[derive(Debug)]
 pub struct ProcessOutput {
@@ -26,6 +27,28 @@ pub fn run_bounded(
     max_stdout_bytes: usize,
     max_stderr_bytes: usize,
 ) -> io::Result<ProcessOutput> {
+    run_bounded_cancellable(
+        executable,
+        arguments,
+        timeout,
+        max_stdout_bytes,
+        max_stderr_bytes,
+        || false,
+    )
+}
+
+pub fn run_bounded_cancellable(
+    executable: &OsStr,
+    arguments: &[OsString],
+    timeout: Duration,
+    max_stdout_bytes: usize,
+    max_stderr_bytes: usize,
+    mut is_cancelled: impl FnMut() -> bool,
+) -> io::Result<ProcessOutput> {
+    if is_cancelled() {
+        return Err(cancelled_error());
+    }
+
     let mut command = Command::new(executable);
     command
         .args(arguments)
@@ -47,9 +70,17 @@ pub fn run_bounded(
     let stdout_reader = thread::spawn(move || read_bounded(stdout, max_stdout_bytes));
     let stderr_reader = thread::spawn(move || read_bounded(stderr, max_stderr_bytes));
 
-    let status = match child.wait_timeout(timeout) {
-        Ok(Some(status)) => status,
-        Ok(None) => {
+    let started_at = Instant::now();
+    let status = loop {
+        if is_cancelled() {
+            terminate_child(&mut child)?;
+            join_reader(stdout_reader)?;
+            join_reader(stderr_reader)?;
+            return Err(cancelled_error());
+        }
+
+        let elapsed = started_at.elapsed();
+        if elapsed >= timeout {
             terminate_child(&mut child)?;
             join_reader(stdout_reader)?;
             join_reader(stderr_reader)?;
@@ -58,11 +89,17 @@ pub fn run_bounded(
                 "media helper process timed out",
             ));
         }
-        Err(error) => {
-            let _ = terminate_child(&mut child);
-            join_reader(stdout_reader)?;
-            join_reader(stderr_reader)?;
-            return Err(error);
+
+        let wait_duration = PROCESS_POLL_INTERVAL.min(timeout - elapsed);
+        match child.wait_timeout(wait_duration) {
+            Ok(Some(status)) => break status,
+            Ok(None) => {}
+            Err(error) => {
+                let _ = terminate_child(&mut child);
+                join_reader(stdout_reader)?;
+                join_reader(stderr_reader)?;
+                return Err(error);
+            }
         }
     };
 
@@ -76,6 +113,13 @@ pub fn run_bounded(
         stdout_truncated,
         stderr_truncated,
     })
+}
+
+fn cancelled_error() -> io::Error {
+    io::Error::new(
+        io::ErrorKind::Interrupted,
+        "media helper process was cancelled",
+    )
 }
 
 fn read_bounded(mut reader: impl Read, limit: usize) -> io::Result<(Vec<u8>, bool)> {
@@ -127,9 +171,13 @@ fn configure_process(_command: &mut Command) {}
 
 #[cfg(test)]
 mod tests {
-    use std::io::Cursor;
+    use std::{
+        ffi::OsStr,
+        io::{self, Cursor},
+        time::Duration,
+    };
 
-    use super::read_bounded;
+    use super::{read_bounded, run_bounded_cancellable};
 
     #[test]
     fn bounded_reader_drains_but_retains_only_the_limit() {
@@ -138,5 +186,20 @@ mod tests {
 
         assert_eq!(retained, b"0123");
         assert!(truncated);
+    }
+
+    #[test]
+    fn cancellation_is_checked_before_spawning_a_process() {
+        let error = run_bounded_cancellable(
+            OsStr::new("this-process-must-not-start"),
+            &[],
+            Duration::from_secs(1),
+            0,
+            0,
+            || true,
+        )
+        .expect_err("cancelled execution must stop before process lookup");
+
+        assert_eq!(error.kind(), io::ErrorKind::Interrupted);
     }
 }
