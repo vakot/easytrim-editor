@@ -29,6 +29,7 @@ export type WaveformState =
 export interface AudioTrackState {
   streamIndex: number;
   enabled: boolean;
+  volumePercent: number;
   waveform: WaveformState;
 }
 
@@ -41,6 +42,7 @@ export interface SessionState {
     preview: PreviewState;
     trim: TrimRange | null;
     audioTracks: AudioTrackState[];
+    masterVolumePercent: number;
     mergeAudio: boolean;
   } | null;
   lastError: AppError | null;
@@ -65,6 +67,13 @@ type SessionAction =
   | { type: "trim-changed"; sourceId: string; trim: TrimRange }
   | { type: "audio-track-toggled"; sourceId: string; streamIndex: number }
   | { type: "audio-tracks-set-enabled"; sourceId: string; enabled: boolean }
+  | {
+      type: "audio-track-volume-changed";
+      sourceId: string;
+      streamIndex: number;
+      volumePercent: number;
+    }
+  | { type: "audio-tracks-volume-set"; sourceId: string; volumePercent: number }
   | { type: "audio-merge-toggled"; sourceId: string }
   | {
       type: "waveforms-loading";
@@ -106,6 +115,7 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
           preview: { status: "idle" },
           trim: null,
           audioTracks: [],
+          masterVolumePercent: 50,
           mergeAudio: false,
         },
         lastError: null,
@@ -127,6 +137,7 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
           audioTracks: action.media.audioStreams.map((stream) => ({
             streamIndex: stream.streamIndex,
             enabled: true,
+            volumePercent: 50,
             waveform: { status: "idle" },
           })),
         },
@@ -219,6 +230,41 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
           audioTracks: state.source.audioTracks.map((track) => ({
             ...track,
             enabled: action.enabled,
+          })),
+        },
+      };
+    case "audio-track-volume-changed":
+      if (state.source?.selection.sourceId !== action.sourceId) {
+        return state;
+      }
+      return {
+        ...state,
+        source: {
+          ...state.source,
+          audioTracks: state.source.audioTracks.map((track) =>
+            track.streamIndex === action.streamIndex
+              ? {
+                  ...track,
+                  enabled: action.volumePercent > 0,
+                  volumePercent: action.volumePercent,
+                }
+              : track,
+          ),
+        },
+      };
+    case "audio-tracks-volume-set":
+      if (state.source?.selection.sourceId !== action.sourceId) {
+        return state;
+      }
+      return {
+        ...state,
+        source: {
+          ...state.source,
+          masterVolumePercent: action.volumePercent,
+          audioTracks: state.source.audioTracks.map((track) => ({
+            ...track,
+            enabled: action.volumePercent > 0,
+            volumePercent: action.volumePercent,
           })),
         },
       };

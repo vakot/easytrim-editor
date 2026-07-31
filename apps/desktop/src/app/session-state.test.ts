@@ -205,8 +205,8 @@ describe("sessionReducer", () => {
     });
 
     expect(ready.source?.audioTracks).toEqual([
-      { streamIndex: 2, enabled: true, waveform: { status: "idle" } },
-      { streamIndex: 4, enabled: true, waveform: { status: "idle" } },
+      { streamIndex: 2, enabled: true, volumePercent: 50, waveform: { status: "idle" } },
+      { streamIndex: 4, enabled: true, volumePercent: 50, waveform: { status: "idle" } },
     ]);
     expect(mergeEnabled.source?.audioTracks[1]?.enabled).toBe(false);
     expect(mergeEnabled.source?.mergeAudio).toBe(true);
@@ -307,6 +307,7 @@ describe("sessionReducer", () => {
     expect(failedDisplay.source?.audioTracks[0]).toEqual({
       streamIndex: 2,
       enabled: true,
+      volumePercent: 50,
       waveform: {
         status: "failed",
         jobId: "waveform-1",

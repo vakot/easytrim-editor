@@ -1066,7 +1066,7 @@ p {
 .audio-master-control {
   display: grid;
   min-width: 0;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: auto minmax(6rem, 8rem) minmax(0, 1fr);
   column-gap: 0.45rem;
   align-items: center;
 }
@@ -1118,14 +1118,62 @@ p {
 .audio-track-label {
   display: grid;
   min-width: 0;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: auto minmax(6rem, 8rem) minmax(0, 1fr);
   column-gap: 0.45rem;
   align-items: center;
 }
 
-.audio-master-control input,
-.audio-track-label input {
-  grid-row: 1 / span 2;
+.audio-volume-button {
+  display: grid;
+  width: 1.5rem;
+  height: 1.5rem;
+  place-items: center;
+  padding: 0.15rem;
+  border: 0;
+  border-radius: 0.3rem;
+  color: #e4ae4e;
+  background: transparent;
+  cursor: pointer;
+}
+
+.audio-volume-button:hover,
+.audio-volume-button:focus-visible {
+  background: rgb(228 174 78 / 15%);
+}
+
+.audio-volume-button[aria-pressed="false"] {
+  color: #71717a;
+}
+
+.audio-volume-button svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.audio-level-control {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.audio-volume-slider {
+  width: 100%;
+  min-width: 0;
+  accent-color: #e4ae4e;
+}
+
+.audio-level-control output {
+  min-width: 3.1rem;
+  color: #a1a1aa;
+  font-size: 0.62rem;
+  text-align: right;
+  white-space: nowrap;
 }
 
 .audio-track-title,

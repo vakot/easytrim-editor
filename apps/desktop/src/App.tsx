@@ -122,6 +122,20 @@ function App() {
     dispatch({ type: "audio-tracks-set-enabled", sourceId, enabled });
   }, []);
 
+  const handleAudioTrackVolumeChange = useCallback(
+    (sourceId: string, streamIndex: number, volumePercent: number) => {
+      dispatch({ type: "audio-track-volume-changed", sourceId, streamIndex, volumePercent });
+    },
+    [],
+  );
+
+  const handleAllAudioTracksVolumeChange = useCallback(
+    (sourceId: string, volumePercent: number) => {
+      dispatch({ type: "audio-tracks-volume-set", sourceId, volumePercent });
+    },
+    [],
+  );
+
   const handleToggleAudioMerge = useCallback((sourceId: string) => {
     dispatch({ type: "audio-merge-toggled", sourceId });
   }, []);
@@ -272,6 +286,8 @@ function App() {
         onPrepareWaveforms={handlePrepareWaveforms}
         onToggleAudioTrack={handleToggleAudioTrack}
         onSetAllAudioTracksEnabled={handleSetAllAudioTracksEnabled}
+        onAudioTrackVolumeChange={handleAudioTrackVolumeChange}
+        onAllAudioTracksVolumeChange={handleAllAudioTracksVolumeChange}
         onToggleAudioMerge={handleToggleAudioMerge}
         onWaveformImageError={handleWaveformImageError}
         exportQueue={exportQueue}

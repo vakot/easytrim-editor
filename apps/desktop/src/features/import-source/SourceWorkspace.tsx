@@ -17,6 +17,8 @@ interface SourceWorkspaceProps {
   onPrepareWaveforms: (sourceId: string, streamIndexes: number[], width: number) => void;
   onToggleAudioTrack: (sourceId: string, streamIndex: number) => void;
   onSetAllAudioTracksEnabled: (sourceId: string, enabled: boolean) => void;
+  onAudioTrackVolumeChange: (sourceId: string, streamIndex: number, volumePercent: number) => void;
+  onAllAudioTracksVolumeChange: (sourceId: string, volumePercent: number) => void;
   onToggleAudioMerge: (sourceId: string) => void;
   onWaveformImageError: (sourceId: string, streamIndex: number) => void;
   exportQueue: ExportToast[];
@@ -32,6 +34,8 @@ export function SourceWorkspace({
   onPrepareWaveforms,
   onToggleAudioTrack,
   onSetAllAudioTracksEnabled,
+  onAudioTrackVolumeChange,
+  onAllAudioTracksVolumeChange,
   onToggleAudioMerge,
   onWaveformImageError,
   exportQueue,
@@ -121,6 +125,7 @@ export function SourceWorkspace({
                 }
                 audioStreams={session.source.media.audioStreams}
                 audioTracks={session.source.audioTracks}
+                masterVolumePercent={session.source.masterVolumePercent}
                 mergeAudio={session.source.mergeAudio}
                 onPreviewPlaybackError={onPreviewPlaybackError}
                 onTrimChange={(trim) => onTrimChange(sourceId, trim)}
@@ -130,6 +135,12 @@ export function SourceWorkspace({
                 onToggleAudioTrack={(streamIndex) => onToggleAudioTrack(sourceId, streamIndex)}
                 onSetAllAudioTracksEnabled={(enabled) =>
                   onSetAllAudioTracksEnabled(sourceId, enabled)
+                }
+                onAudioTrackVolumeChange={(streamIndex, volumePercent) =>
+                  onAudioTrackVolumeChange(sourceId, streamIndex, volumePercent)
+                }
+                onAllAudioTracksVolumeChange={(volumePercent) =>
+                  onAllAudioTracksVolumeChange(sourceId, volumePercent)
                 }
                 onToggleAudioMerge={() => onToggleAudioMerge(sourceId)}
                 onWaveformImageError={(streamIndex) => onWaveformImageError(sourceId, streamIndex)}

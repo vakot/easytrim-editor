@@ -41,8 +41,13 @@ export interface ExportResult {
 export interface FastExportRequest {
   sourceId: string;
   trim: TrimSelection;
-  audioStreamIndexes: number[];
+  audioTracks: AudioTrackSelection[];
   mergeAudio: boolean;
+}
+
+export interface AudioTrackSelection {
+  streamIndex: number;
+  volumePercent: number;
 }
 
 export interface OptimizedExportRequest extends FastExportRequest {

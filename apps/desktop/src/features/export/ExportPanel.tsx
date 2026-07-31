@@ -65,14 +65,17 @@ export function ExportPanel({
   const toastSequence = useRef(0);
 
   const selectedAudio = audioTracks
-    .filter((track) => track.enabled)
-    .map((track) => track.streamIndex);
+    .filter((track) => track.enabled && track.volumePercent > 0)
+    .map((track) => ({
+      streamIndex: track.streamIndex,
+      volumePercent: track.volumePercent,
+    }));
 
   async function handleFastCut() {
     const request: FastExportRequest = {
       sourceId: source.sourceId,
       trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
-      audioStreamIndexes: selectedAudio,
+      audioTracks: selectedAudio,
       mergeAudio,
     };
     await chooseAndStart("fast", defaults.fast, request);
@@ -83,7 +86,7 @@ export function ExportPanel({
     const request: OptimizedExportRequest = {
       sourceId: source.sourceId,
       trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
-      audioStreamIndexes: selectedAudio,
+      audioTracks: selectedAudio,
       mergeAudio,
       resolution,
       frameRate: frameRate
