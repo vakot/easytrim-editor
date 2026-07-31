@@ -128,8 +128,12 @@ export function EditorStage({
     video.muted = false;
 
     if (gainValue <= 1) {
-      disconnectPreviewAudio();
-      video.volume = Math.max(0, gainValue);
+      if (audioGainRef.current) {
+        audioGainRef.current.gain.value = gainValue;
+        video.volume = 1;
+      } else {
+        video.volume = Math.max(0, gainValue);
+      }
       return;
     }
 
