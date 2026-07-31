@@ -8,6 +8,8 @@ import {
 } from "../../domain/playback";
 import {
   canSetTrimBoundaryAtPlayhead,
+  playheadAfterSegmentMove,
+  playheadAfterTrimBoundaryMove,
   setTrimBoundaryAtPlayhead,
   type TrimBoundary,
   type TrimRange,
@@ -50,11 +52,14 @@ export function EditorStage({
   const lastPlaybackCommitAtRef = useRef(0);
   const trimRef = useRef(trim);
   const currentPlayheadMicrosRef = useRef(trim.startMicros);
+  const segmentDragActiveRef = useRef(false);
+  const segmentFollowBoundaryRef = useRef<TrimBoundary | null>(null);
   const shortcutActionsRef = useRef<EditorShortcutActions | null>(null);
   trimRef.current = trim;
 
   const [playheadMicros, setPlayheadMicros] = useState(trim.startMicros);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [safeTrimFollowingEnabled, setSafeTrimFollowingEnabled] = useState(true);
   const [transportError, setTransportError] = useState<string | null>(null);
   const displayedPlayheadMicros = clampPlaybackMicros(playheadMicros, trim.sourceDurationMicros);
 
@@ -246,6 +251,51 @@ export function EditorStage({
     onTrimChange(nextTrim);
   }
 
+  function handleTrimBoundaryChange(boundary: TrimBoundary, nextTrim: TrimRange) {
+    const previousTrim = trimRef.current;
+    const currentPlayheadMicros = currentPlayheadMicrosRef.current;
+    const nextPlayheadMicros = safeTrimFollowingEnabled
+      ? playheadAfterTrimBoundaryMove(previousTrim, nextTrim, boundary, currentPlayheadMicros)
+      : currentPlayheadMicros;
+
+    trimRef.current = nextTrim;
+    onTrimChange(nextTrim);
+    if (nextPlayheadMicros !== currentPlayheadMicros) {
+      commitSeek(nextPlayheadMicros);
+    }
+  }
+
+  function handleSegmentMove(nextTrim: TrimRange) {
+    const previousTrim = trimRef.current;
+    const currentPlayheadMicros = currentPlayheadMicrosRef.current;
+    const follow =
+      safeTrimFollowingEnabled && segmentDragActiveRef.current
+        ? playheadAfterSegmentMove(
+            previousTrim,
+            nextTrim,
+            currentPlayheadMicros,
+            segmentFollowBoundaryRef.current,
+          )
+        : { playheadMicros: currentPlayheadMicros, boundary: null };
+
+    segmentFollowBoundaryRef.current = follow.boundary;
+    trimRef.current = nextTrim;
+    onTrimChange(nextTrim);
+    if (follow.playheadMicros !== currentPlayheadMicros) {
+      commitSeek(follow.playheadMicros);
+    }
+  }
+
+  function handleSegmentDragStart() {
+    segmentDragActiveRef.current = true;
+    segmentFollowBoundaryRef.current = null;
+  }
+
+  function handleSegmentDragEnd() {
+    segmentDragActiveRef.current = false;
+    segmentFollowBoundaryRef.current = null;
+  }
+
   shortcutActionsRef.current = {
     enabled: preview.status === "ready",
     togglePlayback: handleTogglePlayback,
@@ -305,10 +355,15 @@ export function EditorStage({
             <PlaybackTimecode
               currentMicros={displayedPlayheadMicros}
               sourceDurationMicros={trim.sourceDurationMicros}
+              safeTrimFollowingEnabled={safeTrimFollowingEnabled}
+              onToggleSafeTrimFollowing={() => setSafeTrimFollowingEnabled((enabled) => !enabled)}
             />
           ) : null
         }
-        onChange={onTrimChange}
+        onChange={handleTrimBoundaryChange}
+        onMoveSegment={handleSegmentMove}
+        onSegmentDragStart={handleSegmentDragStart}
+        onSegmentDragEnd={handleSegmentDragEnd}
         onSeek={commitSeek}
         onScrubStart={handleScrubStart}
         onScrub={queueScrubSeek}

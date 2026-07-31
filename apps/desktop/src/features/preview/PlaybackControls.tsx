@@ -24,7 +24,7 @@ export function PlaybackControls({
     <div className="playback-controls" aria-label="Preview playback controls">
       <div className="transport-buttons">
         <button
-          className="transport-button transport-button-mark"
+          className="transport-button"
           type="button"
           aria-label="Set segment start to current position"
           aria-keyshortcuts="I"
@@ -36,7 +36,7 @@ export function PlaybackControls({
           disabled={!canSetSegmentStart}
           onClick={() => onSetSegmentBoundary("start")}
         >
-          <span aria-hidden="true">I</span>
+          <MarkInIcon />
         </button>
         <button
           className="transport-button"
@@ -69,7 +69,7 @@ export function PlaybackControls({
           <NextFrameIcon />
         </button>
         <button
-          className="transport-button transport-button-mark"
+          className="transport-button"
           type="button"
           aria-label="Set segment end to current position"
           aria-keyshortcuts="O"
@@ -81,7 +81,7 @@ export function PlaybackControls({
           disabled={!canSetSegmentEnd}
           onClick={() => onSetSegmentBoundary("end")}
         >
-          <span aria-hidden="true">O</span>
+          <MarkOutIcon />
         </button>
       </div>
 
@@ -97,14 +97,37 @@ export function PlaybackControls({
 interface PlaybackTimecodeProps {
   currentMicros: number;
   sourceDurationMicros: number;
+  safeTrimFollowingEnabled: boolean;
+  onToggleSafeTrimFollowing: () => void;
 }
 
-export function PlaybackTimecode({ currentMicros, sourceDurationMicros }: PlaybackTimecodeProps) {
+export function PlaybackTimecode({
+  currentMicros,
+  sourceDurationMicros,
+  safeTrimFollowingEnabled,
+  onToggleSafeTrimFollowing,
+}: PlaybackTimecodeProps) {
   return (
-    <output className="playback-time" aria-label="Current playback time">
-      {formatPlaybackTime(currentMicros)}
-      <span> / {formatPlaybackTime(sourceDurationMicros)}</span>
-    </output>
+    <div className="playback-time-toolbar">
+      <output className="playback-time" aria-label="Current playback time">
+        {formatPlaybackTime(currentMicros)}
+        <span> / {formatPlaybackTime(sourceDurationMicros)}</span>
+      </output>
+      <button
+        className="timeline-tool-button"
+        type="button"
+        aria-label="Safe trim following"
+        aria-pressed={safeTrimFollowingEnabled}
+        title={
+          safeTrimFollowingEnabled
+            ? "Safe trim following: on — playhead follows a trim border once caught"
+            : "Safe trim following: off — playhead stays in place"
+        }
+        onClick={onToggleSafeTrimFollowing}
+      >
+        <LinkPlayheadIcon />
+      </button>
+    </div>
   );
 }
 
@@ -120,6 +143,30 @@ function PauseIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="M7 5h4v14H7zm6 0h4v14h-4z" />
+    </svg>
+  );
+}
+
+function MarkInIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M6 5h2v14H6zm4 1.5 8.5 5.5-8.5 5.5z" />
+    </svg>
+  );
+}
+
+function MarkOutIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M16 5h2v14h-2zM5.5 12 14 6.5v11z" />
+    </svg>
+  );
+}
+
+function LinkPlayheadIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M9.6 13.2a3.9 3.9 0 0 0 5.5 0l2.3-2.3a3.9 3.9 0 0 0-5.5-5.5l-1.3 1.3L12 8.1l1.3-1.3a1.9 1.9 0 1 1 2.7 2.7l-2.3 2.3a1.9 1.9 0 0 1-2.7 0zm4.8-2.4a3.9 3.9 0 0 0-5.5 0l-2.3 2.3a3.9 3.9 0 0 0 5.5 5.5l1.3-1.3-1.4-1.4-1.3 1.3A1.9 1.9 0 1 1 8 14.5l2.3-2.3a1.9 1.9 0 0 1 2.7 0z" />
     </svg>
   );
 }
