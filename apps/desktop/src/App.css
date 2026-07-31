@@ -507,6 +507,9 @@ p {
 }
 
 .timeline-panel {
+  --timeline-label-width: 8.75rem;
+  --timeline-column-gap: 0.75rem;
+
   min-width: 0;
   padding: 1rem 1.25rem 1.25rem;
   border-top: 1px solid #29292e;
@@ -564,7 +567,7 @@ p {
 .timeline-scale {
   display: flex;
   justify-content: space-between;
-  margin: 0.8rem 0 0.3rem 9.5rem;
+  margin: 0.8rem 0 0.3rem calc(var(--timeline-label-width) + var(--timeline-column-gap));
   color: #62626a;
   font-size: 0.62rem;
   font-variant-numeric: tabular-nums;
@@ -573,8 +576,8 @@ p {
 .timeline-row {
   display: grid;
   min-width: 0;
-  grid-template-columns: 8.75rem minmax(0, 1fr);
-  gap: 0.75rem;
+  grid-template-columns: var(--timeline-label-width) minmax(0, 1fr);
+  gap: var(--timeline-column-gap);
   align-items: center;
 }
 
@@ -652,8 +655,29 @@ p {
 }
 
 .audio-track-list {
+  position: relative;
   display: grid;
   gap: 0.45rem;
+}
+
+.audio-playhead-layer {
+  z-index: 3;
+  position: absolute;
+  inset: 0 0 0 calc(var(--timeline-label-width) + var(--timeline-column-gap));
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.audio-playhead {
+  position: absolute;
+  inset-block: 0;
+  width: 2px;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgb(245 245 244 / 88%) 0 5px,
+    transparent 5px 9px
+  );
+  transform: translateX(-50%);
 }
 
 .audio-track-label {
@@ -750,7 +774,7 @@ p {
 }
 
 .timeline-empty-audio {
-  margin: 0.8rem 0 0 9.5rem;
+  margin: 0.8rem 0 0 calc(var(--timeline-label-width) + var(--timeline-column-gap));
   padding-top: 0.8rem;
   border-top: 1px solid #29292e;
   color: #71717a;

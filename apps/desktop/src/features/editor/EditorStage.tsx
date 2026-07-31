@@ -62,6 +62,7 @@ export function EditorStage({
 }: EditorStageProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const playheadRef = useRef<HTMLButtonElement>(null);
+  const audioPlayheadRef = useRef<HTMLDivElement>(null);
   const playbackFrameRef = useRef<number | null>(null);
   const scrubFrameRef = useRef<number | null>(null);
   const pendingScrubMicrosRef = useRef<number | null>(null);
@@ -135,7 +136,12 @@ export function EditorStage({
   function commitSeek(micros: number) {
     const clamped = clampPlaybackMicros(micros, trimRef.current.sourceDurationMicros);
     currentPlayheadMicrosRef.current = clamped;
-    syncPlayheadElement(playheadRef.current, clamped, trimRef.current.sourceDurationMicros);
+    syncPlayheadElements(
+      playheadRef.current,
+      audioPlayheadRef.current,
+      clamped,
+      trimRef.current.sourceDurationMicros,
+    );
     setPlayheadMicros(clamped);
     seekVideo(videoRef.current, clamped);
   }
@@ -187,7 +193,12 @@ export function EditorStage({
     const durationMicros = trimRef.current.sourceDurationMicros;
     const currentMicros = clampPlaybackMicros(seconds * 1_000_000, durationMicros);
     currentPlayheadMicrosRef.current = currentMicros;
-    syncPlayheadElement(playheadRef.current, currentMicros, durationMicros);
+    syncPlayheadElements(
+      playheadRef.current,
+      audioPlayheadRef.current,
+      currentMicros,
+      durationMicros,
+    );
     setPlayheadMicros(currentMicros);
     if (currentMicros >= durationMicros) {
       stopPlayheadAnimation();
@@ -206,7 +217,12 @@ export function EditorStage({
       const durationMicros = trimRef.current.sourceDurationMicros;
       const currentMicros = clampPlaybackMicros(video.currentTime * 1_000_000, durationMicros);
       currentPlayheadMicrosRef.current = currentMicros;
-      syncPlayheadElement(playheadRef.current, currentMicros, durationMicros);
+      syncPlayheadElements(
+        playheadRef.current,
+        audioPlayheadRef.current,
+        currentMicros,
+        durationMicros,
+      );
       if (timestamp - lastPlaybackCommitAtRef.current >= 100) {
         lastPlaybackCommitAtRef.current = timestamp;
         setPlayheadMicros(currentMicros);
@@ -390,6 +406,8 @@ export function EditorStage({
             streams={audioStreams}
             tracks={audioTracks}
             range={trim}
+            playheadMicros={displayedPlayheadMicros}
+            playheadRef={audioPlayheadRef}
             mergeAudio={mergeAudio}
             onToggleTrack={onToggleAudioTrack}
             onSetAllTracksEnabled={onSetAllAudioTracksEnabled}
@@ -422,19 +440,22 @@ function seekVideo(video: HTMLVideoElement | null, micros: number) {
   }
 }
 
-function syncPlayheadElement(
+function syncPlayheadElements(
   playhead: HTMLButtonElement | null,
+  audioPlayhead: HTMLDivElement | null,
   micros: number,
   durationMicros: number,
 ) {
-  if (!playhead) {
-    return;
-  }
   const percent = durationMicros > 0 ? (micros / durationMicros) * 100 : 0;
-  playhead.style.left = `${percent}%`;
-  playhead.setAttribute("aria-valuenow", micros.toString());
-  playhead.setAttribute("aria-valuetext", `${(micros / 1_000_000).toFixed(3)} seconds`);
-  playhead.title = formatPlaybackTime(micros);
+  if (playhead) {
+    playhead.style.left = `${percent}%`;
+    playhead.setAttribute("aria-valuenow", micros.toString());
+    playhead.setAttribute("aria-valuetext", `${(micros / 1_000_000).toFixed(3)} seconds`);
+    playhead.title = formatPlaybackTime(micros);
+  }
+  if (audioPlayhead) {
+    audioPlayhead.style.left = `${percent}%`;
+  }
 }
 
 function cancelFrame(frameRef: { current: number | null }) {

@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 
 import type { AudioTrackState } from "../../app/session-state";
 import { timelinePercent, type TrimRange } from "../../domain/trim";
@@ -12,6 +12,8 @@ interface AudioTracksProps {
   streams: AudioStream[];
   tracks: AudioTrackState[];
   range: TrimRange;
+  playheadMicros: number;
+  playheadRef: RefObject<HTMLDivElement | null>;
   mergeAudio: boolean;
   onToggleTrack: (streamIndex: number) => void;
   onSetAllTracksEnabled: (enabled: boolean) => void;
@@ -24,6 +26,8 @@ export function AudioTracks({
   streams,
   tracks,
   range,
+  playheadMicros,
+  playheadRef,
   mergeAudio,
   onToggleTrack,
   onSetAllTracksEnabled,
@@ -35,6 +39,7 @@ export function AudioTracks({
   const [waveformWidth, setWaveformWidth] = useState(0);
   const startPercent = timelinePercent(range.startMicros, range.sourceDurationMicros);
   const endPercent = timelinePercent(range.endMicros, range.sourceDurationMicros);
+  const playheadPercent = timelinePercent(playheadMicros, range.sourceDurationMicros);
   const enabledCount = tracks.filter((track) => track.enabled).length;
   const masterCheckboxRef = useRef<HTMLInputElement>(null);
   const allTracksEnabled = enabledCount === tracks.length;
@@ -164,6 +169,13 @@ export function AudioTracks({
             </div>
           );
         })}
+        <div className="audio-playhead-layer" aria-hidden="true">
+          <div
+            ref={playheadRef}
+            className="audio-playhead"
+            style={{ left: `${playheadPercent}%` }}
+          />
+        </div>
       </div>
     </section>
   );

@@ -149,6 +149,9 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Previous frame" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Next frame" })).toBeInTheDocument();
+    const audioPlayhead = document.querySelector(".audio-playhead");
+    expect(audioPlayhead).toBeInTheDocument();
+    expect(audioPlayhead?.parentElement).toHaveAttribute("aria-hidden", "true");
     expect(
       screen.getByRole("button", { name: "Set segment start to current position" }),
     ).toHaveAttribute("aria-keyshortcuts", "I");
@@ -320,14 +323,19 @@ describe("App", () => {
 
     await user.click(screen.getByRole("button", { name: "Next frame" }));
     expect(pause).toHaveBeenCalled();
-    expect(screen.getByRole("slider", { name: "Playback position" })).toHaveAttribute(
-      "aria-valuenow",
-      "16683",
-    );
+    const playhead = screen.getByRole("slider", { name: "Playback position" });
+    const audioPlayhead = document.querySelector(".audio-playhead") as HTMLElement;
+    expect(playhead).toHaveAttribute("aria-valuenow", "16683");
+    expect(audioPlayhead.style.left).toBe(playhead.style.left);
     expect(screen.getByLabelText("Current playback time")).toHaveTextContent("00:00:00.016");
 
     await user.click(screen.getByRole("button", { name: "Previous frame" }));
     expect(screen.getByLabelText("Current playback time")).toHaveTextContent("00:00:00.000");
+    expect(audioPlayhead.style.left).toBe(playhead.style.left);
+
+    video.currentTime = 10;
+    fireEvent.timeUpdate(video);
+    expect(audioPlayhead.style.left).toBe(playhead.style.left);
   });
 
   it("prioritizes playback while keeping other shortcuts locked during text entry", async () => {
