@@ -655,15 +655,19 @@ p {
 }
 
 .audio-track-list {
+  --audio-track-gap: 0.45rem;
+  --audio-playhead-overhang: 0.225rem;
+
   position: relative;
   display: grid;
-  gap: 0.45rem;
+  gap: var(--audio-track-gap);
 }
 
 .audio-playhead-layer {
   z-index: 3;
   position: absolute;
-  inset: 0 0 0 calc(var(--timeline-label-width) + var(--timeline-column-gap));
+  inset: calc(0rem - var(--audio-playhead-overhang)) 0 calc(0rem - var(--audio-playhead-overhang))
+    calc(var(--timeline-label-width) + var(--timeline-column-gap));
   overflow: hidden;
   pointer-events: none;
 }
@@ -671,7 +675,7 @@ p {
 .audio-playhead {
   position: absolute;
   inset-block: 0;
-  width: 2px;
+  width: 1px;
   background: repeating-linear-gradient(
     to bottom,
     rgb(245 245 244 / 88%) 0 5px,
