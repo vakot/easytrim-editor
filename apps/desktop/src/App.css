@@ -355,6 +355,8 @@ p {
   width: 1.5rem;
   height: 1.5rem;
   place-items: center;
+  font-size: 1rem;
+  line-height: 1;
   border-radius: 50%;
   color: #17130a;
   background: #72b18a;

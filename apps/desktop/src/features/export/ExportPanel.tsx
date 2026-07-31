@@ -349,7 +349,9 @@ export function ExportQueue({ queue }: { queue: ExportToast[] }) {
                 <span className="export-toast-path" title={toast.path}>
                   {toast.path}
                 </span>
-                {toast.error ? <span className="export-toast-error">{toast.error}</span> : null}
+                {toast.error && toast.status !== "canceled" ? (
+                  <span className="export-toast-error">{toast.error}</span>
+                ) : null}
               </div>
               <div className="export-toast-actions">
                 {toast.onCancel ? (
