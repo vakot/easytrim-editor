@@ -5,8 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type {
   MediaCapabilities,
   MediaInfo,
-  SourceDragEvent,
-  SourceImportEvent,
+  SourceDropEvent,
   SourceSelection,
 } from "./lib/tauri/media";
 
@@ -14,10 +13,8 @@ const mocks = vi.hoisted(() => ({
   checkMediaCapabilities: vi.fn(),
   chooseSource: vi.fn(),
   inspectMedia: vi.fn(),
-  listenForSourceDrag: vi.fn(),
-  listenForSourceImports: vi.fn(),
-  unlistenDrag: vi.fn(),
-  unlistenImport: vi.fn(),
+  listenForSourceDrops: vi.fn(),
+  unlistenDrops: vi.fn(),
 }));
 
 vi.mock("./lib/tauri/media", async (importOriginal) => {
@@ -27,8 +24,7 @@ vi.mock("./lib/tauri/media", async (importOriginal) => {
     checkMediaCapabilities: mocks.checkMediaCapabilities,
     chooseSource: mocks.chooseSource,
     inspectMedia: mocks.inspectMedia,
-    listenForSourceDrag: mocks.listenForSourceDrag,
-    listenForSourceImports: mocks.listenForSourceImports,
+    listenForSourceDrops: mocks.listenForSourceDrops,
   };
 });
 
@@ -76,26 +72,18 @@ const media: MediaInfo = {
   chapters: [],
 };
 
-let sourceImportListener: ((event: SourceImportEvent) => void) | undefined;
-let sourceDragListener: ((event: SourceDragEvent) => void) | undefined;
+let sourceDropListener: ((event: SourceDropEvent) => void) | undefined;
 
 beforeEach(() => {
   vi.clearAllMocks();
-  sourceImportListener = undefined;
-  sourceDragListener = undefined;
+  sourceDropListener = undefined;
   mocks.checkMediaCapabilities.mockResolvedValue(capabilities);
   mocks.chooseSource.mockResolvedValue(null);
   mocks.inspectMedia.mockResolvedValue(media);
-  mocks.listenForSourceImports.mockImplementation(
-    async (listener: (event: SourceImportEvent) => void) => {
-      sourceImportListener = listener;
-      return mocks.unlistenImport;
-    },
-  );
-  mocks.listenForSourceDrag.mockImplementation(
-    async (listener: (event: SourceDragEvent) => void) => {
-      sourceDragListener = listener;
-      return mocks.unlistenDrag;
+  mocks.listenForSourceDrops.mockImplementation(
+    async (listener: (event: SourceDropEvent) => void) => {
+      sourceDropListener = listener;
+      return mocks.unlistenDrops;
     },
   );
 });
@@ -171,7 +159,7 @@ describe("App", () => {
     expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
 
     act(() => {
-      sourceImportListener?.({
+      sourceDropListener?.({
         status: "failed",
         error: { code: "unsupported_media", message: "This file type is not supported yet." },
       });
@@ -179,6 +167,18 @@ describe("App", () => {
 
     expect(screen.queryByRole("heading", { name: "holiday.mp4" })).not.toBeInTheDocument();
     expect(screen.getByRole("alert")).toHaveTextContent("This file type is not supported yet.");
+  });
+
+  it("inspects a source selected by the native drop listener", async () => {
+    render(<App />);
+
+    act(() => {
+      sourceDropListener?.({ status: "selected", source: selection });
+    });
+
+    expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
+    expect(mocks.inspectMedia).toHaveBeenCalledWith(selection.sourceId);
+    expect(await screen.findByText("3840 × 2160")).toBeInTheDocument();
   });
 
   it("shows the native drag overlay over the editor stage", async () => {
@@ -189,23 +189,19 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: "Open video" }));
     expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
 
-    act(() => sourceDragListener?.({ active: true }));
+    act(() => sourceDropListener?.({ status: "drag", active: true }));
     expect(screen.getByRole("status", { name: "Drop video to open" })).toBeInTheDocument();
 
-    act(() => sourceDragListener?.({ active: false }));
+    act(() => sourceDropListener?.({ status: "drag", active: false }));
     expect(screen.queryByRole("status", { name: "Drop video to open" })).not.toBeInTheDocument();
   });
 
-  it("cleans up native source listeners on unmount", async () => {
+  it("cleans up the native source-drop listener on unmount", async () => {
     const view = render(<App />);
-    await waitFor(() => {
-      expect(sourceImportListener).toBeDefined();
-      expect(sourceDragListener).toBeDefined();
-    });
+    await waitFor(() => expect(sourceDropListener).toBeDefined());
 
     view.unmount();
 
-    expect(mocks.unlistenImport).toHaveBeenCalledOnce();
-    expect(mocks.unlistenDrag).toHaveBeenCalledOnce();
+    expect(mocks.unlistenDrops).toHaveBeenCalledOnce();
   });
 });

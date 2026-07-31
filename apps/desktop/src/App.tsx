@@ -6,8 +6,7 @@ import {
   checkMediaCapabilities,
   chooseSource,
   inspectMedia,
-  listenForSourceDrag,
-  listenForSourceImports,
+  listenForSourceDrops,
   normalizeAppError,
   type SourceSelection,
 } from "./lib/tauri/media";
@@ -62,17 +61,23 @@ function App() {
     let disposed = false;
     let unlisten: (() => void) | undefined;
 
-    void listenForSourceImports((event) => {
+    void listenForSourceDrops((event) => {
       if (disposed) {
         return;
       }
-      setIsSourceDragActive(false);
-      setDropListenerError(null);
-      if (event.status === "selected") {
-        inspectSource(event.source);
-      } else {
-        dispatch({ type: "source-failed", error: event.error });
+
+      if (event.status === "drag") {
+        setIsSourceDragActive(event.active);
+        return;
       }
+
+      setDropListenerError(null);
+      if (event.status === "failed") {
+        dispatch({ type: "source-failed", error: event.error });
+        return;
+      }
+
+      inspectSource(event.source);
     })
       .then((stopListening) => {
         if (disposed) {
@@ -92,34 +97,6 @@ function App() {
       unlisten?.();
     };
   }, [inspectSource]);
-
-  useEffect(() => {
-    let disposed = false;
-    let unlisten: (() => void) | undefined;
-
-    void listenForSourceDrag((event) => {
-      if (!disposed) {
-        setIsSourceDragActive(event.active);
-      }
-    })
-      .then((stopListening) => {
-        if (disposed) {
-          stopListening();
-        } else {
-          unlisten = stopListening;
-        }
-      })
-      .catch((error: unknown) => {
-        if (!disposed) {
-          setDropListenerError(normalizeAppError(error).message);
-        }
-      });
-
-    return () => {
-      disposed = true;
-      unlisten?.();
-    };
-  }, []);
 
   async function handleChooseSource() {
     if (isChoosingSource) {

@@ -2,16 +2,32 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   invoke: vi.fn(),
-  listen: vi.fn(),
+  onDragDropEvent: vi.fn(),
 }));
 
 vi.mock("@tauri-apps/api/core", () => ({ invoke: mocks.invoke }));
-vi.mock("@tauri-apps/api/event", () => ({ listen: mocks.listen }));
+vi.mock("@tauri-apps/api/webview", () => ({
+  getCurrentWebview: () => ({ onDragDropEvent: mocks.onDragDropEvent }),
+}));
 
-import { chooseSource, inspectMedia, listenForSourceDrag, listenForSourceImports } from "./media";
+import { chooseSource, inspectMedia, listenForSourceDrops } from "./media";
+
+type NativeDropEvent =
+  | { payload: { type: "enter"; paths: string[] } }
+  | { payload: { type: "over" } }
+  | { payload: { type: "drop"; paths: string[] } }
+  | { payload: { type: "leave" } };
+
+let nativeDropListener: ((event: NativeDropEvent) => void) | undefined;
+const unlisten = vi.fn();
 
 beforeEach(() => {
   vi.clearAllMocks();
+  nativeDropListener = undefined;
+  mocks.onDragDropEvent.mockImplementation(async (listener: (event: NativeDropEvent) => void) => {
+    nativeDropListener = listener;
+    return unlisten;
+  });
 });
 
 describe("media IPC adapter", () => {
@@ -40,59 +56,74 @@ describe("media IPC adapter", () => {
     });
   });
 
-  it("normalizes malformed source events into a structured failure", async () => {
-    const unlisten = vi.fn();
-    let nativeListener: ((event: { payload: unknown }) => void) | undefined;
-    mocks.listen.mockImplementation(
-      async (_eventName: string, listener: (event: { payload: unknown }) => void) => {
-        nativeListener = listener;
-        return unlisten;
-      },
-    );
-    const onImport = vi.fn();
+  it("maps official webview drag events to path-free UI state", async () => {
+    const onEvent = vi.fn();
 
-    await expect(listenForSourceImports(onImport)).resolves.toBe(unlisten);
-    nativeListener?.({ payload: { status: "unexpected" } });
+    await expect(listenForSourceDrops(onEvent)).resolves.toBe(unlisten);
+    nativeDropListener?.({ payload: { type: "enter", paths: ["C:\\private\\video.mkv"] } });
+    nativeDropListener?.({ payload: { type: "leave" } });
 
-    expect(onImport).toHaveBeenCalledWith({
-      status: "failed",
-      error: {
-        code: "internal",
-        message: "The native application returned an invalid source import event.",
-      },
+    expect(onEvent).toHaveBeenNthCalledWith(1, { status: "drag", active: true });
+    expect(onEvent).toHaveBeenNthCalledWith(2, { status: "drag", active: false });
+  });
+
+  it("imports a dropped path through Rust and emits only opaque source metadata", async () => {
+    mocks.invoke.mockResolvedValue({
+      sourceId: "source-4",
+      displayName: "video.mkv",
+    });
+    const onEvent = vi.fn();
+    await listenForSourceDrops(onEvent);
+
+    nativeDropListener?.({ payload: { type: "drop", paths: ["C:\\private\\video.mkv"] } });
+
+    await vi.waitFor(() => {
+      expect(mocks.invoke).toHaveBeenCalledWith("import_dropped_source", {
+        path: "C:\\private\\video.mkv",
+      });
+      expect(onEvent).toHaveBeenLastCalledWith({
+        status: "selected",
+        source: { sourceId: "source-4", displayName: "video.mkv" },
+      });
+    });
+    expect(JSON.stringify(onEvent.mock.calls)).not.toContain("C:\\private\\video.mkv");
+  });
+
+  it("normalizes a rejected dropped path into a structured failure", async () => {
+    mocks.invoke.mockRejectedValue({
+      code: "unsupported_media",
+      message: "This file type is not supported yet.",
+    });
+    const onEvent = vi.fn();
+    await listenForSourceDrops(onEvent);
+
+    nativeDropListener?.({ payload: { type: "drop", paths: ["C:\\private\\notes.txt"] } });
+
+    await vi.waitFor(() => {
+      expect(onEvent).toHaveBeenLastCalledWith({
+        status: "failed",
+        error: {
+          code: "unsupported_media",
+          message: "This file type is not supported yet.",
+          diagnostics: undefined,
+        },
+      });
     });
   });
 
-  it("validates native drag state without exposing dropped paths", async () => {
-    const unlisten = vi.fn();
-    let nativeListener: ((event: { payload: unknown }) => void) | undefined;
-    mocks.listen.mockImplementation(
-      async (_eventName: string, listener: (event: { payload: unknown }) => void) => {
-        nativeListener = listener;
-        return unlisten;
+  it("reports an empty native drop without invoking Rust", async () => {
+    const onEvent = vi.fn();
+    await listenForSourceDrops(onEvent);
+
+    nativeDropListener?.({ payload: { type: "drop", paths: [] } });
+
+    expect(mocks.invoke).not.toHaveBeenCalled();
+    expect(onEvent).toHaveBeenLastCalledWith({
+      status: "failed",
+      error: {
+        code: "invalid_request",
+        message: "Drop a video file instead of an empty selection.",
       },
-    );
-    const onDrag = vi.fn();
-
-    await expect(listenForSourceDrag(onDrag)).resolves.toBe(unlisten);
-    nativeListener?.({ payload: { active: true, path: "C:\\private\\video.mkv" } });
-
-    expect(onDrag).toHaveBeenCalledWith({ active: true });
-  });
-
-  it("clears the drag overlay for malformed native state", async () => {
-    let nativeListener: ((event: { payload: unknown }) => void) | undefined;
-    mocks.listen.mockImplementation(
-      async (_eventName: string, listener: (event: { payload: unknown }) => void) => {
-        nativeListener = listener;
-        return vi.fn();
-      },
-    );
-    const onDrag = vi.fn();
-
-    await listenForSourceDrag(onDrag);
-    nativeListener?.({ payload: { active: "yes" } });
-
-    expect(onDrag).toHaveBeenCalledWith({ active: false });
+    });
   });
 });

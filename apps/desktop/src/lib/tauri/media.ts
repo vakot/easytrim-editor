@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import type { UnlistenFn } from "@tauri-apps/api/event";
+import { getCurrentWebview } from "@tauri-apps/api/webview";
 
 export interface AppError {
   code: string;
@@ -81,9 +82,7 @@ export interface MediaInfo {
 export type SourceImportEvent =
   { status: "selected"; source: SourceSelection } | { status: "failed"; error: AppError };
 
-export interface SourceDragEvent {
-  active: boolean;
-}
+export type SourceDropEvent = { status: "drag"; active: boolean } | SourceImportEvent;
 
 export async function chooseSource(): Promise<SourceSelection | null> {
   try {
@@ -110,28 +109,52 @@ export async function inspectMedia(sourceId: string): Promise<MediaInfo> {
   }
 }
 
-export async function listenForSourceImports(
-  onImport: (event: SourceImportEvent) => void,
+export async function listenForSourceDrops(
+  onEvent: (event: SourceDropEvent) => void,
 ): Promise<UnlistenFn> {
-  return listen<unknown>("source-import", (event) => {
-    try {
-      onImport(parseSourceImportEvent(event.payload));
-    } catch (error: unknown) {
-      onImport({ status: "failed", error: normalizeAppError(error) });
+  return getCurrentWebview().onDragDropEvent((event) => {
+    switch (event.payload.type) {
+      case "enter":
+        onEvent({ status: "drag", active: true });
+        break;
+      case "leave":
+        onEvent({ status: "drag", active: false });
+        break;
+      case "drop": {
+        onEvent({ status: "drag", active: false });
+        const path = event.payload.paths[0];
+        if (!path) {
+          onEvent({
+            status: "failed",
+            error: {
+              code: "invalid_request",
+              message: "Drop a video file instead of an empty selection.",
+            },
+          });
+          break;
+        }
+        void importDroppedSource(path).then(
+          (source) => onEvent({ status: "selected", source }),
+          (error: unknown) => onEvent({ status: "failed", error: normalizeAppError(error) }),
+        );
+        break;
+      }
+      case "over":
+        break;
     }
   });
 }
 
-export async function listenForSourceDrag(
-  onDrag: (event: SourceDragEvent) => void,
-): Promise<UnlistenFn> {
-  return listen<unknown>("source-drag", (event) => {
-    try {
-      onDrag(parseSourceDragEvent(event.payload));
-    } catch {
-      onDrag({ active: false });
-    }
-  });
+async function importDroppedSource(path: string): Promise<SourceSelection> {
+  try {
+    return parseSourceSelection(
+      await invoke<unknown>("import_dropped_source", {
+        path,
+      }),
+    );
+  } catch (error: unknown) {
+    throw normalizeAppError(error);
+  }
 }
 
 export function normalizeAppError(error: unknown): AppError {
@@ -150,25 +173,6 @@ export function normalizeAppError(error: unknown): AppError {
     return { code: "internal", message: error };
   }
   return { code: "internal", message: "An unexpected application error occurred." };
-}
-
-function parseSourceImportEvent(value: unknown): SourceImportEvent {
-  const event = requireRecord(value, "source import event");
-  if (event.status === "selected") {
-    return { status: "selected", source: parseSourceSelection(event.source) };
-  }
-  if (event.status === "failed") {
-    return { status: "failed", error: normalizeAppError(event.error) };
-  }
-  throw invalidResponse("source import event");
-}
-
-function parseSourceDragEvent(value: unknown): SourceDragEvent {
-  const event = requireRecord(value, "source drag event");
-  if (typeof event.active !== "boolean") {
-    throw invalidResponse("source drag event");
-  }
-  return { active: event.active };
 }
 
 function parseSourceSelection(value: unknown): SourceSelection {
