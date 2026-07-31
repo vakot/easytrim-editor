@@ -591,11 +591,6 @@ p {
 }
 
 .timeline-audio-heading {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
   margin-bottom: 0.65rem;
 }
 
@@ -621,17 +616,25 @@ p {
   cursor: pointer;
 }
 
-.timeline-audio-actions,
-.audio-master-control,
+.timeline-audio-summary,
 .merge-audio-control {
   display: flex;
   flex: 0 0 auto;
   align-items: center;
 }
 
-.timeline-audio-actions {
+.timeline-audio-summary {
   flex-wrap: wrap;
-  gap: 1rem;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.audio-master-control {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.45rem;
+  align-items: center;
 }
 
 .audio-master-control,

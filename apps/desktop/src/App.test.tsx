@@ -215,6 +215,7 @@ describe("App", () => {
       expect(await screen.findByRole("heading", { name: "Audio tracks" })).toBeInTheDocument();
       const allTracks = screen.getByRole("checkbox", { name: "All audio tracks" });
       expect(allTracks).toBeChecked();
+      expect(allTracks.closest(".timeline-row")).toHaveClass("timeline-audio-heading");
       expect(screen.getByRole("checkbox", { name: "Include eng" })).toBeChecked();
       expect(screen.getByRole("checkbox", { name: "Include Commentary" })).toBeChecked();
       await waitFor(() =>

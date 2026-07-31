@@ -92,23 +92,23 @@ export function AudioTracks({
 
   return (
     <section className="timeline-audio" aria-labelledby="timeline-audio-title">
-      <div className="timeline-audio-heading">
-        <div>
-          <h3 id="timeline-audio-title">Audio tracks</h3>
-          <p>{audioOutputSummary(enabledCount, mergeAudio)}</p>
-        </div>
-        <div className="timeline-audio-actions">
-          <label className="audio-master-control">
-            <input
-              ref={masterCheckboxRef}
-              type="checkbox"
-              checked={allTracksEnabled}
-              onChange={() => onSetAllTracksEnabled(!allTracksEnabled)}
-              aria-label="All audio tracks"
-              title={allTracksEnabled ? "Disable all audio tracks" : "Enable all audio tracks"}
-            />
-            <span>All tracks</span>
-          </label>
+      <div className="timeline-row timeline-audio-heading">
+        <label className="audio-master-control">
+          <input
+            ref={masterCheckboxRef}
+            type="checkbox"
+            checked={allTracksEnabled}
+            onChange={() => onSetAllTracksEnabled(!allTracksEnabled)}
+            aria-label="All audio tracks"
+            title={allTracksEnabled ? "Disable all audio tracks" : "Enable all audio tracks"}
+          />
+          <span>All tracks</span>
+        </label>
+        <div className="timeline-audio-summary">
+          <div>
+            <h3 id="timeline-audio-title">Audio tracks</h3>
+            <p>{audioOutputSummary(enabledCount, mergeAudio)}</p>
+          </div>
           <label className="merge-audio-control">
             <input type="checkbox" checked={mergeAudio} onChange={onToggleMerge} />
             <span>Merge selected tracks</span>
