@@ -305,45 +305,47 @@ export function ExportPanel({
 }
 
 export function ExportQueue({ queue }: { queue: ExportToast[] }) {
-  if (queue.length === 0) return null;
-
   return (
     <section className="export-queue" aria-labelledby="export-queue-title">
       <div className="export-queue-heading">
         <h2 id="export-queue-title">Export queue</h2>
         <span>{queue.length}</span>
       </div>
-      <div className="export-queue-list" role="status" aria-live="polite">
-        {queue.map((toast) => (
-          <div className={`export-toast export-toast-${toast.status}`} key={toast.id}>
-            <div className="export-toast-copy">
-              <div className="export-toast-title">
-                <strong>{toast.filename}</strong>
-                <span>· {toast.percentage}%</span>
-              </div>
-              <span className="export-toast-path" title={toast.path}>
-                {toast.path}
-              </span>
-              {toast.error ? <span className="export-toast-error">{toast.error}</span> : null}
-            </div>
-            <div className="export-toast-actions">
-              {toast.onCancel ? (
-                <button
-                  type="button"
-                  onClick={toast.onCancel}
-                  aria-label={`Cancel ${toast.filename}`}
-                >
-                  Cancel
-                </button>
-              ) : (
-                <span aria-label={`${toast.status} export`}>
-                  {toast.status === "completed" ? "✓" : toast.status === "failed" ? "!" : "×"}
+      {queue.length === 0 ? (
+        <p className="export-queue-empty">No exports yet.</p>
+      ) : (
+        <div className="export-queue-list" role="status" aria-live="polite">
+          {queue.map((toast) => (
+            <div className={`export-toast export-toast-${toast.status}`} key={toast.id}>
+              <div className="export-toast-copy">
+                <div className="export-toast-title">
+                  <strong>{toast.filename}</strong>
+                  <span>· {toast.percentage}%</span>
+                </div>
+                <span className="export-toast-path" title={toast.path}>
+                  {toast.path}
                 </span>
-              )}
+                {toast.error ? <span className="export-toast-error">{toast.error}</span> : null}
+              </div>
+              <div className="export-toast-actions">
+                {toast.onCancel ? (
+                  <button
+                    type="button"
+                    onClick={toast.onCancel}
+                    aria-label={`Cancel ${toast.filename}`}
+                  >
+                    Cancel
+                  </button>
+                ) : (
+                  <span aria-label={`${toast.status} export`}>
+                    {toast.status === "completed" ? "✓" : toast.status === "failed" ? "!" : "×"}
+                  </span>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </section>
   );
 }

@@ -245,6 +245,12 @@ p {
   gap: 0.55rem;
 }
 
+.export-queue-empty {
+  margin: 0;
+  color: #71717a;
+  font-size: 0.75rem;
+}
+
 .export-toast {
   display: flex;
   min-width: 0;

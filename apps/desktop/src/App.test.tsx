@@ -141,6 +141,8 @@ describe("App", () => {
     expect(screen.getByText("59.94 fps")).toBeInTheDocument();
     const audioStreamMetadata = screen.getByText("Audio streams");
     expect(audioStreamMetadata.nextElementSibling).toHaveTextContent("1");
+    expect(screen.getByRole("heading", { name: "Export queue" })).toBeInTheDocument();
+    expect(screen.getByText("No exports yet.")).toBeInTheDocument();
     expect(screen.getByLabelText("Source video preview")).toHaveAttribute(
       "src",
       "http://clipkit-media.localhost/source-1?variant=source",
