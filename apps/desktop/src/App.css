@@ -212,6 +212,110 @@ p {
   color: #fecaca;
 }
 
+.export-queue {
+  position: fixed;
+  z-index: 40;
+  top: 4.75rem;
+  right: 1rem;
+  display: grid;
+  width: min(30rem, calc(100vw - 2rem));
+  gap: 0.55rem;
+}
+
+.export-toast {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 0.85rem 0.75rem 1rem;
+  border: 1px solid #3b3b43;
+  border-left: 3px solid #e4ae4e;
+  border-radius: 0.6rem;
+  color: #f4f4f5;
+  background: #19191d;
+  box-shadow: 0 0.75rem 2rem rgb(0 0 0 / 32%);
+}
+
+.export-toast-completed {
+  border-left-color: #72b18a;
+}
+
+.export-toast-failed {
+  border-left-color: #d8796b;
+}
+
+.export-toast-copy {
+  display: grid;
+  min-width: 0;
+  gap: 0.2rem;
+}
+
+.export-toast-title {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+}
+
+.export-toast-title strong,
+.export-toast-path {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.export-toast-title span {
+  flex: 0 0 auto;
+  color: #e4ae4e;
+  font-variant-numeric: tabular-nums;
+}
+
+.export-toast-path {
+  color: #8c8c95;
+  font-size: 0.7rem;
+}
+
+.export-toast-error {
+  color: #fecaca;
+  font-size: 0.7rem;
+}
+
+.export-toast-actions {
+  flex: 0 0 auto;
+}
+
+.export-toast-actions button {
+  border: 1px solid #5d3733;
+  border-radius: 0.4rem;
+  padding: 0.35rem 0.55rem;
+  color: #fecaca;
+  background: transparent;
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+
+.export-toast-actions button:hover {
+  background: #321b19;
+}
+
+.export-toast-actions span {
+  display: grid;
+  width: 1.5rem;
+  height: 1.5rem;
+  place-items: center;
+  border-radius: 50%;
+  color: #17130a;
+  background: #72b18a;
+  font-weight: 800;
+}
+
+.export-toast-failed .export-toast-actions span {
+  color: #fff;
+  background: #d8796b;
+}
+
 .welcome-header {
   z-index: 10;
   display: flex;

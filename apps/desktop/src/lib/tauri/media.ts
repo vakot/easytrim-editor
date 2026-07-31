@@ -29,11 +29,13 @@ export interface ExportProgress {
 export interface OutputSelection {
   outputId: string;
   displayName: string;
+  displayPath: string;
 }
 
 export interface ExportResult {
   operationId: string;
   displayName: string;
+  displayPath: string;
 }
 
 export interface FastExportRequest {
@@ -344,6 +346,7 @@ function parseOutputSelection(value: unknown): OutputSelection {
   return {
     outputId: requireString(output.outputId, "output ID"),
     displayName: requireString(output.displayName, "output display name"),
+    displayPath: requireString(output.displayPath, "output display path"),
   };
 }
 
@@ -367,6 +370,7 @@ function parseExportResult(value: unknown): ExportResult {
   return {
     operationId: requireString(result.operationId, "operation ID"),
     displayName: requireString(result.displayName, "output display name"),
+    displayPath: requireString(result.displayPath, "output display path"),
   };
 }
 

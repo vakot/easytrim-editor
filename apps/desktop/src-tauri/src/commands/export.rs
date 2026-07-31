@@ -24,6 +24,7 @@ const EXPORT_STDERR_LIMIT: usize = 256 * 1024;
 pub struct OutputSelection {
     pub output_id: String,
     pub display_name: String,
+    pub display_path: String,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -48,6 +49,7 @@ pub enum ExportPhase {
 pub struct ExportResult {
     pub operation_id: String,
     pub display_name: String,
+    pub display_path: String,
 }
 
 #[tauri::command]
@@ -77,10 +79,12 @@ pub fn choose_output_path(
         .filter(|value| !value.is_empty())
         .ok_or_else(|| AppError::invalid_request("The output name is required."))?
         .to_owned();
+    let display_path = path.display().to_string();
     let output_id = state.register_output(path)?;
     Ok(Some(OutputSelection {
         output_id,
         display_name,
+        display_path,
     }))
 }
 
@@ -157,6 +161,7 @@ async fn run_export(
     on_progress: Channel<ExportProgress>,
 ) -> Result<ExportResult, AppError> {
     let (operation_id, cancellation) = state.begin_operation()?;
+    let cancellation_for_check = cancellation.clone();
     let operation_for_task = operation_id.clone();
     let result = tauri::async_runtime::spawn_blocking(move || {
         let mut progress_values = HashMap::new();
@@ -209,25 +214,49 @@ async fn run_export(
     .await
     .map_err(|_| AppError::internal("The export operation stopped unexpectedly."))?;
     state.finish_operation(&operation_id)?;
-    let result = result?;
+    let result = match result {
+        Ok(result) => result,
+        Err(error) => {
+            remove_partial_output(&output_path);
+            return Err(error);
+        }
+    };
+    if cancellation_for_check.load(Ordering::Acquire) {
+        remove_partial_output(&output_path);
+        return Err(AppError::cancelled("The export was cancelled."));
+    }
     if !result.status.success() {
+        remove_partial_output(&output_path);
         return Err(AppError::io_failed(
             "FFmpeg could not render the selected segment.",
         ));
     }
-    let output_size = fs::metadata(&output_path)
-        .map_err(|_| AppError::io_failed("The rendered output could not be verified."))?
-        .len();
+    let output_size = match fs::metadata(&output_path) {
+        Ok(metadata) => metadata.len(),
+        Err(_) => {
+            remove_partial_output(&output_path);
+            return Err(AppError::io_failed(
+                "The rendered output could not be verified.",
+            ));
+        }
+    };
     if output_size == 0 {
+        remove_partial_output(&output_path);
         return Err(AppError::io_failed("The rendered output is empty."));
     }
     if state.resolve_source(&source_id).is_err() {
+        remove_partial_output(&output_path);
         return Err(AppError::source_replaced());
     }
     Ok(ExportResult {
         operation_id,
         display_name,
+        display_path: output_path.display().to_string(),
     })
+}
+
+fn remove_partial_output(path: &std::path::Path) {
+    let _ = fs::remove_file(path);
 }
 
 fn output_display_name(path: &std::path::Path) -> Result<String, AppError> {

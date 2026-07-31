@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import type { AudioTrackState } from "../../app/session-state";
 import type { TrimRange } from "../../domain/trim";
@@ -13,10 +13,24 @@ import {
   type FrameRate,
   type MediaInfo,
   type OptimizedExportRequest,
+  type OutputSelection,
 } from "../../lib/tauri/media";
 
 const DEFAULT_ARGUMENTS =
   "-c:v hevc_nvenc -preset p5 -tune hq -rc vbr -cq 24 -b:v 0 -spatial_aq 1 -temporal_aq 1 -aq-strength 8 -pix_fmt yuv420p -c:a aac -b:a 160k";
+const TOAST_REMOVE_DELAY_MS = 3_500;
+
+type ToastStatus = "rendering" | "completed" | "failed";
+
+interface ExportToast {
+  id: string;
+  operationId: string | null;
+  filename: string;
+  path: string;
+  percentage: number;
+  status: ToastStatus;
+  error?: string;
+}
 
 interface ExportPanelProps {
   source: MediaInfo;
@@ -33,25 +47,22 @@ export function ExportPanel({
   audioTracks,
   mergeAudio,
 }: ExportPanelProps) {
-  const sourceRate = source.video.averageFrameRate ?? source.video.realFrameRate;
   const defaults = useMemo(() => outputDefaults(sourceName), [sourceName]);
   const [isOptimizedOpen, setIsOptimizedOpen] = useState(false);
   const [resolution, setResolution] = useState({
     width: source.video.width,
     height: source.video.height,
   });
-  const [frameRate, setFrameRate] = useState<FrameRate | undefined>(sourceRate);
+  const [frameRate, setFrameRate] = useState<FrameRate | undefined>();
   const [argumentsText, setArgumentsText] = useState(DEFAULT_ARGUMENTS);
-  const [progress, setProgress] = useState<ExportProgress | null>(null);
-  const [operationId, setOperationId] = useState<string | null>(null);
-  const [isStarting, setIsStarting] = useState(false);
-  const [status, setStatus] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [queue, setQueue] = useState<ExportToast[]>([]);
+  const [launchError, setLaunchError] = useState<string | null>(null);
+  const canceledRef = useRef(new Set<string>());
+  const toastSequence = useRef(0);
 
   const selectedAudio = audioTracks
     .filter((track) => track.enabled)
     .map((track) => track.streamIndex);
-  const isBusy = isStarting || operationId !== null;
 
   async function handleFastCut() {
     const request: FastExportRequest = {
@@ -60,7 +71,7 @@ export function ExportPanel({
       audioStreamIndexes: selectedAudio,
       mergeAudio,
     };
-    await runExport("fast", defaults.fast, request);
+    await chooseAndStart("fast", defaults.fast, request);
   }
 
   async function handleOptimizedRender() {
@@ -76,179 +87,248 @@ export function ExportPanel({
         : undefined,
       arguments: argumentsText,
     };
-    await runExport("optimized", defaults.optimized, request);
+    await chooseAndStart("optimized", defaults.optimized, request);
   }
 
-  async function runExport(
+  async function chooseAndStart(
     route: "fast" | "optimized",
     defaultName: string,
     request: FastExportRequest | OptimizedExportRequest,
   ) {
-    if (isBusy) return;
-    setError(null);
-    setStatus(null);
-    setProgress(null);
-    setIsStarting(true);
+    setLaunchError(null);
     try {
       const output = await chooseOutputPath(defaultName);
-      if (!output) return;
+      if (output) {
+        startQueuedExport(route, request, output);
+      }
+    } catch (nextError: unknown) {
+      setLaunchError(normalizeAppError(nextError).message);
+    }
+  }
 
-      const onProgress = (next: ExportProgress) => {
-        setProgress(next);
-        setOperationId(next.operationId);
-      };
+  function startQueuedExport(
+    route: "fast" | "optimized",
+    request: FastExportRequest | OptimizedExportRequest,
+    output: OutputSelection,
+  ) {
+    const id = `export-toast-${++toastSequence.current}`;
+    setQueue((current) => [
+      ...current,
+      {
+        id,
+        operationId: null,
+        filename: output.displayName,
+        path: output.displayPath,
+        percentage: 0,
+        status: "rendering",
+      },
+    ]);
+    void renderQueuedExport(id, route, request, output);
+  }
+
+  async function renderQueuedExport(
+    id: string,
+    route: "fast" | "optimized",
+    request: FastExportRequest | OptimizedExportRequest,
+    output: OutputSelection,
+  ) {
+    const onProgress = (next: ExportProgress) => {
+      if (canceledRef.current.has(id)) {
+        void cancelOperation(next.operationId).catch(() => undefined);
+        return;
+      }
+      updateToast(id, (toast) => ({
+        ...toast,
+        operationId: next.operationId,
+        percentage: Math.round(next.percentage),
+      }));
+    };
+
+    try {
       const result =
         route === "fast"
           ? await renderFast(request, output.outputId, onProgress)
           : await renderOptimized(request as OptimizedExportRequest, output.outputId, onProgress);
-      setOperationId(null);
-      setStatus(`Saved ${result.displayName}`);
-      setProgress({
+      if (canceledRef.current.has(id)) return;
+      updateToast(id, (toast) => ({
+        ...toast,
         operationId: result.operationId,
+        path: result.displayPath,
         percentage: 100,
-        elapsedMicros: trim.endMicros - trim.startMicros,
-        phase: "completed",
-      });
+        status: "completed",
+      }));
+      removeToastLater(id);
     } catch (nextError: unknown) {
-      setOperationId(null);
-      setError(normalizeAppError(nextError).message);
-    } finally {
-      setIsStarting(false);
+      if (canceledRef.current.has(id)) return;
+      updateToast(id, (toast) => ({
+        ...toast,
+        status: "failed",
+        error: normalizeAppError(nextError).message,
+      }));
+      removeToastLater(id);
     }
   }
 
-  async function handleCancel() {
-    if (!operationId) return;
-    try {
-      await cancelOperation(operationId);
-      setStatus("Cancelling export…");
-    } catch (nextError: unknown) {
-      setError(normalizeAppError(nextError).message);
+  function updateToast(id: string, update: (toast: ExportToast) => ExportToast) {
+    setQueue((current) => current.map((toast) => (toast.id === id ? update(toast) : toast)));
+  }
+
+  function removeToastLater(id: string) {
+    window.setTimeout(() => {
+      setQueue((current) => current.filter((toast) => toast.id !== id));
+    }, TOAST_REMOVE_DELAY_MS);
+  }
+
+  function handleCancel(toast: ExportToast) {
+    canceledRef.current.add(toast.id);
+    setQueue((current) => current.filter((item) => item.id !== toast.id));
+    if (toast.operationId) {
+      void cancelOperation(toast.operationId).catch(() => undefined);
     }
   }
 
   return (
-    <div className="export-toolbar-group">
-      <div className="toolbar-divider" aria-hidden="true" />
-      <button
-        className="toolbar-button export-button"
-        type="button"
-        onClick={() => void handleFastCut()}
-        disabled={isBusy}
-      >
-        Fast cut
-      </button>
-      <div className="export-config-anchor">
+    <>
+      <div className="export-toolbar-group">
+        <div className="toolbar-divider" aria-hidden="true" />
         <button
           className="toolbar-button export-button"
           type="button"
-          onClick={() => {
-            setError(null);
-            setIsOptimizedOpen((open) => !open);
-          }}
-          disabled={isBusy}
-          aria-haspopup="dialog"
-          aria-expanded={isOptimizedOpen}
+          onClick={() => void handleFastCut()}
         >
-          Optimized render
+          Fast cut
         </button>
-        {isOptimizedOpen ? (
-          <div className="export-dialog" role="dialog" aria-labelledby="optimized-export-title">
-            <div className="export-dialog-header">
-              <div>
-                <p className="section-label">Export</p>
-                <h2 id="optimized-export-title">Optimized render</h2>
+        <div className="export-config-anchor">
+          <button
+            className="toolbar-button export-button"
+            type="button"
+            onClick={() => {
+              setLaunchError(null);
+              setIsOptimizedOpen((open) => !open);
+            }}
+            aria-haspopup="dialog"
+            aria-expanded={isOptimizedOpen}
+          >
+            Optimized render
+          </button>
+          {isOptimizedOpen ? (
+            <div className="export-dialog" role="dialog" aria-labelledby="optimized-export-title">
+              <div className="export-dialog-header">
+                <div>
+                  <p className="section-label">Export</p>
+                  <h2 id="optimized-export-title">Optimized render</h2>
+                </div>
+                <button
+                  className="icon-button"
+                  type="button"
+                  onClick={() => setIsOptimizedOpen(false)}
+                  aria-label="Close optimized render settings"
+                >
+                  ×
+                </button>
               </div>
-              <button
-                className="icon-button"
-                type="button"
-                onClick={() => setIsOptimizedOpen(false)}
-                aria-label="Close optimized render settings"
-              >
-                ×
-              </button>
-            </div>
-            <div className="optimized-options">
-              <label className="export-field">
-                <span>Resolution</span>
-                <select
-                  value={`${resolution.width}x${resolution.height}`}
-                  onChange={(event) => {
-                    const [width, height] = event.target.value.split("x").map(Number);
-                    if (width && height) setResolution({ width, height });
-                  }}
-                >
-                  {resolutionOptions(source).map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+              <div className="optimized-options">
+                <label className="export-field">
+                  <span>Resolution</span>
+                  <select
+                    value={`${resolution.width}x${resolution.height}`}
+                    onChange={(event) => {
+                      const [width, height] = event.target.value.split("x").map(Number);
+                      if (width && height) setResolution({ width, height });
+                    }}
+                  >
+                    {resolutionOptions(source).map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="export-field">
+                  <span>Frame rate</span>
+                  <select
+                    value={frameRate ? `${frameRate.numerator}/${frameRate.denominator}` : "source"}
+                    onChange={(event) => setFrameRate(rateFromValue(event.target.value))}
+                  >
+                    <option value="source">Match source</option>
+                    {[24, 25, 30, 50, 60, 120].map((rate) => (
+                      <option key={rate} value={`${rate}/1`}>
+                        {rate} FPS
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <label className="export-field export-arguments">
+                <span>FFmpeg arguments</span>
+                <textarea
+                  value={argumentsText}
+                  onChange={(event) => setArgumentsText(event.target.value)}
+                  rows={4}
+                />
               </label>
-              <label className="export-field">
-                <span>Frame rate</span>
-                <select
-                  value={frameRate ? `${frameRate.numerator}/${frameRate.denominator}` : "source"}
-                  onChange={(event) => setFrameRate(rateFromValue(event.target.value, sourceRate))}
+              <p className="export-note">The native save dialog opens after confirmation.</p>
+              <div className="export-dialog-actions">
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={() => setIsOptimizedOpen(false)}
                 >
-                  <option value="source">Source FPS</option>
-                  {[24, 25, 30, 50, 60, 120].map((rate) => (
-                    <option key={rate} value={`${rate}/1`}>
-                      {rate} FPS
-                    </option>
-                  ))}
-                </select>
-              </label>
+                  Cancel
+                </button>
+                <button
+                  className="primary-button"
+                  type="button"
+                  onClick={() => void handleOptimizedRender()}
+                >
+                  Choose output path
+                </button>
+              </div>
             </div>
-            <label className="export-field export-arguments">
-              <span>FFmpeg arguments</span>
-              <textarea
-                value={argumentsText}
-                onChange={(event) => setArgumentsText(event.target.value)}
-                rows={4}
-              />
-            </label>
-            <p className="export-note">The native save dialog opens after confirmation.</p>
-            <div className="export-dialog-actions">
-              <button
-                className="secondary-button"
-                type="button"
-                onClick={() => setIsOptimizedOpen(false)}
-              >
-                Cancel
-              </button>
-              <button
-                className="primary-button"
-                type="button"
-                onClick={() => void handleOptimizedRender()}
-              >
-                Choose output path
-              </button>
-            </div>
-          </div>
+          ) : null}
+        </div>
+        {launchError ? (
+          <span className="export-error" role="alert">
+            {launchError}
+          </span>
         ) : null}
       </div>
-      {progress ? (
-        <span className="export-progress-label" role="status">
-          {Math.round(progress.percentage)}%
-        </span>
+      {queue.length > 0 ? (
+        <div className="export-queue" role="status" aria-live="polite">
+          {queue.map((toast) => (
+            <div className={`export-toast export-toast-${toast.status}`} key={toast.id}>
+              <div className="export-toast-copy">
+                <div className="export-toast-title">
+                  <strong>{toast.filename}</strong>
+                  <span>· {toast.percentage}%</span>
+                </div>
+                <span className="export-toast-path" title={toast.path}>
+                  {toast.path}
+                </span>
+                {toast.error ? <span className="export-toast-error">{toast.error}</span> : null}
+              </div>
+              <div className="export-toast-actions">
+                {toast.status === "rendering" ? (
+                  <button
+                    type="button"
+                    onClick={() => handleCancel(toast)}
+                    aria-label={`Cancel ${toast.filename}`}
+                  >
+                    Cancel
+                  </button>
+                ) : (
+                  <span
+                    aria-label={toast.status === "completed" ? "Export complete" : "Export failed"}
+                  >
+                    {toast.status === "completed" ? "✓" : "!"}
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
       ) : null}
-      {isBusy ? (
-        <button
-          className="toolbar-button export-cancel-button"
-          type="button"
-          onClick={() => void handleCancel()}
-        >
-          Cancel
-        </button>
-      ) : null}
-      {status ? <span className="export-status">{status}</span> : null}
-      {error ? (
-        <span className="export-error" role="alert">
-          {error}
-        </span>
-      ) : null}
-    </div>
+    </>
   );
 }
 
@@ -273,8 +353,8 @@ function resolutionOptions(source: MediaInfo) {
   return options;
 }
 
-function rateFromValue(value: string, sourceRate: FrameRate | undefined): FrameRate | undefined {
-  if (value === "source") return sourceRate;
+function rateFromValue(value: string): FrameRate | undefined {
+  if (value === "source") return undefined;
   const [numerator, denominator] = value.split("/").map(Number);
-  return numerator && denominator ? { numerator, denominator } : sourceRate;
+  return numerator && denominator ? { numerator, denominator } : undefined;
 }
