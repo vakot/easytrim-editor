@@ -249,10 +249,24 @@ describe("App", () => {
           selection.sourceId,
           expect.stringMatching(/^waveform-/),
           [1, 2],
-          1_024,
+          4_096,
         ),
       );
       await waitFor(() => expect(document.querySelectorAll(".waveform-image")).toHaveLength(2));
+
+      bounds.mockReturnValue({
+        width: 1_536,
+        height: 42,
+        top: 0,
+        right: 1_536,
+        bottom: 42,
+        left: 0,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      });
+      await act(async () => fireEvent(window, new Event("resize")));
+      expect(mocks.prepareWaveforms).toHaveBeenCalledTimes(1);
 
       await user.click(screen.getByRole("checkbox", { name: "Include Commentary" }));
       expect(allTracks).toBePartiallyChecked();
