@@ -93,7 +93,7 @@ describe("App", () => {
     render(<App />);
 
     expect(screen.getByText("Local video editor")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Easy Cut" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "ClipKit" })).toBeInTheDocument();
     expect(
       screen.getByText("Import a video to inspect its source and prepare a precise cut."),
     ).toBeInTheDocument();

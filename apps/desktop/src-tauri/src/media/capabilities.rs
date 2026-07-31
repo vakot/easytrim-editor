@@ -117,7 +117,7 @@ mod tests {
 
     #[test]
     fn reports_a_missing_binary_without_failing_the_check() {
-        let capability = check_binary("easy-cut-binary-that-does-not-exist");
+        let capability = check_binary("clipkit-binary-that-does-not-exist");
 
         assert!(!capability.available);
         assert!(capability.error.is_some());

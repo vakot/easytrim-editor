@@ -1,5 +1,5 @@
 {
-  "name": "easy-cut",
+  "name": "clipkit",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -8,15 +8,15 @@
     "node": ">=22.12.0"
   },
   "scripts": {
-    "dev": "pnpm --filter @easy-cut/desktop tauri dev",
-    "build": "pnpm --filter @easy-cut/desktop build",
+    "dev": "pnpm --filter @clipkit/desktop tauri dev",
+    "build": "pnpm --filter @clipkit/desktop build",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint . --max-warnings 0",
-    "typecheck": "pnpm --filter @easy-cut/desktop typecheck",
-    "test": "pnpm --filter @easy-cut/desktop test",
+    "typecheck": "pnpm --filter @clipkit/desktop typecheck",
+    "test": "pnpm --filter @clipkit/desktop test",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
-    "tauri": "pnpm --filter @easy-cut/desktop tauri"
+    "tauri": "pnpm --filter @clipkit/desktop tauri"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
