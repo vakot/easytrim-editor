@@ -213,6 +213,8 @@ describe("App", () => {
       await user.click(screen.getByRole("button", { name: "Open video" }));
 
       expect(await screen.findByRole("heading", { name: "Audio tracks" })).toBeInTheDocument();
+      const allTracks = screen.getByRole("checkbox", { name: "All audio tracks" });
+      expect(allTracks).toBeChecked();
       expect(screen.getByRole("checkbox", { name: "Include eng" })).toBeChecked();
       expect(screen.getByRole("checkbox", { name: "Include Commentary" })).toBeChecked();
       await waitFor(() =>
@@ -226,13 +228,22 @@ describe("App", () => {
       await waitFor(() => expect(document.querySelectorAll(".waveform-image")).toHaveLength(2));
 
       await user.click(screen.getByRole("checkbox", { name: "Include Commentary" }));
+      expect(allTracks).toBePartiallyChecked();
       expect(screen.getByText("1 selected track kept separately.")).toBeInTheDocument();
       await user.click(screen.getByRole("checkbox", { name: "Merge selected tracks" }));
       expect(screen.getByText("One selected track — no merge is needed.")).toBeInTheDocument();
-      await user.click(screen.getByRole("checkbox", { name: "Include Commentary" }));
+      await user.click(allTracks);
+      expect(allTracks).toBeChecked();
       expect(
         screen.getByText("Fast cut + audio merge — video stays copied; selected audio is encoded."),
       ).toBeInTheDocument();
+      await user.click(allTracks);
+      expect(screen.getByRole("checkbox", { name: "Include eng" })).not.toBeChecked();
+      expect(screen.getByRole("checkbox", { name: "Include Commentary" })).not.toBeChecked();
+      expect(screen.getByText("Video-only output")).toBeInTheDocument();
+      await user.click(allTracks);
+      expect(screen.getByRole("checkbox", { name: "Include eng" })).toBeChecked();
+      expect(screen.getByRole("checkbox", { name: "Include Commentary" })).toBeChecked();
     } finally {
       bounds.mockRestore();
     }

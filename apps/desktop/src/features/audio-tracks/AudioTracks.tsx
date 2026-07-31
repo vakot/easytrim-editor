@@ -14,6 +14,7 @@ interface AudioTracksProps {
   range: TrimRange;
   mergeAudio: boolean;
   onToggleTrack: (streamIndex: number) => void;
+  onSetAllTracksEnabled: (enabled: boolean) => void;
   onToggleMerge: () => void;
   onPrepareWaveforms: (streamIndexes: number[], width: number) => void;
   onWaveformImageError: (streamIndex: number) => void;
@@ -25,6 +26,7 @@ export function AudioTracks({
   range,
   mergeAudio,
   onToggleTrack,
+  onSetAllTracksEnabled,
   onToggleMerge,
   onPrepareWaveforms,
   onWaveformImageError,
@@ -34,6 +36,15 @@ export function AudioTracks({
   const startPercent = timelinePercent(range.startMicros, range.sourceDurationMicros);
   const endPercent = timelinePercent(range.endMicros, range.sourceDurationMicros);
   const enabledCount = tracks.filter((track) => track.enabled).length;
+  const masterCheckboxRef = useRef<HTMLInputElement>(null);
+  const allTracksEnabled = enabledCount === tracks.length;
+  const someTracksEnabled = enabledCount > 0 && !allTracksEnabled;
+
+  useEffect(() => {
+    if (masterCheckboxRef.current) {
+      masterCheckboxRef.current.indeterminate = someTracksEnabled;
+    }
+  }, [someTracksEnabled]);
 
   useLayoutEffect(() => {
     const element = measureRef.current;
@@ -86,10 +97,23 @@ export function AudioTracks({
           <h3 id="timeline-audio-title">Audio tracks</h3>
           <p>{audioOutputSummary(enabledCount, mergeAudio)}</p>
         </div>
-        <label className="merge-audio-control">
-          <input type="checkbox" checked={mergeAudio} onChange={onToggleMerge} />
-          <span>Merge selected tracks</span>
-        </label>
+        <div className="timeline-audio-actions">
+          <label className="audio-master-control">
+            <input
+              ref={masterCheckboxRef}
+              type="checkbox"
+              checked={allTracksEnabled}
+              onChange={() => onSetAllTracksEnabled(!allTracksEnabled)}
+              aria-label="All audio tracks"
+              title={allTracksEnabled ? "Disable all audio tracks" : "Enable all audio tracks"}
+            />
+            <span>All tracks</span>
+          </label>
+          <label className="merge-audio-control">
+            <input type="checkbox" checked={mergeAudio} onChange={onToggleMerge} />
+            <span>Merge selected tracks</span>
+          </label>
+        </div>
       </div>
 
       <div className="audio-track-list">

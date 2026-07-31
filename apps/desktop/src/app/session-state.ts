@@ -64,6 +64,7 @@ type SessionAction =
   | { type: "preview-failed"; sourceId: string; error: AppError }
   | { type: "trim-changed"; sourceId: string; trim: TrimRange }
   | { type: "audio-track-toggled"; sourceId: string; streamIndex: number }
+  | { type: "audio-tracks-set-enabled"; sourceId: string; enabled: boolean }
   | { type: "audio-merge-toggled"; sourceId: string }
   | {
       type: "waveforms-loading";
@@ -205,6 +206,20 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
               ? { ...track, enabled: !track.enabled }
               : track,
           ),
+        },
+      };
+    case "audio-tracks-set-enabled":
+      if (state.source?.selection.sourceId !== action.sourceId) {
+        return state;
+      }
+      return {
+        ...state,
+        source: {
+          ...state.source,
+          audioTracks: state.source.audioTracks.map((track) => ({
+            ...track,
+            enabled: action.enabled,
+          })),
         },
       };
     case "audio-merge-toggled":

@@ -12,6 +12,7 @@ interface SourceWorkspaceProps {
   onTrimChange: (sourceId: string, trim: TrimRange) => void;
   onPrepareWaveforms: (sourceId: string, streamIndexes: number[], width: number) => void;
   onToggleAudioTrack: (sourceId: string, streamIndex: number) => void;
+  onSetAllAudioTracksEnabled: (sourceId: string, enabled: boolean) => void;
   onToggleAudioMerge: (sourceId: string) => void;
   onWaveformImageError: (sourceId: string, streamIndex: number) => void;
 }
@@ -25,6 +26,7 @@ export function SourceWorkspace({
   onTrimChange,
   onPrepareWaveforms,
   onToggleAudioTrack,
+  onSetAllAudioTracksEnabled,
   onToggleAudioMerge,
   onWaveformImageError,
 }: SourceWorkspaceProps) {
@@ -96,6 +98,7 @@ export function SourceWorkspace({
               onPrepareWaveforms(sourceId, streamIndexes, width)
             }
             onToggleAudioTrack={(streamIndex) => onToggleAudioTrack(sourceId, streamIndex)}
+            onSetAllAudioTracksEnabled={(enabled) => onSetAllAudioTracksEnabled(sourceId, enabled)}
             onToggleAudioMerge={() => onToggleAudioMerge(sourceId)}
             onWaveformImageError={(streamIndex) => onWaveformImageError(sourceId, streamIndex)}
           />

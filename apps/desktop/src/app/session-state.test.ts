@@ -193,6 +193,16 @@ describe("sessionReducer", () => {
       type: "audio-merge-toggled",
       sourceId: firstSource.sourceId,
     });
+    const allDisabled = sessionReducer(mergeEnabled, {
+      type: "audio-tracks-set-enabled",
+      sourceId: firstSource.sourceId,
+      enabled: false,
+    });
+    const allEnabled = sessionReducer(allDisabled, {
+      type: "audio-tracks-set-enabled",
+      sourceId: firstSource.sourceId,
+      enabled: true,
+    });
 
     expect(ready.source?.audioTracks).toEqual([
       { streamIndex: 2, enabled: true, waveform: { status: "idle" } },
@@ -200,6 +210,8 @@ describe("sessionReducer", () => {
     ]);
     expect(mergeEnabled.source?.audioTracks[1]?.enabled).toBe(false);
     expect(mergeEnabled.source?.mergeAudio).toBe(true);
+    expect(allDisabled.source?.audioTracks.every((track) => !track.enabled)).toBe(true);
+    expect(allEnabled.source?.audioTracks.every((track) => track.enabled)).toBe(true);
   });
 
   it("ignores stale waveform completions after regeneration", () => {

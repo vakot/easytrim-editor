@@ -32,6 +32,7 @@ interface EditorStageProps {
   onTrimChange: (trim: TrimRange) => void;
   onPrepareWaveforms: (streamIndexes: number[], width: number) => void;
   onToggleAudioTrack: (streamIndex: number) => void;
+  onSetAllAudioTracksEnabled: (enabled: boolean) => void;
   onToggleAudioMerge: () => void;
   onWaveformImageError: (streamIndex: number) => void;
 }
@@ -55,6 +56,7 @@ export function EditorStage({
   onTrimChange,
   onPrepareWaveforms,
   onToggleAudioTrack,
+  onSetAllAudioTracksEnabled,
   onToggleAudioMerge,
   onWaveformImageError,
 }: EditorStageProps) {
@@ -390,6 +392,7 @@ export function EditorStage({
             range={trim}
             mergeAudio={mergeAudio}
             onToggleTrack={onToggleAudioTrack}
+            onSetAllTracksEnabled={onSetAllAudioTracksEnabled}
             onToggleMerge={onToggleAudioMerge}
             onPrepareWaveforms={onPrepareWaveforms}
             onWaveformImageError={onWaveformImageError}

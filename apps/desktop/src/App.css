@@ -592,6 +592,7 @@ p {
 
 .timeline-audio-heading {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
@@ -614,20 +615,33 @@ p {
   font-size: 0.68rem;
 }
 
+.audio-master-control,
 .merge-audio-control,
 .audio-track-label {
   cursor: pointer;
 }
 
+.timeline-audio-actions,
+.audio-master-control,
 .merge-audio-control {
   display: flex;
   flex: 0 0 auto;
   align-items: center;
+}
+
+.timeline-audio-actions {
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.audio-master-control,
+.merge-audio-control {
   gap: 0.45rem;
   color: #c4c4cc;
   font-size: 0.72rem;
 }
 
+.audio-master-control input,
 .merge-audio-control input,
 .audio-track-label input {
   margin: 0;

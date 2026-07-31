@@ -116,6 +116,10 @@ function App() {
     dispatch({ type: "audio-track-toggled", sourceId, streamIndex });
   }, []);
 
+  const handleSetAllAudioTracksEnabled = useCallback((sourceId: string, enabled: boolean) => {
+    dispatch({ type: "audio-tracks-set-enabled", sourceId, enabled });
+  }, []);
+
   const handleToggleAudioMerge = useCallback((sourceId: string) => {
     dispatch({ type: "audio-merge-toggled", sourceId });
   }, []);
@@ -252,6 +256,7 @@ function App() {
         onTrimChange={handleTrimChange}
         onPrepareWaveforms={handlePrepareWaveforms}
         onToggleAudioTrack={handleToggleAudioTrack}
+        onSetAllAudioTracksEnabled={handleSetAllAudioTracksEnabled}
         onToggleAudioMerge={handleToggleAudioMerge}
         onWaveformImageError={handleWaveformImageError}
       />
