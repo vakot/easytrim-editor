@@ -71,9 +71,6 @@ export function EditorStage({
   onWaveformImageError,
 }: EditorStageProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const audioGainRef = useRef<GainNode | null>(null);
-  const audioSourceRef = useRef<MediaElementAudioSourceNode | null>(null);
   const playheadRef = useRef<HTMLButtonElement>(null);
   const audioPlayheadRef = useRef<HTMLDivElement>(null);
   const playbackFrameRef = useRef<number | null>(null);
@@ -94,15 +91,6 @@ export function EditorStage({
   const [transportError, setTransportError] = useState<string | null>(null);
   const displayedPlayheadMicros = clampPlaybackMicros(playheadMicros, trim.sourceDurationMicros);
 
-  function disconnectPreviewAudio() {
-    audioGainRef.current?.disconnect();
-    audioSourceRef.current?.disconnect();
-    void audioContextRef.current?.close().catch(() => undefined);
-    audioGainRef.current = null;
-    audioSourceRef.current = null;
-    audioContextRef.current = null;
-  }
-
   useEffect(
     () => () => {
       cancelFrame(playbackFrameRef);
@@ -110,10 +98,6 @@ export function EditorStage({
     },
     [],
   );
-
-  useEffect(() => {
-    return () => disconnectPreviewAudio();
-  }, [preview.status]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -125,42 +109,8 @@ export function EditorStage({
           enabledTracks.length
         : 0;
     const gainValue = masterEnabled ? (masterVolumePercent / 50) * trackGain : 0;
-    video.muted = false;
-
-    if (gainValue <= 1) {
-      if (audioGainRef.current) {
-        audioGainRef.current.gain.value = gainValue;
-        video.volume = 1;
-      } else {
-        video.volume = Math.max(0, gainValue);
-      }
-      return;
-    }
-
-    const AudioContextConstructor =
-      window.AudioContext ??
-      (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!AudioContextConstructor) {
-      video.volume = 1;
-      return;
-    }
-
-    try {
-      if (!audioSourceRef.current) {
-        const context = new AudioContextConstructor();
-        const source = context.createMediaElementSource(video);
-        const gain = context.createGain();
-        source.connect(gain).connect(context.destination);
-        audioContextRef.current = context;
-        audioSourceRef.current = source;
-        audioGainRef.current = gain;
-      }
-      video.volume = 1;
-      audioGainRef.current!.gain.value = gainValue;
-    } catch {
-      disconnectPreviewAudio();
-      video.volume = 1;
-    }
+    video.muted = gainValue <= 0;
+    video.volume = Math.min(1, Math.max(0, gainValue));
   }, [audioTracks, masterEnabled, masterVolumePercent]);
 
   useEffect(() => {
@@ -321,7 +271,6 @@ export function EditorStage({
       return;
     }
     setTransportError(null);
-    void audioContextRef.current?.resume().catch(() => undefined);
     void video.play().catch(() => {
       setIsPlaying(false);
       setTransportError("Playback could not start.");
