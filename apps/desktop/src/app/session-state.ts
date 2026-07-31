@@ -5,6 +5,7 @@ import type {
   PreviewDescriptor,
   PreviewKind,
   SourceSelection,
+  WaveformResult,
 } from "../lib/tauri/media";
 import { createFullTrimRange, isValidTrimRange, type TrimRange } from "../domain/trim";
 
@@ -19,6 +20,18 @@ export type PreviewState =
   | { status: "ready"; value: PreviewDescriptor }
   | { status: "failed"; error: AppError };
 
+export type WaveformState =
+  | { status: "idle" }
+  | { status: "loading"; jobId: string; width: number }
+  | { status: "ready"; jobId: string; width: number; url: string }
+  | { status: "failed"; jobId: string; width: number; error: AppError };
+
+export interface AudioTrackState {
+  streamIndex: number;
+  enabled: boolean;
+  waveform: WaveformState;
+}
+
 export interface SessionState {
   status: "idle" | "loading-source" | "ready" | "failed";
   capabilities: CapabilityState;
@@ -27,6 +40,8 @@ export interface SessionState {
     media: MediaInfo | null;
     preview: PreviewState;
     trim: TrimRange | null;
+    audioTracks: AudioTrackState[];
+    mergeAudio: boolean;
   } | null;
   lastError: AppError | null;
 }
@@ -47,7 +62,25 @@ type SessionAction =
   | { type: "preview-loading"; sourceId: string; kind: PreviewKind }
   | { type: "preview-ready"; sourceId: string; preview: PreviewDescriptor }
   | { type: "preview-failed"; sourceId: string; error: AppError }
-  | { type: "trim-changed"; sourceId: string; trim: TrimRange };
+  | { type: "trim-changed"; sourceId: string; trim: TrimRange }
+  | { type: "audio-track-toggled"; sourceId: string; streamIndex: number }
+  | { type: "audio-merge-toggled"; sourceId: string }
+  | {
+      type: "waveforms-loading";
+      sourceId: string;
+      jobId: string;
+      width: number;
+      streamIndexes: number[];
+    }
+  | { type: "waveform-result"; result: WaveformResult }
+  | {
+      type: "waveforms-failed";
+      sourceId: string;
+      jobId: string;
+      width: number;
+      streamIndexes: number[];
+      error: AppError;
+    };
 
 export function sessionReducer(state: SessionState, action: SessionAction): SessionState {
   switch (action.type) {
@@ -70,6 +103,8 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
           media: null,
           preview: { status: "idle" },
           trim: null,
+          audioTracks: [],
+          mergeAudio: false,
         },
         lastError: null,
       };
@@ -87,6 +122,11 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
           ...state.source,
           media: action.media,
           trim: createFullTrimRange(action.media.durationMicros),
+          audioTracks: action.media.audioStreams.map((stream) => ({
+            streamIndex: stream.streamIndex,
+            enabled: true,
+            waveform: { status: "idle" },
+          })),
         },
         lastError: null,
       };
@@ -151,5 +191,116 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
           trim: action.trim,
         },
       };
+    case "audio-track-toggled":
+      if (state.source?.selection.sourceId !== action.sourceId) {
+        return state;
+      }
+      return {
+        ...state,
+        source: {
+          ...state.source,
+          audioTracks: state.source.audioTracks.map((track) =>
+            track.streamIndex === action.streamIndex
+              ? { ...track, enabled: !track.enabled }
+              : track,
+          ),
+        },
+      };
+    case "audio-merge-toggled":
+      if (state.source?.selection.sourceId !== action.sourceId) {
+        return state;
+      }
+      return {
+        ...state,
+        source: {
+          ...state.source,
+          mergeAudio: !state.source.mergeAudio,
+        },
+      };
+    case "waveforms-loading":
+      if (state.source?.selection.sourceId !== action.sourceId) {
+        return state;
+      }
+      return {
+        ...state,
+        source: {
+          ...state.source,
+          audioTracks: updateWaveformTracks(state.source.audioTracks, action.streamIndexes, () => ({
+            status: "loading",
+            jobId: action.jobId,
+            width: action.width,
+          })),
+        },
+      };
+    case "waveform-result":
+      if (state.source?.selection.sourceId !== action.result.sourceId) {
+        return state;
+      }
+      return {
+        ...state,
+        source: {
+          ...state.source,
+          audioTracks: state.source.audioTracks.map((track) => {
+            if (
+              track.streamIndex !== action.result.streamIndex ||
+              track.waveform.status !== "loading" ||
+              track.waveform.jobId !== action.result.jobId
+            ) {
+              return track;
+            }
+            return {
+              ...track,
+              waveform:
+                action.result.status === "ready"
+                  ? {
+                      status: "ready",
+                      jobId: action.result.jobId,
+                      width: action.result.width,
+                      url: action.result.url,
+                    }
+                  : {
+                      status: "failed",
+                      jobId: action.result.jobId,
+                      width: action.result.width,
+                      error: action.result.error,
+                    },
+            };
+          }),
+        },
+      };
+    case "waveforms-failed":
+      if (state.source?.selection.sourceId !== action.sourceId) {
+        return state;
+      }
+      return {
+        ...state,
+        source: {
+          ...state.source,
+          audioTracks: updateWaveformTracks(
+            state.source.audioTracks,
+            action.streamIndexes,
+            (track) =>
+              track.waveform.status === "loading" && track.waveform.jobId === action.jobId
+                ? {
+                    status: "failed",
+                    jobId: action.jobId,
+                    width: action.width,
+                    error: action.error,
+                  }
+                : track.waveform,
+          ),
+        },
+      };
   }
+}
+
+function updateWaveformTracks(
+  tracks: AudioTrackState[],
+  streamIndexes: number[],
+  update: (track: AudioTrackState) => WaveformState,
+): AudioTrackState[] {
+  const selected = new Set(streamIndexes);
+  return tracks.map((track) =>
+    selected.has(track.streamIndex) ? { ...track, waveform: update(track) } : track,
+  );
 }

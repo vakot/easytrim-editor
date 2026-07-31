@@ -86,12 +86,12 @@ beforeEach(() => {
   mocks.inspectMedia.mockResolvedValue(media);
   mocks.prepareSourcePreview.mockResolvedValue({
     sourceId: selection.sourceId,
-    url: "http://easycut-media.localhost/source-1?variant=source",
+    url: "http://clipkit-media.localhost/source-1?variant=source",
     kind: "source",
   });
   mocks.prepareProxyPreview.mockResolvedValue({
     sourceId: selection.sourceId,
-    url: "http://easycut-media.localhost/source-1?variant=proxy",
+    url: "http://clipkit-media.localhost/source-1?variant=proxy",
     kind: "proxy",
   });
   mocks.listenForSourceDrops.mockImplementation(
@@ -130,7 +130,7 @@ describe("App", () => {
     expect(screen.getByText(/AAC/)).toBeInTheDocument();
     expect(screen.getByLabelText("Source video preview")).toHaveAttribute(
       "src",
-      "http://easycut-media.localhost/source-1?variant=source",
+      "http://clipkit-media.localhost/source-1?variant=source",
     );
     expect(screen.getByLabelText("Source video preview")).not.toHaveAttribute("controls");
     expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
@@ -317,7 +317,7 @@ describe("App", () => {
     expect(await screen.findByText("720p preview")).toBeInTheDocument();
     expect(screen.getByLabelText("Source video preview")).toHaveAttribute(
       "src",
-      "http://easycut-media.localhost/source-1?variant=proxy",
+      "http://clipkit-media.localhost/source-1?variant=proxy",
     );
   });
 
