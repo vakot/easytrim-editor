@@ -18,6 +18,11 @@ pub fn run() {
         .manage(AppState::default())
         .invoke_handler(tauri::generate_handler![
             commands::capabilities::check_media_capabilities,
+            commands::export::cancel_operation,
+            commands::export::choose_output_path,
+            commands::export::reveal_in_explorer,
+            commands::export::render_fast,
+            commands::export::render_optimized,
             commands::media::inspect_media,
             commands::media::prepare_proxy_preview,
             commands::media::prepare_source_preview,

@@ -8,6 +8,7 @@ use std::{
     },
 };
 
+use crate::media::probe::MediaInfo;
 use crate::{domain::source::ValidatedSource, error::AppError};
 
 #[derive(Clone, Debug)]
@@ -15,6 +16,7 @@ pub struct ActiveSource {
     pub source_id: String,
     pub path: PathBuf,
     pub cancellation: Arc<AtomicBool>,
+    pub media: Option<MediaInfo>,
     pub preview_streams: Option<PreviewStreamSelection>,
     pub audio_stream_indexes: Vec<u32>,
 }
@@ -79,6 +81,7 @@ struct ActiveSourceRecord {
     source_id: String,
     path: PathBuf,
     cancellation: Arc<AtomicBool>,
+    media: Option<MediaInfo>,
     preview_streams: Option<PreviewStreamSelection>,
     preview: Option<PreviewArtifact>,
     audio_stream_indexes: Vec<u32>,
@@ -95,7 +98,11 @@ struct SessionState {
 #[derive(Debug, Default)]
 pub struct AppState {
     next_generation: AtomicU64,
+    next_output: AtomicU64,
+    next_operation: AtomicU64,
     session: Mutex<SessionState>,
+    outputs: Mutex<HashMap<String, PathBuf>>,
+    operations: Mutex<HashMap<String, Arc<AtomicBool>>>,
 }
 
 impl AppState {
@@ -109,7 +116,70 @@ impl AppState {
         if let Some(previous_source) = previous_source {
             previous_source.cancellation.store(true, Ordering::Release);
         }
+        if let Ok(operations) = self.operations.lock() {
+            for cancellation in operations.values() {
+                cancellation.store(true, Ordering::Release);
+            }
+        }
+        self.outputs
+            .lock()
+            .map_err(|_| AppError::internal("The in-memory output registry is unavailable."))?
+            .clear();
         Ok(generation)
+    }
+
+    pub fn register_output(&self, path: PathBuf) -> Result<String, AppError> {
+        let id = format!(
+            "output-{}",
+            self.next_output.fetch_add(1, Ordering::Relaxed) + 1
+        );
+        self.outputs
+            .lock()
+            .map_err(|_| AppError::internal("The in-memory output registry is unavailable."))?
+            .insert(id.clone(), path);
+        Ok(id)
+    }
+
+    pub fn resolve_output(&self, output_id: &str) -> Result<PathBuf, AppError> {
+        self.outputs
+            .lock()
+            .map_err(|_| AppError::internal("The in-memory output registry is unavailable."))?
+            .get(output_id)
+            .cloned()
+            .ok_or_else(|| AppError::invalid_request("The output location is no longer available."))
+    }
+
+    pub fn begin_operation(&self) -> Result<(String, Arc<AtomicBool>), AppError> {
+        let id = format!(
+            "operation-{}",
+            self.next_operation.fetch_add(1, Ordering::Relaxed) + 1
+        );
+        let cancellation = Arc::new(AtomicBool::new(false));
+        self.operations
+            .lock()
+            .map_err(|_| AppError::internal("The in-memory operation registry is unavailable."))?
+            .insert(id.clone(), Arc::clone(&cancellation));
+        Ok((id, cancellation))
+    }
+
+    pub fn cancel_operation(&self, operation_id: &str) -> Result<(), AppError> {
+        let operations = self
+            .operations
+            .lock()
+            .map_err(|_| AppError::internal("The in-memory operation registry is unavailable."))?;
+        operations
+            .get(operation_id)
+            .ok_or_else(|| AppError::invalid_request("The export operation is no longer active."))?
+            .store(true, Ordering::Release);
+        Ok(())
+    }
+
+    pub fn finish_operation(&self, operation_id: &str) -> Result<(), AppError> {
+        self.operations
+            .lock()
+            .map_err(|_| AppError::internal("The in-memory operation registry is unavailable."))?
+            .remove(operation_id);
+        Ok(())
     }
 
     pub fn complete_source_replacement(
@@ -127,6 +197,7 @@ impl AppState {
             source_id: source_id.clone(),
             path: source.path,
             cancellation: Arc::new(AtomicBool::new(false)),
+            media: None,
             preview_streams: None,
             preview: None,
             audio_stream_indexes: Vec::new(),
@@ -147,6 +218,7 @@ impl AppState {
                 source_id: source.source_id.clone(),
                 path: source.path.clone(),
                 cancellation: Arc::clone(&source.cancellation),
+                media: source.media.clone(),
                 preview_streams: source.preview_streams,
                 audio_stream_indexes: source.audio_stream_indexes.clone(),
             })
@@ -156,11 +228,13 @@ impl AppState {
     pub fn remember_inspected_streams(
         &self,
         source_id: &str,
+        media: MediaInfo,
         preview_streams: PreviewStreamSelection,
         audio_stream_indexes: Vec<u32>,
     ) -> Result<(), AppError> {
         let mut session = self.lock_session()?;
         let source = active_source_mut(&mut session, source_id)?;
+        source.media = Some(media);
         source.preview_streams = Some(preview_streams);
         source.audio_stream_indexes = audio_stream_indexes;
         Ok(())
@@ -197,6 +271,7 @@ impl AppState {
                 source_id: source.source_id.clone(),
                 path: source.path.clone(),
                 cancellation: Arc::clone(&source.cancellation),
+                media: source.media.clone(),
                 preview_streams: source.preview_streams,
                 audio_stream_indexes: source.audio_stream_indexes.clone(),
             },

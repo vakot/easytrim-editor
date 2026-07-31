@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+import { Channel, invoke } from "@tauri-apps/api/core";
 import type { UnlistenFn } from "@tauri-apps/api/event";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 
@@ -11,6 +11,44 @@ export interface AppError {
 export interface SourceSelection {
   sourceId: string;
   displayName: string;
+}
+
+export interface TrimSelection {
+  startMicros: number;
+  endMicros: number;
+}
+
+export interface ExportProgress {
+  operationId: string;
+  percentage: number;
+  elapsedMicros: number;
+  speed?: string;
+  phase: "running" | "completed";
+}
+
+export interface OutputSelection {
+  outputId: string;
+  displayName: string;
+  displayPath: string;
+}
+
+export interface ExportResult {
+  operationId: string;
+  displayName: string;
+  displayPath: string;
+}
+
+export interface FastExportRequest {
+  sourceId: string;
+  trim: TrimSelection;
+  audioStreamIndexes: number[];
+  mergeAudio: boolean;
+}
+
+export interface OptimizedExportRequest extends FastExportRequest {
+  resolution: { width: number; height: number };
+  frameRate?: { numerator: number; denominator: number };
+  arguments: string;
 }
 
 export interface BinaryCapability {
@@ -135,6 +173,63 @@ export async function inspectMedia(sourceId: string): Promise<MediaInfo> {
   }
 }
 
+export async function chooseOutputPath(defaultName: string): Promise<OutputSelection | null> {
+  try {
+    const value = await invoke<unknown>("choose_output_path", { defaultName });
+    return value === null ? null : parseOutputSelection(value);
+  } catch (error: unknown) {
+    throw normalizeAppError(error);
+  }
+}
+
+export async function renderFast(
+  request: FastExportRequest,
+  outputId: string,
+  onProgress: (progress: ExportProgress) => void,
+): Promise<ExportResult> {
+  return render("render_fast", request, outputId, onProgress);
+}
+
+export async function renderOptimized(
+  request: OptimizedExportRequest,
+  outputId: string,
+  onProgress: (progress: ExportProgress) => void,
+): Promise<ExportResult> {
+  return render("render_optimized", request, outputId, onProgress);
+}
+
+export async function cancelOperation(operationId: string): Promise<void> {
+  try {
+    await invoke("cancel_operation", { operationId });
+  } catch (error: unknown) {
+    throw normalizeAppError(error);
+  }
+}
+
+export async function revealInExplorer(path: string): Promise<void> {
+  try {
+    await invoke("reveal_in_explorer", { path });
+  } catch (error: unknown) {
+    throw normalizeAppError(error);
+  }
+}
+
+async function render(
+  command: "render_fast" | "render_optimized",
+  request: FastExportRequest | OptimizedExportRequest,
+  outputId: string,
+  onProgress: (progress: ExportProgress) => void,
+): Promise<ExportResult> {
+  try {
+    const channel = new Channel<unknown>((value) => onProgress(parseExportProgress(value)));
+    return parseExportResult(
+      await invoke<unknown>(command, { request, outputId, onProgress: channel }),
+    );
+  } catch (error: unknown) {
+    throw normalizeAppError(error);
+  }
+}
+
 export async function prepareSourcePreview(sourceId: string): Promise<PreviewDescriptor> {
   try {
     return parsePreviewDescriptor(
@@ -251,6 +346,39 @@ function parseSourceSelection(value: unknown): SourceSelection {
   return {
     sourceId: requireString(source.sourceId, "source ID"),
     displayName: requireString(source.displayName, "display name"),
+  };
+}
+
+function parseOutputSelection(value: unknown): OutputSelection {
+  const output = requireRecord(value, "output selection");
+  return {
+    outputId: requireString(output.outputId, "output ID"),
+    displayName: requireString(output.displayName, "output display name"),
+    displayPath: requireString(output.displayPath, "output display path"),
+  };
+}
+
+function parseExportProgress(value: unknown): ExportProgress {
+  const progress = requireRecord(value, "export progress");
+  const phase = progress.phase;
+  if (phase !== "running" && phase !== "completed") {
+    throw invalidResponse("export progress phase");
+  }
+  return {
+    operationId: requireString(progress.operationId, "operation ID"),
+    percentage: requireFiniteNumber(progress.percentage, "export percentage"),
+    elapsedMicros: requireInteger(progress.elapsedMicros, "export elapsed time"),
+    speed: optionalString(progress.speed),
+    phase,
+  };
+}
+
+function parseExportResult(value: unknown): ExportResult {
+  const result = requireRecord(value, "export result");
+  return {
+    operationId: requireString(result.operationId, "operation ID"),
+    displayName: requireString(result.displayName, "output display name"),
+    displayPath: requireString(result.displayPath, "output display path"),
   };
 }
 
@@ -437,6 +565,13 @@ function optionalString(value: unknown): string | undefined {
 
 function requireInteger(value: unknown, label: string): number {
   if (typeof value !== "number" || !Number.isSafeInteger(value)) {
+    throw invalidResponse(label);
+  }
+  return value;
+}
+
+function requireFiniteNumber(value: unknown, label: string): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
     throw invalidResponse(label);
   }
   return value;

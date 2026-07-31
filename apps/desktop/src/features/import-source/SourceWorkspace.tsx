@@ -5,6 +5,7 @@ import { PaneResizeHandle } from "../../components/PaneResizeHandle";
 import type { TrimRange } from "../../domain/trim";
 import type { BinaryCapability, FrameRate, MediaInfo } from "../../lib/tauri/media";
 import { EditorStage } from "../editor/EditorStage";
+import { ExportQueue, type ExportToast } from "../export/ExportPanel";
 
 interface SourceWorkspaceProps {
   session: SessionState;
@@ -18,6 +19,7 @@ interface SourceWorkspaceProps {
   onSetAllAudioTracksEnabled: (sourceId: string, enabled: boolean) => void;
   onToggleAudioMerge: (sourceId: string) => void;
   onWaveformImageError: (sourceId: string, streamIndex: number) => void;
+  exportQueue: ExportToast[];
 }
 
 export function SourceWorkspace({
@@ -32,6 +34,7 @@ export function SourceWorkspace({
   onSetAllAudioTracksEnabled,
   onToggleAudioMerge,
   onWaveformImageError,
+  exportQueue,
 }: SourceWorkspaceProps) {
   if (!session.source) {
     return (
@@ -93,6 +96,7 @@ export function SourceWorkspace({
           {session.status === "ready" && session.source.media ? (
             <MediaDetails media={session.source.media} />
           ) : null}
+          <ExportQueue queue={exportQueue} />
         </aside>
       </Panel>
 
@@ -105,30 +109,32 @@ export function SourceWorkspace({
       <Panel id="editor-content-panel" minSize="44rem" className="workspace-pane-content">
         <div className="editor-stage" aria-label="Video preview and timeline area">
           {session.status === "ready" && session.source.media && session.source.trim ? (
-            <EditorStage
-              key={sourceId}
-              sourceId={sourceId}
-              preview={session.source.preview}
-              trim={session.source.trim}
-              frameRate={
-                session.source.media.video.averageFrameRate ??
-                session.source.media.video.realFrameRate
-              }
-              audioStreams={session.source.media.audioStreams}
-              audioTracks={session.source.audioTracks}
-              mergeAudio={session.source.mergeAudio}
-              onPreviewPlaybackError={onPreviewPlaybackError}
-              onTrimChange={(trim) => onTrimChange(sourceId, trim)}
-              onPrepareWaveforms={(streamIndexes, width) =>
-                onPrepareWaveforms(sourceId, streamIndexes, width)
-              }
-              onToggleAudioTrack={(streamIndex) => onToggleAudioTrack(sourceId, streamIndex)}
-              onSetAllAudioTracksEnabled={(enabled) =>
-                onSetAllAudioTracksEnabled(sourceId, enabled)
-              }
-              onToggleAudioMerge={() => onToggleAudioMerge(sourceId)}
-              onWaveformImageError={(streamIndex) => onWaveformImageError(sourceId, streamIndex)}
-            />
+            <>
+              <EditorStage
+                key={sourceId}
+                sourceId={sourceId}
+                preview={session.source.preview}
+                trim={session.source.trim}
+                frameRate={
+                  session.source.media.video.averageFrameRate ??
+                  session.source.media.video.realFrameRate
+                }
+                audioStreams={session.source.media.audioStreams}
+                audioTracks={session.source.audioTracks}
+                mergeAudio={session.source.mergeAudio}
+                onPreviewPlaybackError={onPreviewPlaybackError}
+                onTrimChange={(trim) => onTrimChange(sourceId, trim)}
+                onPrepareWaveforms={(streamIndexes, width) =>
+                  onPrepareWaveforms(sourceId, streamIndexes, width)
+                }
+                onToggleAudioTrack={(streamIndex) => onToggleAudioTrack(sourceId, streamIndex)}
+                onSetAllAudioTracksEnabled={(enabled) =>
+                  onSetAllAudioTracksEnabled(sourceId, enabled)
+                }
+                onToggleAudioMerge={() => onToggleAudioMerge(sourceId)}
+                onWaveformImageError={(streamIndex) => onWaveformImageError(sourceId, streamIndex)}
+              />
+            </>
           ) : null}
           {isSourceDragActive ? <DropOverlay /> : null}
         </div>
@@ -227,33 +233,8 @@ function MediaDetails({ media }: { media: MediaInfo }) {
         <Metadata label="File size" value={formatBytes(media.sizeBytes)} />
         <Metadata label="Bitrate" value={formatBitrate(media.bitrate)} />
         <Metadata label="Video stream" value={`#${media.video.streamIndex}`} />
+        <Metadata label="Audio tracks" value={String(media.audioStreams.length)} />
       </dl>
-
-      <section className="audio-section" aria-labelledby="audio-title">
-        <div className="audio-heading">
-          <h2 id="audio-title">Audio streams</h2>
-          <span>{media.audioStreams.length}</span>
-        </div>
-        {media.audioStreams.length === 0 ? (
-          <p className="no-audio">No audio streams found.</p>
-        ) : (
-          <ul className="audio-list">
-            {media.audioStreams.map((audio) => (
-              <li key={audio.streamIndex}>
-                <div className="audio-title">
-                  <strong>{audio.title ?? audio.language ?? `Audio ${audio.streamIndex}`}</strong>
-                  {audio.isDefault ? <span className="default-tag">Default</span> : null}
-                </div>
-                <span>
-                  #{audio.streamIndex} · {audio.codecName.toUpperCase()} ·{" "}
-                  {audio.channelLayout ?? formatChannels(audio.channels)}
-                  {audio.sampleRateHz ? ` · ${Math.round(audio.sampleRateHz / 1_000)} kHz` : ""}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
     </div>
   );
 }
@@ -299,10 +280,4 @@ function formatBytes(bytes: number | undefined): string {
 
 function formatBitrate(bitrate: number | undefined): string {
   return bitrate === undefined ? "Unknown" : `${(bitrate / 1_000_000).toFixed(2)} Mbps`;
-}
-
-function formatChannels(channels: number | undefined): string {
-  return channels === undefined
-    ? "Unknown layout"
-    : `${channels} channel${channels === 1 ? "" : "s"}`;
 }

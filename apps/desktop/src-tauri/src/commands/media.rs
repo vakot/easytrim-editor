@@ -72,6 +72,7 @@ pub async fn inspect_media(
         .collect();
     state.remember_inspected_streams(
         &source_id,
+        result.clone(),
         PreviewStreamSelection {
             video_stream_index: result.video.stream_index,
             audio_stream_index,

@@ -77,11 +77,19 @@ p {
   display: flex;
   min-width: 0;
   align-items: center;
-  justify-content: flex-end;
-  gap: 1rem;
+  justify-content: space-between;
+  gap: 2rem;
   padding: 0 1.25rem;
   border-bottom: 1px solid #29292e;
   background: #111114;
+}
+
+.app-brand {
+  flex: 0 0 auto;
+  margin: 0;
+  color: #e4ae4e;
+  font-size: 1.25rem;
+  letter-spacing: 0.02em;
 }
 
 .toolbar-actions {
@@ -92,6 +100,301 @@ p {
 .toolbar-actions {
   min-width: 0;
   gap: 0.75rem;
+}
+
+.app-toolbar > .toolbar-actions {
+  flex: 1 1 auto;
+  justify-content: flex-end;
+}
+
+.export-toolbar-group {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 1.75rem;
+  margin: 0 0.25rem;
+  background: #34343a;
+}
+
+.export-button {
+  min-width: auto;
+  white-space: nowrap;
+}
+
+.export-config-anchor {
+  position: relative;
+}
+
+.export-dialog {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 0.75rem);
+  right: 0;
+  display: grid;
+  width: min(35rem, calc(100vw - 2rem));
+  gap: 1rem;
+  box-sizing: border-box;
+  padding: 1rem;
+  border: 1px solid #3b3b43;
+  border-radius: 0.7rem;
+  color: #f4f4f5;
+  background: #17171b;
+  box-shadow: 0 1rem 3rem rgb(0 0 0 / 45%);
+}
+
+.export-dialog-header,
+.export-dialog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.export-dialog-header h2 {
+  margin: 0.25rem 0 0;
+  font-size: 1rem;
+}
+
+.icon-button {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border: 0;
+  border-radius: 0.4rem;
+  color: #d4d4d8;
+  background: transparent;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.icon-button:hover {
+  background: #29292e;
+}
+
+.export-dialog .optimized-options {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.export-dialog .primary-button,
+.export-dialog .secondary-button {
+  width: auto;
+  margin: 0;
+  padding: 0.6rem 0.9rem;
+}
+
+.secondary-button {
+  min-height: 2.5rem;
+  border: 1px solid #3b3b43;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.9rem;
+  color: #e4e4e7;
+  background: #222228;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.secondary-button:hover {
+  background: #2d2d34;
+}
+
+.export-cancel-button {
+  min-width: auto;
+  color: #f4f4f5;
+  background: #7f433c;
+}
+
+.export-progress-label,
+.export-status,
+.export-error {
+  overflow: hidden;
+  max-width: 16rem;
+  color: #a1a1aa;
+  font-size: 0.72rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.export-error {
+  color: #fecaca;
+}
+
+.export-queue {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+}
+
+.export-queue-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.export-queue-heading h2 {
+  margin: 0;
+  color: #e4ae4e;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.export-queue-heading > span {
+  color: #8c8c95;
+  font-size: 0.72rem;
+}
+
+.export-queue-list {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.export-queue-empty {
+  margin: 0;
+  color: #71717a;
+  font-size: 0.75rem;
+}
+
+.export-toast {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 0.85rem 0.75rem 1rem;
+  border: 1px solid #3b3b43;
+  border-left: 3px solid #e4ae4e;
+  border-radius: 0.6rem;
+  color: #f4f4f5;
+  background: #19191d;
+  box-shadow: 0 0.75rem 2rem rgb(0 0 0 / 32%);
+}
+
+.export-toast-clickable {
+  cursor: pointer;
+}
+
+.export-toast-clickable:hover {
+  border-color: #686871;
+  background: #202026;
+}
+
+.export-toast-clickable:focus-visible {
+  outline: 2px solid #e4ae4e;
+  outline-offset: 2px;
+}
+
+.export-toast-completed {
+  border-left-color: #72b18a;
+}
+
+.export-toast-failed {
+  border-left-color: #d8796b;
+}
+
+.export-toast-canceled {
+  border-left-color: #d8796b;
+}
+
+.export-toast-canceled .export-toast-title span {
+  color: #d8796b;
+}
+
+.export-toast-copy {
+  display: grid;
+  min-width: 0;
+  gap: 0.2rem;
+}
+
+.export-toast-title {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+}
+
+.export-toast-title strong,
+.export-toast-path {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.export-toast-title span {
+  flex: 0 0 auto;
+  color: #e4ae4e;
+  font-variant-numeric: tabular-nums;
+}
+
+.export-toast-path {
+  color: #8c8c95;
+  font-size: 0.7rem;
+}
+
+.export-toast-error {
+  color: #fecaca;
+  font-size: 0.7rem;
+}
+
+.export-toast-actions {
+  flex: 0 0 auto;
+}
+
+.export-toast-actions button {
+  border: 1px solid #5d3733;
+  border-radius: 0.4rem;
+  padding: 0.35rem 0.55rem;
+  color: #fecaca;
+  background: transparent;
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+
+.export-toast-actions button:hover {
+  background: #321b19;
+}
+
+.export-toast-actions span {
+  display: grid;
+  width: 1.5rem;
+  height: 1.5rem;
+  place-items: center;
+  font-size: 1rem;
+  line-height: 1;
+  border-radius: 50%;
+  color: #17130a;
+  background: #72b18a;
+  font-weight: 800;
+}
+
+.export-toast-actions svg {
+  display: block;
+  width: 0.9rem;
+  height: 0.9rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.25;
+}
+
+.export-toast-failed .export-toast-actions span {
+  color: #fff;
+  background: #d8796b;
+}
+
+.export-toast-canceled .export-toast-actions span {
+  color: #fff;
+  background: #d8796b;
 }
 
 .welcome-header {
@@ -153,6 +456,21 @@ p {
 .toolbar-button:hover:not(:disabled),
 .primary-button:hover:not(:disabled) {
   background: #f0bd61;
+}
+
+.toolbar-button.secondary-button {
+  border: 1px solid #e4ae4e;
+  color: #e4ae4e;
+  background: transparent;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease;
+}
+
+.toolbar-button.secondary-button:hover:not(:disabled) {
+  color: #17130a;
+  background: #e4ae4e;
 }
 
 .toolbar-button:disabled,
@@ -325,8 +643,55 @@ p {
   height: 100%;
   min-width: 0;
   min-height: 0;
-  overflow: hidden;
+  grid-template-rows: minmax(0, 1fr) auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   background: radial-gradient(circle at 50% 45%, #16161a, transparent 35rem), #0a0a0c;
+}
+
+.export-progress-label,
+.export-note,
+.export-status {
+  color: #a1a1aa;
+  font-size: 0.78rem;
+}
+
+.export-field {
+  display: grid;
+  gap: 0.35rem;
+  color: #a1a1aa;
+  font-size: 0.76rem;
+}
+
+.export-field input,
+.export-field select,
+.export-field textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #34343a;
+  border-radius: 0.4rem;
+  padding: 0.55rem 0.65rem;
+  color: #f4f4f5;
+  background: #19191d;
+  font: inherit;
+}
+
+.export-field textarea {
+  resize: vertical;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.72rem;
+}
+
+.optimized-options {
+  display: grid;
+  grid-template-columns: minmax(10rem, 0.7fr) minmax(8rem, 0.5fr) minmax(16rem, 2fr);
+  gap: 0.75rem;
+}
+
+.export-note,
+.export-status {
+  margin: 0;
 }
 
 .editor-stage-content {

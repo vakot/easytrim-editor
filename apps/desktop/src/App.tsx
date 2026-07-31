@@ -3,6 +3,7 @@ import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { initialSessionState, sessionReducer } from "./app/session-state";
 import type { TrimRange } from "./domain/trim";
 import { CapabilityStatus, SourceWorkspace } from "./features/import-source/SourceWorkspace";
+import { ExportPanel, type ExportToast } from "./features/export/ExportPanel";
 import {
   checkMediaCapabilities,
   chooseSource,
@@ -22,6 +23,7 @@ function App() {
   const [isChoosingSource, setIsChoosingSource] = useState(false);
   const [isSourceDragActive, setIsSourceDragActive] = useState(false);
   const [dropListenerError, setDropListenerError] = useState<string | null>(null);
+  const [exportQueue, setExportQueue] = useState<ExportToast[]>([]);
   const waveformJobSequence = useRef(0);
   const hasSource = session.source !== null;
 
@@ -214,12 +216,25 @@ function App() {
     <main className={`app-shell ${hasSource ? "has-source" : "is-empty"}`}>
       {hasSource ? (
         <div className="app-toolbar" role="toolbar" aria-label="Application toolbar">
+          <h1 className="app-brand">ClipKit</h1>
           <div className="toolbar-actions">
             <CapabilityStatus capabilities={session.capabilities} />
             <OpenVideoButton
               isChoosingSource={isChoosingSource}
               onChooseSource={() => void handleChooseSource()}
             />
+            {session.status === "ready" && session.source?.media && session.source.trim ? (
+              <ExportPanel
+                key={`export-${session.source.selection.sourceId}`}
+                source={session.source.media}
+                sourceName={session.source.selection.displayName}
+                trim={session.source.trim}
+                audioTracks={session.source.audioTracks}
+                mergeAudio={session.source.mergeAudio}
+                queue={exportQueue}
+                setQueue={setExportQueue}
+              />
+            ) : null}
           </div>
         </div>
       ) : (
@@ -259,6 +274,7 @@ function App() {
         onSetAllAudioTracksEnabled={handleSetAllAudioTracksEnabled}
         onToggleAudioMerge={handleToggleAudioMerge}
         onWaveformImageError={handleWaveformImageError}
+        exportQueue={exportQueue}
       />
     </main>
   );
@@ -273,7 +289,7 @@ function OpenVideoButton({
 }) {
   return (
     <button
-      className="toolbar-button"
+      className="toolbar-button secondary-button"
       type="button"
       onClick={onChooseSource}
       disabled={isChoosingSource}

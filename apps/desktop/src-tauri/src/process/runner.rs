@@ -1,6 +1,6 @@
 use std::{
     ffi::{OsStr, OsString},
-    io::{self, Read},
+    io::{self, BufRead, BufReader, Read},
     process::{Command, ExitStatus, Stdio},
     thread,
     time::{Duration, Instant},
@@ -106,6 +106,111 @@ pub fn run_bounded_cancellable(
     let (stdout, stdout_truncated) = join_reader(stdout_reader)?;
     let (stderr, stderr_truncated) = join_reader(stderr_reader)?;
 
+    Ok(ProcessOutput {
+        status,
+        stdout,
+        stderr,
+        stdout_truncated,
+        stderr_truncated,
+    })
+}
+
+pub fn run_progress_cancellable(
+    executable: &OsStr,
+    arguments: &[OsString],
+    timeout: Duration,
+    max_stdout_bytes: usize,
+    max_stderr_bytes: usize,
+    mut is_cancelled: impl FnMut() -> bool,
+    mut on_progress_line: impl FnMut(&str),
+) -> io::Result<ProcessOutput> {
+    if is_cancelled() {
+        return Err(cancelled_error());
+    }
+
+    let mut command = Command::new(executable);
+    command
+        .args(arguments)
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+    configure_process(&mut command);
+
+    let mut child = command.spawn()?;
+    let stdout = child
+        .stdout
+        .take()
+        .ok_or_else(|| io::Error::other("child stdout was not captured"))?;
+    let stderr = child
+        .stderr
+        .take()
+        .ok_or_else(|| io::Error::other("child stderr was not captured"))?;
+    let (progress_sender, progress_receiver) = std::sync::mpsc::channel::<io::Result<String>>();
+    let stdout_reader = thread::spawn(move || {
+        let mut reader = BufReader::new(stdout);
+        let mut retained = Vec::with_capacity(max_stdout_bytes.min(16 * 1024));
+        let mut truncated = false;
+        let mut line = String::new();
+        loop {
+            line.clear();
+            let read = reader.read_line(&mut line)?;
+            if read == 0 {
+                break;
+            }
+            let remaining = max_stdout_bytes.saturating_sub(retained.len());
+            let bytes = line.as_bytes();
+            let to_retain = remaining.min(bytes.len());
+            retained.extend_from_slice(&bytes[..to_retain]);
+            truncated |= to_retain < bytes.len();
+            if progress_sender
+                .send(Ok(line.trim_end().to_owned()))
+                .is_err()
+            {
+                break;
+            }
+        }
+        Ok::<_, io::Error>((retained, truncated))
+    });
+    let stderr_reader = thread::spawn(move || read_bounded(stderr, max_stderr_bytes));
+
+    let started_at = Instant::now();
+    let status = loop {
+        while let Ok(line) = progress_receiver.try_recv() {
+            on_progress_line(&line?);
+        }
+        if is_cancelled() {
+            terminate_child(&mut child)?;
+            join_reader(stdout_reader)?;
+            join_reader(stderr_reader)?;
+            return Err(cancelled_error());
+        }
+        let elapsed = started_at.elapsed();
+        if elapsed >= timeout {
+            terminate_child(&mut child)?;
+            join_reader(stdout_reader)?;
+            join_reader(stderr_reader)?;
+            return Err(io::Error::new(
+                io::ErrorKind::TimedOut,
+                "media helper process timed out",
+            ));
+        }
+        match child.wait_timeout(PROCESS_POLL_INTERVAL.min(timeout - elapsed)) {
+            Ok(Some(status)) => break status,
+            Ok(None) => {}
+            Err(error) => {
+                let _ = terminate_child(&mut child);
+                join_reader(stdout_reader)?;
+                join_reader(stderr_reader)?;
+                return Err(error);
+            }
+        }
+    };
+
+    let (stdout, stdout_truncated) = join_reader(stdout_reader)?;
+    while let Ok(line) = progress_receiver.try_recv() {
+        on_progress_line(&line?);
+    }
+    let (stderr, stderr_truncated) = join_reader(stderr_reader)?;
     Ok(ProcessOutput {
         status,
         stdout,
