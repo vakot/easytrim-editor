@@ -584,6 +584,7 @@ p {
   --timeline-column-gap: 0.75rem;
 
   min-width: 0;
+  min-height: 100%;
   padding: 1rem 1.25rem 1.25rem;
   background: #111114;
   user-select: none;
