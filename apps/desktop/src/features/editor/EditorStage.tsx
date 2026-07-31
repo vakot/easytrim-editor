@@ -94,6 +94,15 @@ export function EditorStage({
   const [transportError, setTransportError] = useState<string | null>(null);
   const displayedPlayheadMicros = clampPlaybackMicros(playheadMicros, trim.sourceDurationMicros);
 
+  function disconnectPreviewAudio() {
+    audioGainRef.current?.disconnect();
+    audioSourceRef.current?.disconnect();
+    void audioContextRef.current?.close().catch(() => undefined);
+    audioGainRef.current = null;
+    audioSourceRef.current = null;
+    audioContextRef.current = null;
+  }
+
   useEffect(
     () => () => {
       cancelFrame(playbackFrameRef);
@@ -103,12 +112,32 @@ export function EditorStage({
   );
 
   useEffect(() => {
+    return () => disconnectPreviewAudio();
+  }, [preview.status]);
+
+  useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
+    const enabledTracks = audioTracks.filter((track) => track.enabled && track.volumePercent > 0);
+    const trackGain =
+      enabledTracks.length > 0
+        ? enabledTracks.reduce((sum, track) => sum + track.volumePercent / 50, 0) /
+          enabledTracks.length
+        : 0;
+    const gainValue = masterEnabled ? (masterVolumePercent / 50) * trackGain : 0;
+    video.muted = false;
+
+    if (gainValue <= 1) {
+      disconnectPreviewAudio();
+      video.volume = Math.max(0, gainValue);
+      return;
+    }
+
     const AudioContextConstructor =
       window.AudioContext ??
       (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!AudioContextConstructor) {
+      video.volume = 1;
       return;
     }
 
@@ -122,35 +151,11 @@ export function EditorStage({
         audioSourceRef.current = source;
         audioGainRef.current = gain;
       }
+      video.volume = 1;
+      audioGainRef.current!.gain.value = gainValue;
     } catch {
-      // Some WebViews do not expose MediaElementSource. The gain effect below
-      // falls back to the native volume property in that case.
-    }
-
-    return () => {
-      audioGainRef.current?.disconnect();
-      audioSourceRef.current?.disconnect();
-      void audioContextRef.current?.close().catch(() => undefined);
-      audioGainRef.current = null;
-      audioSourceRef.current = null;
-      audioContextRef.current = null;
-    };
-  }, [preview.status]);
-
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    const enabledTracks = audioTracks.filter((track) => track.enabled && track.volumePercent > 0);
-    const trackGain =
-      enabledTracks.length > 0
-        ? enabledTracks.reduce((sum, track) => sum + track.volumePercent / 50, 0) /
-          enabledTracks.length
-        : 0;
-    const gainValue = masterEnabled ? (masterVolumePercent / 50) * trackGain : 0;
-    if (audioGainRef.current) {
-      audioGainRef.current.gain.value = gainValue;
-    } else {
-      video.volume = Math.min(1, gainValue);
+      disconnectPreviewAudio();
+      video.volume = 1;
     }
   }, [audioTracks, masterEnabled, masterVolumePercent]);
 

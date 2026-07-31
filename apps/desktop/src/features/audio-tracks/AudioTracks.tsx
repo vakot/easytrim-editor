@@ -75,7 +75,6 @@ export function AudioTracks({
             className="audio-master-level-control"
           />
           <div>
-            <span className="audio-track-title">All tracks</span>
             <span className="audio-track-meta" title={outputSummary}>
               {outputSummary}
             </span>

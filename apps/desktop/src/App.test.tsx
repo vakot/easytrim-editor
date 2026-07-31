@@ -253,7 +253,6 @@ describe("App", () => {
       const allTracks = screen.getByRole("button", { name: "All audio tracks" });
       expect(allTracks).toHaveAttribute("aria-pressed", "true");
       expect(allTracks.closest(".timeline-row")).toHaveClass("timeline-audio-heading");
-      expect(allTracks.parentElement).toHaveTextContent("All tracks");
       expect(allTracks.parentElement).not.toHaveTextContent("Audio tracks");
       expect(screen.getByRole("button", { name: "Mute eng" })).toHaveAttribute(
         "aria-pressed",
