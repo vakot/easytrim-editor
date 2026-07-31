@@ -232,8 +232,8 @@ function MediaDetails({ media }: { media: MediaInfo }) {
         <Metadata label="Video codec" value={media.video.codecName.toUpperCase()} />
         <Metadata label="File size" value={formatBytes(media.sizeBytes)} />
         <Metadata label="Bitrate" value={formatBitrate(media.bitrate)} />
-        <Metadata label="Audio streams" value={String(media.audioStreams.length)} />
         <Metadata label="Video stream" value={`#${media.video.streamIndex}`} />
+        <Metadata label="Audio tracks" value={String(media.audioStreams.length)} />
       </dl>
     </div>
   );

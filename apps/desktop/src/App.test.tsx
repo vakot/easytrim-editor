@@ -139,7 +139,7 @@ describe("App", () => {
     expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
     expect(await screen.findByText("3840 × 2160")).toBeInTheDocument();
     expect(screen.getByText("59.94 fps")).toBeInTheDocument();
-    const audioStreamMetadata = screen.getByText("Audio streams");
+    const audioStreamMetadata = screen.getAllByText("Audio tracks")[0]!;
     expect(audioStreamMetadata.nextElementSibling).toHaveTextContent("1");
     expect(screen.getByRole("heading", { name: "Export queue" })).toBeInTheDocument();
     expect(screen.getByText("No exports yet.")).toBeInTheDocument();
