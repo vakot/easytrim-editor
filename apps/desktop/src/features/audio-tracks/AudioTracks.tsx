@@ -5,6 +5,9 @@ import { timelinePercent, type TrimRange } from "../../domain/trim";
 import type { AudioStream } from "../../lib/tauri/media";
 
 const WAVEFORM_RENDER_WIDTH = 4096;
+const MIN_SLIDER_DECIBELS = -24;
+const MAX_SLIDER_DECIBELS = 6;
+const ORIGINAL_SLIDER_POSITION = 80;
 
 interface AudioTracksProps {
   streams: AudioStream[];
@@ -169,21 +172,45 @@ function AudioLevelControl({
 }) {
   return (
     <div className={`audio-level-control${className ? ` ${className}` : ""}`}>
-      <input
-        className="audio-volume-slider"
-        type="range"
-        min="0"
-        max="100"
-        step="1"
-        value={volumePercent}
-        onChange={(event) => onChange(Number(event.target.value))}
-        onDoubleClick={() => onChange(50)}
-        aria-label={label}
-        title="50% is the original level"
-      />
+      <div className="audio-slider-track">
+        <input
+          className="audio-volume-slider"
+          type="range"
+          min={MIN_SLIDER_DECIBELS}
+          max={MAX_SLIDER_DECIBELS}
+          step="0.1"
+          value={volumePercentToDecibels(volumePercent)}
+          onChange={(event) => onChange(decibelsToVolumePercent(Number(event.target.value)))}
+          onDoubleClick={() => onChange(50)}
+          aria-label={label}
+          title="0 dB is the original level"
+        />
+        <span
+          className="audio-slider-original-marker"
+          style={{ left: `${ORIGINAL_SLIDER_POSITION}%` }}
+          aria-hidden="true"
+        />
+      </div>
       <output>{formatDecibels(volumePercent)}</output>
     </div>
   );
+}
+
+function volumePercentToDecibels(volumePercent: number): number {
+  if (volumePercent <= 0) {
+    return MIN_SLIDER_DECIBELS;
+  }
+  return Math.max(
+    MIN_SLIDER_DECIBELS,
+    Math.min(MAX_SLIDER_DECIBELS, 20 * Math.log10(volumePercent / 50)),
+  );
+}
+
+function decibelsToVolumePercent(decibels: number): number {
+  if (decibels <= MIN_SLIDER_DECIBELS) {
+    return 0;
+  }
+  return Math.round(50 * 10 ** (decibels / 20));
 }
 
 function VolumeButton({

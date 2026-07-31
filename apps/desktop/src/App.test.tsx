@@ -263,25 +263,25 @@ describe("App", () => {
         "true",
       );
       const engVolume = screen.getByRole("slider", { name: "eng volume" });
-      expect(engVolume).toHaveValue("50");
-      fireEvent.change(engVolume, { target: { value: "100" } });
-      expect(engVolume).toHaveValue("100");
+      expect(engVolume).toHaveValue("0");
+      fireEvent.change(engVolume, { target: { value: "6" } });
+      expect(engVolume).toHaveValue("6");
       expect(screen.getByText("+6.0 dB")).toBeInTheDocument();
       await user.dblClick(engVolume);
-      expect(engVolume).toHaveValue("50");
-      expect(engVolume.parentElement).toHaveTextContent("+0.0 dB");
+      expect(engVolume).toHaveValue("0");
+      expect(engVolume.closest(".audio-level-control")).toHaveTextContent("+0.0 dB");
       await user.click(screen.getByRole("button", { name: "Mute eng" }));
       expect(screen.getByRole("button", { name: "Enable eng" })).toHaveAttribute(
         "aria-pressed",
         "false",
       );
-      expect(engVolume).toHaveValue("0");
+      expect(engVolume).toHaveValue("-24");
       await user.click(screen.getByRole("button", { name: "Enable eng" }));
       expect(screen.getByRole("button", { name: "Mute eng" })).toHaveAttribute(
         "aria-pressed",
         "true",
       );
-      expect(engVolume).toHaveValue("50");
+      expect(engVolume).toHaveValue("0");
       await waitFor(() =>
         expect(mocks.prepareWaveforms).toHaveBeenCalledWith(
           selection.sourceId,

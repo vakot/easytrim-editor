@@ -1213,10 +1213,29 @@ p {
   gap: 0.35rem;
 }
 
+.audio-slider-track {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+}
+
 .audio-volume-slider {
   width: 100%;
   min-width: 0;
   accent-color: #e4ae4e;
+}
+
+.audio-slider-original-marker {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  width: 1px;
+  height: 0.75rem;
+  background: #f3d18c;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
 }
 
 .audio-master-level-control .audio-volume-slider {
