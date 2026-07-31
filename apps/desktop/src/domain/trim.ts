@@ -13,7 +13,52 @@ export interface SegmentSnapResult {
   point: SegmentSnapPoint | null;
 }
 
+export type DragDirection = -1 | 1;
+
+export interface DirectionalSnapLatch {
+  direction: DragDirection | null;
+  ignoredDirection: DragDirection | null;
+}
+
+export interface DirectionalSnapState {
+  latch: DirectionalSnapLatch;
+  anchorIgnored: boolean;
+}
+
 export const MIN_SELECTION_MICROS = 1_000_000;
+
+export function createDirectionalSnapLatch(): DirectionalSnapLatch {
+  return {
+    direction: null,
+    ignoredDirection: null,
+  };
+}
+
+export function advanceDirectionalSnapLatch(
+  latch: DirectionalSnapLatch,
+  movementMicros: number,
+): DirectionalSnapState {
+  const nextDirection: DragDirection | null =
+    movementMicros > 0 ? 1 : movementMicros < 0 ? -1 : latch.direction;
+  const directionChanged =
+    nextDirection !== null && latch.direction !== null && nextDirection !== latch.direction;
+  const ignoredDirection = directionChanged ? null : latch.ignoredDirection;
+
+  return {
+    latch: {
+      direction: nextDirection,
+      ignoredDirection,
+    },
+    anchorIgnored: nextDirection !== null && ignoredDirection === nextDirection,
+  };
+}
+
+export function ignoreDirectionalSnapAnchor(latch: DirectionalSnapLatch): DirectionalSnapLatch {
+  return {
+    ...latch,
+    ignoredDirection: latch.direction,
+  };
+}
 
 export function createFullTrimRange(sourceDurationMicros: number): TrimRange {
   const duration = requirePositiveInteger(sourceDurationMicros, "source duration");
@@ -139,8 +184,17 @@ export function playheadAfterTrimBoundaryMove(
   boundary: TrimBoundary,
   playheadMicros: number,
 ): number {
-  return safeBoundaryFollowAfterMove(previousRange, nextRange, boundary, playheadMicros, false)
+  return playheadFollowAfterTrimBoundaryMove(previousRange, nextRange, boundary, playheadMicros)
     .playheadMicros;
+}
+
+export function playheadFollowAfterTrimBoundaryMove(
+  previousRange: TrimRange,
+  nextRange: TrimRange,
+  boundary: TrimBoundary,
+  playheadMicros: number,
+): PlayheadBoundaryFollow {
+  return safeBoundaryFollowAfterMove(previousRange, nextRange, boundary, playheadMicros, false);
 }
 
 function safeBoundaryFollowAfterMove(

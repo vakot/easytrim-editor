@@ -689,6 +689,84 @@ describe("App", () => {
     expect(playhead).toHaveAttribute("aria-valuenow", "45000000");
   });
 
+  it("does not repeatedly snap a safely followed segment border while movement continues", async () => {
+    mocks.chooseSource.mockResolvedValue(selection);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Open video" }));
+    const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
+    const timeline = screen.getByLabelText("Video trim timeline");
+    vi.spyOn(timeline, "getBoundingClientRect").mockReturnValue({
+      x: 100,
+      y: 0,
+      left: 100,
+      top: 0,
+      right: 1100,
+      bottom: 52,
+      width: 1000,
+      height: 52,
+      toJSON: () => ({}),
+    });
+    const clientXForSeconds = (seconds: number) => 100 + (seconds / 65) * 1000;
+
+    video.currentTime = 10;
+    fireEvent.timeUpdate(video);
+    fireEvent.keyDown(window, { key: "i" });
+    video.currentTime = 20;
+    fireEvent.timeUpdate(video);
+    fireEvent.keyDown(window, { key: "o" });
+    video.currentTime = 30;
+    fireEvent.timeUpdate(video);
+
+    const segmentHandle = screen.getByRole("slider", { name: "Move selected segment" });
+    const trimStart = screen.getByRole("slider", { name: "Trim start" });
+    const playhead = screen.getByRole("slider", { name: "Playback position" });
+
+    fireEvent.pointerDown(segmentHandle, {
+      clientX: clientXForSeconds(15),
+      pointerId: 37,
+      shiftKey: true,
+    });
+    fireEvent.pointerMove(segmentHandle, {
+      clientX: clientXForSeconds(35),
+      pointerId: 37,
+      shiftKey: true,
+    });
+    expect(segmentHandle).toHaveAttribute("data-snap-point", "start");
+    expect(playhead).toHaveAttribute("aria-valuenow", "30000000");
+
+    fireEvent.pointerMove(segmentHandle, {
+      clientX: clientXForSeconds(35.5),
+      pointerId: 37,
+      shiftKey: true,
+    });
+    expect(segmentHandle).not.toHaveAttribute("data-snap-point");
+    expect(trimStart).toHaveAttribute("aria-valuenow", "30500000");
+    expect(playhead).toHaveAttribute("aria-valuenow", "30500000");
+
+    fireEvent.pointerMove(segmentHandle, {
+      clientX: clientXForSeconds(36),
+      pointerId: 37,
+      shiftKey: true,
+    });
+    expect(trimStart).toHaveAttribute("aria-valuenow", "31000000");
+    expect(playhead).toHaveAttribute("aria-valuenow", "31000000");
+
+    fireEvent.pointerMove(segmentHandle, {
+      clientX: clientXForSeconds(35.8),
+      pointerId: 37,
+      shiftKey: true,
+    });
+    expect(segmentHandle).toHaveAttribute("data-snap-point", "start");
+    expect(trimStart).toHaveAttribute("aria-valuenow", "31000000");
+    fireEvent.pointerUp(segmentHandle, {
+      clientX: clientXForSeconds(35.8),
+      pointerId: 37,
+      shiftKey: true,
+    });
+  });
+
   it("catches and follows the playhead while safely dragging the segment", async () => {
     mocks.chooseSource.mockResolvedValue(selection);
     const user = userEvent.setup();
@@ -902,6 +980,70 @@ describe("App", () => {
     expect(safeTrimToggle).toHaveAttribute("aria-pressed", "true");
     expect(playhead).toHaveAttribute("aria-valuenow", "35000000");
     expect(video.currentTime).toBe(35);
+  });
+
+  it("does not repeatedly snap a safely followed trim border while movement continues", async () => {
+    mocks.chooseSource.mockResolvedValue(selection);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Open video" }));
+    const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
+    const timeline = screen.getByLabelText("Video trim timeline");
+    vi.spyOn(timeline, "getBoundingClientRect").mockReturnValue({
+      x: 100,
+      y: 0,
+      left: 100,
+      top: 0,
+      right: 1100,
+      bottom: 52,
+      width: 1000,
+      height: 52,
+      toJSON: () => ({}),
+    });
+    const clientXForSeconds = (seconds: number) => 100 + (seconds / 65) * 1000;
+
+    video.currentTime = 30;
+    fireEvent.timeUpdate(video);
+    const trimStart = screen.getByRole("slider", { name: "Trim start" });
+    const playhead = screen.getByRole("slider", { name: "Playback position" });
+
+    fireEvent.pointerDown(trimStart, {
+      clientX: clientXForSeconds(30),
+      pointerId: 23,
+      shiftKey: true,
+    });
+    expect(trimStart).toHaveAttribute("data-snap-active", "true");
+    expect(playhead).toHaveAttribute("aria-valuenow", "30000000");
+
+    fireEvent.pointerMove(trimStart, {
+      clientX: clientXForSeconds(30.5),
+      pointerId: 23,
+      shiftKey: true,
+    });
+    expect(trimStart).not.toHaveAttribute("data-snap-active");
+    expect(trimStart).toHaveAttribute("aria-valuenow", "30500000");
+    expect(playhead).toHaveAttribute("aria-valuenow", "30500000");
+
+    fireEvent.pointerMove(trimStart, {
+      clientX: clientXForSeconds(31),
+      pointerId: 23,
+      shiftKey: true,
+    });
+    expect(trimStart).toHaveAttribute("aria-valuenow", "31000000");
+    expect(playhead).toHaveAttribute("aria-valuenow", "31000000");
+
+    fireEvent.pointerMove(trimStart, {
+      clientX: clientXForSeconds(30.8),
+      pointerId: 23,
+      shiftKey: true,
+    });
+    expect(trimStart).toHaveAttribute("data-snap-active", "true");
+    expect(trimStart).toHaveAttribute("aria-valuenow", "31000000");
+    fireEvent.pointerUp(trimStart, {
+      pointerId: 23,
+      shiftKey: true,
+    });
   });
 
   it("uses Shift to snap playhead and trim-handle drags to each other", async () => {

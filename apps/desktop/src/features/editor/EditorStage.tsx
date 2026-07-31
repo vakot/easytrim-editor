@@ -9,7 +9,7 @@ import {
 import {
   canSetTrimBoundaryAtPlayhead,
   playheadAfterSegmentMove,
-  playheadAfterTrimBoundaryMove,
+  playheadFollowAfterTrimBoundaryMove,
   setTrimBoundaryAtPlayhead,
   type TrimBoundary,
   type TrimRange,
@@ -254,21 +254,25 @@ export function EditorStage({
     onTrimChange(nextTrim);
   }
 
-  function handleTrimBoundaryChange(boundary: TrimBoundary, nextTrim: TrimRange) {
+  function handleTrimBoundaryChange(
+    boundary: TrimBoundary,
+    nextTrim: TrimRange,
+  ): TrimBoundary | null {
     const previousTrim = trimRef.current;
     const currentPlayheadMicros = currentPlayheadMicrosRef.current;
-    const nextPlayheadMicros = safeTrimFollowingEnabled
-      ? playheadAfterTrimBoundaryMove(previousTrim, nextTrim, boundary, currentPlayheadMicros)
-      : currentPlayheadMicros;
+    const follow = safeTrimFollowingEnabled
+      ? playheadFollowAfterTrimBoundaryMove(previousTrim, nextTrim, boundary, currentPlayheadMicros)
+      : { playheadMicros: currentPlayheadMicros, boundary: null };
 
     trimRef.current = nextTrim;
     onTrimChange(nextTrim);
-    if (nextPlayheadMicros !== currentPlayheadMicros) {
-      commitSeek(nextPlayheadMicros);
+    if (follow.playheadMicros !== currentPlayheadMicros) {
+      commitSeek(follow.playheadMicros);
     }
+    return follow.boundary;
   }
 
-  function handleSegmentMove(nextTrim: TrimRange) {
+  function handleSegmentMove(nextTrim: TrimRange): TrimBoundary | null {
     const previousTrim = trimRef.current;
     const currentPlayheadMicros = currentPlayheadMicrosRef.current;
     const follow =
@@ -287,6 +291,7 @@ export function EditorStage({
     if (follow.playheadMicros !== currentPlayheadMicros) {
       commitSeek(follow.playheadMicros);
     }
+    return follow.boundary;
   }
 
   function handleSegmentDragStart() {

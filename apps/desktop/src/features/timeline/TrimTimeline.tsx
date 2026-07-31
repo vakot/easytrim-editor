@@ -13,13 +13,17 @@ import {
   frameDurationMicros,
 } from "../../domain/playback";
 import {
+  advanceDirectionalSnapLatch,
   clampToTrim,
+  createDirectionalSnapLatch,
+  ignoreDirectionalSnapAnchor,
   microsFromTimelinePosition,
   minimumSelectionMicros,
   moveTrimBoundary,
   moveTrimRange,
   snapMovedTrimRangeToPlayhead,
   timelinePercent,
+  type DirectionalSnapLatch,
   type SegmentSnapPoint,
   type TrimBoundary,
   type TrimRange,
@@ -35,8 +39,8 @@ interface TrimTimelineProps {
   frameRate?: FrameRate;
   playbackControls: ReactNode;
   playbackTimecode: ReactNode;
-  onChange: (boundary: TrimBoundary, range: TrimRange) => void;
-  onMoveSegment: (range: TrimRange) => void;
+  onChange: (boundary: TrimBoundary, range: TrimRange) => TrimBoundary | null;
+  onMoveSegment: (range: TrimRange) => TrimBoundary | null;
   onSegmentDragStart: () => void;
   onSegmentDragEnd: () => void;
   onSeek: (micros: number) => void;
@@ -63,11 +67,18 @@ export function TrimTimeline({
 }: TrimTimelineProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   const scrubPointerIdRef = useRef<number | null>(null);
+  const trimDragRef = useRef<{
+    pointerId: number;
+    boundary: TrimBoundary;
+    lastPointerMicros: number;
+    snapLatch: DirectionalSnapLatch;
+  } | null>(null);
   const segmentDragRef = useRef<{
     pointerId: number;
     grabOffsetMicros: number;
     lastPointerMicros: number;
     snapModifierActive: boolean;
+    snapLatch: DirectionalSnapLatch;
   } | null>(null);
   const [segmentDragging, setSegmentDragging] = useState(false);
   const [segmentSnapPoint, setSegmentSnapPoint] = useState<SegmentSnapPoint | null>(null);
@@ -101,8 +112,19 @@ export function TrimTimeline({
       bounds.width,
       range.sourceDurationMicros,
     );
+    const drag = trimDragRef.current;
+    if (!drag || drag.boundary !== boundary) {
+      return false;
+    }
+    const snapState = advanceDirectionalSnapLatch(
+      drag.snapLatch,
+      pointerMicros - drag.lastPointerMicros,
+    );
+    drag.lastPointerMicros = pointerMicros;
+    drag.snapLatch = snapState.latch;
     const snapActive =
       snapToPlayhead &&
+      !snapState.anchorIgnored &&
       isPointerNearPlayhead(
         clientX,
         bounds.left,
@@ -112,7 +134,10 @@ export function TrimTimeline({
       );
     const requestedMicros = snapActive ? playheadMicros : pointerMicros;
     const next = moveTrimBoundary(range, boundary, requestedMicros);
-    onChange(boundary, next);
+    const followedBoundary = onChange(boundary, next);
+    if (followedBoundary === boundary) {
+      drag.snapLatch = ignoreDirectionalSnapAnchor(drag.snapLatch);
+    }
     return snapActive;
   }
 
@@ -122,18 +147,32 @@ export function TrimTimeline({
     capture: boolean,
   ) {
     if (capture) {
+      trimDragRef.current = {
+        pointerId: event.pointerId,
+        boundary,
+        lastPointerMicros: boundaryValue(range, boundary),
+        snapLatch: createDirectionalSnapLatch(),
+      };
       event.currentTarget.setPointerCapture?.(event.pointerId);
-    } else if (
-      event.currentTarget.hasPointerCapture &&
-      !event.currentTarget.hasPointerCapture(event.pointerId)
-    ) {
-      return;
+    } else {
+      if (trimDragRef.current?.pointerId !== event.pointerId) {
+        return;
+      }
+      if (
+        event.currentTarget.hasPointerCapture &&
+        !event.currentTarget.hasPointerCapture(event.pointerId)
+      ) {
+        return;
+      }
     }
     const snapActive = updateFromPointer(boundary, event.clientX, event.shiftKey);
     setTrimDragState({ boundary, snapActive });
   }
 
   function finishTrimDrag(boundary: TrimBoundary) {
+    if (trimDragRef.current?.boundary === boundary) {
+      trimDragRef.current = null;
+    }
     setTrimDragState((current) => (current?.boundary === boundary ? null : current));
   }
 
@@ -208,13 +247,19 @@ export function TrimTimeline({
     }
     drag.lastPointerMicros = pointerMicros;
     drag.snapModifierActive = snapToPlayhead;
+    const snapState = advanceDirectionalSnapLatch(drag.snapLatch, pointerDeltaMicros);
+    drag.snapLatch = snapState.latch;
     const requestedStartMicros = pointerMicros - drag.grabOffsetMicros - segmentDurationMicros / 2;
     const movedRange = moveTrimRange(range, requestedStartMicros);
-    const snapped = snapToPlayhead
-      ? snapMovedTrimRangeToPlayhead(movedRange, playheadMicros, snapReachMicros)
-      : { range: movedRange, point: null };
+    const snapped =
+      snapToPlayhead && !snapState.anchorIgnored
+        ? snapMovedTrimRangeToPlayhead(movedRange, playheadMicros, snapReachMicros)
+        : { range: movedRange, point: null };
     setSegmentSnapPoint(snapped.point);
-    onMoveSegment(snapped.range);
+    const followedBoundary = onMoveSegment(snapped.range);
+    if (followedBoundary) {
+      drag.snapLatch = ignoreDirectionalSnapAnchor(drag.snapLatch);
+    }
   }
 
   function startSegmentDrag(event: PointerEvent<HTMLButtonElement>) {
@@ -229,6 +274,7 @@ export function TrimTimeline({
       grabOffsetMicros: pointer.pointerMicros - segmentCenterMicros,
       lastPointerMicros: pointer.pointerMicros,
       snapModifierActive: event.shiftKey,
+      snapLatch: createDirectionalSnapLatch(),
     };
     setSegmentDragging(true);
     onSegmentDragStart();

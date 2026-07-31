@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  advanceDirectionalSnapLatch,
   canSetTrimBoundaryAtPlayhead,
   clampToTrim,
+  createDirectionalSnapLatch,
   createFullTrimRange,
+  ignoreDirectionalSnapAnchor,
   isValidTrimRange,
   microsFromTimelinePosition,
   moveTrimBoundary,
@@ -116,6 +119,26 @@ describe("trim domain", () => {
     ).toEqual({
       range: { ...range, startMicros: 9_000_000, endMicros: 19_000_000 },
       point: "start",
+    });
+  });
+
+  it("ignores a followed snap anchor until drag direction reverses", () => {
+    const movingRight = advanceDirectionalSnapLatch(createDirectionalSnapLatch(), 500_000);
+    const ignored = ignoreDirectionalSnapAnchor(movingRight.latch);
+
+    const continuingRight = advanceDirectionalSnapLatch(ignored, 250_000);
+    expect(continuingRight.anchorIgnored).toBe(true);
+
+    const stationary = advanceDirectionalSnapLatch(continuingRight.latch, 0);
+    expect(stationary.anchorIgnored).toBe(true);
+
+    const reversingLeft = advanceDirectionalSnapLatch(stationary.latch, -100_000);
+    expect(reversingLeft).toEqual({
+      latch: {
+        direction: -1,
+        ignoredDirection: null,
+      },
+      anchorIgnored: false,
     });
   });
 
