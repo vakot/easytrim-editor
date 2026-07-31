@@ -132,6 +132,13 @@ describe("App", () => {
       "src",
       "http://easycut-media.localhost/source-1?variant=source",
     );
+    expect(screen.getByLabelText("Source video preview")).not.toHaveAttribute("controls");
+    expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Previous frame" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Next frame" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Current playback time")).toHaveTextContent(
+      "00:00:00.000 / 00:01:05.000",
+    );
     expect(screen.getByLabelText("Video preview and timeline area")).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Open a video" })).not.toBeInTheDocument();
     expect(screen.queryByText("Local video editor")).not.toBeInTheDocument();
@@ -139,6 +146,34 @@ describe("App", () => {
       screen.queryByText("Import a video to inspect its source and prepare a precise cut."),
     ).not.toBeInTheDocument();
     expect(screen.getByRole("toolbar", { name: "Application toolbar" })).toBeInTheDocument();
+  });
+
+  it("plays, pauses, and steps by the source fractional frame rate", async () => {
+    mocks.chooseSource.mockResolvedValue(selection);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Open video" }));
+    const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
+    const play = vi.spyOn(video, "play").mockResolvedValue();
+    const pause = vi.spyOn(video, "pause").mockImplementation(() => undefined);
+
+    await user.click(screen.getByRole("button", { name: "Play" }));
+    expect(play).toHaveBeenCalledOnce();
+
+    fireEvent.play(video);
+    expect(screen.getByRole("button", { name: "Pause" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Next frame" }));
+    expect(pause).toHaveBeenCalled();
+    expect(screen.getByLabelText("Playback position 0.017 seconds")).toHaveAttribute(
+      "aria-valuenow",
+      "16683",
+    );
+    expect(screen.getByLabelText("Current playback time")).toHaveTextContent("00:00:00.016");
+
+    await user.click(screen.getByRole("button", { name: "Previous frame" }));
+    expect(screen.getByLabelText("Current playback time")).toHaveTextContent("00:00:00.000");
   });
 
   it("falls back to a compatible proxy when direct playback fails", async () => {
@@ -176,7 +211,7 @@ describe("App", () => {
     await user.keyboard("{ArrowRight}");
 
     expect(startHandle).toHaveAttribute("aria-valuenow", "16683");
-    expect(screen.getByText("00:00:00.016")).toBeInTheDocument();
+    expect(screen.getAllByText("00:00:00.016")).not.toHaveLength(0);
   });
 
   it("maps pointer movement on a trim handle to source time", async () => {

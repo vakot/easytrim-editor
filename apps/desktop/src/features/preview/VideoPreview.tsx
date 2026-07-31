@@ -8,6 +8,7 @@ interface VideoPreviewProps {
   videoRef: RefObject<HTMLVideoElement | null>;
   onPlaybackError: (sourceId: string, previewKind: "source" | "proxy") => void;
   onLoadedMetadata: () => void;
+  onTogglePlayback: () => void;
   onPlay: () => void;
   onPause: () => void;
   onTimeUpdate: (seconds: number) => void;
@@ -19,6 +20,7 @@ export function VideoPreview({
   videoRef,
   onPlaybackError,
   onLoadedMetadata,
+  onTogglePlayback,
   onPlay,
   onPause,
   onTimeUpdate,
@@ -69,10 +71,10 @@ export function VideoPreview({
         key={value.url}
         className="preview-video"
         src={value.url}
-        controls
         preload="metadata"
         aria-label="Source video preview"
         data-preview-kind={value.kind}
+        onClick={onTogglePlayback}
         onLoadedMetadata={onLoadedMetadata}
         onPlay={onPlay}
         onPause={onPause}

@@ -323,13 +323,20 @@ p {
   grid-template-rows: minmax(0, 1fr) auto;
 }
 
+.preview-workspace {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+
 .video-preview {
   position: relative;
   display: grid;
   min-width: 0;
   min-height: 0;
   place-items: center;
-  padding: clamp(1rem, 3vw, 2.5rem);
+  padding: clamp(1rem, 3vw, 2.5rem) clamp(1rem, 3vw, 2.5rem) 0.75rem;
 }
 
 .preview-video {
@@ -338,6 +345,7 @@ p {
   min-width: 0;
   min-height: 0;
   border-radius: 0.5rem;
+  cursor: pointer;
   object-fit: contain;
   background: #000;
   box-shadow: 0 1.5rem 4rem rgb(0 0 0 / 38%);
@@ -384,6 +392,73 @@ p {
 .preview-error {
   width: min(28rem, calc(100% - 3rem));
   place-self: center;
+}
+
+.playback-controls {
+  display: flex;
+  min-height: 3.5rem;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 0.35rem 1.25rem 0.75rem;
+}
+
+.transport-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.transport-button {
+  display: grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  color: #d4d4d8;
+  background: transparent;
+  cursor: pointer;
+}
+
+.transport-button:hover {
+  border-color: #36363d;
+  color: #f5f5f4;
+  background: #202025;
+}
+
+.transport-button-primary {
+  color: #17130a;
+  background: #e4ae4e;
+}
+
+.transport-button-primary:hover {
+  border-color: #f0bd61;
+  color: #17130a;
+  background: #f0bd61;
+}
+
+.transport-button svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  fill: currentColor;
+}
+
+.playback-time {
+  min-width: 14rem;
+  color: #e4e4e7;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.playback-time span {
+  color: #71717a;
+}
+
+.transport-error {
+  color: #f1b3a8;
+  font-size: 0.75rem;
 }
 
 .timeline-panel {

@@ -1,7 +1,11 @@
 import { useRef, type KeyboardEvent, type PointerEvent } from "react";
 
 import {
-  clampToTrim,
+  clampPlaybackMicros,
+  formatPlaybackTime,
+  frameDurationMicros,
+} from "../../domain/playback";
+import {
   microsFromTimelinePosition,
   moveTrimBoundary,
   timelinePercent,
@@ -29,7 +33,7 @@ export function TrimTimeline({
   const startPercent = timelinePercent(range.startMicros, range.sourceDurationMicros);
   const endPercent = timelinePercent(range.endMicros, range.sourceDurationMicros);
   const playheadPercent = timelinePercent(
-    clampToTrim(playheadMicros, range),
+    clampPlaybackMicros(playheadMicros, range.sourceDurationMicros),
     range.sourceDurationMicros,
   );
 
@@ -114,7 +118,7 @@ export function TrimTimeline({
       <div className="timeline-scale" aria-hidden="true">
         {[0, 0.25, 0.5, 0.75, 1].map((fraction) => (
           <span key={fraction}>
-            {formatTimelineTime(Math.round(range.sourceDurationMicros * fraction))}
+            {formatPlaybackTime(Math.round(range.sourceDurationMicros * fraction))}
           </span>
         ))}
       </div>
@@ -131,14 +135,11 @@ export function TrimTimeline({
             }
             const bounds = event.currentTarget.getBoundingClientRect();
             onSeek(
-              clampToTrim(
-                microsFromTimelinePosition(
-                  event.clientX,
-                  bounds.left,
-                  bounds.width,
-                  range.sourceDurationMicros,
-                ),
-                range,
+              microsFromTimelinePosition(
+                event.clientX,
+                bounds.left,
+                bounds.width,
+                range.sourceDurationMicros,
               ),
             );
           }}
@@ -152,9 +153,9 @@ export function TrimTimeline({
             style={{ left: `${playheadPercent}%` }}
             role="progressbar"
             aria-label={`Playback position ${formatAccessibleTime(playheadMicros)}`}
-            aria-valuemin={range.startMicros}
-            aria-valuemax={range.endMicros}
-            aria-valuenow={clampToTrim(playheadMicros, range)}
+            aria-valuemin={0}
+            aria-valuemax={range.sourceDurationMicros}
+            aria-valuenow={clampPlaybackMicros(playheadMicros, range.sourceDurationMicros)}
           />
           <TrimHandle
             boundary="start"
@@ -228,7 +229,7 @@ function TimeValue({ label, micros }: { label: string; micros: number }) {
   return (
     <div>
       <dt>{label}</dt>
-      <dd>{formatTimelineTime(micros)}</dd>
+      <dd>{formatPlaybackTime(micros)}</dd>
     </div>
   );
 }
@@ -238,26 +239,13 @@ function keyboardStepMicros(frameRate: FrameRate | undefined, coarse: boolean): 
     return 1_000_000;
   }
   if (!frameRate) {
-    return 100_000;
+    return frameDurationMicros(undefined);
   }
-  return Math.max(1, Math.round((frameRate.denominator / frameRate.numerator) * 1_000_000));
+  return frameDurationMicros(frameRate);
 }
 
 function boundaryValue(range: TrimRange, boundary: TrimBoundary): number {
   return boundary === "start" ? range.startMicros : range.endMicros;
-}
-
-function formatTimelineTime(micros: number): string {
-  const totalMilliseconds = Math.max(0, Math.floor(micros / 1_000));
-  const hours = Math.floor(totalMilliseconds / 3_600_000);
-  const minutes = Math.floor((totalMilliseconds % 3_600_000) / 60_000);
-  const seconds = Math.floor((totalMilliseconds % 60_000) / 1_000);
-  const milliseconds = totalMilliseconds % 1_000;
-  return `${hours.toString().padStart(2, "0")}:${minutes
-    .toString()
-    .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}.${milliseconds
-    .toString()
-    .padStart(3, "0")}`;
 }
 
 function formatAccessibleTime(micros: number): string {
