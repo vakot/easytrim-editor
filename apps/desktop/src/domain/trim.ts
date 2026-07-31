@@ -18,6 +18,7 @@ export type DragDirection = -1 | 1;
 export interface DirectionalSnapLatch {
   direction: DragDirection | null;
   ignoredDirection: DragDirection | null;
+  anchorHeld: boolean;
 }
 
 export interface DirectionalSnapState {
@@ -31,6 +32,7 @@ export function createDirectionalSnapLatch(): DirectionalSnapLatch {
   return {
     direction: null,
     ignoredDirection: null,
+    anchorHeld: false,
   };
 }
 
@@ -43,20 +45,41 @@ export function advanceDirectionalSnapLatch(
   const directionChanged =
     nextDirection !== null && latch.direction !== null && nextDirection !== latch.direction;
   const ignoredDirection = directionChanged ? null : latch.ignoredDirection;
+  const anchorHeld = directionChanged ? false : latch.anchorHeld;
 
   return {
     latch: {
       direction: nextDirection,
       ignoredDirection,
+      anchorHeld,
     },
     anchorIgnored: nextDirection !== null && ignoredDirection === nextDirection,
   };
 }
 
-export function ignoreDirectionalSnapAnchor(latch: DirectionalSnapLatch): DirectionalSnapLatch {
+export function settleDirectionalSnapLatch(
+  latch: DirectionalSnapLatch,
+  anchorSnapped: boolean,
+  playheadFollowed: boolean,
+): DirectionalSnapLatch {
+  if (anchorSnapped && (latch.anchorHeld || playheadFollowed)) {
+    return {
+      ...latch,
+      anchorHeld: true,
+    };
+  }
+
+  if (playheadFollowed) {
+    return {
+      ...latch,
+      ignoredDirection: latch.direction,
+      anchorHeld: false,
+    };
+  }
+
   return {
     ...latch,
-    ignoredDirection: latch.direction,
+    anchorHeld: false,
   };
 }
 

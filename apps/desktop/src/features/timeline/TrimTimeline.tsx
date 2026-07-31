@@ -16,12 +16,12 @@ import {
   advanceDirectionalSnapLatch,
   clampToTrim,
   createDirectionalSnapLatch,
-  ignoreDirectionalSnapAnchor,
   microsFromTimelinePosition,
   minimumSelectionMicros,
   moveTrimBoundary,
   moveTrimRange,
   snapMovedTrimRangeToPlayhead,
+  settleDirectionalSnapLatch,
   timelinePercent,
   type DirectionalSnapLatch,
   type SegmentSnapPoint,
@@ -135,9 +135,11 @@ export function TrimTimeline({
     const requestedMicros = snapActive ? playheadMicros : pointerMicros;
     const next = moveTrimBoundary(range, boundary, requestedMicros);
     const followedBoundary = onChange(boundary, next);
-    if (followedBoundary === boundary) {
-      drag.snapLatch = ignoreDirectionalSnapAnchor(drag.snapLatch);
-    }
+    drag.snapLatch = settleDirectionalSnapLatch(
+      drag.snapLatch,
+      snapActive,
+      followedBoundary === boundary,
+    );
     return snapActive;
   }
 
@@ -257,9 +259,11 @@ export function TrimTimeline({
         : { range: movedRange, point: null };
     setSegmentSnapPoint(snapped.point);
     const followedBoundary = onMoveSegment(snapped.range);
-    if (followedBoundary) {
-      drag.snapLatch = ignoreDirectionalSnapAnchor(drag.snapLatch);
-    }
+    drag.snapLatch = settleDirectionalSnapLatch(
+      drag.snapLatch,
+      snapped.point !== null,
+      followedBoundary !== null,
+    );
   }
 
   function startSegmentDrag(event: PointerEvent<HTMLButtonElement>) {

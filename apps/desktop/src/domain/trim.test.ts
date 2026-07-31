@@ -6,7 +6,6 @@ import {
   clampToTrim,
   createDirectionalSnapLatch,
   createFullTrimRange,
-  ignoreDirectionalSnapAnchor,
   isValidTrimRange,
   microsFromTimelinePosition,
   moveTrimBoundary,
@@ -15,6 +14,7 @@ import {
   playheadAfterTrimBoundaryMove,
   setTrimBoundaryAtPlayhead,
   snapMovedTrimRangeToPlayhead,
+  settleDirectionalSnapLatch,
   timelinePercent,
 } from "./trim";
 
@@ -122,10 +122,16 @@ describe("trim domain", () => {
     });
   });
 
-  it("ignores a followed snap anchor until drag direction reverses", () => {
+  it("holds a followed anchor through its magnetic radius, then ignores it until reversal", () => {
     const movingRight = advanceDirectionalSnapLatch(createDirectionalSnapLatch(), 500_000);
-    const ignored = ignoreDirectionalSnapAnchor(movingRight.latch);
+    const held = settleDirectionalSnapLatch(movingRight.latch, true, true);
+    expect(held.anchorHeld).toBe(true);
 
+    const withinMagneticRadius = advanceDirectionalSnapLatch(held, 250_000);
+    expect(withinMagneticRadius.anchorIgnored).toBe(false);
+    expect(withinMagneticRadius.latch.anchorHeld).toBe(true);
+
+    const ignored = settleDirectionalSnapLatch(withinMagneticRadius.latch, false, true);
     const continuingRight = advanceDirectionalSnapLatch(ignored, 250_000);
     expect(continuingRight.anchorIgnored).toBe(true);
 
@@ -137,6 +143,7 @@ describe("trim domain", () => {
       latch: {
         direction: -1,
         ignoredDirection: null,
+        anchorHeld: false,
       },
       anchorIgnored: false,
     });

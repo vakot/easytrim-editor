@@ -689,7 +689,7 @@ describe("App", () => {
     expect(playhead).toHaveAttribute("aria-valuenow", "45000000");
   });
 
-  it("does not repeatedly snap a safely followed segment border while movement continues", async () => {
+  it("holds a safely followed segment border through the snap radius before releasing it", async () => {
     mocks.chooseSource.mockResolvedValue(selection);
     const user = userEvent.setup();
     render(<App />);
@@ -741,27 +741,37 @@ describe("App", () => {
       pointerId: 37,
       shiftKey: true,
     });
-    expect(segmentHandle).not.toHaveAttribute("data-snap-point");
-    expect(trimStart).toHaveAttribute("aria-valuenow", "30500000");
-    expect(playhead).toHaveAttribute("aria-valuenow", "30500000");
+    expect(segmentHandle).toHaveAttribute("data-snap-point", "start");
+    expect(trimStart).toHaveAttribute("aria-valuenow", "30000000");
+    expect(playhead).toHaveAttribute("aria-valuenow", "30000000");
 
     fireEvent.pointerMove(segmentHandle, {
       clientX: clientXForSeconds(36),
       pointerId: 37,
       shiftKey: true,
     });
+    expect(segmentHandle).not.toHaveAttribute("data-snap-point");
     expect(trimStart).toHaveAttribute("aria-valuenow", "31000000");
     expect(playhead).toHaveAttribute("aria-valuenow", "31000000");
 
     fireEvent.pointerMove(segmentHandle, {
-      clientX: clientXForSeconds(35.8),
+      clientX: clientXForSeconds(36.5),
+      pointerId: 37,
+      shiftKey: true,
+    });
+    expect(segmentHandle).not.toHaveAttribute("data-snap-point");
+    expect(trimStart).toHaveAttribute("aria-valuenow", "31500000");
+    expect(playhead).toHaveAttribute("aria-valuenow", "31500000");
+
+    fireEvent.pointerMove(segmentHandle, {
+      clientX: clientXForSeconds(36.3),
       pointerId: 37,
       shiftKey: true,
     });
     expect(segmentHandle).toHaveAttribute("data-snap-point", "start");
-    expect(trimStart).toHaveAttribute("aria-valuenow", "31000000");
+    expect(trimStart).toHaveAttribute("aria-valuenow", "31500000");
     fireEvent.pointerUp(segmentHandle, {
-      clientX: clientXForSeconds(35.8),
+      clientX: clientXForSeconds(36.3),
       pointerId: 37,
       shiftKey: true,
     });
@@ -982,7 +992,7 @@ describe("App", () => {
     expect(video.currentTime).toBe(35);
   });
 
-  it("does not repeatedly snap a safely followed trim border while movement continues", async () => {
+  it("holds a safely followed trim border through the snap radius before releasing it", async () => {
     mocks.chooseSource.mockResolvedValue(selection);
     const user = userEvent.setup();
     render(<App />);
@@ -1021,25 +1031,35 @@ describe("App", () => {
       pointerId: 23,
       shiftKey: true,
     });
-    expect(trimStart).not.toHaveAttribute("data-snap-active");
-    expect(trimStart).toHaveAttribute("aria-valuenow", "30500000");
-    expect(playhead).toHaveAttribute("aria-valuenow", "30500000");
+    expect(trimStart).toHaveAttribute("data-snap-active", "true");
+    expect(trimStart).toHaveAttribute("aria-valuenow", "30000000");
+    expect(playhead).toHaveAttribute("aria-valuenow", "30000000");
 
     fireEvent.pointerMove(trimStart, {
       clientX: clientXForSeconds(31),
       pointerId: 23,
       shiftKey: true,
     });
+    expect(trimStart).not.toHaveAttribute("data-snap-active");
     expect(trimStart).toHaveAttribute("aria-valuenow", "31000000");
     expect(playhead).toHaveAttribute("aria-valuenow", "31000000");
 
     fireEvent.pointerMove(trimStart, {
-      clientX: clientXForSeconds(30.8),
+      clientX: clientXForSeconds(31.5),
+      pointerId: 23,
+      shiftKey: true,
+    });
+    expect(trimStart).not.toHaveAttribute("data-snap-active");
+    expect(trimStart).toHaveAttribute("aria-valuenow", "31500000");
+    expect(playhead).toHaveAttribute("aria-valuenow", "31500000");
+
+    fireEvent.pointerMove(trimStart, {
+      clientX: clientXForSeconds(31.3),
       pointerId: 23,
       shiftKey: true,
     });
     expect(trimStart).toHaveAttribute("data-snap-active", "true");
-    expect(trimStart).toHaveAttribute("aria-valuenow", "31000000");
+    expect(trimStart).toHaveAttribute("aria-valuenow", "31500000");
     fireEvent.pointerUp(trimStart, {
       pointerId: 23,
       shiftKey: true,
