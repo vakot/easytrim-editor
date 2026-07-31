@@ -6,6 +6,7 @@ import type {
   PreviewKind,
   SourceSelection,
 } from "../lib/tauri/media";
+import { createFullTrimRange, isValidTrimRange, type TrimRange } from "../domain/trim";
 
 type CapabilityState =
   | { status: "checking" }
@@ -25,6 +26,7 @@ export interface SessionState {
     selection: SourceSelection;
     media: MediaInfo | null;
     preview: PreviewState;
+    trim: TrimRange | null;
   } | null;
   lastError: AppError | null;
 }
@@ -44,7 +46,8 @@ type SessionAction =
   | { type: "source-failed"; sourceId?: string; error: AppError }
   | { type: "preview-loading"; sourceId: string; kind: PreviewKind }
   | { type: "preview-ready"; sourceId: string; preview: PreviewDescriptor }
-  | { type: "preview-failed"; sourceId: string; error: AppError };
+  | { type: "preview-failed"; sourceId: string; error: AppError }
+  | { type: "trim-changed"; sourceId: string; trim: TrimRange };
 
 export function sessionReducer(state: SessionState, action: SessionAction): SessionState {
   switch (action.type) {
@@ -62,7 +65,12 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
       return {
         ...state,
         status: "loading-source",
-        source: { selection: action.source, media: null, preview: { status: "idle" } },
+        source: {
+          selection: action.source,
+          media: null,
+          preview: { status: "idle" },
+          trim: null,
+        },
         lastError: null,
       };
     case "source-ready":
@@ -75,7 +83,11 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
       return {
         ...state,
         status: "ready",
-        source: { ...state.source, media: action.media },
+        source: {
+          ...state.source,
+          media: action.media,
+          trim: createFullTrimRange(action.media.durationMicros),
+        },
         lastError: null,
       };
     case "source-failed":
@@ -122,6 +134,21 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
         source: {
           ...state.source,
           preview: { status: "failed", error: action.error },
+        },
+      };
+    case "trim-changed":
+      if (
+        state.source?.selection.sourceId !== action.sourceId ||
+        state.source.media?.durationMicros !== action.trim.sourceDurationMicros ||
+        !isValidTrimRange(action.trim)
+      ) {
+        return state;
+      }
+      return {
+        ...state,
+        source: {
+          ...state.source,
+          trim: action.trim,
         },
       };
   }

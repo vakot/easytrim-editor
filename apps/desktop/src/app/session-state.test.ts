@@ -121,4 +121,32 @@ describe("sessionReducer", () => {
       error: { code: "preview_failed", message: "Preview failed." },
     });
   });
+
+  it("initializes a full trim and rejects an empty trim update", () => {
+    const loading = sessionReducer(initialSessionState, {
+      type: "source-selected",
+      source: firstSource,
+    });
+    const ready = sessionReducer(loading, {
+      type: "source-ready",
+      sourceId: firstSource.sourceId,
+      media: media(firstSource.sourceId),
+    });
+    const invalidUpdate = sessionReducer(ready, {
+      type: "trim-changed",
+      sourceId: firstSource.sourceId,
+      trim: {
+        startMicros: 2_000_000,
+        endMicros: 2_000_000,
+        sourceDurationMicros: 5_000_000,
+      },
+    });
+
+    expect(ready.source?.trim).toEqual({
+      startMicros: 0,
+      endMicros: 5_000_000,
+      sourceDurationMicros: 5_000_000,
+    });
+    expect(invalidUpdate).toBe(ready);
+  });
 });
