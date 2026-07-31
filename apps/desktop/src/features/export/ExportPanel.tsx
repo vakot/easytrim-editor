@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 
 import type { AudioTrackState } from "../../app/session-state";
@@ -65,6 +65,25 @@ export function ExportPanel({
   const canceledRef = useRef(new Set<string>());
   const operationIdsRef = useRef(new Map<string, string>());
   const toastSequence = useRef(0);
+
+  useEffect(() => {
+    function handleExportShortcut(event: KeyboardEvent) {
+      if (!event.ctrlKey || event.altKey || event.metaKey || isEditableTarget(event.target)) {
+        return;
+      }
+      if (event.key.toLowerCase() === "s") {
+        event.preventDefault();
+        void handleFastCut();
+      } else if (event.key.toLowerCase() === "e") {
+        event.preventDefault();
+        setLaunchError(null);
+        setIsOptimizedOpen(true);
+      }
+    }
+
+    window.addEventListener("keydown", handleExportShortcut, true);
+    return () => window.removeEventListener("keydown", handleExportShortcut, true);
+  });
 
   const selectedAudio = audioTracks
     .filter((track) => track.enabled)
@@ -208,8 +227,10 @@ export function ExportPanel({
           className="toolbar-button export-button"
           type="button"
           onClick={() => void handleFastCut()}
+          aria-keyshortcuts="Control+S"
+          title="Save (Ctrl+S)"
         >
-          Fast cut
+          Save
         </button>
         <div className="export-config-anchor">
           <button
@@ -221,15 +242,17 @@ export function ExportPanel({
             }}
             aria-haspopup="dialog"
             aria-expanded={isOptimizedOpen}
+            aria-keyshortcuts="Control+E"
+            title="Export (Ctrl+E)"
           >
-            Optimized render
+            Export
           </button>
           {isOptimizedOpen ? (
             <div className="export-dialog" role="dialog" aria-labelledby="optimized-export-title">
               <div className="export-dialog-header">
                 <div>
                   <p className="section-label">Export</p>
-                  <h2 id="optimized-export-title">Optimized render</h2>
+                  <h2 id="optimized-export-title">Export</h2>
                 </div>
                 <button
                   className="icon-button"
@@ -395,6 +418,14 @@ export function ExportQueue({ queue }: { queue: ExportToast[] }) {
 function outputDefaults(sourceName: string) {
   const stem = sourceName.replace(/\.[^/.]+$/, "") || "clip";
   return { fast: `${stem}-cut.mkv`, optimized: `${stem}-optimized.mp4` };
+}
+
+function isEditableTarget(target: EventTarget | null): boolean {
+  return (
+    target instanceof Element &&
+    target.closest("input, textarea, select, [contenteditable]:not([contenteditable='false'])") !==
+      null
+  );
 }
 
 function resolutionOptions(source: MediaInfo) {
