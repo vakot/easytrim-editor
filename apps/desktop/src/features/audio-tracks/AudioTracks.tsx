@@ -211,7 +211,8 @@ function decibelsToVolumePercent(decibels: number): number {
   if (decibels <= MIN_SLIDER_DECIBELS) {
     return 0;
   }
-  return Math.round(50 * 10 ** (decibels / 20));
+  const volumePercent = Math.round(50 * 10 ** (decibels / 20));
+  return volumePercent <= 3 ? 0 : volumePercent;
 }
 
 function sliderFillPercent(volumePercent: number): number {
