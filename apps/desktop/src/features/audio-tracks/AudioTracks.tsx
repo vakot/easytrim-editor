@@ -41,6 +41,7 @@ export function AudioTracks({
   const endPercent = timelinePercent(range.endMicros, range.sourceDurationMicros);
   const playheadPercent = timelinePercent(playheadMicros, range.sourceDurationMicros);
   const enabledCount = tracks.filter((track) => track.enabled).length;
+  const outputSummary = audioOutputSummary(enabledCount, mergeAudio);
   const masterCheckboxRef = useRef<HTMLInputElement>(null);
   const allTracksEnabled = enabledCount === tracks.length;
   const someTracksEnabled = enabledCount > 0 && !allTracksEnabled;
@@ -107,13 +108,19 @@ export function AudioTracks({
             aria-label="All audio tracks"
             title={allTracksEnabled ? "Disable all audio tracks" : "Enable all audio tracks"}
           />
-          <span>All tracks</span>
+          <span
+            id="timeline-audio-title"
+            className="audio-track-title"
+            role="heading"
+            aria-level={3}
+          >
+            Audio tracks
+          </span>
+          <span className="audio-track-meta" title={outputSummary}>
+            {outputSummary}
+          </span>
         </label>
         <div className="timeline-audio-summary">
-          <div>
-            <h3 id="timeline-audio-title">Audio tracks</h3>
-            <p>{audioOutputSummary(enabledCount, mergeAudio)}</p>
-          </div>
           <label className="merge-audio-control">
             <input type="checkbox" checked={mergeAudio} onChange={onToggleMerge} />
             <span>Merge selected tracks</span>
