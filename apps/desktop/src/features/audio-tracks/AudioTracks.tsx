@@ -98,6 +98,9 @@ export function AudioTracks({
 
   return (
     <section className="timeline-audio" aria-labelledby="timeline-audio-title">
+      <h3 id="timeline-audio-title" className="section-label">
+        Audio tracks
+      </h3>
       <div className="timeline-row timeline-audio-heading">
         <label className="audio-master-control">
           <input
@@ -108,14 +111,7 @@ export function AudioTracks({
             aria-label="All audio tracks"
             title={allTracksEnabled ? "Disable all audio tracks" : "Enable all audio tracks"}
           />
-          <span
-            id="timeline-audio-title"
-            className="audio-track-title"
-            role="heading"
-            aria-level={3}
-          >
-            Audio tracks
-          </span>
+          <span className="audio-track-title">All tracks</span>
           <span className="audio-track-meta" title={outputSummary}>
             {outputSummary}
           </span>
