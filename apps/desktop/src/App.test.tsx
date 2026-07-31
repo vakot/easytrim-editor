@@ -173,6 +173,27 @@ describe("App", () => {
     ).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Trim" })).not.toBeInTheDocument();
     expect(screen.getByLabelText("Video preview and timeline area")).toBeInTheDocument();
+    expect(screen.getByTestId("source-details-panel")).toContainElement(
+      screen.getByRole("heading", { name: "holiday.mp4" }),
+    );
+    expect(screen.getByTestId("preview-panel")).toContainElement(
+      screen.getByLabelText("Source video preview"),
+    );
+    expect(screen.getByTestId("timeline-panel")).toContainElement(
+      screen.getByRole("heading", { name: "Selected Segment" }),
+    );
+    const sourceResizeHandle = screen.getByRole("separator", { name: "Resize source details" });
+    const timelineResizeHandle = screen.getByRole("separator", {
+      name: "Resize preview and timeline",
+    });
+    expect(sourceResizeHandle).toHaveAttribute("aria-orientation", "vertical");
+    expect(sourceResizeHandle).toHaveAttribute("tabindex", "0");
+    expect(timelineResizeHandle).toHaveAttribute("aria-orientation", "horizontal");
+    expect(timelineResizeHandle).toHaveAttribute("tabindex", "0");
+    expect(screen.getAllByRole("separator")).toHaveLength(2);
+    expect(
+      screen.getByTestId("timeline-panel").querySelector(".timeline-pane-scroll"),
+    ).not.toBeNull();
     expect(screen.queryByRole("heading", { name: "Open a video" })).not.toBeInTheDocument();
     expect(screen.queryByText("Local video editor")).not.toBeInTheDocument();
     expect(
@@ -228,10 +249,24 @@ describe("App", () => {
           selection.sourceId,
           expect.stringMatching(/^waveform-/),
           [1, 2],
-          1_024,
+          4_096,
         ),
       );
       await waitFor(() => expect(document.querySelectorAll(".waveform-image")).toHaveLength(2));
+
+      bounds.mockReturnValue({
+        width: 1_536,
+        height: 42,
+        top: 0,
+        right: 1_536,
+        bottom: 42,
+        left: 0,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      });
+      await act(async () => fireEvent(window, new Event("resize")));
+      expect(mocks.prepareWaveforms).toHaveBeenCalledTimes(1);
 
       await user.click(screen.getByRole("checkbox", { name: "Include Commentary" }));
       expect(allTracks).toBePartiallyChecked();
@@ -480,7 +515,7 @@ describe("App", () => {
     expect(startHandle).toHaveAttribute("aria-valuenow", "0");
     expect(endHandle).toHaveAttribute("aria-valuenow", "65000000");
 
-    await user.click(startHandle);
+    startHandle.focus();
     await user.keyboard("{ArrowRight}");
 
     expect(startHandle).toHaveAttribute("aria-valuenow", "16683");

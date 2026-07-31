@@ -271,18 +271,29 @@ p {
 }
 
 .editor-workspace {
-  display: grid;
+  width: 100%;
+  height: 100%;
   min-width: 0;
   min-height: 0;
-  grid-template-columns: 20rem minmax(0, 1fr);
+}
+
+.workspace-pane-content,
+.editor-pane-content {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
 }
 
 .source-sidebar {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
   min-width: 0;
+  min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
   padding: 1.5rem;
-  border-right: 1px solid #29292e;
   background: #141417;
 }
 
@@ -310,6 +321,8 @@ p {
 .editor-stage {
   position: relative;
   display: grid;
+  width: 100%;
+  height: 100%;
   min-width: 0;
   min-height: 0;
   overflow: hidden;
@@ -317,17 +330,76 @@ p {
 }
 
 .editor-stage-content {
-  display: grid;
+  width: 100%;
+  height: 100%;
   min-width: 0;
   min-height: 0;
-  grid-template-rows: minmax(0, 1fr) auto;
 }
 
 .preview-workspace {
   display: grid;
+  width: 100%;
+  height: 100%;
   min-width: 0;
   min-height: 0;
   grid-template-rows: minmax(0, 1fr);
+}
+
+.timeline-pane-scroll {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.pane-resize-handle {
+  position: relative;
+  z-index: 2;
+  flex: 0 0 auto;
+  background: #111114;
+  outline: none;
+  touch-action: none;
+}
+
+.pane-resize-handle::before {
+  position: absolute;
+  border-radius: 999px;
+  background: #34343a;
+  content: "";
+  transition:
+    background-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.pane-resize-handle-vertical {
+  width: 0.55rem;
+  cursor: col-resize;
+}
+
+.pane-resize-handle-vertical::before {
+  inset: 0 50%;
+  width: 1px;
+  transform: translateX(-50%);
+}
+
+.pane-resize-handle-horizontal {
+  height: 0.55rem;
+  cursor: row-resize;
+}
+
+.pane-resize-handle-horizontal::before {
+  inset: 50% 0;
+  height: 1px;
+  transform: translateY(-50%);
+}
+
+.pane-resize-handle:hover::before,
+.pane-resize-handle:active::before,
+.pane-resize-handle:focus-visible::before {
+  background: #e4ae4e;
+  box-shadow: 0 0 0 1px rgb(228 174 78 / 20%);
 }
 
 .video-preview {
@@ -511,8 +583,8 @@ p {
   --timeline-column-gap: 0.75rem;
 
   min-width: 0;
+  min-height: 100%;
   padding: 1rem 1.25rem 1.25rem;
-  border-top: 1px solid #29292e;
   background: #111114;
   user-select: none;
 }
@@ -1186,10 +1258,6 @@ p {
     text-align: left;
   }
 
-  .editor-workspace {
-    grid-template-columns: 15rem minmax(0, 1fr);
-  }
-
   .trim-readouts > div:nth-child(3) {
     display: none;
   }
@@ -1198,10 +1266,6 @@ p {
 @media (max-width: 32rem) {
   .app-toolbar {
     padding: 0 0.75rem;
-  }
-
-  .editor-workspace {
-    grid-template-columns: 12rem minmax(8rem, 1fr);
   }
 
   .source-sidebar {

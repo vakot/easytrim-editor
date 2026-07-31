@@ -1,12 +1,10 @@
-import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 
 import type { AudioTrackState } from "../../app/session-state";
 import { timelinePercent, type TrimRange } from "../../domain/trim";
 import type { AudioStream } from "../../lib/tauri/media";
 
-const MIN_WAVEFORM_WIDTH = 64;
-const MAX_WAVEFORM_WIDTH = 4096;
-const WAVEFORM_WIDTH_STEP = 128;
+const WAVEFORM_RENDER_WIDTH = 4096;
 
 interface AudioTracksProps {
   streams: AudioStream[];
@@ -35,8 +33,6 @@ export function AudioTracks({
   onPrepareWaveforms,
   onWaveformImageError,
 }: AudioTracksProps) {
-  const measureRef = useRef<HTMLDivElement>(null);
-  const [waveformWidth, setWaveformWidth] = useState(0);
   const startPercent = timelinePercent(range.startMicros, range.sourceDurationMicros);
   const endPercent = timelinePercent(range.endMicros, range.sourceDurationMicros);
   const playheadPercent = timelinePercent(playheadMicros, range.sourceDurationMicros);
@@ -52,45 +48,14 @@ export function AudioTracks({
     }
   }, [someTracksEnabled]);
 
-  useLayoutEffect(() => {
-    const element = measureRef.current;
-    if (!element) {
-      return;
-    }
-
-    const measure = () => {
-      const measuredWidth = element.getBoundingClientRect().width;
-      if (measuredWidth > 0) {
-        setWaveformWidth(quantizeWaveformWidth(measuredWidth));
-      }
-    };
-    measure();
-
-    const observer =
-      typeof ResizeObserver === "undefined" ? null : new ResizeObserver(() => measure());
-    observer?.observe(element);
-    window.addEventListener("resize", measure);
-    return () => {
-      observer?.disconnect();
-      window.removeEventListener("resize", measure);
-    };
-  }, []);
-
   useEffect(() => {
-    if (waveformWidth === 0) {
-      return;
-    }
     const pending = tracks
-      .filter(
-        (track) =>
-          track.waveform.status === "idle" ||
-          (track.waveform.width !== waveformWidth && track.waveform.status !== "loading"),
-      )
+      .filter((track) => track.waveform.status === "idle")
       .map((track) => track.streamIndex);
     if (pending.length > 0) {
-      onPrepareWaveforms(pending, waveformWidth);
+      onPrepareWaveforms(pending, WAVEFORM_RENDER_WIDTH);
     }
-  }, [onPrepareWaveforms, tracks, waveformWidth]);
+  }, [onPrepareWaveforms, tracks]);
 
   if (streams.length === 0) {
     return <p className="timeline-empty-audio">This source has no audio tracks.</p>;
@@ -148,17 +113,13 @@ export function AudioTracks({
                   {formatChannels(stream)}
                 </span>
               </label>
-              <div
-                ref={index === 0 ? measureRef : undefined}
-                className="audio-waveform-track"
-                data-enabled={track.enabled}
-              >
+              <div className="audio-waveform-track" data-enabled={track.enabled}>
                 <WaveformContent
                   track={track}
                   onRetry={() =>
                     onPrepareWaveforms(
                       [stream.streamIndex],
-                      waveformWidth || waveformStateWidth(track) || MIN_WAVEFORM_WIDTH,
+                      waveformStateWidth(track) || WAVEFORM_RENDER_WIDTH,
                     )
                   }
                   onImageError={() => onWaveformImageError(stream.streamIndex)}
@@ -222,11 +183,6 @@ function WaveformContent({
         </div>
       );
   }
-}
-
-function quantizeWaveformWidth(width: number): number {
-  const quantized = Math.round(width / WAVEFORM_WIDTH_STEP) * WAVEFORM_WIDTH_STEP;
-  return Math.min(MAX_WAVEFORM_WIDTH, Math.max(MIN_WAVEFORM_WIDTH, quantized));
 }
 
 function waveformStateWidth(track: AudioTrackState): number | null {
