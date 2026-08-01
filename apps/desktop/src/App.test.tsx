@@ -217,6 +217,21 @@ describe("App", () => {
     expect(screen.getByRole("toolbar", { name: "Application toolbar" })).toBeInTheDocument();
   });
 
+  it("uses Escape to show and then dismiss the return confirmation dialog", async () => {
+    mocks.chooseSource.mockResolvedValue(selection);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Select video" }));
+    expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
+
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
   it("prepares aligned waveforms and keeps audio output choices in memory", async () => {
     const bounds = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
       width: 1_024,
