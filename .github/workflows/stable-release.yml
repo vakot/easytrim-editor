@@ -80,6 +80,7 @@ jobs:
         with:
           projectPath: apps/desktop
           tauriScript: pnpm tauri
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
           args: ${{ matrix.args }}
           tagName: ${{ github.event.inputs.tag || github.ref_name }}
           releaseName: ClipKit ${{ github.event.inputs.tag || github.ref_name }}
