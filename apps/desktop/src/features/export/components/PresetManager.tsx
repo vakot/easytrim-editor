@@ -98,10 +98,15 @@ export function PresetManager({ state, onAction }: PresetManagerProps) {
               {state.presets.map((preset) => (
                 <div key={preset.id} className="flex items-center gap-1">
                   <DropdownMenuPrimitive.Item
-                    className="min-w-0 flex-1 cursor-pointer truncate rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent"
+                    className="min-w-0 flex-1 cursor-pointer rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent"
                     onSelect={() => onAction({ type: "preset-selected", presetId: preset.id })}
                   >
-                    {preset.name}
+                    <span className="block truncate">{preset.name}</span>
+                    {preset.description ? (
+                      <span className="block truncate text-xs text-muted-foreground">
+                        {preset.description}
+                      </span>
+                    ) : null}
                   </DropdownMenuPrimitive.Item>
                   <DropdownMenuPrimitive.Sub>
                     <DropdownMenuPrimitive.SubTrigger
