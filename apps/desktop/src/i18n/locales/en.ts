@@ -47,6 +47,11 @@ export const en = {
       formats: "MP4, MOV, MKV, WebM, AVI, TS, MTS, M2TS, M4V, WMV, FLV",
     },
     capabilities: {
+      checkingDescription: "Checking whether the required media dependencies are ready.",
+      readyDescription: "All required media dependencies are installed and ready to use.",
+      unavailableDescription: "Some required media dependencies are unavailable.",
+      installed: "Installed",
+      missingStatus: "Missing",
       checking: "Checking media tools…",
       failed: "Media tool check failed",
       ready: "Media tools ready",
