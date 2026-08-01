@@ -162,8 +162,8 @@ export function SourceWorkspace({
 }
 
 function WelcomeBrandWall() {
-  const rowCount = 8;
-  const markCount = 7;
+  const rowCount = 4;
+  const wordCount = 14;
 
   return (
     <div className="welcome-brand-wall" aria-hidden="true">
@@ -172,10 +172,9 @@ function WelcomeBrandWall() {
           <div className="welcome-brand-track">
             {Array.from({ length: 2 }, (_, setIndex) => (
               <div className="welcome-brand-set" key={setIndex}>
-                {Array.from({ length: markCount }, (_, markIndex) => (
-                  <span className="welcome-brand-mark" key={markIndex}>
-                    <span>CLIP KIT</span>
-                    <img src="/logo_gray.svg" alt="" />
+                {Array.from({ length: wordCount }, (_, wordIndex) => (
+                  <span className="welcome-brand-mark" key={wordIndex}>
+                    {wordIndex % 2 === 0 ? "CLIP" : "KIT"}
                   </span>
                 ))}
               </div>

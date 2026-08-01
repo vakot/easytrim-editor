@@ -591,12 +591,16 @@ p {
   inset: 0;
   display: flex;
   flex-direction: column;
-  justify-content: space-around;
+  justify-content: flex-start;
   overflow: hidden;
   pointer-events: none;
 }
 
 .welcome-brand-row {
+  display: flex;
+  height: 25%;
+  flex: 0 0 25%;
+  align-items: center;
   overflow: hidden;
   white-space: nowrap;
 }
@@ -604,7 +608,7 @@ p {
 .welcome-brand-track {
   display: flex;
   width: max-content;
-  animation: welcome-brand-scroll 42s linear infinite;
+  animation: welcome-brand-scroll 240s linear infinite;
 }
 
 .welcome-brand-row:nth-child(even) .welcome-brand-track {
@@ -612,27 +616,21 @@ p {
 }
 
 .welcome-brand-set {
+  --welcome-brand-gap: clamp(1.25rem, 2.5vw, 2.5rem);
   display: flex;
+  flex: 0 0 auto;
   align-items: center;
-  gap: clamp(1.25rem, 2.5vw, 2.5rem);
-  padding-right: clamp(1.25rem, 2.5vw, 2.5rem);
+  gap: var(--welcome-brand-gap);
+  padding-right: var(--welcome-brand-gap);
 }
 
 .welcome-brand-mark {
   display: inline-flex;
-  flex: 0 0 clamp(11rem, 19vw, 19rem);
-  justify-content: space-between;
+  flex: 0 0 auto;
   color: #29292f;
-  font-size: clamp(1.75rem, 4vw, 4rem);
+  font-size: 25vh;
   font-weight: 800;
-  letter-spacing: -0.06em;
   line-height: 1;
-}
-
-.welcome-brand-mark img {
-  width: 1em;
-  height: 1em;
-  object-fit: contain;
 }
 
 @keyframes welcome-brand-scroll {
