@@ -33,6 +33,8 @@ export interface AudioTrackState {
   waveform: WaveformState;
 }
 
+const SAFE_UNMUTE_VOLUME_PERCENT = 50 * 10 ** (-12 / 20);
+
 export interface SessionState {
   status: "idle" | "loading-source" | "ready" | "failed";
   capabilities: CapabilityState;
@@ -217,7 +219,14 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
           ...state.source,
           audioTracks: state.source.audioTracks.map((track) =>
             track.streamIndex === action.streamIndex
-              ? { ...track, enabled: !track.enabled }
+              ? {
+                  ...track,
+                  enabled: !track.enabled,
+                  volumePercent:
+                    !track.enabled && track.volumePercent <= 0
+                      ? SAFE_UNMUTE_VOLUME_PERCENT
+                      : track.volumePercent,
+                }
               : track,
           ),
         },
@@ -264,6 +273,10 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
         source: {
           ...state.source,
           masterEnabled: !state.source.masterEnabled,
+          masterVolumePercent:
+            !state.source.masterEnabled && state.source.masterVolumePercent <= 0
+              ? SAFE_UNMUTE_VOLUME_PERCENT
+              : state.source.masterVolumePercent,
         },
       };
     case "audio-master-volume-changed":

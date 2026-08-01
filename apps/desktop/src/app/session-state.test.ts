@@ -203,6 +203,17 @@ describe("sessionReducer", () => {
       sourceId: firstSource.sourceId,
       enabled: true,
     });
+    const sliderMuted = sessionReducer(ready, {
+      type: "audio-track-volume-changed",
+      sourceId: firstSource.sourceId,
+      streamIndex: 2,
+      volumePercent: 0,
+    });
+    const safelyUnmuted = sessionReducer(sliderMuted, {
+      type: "audio-track-toggled",
+      sourceId: firstSource.sourceId,
+      streamIndex: 2,
+    });
 
     expect(ready.source?.audioTracks).toEqual([
       { streamIndex: 2, enabled: true, volumePercent: 50, waveform: { status: "idle" } },
@@ -212,6 +223,8 @@ describe("sessionReducer", () => {
     expect(mergeEnabled.source?.mergeAudio).toBe(true);
     expect(allDisabled.source?.audioTracks.every((track) => !track.enabled)).toBe(true);
     expect(allEnabled.source?.audioTracks.every((track) => track.enabled)).toBe(true);
+    expect(safelyUnmuted.source?.audioTracks[0]?.enabled).toBe(true);
+    expect(safelyUnmuted.source?.audioTracks[0]?.volumePercent).toBeCloseTo(12.589, 2);
   });
 
   it("ignores stale waveform completions after regeneration", () => {
