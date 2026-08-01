@@ -104,6 +104,16 @@ export const en = {
       enabled: "Safe trim following: on — playhead follows a trim border once caught",
       disabled: "Safe trim following: off — playhead stays in place",
     },
+    loopPlayback: {
+      label: "Loop playback",
+      enabled: "Loop playback: on — restart when playback reaches its end",
+      disabled: "Loop playback: off — stop when playback reaches its end",
+    },
+    segmentPlayback: {
+      label: "Segment playback",
+      enabled: "Segment playback: on — constrain playback to the selected segment",
+      disabled: "Segment playback: off — play the complete timeline",
+    },
     opening: "Opening preview…",
     preparing: "Preparing compatible preview…",
     preparingDescription: "This can take a moment for high-resolution sources.",

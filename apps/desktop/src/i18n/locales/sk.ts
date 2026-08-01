@@ -111,6 +111,16 @@ export const sk = {
         "Bezpečné sledovanie strihu: zapnuté — prehrávacia hlava po zachytení sleduje hranicu strihu",
       disabled: "Bezpečné sledovanie strihu: vypnuté — prehrávacia hlava zostáva na mieste",
     },
+    loopPlayback: {
+      label: "Opakovať prehrávanie",
+      enabled: "Opakovanie prehrávania: zapnuté — po dosiahnutí konca sa prehrávanie reštartuje",
+      disabled: "Opakovanie prehrávania: vypnuté — po dosiahnutí konca sa prehrávanie zastaví",
+    },
+    segmentPlayback: {
+      label: "Prehrávanie segmentu",
+      enabled: "Prehrávanie segmentu: zapnuté — prehrávanie je obmedzené na vybraný segment",
+      disabled: "Prehrávanie segmentu: vypnuté — prehráva sa celá časová os",
+    },
     opening: "Otvára sa náhľad…",
     preparing: "Pripravuje sa kompatibilný náhľad…",
     preparingDescription: "Pri zdrojoch s vysokým rozlíšením to môže chvíľu trvať.",

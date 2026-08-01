@@ -1,7 +1,9 @@
 import {
+  BetweenHorizontalStart,
   Link2,
   Pause,
   Play,
+  Repeat2,
   SkipBack,
   SkipForward,
   SquareArrowLeft,
@@ -160,30 +162,87 @@ export function PlaybackTimecode({
 
 interface TimelineToolsProps {
   safeTrimFollowingEnabled: boolean;
+  loopPlaybackEnabled: boolean;
+  segmentPlaybackEnabled: boolean;
   onToggleSafeTrimFollowing: () => void;
+  onToggleLoopPlayback: () => void;
+  onToggleSegmentPlayback: () => void;
 }
 
 export function TimelineTools({
   safeTrimFollowingEnabled,
+  loopPlaybackEnabled,
+  segmentPlaybackEnabled,
   onToggleSafeTrimFollowing,
+  onToggleLoopPlayback,
+  onToggleSegmentPlayback,
 }: TimelineToolsProps) {
   const { t } = useTranslation();
-  const title = safeTrimFollowingEnabled
-    ? t("preview.safeTrim.enabled")
-    : t("preview.safeTrim.disabled");
+
+  return (
+    <>
+      <TimelineToolButton
+        enabled={safeTrimFollowingEnabled}
+        label={t("preview.safeTrim.label")}
+        title={t(
+          safeTrimFollowingEnabled ? "preview.safeTrim.enabled" : "preview.safeTrim.disabled",
+        )}
+        onClick={onToggleSafeTrimFollowing}
+      >
+        <Link2 />
+      </TimelineToolButton>
+      <TimelineToolButton
+        enabled={loopPlaybackEnabled}
+        label={t("preview.loopPlayback.label")}
+        title={t(
+          loopPlaybackEnabled ? "preview.loopPlayback.enabled" : "preview.loopPlayback.disabled",
+        )}
+        onClick={onToggleLoopPlayback}
+      >
+        <Repeat2 />
+      </TimelineToolButton>
+      <TimelineToolButton
+        enabled={segmentPlaybackEnabled}
+        label={t("preview.segmentPlayback.label")}
+        title={t(
+          segmentPlaybackEnabled
+            ? "preview.segmentPlayback.enabled"
+            : "preview.segmentPlayback.disabled",
+        )}
+        onClick={onToggleSegmentPlayback}
+      >
+        <BetweenHorizontalStart />
+      </TimelineToolButton>
+    </>
+  );
+}
+
+function TimelineToolButton({
+  enabled,
+  label,
+  title,
+  onClick,
+  children,
+}: {
+  enabled: boolean;
+  label: string;
+  title: string;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <Button
-          variant={safeTrimFollowingEnabled ? "secondary" : "ghost"}
+          variant={enabled ? "secondary" : "ghost"}
           size="icon-sm"
           type="button"
-          aria-label={t("preview.safeTrim.label")}
-          aria-pressed={safeTrimFollowingEnabled}
-          onClick={onToggleSafeTrimFollowing}
-          className={safeTrimFollowingEnabled ? "text-primary" : undefined}
+          aria-label={label}
+          aria-pressed={enabled}
+          onClick={onClick}
+          className={enabled ? "text-primary" : undefined}
         >
-          <Link2 />
+          {children}
         </Button>
       </TooltipTrigger>
       <TooltipContent>{title}</TooltipContent>

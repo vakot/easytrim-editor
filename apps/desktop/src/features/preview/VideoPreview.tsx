@@ -16,6 +16,7 @@ interface VideoPreviewProps {
   onPlay: () => void;
   onPause: () => void;
   onTimeUpdate: (seconds: number) => void;
+  onEnded: () => void;
 }
 
 export function VideoPreview({
@@ -28,6 +29,7 @@ export function VideoPreview({
   onPlay,
   onPause,
   onTimeUpdate,
+  onEnded,
 }: VideoPreviewProps) {
   const { t } = useTranslation();
   const reportedUrl = useRef<string | null>(null);
@@ -88,6 +90,7 @@ export function VideoPreview({
         onPlay={onPlay}
         onPause={onPause}
         onTimeUpdate={(event) => onTimeUpdate(event.currentTarget.currentTime)}
+        onEnded={onEnded}
         onError={() => {
           if (reportedUrl.current === value.url) return;
           reportedUrl.current = value.url;

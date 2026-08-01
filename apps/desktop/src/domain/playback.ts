@@ -3,6 +3,16 @@ export interface PlaybackFrameRate {
   denominator: number;
 }
 
+export interface PlaybackRange {
+  startMicros: number;
+  endMicros: number;
+}
+
+export type PlaybackBoundaryAction =
+  | { type: "continue" }
+  | { type: "restart"; positionMicros: number }
+  | { type: "stop"; positionMicros: number };
+
 export function frameDurationMicros(frameRate: PlaybackFrameRate | undefined): number {
   if (!frameRate || frameRate.numerator <= 0 || frameRate.denominator <= 0) {
     return 100_000;
@@ -13,6 +23,45 @@ export function frameDurationMicros(frameRate: PlaybackFrameRate | undefined): n
 export function clampPlaybackMicros(micros: number, sourceDurationMicros: number): number {
   const integer = Number.isFinite(micros) ? Math.round(micros) : 0;
   return Math.min(sourceDurationMicros, Math.max(0, integer));
+}
+
+export function playbackRange(
+  sourceDurationMicros: number,
+  segmentStartMicros: number,
+  segmentEndMicros: number,
+  segmentEnabled: boolean,
+): PlaybackRange {
+  const sourceEnd = Math.max(0, Math.round(sourceDurationMicros));
+  if (!segmentEnabled) {
+    return { startMicros: 0, endMicros: sourceEnd };
+  }
+  const startMicros = clampPlaybackMicros(segmentStartMicros, sourceEnd);
+  return {
+    startMicros,
+    endMicros: Math.max(startMicros, clampPlaybackMicros(segmentEndMicros, sourceEnd)),
+  };
+}
+
+export function playbackStartMicros(currentMicros: number, range: PlaybackRange): number {
+  return currentMicros < range.startMicros || currentMicros >= range.endMicros
+    ? range.startMicros
+    : currentMicros;
+}
+
+export function playbackBoundaryAction(
+  currentMicros: number,
+  range: PlaybackRange,
+  loopEnabled: boolean,
+): PlaybackBoundaryAction {
+  if (currentMicros < range.startMicros) {
+    return { type: "restart", positionMicros: range.startMicros };
+  }
+  if (currentMicros < range.endMicros) {
+    return { type: "continue" };
+  }
+  return loopEnabled
+    ? { type: "restart", positionMicros: range.startMicros }
+    : { type: "stop", positionMicros: range.endMicros };
 }
 
 export function formatPlaybackTime(
