@@ -26,10 +26,12 @@ function App() {
   const [dropListenerError, setDropListenerError] = useState<string | null>(null);
   const [exportQueue, setExportQueue] = useState<ExportToast[]>([]);
   const [audioPreviewUrls, setAudioPreviewUrls] = useState<Record<number, string>>({});
+  const activeSourceIdRef = useRef<string | null>(null);
   const waveformJobSequence = useRef(0);
   const hasSource = session.source !== null;
 
   const inspectSource = useCallback((source: SourceSelection) => {
+    activeSourceIdRef.current = source.sourceId;
     setAudioPreviewUrls({});
     dispatch({ type: "source-selected", source });
     void inspectMedia(source.sourceId)
@@ -40,6 +42,9 @@ function App() {
           media.audioStreams.map((stream) => stream.streamIndex),
         )
           .then((previews) => {
+            if (activeSourceIdRef.current !== source.sourceId) {
+              return;
+            }
             setAudioPreviewUrls(
               Object.fromEntries(previews.map((preview) => [preview.streamIndex, preview.url])),
             );

@@ -6,10 +6,11 @@ mod media;
 mod process;
 mod state;
 
-use state::AppState;
+use state::{AppState, cleanup_stale_media_artifacts};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    cleanup_stale_media_artifacts();
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .register_uri_scheme_protocol("clipkit-media", |context, request| {

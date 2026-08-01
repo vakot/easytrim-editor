@@ -11,6 +11,36 @@ use std::{
 use crate::media::probe::MediaInfo;
 use crate::{domain::source::ValidatedSource, error::AppError};
 
+const STALE_ARTIFACT_AGE: std::time::Duration = std::time::Duration::from_secs(60 * 60);
+
+pub fn cleanup_stale_media_artifacts() {
+    let Ok(entries) = fs::read_dir(std::env::temp_dir()) else {
+        return;
+    };
+    let cutoff = std::time::SystemTime::now()
+        .checked_sub(STALE_ARTIFACT_AGE)
+        .unwrap_or(std::time::SystemTime::UNIX_EPOCH);
+
+    for entry in entries.flatten() {
+        let path = entry.path();
+        let name = entry.file_name();
+        let name = name.to_string_lossy();
+        let is_clipkit_artifact = name.starts_with("clipkit-preview-")
+            || name.starts_with("clipkit-audio-preview-")
+            || name.starts_with("clipkit-waveform-");
+        if !is_clipkit_artifact || !entry.file_type().is_ok_and(|file_type| file_type.is_dir()) {
+            continue;
+        }
+        let is_stale = entry
+            .metadata()
+            .and_then(|metadata| metadata.modified())
+            .is_ok_and(|modified| modified < cutoff);
+        if is_stale {
+            let _ = fs::remove_dir_all(path);
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct ActiveSource {
     pub source_id: String,
