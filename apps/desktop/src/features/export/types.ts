@@ -1,0 +1,36 @@
+import type { Dispatch, SetStateAction } from "react";
+
+import type { AudioTrackState } from "@/app/session-state";
+import type { TrimRange } from "@/domain/trim";
+import type { FrameRate, MediaInfo } from "@/lib/tauri/media";
+
+export type ExportStatus = "rendering" | "completed" | "failed" | "canceled";
+
+export interface ExportToast {
+  id: string;
+  operationId: string | null;
+  filename: string;
+  path: string;
+  percentage: number;
+  status: ExportStatus;
+  error?: string;
+  onCancel?: () => void;
+}
+
+export interface ExportPanelProps {
+  source: MediaInfo;
+  sourceName: string;
+  trim: TrimRange;
+  audioTracks: AudioTrackState[];
+  masterEnabled: boolean;
+  masterVolumePercent: number;
+  mergeAudio: boolean;
+  setQueue: Dispatch<SetStateAction<ExportToast[]>>;
+  onNativeDialogStateChange: (open: boolean) => void;
+}
+
+export interface ExportSettings {
+  resolution: { width: number; height: number };
+  frameRate: FrameRate | undefined;
+  argumentsText: string;
+}

@@ -1,6 +1,22 @@
-import type { TrimBoundary } from "../../domain/trim";
-import { formatPlaybackTime } from "../../domain/playback";
-import type { FrameRate } from "../../lib/tauri/media";
+import {
+  BetweenHorizontalStart,
+  Link2,
+  Pause,
+  Play,
+  Repeat2,
+  SkipBack,
+  SkipForward,
+  SquareArrowLeft,
+  SquareArrowRight,
+} from "lucide-react";
+
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { formatPlaybackTime } from "@/domain/playback";
+import type { TrimBoundary } from "@/domain/trim";
+import type { FrameRate } from "@/lib/tauri/media";
+import { useTranslation } from "react-i18next";
 
 interface PlaybackControlsProps {
   isPlaying: boolean;
@@ -21,77 +37,102 @@ export function PlaybackControls({
   onStepFrame,
   onSetSegmentBoundary,
 }: PlaybackControlsProps) {
+  const { t } = useTranslation();
+
   return (
-    <div className="playback-controls" aria-label="Preview playback controls">
-      <div className="transport-buttons">
-        <button
-          className="transport-button"
-          type="button"
-          aria-label="Set segment start to current position"
-          aria-keyshortcuts="I"
+    <div className="relative flex items-center justify-center" aria-label={t("preview.controls")}>
+      <div className="flex items-center gap-1.5">
+        <TransportButton
+          label={t("preview.setStart")}
+          shortcut="I"
           title={
-            canSetSegmentStart
-              ? "Set segment start to current position (I)"
-              : "Move before the source end to set segment start"
+            canSetSegmentStart ? t("preview.setStartShortcut") : t("preview.setStartUnavailable")
           }
           disabled={!canSetSegmentStart}
           onClick={() => onSetSegmentBoundary("start")}
         >
-          <MarkInIcon />
-        </button>
-        <button
-          className="transport-button"
-          type="button"
-          aria-label="Previous frame"
-          aria-keyshortcuts="ArrowLeft"
-          title="Previous frame (Left Arrow)"
+          <SquareArrowRight />
+        </TransportButton>
+        <TransportButton
+          label={t("preview.previousFrame")}
+          shortcut="ArrowLeft"
+          title={t("preview.previousFrameShortcut")}
           onClick={() => onStepFrame(-1)}
         >
-          <PreviousFrameIcon />
-        </button>
-        <button
-          className="transport-button transport-button-primary"
-          type="button"
-          aria-label={isPlaying ? "Pause" : "Play"}
-          aria-keyshortcuts="Space"
-          title={`${isPlaying ? "Pause" : "Play"} (Space)`}
+          <SkipBack />
+        </TransportButton>
+        <TransportButton
+          label={isPlaying ? t("preview.pause") : t("preview.play")}
+          shortcut="Space"
+          title={isPlaying ? t("preview.pauseShortcut") : t("preview.playShortcut")}
+          primary
           onClick={onTogglePlayback}
         >
-          {isPlaying ? <PauseIcon /> : <PlayIcon />}
-        </button>
-        <button
-          className="transport-button"
-          type="button"
-          aria-label="Next frame"
-          aria-keyshortcuts="ArrowRight"
-          title="Next frame (Right Arrow)"
+          {isPlaying ? <Pause /> : <Play />}
+        </TransportButton>
+        <TransportButton
+          label={t("preview.nextFrame")}
+          shortcut="ArrowRight"
+          title={t("preview.nextFrameShortcut")}
           onClick={() => onStepFrame(1)}
         >
-          <NextFrameIcon />
-        </button>
-        <button
-          className="transport-button"
-          type="button"
-          aria-label="Set segment end to current position"
-          aria-keyshortcuts="O"
-          title={
-            canSetSegmentEnd
-              ? "Set segment end to current position (O)"
-              : "Move after the source start to set segment end"
-          }
+          <SkipForward />
+        </TransportButton>
+        <TransportButton
+          label={t("preview.setEnd")}
+          shortcut="O"
+          title={canSetSegmentEnd ? t("preview.setEndShortcut") : t("preview.setEndUnavailable")}
           disabled={!canSetSegmentEnd}
           onClick={() => onSetSegmentBoundary("end")}
         >
-          <MarkOutIcon />
-        </button>
+          <SquareArrowLeft />
+        </TransportButton>
       </div>
-
       {error ? (
-        <span className="transport-error" role="alert">
-          {error}
-        </span>
+        <Alert variant="destructive" className="absolute top-full z-10 mt-2 w-72">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       ) : null}
     </div>
+  );
+}
+
+function TransportButton({
+  label,
+  shortcut,
+  title,
+  primary = false,
+  disabled,
+  onClick,
+  children,
+}: {
+  label: string;
+  shortcut: string;
+  title: string;
+  primary?: boolean;
+  disabled?: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant={primary ? "default" : "ghost"}
+          size={primary ? "icon-lg" : "icon-sm"}
+          type="button"
+          data-editor-shortcut="true"
+          aria-label={label}
+          aria-keyshortcuts={shortcut}
+          disabled={disabled}
+          onClick={onClick}
+          className={primary ? "rounded-full" : undefined}
+        >
+          {children}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{title}</TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -106,10 +147,15 @@ export function PlaybackTimecode({
   sourceDurationMicros,
   frameRate,
 }: PlaybackTimecodeProps) {
+  const { t } = useTranslation();
+
   return (
-    <output className="playback-time" aria-label="Current playback time">
+    <output className="font-mono text-xs text-foreground" aria-label={t("preview.currentTime")}>
       {formatPlaybackTime(currentMicros, frameRate)}
-      <span> / {formatPlaybackTime(sourceDurationMicros, frameRate)}</span>
+      <span className="text-muted-foreground">
+        {" "}
+        / {formatPlaybackTime(sourceDurationMicros, frameRate)}
+      </span>
     </output>
   );
 }
@@ -131,122 +177,75 @@ export function TimelineTools({
   onToggleLoopPlayback,
   onToggleSegmentPlayback,
 }: TimelineToolsProps) {
+  const { t } = useTranslation();
+
   return (
     <>
-      <button
-        className="timeline-tool-button"
-        type="button"
-        aria-label="Safe trim following"
-        aria-pressed={safeTrimFollowingEnabled}
-        title={
-          safeTrimFollowingEnabled
-            ? "Safe trim following: on — playhead follows a trim border once caught"
-            : "Safe trim following: off — playhead stays in place"
-        }
+      <TimelineToolButton
+        enabled={safeTrimFollowingEnabled}
+        label={t("preview.safeTrim.label")}
+        title={t(
+          safeTrimFollowingEnabled ? "preview.safeTrim.enabled" : "preview.safeTrim.disabled",
+        )}
         onClick={onToggleSafeTrimFollowing}
       >
-        <LinkPlayheadIcon />
-      </button>
-      <button
-        className="timeline-tool-button"
-        type="button"
-        aria-label="Loop playback"
-        aria-pressed={loopPlaybackEnabled}
-        title={
-          loopPlaybackEnabled
-            ? "Loop playback: on — restart when playback reaches its end"
-            : "Loop playback: off — stop when playback reaches its end"
-        }
+        <Link2 />
+      </TimelineToolButton>
+      <TimelineToolButton
+        enabled={loopPlaybackEnabled}
+        label={t("preview.loopPlayback.label")}
+        title={t(
+          loopPlaybackEnabled ? "preview.loopPlayback.enabled" : "preview.loopPlayback.disabled",
+        )}
         onClick={onToggleLoopPlayback}
       >
-        <LoopIcon />
-      </button>
-      <button
-        className="timeline-tool-button"
-        type="button"
-        aria-label="Segment playback"
-        aria-pressed={segmentPlaybackEnabled}
-        title={
+        <Repeat2 />
+      </TimelineToolButton>
+      <TimelineToolButton
+        enabled={segmentPlaybackEnabled}
+        label={t("preview.segmentPlayback.label")}
+        title={t(
           segmentPlaybackEnabled
-            ? "Segment playback: on — constrain playback to the selected segment"
-            : "Segment playback: off — play the complete timeline"
-        }
+            ? "preview.segmentPlayback.enabled"
+            : "preview.segmentPlayback.disabled",
+        )}
         onClick={onToggleSegmentPlayback}
       >
-        <SegmentPlaybackIcon />
-      </button>
+        <BetweenHorizontalStart />
+      </TimelineToolButton>
     </>
   );
 }
 
-function PlayIcon() {
+function TimelineToolButton({
+  enabled,
+  label,
+  title,
+  onClick,
+  children,
+}: {
+  enabled: boolean;
+  label: string;
+  title: string;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M8 5v14l11-7z" />
-    </svg>
-  );
-}
-
-function PauseIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M7 5h4v14H7zm6 0h4v14h-4z" />
-    </svg>
-  );
-}
-
-function MarkInIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M6 5h2v14H6zm4 1.5 8.5 5.5-8.5 5.5z" />
-    </svg>
-  );
-}
-
-function MarkOutIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M16 5h2v14h-2zM5.5 12 14 6.5v11z" />
-    </svg>
-  );
-}
-
-function LinkPlayheadIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M9.6 13.2a3.9 3.9 0 0 0 5.5 0l2.3-2.3a3.9 3.9 0 0 0-5.5-5.5l-1.3 1.3L12 8.1l1.3-1.3a1.9 1.9 0 1 1 2.7 2.7l-2.3 2.3a1.9 1.9 0 0 1-2.7 0zm4.8-2.4a3.9 3.9 0 0 0-5.5 0l-2.3 2.3a3.9 3.9 0 0 0 5.5 5.5l1.3-1.3-1.4-1.4-1.3 1.3A1.9 1.9 0 1 1 8 14.5l2.3-2.3a1.9 1.9 0 0 1 2.7 0z" />
-    </svg>
-  );
-}
-
-function LoopIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M7 7h9.2l-1.7-1.7L16 3.9 20.1 8 16 12.1l-1.5-1.4L16.2 9H7a3 3 0 0 0-3 3v1H2v-1a5 5 0 0 1 5-5zm10 10H7.8l1.7 1.7L8 20.1 3.9 16 8 11.9l1.5 1.4L7.8 15H17a3 3 0 0 0 3-3v-1h2v1a5 5 0 0 1-5 5z" />
-    </svg>
-  );
-}
-
-function SegmentPlaybackIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M4 5h2v14H4zm14 0h2v14h-2zM9 7.5v9l7-4.5z" />
-    </svg>
-  );
-}
-
-function PreviousFrameIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M6 5h2v14H6zm12.5 1.5L10 12l8.5 5.5z" />
-    </svg>
-  );
-}
-
-function NextFrameIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M16 5h2v14h-2zM5.5 6.5L14 12l-8.5 5.5z" />
-    </svg>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant={enabled ? "secondary" : "ghost"}
+          size="icon-sm"
+          type="button"
+          aria-label={label}
+          aria-pressed={enabled}
+          onClick={onClick}
+          className={enabled ? "text-primary" : undefined}
+        >
+          {children}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{title}</TooltipContent>
+    </Tooltip>
   );
 }

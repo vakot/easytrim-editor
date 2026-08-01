@@ -150,7 +150,10 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "Next frame" })).toBeInTheDocument();
     const audioPlayhead = document.querySelector(".audio-playhead");
     expect(audioPlayhead).toBeInTheDocument();
-    expect(audioPlayhead?.parentElement).toHaveAttribute("aria-hidden", "true");
+    const audioPlayheadGrid = audioPlayhead?.closest('[data-slot="audio-playhead-grid"]');
+    expect(audioPlayheadGrid).toHaveAttribute("aria-hidden", "true");
+    expect(audioPlayheadGrid).toHaveClass("grid-cols-[var(--editor-track-grid-columns)]");
+    expect(audioPlayhead?.parentElement).toHaveAttribute("data-slot", "audio-playhead-track");
     expect(
       screen.getByRole("button", { name: "Set segment start to current position" }),
     ).toHaveAttribute("aria-keyshortcuts", "I");
@@ -172,13 +175,15 @@ describe("App", () => {
     ).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Trim" })).not.toBeInTheDocument();
     expect(screen.getByLabelText("Video preview and timeline area")).toBeInTheDocument();
-    const videoTimelineRow = screen.getByLabelText("Video trim timeline").closest(".timeline-row");
+    const videoTimelineRow = screen
+      .getByLabelText("Video trim timeline")
+      .closest("[data-slot='timeline-row']");
     expect(videoTimelineRow).not.toBeNull();
     const videoToolbar = within(videoTimelineRow as HTMLElement).getByRole("toolbar", {
       name: "Video timeline tools",
     });
-    expect(screen.getByText("Tools")).toHaveClass("timeline-toolbar-title");
-    expect(videoToolbar).toHaveClass("timeline-row-toolbar");
+    expect(screen.getByText("Tools")).toHaveAttribute("data-slot", "timeline-tools-title");
+    expect(videoToolbar).toHaveAttribute("data-slot", "timeline-toolbar");
     expect(within(videoToolbar).getByRole("button", { name: "Safe trim following" })).toBe(
       screen.getByRole("button", { name: "Safe trim following" }),
     );
@@ -209,15 +214,71 @@ describe("App", () => {
     expect(timelineResizeHandle).toHaveAttribute("aria-orientation", "horizontal");
     expect(timelineResizeHandle).toHaveAttribute("tabindex", "0");
     expect(screen.getAllByRole("separator")).toHaveLength(2);
-    expect(
-      screen.getByTestId("timeline-panel").querySelector(".timeline-pane-scroll"),
-    ).not.toBeNull();
+    const fixedTimeline = screen.getByTestId("timeline-fixed-content");
+    const audioTracksScroll = screen.getByTestId("audio-tracks-scroll");
+    expect(screen.getByTestId("timeline-panel")).toContainElement(fixedTimeline);
+    expect(screen.getByTestId("timeline-panel")).toContainElement(audioTracksScroll);
+    expect(fixedTimeline).toContainElement(
+      screen.getByRole("heading", { name: "Selected Segment" }),
+    );
+    expect(fixedTimeline).not.toContainElement(
+      screen.getByRole("heading", { name: "Audio tracks" }),
+    );
+    expect(audioTracksScroll).toContainElement(
+      screen.getByRole("heading", { name: "Audio tracks" }),
+    );
+    expect(audioTracksScroll).toHaveClass("overflow-hidden");
+    expect(audioTracksScroll.querySelector('[data-slot="scroll-area-viewport"]')).not.toBeNull();
+    expect(screen.queryByTestId("timeline-pane-scroll")).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Open a video" })).not.toBeInTheDocument();
     expect(screen.queryByText("Local video editor")).not.toBeInTheDocument();
     expect(
       screen.queryByText("Import a video to inspect its source and prepare a precise cut."),
     ).not.toBeInTheDocument();
     expect(screen.getByRole("toolbar", { name: "Application toolbar" })).toBeInTheDocument();
+  });
+
+  it("uses Escape to show and then dismiss the return confirmation dialog", async () => {
+    mocks.chooseSource.mockResolvedValue(selection);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Select video" }));
+    expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
+
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("opens a track volume control from the volume button hover and focus", async () => {
+    mocks.chooseSource.mockResolvedValue(selection);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Select video" }));
+    await screen.findByRole("heading", { name: "holiday.mp4" });
+    const volumeButton = screen.getByRole("button", { name: "Mute eng" });
+    expect(volumeButton).not.toHaveAttribute("title");
+
+    await user.hover(volumeButton);
+    expect(await screen.findByRole("slider", { name: "eng volume" })).toBeInTheDocument();
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("Mute");
+
+    await user.unhover(volumeButton);
+    await waitFor(() => {
+      expect(screen.queryByRole("slider", { name: "eng volume" })).not.toBeInTheDocument();
+    });
+
+    volumeButton.focus();
+    expect(await screen.findByRole("slider", { name: "eng volume" })).toBeInTheDocument();
+
+    volumeButton.blur();
+    await waitFor(() => {
+      expect(screen.queryByRole("slider", { name: "eng volume" })).not.toBeInTheDocument();
+    });
   });
 
   it("prepares aligned waveforms and keeps audio output choices in memory", async () => {
@@ -257,7 +318,6 @@ describe("App", () => {
       expect(await screen.findByRole("heading", { name: "Audio tracks" })).toBeInTheDocument();
       const allTracks = screen.getByRole("button", { name: "All audio tracks" });
       expect(allTracks).toHaveAttribute("aria-pressed", "true");
-      expect(allTracks.closest(".timeline-row")).toHaveClass("timeline-audio-heading");
       expect(allTracks.parentElement).not.toHaveTextContent("Audio tracks");
       expect(screen.getByRole("button", { name: "Mute eng" })).toHaveAttribute(
         "aria-pressed",
@@ -267,26 +327,25 @@ describe("App", () => {
         "aria-pressed",
         "true",
       );
-      const engVolume = screen.getByRole("slider", { name: "eng volume" });
-      expect(engVolume).toHaveValue("0");
-      fireEvent.change(engVolume, { target: { value: "6" } });
-      expect(engVolume).toHaveValue("6");
+      const masterVolume = screen.getByRole("slider", { name: "All audio tracks volume" });
+      expect(masterVolume).toHaveAttribute("aria-valuenow", "0");
+      masterVolume.focus();
+      await user.keyboard("{End}");
+      await waitFor(() => expect(masterVolume).toHaveAttribute("aria-valuenow", "6"));
       expect(screen.getByText("+6.0 dB")).toBeInTheDocument();
-      await user.dblClick(engVolume);
-      expect(engVolume).toHaveValue("0");
-      expect(engVolume.closest(".audio-level-control")).toHaveTextContent("+0.0 dB");
+      fireEvent.doubleClick(masterVolume);
+      expect(masterVolume).toHaveAttribute("aria-valuenow", "0");
+      expect(screen.getByText("+0.0 dB")).toBeInTheDocument();
       await user.click(screen.getByRole("button", { name: "Mute eng" }));
       expect(screen.getByRole("button", { name: "Enable eng" })).toHaveAttribute(
         "aria-pressed",
         "false",
       );
-      expect(engVolume).toHaveValue("-24");
       await user.click(screen.getByRole("button", { name: "Enable eng" }));
       expect(screen.getByRole("button", { name: "Mute eng" })).toHaveAttribute(
         "aria-pressed",
         "true",
       );
-      expect(engVolume).toHaveValue("0");
       await waitFor(() =>
         expect(mocks.prepareWaveforms).toHaveBeenCalledWith(
           selection.sourceId,
@@ -295,7 +354,9 @@ describe("App", () => {
           4_096,
         ),
       );
-      await waitFor(() => expect(document.querySelectorAll(".waveform-image")).toHaveLength(2));
+      await waitFor(() =>
+        expect(document.querySelectorAll("img[aria-hidden='true']")).toHaveLength(2),
+      );
 
       bounds.mockReturnValue({
         width: 1_536,

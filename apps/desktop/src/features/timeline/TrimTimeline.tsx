@@ -1,11 +1,4 @@
-import {
-  useRef,
-  useState,
-  type KeyboardEvent,
-  type PointerEvent,
-  type ReactNode,
-  type RefObject,
-} from "react";
+import { useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 
 import {
   clampPlaybackMicros,
@@ -29,27 +22,12 @@ import {
   type TrimRange,
 } from "../../domain/trim";
 import type { FrameRate } from "../../lib/tauri/media";
+import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
+import styles from "./components/timeline-handles.module.css";
+import type { TrimTimelineProps } from "./types";
 
 const TIMELINE_SNAP_REACH_PX = 12;
-
-interface TrimTimelineProps {
-  range: TrimRange;
-  playheadMicros: number;
-  playheadRef: RefObject<HTMLButtonElement | null>;
-  frameRate?: FrameRate;
-  playbackControls: ReactNode;
-  playbackTimecode: ReactNode;
-  videoToolbar: ReactNode;
-  audioRows: ReactNode;
-  onChange: (boundary: TrimBoundary, range: TrimRange) => TrimBoundary | null;
-  onMoveSegment: (range: TrimRange) => TrimBoundary | null;
-  onSegmentDragStart: () => void;
-  onSegmentDragEnd: () => void;
-  onSeek: (micros: number) => void;
-  onScrubStart: () => void;
-  onScrub: (micros: number) => void;
-  onScrubEnd: () => void;
-}
 
 export function TrimTimeline({
   range,
@@ -59,7 +37,6 @@ export function TrimTimeline({
   playbackControls,
   playbackTimecode,
   videoToolbar,
-  audioRows,
   onChange,
   onMoveSegment,
   onSegmentDragStart,
@@ -69,6 +46,7 @@ export function TrimTimeline({
   onScrub,
   onScrubEnd,
 }: TrimTimelineProps) {
+  const { t } = useTranslation();
   const trackRef = useRef<HTMLDivElement>(null);
   const scrubPointerIdRef = useRef<number | null>(null);
   const trimDragRef = useRef<{
@@ -428,29 +406,43 @@ export function TrimTimeline({
   }
 
   return (
-    <section className="timeline-panel" aria-labelledby="timeline-title">
-      <div className="timeline-heading">
-        <div className="timeline-heading-summary">
-          <h2 id="timeline-title" className="section-label">
-            Selected Segment
+    <section
+      className="min-w-0 select-none bg-background px-5 pt-4"
+      aria-labelledby="timeline-title"
+    >
+      <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-6">
+        <div className="min-w-0 justify-self-start">
+          <h2
+            id="timeline-title"
+            className="mb-0.5 font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
+          >
+            {t("timeline.selectedSegment")}
           </h2>
           {playbackTimecode}
         </div>
-        <div className="timeline-heading-controls">{playbackControls}</div>
-        <dl className="trim-readouts" aria-label="Trim time values">
-          <TimeValue label="Start" micros={range.startMicros} frameRate={frameRate} />
-          <TimeValue label="End" micros={range.endMicros} frameRate={frameRate} />
+        <div className="justify-self-center">{playbackControls}</div>
+        <dl className="m-0 flex justify-self-end gap-5" aria-label={t("timeline.trimValues")}>
+          <TimeValue label={t("timeline.start")} micros={range.startMicros} frameRate={frameRate} />
+          <TimeValue label={t("timeline.end")} micros={range.endMicros} frameRate={frameRate} />
           <TimeValue
-            label="Duration"
+            label={t("timeline.duration")}
             micros={range.endMicros - range.startMicros}
             frameRate={frameRate}
           />
         </dl>
       </div>
 
-      <div className="timeline-row timeline-scale-row" aria-hidden="true">
-        <span className="timeline-toolbar-title">Tools</span>
-        <div className="timeline-scale">
+      <div
+        className="mt-3 mb-1 grid min-w-0 grid-cols-[var(--editor-track-grid-columns)] items-end gap-3"
+        aria-hidden="true"
+      >
+        <span
+          className="text-[0.625rem] font-bold tracking-[0.08em] text-muted-foreground uppercase"
+          data-slot="timeline-tools-title"
+        >
+          {t("timeline.tools")}
+        </span>
+        <div className="flex justify-between font-mono text-[0.625rem] text-muted-foreground">
           {[0, 0.25, 0.5, 0.75, 1].map((fraction) => (
             <span key={fraction}>
               {formatPlaybackTime(Math.round(range.sourceDurationMicros * fraction), frameRate)}
@@ -459,14 +451,22 @@ export function TrimTimeline({
         </div>
       </div>
 
-      <div className="timeline-row">
-        <div className="timeline-row-toolbar" role="toolbar" aria-label="Video timeline tools">
+      <div
+        className="mb-2 grid min-w-0 grid-cols-[var(--editor-track-grid-columns)] items-center gap-3"
+        data-slot="timeline-row"
+      >
+        <div
+          className="grid w-full grid-flow-col grid-cols-4 grid-rows-2 items-center justify-start gap-1.5"
+          data-slot="timeline-toolbar"
+          role="toolbar"
+          aria-label={t("timeline.toolsLabel")}
+        >
           {videoToolbar}
         </div>
         <div
           ref={trackRef}
-          className="timeline-track"
-          aria-label="Video trim timeline"
+          className={styles.track}
+          aria-label={t("timeline.trackLabel")}
           onPointerDown={(event) => {
             if (event.target !== event.currentTarget) {
               return;
@@ -479,7 +479,7 @@ export function TrimTimeline({
           onLostPointerCapture={(event) => finishScrub(event, false)}
         >
           <div
-            className="trim-selection"
+            className={styles.selection}
             style={{ left: `${startPercent}%`, right: `${100 - endPercent}%` }}
           />
           <SegmentDragHandle
@@ -496,15 +496,17 @@ export function TrimTimeline({
           />
           <button
             ref={playheadRef}
-            className="playhead"
+            className={cn("playhead", styles.playhead)}
             type="button"
             style={{ left: `${playheadPercent}%` }}
             role="slider"
-            aria-label="Playback position"
+            aria-label={t("timeline.playbackPosition")}
             aria-valuemin={0}
             aria-valuemax={range.sourceDurationMicros}
             aria-valuenow={clampPlaybackMicros(playheadMicros, range.sourceDurationMicros)}
-            aria-valuetext={formatAccessibleTime(playheadMicros)}
+            aria-valuetext={t("timeline.accessibleSeconds", {
+              value: formatAccessibleTime(playheadMicros),
+            })}
             title={formatPlaybackTime(playheadMicros, frameRate)}
             onPointerDown={(event) => startScrub(event, event.currentTarget)}
             onPointerMove={moveScrub}
@@ -543,7 +545,6 @@ export function TrimTimeline({
           />
         </div>
       </div>
-      {audioRows}
     </section>
   );
 }
@@ -573,18 +574,23 @@ function SegmentDragHandle({
   onLostPointerCapture,
   onKeyDown,
 }: SegmentDragHandleProps) {
+  const { t } = useTranslation();
   const durationMicros = range.endMicros - range.startMicros;
   return (
     <button
-      className="segment-drag-handle"
+      className={cn("segment-drag-handle", styles.segment)}
       type="button"
       role="slider"
-      aria-label="Move selected segment"
+      aria-label={t("timeline.moveSegment")}
       aria-valuemin={0}
       aria-valuemax={range.sourceDurationMicros - durationMicros}
       aria-valuenow={range.startMicros}
-      aria-valuetext={`Starts at ${formatAccessibleTime(range.startMicros)}`}
-      title="Drag to move the selected segment — hold Shift to snap"
+      aria-valuetext={t("timeline.startsAt", {
+        time: t("timeline.accessibleSeconds", {
+          value: formatAccessibleTime(range.startMicros),
+        }),
+      })}
+      title={t("timeline.moveSegmentHint")}
       data-dragging={dragging ? "true" : undefined}
       data-snap-active={snapPoint ? "true" : undefined}
       data-snap-point={snapPoint ?? undefined}
@@ -632,18 +638,24 @@ function TrimHandle({
   onDoubleClick,
   onKeyDown,
 }: TrimHandleProps) {
-  const label = boundary === "start" ? "Trim start" : "Trim end";
+  const { t } = useTranslation();
+  const label = boundary === "start" ? t("timeline.trimStart") : t("timeline.trimEnd");
   return (
     <button
-      className={`trim-handle trim-handle-${boundary}`}
+      className={cn(
+        "trim-handle",
+        `trim-handle-${boundary}`,
+        styles.trim,
+        boundary === "start" ? styles.start : styles.end,
+      )}
       type="button"
       role="slider"
       aria-label={label}
       aria-valuemin={minimum}
       aria-valuemax={maximum}
       aria-valuenow={value}
-      aria-valuetext={formatAccessibleTime(value)}
-      title={`${label} — double-click to reset`}
+      aria-valuetext={t("timeline.accessibleSeconds", { value: formatAccessibleTime(value) })}
+      title={t("timeline.trimResetHint", { label })}
       data-dragging={dragging ? "true" : undefined}
       data-snap-active={snapActive ? "true" : undefined}
       style={{ left: `${percent}%` }}
@@ -670,9 +682,13 @@ function TimeValue({
   frameRate?: FrameRate;
 }) {
   return (
-    <div>
-      <dt>{label}</dt>
-      <dd>{formatPlaybackTime(micros, frameRate)}</dd>
+    <div className="grid gap-px">
+      <dt className="text-[0.625rem] font-bold tracking-[0.08em] text-muted-foreground uppercase">
+        {label}
+      </dt>
+      <dd className="m-0 font-mono text-xs tabular-nums">
+        {formatPlaybackTime(micros, frameRate)}
+      </dd>
     </div>
   );
 }
@@ -707,5 +723,5 @@ function isPointerNearPlayhead(
 }
 
 function formatAccessibleTime(micros: number): string {
-  return `${(micros / 1_000_000).toFixed(3)} seconds`;
+  return (micros / 1_000_000).toFixed(3);
 }

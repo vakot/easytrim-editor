@@ -73,6 +73,27 @@ main -> app -> features -> components/lib/types
 - Do not import another feature's internal files. Promote genuinely shared behavior to a narrowly named shared module.
 - Keep IPC calls in `apps/desktop/src/lib/tauri/`; components and reducers consume typed functions, not generic `invoke`.
 - Keep product state in `apps/desktop/src/app/` or the owning feature. Keep visual-only state local to components.
+- Consume another feature through its deliberate `index.ts` API; never reach into its internal folders.
+
+## Frontend feature shape
+
+Once a feature has multiple responsibilities, use only the folders it needs:
+
+```text
+features/<feature>/
+├─ components/   # Presentational feature UI and feature-local CSS modules
+├─ hooks/        # Stateful orchestration and effects
+├─ utils/        # Pure calculations and formatters
+├─ types.ts      # Feature contracts
+├─ index.ts      # Deliberate public API
+└─ <Feature>.tsx # Thin feature composition boundary
+```
+
+- Prefer shadcn primitives from `components/ui` before creating an interactive primitive.
+- Use Tailwind utilities for ordinary layout, spacing, typography, color, and state styling.
+- Use a colocated `*.module.css` only when precise pseudo-elements, keyframes, or browser-native styling are materially clearer than utilities.
+- Keep components presentational. Put effects, async work, subscriptions, and multi-step state transitions in an owning hook or higher-level composition boundary.
+- Keep `styles/globals.css` limited to Tailwind imports, theme tokens, reset, and truly application-wide defaults.
 
 Native:
 
@@ -97,7 +118,7 @@ commands -> application -> domain/media/process
 
 ## Growth rules
 
-- Start a feature as one focused module; introduce `components/`, `model/`, or `tests/` subdirectories only when multiple files justify them.
+- Start a feature as one focused module; introduce `components/`, `hooks/`, `utils/`, or tests only when multiple files justify them.
 - Avoid broad barrel exports. Add an `index.ts` only when a feature needs a deliberate public API.
 - Keep generated files, media fixtures, packaged binaries, and user output out of source directories.
 - Put reusable automation in `scripts/`; do not hide build logic in ad hoc shell snippets.
