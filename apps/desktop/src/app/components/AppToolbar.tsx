@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import type { SessionState } from "@/app/session-state";
 import { CapabilityStatus } from "@/features/import-source/SourceWorkspace";
 import { ExportPanel, type ExportToast } from "@/features/export";
@@ -49,6 +50,7 @@ export function AppToolbar({
       <div className="flex items-center justify-end gap-3 pl-4">
         <ThemeSelector />
         <LanguageSelector className="w-36" />
+        <Separator orientation="vertical" className="h-7" />
         <Button variant="outline" onClick={onChooseSource} disabled={isChoosingSource}>
           {isChoosingSource ? t("import.opening") : t("import.openVideo")}
         </Button>
