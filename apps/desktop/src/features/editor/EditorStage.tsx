@@ -503,7 +503,7 @@ export function EditorStage({
       aria-label={t("preview.panes")}
     >
       <Panel id="preview-panel" minSize="14rem" className="min-h-0 min-w-0">
-        <div className="grid size-full min-h-0 place-items-center overflow-auto bg-black p-3">
+        <div className="grid size-full min-h-0 place-items-center overflow-auto bg-preview-surface p-3">
           <VideoPreview
             sourceId={sourceId}
             preview={preview}

@@ -10,7 +10,7 @@ describe("ThemeSelector", () => {
     const user = userEvent.setup();
     render(
       <ThemeProvider>
-        <ThemeSelector className="w-12" />
+        <ThemeSelector className="w-14" />
       </ThemeProvider>,
     );
 

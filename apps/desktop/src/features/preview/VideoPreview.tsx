@@ -74,7 +74,7 @@ export function VideoPreview({
 
   const { value } = preview;
   return (
-    <div className="relative flex size-full min-h-0 items-center justify-center overflow-hidden bg-black">
+    <div className="relative flex size-full min-h-0 items-center justify-center overflow-hidden bg-preview-surface">
       <video
         ref={videoRef}
         key={value.url}
