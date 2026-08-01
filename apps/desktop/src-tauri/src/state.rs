@@ -56,6 +56,7 @@ impl Drop for TemporaryMediaArtifact {
 }
 
 pub type PreviewArtifact = TemporaryMediaArtifact;
+pub type AudioPreviewArtifact = TemporaryMediaArtifact;
 pub type WaveformArtifact = TemporaryMediaArtifact;
 
 #[derive(Clone, Debug)]
@@ -84,6 +85,7 @@ struct ActiveSourceRecord {
     media: Option<MediaInfo>,
     preview_streams: Option<PreviewStreamSelection>,
     preview: Option<PreviewArtifact>,
+    audio_previews: HashMap<u32, AudioPreviewArtifact>,
     audio_stream_indexes: Vec<u32>,
     waveform_job: Option<WaveformJobRecord>,
     waveforms: HashMap<u32, WaveformRecord>,
@@ -200,6 +202,7 @@ impl AppState {
             media: None,
             preview_streams: None,
             preview: None,
+            audio_previews: HashMap::new(),
             audio_stream_indexes: Vec::new(),
             waveform_job: None,
             waveforms: HashMap::new(),
@@ -347,6 +350,42 @@ impl AppState {
         };
         drop(previous_preview);
         Ok(())
+    }
+
+    pub fn install_audio_preview(
+        &self,
+        source_id: &str,
+        stream_index: u32,
+        preview: AudioPreviewArtifact,
+    ) -> Result<(), AppError> {
+        let previous_preview = {
+            let mut session = self.lock_session()?;
+            let source = active_source_mut(&mut session, source_id)?;
+            if source.cancellation.load(Ordering::Acquire) {
+                return Err(AppError::source_replaced());
+            }
+            source.audio_previews.insert(stream_index, preview)
+        };
+        drop(previous_preview);
+        Ok(())
+    }
+
+    pub fn resolve_audio_preview_path(
+        &self,
+        source_id: &str,
+        stream_index: u32,
+    ) -> Result<PathBuf, AppError> {
+        let session = self.lock_session()?;
+        let source = session
+            .active_source
+            .as_ref()
+            .filter(|source| source.source_id == source_id)
+            .ok_or_else(AppError::source_replaced)?;
+        source
+            .audio_previews
+            .get(&stream_index)
+            .map(|preview| preview.path().to_owned())
+            .ok_or_else(|| AppError::invalid_request("The audio preview is not available."))
     }
 
     pub fn resolve_preview_path(&self, source_id: &str) -> Result<PathBuf, AppError> {

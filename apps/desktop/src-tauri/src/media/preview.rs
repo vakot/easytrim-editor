@@ -34,6 +34,13 @@ pub fn respond<R: Runtime>(app: &AppHandle<R>, request: Request<Vec<u8>>) -> Res
             return empty_response(StatusCode::NOT_FOUND);
         };
         state.resolve_waveform_path(source_id, stream_index)
+    } else if query_parameter(request.uri().query(), "variant") == Some("audio") {
+        let Some(stream_index) = query_parameter(request.uri().query(), "stream")
+            .and_then(|value| value.parse::<u32>().ok())
+        else {
+            return empty_response(StatusCode::NOT_FOUND);
+        };
+        state.resolve_audio_preview_path(source_id, stream_index)
     } else {
         state.resolve_preview_path(source_id)
     };
