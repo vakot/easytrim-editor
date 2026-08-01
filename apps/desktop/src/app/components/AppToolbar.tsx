@@ -42,7 +42,7 @@ export function AppToolbar({
       </button>
       <CapabilityStatus capabilities={session.capabilities} />
       <div className="flex items-center justify-end gap-3">
-        <ThemeSelector className="w-14 px-2.5" />
+        <ThemeSelector />
         <LanguageSelector className="w-36" />
         <Button variant="outline" size="lg" onClick={onChooseSource} disabled={isChoosingSource}>
           {isChoosingSource ? t("import.opening") : t("import.openVideo")}

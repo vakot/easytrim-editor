@@ -62,7 +62,6 @@ export function AudioTracks({
             label={t("audio.allTracksVolume")}
             volumePercent={masterEnabled ? masterVolumePercent : 0}
             onChange={onMasterVolumeChange}
-            className="flex-1"
           />
         </div>
         <div className="flex min-w-0 items-center justify-between gap-4">

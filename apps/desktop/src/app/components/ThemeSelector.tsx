@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/select";
 import { useTheme } from "@/app/theme/use-theme";
 import type { ThemePreference } from "@/app/theme/theme";
+import { cn } from "@/lib/utils";
 
 const themeOptions = [
   { value: "system", labelKey: "theme.system", Icon: Monitor },
@@ -29,7 +30,7 @@ export function ThemeSelector({ className }: { className?: string }) {
   return (
     <Select value={preference} onValueChange={(theme) => setPreference(theme as ThemePreference)}>
       <SelectTrigger
-        className={className}
+        className={cn("w-20 px-3", className)}
         aria-label={t("theme.selection", { theme: currentThemeLabel })}
         title={t("theme.selection", { theme: currentThemeLabel })}
       >

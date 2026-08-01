@@ -28,9 +28,9 @@ export function AudioLevelControl({
   const decibels = volumePercentToDecibels(volumePercent);
 
   return (
-    <div className={cn("flex min-w-0 items-center gap-3", className)}>
+    <div className={cn("flex w-4/5 min-w-0 items-center", className)}>
       <Slider
-        className={cn("min-w-36 flex-1", styles.slider)}
+        className={cn("min-w-0 flex-1", styles.slider)}
         min={MIN_SLIDER_DECIBELS}
         max={MAX_SLIDER_DECIBELS}
         step={0.1}
@@ -40,7 +40,7 @@ export function AudioLevelControl({
         aria-label={label}
         title={t("audio.originalLevel")}
       />
-      <output className="w-16 shrink-0 text-right font-mono text-xs text-muted-foreground">
+      <output className="w-16 shrink-0 text-left font-mono text-xs text-muted-foreground">
         {formatDecibels(volumePercent)}
       </output>
     </div>

@@ -1,4 +1,9 @@
+.slider {
+  isolation: isolate;
+}
+
 .slider [data-slot="slider-track"] {
+  z-index: 0;
   height: 0.375rem;
 }
 
@@ -18,5 +23,5 @@
 }
 
 .slider [data-slot="slider-thumb"] {
-  z-index: 3;
+  z-index: 10;
 }

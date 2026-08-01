@@ -32,7 +32,7 @@ export function WelcomePage({
     >
       <WelcomeBrandWall />
       <div className="absolute top-5 right-5 z-20 flex items-center gap-2">
-        <ThemeSelector className="w-14 bg-background/90 px-2.5 backdrop-blur-sm" />
+        <ThemeSelector className="bg-background/90 backdrop-blur-sm" />
         <LanguageSelector className="w-36 bg-background/90 backdrop-blur-sm" />
       </div>
       <Card className="relative z-10 w-[min(27rem,calc(100vw-2rem))] border-border/80 bg-card/96 shadow-2xl backdrop-blur-md">
