@@ -108,10 +108,11 @@ export function EditorStage({
   useEffect(() => {
     const video = videoRef.current;
     if (video) {
-      video.muted = true;
-      video.volume = 0;
+      const hasIndependentAudio = Object.keys(audioPreviewUrls).length > 0;
+      video.muted = hasIndependentAudio;
+      video.volume = hasIndependentAudio ? 0 : 1;
     }
-  }, []);
+  }, [audioPreviewUrls]);
 
   useEffect(() => {
     const context = audioContextRef.current ?? new AudioContext();
@@ -149,10 +150,19 @@ export function EditorStage({
       audioNodesRef.current.set(streamIndex, { source, gain });
     }
 
+    if (isPlaying) {
+      const seconds = videoRef.current?.currentTime ?? 0;
+      void context.resume();
+      syncAudioPlayback(seconds);
+      void Promise.all([...audioElementsRef.current.values()].map((audio) => audio.play())).catch(
+        () => undefined,
+      );
+    }
+
     return () => {
       // Keep the graph alive across volume changes; elements are disposed on source unmount.
     };
-  }, [audioPreviewUrls]);
+  }, [audioPreviewUrls, isPlaying]);
 
   useEffect(() => {
     const masterGain = masterGainRef.current;
