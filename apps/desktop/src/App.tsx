@@ -287,7 +287,7 @@ function App() {
               className="app-brand"
               role="button"
               tabIndex={0}
-              aria-label="Return to ClipKit welcome page"
+              aria-label="Return to CLIP KIT welcome page"
               onClick={requestReturnToWelcome}
               onKeyDown={(event) => {
                 if (event.key === "Enter" || event.key === " ") {
@@ -297,7 +297,7 @@ function App() {
               }}
             >
               <img src="/logo.svg" alt="" />
-              ClipKit
+              CLIP KIT
             </h1>
           </div>
           <div className="toolbar-capability">

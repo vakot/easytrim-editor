@@ -174,7 +174,7 @@ function WelcomeBrandWall() {
               <div className="welcome-brand-set" key={setIndex}>
                 {Array.from({ length: markCount }, (_, markIndex) => (
                   <span className="welcome-brand-mark" key={markIndex}>
-                    <span>ClipKit</span>
+                    <span>CLIP KIT</span>
                     <img src="/logo_gray.svg" alt="" />
                   </span>
                 ))}
