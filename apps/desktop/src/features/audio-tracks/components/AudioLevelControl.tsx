@@ -40,7 +40,7 @@ export function AudioLevelControl({
         aria-label={label}
         title={t("audio.originalLevel")}
       />
-      <output className="w-14 shrink-0 text-left font-mono text-xs text-muted-foreground">
+      <output className="w-14 shrink-0 text-right font-mono text-xs text-muted-foreground">
         {formatDecibels(volumePercent)}
       </output>
     </div>

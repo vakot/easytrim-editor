@@ -1,8 +1,8 @@
 import type { AudioTrackState } from "@/app/session-state";
-import { useState } from "react";
-import { useTranslation } from "react-i18next";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import type { AudioStream } from "@/lib/tauri/media";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { WAVEFORM_RENDER_WIDTH } from "../hooks/use-waveform-preparation";
 import { formatChannels } from "../utils/audio-level";
