@@ -7,6 +7,9 @@ import {
   clampPlaybackMicros,
   formatPlaybackTime,
   frameDurationMicros,
+  playbackBoundaryAction,
+  playbackRange,
+  playbackStartMicros,
 } from "../../domain/playback";
 import {
   canSetTrimBoundaryAtPlayhead,
@@ -86,17 +89,22 @@ export function EditorStage({
   const pendingScrubMicrosRef = useRef<number | null>(null);
   const resumeAfterScrubRef = useRef(false);
   const playbackStartSequenceRef = useRef(0);
+  const playbackBoundaryHandledRef = useRef(false);
+  const isPlayingRef = useRef(false);
   const lastPlaybackCommitAtRef = useRef(0);
   const trimRef = useRef(trim);
   const currentPlayheadMicrosRef = useRef(trim.startMicros);
   const segmentDragActiveRef = useRef(false);
   const segmentFollowBoundaryRef = useRef<TrimBoundary | null>(null);
   const shortcutActionsRef = useRef<EditorShortcutActions | null>(null);
+  const playbackModesRef = useRef({ loopEnabled: false, segmentEnabled: false });
   trimRef.current = trim;
 
   const [playheadMicros, setPlayheadMicros] = useState(trim.startMicros);
   const [isPlaying, setIsPlaying] = useState(false);
   const [safeTrimFollowingEnabled, setSafeTrimFollowingEnabled] = useState(true);
+  const [loopPlaybackEnabled, setLoopPlaybackEnabled] = useState(false);
+  const [segmentPlaybackEnabled, setSegmentPlaybackEnabled] = useState(false);
   const [transportError, setTransportError] = useState<string | null>(null);
   const displayedPlayheadMicros = clampPlaybackMicros(playheadMicros, trim.sourceDurationMicros);
 
@@ -288,6 +296,7 @@ export function EditorStage({
   function handleScrubStart() {
     playbackStartSequenceRef.current += 1;
     resumeAfterScrubRef.current = isPlaying;
+    isPlayingRef.current = false;
     videoRef.current?.pause();
     pauseAudioPlayback();
     setIsPlaying(false);
@@ -315,6 +324,9 @@ export function EditorStage({
       frameRate,
     );
     setPlayheadMicros(currentMicros);
+    if (isPlayingRef.current && handlePlaybackBoundary(currentMicros)) {
+      return;
+    }
     syncAudioPlayback(seconds);
     if (currentMicros >= durationMicros) {
       stopPlayheadAnimation();
@@ -345,8 +357,8 @@ export function EditorStage({
         setPlayheadMicros(currentMicros);
       }
 
-      if (currentMicros >= durationMicros) {
-        playbackFrameRef.current = null;
+      if (handlePlaybackBoundary(currentMicros)) {
+        playbackFrameRef.current = video.paused ? null : requestAnimationFrame(update);
         return;
       }
       playbackFrameRef.current = requestAnimationFrame(update);
@@ -356,6 +368,55 @@ export function EditorStage({
 
   function stopPlayheadAnimation() {
     cancelFrame(playbackFrameRef);
+  }
+
+  function activePlaybackRange() {
+    const currentTrim = trimRef.current;
+    return playbackRange(
+      currentTrim.sourceDurationMicros,
+      currentTrim.startMicros,
+      currentTrim.endMicros,
+      playbackModesRef.current.segmentEnabled,
+    );
+  }
+
+  function handlePlaybackBoundary(currentMicros: number): boolean {
+    const action = playbackBoundaryAction(
+      currentMicros,
+      activePlaybackRange(),
+      playbackModesRef.current.loopEnabled,
+    );
+    if (action.type === "continue") {
+      playbackBoundaryHandledRef.current = false;
+      return false;
+    }
+    if (playbackBoundaryHandledRef.current) {
+      return true;
+    }
+    playbackBoundaryHandledRef.current = true;
+    if (action.type === "restart") {
+      commitSeek(action.positionMicros);
+      if (videoRef.current?.paused) {
+        startMediaPlayback();
+      }
+      return true;
+    }
+
+    playbackStartSequenceRef.current += 1;
+    isPlayingRef.current = false;
+    videoRef.current?.pause();
+    pauseAudioPlayback();
+    setIsPlaying(false);
+    stopPlayheadAnimation();
+    commitSeek(action.positionMicros);
+    return true;
+  }
+
+  function handlePlaybackEnded() {
+    const video = videoRef.current;
+    if (video) {
+      handlePlaybackBoundary(video.currentTime * 1_000_000);
+    }
   }
 
   function startMediaPlayback() {
@@ -402,6 +463,7 @@ export function EditorStage({
           return;
         }
         pauseAudioPlayback();
+        isPlayingRef.current = false;
         setIsPlaying(false);
         setTransportError("Playback could not start.");
       });
@@ -433,21 +495,51 @@ export function EditorStage({
     setTransportError(null);
     if (isPlaying) {
       playbackStartSequenceRef.current += 1;
+      isPlayingRef.current = false;
       video.pause();
       return;
     }
-    if (currentPlayheadMicrosRef.current >= trimRef.current.sourceDurationMicros) {
-      commitSeek(0);
+    const startMicros = playbackStartMicros(
+      currentPlayheadMicrosRef.current,
+      activePlaybackRange(),
+    );
+    if (startMicros !== currentPlayheadMicrosRef.current) {
+      commitSeek(startMicros);
     }
+    playbackBoundaryHandledRef.current = false;
     startMediaPlayback();
   }
 
   function handleStepFrame(direction: -1 | 1) {
     playbackStartSequenceRef.current += 1;
+    isPlayingRef.current = false;
     videoRef.current?.pause();
     setIsPlaying(false);
     stopPlayheadAnimation();
     commitSeek(currentPlayheadMicrosRef.current + direction * frameDurationMicros(frameRate));
+  }
+
+  function handleToggleLoopPlayback() {
+    const enabled = !loopPlaybackEnabled;
+    playbackModesRef.current.loopEnabled = enabled;
+    setLoopPlaybackEnabled(enabled);
+  }
+
+  function handleToggleSegmentPlayback() {
+    const enabled = !segmentPlaybackEnabled;
+    playbackModesRef.current.segmentEnabled = enabled;
+    setSegmentPlaybackEnabled(enabled);
+    playbackBoundaryHandledRef.current = false;
+    if (!enabled) {
+      return;
+    }
+    const startMicros = playbackStartMicros(
+      currentPlayheadMicrosRef.current,
+      activePlaybackRange(),
+    );
+    if (startMicros !== currentPlayheadMicrosRef.current) {
+      commitSeek(startMicros);
+    }
   }
 
   function handleSetSegmentBoundary(boundary: TrimBoundary) {
@@ -536,10 +628,12 @@ export function EditorStage({
             onLoadedMetadata={() => commitSeek(displayedPlayheadMicros)}
             onTogglePlayback={handleTogglePlayback}
             onPlay={() => {
+              isPlayingRef.current = true;
               setIsPlaying(true);
               startPlayheadAnimation();
             }}
             onPause={() => {
+              isPlayingRef.current = false;
               setIsPlaying(false);
               pauseAudioPlayback();
               stopPlayheadAnimation();
@@ -549,6 +643,7 @@ export function EditorStage({
               }
             }}
             onTimeUpdate={handleTimeUpdate}
+            onEnded={handlePlaybackEnded}
           />
         </div>
       </Panel>
@@ -607,9 +702,13 @@ export function EditorStage({
               preview.status === "ready" ? (
                 <TimelineTools
                   safeTrimFollowingEnabled={safeTrimFollowingEnabled}
+                  loopPlaybackEnabled={loopPlaybackEnabled}
+                  segmentPlaybackEnabled={segmentPlaybackEnabled}
                   onToggleSafeTrimFollowing={() =>
                     setSafeTrimFollowingEnabled((enabled) => !enabled)
                   }
+                  onToggleLoopPlayback={handleToggleLoopPlayback}
+                  onToggleSegmentPlayback={handleToggleSegmentPlayback}
                 />
               ) : null
             }

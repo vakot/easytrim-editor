@@ -116,28 +116,66 @@ export function PlaybackTimecode({
 
 interface TimelineToolsProps {
   safeTrimFollowingEnabled: boolean;
+  loopPlaybackEnabled: boolean;
+  segmentPlaybackEnabled: boolean;
   onToggleSafeTrimFollowing: () => void;
+  onToggleLoopPlayback: () => void;
+  onToggleSegmentPlayback: () => void;
 }
 
 export function TimelineTools({
   safeTrimFollowingEnabled,
+  loopPlaybackEnabled,
+  segmentPlaybackEnabled,
   onToggleSafeTrimFollowing,
+  onToggleLoopPlayback,
+  onToggleSegmentPlayback,
 }: TimelineToolsProps) {
   return (
-    <button
-      className="timeline-tool-button"
-      type="button"
-      aria-label="Safe trim following"
-      aria-pressed={safeTrimFollowingEnabled}
-      title={
-        safeTrimFollowingEnabled
-          ? "Safe trim following: on — playhead follows a trim border once caught"
-          : "Safe trim following: off — playhead stays in place"
-      }
-      onClick={onToggleSafeTrimFollowing}
-    >
-      <LinkPlayheadIcon />
-    </button>
+    <>
+      <button
+        className="timeline-tool-button"
+        type="button"
+        aria-label="Safe trim following"
+        aria-pressed={safeTrimFollowingEnabled}
+        title={
+          safeTrimFollowingEnabled
+            ? "Safe trim following: on — playhead follows a trim border once caught"
+            : "Safe trim following: off — playhead stays in place"
+        }
+        onClick={onToggleSafeTrimFollowing}
+      >
+        <LinkPlayheadIcon />
+      </button>
+      <button
+        className="timeline-tool-button"
+        type="button"
+        aria-label="Loop playback"
+        aria-pressed={loopPlaybackEnabled}
+        title={
+          loopPlaybackEnabled
+            ? "Loop playback: on — restart when playback reaches its end"
+            : "Loop playback: off — stop when playback reaches its end"
+        }
+        onClick={onToggleLoopPlayback}
+      >
+        <LoopIcon />
+      </button>
+      <button
+        className="timeline-tool-button"
+        type="button"
+        aria-label="Segment playback"
+        aria-pressed={segmentPlaybackEnabled}
+        title={
+          segmentPlaybackEnabled
+            ? "Segment playback: on — constrain playback to the selected segment"
+            : "Segment playback: off — play the complete timeline"
+        }
+        onClick={onToggleSegmentPlayback}
+      >
+        <SegmentPlaybackIcon />
+      </button>
+    </>
   );
 }
 
@@ -177,6 +215,22 @@ function LinkPlayheadIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="M9.6 13.2a3.9 3.9 0 0 0 5.5 0l2.3-2.3a3.9 3.9 0 0 0-5.5-5.5l-1.3 1.3L12 8.1l1.3-1.3a1.9 1.9 0 1 1 2.7 2.7l-2.3 2.3a1.9 1.9 0 0 1-2.7 0zm4.8-2.4a3.9 3.9 0 0 0-5.5 0l-2.3 2.3a3.9 3.9 0 0 0 5.5 5.5l1.3-1.3-1.4-1.4-1.3 1.3A1.9 1.9 0 1 1 8 14.5l2.3-2.3a1.9 1.9 0 0 1 2.7 0z" />
+    </svg>
+  );
+}
+
+function LoopIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M7 7h9.2l-1.7-1.7L16 3.9 20.1 8 16 12.1l-1.5-1.4L16.2 9H7a3 3 0 0 0-3 3v1H2v-1a5 5 0 0 1 5-5zm10 10H7.8l1.7 1.7L8 20.1 3.9 16 8 11.9l1.5 1.4L7.8 15H17a3 3 0 0 0 3-3v-1h2v1a5 5 0 0 1-5 5z" />
+    </svg>
+  );
+}
+
+function SegmentPlaybackIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 5h2v14H4zm14 0h2v14h-2zM9 7.5v9l7-4.5z" />
     </svg>
   );
 }

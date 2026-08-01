@@ -182,6 +182,14 @@ describe("App", () => {
     expect(within(videoToolbar).getByRole("button", { name: "Safe trim following" })).toBe(
       screen.getByRole("button", { name: "Safe trim following" }),
     );
+    expect(within(videoToolbar).getByRole("button", { name: "Loop playback" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+    expect(within(videoToolbar).getByRole("button", { name: "Segment playback" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
     expect(within(videoTimelineRow as HTMLElement).queryByText("Video")).not.toBeInTheDocument();
     expect(screen.getByTestId("source-details-panel")).toContainElement(
       screen.getByRole("heading", { name: "holiday.mp4" }),
@@ -412,6 +420,77 @@ describe("App", () => {
     video.currentTime = 10;
     fireEvent.timeUpdate(video);
     expect(audioPlayhead.style.left).toBe(playhead.style.left);
+  });
+
+  it("stops or loops at the selected segment boundary", async () => {
+    mocks.chooseSource.mockResolvedValue(selection);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Select video" }));
+    const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
+    const play = vi.spyOn(video, "play").mockResolvedValue();
+    const pause = vi.spyOn(video, "pause").mockImplementation(() => undefined);
+
+    video.currentTime = 10;
+    fireEvent.timeUpdate(video);
+    fireEvent.keyDown(window, { key: "i" });
+    video.currentTime = 20;
+    fireEvent.timeUpdate(video);
+    fireEvent.keyDown(window, { key: "o" });
+
+    const segmentToggle = screen.getByRole("button", { name: "Segment playback" });
+    const loopToggle = screen.getByRole("button", { name: "Loop playback" });
+    const playhead = screen.getByRole("slider", { name: "Playback position" });
+    await user.click(segmentToggle);
+    expect(segmentToggle).toHaveAttribute("aria-pressed", "true");
+    expect(video.currentTime).toBe(10);
+
+    await user.click(screen.getByRole("button", { name: "Play" }));
+    fireEvent.play(video);
+    video.currentTime = 20.25;
+    fireEvent.timeUpdate(video);
+
+    expect(pause).toHaveBeenCalled();
+    expect(playhead).toHaveAttribute("aria-valuenow", "20000000");
+    expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
+
+    pause.mockClear();
+    await user.click(loopToggle);
+    await user.click(screen.getByRole("button", { name: "Play" }));
+    fireEvent.play(video);
+    video.currentTime = 20.25;
+    fireEvent.timeUpdate(video);
+
+    expect(loopToggle).toHaveAttribute("aria-pressed", "true");
+    expect(pause).not.toHaveBeenCalled();
+    expect(video.currentTime).toBe(10);
+    expect(playhead).toHaveAttribute("aria-valuenow", "10000000");
+    expect(play).toHaveBeenCalled();
+  });
+
+  it("restarts the complete timeline after the video ends when looping is enabled", async () => {
+    mocks.chooseSource.mockResolvedValue(selection);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Select video" }));
+    const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
+    const play = vi.spyOn(video, "play").mockResolvedValue();
+    vi.spyOn(video, "pause").mockImplementation(() => undefined);
+
+    await user.click(screen.getByRole("button", { name: "Loop playback" }));
+    await user.click(screen.getByRole("button", { name: "Play" }));
+    fireEvent.play(video);
+    video.currentTime = 65;
+    fireEvent.ended(video);
+
+    expect(video.currentTime).toBe(0);
+    expect(screen.getByRole("slider", { name: "Playback position" })).toHaveAttribute(
+      "aria-valuenow",
+      "0",
+    );
+    await waitFor(() => expect(play).toHaveBeenCalledTimes(2));
   });
 
   it("prioritizes playback while keeping other shortcuts locked during text entry", async () => {
