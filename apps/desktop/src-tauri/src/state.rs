@@ -199,10 +199,9 @@ impl AppState {
             .operations
             .lock()
             .map_err(|_| AppError::internal("The in-memory operation registry is unavailable."))?;
-        operations
-            .get(operation_id)
-            .ok_or_else(|| AppError::invalid_request("The export operation is no longer active."))?
-            .store(true, Ordering::Release);
+        if let Some(cancellation) = operations.get(operation_id) {
+            cancellation.store(true, Ordering::Release);
+        }
         Ok(())
     }
 
@@ -557,5 +556,23 @@ mod tests {
             .expect("replacement waveform job starts");
 
         assert!(first_job.cancellation.load(Ordering::Acquire));
+    }
+
+    #[test]
+    fn operation_cancellation_is_idempotent() {
+        let state = AppState::default();
+        let (operation_id, cancellation) = state.begin_operation().expect("operation starts");
+
+        state
+            .cancel_operation(&operation_id)
+            .expect("active operation cancels");
+        state
+            .cancel_operation(&operation_id)
+            .expect("repeated cancellation is harmless");
+        state
+            .cancel_operation("operation-no-longer-active")
+            .expect("late cancellation is harmless");
+
+        assert!(cancellation.load(Ordering::Acquire));
     }
 }

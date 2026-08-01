@@ -282,7 +282,7 @@ mod tests {
         time::Duration,
     };
 
-    use super::{read_bounded, run_bounded_cancellable};
+    use super::{read_bounded, run_bounded_cancellable, run_progress_cancellable};
 
     #[test]
     fn bounded_reader_drains_but_retains_only_the_limit() {
@@ -306,5 +306,32 @@ mod tests {
         .expect_err("cancelled execution must stop before process lookup");
 
         assert_eq!(error.kind(), io::ErrorKind::Interrupted);
+    }
+
+    #[test]
+    fn progress_process_reports_prelaunch_cancellation_and_spawn_failure() {
+        let cancelled = run_progress_cancellable(
+            OsStr::new("this-process-must-not-start"),
+            &[],
+            Duration::from_secs(1),
+            0,
+            0,
+            || true,
+            |_| {},
+        )
+        .expect_err("cancelled export must stop before process lookup");
+        assert_eq!(cancelled.kind(), io::ErrorKind::Interrupted);
+
+        let missing = run_progress_cancellable(
+            OsStr::new("clipkit-process-that-does-not-exist"),
+            &[],
+            Duration::from_secs(1),
+            0,
+            0,
+            || false,
+            |_| {},
+        )
+        .expect_err("missing export process must fail");
+        assert_eq!(missing.kind(), io::ErrorKind::NotFound);
     }
 }

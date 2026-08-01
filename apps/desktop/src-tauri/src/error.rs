@@ -75,6 +75,14 @@ impl AppError {
         }
     }
 
+    pub fn render_failed(message: impl Into<String>) -> Self {
+        Self {
+            code: "render_failed",
+            message: message.into(),
+            diagnostics: None,
+        }
+    }
+
     pub fn io_failed(message: impl Into<String>) -> Self {
         Self {
             code: "io_failed",

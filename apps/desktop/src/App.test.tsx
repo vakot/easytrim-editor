@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type {
+  ExportProgress,
   MediaCapabilities,
   MediaInfo,
   SourceDropEvent,
@@ -11,6 +12,8 @@ import type {
 
 const mocks = vi.hoisted(() => ({
   checkMediaCapabilities: vi.fn(),
+  cancelOperation: vi.fn(),
+  chooseOutputPath: vi.fn(),
   chooseSource: vi.fn(),
   inspectMedia: vi.fn(),
   listenForSourceDrops: vi.fn(),
@@ -18,6 +21,7 @@ const mocks = vi.hoisted(() => ({
   prepareProxyPreview: vi.fn(),
   prepareSourcePreview: vi.fn(),
   prepareWaveforms: vi.fn(),
+  renderFast: vi.fn(),
   unlistenDrops: vi.fn(),
 }));
 
@@ -26,6 +30,8 @@ vi.mock("./lib/tauri/media", async (importOriginal) => {
   return {
     ...original,
     checkMediaCapabilities: mocks.checkMediaCapabilities,
+    cancelOperation: mocks.cancelOperation,
+    chooseOutputPath: mocks.chooseOutputPath,
     chooseSource: mocks.chooseSource,
     inspectMedia: mocks.inspectMedia,
     listenForSourceDrops: mocks.listenForSourceDrops,
@@ -33,6 +39,7 @@ vi.mock("./lib/tauri/media", async (importOriginal) => {
     prepareProxyPreview: mocks.prepareProxyPreview,
     prepareSourcePreview: mocks.prepareSourcePreview,
     prepareWaveforms: mocks.prepareWaveforms,
+    renderFast: mocks.renderFast,
   };
 });
 
@@ -87,6 +94,8 @@ beforeEach(() => {
   sourceDropListener = undefined;
   mocks.checkMediaCapabilities.mockResolvedValue(capabilities);
   mocks.chooseSource.mockResolvedValue(null);
+  mocks.chooseOutputPath.mockResolvedValue(null);
+  mocks.cancelOperation.mockResolvedValue(undefined);
   mocks.inspectMedia.mockResolvedValue(media);
   mocks.prepareSourcePreview.mockResolvedValue({
     sourceId: selection.sourceId,
@@ -289,6 +298,45 @@ describe("App", () => {
         name: "Export",
       }),
     ).toBeDisabled();
+  });
+
+  it("cancels an export that was stopped before its operation ID arrived", async () => {
+    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.chooseOutputPath.mockResolvedValue({
+      outputId: "output-1",
+      displayName: "holiday-cut.mkv",
+      displayPath: "C:\\Exports\\holiday-cut.mkv",
+    });
+    let sendProgress: ((progress: ExportProgress) => void) | undefined;
+    mocks.renderFast.mockImplementation(
+      async (
+        _request: unknown,
+        _outputId: string,
+        onProgress: (progress: ExportProgress) => void,
+      ) => {
+        sendProgress = onProgress;
+        return new Promise<never>(() => undefined);
+      },
+    );
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Select video" }));
+    await screen.findByRole("heading", { name: "holiday.mp4" });
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    await user.click(await screen.findByRole("button", { name: "Cancel holiday-cut.mkv" }));
+    expect(screen.getByText(/Canceled/)).toBeInTheDocument();
+
+    act(() => {
+      sendProgress?.({
+        operationId: "operation-1",
+        percentage: 0,
+        elapsedMicros: 0,
+        phase: "running",
+      });
+    });
+    await waitFor(() => expect(mocks.cancelOperation).toHaveBeenCalledWith("operation-1"));
+    expect(screen.getByText(/Canceled/)).toBeInTheDocument();
   });
 
   it("prepares aligned waveforms and keeps audio output choices in memory", async () => {
