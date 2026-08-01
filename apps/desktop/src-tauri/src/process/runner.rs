@@ -8,6 +8,7 @@ use std::{
 
 use wait_timeout::ChildExt;
 
+#[cfg(windows)]
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 const PROCESS_POLL_INTERVAL: Duration = Duration::from_millis(100);
 
