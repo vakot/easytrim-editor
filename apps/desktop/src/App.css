@@ -629,8 +629,8 @@ p {
 
 .welcome-brand-mark img {
   align-self: baseline;
-  width: clamp(2rem, 4.5vw, 4.5rem);
-  height: clamp(2rem, 4.5vw, 4.5rem);
+  width: 1em;
+  height: 1em;
   object-fit: contain;
 }
 
