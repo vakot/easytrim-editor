@@ -3,6 +3,7 @@ import { forwardRef } from "react";
 import type { ComponentPropsWithoutRef } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 
@@ -20,21 +21,26 @@ export const VolumeButton = forwardRef<HTMLButtonElement, VolumeButtonProps>(fun
   ref,
 ) {
   const { t } = useTranslation();
+  const stateLabel = t(enabled ? "audio.enabledState" : "audio.mutedState", { label });
 
   return (
-    <Button
-      ref={ref}
-      {...buttonProps}
-      variant="ghost"
-      size="icon-sm"
-      type="button"
-      aria-label={label}
-      aria-pressed={enabled}
-      title={t(enabled ? "audio.enabledState" : "audio.mutedState", { label })}
-      onClick={onClick}
-      className={cn("text-primary", className)}
-    >
-      {enabled ? <Volume2 /> : <VolumeX />}
-    </Button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          ref={ref}
+          {...buttonProps}
+          variant="ghost"
+          size="icon-sm"
+          type="button"
+          aria-label={label}
+          aria-pressed={enabled}
+          onClick={onClick}
+          className={cn("text-primary", className)}
+        >
+          {enabled ? <Volume2 /> : <VolumeX />}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{stateLabel}</TooltipContent>
+    </Tooltip>
   );
 });

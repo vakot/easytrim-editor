@@ -240,11 +240,13 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: "Select video" }));
     await screen.findByRole("heading", { name: "holiday.mp4" });
     const volumeButton = screen.getByRole("button", { name: "Mute eng" });
+    expect(volumeButton).not.toHaveAttribute("title");
 
-    fireEvent.pointerEnter(volumeButton);
+    await user.hover(volumeButton);
     expect(await screen.findByRole("slider", { name: "eng volume" })).toBeInTheDocument();
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("Mute eng: enabled");
 
-    fireEvent.pointerLeave(volumeButton);
+    await user.unhover(volumeButton);
     await waitFor(() => {
       expect(screen.queryByRole("slider", { name: "eng volume" })).not.toBeInTheDocument();
     });
