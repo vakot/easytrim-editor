@@ -219,6 +219,7 @@ describe("App", () => {
     expect(audioTracksScroll).toContainElement(
       screen.getByRole("heading", { name: "Audio tracks" }),
     );
+    expect(audioTracksScroll).toHaveClass("overflow-hidden");
     expect(audioTracksScroll.querySelector('[data-slot="scroll-area-viewport"]')).not.toBeNull();
     expect(screen.queryByTestId("timeline-pane-scroll")).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Open a video" })).not.toBeInTheDocument();
