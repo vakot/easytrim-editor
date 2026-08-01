@@ -44,14 +44,9 @@ export function useTimelinePanelSizing(sourceId: string) {
     }
   }, [measuredConstraints, panelRef, sourceId]);
 
-  const resetSize = useCallback(() => {
-    panelRef.current?.resize((measuredConstraints ?? FALLBACK_CONSTRAINTS).defaultSize);
-  }, [measuredConstraints, panelRef]);
-
   return {
     constraints: measuredConstraints ?? FALLBACK_CONSTRAINTS,
     panelRef,
     onSizeConstraintsChange: handleSizeConstraintsChange,
-    resetSize,
   };
 }

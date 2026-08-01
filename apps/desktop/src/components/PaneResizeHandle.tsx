@@ -5,17 +5,14 @@ import { cn } from "@/lib/utils";
 interface PaneResizeHandleProps {
   id: string;
   label: string;
-  onReset?: () => void;
   orientation: "horizontal" | "vertical";
 }
 
-export function PaneResizeHandle({ id, label, onReset, orientation }: PaneResizeHandleProps) {
+export function PaneResizeHandle({ id, label, orientation }: PaneResizeHandleProps) {
   return (
     <Separator
       id={id}
       aria-label={label}
-      disableDoubleClick={onReset !== undefined}
-      onDoubleClick={onReset}
       className={cn(
         "group relative z-20 shrink-0 bg-border/60 outline-none transition-colors hover:bg-primary/70 focus-visible:bg-primary",
         orientation === "vertical"
