@@ -42,6 +42,36 @@
   white-space: nowrap;
 }
 
+.mark:nth-child(odd) {
+  color: var(--brand-wall-easy);
+}
+
+.mark:nth-child(even) {
+  color: var(--brand-wall-trim);
+}
+
+.errorBadge {
+  position: relative;
+  isolation: isolate;
+  overflow: visible !important;
+}
+
+.errorBadge::before {
+  position: absolute;
+  inset: -1px;
+  z-index: 0;
+  border: 1px solid var(--destructive);
+  border-radius: inherit;
+  content: "";
+  pointer-events: none;
+  animation: capability-error-ripple 1.8s ease-out infinite;
+}
+
+.errorBadge > * {
+  position: relative;
+  z-index: 1;
+}
+
 .mark::after {
   content: " ";
   white-space: pre;
@@ -56,8 +86,25 @@
   }
 }
 
+@keyframes capability-error-ripple {
+  0% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+
+  75%,
+  100% {
+    opacity: 0;
+    transform: scale(1.35);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .track {
     animation-play-state: paused;
+  }
+
+  .errorBadge::before {
+    animation: none;
   }
 }

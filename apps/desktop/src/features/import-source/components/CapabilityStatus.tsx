@@ -5,6 +5,7 @@ import type { SessionState } from "@/app/session-state";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { capabilityError } from "@/features/import-source/utils/media-formatters";
 import { useTranslation } from "react-i18next";
+import styles from "./styles.module.css";
 
 function StatusDot({ tone }: { tone: "success" | "error" | "neutral" }) {
   const color =
@@ -48,7 +49,7 @@ export function CapabilityStatus({ capabilities }: { capabilities: SessionState[
   if (capabilities.status === "failed") {
     return (
       <CapabilityTooltip content={capabilities.error.message}>
-        <Badge variant="destructive" role="status" className="motion-safe:animate-pulse">
+        <Badge variant="destructive" role="status" className={styles.errorBadge}>
           <StatusDot tone="error" />
           {t("import.capabilities.failed")}
         </Badge>
@@ -117,7 +118,7 @@ export function CapabilityStatus({ capabilities }: { capabilities: SessionState[
         variant="destructive"
         role="status"
         aria-label={t("import.capabilities.unavailableLabel", { message })}
-        className="motion-safe:animate-pulse"
+        className={styles.errorBadge}
       >
         <StatusDot tone="error" />
         {t("import.capabilities.unavailable")}
