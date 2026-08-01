@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   exportPresetReducer,
   initialExportPresetState,
+  loadExportPresetState,
+  persistExportPresetState,
   presetNameError,
   selectedExportPreset,
 } from "../export-presets";
@@ -57,5 +59,16 @@ describe("export presets", () => {
         name: "Balanced HEVC (NVENC)",
       }),
     ).toBe(initialExportPresetState);
+  });
+
+  it("round-trips presets through versioned storage", () => {
+    const state = exportPresetReducer(initialExportPresetState, {
+      type: "preset-new-started",
+    });
+    const saved = exportPresetReducer(state, { type: "preset-created", name: "Portable" });
+
+    persistExportPresetState(saved);
+
+    expect(loadExportPresetState()).toEqual(saved);
   });
 });

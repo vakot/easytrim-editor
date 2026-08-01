@@ -1,3 +1,5 @@
+import { STORAGE_KEYS, readStoredJson, writeStoredJson } from "@/lib/storage";
+
 export const DEFAULT_OPTIMIZED_ARGUMENTS =
   "-c:v hevc_nvenc -preset p3 -tune hq -rc vbr -cq 24 -b:v 0 -spatial_aq 1 -temporal_aq 1 -aq-strength 8 -pix_fmt yuv420p -c:a aac -b:a 160k -movflags +faststart";
 
@@ -34,6 +36,43 @@ export const initialExportPresetState: ExportPresetState = {
   argumentsText: DEFAULT_PRESET.argumentsText,
   nextPresetSequence: 0,
 };
+
+export function loadExportPresetState(): ExportPresetState {
+  const stored = readStoredJson<Partial<ExportPresetState>>(STORAGE_KEYS.exportPresets);
+  if (
+    !stored ||
+    !Array.isArray(stored.presets) ||
+    typeof stored.argumentsText !== "string" ||
+    (stored.selectedPresetId !== null && typeof stored.selectedPresetId !== "string") ||
+    typeof stored.nextPresetSequence !== "number"
+  ) {
+    return initialExportPresetState;
+  }
+
+  const presets = stored.presets.filter(
+    (preset): preset is ExportPreset =>
+      Boolean(preset) &&
+      typeof preset.id === "string" &&
+      typeof preset.name === "string" &&
+      typeof preset.argumentsText === "string",
+  );
+  const availablePresets = presets.length > 0 ? presets : initialExportPresetState.presets;
+  const selectedPresetId = availablePresets.some((preset) => preset.id === stored.selectedPresetId)
+    ? stored.selectedPresetId
+    : (availablePresets[0]?.id ?? null);
+  const selectedPreset = availablePresets.find((preset) => preset.id === selectedPresetId);
+
+  return {
+    presets: availablePresets,
+    selectedPresetId,
+    argumentsText: selectedPreset?.argumentsText ?? stored.argumentsText,
+    nextPresetSequence: Math.max(0, Math.floor(stored.nextPresetSequence)),
+  };
+}
+
+export function persistExportPresetState(state: ExportPresetState): void {
+  writeStoredJson(STORAGE_KEYS.exportPresets, state);
+}
 
 export function exportPresetReducer(
   state: ExportPresetState,

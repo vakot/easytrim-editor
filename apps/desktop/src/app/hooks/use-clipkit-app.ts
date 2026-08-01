@@ -3,7 +3,11 @@ import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { initialSessionState, sessionReducer } from "@/app/session-state";
 import type { TrimRange } from "@/domain/trim";
 import type { ExportToast } from "@/features/export";
-import { exportPresetReducer, initialExportPresetState } from "@/features/export/export-presets";
+import {
+  exportPresetReducer,
+  loadExportPresetState,
+  persistExportPresetState,
+} from "@/features/export/export-presets";
 import {
   checkMediaCapabilities,
   chooseSource,
@@ -28,12 +32,17 @@ export function useClipKitApp() {
   const [exportQueue, setExportQueue] = useState<ExportToast[]>([]);
   const [exportPresets, dispatchExportPreset] = useReducer(
     exportPresetReducer,
-    initialExportPresetState,
+    undefined,
+    loadExportPresetState,
   );
   const [audioPreviewUrls, setAudioPreviewUrls] = useState<Record<number, string>>({});
   const activeSourceIdRef = useRef<string | null>(null);
   const waveformJobSequence = useRef(0);
   const hasSource = session.source !== null;
+
+  useEffect(() => {
+    persistExportPresetState(exportPresets);
+  }, [exportPresets]);
 
   const inspectSource = useCallback((source: SourceSelection) => {
     activeSourceIdRef.current = source.sourceId;
