@@ -5,7 +5,7 @@ import {
   initialExportPresetState,
   presetNameError,
   selectedExportPreset,
-} from "./export-presets";
+} from "../export-presets";
 
 describe("export presets", () => {
   it("creates, selects, renames, updates, and deletes runtime presets", () => {
