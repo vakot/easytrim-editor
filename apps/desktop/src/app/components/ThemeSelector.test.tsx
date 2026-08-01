@@ -39,5 +39,6 @@ async function chooseTheme(
   optionName: string,
 ) {
   await user.click(screen.getByRole("combobox", { name: accessibleName }));
+  expect(screen.getByRole("listbox")).toHaveAttribute("data-align-trigger", "false");
   await user.click(screen.getByRole("option", { name: optionName }));
 }
