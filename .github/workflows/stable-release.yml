@@ -1,0 +1,94 @@
+name: Stable release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing version tag to publish
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: stable-release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  PNPM_VERSION: 11.18.0
+  NODE_VERSION: 22.13.0
+
+jobs:
+  release:
+    name: Stable release (${{ matrix.name }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux
+            os: ubuntu-22.04
+            args: ""
+          - name: Windows
+            os: windows-latest
+            args: ""
+          - name: macOS Intel
+            os: macos-15-intel
+            args: --target x86_64-apple-darwin
+          - name: macOS Apple Silicon
+            os: macos-latest
+            args: --target aarch64-apple-darwin
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.97.1
+          targets: ${{ startsWith(matrix.name, 'macOS') && 'x86_64-apple-darwin,aarch64-apple-darwin' || '' }}
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xdg-utils
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build and publish stable release
+        uses: tauri-apps/tauri-action@v1
+        with:
+          projectPath: apps/desktop
+          tauriScript: pnpm tauri
+          args: ${{ matrix.args }}
+          tagName: ${{ github.event.inputs.tag || github.ref_name }}
+          releaseName: ClipKit ${{ github.event.inputs.tag || github.ref_name }}
+          releaseBody: |
+            ClipKit ${{ github.event.inputs.tag || github.ref_name }}
+
+            Standalone desktop builds for Linux, Windows, macOS Intel, and macOS Apple Silicon.
+
+            Runtime requirement: install FFmpeg and make `ffmpeg` and `ffprobe` available on your system PATH.
+          releaseDraft: false
+          prerelease: false
+          generateReleaseNotes: true
