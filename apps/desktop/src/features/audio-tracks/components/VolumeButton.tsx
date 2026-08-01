@@ -1,6 +1,7 @@
 import { Volume2, VolumeX } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
 
 interface VolumeButtonProps {
   enabled: boolean;
@@ -9,6 +10,8 @@ interface VolumeButtonProps {
 }
 
 export function VolumeButton({ enabled, label, onClick }: VolumeButtonProps) {
+  const { t } = useTranslation();
+
   return (
     <Button
       variant="ghost"
@@ -16,7 +19,7 @@ export function VolumeButton({ enabled, label, onClick }: VolumeButtonProps) {
       type="button"
       aria-label={label}
       aria-pressed={enabled}
-      title={enabled ? `${label}: enabled` : `${label}: muted`}
+      title={t(enabled ? "audio.enabledState" : "audio.mutedState", { label })}
       onClick={onClick}
       className="text-primary"
     >

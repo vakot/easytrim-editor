@@ -1,5 +1,6 @@
 import type { AudioTrackState } from "@/app/session-state";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
 
 interface WaveformContentProps {
   track: AudioTrackState;
@@ -8,6 +9,8 @@ interface WaveformContentProps {
 }
 
 export function WaveformContent({ track, onRetry, onImageError }: WaveformContentProps) {
+  const { t } = useTranslation();
+
   switch (track.waveform.status) {
     case "idle":
     case "loading":
@@ -16,7 +19,7 @@ export function WaveformContent({ track, onRetry, onImageError }: WaveformConten
           className="absolute inset-0 grid place-items-center text-xs text-muted-foreground"
           role="status"
         >
-          Preparing waveform…
+          {t("audio.preparingWaveform")}
         </span>
       );
     case "ready":
@@ -33,9 +36,9 @@ export function WaveformContent({ track, onRetry, onImageError }: WaveformConten
     case "failed":
       return (
         <div className="absolute inset-0 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-          <span title={track.waveform.error.message}>Waveform unavailable</span>
+          <span title={track.waveform.error.message}>{t("audio.waveformUnavailable")}</span>
           <Button variant="ghost" size="xs" type="button" onClick={onRetry}>
-            Retry
+            {t("common.retry")}
           </Button>
         </div>
       );

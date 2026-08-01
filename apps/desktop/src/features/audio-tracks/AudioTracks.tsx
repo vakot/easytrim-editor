@@ -1,6 +1,7 @@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { timelinePercent } from "@/domain/trim";
+import { useTranslation } from "react-i18next";
 
 import { AudioLevelControl } from "./components/AudioLevelControl";
 import { AudioTrackRow } from "./components/AudioTrackRow";
@@ -26,16 +27,17 @@ export function AudioTracks({
   onPrepareWaveforms,
   onWaveformImageError,
 }: AudioTracksProps) {
+  const { t } = useTranslation();
   const startPercent = timelinePercent(range.startMicros, range.sourceDurationMicros);
   const endPercent = timelinePercent(range.endMicros, range.sourceDurationMicros);
   const playheadPercent = timelinePercent(playheadMicros, range.sourceDurationMicros);
   const enabledCount = tracks.filter((track) => track.enabled).length;
-  const outputSummary = audioOutputSummary(enabledCount, mergeAudio);
+  const outputSummary = audioOutputSummary(enabledCount, mergeAudio, t);
 
   useWaveformPreparation(tracks, onPrepareWaveforms);
 
   if (streams.length === 0) {
-    return <p className="text-sm text-muted-foreground">This source has no audio tracks.</p>;
+    return <p className="text-sm text-muted-foreground">{t("audio.noTracks")}</p>;
   }
 
   return (
@@ -47,16 +49,19 @@ export function AudioTracks({
         id="timeline-audio-title"
         className="font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
       >
-        Audio tracks
+        {t("audio.title")}
       </h3>
       <div className="grid min-w-0 grid-cols-[minmax(13rem,18rem)_minmax(0,1fr)] items-center gap-3">
         <div className="flex min-w-0 items-center gap-2 px-1 py-1">
-          <VolumeButton enabled={masterEnabled} label="All audio tracks" onClick={onToggleMaster} />
+          <VolumeButton
+            enabled={masterEnabled}
+            label={t("audio.allTracks")}
+            onClick={onToggleMaster}
+          />
           <AudioLevelControl
-            label="All audio tracks volume"
+            label={t("audio.allTracksVolume")}
             volumePercent={masterEnabled ? masterVolumePercent : 0}
             onChange={onMasterVolumeChange}
-            className="flex-1"
           />
         </div>
         <div className="flex min-w-0 items-center justify-between gap-4">
@@ -66,7 +71,7 @@ export function AudioTracks({
           <div className="flex shrink-0 items-center gap-2">
             <Checkbox id="merge-audio" checked={mergeAudio} onCheckedChange={onToggleMerge} />
             <Label htmlFor="merge-audio" className="text-xs text-muted-foreground">
-              Merge selected tracks
+              {t("audio.mergeSelected")}
             </Label>
           </div>
         </div>
@@ -76,7 +81,8 @@ export function AudioTracks({
         {streams.map((stream, index) => {
           const track = tracks.find((candidate) => candidate.streamIndex === stream.streamIndex);
           if (!track) return null;
-          const title = stream.title ?? stream.language ?? `Audio ${index + 1}`;
+          const title =
+            stream.title ?? stream.language ?? t("audio.defaultTrack", { number: index + 1 });
           return (
             <AudioTrackRow
               key={stream.streamIndex}

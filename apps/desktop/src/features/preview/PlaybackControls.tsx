@@ -14,6 +14,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { formatPlaybackTime } from "@/domain/playback";
 import type { TrimBoundary } from "@/domain/trim";
 import type { FrameRate } from "@/lib/tauri/media";
+import { useTranslation } from "react-i18next";
 
 interface PlaybackControlsProps {
   isPlaying: boolean;
@@ -34,19 +35,16 @@ export function PlaybackControls({
   onStepFrame,
   onSetSegmentBoundary,
 }: PlaybackControlsProps) {
+  const { t } = useTranslation();
+
   return (
-    <div
-      className="relative flex items-center justify-center"
-      aria-label="Preview playback controls"
-    >
+    <div className="relative flex items-center justify-center" aria-label={t("preview.controls")}>
       <div className="flex items-center gap-1.5">
         <TransportButton
-          label="Set segment start to current position"
+          label={t("preview.setStart")}
           shortcut="I"
           title={
-            canSetSegmentStart
-              ? "Set segment start to current position (I)"
-              : "Move before the source end to set segment start"
+            canSetSegmentStart ? t("preview.setStartShortcut") : t("preview.setStartUnavailable")
           }
           disabled={!canSetSegmentStart}
           onClick={() => onSetSegmentBoundary("start")}
@@ -54,38 +52,34 @@ export function PlaybackControls({
           <SquareArrowRight />
         </TransportButton>
         <TransportButton
-          label="Previous frame"
+          label={t("preview.previousFrame")}
           shortcut="ArrowLeft"
-          title="Previous frame (Left Arrow)"
+          title={t("preview.previousFrameShortcut")}
           onClick={() => onStepFrame(-1)}
         >
           <SkipBack />
         </TransportButton>
         <TransportButton
-          label={isPlaying ? "Pause" : "Play"}
+          label={isPlaying ? t("preview.pause") : t("preview.play")}
           shortcut="Space"
-          title={`${isPlaying ? "Pause" : "Play"} (Space)`}
+          title={isPlaying ? t("preview.pauseShortcut") : t("preview.playShortcut")}
           primary
           onClick={onTogglePlayback}
         >
           {isPlaying ? <Pause /> : <Play />}
         </TransportButton>
         <TransportButton
-          label="Next frame"
+          label={t("preview.nextFrame")}
           shortcut="ArrowRight"
-          title="Next frame (Right Arrow)"
+          title={t("preview.nextFrameShortcut")}
           onClick={() => onStepFrame(1)}
         >
           <SkipForward />
         </TransportButton>
         <TransportButton
-          label="Set segment end to current position"
+          label={t("preview.setEnd")}
           shortcut="O"
-          title={
-            canSetSegmentEnd
-              ? "Set segment end to current position (O)"
-              : "Move after the source start to set segment end"
-          }
+          title={canSetSegmentEnd ? t("preview.setEndShortcut") : t("preview.setEndUnavailable")}
           disabled={!canSetSegmentEnd}
           onClick={() => onSetSegmentBoundary("end")}
         >
@@ -151,8 +145,10 @@ export function PlaybackTimecode({
   sourceDurationMicros,
   frameRate,
 }: PlaybackTimecodeProps) {
+  const { t } = useTranslation();
+
   return (
-    <output className="font-mono text-xs text-foreground" aria-label="Current playback time">
+    <output className="font-mono text-xs text-foreground" aria-label={t("preview.currentTime")}>
       {formatPlaybackTime(currentMicros, frameRate)}
       <span className="text-muted-foreground">
         {" "}
@@ -171,9 +167,10 @@ export function TimelineTools({
   safeTrimFollowingEnabled,
   onToggleSafeTrimFollowing,
 }: TimelineToolsProps) {
+  const { t } = useTranslation();
   const title = safeTrimFollowingEnabled
-    ? "Safe trim following: on — playhead follows a trim border once caught"
-    : "Safe trim following: off — playhead stays in place";
+    ? t("preview.safeTrim.enabled")
+    : t("preview.safeTrim.disabled");
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -181,7 +178,7 @@ export function TimelineTools({
           variant={safeTrimFollowingEnabled ? "secondary" : "ghost"}
           size="icon-sm"
           type="button"
-          aria-label="Safe trim following"
+          aria-label={t("preview.safeTrim.label")}
           aria-pressed={safeTrimFollowingEnabled}
           onClick={onToggleSafeTrimFollowing}
           className={safeTrimFollowingEnabled ? "text-primary" : undefined}

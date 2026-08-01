@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { revealInExplorer } from "@/lib/tauri/media";
 
 import type { ExportToast } from "../types";
+import { useTranslation } from "react-i18next";
 
 const statusStyles = {
   rendering: "border-l-primary",
@@ -14,6 +15,8 @@ const statusStyles = {
 } as const;
 
 export function ExportQueue({ queue }: { queue: ExportToast[] }) {
+  const { t } = useTranslation();
+
   return (
     <section className="grid gap-3" aria-labelledby="export-queue-title">
       <div className="flex items-center justify-between">
@@ -21,13 +24,13 @@ export function ExportQueue({ queue }: { queue: ExportToast[] }) {
           id="export-queue-title"
           className="font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
         >
-          Export queue
+          {t("export.queue")}
         </h2>
         <span className="text-xs text-muted-foreground">{queue.length}</span>
       </div>
       {queue.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted-foreground">
-          No exports yet.
+          {t("export.empty")}
         </p>
       ) : (
         <div className="grid gap-2" role="status" aria-live="polite">
@@ -41,8 +44,9 @@ export function ExportQueue({ queue }: { queue: ExportToast[] }) {
 }
 
 function ExportQueueItem({ item }: { item: ExportToast }) {
+  const { t } = useTranslation();
   const isCompleted = item.status === "completed";
-  const statusLabel = item.status === "canceled" ? "Canceled" : `${item.percentage}%`;
+  const statusLabel = item.status === "canceled" ? t("export.canceled") : `${item.percentage}%`;
 
   function reveal() {
     if (isCompleted) void revealInExplorer(item.path).catch(() => undefined);
@@ -57,7 +61,7 @@ function ExportQueueItem({ item }: { item: ExportToast }) {
       )}
       role={isCompleted ? "button" : undefined}
       tabIndex={isCompleted ? 0 : undefined}
-      title={isCompleted ? "Reveal file in Explorer" : undefined}
+      title={isCompleted ? t("export.reveal") : undefined}
       onClick={reveal}
       onKeyDown={(event) => {
         if (isCompleted && (event.key === "Enter" || event.key === " ")) {
@@ -94,12 +98,15 @@ function ExportQueueItem({ item }: { item: ExportToast }) {
             event.stopPropagation();
             item.onCancel?.();
           }}
-          aria-label={`Cancel ${item.filename}`}
+          aria-label={t("export.cancelItem", { filename: item.filename })}
         >
           <X />
         </Button>
       ) : (
-        <span className="grid size-7 place-items-center" aria-label={`${item.status} export`}>
+        <span
+          className="grid size-7 place-items-center"
+          aria-label={t("export.statusLabel", { status: t(`export.status.${item.status}`) })}
+        >
           {item.status === "completed" ? (
             <Check className="size-4 text-emerald-400" />
           ) : item.status === "failed" ? (

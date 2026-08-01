@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useTranslation } from "react-i18next";
 
 interface ReturnConfirmationDialogProps {
   open: boolean;
@@ -19,21 +20,23 @@ export function ReturnConfirmationDialog({
   onCancel,
   onConfirm,
 }: ReturnConfirmationDialogProps) {
+  const { t } = useTranslation();
+
   return (
     <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onCancel()}>
       <DialogContent showCloseButton={false} className="sm:max-w-md">
         <DialogHeader>
-          <p className="text-xs font-bold tracking-[0.14em] text-primary uppercase">Leave editor</p>
-          <DialogTitle>Return to welcome page?</DialogTitle>
-          <DialogDescription>
-            Your current trim and audio settings will be cleared.
-          </DialogDescription>
+          <p className="text-xs font-bold tracking-[0.14em] text-primary uppercase">
+            {t("app.returnDialog.eyebrow")}
+          </p>
+          <DialogTitle>{t("app.returnDialog.title")}</DialogTitle>
+          <DialogDescription>{t("app.returnDialog.description")}</DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button variant="outline" onClick={onCancel}>
-            Cancel
+            {t("common.cancel")}
           </Button>
-          <Button onClick={onConfirm}>Return to welcome</Button>
+          <Button onClick={onConfirm}>{t("app.returnDialog.confirm")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

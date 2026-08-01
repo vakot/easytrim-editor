@@ -1,5 +1,6 @@
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 import {
   decibelsToVolumePercent,
@@ -23,12 +24,13 @@ export function AudioLevelControl({
   onChange,
   className,
 }: AudioLevelControlProps) {
+  const { t } = useTranslation();
   const decibels = volumePercentToDecibels(volumePercent);
 
   return (
-    <div className={cn("flex min-w-0 items-center gap-3", className)}>
+    <div className={cn("flex w-4/5 min-w-0 items-center", className)}>
       <Slider
-        className={cn("min-w-36 flex-1", styles.slider)}
+        className={cn("min-w-0 flex-1", styles.slider)}
         min={MIN_SLIDER_DECIBELS}
         max={MAX_SLIDER_DECIBELS}
         step={0.1}
@@ -36,9 +38,9 @@ export function AudioLevelControl({
         onValueChange={([value]) => onChange(decibelsToVolumePercent(value ?? decibels))}
         onDoubleClick={() => onChange(50)}
         aria-label={label}
-        title="0 dB is the original level"
+        title={t("audio.originalLevel")}
       />
-      <output className="w-16 shrink-0 text-right font-mono text-xs text-muted-foreground">
+      <output className="w-16 shrink-0 text-left font-mono text-xs text-muted-foreground">
         {formatDecibels(volumePercent)}
       </output>
     </div>

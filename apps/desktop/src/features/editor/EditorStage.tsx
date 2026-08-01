@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Group, Panel } from "react-resizable-panels";
+import { useTranslation } from "react-i18next";
 
 import { PaneResizeHandle } from "../../components/PaneResizeHandle";
 import { clampPlaybackMicros, frameDurationMicros } from "../../domain/playback";
@@ -46,6 +47,7 @@ export function EditorStage({
   onWaveformImageError,
   audioPreviewUrls,
 }: EditorStageProps) {
+  const { t } = useTranslation();
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioElementsRef = useRef(new Map<number, HTMLAudioElement>());
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -377,7 +379,7 @@ export function EditorStage({
         }
         pauseAudioPlayback();
         setIsPlaying(false);
-        setTransportError("Playback could not start.");
+        setTransportError(t("preview.playbackFailed"));
       });
   }
 
@@ -498,10 +500,10 @@ export function EditorStage({
       orientation="vertical"
       className="min-h-0 min-w-0 bg-background"
       resizeTargetMinimumSize={{ fine: 8, coarse: 24 }}
-      aria-label="Preview and timeline panes"
+      aria-label={t("preview.panes")}
     >
       <Panel id="preview-panel" minSize="14rem" className="min-h-0 min-w-0">
-        <div className="grid size-full min-h-0 place-items-center overflow-auto bg-black p-3">
+        <div className="grid size-full min-h-0 place-items-center overflow-auto bg-preview-surface p-3">
           <VideoPreview
             sourceId={sourceId}
             preview={preview}
@@ -529,7 +531,7 @@ export function EditorStage({
 
       <PaneResizeHandle
         id="preview-timeline-resize-handle"
-        label="Resize preview and timeline"
+        label={t("preview.resize")}
         orientation="horizontal"
       />
 

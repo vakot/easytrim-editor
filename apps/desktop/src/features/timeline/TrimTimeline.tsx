@@ -23,6 +23,7 @@ import {
 } from "../../domain/trim";
 import type { FrameRate } from "../../lib/tauri/media";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 import styles from "./components/timeline-handles.module.css";
 import type { TrimTimelineProps } from "./types";
 
@@ -46,6 +47,7 @@ export function TrimTimeline({
   onScrub,
   onScrubEnd,
 }: TrimTimelineProps) {
+  const { t } = useTranslation();
   const trackRef = useRef<HTMLDivElement>(null);
   const scrubPointerIdRef = useRef<number | null>(null);
   const trimDragRef = useRef<{
@@ -415,16 +417,16 @@ export function TrimTimeline({
             id="timeline-title"
             className="mb-0.5 font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
           >
-            Selected Segment
+            {t("timeline.selectedSegment")}
           </h2>
           {playbackTimecode}
         </div>
         <div className="justify-self-center">{playbackControls}</div>
-        <dl className="m-0 flex justify-self-end gap-5" aria-label="Trim time values">
-          <TimeValue label="Start" micros={range.startMicros} frameRate={frameRate} />
-          <TimeValue label="End" micros={range.endMicros} frameRate={frameRate} />
+        <dl className="m-0 flex justify-self-end gap-5" aria-label={t("timeline.trimValues")}>
+          <TimeValue label={t("timeline.start")} micros={range.startMicros} frameRate={frameRate} />
+          <TimeValue label={t("timeline.end")} micros={range.endMicros} frameRate={frameRate} />
           <TimeValue
-            label="Duration"
+            label={t("timeline.duration")}
             micros={range.endMicros - range.startMicros}
             frameRate={frameRate}
           />
@@ -439,7 +441,7 @@ export function TrimTimeline({
           className="text-[0.625rem] font-bold tracking-[0.08em] text-muted-foreground uppercase"
           data-slot="timeline-tools-title"
         >
-          Tools
+          {t("timeline.tools")}
         </span>
         <div className="flex justify-between font-mono text-[0.625rem] text-muted-foreground">
           {[0, 0.25, 0.5, 0.75, 1].map((fraction) => (
@@ -458,14 +460,14 @@ export function TrimTimeline({
           className="grid grid-flow-col grid-cols-4 grid-rows-2 items-center justify-start gap-1.5"
           data-slot="timeline-toolbar"
           role="toolbar"
-          aria-label="Video timeline tools"
+          aria-label={t("timeline.toolsLabel")}
         >
           {videoToolbar}
         </div>
         <div
           ref={trackRef}
           className={styles.track}
-          aria-label="Video trim timeline"
+          aria-label={t("timeline.trackLabel")}
           onPointerDown={(event) => {
             if (event.target !== event.currentTarget) {
               return;
@@ -499,11 +501,13 @@ export function TrimTimeline({
             type="button"
             style={{ left: `${playheadPercent}%` }}
             role="slider"
-            aria-label="Playback position"
+            aria-label={t("timeline.playbackPosition")}
             aria-valuemin={0}
             aria-valuemax={range.sourceDurationMicros}
             aria-valuenow={clampPlaybackMicros(playheadMicros, range.sourceDurationMicros)}
-            aria-valuetext={formatAccessibleTime(playheadMicros)}
+            aria-valuetext={t("timeline.accessibleSeconds", {
+              value: formatAccessibleTime(playheadMicros),
+            })}
             title={formatPlaybackTime(playheadMicros, frameRate)}
             onPointerDown={(event) => startScrub(event, event.currentTarget)}
             onPointerMove={moveScrub}
@@ -572,18 +576,23 @@ function SegmentDragHandle({
   onLostPointerCapture,
   onKeyDown,
 }: SegmentDragHandleProps) {
+  const { t } = useTranslation();
   const durationMicros = range.endMicros - range.startMicros;
   return (
     <button
       className={cn("segment-drag-handle", styles.segment)}
       type="button"
       role="slider"
-      aria-label="Move selected segment"
+      aria-label={t("timeline.moveSegment")}
       aria-valuemin={0}
       aria-valuemax={range.sourceDurationMicros - durationMicros}
       aria-valuenow={range.startMicros}
-      aria-valuetext={`Starts at ${formatAccessibleTime(range.startMicros)}`}
-      title="Drag to move the selected segment — hold Shift to snap"
+      aria-valuetext={t("timeline.startsAt", {
+        time: t("timeline.accessibleSeconds", {
+          value: formatAccessibleTime(range.startMicros),
+        }),
+      })}
+      title={t("timeline.moveSegmentHint")}
       data-dragging={dragging ? "true" : undefined}
       data-snap-active={snapPoint ? "true" : undefined}
       data-snap-point={snapPoint ?? undefined}
@@ -631,7 +640,8 @@ function TrimHandle({
   onDoubleClick,
   onKeyDown,
 }: TrimHandleProps) {
-  const label = boundary === "start" ? "Trim start" : "Trim end";
+  const { t } = useTranslation();
+  const label = boundary === "start" ? t("timeline.trimStart") : t("timeline.trimEnd");
   return (
     <button
       className={cn(
@@ -646,8 +656,8 @@ function TrimHandle({
       aria-valuemin={minimum}
       aria-valuemax={maximum}
       aria-valuenow={value}
-      aria-valuetext={formatAccessibleTime(value)}
-      title={`${label} — double-click to reset`}
+      aria-valuetext={t("timeline.accessibleSeconds", { value: formatAccessibleTime(value) })}
+      title={t("timeline.trimResetHint", { label })}
       data-dragging={dragging ? "true" : undefined}
       data-snap-active={snapActive ? "true" : undefined}
       style={{ left: `${percent}%` }}
@@ -715,5 +725,5 @@ function isPointerNearPlayhead(
 }
 
 function formatAccessibleTime(micros: number): string {
-  return `${(micros / 1_000_000).toFixed(3)} seconds`;
+  return (micros / 1_000_000).toFixed(3);
 }

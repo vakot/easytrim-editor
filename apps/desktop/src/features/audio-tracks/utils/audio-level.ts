@@ -1,4 +1,5 @@
 import type { AudioStream } from "@/lib/tauri/media";
+import type { TFunction } from "i18next";
 
 export const MIN_SLIDER_DECIBELS = -24;
 export const MAX_SLIDER_DECIBELS = 6;
@@ -23,18 +24,22 @@ export function formatDecibels(volumePercent: number): string {
   return `${decibels >= 0 ? "+" : ""}${decibels.toFixed(1)} dB`;
 }
 
-export function formatChannels(stream: AudioStream): string {
+export function formatChannels(stream: AudioStream, t: TFunction): string {
   if (stream.channelLayout) return stream.channelLayout;
   return stream.channels === undefined
-    ? "unknown layout"
-    : `${stream.channels} channel${stream.channels === 1 ? "" : "s"}`;
+    ? t("audio.unknownLayout")
+    : t("audio.channels", { count: stream.channels });
 }
 
-export function audioOutputSummary(enabledCount: number, mergeAudio: boolean): string {
-  if (enabledCount === 0) return "Video-only output";
+export function audioOutputSummary(
+  enabledCount: number,
+  mergeAudio: boolean,
+  t: TFunction,
+): string {
+  if (enabledCount === 0) return t("audio.output.videoOnly");
   if (mergeAudio && enabledCount > 1) {
-    return "Fast cut + audio merge — video stays copied; selected audio is encoded.";
+    return t("audio.output.merged");
   }
-  if (mergeAudio) return "One selected track — no merge is needed.";
-  return `${enabledCount} selected track${enabledCount === 1 ? "" : "s"} kept separately.`;
+  if (mergeAudio) return t("audio.output.oneTrack");
+  return t("audio.output.separate", { count: enabledCount });
 }

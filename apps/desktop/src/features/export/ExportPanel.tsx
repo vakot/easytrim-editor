@@ -5,8 +5,10 @@ import { Separator } from "@/components/ui/separator";
 import { OptimizedExportDialog } from "./components/OptimizedExportDialog";
 import { useExportController } from "./hooks/use-export-controller";
 import type { ExportPanelProps } from "./types";
+import { useTranslation } from "react-i18next";
 
 export function ExportPanel(props: ExportPanelProps) {
+  const { t } = useTranslation();
   const exportController = useExportController(props);
 
   return (
@@ -16,9 +18,9 @@ export function ExportPanel(props: ExportPanelProps) {
         type="button"
         onClick={() => void exportController.startFastCut()}
         aria-keyshortcuts="Control+S"
-        title="Save (Ctrl+S)"
+        title={t("export.saveShortcut")}
       >
-        Save
+        {t("export.save")}
       </Button>
       <OptimizedExportDialog
         open={exportController.isOptimizedOpen}
