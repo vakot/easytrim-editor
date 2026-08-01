@@ -184,7 +184,11 @@ describe("App", () => {
     });
     expect(screen.getByText("Tools")).toHaveAttribute("data-slot", "timeline-tools-title");
     expect(videoToolbar).toHaveAttribute("data-slot", "timeline-toolbar");
-    expect(videoToolbar).toHaveClass("auto-cols-[1.75rem]", "grid-rows-2", "gap-1.5");
+    expect(videoToolbar).toHaveClass(
+      "auto-cols-[1.75rem]",
+      "grid-rows-[repeat(2,1.75rem)]",
+      "gap-1.5",
+    );
     for (const tool of within(videoToolbar).getAllByRole("button")) {
       expect(tool).toHaveAttribute("data-size", "icon-sm");
     }
