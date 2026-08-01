@@ -63,6 +63,8 @@ jobs:
 
     if: ${{ github.event_name == 'push' || inputs.platform == 'all' || inputs.platform == matrix.id }}
     runs-on: ${{ matrix.os }}
+    env:
+      APPLE_SIGNING_ENABLED: ${{ secrets.APPLE_CERTIFICATE != '' }}
     steps:
       - name: Check out tagged source
         uses: actions/checkout@v4
@@ -96,7 +98,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Verify macOS signing configuration
-        if: startsWith(matrix.name, 'macOS')
+        if: startsWith(matrix.name, 'macOS') && env.APPLE_SIGNING_ENABLED == 'true'
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
@@ -115,7 +117,7 @@ jobs:
           test -n "$APPLE_TEAM_ID" || { echo "APPLE_TEAM_ID is not configured"; exit 1; }
 
       - name: Import macOS signing certificate
-        if: startsWith(matrix.name, 'macOS')
+        if: startsWith(matrix.name, 'macOS') && env.APPLE_SIGNING_ENABLED == 'true'
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
