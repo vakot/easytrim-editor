@@ -28,19 +28,19 @@ export function AudioLevelControl({
   const decibels = volumePercentToDecibels(volumePercent);
 
   return (
-    <div className={cn("flex w-4/5 min-w-0 items-center", className)}>
+    <div className={cn("flex w-full min-w-0 items-center gap-2", className)}>
       <Slider
         className={cn("min-w-0 flex-1", styles.slider)}
         min={MIN_SLIDER_DECIBELS}
         max={MAX_SLIDER_DECIBELS}
-        step={0.1}
+        step={0.5}
         value={[decibels]}
         onValueChange={([value]) => onChange(decibelsToVolumePercent(value ?? decibels))}
         onDoubleClick={() => onChange(50)}
         aria-label={label}
         title={t("audio.originalLevel")}
       />
-      <output className="w-16 shrink-0 text-left font-mono text-xs text-muted-foreground">
+      <output className="w-14 shrink-0 text-right font-mono text-xs text-muted-foreground">
         {formatDecibels(volumePercent)}
       </output>
     </div>

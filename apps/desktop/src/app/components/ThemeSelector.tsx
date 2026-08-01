@@ -1,13 +1,7 @@
 import { Monitor, Moon, Sun } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { useTheme } from "@/app/theme/use-theme";
 import type { ThemePreference } from "@/app/theme/theme";
 import { cn } from "@/lib/utils";
@@ -30,14 +24,13 @@ export function ThemeSelector({ className }: { className?: string }) {
   return (
     <Select value={preference} onValueChange={(theme) => setPreference(theme as ThemePreference)}>
       <SelectTrigger
-        className={cn("w-20 px-3", className)}
+        className={cn("w-16 px-3", className)}
         aria-label={t("theme.selection", { theme: currentThemeLabel })}
         title={t("theme.selection", { theme: currentThemeLabel })}
       >
         <CurrentIcon className="size-4" aria-hidden="true" />
-        <SelectValue className="sr-only" />
       </SelectTrigger>
-      <SelectContent align="end">
+      <SelectContent>
         {themeOptions.map(({ value, labelKey, Icon }) => (
           <SelectItem key={value} value={value}>
             <Icon className="size-4 text-muted-foreground" aria-hidden="true" />

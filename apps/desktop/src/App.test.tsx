@@ -150,7 +150,10 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "Next frame" })).toBeInTheDocument();
     const audioPlayhead = document.querySelector(".audio-playhead");
     expect(audioPlayhead).toBeInTheDocument();
-    expect(audioPlayhead?.parentElement).toHaveAttribute("aria-hidden", "true");
+    const audioPlayheadGrid = audioPlayhead?.closest('[data-slot="audio-playhead-grid"]');
+    expect(audioPlayheadGrid).toHaveAttribute("aria-hidden", "true");
+    expect(audioPlayheadGrid).toHaveClass("grid-cols-[var(--editor-track-grid-columns)]");
+    expect(audioPlayhead?.parentElement).toHaveAttribute("data-slot", "audio-playhead-track");
     expect(
       screen.getByRole("button", { name: "Set segment start to current position" }),
     ).toHaveAttribute("aria-keyshortcuts", "I");
@@ -212,6 +215,49 @@ describe("App", () => {
       screen.queryByText("Import a video to inspect its source and prepare a precise cut."),
     ).not.toBeInTheDocument();
     expect(screen.getByRole("toolbar", { name: "Application toolbar" })).toBeInTheDocument();
+  });
+
+  it("uses Escape to show and then dismiss the return confirmation dialog", async () => {
+    mocks.chooseSource.mockResolvedValue(selection);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Select video" }));
+    expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
+
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("opens a track volume control from the volume button hover and focus", async () => {
+    mocks.chooseSource.mockResolvedValue(selection);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Select video" }));
+    await screen.findByRole("heading", { name: "holiday.mp4" });
+    const volumeButton = screen.getByRole("button", { name: "Mute eng" });
+    expect(volumeButton).not.toHaveAttribute("title");
+
+    await user.hover(volumeButton);
+    expect(await screen.findByRole("slider", { name: "eng volume" })).toBeInTheDocument();
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("Mute");
+
+    await user.unhover(volumeButton);
+    await waitFor(() => {
+      expect(screen.queryByRole("slider", { name: "eng volume" })).not.toBeInTheDocument();
+    });
+
+    volumeButton.focus();
+    expect(await screen.findByRole("slider", { name: "eng volume" })).toBeInTheDocument();
+
+    volumeButton.blur();
+    await waitFor(() => {
+      expect(screen.queryByRole("slider", { name: "eng volume" })).not.toBeInTheDocument();
+    });
   });
 
   it("prepares aligned waveforms and keeps audio output choices in memory", async () => {

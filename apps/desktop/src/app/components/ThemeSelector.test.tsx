@@ -15,6 +15,7 @@ describe("ThemeSelector", () => {
     );
 
     const root = document.documentElement;
+    expect(screen.getByRole("combobox").querySelectorAll("svg")).toHaveLength(2);
     expect(root).not.toHaveClass("light", "dark");
     expect(root).toHaveAttribute("data-theme", "light");
 
@@ -38,5 +39,7 @@ async function chooseTheme(
   optionName: string,
 ) {
   await user.click(screen.getByRole("combobox", { name: accessibleName }));
+  expect(screen.getByRole("listbox")).toHaveAttribute("data-align", "start");
+  expect(screen.getByRole("listbox")).toHaveAttribute("data-align-trigger", "false");
   await user.click(screen.getByRole("option", { name: optionName }));
 }

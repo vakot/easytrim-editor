@@ -1,8 +1,7 @@
 import type { AudioTrackState } from "@/app/session-state";
-import { useState } from "react";
-import { useTranslation } from "react-i18next";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import type { AudioStream } from "@/lib/tauri/media";
+import { useTranslation } from "react-i18next";
 
 import { WAVEFORM_RENDER_WIDTH } from "../hooks/use-waveform-preparation";
 import { formatChannels } from "../utils/audio-level";
@@ -35,33 +34,33 @@ export function AudioTrackRow({
   onWaveformImageError,
 }: AudioTrackRowProps) {
   const { t } = useTranslation();
-  const [isLevelOpen, setIsLevelOpen] = useState(false);
 
   return (
-    <div className="grid min-w-0 grid-cols-[minmax(13rem,18rem)_minmax(0,1fr)] gap-3">
-      <HoverCard open={isLevelOpen} onOpenChange={setIsLevelOpen} openDelay={0} closeDelay={100}>
-        <HoverCardTrigger asChild>
-          <div
-            className="flex min-w-0 items-center gap-2 rounded-lg px-1 py-1 hover:bg-muted/40"
-            onMouseEnter={() => setIsLevelOpen(true)}
-          >
+    <div className="grid min-w-0 grid-cols-[var(--editor-track-grid-columns)] gap-3">
+      <HoverCard openDelay={0} closeDelay={100}>
+        <div className="flex min-w-0 items-center gap-2 rounded-lg px-1 py-1 hover:bg-muted/40">
+          <HoverCardTrigger asChild>
             <VolumeButton
               enabled={track.enabled}
               label={t(track.enabled ? "audio.muteTrack" : "audio.enableTrack", { title })}
               onClick={onToggle}
             />
-            <div className="min-w-0 leading-tight">
-              <p className="truncate text-sm font-semibold" title={title}>
-                {title}
-              </p>
-              <p className="truncate text-xs leading-5 text-muted-foreground">
-                #{stream.streamIndex} · {stream.codecName.toUpperCase()} ·{" "}
-                {formatChannels(stream, t)}
-              </p>
-            </div>
+          </HoverCardTrigger>
+          <div className="min-w-0 leading-tight">
+            <p className="truncate text-sm font-semibold" title={title}>
+              {title}
+            </p>
+            <p className="truncate text-xs leading-5 text-muted-foreground">
+              #{stream.streamIndex} · {stream.codecName.toUpperCase()} · {formatChannels(stream, t)}
+            </p>
           </div>
-        </HoverCardTrigger>
-        <HoverCardContent side="top" align="start" sideOffset={8} className="w-80">
+        </div>
+        <HoverCardContent
+          side="right"
+          align="center"
+          sideOffset={4}
+          className="w-[calc(var(--editor-track-controls-width)-1.5rem)]"
+        >
           <AudioLevelControl
             label={t("audio.trackVolume", { title })}
             volumePercent={track.enabled ? track.volumePercent : 0}

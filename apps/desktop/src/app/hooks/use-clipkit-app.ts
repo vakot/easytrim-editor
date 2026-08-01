@@ -261,17 +261,22 @@ export function useClipKitApp() {
     }
 
     function handleEscape(event: KeyboardEvent) {
-      if (event.key === "Escape" && !isNativeDialogOpen) {
-        if (isReturnConfirmationOpen) {
-          setIsReturnConfirmationOpen(false);
-        } else {
-          requestReturnToWelcome();
-        }
+      if (event.key !== "Escape" || isNativeDialogOpen) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (isReturnConfirmationOpen) {
+        setIsReturnConfirmationOpen(false);
+      } else {
+        requestReturnToWelcome();
       }
     }
 
-    window.addEventListener("keydown", handleEscape);
-    return () => window.removeEventListener("keydown", handleEscape);
+    window.addEventListener("keydown", handleEscape, true);
+    return () => window.removeEventListener("keydown", handleEscape, true);
   }, [hasSource, isNativeDialogOpen, isReturnConfirmationOpen, requestReturnToWelcome]);
 
   return {

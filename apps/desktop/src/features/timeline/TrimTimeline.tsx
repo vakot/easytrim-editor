@@ -434,7 +434,7 @@ export function TrimTimeline({
       </div>
 
       <div
-        className="mt-3 mb-1 grid min-w-0 grid-cols-[8.75rem_minmax(0,1fr)] items-end gap-3"
+        className="mt-3 mb-1 grid min-w-0 grid-cols-[var(--editor-track-grid-columns)] items-end gap-3"
         aria-hidden="true"
       >
         <span
@@ -453,11 +453,11 @@ export function TrimTimeline({
       </div>
 
       <div
-        className="grid min-w-0 grid-cols-[8.75rem_minmax(0,1fr)] items-center gap-3"
+        className="mb-2 grid min-w-0 grid-cols-[var(--editor-track-grid-columns)] items-center gap-3"
         data-slot="timeline-row"
       >
         <div
-          className="grid grid-flow-col grid-cols-4 grid-rows-2 items-center justify-start gap-1.5"
+          className="grid w-full grid-flow-col grid-cols-4 grid-rows-2 items-center justify-start gap-1.5"
           data-slot="timeline-toolbar"
           role="toolbar"
           aria-label={t("timeline.toolsLabel")}

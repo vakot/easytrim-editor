@@ -17,7 +17,7 @@
   display: flex;
   width: max-content;
   height: 100%;
-  animation: brand-scroll 55s linear infinite;
+  animation: brand-scroll 240s linear infinite;
   will-change: transform;
 }
 

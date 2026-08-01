@@ -33,7 +33,7 @@ export function AppToolbar({
       aria-label={t("app.toolbar")}
     >
       <button
-        className="w-fit font-heading text-xl font-bold tracking-[0.08em] text-primary outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring"
+        className="w-fit font-heading text-4xl font-bold tracking-[0.08em] text-primary outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring"
         type="button"
         aria-label={t("app.returnToWelcome")}
         onClick={onReturnToWelcome}
@@ -44,7 +44,7 @@ export function AppToolbar({
       <div className="flex items-center justify-end gap-3">
         <ThemeSelector />
         <LanguageSelector className="w-36" />
-        <Button variant="outline" size="lg" onClick={onChooseSource} disabled={isChoosingSource}>
+        <Button variant="outline" onClick={onChooseSource} disabled={isChoosingSource}>
           {isChoosingSource ? t("import.opening") : t("import.openVideo")}
         </Button>
         {session.status === "ready" && session.source?.media && session.source.trim ? (

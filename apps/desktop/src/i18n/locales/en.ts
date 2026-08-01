@@ -142,6 +142,8 @@ export const en = {
     trackVolume: "{{title}} volume",
     enabledState: "{{label}}: enabled",
     mutedState: "{{label}}: muted",
+    mute: "Mute",
+    unmute: "Unmute",
     originalLevel: "0 dB is the original level",
     preparingWaveform: "Preparing waveform…",
     waveformUnavailable: "Waveform unavailable",
@@ -151,7 +153,10 @@ export const en = {
     channels_other: "{{count}} channels",
     output: {
       videoOnly: "Video-only output",
-      merged: "Fast cut + audio merge — video stays copied; selected audio is encoded.",
+      merged_one: "{{count}} selected track is merged into one track; selected audio is encoded.",
+      merged_few: "{{count}} selected tracks are merged into one track; selected audio is encoded.",
+      merged_other:
+        "{{count}} selected tracks are merged into one track; selected audio is encoded.",
       oneTrack: "One selected track — no merge is needed.",
       separate_one: "{{count}} selected track kept separately.",
       separate_few: "{{count}} selected tracks kept separately.",

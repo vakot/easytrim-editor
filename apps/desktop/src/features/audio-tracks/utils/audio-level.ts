@@ -38,7 +38,7 @@ export function audioOutputSummary(
 ): string {
   if (enabledCount === 0) return t("audio.output.videoOnly");
   if (mergeAudio && enabledCount > 1) {
-    return t("audio.output.merged");
+    return t("audio.output.merged", { count: enabledCount });
   }
   if (mergeAudio) return t("audio.output.oneTrack");
   return t("audio.output.separate", { count: enabledCount });

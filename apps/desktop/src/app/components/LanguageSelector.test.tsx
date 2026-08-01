@@ -16,6 +16,10 @@ describe("LanguageSelector", () => {
     render(<LanguageSelector className="w-36" />);
 
     await user.click(screen.getByRole("combobox", { name: "Language" }));
+    const listbox = screen.getByRole("listbox");
+    expect(listbox).toHaveAttribute("data-align", "start");
+    expect(listbox).toHaveAttribute("data-align-trigger", "false");
+    expect(listbox.querySelector('[data-slot="select-viewport"]')).toHaveClass("p-1");
     await user.click(screen.getByRole("option", { name: "Slovenčina" }));
 
     expect(i18n.resolvedLanguage).toBe("sk");
