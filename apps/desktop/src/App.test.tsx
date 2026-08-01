@@ -245,7 +245,7 @@ describe("App", () => {
     expect(await screen.findByRole("slider", { name: "eng volume" })).toBeInTheDocument();
 
     volumeButton.focus();
-    expect(screen.getByRole("slider", { name: "eng volume" })).toBeInTheDocument();
+    expect(await screen.findByRole("slider", { name: "eng volume" })).toBeInTheDocument();
   });
 
   it("prepares aligned waveforms and keeps audio output choices in memory", async () => {

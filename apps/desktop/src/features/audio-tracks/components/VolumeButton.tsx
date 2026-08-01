@@ -1,4 +1,5 @@
 import { Volume2, VolumeX } from "lucide-react";
+import { forwardRef } from "react";
 import type { FocusEventHandler, PointerEventHandler } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -12,17 +13,15 @@ interface VolumeButtonProps {
   onFocus?: FocusEventHandler<HTMLButtonElement>;
 }
 
-export function VolumeButton({
-  enabled,
-  label,
-  onClick,
-  onPointerEnter,
-  onFocus,
-}: VolumeButtonProps) {
+export const VolumeButton = forwardRef<HTMLButtonElement, VolumeButtonProps>(function VolumeButton(
+  { enabled, label, onClick, onPointerEnter, onFocus },
+  ref,
+) {
   const { t } = useTranslation();
 
   return (
     <Button
+      ref={ref}
       variant="ghost"
       size="icon-sm"
       type="button"
@@ -37,4 +36,4 @@ export function VolumeButton({
       {enabled ? <Volume2 /> : <VolumeX />}
     </Button>
   );
-}
+});
