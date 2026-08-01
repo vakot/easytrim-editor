@@ -1,293 +1,229 @@
 # ClipKit — FFmpeg UI MVP plan
 
-## Goal
+## Goal and current status
 
-Build a small Windows-first video cutting application with a single, focused editing screen:
+ClipKit is a Windows-first, single-clip video cutter built around FFmpeg. The MVP editing and
+export workflow is implemented through phases 0–5. This document now records the product
+contract, completed scope, measured default preset, and the work that remains before a packaged
+release.
 
-- import a known video file by drag-and-drop or file picker;
-- preview the complete source, using a temporary lower-quality proxy when native playback cannot handle the source format;
-- select one continuous segment by dragging the start and end handles on a timeline;
-- show the source audio tracks as separate timeline rows with waveform previews;
-- enable or disable individual audio tracks;
-- export the selected segment either as a fast stream-copy cut or as an optimized re-encode;
-- keep all editing state and named presets in memory only for the current run.
+The application supports:
 
-The first version is intentionally a single-clip editor. No project files, autosave, edit history, multi-clip timeline, effects, or cloud integrations are in scope.
+- importing or replacing one known video file through a picker or drag and drop;
+- previewing the complete source directly or through a temporary compatibility proxy;
+- selecting one continuous segment with start/end handles and a draggable playhead;
+- previewing, muting, mixing, and adjusting every discovered audio stream;
+- saving the selected segment through fast video-copy or optimized re-encoding;
+- managing named optimized-render presets for the current process only;
+- tracking queued exports, progress, cancellation, failure, completion, and reveal-in-Explorer.
 
-## Proposed stack
+No project files, autosave, edit history, multi-clip timeline, effects, cloud integration, or
+persistent preferences are in scope.
 
-### Application shell and native core
+## Stack
 
-**Rust + Tauri 2**
+- **Tauri 2 + Rust** own native dialogs, opaque source/output registration, FFprobe parsing,
+  FFmpeg argument construction, process lifecycle, cancellation, temporary artifacts, and path
+  validation.
+- **React + TypeScript + Vite** own the single-screen UI, in-memory editor/preset state, timeline,
+  audio controls, export configuration, and history.
+- **pnpm workspace + Cargo workspace** provide one repository-level quality workflow.
+- **FFmpeg + FFprobe** provide inspection, proxies, audio previews, waveforms, stream-copy cuts,
+  optimized rendering, and progress records.
 
-- small Windows binary and low idle overhead;
-- native file dialogs, drag-and-drop, process management, cancellation, and filesystem access;
-- Rust owns all FFmpeg execution and validates user-provided arguments before starting a process;
-- temporary preview and waveform files live in the OS temporary directory and are removed on exit when possible.
+The frontend receives opaque source/output IDs. It does not construct FFmpeg commands or receive
+general filesystem/process authority. FFmpeg is invoked directly with an argument array, never
+through a shell.
 
-### UI
+## Product flow
 
-**React + TypeScript + Vite**
+1. The welcome page accepts a video from the picker or drag and drop.
+2. Import registers the path natively and returns an opaque source ID plus display name.
+3. FFprobe supplies canonical metadata and global stream indexes.
+4. The source is previewed directly; playback failure triggers a temporary 720p-or-smaller proxy.
+5. The editor keeps source time in integer microseconds and displays frame-based timecode.
+6. Start/end handles select `[trim_start, trim_end)` with a minimum one-second segment.
+7. Every audio stream gets an aligned waveform and independent mute/volume control. Master gain is
+   applied separately without rewriting per-track values.
+8. `Save` (`Ctrl+S`) opens the fast-cut save dialog. `Export` (`Ctrl+E`) opens optimized settings,
+   validates them natively, previews the assembled command, then opens the save dialog.
+9. Export history remains visible for the process lifetime. Active exports can be cancelled and
+   completed outputs can be revealed in Explorer.
+10. Importing another source resets source-bound trim/audio state without confirmation and keeps
+    runtime presets and export history.
 
-- TypeScript and Vite remain directly reviewable by the project owner;
-- React is widely understood by coding agents and suitable for a small reducer-driven single-screen workflow;
-- timeline handles and audio-track toggles require no external state-management library;
-- CSS-based layout and controls to keep the visual system simple and fast;
-- compact top toolbar for the direct `Open video` action and in-memory preset control; no
-  dropdown navigation or context menus.
+Returning to the welcome page or restarting the application discards the editing session. No
+project, preset, editor, or path state is written to OS configuration storage.
 
-### Repository workspace
+## Preview and timeline contracts
 
-**pnpm workspace + Cargo workspace**
+- Direct source playback is preferred; generated proxy media is preview-only and never exported.
+- Preview audio streams are decoded once to temporary audio-only assets and mixed at runtime.
+- Visual playhead movement uses `requestAnimationFrame`; canonical state commits are throttled.
+- Playback restarts only after the committed seek settles. Duplicate media seeks are ignored.
+- Space toggles playback; Left/Right step frames; `I`/`O` move segment start/end to the playhead.
+- Shift enables magnetic snapping for playhead/trim/segment movement according to the editor rules.
+- Safe trim following is optional and shares one directional-following implementation.
+- Source replacement cancels source-bound preview/waveform work and ignores stale completions.
 
-- root scripts provide one entry point for formatting, linting, type checking, tests, and builds;
-- `apps/desktop` contains the coupled React frontend and Tauri native application;
-- shared packages are introduced only when a second real consumer exists;
-- JavaScript and Rust dependency versions are pinned through committed lockfiles.
+## Audio contract
 
-### Agent development skills
+- FFprobe global audio stream indexes are preserved end to end.
+- Every discovered stream starts enabled at its original level.
+- `0%`/below `-24 dB` is muted; unmuting a zero-level track restores a safe `-12 dB` level.
+- Track gain supports `0–200%`; master gain scales preview and output independently.
+- Disabled tracks are not mapped and are never included in merge operations.
+- Merge means one normalized stereo output stream, not mono.
+- Waveform failure is local, retryable, and does not disable export.
 
-Project-local skills under `.agents/skills/` define the implementation and review standards:
+## Export contracts
 
-- `clipkit-tauri-rust` owns Rust, Tauri, IPC, process lifecycle, security, temporary files, and native validation;
-- `clipkit-ffmpeg-pipeline` owns FFprobe metadata, FFmpeg command contracts, trim/audio correctness, presets, and media tests;
-- `clipkit-react-interface` owns the React/TypeScript single-screen UX, editor state, accessibility, frontend performance, and UI tests.
+Both routes export only `[trim_start, trim_end)` and explicitly map the selected global streams.
+The native save dialog authorizes overwrite of the selected output via `-y`.
 
-Cross-cutting work uses every applicable skill. This is especially important because Rust/Tauri implementation is AI-owned while the React/TypeScript surface remains reviewable by the project owner.
+### Save (fast route)
 
-Repository-wide conventions are auto-loaded through `AGENTS.md`. Shared rules under `.agents/rules/` own engineering, structure, runtime/security, quality, and Git/PR policy so skills remain focused and do not duplicate guidance.
+- Copies source video without changing resolution or frame rate.
+- Copies selected audio when gain is unchanged and merge is unnecessary.
+- Re-encodes only selected audio when gain changes or multiple tracks are merged.
+- Produces video-only output when no audio tracks are selected.
+- Uses a keyframe-constrained stream-copy start and is not described as frame-accurate.
 
-### Media toolchain
+### Export (optimized route)
 
-**FFmpeg + FFprobe**
+- Re-encodes the selected interval.
+- Offers source, 2160p, 1440p, and 1080p bounds only when they do not upscale.
+- Preserves display aspect ratio, handles rotated display dimensions, and uses even scaled sizes.
+- Keeps frame rate independent from resolution, including common fractional rates.
+- Applies selected audio gain/mapping or one normalized stereo merge.
+- Accepts codec, quality, encoder-preset, tuning, bitrate, and compatible muxer options.
 
-- FFprobe JSON is the source of truth for duration, dimensions, frame rate, codecs, stream indexes, language, and audio-channel layout;
-- FFmpeg performs proxy generation, waveform generation, stream-copy exports, and optimized exports;
-- distribute a tested FFmpeg/FFprobe build with the application after checking the chosen build's LGPL/GPL obligations.
+Rust rejects custom arguments that attempt to own input/output paths, trims, response files,
+stream maps, filters, scaling, frame-rate conversion, channel layout, output format, overwrite
+policy, or positional outputs. The command preview is assembled by the same native builder with
+`<source>` and `<output>` placeholders, so private paths are not exposed.
 
-### Preview strategy
+## Runtime presets
 
-1. Try the source file directly in the embedded video element.
-2. If the WebView cannot play it, generate a temporary 720p-or-smaller H.264/AAC proxy with FFmpeg.
-3. Keep timeline positions in integer source microseconds; the proxy is only a viewing aid and is never used as the export source.
-
-This avoids forcing every input through a full conversion while still allowing uncommon codecs and containers to be reviewed.
-
-## Main-screen UX
-
-The main screen contains only the controls needed for the current cut:
-
-1. **Import flow** — before selection, a full-workspace landing view accepts a drop or picker
-   action beneath a concise product introduction. The introduction disappears after selection;
-   `Open video` remains directly available in the compact top toolbar, and dragging a file over
-   the editor shows a clear replacement overlay.
-2. **Preview** — an undecorated video surface with compact app-owned play/pause, previous-frame,
-   next-frame, set-segment-start/end, current-time, and duration controls. Space toggles playback,
-   Left/Right Arrow steps frames, and `I`/`O` set segment boundaries at the playhead.
-3. **Timeline** — one video row and one row for each audio stream. A shaded region identifies the selected export segment. Dragging the left or right handle trims only the start or end. The playback marker is independently draggable and continuously seeks the preview while moving.
-4. **Audio rows** — track label, codec/channel information, waveform, and an enabled checkbox. Track ordering follows FFprobe stream order.
-5. **Export settings** — output name, optimized resolution/framerate controls, merge-audio toggle, and a named in-memory FFmpeg preset field.
-6. **Two primary buttons** — `Fast cut` and `Optimized render`, always visible and side by side. No submenu is required to choose the export route.
-
-Importing another file immediately replaces the current source, resets trim handles and audio selections, and preserves the currently selected FFmpeg preset in memory.
-
-After import, source metadata and audio-stream details occupy one narrow, vertically scrollable
-left sidebar. The remaining main area is reserved for the video preview and timeline.
-
-All discovered audio tracks start enabled. A failed replacement remains the current failed import and does not restore the previous source. Waveform generation failure is non-blocking and can be retried per track.
-
-The output-name field is required. It starts from the source filename plus a route-specific suffix, for example `clip_fast.mkv` or `clip_optimized.mp4`. The fast route preserves a compatible source extension where possible. The name is validated as a filename and the destination is selected immediately before rendering.
-
-## State and persistence
-
-Use one in-memory application state object:
-
-- source path and FFprobe metadata;
-- proxy path and waveform paths;
-- `trimStart` and `trimEnd` in integer source microseconds;
-- audio stream enabled flags and merge-audio flag;
-- optimized width/height and output frame rate;
-- current FFmpeg argument string;
-- named presets held in a runtime map;
-- active operation, progress, cancellation state, and error message.
-
-Do not write settings, projects, presets, or restore data to an OS configuration directory. Presets are available only until the application exits. Temporary media artifacts are implementation cache, not user state.
-
-## Export behavior
-
-### Fast cut
-
-Default behavior is stream copy:
-
-```text
-ffmpeg -ss <start> -i <source> -t <duration> -map 0:<selected-streams> -c copy -avoid_negative_ts make_zero <output>
-```
-
-Important behavior to expose in the UI:
-
-- video and audio remain at the source resolution and frame rate;
-- the cut is fast and does not re-encode selected streams;
-- the start may snap to a nearby keyframe because exact arbitrary-frame trimming is not generally possible with stream copy;
-- disabled audio tracks are removed through `-map` selection;
-- if `Merge audio into one channel` is enabled, only the audio stream(s) need to be re-encoded while video remains copied. This is a fast/hybrid export and should be labeled accordingly.
-
-The command builder must never pass the original user string into the shell. It should construct an argument array and invoke FFmpeg directly.
-
-### Optimized render
-
-The optimized route re-encodes only the selected interval and allows independent resolution and frame-rate choices:
-
-- source resolution, 4K → 2K, 4K → 1080p, or a custom supported size;
-- source frame rate or a separately selected output frame rate;
-- individual audio stream selection;
-- optional downmix/merge to one audio stream;
-- a raw FFmpeg argument string supplied by the user, saved under a runtime-only named preset.
-
-The safest MVP contract for custom arguments is: the user supplies codec/filter/quality arguments, while the application owns input, trim, stream mapping, output path, and output container flags. The UI should show the assembled command preview so mistakes are visible before rendering.
+- The initial preset is selected on startup.
+- Presets can be created, selected, renamed/updated, and deleted.
+- Presets and the current argument text survive source replacement.
+- Presets exist only in React process memory and are discarded on reload/application exit.
+- Names are required, unique within the session, and limited to 64 characters.
 
 ## Default optimized preset
 
-Use a hardware-aware balanced preset aimed at small files, close visual quality, and high throughput on the confirmed RTX 4070 SUPER:
+The measured balanced default for the current RTX 4070 SUPER system is:
 
 ```text
--c:v hevc_nvenc -preset p5 -tune hq -rc vbr -cq 24 -b:v 0 -spatial_aq 1 -temporal_aq 1 -aq-strength 8 -pix_fmt yuv420p -c:a aac -b:a 160k -movflags +faststart
+-c:v hevc_nvenc -preset p3 -tune hq -rc vbr -cq 24 -b:v 0 -spatial_aq 1 -temporal_aq 1 -aq-strength 8 -pix_fmt yuv420p -c:a aac -b:a 160k -movflags +faststart
 ```
 
-Notes:
+### Benchmark record (2026-08-01)
 
-- HEVC NVENC is a good first default for size/quality/speed balance on this GPU.
-- H.264 NVENC should be offered as a compatibility preset later.
-- AV1 NVENC can be added as an optional smaller-file preset after testing target-player compatibility.
-- The exact CQ value must be validated against representative 4K/1080p samples; the preset is an initial product default, not a quality guarantee.
-- The UI should show a clear fallback/error if the installed FFmpeg build lacks `hevc_nvenc`.
+Environment:
 
-## Audio waveform approach
+- AMD Ryzen 7 5700X3D;
+- NVIDIA GeForce RTX 4070 SUPER, 12 GB, driver 610.74;
+- source: local 3840×2160 HEVC, `yuv420p`, 60 fps screen recording;
+- workload: first 10 seconds, source resolution, video-only encode, CQ 24, identical AQ settings;
+- temporary outputs were probed and removed after measurement.
 
-For each audio stream, generate a compact temporary waveform image or sampled amplitude data with FFmpeg. Start with waveform previews because they are inexpensive and readable at a glance; add spectrogram rendering only if it proves materially useful.
+| NVENC preset | Reported speed | Reported fps |    10 s output size |
+| ------------ | -------------: | -----------: | ------------------: |
+| P5           |         0.919× |        55.40 |     5,330,727 bytes |
+| P4           |          1.02× |        61.58 |     5,323,836 bytes |
+| **P3**       |      **1.56×** |    **93.97** | **5,522,645 bytes** |
+| P2           |          1.70× |       102.17 |     5,685,835 bytes |
+| P1           |          2.27× |       136.07 |     5,220,725 bytes |
 
-The waveform renderer should:
-
-- use source duration to align pixels to the same timeline scale as video;
-- generate one asset per audio stream;
-- downsample to the visible timeline width rather than retaining full-resolution samples;
-- regenerate only when a new source is imported or the timeline size changes substantially.
-
-## Suggested Rust command surface
-
-Keep the Tauri boundary small and typed:
-
-- `choose_source() -> SourceSelection`;
-- `inspect_media(source_id) -> MediaInfo`;
-- `prepare_source_preview(source_id) -> PreviewInfo`;
-- `prepare_proxy_preview(source_id) -> PreviewInfo`;
-- `prepare_waveforms(source_id, job_id, stream_indexes, width) -> WaveformResult[]`;
-- `choose_output_path(default_name) -> Path`;
-- `render_fast(request) -> OperationId`;
-- `render_optimized(request) -> OperationId`;
-- `cancel_operation(operation_id)`;
-- `subscribe_operation_progress(operation_id)`.
-
-Source replacement cancels source-bound preview and waveform helpers through the active source
-token; no separate frontend cancellation command is needed for replacement.
-
-All FFmpeg processes should be cancellable, capture stderr for diagnostics, and parse `-progress pipe:1` into elapsed time, total duration, speed, and completion percentage.
+On a separate five-second comparison, P5 measured SSIM `0.998070` and P3 measured `0.998012`
+against the compressed source. P3 is selected because it materially improves throughput while
+remaining nearly identical to P5 on this sample. This is one benchmark, not a universal quality or
+speed guarantee. A representative local 4K H.264 source was not available.
 
 ## Implementation phases
 
 ### Phase 0 — repository and toolchain bootstrap
 
-- initialize the Rust/Tauri/React project;
-- add formatting, linting, and a basic Windows development README;
-- add an FFmpeg capability check and a clear missing-binary error;
-- establish the in-memory state model.
+Status: complete.
+
+- Tauri/React monorepo, strict tooling, development scripts, in-memory session model, and media
+  capability status.
 
 ### Phase 1 — import and inspect
 
-- implement file picker and drag-and-drop for supported video containers;
-- run FFprobe and render source metadata;
-- replace an existing source immediately on new import;
-- verify that no project or configuration files are created.
+Status: complete.
 
-### Phase 2 — preview and trim UI
+- Picker/drop import, FFprobe metadata, immediate replacement, opaque native source registration,
+  and no project/config persistence.
 
-Status: implemented on the Phase 2 topic branch; real-file WebView codec coverage remains part of
-the validation matrix.
+### Phase 2 — preview and trim
 
-- direct source preview with proxy fallback;
-- timeline scale, playback cursor, and draggable start/end handles;
-- app-owned playback/frame and set-in/out controls, global editor shortcuts, and continuously
-  draggable playhead seeking;
-- keyboard-accessible handle adjustments and numeric time readouts;
-- clamp trim values and reject empty selections.
+Status: complete.
+
+- Source/proxy preview, custom transport, frame controls, keyboard shortcuts, timeline, playhead,
+  trim/segment dragging, snapping, safe following, and resizable panes.
 
 ### Phase 3 — audio tracks
 
-Status: implemented on the Phase 3 topic branch; broader real-file validation across unusual audio
-layouts and long sources remains part of the media matrix.
+Status: complete.
 
-- list all audio streams;
-- generate source-aligned, visible-width waveform images through a cancellable source/job contract;
-- display one timeline row per global audio stream index with compact metadata and retryable,
-  non-blocking waveform failures;
-- enable every discovered track by default and keep per-track enable/disable state in memory;
-- add optional merge-to-one-audio state with explicit fast/hybrid labeling for multiple selected
-  tracks; export routing consumes this state in Phase 4.
+- Per-stream waveforms, audio-only preview mixing, track/master gain, mute restoration, stream
+  selection, and optional merge.
 
 ### Phase 4 — exports
 
-- implement fast stream-copy cut;
-- implement optimized render with source/scaled resolution and independent frame-rate controls;
-- make output naming required with route-specific defaults;
-- add progress, cancel, success, failure, and reveal-in-folder states.
+Status: complete.
+
+- Fast and optimized routes, native save dialog, overwrite confirmation, output naming, queue,
+  progress, cancellation, failure/completion history, and reveal in Explorer.
 
 ### Phase 5 — in-memory presets and hardening
 
-- allow named presets to be created, selected, renamed, and deleted during the session;
-- validate argument strings and render an assembled-command preview;
-- test unusual stream layouts, variable frame rate, missing audio, Unicode paths, long paths, and failed/cancelled processes;
-- benchmark 4K H.264/HEVC samples on the RTX 4070 SUPER and tune the default CQ/preset.
+Status: complete on `feature/vakot/phase-5/in-memory-presets-hardening`.
 
-## Acceptance criteria for the first usable build
+- Full runtime preset lifecycle preserved across source replacement.
+- Native custom-argument validation and path-redacted assembled-command preview.
+- Fractional frame-rate choices and rotated/no-upscale resolution validation.
+- Duplicate/unavailable stream, no-audio, malformed argument, Unicode/space/long-path, failed
+  process, early cancellation, and idempotent cancellation coverage.
+- RTX 4070 SUPER benchmark and default preset tuning from P5 to P3.
 
-- A user can import a supported video by drop or picker in one action.
-- The complete source is previewable, directly or through a temporary proxy.
-- Start and end handles select exactly one continuous export range.
-- Every audio stream is visible and can be enabled or disabled.
-- Fast cut preserves source video resolution and frame rate and avoids video re-encoding.
-- Optimized render can scale resolution and select a different frame rate.
-- Both export buttons are visible on the main screen with no submenu step.
-- The output name is required and prefilled from the source filename.
-- Named presets survive source replacement during the current run but disappear after application exit.
-- Cancelling an FFmpeg process works without leaving the UI stuck in a rendering state.
-- No project, preset, or application configuration is written to the OS.
+## MVP acceptance status
 
-## Main risks and decisions to validate early
+- [x] Import or replace a supported video in one action.
+- [x] Preview the complete source directly or through a temporary proxy.
+- [x] Select one continuous segment with accessible start/end handles.
+- [x] Display and independently control every discovered audio stream.
+- [x] Preserve source video resolution/frame rate without video encoding on the fast route.
+- [x] Scale resolution and select an independent frame rate on the optimized route.
+- [x] Keep `Save` and `Export` directly available in the main toolbar.
+- [x] Require a native output filename prefilled from the source name.
+- [x] Preserve named presets across source replacement and discard them on process exit.
+- [x] Cancel FFmpeg operations without leaving active UI state or partial output.
+- [x] Avoid project, preset, path, and editor-state persistence.
 
-1. **Preview codec support:** test the Windows WebView with common H.264, HEVC, VP9, AV1, MOV, MKV, and TS inputs. Keep proxy fallback behind the same preview component.
-2. **Fast-cut accuracy:** communicate keyframe snapping clearly and add exact-cut re-encode through the optimized route.
-3. **Custom arguments:** do not allow arguments to override input/output or stream maps in the first version; this keeps the app safe and the UI predictable.
-4. **FFmpeg distribution:** choose a redistributable build and document its license files before packaging.
-5. **GPU portability:** ship a CPU fallback preset so the application remains usable when NVENC is unavailable.
+## Remaining release work
 
-## Initial directory layout
+These items are intentionally outside completed phase 5 and remain before declaring a broadly
+redistributable Windows release:
 
-```text
-clipkit/
-├─ AGENTS.md         # Auto-loaded repository instruction index
-├─ .agents/
-│  ├─ rules/         # Shared repository-wide policies
-│  └─ skills/        # Stack and domain workflows
-├─ apps/
-│  └─ desktop/
-│     ├─ public/     # Static packaged frontend assets
-│     ├─ src/        # React/TypeScript UI
-│     └─ src-tauri/  # Rust/Tauri application core
-├─ plans/
-│  └─ ffmpeg-ui-mvp.md
-├─ .github/
-│  └─ pull_request_template.md
-├─ Cargo.toml        # Rust workspace
-├─ package.json      # Root scripts and shared JavaScript tooling
-├─ pnpm-workspace.yaml
-└─ README.md
-```
+1. **Packaged media binaries and licensing** — select and pin redistributable FFmpeg/FFprobe
+   sidecars, include required LGPL/GPL notices, and stop relying on `PATH` in production builds.
+2. **Compatibility presets** — add a tested H.264 NVENC preset and a CPU fallback with explicit
+   encoder availability; consider AV1 only after target-player compatibility testing.
+3. **Real-file validation matrix** — exercise H.264, HEVC, VP9, AV1, MOV, MKV, WebM, and TS;
+   include VFR, fractional rates, no/mono/stereo/surround/many-audio layouts, rotation, near-EOF
+   trims, Unicode and long Windows paths, and incompatible stream/container combinations.
+4. **Output verification suite** — add deterministic redistributable fixtures and probe fast,
+   hybrid, and optimized outputs for stream counts, dimensions, frame rate, duration tolerance,
+   mapping, merge behavior, readability, failure cleanup, and cancellation cleanup.
+5. **Additional performance evidence** — benchmark representative 4K H.264 and longer/mixed
+   content; record quality, output size, elapsed time, and decode bottlenecks before promising a
+   throughput target.
+6. **Windows packaging QA** — test install, upgrade/uninstall, first run, missing/unavailable GPU
+   encoder behavior, WebView codec fallback, temporary-artifact cleanup, and signed release assets.
+
+Until those release items are complete, the application is an implemented and testable MVP rather
+than a production-distributed build.
