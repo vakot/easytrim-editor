@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { AudioTrackState } from "../../app/session-state";
 import type { TrimRange } from "../../domain/trim";
@@ -38,6 +38,8 @@ interface ExportPanelProps {
   sourceName: string;
   trim: TrimRange;
   audioTracks: AudioTrackState[];
+  masterEnabled: boolean;
+  masterVolumePercent: number;
   mergeAudio: boolean;
   queue: ExportToast[];
   setQueue: Dispatch<SetStateAction<ExportToast[]>>;
@@ -49,6 +51,8 @@ export function ExportPanel({
   sourceName,
   trim,
   audioTracks,
+  masterEnabled,
+  masterVolumePercent,
   mergeAudio,
   setQueue,
   onNativeDialogStateChange,
@@ -85,15 +89,20 @@ export function ExportPanel({
     return () => window.removeEventListener("keydown", handleExportShortcut, true);
   });
 
+  const masterGain = masterEnabled ? masterVolumePercent / 50 : 0;
   const selectedAudio = audioTracks
-    .filter((track) => track.enabled)
-    .map((track) => track.streamIndex);
+    .filter((track) => track.enabled && track.volumePercent > 0 && masterGain > 0)
+    .map((track) => ({
+      streamIndex: track.streamIndex,
+      volumePercent: Math.min(200, Math.round(track.volumePercent * masterGain)),
+    }))
+    .filter((track) => track.volumePercent > 0);
 
   async function handleFastCut() {
     const request: FastExportRequest = {
       sourceId: source.sourceId,
       trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
-      audioStreamIndexes: selectedAudio,
+      audioTracks: selectedAudio,
       mergeAudio,
     };
     await chooseAndStart("fast", defaults.fast, request);
@@ -104,7 +113,7 @@ export function ExportPanel({
     const request: OptimizedExportRequest = {
       sourceId: source.sourceId,
       trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
-      audioStreamIndexes: selectedAudio,
+      audioTracks: selectedAudio,
       mergeAudio,
       resolution,
       frameRate: frameRate

@@ -1121,12 +1121,13 @@ p {
 }
 
 .timeline-audio-heading {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
   margin-bottom: var(--audio-track-gap);
 }
 
 .audio-master-control,
-.merge-audio-control,
-.audio-track-label {
+.merge-audio-control {
   cursor: pointer;
 }
 
@@ -1142,10 +1143,19 @@ p {
 
 .audio-master-control {
   display: grid;
-  min-width: 0;
-  grid-template-columns: auto minmax(0, 1fr);
-  column-gap: 0.45rem;
   align-items: center;
+  min-width: 0;
+  grid-template-columns: auto minmax(14rem, 18rem) minmax(0, 1fr);
+  column-gap: 0.45rem;
+  min-height: 2rem;
+}
+
+.audio-master-control > div:last-child,
+.timeline-audio-summary {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  line-height: 1.25;
 }
 
 .merge-audio-control {
@@ -1156,6 +1166,8 @@ p {
 
 .merge-audio-control {
   flex: 0 0 auto;
+  margin: 0;
+  line-height: 1.25;
 }
 
 .audio-master-control input,
@@ -1200,9 +1212,191 @@ p {
   align-items: center;
 }
 
-.audio-master-control input,
-.audio-track-label input {
-  grid-row: 1 / span 2;
+.audio-volume-anchor {
+  position: relative;
+  display: grid;
+}
+
+.audio-volume-popover {
+  position: absolute;
+  z-index: 10;
+  bottom: calc(100% + 0.35rem);
+  left: 0;
+  width: 16rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #45454d;
+  border-radius: 0.45rem;
+  background: #19191e;
+  box-shadow: 0 0.6rem 1.4rem rgb(0 0 0 / 35%);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(0.25rem);
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease,
+    visibility 120ms ease;
+}
+
+.audio-volume-popover::after {
+  position: absolute;
+  right: 0;
+  bottom: -0.35rem;
+  left: 0;
+  height: 0.35rem;
+  content: "";
+}
+
+.audio-track-label:hover .audio-volume-popover {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.audio-track-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.audio-volume-button {
+  display: grid;
+  width: 1.5rem;
+  height: 1.5rem;
+  place-items: center;
+  padding: 0.15rem;
+  border: 0;
+  border-radius: 0.3rem;
+  color: #e4ae4e;
+  background: transparent;
+  cursor: pointer;
+}
+
+.audio-volume-button:hover,
+.audio-volume-button:focus-visible {
+  background: rgb(228 174 78 / 15%);
+}
+
+.audio-volume-button[aria-pressed="false"] {
+  color: #71717a;
+}
+
+.audio-volume-button svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.audio-level-control {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.audio-slider-track {
+  position: relative;
+  display: flex;
+  height: 1.1rem;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+}
+
+.audio-slider-track::before,
+.audio-slider-track::after {
+  position: absolute;
+  top: 50%;
+  height: 0.35rem;
+  border-radius: 999px;
+  content: "";
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.audio-slider-track::before {
+  right: 0;
+  left: 0;
+  background: #3f3f46;
+}
+
+.audio-slider-track::after {
+  left: 0;
+  width: var(--slider-fill, 0%);
+  background: #e4ae4e;
+}
+
+.audio-volume-slider {
+  position: relative;
+  z-index: 3;
+  appearance: none;
+  width: 100%;
+  height: 1.1rem;
+  min-width: 0;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.audio-volume-slider::-webkit-slider-runnable-track {
+  height: 0.35rem;
+  background: transparent;
+}
+
+.audio-volume-slider::-webkit-slider-thumb {
+  width: 1rem;
+  height: 1rem;
+  margin-top: -0.375rem;
+  border: 0;
+  border-radius: 50%;
+  background: #e4ae4e;
+  appearance: none;
+}
+
+.audio-volume-slider::-moz-range-track {
+  height: 0.35rem;
+  background: transparent;
+}
+
+.audio-volume-slider::-moz-range-progress {
+  background: transparent;
+}
+
+.audio-volume-slider::-moz-range-thumb {
+  width: 1rem;
+  height: 1rem;
+  border: 0;
+  border-radius: 50%;
+  background: #e4ae4e;
+}
+
+.audio-slider-original-marker {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  width: 1px;
+  height: 0.75rem;
+  background: #71717a;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.audio-master-level-control .audio-volume-slider {
+  width: 100%;
+  min-width: 0;
+}
+
+.audio-level-control output {
+  min-width: 3.1rem;
+  color: #a1a1aa;
+  font-size: 0.62rem;
+  text-align: right;
+  white-space: nowrap;
 }
 
 .audio-track-title,

@@ -16,9 +16,12 @@ interface SourceWorkspaceProps {
   onTrimChange: (sourceId: string, trim: TrimRange) => void;
   onPrepareWaveforms: (sourceId: string, streamIndexes: number[], width: number) => void;
   onToggleAudioTrack: (sourceId: string, streamIndex: number) => void;
-  onSetAllAudioTracksEnabled: (sourceId: string, enabled: boolean) => void;
+  onAudioTrackVolumeChange: (sourceId: string, streamIndex: number, volumePercent: number) => void;
+  onToggleAudioMaster: (sourceId: string) => void;
+  onMasterVolumeChange: (sourceId: string, volumePercent: number) => void;
   onToggleAudioMerge: (sourceId: string) => void;
   onWaveformImageError: (sourceId: string, streamIndex: number) => void;
+  audioPreviewUrls: Record<number, string>;
   exportQueue: ExportToast[];
 }
 
@@ -31,9 +34,12 @@ export function SourceWorkspace({
   onTrimChange,
   onPrepareWaveforms,
   onToggleAudioTrack,
-  onSetAllAudioTracksEnabled,
+  onAudioTrackVolumeChange,
+  onToggleAudioMaster,
+  onMasterVolumeChange,
   onToggleAudioMerge,
   onWaveformImageError,
+  audioPreviewUrls,
   exportQueue,
 }: SourceWorkspaceProps) {
   if (!session.source) {
@@ -121,6 +127,8 @@ export function SourceWorkspace({
                 }
                 audioStreams={session.source.media.audioStreams}
                 audioTracks={session.source.audioTracks}
+                masterEnabled={session.source.masterEnabled}
+                masterVolumePercent={session.source.masterVolumePercent}
                 mergeAudio={session.source.mergeAudio}
                 onPreviewPlaybackError={onPreviewPlaybackError}
                 onTrimChange={(trim) => onTrimChange(sourceId, trim)}
@@ -128,11 +136,16 @@ export function SourceWorkspace({
                   onPrepareWaveforms(sourceId, streamIndexes, width)
                 }
                 onToggleAudioTrack={(streamIndex) => onToggleAudioTrack(sourceId, streamIndex)}
-                onSetAllAudioTracksEnabled={(enabled) =>
-                  onSetAllAudioTracksEnabled(sourceId, enabled)
+                onAudioTrackVolumeChange={(streamIndex, volumePercent) =>
+                  onAudioTrackVolumeChange(sourceId, streamIndex, volumePercent)
+                }
+                onToggleAudioMaster={() => onToggleAudioMaster(sourceId)}
+                onMasterVolumeChange={(volumePercent) =>
+                  onMasterVolumeChange(sourceId, volumePercent)
                 }
                 onToggleAudioMerge={() => onToggleAudioMerge(sourceId)}
                 onWaveformImageError={(streamIndex) => onWaveformImageError(sourceId, streamIndex)}
+                audioPreviewUrls={audioPreviewUrls}
               />
             </>
           ) : null}

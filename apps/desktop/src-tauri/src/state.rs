@@ -11,6 +11,36 @@ use std::{
 use crate::media::probe::MediaInfo;
 use crate::{domain::source::ValidatedSource, error::AppError};
 
+const STALE_ARTIFACT_AGE: std::time::Duration = std::time::Duration::from_secs(60 * 60);
+
+pub fn cleanup_stale_media_artifacts() {
+    let Ok(entries) = fs::read_dir(std::env::temp_dir()) else {
+        return;
+    };
+    let cutoff = std::time::SystemTime::now()
+        .checked_sub(STALE_ARTIFACT_AGE)
+        .unwrap_or(std::time::SystemTime::UNIX_EPOCH);
+
+    for entry in entries.flatten() {
+        let path = entry.path();
+        let name = entry.file_name();
+        let name = name.to_string_lossy();
+        let is_clipkit_artifact = name.starts_with("clipkit-preview-")
+            || name.starts_with("clipkit-audio-preview-")
+            || name.starts_with("clipkit-waveform-");
+        if !is_clipkit_artifact || !entry.file_type().is_ok_and(|file_type| file_type.is_dir()) {
+            continue;
+        }
+        let is_stale = entry
+            .metadata()
+            .and_then(|metadata| metadata.modified())
+            .is_ok_and(|modified| modified < cutoff);
+        if is_stale {
+            let _ = fs::remove_dir_all(path);
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct ActiveSource {
     pub source_id: String,
@@ -56,6 +86,7 @@ impl Drop for TemporaryMediaArtifact {
 }
 
 pub type PreviewArtifact = TemporaryMediaArtifact;
+pub type AudioPreviewArtifact = TemporaryMediaArtifact;
 pub type WaveformArtifact = TemporaryMediaArtifact;
 
 #[derive(Clone, Debug)]
@@ -84,6 +115,7 @@ struct ActiveSourceRecord {
     media: Option<MediaInfo>,
     preview_streams: Option<PreviewStreamSelection>,
     preview: Option<PreviewArtifact>,
+    audio_previews: HashMap<u32, AudioPreviewArtifact>,
     audio_stream_indexes: Vec<u32>,
     waveform_job: Option<WaveformJobRecord>,
     waveforms: HashMap<u32, WaveformRecord>,
@@ -200,6 +232,7 @@ impl AppState {
             media: None,
             preview_streams: None,
             preview: None,
+            audio_previews: HashMap::new(),
             audio_stream_indexes: Vec::new(),
             waveform_job: None,
             waveforms: HashMap::new(),
@@ -347,6 +380,42 @@ impl AppState {
         };
         drop(previous_preview);
         Ok(())
+    }
+
+    pub fn install_audio_preview(
+        &self,
+        source_id: &str,
+        stream_index: u32,
+        preview: AudioPreviewArtifact,
+    ) -> Result<(), AppError> {
+        let previous_preview = {
+            let mut session = self.lock_session()?;
+            let source = active_source_mut(&mut session, source_id)?;
+            if source.cancellation.load(Ordering::Acquire) {
+                return Err(AppError::source_replaced());
+            }
+            source.audio_previews.insert(stream_index, preview)
+        };
+        drop(previous_preview);
+        Ok(())
+    }
+
+    pub fn resolve_audio_preview_path(
+        &self,
+        source_id: &str,
+        stream_index: u32,
+    ) -> Result<PathBuf, AppError> {
+        let session = self.lock_session()?;
+        let source = session
+            .active_source
+            .as_ref()
+            .filter(|source| source.source_id == source_id)
+            .ok_or_else(AppError::source_replaced)?;
+        source
+            .audio_previews
+            .get(&stream_index)
+            .map(|preview| preview.path().to_owned())
+            .ok_or_else(|| AppError::invalid_request("The audio preview is not available."))
     }
 
     pub fn resolve_preview_path(&self, source_id: &str) -> Result<PathBuf, AppError> {
