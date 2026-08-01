@@ -29,18 +29,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: Linux
-            os: ubuntu-22.04
-            args: ""
           - name: Windows
             os: windows-latest
             args: ""
-          - name: macOS Intel
-            os: macos-15-intel
-            args: --target x86_64-apple-darwin
-          - name: macOS Apple Silicon
-            os: macos-latest
-            args: --target aarch64-apple-darwin
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -86,7 +77,7 @@ jobs:
           releaseBody: |
             ClipKit ${{ github.event.inputs.tag || github.ref_name }}
 
-            Standalone desktop builds for Linux, Windows, macOS Intel, and macOS Apple Silicon.
+            Standalone Windows desktop build.
 
             Runtime requirement: install FFmpeg and make `ffmpeg` and `ffprobe` available on your system PATH.
           releaseDraft: false
