@@ -7,7 +7,7 @@ import type {
   MediaInfo,
   SourceDropEvent,
   SourceSelection,
-} from "./lib/tauri/media";
+} from "../lib/tauri/media";
 
 const mocks = vi.hoisted(() => ({
   checkMediaCapabilities: vi.fn(),
@@ -20,8 +20,8 @@ const mocks = vi.hoisted(() => ({
   unlistenDrops: vi.fn(),
 }));
 
-vi.mock("./lib/tauri/media", async (importOriginal) => {
-  const original = await importOriginal<typeof import("./lib/tauri/media")>();
+vi.mock("../lib/tauri/media", async (importOriginal) => {
+  const original = await importOriginal<typeof import("../lib/tauri/media")>();
   return {
     ...original,
     checkMediaCapabilities: mocks.checkMediaCapabilities,
@@ -34,7 +34,7 @@ vi.mock("./lib/tauri/media", async (importOriginal) => {
   };
 });
 
-import App from "./App";
+import App from "../App";
 
 const capabilities: MediaCapabilities = {
   ffmpeg: { available: true, version: "ffmpeg version 7.1" },

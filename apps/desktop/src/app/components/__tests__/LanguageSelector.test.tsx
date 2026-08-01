@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 
 import i18n from "@/i18n/config";
-import { LanguageSelector } from "./LanguageSelector";
+import { LanguageSelector } from "../LanguageSelector";
 
 describe("LanguageSelector", () => {
   afterEach(async () => {

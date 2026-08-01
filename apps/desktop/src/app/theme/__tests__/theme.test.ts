@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { resolveTheme } from "./theme";
+import { resolveTheme } from "../theme";
 
 describe("resolveTheme", () => {
   it("matches the current system theme by default", () => {

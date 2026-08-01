@@ -16,7 +16,7 @@ import {
   snapMovedTrimRangeToPlayhead,
   settleDirectionalSnapLatch,
   timelinePercent,
-} from "./trim";
+} from "../trim";
 
 describe("trim domain", () => {
   it("initializes the full source in integer microseconds", () => {

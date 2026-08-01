@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
-import { ThemeSelector } from "./ThemeSelector";
+import { ThemeSelector } from "../ThemeSelector";
 
 describe("ThemeSelector", () => {
   it("switches between runtime themes and can return to the system preference", async () => {

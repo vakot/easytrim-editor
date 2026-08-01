@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import i18n from "./config";
-import { resolveInitialLanguage } from "./resources";
+import i18n from "../config";
+import { resolveInitialLanguage } from "../resources";
 
 describe("resolveInitialLanguage", () => {
   it("uses the first supported system language", () => {
