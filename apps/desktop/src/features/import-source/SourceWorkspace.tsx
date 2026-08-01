@@ -6,6 +6,7 @@ import { DropOverlay } from "./components/DropOverlay";
 import { SourceSidebar } from "./components/SourceSidebar";
 import { WelcomePage } from "./components/WelcomePage";
 import type { SourceWorkspaceProps } from "./types";
+import { useTranslation } from "react-i18next";
 
 export { CapabilityStatus } from "./components/CapabilityStatus";
 
@@ -26,6 +27,8 @@ export function SourceWorkspace({
   audioPreviewUrls,
   exportQueue,
 }: SourceWorkspaceProps) {
+  const { t } = useTranslation();
+
   if (!session.source) {
     return (
       <WelcomePage
@@ -48,7 +51,7 @@ export function SourceWorkspace({
       orientation="horizontal"
       className="min-h-0 min-w-0 bg-background"
       resizeTargetMinimumSize={{ fine: 8, coarse: 24 }}
-      aria-label="Video editor workspace"
+      aria-label={t("import.source.workspace")}
     >
       <Panel
         id="source-details-panel"
@@ -63,14 +66,14 @@ export function SourceWorkspace({
 
       <PaneResizeHandle
         id="source-details-resize-handle"
-        label="Resize source details"
+        label={t("import.source.resizeDetails")}
         orientation="vertical"
       />
 
       <Panel id="editor-content-panel" minSize="44rem" className="min-h-0 min-w-0 overflow-hidden">
         <div
           className="relative h-full min-h-0 min-w-0"
-          aria-label="Video preview and timeline area"
+          aria-label={t("import.source.previewArea")}
         >
           {session.status === "ready" && media && trimRange ? (
             <EditorStage

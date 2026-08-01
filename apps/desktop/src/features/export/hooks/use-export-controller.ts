@@ -14,6 +14,7 @@ import {
 
 import type { ExportPanelProps, ExportSettings, ExportToast } from "../types";
 import { DEFAULT_ARGUMENTS, isEditableTarget, outputDefaults } from "../utils/export-options";
+import { useTranslation } from "react-i18next";
 
 export function useExportController({
   source,
@@ -26,6 +27,7 @@ export function useExportController({
   setQueue,
   onNativeDialogStateChange,
 }: ExportPanelProps) {
+  const { t } = useTranslation();
   const defaults = useMemo(() => outputDefaults(sourceName), [sourceName]);
   const [isOptimizedOpen, setIsOptimizedOpen] = useState(false);
   const [settings, setSettings] = useState<ExportSettings>({
@@ -154,7 +156,7 @@ export function useExportController({
       updateToast(id, (toast) => ({
         ...toast,
         status: wasCanceled ? "canceled" : "failed",
-        error: wasCanceled ? "Export canceled." : normalized.message,
+        error: wasCanceled ? t("export.canceledMessage") : normalized.message,
         onCancel: undefined,
       }));
     }
@@ -169,7 +171,7 @@ export function useExportController({
     updateToast(id, (toast) => ({
       ...toast,
       status: "canceled",
-      error: "Export canceled.",
+      error: t("export.canceledMessage"),
       onCancel: undefined,
     }));
     const operationId = operationIdsRef.current.get(id);

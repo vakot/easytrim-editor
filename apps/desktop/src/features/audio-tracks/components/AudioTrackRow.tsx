@@ -1,4 +1,6 @@
 import type { AudioTrackState } from "@/app/session-state";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import type { AudioStream } from "@/lib/tauri/media";
 
@@ -32,6 +34,7 @@ export function AudioTrackRow({
   onPrepareWaveform,
   onWaveformImageError,
 }: AudioTrackRowProps) {
+  const { t } = useTranslation();
   const [isLevelOpen, setIsLevelOpen] = useState(false);
 
   return (
@@ -44,7 +47,7 @@ export function AudioTrackRow({
           >
             <VolumeButton
               enabled={track.enabled}
-              label={`${track.enabled ? "Mute" : "Enable"} ${title}`}
+              label={t(track.enabled ? "audio.muteTrack" : "audio.enableTrack", { title })}
               onClick={onToggle}
             />
             <div className="min-w-0 leading-tight">
@@ -52,14 +55,15 @@ export function AudioTrackRow({
                 {title}
               </p>
               <p className="truncate text-xs leading-5 text-muted-foreground">
-                #{stream.streamIndex} · {stream.codecName.toUpperCase()} · {formatChannels(stream)}
+                #{stream.streamIndex} · {stream.codecName.toUpperCase()} ·{" "}
+                {formatChannels(stream, t)}
               </p>
             </div>
           </div>
         </HoverCardTrigger>
         <HoverCardContent side="top" align="start" sideOffset={8} className="w-80">
           <AudioLevelControl
-            label={`${title} volume`}
+            label={t("audio.trackVolume", { title })}
             volumePercent={track.enabled ? track.volumePercent : 0}
             onChange={onVolumeChange}
           />
@@ -83,4 +87,3 @@ export function AudioTrackRow({
     </div>
   );
 }
-import { useState } from "react";

@@ -3,6 +3,8 @@ import type { SessionState } from "@/app/session-state";
 import { CapabilityStatus } from "@/features/import-source/SourceWorkspace";
 import { ExportPanel, type ExportToast } from "@/features/export";
 import type { Dispatch, SetStateAction } from "react";
+import { useTranslation } from "react-i18next";
+import { LanguageSelector } from "./LanguageSelector";
 
 interface AppToolbarProps {
   session: SessionState;
@@ -21,24 +23,27 @@ export function AppToolbar({
   onReturnToWelcome,
   onNativeDialogStateChange,
 }: AppToolbarProps) {
+  const { t } = useTranslation();
+
   return (
     <div
       className="grid h-[4.25rem] grid-cols-[1fr_auto_1fr] items-center border-b border-border bg-background px-5"
       role="toolbar"
-      aria-label="Application toolbar"
+      aria-label={t("app.toolbar")}
     >
       <button
         className="w-fit font-heading text-xl font-bold tracking-[0.08em] text-primary outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring"
         type="button"
-        aria-label="Return to CLIP KIT welcome page"
+        aria-label={t("app.returnToWelcome")}
         onClick={onReturnToWelcome}
       >
-        CLIP KIT
+        {t("common.brand")}
       </button>
       <CapabilityStatus capabilities={session.capabilities} />
       <div className="flex items-center justify-end gap-3">
+        <LanguageSelector className="w-36" />
         <Button variant="outline" size="lg" onClick={onChooseSource} disabled={isChoosingSource}>
-          {isChoosingSource ? "Opening…" : "Open video"}
+          {isChoosingSource ? t("import.opening") : t("import.openVideo")}
         </Button>
         {session.status === "ready" && session.source?.media && session.source.trim ? (
           <ExportPanel

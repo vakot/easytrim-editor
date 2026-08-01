@@ -1,7 +1,11 @@
 import type { BinaryCapability, FrameRate } from "@/lib/tauri/media";
 
-export function capabilityError(label: string, capability: BinaryCapability): string | null {
-  return capability.available ? null : `${label}: ${capability.error ?? "not available."}`;
+export function capabilityError(
+  label: string,
+  capability: BinaryCapability,
+  unavailableMessage: string,
+): string | null {
+  return capability.available ? null : `${label}: ${capability.error ?? unavailableMessage}`;
 }
 
 export function formatDuration(micros: number): string {
@@ -12,17 +16,21 @@ export function formatDuration(micros: number): string {
   return [hours, minutes, seconds].map((value) => value.toString().padStart(2, "0")).join(":");
 }
 
-export function formatFrameRate(frameRate: FrameRate | undefined): string {
+export function formatFrameRate(
+  frameRate: FrameRate | undefined,
+  unknownLabel: string,
+  formatUnit: (value: string) => string,
+): string {
   if (!frameRate) {
-    return "Unknown";
+    return unknownLabel;
   }
   const value = frameRate.displayValue ?? frameRate.numerator / frameRate.denominator;
-  return `${value.toFixed(value % 1 === 0 ? 0 : 2)} fps`;
+  return formatUnit(value.toFixed(value % 1 === 0 ? 0 : 2));
 }
 
-export function formatBytes(bytes: number | undefined): string {
+export function formatBytes(bytes: number | undefined, unknownLabel: string): string {
   if (bytes === undefined) {
-    return "Unknown";
+    return unknownLabel;
   }
   const units = ["B", "KB", "MB", "GB", "TB"];
   let value = bytes;
@@ -34,6 +42,10 @@ export function formatBytes(bytes: number | undefined): string {
   return `${value.toFixed(unit === 0 ? 0 : 1)} ${units[unit]}`;
 }
 
-export function formatBitrate(bitrate: number | undefined): string {
-  return bitrate === undefined ? "Unknown" : `${(bitrate / 1_000_000).toFixed(2)} Mbps`;
+export function formatBitrate(
+  bitrate: number | undefined,
+  unknownLabel: string,
+  formatUnit: (value: string) => string,
+): string {
+  return bitrate === undefined ? unknownLabel : formatUnit((bitrate / 1_000_000).toFixed(2));
 }

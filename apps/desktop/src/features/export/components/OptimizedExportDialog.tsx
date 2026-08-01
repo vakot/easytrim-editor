@@ -21,6 +21,7 @@ import type { MediaInfo } from "@/lib/tauri/media";
 
 import type { ExportSettings } from "../types";
 import { FRAME_RATE_OPTIONS, rateFromValue, resolutionOptions } from "../utils/export-options";
+import { useTranslation } from "react-i18next";
 
 interface OptimizedExportDialogProps {
   open: boolean;
@@ -39,6 +40,7 @@ export function OptimizedExportDialog({
   onSettingsChange,
   onExport,
 }: OptimizedExportDialogProps) {
+  const { t } = useTranslation();
   const resolutionValue = `${settings.resolution.width}x${settings.resolution.height}`;
   const frameRateValue = settings.frameRate
     ? `${settings.frameRate.numerator}/${settings.frameRate.denominator}`
@@ -47,20 +49,18 @@ export function OptimizedExportDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
-        <Button aria-keyshortcuts="Control+E" title="Export (Ctrl+E)">
-          Export
+        <Button aria-keyshortcuts="Control+E" title={t("export.exportShortcut")}>
+          {t("export.export")}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>Export</DialogTitle>
-          <DialogDescription>
-            Configure the optimized render before choosing its file.
-          </DialogDescription>
+          <DialogTitle>{t("export.export")}</DialogTitle>
+          <DialogDescription>{t("export.dialog.description")}</DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-2 gap-3">
           <div className="grid gap-1.5">
-            <Label htmlFor="export-resolution">Resolution</Label>
+            <Label htmlFor="export-resolution">{t("export.dialog.resolution")}</Label>
             <Select
               value={resolutionValue}
               onValueChange={(value) => {
@@ -74,7 +74,7 @@ export function OptimizedExportDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {resolutionOptions(source).map((option) => (
+                {resolutionOptions(source, t).map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
                   </SelectItem>
@@ -83,7 +83,7 @@ export function OptimizedExportDialog({
             </Select>
           </div>
           <div className="grid gap-1.5">
-            <Label htmlFor="export-frame-rate">Frame rate</Label>
+            <Label htmlFor="export-frame-rate">{t("export.dialog.frameRate")}</Label>
             <Select
               value={frameRateValue}
               onValueChange={(value) =>
@@ -94,10 +94,10 @@ export function OptimizedExportDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="source">Match source</SelectItem>
+                <SelectItem value="source">{t("export.dialog.matchSource")}</SelectItem>
                 {FRAME_RATE_OPTIONS.map((rate) => (
                   <SelectItem key={rate} value={`${rate}/1`}>
-                    {rate} FPS
+                    {t("export.framesPerSecond", { value: rate })}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -105,7 +105,7 @@ export function OptimizedExportDialog({
           </div>
         </div>
         <div className="grid gap-1.5">
-          <Label htmlFor="export-arguments">FFmpeg arguments</Label>
+          <Label htmlFor="export-arguments">{t("export.dialog.arguments")}</Label>
           <Textarea
             id="export-arguments"
             className="min-h-28 resize-y font-mono text-xs"
@@ -115,14 +115,12 @@ export function OptimizedExportDialog({
             }
           />
         </div>
-        <p className="text-xs text-muted-foreground">
-          The native save dialog opens after confirmation.
-        </p>
+        <p className="text-xs text-muted-foreground">{t("export.dialog.saveNotice")}</p>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t("common.cancel")}
           </Button>
-          <Button onClick={onExport}>Export</Button>
+          <Button onClick={onExport}>{t("export.export")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -1,4 +1,5 @@
 import type { FrameRate, MediaInfo } from "@/lib/tauri/media";
+import type { TFunction } from "i18next";
 
 export const DEFAULT_ARGUMENTS =
   "-c:v hevc_nvenc -preset p5 -tune hq -rc vbr -cq 24 -b:v 0 -spatial_aq 1 -temporal_aq 1 -aq-strength 8 -pix_fmt yuv420p -c:a aac -b:a 160k";
@@ -18,10 +19,13 @@ export function isEditableTarget(target: EventTarget | null): boolean {
   );
 }
 
-export function resolutionOptions(source: MediaInfo) {
-  const options = [
+export function resolutionOptions(source: MediaInfo, t: TFunction) {
+  const options: { label: string; value: string }[] = [
     {
-      label: `Source · ${source.video.width} × ${source.video.height}`,
+      label: t("export.sourceResolution", {
+        width: source.video.width,
+        height: source.video.height,
+      }),
       value: `${source.video.width}x${source.video.height}`,
     },
   ];

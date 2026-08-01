@@ -5,9 +5,11 @@ import { NativeDialogOverlay } from "@/app/components/NativeDialogOverlay";
 import { ReturnConfirmationDialog } from "@/app/components/ReturnConfirmationDialog";
 import { useClipKitApp } from "@/app/hooks/use-clipkit-app";
 import { SourceWorkspace } from "@/features/import-source/SourceWorkspace";
+import { useTranslation } from "react-i18next";
 
 function App() {
   const app = useClipKitApp();
+  const { t } = useTranslation();
 
   return (
     <TooltipProvider>
@@ -44,7 +46,7 @@ function App() {
             className="fixed top-20 left-1/2 z-50 w-auto -translate-x-1/2"
           >
             <AlertDescription>
-              Drag and drop is unavailable: {app.dropListenerError}
+              {t("app.dragUnavailable", { message: app.dropListenerError })}
             </AlertDescription>
           </Alert>
         ) : null}

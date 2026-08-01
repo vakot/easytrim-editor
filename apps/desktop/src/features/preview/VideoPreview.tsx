@@ -4,6 +4,7 @@ import { useEffect, useRef, type RefObject } from "react";
 import type { PreviewState } from "@/app/session-state";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { useTranslation } from "react-i18next";
 
 interface VideoPreviewProps {
   sourceId: string;
@@ -28,6 +29,7 @@ export function VideoPreview({
   onPause,
   onTimeUpdate,
 }: VideoPreviewProps) {
+  const { t } = useTranslation();
   const reportedUrl = useRef<string | null>(null);
   const readyUrl = preview.status === "ready" ? preview.value.url : null;
 
@@ -44,9 +46,9 @@ export function VideoPreview({
       >
         <LoaderCircle className="size-6 animate-spin text-primary" aria-hidden="true" />
         <strong className="text-foreground">
-          {isProxy ? "Preparing compatible preview…" : "Opening preview…"}
+          {isProxy ? t("preview.preparing") : t("preview.opening")}
         </strong>
-        {isProxy ? <span>This can take a moment for high-resolution sources.</span> : null}
+        {isProxy ? <span>{t("preview.preparingDescription")}</span> : null}
       </div>
     );
   }
@@ -54,12 +56,12 @@ export function VideoPreview({
   if (preview.status === "failed") {
     return (
       <Alert variant="destructive" className="max-w-xl">
-        <AlertTitle>Could not preview this video</AlertTitle>
+        <AlertTitle>{t("preview.error")}</AlertTitle>
         <AlertDescription>
           <p>{preview.error.message}</p>
           {preview.error.diagnostics ? (
             <details className="mt-2">
-              <summary>Technical details</summary>
+              <summary>{t("import.source.technicalDetails")}</summary>
               <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap text-xs">
                 {preview.error.diagnostics}
               </pre>
@@ -79,7 +81,7 @@ export function VideoPreview({
         className="block size-full cursor-pointer object-contain"
         src={value.url}
         preload="metadata"
-        aria-label="Source video preview"
+        aria-label={t("preview.sourceLabel")}
         data-preview-kind={value.kind}
         onClick={onTogglePlayback}
         onLoadedMetadata={onLoadedMetadata}
@@ -94,7 +96,7 @@ export function VideoPreview({
       />
       {value.kind === "proxy" ? (
         <Badge variant="secondary" className="absolute top-3 right-3">
-          720p preview
+          {t("preview.proxyBadge")}
         </Badge>
       ) : null}
     </div>

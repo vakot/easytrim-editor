@@ -3,6 +3,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ExportQueue, type ExportToast } from "@/features/export";
 import { MediaDetails } from "./MediaDetails";
 import { SourceError } from "./SourceError";
+import { useTranslation } from "react-i18next";
 
 interface SourceSidebarProps {
   session: SessionState;
@@ -10,6 +11,8 @@ interface SourceSidebarProps {
 }
 
 export function SourceSidebar({ session, queue }: SourceSidebarProps) {
+  const { t } = useTranslation();
+
   if (!session.source) {
     return null;
   }
@@ -19,7 +22,7 @@ export function SourceSidebar({ session, queue }: SourceSidebarProps) {
       <aside className="grid content-start gap-5 p-5" aria-labelledby="source-title">
         <div className="min-w-0">
           <p className="mb-1 text-xs font-bold tracking-[0.14em] text-primary uppercase">
-            Source details
+            {t("import.source.details")}
           </p>
           <h1
             id="source-title"
@@ -30,7 +33,7 @@ export function SourceSidebar({ session, queue }: SourceSidebarProps) {
           </h1>
           {session.status === "loading-source" ? (
             <span className="text-xs text-muted-foreground" role="status">
-              Inspecting…
+              {t("import.source.inspecting")}
             </span>
           ) : null}
         </div>
