@@ -162,7 +162,8 @@ p {
   top: calc(100% + 0.75rem);
   right: 0;
   display: grid;
-  width: min(35rem, calc(100vw - 2rem));
+  width: min(44rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 6rem);
   gap: 1rem;
   box-sizing: border-box;
   padding: 1rem;
@@ -171,6 +172,7 @@ p {
   color: #f4f4f5;
   background: #17171b;
   box-shadow: 0 1rem 3rem rgb(0 0 0 / 45%);
+  overflow-y: auto;
 }
 
 .export-dialog-header,
@@ -212,6 +214,64 @@ p {
   width: auto;
   margin: 0;
   padding: 0.6rem 0.9rem;
+}
+
+.preset-editor,
+.command-preview {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.75rem;
+  border: 1px solid #2f2f36;
+  border-radius: 0.55rem;
+  background: #141418;
+}
+
+.preset-editor-heading,
+.preset-editor-actions,
+.preset-editor-fields {
+  display: flex;
+  align-items: end;
+  gap: 0.5rem;
+}
+
+.preset-editor-heading {
+  align-items: center;
+  justify-content: space-between;
+  color: #a1a1aa;
+  font-size: 0.76rem;
+}
+
+.preset-editor-fields .export-field {
+  flex: 1 1 11rem;
+}
+
+.preset-editor-fields .preset-name-field {
+  flex-grow: 1.4;
+}
+
+.preset-save-button {
+  flex: 0 0 auto;
+}
+
+.command-preview > span {
+  color: #a1a1aa;
+  font-size: 0.76rem;
+}
+
+.command-preview p,
+.command-preview pre {
+  margin: 0;
+}
+
+.command-preview pre {
+  max-height: 8rem;
+  overflow: auto;
+  color: #d4d4d8;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.7rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
 }
 
 .secondary-button {

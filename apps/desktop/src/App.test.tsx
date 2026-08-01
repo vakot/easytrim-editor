@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   chooseSource: vi.fn(),
   inspectMedia: vi.fn(),
   listenForSourceDrops: vi.fn(),
+  planOptimizedExport: vi.fn(),
   prepareProxyPreview: vi.fn(),
   prepareSourcePreview: vi.fn(),
   prepareWaveforms: vi.fn(),
@@ -28,6 +29,7 @@ vi.mock("./lib/tauri/media", async (importOriginal) => {
     chooseSource: mocks.chooseSource,
     inspectMedia: mocks.inspectMedia,
     listenForSourceDrops: mocks.listenForSourceDrops,
+    planOptimizedExport: mocks.planOptimizedExport,
     prepareProxyPreview: mocks.prepareProxyPreview,
     prepareSourcePreview: mocks.prepareSourcePreview,
     prepareWaveforms: mocks.prepareWaveforms,
@@ -107,6 +109,9 @@ beforeEach(() => {
         url: `http://clipkit-media.localhost/${sourceId}?variant=waveform&stream=${streamIndex}&width=${width}`,
       })),
   );
+  mocks.planOptimizedExport.mockResolvedValue({
+    commandPreview: "ffmpeg -i <source> -c:v hevc_nvenc <output>",
+  });
   mocks.listenForSourceDrops.mockImplementation(
     async (listener: (event: SourceDropEvent) => void) => {
       sourceDropListener = listener;
@@ -210,6 +215,80 @@ describe("App", () => {
       screen.queryByText("Import a video to inspect its source and prepare a precise cut."),
     ).not.toBeInTheDocument();
     expect(screen.getByRole("toolbar", { name: "Application toolbar" })).toBeInTheDocument();
+  });
+
+  it("keeps runtime export presets when the source is replaced", async () => {
+    const replacement = { sourceId: "source-2", displayName: "replacement.mkv" };
+    mocks.chooseSource.mockResolvedValueOnce(selection).mockResolvedValueOnce(replacement);
+    mocks.inspectMedia.mockImplementation(async (sourceId: string) => ({ ...media, sourceId }));
+    mocks.prepareSourcePreview.mockImplementation(async (sourceId: string) => ({
+      sourceId,
+      url: `http://clipkit-media.localhost/${sourceId}?variant=source`,
+      kind: "source" as const,
+    }));
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Select video" }));
+    await screen.findByRole("heading", { name: "holiday.mp4" });
+    await user.click(screen.getByRole("button", { name: "Export" }));
+    await screen.findByText("ffmpeg -i <source> -c:v hevc_nvenc <output>");
+
+    await user.click(screen.getByRole("button", { name: "New" }));
+    await waitFor(() => expect(screen.getByLabelText("Name")).toHaveValue(""));
+    fireEvent.change(screen.getByLabelText("Name"), {
+      target: { value: "CPU fallback" },
+    });
+    fireEvent.change(screen.getByLabelText("FFmpeg arguments"), {
+      target: { value: "-c:v libx264 -crf 20 -c:a aac -b:a 160k" },
+    });
+    await user.click(screen.getByRole("button", { name: "Create preset" }));
+    await waitFor(() =>
+      expect(screen.getByLabelText("Saved presets")).toHaveValue("runtime-preset-1"),
+    );
+
+    await user.click(screen.getByRole("button", { name: "Close optimized render settings" }));
+    await user.click(screen.getByRole("button", { name: "Open video" }));
+    await screen.findByRole("heading", { name: "replacement.mkv" });
+    await user.click(screen.getByRole("button", { name: "Export" }));
+
+    expect(screen.getByLabelText("Saved presets")).toHaveValue("runtime-preset-1");
+    expect(screen.getByLabelText("Name")).toHaveValue("CPU fallback");
+    expect(screen.getByLabelText("FFmpeg arguments")).toHaveValue(
+      "-c:v libx264 -crf 20 -c:a aac -b:a 160k",
+    );
+  });
+
+  it("shows native argument validation before opening the save dialog", async () => {
+    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.planOptimizedExport.mockImplementation(async (request: { arguments: string }) => {
+      if (request.arguments.includes("-i")) {
+        throw {
+          code: "invalid_request",
+          message: "Optimized arguments cannot override the input.",
+        };
+      }
+      return { commandPreview: "ffmpeg -i <source> <output>" };
+    });
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Select video" }));
+    await screen.findByRole("heading", { name: "holiday.mp4" });
+    await user.click(screen.getByRole("button", { name: "Export" }));
+    await screen.findByText("ffmpeg -i <source> <output>");
+    fireEvent.change(screen.getByLabelText("FFmpeg arguments"), {
+      target: { value: "-c:v libx264 -i another.mp4" },
+    });
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Optimized arguments cannot override the input.",
+    );
+    expect(
+      within(screen.getByRole("dialog", { name: "Export" })).getByRole("button", {
+        name: "Export",
+      }),
+    ).toBeDisabled();
   });
 
   it("prepares aligned waveforms and keeps audio output choices in memory", async () => {

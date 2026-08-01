@@ -7,6 +7,7 @@ import {
   cancelOperation,
   chooseOutputPath,
   normalizeAppError,
+  planOptimizedExport,
   renderFast,
   renderOptimized,
   revealInExplorer,
@@ -17,10 +18,30 @@ import {
   type OptimizedExportRequest,
   type OutputSelection,
 } from "../../lib/tauri/media";
+import {
+  presetNameError,
+  selectedExportPreset,
+  type ExportPresetAction,
+  type ExportPresetState,
+} from "./export-presets";
 
-const DEFAULT_ARGUMENTS =
-  "-c:v hevc_nvenc -preset p5 -tune hq -rc vbr -cq 24 -b:v 0 -spatial_aq 1 -temporal_aq 1 -aq-strength 8 -pix_fmt yuv420p -c:a aac -b:a 160k";
 type ToastStatus = "rendering" | "completed" | "failed" | "canceled";
+type ExportPlanState =
+  | { status: "idle" | "loading" }
+  | { status: "ready"; commandPreview: string }
+  | { status: "failed"; message: string };
+
+const FRAME_RATE_OPTIONS = [
+  { label: "23.976 FPS", numerator: 24_000, denominator: 1_001 },
+  { label: "24 FPS", numerator: 24, denominator: 1 },
+  { label: "25 FPS", numerator: 25, denominator: 1 },
+  { label: "29.97 FPS", numerator: 30_000, denominator: 1_001 },
+  { label: "30 FPS", numerator: 30, denominator: 1 },
+  { label: "50 FPS", numerator: 50, denominator: 1 },
+  { label: "59.94 FPS", numerator: 60_000, denominator: 1_001 },
+  { label: "60 FPS", numerator: 60, denominator: 1 },
+  { label: "120 FPS", numerator: 120, denominator: 1 },
+] as const;
 
 export interface ExportToast {
   id: string;
@@ -43,6 +64,8 @@ interface ExportPanelProps {
   mergeAudio: boolean;
   queue: ExportToast[];
   setQueue: Dispatch<SetStateAction<ExportToast[]>>;
+  presetState: ExportPresetState;
+  onPresetAction: Dispatch<ExportPresetAction>;
   onNativeDialogStateChange: (open: boolean) => void;
 }
 
@@ -55,20 +78,29 @@ export function ExportPanel({
   masterVolumePercent,
   mergeAudio,
   setQueue,
+  presetState,
+  onPresetAction,
   onNativeDialogStateChange,
 }: ExportPanelProps) {
   const defaults = useMemo(() => outputDefaults(sourceName), [sourceName]);
+  const sourceResolution = useMemo(() => displayResolution(source), [source]);
   const [isOptimizedOpen, setIsOptimizedOpen] = useState(false);
-  const [resolution, setResolution] = useState({
-    width: source.video.width,
-    height: source.video.height,
-  });
+  const [resolution, setResolution] = useState(sourceResolution);
   const [frameRate, setFrameRate] = useState<FrameRate | undefined>();
-  const [argumentsText, setArgumentsText] = useState(DEFAULT_ARGUMENTS);
+  const [presetNameDraft, setPresetNameDraft] = useState(() => ({
+    presetId: presetState.selectedPresetId,
+    value: selectedExportPreset(presetState)?.name ?? "",
+  }));
+  const [presetError, setPresetError] = useState<string | null>(null);
+  const [exportPlan, setExportPlan] = useState<ExportPlanState>({ status: "idle" });
   const [launchError, setLaunchError] = useState<string | null>(null);
   const canceledRef = useRef(new Set<string>());
   const operationIdsRef = useRef(new Map<string, string>());
   const toastSequence = useRef(0);
+  const presetName =
+    presetNameDraft.presetId === presetState.selectedPresetId
+      ? presetNameDraft.value
+      : (selectedExportPreset(presetState)?.name ?? "");
 
   useEffect(() => {
     function handleExportShortcut(event: KeyboardEvent) {
@@ -80,8 +112,7 @@ export function ExportPanel({
         void handleFastCut();
       } else if (event.key.toLowerCase() === "e") {
         event.preventDefault();
-        setLaunchError(null);
-        setIsOptimizedOpen(true);
+        openOptimizedSettings();
       }
     }
 
@@ -89,14 +120,61 @@ export function ExportPanel({
     return () => window.removeEventListener("keydown", handleExportShortcut, true);
   });
 
-  const masterGain = masterEnabled ? masterVolumePercent / 50 : 0;
-  const selectedAudio = audioTracks
-    .filter((track) => track.enabled && track.volumePercent > 0 && masterGain > 0)
-    .map((track) => ({
-      streamIndex: track.streamIndex,
-      volumePercent: Math.min(200, Math.round(track.volumePercent * masterGain)),
-    }))
-    .filter((track) => track.volumePercent > 0);
+  const selectedAudio = useMemo(() => {
+    const masterGain = masterEnabled ? masterVolumePercent / 50 : 0;
+    return audioTracks
+      .filter((track) => track.enabled && track.volumePercent > 0 && masterGain > 0)
+      .map((track) => ({
+        streamIndex: track.streamIndex,
+        volumePercent: Math.min(200, Math.round(track.volumePercent * masterGain)),
+      }))
+      .filter((track) => track.volumePercent > 0);
+  }, [audioTracks, masterEnabled, masterVolumePercent]);
+
+  const optimizedRequest = useMemo<OptimizedExportRequest>(
+    () => ({
+      sourceId: source.sourceId,
+      trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
+      audioTracks: selectedAudio,
+      mergeAudio,
+      resolution,
+      frameRate: frameRate
+        ? { numerator: frameRate.numerator, denominator: frameRate.denominator }
+        : undefined,
+      arguments: presetState.argumentsText,
+    }),
+    [frameRate, mergeAudio, presetState.argumentsText, resolution, selectedAudio, source, trim],
+  );
+
+  useEffect(() => {
+    if (!isOptimizedOpen) {
+      return;
+    }
+    let disposed = false;
+    const timeout = window.setTimeout(() => {
+      void planOptimizedExport(optimizedRequest)
+        .then((plan) => {
+          if (!disposed) {
+            setExportPlan({ status: "ready", commandPreview: plan.commandPreview });
+          }
+        })
+        .catch((error: unknown) => {
+          if (!disposed) {
+            setExportPlan({ status: "failed", message: normalizeAppError(error).message });
+          }
+        });
+    }, 120);
+    return () => {
+      disposed = true;
+      window.clearTimeout(timeout);
+    };
+  }, [isOptimizedOpen, optimizedRequest]);
+
+  function openOptimizedSettings() {
+    setLaunchError(null);
+    setExportPlan({ status: "loading" });
+    setIsOptimizedOpen(true);
+  }
 
   async function handleFastCut() {
     const request: FastExportRequest = {
@@ -109,19 +187,32 @@ export function ExportPanel({
   }
 
   async function handleOptimizedRender() {
+    setLaunchError(null);
+    try {
+      await planOptimizedExport(optimizedRequest);
+    } catch (error: unknown) {
+      setLaunchError(normalizeAppError(error).message);
+      return;
+    }
     setIsOptimizedOpen(false);
-    const request: OptimizedExportRequest = {
-      sourceId: source.sourceId,
-      trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
-      audioTracks: selectedAudio,
-      mergeAudio,
-      resolution,
-      frameRate: frameRate
-        ? { numerator: frameRate.numerator, denominator: frameRate.denominator }
-        : undefined,
-      arguments: argumentsText,
-    };
-    await chooseAndStart("optimized", defaults.optimized, request);
+    await chooseAndStart("optimized", defaults.optimized, optimizedRequest);
+  }
+
+  function handleSavePreset() {
+    const error = presetNameError(
+      presetState.presets,
+      presetName,
+      presetState.selectedPresetId ?? undefined,
+    );
+    if (error) {
+      setPresetError(error);
+      return;
+    }
+    onPresetAction({
+      type: presetState.selectedPresetId ? "preset-updated" : "preset-created",
+      name: presetName,
+    });
+    setPresetError(null);
   }
 
   async function chooseAndStart(
@@ -246,8 +337,11 @@ export function ExportPanel({
             className="toolbar-button export-button"
             type="button"
             onClick={() => {
-              setLaunchError(null);
-              setIsOptimizedOpen((open) => !open);
+              if (isOptimizedOpen) {
+                setIsOptimizedOpen(false);
+              } else {
+                openOptimizedSettings();
+              }
             }}
             aria-haspopup="dialog"
             aria-expanded={isOptimizedOpen}
@@ -279,7 +373,10 @@ export function ExportPanel({
                     value={`${resolution.width}x${resolution.height}`}
                     onChange={(event) => {
                       const [width, height] = event.target.value.split("x").map(Number);
-                      if (width && height) setResolution({ width, height });
+                      if (width && height) {
+                        setExportPlan({ status: "loading" });
+                        setResolution({ width, height });
+                      }
                     }}
                   >
                     {resolutionOptions(source).map((option) => (
@@ -293,25 +390,138 @@ export function ExportPanel({
                   <span>Frame rate</span>
                   <select
                     value={frameRate ? `${frameRate.numerator}/${frameRate.denominator}` : "source"}
-                    onChange={(event) => setFrameRate(rateFromValue(event.target.value))}
+                    onChange={(event) => {
+                      setExportPlan({ status: "loading" });
+                      setFrameRate(rateFromValue(event.target.value));
+                    }}
                   >
                     <option value="source">Match source</option>
-                    {[24, 25, 30, 50, 60, 120].map((rate) => (
-                      <option key={rate} value={`${rate}/1`}>
-                        {rate} FPS
+                    {FRAME_RATE_OPTIONS.map((rate) => (
+                      <option
+                        key={`${rate.numerator}/${rate.denominator}`}
+                        value={`${rate.numerator}/${rate.denominator}`}
+                      >
+                        {rate.label}
                       </option>
                     ))}
                   </select>
                 </label>
               </div>
+              <section className="preset-editor" aria-labelledby="preset-editor-title">
+                <div className="preset-editor-heading">
+                  <span id="preset-editor-title">Preset</span>
+                  <div className="preset-editor-actions">
+                    <button
+                      className="secondary-button"
+                      type="button"
+                      onClick={() => {
+                        onPresetAction({ type: "preset-new-started" });
+                        setPresetNameDraft({ presetId: null, value: "" });
+                        setPresetError(null);
+                        setExportPlan({ status: "loading" });
+                      }}
+                    >
+                      New
+                    </button>
+                    <button
+                      className="secondary-button"
+                      type="button"
+                      disabled={!presetState.selectedPresetId}
+                      onClick={() => {
+                        onPresetAction({ type: "preset-deleted" });
+                        setPresetError(null);
+                        setExportPlan({ status: "loading" });
+                      }}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+                <div className="preset-editor-fields">
+                  <label className="export-field">
+                    <span>Saved presets</span>
+                    <select
+                      value={presetState.selectedPresetId ?? ""}
+                      onChange={(event) => {
+                        if (event.target.value) {
+                          setPresetError(null);
+                          setExportPlan({ status: "loading" });
+                          onPresetAction({
+                            type: "preset-selected",
+                            presetId: event.target.value,
+                          });
+                        }
+                      }}
+                    >
+                      <option value="" disabled>
+                        Unsaved preset
+                      </option>
+                      {presetState.presets.map((preset) => (
+                        <option key={preset.id} value={preset.id}>
+                          {preset.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="export-field preset-name-field">
+                    <span>Name</span>
+                    <input
+                      value={presetName}
+                      maxLength={64}
+                      onChange={(event) => {
+                        setPresetNameDraft({
+                          presetId: presetState.selectedPresetId,
+                          value: event.target.value,
+                        });
+                        setPresetError(null);
+                      }}
+                    />
+                  </label>
+                  <button
+                    className="secondary-button preset-save-button"
+                    type="button"
+                    onClick={handleSavePreset}
+                  >
+                    {presetState.selectedPresetId ? "Update preset" : "Create preset"}
+                  </button>
+                </div>
+                {presetError ? (
+                  <span className="export-error" role="alert">
+                    {presetError}
+                  </span>
+                ) : null}
+              </section>
               <label className="export-field export-arguments">
                 <span>FFmpeg arguments</span>
                 <textarea
-                  value={argumentsText}
-                  onChange={(event) => setArgumentsText(event.target.value)}
+                  value={presetState.argumentsText}
+                  onChange={(event) => {
+                    setExportPlan({ status: "loading" });
+                    onPresetAction({
+                      type: "arguments-changed",
+                      argumentsText: event.target.value,
+                    });
+                  }}
                   rows={4}
                 />
               </label>
+              <section className="command-preview" aria-labelledby="command-preview-title">
+                <span id="command-preview-title">Command preview</span>
+                {exportPlan.status === "ready" ? (
+                  <pre>{exportPlan.commandPreview}</pre>
+                ) : exportPlan.status === "failed" ? (
+                  <p className="export-error" role="alert">
+                    {exportPlan.message}
+                  </p>
+                ) : (
+                  <p role="status">Validating arguments…</p>
+                )}
+              </section>
+              {launchError ? (
+                <span className="export-error" role="alert">
+                  {launchError}
+                </span>
+              ) : null}
               <p className="export-note">The native save dialog opens after confirmation.</p>
               <div className="export-dialog-actions">
                 <button
@@ -324,6 +534,7 @@ export function ExportPanel({
                 <button
                   className="primary-button"
                   type="button"
+                  disabled={exportPlan.status !== "ready"}
                   onClick={() => void handleOptimizedRender()}
                 >
                   Export
@@ -332,7 +543,7 @@ export function ExportPanel({
             </div>
           ) : null}
         </div>
-        {launchError ? (
+        {launchError && !isOptimizedOpen ? (
           <span className="export-error" role="alert">
             {launchError}
           </span>
@@ -438,19 +649,27 @@ function isEditableTarget(target: EventTarget | null): boolean {
 }
 
 function resolutionOptions(source: MediaInfo) {
+  const sourceResolution = displayResolution(source);
   const options = [
     {
-      label: `Source · ${source.video.width} × ${source.video.height}`,
-      value: `${source.video.width}x${source.video.height}`,
+      label: `Source · ${sourceResolution.width} × ${sourceResolution.height}`,
+      value: `${sourceResolution.width}x${sourceResolution.height}`,
     },
   ];
   for (const height of [2160, 1440, 1080]) {
-    if (height < source.video.height) {
-      const width = Math.round((source.video.width * height) / source.video.height / 2) * 2;
+    if (height < sourceResolution.height) {
+      const width = Math.round((sourceResolution.width * height) / sourceResolution.height / 2) * 2;
       options.push({ label: `${height}p · ${width} × ${height}`, value: `${width}x${height}` });
     }
   }
   return options;
+}
+
+function displayResolution(source: MediaInfo) {
+  const rotation = source.video.rotationDegrees ?? 0;
+  return Math.abs(rotation) % 180 === 90
+    ? { width: source.video.height, height: source.video.width }
+    : { width: source.video.width, height: source.video.height };
 }
 
 function rateFromValue(value: string): FrameRate | undefined {

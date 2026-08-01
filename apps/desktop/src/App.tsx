@@ -4,6 +4,7 @@ import { initialSessionState, sessionReducer } from "./app/session-state";
 import type { TrimRange } from "./domain/trim";
 import { CapabilityStatus, SourceWorkspace } from "./features/import-source/SourceWorkspace";
 import { ExportPanel, type ExportToast } from "./features/export/ExportPanel";
+import { exportPresetReducer, initialExportPresetState } from "./features/export/export-presets";
 import {
   checkMediaCapabilities,
   chooseSource,
@@ -21,6 +22,10 @@ import "./App.css";
 
 function App() {
   const [session, dispatch] = useReducer(sessionReducer, initialSessionState);
+  const [exportPresets, dispatchExportPreset] = useReducer(
+    exportPresetReducer,
+    initialExportPresetState,
+  );
   const [isChoosingSource, setIsChoosingSource] = useState(false);
   const [isNativeDialogOpen, setIsNativeDialogOpen] = useState(false);
   const [isReturnConfirmationOpen, setIsReturnConfirmationOpen] = useState(false);
@@ -319,6 +324,8 @@ function App() {
                 mergeAudio={session.source.mergeAudio}
                 queue={exportQueue}
                 setQueue={setExportQueue}
+                presetState={exportPresets}
+                onPresetAction={dispatchExportPreset}
                 onNativeDialogStateChange={setIsNativeDialogOpen}
               />
             ) : null}
