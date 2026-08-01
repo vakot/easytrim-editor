@@ -15,7 +15,7 @@ function StatusDot({ tone }: { tone: "success" | "error" | "neutral" }) {
 
 function CapabilityTooltip({ children, content }: { children: ReactNode; content: ReactNode }) {
   return (
-    <Tooltip>
+    <Tooltip delayDuration={0}>
       <TooltipTrigger asChild>
         <span tabIndex={0} className="inline-flex">
           {children}
@@ -48,7 +48,7 @@ export function CapabilityStatus({ capabilities }: { capabilities: SessionState[
   if (capabilities.status === "failed") {
     return (
       <CapabilityTooltip content={capabilities.error.message}>
-        <Badge variant="destructive" role="status">
+        <Badge variant="destructive" role="status" className="motion-safe:animate-pulse">
           <StatusDot tone="error" />
           {t("import.capabilities.failed")}
         </Badge>
@@ -117,6 +117,7 @@ export function CapabilityStatus({ capabilities }: { capabilities: SessionState[
         variant="destructive"
         role="status"
         aria-label={t("import.capabilities.unavailableLabel", { message })}
+        className="motion-safe:animate-pulse"
       >
         <StatusDot tone="error" />
         {t("import.capabilities.unavailable")}
