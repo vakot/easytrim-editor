@@ -296,7 +296,7 @@ function App() {
                 }
               }}
             >
-              <img src="/logo.svg" alt="" />
+              <img src="/logo_outline.svg" alt="" />
               CLIP KIT
             </h1>
           </div>
