@@ -158,8 +158,9 @@ export const sk = {
     channels_other: "{{count}} kanálov",
     output: {
       videoOnly: "Výstup iba s videom",
-      merged:
-        "Rýchly strih a zlúčenie zvuku — video zostane skopírované, vybraný zvuk sa zakóduje.",
+      merged_one: "{{count}} vybraná stopa sa zlúči do jednej stopy; vybraný zvuk sa zakóduje.",
+      merged_few: "{{count}} vybrané stopy sa zlúčia do jednej stopy; vybraný zvuk sa zakóduje.",
+      merged_other: "{{count}} vybraných stôp sa zlúči do jednej stopy; vybraný zvuk sa zakóduje.",
       oneTrack: "Jedna vybraná stopa — zlúčenie nie je potrebné.",
       separate_one: "{{count}} vybraná stopa zostane samostatná.",
       separate_few: "{{count}} vybrané stopy zostanú samostatné.",
