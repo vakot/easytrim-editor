@@ -50,7 +50,11 @@ export function AudioTrackRow({
             />
           </HoverCardTrigger>
           <div className="min-w-0 leading-tight">
-            <p className="truncate text-sm font-semibold" title={title}>
+            <p
+              className="truncate text-sm font-semibold transition-colors data-[enabled=false]:text-muted-foreground"
+              data-enabled={track.enabled}
+              title={title}
+            >
               {title}
             </p>
             <p className="truncate text-xs leading-5 text-muted-foreground">
