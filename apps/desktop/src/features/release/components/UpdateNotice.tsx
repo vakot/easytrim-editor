@@ -1,4 +1,5 @@
-import { ExternalLink, Sparkles } from "lucide-react";
+import { ExternalLink, Sparkles, X } from "lucide-react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,9 @@ import type { AvailableUpdate } from "../release-check";
 
 export function UpdateNotice({ update }: { update: AvailableUpdate }) {
   const { t } = useTranslation();
+  const [isVisible, setIsVisible] = useState(true);
+
+  if (!isVisible) return null;
 
   return (
     <aside
@@ -22,6 +26,14 @@ export function UpdateNotice({ update }: { update: AvailableUpdate }) {
       <Button size="sm" onClick={() => void openExternalUrl(update.url)}>
         {t("release.update")}
         <ExternalLink aria-hidden="true" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon-xs"
+        aria-label={t("release.dismiss")}
+        onClick={() => setIsVisible(false)}
+      >
+        <X aria-hidden="true" />
       </Button>
     </aside>
   );

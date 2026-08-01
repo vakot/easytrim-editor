@@ -205,6 +205,7 @@ export const en = {
   release: {
     updateAvailable: "A new ClipKit release is available:",
     update: "Update",
+    dismiss: "Dismiss update notice",
   },
   support: {
     message: "Support the author and help keep ClipKit improving.",

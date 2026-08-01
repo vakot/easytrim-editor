@@ -211,6 +211,7 @@ export const sk = {
   release: {
     updateAvailable: "Je dostupná nová verzia ClipKit:",
     update: "Aktualizovať",
+    dismiss: "Skryť upozornenie na aktualizáciu",
   },
   support: {
     message: "Podporte autora a pomôžte zlepšovať ClipKit.",
