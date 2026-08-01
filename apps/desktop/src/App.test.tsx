@@ -244,7 +244,7 @@ describe("App", () => {
 
     await user.hover(volumeButton);
     expect(await screen.findByRole("slider", { name: "eng volume" })).toBeInTheDocument();
-    expect(await screen.findByRole("tooltip")).toHaveTextContent("Mute eng: enabled");
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("Mute");
 
     await user.unhover(volumeButton);
     await waitFor(() => {

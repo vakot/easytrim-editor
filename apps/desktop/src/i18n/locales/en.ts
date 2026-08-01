@@ -142,6 +142,8 @@ export const en = {
     trackVolume: "{{title}} volume",
     enabledState: "{{label}}: enabled",
     mutedState: "{{label}}: muted",
+    mute: "Mute",
+    unmute: "Unmute",
     originalLevel: "0 dB is the original level",
     preparingWaveform: "Preparing waveform…",
     waveformUnavailable: "Waveform unavailable",

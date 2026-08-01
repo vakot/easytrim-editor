@@ -14,7 +14,7 @@
   bottom: -0.1875rem;
   left: 80%;
   width: 1px;
-  background: var(--muted-foreground);
+  background: var(--slider-original-marker);
   content: "";
 }
 

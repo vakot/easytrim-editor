@@ -149,6 +149,8 @@ export const sk = {
     trackVolume: "Hlasitosť: {{title}}",
     enabledState: "{{label}}: zapnuté",
     mutedState: "{{label}}: stlmené",
+    mute: "Stlmiť",
+    unmute: "Zrušiť stlmenie",
     originalLevel: "0 dB je pôvodná úroveň",
     preparingWaveform: "Pripravuje sa priebeh zvuku…",
     waveformUnavailable: "Priebeh zvuku nie je dostupný",

@@ -21,7 +21,7 @@ export const VolumeButton = forwardRef<HTMLButtonElement, VolumeButtonProps>(fun
   ref,
 ) {
   const { t } = useTranslation();
-  const stateLabel = t(enabled ? "audio.enabledState" : "audio.mutedState", { label });
+  const tooltipLabel = t(enabled ? "audio.mute" : "audio.unmute");
 
   return (
     <Tooltip>
@@ -40,7 +40,7 @@ export const VolumeButton = forwardRef<HTMLButtonElement, VolumeButtonProps>(fun
           {enabled ? <Volume2 /> : <VolumeX />}
         </Button>
       </TooltipTrigger>
-      <TooltipContent>{stateLabel}</TooltipContent>
+      <TooltipContent>{tooltipLabel}</TooltipContent>
     </Tooltip>
   );
 });
