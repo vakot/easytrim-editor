@@ -28,6 +28,8 @@ export function ExportPanel(props: ExportPanelProps) {
         settings={exportController.settings}
         onOpenChange={exportController.setIsOptimizedOpen}
         onSettingsChange={exportController.setSettings}
+        presetState={props.presetState}
+        onPresetAction={props.onPresetAction}
         onExport={() => void exportController.startOptimizedRender()}
       />
       {exportController.launchError ? (

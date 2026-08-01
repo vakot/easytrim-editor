@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import type { SessionState } from "@/app/session-state";
 import { CapabilityStatus } from "@/features/import-source/SourceWorkspace";
 import { ExportPanel, type ExportToast } from "@/features/export";
+import type { ExportPresetAction, ExportPresetState } from "@/features/export/export-presets";
 import type { Dispatch, SetStateAction } from "react";
 import { useTranslation } from "react-i18next";
 import { LanguageSelector } from "./LanguageSelector";
@@ -11,6 +12,8 @@ interface AppToolbarProps {
   session: SessionState;
   isChoosingSource: boolean;
   setExportQueue: Dispatch<SetStateAction<ExportToast[]>>;
+  exportPresets: ExportPresetState;
+  dispatchExportPreset: Dispatch<ExportPresetAction>;
   onChooseSource: () => void;
   onReturnToWelcome: () => void;
   onNativeDialogStateChange: (open: boolean) => void;
@@ -20,6 +23,8 @@ export function AppToolbar({
   session,
   isChoosingSource,
   setExportQueue,
+  exportPresets,
+  dispatchExportPreset,
   onChooseSource,
   onReturnToWelcome,
   onNativeDialogStateChange,
@@ -58,6 +63,8 @@ export function AppToolbar({
             masterVolumePercent={session.source.masterVolumePercent}
             mergeAudio={session.source.mergeAudio}
             setQueue={setExportQueue}
+            presetState={exportPresets}
+            onPresetAction={dispatchExportPreset}
             onNativeDialogStateChange={onNativeDialogStateChange}
           />
         ) : null}

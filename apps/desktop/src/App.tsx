@@ -24,6 +24,8 @@ function ClipKitApp() {
             session={app.session}
             isChoosingSource={app.isChoosingSource}
             setExportQueue={app.setExportQueue}
+            exportPresets={app.exportPresets}
+            dispatchExportPreset={app.dispatchExportPreset}
             onChooseSource={() => void app.handleChooseSource()}
             onReturnToWelcome={app.requestReturnToWelcome}
             onNativeDialogStateChange={app.setIsNativeDialogOpen}

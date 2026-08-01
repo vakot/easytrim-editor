@@ -3,6 +3,7 @@ import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { initialSessionState, sessionReducer } from "@/app/session-state";
 import type { TrimRange } from "@/domain/trim";
 import type { ExportToast } from "@/features/export";
+import { exportPresetReducer, initialExportPresetState } from "@/features/export/export-presets";
 import {
   checkMediaCapabilities,
   chooseSource,
@@ -25,6 +26,10 @@ export function useClipKitApp() {
   const [isSourceDragActive, setIsSourceDragActive] = useState(false);
   const [dropListenerError, setDropListenerError] = useState<string | null>(null);
   const [exportQueue, setExportQueue] = useState<ExportToast[]>([]);
+  const [exportPresets, dispatchExportPreset] = useReducer(
+    exportPresetReducer,
+    initialExportPresetState,
+  );
   const [audioPreviewUrls, setAudioPreviewUrls] = useState<Record<number, string>>({});
   const activeSourceIdRef = useRef<string | null>(null);
   const waveformJobSequence = useRef(0);
@@ -300,6 +305,8 @@ export function useClipKitApp() {
     isSourceDragActive,
     dropListenerError,
     exportQueue,
+    exportPresets,
+    dispatchExportPreset,
     audioPreviewUrls,
     setExportQueue,
     setIsNativeDialogOpen,
