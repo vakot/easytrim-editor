@@ -202,6 +202,14 @@ export const en = {
     sourceResolution: "{{height}}p \u00b7 {{width}} \u00d7 {{height}} (source)",
     framesPerSecond: "{{value}} FPS",
   },
+  release: {
+    updateAvailable: "A new ClipKit release is available:",
+    update: "Update",
+  },
+  support: {
+    message: "Support the author and help keep ClipKit improving.",
+    dismiss: "Dismiss support message",
+  },
   units: {
     framesPerSecond: "{{value}} fps",
     megabitsPerSecond: "{{value}} Mbps",

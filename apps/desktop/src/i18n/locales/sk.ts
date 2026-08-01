@@ -208,6 +208,14 @@ export const sk = {
     sourceResolution: "{{height}}p \u00b7 {{width}} \u00d7 {{height}} (zdroj)",
     framesPerSecond: "{{value}} FPS",
   },
+  release: {
+    updateAvailable: "Je dostupná nová verzia ClipKit:",
+    update: "Aktualizovať",
+  },
+  support: {
+    message: "Podporte autora a pomôžte zlepšovať ClipKit.",
+    dismiss: "Skryť správu podpory",
+  },
   units: {
     framesPerSecond: "{{value}} fps",
     megabitsPerSecond: "{{value}} Mb/s",

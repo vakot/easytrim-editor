@@ -7,10 +7,13 @@ import { useClipKitApp } from "@/app/hooks/use-clipkit-app";
 import { SourceWorkspace } from "@/features/import-source/SourceWorkspace";
 import { useTranslation } from "react-i18next";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
+import { UpdateNotice } from "@/features/release/components/UpdateNotice";
+import { useReleaseCheck } from "@/features/release/hooks/use-release-check";
 
 function ClipKitApp() {
   const app = useClipKitApp();
   const { t } = useTranslation();
+  const { update } = useReleaseCheck();
 
   return (
     <TooltipProvider>
@@ -19,6 +22,7 @@ function ClipKitApp() {
           app.hasSource ? "grid-rows-[auto_minmax(0,1fr)]" : "grid-rows-1"
         }`}
       >
+        {update ? <UpdateNotice update={update} /> : null}
         {app.hasSource ? (
           <AppToolbar
             session={app.session}
