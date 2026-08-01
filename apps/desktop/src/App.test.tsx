@@ -249,7 +249,6 @@ describe("App", () => {
       expect(await screen.findByRole("heading", { name: "Audio tracks" })).toBeInTheDocument();
       const allTracks = screen.getByRole("button", { name: "All audio tracks" });
       expect(allTracks).toHaveAttribute("aria-pressed", "true");
-      expect(allTracks.closest(".timeline-row")).toHaveClass("timeline-audio-heading");
       expect(allTracks.parentElement).not.toHaveTextContent("Audio tracks");
       expect(screen.getByRole("button", { name: "Mute eng" })).toHaveAttribute(
         "aria-pressed",
@@ -259,26 +258,25 @@ describe("App", () => {
         "aria-pressed",
         "true",
       );
-      const engVolume = screen.getByRole("slider", { name: "eng volume" });
-      expect(engVolume).toHaveValue("0");
-      fireEvent.change(engVolume, { target: { value: "6" } });
-      expect(engVolume).toHaveValue("6");
+      const masterVolume = screen.getByRole("slider", { name: "All audio tracks volume" });
+      expect(masterVolume).toHaveAttribute("aria-valuenow", "0");
+      masterVolume.focus();
+      await user.keyboard("{End}");
+      await waitFor(() => expect(masterVolume).toHaveAttribute("aria-valuenow", "6"));
       expect(screen.getByText("+6.0 dB")).toBeInTheDocument();
-      await user.dblClick(engVolume);
-      expect(engVolume).toHaveValue("0");
-      expect(engVolume.closest(".audio-level-control")).toHaveTextContent("+0.0 dB");
+      fireEvent.doubleClick(masterVolume);
+      expect(masterVolume).toHaveAttribute("aria-valuenow", "0");
+      expect(screen.getByText("+0.0 dB")).toBeInTheDocument();
       await user.click(screen.getByRole("button", { name: "Mute eng" }));
       expect(screen.getByRole("button", { name: "Enable eng" })).toHaveAttribute(
         "aria-pressed",
         "false",
       );
-      expect(engVolume).toHaveValue("-24");
       await user.click(screen.getByRole("button", { name: "Enable eng" }));
       expect(screen.getByRole("button", { name: "Mute eng" })).toHaveAttribute(
         "aria-pressed",
         "true",
       );
-      expect(engVolume).toHaveValue("0");
       await waitFor(() =>
         expect(mocks.prepareWaveforms).toHaveBeenCalledWith(
           selection.sourceId,
@@ -287,7 +285,9 @@ describe("App", () => {
           4_096,
         ),
       );
-      await waitFor(() => expect(document.querySelectorAll(".waveform-image")).toHaveLength(2));
+      await waitFor(() =>
+        expect(document.querySelectorAll("img[aria-hidden='true']")).toHaveLength(2),
+      );
 
       bounds.mockReturnValue({
         width: 1_536,

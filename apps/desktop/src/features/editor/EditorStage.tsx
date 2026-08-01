@@ -17,7 +17,7 @@ import {
   type TrimRange,
 } from "../../domain/trim";
 import type { AudioStream, FrameRate } from "../../lib/tauri/media";
-import { AudioTracks } from "../audio-tracks/AudioTracks";
+import { AudioTracks } from "../audio-tracks";
 import { PlaybackControls, PlaybackTimecode, TimelineTools } from "../preview/PlaybackControls";
 import { VideoPreview } from "../preview/VideoPreview";
 import { TrimTimeline } from "../timeline/TrimTimeline";

@@ -1,0 +1,22 @@
+.slider [data-slot="slider-track"] {
+  height: 0.375rem;
+}
+
+.slider [data-slot="slider-track"]::after {
+  position: absolute;
+  z-index: 1;
+  top: -0.1875rem;
+  bottom: -0.1875rem;
+  left: 80%;
+  width: 1px;
+  background: var(--muted-foreground);
+  content: "";
+}
+
+.slider [data-slot="slider-range"] {
+  z-index: 2;
+}
+
+.slider [data-slot="slider-thumb"] {
+  z-index: 3;
+}
