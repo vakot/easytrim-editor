@@ -637,7 +637,6 @@ p {
   width: 1em;
   height: 1em;
   object-fit: contain;
-  filter: grayscale(1) brightness(0.18);
 }
 
 @keyframes welcome-brand-scroll {
