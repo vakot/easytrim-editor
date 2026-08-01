@@ -268,6 +268,28 @@ describe("App", () => {
     );
   });
 
+  it("keeps a validated command ready when an equivalent saved preset is selected", async () => {
+    mocks.chooseSource.mockResolvedValue(selection);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Select video" }));
+    await screen.findByRole("heading", { name: "holiday.mp4" });
+    await user.click(screen.getByRole("button", { name: "Export" }));
+    await screen.findByText("ffmpeg -i <source> -c:v hevc_nvenc <output>");
+
+    await user.click(screen.getByRole("button", { name: "New" }));
+    await user.selectOptions(screen.getByLabelText("Saved presets"), "balanced-hevc-nvenc");
+
+    expect(screen.getByLabelText("Name")).toHaveValue("Balanced HEVC (NVENC)");
+    expect(screen.getByText("ffmpeg -i <source> -c:v hevc_nvenc <output>")).toBeInTheDocument();
+    expect(
+      within(screen.getByRole("dialog", { name: "Export" })).getByRole("button", {
+        name: "Export",
+      }),
+    ).toBeEnabled();
+  });
+
   it("shows native argument validation before opening the save dialog", async () => {
     mocks.chooseSource.mockResolvedValue(selection);
     mocks.planOptimizedExport.mockImplementation(async (request: { arguments: string }) => {

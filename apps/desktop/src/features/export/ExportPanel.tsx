@@ -27,9 +27,10 @@ import {
 
 type ToastStatus = "rendering" | "completed" | "failed" | "canceled";
 type ExportPlanState =
-  | { status: "idle" | "loading" }
-  | { status: "ready"; commandPreview: string }
-  | { status: "failed"; message: string };
+  | { status: "idle" }
+  | { status: "loading"; requestKey: string }
+  | { status: "ready"; requestKey: string; commandPreview: string }
+  | { status: "failed"; requestKey: string; message: string };
 
 const FRAME_RATE_OPTIONS = [
   { label: "23.976 FPS", numerator: 24_000, denominator: 1_001 },
@@ -145,6 +146,11 @@ export function ExportPanel({
     }),
     [frameRate, mergeAudio, presetState.argumentsText, resolution, selectedAudio, source, trim],
   );
+  const optimizedRequestKey = JSON.stringify(optimizedRequest);
+  const currentExportPlan =
+    exportPlan.status !== "idle" && exportPlan.requestKey === optimizedRequestKey
+      ? exportPlan
+      : ({ status: "loading", requestKey: optimizedRequestKey } satisfies ExportPlanState);
 
   useEffect(() => {
     if (!isOptimizedOpen) {
@@ -155,12 +161,20 @@ export function ExportPanel({
       void planOptimizedExport(optimizedRequest)
         .then((plan) => {
           if (!disposed) {
-            setExportPlan({ status: "ready", commandPreview: plan.commandPreview });
+            setExportPlan({
+              status: "ready",
+              requestKey: optimizedRequestKey,
+              commandPreview: plan.commandPreview,
+            });
           }
         })
         .catch((error: unknown) => {
           if (!disposed) {
-            setExportPlan({ status: "failed", message: normalizeAppError(error).message });
+            setExportPlan({
+              status: "failed",
+              requestKey: optimizedRequestKey,
+              message: normalizeAppError(error).message,
+            });
           }
         });
     }, 120);
@@ -168,11 +182,11 @@ export function ExportPanel({
       disposed = true;
       window.clearTimeout(timeout);
     };
-  }, [isOptimizedOpen, optimizedRequest]);
+  }, [isOptimizedOpen, optimizedRequest, optimizedRequestKey]);
 
   function openOptimizedSettings() {
     setLaunchError(null);
-    setExportPlan({ status: "loading" });
+    setExportPlan({ status: "loading", requestKey: optimizedRequestKey });
     setIsOptimizedOpen(true);
   }
 
@@ -374,7 +388,6 @@ export function ExportPanel({
                     onChange={(event) => {
                       const [width, height] = event.target.value.split("x").map(Number);
                       if (width && height) {
-                        setExportPlan({ status: "loading" });
                         setResolution({ width, height });
                       }
                     }}
@@ -391,7 +404,6 @@ export function ExportPanel({
                   <select
                     value={frameRate ? `${frameRate.numerator}/${frameRate.denominator}` : "source"}
                     onChange={(event) => {
-                      setExportPlan({ status: "loading" });
                       setFrameRate(rateFromValue(event.target.value));
                     }}
                   >
@@ -418,7 +430,6 @@ export function ExportPanel({
                         onPresetAction({ type: "preset-new-started" });
                         setPresetNameDraft({ presetId: null, value: "" });
                         setPresetError(null);
-                        setExportPlan({ status: "loading" });
                       }}
                     >
                       New
@@ -430,7 +441,6 @@ export function ExportPanel({
                       onClick={() => {
                         onPresetAction({ type: "preset-deleted" });
                         setPresetError(null);
-                        setExportPlan({ status: "loading" });
                       }}
                     >
                       Delete
@@ -445,7 +455,6 @@ export function ExportPanel({
                       onChange={(event) => {
                         if (event.target.value) {
                           setPresetError(null);
-                          setExportPlan({ status: "loading" });
                           onPresetAction({
                             type: "preset-selected",
                             presetId: event.target.value,
@@ -496,7 +505,6 @@ export function ExportPanel({
                 <textarea
                   value={presetState.argumentsText}
                   onChange={(event) => {
-                    setExportPlan({ status: "loading" });
                     onPresetAction({
                       type: "arguments-changed",
                       argumentsText: event.target.value,
@@ -507,11 +515,11 @@ export function ExportPanel({
               </label>
               <section className="command-preview" aria-labelledby="command-preview-title">
                 <span id="command-preview-title">Command preview</span>
-                {exportPlan.status === "ready" ? (
-                  <pre>{exportPlan.commandPreview}</pre>
-                ) : exportPlan.status === "failed" ? (
+                {currentExportPlan.status === "ready" ? (
+                  <pre>{currentExportPlan.commandPreview}</pre>
+                ) : currentExportPlan.status === "failed" ? (
                   <p className="export-error" role="alert">
-                    {exportPlan.message}
+                    {currentExportPlan.message}
                   </p>
                 ) : (
                   <p role="status">Validating arguments…</p>
@@ -534,7 +542,7 @@ export function ExportPanel({
                 <button
                   className="primary-button"
                   type="button"
-                  disabled={exportPlan.status !== "ready"}
+                  disabled={currentExportPlan.status !== "ready"}
                   onClick={() => void handleOptimizedRender()}
                 >
                   Export
