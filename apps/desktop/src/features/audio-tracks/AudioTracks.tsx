@@ -102,14 +102,17 @@ export function AudioTracks({
           );
         })}
         <div
-          className="pointer-events-none absolute inset-y-[-0.25rem] right-0 left-[calc(min(18rem,100%)+0.75rem)]"
+          className="pointer-events-none absolute inset-x-0 inset-y-[-0.25rem] grid min-w-0 grid-cols-[var(--editor-track-grid-columns)] gap-3"
+          data-slot="audio-playhead-grid"
           aria-hidden="true"
         >
-          <div
-            ref={playheadRef}
-            className="audio-playhead absolute inset-y-0 border-l border-dashed border-foreground/70"
-            style={{ left: `${playheadPercent}%` }}
-          />
+          <div className="relative col-start-2 mx-px" data-slot="audio-playhead-track">
+            <div
+              ref={playheadRef}
+              className="audio-playhead absolute inset-y-0 border-l border-dashed border-foreground/70"
+              style={{ left: `${playheadPercent}%` }}
+            />
+          </div>
         </div>
       </div>
     </section>

@@ -150,7 +150,10 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "Next frame" })).toBeInTheDocument();
     const audioPlayhead = document.querySelector(".audio-playhead");
     expect(audioPlayhead).toBeInTheDocument();
-    expect(audioPlayhead?.parentElement).toHaveAttribute("aria-hidden", "true");
+    const audioPlayheadGrid = audioPlayhead?.closest('[data-slot="audio-playhead-grid"]');
+    expect(audioPlayheadGrid).toHaveAttribute("aria-hidden", "true");
+    expect(audioPlayheadGrid).toHaveClass("grid-cols-[var(--editor-track-grid-columns)]");
+    expect(audioPlayhead?.parentElement).toHaveAttribute("data-slot", "audio-playhead-track");
     expect(
       screen.getByRole("button", { name: "Set segment start to current position" }),
     ).toHaveAttribute("aria-keyshortcuts", "I");
