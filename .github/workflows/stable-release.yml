@@ -10,6 +10,17 @@ on:
         description: Existing version tag to publish
         required: true
         type: string
+      platform:
+        description: Platform to publish without rebuilding other release assets
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - linux
+          - windows
+          - macos-intel
+          - macos-apple-silicon
 
 permissions:
   contents: write
@@ -29,19 +40,28 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - id: linux
+            name: Linux
+            os: ubuntu-22.04
+            args: --bundles appimage,deb
+            target: ""
           - name: Windows
+            id: windows
             os: windows-latest
             args: ""
             target: ""
           - name: macOS Intel
+            id: macos-intel
             os: macos-15-intel
             args: --target x86_64-apple-darwin --bundles app,dmg
             target: x86_64-apple-darwin
           - name: macOS Apple Silicon
+            id: macos-apple-silicon
             os: macos-latest
             args: --target aarch64-apple-darwin --bundles app,dmg
             target: aarch64-apple-darwin
 
+    if: ${{ github.event_name == 'push' || inputs.platform == 'all' || inputs.platform == matrix.id }}
     runs-on: ${{ matrix.os }}
     steps:
       - name: Check out tagged source
@@ -123,9 +143,9 @@ jobs:
           releaseBody: |
             EasyTrim Editor ${{ github.event.inputs.tag || github.ref_name }}
 
-            Standalone Windows and macOS desktop builds.
+            Standalone Linux, Windows, and macOS desktop builds.
 
-            Runtime requirement: install FFmpeg and make `ffmpeg` and `ffprobe` available to ClipKit. On macOS, ClipKit also checks the standard Homebrew locations for Finder launches.
+            Runtime requirement: install FFmpeg and make `ffmpeg` and `ffprobe` available to EasyTrim Editor. On macOS, EasyTrim Editor also checks the standard Homebrew locations for Finder launches.
           releaseDraft: false
           prerelease: false
           generateReleaseNotes: true
