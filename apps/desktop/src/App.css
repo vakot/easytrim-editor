@@ -257,7 +257,12 @@ p {
 }
 
 .preset-save-button {
+  display: inline-flex;
   flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  text-align: center;
 }
 
 .command-preview > span {
