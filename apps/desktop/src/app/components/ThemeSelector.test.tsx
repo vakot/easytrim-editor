@@ -15,6 +15,7 @@ describe("ThemeSelector", () => {
     );
 
     const root = document.documentElement;
+    expect(screen.getByRole("combobox").querySelectorAll("svg")).toHaveLength(2);
     expect(root).not.toHaveClass("light", "dark");
     expect(root).toHaveAttribute("data-theme", "light");
 
