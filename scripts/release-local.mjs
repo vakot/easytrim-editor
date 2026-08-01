@@ -3,17 +3,17 @@ import { join, relative } from "node:path";
 import { spawnSync } from "node:child_process";
 
 const bundlesByPlatform = {
-  windows: { bundles: "nsis,msi", directory: "nsis", host: "win32" },
-  linux: { bundles: "appimage,deb", directory: "appimage", host: "linux" },
+  windows: { bundles: "nsis,msi", directories: ["nsis", "msi"], host: "win32" },
+  linux: { bundles: "appimage,deb", directories: ["appimage", "deb"], host: "linux" },
   "macos-intel": {
     bundles: "app,dmg",
-    directory: "dmg",
+    directories: ["dmg"],
     host: "darwin",
     target: "x86_64-apple-darwin",
   },
   "macos-apple-silicon": {
     bundles: "app,dmg",
-    directory: "dmg",
+    directories: ["dmg"],
     host: "darwin",
     target: "aarch64-apple-darwin",
   },
@@ -87,14 +87,19 @@ const bundleRoot = join(
   "release",
   "bundle",
 );
-const artifactDirectory = join(bundleRoot, config.directory);
-const entries = await readdir(artifactDirectory, { withFileTypes: true });
-const artifacts = entries
-  .filter((entry) => entry.isFile())
-  .map((entry) => join(artifactDirectory, entry.name));
+const artifacts = [];
+for (const directory of config.directories) {
+  const artifactDirectory = join(bundleRoot, directory);
+  const entries = await readdir(artifactDirectory, { withFileTypes: true });
+  artifacts.push(
+    ...entries
+      .filter((entry) => entry.isFile())
+      .map((entry) => join(artifactDirectory, entry.name)),
+  );
+}
 
 if (artifacts.length === 0) {
-  fail(`no artifacts found in ${relative(process.cwd(), artifactDirectory)}`);
+  fail(`no artifacts found in ${relative(process.cwd(), bundleRoot)}`);
 }
 
 console.log(`Uploading ${artifacts.length} artifact(s) to GitHub release ${tag}...`);
