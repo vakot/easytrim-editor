@@ -201,9 +201,9 @@ describe("App", () => {
     expect(timelineResizeHandle).toHaveAttribute("aria-orientation", "horizontal");
     expect(timelineResizeHandle).toHaveAttribute("tabindex", "0");
     expect(screen.getAllByRole("separator")).toHaveLength(2);
-    expect(
-      screen.getByTestId("timeline-panel").querySelector(".timeline-pane-scroll"),
-    ).not.toBeNull();
+    expect(screen.getByTestId("timeline-panel")).toContainElement(
+      screen.getByTestId("timeline-pane-scroll"),
+    );
     expect(screen.queryByRole("heading", { name: "Open a video" })).not.toBeInTheDocument();
     expect(screen.queryByText("Local video editor")).not.toBeInTheDocument();
     expect(

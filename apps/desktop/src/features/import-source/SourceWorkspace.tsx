@@ -1,7 +1,7 @@
 import { Group, Panel } from "react-resizable-panels";
 
 import { PaneResizeHandle } from "@/components/PaneResizeHandle";
-import { EditorStage } from "@/features/editor/EditorStage";
+import { EditorStage } from "@/features/editor";
 import { DropOverlay } from "./components/DropOverlay";
 import { SourceSidebar } from "./components/SourceSidebar";
 import { WelcomePage } from "./components/WelcomePage";

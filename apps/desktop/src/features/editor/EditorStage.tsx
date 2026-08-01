@@ -1,13 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Group, Panel } from "react-resizable-panels";
 
-import type { AudioTrackState, PreviewState } from "../../app/session-state";
 import { PaneResizeHandle } from "../../components/PaneResizeHandle";
-import {
-  clampPlaybackMicros,
-  formatPlaybackTime,
-  frameDurationMicros,
-} from "../../domain/playback";
+import { clampPlaybackMicros, frameDurationMicros } from "../../domain/playback";
 import {
   canSetTrimBoundaryAtPlayhead,
   playheadAfterSegmentMove,
@@ -16,40 +11,19 @@ import {
   type TrimBoundary,
   type TrimRange,
 } from "../../domain/trim";
-import type { AudioStream, FrameRate } from "../../lib/tauri/media";
 import { AudioTracks } from "../audio-tracks";
 import { PlaybackControls, PlaybackTimecode, TimelineTools } from "../preview/PlaybackControls";
 import { VideoPreview } from "../preview/VideoPreview";
 import { TrimTimeline } from "../timeline/TrimTimeline";
-
-interface EditorStageProps {
-  sourceId: string;
-  preview: PreviewState;
-  trim: TrimRange;
-  frameRate?: FrameRate;
-  audioStreams: AudioStream[];
-  audioTracks: AudioTrackState[];
-  masterEnabled: boolean;
-  masterVolumePercent: number;
-  mergeAudio: boolean;
-  onPreviewPlaybackError: (sourceId: string, previewKind: "source" | "proxy") => void;
-  onTrimChange: (trim: TrimRange) => void;
-  onPrepareWaveforms: (streamIndexes: number[], width: number) => void;
-  onToggleAudioTrack: (streamIndex: number) => void;
-  onAudioTrackVolumeChange: (streamIndex: number, volumePercent: number) => void;
-  onToggleAudioMaster: () => void;
-  onMasterVolumeChange: (volumePercent: number) => void;
-  onToggleAudioMerge: () => void;
-  onWaveformImageError: (streamIndex: number) => void;
-  audioPreviewUrls: Record<number, string>;
-}
-
-interface EditorShortcutActions {
-  enabled: boolean;
-  togglePlayback: () => void;
-  stepFrame: (direction: -1 | 1) => void;
-  setSegmentBoundary: (boundary: TrimBoundary) => void;
-}
+import type { EditorShortcutActions, EditorStageProps } from "./types";
+import { editorShortcutFromEvent, isShortcutBlockedTarget } from "./utils/editor-shortcuts";
+import {
+  cancelFrame,
+  seekMediaIfNeeded,
+  seekVideo,
+  syncPlayheadElements,
+  waitForSeekToSettle,
+} from "./utils/media-sync";
 
 export function EditorStage({
   sourceId,
@@ -522,12 +496,12 @@ export function EditorStage({
     <Group
       id="editor-stage-panels"
       orientation="vertical"
-      className="editor-stage-content"
+      className="min-h-0 min-w-0 bg-background"
       resizeTargetMinimumSize={{ fine: 8, coarse: 24 }}
       aria-label="Preview and timeline panes"
     >
-      <Panel id="preview-panel" minSize="14rem" className="editor-pane-content">
-        <div className="preview-workspace">
+      <Panel id="preview-panel" minSize="14rem" className="min-h-0 min-w-0">
+        <div className="grid size-full min-h-0 place-items-center overflow-auto bg-black p-3">
           <VideoPreview
             sourceId={sourceId}
             preview={preview}
@@ -565,9 +539,12 @@ export function EditorStage({
         minSize="10rem"
         maxSize="70%"
         groupResizeBehavior="preserve-pixel-size"
-        className="editor-pane-content"
+        className="min-h-0 min-w-0 bg-background"
       >
-        <div className="timeline-pane-scroll">
+        <div
+          className="size-full min-h-0 overflow-x-hidden overflow-y-auto bg-background"
+          data-testid="timeline-pane-scroll"
+        >
           <TrimTimeline
             range={trim}
             playheadMicros={displayedPlayheadMicros}
@@ -645,91 +622,4 @@ export function EditorStage({
       </Panel>
     </Group>
   );
-}
-
-function seekVideo(video: HTMLVideoElement | null, micros: number) {
-  if (!video) {
-    return;
-  }
-  seekMediaIfNeeded(video, micros / 1_000_000);
-}
-
-function seekMediaIfNeeded(media: HTMLMediaElement, seconds: number) {
-  if (Math.abs(media.currentTime - seconds) <= 0.0005) {
-    return;
-  }
-  try {
-    media.currentTime = seconds;
-  } catch {
-    // Metadata may not be ready yet; loadedmetadata retries the seek.
-  }
-}
-
-function waitForSeekToSettle(media: HTMLMediaElement): Promise<void> {
-  if (!media.seeking) {
-    return Promise.resolve();
-  }
-  return new Promise((resolve) => {
-    media.addEventListener("seeked", () => resolve(), { once: true });
-  });
-}
-
-function syncPlayheadElements(
-  playhead: HTMLButtonElement | null,
-  audioPlayhead: HTMLDivElement | null,
-  micros: number,
-  durationMicros: number,
-  frameRate?: FrameRate,
-) {
-  const percent = durationMicros > 0 ? (micros / durationMicros) * 100 : 0;
-  if (playhead) {
-    playhead.style.left = `${percent}%`;
-    playhead.setAttribute("aria-valuenow", micros.toString());
-    playhead.setAttribute("aria-valuetext", `${(micros / 1_000_000).toFixed(3)} seconds`);
-    playhead.title = formatPlaybackTime(micros, frameRate);
-  }
-  if (audioPlayhead) {
-    audioPlayhead.style.left = `${percent}%`;
-  }
-}
-
-function cancelFrame(frameRef: { current: number | null }) {
-  if (frameRef.current !== null) {
-    cancelAnimationFrame(frameRef.current);
-    frameRef.current = null;
-  }
-}
-
-type EditorShortcut =
-  "toggle-playback" | "previous-frame" | "next-frame" | "set-segment-start" | "set-segment-end";
-
-function editorShortcutFromEvent(event: globalThis.KeyboardEvent): EditorShortcut | null {
-  if (event.altKey || event.ctrlKey || event.metaKey) {
-    return null;
-  }
-  switch (event.key.toLowerCase()) {
-    case " ":
-      return "toggle-playback";
-    case "arrowleft":
-      return "previous-frame";
-    case "arrowright":
-      return "next-frame";
-    case "i":
-      return "set-segment-start";
-    case "o":
-      return "set-segment-end";
-    default:
-      return null;
-  }
-}
-
-function isShortcutBlockedTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof Element)) {
-    return false;
-  }
-  if (target.closest("input, textarea, select, [contenteditable]:not([contenteditable='false'])")) {
-    return true;
-  }
-  const button = target.closest("button");
-  return button !== null && !button.classList.contains("transport-button");
 }

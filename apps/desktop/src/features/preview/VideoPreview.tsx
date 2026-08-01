@@ -1,6 +1,9 @@
+import { LoaderCircle } from "lucide-react";
 import { useEffect, useRef, type RefObject } from "react";
 
-import type { PreviewState } from "../../app/session-state";
+import type { PreviewState } from "@/app/session-state";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 
 interface VideoPreviewProps {
   sourceId: string;
@@ -33,43 +36,47 @@ export function VideoPreview({
   }, [readyUrl]);
 
   if (preview.status === "idle" || preview.status === "loading") {
+    const isProxy = preview.status === "loading" && preview.kind === "proxy";
     return (
-      <div className="preview-status" role="status">
-        <span className="preview-spinner" aria-hidden="true" />
-        <strong>
-          {preview.status === "loading" && preview.kind === "proxy"
-            ? "Preparing compatible preview\u2026"
-            : "Opening preview\u2026"}
+      <div
+        className="grid place-items-center gap-2 text-center text-sm text-muted-foreground"
+        role="status"
+      >
+        <LoaderCircle className="size-6 animate-spin text-primary" aria-hidden="true" />
+        <strong className="text-foreground">
+          {isProxy ? "Preparing compatible preview…" : "Opening preview…"}
         </strong>
-        {preview.status === "loading" && preview.kind === "proxy" ? (
-          <span>This can take a moment for high-resolution sources.</span>
-        ) : null}
+        {isProxy ? <span>This can take a moment for high-resolution sources.</span> : null}
       </div>
     );
   }
 
   if (preview.status === "failed") {
     return (
-      <div className="preview-error error-card" role="alert">
-        <strong>Could not preview this video</strong>
-        <p>{preview.error.message}</p>
-        {preview.error.diagnostics ? (
-          <details>
-            <summary>Technical details</summary>
-            <pre>{preview.error.diagnostics}</pre>
-          </details>
-        ) : null}
-      </div>
+      <Alert variant="destructive" className="max-w-xl">
+        <AlertTitle>Could not preview this video</AlertTitle>
+        <AlertDescription>
+          <p>{preview.error.message}</p>
+          {preview.error.diagnostics ? (
+            <details className="mt-2">
+              <summary>Technical details</summary>
+              <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap text-xs">
+                {preview.error.diagnostics}
+              </pre>
+            </details>
+          ) : null}
+        </AlertDescription>
+      </Alert>
     );
   }
 
   const { value } = preview;
   return (
-    <div className="video-preview">
+    <div className="relative flex size-full min-h-0 items-center justify-center overflow-hidden bg-black">
       <video
         ref={videoRef}
         key={value.url}
-        className="preview-video"
+        className="block size-full cursor-pointer object-contain"
         src={value.url}
         preload="metadata"
         aria-label="Source video preview"
@@ -80,14 +87,16 @@ export function VideoPreview({
         onPause={onPause}
         onTimeUpdate={(event) => onTimeUpdate(event.currentTarget.currentTime)}
         onError={() => {
-          if (reportedUrl.current === value.url) {
-            return;
-          }
+          if (reportedUrl.current === value.url) return;
           reportedUrl.current = value.url;
           onPlaybackError(sourceId, value.kind);
         }}
       />
-      {value.kind === "proxy" ? <span className="proxy-badge">720p preview</span> : null}
+      {value.kind === "proxy" ? (
+        <Badge variant="secondary" className="absolute top-3 right-3">
+          720p preview
+        </Badge>
+      ) : null}
     </div>
   );
 }
