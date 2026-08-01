@@ -1,7 +1,6 @@
 import type { AudioTrackState } from "@/app/session-state";
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { AudioStream } from "@/lib/tauri/media";
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { WAVEFORM_RENDER_WIDTH } from "../hooks/use-waveform-preparation";
@@ -35,34 +34,29 @@ export function AudioTrackRow({
   onWaveformImageError,
 }: AudioTrackRowProps) {
   const { t } = useTranslation();
-  const [isLevelOpen, setIsLevelOpen] = useState(false);
 
   return (
     <div className="grid min-w-0 grid-cols-[var(--editor-track-grid-columns)] gap-3">
-      <HoverCard open={isLevelOpen} onOpenChange={setIsLevelOpen} openDelay={0} closeDelay={100}>
-        <HoverCardTrigger asChild>
-          <div
-            className="flex min-w-0 items-center gap-2 rounded-lg px-1 py-1 hover:bg-muted/40"
-            onMouseEnter={() => setIsLevelOpen(true)}
-          >
+      <Popover>
+        <div className="flex min-w-0 items-center gap-2 rounded-lg px-1 py-1 hover:bg-muted/40">
+          <PopoverTrigger asChild>
             <VolumeButton
               enabled={track.enabled}
               label={t(track.enabled ? "audio.muteTrack" : "audio.enableTrack", { title })}
               onClick={onToggle}
             />
-            <div className="min-w-0 leading-tight">
-              <p className="truncate text-sm font-semibold" title={title}>
-                {title}
-              </p>
-              <p className="truncate text-xs leading-5 text-muted-foreground">
-                #{stream.streamIndex} · {stream.codecName.toUpperCase()} ·{" "}
-                {formatChannels(stream, t)}
-              </p>
-            </div>
+          </PopoverTrigger>
+          <div className="min-w-0 leading-tight">
+            <p className="truncate text-sm font-semibold" title={title}>
+              {title}
+            </p>
+            <p className="truncate text-xs leading-5 text-muted-foreground">
+              #{stream.streamIndex} · {stream.codecName.toUpperCase()} · {formatChannels(stream, t)}
+            </p>
           </div>
-        </HoverCardTrigger>
-        <HoverCardContent
-          side="top"
+        </div>
+        <PopoverContent
+          side="right"
           align="start"
           sideOffset={8}
           className="w-[var(--editor-track-controls-width)]"
@@ -72,8 +66,8 @@ export function AudioTrackRow({
             volumePercent={track.enabled ? track.volumePercent : 0}
             onChange={onVolumeChange}
           />
-        </HoverCardContent>
-      </HoverCard>
+        </PopoverContent>
+      </Popover>
       <div
         className="relative h-12 min-w-0 overflow-hidden rounded-lg border border-border bg-muted/30 transition-opacity data-[enabled=false]:opacity-40"
         data-enabled={track.enabled}
