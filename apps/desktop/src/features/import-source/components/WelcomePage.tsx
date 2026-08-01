@@ -9,6 +9,7 @@ import { DropOverlay } from "./DropOverlay";
 import { SourceError } from "./SourceError";
 import { WelcomeBrandWall } from "./WelcomeBrandWall";
 import { useTranslation } from "react-i18next";
+import { SupportBadge } from "@/features/support/components/SupportBadge";
 
 interface WelcomePageProps {
   session: SessionState;
@@ -75,6 +76,7 @@ export function WelcomePage({
         </div>
       ) : null}
       {isSourceDragActive ? <DropOverlay /> : null}
+      <SupportBadge />
     </section>
   );
 }
