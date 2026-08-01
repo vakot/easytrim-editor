@@ -37,7 +37,6 @@ export function TrimTimeline({
   playbackControls,
   playbackTimecode,
   videoToolbar,
-  audioRows,
   onChange,
   onMoveSegment,
   onSegmentDragStart,
@@ -408,7 +407,7 @@ export function TrimTimeline({
 
   return (
     <section
-      className="min-h-full min-w-0 select-none bg-background px-5 pt-4 pb-5"
+      className="min-w-0 select-none bg-background px-5 pt-4"
       aria-labelledby="timeline-title"
     >
       <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-6">
@@ -546,7 +545,6 @@ export function TrimTimeline({
           />
         </div>
       </div>
-      {audioRows}
     </section>
   );
 }

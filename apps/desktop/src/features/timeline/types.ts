@@ -11,7 +11,6 @@ export interface TrimTimelineProps {
   playbackControls: ReactNode;
   playbackTimecode: ReactNode;
   videoToolbar: ReactNode;
-  audioRows: ReactNode;
   onChange: (boundary: TrimBoundary, range: TrimRange) => TrimBoundary | null;
   onMoveSegment: (range: TrimRange) => TrimBoundary | null;
   onSegmentDragStart: () => void;
