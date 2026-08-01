@@ -3,7 +3,7 @@ import { Tooltip as TooltipPrimitive } from "radix-ui";
 
 import { cn } from "@/lib/utils";
 
-const DEFAULT_TOOLTIP_DELAY_MS = 1000;
+const DEFAULT_TOOLTIP_DELAY_MS = 500;
 
 function TooltipProvider({
   delayDuration = DEFAULT_TOOLTIP_DELAY_MS,
