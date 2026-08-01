@@ -838,6 +838,43 @@ p {
   cursor: wait;
 }
 
+.return-confirmation-overlay {
+  position: fixed;
+  z-index: 90;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background: rgb(12 12 14 / 72%);
+}
+
+.return-confirmation-dialog {
+  width: min(100%, 25rem);
+  padding: 1.5rem;
+  border: 1px solid #3b3b43;
+  border-radius: 0.85rem;
+  background: #19191d;
+  box-shadow: 0 1rem 3rem rgb(0 0 0 / 42%);
+}
+
+.return-confirmation-dialog h2 {
+  margin: 0.35rem 0 0.65rem;
+  font-size: 1.2rem;
+}
+
+.return-confirmation-dialog > p:not(.section-label) {
+  margin: 0;
+  color: #a1a1aa;
+  font-size: 0.85rem;
+}
+
+.return-confirmation-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  margin-top: 1.25rem;
+}
+
 .native-dialog-card {
   display: grid;
   justify-items: center;

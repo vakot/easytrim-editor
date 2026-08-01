@@ -23,6 +23,7 @@ function App() {
   const [session, dispatch] = useReducer(sessionReducer, initialSessionState);
   const [isChoosingSource, setIsChoosingSource] = useState(false);
   const [isNativeDialogOpen, setIsNativeDialogOpen] = useState(false);
+  const [isReturnConfirmationOpen, setIsReturnConfirmationOpen] = useState(false);
   const [isSourceDragActive, setIsSourceDragActive] = useState(false);
   const [dropListenerError, setDropListenerError] = useState<string | null>(null);
   const [exportQueue, setExportQueue] = useState<ExportToast[]>([]);
@@ -252,6 +253,12 @@ function App() {
     dispatch({ type: "return-to-welcome" });
   }, []);
 
+  const requestReturnToWelcome = useCallback(() => {
+    if (hasSource) {
+      setIsReturnConfirmationOpen(true);
+    }
+  }, [hasSource]);
+
   useEffect(() => {
     if (!hasSource) {
       return;
@@ -259,13 +266,17 @@ function App() {
 
     function handleEscape(event: KeyboardEvent) {
       if (event.key === "Escape" && !isNativeDialogOpen) {
-        handleReturnToWelcome();
+        if (isReturnConfirmationOpen) {
+          setIsReturnConfirmationOpen(false);
+        } else {
+          requestReturnToWelcome();
+        }
       }
     }
 
     window.addEventListener("keydown", handleEscape);
     return () => window.removeEventListener("keydown", handleEscape);
-  }, [handleReturnToWelcome, hasSource, isNativeDialogOpen]);
+  }, [hasSource, isNativeDialogOpen, isReturnConfirmationOpen, requestReturnToWelcome]);
 
   return (
     <main className={`app-shell ${hasSource ? "has-source" : "is-empty"}`}>
@@ -277,11 +288,11 @@ function App() {
               role="button"
               tabIndex={0}
               aria-label="Return to ClipKit welcome page"
-              onClick={handleReturnToWelcome}
+              onClick={requestReturnToWelcome}
               onKeyDown={(event) => {
                 if (event.key === "Enter" || event.key === " ") {
                   event.preventDefault();
-                  handleReturnToWelcome();
+                  requestReturnToWelcome();
                 }
               }}
             >
@@ -314,6 +325,16 @@ function App() {
             ) : null}
           </div>
         </div>
+      ) : null}
+
+      {isReturnConfirmationOpen ? (
+        <ReturnConfirmationDialog
+          onCancel={() => setIsReturnConfirmationOpen(false)}
+          onConfirm={() => {
+            setIsReturnConfirmationOpen(false);
+            handleReturnToWelcome();
+          }}
+        />
       ) : null}
 
       {isNativeDialogOpen ? <NativeDialogOverlay /> : null}
@@ -353,6 +374,37 @@ function NativeDialogOverlay() {
         <strong>Waiting for system dialog</strong>
         <span>Choose a file location to continue.</span>
       </div>
+    </div>
+  );
+}
+
+function ReturnConfirmationDialog({
+  onCancel,
+  onConfirm,
+}: {
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <div className="return-confirmation-overlay" role="presentation">
+      <section
+        className="return-confirmation-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="return-confirmation-title"
+      >
+        <p className="section-label">Leave editor</p>
+        <h2 id="return-confirmation-title">Return to welcome page?</h2>
+        <p>Your current trim and audio settings will be cleared.</p>
+        <div className="return-confirmation-actions">
+          <button className="secondary-button" type="button" onClick={onCancel}>
+            Cancel
+          </button>
+          <button className="primary-button" type="button" onClick={onConfirm}>
+            Return to welcome
+          </button>
+        </div>
+      </section>
     </div>
   );
 }
