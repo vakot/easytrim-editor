@@ -254,11 +254,7 @@ export function EditorStage({
     setPlayheadMicros(clamped);
     seekVideo(videoRef.current, clamped);
     for (const audio of audioElementsRef.current.values()) {
-      try {
-        audio.currentTime = clamped / 1_000_000;
-      } catch {
-        // Audio metadata may not be ready yet; playback start retries synchronization.
-      }
+      seekMediaIfNeeded(audio, clamped / 1_000_000);
     }
   }
 
@@ -655,8 +651,15 @@ function seekVideo(video: HTMLVideoElement | null, micros: number) {
   if (!video) {
     return;
   }
+  seekMediaIfNeeded(video, micros / 1_000_000);
+}
+
+function seekMediaIfNeeded(media: HTMLMediaElement, seconds: number) {
+  if (Math.abs(media.currentTime - seconds) <= 0.0005) {
+    return;
+  }
   try {
-    video.currentTime = micros / 1_000_000;
+    media.currentTime = seconds;
   } catch {
     // Metadata may not be ready yet; loadedmetadata retries the seek.
   }

@@ -1423,6 +1423,16 @@ describe("App", () => {
     const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
     const play = vi.spyOn(video, "play").mockResolvedValue();
     vi.spyOn(video, "pause").mockImplementation(() => undefined);
+    let currentTime = video.currentTime;
+    let seekAssignments = 0;
+    Object.defineProperty(video, "currentTime", {
+      configurable: true,
+      get: () => currentTime,
+      set: (seconds: number) => {
+        currentTime = seconds;
+        seekAssignments += 1;
+      },
+    });
     const timeline = screen.getByLabelText("Video trim timeline");
     vi.spyOn(timeline, "getBoundingClientRect").mockReturnValue({
       x: 100,
@@ -1452,6 +1462,7 @@ describe("App", () => {
     });
     fireEvent.pointerUp(playhead, { clientX: 600, pointerId: 7 });
     expect(play).not.toHaveBeenCalled();
+    expect(seekAssignments).toBe(1);
 
     seeking = false;
     fireEvent.seeked(video);
