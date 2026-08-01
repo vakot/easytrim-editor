@@ -9,7 +9,7 @@ import {
   MIN_SLIDER_DECIBELS,
   volumePercentToDecibels,
 } from "../utils/audio-level";
-import styles from "./audio-level-control.module.css";
+import styles from "./styles.module.css";
 
 interface AudioLevelControlProps {
   label: string;

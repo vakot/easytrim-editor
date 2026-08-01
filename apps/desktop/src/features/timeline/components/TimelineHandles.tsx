@@ -7,7 +7,7 @@ import { formatPlaybackTime } from "@/domain/playback";
 import { formatAccessibleTime } from "../utils/timeline-format";
 import type { SegmentSnapPoint, TrimBoundary, TrimRange } from "@/domain/trim";
 import type { FrameRate } from "@/lib/tauri/media";
-import styles from "./timeline-handles.module.css";
+import styles from "./styles.module.css";
 
 interface SegmentDragHandleProps {
   range: TrimRange;

@@ -1,4 +1,4 @@
-import styles from "./welcome-brand-wall.module.css";
+import styles from "./styles.module.css";
 
 const ROW_COUNT = 4;
 const WORD_COUNT = 14;
