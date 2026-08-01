@@ -44,7 +44,7 @@ export function AppToolbar({
       <div className="flex items-center justify-end gap-3">
         <ThemeSelector />
         <LanguageSelector className="w-36" />
-        <Button variant="outline" size="lg" onClick={onChooseSource} disabled={isChoosingSource}>
+        <Button variant="outline" onClick={onChooseSource} disabled={isChoosingSource}>
           {isChoosingSource ? t("import.opening") : t("import.openVideo")}
         </Button>
         {session.status === "ready" && session.source?.media && session.source.trim ? (
