@@ -45,21 +45,26 @@ export function SourceWorkspace({
   if (!session.source) {
     return (
       <section className="import-landing" aria-labelledby="import-title">
+        <WelcomeBrandWall />
         <div className="import-card">
-          <p className="section-label">Start a new cut</p>
+          <p className="section-label">Start a new clip</p>
           <h2 id="import-title">Open a video</h2>
-          <p>Drop a supported video here, or select one from your computer.</p>
-          <button
-            className="primary-button"
-            type="button"
-            onClick={onChooseSource}
-            disabled={isChoosingSource}
-          >
-            {isChoosingSource ? "Opening…" : "Select video"}
-          </button>
+          <div className="import-drop-box">
+            <button
+              className="primary-button"
+              type="button"
+              onClick={onChooseSource}
+              disabled={isChoosingSource}
+            >
+              {isChoosingSource ? "Opening…" : "Select video"}
+            </button>
+            <span className="import-drop-divider">-or-</span>
+            <p>Drop a supported video here, or select one from your computer.</p>
+          </div>
           <p className="supported-formats">
             MP4, MOV, MKV, WebM, AVI, TS, MTS, M2TS, M4V, WMV, FLV
           </p>
+          <CapabilityStatus capabilities={session.capabilities} />
         </div>
 
         {session.lastError ? <SourceError error={session.lastError} /> : null}
@@ -153,6 +158,28 @@ export function SourceWorkspace({
         </div>
       </Panel>
     </Group>
+  );
+}
+
+function WelcomeBrandWall() {
+  const rowCount = 8;
+  const markCount = 7;
+
+  return (
+    <div className="welcome-brand-wall" aria-hidden="true">
+      {Array.from({ length: rowCount }, (_, rowIndex) => (
+        <div className="welcome-brand-row" key={rowIndex}>
+          <div className="welcome-brand-track">
+            {Array.from({ length: markCount * 2 }, (_, markIndex) => (
+              <span className="welcome-brand-mark" key={markIndex}>
+                <span>ClipKit</span>
+                <img src="/logo.svg" alt="" />
+              </span>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
 

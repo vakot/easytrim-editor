@@ -65,7 +65,7 @@ p {
 }
 
 .app-shell.is-empty {
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
 }
 
 .app-shell.has-source {
@@ -577,19 +577,72 @@ p {
   place-items: center;
   overflow: auto;
   padding: clamp(1.5rem, 5vw, 4rem);
-  background:
-    radial-gradient(circle at 50% 42%, rgb(228 174 78 / 7%), transparent 33rem),
-    repeating-linear-gradient(135deg, transparent 0 13px, rgb(255 255 255 / 1.2%) 13px 14px),
-    #0c0c0e;
+  background: #0c0c0e;
+}
+
+.welcome-brand-wall {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.welcome-brand-row {
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.welcome-brand-track {
+  display: flex;
+  width: max-content;
+  align-items: center;
+  gap: clamp(2rem, 5vw, 5rem);
+  animation: welcome-brand-scroll 42s linear infinite;
+}
+
+.welcome-brand-row:nth-child(even) .welcome-brand-track {
+  animation-direction: reverse;
+}
+
+.welcome-brand-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 1rem;
+  color: #29292f;
+  font-size: clamp(2.5rem, 6vw, 6rem);
+  font-weight: 800;
+  letter-spacing: -0.06em;
+  line-height: 1;
+}
+
+.welcome-brand-mark img {
+  width: clamp(2rem, 4vw, 4rem);
+  height: clamp(2rem, 4vw, 4rem);
+  object-fit: contain;
+}
+
+@keyframes welcome-brand-scroll {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
 }
 
 .import-card {
-  width: min(100%, 34rem);
+  z-index: 1;
+  width: min(100%, 44rem);
   padding: clamp(2rem, 5vw, 4.5rem);
   border: 1px solid #303036;
   border-radius: 1rem;
   text-align: center;
-  background: rgb(20 20 23 / 90%);
+  background: #141417;
   box-shadow: 0 1.5rem 5rem rgb(0 0 0 / 28%);
 }
 
@@ -598,6 +651,7 @@ p {
   font-size: clamp(2.25rem, 6vw, 4.75rem);
   line-height: 0.95;
   letter-spacing: -0.055em;
+  white-space: nowrap;
 }
 
 .import-card > p:not(.section-label, .supported-formats) {
@@ -605,9 +659,28 @@ p {
 }
 
 .primary-button {
-  width: 100%;
-  margin-top: 1rem;
+  width: auto;
   padding: 0.75rem 1.25rem;
+}
+
+.import-drop-box {
+  display: grid;
+  justify-items: center;
+  gap: 0.7rem;
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  border: 1px dashed #57575f;
+  border-radius: 0.75rem;
+}
+
+.import-drop-divider {
+  color: #71717a;
+  font-size: 0.8rem;
+}
+
+.import-drop-box p {
+  margin: 0;
+  color: #a1a1aa;
 }
 
 .supported-formats {

@@ -281,27 +281,7 @@ function App() {
             ) : null}
           </div>
         </div>
-      ) : (
-        <header className="welcome-header">
-          <div>
-            <p className="eyebrow">Local video editor</p>
-            <h1>
-              <img className="welcome-logo" src="/logo.svg" alt="" />
-              ClipKit
-            </h1>
-          </div>
-          <div className="welcome-summary">
-            <p>Import a video to inspect its source and prepare a precise cut.</p>
-            <div className="toolbar-actions">
-              <CapabilityStatus capabilities={session.capabilities} />
-              <OpenVideoButton
-                isChoosingSource={isChoosingSource}
-                onChooseSource={() => void handleChooseSource()}
-              />
-            </div>
-          </div>
-        </header>
-      )}
+      ) : null}
 
       {isNativeDialogOpen ? <NativeDialogOverlay /> : null}
 
