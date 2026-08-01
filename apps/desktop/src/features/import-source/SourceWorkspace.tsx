@@ -58,7 +58,7 @@ export function SourceWorkspace({
             >
               {isChoosingSource ? "Opening…" : "Select video"}
             </button>
-            <span className="import-drop-divider">-or-</span>
+            <span className="import-drop-divider">or</span>
             <p>Drop a supported video here</p>
           </div>
           <p className="supported-formats">
