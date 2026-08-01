@@ -103,30 +103,18 @@ p {
   flex: 0 0 auto;
   align-items: center;
   cursor: pointer;
-  gap: 0.55rem;
+  gap: 1rem;
   margin: 0;
   color: #e4ae4e;
-  font-size: 3.2rem;
+  font-size: 3rem;
   line-height: 1;
   letter-spacing: 0.02em;
-}
-
-.app-brand img,
-.welcome-logo {
-  width: 2.5rem;
-  height: 2.5rem;
-  object-fit: contain;
 }
 
 .welcome-header h1 {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-}
-
-.welcome-logo {
-  width: 2.5rem;
-  height: 2.5rem;
 }
 
 .toolbar-actions {
