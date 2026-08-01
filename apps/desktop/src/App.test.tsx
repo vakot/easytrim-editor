@@ -172,13 +172,15 @@ describe("App", () => {
     ).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Trim" })).not.toBeInTheDocument();
     expect(screen.getByLabelText("Video preview and timeline area")).toBeInTheDocument();
-    const videoTimelineRow = screen.getByLabelText("Video trim timeline").closest(".timeline-row");
+    const videoTimelineRow = screen
+      .getByLabelText("Video trim timeline")
+      .closest("[data-slot='timeline-row']");
     expect(videoTimelineRow).not.toBeNull();
     const videoToolbar = within(videoTimelineRow as HTMLElement).getByRole("toolbar", {
       name: "Video timeline tools",
     });
-    expect(screen.getByText("Tools")).toHaveClass("timeline-toolbar-title");
-    expect(videoToolbar).toHaveClass("timeline-row-toolbar");
+    expect(screen.getByText("Tools")).toHaveAttribute("data-slot", "timeline-tools-title");
+    expect(videoToolbar).toHaveAttribute("data-slot", "timeline-toolbar");
     expect(within(videoToolbar).getByRole("button", { name: "Safe trim following" })).toBe(
       screen.getByRole("button", { name: "Safe trim following" }),
     );
@@ -201,9 +203,9 @@ describe("App", () => {
     expect(timelineResizeHandle).toHaveAttribute("aria-orientation", "horizontal");
     expect(timelineResizeHandle).toHaveAttribute("tabindex", "0");
     expect(screen.getAllByRole("separator")).toHaveLength(2);
-    expect(
-      screen.getByTestId("timeline-panel").querySelector(".timeline-pane-scroll"),
-    ).not.toBeNull();
+    expect(screen.getByTestId("timeline-panel")).toContainElement(
+      screen.getByTestId("timeline-pane-scroll"),
+    );
     expect(screen.queryByRole("heading", { name: "Open a video" })).not.toBeInTheDocument();
     expect(screen.queryByText("Local video editor")).not.toBeInTheDocument();
     expect(
@@ -249,7 +251,6 @@ describe("App", () => {
       expect(await screen.findByRole("heading", { name: "Audio tracks" })).toBeInTheDocument();
       const allTracks = screen.getByRole("button", { name: "All audio tracks" });
       expect(allTracks).toHaveAttribute("aria-pressed", "true");
-      expect(allTracks.closest(".timeline-row")).toHaveClass("timeline-audio-heading");
       expect(allTracks.parentElement).not.toHaveTextContent("Audio tracks");
       expect(screen.getByRole("button", { name: "Mute eng" })).toHaveAttribute(
         "aria-pressed",
@@ -259,26 +260,25 @@ describe("App", () => {
         "aria-pressed",
         "true",
       );
-      const engVolume = screen.getByRole("slider", { name: "eng volume" });
-      expect(engVolume).toHaveValue("0");
-      fireEvent.change(engVolume, { target: { value: "6" } });
-      expect(engVolume).toHaveValue("6");
+      const masterVolume = screen.getByRole("slider", { name: "All audio tracks volume" });
+      expect(masterVolume).toHaveAttribute("aria-valuenow", "0");
+      masterVolume.focus();
+      await user.keyboard("{End}");
+      await waitFor(() => expect(masterVolume).toHaveAttribute("aria-valuenow", "6"));
       expect(screen.getByText("+6.0 dB")).toBeInTheDocument();
-      await user.dblClick(engVolume);
-      expect(engVolume).toHaveValue("0");
-      expect(engVolume.closest(".audio-level-control")).toHaveTextContent("+0.0 dB");
+      fireEvent.doubleClick(masterVolume);
+      expect(masterVolume).toHaveAttribute("aria-valuenow", "0");
+      expect(screen.getByText("+0.0 dB")).toBeInTheDocument();
       await user.click(screen.getByRole("button", { name: "Mute eng" }));
       expect(screen.getByRole("button", { name: "Enable eng" })).toHaveAttribute(
         "aria-pressed",
         "false",
       );
-      expect(engVolume).toHaveValue("-24");
       await user.click(screen.getByRole("button", { name: "Enable eng" }));
       expect(screen.getByRole("button", { name: "Mute eng" })).toHaveAttribute(
         "aria-pressed",
         "true",
       );
-      expect(engVolume).toHaveValue("0");
       await waitFor(() =>
         expect(mocks.prepareWaveforms).toHaveBeenCalledWith(
           selection.sourceId,
@@ -287,7 +287,9 @@ describe("App", () => {
           4_096,
         ),
       );
-      await waitFor(() => expect(document.querySelectorAll(".waveform-image")).toHaveLength(2));
+      await waitFor(() =>
+        expect(document.querySelectorAll("img[aria-hidden='true']")).toHaveLength(2),
+      );
 
       bounds.mockReturnValue({
         width: 1_536,

@@ -27,12 +27,12 @@ The first version is intentionally a single-clip editor. No project files, autos
 
 ### UI
 
-**React + TypeScript + Vite**
+**React + TypeScript + Vite + Tailwind + shadcn**
 
 - TypeScript and Vite remain directly reviewable by the project owner;
 - React is widely understood by coding agents and suitable for a small reducer-driven single-screen workflow;
 - timeline handles and audio-track toggles require no external state-management library;
-- CSS-based layout and controls to keep the visual system simple and fast;
+- Tailwind utilities and shared shadcn primitives keep layout and controls consistent; focused CSS modules cover precision timeline and animation styling;
 - compact top toolbar for the direct `Open video` action and in-memory preset control; no
   dropdown navigation or context menus.
 

@@ -70,7 +70,7 @@ Use the canonical integer unit shared with native DTOs. Make the minimum gap exp
 
 Each row shows:
 
-- enabled checkbox;
+- mute/unmute icon with an interactive level popover;
 - stream title/language fallback;
 - codec and channel layout;
 - aligned waveform;
@@ -79,6 +79,10 @@ Each row shows:
 “Merge audio” means one output audio stream, not necessarily mono. Label mono separately if added later.
 
 Waveform failure leaves the row enabled and exportable. Show a compact unavailable state and retry action without blocking the editor.
+
+Use the always-visible master slider for output and preview gain without rewriting per-track levels.
+Per-track sliders range from mute through +6 dB, reset to 0 dB on double-click, and muted tracks
+are excluded from export and merge inputs.
 
 ## 5. Export settings
 
