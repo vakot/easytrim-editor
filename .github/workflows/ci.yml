@@ -10,7 +10,7 @@ permissions:
 
 env:
   PNPM_VERSION: 11.18.0
-  NODE_VERSION: 22.12.0
+  NODE_VERSION: 22.13.0
 
 jobs:
   web-quality:
