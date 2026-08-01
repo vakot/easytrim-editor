@@ -18,7 +18,7 @@ import {
   prepareProxyPreview,
   prepareSourcePreview,
   prepareWaveforms,
-} from "./media";
+} from "../media";
 
 type NativeDropEvent =
   | { payload: { type: "enter"; paths: string[] } }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import type { MediaInfo, SourceSelection } from "../lib/tauri/media";
-import { initialSessionState, sessionReducer } from "./session-state";
+import type { MediaInfo, SourceSelection } from "../../lib/tauri/media";
+import { initialSessionState, sessionReducer } from "../session-state";
 
 const firstSource: SourceSelection = {
   sourceId: "source-1",

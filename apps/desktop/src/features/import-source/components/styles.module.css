@@ -1,0 +1,63 @@
+.wall {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-rows: repeat(4, minmax(0, 1fr));
+  overflow: hidden;
+  color: var(--brand-wall);
+  user-select: none;
+}
+
+.row {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.track {
+  display: flex;
+  width: max-content;
+  height: 100%;
+  animation: brand-scroll 240s linear infinite;
+  will-change: transform;
+}
+
+.row:nth-child(even) .track {
+  animation-direction: reverse;
+}
+
+.set {
+  display: flex;
+  height: 100%;
+  flex: none;
+  align-items: center;
+}
+
+.mark {
+  display: inline-block;
+  flex: none;
+  font-size: 24vh;
+  font-weight: 850;
+  line-height: 1;
+  letter-spacing: -0.075em;
+  white-space: nowrap;
+}
+
+.mark::after {
+  content: " ";
+  white-space: pre;
+}
+
+@keyframes brand-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .track {
+    animation-play-state: paused;
+  }
+}

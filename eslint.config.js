@@ -27,4 +27,10 @@ export default tseslint.config(
       ...reactRefresh.configs.vite.rules,
     },
   },
+  {
+    files: ["apps/desktop/src/components/ui/*.tsx"],
+    rules: {
+      "react-refresh/only-export-components": "off",
+    },
+  },
 );

@@ -8,7 +8,7 @@ import type {
   MediaInfo,
   SourceDropEvent,
   SourceSelection,
-} from "./lib/tauri/media";
+} from "../lib/tauri/media";
 
 const mocks = vi.hoisted(() => ({
   checkMediaCapabilities: vi.fn(),
@@ -25,8 +25,8 @@ const mocks = vi.hoisted(() => ({
   unlistenDrops: vi.fn(),
 }));
 
-vi.mock("./lib/tauri/media", async (importOriginal) => {
-  const original = await importOriginal<typeof import("./lib/tauri/media")>();
+vi.mock("../lib/tauri/media", async (importOriginal) => {
+  const original = await importOriginal<typeof import("../lib/tauri/media")>();
   return {
     ...original,
     checkMediaCapabilities: mocks.checkMediaCapabilities,
@@ -43,7 +43,7 @@ vi.mock("./lib/tauri/media", async (importOriginal) => {
   };
 });
 
-import App from "./App";
+import App from "../App";
 
 const capabilities: MediaCapabilities = {
   ffmpeg: { available: true, version: "ffmpeg version 7.1" },
@@ -164,7 +164,10 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "Next frame" })).toBeInTheDocument();
     const audioPlayhead = document.querySelector(".audio-playhead");
     expect(audioPlayhead).toBeInTheDocument();
-    expect(audioPlayhead?.parentElement).toHaveAttribute("aria-hidden", "true");
+    const audioPlayheadGrid = audioPlayhead?.closest('[data-slot="audio-playhead-grid"]');
+    expect(audioPlayheadGrid).toHaveAttribute("aria-hidden", "true");
+    expect(audioPlayheadGrid).toHaveClass("grid-cols-[var(--editor-track-grid-columns)]");
+    expect(audioPlayhead?.parentElement).toHaveAttribute("data-slot", "audio-playhead-track");
     expect(
       screen.getByRole("button", { name: "Set segment start to current position" }),
     ).toHaveAttribute("aria-keyshortcuts", "I");
@@ -186,15 +189,33 @@ describe("App", () => {
     ).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Trim" })).not.toBeInTheDocument();
     expect(screen.getByLabelText("Video preview and timeline area")).toBeInTheDocument();
-    const videoTimelineRow = screen.getByLabelText("Video trim timeline").closest(".timeline-row");
+    const videoTimelineRow = screen
+      .getByLabelText("Video trim timeline")
+      .closest("[data-slot='timeline-row']");
     expect(videoTimelineRow).not.toBeNull();
     const videoToolbar = within(videoTimelineRow as HTMLElement).getByRole("toolbar", {
       name: "Video timeline tools",
     });
-    expect(screen.getByText("Tools")).toHaveClass("timeline-toolbar-title");
-    expect(videoToolbar).toHaveClass("timeline-row-toolbar");
+    expect(screen.getByText("Tools")).toHaveAttribute("data-slot", "timeline-tools-title");
+    expect(videoToolbar).toHaveAttribute("data-slot", "timeline-toolbar");
+    expect(videoToolbar).toHaveClass(
+      "auto-cols-[1.75rem]",
+      "grid-rows-[repeat(2,1.75rem)]",
+      "gap-1",
+    );
+    for (const tool of within(videoToolbar).getAllByRole("button")) {
+      expect(tool).toHaveAttribute("data-size", "icon-sm");
+    }
     expect(within(videoToolbar).getByRole("button", { name: "Safe trim following" })).toBe(
       screen.getByRole("button", { name: "Safe trim following" }),
+    );
+    expect(within(videoToolbar).getByRole("button", { name: "Loop playback" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(within(videoToolbar).getByRole("button", { name: "Segment playback" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
     );
     expect(within(videoTimelineRow as HTMLElement).queryByText("Video")).not.toBeInTheDocument();
     expect(screen.getByTestId("source-details-panel")).toContainElement(
@@ -215,9 +236,22 @@ describe("App", () => {
     expect(timelineResizeHandle).toHaveAttribute("aria-orientation", "horizontal");
     expect(timelineResizeHandle).toHaveAttribute("tabindex", "0");
     expect(screen.getAllByRole("separator")).toHaveLength(2);
-    expect(
-      screen.getByTestId("timeline-panel").querySelector(".timeline-pane-scroll"),
-    ).not.toBeNull();
+    const fixedTimeline = screen.getByTestId("timeline-fixed-content");
+    const audioTracksScroll = screen.getByTestId("audio-tracks-scroll");
+    expect(screen.getByTestId("timeline-panel")).toContainElement(fixedTimeline);
+    expect(screen.getByTestId("timeline-panel")).toContainElement(audioTracksScroll);
+    expect(fixedTimeline).toContainElement(
+      screen.getByRole("heading", { name: "Selected Segment" }),
+    );
+    expect(fixedTimeline).not.toContainElement(
+      screen.getByRole("heading", { name: "Audio tracks" }),
+    );
+    expect(audioTracksScroll).toContainElement(
+      screen.getByRole("heading", { name: "Audio tracks" }),
+    );
+    expect(audioTracksScroll).toHaveClass("overflow-hidden");
+    expect(audioTracksScroll.querySelector('[data-slot="scroll-area-viewport"]')).not.toBeNull();
+    expect(screen.queryByTestId("timeline-pane-scroll")).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Open a video" })).not.toBeInTheDocument();
     expect(screen.queryByText("Local video editor")).not.toBeInTheDocument();
     expect(
@@ -226,6 +260,7 @@ describe("App", () => {
     expect(screen.getByRole("toolbar", { name: "Application toolbar" })).toBeInTheDocument();
   });
 
+<<<<<<< HEAD:apps/desktop/src/App.test.tsx
   it("keeps runtime export presets when the source is replaced", async () => {
     const replacement = { sourceId: "source-2", displayName: "replacement.mkv" };
     mocks.chooseSource.mockResolvedValueOnce(selection).mockResolvedValueOnce(replacement);
@@ -235,10 +270,15 @@ describe("App", () => {
       url: `http://clipkit-media.localhost/${sourceId}?variant=source`,
       kind: "source" as const,
     }));
+=======
+  it("uses Escape to show and then dismiss the return confirmation dialog", async () => {
+    mocks.chooseSource.mockResolvedValue(selection);
+>>>>>>> origin/master:apps/desktop/src/__tests__/App.test.tsx
     const user = userEvent.setup();
     render(<App />);
 
     await user.click(screen.getByRole("button", { name: "Select video" }));
+<<<<<<< HEAD:apps/desktop/src/App.test.tsx
     await screen.findByRole("heading", { name: "holiday.mp4" });
     await user.click(screen.getByRole("button", { name: "Export" }));
     await screen.findByText("ffmpeg -i <source> -c:v hevc_nvenc <output>");
@@ -269,12 +309,25 @@ describe("App", () => {
   });
 
   it("keeps a validated command ready when an equivalent saved preset is selected", async () => {
+=======
+    expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
+
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("opens a track volume control from the volume button hover and focus", async () => {
+>>>>>>> origin/master:apps/desktop/src/__tests__/App.test.tsx
     mocks.chooseSource.mockResolvedValue(selection);
     const user = userEvent.setup();
     render(<App />);
 
     await user.click(screen.getByRole("button", { name: "Select video" }));
     await screen.findByRole("heading", { name: "holiday.mp4" });
+<<<<<<< HEAD:apps/desktop/src/App.test.tsx
     await user.click(screen.getByRole("button", { name: "Export" }));
     await screen.findByText("ffmpeg -i <source> -c:v hevc_nvenc <output>");
 
@@ -359,6 +412,27 @@ describe("App", () => {
     });
     await waitFor(() => expect(mocks.cancelOperation).toHaveBeenCalledWith("operation-1"));
     expect(screen.getByText(/Canceled/)).toBeInTheDocument();
+=======
+    const volumeButton = screen.getByRole("button", { name: "Mute eng" });
+    expect(volumeButton).not.toHaveAttribute("title");
+
+    await user.hover(volumeButton);
+    expect(await screen.findByRole("slider", { name: "eng volume" })).toBeInTheDocument();
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("Mute");
+
+    await user.unhover(volumeButton);
+    await waitFor(() => {
+      expect(screen.queryByRole("slider", { name: "eng volume" })).not.toBeInTheDocument();
+    });
+
+    volumeButton.focus();
+    expect(await screen.findByRole("slider", { name: "eng volume" })).toBeInTheDocument();
+
+    volumeButton.blur();
+    await waitFor(() => {
+      expect(screen.queryByRole("slider", { name: "eng volume" })).not.toBeInTheDocument();
+    });
+>>>>>>> origin/master:apps/desktop/src/__tests__/App.test.tsx
   });
 
   it("prepares aligned waveforms and keeps audio output choices in memory", async () => {
@@ -398,7 +472,6 @@ describe("App", () => {
       expect(await screen.findByRole("heading", { name: "Audio tracks" })).toBeInTheDocument();
       const allTracks = screen.getByRole("button", { name: "All audio tracks" });
       expect(allTracks).toHaveAttribute("aria-pressed", "true");
-      expect(allTracks.closest(".timeline-row")).toHaveClass("timeline-audio-heading");
       expect(allTracks.parentElement).not.toHaveTextContent("Audio tracks");
       expect(screen.getByRole("button", { name: "Mute eng" })).toHaveAttribute(
         "aria-pressed",
@@ -408,26 +481,25 @@ describe("App", () => {
         "aria-pressed",
         "true",
       );
-      const engVolume = screen.getByRole("slider", { name: "eng volume" });
-      expect(engVolume).toHaveValue("0");
-      fireEvent.change(engVolume, { target: { value: "6" } });
-      expect(engVolume).toHaveValue("6");
+      const masterVolume = screen.getByRole("slider", { name: "All audio tracks volume" });
+      expect(masterVolume).toHaveAttribute("aria-valuenow", "0");
+      masterVolume.focus();
+      await user.keyboard("{End}");
+      await waitFor(() => expect(masterVolume).toHaveAttribute("aria-valuenow", "6"));
       expect(screen.getByText("+6.0 dB")).toBeInTheDocument();
-      await user.dblClick(engVolume);
-      expect(engVolume).toHaveValue("0");
-      expect(engVolume.closest(".audio-level-control")).toHaveTextContent("+0.0 dB");
+      fireEvent.doubleClick(masterVolume);
+      expect(masterVolume).toHaveAttribute("aria-valuenow", "0");
+      expect(screen.getByText("+0.0 dB")).toBeInTheDocument();
       await user.click(screen.getByRole("button", { name: "Mute eng" }));
       expect(screen.getByRole("button", { name: "Enable eng" })).toHaveAttribute(
         "aria-pressed",
         "false",
       );
-      expect(engVolume).toHaveValue("-24");
       await user.click(screen.getByRole("button", { name: "Enable eng" }));
       expect(screen.getByRole("button", { name: "Mute eng" })).toHaveAttribute(
         "aria-pressed",
         "true",
       );
-      expect(engVolume).toHaveValue("0");
       await waitFor(() =>
         expect(mocks.prepareWaveforms).toHaveBeenCalledWith(
           selection.sourceId,
@@ -436,7 +508,9 @@ describe("App", () => {
           4_096,
         ),
       );
-      await waitFor(() => expect(document.querySelectorAll(".waveform-image")).toHaveLength(2));
+      await waitFor(() =>
+        expect(document.querySelectorAll("img[aria-hidden='true']")).toHaveLength(2),
+      );
 
       bounds.mockReturnValue({
         width: 1_536,
@@ -561,6 +635,80 @@ describe("App", () => {
     video.currentTime = 10;
     fireEvent.timeUpdate(video);
     expect(audioPlayhead.style.left).toBe(playhead.style.left);
+  });
+
+  it("stops or loops at the selected segment boundary", async () => {
+    mocks.chooseSource.mockResolvedValue(selection);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Select video" }));
+    const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
+    const play = vi.spyOn(video, "play").mockResolvedValue();
+    const pause = vi.spyOn(video, "pause").mockImplementation(() => undefined);
+
+    video.currentTime = 10;
+    fireEvent.timeUpdate(video);
+    fireEvent.keyDown(window, { key: "i" });
+    video.currentTime = 20;
+    fireEvent.timeUpdate(video);
+    fireEvent.keyDown(window, { key: "o" });
+
+    const segmentToggle = screen.getByRole("button", { name: "Segment playback" });
+    const loopToggle = screen.getByRole("button", { name: "Loop playback" });
+    const playhead = screen.getByRole("slider", { name: "Playback position" });
+    expect(segmentToggle).toHaveAttribute("aria-pressed", "true");
+    await user.click(loopToggle);
+    expect(loopToggle).toHaveAttribute("aria-pressed", "false");
+
+    await user.click(screen.getByRole("button", { name: "Play" }));
+    expect(video.currentTime).toBe(10);
+    fireEvent.play(video);
+    video.currentTime = 20.25;
+    fireEvent.timeUpdate(video);
+
+    expect(pause).toHaveBeenCalled();
+    expect(playhead).toHaveAttribute("aria-valuenow", "20000000");
+    expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
+
+    pause.mockClear();
+    await user.click(loopToggle);
+    await user.click(screen.getByRole("button", { name: "Play" }));
+    fireEvent.play(video);
+    video.currentTime = 20.25;
+    fireEvent.timeUpdate(video);
+
+    expect(loopToggle).toHaveAttribute("aria-pressed", "true");
+    expect(pause).not.toHaveBeenCalled();
+    expect(video.currentTime).toBe(10);
+    expect(playhead).toHaveAttribute("aria-valuenow", "10000000");
+    expect(play).toHaveBeenCalled();
+  });
+
+  it("restarts the complete timeline after the video ends when looping is enabled", async () => {
+    mocks.chooseSource.mockResolvedValue(selection);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Select video" }));
+    const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
+    const play = vi.spyOn(video, "play").mockResolvedValue();
+    vi.spyOn(video, "pause").mockImplementation(() => undefined);
+
+    const segmentToggle = screen.getByRole("button", { name: "Segment playback" });
+    await user.click(segmentToggle);
+    expect(segmentToggle).toHaveAttribute("aria-pressed", "false");
+    await user.click(screen.getByRole("button", { name: "Play" }));
+    fireEvent.play(video);
+    video.currentTime = 65;
+    fireEvent.ended(video);
+
+    expect(video.currentTime).toBe(0);
+    expect(screen.getByRole("slider", { name: "Playback position" })).toHaveAttribute(
+      "aria-valuenow",
+      "0",
+    );
+    await waitFor(() => expect(play).toHaveBeenCalledTimes(2));
   });
 
   it("prioritizes playback while keeping other shortcuts locked during text entry", async () => {

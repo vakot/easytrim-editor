@@ -1,0 +1,184 @@
+.track {
+  position: relative;
+  height: 3.25rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--foreground) 6%, transparent) 0 1px,
+      transparent 1px 6.25%
+    ),
+    var(--muted);
+  cursor: pointer;
+}
+
+.selection {
+  position: absolute;
+  inset-block: 0;
+  border-block: 2px solid var(--primary);
+  background: color-mix(in oklch, var(--primary) 12%, transparent);
+  pointer-events: none;
+}
+
+.segment {
+  z-index: 4;
+  position: absolute;
+  top: 50%;
+  display: grid;
+  width: 1.55rem;
+  height: 1.55rem;
+  padding: 0;
+  place-items: center;
+  border: 1px solid color-mix(in oklch, var(--primary) 72%, white);
+  border-radius: 50%;
+  color: var(--primary-foreground);
+  background: var(--primary);
+  box-shadow: 0 0.2rem 0.65rem rgb(0 0 0 / 38%);
+  cursor: grab;
+  touch-action: none;
+  transform: translate(-50%, -50%);
+  transition: 120ms ease;
+}
+
+.segment:hover,
+.segment[data-dragging="true"] {
+  background: color-mix(in oklch, var(--primary) 88%, white);
+  box-shadow: 0 0 0 2px color-mix(in oklch, var(--primary) 24%, transparent);
+}
+
+.segment[data-dragging="true"] {
+  cursor: grabbing;
+  transform: translate(-50%, -50%) scale(1.06);
+}
+
+.segment[data-snap-active="true"] {
+  box-shadow:
+    0 0 0 2px color-mix(in oklch, var(--foreground) 68%, transparent),
+    0 0 0.95rem color-mix(in oklch, var(--primary) 72%, transparent);
+}
+
+.segment:focus-visible {
+  outline: 2px solid color-mix(in oklch, var(--foreground) 72%, transparent);
+  outline-offset: 2px;
+}
+
+.segment svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  fill: currentColor;
+}
+
+.playhead {
+  z-index: 2;
+  position: absolute;
+  top: -0.3rem;
+  width: 2.75rem;
+  height: calc(100% + 0.6rem);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: ew-resize;
+  touch-action: none;
+  transform: translateX(-50%);
+}
+
+.playhead::before {
+  position: absolute;
+  inset-block: 0;
+  left: 50%;
+  width: 2px;
+  background: var(--foreground);
+  content: "";
+  transform: translateX(-50%);
+}
+
+.playhead::after {
+  position: absolute;
+  top: -0.05rem;
+  left: 50%;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--foreground);
+  content: "";
+  transform: translateX(-50%);
+}
+
+.playhead:focus-visible {
+  outline: none;
+}
+
+.playhead:focus-visible::before,
+.playhead:focus-visible::after {
+  background: var(--primary);
+  box-shadow:
+    0 0 0 1px var(--background),
+    0 0 0 3px color-mix(in oklch, var(--primary) 42%, transparent);
+}
+
+.trim {
+  z-index: 3;
+  position: absolute;
+  top: -0.15rem;
+  width: 2.75rem;
+  height: calc(100% + 0.3rem);
+  padding: 0;
+  border: 0;
+  color: var(--primary-foreground);
+  background: transparent;
+  cursor: ew-resize;
+  touch-action: none;
+  transform: translateX(-50%);
+}
+
+.trim::before {
+  position: absolute;
+  inset-block: 0;
+  left: 50%;
+  width: 1.15rem;
+  background: var(--primary);
+  content: "";
+  transition: 120ms ease;
+  transform: translateX(-50%);
+}
+
+.start::before {
+  border-radius: 0.35rem 0 0 0.35rem;
+}
+
+.end::before {
+  border-radius: 0 0.35rem 0.35rem 0;
+}
+
+.trim > span {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 2px;
+  height: 1rem;
+  margin: auto;
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--primary-foreground) 58%, transparent);
+}
+
+.trim:focus-visible {
+  outline: none;
+}
+
+.trim:focus-visible::before {
+  box-shadow:
+    0 0 0 2px var(--background),
+    0 0 0 4px color-mix(in oklch, var(--foreground) 60%, transparent);
+}
+
+.trim[data-dragging="true"]:focus-visible::before {
+  box-shadow: none;
+}
+
+.trim[data-snap-active="true"]::before {
+  background: color-mix(in oklch, var(--primary) 88%, white);
+  box-shadow:
+    0 0 0 2px color-mix(in oklch, var(--primary) 28%, transparent),
+    0 0 0.8rem color-mix(in oklch, var(--primary) 72%, transparent);
+}

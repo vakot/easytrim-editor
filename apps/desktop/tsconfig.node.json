@@ -5,7 +5,10 @@
     "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true,
     "noEmit": true,
-    "types": ["node"]
+    "types": ["node"],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
   "include": ["vite.config.ts"]
 }
