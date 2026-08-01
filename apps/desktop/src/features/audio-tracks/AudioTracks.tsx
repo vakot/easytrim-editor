@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import { AudioLevelControl } from "./components/AudioLevelControl";
 import { AudioTrackRow } from "./components/AudioTrackRow";
 import { VolumeButton } from "./components/VolumeButton";
-import { useWaveformPreparation } from "./hooks/use-waveform-preparation";
+import { useWaveformPreparation } from "./hooks/useWaveformPreparation";
 import type { AudioTracksProps } from "./types";
 import { audioOutputSummary } from "./utils/audio-level";
 

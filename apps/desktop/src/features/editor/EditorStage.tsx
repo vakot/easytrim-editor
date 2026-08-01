@@ -18,8 +18,8 @@ import { PlaybackControls, PlaybackTimecode, TimelineTools } from "../preview/Pl
 import { VideoPreview } from "../preview/VideoPreview";
 import { TrimTimeline } from "../timeline";
 import { TimelinePane } from "./components/TimelinePane";
-import { usePlaybackModes } from "./hooks/use-playback-modes";
-import { useTimelinePanelSizing } from "./hooks/use-timeline-panel-sizing";
+import { usePlaybackModes } from "./hooks/usePlaybackModes";
+import { useTimelinePanelSizing } from "./hooks/useTimelinePanelSizing";
 import type { EditorShortcutActions, EditorStageProps } from "./types";
 import { editorShortcutFromEvent, isShortcutBlockedTarget } from "./utils/editor-shortcuts";
 import {

@@ -3,11 +3,11 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppToolbar } from "@/app/components/AppToolbar";
 import { NativeDialogOverlay } from "@/app/components/NativeDialogOverlay";
 import { ReturnConfirmationDialog } from "@/app/components/ReturnConfirmationDialog";
-import { useClipKitApp } from "@/app/hooks/use-clipkit-app";
+import { useClipKitApp } from "@/app/hooks/useClipKitApp";
 import { SourceWorkspace } from "@/features/import-source/SourceWorkspace";
 import { useTranslation } from "react-i18next";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
-import { useReleaseCheck } from "@/features/release/hooks/use-release-check";
+import { useReleaseCheck } from "@/features/release/hooks/useReleaseCheck";
 
 function ClipKitApp() {
   const app = useClipKitApp();

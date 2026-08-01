@@ -15,11 +15,11 @@ export function UpdateNotice({ update }: { update: AvailableUpdate }) {
 
   return (
     <aside
-      className="fixed top-4 left-1/2 z-50 flex w-[min(34rem,calc(100vw-2rem))] -translate-x-1/2 items-center gap-3 rounded-xl border border-primary/30 bg-card/95 px-4 py-3 text-card-foreground shadow-xl backdrop-blur-md"
+      className="fixed top-4 left-1/2 z-50 flex w-fit max-w-[calc(100vw-2rem)] -translate-x-1/2 items-center gap-3 rounded-xl border border-primary/30 bg-card/95 px-4 py-3 text-card-foreground shadow-xl backdrop-blur-md"
       role="status"
     >
       <Sparkles className="size-4 shrink-0 text-primary" aria-hidden="true" />
-      <p className="min-w-0 flex-1 text-sm">
+      <p className="min-w-0 max-w-[min(34rem,calc(100vw-10rem))] truncate whitespace-nowrap text-sm">
         <span className="font-semibold">{t("release.updateAvailable")}</span>
         <span className="ml-1 text-muted-foreground">{update.name}</span>
       </p>
