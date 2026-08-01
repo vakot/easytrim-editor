@@ -187,7 +187,7 @@ describe("App", () => {
     expect(videoToolbar).toHaveClass(
       "auto-cols-[1.75rem]",
       "grid-rows-[repeat(2,1.75rem)]",
-      "gap-1.5",
+      "gap-1",
     );
     for (const tool of within(videoToolbar).getAllByRole("button")) {
       expect(tool).toHaveAttribute("data-size", "icon-sm");
