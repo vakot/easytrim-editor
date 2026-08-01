@@ -40,6 +40,16 @@ Install the generated DMG and launch EasyTrim from Finder. The native media proc
 
 Public macOS distribution requires a Developer ID Application certificate and notarization credentials. Configure them only as CI secrets (`APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY`, `KEYCHAIN_PASSWORD`, `APPLE_ID`, `APPLE_PASSWORD`, and `APPLE_TEAM_ID`); never commit certificates or credentials.
 
+## Local release artifacts
+
+Build and upload artifacts to an existing GitHub release without using GitHub Actions:
+
+```sh
+pnpm release:local -- --tag v1.0.1 --platform current
+```
+
+Supported platforms are `windows`, `linux`, `macos-intel`, and `macos-apple-silicon`. The command builds the current machine's native bundles and uploads them with `gh release upload`; authenticate with `gh auth login` first. Windows can build Windows artifacts, and Linux can be built inside WSL or a Linux Docker environment. macOS artifacts require a macOS machine because Apple targets cannot be built on Windows.
+
 ## Development
 
 Start the Tauri desktop application:

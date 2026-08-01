@@ -15,6 +15,7 @@
     "lint": "eslint . --max-warnings 0",
     "typecheck": "pnpm --filter @easytrim-editor/desktop typecheck",
     "test": "pnpm --filter @easytrim-editor/desktop test",
+    "release:local": "node scripts/release-local.mjs",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "tauri": "pnpm --filter @easytrim-editor/desktop tauri"
   },
