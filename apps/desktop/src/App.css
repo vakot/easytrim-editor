@@ -1143,7 +1143,7 @@ p {
 .audio-volume-popover {
   position: absolute;
   z-index: 10;
-  bottom: calc(100% - 0.35rem);
+  bottom: calc(100% + 0.35rem);
   left: 0;
   width: 16rem;
   padding: 0.6rem 0.75rem;
@@ -1159,6 +1159,15 @@ p {
     opacity 120ms ease,
     transform 120ms ease,
     visibility 120ms ease;
+}
+
+.audio-volume-popover::after {
+  position: absolute;
+  right: 0;
+  bottom: -0.35rem;
+  left: 0;
+  height: 0.35rem;
+  content: "";
 }
 
 .audio-track-label:hover .audio-volume-popover {
