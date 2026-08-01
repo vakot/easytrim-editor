@@ -232,6 +232,22 @@ describe("App", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
+  it("opens a track volume control from the volume button hover and focus", async () => {
+    mocks.chooseSource.mockResolvedValue(selection);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Select video" }));
+    await screen.findByRole("heading", { name: "holiday.mp4" });
+    const volumeButton = screen.getByRole("button", { name: "Mute eng" });
+
+    fireEvent.pointerEnter(volumeButton);
+    expect(await screen.findByRole("slider", { name: "eng volume" })).toBeInTheDocument();
+
+    volumeButton.focus();
+    expect(screen.getByRole("slider", { name: "eng volume" })).toBeInTheDocument();
+  });
+
   it("prepares aligned waveforms and keeps audio output choices in memory", async () => {
     const bounds = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
       width: 1_024,
