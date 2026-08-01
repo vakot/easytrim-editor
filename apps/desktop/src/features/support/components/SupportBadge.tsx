@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { STORAGE_KEYS, readStoredJson, writeStoredJson } from "@/lib/storage";
+import { openExternalUrl } from "@/lib/open-external-url";
 
 import { AUTHOR_SUPPORT_URL } from "@/features/release/release-check";
 
@@ -13,7 +14,21 @@ export function SupportBadge() {
     () => readStoredJson<boolean>(STORAGE_KEYS.supportBadgeDismissed) !== true,
   );
 
-  if (!isVisible) return null;
+  if (!isVisible) {
+    return import.meta.env.DEV ? (
+      <Button
+        className="absolute right-4 bottom-4 z-20"
+        variant="outline"
+        size="sm"
+        onClick={() => {
+          window.localStorage.removeItem(STORAGE_KEYS.supportBadgeDismissed);
+          setIsVisible(true);
+        }}
+      >
+        {t("support.resetDevelopment")}
+      </Button>
+    ) : null;
+  }
 
   function dismiss() {
     writeStoredJson(STORAGE_KEYS.supportBadgeDismissed, true);
@@ -26,8 +41,10 @@ export function SupportBadge() {
       <a
         className="min-w-0 flex-1 text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
         href={AUTHOR_SUPPORT_URL}
-        target="_blank"
-        rel="noreferrer"
+        onClick={(event) => {
+          event.preventDefault();
+          void openExternalUrl(AUTHOR_SUPPORT_URL);
+        }}
       >
         {t("support.message")}
       </a>

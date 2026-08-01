@@ -2,6 +2,7 @@ import { ExternalLink, Sparkles } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { openExternalUrl } from "@/lib/open-external-url";
 
 import type { AvailableUpdate } from "../release-check";
 
@@ -18,11 +19,9 @@ export function UpdateNotice({ update }: { update: AvailableUpdate }) {
         <span className="font-semibold">{t("release.updateAvailable")}</span>
         <span className="ml-1 text-muted-foreground">{update.name}</span>
       </p>
-      <Button asChild size="sm">
-        <a href={update.url} target="_blank" rel="noreferrer">
-          {t("release.update")}
-          <ExternalLink aria-hidden="true" />
-        </a>
+      <Button size="sm" onClick={() => void openExternalUrl(update.url)}>
+        {t("release.update")}
+        <ExternalLink aria-hidden="true" />
       </Button>
     </aside>
   );

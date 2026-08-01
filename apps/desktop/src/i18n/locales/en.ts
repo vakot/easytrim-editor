@@ -209,6 +209,7 @@ export const en = {
   support: {
     message: "Support the author and help keep ClipKit improving.",
     dismiss: "Dismiss support message",
+    resetDevelopment: "Reset support badge",
   },
   units: {
     framesPerSecond: "{{value}} fps",

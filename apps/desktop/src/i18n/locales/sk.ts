@@ -215,6 +215,7 @@ export const sk = {
   support: {
     message: "Podporte autora a pomôžte zlepšovať ClipKit.",
     dismiss: "Skryť správu podpory",
+    resetDevelopment: "Obnoviť odznak podpory",
   },
   units: {
     framesPerSecond: "{{value}} fps",
