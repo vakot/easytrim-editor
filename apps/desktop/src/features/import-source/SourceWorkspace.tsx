@@ -59,7 +59,7 @@ export function SourceWorkspace({
               {isChoosingSource ? "Opening…" : "Select video"}
             </button>
             <span className="import-drop-divider">-or-</span>
-            <p>Drop a supported video here, or select one from your computer.</p>
+            <p>Drop a supported video here</p>
           </div>
           <p className="supported-formats">
             MP4, MOV, MKV, WebM, AVI, TS, MTS, M2TS, M4V, WMV, FLV

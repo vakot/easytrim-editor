@@ -120,9 +120,7 @@ describe("App", () => {
     render(<App />);
 
     expect(screen.getByText("Start a new clip")).toBeInTheDocument();
-    expect(
-      screen.getByText("Drop a supported video here, or select one from your computer."),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Drop a supported video here")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Open a video" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Select video" })).toBeInTheDocument();
     expect(screen.queryByLabelText("Video editor workspace")).not.toBeInTheDocument();
