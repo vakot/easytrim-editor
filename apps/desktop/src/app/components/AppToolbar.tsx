@@ -46,7 +46,7 @@ export function AppToolbar({
         {t("common.brand")}
       </button>
       <CapabilityStatus capabilities={session.capabilities} />
-      <div className="flex items-center justify-end gap-3">
+      <div className="flex items-center justify-end gap-3 pl-4">
         <ThemeSelector />
         <LanguageSelector className="w-36" />
         <Button variant="outline" onClick={onChooseSource} disabled={isChoosingSource}>
