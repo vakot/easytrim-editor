@@ -170,11 +170,15 @@ function WelcomeBrandWall() {
       {Array.from({ length: rowCount }, (_, rowIndex) => (
         <div className="welcome-brand-row" key={rowIndex}>
           <div className="welcome-brand-track">
-            {Array.from({ length: markCount * 2 }, (_, markIndex) => (
-              <span className="welcome-brand-mark" key={markIndex}>
-                <span>ClipKit</span>
-                <img src="/logo.svg" alt="" />
-              </span>
+            {Array.from({ length: 2 }, (_, setIndex) => (
+              <div className="welcome-brand-set" key={setIndex}>
+                {Array.from({ length: markCount }, (_, markIndex) => (
+                  <span className="welcome-brand-mark" key={markIndex}>
+                    <span>ClipKit</span>
+                    <img src="/logo.svg" alt="" />
+                  </span>
+                ))}
+              </div>
             ))}
           </div>
         </div>

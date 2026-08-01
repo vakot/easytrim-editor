@@ -606,13 +606,18 @@ p {
 .welcome-brand-track {
   display: flex;
   width: max-content;
-  align-items: center;
-  gap: clamp(1.25rem, 2.5vw, 2.5rem);
   animation: welcome-brand-scroll 42s linear infinite;
 }
 
 .welcome-brand-row:nth-child(even) .welcome-brand-track {
   animation-direction: reverse;
+}
+
+.welcome-brand-set {
+  display: flex;
+  align-items: center;
+  gap: clamp(1.25rem, 2.5vw, 2.5rem);
+  padding-right: clamp(1.25rem, 2.5vw, 2.5rem);
 }
 
 .welcome-brand-mark {
