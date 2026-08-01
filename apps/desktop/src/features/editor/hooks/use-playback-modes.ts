@@ -14,10 +14,10 @@ export type PlaybackBoundaryResult =
   { reached: false } | { reached: true; action: ReachedBoundaryAction | null };
 
 export function usePlaybackModes() {
-  const modesRef = useRef({ loopEnabled: false, segmentEnabled: false });
+  const modesRef = useRef({ loopEnabled: true, segmentEnabled: true });
   const boundaryHandledRef = useRef(false);
-  const [loopEnabled, setLoopEnabled] = useState(false);
-  const [segmentEnabled, setSegmentEnabled] = useState(false);
+  const [loopEnabled, setLoopEnabled] = useState(true);
+  const [segmentEnabled, setSegmentEnabled] = useState(true);
 
   function activeRange(trim: TrimRange) {
     return playbackRange(
