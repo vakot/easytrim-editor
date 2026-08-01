@@ -17,6 +17,7 @@ import { PlaybackControls, PlaybackTimecode, TimelineTools } from "../preview/Pl
 import { VideoPreview } from "../preview/VideoPreview";
 import { TrimTimeline } from "../timeline";
 import { TimelinePane } from "./components/TimelinePane";
+import { useTimelinePanelSizing } from "./hooks/use-timeline-panel-sizing";
 import type { EditorShortcutActions, EditorStageProps } from "./types";
 import { editorShortcutFromEvent, isShortcutBlockedTarget } from "./utils/editor-shortcuts";
 import {
@@ -49,6 +50,7 @@ export function EditorStage({
   audioPreviewUrls,
 }: EditorStageProps) {
   const { t } = useTranslation();
+  const timelinePanelSizing = useTimelinePanelSizing(sourceId);
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioElementsRef = useRef(new Map<number, HTMLAudioElement>());
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -538,13 +540,15 @@ export function EditorStage({
 
       <Panel
         id="timeline-panel"
-        defaultSize="22rem"
-        minSize="10rem"
-        maxSize="70%"
+        panelRef={timelinePanelSizing.panelRef}
+        defaultSize={timelinePanelSizing.constraints.defaultSize}
+        minSize={timelinePanelSizing.constraints.minSize}
+        maxSize={timelinePanelSizing.constraints.maxSize}
         groupResizeBehavior="preserve-pixel-size"
         className="min-h-0 min-w-0 bg-background"
       >
         <TimelinePane
+          onSizeConstraintsChange={timelinePanelSizing.onSizeConstraintsChange}
           timeline={
             <TrimTimeline
               range={trim}

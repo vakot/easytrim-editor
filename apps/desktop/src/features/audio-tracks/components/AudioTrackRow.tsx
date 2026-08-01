@@ -36,7 +36,10 @@ export function AudioTrackRow({
   const { t } = useTranslation();
 
   return (
-    <div className="grid min-w-0 grid-cols-[var(--editor-track-grid-columns)] gap-3">
+    <div
+      className="grid min-w-0 grid-cols-[var(--editor-track-grid-columns)] gap-3"
+      data-slot="audio-track-row"
+    >
       <HoverCard openDelay={0} closeDelay={100}>
         <div className="flex min-w-0 items-center gap-2 rounded-lg px-1 py-1 hover:bg-muted/40">
           <HoverCardTrigger asChild>
