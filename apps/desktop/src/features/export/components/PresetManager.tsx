@@ -82,7 +82,7 @@ export function PresetManager({ state, onAction }: PresetManagerProps) {
         <Label>{t("export.presets.label", "Preset")}</Label>
         <DropdownMenuPrimitive.Root>
           <DropdownMenuPrimitive.Trigger asChild>
-            <Button variant="outline" className="w-full justify-between font-normal">
+            <Button variant="default" className="w-full justify-between font-normal">
               <span className="truncate">
                 {selectedPreset?.name ?? t("export.presets.select", "Select a preset")}
               </span>
@@ -146,12 +146,6 @@ export function PresetManager({ state, onAction }: PresetManagerProps) {
           </DropdownMenuPrimitive.Portal>
         </DropdownMenuPrimitive.Root>
       </div>
-
-      <Separator />
-      <Button type="button" className="w-full" onClick={openCreateDialog}>
-        <Plus />
-        {t("export.presets.new", "Add new preset")}
-      </Button>
 
       <Dialog open={dialogMode !== null} onOpenChange={(open) => !open && setDialogMode(null)}>
         <DialogContent className="sm:max-w-xl">
