@@ -557,7 +557,8 @@ p {
   color: #86c89a;
 }
 
-.import-card .capability-ready {
+.import-card > p.capability-ready {
+  margin: 1rem auto 0;
   border-color: rgb(134 200 154 / 35%);
   background: rgb(134 200 154 / 10%);
   color: #86c89a;
@@ -606,7 +607,7 @@ p {
   display: flex;
   width: max-content;
   align-items: center;
-  gap: clamp(1.5rem, 3.5vw, 3.5rem);
+  gap: clamp(1.25rem, 2.5vw, 2.5rem);
   animation: welcome-brand-scroll 42s linear infinite;
 }
 
@@ -616,8 +617,9 @@ p {
 
 .welcome-brand-mark {
   display: inline-flex;
+  flex: 0 0 clamp(11rem, 19vw, 19rem);
   align-items: baseline;
-  gap: clamp(0.65rem, 1.5vw, 1.5rem);
+  justify-content: space-between;
   color: #29292f;
   font-size: clamp(1.75rem, 4vw, 4rem);
   font-weight: 800;
@@ -704,6 +706,7 @@ p {
 .import-drop-box p {
   margin: 0;
   color: #a1a1aa;
+  font-size: 0.75rem;
 }
 
 .supported-formats {
