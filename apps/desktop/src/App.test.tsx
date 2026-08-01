@@ -1414,7 +1414,7 @@ describe("App", () => {
     expect(playhead).toHaveAttribute("aria-valuenow", "30000000");
   });
 
-  it("scrubs the playhead continuously and seeks the preview before release", async () => {
+  it("waits for a scrub seek to settle before resuming playback", async () => {
     mocks.chooseSource.mockResolvedValue(selection);
     const user = userEvent.setup();
     render(<App />);
@@ -1445,8 +1445,17 @@ describe("App", () => {
     expect(playhead).toHaveAttribute("aria-valuenow", "32500000");
     expect(screen.getByLabelText("Current playback time")).toHaveTextContent("00:00:32:28f");
 
+    let seeking = true;
+    Object.defineProperty(video, "seeking", {
+      configurable: true,
+      get: () => seeking,
+    });
     fireEvent.pointerUp(playhead, { clientX: 600, pointerId: 7 });
-    expect(play).toHaveBeenCalledOnce();
+    expect(play).not.toHaveBeenCalled();
+
+    seeking = false;
+    fireEvent.seeked(video);
+    await waitFor(() => expect(play).toHaveBeenCalledOnce());
   });
 
   it("synchronizes the timeline playhead with video playback", async () => {
