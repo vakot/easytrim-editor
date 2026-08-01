@@ -7,7 +7,7 @@ import {
   playbackBoundaryAction,
   playbackRange,
   playbackStartMicros,
-} from "./playback";
+} from "../playback";
 
 describe("playback domain", () => {
   it("preserves fractional frame-rate timing", () => {
