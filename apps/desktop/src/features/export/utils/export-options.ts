@@ -32,7 +32,10 @@ export function resolutionOptions(source: MediaInfo, t: TFunction) {
   for (const height of [2160, 1440, 1080]) {
     if (height < source.video.height) {
       const width = Math.round((source.video.width * height) / source.video.height / 2) * 2;
-      options.push({ label: `${height}p · ${width} × ${height}`, value: `${width}x${height}` });
+      options.push({
+        label: `${height}p \u00b7 ${width} \u00d7 ${height}`,
+        value: `${width}x${height}`,
+      });
     }
   }
   return options;
