@@ -158,7 +158,7 @@ export function EditorStage({
     }
 
     if (isPlaying) {
-      const seconds = videoRef.current?.currentTime ?? 0;
+      const seconds = currentPlayheadMicrosRef.current / 1_000_000;
       void context.resume();
       syncAudioPlayback(seconds);
       void Promise.all([...audioElementsRef.current.values()].map((audio) => audio.play())).catch(
