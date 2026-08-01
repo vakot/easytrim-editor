@@ -5,7 +5,7 @@ import { minimumSelectionMicros, timelinePercent } from "@/domain/trim";
 
 import { SegmentDragHandle, Playhead, TrimHandle } from "./components/TimelineHandles";
 import { TimelineTimeValue } from "./components/TimelineTimeValue";
-import { useTrimTimelineInteractions } from "./hooks/use-trim-timeline-interactions";
+import { useTrimTimelineInteractions } from "./hooks/useTrimTimelineInteractions";
 import styles from "./components/styles.module.css";
 import type { TrimTimelineProps } from "./types";
 

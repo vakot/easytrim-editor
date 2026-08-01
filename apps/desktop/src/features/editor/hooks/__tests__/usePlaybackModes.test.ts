@@ -1,7 +1,7 @@
 import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { usePlaybackModes } from "../use-playback-modes";
+import { usePlaybackModes } from "../usePlaybackModes";
 
 const trim = {
   sourceDurationMicros: 60_000_000,

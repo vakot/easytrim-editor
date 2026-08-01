@@ -3,7 +3,7 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/h
 import type { AudioStream } from "@/lib/tauri/media";
 import { useTranslation } from "react-i18next";
 
-import { WAVEFORM_RENDER_WIDTH } from "../hooks/use-waveform-preparation";
+import { WAVEFORM_RENDER_WIDTH } from "../hooks/useWaveformPreparation";
 import { formatChannels } from "../utils/audio-level";
 import { waveformStateWidth } from "../utils/waveform";
 import { AudioLevelControl } from "./AudioLevelControl";

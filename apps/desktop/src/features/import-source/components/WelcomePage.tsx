@@ -9,12 +9,16 @@ import { DropOverlay } from "./DropOverlay";
 import { SourceError } from "./SourceError";
 import { WelcomeBrandWall } from "./WelcomeBrandWall";
 import { useTranslation } from "react-i18next";
+import { SupportBadge } from "@/features/support/components/SupportBadge";
+import { UpdateNotice } from "@/features/release/components/UpdateNotice";
+import type { AvailableUpdate } from "@/features/release/release-check";
 
 interface WelcomePageProps {
   session: SessionState;
   isChoosingSource: boolean;
   isSourceDragActive: boolean;
   onChooseSource: () => void;
+  update: AvailableUpdate | null;
 }
 
 export function WelcomePage({
@@ -22,6 +26,7 @@ export function WelcomePage({
   isChoosingSource,
   isSourceDragActive,
   onChooseSource,
+  update,
 }: WelcomePageProps) {
   const { t } = useTranslation();
 
@@ -31,6 +36,7 @@ export function WelcomePage({
       aria-labelledby="import-title"
     >
       <WelcomeBrandWall />
+      {update ? <UpdateNotice update={update} /> : null}
       <div className="absolute top-5 right-5 z-20 flex items-center gap-2">
         <ThemeSelector className="bg-background/90 backdrop-blur-sm" />
         <LanguageSelector className="w-36 bg-background/90 backdrop-blur-sm" />
@@ -75,6 +81,7 @@ export function WelcomePage({
         </div>
       ) : null}
       {isSourceDragActive ? <DropOverlay /> : null}
+      <SupportBadge />
     </section>
   );
 }

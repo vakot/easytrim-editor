@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
 import { OptimizedExportDialog } from "./components/OptimizedExportDialog";
-import { useExportController } from "./hooks/use-export-controller";
+import { useExportController } from "./hooks/useExportController";
 import type { ExportPanelProps } from "./types";
 import { useTranslation } from "react-i18next";
 

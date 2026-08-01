@@ -13,6 +13,7 @@ pub fn run() {
     cleanup_stale_media_artifacts();
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_opener::init())
         .register_uri_scheme_protocol("clipkit-media", |context, request| {
             media::preview::respond(context.app_handle(), request)
         })

@@ -1,6 +1,7 @@
 import type { SessionState } from "@/app/session-state";
 import type { TrimRange } from "@/domain/trim";
 import type { ExportToast } from "@/features/export";
+import type { AvailableUpdate } from "@/features/release/release-check";
 
 export interface SourceWorkspaceProps {
   session: SessionState;
@@ -18,4 +19,5 @@ export interface SourceWorkspaceProps {
   onWaveformImageError: (sourceId: string, streamIndex: number) => void;
   audioPreviewUrls: Record<number, string>;
   exportQueue: ExportToast[];
+  update: AvailableUpdate | null;
 }

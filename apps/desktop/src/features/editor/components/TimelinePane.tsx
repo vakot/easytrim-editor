@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useTimelinePaneMeasurements } from "../hooks/use-timeline-pane-measurements";
+import { useTimelinePaneMeasurements } from "../hooks/useTimelinePaneMeasurements";
 import type { TimelinePanelSizeConstraints } from "../utils/timeline-pane-sizing";
 
 interface TimelinePaneProps {

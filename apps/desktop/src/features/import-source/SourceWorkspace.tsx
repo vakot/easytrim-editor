@@ -26,6 +26,7 @@ export function SourceWorkspace({
   onWaveformImageError,
   audioPreviewUrls,
   exportQueue,
+  update,
 }: SourceWorkspaceProps) {
   const { t } = useTranslation();
 
@@ -36,6 +37,7 @@ export function SourceWorkspace({
         isChoosingSource={isChoosingSource}
         isSourceDragActive={isSourceDragActive}
         onChooseSource={onChooseSource}
+        update={update}
       />
     );
   }
