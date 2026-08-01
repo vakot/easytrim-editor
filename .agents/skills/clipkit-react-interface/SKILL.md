@@ -1,6 +1,6 @@
 ---
 name: clipkit-react-interface
-description: Build and review ClipKit's React, TypeScript, Vite, CSS, and frontend tests. Use for the single-screen editor UI, import/drop behavior, video preview controls, timeline and trim handles, playhead synchronization, audio waveform rows and toggles, preset editing, resolution/frame-rate controls, required output naming, export/progress/cancel states, accessibility, responsive layout, frontend performance, or Tauri IPC client types. Pair with clipkit-tauri-rust for IPC/native changes and clipkit-ffmpeg-pipeline when controls alter media semantics.
+description: Build and review ClipKit's React, TypeScript, Vite, Tailwind, shadcn, CSS modules, and frontend tests. Use for the single-screen editor UI, import/drop behavior, video preview controls, timeline and trim handles, playhead synchronization, audio waveform rows and levels, preset editing, resolution/frame-rate controls, export states, accessibility, responsive layout, frontend performance, or Tauri IPC client types. Pair with clipkit-tauri-rust for IPC/native changes and clipkit-ffmpeg-pipeline when controls alter media semantics.
 ---
 
 # ClipKit React Interface
@@ -22,11 +22,15 @@ Use `clipkit-tauri-rust` for IPC/native changes and `clipkit-ffmpeg-pipeline` wh
 
 ## Keep frontend architecture simple
 
-- Use React, strict TypeScript, Vite, semantic HTML, and CSS.
-- Avoid a router, global state library, component framework, canvas framework, or form library until concrete complexity justifies it.
+- Use React, strict TypeScript, Vite, semantic HTML, Tailwind, and the repository's shadcn primitives.
+- Reuse `components/ui` for buttons, dialogs, fields, tooltips, popovers, sliders, checkboxes, cards, and alerts. Add a shadcn primitive before hand-building an equivalent control.
+- Keep generated primitives generic. Put product-specific composition in the owning feature.
+- Use Tailwind utilities first. Reserve colocated CSS modules for precise pseudo-elements, keyframes, or browser-native styling that would be obscure as utilities.
+- Avoid a router, global state library, canvas framework, or form library until concrete complexity justifies it.
 - Keep Tauri calls behind the typed adapter defined by the structure rule.
 - Keep FFmpeg strings, path validation, and process details out of components.
 - Load no analytics, remote assets, fonts, or network resources.
+- Keep feature components primarily presentational; move effects and stateful workflows to `hooks/` or the app composition layer and pure transformations to `utils/`.
 
 ## Model editor state explicitly
 
