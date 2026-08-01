@@ -244,8 +244,18 @@ describe("App", () => {
     fireEvent.pointerEnter(volumeButton);
     expect(await screen.findByRole("slider", { name: "eng volume" })).toBeInTheDocument();
 
+    fireEvent.pointerLeave(volumeButton);
+    await waitFor(() => {
+      expect(screen.queryByRole("slider", { name: "eng volume" })).not.toBeInTheDocument();
+    });
+
     volumeButton.focus();
     expect(await screen.findByRole("slider", { name: "eng volume" })).toBeInTheDocument();
+
+    volumeButton.blur();
+    await waitFor(() => {
+      expect(screen.queryByRole("slider", { name: "eng volume" })).not.toBeInTheDocument();
+    });
   });
 
   it("prepares aligned waveforms and keeps audio output choices in memory", async () => {
