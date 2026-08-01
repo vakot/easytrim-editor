@@ -29,8 +29,11 @@ export type WaveformState =
 export interface AudioTrackState {
   streamIndex: number;
   enabled: boolean;
+  volumePercent: number;
   waveform: WaveformState;
 }
+
+const SAFE_UNMUTE_VOLUME_PERCENT = 50 * 10 ** (-12 / 20);
 
 export interface SessionState {
   status: "idle" | "loading-source" | "ready" | "failed";
@@ -41,6 +44,8 @@ export interface SessionState {
     preview: PreviewState;
     trim: TrimRange | null;
     audioTracks: AudioTrackState[];
+    masterEnabled: boolean;
+    masterVolumePercent: number;
     mergeAudio: boolean;
   } | null;
   lastError: AppError | null;
@@ -65,6 +70,14 @@ type SessionAction =
   | { type: "trim-changed"; sourceId: string; trim: TrimRange }
   | { type: "audio-track-toggled"; sourceId: string; streamIndex: number }
   | { type: "audio-tracks-set-enabled"; sourceId: string; enabled: boolean }
+  | { type: "audio-master-toggled"; sourceId: string }
+  | { type: "audio-master-volume-changed"; sourceId: string; volumePercent: number }
+  | {
+      type: "audio-track-volume-changed";
+      sourceId: string;
+      streamIndex: number;
+      volumePercent: number;
+    }
   | { type: "audio-merge-toggled"; sourceId: string }
   | {
       type: "waveforms-loading";
@@ -106,6 +119,8 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
           preview: { status: "idle" },
           trim: null,
           audioTracks: [],
+          masterEnabled: true,
+          masterVolumePercent: 50,
           mergeAudio: false,
         },
         lastError: null,
@@ -127,6 +142,7 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
           audioTracks: action.media.audioStreams.map((stream) => ({
             streamIndex: stream.streamIndex,
             enabled: true,
+            volumePercent: 50,
             waveform: { status: "idle" },
           })),
         },
@@ -203,7 +219,14 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
           ...state.source,
           audioTracks: state.source.audioTracks.map((track) =>
             track.streamIndex === action.streamIndex
-              ? { ...track, enabled: !track.enabled }
+              ? {
+                  ...track,
+                  enabled: !track.enabled,
+                  volumePercent:
+                    !track.enabled && track.volumePercent <= 0
+                      ? SAFE_UNMUTE_VOLUME_PERCENT
+                      : track.volumePercent,
+                }
               : track,
           ),
         },
@@ -220,6 +243,52 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
             ...track,
             enabled: action.enabled,
           })),
+        },
+      };
+    case "audio-track-volume-changed":
+      if (state.source?.selection.sourceId !== action.sourceId) {
+        return state;
+      }
+      return {
+        ...state,
+        source: {
+          ...state.source,
+          audioTracks: state.source.audioTracks.map((track) =>
+            track.streamIndex === action.streamIndex
+              ? {
+                  ...track,
+                  enabled: action.volumePercent > 0,
+                  volumePercent: action.volumePercent,
+                }
+              : track,
+          ),
+        },
+      };
+    case "audio-master-toggled":
+      if (state.source?.selection.sourceId !== action.sourceId) {
+        return state;
+      }
+      return {
+        ...state,
+        source: {
+          ...state.source,
+          masterEnabled: !state.source.masterEnabled,
+          masterVolumePercent:
+            !state.source.masterEnabled && state.source.masterVolumePercent <= 0
+              ? SAFE_UNMUTE_VOLUME_PERCENT
+              : state.source.masterVolumePercent,
+        },
+      };
+    case "audio-master-volume-changed":
+      if (state.source?.selection.sourceId !== action.sourceId) {
+        return state;
+      }
+      return {
+        ...state,
+        source: {
+          ...state.source,
+          masterEnabled: action.volumePercent > 0,
+          masterVolumePercent: action.volumePercent,
         },
       };
     case "audio-merge-toggled":

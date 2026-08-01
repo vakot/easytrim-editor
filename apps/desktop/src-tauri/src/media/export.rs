@@ -32,8 +32,15 @@ pub struct ResolutionSelection {
 pub struct FastExportRequest {
     pub source_id: String,
     pub trim: TrimSelection,
-    pub audio_stream_indexes: Vec<u32>,
+    pub audio_tracks: Vec<AudioTrackSelection>,
     pub merge_audio: bool,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct AudioTrackSelection {
+    pub stream_index: u32,
+    pub volume_percent: u16,
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
@@ -41,7 +48,7 @@ pub struct FastExportRequest {
 pub struct OptimizedExportRequest {
     pub source_id: String,
     pub trim: TrimSelection,
-    pub audio_stream_indexes: Vec<u32>,
+    pub audio_tracks: Vec<AudioTrackSelection>,
     pub merge_audio: bool,
     pub resolution: ResolutionSelection,
     pub frame_rate: Option<FrameRateSelection>,
@@ -58,7 +65,7 @@ pub fn build_fast_arguments(
         source,
         &request.source_id,
         &request.trim,
-        &request.audio_stream_indexes,
+        &request.audio_tracks,
     )?;
 
     let mut arguments = common_input_arguments(source_path, &request.trim);
@@ -67,20 +74,12 @@ pub fn build_fast_arguments(
         OsString::from(format!("0:{}", source.video.stream_index)),
     ]);
 
-    if request.audio_stream_indexes.is_empty() {
+    if request.audio_tracks.is_empty() {
         arguments.push(OsString::from("-an"));
-    } else if request.merge_audio && request.audio_stream_indexes.len() > 1 {
-        let audio_inputs = request
-            .audio_stream_indexes
-            .iter()
-            .map(|stream_index| format!("[0:{stream_index}]"))
-            .collect::<String>();
+    } else if request.merge_audio && request.audio_tracks.len() > 1 {
         arguments.extend([
             OsString::from("-filter_complex"),
-            OsString::from(format!(
-                "{audio_inputs}amix=inputs={}:duration=longest:dropout_transition=0:normalize=1[aout]",
-                request.audio_stream_indexes.len()
-            )),
+            OsString::from(audio_filter_graph(&request.audio_tracks, true)),
             OsString::from("-map"),
             OsString::from("[aout]"),
             OsString::from("-c:v"),
@@ -92,11 +91,28 @@ pub fn build_fast_arguments(
             OsString::from("-ac"),
             OsString::from("2"),
         ]);
-    } else {
-        for stream_index in &request.audio_stream_indexes {
+    } else if audio_tracks_need_reencode(&request.audio_tracks) {
+        arguments.extend([
+            OsString::from("-filter_complex"),
+            OsString::from(audio_filter_graph(&request.audio_tracks, false)),
+            OsString::from("-c:v"),
+            OsString::from("copy"),
+            OsString::from("-c:a"),
+            OsString::from("aac"),
+            OsString::from("-b:a"),
+            OsString::from("160k"),
+        ]);
+        for index in 0..request.audio_tracks.len() {
             arguments.extend([
                 OsString::from("-map"),
-                OsString::from(format!("0:{stream_index}")),
+                OsString::from(format!("[audio{index}]")),
+            ]);
+        }
+    } else {
+        for track in &request.audio_tracks {
+            arguments.extend([
+                OsString::from("-map"),
+                OsString::from(format!("0:{}", track.stream_index)),
             ]);
         }
         arguments.extend([OsString::from("-c"), OsString::from("copy")]);
@@ -125,7 +141,7 @@ pub fn build_optimized_arguments(
         source,
         &request.source_id,
         &request.trim,
-        &request.audio_stream_indexes,
+        &request.audio_tracks,
     )?;
     if request.resolution.width == 0 || request.resolution.height == 0 {
         return Err(AppError::invalid_request(
@@ -145,30 +161,33 @@ pub fn build_optimized_arguments(
         OsString::from("-map"),
         OsString::from(format!("0:{}", source.video.stream_index)),
     ]);
-    if request.merge_audio && request.audio_stream_indexes.len() > 1 {
-        let audio_inputs = request
-            .audio_stream_indexes
-            .iter()
-            .map(|stream_index| format!("[0:{stream_index}]"))
-            .collect::<String>();
+    if request.merge_audio && request.audio_tracks.len() > 1 {
         arguments.extend([
             OsString::from("-filter_complex"),
-            OsString::from(format!(
-                "{audio_inputs}amix=inputs={}:duration=longest:dropout_transition=0:normalize=1[aout]",
-                request.audio_stream_indexes.len()
-            )),
+            OsString::from(audio_filter_graph(&request.audio_tracks, true)),
             OsString::from("-map"),
             OsString::from("[aout]"),
         ]);
-    } else {
-        for stream_index in &request.audio_stream_indexes {
+    } else if audio_tracks_need_reencode(&request.audio_tracks) {
+        arguments.extend([
+            OsString::from("-filter_complex"),
+            OsString::from(audio_filter_graph(&request.audio_tracks, false)),
+        ]);
+        for index in 0..request.audio_tracks.len() {
             arguments.extend([
                 OsString::from("-map"),
-                OsString::from(format!("0:{stream_index}")),
+                OsString::from(format!("[audio{index}]")),
+            ]);
+        }
+    } else {
+        for track in &request.audio_tracks {
+            arguments.extend([
+                OsString::from("-map"),
+                OsString::from(format!("0:{}", track.stream_index)),
             ]);
         }
     }
-    if request.audio_stream_indexes.is_empty() {
+    if request.audio_tracks.is_empty() {
         arguments.push(OsString::from("-an"));
     }
     arguments.extend([
@@ -221,7 +240,7 @@ fn validate_common_request(
     source: &MediaInfo,
     source_id: &str,
     trim: &TrimSelection,
-    audio_stream_indexes: &[u32],
+    audio_tracks: &[AudioTrackSelection],
 ) -> Result<(), AppError> {
     if source.source_id != source_id {
         return Err(AppError::source_replaced());
@@ -234,17 +253,47 @@ fn validate_common_request(
             "The selected export range is invalid.",
         ));
     }
-    if audio_stream_indexes.iter().any(|index| {
-        !source
-            .audio_streams
-            .iter()
-            .any(|stream| stream.stream_index == *index)
+    if audio_tracks.iter().any(|track| {
+        track.volume_percent == 0
+            || track.volume_percent > 200
+            || !source
+                .audio_streams
+                .iter()
+                .any(|stream| stream.stream_index == track.stream_index)
     }) {
         return Err(AppError::invalid_request(
-            "An audio stream selection is invalid.",
+            "An audio stream selection or volume is invalid.",
         ));
     }
     Ok(())
+}
+
+fn audio_tracks_need_reencode(audio_tracks: &[AudioTrackSelection]) -> bool {
+    audio_tracks.iter().any(|track| track.volume_percent != 50)
+}
+
+fn audio_filter_graph(audio_tracks: &[AudioTrackSelection], merge: bool) -> String {
+    let mut graph = audio_tracks
+        .iter()
+        .enumerate()
+        .map(|(index, track)| {
+            format!(
+                "[0:{}]volume={:.6}[audio{index}]",
+                track.stream_index,
+                f64::from(track.volume_percent) / 50.0
+            )
+        })
+        .collect::<Vec<_>>();
+    if merge {
+        let inputs = (0..audio_tracks.len())
+            .map(|index| format!("[audio{index}]"))
+            .collect::<String>();
+        graph.push(format!(
+            "{inputs}amix=inputs={}:duration=longest:dropout_transition=0:normalize=1[aout]",
+            audio_tracks.len()
+        ));
+    }
+    graph.join(";")
 }
 
 fn parse_arguments(value: &str) -> Result<Vec<OsString>, AppError> {
@@ -315,8 +364,8 @@ mod tests {
     use std::path::Path;
 
     use super::{
-        FastExportRequest, FrameRateSelection, OptimizedExportRequest, ResolutionSelection,
-        TrimSelection, build_fast_arguments, build_optimized_arguments,
+        AudioTrackSelection, FastExportRequest, FrameRateSelection, OptimizedExportRequest,
+        ResolutionSelection, TrimSelection, build_fast_arguments, build_optimized_arguments,
     };
     use crate::media::probe::{AudioStream, MediaInfo, VideoStream};
 
@@ -382,7 +431,10 @@ mod tests {
                     start_micros: 1_000_000,
                     end_micros: 4_000_000,
                 },
-                audio_stream_indexes: vec![2],
+                audio_tracks: vec![AudioTrackSelection {
+                    stream_index: 2,
+                    volume_percent: 50,
+                }],
                 merge_audio: false,
             },
             Path::new("source.mkv"),
@@ -409,7 +461,16 @@ mod tests {
                     start_micros: 0,
                     end_micros: 2_000_000,
                 },
-                audio_stream_indexes: vec![1, 2],
+                audio_tracks: vec![
+                    AudioTrackSelection {
+                        stream_index: 1,
+                        volume_percent: 50,
+                    },
+                    AudioTrackSelection {
+                        stream_index: 2,
+                        volume_percent: 50,
+                    },
+                ],
                 merge_audio: true,
             },
             Path::new("source.mkv"),
@@ -428,6 +489,41 @@ mod tests {
     }
 
     #[test]
+    fn fast_volume_adjustment_filters_only_selected_audio() {
+        let args = build_fast_arguments(
+            &media(),
+            &FastExportRequest {
+                source_id: "source-1".to_owned(),
+                trim: TrimSelection {
+                    start_micros: 0,
+                    end_micros: 2_000_000,
+                },
+                audio_tracks: vec![AudioTrackSelection {
+                    stream_index: 2,
+                    volume_percent: 100,
+                }],
+                merge_audio: false,
+            },
+            Path::new("source.mkv"),
+            Path::new("out.mkv"),
+        )
+        .expect("request is valid");
+        let values = args
+            .iter()
+            .map(|value| value.to_string_lossy().to_string())
+            .collect::<Vec<_>>();
+        assert!(
+            values
+                .iter()
+                .any(|value| value.contains("0:2]volume=2.000000[audio0]"))
+        );
+        assert!(values.windows(2).any(|pair| pair == ["-map", "[audio0]"]));
+        assert!(values.windows(2).any(|pair| pair == ["-c:v", "copy"]));
+        assert!(values.windows(2).any(|pair| pair == ["-c:a", "aac"]));
+        assert!(!values.iter().any(|value| value == "0:1"));
+    }
+
+    #[test]
     fn optimized_route_owns_trim_and_scale_while_accepting_codec_arguments() {
         let args = build_optimized_arguments(
             &media(),
@@ -437,7 +533,10 @@ mod tests {
                     start_micros: 2_000_000,
                     end_micros: 7_000_000,
                 },
-                audio_stream_indexes: vec![1],
+                audio_tracks: vec![AudioTrackSelection {
+                    stream_index: 1,
+                    volume_percent: 50,
+                }],
                 merge_audio: false,
                 resolution: ResolutionSelection {
                     width: 1920,
@@ -475,7 +574,10 @@ mod tests {
                 start_micros: 0,
                 end_micros: 2_000_000,
             },
-            audio_stream_indexes: vec![1],
+            audio_tracks: vec![AudioTrackSelection {
+                stream_index: 1,
+                volume_percent: 50,
+            }],
             merge_audio: false,
             resolution: ResolutionSelection {
                 width: 1920,

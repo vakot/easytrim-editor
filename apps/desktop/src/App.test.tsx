@@ -250,13 +250,38 @@ describe("App", () => {
       await user.click(screen.getByRole("button", { name: "Open video" }));
 
       expect(await screen.findByRole("heading", { name: "Audio tracks" })).toBeInTheDocument();
-      const allTracks = screen.getByRole("checkbox", { name: "All audio tracks" });
-      expect(allTracks).toBeChecked();
+      const allTracks = screen.getByRole("button", { name: "All audio tracks" });
+      expect(allTracks).toHaveAttribute("aria-pressed", "true");
       expect(allTracks.closest(".timeline-row")).toHaveClass("timeline-audio-heading");
-      expect(allTracks.parentElement).toHaveTextContent("All tracks");
       expect(allTracks.parentElement).not.toHaveTextContent("Audio tracks");
-      expect(screen.getByRole("checkbox", { name: "Include eng" })).toBeChecked();
-      expect(screen.getByRole("checkbox", { name: "Include Commentary" })).toBeChecked();
+      expect(screen.getByRole("button", { name: "Mute eng" })).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      );
+      expect(screen.getByRole("button", { name: "Mute Commentary" })).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      );
+      const engVolume = screen.getByRole("slider", { name: "eng volume" });
+      expect(engVolume).toHaveValue("0");
+      fireEvent.change(engVolume, { target: { value: "6" } });
+      expect(engVolume).toHaveValue("6");
+      expect(screen.getByText("+6.0 dB")).toBeInTheDocument();
+      await user.dblClick(engVolume);
+      expect(engVolume).toHaveValue("0");
+      expect(engVolume.closest(".audio-level-control")).toHaveTextContent("+0.0 dB");
+      await user.click(screen.getByRole("button", { name: "Mute eng" }));
+      expect(screen.getByRole("button", { name: "Enable eng" })).toHaveAttribute(
+        "aria-pressed",
+        "false",
+      );
+      expect(engVolume).toHaveValue("-24");
+      await user.click(screen.getByRole("button", { name: "Enable eng" }));
+      expect(screen.getByRole("button", { name: "Mute eng" })).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      );
+      expect(engVolume).toHaveValue("0");
       await waitFor(() =>
         expect(mocks.prepareWaveforms).toHaveBeenCalledWith(
           selection.sourceId,
@@ -281,23 +306,24 @@ describe("App", () => {
       await act(async () => fireEvent(window, new Event("resize")));
       expect(mocks.prepareWaveforms).toHaveBeenCalledTimes(1);
 
-      await user.click(screen.getByRole("checkbox", { name: "Include Commentary" }));
-      expect(allTracks).toBePartiallyChecked();
+      await user.click(screen.getByRole("button", { name: "Mute Commentary" }));
+      expect(allTracks).toHaveAttribute("aria-pressed", "true");
       expect(screen.getByText("1 selected track kept separately.")).toBeInTheDocument();
       await user.click(screen.getByRole("checkbox", { name: "Merge selected tracks" }));
       expect(screen.getByText("One selected track — no merge is needed.")).toBeInTheDocument();
       await user.click(allTracks);
-      expect(allTracks).toBeChecked();
-      expect(
-        screen.getByText("Fast cut + audio merge — video stays copied; selected audio is encoded."),
-      ).toBeInTheDocument();
+      expect(allTracks).toHaveAttribute("aria-pressed", "false");
+      expect(screen.getByText(/One selected track/)).toBeInTheDocument();
       await user.click(allTracks);
-      expect(screen.getByRole("checkbox", { name: "Include eng" })).not.toBeChecked();
-      expect(screen.getByRole("checkbox", { name: "Include Commentary" })).not.toBeChecked();
-      expect(screen.getByText("Video-only output")).toBeInTheDocument();
-      await user.click(allTracks);
-      expect(screen.getByRole("checkbox", { name: "Include eng" })).toBeChecked();
-      expect(screen.getByRole("checkbox", { name: "Include Commentary" })).toBeChecked();
+      expect(allTracks).toHaveAttribute("aria-pressed", "true");
+      expect(screen.getByRole("button", { name: "Mute eng" })).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      );
+      expect(screen.getByRole("button", { name: "Enable Commentary" })).toHaveAttribute(
+        "aria-pressed",
+        "false",
+      );
     } finally {
       bounds.mockRestore();
     }
@@ -346,7 +372,10 @@ describe("App", () => {
       await user.click(screen.getByRole("button", { name: "Open video" }));
 
       const retry = await screen.findByRole("button", { name: "Retry" });
-      expect(screen.getByRole("checkbox", { name: "Include eng" })).toBeChecked();
+      expect(screen.getByRole("button", { name: "Mute eng" })).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      );
       await user.click(retry);
       await waitFor(() => expect(document.querySelector(".waveform-image")).not.toBeNull());
       expect(mocks.prepareWaveforms).toHaveBeenCalledTimes(2);

@@ -1,6 +1,7 @@
 use crate::{
     error::AppError,
     media::{
+        audio::generate_audio_preview,
         probe::{MediaInfo, inspect_media as probe_media},
         proxy::generate_preview,
         waveform::{generate_waveform, validate_waveform_request},
@@ -23,6 +24,14 @@ pub struct PreviewDescriptor {
     pub source_id: String,
     pub url: String,
     pub kind: PreviewKind,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AudioPreviewDescriptor {
+    pub source_id: String,
+    pub stream_index: u32,
+    pub url: String,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
@@ -80,6 +89,49 @@ pub async fn inspect_media(
         audio_stream_indexes,
     )?;
     Ok(result)
+}
+
+#[tauri::command]
+pub async fn prepare_audio_previews(
+    source_id: String,
+    stream_indexes: Vec<u32>,
+    state: State<'_, AppState>,
+) -> Result<Vec<AudioPreviewDescriptor>, AppError> {
+    if stream_indexes.is_empty() || stream_indexes.len() > 32 {
+        return Err(AppError::invalid_request(
+            "Select between one and 32 audio streams for preview.",
+        ));
+    }
+    let source = state.resolve_source(&source_id)?;
+    let mut unique_stream_indexes = stream_indexes.clone();
+    unique_stream_indexes.sort_unstable();
+    unique_stream_indexes.dedup();
+    if unique_stream_indexes.len() != stream_indexes.len() {
+        return Err(AppError::invalid_request(
+            "Audio preview stream indexes must be unique.",
+        ));
+    }
+
+    let generated = tauri::async_runtime::spawn_blocking(move || {
+        let mut generated = Vec::with_capacity(stream_indexes.len());
+        for stream_index in stream_indexes {
+            generated.push((stream_index, generate_audio_preview(&source, stream_index)?));
+        }
+        Ok::<_, AppError>(generated)
+    })
+    .await
+    .map_err(|_| AppError::internal("Audio preview preparation stopped unexpectedly."))??;
+
+    let mut results = Vec::with_capacity(generated.len());
+    for (stream_index, artifact) in generated {
+        state.install_audio_preview(&source_id, stream_index, artifact)?;
+        results.push(AudioPreviewDescriptor {
+            source_id: source_id.clone(),
+            stream_index,
+            url: audio_preview_url(&source_id, stream_index),
+        });
+    }
+    Ok(results)
 }
 
 #[tauri::command]
@@ -229,6 +281,20 @@ fn preview_url(source_id: &str, kind: PreviewKind) -> String {
 fn waveform_url(source_id: &str, stream_index: u32, width: u32) -> String {
     format!(
         "http://clipkit-media.localhost/{source_id}?variant=waveform&stream={stream_index}&width={width}"
+    )
+}
+
+#[cfg(any(target_os = "windows", target_os = "android"))]
+fn audio_preview_url(source_id: &str, stream_index: u32) -> String {
+    format!(
+        "http://clipkit-media.localhost/{source_id}?variant=audio&stream={stream_index}"
+    )
+}
+
+#[cfg(not(any(target_os = "windows", target_os = "android")))]
+fn audio_preview_url(source_id: &str, stream_index: u32) -> String {
+    format!(
+        "clipkit-media://localhost/{source_id}?variant=audio&stream={stream_index}"
     )
 }
 

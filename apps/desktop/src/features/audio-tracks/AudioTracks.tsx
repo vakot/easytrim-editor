@@ -1,20 +1,27 @@
-import { useEffect, useRef, type RefObject } from "react";
+import { useEffect, type CSSProperties, type RefObject } from "react";
 
 import type { AudioTrackState } from "../../app/session-state";
 import { timelinePercent, type TrimRange } from "../../domain/trim";
 import type { AudioStream } from "../../lib/tauri/media";
 
 const WAVEFORM_RENDER_WIDTH = 4096;
+const MIN_SLIDER_DECIBELS = -24;
+const MAX_SLIDER_DECIBELS = 6;
+const ORIGINAL_SLIDER_POSITION = 80;
 
 interface AudioTracksProps {
   streams: AudioStream[];
   tracks: AudioTrackState[];
+  masterEnabled: boolean;
+  masterVolumePercent: number;
   range: TrimRange;
   playheadMicros: number;
   playheadRef: RefObject<HTMLDivElement | null>;
   mergeAudio: boolean;
   onToggleTrack: (streamIndex: number) => void;
-  onSetAllTracksEnabled: (enabled: boolean) => void;
+  onTrackVolumeChange: (streamIndex: number, volumePercent: number) => void;
+  onToggleMaster: () => void;
+  onMasterVolumeChange: (volumePercent: number) => void;
   onToggleMerge: () => void;
   onPrepareWaveforms: (streamIndexes: number[], width: number) => void;
   onWaveformImageError: (streamIndex: number) => void;
@@ -23,12 +30,16 @@ interface AudioTracksProps {
 export function AudioTracks({
   streams,
   tracks,
+  masterEnabled,
+  masterVolumePercent,
   range,
   playheadMicros,
   playheadRef,
   mergeAudio,
   onToggleTrack,
-  onSetAllTracksEnabled,
+  onTrackVolumeChange,
+  onToggleMaster,
+  onMasterVolumeChange,
   onToggleMerge,
   onPrepareWaveforms,
   onWaveformImageError,
@@ -38,15 +49,6 @@ export function AudioTracks({
   const playheadPercent = timelinePercent(playheadMicros, range.sourceDurationMicros);
   const enabledCount = tracks.filter((track) => track.enabled).length;
   const outputSummary = audioOutputSummary(enabledCount, mergeAudio);
-  const masterCheckboxRef = useRef<HTMLInputElement>(null);
-  const allTracksEnabled = enabledCount === tracks.length;
-  const someTracksEnabled = enabledCount > 0 && !allTracksEnabled;
-
-  useEffect(() => {
-    if (masterCheckboxRef.current) {
-      masterCheckboxRef.current.indeterminate = someTracksEnabled;
-    }
-  }, [someTracksEnabled]);
 
   useEffect(() => {
     const pending = tracks
@@ -67,20 +69,20 @@ export function AudioTracks({
         Audio tracks
       </h3>
       <div className="timeline-row timeline-audio-heading">
-        <label className="audio-master-control">
-          <input
-            ref={masterCheckboxRef}
-            type="checkbox"
-            checked={allTracksEnabled}
-            onChange={() => onSetAllTracksEnabled(!allTracksEnabled)}
-            aria-label="All audio tracks"
-            title={allTracksEnabled ? "Disable all audio tracks" : "Enable all audio tracks"}
+        <div className="audio-master-control">
+          <VolumeButton enabled={masterEnabled} label="All audio tracks" onClick={onToggleMaster} />
+          <AudioLevelControl
+            label="All audio tracks volume"
+            volumePercent={masterEnabled ? masterVolumePercent : 0}
+            onChange={onMasterVolumeChange}
+            className="audio-master-level-control"
           />
-          <span className="audio-track-title">All tracks</span>
-          <span className="audio-track-meta" title={outputSummary}>
-            {outputSummary}
-          </span>
-        </label>
+          <div>
+            <span className="audio-track-meta" title={outputSummary}>
+              {outputSummary}
+            </span>
+          </div>
+        </div>
         <div className="timeline-audio-summary">
           <label className="merge-audio-control">
             <input type="checkbox" checked={mergeAudio} onChange={onToggleMerge} />
@@ -98,21 +100,33 @@ export function AudioTracks({
           const title = stream.title ?? stream.language ?? `Audio ${index + 1}`;
           return (
             <div className="timeline-row audio-track-row" key={stream.streamIndex}>
-              <label className="audio-track-label">
-                <input
-                  type="checkbox"
-                  checked={track.enabled}
-                  onChange={() => onToggleTrack(stream.streamIndex)}
-                  aria-label={`Include ${title}`}
-                />
-                <span className="audio-track-title" title={title}>
-                  {title}
-                </span>
-                <span className="audio-track-meta">
-                  #{stream.streamIndex} · {stream.codecName.toUpperCase()} ·{" "}
-                  {formatChannels(stream)}
-                </span>
-              </label>
+              <div className="audio-track-label">
+                <div className="audio-volume-anchor">
+                  <VolumeButton
+                    enabled={track.enabled}
+                    label={`${track.enabled ? "Mute" : "Enable"} ${title}`}
+                    onClick={() => onToggleTrack(stream.streamIndex)}
+                  />
+                  <div className="audio-volume-popover">
+                    <AudioLevelControl
+                      label={`${title} volume`}
+                      volumePercent={track.enabled ? track.volumePercent : 0}
+                      onChange={(volumePercent) =>
+                        onTrackVolumeChange(stream.streamIndex, volumePercent)
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="audio-track-copy">
+                  <span className="audio-track-title" title={title}>
+                    {title}
+                  </span>
+                  <span className="audio-track-meta">
+                    #{stream.streamIndex} · {stream.codecName.toUpperCase()} ·{" "}
+                    {formatChannels(stream)}
+                  </span>
+                </div>
+              </div>
               <div className="audio-waveform-track" data-enabled={track.enabled}>
                 <WaveformContent
                   track={track}
@@ -142,6 +156,105 @@ export function AudioTracks({
         </div>
       </div>
     </section>
+  );
+}
+
+function AudioLevelControl({
+  label,
+  volumePercent,
+  onChange,
+  className,
+}: {
+  label: string;
+  volumePercent: number;
+  onChange: (volumePercent: number) => void;
+  className?: string;
+}) {
+  return (
+    <div className={`audio-level-control${className ? ` ${className}` : ""}`}>
+      <div
+        className="audio-slider-track"
+        style={{ "--slider-fill": `${sliderFillPercent(volumePercent)}%` } as CSSProperties}
+      >
+        <input
+          className="audio-volume-slider"
+          type="range"
+          min={MIN_SLIDER_DECIBELS}
+          max={MAX_SLIDER_DECIBELS}
+          step="0.1"
+          value={volumePercentToDecibels(volumePercent)}
+          onChange={(event) => onChange(decibelsToVolumePercent(Number(event.target.value)))}
+          onDoubleClick={() => onChange(50)}
+          aria-label={label}
+          title="0 dB is the original level"
+        />
+        <span
+          className="audio-slider-original-marker"
+          style={{ left: `calc(${ORIGINAL_SLIDER_POSITION}% - 0.35rem)` }}
+          aria-hidden="true"
+        />
+      </div>
+      <output>{formatDecibels(volumePercent)}</output>
+    </div>
+  );
+}
+
+function volumePercentToDecibels(volumePercent: number): number {
+  if (volumePercent <= 0) {
+    return MIN_SLIDER_DECIBELS;
+  }
+  const decibels = Math.max(
+    MIN_SLIDER_DECIBELS,
+    Math.min(MAX_SLIDER_DECIBELS, 20 * Math.log10(volumePercent / 50)),
+  );
+  return Math.round(decibels * 10) / 10;
+}
+
+function decibelsToVolumePercent(decibels: number): number {
+  if (decibels <= MIN_SLIDER_DECIBELS) {
+    return 0;
+  }
+  return 50 * 10 ** (decibels / 20);
+}
+
+function sliderFillPercent(volumePercent: number): number {
+  const decibels = volumePercentToDecibels(volumePercent);
+  return ((decibels - MIN_SLIDER_DECIBELS) / (MAX_SLIDER_DECIBELS - MIN_SLIDER_DECIBELS)) * 100;
+}
+
+function VolumeButton({
+  enabled,
+  label,
+  onClick,
+}: {
+  enabled: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      className="audio-volume-button"
+      type="button"
+      aria-label={label}
+      aria-pressed={enabled}
+      title={enabled ? `${label}: enabled` : `${label}: muted`}
+      onClick={onClick}
+    >
+      <VolumeIcon muted={!enabled} />
+    </button>
+  );
+}
+
+function VolumeIcon({ muted }: { muted: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M4 9v6h4l5 4V5L8 9z" />
+      {muted ? (
+        <path d="m17 9 4 6m0-6-4 6" />
+      ) : (
+        <path d="M17 9.5a4 4 0 0 1 0 5M19.5 7a7.5 7.5 0 0 1 0 10" />
+      )}
+    </svg>
   );
 }
 
@@ -196,6 +309,14 @@ function formatChannels(stream: AudioStream): string {
   return stream.channels === undefined
     ? "unknown layout"
     : `${stream.channels} channel${stream.channels === 1 ? "" : "s"}`;
+}
+
+function formatDecibels(volumePercent: number): string {
+  if (volumePercent <= 0) {
+    return "−∞ dB";
+  }
+  const decibels = 20 * Math.log10(volumePercent / 50);
+  return `${decibels >= 0 ? "+" : ""}${decibels.toFixed(1)} dB`;
 }
 
 function audioOutputSummary(enabledCount: number, mergeAudio: boolean): string {
