@@ -557,11 +557,8 @@ p {
   color: #86c89a;
 }
 
-.import-card > p.capability-ready {
+.import-card > .capability {
   margin: 1rem auto 0;
-  border-color: rgb(134 200 154 / 35%);
-  background: rgb(134 200 154 / 10%);
-  color: #86c89a;
 }
 
 .capability-missing {
@@ -623,7 +620,6 @@ p {
 .welcome-brand-mark {
   display: inline-flex;
   flex: 0 0 clamp(11rem, 19vw, 19rem);
-  align-items: baseline;
   justify-content: space-between;
   color: #29292f;
   font-size: clamp(1.75rem, 4vw, 4rem);
@@ -633,7 +629,6 @@ p {
 }
 
 .welcome-brand-mark img {
-  align-self: baseline;
   width: 1em;
   height: 1em;
   object-fit: contain;
@@ -668,7 +663,7 @@ p {
   white-space: nowrap;
 }
 
-.import-card > p:not(.section-label, .supported-formats) {
+.import-card > p:not(.section-label, .supported-formats, .capability) {
   color: #a1a1aa;
 }
 
