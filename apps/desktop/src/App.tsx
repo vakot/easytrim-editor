@@ -21,7 +21,6 @@ function App() {
           <AppToolbar
             session={app.session}
             isChoosingSource={app.isChoosingSource}
-            exportQueue={app.exportQueue}
             setExportQueue={app.setExportQueue}
             onChooseSource={() => void app.handleChooseSource()}
             onReturnToWelcome={app.requestReturnToWelcome}

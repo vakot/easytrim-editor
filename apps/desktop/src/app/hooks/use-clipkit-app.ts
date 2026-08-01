@@ -2,7 +2,7 @@ import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 
 import { initialSessionState, sessionReducer } from "@/app/session-state";
 import type { TrimRange } from "@/domain/trim";
-import type { ExportToast } from "@/features/export/ExportPanel";
+import type { ExportToast } from "@/features/export";
 import {
   checkMediaCapabilities,
   chooseSource,

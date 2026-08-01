@@ -1,6 +1,6 @@
 import type { SessionState } from "@/app/session-state";
 import type { TrimRange } from "@/domain/trim";
-import type { ExportToast } from "@/features/export/ExportPanel";
+import type { ExportToast } from "@/features/export";
 
 export interface SourceWorkspaceProps {
   session: SessionState;

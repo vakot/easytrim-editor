@@ -1,6 +1,6 @@
 import type { SessionState } from "@/app/session-state";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ExportQueue, type ExportToast } from "@/features/export/ExportPanel";
+import { ExportQueue, type ExportToast } from "@/features/export";
 import { MediaDetails } from "./MediaDetails";
 import { SourceError } from "./SourceError";
 
