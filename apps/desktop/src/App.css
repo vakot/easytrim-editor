@@ -557,6 +557,11 @@ p {
   color: #86c89a;
 }
 
+.import-card .capability-ready {
+  border-color: rgb(134 200 154 / 35%);
+  color: #86c89a;
+}
+
 .capability-missing {
   color: #f1b3a8;
 }
@@ -600,7 +605,7 @@ p {
   display: flex;
   width: max-content;
   align-items: center;
-  gap: clamp(2rem, 5vw, 5rem);
+  gap: clamp(1.5rem, 3.5vw, 3.5rem);
   animation: welcome-brand-scroll 42s linear infinite;
 }
 
@@ -610,18 +615,19 @@ p {
 
 .welcome-brand-mark {
   display: inline-flex;
-  align-items: center;
-  gap: 1rem;
+  align-items: baseline;
+  gap: clamp(0.65rem, 1.5vw, 1.5rem);
   color: #29292f;
-  font-size: clamp(2.5rem, 6vw, 6rem);
+  font-size: clamp(1.75rem, 4vw, 4rem);
   font-weight: 800;
   letter-spacing: -0.06em;
   line-height: 1;
 }
 
 .welcome-brand-mark img {
-  width: clamp(2rem, 4vw, 4rem);
-  height: clamp(2rem, 4vw, 4rem);
+  align-self: baseline;
+  width: clamp(2rem, 4.5vw, 4.5rem);
+  height: clamp(2rem, 4.5vw, 4.5rem);
   object-fit: contain;
 }
 
@@ -668,14 +674,30 @@ p {
   justify-items: center;
   gap: 0.7rem;
   margin-top: 1.5rem;
-  padding: 1.5rem;
+  padding: 1rem;
   border: 1px dashed #57575f;
   border-radius: 0.75rem;
 }
 
 .import-drop-divider {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.6rem;
   color: #71717a;
   font-size: 0.8rem;
+}
+
+.import-drop-divider::before,
+.import-drop-divider::after {
+  height: 1px;
+  flex: 1;
+  background: #303036;
+  content: "";
+}
+
+.import-drop-box .primary-button {
+  width: 100%;
 }
 
 .import-drop-box p {
