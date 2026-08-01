@@ -23,6 +23,7 @@ function App() {
   const [session, dispatch] = useReducer(sessionReducer, initialSessionState);
   const [isChoosingSource, setIsChoosingSource] = useState(false);
   const [isNativeDialogOpen, setIsNativeDialogOpen] = useState(false);
+  const [isReturnConfirmationOpen, setIsReturnConfirmationOpen] = useState(false);
   const [isSourceDragActive, setIsSourceDragActive] = useState(false);
   const [dropListenerError, setDropListenerError] = useState<string | null>(null);
   const [exportQueue, setExportQueue] = useState<ExportToast[]>([]);
@@ -246,14 +247,56 @@ function App() {
     }
   }
 
+  const handleReturnToWelcome = useCallback(() => {
+    activeSourceIdRef.current = null;
+    setAudioPreviewUrls({});
+    dispatch({ type: "return-to-welcome" });
+  }, []);
+
+  const requestReturnToWelcome = useCallback(() => {
+    if (hasSource) {
+      setIsReturnConfirmationOpen(true);
+    }
+  }, [hasSource]);
+
+  useEffect(() => {
+    if (!hasSource) {
+      return;
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape" && !isNativeDialogOpen) {
+        if (isReturnConfirmationOpen) {
+          setIsReturnConfirmationOpen(false);
+        } else {
+          requestReturnToWelcome();
+        }
+      }
+    }
+
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [hasSource, isNativeDialogOpen, isReturnConfirmationOpen, requestReturnToWelcome]);
+
   return (
     <main className={`app-shell ${hasSource ? "has-source" : "is-empty"}`}>
       {hasSource ? (
         <div className="app-toolbar" role="toolbar" aria-label="Application toolbar">
           <div className="toolbar-brand-group">
-            <h1 className="app-brand">
-              <img src="/logo.svg" alt="" />
-              ClipKit
+            <h1
+              className="app-brand"
+              role="button"
+              tabIndex={0}
+              aria-label="Return to CLIP KIT welcome page"
+              onClick={requestReturnToWelcome}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  requestReturnToWelcome();
+                }
+              }}
+            >
+              CLIP KIT
             </h1>
           </div>
           <div className="toolbar-capability">
@@ -281,27 +324,17 @@ function App() {
             ) : null}
           </div>
         </div>
-      ) : (
-        <header className="welcome-header">
-          <div>
-            <p className="eyebrow">Local video editor</p>
-            <h1>
-              <img className="welcome-logo" src="/logo.svg" alt="" />
-              ClipKit
-            </h1>
-          </div>
-          <div className="welcome-summary">
-            <p>Import a video to inspect its source and prepare a precise cut.</p>
-            <div className="toolbar-actions">
-              <CapabilityStatus capabilities={session.capabilities} />
-              <OpenVideoButton
-                isChoosingSource={isChoosingSource}
-                onChooseSource={() => void handleChooseSource()}
-              />
-            </div>
-          </div>
-        </header>
-      )}
+      ) : null}
+
+      {isReturnConfirmationOpen ? (
+        <ReturnConfirmationDialog
+          onCancel={() => setIsReturnConfirmationOpen(false)}
+          onConfirm={() => {
+            setIsReturnConfirmationOpen(false);
+            handleReturnToWelcome();
+          }}
+        />
+      ) : null}
 
       {isNativeDialogOpen ? <NativeDialogOverlay /> : null}
 
@@ -340,6 +373,37 @@ function NativeDialogOverlay() {
         <strong>Waiting for system dialog</strong>
         <span>Choose a file location to continue.</span>
       </div>
+    </div>
+  );
+}
+
+function ReturnConfirmationDialog({
+  onCancel,
+  onConfirm,
+}: {
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <div className="return-confirmation-overlay" role="presentation">
+      <section
+        className="return-confirmation-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="return-confirmation-title"
+      >
+        <p className="section-label">Leave editor</p>
+        <h2 id="return-confirmation-title">Return to welcome page?</h2>
+        <p>Your current trim and audio settings will be cleared.</p>
+        <div className="return-confirmation-actions">
+          <button className="secondary-button" type="button" onClick={onCancel}>
+            Cancel
+          </button>
+          <button className="primary-button" type="button" onClick={onConfirm}>
+            Return to welcome
+          </button>
+        </div>
+      </section>
     </div>
   );
 }

@@ -45,21 +45,26 @@ export function SourceWorkspace({
   if (!session.source) {
     return (
       <section className="import-landing" aria-labelledby="import-title">
+        <WelcomeBrandWall />
         <div className="import-card">
-          <p className="section-label">Start a new cut</p>
+          <p className="section-label">Start a new clip</p>
           <h2 id="import-title">Open a video</h2>
-          <p>Drop a supported video here, or select one from your computer.</p>
-          <button
-            className="primary-button"
-            type="button"
-            onClick={onChooseSource}
-            disabled={isChoosingSource}
-          >
-            {isChoosingSource ? "Opening…" : "Select video"}
-          </button>
+          <div className="import-drop-box">
+            <button
+              className="primary-button"
+              type="button"
+              onClick={onChooseSource}
+              disabled={isChoosingSource}
+            >
+              {isChoosingSource ? "Opening…" : "Select video"}
+            </button>
+            <span className="import-drop-divider">or</span>
+            <p>Drop a supported video here</p>
+          </div>
           <p className="supported-formats">
             MP4, MOV, MKV, WebM, AVI, TS, MTS, M2TS, M4V, WMV, FLV
           </p>
+          <CapabilityStatus capabilities={session.capabilities} />
         </div>
 
         {session.lastError ? <SourceError error={session.lastError} /> : null}
@@ -153,6 +158,31 @@ export function SourceWorkspace({
         </div>
       </Panel>
     </Group>
+  );
+}
+
+function WelcomeBrandWall() {
+  const rowCount = 4;
+  const wordCount = 14;
+
+  return (
+    <div className="welcome-brand-wall" aria-hidden="true">
+      {Array.from({ length: rowCount }, (_, rowIndex) => (
+        <div className="welcome-brand-row" key={rowIndex}>
+          <div className="welcome-brand-track">
+            {Array.from({ length: 2 }, (_, setIndex) => (
+              <div className="welcome-brand-set" key={setIndex}>
+                {Array.from({ length: wordCount }, (_, wordIndex) => (
+                  <span className="welcome-brand-mark" key={wordIndex}>
+                    {wordIndex % 2 === 0 ? "CLIP" : "KIT"}
+                  </span>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
 

@@ -119,11 +119,8 @@ describe("App", () => {
   it("starts with a full workspace import view", async () => {
     render(<App />);
 
-    expect(screen.getByText("Local video editor")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "ClipKit" })).toBeInTheDocument();
-    expect(
-      screen.getByText("Import a video to inspect its source and prepare a precise cut."),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Start a new clip")).toBeInTheDocument();
+    expect(screen.getByText("Drop a supported video here")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Open a video" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Select video" })).toBeInTheDocument();
     expect(screen.queryByLabelText("Video editor workspace")).not.toBeInTheDocument();
@@ -134,7 +131,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Open video" }));
+    await user.click(screen.getByRole("button", { name: "Select video" }));
 
     expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
     expect(await screen.findByText("3840 × 2160")).toBeInTheDocument();
@@ -247,7 +244,7 @@ describe("App", () => {
 
     try {
       render(<App />);
-      await user.click(screen.getByRole("button", { name: "Open video" }));
+      await user.click(screen.getByRole("button", { name: "Select video" }));
 
       expect(await screen.findByRole("heading", { name: "Audio tracks" })).toBeInTheDocument();
       const allTracks = screen.getByRole("button", { name: "All audio tracks" });
@@ -369,7 +366,7 @@ describe("App", () => {
 
     try {
       render(<App />);
-      await user.click(screen.getByRole("button", { name: "Open video" }));
+      await user.click(screen.getByRole("button", { name: "Select video" }));
 
       const retry = await screen.findByRole("button", { name: "Retry" });
       expect(screen.getByRole("button", { name: "Mute eng" })).toHaveAttribute(
@@ -389,7 +386,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Open video" }));
+    await user.click(screen.getByRole("button", { name: "Select video" }));
     const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
     const play = vi.spyOn(video, "play").mockResolvedValue();
     const pause = vi.spyOn(video, "pause").mockImplementation(() => undefined);
@@ -422,7 +419,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Open video" }));
+    await user.click(screen.getByRole("button", { name: "Select video" }));
     const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
     const play = vi.spyOn(video, "play").mockResolvedValue();
     const pause = vi.spyOn(video, "pause").mockImplementation(() => undefined);
@@ -469,7 +466,7 @@ describe("App", () => {
     const user = userEvent.setup();
     const view = render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Open video" }));
+    await user.click(screen.getByRole("button", { name: "Select video" }));
     await screen.findByLabelText("Source video preview");
     view.unmount();
 
@@ -482,7 +479,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Open video" }));
+    await user.click(screen.getByRole("button", { name: "Select video" }));
     const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
     const startHandle = screen.getByRole("slider", { name: "Trim start" });
     const endHandle = screen.getByRole("slider", { name: "Trim end" });
@@ -531,7 +528,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Open video" }));
+    await user.click(screen.getByRole("button", { name: "Select video" }));
     const directPreview = await screen.findByLabelText("Source video preview");
     fireEvent.error(directPreview);
 
@@ -550,7 +547,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Open video" }));
+    await user.click(screen.getByRole("button", { name: "Select video" }));
     const startHandle = await screen.findByRole("slider", { name: "Trim start" });
     const endHandle = screen.getByRole("slider", { name: "Trim end" });
 
@@ -569,7 +566,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Open video" }));
+    await user.click(screen.getByRole("button", { name: "Select video" }));
     const timeline = await screen.findByLabelText("Video trim timeline");
     vi.spyOn(timeline, "getBoundingClientRect").mockReturnValue({
       x: 100,
@@ -613,7 +610,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Open video" }));
+    await user.click(screen.getByRole("button", { name: "Select video" }));
     const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
     const startHandle = screen.getByRole("slider", { name: "Trim start" });
     const endHandle = screen.getByRole("slider", { name: "Trim end" });
@@ -645,7 +642,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Open video" }));
+    await user.click(screen.getByRole("button", { name: "Select video" }));
     const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
     const timeline = screen.getByLabelText("Video trim timeline");
     vi.spyOn(timeline, "getBoundingClientRect").mockReturnValue({
@@ -746,7 +743,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Open video" }));
+    await user.click(screen.getByRole("button", { name: "Select video" }));
     const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
     const timeline = screen.getByLabelText("Video trim timeline");
     vi.spyOn(timeline, "getBoundingClientRect").mockReturnValue({
@@ -918,7 +915,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Open video" }));
+    await user.click(screen.getByRole("button", { name: "Select video" }));
     const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
     const timeline = screen.getByLabelText("Video trim timeline");
     vi.spyOn(timeline, "getBoundingClientRect").mockReturnValue({
@@ -1006,7 +1003,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Open video" }));
+    await user.click(screen.getByRole("button", { name: "Select video" }));
     const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
     const timeline = screen.getByLabelText("Video trim timeline");
     vi.spyOn(timeline, "getBoundingClientRect").mockReturnValue({
@@ -1116,7 +1113,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Open video" }));
+    await user.click(screen.getByRole("button", { name: "Select video" }));
     const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
     const timeline = screen.getByLabelText("Video trim timeline");
     vi.spyOn(timeline, "getBoundingClientRect").mockReturnValue({
@@ -1172,7 +1169,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Open video" }));
+    await user.click(screen.getByRole("button", { name: "Select video" }));
     const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
     const timeline = screen.getByLabelText("Video trim timeline");
     vi.spyOn(timeline, "getBoundingClientRect").mockReturnValue({
@@ -1221,7 +1218,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Open video" }));
+    await user.click(screen.getByRole("button", { name: "Select video" }));
     const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
     const timeline = screen.getByLabelText("Video trim timeline");
     vi.spyOn(timeline, "getBoundingClientRect").mockReturnValue({
@@ -1295,7 +1292,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Open video" }));
+    await user.click(screen.getByRole("button", { name: "Select video" }));
     const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
     vi.spyOn(video, "pause").mockImplementation(() => undefined);
     const timeline = screen.getByLabelText("Video trim timeline");
@@ -1422,7 +1419,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Open video" }));
+    await user.click(screen.getByRole("button", { name: "Select video" }));
     const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
     const play = vi.spyOn(video, "play").mockResolvedValue();
     vi.spyOn(video, "pause").mockImplementation(() => undefined);
@@ -1457,7 +1454,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Open video" }));
+    await user.click(screen.getByRole("button", { name: "Select video" }));
     const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
     video.currentTime = 12.5;
     fireEvent.timeUpdate(video);
@@ -1476,7 +1473,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Open video" }));
+    await user.click(screen.getByRole("button", { name: "Select video" }));
     fireEvent.error(await screen.findByLabelText("Source video preview"));
     const proxyPreview = await screen.findByText("720p preview");
     expect(proxyPreview).toBeInTheDocument();
@@ -1493,7 +1490,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Open video" }));
+    await user.click(screen.getByRole("button", { name: "Select video" }));
     expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Open video" }));
@@ -1520,7 +1517,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Open video" }));
+    await user.click(screen.getByRole("button", { name: "Select video" }));
     expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
 
     act(() => {
@@ -1551,7 +1548,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Open video" }));
+    await user.click(screen.getByRole("button", { name: "Select video" }));
     expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
 
     act(() => sourceDropListener?.({ status: "drag", active: true }));

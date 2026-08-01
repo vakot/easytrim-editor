@@ -75,7 +75,9 @@ export function EditorStage({
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioElementsRef = useRef(new Map<number, HTMLAudioElement>());
   const audioContextRef = useRef<AudioContext | null>(null);
-  const audioNodesRef = useRef(new Map<number, { source: MediaElementAudioSourceNode; gain: GainNode }>());
+  const audioNodesRef = useRef(
+    new Map<number, { source: MediaElementAudioSourceNode; gain: GainNode }>(),
+  );
   const masterGainRef = useRef<GainNode | null>(null);
   const playheadRef = useRef<HTMLButtonElement>(null);
   const audioPlayheadRef = useRef<HTMLDivElement>(null);
@@ -115,6 +117,9 @@ export function EditorStage({
   }, [audioPreviewUrls]);
 
   useEffect(() => {
+    if (typeof AudioContext === "undefined") {
+      return;
+    }
     const context = audioContextRef.current ?? new AudioContext();
     audioContextRef.current = context;
     let masterGain = masterGainRef.current;
@@ -371,12 +376,13 @@ export function EditorStage({
     setTransportError(null);
     void audioContextRef.current?.resume();
     syncAudioPlayback(video.currentTime);
-    void Promise.all([...audioElementsRef.current.values()].map((audio) => audio.play()))
-      .then(() => video.play())
+    void video
+      .play()
+      .then(() => Promise.all([...audioElementsRef.current.values()].map((audio) => audio.play())))
       .catch(() => {
         pauseAudioPlayback();
-      setIsPlaying(false);
-      setTransportError("Playback could not start.");
+        setIsPlaying(false);
+        setTransportError("Playback could not start.");
       });
   }
 

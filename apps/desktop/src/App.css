@@ -65,7 +65,7 @@ p {
 }
 
 .app-shell.is-empty {
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
 }
 
 .app-shell.has-source {
@@ -102,29 +102,19 @@ p {
   display: flex;
   flex: 0 0 auto;
   align-items: center;
-  gap: 0.55rem;
+  cursor: pointer;
+  gap: 1rem;
   margin: 0;
   color: #e4ae4e;
-  font-size: 1.5rem;
+  font-size: 3rem;
+  line-height: 1;
   letter-spacing: 0.02em;
-}
-
-.app-brand img,
-.welcome-logo {
-  width: 2.5rem;
-  height: 2.5rem;
-  object-fit: contain;
 }
 
 .welcome-header h1 {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-}
-
-.welcome-logo {
-  width: 2.5rem;
-  height: 2.5rem;
 }
 
 .toolbar-actions {
@@ -557,6 +547,10 @@ p {
   color: #86c89a;
 }
 
+.import-card > .capability {
+  margin: 1rem auto 0;
+}
+
 .capability-missing {
   color: #f1b3a8;
 }
@@ -577,19 +571,75 @@ p {
   place-items: center;
   overflow: auto;
   padding: clamp(1.5rem, 5vw, 4rem);
-  background:
-    radial-gradient(circle at 50% 42%, rgb(228 174 78 / 7%), transparent 33rem),
-    repeating-linear-gradient(135deg, transparent 0 13px, rgb(255 255 255 / 1.2%) 13px 14px),
-    #0c0c0e;
+  background: #0c0c0e;
+}
+
+.welcome-brand-wall {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.welcome-brand-row {
+  display: flex;
+  height: 25%;
+  flex: 0 0 25%;
+  align-items: center;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.welcome-brand-track {
+  display: flex;
+  width: max-content;
+  animation: welcome-brand-scroll 240s linear infinite;
+}
+
+.welcome-brand-row:nth-child(even) .welcome-brand-track {
+  animation-direction: reverse;
+}
+
+.welcome-brand-set {
+  --welcome-brand-gap: clamp(1.25rem, 2.5vw, 2.5rem);
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--welcome-brand-gap);
+  padding-right: var(--welcome-brand-gap);
+}
+
+.welcome-brand-mark {
+  display: inline-flex;
+  flex: 0 0 auto;
+  color: #29292f;
+  font-size: 25vh;
+  font-weight: 800;
+  line-height: 1;
+}
+
+@keyframes welcome-brand-scroll {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
 }
 
 .import-card {
-  width: min(100%, 34rem);
-  padding: clamp(2rem, 5vw, 4.5rem);
+  z-index: 1;
+  width: min(100%, 35rem);
+  padding: clamp(1.6rem, 4vw, 3.6rem);
   border: 1px solid #303036;
   border-radius: 1rem;
   text-align: center;
-  background: rgb(20 20 23 / 90%);
+  background: #141417;
   box-shadow: 0 1.5rem 5rem rgb(0 0 0 / 28%);
 }
 
@@ -598,16 +648,52 @@ p {
   font-size: clamp(2.25rem, 6vw, 4.75rem);
   line-height: 0.95;
   letter-spacing: -0.055em;
+  white-space: nowrap;
 }
 
-.import-card > p:not(.section-label, .supported-formats) {
+.import-card > p:not(.section-label, .supported-formats, .capability) {
   color: #a1a1aa;
 }
 
 .primary-button {
-  width: 100%;
-  margin-top: 1rem;
+  width: auto;
   padding: 0.75rem 1.25rem;
+}
+
+.import-drop-box {
+  display: grid;
+  justify-items: center;
+  gap: 0.7rem;
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border: 1px dashed #57575f;
+  border-radius: 0.75rem;
+}
+
+.import-drop-divider {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.6rem;
+  color: #71717a;
+  font-size: 0.8rem;
+}
+
+.import-drop-divider::before,
+.import-drop-divider::after {
+  height: 1px;
+  flex: 1;
+  background: #303036;
+  content: "";
+}
+
+.import-drop-box .primary-button {
+  width: 100%;
+}
+
+.import-drop-box p {
+  margin: 0;
+  color: #a1a1aa;
 }
 
 .supported-formats {
@@ -737,6 +823,43 @@ p {
   place-items: center;
   background: rgb(12 12 14 / 72%);
   cursor: wait;
+}
+
+.return-confirmation-overlay {
+  position: fixed;
+  z-index: 90;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background: rgb(12 12 14 / 72%);
+}
+
+.return-confirmation-dialog {
+  width: min(100%, 25rem);
+  padding: 1.5rem;
+  border: 1px solid #3b3b43;
+  border-radius: 0.85rem;
+  background: #19191d;
+  box-shadow: 0 1rem 3rem rgb(0 0 0 / 42%);
+}
+
+.return-confirmation-dialog h2 {
+  margin: 0.35rem 0 0.65rem;
+  font-size: 1.2rem;
+}
+
+.return-confirmation-dialog > p:not(.section-label) {
+  margin: 0;
+  color: #a1a1aa;
+  font-size: 0.85rem;
+}
+
+.return-confirmation-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  margin-top: 1.25rem;
 }
 
 .native-dialog-card {
