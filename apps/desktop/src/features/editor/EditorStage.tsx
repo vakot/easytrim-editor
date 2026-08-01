@@ -85,6 +85,7 @@ export function EditorStage({
   const scrubFrameRef = useRef<number | null>(null);
   const pendingScrubMicrosRef = useRef<number | null>(null);
   const resumeAfterScrubRef = useRef(false);
+  const playbackStartSequenceRef = useRef(0);
   const lastPlaybackCommitAtRef = useRef(0);
   const trimRef = useRef(trim);
   const currentPlayheadMicrosRef = useRef(trim.startMicros);
@@ -101,6 +102,7 @@ export function EditorStage({
 
   useEffect(
     () => () => {
+      playbackStartSequenceRef.current += 1;
       cancelFrame(playbackFrameRef);
       cancelFrame(scrubFrameRef);
     },
@@ -157,19 +159,10 @@ export function EditorStage({
       audioNodesRef.current.set(streamIndex, { source, gain });
     }
 
-    if (isPlaying) {
-      const seconds = videoRef.current?.currentTime ?? 0;
-      void context.resume();
-      syncAudioPlayback(seconds);
-      void Promise.all([...audioElementsRef.current.values()].map((audio) => audio.play())).catch(
-        () => undefined,
-      );
-    }
-
     return () => {
       // Keep the graph alive across volume changes; elements are disposed on source unmount.
     };
-  }, [audioPreviewUrls, isPlaying]);
+  }, [audioPreviewUrls]);
 
   useEffect(() => {
     const masterGain = masterGainRef.current;
@@ -261,11 +254,7 @@ export function EditorStage({
     setPlayheadMicros(clamped);
     seekVideo(videoRef.current, clamped);
     for (const audio of audioElementsRef.current.values()) {
-      try {
-        audio.currentTime = clamped / 1_000_000;
-      } catch {
-        // Audio metadata may not be ready yet; playback start retries synchronization.
-      }
+      seekMediaIfNeeded(audio, clamped / 1_000_000);
     }
   }
 
@@ -297,6 +286,7 @@ export function EditorStage({
   }
 
   function handleScrubStart() {
+    playbackStartSequenceRef.current += 1;
     resumeAfterScrubRef.current = isPlaying;
     videoRef.current?.pause();
     pauseAudioPlayback();
@@ -373,13 +363,44 @@ export function EditorStage({
     if (!video) {
       return;
     }
+    const startMicros = currentPlayheadMicrosRef.current;
+    const startSeconds = startMicros / 1_000_000;
+    const startSequence = ++playbackStartSequenceRef.current;
     setTransportError(null);
     void audioContextRef.current?.resume();
-    syncAudioPlayback(video.currentTime);
+    seekVideo(video, startMicros);
+    syncAudioPlayback(startSeconds);
+
+    const seekingMedia = [video, ...audioElementsRef.current.values()].filter(
+      (media) => media.seeking,
+    );
+    if (seekingMedia.length === 0) {
+      beginMediaPlayback(video, startSequence);
+      return;
+    }
+    void Promise.all(seekingMedia.map(waitForSeekToSettle)).then(() => {
+      beginMediaPlayback(video, startSequence);
+    });
+  }
+
+  function beginMediaPlayback(video: HTMLVideoElement, startSequence: number) {
+    if (startSequence !== playbackStartSequenceRef.current) {
+      return;
+    }
     void video
       .play()
-      .then(() => Promise.all([...audioElementsRef.current.values()].map((audio) => audio.play())))
+      .then(() => {
+        if (startSequence !== playbackStartSequenceRef.current) {
+          video.pause();
+          return;
+        }
+        syncAudioPlayback(video.currentTime);
+        return Promise.all([...audioElementsRef.current.values()].map((audio) => audio.play()));
+      })
       .catch(() => {
+        if (startSequence !== playbackStartSequenceRef.current) {
+          return;
+        }
         pauseAudioPlayback();
         setIsPlaying(false);
         setTransportError("Playback could not start.");
@@ -411,6 +432,7 @@ export function EditorStage({
     }
     setTransportError(null);
     if (isPlaying) {
+      playbackStartSequenceRef.current += 1;
       video.pause();
       return;
     }
@@ -421,6 +443,7 @@ export function EditorStage({
   }
 
   function handleStepFrame(direction: -1 | 1) {
+    playbackStartSequenceRef.current += 1;
     videoRef.current?.pause();
     setIsPlaying(false);
     stopPlayheadAnimation();
@@ -628,11 +651,27 @@ function seekVideo(video: HTMLVideoElement | null, micros: number) {
   if (!video) {
     return;
   }
+  seekMediaIfNeeded(video, micros / 1_000_000);
+}
+
+function seekMediaIfNeeded(media: HTMLMediaElement, seconds: number) {
+  if (Math.abs(media.currentTime - seconds) <= 0.0005) {
+    return;
+  }
   try {
-    video.currentTime = micros / 1_000_000;
+    media.currentTime = seconds;
   } catch {
     // Metadata may not be ready yet; loadedmetadata retries the seek.
   }
+}
+
+function waitForSeekToSettle(media: HTMLMediaElement): Promise<void> {
+  if (!media.seeking) {
+    return Promise.resolve();
+  }
+  return new Promise((resolve) => {
+    media.addEventListener("seeked", () => resolve(), { once: true });
+  });
 }
 
 function syncPlayheadElements(
