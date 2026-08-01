@@ -52,11 +52,29 @@ Supported platforms are `windows`, `linux`, `macos-intel`, and `macos-apple-sili
 
 ## Development
 
-Start the Tauri desktop application:
+Start the Tauri desktop application with the Vite development server and hot reload:
 
 ```powershell
 pnpm dev
 ```
+
+Build both production layers for the current operating system, without creating an installer:
+
+```powershell
+pnpm build
+```
+
+Tauri runs the configured `beforeBuildCommand`, which creates the optimized Vite bundle in `apps/desktop/dist`, then embeds it into the release-mode Rust executable under `target/release`.
+
+Launch that exact production executable locally:
+
+```powershell
+pnpm preview
+```
+
+No local web server is involved. Re-run `pnpm build` after changing frontend or native source. These commands are identical on Windows, Linux, and macOS once that operating system's Tauri build prerequisites are installed.
+
+For frontend-only diagnostics, `pnpm build:web` and `pnpm preview:web` remain available, but native Tauri functionality is unavailable in the browser preview.
 
 Run the frontend quality gate:
 
