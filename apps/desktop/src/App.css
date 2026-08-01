@@ -249,6 +249,13 @@ p {
   flex-grow: 1.4;
 }
 
+.preset-editor input,
+.preset-editor select,
+.preset-editor .secondary-button {
+  height: 2.5rem;
+  min-height: 2.5rem;
+}
+
 .preset-save-button {
   flex: 0 0 auto;
 }
