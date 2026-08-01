@@ -1,9 +1,9 @@
 ---
 name: clipkit-ffmpeg-pipeline
-description: Implement and review ClipKit media behavior with FFmpeg and FFprobe. Use for media inspection, stream metadata, preview proxies, audio waveforms, trim math, stream mapping, fast lossless cuts, hybrid audio merging, optimized rendering, scaling, frame-rate conversion, NVENC/CPU presets, custom FFmpeg arguments, progress parsing, codec/container compatibility, or media-focused tests and benchmarks. Pair with clipkit-tauri-rust for process execution and clipkit-react-interface for controls or user-facing media states.
+description: Implement and review FrameLatch media behavior with FFmpeg and FFprobe. Use for media inspection, stream metadata, preview proxies, audio waveforms, trim math, stream mapping, fast lossless cuts, hybrid audio merging, optimized rendering, scaling, frame-rate conversion, NVENC/CPU presets, custom FFmpeg arguments, progress parsing, codec/container compatibility, or media-focused tests and benchmarks. Pair with clipkit-tauri-rust for process execution and clipkit-react-interface for controls or user-facing media states.
 ---
 
-# ClipKit FFmpeg Pipeline
+# FrameLatch FFmpeg Pipeline
 
 Treat media behavior as correctness-sensitive. Preserve the selected interval and make unavoidable tradeoffs visible.
 

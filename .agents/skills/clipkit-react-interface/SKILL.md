@@ -1,9 +1,9 @@
 ---
 name: clipkit-react-interface
-description: Build and review ClipKit's React, TypeScript, Vite, Tailwind, shadcn, CSS modules, and frontend tests. Use for the single-screen editor UI, import/drop behavior, video preview controls, timeline and trim handles, playhead synchronization, audio waveform rows and levels, preset editing, resolution/frame-rate controls, export states, accessibility, responsive layout, frontend performance, or Tauri IPC client types. Pair with clipkit-tauri-rust for IPC/native changes and clipkit-ffmpeg-pipeline when controls alter media semantics.
+description: Build and review FrameLatch's React, TypeScript, Vite, Tailwind, shadcn, CSS modules, and frontend tests. Use for the single-screen editor UI, import/drop behavior, video preview controls, timeline and trim handles, playhead synchronization, audio waveform rows and levels, preset editing, resolution/frame-rate controls, export states, accessibility, responsive layout, frontend performance, or Tauri IPC client types. Pair with clipkit-tauri-rust for IPC/native changes and clipkit-ffmpeg-pipeline when controls alter media semantics.
 ---
 
-# ClipKit React Interface
+# FrameLatch React Interface
 
 Build a minimal React + TypeScript + Vite interface that the project owner can review directly.
 

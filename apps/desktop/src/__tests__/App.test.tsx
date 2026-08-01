@@ -88,12 +88,12 @@ beforeEach(() => {
   mocks.inspectMedia.mockResolvedValue(media);
   mocks.prepareSourcePreview.mockResolvedValue({
     sourceId: selection.sourceId,
-    url: "http://clipkit-media.localhost/source-1?variant=source",
+    url: "http://framelatch-media.localhost/source-1?variant=source",
     kind: "source",
   });
   mocks.prepareProxyPreview.mockResolvedValue({
     sourceId: selection.sourceId,
-    url: "http://clipkit-media.localhost/source-1?variant=proxy",
+    url: "http://framelatch-media.localhost/source-1?variant=proxy",
     kind: "proxy",
   });
   mocks.prepareWaveforms.mockImplementation(
@@ -104,7 +104,7 @@ beforeEach(() => {
         jobId,
         streamIndex,
         width,
-        url: `http://clipkit-media.localhost/${sourceId}?variant=waveform&stream=${streamIndex}&width=${width}`,
+        url: `http://framelatch-media.localhost/${sourceId}?variant=waveform&stream=${streamIndex}&width=${width}`,
       })),
   );
   mocks.listenForSourceDrops.mockImplementation(
@@ -142,7 +142,7 @@ describe("App", () => {
     expect(screen.getByText("No exports yet.")).toBeInTheDocument();
     expect(screen.getByLabelText("Source video preview")).toHaveAttribute(
       "src",
-      "http://clipkit-media.localhost/source-1?variant=source",
+      "http://framelatch-media.localhost/source-1?variant=source",
     );
     expect(screen.getByLabelText("Source video preview")).not.toHaveAttribute("controls");
     expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
@@ -451,7 +451,7 @@ describe("App", () => {
             jobId,
             streamIndex,
             width,
-            url: `http://clipkit-media.localhost/${sourceId}?variant=waveform&stream=${streamIndex}&width=${width}`,
+            url: `http://framelatch-media.localhost/${sourceId}?variant=waveform&stream=${streamIndex}&width=${width}`,
           })),
       );
     const user = userEvent.setup();
@@ -704,7 +704,7 @@ describe("App", () => {
     expect(await screen.findByText("720p preview")).toBeInTheDocument();
     expect(screen.getByLabelText("Source video preview")).toHaveAttribute(
       "src",
-      "http://clipkit-media.localhost/source-1?variant=proxy",
+      "http://framelatch-media.localhost/source-1?variant=proxy",
     );
   });
 

@@ -1,4 +1,4 @@
-# ClipKit agent instructions
+# FrameLatch agent instructions
 
 This file is the auto-loaded entry point for every repository task. Keep it compact; reusable policy lives in `.agents/rules/`.
 

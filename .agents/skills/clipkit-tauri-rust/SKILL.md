@@ -1,9 +1,9 @@
 ---
 name: clipkit-tauri-rust
-description: Build and review ClipKit's Rust and Tauri 2 native core. Use for changes under src-tauri, Cargo manifests, Tauri commands and IPC, application state, file dialogs and drag-drop plumbing, FFmpeg child-process lifecycle, progress/cancellation, temporary files, capabilities/CSP, Windows packaging, native tests, or Rust architecture. Pair with clipkit-ffmpeg-pipeline when media commands or metadata change and with clipkit-react-interface when IPC contracts affect the UI.
+description: Build and review FrameLatch's Rust and Tauri 2 native core. Use for changes under src-tauri, Cargo manifests, Tauri commands and IPC, application state, file dialogs and drag-drop plumbing, FFmpeg child-process lifecycle, progress/cancellation, temporary files, capabilities/CSP, Windows packaging, native tests, or Rust architecture. Pair with clipkit-ffmpeg-pipeline when media commands or metadata change and with clipkit-react-interface when IPC contracts affect the UI.
 ---
 
-# ClipKit Tauri and Rust
+# FrameLatch Tauri and Rust
 
 Own the native implementation so the frontend remains a typed, reviewable client.
 

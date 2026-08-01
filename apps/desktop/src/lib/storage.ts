@@ -1,7 +1,7 @@
 export const STORAGE_KEYS = {
-  preferences: "clipkit.preferences.v1",
-  exportPresets: "clipkit.export-presets.v1",
-  supportBadgeDismissed: "clipkit.support-badge-dismissed.v1",
+  preferences: "framelatch.preferences.v1",
+  exportPresets: "framelatch.export-presets.v1",
+  supportBadgeDismissed: "framelatch.support-badge-dismissed.v1",
 } as const;
 
 export function readStoredJson<T>(key: string): T | null {

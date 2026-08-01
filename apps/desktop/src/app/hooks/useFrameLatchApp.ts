@@ -22,7 +22,7 @@ import {
   type SourceSelection,
 } from "@/lib/tauri/media";
 
-export function useClipKitApp() {
+export function useFrameLatchApp() {
   const [session, dispatch] = useReducer(sessionReducer, initialSessionState);
   const [isChoosingSource, setIsChoosingSource] = useState(false);
   const [isNativeDialogOpen, setIsNativeDialogOpen] = useState(false);

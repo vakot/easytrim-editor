@@ -109,7 +109,7 @@ describe("sessionReducer", () => {
       sourceId: firstSource.sourceId,
       preview: {
         sourceId: firstSource.sourceId,
-        url: "http://clipkit-media.localhost/source-1?variant=source",
+        url: "http://framelatch-media.localhost/source-1?variant=source",
         kind: "source",
       },
     });
@@ -259,7 +259,7 @@ describe("sessionReducer", () => {
         jobId: "waveform-1",
         streamIndex: 2,
         width: 800,
-        url: "http://clipkit-media.localhost/source-1?variant=waveform&stream=2&width=800",
+        url: "http://framelatch-media.localhost/source-1?variant=waveform&stream=2&width=800",
       },
     });
     const currentResult = sessionReducer(staleResult, {
@@ -308,7 +308,7 @@ describe("sessionReducer", () => {
         jobId: "waveform-1",
         streamIndex: 2,
         width: 800,
-        url: "http://clipkit-media.localhost/source-1?variant=waveform&stream=2&width=800",
+        url: "http://framelatch-media.localhost/source-1?variant=waveform&stream=2&width=800",
       },
     });
     const failedDisplay = sessionReducer(prepared, {

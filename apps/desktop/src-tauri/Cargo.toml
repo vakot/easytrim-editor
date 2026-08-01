@@ -1,13 +1,13 @@
 [package]
-name = "clipkit-desktop"
+name = "framelatch-desktop"
 version.workspace = true
-description = "ClipKit desktop application"
+description = "FrameLatch desktop application"
 authors.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 
 [lib]
-name = "clipkit_desktop_lib"
+name = "framelatch_desktop_lib"
 crate-type = ["rlib"]
 
 [build-dependencies]

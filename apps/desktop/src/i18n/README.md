@@ -1,6 +1,6 @@
 # Interface localization
 
-ClipKit bundles translations with the desktop frontend. It reads the initial language from
+FrameLatch bundles translations with the desktop frontend. It reads the initial language from
 `navigator.languages`, supports language-only matching, and falls back to English. Manual changes
 remain in memory and are intentionally not written to browser or OS storage.
 

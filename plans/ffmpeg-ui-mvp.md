@@ -1,4 +1,4 @@
-# ClipKit — FFmpeg UI MVP plan
+# FrameLatch — FFmpeg UI MVP plan
 
 ## Goal
 
@@ -275,7 +275,7 @@ layouts and long sources remains part of the media matrix.
 ## Initial directory layout
 
 ```text
-clipkit/
+framelatch/
 ├─ AGENTS.md         # Auto-loaded repository instruction index
 ├─ .agents/
 │  ├─ rules/         # Shared repository-wide policies

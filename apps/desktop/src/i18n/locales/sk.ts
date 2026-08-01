@@ -6,7 +6,7 @@ type TranslationShape<T> = {
 
 export const sk = {
   common: {
-    brand: "CLIP KIT",
+    brand: "FrameLatch",
     cancel: "Zrušiť",
     close: "Zavrieť",
     retry: "Skúsiť znova",
@@ -27,7 +27,7 @@ export const sk = {
   },
   app: {
     toolbar: "Panel aplikácie",
-    returnToWelcome: "Návrat na úvodnú stránku CLIP KIT",
+    returnToWelcome: "Návrat na úvodnú stránku FrameLatch",
     dragUnavailable: "Presunutie súboru nie je dostupné: {{message}}",
     nativeDialog: {
       title: "Čaká sa na systémové okno",
@@ -209,12 +209,12 @@ export const sk = {
     framesPerSecond: "{{value}} FPS",
   },
   release: {
-    updateAvailable: "Je dostupná nová verzia ClipKit:",
+    updateAvailable: "Je dostupná nová verzia FrameLatch:",
     update: "Aktualizovať",
     dismiss: "Skryť upozornenie na aktualizáciu",
   },
   support: {
-    message: "Podporte autora a pomôžte zlepšovať ClipKit.",
+    message: "Podporte autora a pomôžte zlepšovať FrameLatch.",
     dismiss: "Skryť správu podpory",
     resetDevelopment: "Obnoviť odznak podpory",
   },

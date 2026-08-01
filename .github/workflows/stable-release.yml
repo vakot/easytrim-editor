@@ -73,9 +73,9 @@ jobs:
           tauriScript: pnpm tauri
           args: ${{ matrix.args }}
           tagName: ${{ github.event.inputs.tag || github.ref_name }}
-          releaseName: ClipKit ${{ github.event.inputs.tag || github.ref_name }}
+          releaseName: FrameLatch ${{ github.event.inputs.tag || github.ref_name }}
           releaseBody: |
-            ClipKit ${{ github.event.inputs.tag || github.ref_name }}
+            FrameLatch ${{ github.event.inputs.tag || github.ref_name }}
 
             Standalone Windows desktop build.
 

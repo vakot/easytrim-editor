@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "ClipKit",
+  "productName": "FrameLatch",
   "version": "1.0.0",
-  "identifier": "com.vakot.clipkit",
+  "identifier": "com.vakot.framelatch",
   "build": {
     "beforeDevCommand": "pnpm dev",
     "devUrl": "http://localhost:1420",
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "ClipKit",
+        "title": "FrameLatch",
         "width": 1280,
         "height": 800,
         "minWidth": 960,
@@ -22,8 +22,8 @@
     ],
     "security": {
       "capabilities": ["default"],
-      "csp": "default-src 'self'; connect-src ipc: http://ipc.localhost; img-src 'self' asset: http://asset.localhost clipkit-media: http://clipkit-media.localhost; media-src 'self' clipkit-media: http://clipkit-media.localhost; style-src 'self'",
-      "devCsp": "default-src 'self'; connect-src ipc: http://ipc.localhost ws://localhost:1421; img-src 'self' asset: http://asset.localhost clipkit-media: http://clipkit-media.localhost; media-src 'self' clipkit-media: http://clipkit-media.localhost; style-src 'self'"
+      "csp": "default-src 'self'; connect-src ipc: http://ipc.localhost; img-src 'self' asset: http://asset.localhost framelatch-media: http://framelatch-media.localhost; media-src 'self' framelatch-media: http://framelatch-media.localhost; style-src 'self'",
+      "devCsp": "default-src 'self'; connect-src ipc: http://ipc.localhost ws://localhost:1421; img-src 'self' asset: http://asset.localhost framelatch-media: http://framelatch-media.localhost; media-src 'self' framelatch-media: http://framelatch-media.localhost; style-src 'self'"
     }
   },
   "bundle": {
