@@ -125,7 +125,7 @@ pub fn build_fast_arguments(
         OsString::from("make_zero"),
         OsString::from("-movflags"),
         OsString::from("+faststart"),
-        OsString::from("-n"),
+        OsString::from("-y"),
         output_path.as_os_str().to_owned(),
     ]);
     Ok(arguments)
@@ -214,7 +214,7 @@ pub fn build_optimized_arguments(
         OsString::from("-dn"),
         OsString::from("-movflags"),
         OsString::from("+faststart"),
-        OsString::from("-n"),
+        OsString::from("-y"),
         output_path.as_os_str().to_owned(),
     ]);
     Ok(arguments)

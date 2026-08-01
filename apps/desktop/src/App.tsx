@@ -22,6 +22,7 @@ import "./App.css";
 function App() {
   const [session, dispatch] = useReducer(sessionReducer, initialSessionState);
   const [isChoosingSource, setIsChoosingSource] = useState(false);
+  const [isNativeDialogOpen, setIsNativeDialogOpen] = useState(false);
   const [isSourceDragActive, setIsSourceDragActive] = useState(false);
   const [dropListenerError, setDropListenerError] = useState<string | null>(null);
   const [exportQueue, setExportQueue] = useState<ExportToast[]>([]);
@@ -231,6 +232,7 @@ function App() {
     }
 
     setIsChoosingSource(true);
+    setIsNativeDialogOpen(true);
     try {
       const source = await chooseSource();
       if (source) {
@@ -240,6 +242,7 @@ function App() {
       dispatch({ type: "source-failed", error: normalizeAppError(error) });
     } finally {
       setIsChoosingSource(false);
+      setIsNativeDialogOpen(false);
     }
   }
 
@@ -247,9 +250,16 @@ function App() {
     <main className={`app-shell ${hasSource ? "has-source" : "is-empty"}`}>
       {hasSource ? (
         <div className="app-toolbar" role="toolbar" aria-label="Application toolbar">
-          <h1 className="app-brand">ClipKit</h1>
-          <div className="toolbar-actions">
+          <div className="toolbar-brand-group">
+            <h1 className="app-brand">
+              <img src="/logo.svg" alt="" />
+              ClipKit
+            </h1>
+          </div>
+          <div className="toolbar-capability">
             <CapabilityStatus capabilities={session.capabilities} />
+          </div>
+          <div className="toolbar-actions">
             <OpenVideoButton
               isChoosingSource={isChoosingSource}
               onChooseSource={() => void handleChooseSource()}
@@ -266,6 +276,7 @@ function App() {
                 mergeAudio={session.source.mergeAudio}
                 queue={exportQueue}
                 setQueue={setExportQueue}
+                onNativeDialogStateChange={setIsNativeDialogOpen}
               />
             ) : null}
           </div>
@@ -274,7 +285,10 @@ function App() {
         <header className="welcome-header">
           <div>
             <p className="eyebrow">Local video editor</p>
-            <h1>ClipKit</h1>
+            <h1>
+              <img className="welcome-logo" src="/logo.svg" alt="" />
+              ClipKit
+            </h1>
           </div>
           <div className="welcome-summary">
             <p>Import a video to inspect its source and prepare a precise cut.</p>
@@ -288,6 +302,8 @@ function App() {
           </div>
         </header>
       )}
+
+      {isNativeDialogOpen ? <NativeDialogOverlay /> : null}
 
       {dropListenerError ? (
         <p className="inline-alert" role="alert">
@@ -313,6 +329,18 @@ function App() {
         exportQueue={exportQueue}
       />
     </main>
+  );
+}
+
+function NativeDialogOverlay() {
+  return (
+    <div className="native-dialog-overlay" role="status" aria-live="polite">
+      <div className="native-dialog-card">
+        <span className="native-dialog-spinner" aria-hidden="true" />
+        <strong>Waiting for system dialog</strong>
+        <span>Choose a file location to continue.</span>
+      </div>
+    </div>
   );
 }
 

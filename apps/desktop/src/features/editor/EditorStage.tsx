@@ -215,6 +215,7 @@ export function EditorStage({
       }
 
       event.preventDefault();
+      event.stopPropagation();
       if (event.repeat && shortcut !== "previous-frame" && shortcut !== "next-frame") {
         return;
       }
@@ -250,6 +251,7 @@ export function EditorStage({
       audioPlayheadRef.current,
       clamped,
       trimRef.current.sourceDurationMicros,
+      frameRate,
     );
     setPlayheadMicros(clamped);
     seekVideo(videoRef.current, clamped);
@@ -315,6 +317,7 @@ export function EditorStage({
       audioPlayheadRef.current,
       currentMicros,
       durationMicros,
+      frameRate,
     );
     setPlayheadMicros(currentMicros);
     syncAudioPlayback(seconds);
@@ -340,6 +343,7 @@ export function EditorStage({
         audioPlayheadRef.current,
         currentMicros,
         durationMicros,
+        frameRate,
       );
       if (timestamp - lastPlaybackCommitAtRef.current >= 100) {
         lastPlaybackCommitAtRef.current = timestamp;
@@ -566,6 +570,7 @@ export function EditorStage({
                 <PlaybackTimecode
                   currentMicros={displayedPlayheadMicros}
                   sourceDurationMicros={trim.sourceDurationMicros}
+                  frameRate={frameRate}
                 />
               ) : null
             }
@@ -629,13 +634,14 @@ function syncPlayheadElements(
   audioPlayhead: HTMLDivElement | null,
   micros: number,
   durationMicros: number,
+  frameRate?: FrameRate,
 ) {
   const percent = durationMicros > 0 ? (micros / durationMicros) * 100 : 0;
   if (playhead) {
     playhead.style.left = `${percent}%`;
     playhead.setAttribute("aria-valuenow", micros.toString());
     playhead.setAttribute("aria-valuetext", `${(micros / 1_000_000).toFixed(3)} seconds`);
-    playhead.title = formatPlaybackTime(micros);
+    playhead.title = formatPlaybackTime(micros, frameRate);
   }
   if (audioPlayhead) {
     audioPlayhead.style.left = `${percent}%`;
@@ -673,10 +679,12 @@ function editorShortcutFromEvent(event: globalThis.KeyboardEvent): EditorShortcu
 }
 
 function isShortcutBlockedTarget(target: EventTarget | null): boolean {
-  return (
-    target instanceof Element &&
-    target.closest(
-      "input, textarea, select, button, [contenteditable]:not([contenteditable='false'])",
-    ) !== null
-  );
+  if (!(target instanceof Element)) {
+    return false;
+  }
+  if (target.closest("input, textarea, select, [contenteditable]:not([contenteditable='false'])")) {
+    return true;
+  }
+  const button = target.closest("button");
+  return button !== null && !button.classList.contains("transport-button");
 }

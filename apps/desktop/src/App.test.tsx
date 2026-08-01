@@ -161,7 +161,7 @@ describe("App", () => {
       screen.getByRole("button", { name: "Set segment end to current position" }),
     ).toHaveAttribute("aria-keyshortcuts", "O");
     expect(screen.getByLabelText("Current playback time")).toHaveTextContent(
-      "00:00:00.000 / 00:01:05.000",
+      "00:00:00:00f / 00:01:04:56f",
     );
     const timelineHeading = screen.getByRole("heading", {
       name: "Selected Segment",
@@ -406,10 +406,10 @@ describe("App", () => {
     const audioPlayhead = document.querySelector(".audio-playhead") as HTMLElement;
     expect(playhead).toHaveAttribute("aria-valuenow", "16683");
     expect(audioPlayhead.style.left).toBe(playhead.style.left);
-    expect(screen.getByLabelText("Current playback time")).toHaveTextContent("00:00:00.016");
+    expect(screen.getByLabelText("Current playback time")).toHaveTextContent("00:00:00:01f");
 
     await user.click(screen.getByRole("button", { name: "Previous frame" }));
-    expect(screen.getByLabelText("Current playback time")).toHaveTextContent("00:00:00.000");
+    expect(screen.getByLabelText("Current playback time")).toHaveTextContent("00:00:00:00f");
     expect(audioPlayhead.style.left).toBe(playhead.style.left);
 
     video.currentTime = 10;
@@ -561,7 +561,7 @@ describe("App", () => {
     await user.keyboard("{ArrowRight}");
 
     expect(startHandle).toHaveAttribute("aria-valuenow", "16683");
-    expect(screen.getAllByText("00:00:00.016")).not.toHaveLength(0);
+    expect(screen.getAllByText("00:00:00:01f")).not.toHaveLength(0);
   });
 
   it("maps pointer movement on a trim handle to source time", async () => {
@@ -592,7 +592,7 @@ describe("App", () => {
       "aria-valuenow",
       "16250000",
     );
-    expect(screen.getAllByText("00:00:16.250")).not.toHaveLength(0);
+    expect(screen.getAllByText("00:00:16:14f")).not.toHaveLength(0);
 
     fireEvent.pointerDown(screen.getByRole("slider", { name: "Trim end" }), {
       clientX: 100 + (16.75 / 65) * 1000,
@@ -1446,7 +1446,7 @@ describe("App", () => {
 
     await waitFor(() => expect(video.currentTime).toBe(32.5));
     expect(playhead).toHaveAttribute("aria-valuenow", "32500000");
-    expect(screen.getByLabelText("Current playback time")).toHaveTextContent("00:00:32.500");
+    expect(screen.getByLabelText("Current playback time")).toHaveTextContent("00:00:32:28f");
 
     fireEvent.pointerUp(playhead, { clientX: 600, pointerId: 7 });
     expect(play).toHaveBeenCalledOnce();
