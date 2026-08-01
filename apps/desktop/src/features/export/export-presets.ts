@@ -7,6 +7,7 @@ export interface ExportPreset {
   id: string;
   name: string;
   argumentsText: string;
+  description?: string;
 }
 
 export interface ExportPresetState {
@@ -24,16 +25,48 @@ export type ExportPresetAction =
   | { type: "preset-updated"; name: string }
   | { type: "preset-deleted" };
 
-const DEFAULT_PRESET: ExportPreset = {
-  id: "balanced-hevc-nvenc",
-  name: "Balanced HEVC (NVENC)",
-  argumentsText: DEFAULT_OPTIMIZED_ARGUMENTS,
-};
+const DEFAULT_NVENC_ARGUMENTS = (preset: number) =>
+  DEFAULT_OPTIMIZED_ARGUMENTS.replace("-preset p3", `-preset p${preset}`);
+
+export const DEFAULT_PRESETS: ExportPreset[] = [
+  {
+    id: "hevc-nvenc-p1",
+    name: "P1 · Fastest",
+    description: "Fastest NVENC encoding; largest files and lowest compression efficiency.",
+    argumentsText: DEFAULT_NVENC_ARGUMENTS(1),
+  },
+  {
+    id: "hevc-nvenc-p2",
+    name: "P2 · Very fast",
+    description: "Very fast export with large files; useful when turnaround matters most.",
+    argumentsText: DEFAULT_NVENC_ARGUMENTS(2),
+  },
+  {
+    id: "hevc-nvenc-p3",
+    name: "P3 · Fast",
+    description: "Fast NVENC export with a practical balance of speed, size, and quality.",
+    argumentsText: DEFAULT_NVENC_ARGUMENTS(3),
+  },
+  {
+    id: "hevc-nvenc-p4",
+    name: "P4 · Quality",
+    description: "Quality-focused NVENC encoding; smaller files with a longer render time.",
+    argumentsText: DEFAULT_NVENC_ARGUMENTS(4),
+  },
+  {
+    id: "hevc-nvenc-p5",
+    name: "P5 · Smallest",
+    description: "Smallest files in this set; slowest NVENC option for efficient storage.",
+    argumentsText: DEFAULT_NVENC_ARGUMENTS(5),
+  },
+];
+
+const DEFAULT_PRESET_ID = "hevc-nvenc-p3";
 
 export const initialExportPresetState: ExportPresetState = {
-  presets: [DEFAULT_PRESET],
-  selectedPresetId: DEFAULT_PRESET.id,
-  argumentsText: DEFAULT_PRESET.argumentsText,
+  presets: DEFAULT_PRESETS,
+  selectedPresetId: DEFAULT_PRESET_ID,
+  argumentsText: DEFAULT_PRESETS.find((preset) => preset.id === DEFAULT_PRESET_ID)!.argumentsText,
   nextPresetSequence: 0,
 };
 

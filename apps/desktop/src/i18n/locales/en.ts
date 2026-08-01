@@ -199,7 +199,7 @@ export const en = {
       arguments: "FFmpeg arguments",
       saveNotice: "The native save dialog opens after confirmation.",
     },
-    sourceResolution: "Source · {{width}} × {{height}}",
+    sourceResolution: "{{height}}p \u00b7 {{width}} \u00d7 {{height}} (source)",
     framesPerSecond: "{{value}} FPS",
   },
   units: {

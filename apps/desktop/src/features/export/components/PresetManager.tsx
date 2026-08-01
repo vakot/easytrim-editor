@@ -1,4 +1,4 @@
-import { MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
+import { ChevronDownIcon, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui";
 import { useTranslation } from "react-i18next";
@@ -15,6 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { selectTriggerVariants } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
 import {
@@ -81,13 +82,17 @@ export function PresetManager({ state, onAction }: PresetManagerProps) {
       <div className="grid gap-1.5">
         <Label>{t("export.presets.label", "Preset")}</Label>
         <DropdownMenuPrimitive.Root>
-          <DropdownMenuPrimitive.Trigger asChild>
-            <Button variant="default" className="w-full justify-between font-normal">
-              <span className="truncate">
-                {selectedPreset?.name ?? t("export.presets.select", "Select a preset")}
-              </span>
-              <span aria-hidden="true">⌄</span>
-            </Button>
+          <DropdownMenuPrimitive.Trigger
+            data-size="default"
+            className={selectTriggerVariants({
+              variant: "primary",
+              className: "w-full font-normal",
+            })}
+          >
+            <span className="truncate">
+              {selectedPreset?.name ?? t("export.presets.select", "Select a preset")}
+            </span>
+            <ChevronDownIcon className="pointer-events-none size-4 shrink-0" />
           </DropdownMenuPrimitive.Trigger>
           <DropdownMenuPrimitive.Portal>
             <DropdownMenuPrimitive.Content
@@ -98,10 +103,15 @@ export function PresetManager({ state, onAction }: PresetManagerProps) {
               {state.presets.map((preset) => (
                 <div key={preset.id} className="flex items-center gap-1">
                   <DropdownMenuPrimitive.Item
-                    className="min-w-0 flex-1 cursor-pointer truncate rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent"
+                    className="min-w-0 flex-1 cursor-pointer rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent"
                     onSelect={() => onAction({ type: "preset-selected", presetId: preset.id })}
                   >
-                    {preset.name}
+                    <span className="block truncate">{preset.name}</span>
+                    {preset.description ? (
+                      <span className="block truncate text-xs text-muted-foreground">
+                        {preset.description}
+                      </span>
+                    ) : null}
                   </DropdownMenuPrimitive.Item>
                   <DropdownMenuPrimitive.Sub>
                     <DropdownMenuPrimitive.SubTrigger

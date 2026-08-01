@@ -205,7 +205,7 @@ export const sk = {
       arguments: "Argumenty FFmpeg",
       saveNotice: "Po potvrdení sa otvorí systémové okno na uloženie.",
     },
-    sourceResolution: "Zdroj · {{width}} × {{height}}",
+    sourceResolution: "{{height}}p \u00b7 {{width}} \u00d7 {{height}} (zdroj)",
     framesPerSecond: "{{value}} FPS",
   },
   units: {

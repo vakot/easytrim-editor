@@ -3,8 +3,6 @@ import { describe, expect, it } from "vitest";
 import {
   exportPresetReducer,
   initialExportPresetState,
-  loadExportPresetState,
-  persistExportPresetState,
   presetNameError,
   selectedExportPreset,
 } from "../export-presets";
@@ -39,8 +37,8 @@ describe("export presets", () => {
     });
 
     const deleted = exportPresetReducer(updated, { type: "preset-deleted" });
-    expect(deleted.presets).toHaveLength(1);
-    expect(selectedExportPreset(deleted)?.name).toBe("Balanced HEVC (NVENC)");
+    expect(deleted.presets).toHaveLength(5);
+    expect(selectedExportPreset(deleted)?.name).toBe("P1 · Fastest");
   });
 
   it("rejects blank, long, and duplicate names without changing state", () => {
@@ -50,15 +48,28 @@ describe("export presets", () => {
     expect(presetNameError(initialExportPresetState.presets, "x".repeat(65))).toBe(
       "Preset names must be 64 characters or fewer.",
     );
-    expect(presetNameError(initialExportPresetState.presets, "balanced hevc (nvenc)")).toBe(
+    expect(presetNameError(initialExportPresetState.presets, "p3 · fast")).toBe(
       "Preset names must be unique.",
     );
     expect(
       exportPresetReducer(initialExportPresetState, {
         type: "preset-created",
-        name: "Balanced HEVC (NVENC)",
+        name: "P3 · Fast",
       }),
     ).toBe(initialExportPresetState);
+  });
+
+  it("provides five NVENC defaults from fastest to smallest", () => {
+    expect(initialExportPresetState.presets).toHaveLength(5);
+    expect(initialExportPresetState.presets.map((preset) => preset.id)).toEqual([
+      "hevc-nvenc-p1",
+      "hevc-nvenc-p2",
+      "hevc-nvenc-p3",
+      "hevc-nvenc-p4",
+      "hevc-nvenc-p5",
+    ]);
+    expect(initialExportPresetState.presets[0]?.argumentsText).toContain("-preset p1");
+    expect(initialExportPresetState.presets[4]?.argumentsText).toContain("-preset p5");
   });
 
   it("round-trips presets through versioned storage", () => {
