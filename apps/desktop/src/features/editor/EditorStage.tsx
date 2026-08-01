@@ -138,7 +138,9 @@ export function EditorStage({
     for (const [streamIndexText, url] of Object.entries(audioPreviewUrls)) {
       const streamIndex = Number(streamIndexText);
       if (audioElementsRef.current.has(streamIndex)) continue;
-      const element = new Audio(url);
+      const element = new Audio();
+      element.crossOrigin = "anonymous";
+      element.src = url;
       element.preload = "auto";
       element.setAttribute("aria-hidden", "true");
       element.style.display = "none";

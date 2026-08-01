@@ -9,6 +9,7 @@ use tauri::{
     http::{
         HeaderValue, Method, Request, Response, StatusCode,
         header::{ACCEPT_RANGES, CONTENT_LENGTH, CONTENT_RANGE, CONTENT_TYPE},
+        HeaderName,
     },
 };
 
@@ -127,6 +128,11 @@ fn read_media_response(
     };
     insert_static_header(&mut response, ACCEPT_RANGES, "bytes");
     insert_static_header(&mut response, CONTENT_TYPE, content_type(path));
+    insert_static_header(
+        &mut response,
+        HeaderName::from_static("access-control-allow-origin"),
+        "*",
+    );
     insert_numeric_header(&mut response, CONTENT_LENGTH, response_length);
     if is_partial {
         insert_owned_header(
@@ -189,6 +195,7 @@ fn content_type(path: &Path) -> &'static str {
         Some("mkv") => "video/x-matroska",
         Some("mov") => "video/quicktime",
         Some("png") => "image/png",
+        Some("m4a") => "audio/mp4",
         Some("ts" | "mts" | "m2ts") => "video/mp2t",
         Some("webm") => "video/webm",
         Some("wmv") => "video/x-ms-wmv",
