@@ -53,9 +53,21 @@ export const DEFAULT_PRESETS: ExportPreset[] = [
   },
   {
     id: "hevc-nvenc-p5",
-    name: "P5 · Smallest",
-    description: "Smallest files in this set; slowest NVENC option for efficient storage.",
+    name: "P5 · Smaller",
+    description: "Smaller files with a moderate render-time tradeoff.",
     argumentsText: DEFAULT_NVENC_ARGUMENTS(5),
+  },
+  {
+    id: "hevc-nvenc-p6",
+    name: "P6 · Very small",
+    description: "Higher compression efficiency; slower encoding for very small files.",
+    argumentsText: DEFAULT_NVENC_ARGUMENTS(6),
+  },
+  {
+    id: "hevc-nvenc-p7",
+    name: "P7 · Smallest",
+    description: "Highest-efficiency NVENC preset; slowest option in the full preset range.",
+    argumentsText: DEFAULT_NVENC_ARGUMENTS(7),
   },
 ];
 
