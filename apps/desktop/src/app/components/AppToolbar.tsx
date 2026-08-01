@@ -5,6 +5,7 @@ import { ExportPanel, type ExportToast } from "@/features/export";
 import type { Dispatch, SetStateAction } from "react";
 import { useTranslation } from "react-i18next";
 import { LanguageSelector } from "./LanguageSelector";
+import { ThemeSelector } from "./ThemeSelector";
 
 interface AppToolbarProps {
   session: SessionState;
@@ -41,6 +42,7 @@ export function AppToolbar({
       </button>
       <CapabilityStatus capabilities={session.capabilities} />
       <div className="flex items-center justify-end gap-3">
+        <ThemeSelector className="w-12 px-2" />
         <LanguageSelector className="w-36" />
         <Button variant="outline" size="lg" onClick={onChooseSource} disabled={isChoosingSource}>
           {isChoosingSource ? t("import.opening") : t("import.openVideo")}

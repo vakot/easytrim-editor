@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { LanguageSelector } from "@/app/components/LanguageSelector";
+import { ThemeSelector } from "@/app/components/ThemeSelector";
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import type { SessionState } from "@/app/session-state";
@@ -30,7 +31,10 @@ export function WelcomePage({
       aria-labelledby="import-title"
     >
       <WelcomeBrandWall />
-      <LanguageSelector className="absolute top-5 right-5 z-20 w-36 bg-background/90 backdrop-blur-sm" />
+      <div className="absolute top-5 right-5 z-20 flex items-center gap-2">
+        <ThemeSelector className="w-12 bg-background/90 px-2 backdrop-blur-sm" />
+        <LanguageSelector className="w-36 bg-background/90 backdrop-blur-sm" />
+      </div>
       <Card className="relative z-10 w-[min(27rem,calc(100vw-2rem))] border-border/80 bg-card/96 shadow-2xl backdrop-blur-md">
         <CardHeader className="text-center">
           <p className="text-xs font-bold tracking-[0.14em] text-primary uppercase">

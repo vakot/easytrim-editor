@@ -17,6 +17,14 @@ export const sk = {
     english: "English",
     slovak: "Slovenčina",
   },
+  theme: {
+    label: "Motív",
+    selection: "Motív: {{theme}}",
+    systemSelection: "Systémový ({{resolved}})",
+    system: "Systémový",
+    light: "Svetlý",
+    dark: "Tmavý",
+  },
   app: {
     toolbar: "Panel aplikácie",
     returnToWelcome: "Návrat na úvodnú stránku CLIP KIT",

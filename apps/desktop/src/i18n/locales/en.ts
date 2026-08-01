@@ -11,6 +11,14 @@ export const en = {
     english: "English",
     slovak: "Slovenčina",
   },
+  theme: {
+    label: "Theme",
+    selection: "Theme: {{theme}}",
+    systemSelection: "System ({{resolved}})",
+    system: "System",
+    light: "Light",
+    dark: "Dark",
+  },
   app: {
     toolbar: "Application toolbar",
     returnToWelcome: "Return to CLIP KIT welcome page",
