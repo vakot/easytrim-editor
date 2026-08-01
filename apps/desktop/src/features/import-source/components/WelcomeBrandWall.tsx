@@ -13,7 +13,7 @@ export function WelcomeBrandWall() {
               <div className={styles.set} key={setIndex}>
                 {Array.from({ length: WORD_COUNT }, (_, wordIndex) => (
                   <span className={styles.mark} key={wordIndex}>
-                    {wordIndex % 2 === 0 ? "CLIP" : "KIT"}
+                    {wordIndex % 2 === 0 ? "EASY" : "TRIM"}
                   </span>
                 ))}
               </div>

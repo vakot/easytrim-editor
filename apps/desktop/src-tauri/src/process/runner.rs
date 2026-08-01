@@ -269,13 +269,17 @@ fn resolve_executable(executable: &OsStr) -> io::Result<PathBuf> {
     }
 
     let path = std::env::var_os("PATH").unwrap_or_default();
-    let mut search_paths = std::env::split_paths(&path).collect::<Vec<_>>();
+    let search_paths = {
+        let search_paths = std::env::split_paths(&path);
 
-    #[cfg(target_os = "macos")]
-    search_paths.extend([
-        PathBuf::from("/opt/homebrew/bin"),
-        PathBuf::from("/usr/local/bin"),
-    ]);
+        #[cfg(target_os = "macos")]
+        let search_paths = search_paths.chain([
+            PathBuf::from("/opt/homebrew/bin"),
+            PathBuf::from("/usr/local/bin"),
+        ]);
+
+        search_paths.collect::<Vec<_>>()
+    };
 
     find_executable(executable, search_paths).ok_or_else(|| executable_not_found(executable))
 }
