@@ -11,6 +11,7 @@ use crate::{
     error::AppError,
     media::export::{
         FastExportRequest, OptimizedExportRequest, build_fast_arguments, build_optimized_arguments,
+        optimized_command_preview,
     },
     process::run_progress_cancellable,
     state::AppState,
@@ -51,6 +52,12 @@ pub struct ExportResult {
     pub operation_id: String,
     pub display_name: String,
     pub display_path: String,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OptimizedExportPlan {
+    pub command_preview: String,
 }
 
 #[tauri::command]
@@ -144,6 +151,21 @@ pub async fn render_optimized(
 }
 
 #[tauri::command]
+pub fn plan_optimized_export(
+    request: OptimizedExportRequest,
+    state: State<'_, AppState>,
+) -> Result<OptimizedExportPlan, AppError> {
+    let source = state.resolve_source(&request.source_id)?;
+    let media = source
+        .media
+        .as_ref()
+        .ok_or_else(|| AppError::invalid_request("Inspect the video before exporting."))?;
+    Ok(OptimizedExportPlan {
+        command_preview: optimized_command_preview(media, &request)?,
+    })
+}
+
+#[tauri::command]
 pub fn cancel_operation(operation_id: String, state: State<'_, AppState>) -> Result<(), AppError> {
     state.cancel_operation(&operation_id)
 }
@@ -190,9 +212,16 @@ async fn run_export(
     on_progress: Channel<ExportProgress>,
 ) -> Result<ExportResult, AppError> {
     let (operation_id, cancellation) = state.begin_operation()?;
+    let _ = on_progress.send(ExportProgress {
+        operation_id: operation_id.clone(),
+        percentage: 0.0,
+        elapsed_micros: 0,
+        speed: None,
+        phase: ExportPhase::Running,
+    });
     let cancellation_for_check = cancellation.clone();
     let operation_for_task = operation_id.clone();
-    let result = tauri::async_runtime::spawn_blocking(move || {
+    let task_result = tauri::async_runtime::spawn_blocking(move || {
         let mut progress_values = HashMap::new();
         let process = run_progress_cancellable(
             OsStr::new("ffmpeg"),
@@ -240,9 +269,20 @@ async fn run_export(
             }
         })
     })
-    .await
-    .map_err(|_| AppError::internal("The export operation stopped unexpectedly."))?;
-    state.finish_operation(&operation_id)?;
+    .await;
+    if let Err(error) = state.finish_operation(&operation_id) {
+        remove_partial_output(&output_path);
+        return Err(error);
+    }
+    let result = match task_result {
+        Ok(result) => result,
+        Err(_) => {
+            remove_partial_output(&output_path);
+            return Err(AppError::internal(
+                "The export operation stopped unexpectedly.",
+            ));
+        }
+    };
     let result = match result {
         Ok(result) => result,
         Err(error) => {
@@ -256,7 +296,7 @@ async fn run_export(
     }
     if !result.status.success() {
         remove_partial_output(&output_path);
-        return Err(AppError::io_failed(
+        return Err(AppError::render_failed(
             "FFmpeg could not render the selected segment.",
         ));
     }
@@ -264,14 +304,14 @@ async fn run_export(
         Ok(metadata) => metadata.len(),
         Err(_) => {
             remove_partial_output(&output_path);
-            return Err(AppError::io_failed(
+            return Err(AppError::render_failed(
                 "The rendered output could not be verified.",
             ));
         }
     };
     if output_size == 0 {
         remove_partial_output(&output_path);
-        return Err(AppError::io_failed("The rendered output is empty."));
+        return Err(AppError::render_failed("The rendered output is empty."));
     }
     if state.resolve_source(&source_id).is_err() {
         remove_partial_output(&output_path);

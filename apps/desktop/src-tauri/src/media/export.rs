@@ -1,4 +1,4 @@
-use std::{ffi::OsString, path::Path};
+use std::{collections::HashSet, ffi::OsString, path::Path};
 
 use serde::Deserialize;
 
@@ -143,17 +143,13 @@ pub fn build_optimized_arguments(
         &request.trim,
         &request.audio_tracks,
     )?;
-    if request.resolution.width == 0 || request.resolution.height == 0 {
+    validate_resolution(source, &request.resolution)?;
+    if let Some(frame_rate) = &request.frame_rate
+        && (frame_rate.numerator == 0 || frame_rate.denominator == 0)
+    {
         return Err(AppError::invalid_request(
-            "The output resolution is invalid.",
+            "The output frame rate is invalid.",
         ));
-    }
-    if let Some(frame_rate) = &request.frame_rate {
-        if frame_rate.numerator == 0 || frame_rate.denominator == 0 {
-            return Err(AppError::invalid_request(
-                "The output frame rate is invalid.",
-            ));
-        }
     }
 
     let mut arguments = common_input_arguments(source_path, &request.trim);
@@ -167,6 +163,8 @@ pub fn build_optimized_arguments(
             OsString::from(audio_filter_graph(&request.audio_tracks, true)),
             OsString::from("-map"),
             OsString::from("[aout]"),
+            OsString::from("-ac"),
+            OsString::from("2"),
         ]);
     } else if audio_tracks_need_reencode(&request.audio_tracks) {
         arguments.extend([
@@ -212,12 +210,27 @@ pub fn build_optimized_arguments(
     arguments.extend([
         OsString::from("-sn"),
         OsString::from("-dn"),
-        OsString::from("-movflags"),
-        OsString::from("+faststart"),
         OsString::from("-y"),
         output_path.as_os_str().to_owned(),
     ]);
     Ok(arguments)
+}
+
+pub fn optimized_command_preview(
+    source: &MediaInfo,
+    request: &OptimizedExportRequest,
+) -> Result<String, AppError> {
+    let arguments = build_optimized_arguments(
+        source,
+        request,
+        Path::new("<source>"),
+        Path::new("<output>"),
+    )?;
+    Ok(std::iter::once(OsString::from("ffmpeg"))
+        .chain(arguments)
+        .map(|argument| quote_preview_argument(&argument))
+        .collect::<Vec<_>>()
+        .join(" "))
 }
 
 fn common_input_arguments(source_path: &Path, trim: &TrimSelection) -> Vec<OsString> {
@@ -253,19 +266,69 @@ fn validate_common_request(
             "The selected export range is invalid.",
         ));
     }
-    if audio_tracks.iter().any(|track| {
-        track.volume_percent == 0
+    let mut selected_streams = HashSet::new();
+    for track in audio_tracks {
+        let is_known_stream = source
+            .audio_streams
+            .iter()
+            .any(|stream| stream.stream_index == track.stream_index);
+        if track.volume_percent == 0
             || track.volume_percent > 200
-            || !source
-                .audio_streams
-                .iter()
-                .any(|stream| stream.stream_index == track.stream_index)
-    }) {
+            || !is_known_stream
+            || !selected_streams.insert(track.stream_index)
+        {
+            return Err(AppError::invalid_request(
+                "An audio stream selection or volume is invalid.",
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn validate_resolution(
+    source: &MediaInfo,
+    resolution: &ResolutionSelection,
+) -> Result<(), AppError> {
+    let (source_width, source_height) = display_dimensions(source);
+    if resolution.width == 0
+        || resolution.height == 0
+        || resolution.width > source_width
+        || resolution.height > source_height
+    {
         return Err(AppError::invalid_request(
-            "An audio stream selection or volume is invalid.",
+            "The output resolution must fit within the source.",
+        ));
+    }
+    let is_source_resolution =
+        resolution.width == source_width && resolution.height == source_height;
+    if !is_source_resolution
+        && (!resolution.width.is_multiple_of(2) || !resolution.height.is_multiple_of(2))
+    {
+        return Err(AppError::invalid_request(
+            "Scaled output dimensions must be divisible by two.",
+        ));
+    }
+    let scaled_width = u64::from(resolution.width) * u64::from(source_height);
+    let scaled_height = u64::from(resolution.height) * u64::from(source_width);
+    let rounding_tolerance = u64::from(source_width.max(source_height)) * 2;
+    if scaled_width.abs_diff(scaled_height) > rounding_tolerance {
+        return Err(AppError::invalid_request(
+            "The output resolution must preserve the source aspect ratio.",
         ));
     }
     Ok(())
+}
+
+fn display_dimensions(source: &MediaInfo) -> (u32, u32) {
+    if source
+        .video
+        .rotation_degrees
+        .is_some_and(|rotation| rotation.rem_euclid(180) == 90)
+    {
+        (source.video.height, source.video.width)
+    } else {
+        (source.video.width, source.video.height)
+    }
 }
 
 fn audio_tracks_need_reencode(audio_tracks: &[AudioTrackSelection]) -> bool {
@@ -334,21 +397,85 @@ fn validate_user_arguments(arguments: &[OsString]) -> Result<(), AppError> {
         "-map_channel",
         "-filter_complex",
         "-filter_complex_script",
+        "-filter_script",
+        "-filter",
         "-vf",
+        "-af",
+        "-lavfi",
+        "-r",
+        "-fps_mode",
+        "-s",
+        "-aspect",
+        "-ac",
+        "-channel_layout",
         "-progress",
         "-y",
         "-n",
         "-f",
     ];
-    if arguments.iter().any(|argument| {
+    const VALUELESS: &[&str] = &[
+        "-benchmark",
+        "-benchmark_all",
+        "-bitexact",
+        "-copyts",
+        "-shortest",
+        "-start_at_zero",
+        "-stats",
+        "-nostats",
+    ];
+    let mut expects_value = false;
+    for argument in arguments {
         let value = argument.to_string_lossy();
-        value.starts_with('@') || RESERVED.iter().any(|reserved| *reserved == value)
-    }) {
+        if value.starts_with('@') {
+            return Err(invalid_optimized_arguments());
+        }
+        if expects_value {
+            expects_value = false;
+            continue;
+        }
+        if !value.starts_with('-') {
+            return Err(invalid_optimized_arguments());
+        }
+        let (option, has_inline_value) = value
+            .split_once('=')
+            .map_or((value.as_ref(), false), |(option, _)| (option, true));
+        let is_reserved = RESERVED.iter().any(|reserved| {
+            option == *reserved
+                || option
+                    .strip_prefix(*reserved)
+                    .is_some_and(|suffix| suffix.starts_with(':'))
+        });
+        if is_reserved {
+            return Err(invalid_optimized_arguments());
+        }
+        if !has_inline_value && !VALUELESS.contains(&option) {
+            expects_value = true;
+        }
+    }
+    if expects_value {
         return Err(AppError::invalid_request(
-            "Optimized arguments cannot override input, trim, mapping, filter, or output options.",
+            "The final optimized FFmpeg option is missing its value.",
         ));
     }
     Ok(())
+}
+
+fn invalid_optimized_arguments() -> AppError {
+    AppError::invalid_request(
+        "Optimized arguments cannot override input, trim, mapping, filters, output format, or output paths.",
+    )
+}
+
+fn quote_preview_argument(argument: &OsString) -> String {
+    let value = argument.to_string_lossy();
+    if !value.is_empty()
+        && !value
+            .chars()
+            .any(|character| character.is_whitespace() || matches!(character, '"' | '\\'))
+    {
+        return value.into_owned();
+    }
+    format!("\"{}\"", value.replace('\\', "\\\\").replace('"', "\\\""))
 }
 
 fn format_seconds(micros: i64) -> String {
@@ -366,6 +493,7 @@ mod tests {
     use super::{
         AudioTrackSelection, FastExportRequest, FrameRateSelection, OptimizedExportRequest,
         ResolutionSelection, TrimSelection, build_fast_arguments, build_optimized_arguments,
+        optimized_command_preview,
     };
     use crate::media::probe::{AudioStream, MediaInfo, VideoStream};
 
@@ -418,6 +546,27 @@ mod tests {
                 },
             ],
             chapters: Vec::new(),
+        }
+    }
+
+    fn optimized_request(arguments: &str) -> OptimizedExportRequest {
+        OptimizedExportRequest {
+            source_id: "source-1".to_owned(),
+            trim: TrimSelection {
+                start_micros: 0,
+                end_micros: 2_000_000,
+            },
+            audio_tracks: vec![AudioTrackSelection {
+                stream_index: 1,
+                volume_percent: 50,
+            }],
+            merge_audio: false,
+            resolution: ResolutionSelection {
+                width: 1920,
+                height: 1080,
+            },
+            frame_rate: None,
+            arguments: arguments.to_owned(),
         }
     }
 
@@ -568,24 +717,7 @@ mod tests {
 
     #[test]
     fn optimized_arguments_cannot_override_application_owned_inputs_or_outputs() {
-        let request = OptimizedExportRequest {
-            source_id: "source-1".to_owned(),
-            trim: TrimSelection {
-                start_micros: 0,
-                end_micros: 2_000_000,
-            },
-            audio_tracks: vec![AudioTrackSelection {
-                stream_index: 1,
-                volume_percent: 50,
-            }],
-            merge_audio: false,
-            resolution: ResolutionSelection {
-                width: 1920,
-                height: 1080,
-            },
-            frame_rate: None,
-            arguments: "-c:v libx264 -i another.mp4".to_owned(),
-        };
+        let request = optimized_request("-c:v libx264 -i another.mp4");
         let error = build_optimized_arguments(
             &media(),
             &request,
@@ -594,5 +726,124 @@ mod tests {
         )
         .expect_err("user input must not override the source");
         assert_eq!(error.code, "invalid_request");
+    }
+
+    #[test]
+    fn optimized_arguments_reject_filters_response_files_and_positional_outputs() {
+        for arguments in [
+            "-c:v libx264 -filter:v scale=640:360",
+            "-c:v libx264 @preset.txt",
+            "-c:v libx264 another-output.mp4",
+            "-c:v",
+        ] {
+            let error = build_optimized_arguments(
+                &media(),
+                &optimized_request(arguments),
+                Path::new("source.mkv"),
+                Path::new("out.mp4"),
+            )
+            .expect_err("application-owned arguments and malformed options must fail");
+            assert_eq!(error.code, "invalid_request", "arguments: {arguments}");
+        }
+    }
+
+    #[test]
+    fn optimized_export_supports_video_only_sources_and_preserves_source_timing() {
+        let mut video_only = media();
+        video_only.audio_streams.clear();
+        let mut request = optimized_request("-c:v libx264 -crf 20");
+        request.audio_tracks.clear();
+        let values = build_optimized_arguments(
+            &video_only,
+            &request,
+            Path::new("source.mkv"),
+            Path::new("out.mp4"),
+        )
+        .expect("video-only request is valid")
+        .into_iter()
+        .map(|value| value.to_string_lossy().to_string())
+        .collect::<Vec<_>>();
+
+        assert!(values.contains(&"-an".to_owned()));
+        assert!(!values.contains(&"-r".to_owned()));
+    }
+
+    #[test]
+    fn export_rejects_duplicate_audio_stream_selections() {
+        let mut request = optimized_request("-c:v libx264 -crf 20");
+        request.audio_tracks.push(request.audio_tracks[0].clone());
+        let error = build_optimized_arguments(
+            &media(),
+            &request,
+            Path::new("source.mkv"),
+            Path::new("out.mp4"),
+        )
+        .expect_err("a stream can only be selected once");
+
+        assert_eq!(error.code, "invalid_request");
+    }
+
+    #[test]
+    fn optimized_preview_is_assembled_by_native_code_without_private_paths() {
+        let preview = optimized_command_preview(
+            &media(),
+            &optimized_request("-c:v libx264 -metadata title=\"My clip\""),
+        )
+        .expect("preview request is valid");
+
+        assert!(preview.starts_with("ffmpeg -hide_banner -nostdin"));
+        assert!(preview.contains("-i <source>"));
+        assert!(preview.ends_with("-y <output>"));
+        assert!(preview.contains("\"title=My clip\""));
+    }
+
+    #[test]
+    fn argument_arrays_preserve_unicode_spaces_and_long_paths() {
+        let long_component = "x".repeat(240);
+        let source_path = std::path::PathBuf::from(format!(
+            "C:/Videos/Clips with spaces/🎬-{long_component}.mkv"
+        ));
+        let output_path = std::path::PathBuf::from("C:/Exports/結果 clip.mp4");
+        let arguments = build_optimized_arguments(
+            &media(),
+            &optimized_request("-c:v libx264 -crf 20"),
+            &source_path,
+            &output_path,
+        )
+        .expect("paths are passed as opaque arguments");
+
+        assert!(
+            arguments
+                .iter()
+                .any(|value| value == source_path.as_os_str())
+        );
+        assert!(
+            arguments
+                .iter()
+                .any(|value| value == output_path.as_os_str())
+        );
+    }
+
+    #[test]
+    fn rotated_sources_use_display_dimensions_for_resolution_validation() {
+        let mut rotated = media();
+        rotated.video.width = 1080;
+        rotated.video.height = 1920;
+        rotated.video.rotation_degrees = Some(90);
+        let mut request = optimized_request("-c:v libx264 -crf 20");
+        request.resolution = ResolutionSelection {
+            width: 1920,
+            height: 1080,
+        };
+
+        assert!(
+            build_optimized_arguments(
+                &rotated,
+                &request,
+                Path::new("source.mp4"),
+                Path::new("out.mp4"),
+            )
+            .is_ok()
+        );
     }
 }

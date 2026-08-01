@@ -13,7 +13,7 @@ import {
 } from "@/lib/tauri/media";
 
 import type { ExportPanelProps, ExportSettings, ExportToast } from "../types";
-import { DEFAULT_ARGUMENTS, isEditableTarget, outputDefaults } from "../utils/export-options";
+import { isEditableTarget, outputDefaults } from "../utils/export-options";
 import { useTranslation } from "react-i18next";
 
 export function useExportController({
@@ -25,6 +25,8 @@ export function useExportController({
   masterVolumePercent,
   mergeAudio,
   setQueue,
+  presetState,
+  onPresetAction,
   onNativeDialogStateChange,
 }: ExportPanelProps) {
   const { t } = useTranslation();
@@ -33,7 +35,7 @@ export function useExportController({
   const [settings, setSettings] = useState<ExportSettings>({
     resolution: { width: source.video.width, height: source.video.height },
     frameRate: undefined,
-    argumentsText: DEFAULT_ARGUMENTS,
+    argumentsText: presetState.argumentsText,
   });
   const [launchError, setLaunchError] = useState<string | null>(null);
   const canceledRef = useRef(new Set<string>());
@@ -48,6 +50,13 @@ export function useExportController({
       volumePercent: Math.min(200, Math.round(track.volumePercent * masterGain)),
     }))
     .filter((track) => track.volumePercent > 0);
+
+  function updateSettings(nextSettings: ExportSettings) {
+    setSettings({ ...nextSettings, argumentsText: presetState.argumentsText });
+    if (nextSettings.argumentsText !== presetState.argumentsText) {
+      onPresetAction({ type: "arguments-changed", argumentsText: nextSettings.argumentsText });
+    }
+  }
 
   async function startFastCut() {
     const request: FastExportRequest = {
@@ -73,7 +82,7 @@ export function useExportController({
             denominator: settings.frameRate.denominator,
           }
         : undefined,
-      arguments: settings.argumentsText,
+      arguments: presetState.argumentsText,
     };
     await chooseAndStart("optimized", defaults.optimized, request);
   }
@@ -202,8 +211,8 @@ export function useExportController({
   return {
     isOptimizedOpen,
     setIsOptimizedOpen,
-    settings,
-    setSettings,
+    settings: { ...settings, argumentsText: presetState.argumentsText },
+    setSettings: updateSettings,
     launchError,
     startFastCut,
     startOptimizedRender,

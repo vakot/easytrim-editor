@@ -1,6 +1,7 @@
 import type { Dispatch, SetStateAction } from "react";
 
 import type { AudioTrackState } from "@/app/session-state";
+import type { ExportPresetAction, ExportPresetState } from "./export-presets";
 import type { TrimRange } from "@/domain/trim";
 import type { FrameRate, MediaInfo } from "@/lib/tauri/media";
 
@@ -26,6 +27,8 @@ export interface ExportPanelProps {
   masterVolumePercent: number;
   mergeAudio: boolean;
   setQueue: Dispatch<SetStateAction<ExportToast[]>>;
+  presetState: ExportPresetState;
+  onPresetAction: Dispatch<ExportPresetAction>;
   onNativeDialogStateChange: (open: boolean) => void;
 }
 

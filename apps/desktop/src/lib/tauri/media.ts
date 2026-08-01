@@ -56,6 +56,10 @@ export interface OptimizedExportRequest extends FastExportRequest {
   arguments: string;
 }
 
+export interface OptimizedExportPlan {
+  commandPreview: string;
+}
+
 export interface BinaryCapability {
   available: boolean;
   version?: string;
@@ -207,6 +211,16 @@ export async function renderOptimized(
   onProgress: (progress: ExportProgress) => void,
 ): Promise<ExportResult> {
   return render("render_optimized", request, outputId, onProgress);
+}
+
+export async function planOptimizedExport(
+  request: OptimizedExportRequest,
+): Promise<OptimizedExportPlan> {
+  try {
+    return parseOptimizedExportPlan(await invoke<unknown>("plan_optimized_export", { request }));
+  } catch (error: unknown) {
+    throw normalizeAppError(error);
+  }
 }
 
 export async function cancelOperation(operationId: string): Promise<void> {
@@ -404,6 +418,13 @@ function parseExportResult(value: unknown): ExportResult {
     operationId: requireString(result.operationId, "operation ID"),
     displayName: requireString(result.displayName, "output display name"),
     displayPath: requireString(result.displayPath, "output display path"),
+  };
+}
+
+function parseOptimizedExportPlan(value: unknown): OptimizedExportPlan {
+  const plan = requireRecord(value, "optimized export plan");
+  return {
+    commandPreview: requireString(plan.commandPreview, "optimized command preview"),
   };
 }
 
