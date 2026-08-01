@@ -36,7 +36,9 @@ const currentPlatform =
     ? "windows"
     : process.platform === "linux"
       ? "linux"
-      : "macos-apple-silicon";
+      : process.arch === "arm64"
+        ? "macos-apple-silicon"
+        : "macos-intel";
 const platform = requestedPlatform === "current" ? currentPlatform : requestedPlatform;
 const config = bundlesByPlatform[platform];
 
@@ -76,7 +78,15 @@ if (build.status !== 0) {
   process.exit(build.status ?? 1);
 }
 
-const bundleRoot = join("apps", "desktop", "src-tauri", "target", "release", "bundle");
+const bundleRoot = join(
+  "apps",
+  "desktop",
+  "src-tauri",
+  "target",
+  ...(config.target ? [config.target] : []),
+  "release",
+  "bundle",
+);
 const artifactDirectory = join(bundleRoot, config.directory);
 const entries = await readdir(artifactDirectory, { withFileTypes: true });
 const artifacts = entries
