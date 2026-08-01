@@ -1,6 +1,6 @@
 export const RELEASES_API_URL = "https://api.github.com/repos/vakot/clipkit/releases/latest";
 export const REPOSITORY_RELEASES_URL = "https://github.com/vakot/clipkit/releases";
-export const AUTHOR_SUPPORT_URL = "https://github.com/sponsors/vakot";
+export const AUTHOR_SUPPORT_URL = "https://ko-fi.com/vakot";
 
 export interface GithubRelease {
   tag_name: string;
