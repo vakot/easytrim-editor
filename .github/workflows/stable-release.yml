@@ -32,6 +32,15 @@ jobs:
           - name: Windows
             os: windows-latest
             args: ""
+            target: ""
+          - name: macOS Intel
+            os: macos-15-intel
+            args: --target x86_64-apple-darwin --bundles app,dmg
+            target: x86_64-apple-darwin
+          - name: macOS Apple Silicon
+            os: macos-latest
+            args: --target aarch64-apple-darwin --bundles app,dmg
+            target: aarch64-apple-darwin
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -55,7 +64,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: 1.97.1
-          targets: ${{ startsWith(matrix.name, 'macOS') && 'x86_64-apple-darwin,aarch64-apple-darwin' || '' }}
+          targets: ${{ matrix.target }}
 
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
@@ -65,6 +74,43 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Verify macOS signing configuration
+        if: startsWith(matrix.name, 'macOS')
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          test -n "$APPLE_CERTIFICATE" || { echo "APPLE_CERTIFICATE is not configured"; exit 1; }
+          test -n "$APPLE_CERTIFICATE_PASSWORD" || { echo "APPLE_CERTIFICATE_PASSWORD is not configured"; exit 1; }
+          test -n "$APPLE_SIGNING_IDENTITY" || { echo "APPLE_SIGNING_IDENTITY is not configured"; exit 1; }
+          test -n "$KEYCHAIN_PASSWORD" || { echo "KEYCHAIN_PASSWORD is not configured"; exit 1; }
+          test -n "$APPLE_ID" || { echo "APPLE_ID is not configured"; exit 1; }
+          test -n "$APPLE_PASSWORD" || { echo "APPLE_PASSWORD is not configured"; exit 1; }
+          test -n "$APPLE_TEAM_ID" || { echo "APPLE_TEAM_ID is not configured"; exit 1; }
+
+      - name: Import macOS signing certificate
+        if: startsWith(matrix.name, 'macOS')
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          trap 'rm -f certificate.p12' EXIT
+          echo "$APPLE_CERTIFICATE" | base64 --decode > certificate.p12
+          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security set-keychain-settings -t 3600 -u build.keychain
+          security import certificate.p12 -k build.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
+          security find-identity -v -p codesigning build.keychain
 
       - name: Build and publish stable release
         uses: tauri-apps/tauri-action@v1
@@ -77,11 +123,18 @@ jobs:
           releaseBody: |
             ClipKit ${{ github.event.inputs.tag || github.ref_name }}
 
-            Standalone Windows desktop build.
+            Standalone Windows and macOS desktop builds.
 
-            Runtime requirement: install FFmpeg and make `ffmpeg` and `ffprobe` available on your system PATH.
+            Runtime requirement: install FFmpeg and make `ffmpeg` and `ffprobe` available to ClipKit. On macOS, ClipKit also checks the standard Homebrew locations for Finder launches.
           releaseDraft: false
           prerelease: false
           generateReleaseNotes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPLE_CERTIFICATE: ${{ startsWith(matrix.name, 'macOS') && secrets.APPLE_CERTIFICATE || '' }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ startsWith(matrix.name, 'macOS') && secrets.APPLE_CERTIFICATE_PASSWORD || '' }}
+          APPLE_SIGNING_IDENTITY: ${{ startsWith(matrix.name, 'macOS') && secrets.APPLE_SIGNING_IDENTITY || '' }}
+          KEYCHAIN_PASSWORD: ${{ startsWith(matrix.name, 'macOS') && secrets.KEYCHAIN_PASSWORD || '' }}
+          APPLE_ID: ${{ startsWith(matrix.name, 'macOS') && secrets.APPLE_ID || '' }}
+          APPLE_PASSWORD: ${{ startsWith(matrix.name, 'macOS') && secrets.APPLE_PASSWORD || '' }}
+          APPLE_TEAM_ID: ${{ startsWith(matrix.name, 'macOS') && secrets.APPLE_TEAM_ID || '' }}

@@ -1,6 +1,8 @@
 use std::{
     ffi::{OsStr, OsString},
+    fs,
     io::{self, BufRead, BufReader, Read},
+    path::{Path, PathBuf},
     process::{Command, ExitStatus, Stdio},
     thread,
     time::{Duration, Instant},
@@ -50,7 +52,8 @@ pub fn run_bounded_cancellable(
         return Err(cancelled_error());
     }
 
-    let mut command = Command::new(executable);
+    let executable_path = resolve_executable(executable)?;
+    let mut command = Command::new(executable_path);
     command
         .args(arguments)
         .stdin(Stdio::null())
@@ -129,7 +132,8 @@ pub fn run_progress_cancellable(
         return Err(cancelled_error());
     }
 
-    let mut command = Command::new(executable);
+    let executable_path = resolve_executable(executable)?;
+    let mut command = Command::new(executable_path);
     command
         .args(arguments)
         .stdin(Stdio::null())
@@ -256,6 +260,76 @@ fn join_reader(
         .map_err(|_| io::Error::other("media helper output reader stopped unexpectedly"))?
 }
 
+fn resolve_executable(executable: &OsStr) -> io::Result<PathBuf> {
+    let executable_path = Path::new(executable);
+    if executable_path.is_absolute() || executable_path.components().count() > 1 {
+        return is_executable_file(executable_path)
+            .then(|| executable_path.to_owned())
+            .ok_or_else(|| executable_not_found(executable));
+    }
+
+    let path = std::env::var_os("PATH").unwrap_or_default();
+    let mut search_paths = std::env::split_paths(&path).collect::<Vec<_>>();
+
+    #[cfg(target_os = "macos")]
+    search_paths.extend([
+        PathBuf::from("/opt/homebrew/bin"),
+        PathBuf::from("/usr/local/bin"),
+    ]);
+
+    find_executable(executable, search_paths).ok_or_else(|| executable_not_found(executable))
+}
+
+fn find_executable(
+    executable: &OsStr,
+    search_paths: impl IntoIterator<Item = PathBuf>,
+) -> Option<PathBuf> {
+    search_paths.into_iter().find_map(|directory| {
+        let candidate = directory.join(executable);
+        if is_executable_file(&candidate) {
+            return Some(candidate);
+        }
+
+        #[cfg(windows)]
+        if Path::new(executable).extension().is_none() {
+            let candidate = candidate.with_extension("exe");
+            if is_executable_file(&candidate) {
+                return Some(candidate);
+            }
+        }
+
+        None
+    })
+}
+
+fn is_executable_file(path: &Path) -> bool {
+    let Ok(metadata) = fs::metadata(path) else {
+        return false;
+    };
+    if !metadata.is_file() {
+        return false;
+    }
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+
+        metadata.permissions().mode() & 0o111 != 0
+    }
+
+    #[cfg(not(unix))]
+    {
+        true
+    }
+}
+
+fn executable_not_found(executable: &OsStr) -> io::Error {
+    io::Error::new(
+        io::ErrorKind::NotFound,
+        format!("executable {:?} was not found on PATH", executable),
+    )
+}
+
 fn terminate_child(child: &mut std::process::Child) -> io::Result<()> {
     if let Err(kill_error) = child.kill()
         && child.try_wait()?.is_none()
@@ -283,7 +357,17 @@ mod tests {
         time::Duration,
     };
 
-    use super::{read_bounded, run_bounded_cancellable, run_progress_cancellable};
+    use super::{
+        read_bounded, resolve_executable, run_bounded_cancellable, run_progress_cancellable,
+    };
+
+    #[test]
+    fn resolves_an_executable_from_the_process_environment() {
+        let executable = if cfg!(windows) { "cmd.exe" } else { "sh" };
+        let path = resolve_executable(OsStr::new(executable)).expect("system shell is available");
+
+        assert!(path.is_absolute());
+    }
 
     #[test]
     fn bounded_reader_drains_but_retains_only_the_limit() {
