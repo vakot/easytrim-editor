@@ -102,6 +102,7 @@ p {
   display: flex;
   flex: 0 0 auto;
   align-items: center;
+  cursor: pointer;
   gap: 0.55rem;
   margin: 0;
   color: #e4ae4e;

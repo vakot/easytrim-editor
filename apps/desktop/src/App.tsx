@@ -246,12 +246,45 @@ function App() {
     }
   }
 
+  const handleReturnToWelcome = useCallback(() => {
+    activeSourceIdRef.current = null;
+    setAudioPreviewUrls({});
+    dispatch({ type: "return-to-welcome" });
+  }, []);
+
+  useEffect(() => {
+    if (!hasSource) {
+      return;
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape" && !isNativeDialogOpen) {
+        handleReturnToWelcome();
+      }
+    }
+
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [handleReturnToWelcome, hasSource, isNativeDialogOpen]);
+
   return (
     <main className={`app-shell ${hasSource ? "has-source" : "is-empty"}`}>
       {hasSource ? (
         <div className="app-toolbar" role="toolbar" aria-label="Application toolbar">
           <div className="toolbar-brand-group">
-            <h1 className="app-brand">
+            <h1
+              className="app-brand"
+              role="button"
+              tabIndex={0}
+              aria-label="Return to ClipKit welcome page"
+              onClick={handleReturnToWelcome}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  handleReturnToWelcome();
+                }
+              }}
+            >
               <img src="/logo.svg" alt="" />
               ClipKit
             </h1>
