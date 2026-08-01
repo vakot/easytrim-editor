@@ -11,6 +11,7 @@ import {
   type OptimizedExportRequest,
   type OutputSelection,
 } from "@/lib/tauri/media";
+import { isApplicationDialogOpen } from "@/lib/hotkeys";
 
 import type { ExportPanelProps, ExportSettings, ExportToast } from "../types";
 import { isEditableTarget, outputDefaults } from "../utils/export-options";
@@ -194,6 +195,7 @@ export function useExportController({
 
   useEffect(() => {
     function handleExportShortcut(event: KeyboardEvent) {
+      if (isApplicationDialogOpen()) return;
       if (!event.ctrlKey || event.altKey || event.metaKey || isEditableTarget(event.target)) return;
       if (event.key.toLowerCase() === "s") {
         event.preventDefault();

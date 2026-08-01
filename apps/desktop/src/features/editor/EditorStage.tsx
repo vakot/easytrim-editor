@@ -13,6 +13,7 @@ import {
   type TrimRange,
 } from "../../domain/trim";
 import { AudioTracks } from "../audio-tracks";
+import { isApplicationDialogOpen } from "@/lib/hotkeys";
 import { PlaybackControls, PlaybackTimecode, TimelineTools } from "../preview/PlaybackControls";
 import { VideoPreview } from "../preview/VideoPreview";
 import { TrimTimeline } from "../timeline";
@@ -180,6 +181,9 @@ export function EditorStage({
 
   useEffect(() => {
     function handleEditorShortcut(event: globalThis.KeyboardEvent) {
+      if (isApplicationDialogOpen()) {
+        return;
+      }
       const actions = shortcutActionsRef.current;
       const shortcut = editorShortcutFromEvent(event);
       if (!actions?.enabled || !shortcut) {
