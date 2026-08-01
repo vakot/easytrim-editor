@@ -535,6 +535,7 @@ export function EditorStage({
       <PaneResizeHandle
         id="preview-timeline-resize-handle"
         label={t("preview.resize")}
+        onReset={timelinePanelSizing.resetSize}
         orientation="horizontal"
       />
 
