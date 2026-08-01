@@ -87,12 +87,12 @@ describe("media IPC adapter", () => {
     mocks.invoke
       .mockResolvedValueOnce({
         sourceId: "source-3",
-        url: "http://clipkit-media.localhost/source-3?variant=source",
+        url: "http://easytrim-media.localhost/source-3?variant=source",
         kind: "source",
       })
       .mockResolvedValueOnce({
         sourceId: "source-3",
-        url: "http://clipkit-media.localhost/source-3?variant=proxy",
+        url: "http://easytrim-media.localhost/source-3?variant=proxy",
         kind: "proxy",
       });
 
@@ -109,7 +109,7 @@ describe("media IPC adapter", () => {
   it("rejects an unknown preview kind at the IPC boundary", async () => {
     mocks.invoke.mockResolvedValue({
       sourceId: "source-3",
-      url: "http://clipkit-media.localhost/source-3",
+      url: "http://easytrim-media.localhost/source-3",
       kind: "filesystem",
     });
 
@@ -127,7 +127,7 @@ describe("media IPC adapter", () => {
         jobId: "waveform-7",
         streamIndex: 2,
         width: 1280,
-        url: "http://clipkit-media.localhost/source-3?variant=waveform&stream=2&width=1280",
+        url: "http://easytrim-media.localhost/source-3?variant=waveform&stream=2&width=1280",
       },
       {
         status: "failed",
@@ -166,7 +166,7 @@ describe("media IPC adapter", () => {
         jobId: "waveform-7",
         streamIndex: 2,
         width: 0,
-        url: "http://clipkit-media.localhost/source-3",
+        url: "http://easytrim-media.localhost/source-3",
       },
     ]);
 

@@ -119,9 +119,9 @@ jobs:
           tauriScript: pnpm tauri
           args: ${{ matrix.args }}
           tagName: ${{ github.event.inputs.tag || github.ref_name }}
-          releaseName: ClipKit ${{ github.event.inputs.tag || github.ref_name }}
+          releaseName: EasyTrim Editor ${{ github.event.inputs.tag || github.ref_name }}
           releaseBody: |
-            ClipKit ${{ github.event.inputs.tag || github.ref_name }}
+            EasyTrim Editor ${{ github.event.inputs.tag || github.ref_name }}
 
             Standalone Windows and macOS desktop builds.
 

@@ -264,7 +264,7 @@ pub async fn prepare_proxy_preview(
 #[cfg(any(target_os = "windows", target_os = "android"))]
 fn preview_url(source_id: &str, kind: PreviewKind) -> String {
     format!(
-        "http://clipkit-media.localhost/{source_id}?variant={}",
+        "http://easytrim-media.localhost/{source_id}?variant={}",
         preview_kind_name(kind)
     )
 }
@@ -272,7 +272,7 @@ fn preview_url(source_id: &str, kind: PreviewKind) -> String {
 #[cfg(not(any(target_os = "windows", target_os = "android")))]
 fn preview_url(source_id: &str, kind: PreviewKind) -> String {
     format!(
-        "clipkit-media://localhost/{source_id}?variant={}",
+        "easytrim-media://localhost/{source_id}?variant={}",
         preview_kind_name(kind)
     )
 }
@@ -280,24 +280,24 @@ fn preview_url(source_id: &str, kind: PreviewKind) -> String {
 #[cfg(any(target_os = "windows", target_os = "android"))]
 fn waveform_url(source_id: &str, stream_index: u32, width: u32) -> String {
     format!(
-        "http://clipkit-media.localhost/{source_id}?variant=waveform&stream={stream_index}&width={width}"
+        "http://easytrim-media.localhost/{source_id}?variant=waveform&stream={stream_index}&width={width}"
     )
 }
 
 #[cfg(any(target_os = "windows", target_os = "android"))]
 fn audio_preview_url(source_id: &str, stream_index: u32) -> String {
-    format!("http://clipkit-media.localhost/{source_id}?variant=audio&stream={stream_index}")
+    format!("http://easytrim-media.localhost/{source_id}?variant=audio&stream={stream_index}")
 }
 
 #[cfg(not(any(target_os = "windows", target_os = "android")))]
 fn audio_preview_url(source_id: &str, stream_index: u32) -> String {
-    format!("clipkit-media://localhost/{source_id}?variant=audio&stream={stream_index}")
+    format!("easytrim-media://localhost/{source_id}?variant=audio&stream={stream_index}")
 }
 
 #[cfg(not(any(target_os = "windows", target_os = "android")))]
 fn waveform_url(source_id: &str, stream_index: u32, width: u32) -> String {
     format!(
-        "clipkit-media://localhost/{source_id}?variant=waveform&stream={stream_index}&width={width}"
+        "easytrim-media://localhost/{source_id}?variant=waveform&stream={stream_index}&width={width}"
     )
 }
 

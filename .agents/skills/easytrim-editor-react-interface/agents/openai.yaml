@@ -1,0 +1,4 @@
+interface:
+  display_name: "EasyTrim Editor React Interface"
+  short_description: "Build the minimal reviewable EasyTrim Editor UI"
+  default_prompt: "Use $easytrim-editor-react-interface to implement or review the React and TypeScript interface for EasyTrim Editor."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "EasyTrim Editor Tauri and Rust"
+  short_description: "Build the safe native EasyTrim Editor application core"
+  default_prompt: "Use $easytrim-editor-tauri-rust to implement or review the Rust and Tauri side of EasyTrim Editor."
