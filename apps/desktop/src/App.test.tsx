@@ -184,16 +184,24 @@ describe("App", () => {
     });
     expect(screen.getByText("Tools")).toHaveAttribute("data-slot", "timeline-tools-title");
     expect(videoToolbar).toHaveAttribute("data-slot", "timeline-toolbar");
+    expect(videoToolbar).toHaveClass(
+      "auto-cols-[1.75rem]",
+      "grid-rows-[repeat(2,1.75rem)]",
+      "gap-1.5",
+    );
+    for (const tool of within(videoToolbar).getAllByRole("button")) {
+      expect(tool).toHaveAttribute("data-size", "icon-sm");
+    }
     expect(within(videoToolbar).getByRole("button", { name: "Safe trim following" })).toBe(
       screen.getByRole("button", { name: "Safe trim following" }),
     );
     expect(within(videoToolbar).getByRole("button", { name: "Loop playback" })).toHaveAttribute(
       "aria-pressed",
-      "false",
+      "true",
     );
     expect(within(videoToolbar).getByRole("button", { name: "Segment playback" })).toHaveAttribute(
       "aria-pressed",
-      "false",
+      "true",
     );
     expect(within(videoTimelineRow as HTMLElement).queryByText("Video")).not.toBeInTheDocument();
     expect(screen.getByTestId("source-details-panel")).toContainElement(
@@ -503,11 +511,12 @@ describe("App", () => {
     const segmentToggle = screen.getByRole("button", { name: "Segment playback" });
     const loopToggle = screen.getByRole("button", { name: "Loop playback" });
     const playhead = screen.getByRole("slider", { name: "Playback position" });
-    await user.click(segmentToggle);
     expect(segmentToggle).toHaveAttribute("aria-pressed", "true");
-    expect(video.currentTime).toBe(10);
+    await user.click(loopToggle);
+    expect(loopToggle).toHaveAttribute("aria-pressed", "false");
 
     await user.click(screen.getByRole("button", { name: "Play" }));
+    expect(video.currentTime).toBe(10);
     fireEvent.play(video);
     video.currentTime = 20.25;
     fireEvent.timeUpdate(video);
@@ -540,7 +549,9 @@ describe("App", () => {
     const play = vi.spyOn(video, "play").mockResolvedValue();
     vi.spyOn(video, "pause").mockImplementation(() => undefined);
 
-    await user.click(screen.getByRole("button", { name: "Loop playback" }));
+    const segmentToggle = screen.getByRole("button", { name: "Segment playback" });
+    await user.click(segmentToggle);
+    expect(segmentToggle).toHaveAttribute("aria-pressed", "false");
     await user.click(screen.getByRole("button", { name: "Play" }));
     fireEvent.play(video);
     video.currentTime = 65;

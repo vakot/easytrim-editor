@@ -10,20 +10,22 @@ const trim = {
 };
 
 describe("usePlaybackModes", () => {
-  it("switches between full-source and segment playback", () => {
+  it("defaults to looping the selected segment and allows full-source playback", () => {
     const { result } = renderHook(() => usePlaybackModes());
 
-    expect(result.current.startMicros(5_000_000, trim)).toBe(5_000_000);
+    expect(result.current.loopEnabled).toBe(true);
+    expect(result.current.segmentEnabled).toBe(true);
+    expect(result.current.startMicros(5_000_000, trim)).toBe(10_000_000);
 
     act(() => result.current.toggleSegment());
 
-    expect(result.current.segmentEnabled).toBe(true);
-    expect(result.current.startMicros(5_000_000, trim)).toBe(10_000_000);
+    expect(result.current.segmentEnabled).toBe(false);
+    expect(result.current.startMicros(5_000_000, trim)).toBe(5_000_000);
   });
 
   it("emits each boundary action once until playback returns inside the range", () => {
     const { result } = renderHook(() => usePlaybackModes());
-    act(() => result.current.toggleSegment());
+    act(() => result.current.toggleLoop());
 
     expect(result.current.consumeBoundary(20_000_000, trim)).toEqual({
       reached: true,

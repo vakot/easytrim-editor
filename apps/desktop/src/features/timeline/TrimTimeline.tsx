@@ -456,7 +456,7 @@ export function TrimTimeline({
         data-slot="timeline-row"
       >
         <div
-          className="grid w-full grid-flow-col grid-cols-4 grid-rows-2 items-center justify-start gap-1.5"
+          className="grid w-full grid-flow-col auto-cols-[1.75rem] grid-rows-[repeat(2,1.75rem)] items-center justify-start gap-1"
           data-slot="timeline-toolbar"
           role="toolbar"
           aria-label={t("timeline.toolsLabel")}
