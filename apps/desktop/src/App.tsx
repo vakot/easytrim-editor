@@ -10,6 +10,7 @@ import {
   inspectMedia,
   listenForSourceDrops,
   normalizeAppError,
+  prepareAudioPreviews,
   prepareProxyPreview,
   prepareSourcePreview,
   prepareWaveforms,
@@ -24,14 +25,28 @@ function App() {
   const [isSourceDragActive, setIsSourceDragActive] = useState(false);
   const [dropListenerError, setDropListenerError] = useState<string | null>(null);
   const [exportQueue, setExportQueue] = useState<ExportToast[]>([]);
+  const [audioPreviewUrls, setAudioPreviewUrls] = useState<Record<number, string>>({});
   const waveformJobSequence = useRef(0);
   const hasSource = session.source !== null;
 
   const inspectSource = useCallback((source: SourceSelection) => {
+    setAudioPreviewUrls({});
     dispatch({ type: "source-selected", source });
     void inspectMedia(source.sourceId)
       .then((media) => {
         dispatch({ type: "source-ready", sourceId: source.sourceId, media });
+        void prepareAudioPreviews(
+          source.sourceId,
+          media.audioStreams.map((stream) => stream.streamIndex),
+        )
+          .then((previews) => {
+            setAudioPreviewUrls(
+              Object.fromEntries(previews.map((preview) => [preview.streamIndex, preview.url])),
+            );
+          })
+          .catch(() => {
+            // Audio-only preview is an optimization; the source video remains usable if it fails.
+          });
         dispatch({ type: "preview-loading", sourceId: source.sourceId, kind: "source" });
         return prepareSourcePreview(source.sourceId);
       })
@@ -289,6 +304,7 @@ function App() {
         onMasterVolumeChange={handleMasterVolumeChange}
         onToggleAudioMerge={handleToggleAudioMerge}
         onWaveformImageError={handleWaveformImageError}
+        audioPreviewUrls={audioPreviewUrls}
         exportQueue={exportQueue}
       />
     </main>

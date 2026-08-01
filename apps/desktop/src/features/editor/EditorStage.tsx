@@ -41,6 +41,7 @@ interface EditorStageProps {
   onMasterVolumeChange: (volumePercent: number) => void;
   onToggleAudioMerge: () => void;
   onWaveformImageError: (streamIndex: number) => void;
+  audioPreviewUrls: Record<number, string>;
 }
 
 interface EditorShortcutActions {
@@ -69,8 +70,13 @@ export function EditorStage({
   onMasterVolumeChange,
   onToggleAudioMerge,
   onWaveformImageError,
+  audioPreviewUrls,
 }: EditorStageProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const audioElementsRef = useRef(new Map<number, HTMLAudioElement>());
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const audioNodesRef = useRef(new Map<number, { source: MediaElementAudioSourceNode; gain: GainNode }>());
+  const masterGainRef = useRef<GainNode | null>(null);
   const playheadRef = useRef<HTMLButtonElement>(null);
   const audioPlayheadRef = useRef<HTMLDivElement>(null);
   const playbackFrameRef = useRef<number | null>(null);
@@ -101,17 +107,84 @@ export function EditorStage({
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video) return;
-    const enabledTracks = audioTracks.filter((track) => track.enabled && track.volumePercent > 0);
-    const trackGain =
-      enabledTracks.length > 0
-        ? enabledTracks.reduce((sum, track) => sum + track.volumePercent / 50, 0) /
-          enabledTracks.length
-        : 0;
-    const gainValue = masterEnabled ? (masterVolumePercent / 50) * trackGain : 0;
-    video.muted = gainValue <= 0;
-    video.volume = Math.min(1, Math.max(0, gainValue));
-  }, [audioTracks, masterEnabled, masterVolumePercent]);
+    if (video) {
+      video.muted = true;
+      video.volume = 0;
+    }
+  }, []);
+
+  useEffect(() => {
+    const context = audioContextRef.current ?? new AudioContext();
+    audioContextRef.current = context;
+    let masterGain = masterGainRef.current;
+    if (!masterGain) {
+      masterGain = context.createGain();
+      masterGainRef.current = masterGain;
+      masterGain.connect(context.destination);
+    }
+
+    const activeStreamIndexes = new Set(Object.keys(audioPreviewUrls).map(Number));
+    for (const [streamIndex, element] of audioElementsRef.current) {
+      if (activeStreamIndexes.has(streamIndex)) continue;
+      element.pause();
+      element.remove();
+      audioElementsRef.current.delete(streamIndex);
+      audioNodesRef.current.get(streamIndex)?.source.disconnect();
+      audioNodesRef.current.get(streamIndex)?.gain.disconnect();
+      audioNodesRef.current.delete(streamIndex);
+    }
+
+    for (const [streamIndexText, url] of Object.entries(audioPreviewUrls)) {
+      const streamIndex = Number(streamIndexText);
+      if (audioElementsRef.current.has(streamIndex)) continue;
+      const element = new Audio(url);
+      element.preload = "auto";
+      element.setAttribute("aria-hidden", "true");
+      element.style.display = "none";
+      document.body.appendChild(element);
+      const source = context.createMediaElementSource(element);
+      const gain = context.createGain();
+      source.connect(gain).connect(masterGain);
+      audioElementsRef.current.set(streamIndex, element);
+      audioNodesRef.current.set(streamIndex, { source, gain });
+    }
+
+    return () => {
+      // Keep the graph alive across volume changes; elements are disposed on source unmount.
+    };
+  }, [audioPreviewUrls]);
+
+  useEffect(() => {
+    const masterGain = masterGainRef.current;
+    if (masterGain) {
+      masterGain.gain.value = masterEnabled ? masterVolumePercent / 50 : 0;
+    }
+    for (const track of audioTracks) {
+      const node = audioNodesRef.current.get(track.streamIndex);
+      if (node) {
+        node.gain.gain.value = track.enabled ? track.volumePercent / 50 : 0;
+      }
+    }
+  }, [audioTracks, masterEnabled, masterVolumePercent, audioPreviewUrls]);
+
+  useEffect(
+    () => () => {
+      for (const element of audioElementsRef.current.values()) {
+        element.pause();
+        element.remove();
+      }
+      audioElementsRef.current.clear();
+      for (const node of audioNodesRef.current.values()) {
+        node.source.disconnect();
+        node.gain.disconnect();
+      }
+      audioNodesRef.current.clear();
+      void audioContextRef.current?.close();
+      audioContextRef.current = null;
+      masterGainRef.current = null;
+    },
+    [],
+  );
 
   useEffect(() => {
     function handleEditorShortcut(event: globalThis.KeyboardEvent) {
@@ -168,6 +241,13 @@ export function EditorStage({
     );
     setPlayheadMicros(clamped);
     seekVideo(videoRef.current, clamped);
+    for (const audio of audioElementsRef.current.values()) {
+      try {
+        audio.currentTime = clamped / 1_000_000;
+      } catch {
+        // Audio metadata may not be ready yet; playback start retries synchronization.
+      }
+    }
   }
 
   function queueScrubSeek(micros: number) {
@@ -200,6 +280,7 @@ export function EditorStage({
   function handleScrubStart() {
     resumeAfterScrubRef.current = isPlaying;
     videoRef.current?.pause();
+    pauseAudioPlayback();
     setIsPlaying(false);
     stopPlayheadAnimation();
   }
@@ -224,6 +305,7 @@ export function EditorStage({
       durationMicros,
     );
     setPlayheadMicros(currentMicros);
+    syncAudioPlayback(seconds);
     if (currentMicros >= durationMicros) {
       stopPlayheadAnimation();
     }
@@ -271,10 +353,33 @@ export function EditorStage({
       return;
     }
     setTransportError(null);
-    void video.play().catch(() => {
+    void audioContextRef.current?.resume();
+    syncAudioPlayback(video.currentTime);
+    void Promise.all([...audioElementsRef.current.values()].map((audio) => audio.play()))
+      .then(() => video.play())
+      .catch(() => {
+        pauseAudioPlayback();
       setIsPlaying(false);
       setTransportError("Playback could not start.");
-    });
+      });
+  }
+
+  function pauseAudioPlayback() {
+    for (const audio of audioElementsRef.current.values()) {
+      audio.pause();
+    }
+  }
+
+  function syncAudioPlayback(seconds: number) {
+    for (const audio of audioElementsRef.current.values()) {
+      if (Math.abs(audio.currentTime - seconds) > 0.08) {
+        try {
+          audio.currentTime = seconds;
+        } catch {
+          // Audio metadata may not be ready yet.
+        }
+      }
+    }
   }
 
   function handleTogglePlayback() {
@@ -391,6 +496,7 @@ export function EditorStage({
             }}
             onPause={() => {
               setIsPlaying(false);
+              pauseAudioPlayback();
               stopPlayheadAnimation();
               const video = videoRef.current;
               if (video) {

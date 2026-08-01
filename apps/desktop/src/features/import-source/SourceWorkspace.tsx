@@ -21,6 +21,7 @@ interface SourceWorkspaceProps {
   onMasterVolumeChange: (sourceId: string, volumePercent: number) => void;
   onToggleAudioMerge: (sourceId: string) => void;
   onWaveformImageError: (sourceId: string, streamIndex: number) => void;
+  audioPreviewUrls: Record<number, string>;
   exportQueue: ExportToast[];
 }
 
@@ -38,6 +39,7 @@ export function SourceWorkspace({
   onMasterVolumeChange,
   onToggleAudioMerge,
   onWaveformImageError,
+  audioPreviewUrls,
   exportQueue,
 }: SourceWorkspaceProps) {
   if (!session.source) {
@@ -143,6 +145,7 @@ export function SourceWorkspace({
                 }
                 onToggleAudioMerge={() => onToggleAudioMerge(sourceId)}
                 onWaveformImageError={(streamIndex) => onWaveformImageError(sourceId, streamIndex)}
+                audioPreviewUrls={audioPreviewUrls}
               />
             </>
           ) : null}

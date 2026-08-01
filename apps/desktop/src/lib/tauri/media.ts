@@ -130,6 +130,12 @@ export interface PreviewDescriptor {
   kind: PreviewKind;
 }
 
+export interface AudioPreviewDescriptor {
+  sourceId: string;
+  streamIndex: number;
+  url: string;
+}
+
 export type WaveformResult =
   | {
       status: "ready";
@@ -242,6 +248,20 @@ export async function prepareSourcePreview(sourceId: string): Promise<PreviewDes
         sourceId,
       }),
     );
+  } catch (error: unknown) {
+    throw normalizeAppError(error);
+  }
+}
+
+export async function prepareAudioPreviews(
+  sourceId: string,
+  streamIndexes: number[],
+): Promise<AudioPreviewDescriptor[]> {
+  try {
+    return requireArray(
+      await invoke<unknown>("prepare_audio_previews", { sourceId, streamIndexes }),
+      "audio preview descriptors",
+    ).map(parseAudioPreviewDescriptor);
   } catch (error: unknown) {
     throw normalizeAppError(error);
   }
@@ -433,6 +453,15 @@ function parsePreviewDescriptor(value: unknown): PreviewDescriptor {
     sourceId: requireString(preview.sourceId, "source ID"),
     url: requireString(preview.url, "preview URL"),
     kind,
+  };
+}
+
+function parseAudioPreviewDescriptor(value: unknown): AudioPreviewDescriptor {
+  const preview = requireRecord(value, "audio preview descriptor");
+  return {
+    sourceId: requireString(preview.sourceId, "audio preview source ID"),
+    streamIndex: requireInteger(preview.streamIndex, "audio preview stream index"),
+    url: requireString(preview.url, "audio preview URL"),
   };
 }
 
