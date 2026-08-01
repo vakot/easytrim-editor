@@ -50,6 +50,8 @@ pnpm release:local -- --tag v1.0.1 --platform current
 
 Supported platforms are `windows`, `linux`, `macos-intel`, and `macos-apple-silicon`. The command builds the current machine's native bundles and uploads them with `gh release upload`; authenticate with `gh auth login` first. Windows can build Windows artifacts, and Linux can be built inside WSL or a Linux Docker environment. macOS artifacts require a macOS machine because Apple targets cannot be built on Windows.
 
+Release assets use the same predictable name locally and in GitHub Actions: `EasyTrim_<version>_<os>_<arch>_<bundle><extension>`. For example, Windows NSIS and Apple Silicon DMG builds are uploaded as `EasyTrim_1.0.0_windows_x64_nsis.exe` and `EasyTrim_1.0.0_macos_arm64_dmg.dmg`.
+
 ## Development
 
 Start the Tauri desktop application with the Vite development server and hot reload:

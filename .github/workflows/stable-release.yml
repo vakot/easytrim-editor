@@ -43,21 +43,29 @@ jobs:
           - id: linux
             name: Linux
             os: ubuntu-22.04
+            asset_os: linux
+            asset_arch: x64
             args: --bundles appimage,deb
             target: ""
           - name: Windows
             id: windows
             os: windows-latest
+            asset_os: windows
+            asset_arch: x64
             args: ""
             target: ""
           - name: macOS Intel
             id: macos-intel
             os: macos-15-intel
+            asset_os: macos
+            asset_arch: x64
             args: --target x86_64-apple-darwin --bundles app,dmg
             target: x86_64-apple-darwin
           - name: macOS Apple Silicon
             id: macos-apple-silicon
             os: macos-latest
+            asset_os: macos
+            asset_arch: arm64
             args: --target aarch64-apple-darwin --bundles app,dmg
             target: aarch64-apple-darwin
 
@@ -151,6 +159,7 @@ jobs:
           releaseDraft: false
           prerelease: false
           generateReleaseNotes: true
+          releaseAssetNamePattern: EasyTrim_[version]_${{ matrix.asset_os }}_${{ matrix.asset_arch }}_[bundle][ext]
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           APPLE_CERTIFICATE: ${{ startsWith(matrix.name, 'macOS') && secrets.APPLE_CERTIFICATE || '' }}

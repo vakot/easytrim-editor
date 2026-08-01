@@ -1,20 +1,37 @@
-import { readdir } from "node:fs/promises";
-import { join, relative } from "node:path";
+import { copyFile, mkdtemp, readFile, readdir, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { extname, join, relative } from "node:path";
 import { spawnSync } from "node:child_process";
 
 const bundlesByPlatform = {
-  windows: { bundles: "nsis,msi", directories: ["nsis", "msi"], host: "win32" },
-  linux: { bundles: "appimage,deb", directories: ["appimage", "deb"], host: "linux" },
+  windows: {
+    arch: process.arch,
+    bundles: "nsis,msi",
+    directories: ["nsis", "msi"],
+    host: "win32",
+    os: "windows",
+  },
+  linux: {
+    arch: process.arch,
+    bundles: "appimage,deb",
+    directories: ["appimage", "deb"],
+    host: "linux",
+    os: "linux",
+  },
   "macos-intel": {
+    arch: "x64",
     bundles: "app,dmg",
     directories: ["dmg"],
     host: "darwin",
+    os: "macos",
     target: "x86_64-apple-darwin",
   },
   "macos-apple-silicon": {
+    arch: "arm64",
     bundles: "app,dmg",
     directories: ["dmg"],
     host: "darwin",
+    os: "macos",
     target: "aarch64-apple-darwin",
   },
 };
@@ -41,6 +58,9 @@ const currentPlatform =
         : "macos-intel";
 const platform = requestedPlatform === "current" ? currentPlatform : requestedPlatform;
 const config = bundlesByPlatform[platform];
+const tauriConfig = JSON.parse(
+  await readFile(join("apps", "desktop", "src-tauri", "tauri.conf.json"), "utf8"),
+);
 
 if (!tag) {
   fail("missing --tag, for example --tag v1.0.1");
@@ -79,10 +99,7 @@ if (build.status !== 0) {
 }
 
 const bundleRoot = join(
-  "apps",
-  "desktop",
-  "src-tauri",
-  "target",
+  process.env.CARGO_TARGET_DIR ?? "target",
   ...(config.target ? [config.target] : []),
   "release",
   "bundle",
@@ -102,10 +119,26 @@ if (artifacts.length === 0) {
   fail(`no artifacts found in ${relative(process.cwd(), bundleRoot)}`);
 }
 
-console.log(`Uploading ${artifacts.length} artifact(s) to GitHub release ${tag}...`);
-const upload = spawnSync("gh", ["release", "upload", tag, ...artifacts, "--clobber"], {
-  stdio: "inherit",
-  shell: process.platform === "win32",
-});
+const stagingDirectory = await mkdtemp(join(tmpdir(), "easytrim-release-"));
 
-process.exit(upload.status ?? 1);
+try {
+  const stagedArtifacts = await Promise.all(
+    artifacts.map(async (artifact) => {
+      const bundle = relative(bundleRoot, artifact).split(/[\\/]/)[0];
+      const filename = ["EasyTrim", tauriConfig.version, config.os, config.arch, bundle].join("_");
+      const stagedArtifact = join(stagingDirectory, `${filename}${extname(artifact)}`);
+      await copyFile(artifact, stagedArtifact);
+      return stagedArtifact;
+    }),
+  );
+
+  console.log(`Uploading ${stagedArtifacts.length} artifact(s) to GitHub release ${tag}...`);
+  const upload = spawnSync("gh", ["release", "upload", tag, ...stagedArtifacts, "--clobber"], {
+    stdio: "inherit",
+    shell: process.platform === "win32",
+  });
+
+  process.exitCode = upload.status ?? 1;
+} finally {
+  await rm(stagingDirectory, { force: true, recursive: true });
+}
