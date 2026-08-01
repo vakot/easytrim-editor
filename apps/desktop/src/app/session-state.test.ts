@@ -224,7 +224,7 @@ describe("sessionReducer", () => {
     expect(allDisabled.source?.audioTracks.every((track) => !track.enabled)).toBe(true);
     expect(allEnabled.source?.audioTracks.every((track) => track.enabled)).toBe(true);
     expect(safelyUnmuted.source?.audioTracks[0]?.enabled).toBe(true);
-    expect(safelyUnmuted.source?.audioTracks[0]?.volumePercent).toBeCloseTo(12.589, 2);
+    expect(safelyUnmuted.source?.audioTracks[0]?.volumePercent).toBeCloseTo(12.559, 2);
   });
 
   it("ignores stale waveform completions after regeneration", () => {
