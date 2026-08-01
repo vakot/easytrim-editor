@@ -4,6 +4,7 @@ import {
   cancelOperation,
   chooseOutputPath,
   normalizeAppError,
+  planOptimizedExport,
   renderFast,
   renderOptimized,
   type ExportProgress,
@@ -44,13 +45,65 @@ export function useExportController({
   const toastSequence = useRef(0);
 
   const masterGain = masterEnabled ? masterVolumePercent / 50 : 0;
-  const selectedAudio = audioTracks
-    .filter((track) => track.enabled && track.volumePercent > 0 && masterGain > 0)
-    .map((track) => ({
-      streamIndex: track.streamIndex,
-      volumePercent: Math.min(200, Math.round(track.volumePercent * masterGain)),
-    }))
-    .filter((track) => track.volumePercent > 0);
+  const selectedAudio = useMemo(
+    () =>
+      audioTracks
+        .filter((track) => track.enabled && track.volumePercent > 0 && masterGain > 0)
+        .map((track) => ({
+          streamIndex: track.streamIndex,
+          volumePercent: Math.min(200, Math.round(track.volumePercent * masterGain)),
+        }))
+        .filter((track) => track.volumePercent > 0),
+    [audioTracks, masterGain],
+  );
+
+  const optimizedRequest = useMemo<OptimizedExportRequest>(
+    () => ({
+      sourceId: source.sourceId,
+      trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
+      audioTracks: selectedAudio,
+      mergeAudio,
+      resolution: settings.resolution,
+      frameRate: settings.frameRate
+        ? {
+            numerator: settings.frameRate.numerator,
+            denominator: settings.frameRate.denominator,
+          }
+        : undefined,
+      arguments: presetState.argumentsText,
+    }),
+    [
+      mergeAudio,
+      presetState.argumentsText,
+      selectedAudio,
+      settings.frameRate,
+      settings.resolution,
+      source.sourceId,
+      trim.endMicros,
+      trim.startMicros,
+    ],
+  );
+
+  const [commandPreview, setCommandPreview] = useState("");
+  const [commandPreviewError, setCommandPreviewError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isOptimizedOpen) return;
+    let active = true;
+    void planOptimizedExport(optimizedRequest)
+      .then((plan) => {
+        if (active) {
+          setCommandPreview(plan.commandPreview);
+          setCommandPreviewError(null);
+        }
+      })
+      .catch((error: unknown) => {
+        if (active) setCommandPreviewError(normalizeAppError(error).message);
+      });
+    return () => {
+      active = false;
+    };
+  }, [isOptimizedOpen, optimizedRequest]);
 
   function updateSettings(nextSettings: ExportSettings) {
     setSettings({ ...nextSettings, argumentsText: presetState.argumentsText });
@@ -71,21 +124,7 @@ export function useExportController({
 
   async function startOptimizedRender() {
     setIsOptimizedOpen(false);
-    const request: OptimizedExportRequest = {
-      sourceId: source.sourceId,
-      trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
-      audioTracks: selectedAudio,
-      mergeAudio,
-      resolution: settings.resolution,
-      frameRate: settings.frameRate
-        ? {
-            numerator: settings.frameRate.numerator,
-            denominator: settings.frameRate.denominator,
-          }
-        : undefined,
-      arguments: presetState.argumentsText,
-    };
-    await chooseAndStart("optimized", defaults.optimized, request);
+    await chooseAndStart("optimized", defaults.optimized, optimizedRequest);
   }
 
   async function chooseAndStart(
@@ -214,6 +253,8 @@ export function useExportController({
     isOptimizedOpen,
     setIsOptimizedOpen,
     settings: { ...settings, argumentsText: presetState.argumentsText },
+    commandPreview,
+    commandPreviewError,
     setSettings: updateSettings,
     launchError,
     startFastCut,
