@@ -71,7 +71,6 @@ jobs:
         with:
           projectPath: apps/desktop
           tauriScript: pnpm tauri
-          githubToken: ${{ secrets.GITHUB_TOKEN }}
           args: ${{ matrix.args }}
           tagName: build-${{ github.run_number }}-${{ github.sha }}
           releaseName: ClipKit build ${{ github.run_number }}
@@ -82,3 +81,5 @@ jobs:
           releaseDraft: false
           prerelease: true
           generateReleaseNotes: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
