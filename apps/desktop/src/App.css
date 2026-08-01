@@ -598,7 +598,17 @@ p {
   pointer-events: none;
 }
 
+.welcome-brand-wall::after {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  background: rgb(12 12 14 / 82%);
+  content: "";
+}
+
 .welcome-brand-row {
+  position: relative;
+  z-index: 0;
   overflow: hidden;
   white-space: nowrap;
 }
@@ -625,7 +635,7 @@ p {
   flex: 0 0 clamp(11rem, 19vw, 19rem);
   align-items: baseline;
   justify-content: space-between;
-  color: #29292f;
+  color: #fff;
   font-size: clamp(1.75rem, 4vw, 4rem);
   font-weight: 800;
   letter-spacing: -0.06em;
