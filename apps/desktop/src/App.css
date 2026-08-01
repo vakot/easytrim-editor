@@ -1078,7 +1078,7 @@ p {
   display: flex;
   align-items: center;
   min-width: 0;
-  line-height: 1;
+  line-height: 1.25;
 }
 
 .merge-audio-control {
@@ -1090,7 +1090,7 @@ p {
 .merge-audio-control {
   flex: 0 0 auto;
   margin: 0;
-  line-height: 1;
+  line-height: 1.25;
 }
 
 .audio-master-control input,
