@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   exportPresetReducer,
   initialExportPresetState,
+  loadExportPresetState,
+  persistExportPresetState,
   presetNameError,
   selectedExportPreset,
 } from "../export-presets";
@@ -37,7 +39,7 @@ describe("export presets", () => {
     });
 
     const deleted = exportPresetReducer(updated, { type: "preset-deleted" });
-    expect(deleted.presets).toHaveLength(5);
+    expect(deleted.presets).toHaveLength(7);
     expect(selectedExportPreset(deleted)?.name).toBe("P1 · Fastest");
   });
 
@@ -60,16 +62,19 @@ describe("export presets", () => {
   });
 
   it("provides five NVENC defaults from fastest to smallest", () => {
-    expect(initialExportPresetState.presets).toHaveLength(5);
+    expect(initialExportPresetState.presets).toHaveLength(7);
     expect(initialExportPresetState.presets.map((preset) => preset.id)).toEqual([
       "hevc-nvenc-p1",
       "hevc-nvenc-p2",
       "hevc-nvenc-p3",
       "hevc-nvenc-p4",
       "hevc-nvenc-p5",
+      "hevc-nvenc-p6",
+      "hevc-nvenc-p7",
     ]);
     expect(initialExportPresetState.presets[0]?.argumentsText).toContain("-preset p1");
     expect(initialExportPresetState.presets[4]?.argumentsText).toContain("-preset p5");
+    expect(initialExportPresetState.presets[6]?.argumentsText).toContain("-preset p7");
   });
 
   it("round-trips presets through versioned storage", () => {

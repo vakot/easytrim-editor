@@ -16,12 +16,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import type { MediaInfo } from "@/lib/tauri/media";
 
 import type { ExportSettings } from "../types";
 import type { ExportPresetAction, ExportPresetState } from "../export-presets";
 import { PresetManager } from "./PresetManager";
+import { CommandPreview } from "./CommandPreview";
 import { FRAME_RATE_OPTIONS, rateFromValue, resolutionOptions } from "../utils/export-options";
 import { useTranslation } from "react-i18next";
 
@@ -33,6 +33,8 @@ interface OptimizedExportDialogProps {
   onSettingsChange: (settings: ExportSettings) => void;
   presetState: ExportPresetState;
   onPresetAction: (action: ExportPresetAction) => void;
+  commandPreview: string;
+  commandPreviewError: string | null;
   onExport: () => void;
 }
 
@@ -44,6 +46,8 @@ export function OptimizedExportDialog({
   onSettingsChange,
   presetState,
   onPresetAction,
+  commandPreview,
+  commandPreviewError,
   onExport,
 }: OptimizedExportDialogProps) {
   const { t } = useTranslation();
@@ -111,17 +115,7 @@ export function OptimizedExportDialog({
             </Select>
           </div>
         </div>
-        <div className="grid gap-1.5">
-          <Label htmlFor="export-arguments">{t("export.dialog.arguments")}</Label>
-          <Textarea
-            id="export-arguments"
-            className="min-h-28 resize-y font-mono text-xs"
-            value={settings.argumentsText}
-            onChange={(event) =>
-              onSettingsChange({ ...settings, argumentsText: event.target.value })
-            }
-          />
-        </div>
+        <CommandPreview command={commandPreview} error={commandPreviewError} />
         <p className="text-xs text-muted-foreground">{t("export.dialog.saveNotice")}</p>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
