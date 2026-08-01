@@ -7,9 +7,8 @@ use std::{
 use tauri::{
     AppHandle, Manager, Runtime,
     http::{
-        HeaderValue, Method, Request, Response, StatusCode,
+        HeaderName, HeaderValue, Method, Request, Response, StatusCode,
         header::{ACCEPT_RANGES, CONTENT_LENGTH, CONTENT_RANGE, CONTENT_TYPE},
-        HeaderName,
     },
 };
 

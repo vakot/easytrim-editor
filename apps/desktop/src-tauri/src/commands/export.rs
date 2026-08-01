@@ -11,6 +11,7 @@ use crate::{
     error::AppError,
     media::export::{
         FastExportRequest, OptimizedExportRequest, build_fast_arguments, build_optimized_arguments,
+        optimized_command_preview,
     },
     process::run_progress_cancellable,
     state::AppState,
@@ -51,6 +52,12 @@ pub struct ExportResult {
     pub operation_id: String,
     pub display_name: String,
     pub display_path: String,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OptimizedExportPlan {
+    pub command_preview: String,
 }
 
 #[tauri::command]
@@ -141,6 +148,21 @@ pub async fn render_optimized(
         on_progress,
     )
     .await
+}
+
+#[tauri::command]
+pub fn plan_optimized_export(
+    request: OptimizedExportRequest,
+    state: State<'_, AppState>,
+) -> Result<OptimizedExportPlan, AppError> {
+    let source = state.resolve_source(&request.source_id)?;
+    let media = source
+        .media
+        .as_ref()
+        .ok_or_else(|| AppError::invalid_request("Inspect the video before exporting."))?;
+    Ok(OptimizedExportPlan {
+        command_preview: optimized_command_preview(media, &request)?,
+    })
 }
 
 #[tauri::command]

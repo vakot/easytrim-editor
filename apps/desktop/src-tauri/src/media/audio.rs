@@ -9,7 +9,7 @@ use std::{
 
 use crate::{
     error::AppError,
-    process::{run_bounded_cancellable, ProcessOutput},
+    process::{ProcessOutput, run_bounded_cancellable},
     state::{ActiveSource, AudioPreviewArtifact},
 };
 
@@ -106,10 +106,9 @@ fn process_error(error: io::Error) -> AppError {
             "FFmpeg is required to prepare audio preview.",
             None::<String>,
         ),
-        io::ErrorKind::TimedOut => AppError::preview_failed(
-            "Preparing audio preview took too long.",
-            None::<String>,
-        ),
+        io::ErrorKind::TimedOut => {
+            AppError::preview_failed("Preparing audio preview took too long.", None::<String>)
+        }
         _ => AppError::preview_failed("FFmpeg could not prepare audio preview.", None::<String>),
     }
 }

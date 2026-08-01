@@ -286,16 +286,12 @@ fn waveform_url(source_id: &str, stream_index: u32, width: u32) -> String {
 
 #[cfg(any(target_os = "windows", target_os = "android"))]
 fn audio_preview_url(source_id: &str, stream_index: u32) -> String {
-    format!(
-        "http://clipkit-media.localhost/{source_id}?variant=audio&stream={stream_index}"
-    )
+    format!("http://clipkit-media.localhost/{source_id}?variant=audio&stream={stream_index}")
 }
 
 #[cfg(not(any(target_os = "windows", target_os = "android")))]
 fn audio_preview_url(source_id: &str, stream_index: u32) -> String {
-    format!(
-        "clipkit-media://localhost/{source_id}?variant=audio&stream={stream_index}"
-    )
+    format!("clipkit-media://localhost/{source_id}?variant=audio&stream={stream_index}")
 }
 
 #[cfg(not(any(target_os = "windows", target_os = "android")))]

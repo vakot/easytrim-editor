@@ -14,6 +14,7 @@ import {
   chooseSource,
   inspectMedia,
   listenForSourceDrops,
+  planOptimizedExport,
   prepareProxyPreview,
   prepareSourcePreview,
   prepareWaveforms,
@@ -61,6 +62,25 @@ describe("media IPC adapter", () => {
       code: "internal",
       message: "The native application returned an invalid duration.",
     });
+  });
+
+  it("parses a path-redacted optimized export plan", async () => {
+    mocks.invoke.mockResolvedValue({
+      commandPreview: "ffmpeg -i <source> -c:v hevc_nvenc <output>",
+    });
+    const request = {
+      sourceId: "source-3",
+      trim: { startMicros: 0, endMicros: 1_000_000 },
+      audioTracks: [],
+      mergeAudio: false,
+      resolution: { width: 1920, height: 1080 },
+      arguments: "-c:v hevc_nvenc",
+    };
+
+    await expect(planOptimizedExport(request)).resolves.toEqual({
+      commandPreview: "ffmpeg -i <source> -c:v hevc_nvenc <output>",
+    });
+    expect(mocks.invoke).toHaveBeenCalledWith("plan_optimized_export", { request });
   });
 
   it("parses direct and proxy preview descriptors through narrow commands", async () => {
