@@ -38,7 +38,7 @@ export function AudioTrackRow({
   const [isLevelOpen, setIsLevelOpen] = useState(false);
 
   return (
-    <div className="grid min-w-0 grid-cols-[minmax(13rem,18rem)_minmax(0,1fr)] gap-3">
+    <div className="grid min-w-0 grid-cols-[var(--editor-track-grid-columns)] gap-3">
       <HoverCard open={isLevelOpen} onOpenChange={setIsLevelOpen} openDelay={0} closeDelay={100}>
         <HoverCardTrigger asChild>
           <div
@@ -61,7 +61,12 @@ export function AudioTrackRow({
             </div>
           </div>
         </HoverCardTrigger>
-        <HoverCardContent side="top" align="start" sideOffset={8} className="w-80">
+        <HoverCardContent
+          side="top"
+          align="start"
+          sideOffset={8}
+          className="w-[var(--editor-track-controls-width)]"
+        >
           <AudioLevelControl
             label={t("audio.trackVolume", { title })}
             volumePercent={track.enabled ? track.volumePercent : 0}

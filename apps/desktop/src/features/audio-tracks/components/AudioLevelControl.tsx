@@ -28,7 +28,7 @@ export function AudioLevelControl({
   const decibels = volumePercentToDecibels(volumePercent);
 
   return (
-    <div className={cn("flex w-4/5 min-w-0 items-center", className)}>
+    <div className={cn("flex w-full min-w-0 items-center gap-4", className)}>
       <Slider
         className={cn("min-w-0 flex-1", styles.slider)}
         min={MIN_SLIDER_DECIBELS}

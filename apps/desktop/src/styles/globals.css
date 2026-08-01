@@ -52,6 +52,8 @@
 :root,
 .light {
   color-scheme: light;
+  --editor-track-controls-width: 14.5rem;
+  --editor-track-grid-columns: minmax(13rem, var(--editor-track-controls-width)) minmax(0, 1fr);
   --background: #f6f5f2;
   --foreground: #19191d;
   --card: #fffefa;
