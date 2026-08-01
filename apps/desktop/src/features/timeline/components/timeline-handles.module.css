@@ -4,7 +4,11 @@
   border: 1px solid var(--border);
   border-radius: 0.5rem;
   background:
-    repeating-linear-gradient(90deg, rgb(255 255 255 / 4%) 0 1px, transparent 1px 6.25%),
+    repeating-linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--foreground) 6%, transparent) 0 1px,
+      transparent 1px 6.25%
+    ),
     var(--muted);
   cursor: pointer;
 }
@@ -50,12 +54,12 @@
 
 .segment[data-snap-active="true"] {
   box-shadow:
-    0 0 0 2px rgb(245 245 244 / 68%),
+    0 0 0 2px color-mix(in oklch, var(--foreground) 68%, transparent),
     0 0 0.95rem color-mix(in oklch, var(--primary) 72%, transparent);
 }
 
 .segment:focus-visible {
-  outline: 2px solid rgb(245 245 244 / 72%);
+  outline: 2px solid color-mix(in oklch, var(--foreground) 72%, transparent);
   outline-offset: 2px;
 }
 
@@ -165,7 +169,7 @@
 .trim:focus-visible::before {
   box-shadow:
     0 0 0 2px var(--background),
-    0 0 0 4px rgb(245 245 244 / 60%);
+    0 0 0 4px color-mix(in oklch, var(--foreground) 60%, transparent);
 }
 
 .trim[data-dragging="true"]:focus-visible::before {

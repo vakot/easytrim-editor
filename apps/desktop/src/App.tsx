@@ -6,8 +6,9 @@ import { ReturnConfirmationDialog } from "@/app/components/ReturnConfirmationDia
 import { useClipKitApp } from "@/app/hooks/use-clipkit-app";
 import { SourceWorkspace } from "@/features/import-source/SourceWorkspace";
 import { useTranslation } from "react-i18next";
+import { ThemeProvider } from "@/app/theme/ThemeProvider";
 
-function App() {
+function ClipKitApp() {
   const app = useClipKitApp();
   const { t } = useTranslation();
 
@@ -70,6 +71,14 @@ function App() {
         />
       </main>
     </TooltipProvider>
+  );
+}
+
+function App() {
+  return (
+    <ThemeProvider>
+      <ClipKitApp />
+    </ThemeProvider>
   );
 }
 
