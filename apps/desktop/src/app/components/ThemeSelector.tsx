@@ -30,7 +30,7 @@ export function ThemeSelector({ className }: { className?: string }) {
       >
         <CurrentIcon className="size-4" aria-hidden="true" />
       </SelectTrigger>
-      <SelectContent align="end">
+      <SelectContent>
         {themeOptions.map(({ value, labelKey, Icon }) => (
           <SelectItem key={value} value={value}>
             <Icon className="size-4 text-muted-foreground" aria-hidden="true" />

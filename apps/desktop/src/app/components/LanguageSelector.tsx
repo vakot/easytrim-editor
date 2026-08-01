@@ -28,7 +28,7 @@ export function LanguageSelector({ className }: { className?: string }) {
         <Languages className="size-4 text-muted-foreground" aria-hidden="true" />
         <SelectValue />
       </SelectTrigger>
-      <SelectContent align="end">
+      <SelectContent>
         {Object.entries(languageNameKeys).map(([language, key]) => (
           <SelectItem key={language} value={language}>
             {t(key)}
