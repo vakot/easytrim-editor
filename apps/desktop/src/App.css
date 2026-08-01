@@ -851,7 +851,6 @@ p {
   min-width: 0;
   min-height: 0;
   place-items: center;
-  padding: clamp(1rem, 3vw, 2.5rem) clamp(1rem, 3vw, 2.5rem) 0.75rem;
 }
 
 .preview-video {
