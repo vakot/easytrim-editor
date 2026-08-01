@@ -206,9 +206,22 @@ describe("App", () => {
     expect(timelineResizeHandle).toHaveAttribute("aria-orientation", "horizontal");
     expect(timelineResizeHandle).toHaveAttribute("tabindex", "0");
     expect(screen.getAllByRole("separator")).toHaveLength(2);
-    expect(screen.getByTestId("timeline-panel")).toContainElement(
-      screen.getByTestId("timeline-pane-scroll"),
+    const fixedTimeline = screen.getByTestId("timeline-fixed-content");
+    const audioTracksScroll = screen.getByTestId("audio-tracks-scroll");
+    expect(screen.getByTestId("timeline-panel")).toContainElement(fixedTimeline);
+    expect(screen.getByTestId("timeline-panel")).toContainElement(audioTracksScroll);
+    expect(fixedTimeline).toContainElement(
+      screen.getByRole("heading", { name: "Selected Segment" }),
     );
+    expect(fixedTimeline).not.toContainElement(
+      screen.getByRole("heading", { name: "Audio tracks" }),
+    );
+    expect(audioTracksScroll).toContainElement(
+      screen.getByRole("heading", { name: "Audio tracks" }),
+    );
+    expect(audioTracksScroll).toHaveClass("overflow-hidden");
+    expect(audioTracksScroll.querySelector('[data-slot="scroll-area-viewport"]')).not.toBeNull();
+    expect(screen.queryByTestId("timeline-pane-scroll")).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Open a video" })).not.toBeInTheDocument();
     expect(screen.queryByText("Local video editor")).not.toBeInTheDocument();
     expect(
