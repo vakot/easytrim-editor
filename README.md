@@ -58,6 +58,15 @@ Start the Tauri desktop application:
 pnpm dev
 ```
 
+Build and preview the production web bundle without creating or installing a desktop artifact:
+
+```sh
+pnpm build:web
+pnpm preview:web
+```
+
+Vite prints the local preview URL, usually `http://localhost:4173`. This validates the production React bundle on any operating system. Native Tauri features such as FFmpeg inspection, file dialogs, drag-and-drop paths, and desktop export still require `pnpm dev` or an installed desktop build.
+
 Run the frontend quality gate:
 
 ```powershell

@@ -10,6 +10,8 @@
   "scripts": {
     "dev": "pnpm --filter @easytrim-editor/desktop tauri dev",
     "build": "pnpm --filter @easytrim-editor/desktop build",
+    "build:web": "pnpm --filter @easytrim-editor/desktop build",
+    "preview:web": "pnpm --filter @easytrim-editor/desktop preview",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint . --max-warnings 0",
