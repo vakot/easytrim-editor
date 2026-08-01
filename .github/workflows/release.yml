@@ -1,14 +1,24 @@
-name: Master release builds
+name: Manual development release
 
 on:
-  push:
-    branches: [master]
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Platform to build and publish
+        required: true
+        default: linux
+        type: choice
+        options:
+          - linux
+          - windows
+          - macos-intel
+          - macos-apple-silicon
 
 permissions:
   contents: write
 
 concurrency:
-  group: master-release-${{ github.sha }}
+  group: manual-development-release-${{ github.run_id }}
   cancel-in-progress: false
 
 env:
@@ -17,33 +27,8 @@ env:
 
 jobs:
   release:
-    name: Release (${{ matrix.name }})
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: Linux
-            os: ubuntu-22.04
-            asset_os: linux
-            asset_arch: x64
-            args: ""
-          - name: Windows
-            os: windows-latest
-            asset_os: windows
-            asset_arch: x64
-            args: ""
-          - name: macOS Intel
-            os: macos-15-intel
-            asset_os: macos
-            asset_arch: x64
-            args: --target x86_64-apple-darwin
-          - name: macOS Apple Silicon
-            os: macos-latest
-            asset_os: macos
-            asset_arch: arm64
-            args: --target aarch64-apple-darwin
-
-    runs-on: ${{ matrix.os }}
+    name: Release
+    runs-on: ${{ inputs.platform == 'linux' && 'ubuntu-22.04' || inputs.platform == 'windows' && 'windows-latest' || inputs.platform == 'macos-intel' && 'macos-15-intel' || 'macos-latest' }}
     steps:
       - name: Check out source
         uses: actions/checkout@v4
@@ -63,7 +48,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: 1.97.1
-          targets: ${{ startsWith(matrix.name, 'macOS') && 'x86_64-apple-darwin,aarch64-apple-darwin' || '' }}
+          targets: ${{ inputs.platform == 'macos-intel' && 'x86_64-apple-darwin' || inputs.platform == 'macos-apple-silicon' && 'aarch64-apple-darwin' || '' }}
 
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
@@ -79,7 +64,7 @@ jobs:
         with:
           projectPath: apps/desktop
           tauriScript: pnpm tauri
-          args: ${{ matrix.args }}
+          args: ${{ inputs.platform == 'linux' && '--bundles appimage,deb' || inputs.platform == 'macos-intel' && '--target x86_64-apple-darwin --bundles app,dmg' || inputs.platform == 'macos-apple-silicon' && '--target aarch64-apple-darwin --bundles app,dmg' || '' }}
           tagName: build-${{ github.run_number }}-${{ github.sha }}
           releaseName: EasyTrim Editor build ${{ github.run_number }}
           releaseBody: |
@@ -89,6 +74,6 @@ jobs:
           releaseDraft: false
           prerelease: true
           generateReleaseNotes: false
-          releaseAssetNamePattern: EasyTrim_[version]_${{ matrix.asset_os }}_${{ matrix.asset_arch }}_[bundle][ext]
+          releaseAssetNamePattern: EasyTrim_[version]_${{ startsWith(inputs.platform, 'macos') && 'macos' || inputs.platform }}_${{ inputs.platform == 'macos-apple-silicon' && 'arm64' || 'x64' }}_[bundle][ext]
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

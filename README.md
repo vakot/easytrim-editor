@@ -52,6 +52,10 @@ Supported platforms are `windows`, `linux`, `macos-intel`, and `macos-apple-sili
 
 Release assets use the same predictable name locally and in GitHub Actions: `EasyTrim_<version>_<os>_<arch>_<bundle><extension>`. For example, Windows NSIS and Apple Silicon DMG builds are uploaded as `EasyTrim_1.0.0_windows_x64_nsis.exe` and `EasyTrim_1.0.0_macos_arm64_dmg.dmg`.
 
+GitHub does not build release artifacts automatically on pushes or tags. Use `release:local` whenever possible, or explicitly dispatch the development or stable release workflow and select the required platform. Both manual workflows default to Linux to avoid accidentally starting Windows and macOS runners.
+
+Pull requests run one generic `Build` job on Linux. It performs the web and Rust quality gates and creates a production Tauri executable without packaging or uploading installers. CI does not run again after merging to `master`.
+
 ## Development
 
 Start the Tauri desktop application with the Vite development server and hot reload:
