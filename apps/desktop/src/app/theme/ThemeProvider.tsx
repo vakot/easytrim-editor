@@ -1,6 +1,15 @@
-import { useLayoutEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
-
 import {
+  useCallback,
+  useLayoutEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from "react";
+
+import { STORAGE_KEYS, readStoredJson, writeStoredJson } from "@/lib/storage";
+import {
+  isThemePreference,
   resolveTheme,
   subscribeToSystemTheme,
   systemPrefersDark,
@@ -9,9 +18,17 @@ import {
 import { ThemeContext } from "./theme-context";
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [preference, setPreference] = useState<ThemePreference>("system");
+  const [preference, setPreference] = useState<ThemePreference>(() => {
+    const stored = readStoredJson<{ theme?: unknown }>(STORAGE_KEYS.preferences);
+    return isThemePreference(stored?.theme) ? stored.theme : "system";
+  });
   const systemDark = useSyncExternalStore(subscribeToSystemTheme, systemPrefersDark, () => false);
   const resolvedTheme = resolveTheme(preference, systemDark);
+  const updatePreference = useCallback((nextPreference: ThemePreference) => {
+    setPreference(nextPreference);
+    const stored = readStoredJson<Record<string, unknown>>(STORAGE_KEYS.preferences) ?? {};
+    writeStoredJson(STORAGE_KEYS.preferences, { ...stored, theme: nextPreference });
+  }, []);
 
   useLayoutEffect(() => {
     const root = document.documentElement;
@@ -28,8 +45,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [preference, resolvedTheme]);
 
   const value = useMemo(
-    () => ({ preference, resolvedTheme, setPreference }),
-    [preference, resolvedTheme],
+    () => ({ preference, resolvedTheme, setPreference: updatePreference }),
+    [preference, resolvedTheme, updatePreference],
   );
 
   return <ThemeContext value={value}>{children}</ThemeContext>;

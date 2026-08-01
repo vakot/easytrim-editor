@@ -71,4 +71,15 @@ describe("export presets", () => {
     expect(initialExportPresetState.presets[0]?.argumentsText).toContain("-preset p1");
     expect(initialExportPresetState.presets[4]?.argumentsText).toContain("-preset p5");
   });
+
+  it("round-trips presets through versioned storage", () => {
+    const state = exportPresetReducer(initialExportPresetState, {
+      type: "preset-new-started",
+    });
+    const saved = exportPresetReducer(state, { type: "preset-created", name: "Portable" });
+
+    persistExportPresetState(saved);
+
+    expect(loadExportPresetState()).toEqual(saved);
+  });
 });
