@@ -1,11 +1,4 @@
-import {
-  useRef,
-  useState,
-  type KeyboardEvent,
-  type PointerEvent,
-  type ReactNode,
-  type RefObject,
-} from "react";
+import { useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 
 import {
   clampPlaybackMicros,
@@ -29,27 +22,11 @@ import {
   type TrimRange,
 } from "../../domain/trim";
 import type { FrameRate } from "../../lib/tauri/media";
+import { cn } from "@/lib/utils";
+import styles from "./components/timeline-handles.module.css";
+import type { TrimTimelineProps } from "./types";
 
 const TIMELINE_SNAP_REACH_PX = 12;
-
-interface TrimTimelineProps {
-  range: TrimRange;
-  playheadMicros: number;
-  playheadRef: RefObject<HTMLButtonElement | null>;
-  frameRate?: FrameRate;
-  playbackControls: ReactNode;
-  playbackTimecode: ReactNode;
-  videoToolbar: ReactNode;
-  audioRows: ReactNode;
-  onChange: (boundary: TrimBoundary, range: TrimRange) => TrimBoundary | null;
-  onMoveSegment: (range: TrimRange) => TrimBoundary | null;
-  onSegmentDragStart: () => void;
-  onSegmentDragEnd: () => void;
-  onSeek: (micros: number) => void;
-  onScrubStart: () => void;
-  onScrub: (micros: number) => void;
-  onScrubEnd: () => void;
-}
 
 export function TrimTimeline({
   range,
@@ -428,16 +405,22 @@ export function TrimTimeline({
   }
 
   return (
-    <section className="timeline-panel" aria-labelledby="timeline-title">
-      <div className="timeline-heading">
-        <div className="timeline-heading-summary">
-          <h2 id="timeline-title" className="section-label">
+    <section
+      className="min-h-full min-w-0 select-none bg-background px-5 pt-4 pb-5"
+      aria-labelledby="timeline-title"
+    >
+      <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-6">
+        <div className="min-w-0 justify-self-start">
+          <h2
+            id="timeline-title"
+            className="mb-0.5 font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
+          >
             Selected Segment
           </h2>
           {playbackTimecode}
         </div>
-        <div className="timeline-heading-controls">{playbackControls}</div>
-        <dl className="trim-readouts" aria-label="Trim time values">
+        <div className="justify-self-center">{playbackControls}</div>
+        <dl className="m-0 flex justify-self-end gap-5" aria-label="Trim time values">
           <TimeValue label="Start" micros={range.startMicros} frameRate={frameRate} />
           <TimeValue label="End" micros={range.endMicros} frameRate={frameRate} />
           <TimeValue
@@ -448,9 +431,17 @@ export function TrimTimeline({
         </dl>
       </div>
 
-      <div className="timeline-row timeline-scale-row" aria-hidden="true">
-        <span className="timeline-toolbar-title">Tools</span>
-        <div className="timeline-scale">
+      <div
+        className="mt-3 mb-1 grid min-w-0 grid-cols-[8.75rem_minmax(0,1fr)] items-end gap-3"
+        aria-hidden="true"
+      >
+        <span
+          className="text-[0.625rem] font-bold tracking-[0.08em] text-muted-foreground uppercase"
+          data-slot="timeline-tools-title"
+        >
+          Tools
+        </span>
+        <div className="flex justify-between font-mono text-[0.625rem] text-muted-foreground">
           {[0, 0.25, 0.5, 0.75, 1].map((fraction) => (
             <span key={fraction}>
               {formatPlaybackTime(Math.round(range.sourceDurationMicros * fraction), frameRate)}
@@ -459,13 +450,21 @@ export function TrimTimeline({
         </div>
       </div>
 
-      <div className="timeline-row">
-        <div className="timeline-row-toolbar" role="toolbar" aria-label="Video timeline tools">
+      <div
+        className="grid min-w-0 grid-cols-[8.75rem_minmax(0,1fr)] items-center gap-3"
+        data-slot="timeline-row"
+      >
+        <div
+          className="grid grid-flow-col grid-cols-4 grid-rows-2 items-center justify-start gap-1.5"
+          data-slot="timeline-toolbar"
+          role="toolbar"
+          aria-label="Video timeline tools"
+        >
           {videoToolbar}
         </div>
         <div
           ref={trackRef}
-          className="timeline-track"
+          className={styles.track}
           aria-label="Video trim timeline"
           onPointerDown={(event) => {
             if (event.target !== event.currentTarget) {
@@ -479,7 +478,7 @@ export function TrimTimeline({
           onLostPointerCapture={(event) => finishScrub(event, false)}
         >
           <div
-            className="trim-selection"
+            className={styles.selection}
             style={{ left: `${startPercent}%`, right: `${100 - endPercent}%` }}
           />
           <SegmentDragHandle
@@ -496,7 +495,7 @@ export function TrimTimeline({
           />
           <button
             ref={playheadRef}
-            className="playhead"
+            className={cn("playhead", styles.playhead)}
             type="button"
             style={{ left: `${playheadPercent}%` }}
             role="slider"
@@ -576,7 +575,7 @@ function SegmentDragHandle({
   const durationMicros = range.endMicros - range.startMicros;
   return (
     <button
-      className="segment-drag-handle"
+      className={cn("segment-drag-handle", styles.segment)}
       type="button"
       role="slider"
       aria-label="Move selected segment"
@@ -635,7 +634,12 @@ function TrimHandle({
   const label = boundary === "start" ? "Trim start" : "Trim end";
   return (
     <button
-      className={`trim-handle trim-handle-${boundary}`}
+      className={cn(
+        "trim-handle",
+        `trim-handle-${boundary}`,
+        styles.trim,
+        boundary === "start" ? styles.start : styles.end,
+      )}
       type="button"
       role="slider"
       aria-label={label}
@@ -670,9 +674,13 @@ function TimeValue({
   frameRate?: FrameRate;
 }) {
   return (
-    <div>
-      <dt>{label}</dt>
-      <dd>{formatPlaybackTime(micros, frameRate)}</dd>
+    <div className="grid gap-px">
+      <dt className="text-[0.625rem] font-bold tracking-[0.08em] text-muted-foreground uppercase">
+        {label}
+      </dt>
+      <dd className="m-0 font-mono text-xs tabular-nums">
+        {formatPlaybackTime(micros, frameRate)}
+      </dd>
     </div>
   );
 }

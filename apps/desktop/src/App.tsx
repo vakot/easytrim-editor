@@ -5,7 +5,6 @@ import { NativeDialogOverlay } from "@/app/components/NativeDialogOverlay";
 import { ReturnConfirmationDialog } from "@/app/components/ReturnConfirmationDialog";
 import { useClipKitApp } from "@/app/hooks/use-clipkit-app";
 import { SourceWorkspace } from "@/features/import-source/SourceWorkspace";
-import "./App.css";
 
 function App() {
   const app = useClipKitApp();
