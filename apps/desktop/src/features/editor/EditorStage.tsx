@@ -373,9 +373,12 @@ export function EditorStage({
     if (!video) {
       return;
     }
+    const startMicros = currentPlayheadMicrosRef.current;
+    const startSeconds = startMicros / 1_000_000;
     setTransportError(null);
     void audioContextRef.current?.resume();
-    syncAudioPlayback(video.currentTime);
+    seekVideo(video, startMicros);
+    syncAudioPlayback(startSeconds);
     void video
       .play()
       .then(() => Promise.all([...audioElementsRef.current.values()].map((audio) => audio.play())))
