@@ -26,7 +26,7 @@ export function SourceSidebar({ session, queue }: SourceSidebarProps) {
           </p>
           <h1
             id="source-title"
-            className="truncate text-base font-semibold"
+            className="truncate text-base font-black"
             title={session.source.selection.displayName}
           >
             {session.source.selection.displayName}
