@@ -324,7 +324,7 @@ mod tests {
         assert_eq!(cancelled.kind(), io::ErrorKind::Interrupted);
 
         let missing = run_progress_cancellable(
-            OsStr::new("framelatch-process-that-does-not-exist"),
+            OsStr::new("easytrim-process-that-does-not-exist"),
             &[],
             Duration::from_secs(1),
             0,

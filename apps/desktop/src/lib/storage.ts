@@ -1,7 +1,7 @@
 export const STORAGE_KEYS = {
-  preferences: "framelatch.preferences.v1",
-  exportPresets: "framelatch.export-presets.v1",
-  supportBadgeDismissed: "framelatch.support-badge-dismissed.v1",
+  preferences: "easytrim.preferences.v1",
+  exportPresets: "easytrim.export-presets.v1",
+  supportBadgeDismissed: "easytrim.support-badge-dismissed.v1",
 } as const;
 
 export function readStoredJson<T>(key: string): T | null {

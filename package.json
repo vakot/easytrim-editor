@@ -1,5 +1,5 @@
 {
-  "name": "framelatch",
+  "name": "easytrim-editor",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -8,15 +8,15 @@
     "node": ">=22.12.0"
   },
   "scripts": {
-    "dev": "pnpm --filter @framelatch/desktop tauri dev",
-    "build": "pnpm --filter @framelatch/desktop build",
+    "dev": "pnpm --filter @easytrim-editor/desktop tauri dev",
+    "build": "pnpm --filter @easytrim-editor/desktop build",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint . --max-warnings 0",
-    "typecheck": "pnpm --filter @framelatch/desktop typecheck",
-    "test": "pnpm --filter @framelatch/desktop test",
+    "typecheck": "pnpm --filter @easytrim-editor/desktop typecheck",
+    "test": "pnpm --filter @easytrim-editor/desktop test",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
-    "tauri": "pnpm --filter @framelatch/desktop tauri"
+    "tauri": "pnpm --filter @easytrim-editor/desktop tauri"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

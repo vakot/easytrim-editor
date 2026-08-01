@@ -3,14 +3,14 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppToolbar } from "@/app/components/AppToolbar";
 import { NativeDialogOverlay } from "@/app/components/NativeDialogOverlay";
 import { ReturnConfirmationDialog } from "@/app/components/ReturnConfirmationDialog";
-import { useFrameLatchApp } from "@/app/hooks/useFrameLatchApp";
+import { useEasyTrimEditorApp } from "@/app/hooks/useEasyTrimEditorApp";
 import { SourceWorkspace } from "@/features/import-source/SourceWorkspace";
 import { useTranslation } from "react-i18next";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import { useReleaseCheck } from "@/features/release/hooks/useReleaseCheck";
 
-function FrameLatchApp() {
-  const app = useFrameLatchApp();
+function EasyTrimEditorApp() {
+  const app = useEasyTrimEditorApp();
   const { t } = useTranslation();
   const { update } = useReleaseCheck();
 
@@ -82,7 +82,7 @@ function FrameLatchApp() {
 function App() {
   return (
     <ThemeProvider>
-      <FrameLatchApp />
+      <EasyTrimEditorApp />
     </ThemeProvider>
   );
 }

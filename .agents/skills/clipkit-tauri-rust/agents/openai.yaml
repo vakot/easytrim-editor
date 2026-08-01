@@ -1,4 +1,0 @@
-interface:
-  display_name: "FrameLatch Tauri and Rust"
-  short_description: "Build the safe native FrameLatch application core"
-  default_prompt: "Use $clipkit-tauri-rust to implement or review the Rust and Tauri side of FrameLatch."

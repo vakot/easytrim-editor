@@ -1,13 +1,13 @@
 [package]
-name = "framelatch-desktop"
+name = "easytrim-editor-desktop"
 version.workspace = true
-description = "FrameLatch desktop application"
+description = "EasyTrim Editor desktop application"
 authors.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 
 [lib]
-name = "framelatch_desktop_lib"
+name = "easytrim_editor_desktop_lib"
 crate-type = ["rlib"]
 
 [build-dependencies]

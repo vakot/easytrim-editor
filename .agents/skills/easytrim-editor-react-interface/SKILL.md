@@ -1,9 +1,9 @@
 ---
-name: clipkit-react-interface
-description: Build and review FrameLatch's React, TypeScript, Vite, Tailwind, shadcn, CSS modules, and frontend tests. Use for the single-screen editor UI, import/drop behavior, video preview controls, timeline and trim handles, playhead synchronization, audio waveform rows and levels, preset editing, resolution/frame-rate controls, export states, accessibility, responsive layout, frontend performance, or Tauri IPC client types. Pair with clipkit-tauri-rust for IPC/native changes and clipkit-ffmpeg-pipeline when controls alter media semantics.
+name: easytrim-editor-react-interface
+description: Build and review EasyTrim Editor's React, TypeScript, Vite, Tailwind, shadcn, CSS modules, and frontend tests. Use for the single-screen editor UI, import/drop behavior, video preview controls, timeline and trim handles, playhead synchronization, audio waveform rows and levels, preset editing, resolution/frame-rate controls, export states, accessibility, responsive layout, frontend performance, or Tauri IPC client types. Pair with easytrim-editor-tauri-rust for IPC/native changes and easytrim-editor-ffmpeg-pipeline when controls alter media semantics.
 ---
 
-# FrameLatch React Interface
+# EasyTrim Editor React Interface
 
 Build a minimal React + TypeScript + Vite interface that the project owner can review directly.
 
@@ -18,7 +18,7 @@ Follow the auto-loaded `AGENTS.md`. Before frontend changes, read:
 
 Read `plans/ffmpeg-ui-mvp.md`, inspect existing components/state/Tauri adapter/styles/tests, and identify the user action, state transition, and native command involved.
 
-Use `clipkit-tauri-rust` for IPC/native changes and `clipkit-ffmpeg-pipeline` when controls alter media behavior.
+Use `easytrim-editor-tauri-rust` for IPC/native changes and `easytrim-editor-ffmpeg-pipeline` when controls alter media behavior.
 
 ## Keep frontend architecture simple
 

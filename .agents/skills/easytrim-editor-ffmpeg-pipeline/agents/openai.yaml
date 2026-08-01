@@ -1,0 +1,4 @@
+interface:
+  display_name: "EasyTrim Editor FFmpeg Pipeline"
+  short_description: "Implement correct video and audio processing"
+  default_prompt: "Use $easytrim-editor-ffmpeg-pipeline to implement or review EasyTrim Editor media inspection, preview, trimming, and export."

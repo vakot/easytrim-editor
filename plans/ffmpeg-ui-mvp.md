@@ -1,4 +1,4 @@
-# FrameLatch — FFmpeg UI MVP plan
+# EasyTrim Editor — FFmpeg UI MVP plan
 
 ## Goal
 
@@ -49,9 +49,9 @@ The first version is intentionally a single-clip editor. No project files, autos
 
 Project-local skills under `.agents/skills/` define the implementation and review standards:
 
-- `clipkit-tauri-rust` owns Rust, Tauri, IPC, process lifecycle, security, temporary files, and native validation;
-- `clipkit-ffmpeg-pipeline` owns FFprobe metadata, FFmpeg command contracts, trim/audio correctness, presets, and media tests;
-- `clipkit-react-interface` owns the React/TypeScript single-screen UX, editor state, accessibility, frontend performance, and UI tests.
+- `easytrim-editor-tauri-rust` owns Rust, Tauri, IPC, process lifecycle, security, temporary files, and native validation;
+- `easytrim-editor-ffmpeg-pipeline` owns FFprobe metadata, FFmpeg command contracts, trim/audio correctness, presets, and media tests;
+- `easytrim-editor-react-interface` owns the React/TypeScript single-screen UX, editor state, accessibility, frontend performance, and UI tests.
 
 Cross-cutting work uses every applicable skill. This is especially important because Rust/Tauri implementation is AI-owned while the React/TypeScript surface remains reviewable by the project owner.
 
@@ -275,7 +275,7 @@ layouts and long sources remains part of the media matrix.
 ## Initial directory layout
 
 ```text
-framelatch/
+easytrim-editor/
 ├─ AGENTS.md         # Auto-loaded repository instruction index
 ├─ .agents/
 │  ├─ rules/         # Shared repository-wide policies

@@ -115,7 +115,7 @@ fn create_artifact(stream_index: u32) -> Result<WaveformArtifact, AppError> {
     for _ in 0..100 {
         let sequence = NEXT_DIRECTORY_ID.fetch_add(1, Ordering::Relaxed);
         let directory = base_directory.join(format!(
-            "framelatch-waveform-{}-{timestamp}-{sequence}",
+            "easytrim-waveform-{}-{timestamp}-{sequence}",
             process::id()
         ));
         match fs::create_dir(&directory) {

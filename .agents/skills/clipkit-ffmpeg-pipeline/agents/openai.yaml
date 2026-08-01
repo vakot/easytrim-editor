@@ -1,4 +1,0 @@
-interface:
-  display_name: "FrameLatch FFmpeg Pipeline"
-  short_description: "Implement correct video and audio processing"
-  default_prompt: "Use $clipkit-ffmpeg-pipeline to implement or review FrameLatch media inspection, preview, trimming, and export."

@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "FrameLatch",
+  "productName": "EasyTrim Editor",
   "version": "1.0.0",
-  "identifier": "com.vakot.framelatch",
+  "identifier": "com.vakot.easytrimeditor",
   "build": {
     "beforeDevCommand": "pnpm dev",
     "devUrl": "http://localhost:1420",
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "FrameLatch",
+        "title": "EasyTrim Editor",
         "width": 1280,
         "height": 800,
         "minWidth": 960,
@@ -22,8 +22,8 @@
     ],
     "security": {
       "capabilities": ["default"],
-      "csp": "default-src 'self'; connect-src ipc: http://ipc.localhost; img-src 'self' asset: http://asset.localhost framelatch-media: http://framelatch-media.localhost; media-src 'self' framelatch-media: http://framelatch-media.localhost; style-src 'self'",
-      "devCsp": "default-src 'self'; connect-src ipc: http://ipc.localhost ws://localhost:1421; img-src 'self' asset: http://asset.localhost framelatch-media: http://framelatch-media.localhost; media-src 'self' framelatch-media: http://framelatch-media.localhost; style-src 'self'"
+      "csp": "default-src 'self'; connect-src ipc: http://ipc.localhost; img-src 'self' asset: http://asset.localhost easytrim-media: http://easytrim-media.localhost; media-src 'self' easytrim-media: http://easytrim-media.localhost; style-src 'self'",
+      "devCsp": "default-src 'self'; connect-src ipc: http://ipc.localhost ws://localhost:1421; img-src 'self' asset: http://asset.localhost easytrim-media: http://easytrim-media.localhost; media-src 'self' easytrim-media: http://easytrim-media.localhost; style-src 'self'"
     }
   },
   "bundle": {

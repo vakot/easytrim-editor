@@ -7,7 +7,7 @@ Apply this rule when creating, moving, or reviewing files and module boundaries.
 Grow toward this structure:
 
 ```text
-framelatch/
+easytrim-editor/
 ├─ AGENTS.md
 ├─ .agents/
 │  ├─ rules/                         # Shared auto-applied repository policy

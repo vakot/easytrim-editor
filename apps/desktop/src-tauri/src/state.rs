@@ -25,10 +25,10 @@ pub fn cleanup_stale_media_artifacts() {
         let path = entry.path();
         let name = entry.file_name();
         let name = name.to_string_lossy();
-        let is_framelatch_artifact = name.starts_with("framelatch-preview-")
-            || name.starts_with("framelatch-audio-preview-")
-            || name.starts_with("framelatch-waveform-");
-        if !is_framelatch_artifact || !entry.file_type().is_ok_and(|file_type| file_type.is_dir()) {
+        let is_easytrim_artifact = name.starts_with("easytrim-preview-")
+            || name.starts_with("easytrim-audio-preview-")
+            || name.starts_with("easytrim-waveform-");
+        if !is_easytrim_artifact || !entry.file_type().is_ok_and(|file_type| file_type.is_dir()) {
             continue;
         }
         let is_stale = entry

@@ -73,7 +73,7 @@ jobs:
           tauriScript: pnpm tauri
           args: ${{ matrix.args }}
           tagName: build-${{ github.run_number }}-${{ github.sha }}
-          releaseName: FrameLatch build ${{ github.run_number }}
+          releaseName: EasyTrim Editor build ${{ github.run_number }}
           releaseBody: |
             Automated prerelease for commit ${{ github.sha }}.
 

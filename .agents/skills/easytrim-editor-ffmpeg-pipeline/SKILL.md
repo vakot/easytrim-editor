@@ -1,9 +1,9 @@
 ---
-name: clipkit-ffmpeg-pipeline
-description: Implement and review FrameLatch media behavior with FFmpeg and FFprobe. Use for media inspection, stream metadata, preview proxies, audio waveforms, trim math, stream mapping, fast lossless cuts, hybrid audio merging, optimized rendering, scaling, frame-rate conversion, NVENC/CPU presets, custom FFmpeg arguments, progress parsing, codec/container compatibility, or media-focused tests and benchmarks. Pair with clipkit-tauri-rust for process execution and clipkit-react-interface for controls or user-facing media states.
+name: easytrim-editor-ffmpeg-pipeline
+description: Implement and review EasyTrim Editor media behavior with FFmpeg and FFprobe. Use for media inspection, stream metadata, preview proxies, audio waveforms, trim math, stream mapping, fast lossless cuts, hybrid audio merging, optimized rendering, scaling, frame-rate conversion, NVENC/CPU presets, custom FFmpeg arguments, progress parsing, codec/container compatibility, or media-focused tests and benchmarks. Pair with easytrim-editor-tauri-rust for process execution and easytrim-editor-react-interface for controls or user-facing media states.
 ---
 
-# FrameLatch FFmpeg Pipeline
+# EasyTrim Editor FFmpeg Pipeline
 
 Treat media behavior as correctness-sensitive. Preserve the selected interval and make unavoidable tradeoffs visible.
 
@@ -17,7 +17,7 @@ Follow the auto-loaded `AGENTS.md`. Before media changes, read:
 
 Read `plans/ffmpeg-ui-mvp.md`, inspect media DTOs/builders/capability detection/fixtures, and probe representative inputs before assuming stream layout, timing, rotation, color metadata, or compatibility.
 
-Use `clipkit-tauri-rust` for process/IPC changes and `clipkit-react-interface` when controls or labels change media semantics.
+Use `easytrim-editor-tauri-rust` for process/IPC changes and `easytrim-editor-react-interface` when controls or labels change media semantics.
 
 ## Preserve media invariants
 

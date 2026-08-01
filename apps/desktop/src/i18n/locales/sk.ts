@@ -6,7 +6,7 @@ type TranslationShape<T> = {
 
 export const sk = {
   common: {
-    brand: "FrameLatch",
+    brand: "EasyTrim Editor",
     cancel: "Zrušiť",
     close: "Zavrieť",
     retry: "Skúsiť znova",
@@ -27,7 +27,7 @@ export const sk = {
   },
   app: {
     toolbar: "Panel aplikácie",
-    returnToWelcome: "Návrat na úvodnú stránku FrameLatch",
+    returnToWelcome: "Návrat na úvodnú stránku EasyTrim Editor",
     dragUnavailable: "Presunutie súboru nie je dostupné: {{message}}",
     nativeDialog: {
       title: "Čaká sa na systémové okno",
@@ -209,12 +209,12 @@ export const sk = {
     framesPerSecond: "{{value}} FPS",
   },
   release: {
-    updateAvailable: "Je dostupná nová verzia FrameLatch:",
+    updateAvailable: "Je dostupná nová verzia EasyTrim Editor:",
     update: "Aktualizovať",
     dismiss: "Skryť upozornenie na aktualizáciu",
   },
   support: {
-    message: "Podporte autora a pomôžte zlepšovať FrameLatch.",
+    message: "Podporte autora a pomôžte zlepšovať EasyTrim Editor.",
     dismiss: "Skryť správu podpory",
     resetDevelopment: "Obnoviť odznak podpory",
   },

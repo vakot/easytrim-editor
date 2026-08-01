@@ -139,7 +139,7 @@ fn create_artifact() -> Result<PreviewArtifact, AppError> {
     for _ in 0..100 {
         let sequence = NEXT_DIRECTORY_ID.fetch_add(1, Ordering::Relaxed);
         let directory = base_directory.join(format!(
-            "framelatch-preview-{}-{timestamp}-{sequence}",
+            "easytrim-preview-{}-{timestamp}-{sequence}",
             process::id()
         ));
         match fs::create_dir(&directory) {

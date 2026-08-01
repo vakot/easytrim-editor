@@ -1,6 +1,6 @@
-# FrameLatch
+# EasyTrim Editor
 
-FrameLatch is a Windows-first desktop video trimmer built with Tauri 2, Rust, React, TypeScript, Vite, and FFmpeg.
+EasyTrim Editor is a Windows-first desktop video trimmer built with Tauri 2, Rust, React, TypeScript, Vite, and FFmpeg.
 
 The repository is a pnpm monorepo. The initial workspace contains one desktop application:
 

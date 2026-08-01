@@ -1,6 +1,6 @@
 export const en = {
   common: {
-    brand: "FrameLatch",
+    brand: "EasyTrim Editor",
     cancel: "Cancel",
     close: "Close",
     retry: "Retry",
@@ -21,7 +21,7 @@ export const en = {
   },
   app: {
     toolbar: "Application toolbar",
-    returnToWelcome: "Return to FrameLatch welcome page",
+    returnToWelcome: "Return to EasyTrim Editor welcome page",
     dragUnavailable: "Drag and drop is unavailable: {{message}}",
     nativeDialog: {
       title: "Waiting for system dialog",
@@ -203,12 +203,12 @@ export const en = {
     framesPerSecond: "{{value}} FPS",
   },
   release: {
-    updateAvailable: "A new FrameLatch release is available:",
+    updateAvailable: "A new EasyTrim Editor release is available:",
     update: "Update",
     dismiss: "Dismiss update notice",
   },
   support: {
-    message: "Support the author and help keep FrameLatch improving.",
+    message: "Support the author and help keep EasyTrim Editor improving.",
     dismiss: "Dismiss support message",
     resetDevelopment: "Reset support badge",
   },
