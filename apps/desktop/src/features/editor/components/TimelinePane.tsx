@@ -1,16 +1,20 @@
 import type { ReactNode } from "react";
 
 import { ScrollArea } from "@/components/ui/scroll-area";
+import type { TrimRange } from "@/domain/trim";
+import { timelineGeometryStyle } from "@/features/timeline/utils/timeline-geometry";
 import { useTimelinePaneMeasurements } from "../hooks/useTimelinePaneMeasurements";
 import type { TimelinePanelSizeConstraints } from "../utils/timeline-pane-sizing";
 
 interface TimelinePaneProps {
+  range: TrimRange;
   timeline: ReactNode;
   audioTracks: ReactNode | null;
   onSizeConstraintsChange: (constraints: TimelinePanelSizeConstraints) => void;
 }
 
 export function TimelinePane({
+  range,
   timeline,
   audioTracks,
   onSizeConstraintsChange,
@@ -23,6 +27,8 @@ export function TimelinePane({
 
   return (
     <div
+      data-slot="timeline-pane"
+      style={timelineGeometryStyle(range)}
       className={
         hasAudioTracks
           ? "grid size-full min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden bg-background"

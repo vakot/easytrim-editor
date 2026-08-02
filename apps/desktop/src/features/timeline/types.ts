@@ -13,6 +13,7 @@ export interface TrimTimelineProps {
   videoToolbar: ReactNode;
   onChange: (boundary: TrimBoundary, range: TrimRange) => TrimBoundary | null;
   onMoveSegment: (range: TrimRange) => TrimBoundary | null;
+  onTrimDragEnd: () => void;
   onSegmentDragStart: () => void;
   onSegmentDragEnd: () => void;
   onSeek: (micros: number) => void;
