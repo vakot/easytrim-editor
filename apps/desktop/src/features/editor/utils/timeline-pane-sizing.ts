@@ -4,12 +4,28 @@ export interface TimelinePanelSizeConstraints {
   maxSize: number;
 }
 
-// These values mirror the fixed CSS layout: the timeline and audio controls
-// do not depend on media metadata, while each waveform row uses a fixed 56px
-// row plus an 8px grid gap.
+// These values mirror the fixed CSS layout. The timeline and audio controls
+// do not depend on media metadata, so constraints are available before render.
 export const TIMELINE_FIXED_HEIGHT = 148;
-export const AUDIO_SINGLE_TRACK_HEIGHT = 126;
-export const AUDIO_TRACK_STEP = 64;
+const TIMELINE_DIVIDER_HEIGHT = 1;
+const AUDIO_SECTION_TOP_PADDING = 16;
+const AUDIO_SECTION_HEADING_HEIGHT = 16;
+const AUDIO_SECTION_GAP = 8;
+const AUDIO_MASTER_CONTROLS_HEIGHT = 36;
+const AUDIO_TRACK_HEIGHT = 48;
+const AUDIO_SECTION_BOTTOM_PADDING = 20;
+const AUDIO_DEFAULT_TRAILING_PADDING = 16;
+const AUDIO_SCROLL_AREA_TRAILING_PADDING = 16;
+
+export const AUDIO_SINGLE_TRACK_HEIGHT =
+  AUDIO_SECTION_TOP_PADDING +
+  AUDIO_SECTION_HEADING_HEIGHT +
+  AUDIO_SECTION_GAP +
+  AUDIO_MASTER_CONTROLS_HEIGHT +
+  AUDIO_SECTION_GAP +
+  AUDIO_TRACK_HEIGHT +
+  AUDIO_SECTION_BOTTOM_PADDING;
+export const AUDIO_TRACK_STEP = AUDIO_TRACK_HEIGHT + AUDIO_SECTION_GAP;
 
 export function timelinePanelSizeConstraints(
   audioTrackCount: number,
@@ -18,9 +34,11 @@ export function timelinePanelSizeConstraints(
   const audioContentHeight = trackCount
     ? AUDIO_SINGLE_TRACK_HEIGHT + (trackCount - 1) * AUDIO_TRACK_STEP
     : 0;
-  const minSize = TIMELINE_FIXED_HEIGHT;
-  const defaultSize = minSize + (trackCount ? AUDIO_SINGLE_TRACK_HEIGHT : 0);
-  const maxSize = minSize + audioContentHeight;
+  const minSize = TIMELINE_FIXED_HEIGHT + (trackCount ? TIMELINE_DIVIDER_HEIGHT : 0);
+  const defaultSize =
+    minSize + (trackCount ? AUDIO_SINGLE_TRACK_HEIGHT + AUDIO_DEFAULT_TRAILING_PADDING : 0);
+  const maxSize =
+    minSize + audioContentHeight + (trackCount ? AUDIO_SCROLL_AREA_TRAILING_PADDING : 0);
 
   return {
     minSize,
