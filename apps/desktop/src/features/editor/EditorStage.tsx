@@ -22,6 +22,7 @@ import { usePlaybackModes } from "./hooks/usePlaybackModes";
 import { usePlaybackSpeed } from "./hooks/usePlaybackSpeed";
 import { useTimelinePanelSizing } from "./hooks/useTimelinePanelSizing";
 import type { EditorShortcutActions, EditorStageProps } from "./types";
+import { synchronizeAudioPosition } from "./utils/audio-sync";
 import { editorShortcutFromEvent, isShortcutBlockedTarget } from "./utils/editor-shortcuts";
 import {
   cancelFrame,
@@ -446,7 +447,7 @@ export function EditorStage({
     setTransportError(null);
     void audioContextRef.current?.resume();
     seekVideo(video, startMicros);
-    syncAudioPlayback(startSeconds);
+    syncAudioPlayback(startSeconds, true);
 
     const seekingMedia = [video, ...audioElementsRef.current.values()].filter(
       (media) => media.seeking,
@@ -491,15 +492,9 @@ export function EditorStage({
     }
   }
 
-  function syncAudioPlayback(seconds: number) {
+  function syncAudioPlayback(seconds: number, force = false) {
     for (const audio of audioElementsRef.current.values()) {
-      if (Math.abs(audio.currentTime - seconds) > 0.08) {
-        try {
-          audio.currentTime = seconds;
-        } catch {
-          // Audio metadata may not be ready yet.
-        }
-      }
+      synchronizeAudioPosition(audio, seconds, force);
     }
   }
 
