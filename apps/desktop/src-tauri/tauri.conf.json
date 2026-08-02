@@ -22,8 +22,8 @@
     ],
     "security": {
       "capabilities": ["default"],
-      "csp": "default-src 'self'; connect-src ipc: http://ipc.localhost; img-src 'self' asset: http://asset.localhost easytrim-media: http://easytrim-media.localhost; media-src 'self' easytrim-media: http://easytrim-media.localhost; style-src 'self'",
-      "devCsp": "default-src 'self'; connect-src ipc: http://ipc.localhost ws://localhost:1421; img-src 'self' asset: http://asset.localhost easytrim-media: http://easytrim-media.localhost; media-src 'self' easytrim-media: http://easytrim-media.localhost; style-src 'self'"
+      "csp": "default-src 'self'; connect-src ipc: http://ipc.localhost https://api.github.com; img-src 'self' asset: http://asset.localhost easytrim-media: http://easytrim-media.localhost; media-src 'self' easytrim-media: http://easytrim-media.localhost; style-src 'self'",
+      "devCsp": "default-src 'self'; connect-src ipc: http://ipc.localhost ws://localhost:1421 https://api.github.com; img-src 'self' asset: http://asset.localhost easytrim-media: http://easytrim-media.localhost; media-src 'self' easytrim-media: http://easytrim-media.localhost; style-src 'self'"
     }
   },
   "bundle": {

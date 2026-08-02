@@ -24,6 +24,7 @@ export function ThemeSelector({ className }: { className?: string }) {
   return (
     <Select value={preference} onValueChange={(theme) => setPreference(theme as ThemePreference)}>
       <SelectTrigger
+        variant="solid"
         className={cn("w-16 px-3", className)}
         aria-label={t("theme.selection", { theme: currentThemeLabel })}
         title={t("theme.selection", { theme: currentThemeLabel })}

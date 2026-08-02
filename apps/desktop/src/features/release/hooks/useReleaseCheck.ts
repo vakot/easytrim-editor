@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import packageJson from "../../../../package.json";
+import packageJson from "../../../../../../package.json";
 
 import { checkForUpdate, type AvailableUpdate } from "../release-check";
 

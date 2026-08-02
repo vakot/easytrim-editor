@@ -24,7 +24,7 @@ export function LanguageSelector({ className }: { className?: string }) {
       value={currentLanguage}
       onValueChange={(language) => void i18n.changeLanguage(language as SupportedLanguage)}
     >
-      <SelectTrigger className={className} aria-label={t("language.label")}>
+      <SelectTrigger variant="solid" className={className} aria-label={t("language.label")}>
         <Languages className="size-4 text-muted-foreground" aria-hidden="true" />
         <SelectValue />
       </SelectTrigger>
