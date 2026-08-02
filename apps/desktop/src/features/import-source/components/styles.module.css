@@ -60,11 +60,12 @@
   position: absolute;
   inset: -1px;
   z-index: 0;
-  border: 1px solid var(--destructive);
+  outline: 1px solid var(--destructive);
   border-radius: inherit;
   content: "";
   pointer-events: none;
-  animation: capability-error-ripple 1.8s ease-out infinite;
+  animation: capability-error-ripple 1.6s ease-out infinite;
+  will-change: outline-width, opacity;
 }
 
 .errorBadge > * {
@@ -88,14 +89,23 @@
 
 @keyframes capability-error-ripple {
   0% {
-    opacity: 0.7;
-    transform: scale(1);
+    opacity: 0;
+    outline-width: 1px;
   }
 
-  75%,
+  20% {
+    opacity: 0.7;
+    outline-width: 1px;
+  }
+
+  80% {
+    opacity: 0;
+    outline-width: 6px;
+  }
+
   100% {
     opacity: 0;
-    transform: scale(1.35);
+    outline-width: 1px;
   }
 }
 

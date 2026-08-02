@@ -684,23 +684,25 @@ export function EditorStage({
             />
           }
           audioTracks={
-            <AudioTracks
-              streams={audioStreams}
-              tracks={audioTracks}
-              masterEnabled={masterEnabled}
-              masterVolumePercent={masterVolumePercent}
-              range={trim}
-              playheadMicros={displayedPlayheadMicros}
-              playheadRef={audioPlayheadRef}
-              mergeAudio={mergeAudio}
-              onToggleTrack={onToggleAudioTrack}
-              onTrackVolumeChange={onAudioTrackVolumeChange}
-              onToggleMaster={onToggleAudioMaster}
-              onMasterVolumeChange={onMasterVolumeChange}
-              onToggleMerge={onToggleAudioMerge}
-              onPrepareWaveforms={onPrepareWaveforms}
-              onWaveformImageError={onWaveformImageError}
-            />
+            audioStreams.length > 0 ? (
+              <AudioTracks
+                streams={audioStreams}
+                tracks={audioTracks}
+                masterEnabled={masterEnabled}
+                masterVolumePercent={masterVolumePercent}
+                range={trim}
+                playheadMicros={displayedPlayheadMicros}
+                playheadRef={audioPlayheadRef}
+                mergeAudio={mergeAudio}
+                onToggleTrack={onToggleAudioTrack}
+                onTrackVolumeChange={onAudioTrackVolumeChange}
+                onToggleMaster={onToggleAudioMaster}
+                onMasterVolumeChange={onMasterVolumeChange}
+                onToggleMerge={onToggleAudioMerge}
+                onPrepareWaveforms={onPrepareWaveforms}
+                onWaveformImageError={onWaveformImageError}
+              />
+            ) : null
           }
         />
       </Panel>

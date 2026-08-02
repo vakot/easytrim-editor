@@ -164,6 +164,8 @@
     --sidebar-border: oklch(1 0 0 / 10%);
     --sidebar-ring: oklch(0.556 0 0);
     --brand-wall: #29292f;
+    --brand-wall-easy: #34343a;
+    --brand-wall-trim: #242429;
     --preview-surface: #000000;
   }
 }
