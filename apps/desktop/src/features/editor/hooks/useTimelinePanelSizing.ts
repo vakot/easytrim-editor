@@ -9,34 +9,51 @@ const FALLBACK_CONSTRAINTS = {
   maxSize: "70%",
 } as const;
 
+export function timelinePanelTargetSize(
+  currentSize: number,
+  constraints: TimelinePanelSizeConstraints,
+  initialize: boolean,
+): number {
+  if (initialize) {
+    return constraints.defaultSize;
+  }
+  return Math.min(constraints.maxSize, Math.max(constraints.minSize, currentSize));
+}
+
 export function useTimelinePanelSizing(sourceId: string) {
   const panelRef = usePanelRef();
   const initializedSourceRef = useRef<string | null>(null);
+  const measuredSourceRef = useRef<string | null>(null);
   const [measuredConstraints, setMeasuredConstraints] =
     useState<TimelinePanelSizeConstraints | null>(null);
 
-  const handleSizeConstraintsChange = useCallback((next: TimelinePanelSizeConstraints) => {
-    setMeasuredConstraints((current) =>
-      current &&
-      current.minSize === next.minSize &&
-      current.defaultSize === next.defaultSize &&
-      current.maxSize === next.maxSize
-        ? current
-        : next,
-    );
-  }, []);
+  const handleSizeConstraintsChange = useCallback(
+    (next: TimelinePanelSizeConstraints) => {
+      measuredSourceRef.current = sourceId;
+      setMeasuredConstraints((current) =>
+        current &&
+        current.minSize === next.minSize &&
+        current.defaultSize === next.defaultSize &&
+        current.maxSize === next.maxSize
+          ? current
+          : next,
+      );
+    },
+    [sourceId],
+  );
 
   useLayoutEffect(() => {
     const panel = panelRef.current;
-    if (!panel || !measuredConstraints) {
+    if (!panel || !measuredConstraints || measuredSourceRef.current !== sourceId) {
       return;
     }
 
     const currentSize = panel.getSize().inPixels;
-    const targetSize =
-      initializedSourceRef.current === sourceId
-        ? Math.min(measuredConstraints.maxSize, Math.max(measuredConstraints.minSize, currentSize))
-        : measuredConstraints.defaultSize;
+    const targetSize = timelinePanelTargetSize(
+      currentSize,
+      measuredConstraints,
+      initializedSourceRef.current === null,
+    );
 
     initializedSourceRef.current = sourceId;
     if (Math.abs(currentSize - targetSize) >= 1) {
