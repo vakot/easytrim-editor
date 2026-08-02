@@ -4,10 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { AudioTrackState } from "@/app/session-state";
 
-import {
-  WAVEFORM_RENDER_WIDTH,
-  useWaveformPreparation,
-} from "../useWaveformPreparation";
+import { WAVEFORM_RENDER_WIDTH, useWaveformPreparation } from "../useWaveformPreparation";
 
 const tracks: AudioTrackState[] = [
   { streamIndex: 1, enabled: true, volumePercent: 50, waveform: { status: "idle" } },
