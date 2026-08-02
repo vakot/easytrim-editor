@@ -414,9 +414,7 @@ export function EditorStage({
     const { action } = boundary;
     if (action.type === "restart") {
       commitSeek(action.positionMicros);
-      if (videoRef.current?.paused) {
-        startMediaPlayback();
-      }
+      startMediaPlayback();
       return true;
     }
 
@@ -621,7 +619,7 @@ export function EditorStage({
 
   function handleTrimDragEnd() {
     flushTrimCommit();
-    flushScrubSeek();
+    handleScrubEnd();
   }
 
   shortcutActionsRef.current = {
@@ -751,6 +749,7 @@ export function EditorStage({
               }
               onChange={handleTrimBoundaryChange}
               onMoveSegment={handleSegmentMove}
+              onTrimDragStart={handleScrubStart}
               onTrimDragEnd={handleTrimDragEnd}
               onSegmentDragStart={handleSegmentDragStart}
               onSegmentDragEnd={handleSegmentDragEnd}

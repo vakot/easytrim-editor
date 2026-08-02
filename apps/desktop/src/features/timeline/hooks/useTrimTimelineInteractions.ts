@@ -26,6 +26,7 @@ interface TrimTimelineInteractionOptions {
   frameRate?: FrameRate;
   onChange: (boundary: TrimBoundary, range: TrimRange) => TrimBoundary | null;
   onMoveSegment: (range: TrimRange) => TrimBoundary | null;
+  onTrimDragStart: () => void;
   onTrimDragEnd: () => void;
   onSegmentDragStart: () => void;
   onSegmentDragEnd: () => void;
@@ -46,6 +47,7 @@ export function useTrimTimelineInteractions({
   frameRate,
   onChange,
   onMoveSegment,
+  onTrimDragStart,
   onTrimDragEnd,
   onSegmentDragStart,
   onSegmentDragEnd,
@@ -161,6 +163,7 @@ export function useTrimTimelineInteractions({
         lastPointerMicros: boundaryValue(rangeRef.current, boundary),
         snapLatch: createDirectionalSnapLatch(),
       };
+      onTrimDragStart();
       event.currentTarget.setPointerCapture?.(event.pointerId);
     } else if (
       trimDragRef.current?.pointerId !== event.pointerId ||
