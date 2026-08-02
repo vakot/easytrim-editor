@@ -272,6 +272,7 @@ function PlaybackSpeedTool({
               const nextSpeed = PLAYBACK_SPEED_STEPS[index ?? stepIndex];
               if (nextSpeed !== undefined) onChange(nextSpeed);
             }}
+            onDoubleClick={() => onChange(DEFAULT_PLAYBACK_SPEED)}
             aria-label={t("preview.playbackSpeed.label")}
             markers={PLAYBACK_SPEED_MARKERS}
           />
