@@ -147,6 +147,7 @@ export type WaveformResult =
       jobId: string;
       streamIndex: number;
       width: number;
+      hasSignal?: boolean;
       url: string;
     }
   | {
@@ -498,6 +499,7 @@ function parseWaveformResult(value: unknown): WaveformResult {
     return {
       ...common,
       status: "ready",
+      hasSignal: optionalBoolean(waveform.hasSignal),
       url: requireString(waveform.url, "waveform URL"),
     };
   }
@@ -616,6 +618,13 @@ function optionalString(value: unknown): string | undefined {
     return undefined;
   }
   return typeof value === "string" ? value : undefined;
+}
+
+function optionalBoolean(value: unknown): boolean | undefined {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+  return typeof value === "boolean" ? value : undefined;
 }
 
 function requireInteger(value: unknown, label: string): number {

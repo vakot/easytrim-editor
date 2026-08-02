@@ -50,6 +50,8 @@ pub struct WaveformResult {
     pub width: u32,
     pub status: WaveformStatus,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub has_signal: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub url: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<AppError>,
@@ -164,11 +166,24 @@ pub async fn prepare_waveforms(
     let mut results = Vec::with_capacity(stream_indexes.len());
     let mut pending_stream_indexes = Vec::new();
     for stream_index in stream_indexes {
-        if state.waveform_is_ready(&source_id, stream_index, width)? {
-            results.push(ready_waveform(&source_id, &job_id, stream_index, width));
+        if let Some(has_signal) =
+            state.waveform_activity_if_ready(&source_id, stream_index, width)?
+        {
+            results.push(ready_waveform(
+                &source_id,
+                &job_id,
+                stream_index,
+                width,
+                has_signal,
+            ));
         } else {
             pending_stream_indexes.push(stream_index);
         }
+    }
+
+    if pending_stream_indexes.is_empty() {
+        results.sort_by_key(|result| result.stream_index);
+        return Ok(results);
     }
 
     let generated = tauri::async_runtime::spawn_blocking(move || {
@@ -177,11 +192,24 @@ pub async fn prepare_waveforms(
     .await
     .map_err(|_| AppError::internal("Waveform generation stopped unexpectedly."))??;
 
-    for (stream_index, generated) in generated {
+    for (stream_index, has_signal, generated) in generated {
         match generated {
             Ok(artifact) => {
-                state.install_waveform(&source_id, &job_id, stream_index, width, artifact)?;
-                results.push(ready_waveform(&source_id, &job_id, stream_index, width));
+                state.install_waveform(
+                    &source_id,
+                    &job_id,
+                    stream_index,
+                    width,
+                    has_signal,
+                    artifact,
+                )?;
+                results.push(ready_waveform(
+                    &source_id,
+                    &job_id,
+                    stream_index,
+                    width,
+                    has_signal,
+                ));
             }
             Err(error) => results.push(WaveformResult {
                 source_id: source_id.clone(),
@@ -189,6 +217,7 @@ pub async fn prepare_waveforms(
                 stream_index,
                 width,
                 status: WaveformStatus::Failed,
+                has_signal: None,
                 url: None,
                 error: Some(error),
             }),
@@ -199,13 +228,20 @@ pub async fn prepare_waveforms(
     Ok(results)
 }
 
-fn ready_waveform(source_id: &str, job_id: &str, stream_index: u32, width: u32) -> WaveformResult {
+fn ready_waveform(
+    source_id: &str,
+    job_id: &str,
+    stream_index: u32,
+    width: u32,
+    has_signal: Option<bool>,
+) -> WaveformResult {
     WaveformResult {
         source_id: source_id.to_owned(),
         job_id: job_id.to_owned(),
         stream_index,
         width,
         status: WaveformStatus::Ready,
+        has_signal,
         url: Some(waveform_url(source_id, stream_index, width)),
         error: None,
     }

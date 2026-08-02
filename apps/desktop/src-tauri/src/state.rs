@@ -98,6 +98,7 @@ pub struct WaveformSource {
 #[derive(Debug)]
 struct WaveformRecord {
     width: u32,
+    has_signal: Option<bool>,
     artifact: WaveformArtifact,
 }
 
@@ -311,6 +312,7 @@ impl AppState {
         job_id: &str,
         stream_index: u32,
         width: u32,
+        has_signal: Option<bool>,
         artifact: WaveformArtifact,
     ) -> Result<(), AppError> {
         let previous_waveform = {
@@ -322,26 +324,32 @@ impl AppState {
             if source.cancellation.load(Ordering::Acquire) || !job_is_active {
                 return Err(AppError::source_replaced());
             }
-            source
-                .waveforms
-                .insert(stream_index, WaveformRecord { width, artifact })
+            source.waveforms.insert(
+                stream_index,
+                WaveformRecord {
+                    width,
+                    has_signal,
+                    artifact,
+                },
+            )
         };
         drop(previous_waveform);
         Ok(())
     }
 
-    pub fn waveform_is_ready(
+    pub fn waveform_activity_if_ready(
         &self,
         source_id: &str,
         stream_index: u32,
         width: u32,
-    ) -> Result<bool, AppError> {
+    ) -> Result<Option<Option<bool>>, AppError> {
         let session = self.lock_session()?;
         let source = active_source(&session, source_id)?;
         Ok(source
             .waveforms
             .get(&stream_index)
-            .is_some_and(|waveform| waveform.width == width))
+            .filter(|waveform| waveform.width == width)
+            .map(|waveform| waveform.has_signal))
     }
 
     pub fn resolve_waveform_path(

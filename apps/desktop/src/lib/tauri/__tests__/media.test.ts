@@ -127,6 +127,7 @@ describe("media IPC adapter", () => {
         jobId: "waveform-7",
         streamIndex: 2,
         width: 1280,
+        hasSignal: false,
         url: "http://easytrim-media.localhost/source-3?variant=waveform&stream=2&width=1280",
       },
       {
@@ -143,7 +144,7 @@ describe("media IPC adapter", () => {
     ]);
 
     await expect(prepareWaveforms("source-3", "waveform-7", [2, 4], 1280)).resolves.toEqual([
-      expect.objectContaining({ status: "ready", streamIndex: 2 }),
+      expect.objectContaining({ status: "ready", streamIndex: 2, hasSignal: false }),
       expect.objectContaining({
         status: "failed",
         streamIndex: 4,

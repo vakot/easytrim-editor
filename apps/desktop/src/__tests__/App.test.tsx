@@ -330,6 +330,36 @@ describe("App", () => {
     });
   });
 
+  it("mutes a track with no meaningful signal and restores it at 0 dB", async () => {
+    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.prepareWaveforms.mockImplementationOnce(
+      async (sourceId: string, jobId: string, streamIndexes: number[], width: number) =>
+        streamIndexes.map((streamIndex) => ({
+          status: "ready" as const,
+          sourceId,
+          jobId,
+          streamIndex,
+          width,
+          hasSignal: false,
+          url: `http://easytrim-media.localhost/${sourceId}?variant=waveform&stream=${streamIndex}&width=${width}`,
+        })),
+    );
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Select video" }));
+    const mutedButton = await screen.findByRole("button", { name: "Enable eng" });
+    expect(mutedButton).toHaveAttribute("aria-pressed", "false");
+
+    await user.click(mutedButton);
+    const unmutedButton = screen.getByRole("button", { name: "Mute eng" });
+    await user.hover(unmutedButton);
+    expect(await screen.findByRole("slider", { name: "eng volume" })).toHaveAttribute(
+      "aria-valuenow",
+      "0",
+    );
+  });
+
   it("prepares aligned waveforms and keeps audio output choices in memory", async () => {
     const bounds = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
       width: 1_024,
