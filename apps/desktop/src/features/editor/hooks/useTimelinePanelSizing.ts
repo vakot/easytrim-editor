@@ -30,14 +30,7 @@ export function useTimelinePanelSizing(sourceId: string) {
   const handleSizeConstraintsChange = useCallback(
     (next: TimelinePanelSizeConstraints) => {
       measuredSourceRef.current = sourceId;
-      setMeasuredConstraints((current) =>
-        current &&
-        current.minSize === next.minSize &&
-        current.defaultSize === next.defaultSize &&
-        current.maxSize === next.maxSize
-          ? current
-          : next,
-      );
+      setMeasuredConstraints(next);
     },
     [sourceId],
   );
