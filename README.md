@@ -4,28 +4,29 @@ EasyTrim Editor is a fast, lightweight desktop video trimmer for making precise 
 
 ![EasyTrim Editor](apps/desktop/public/image.png)
 
-## Features
+## What it does
 
-- Import supported video files by selecting them or dragging them into the editor.
+- Import video files by selecting them or dragging them into the editor.
 - Preview the source video with frame-accurate timeline and keyboard controls.
-- Trim the start and end of a segment, or move the complete segment without changing its duration.
-- Use Shift snapping, safe trim, loop playback, selected-segment playback, and adjustable playback speed.
+- Trim the beginning and end of a selected segment by dragging its handles.
+- Move the whole selected segment without changing its duration.
+- Use Shift snapping, safe trim, looping, segment playback, and adjustable playback speed.
 - Inspect audio tracks with waveform previews.
-- Mute tracks and adjust individual levels from -24 dB to +6 dB.
+- Mute tracks or adjust each track from -24 dB to +6 dB.
 - Control overall preview/export volume independently from per-track levels.
 - Keep selected tracks separate or merge them into one output track.
-- Save a fast stream-copy cut when possible.
+- Save a fast cut using stream copying when possible.
 - Export an optimized render with resolution, frame-rate, and NVENC preset controls.
 - Monitor active and completed renders in the export queue.
 - Persist language, theme, and export presets between sessions.
 
-The current editing session is kept in memory only. EasyTrim Editor does not save project files or restore an in-progress edit after restart.
+The editor keeps active work in memory only. It does not save projects or restore the current editing session after restart.
 
 ## Download
 
-Download the current [EasyTrim Editor 1.0.2 release](https://github.com/vakot/easytrim-editor/releases/tag/v1.0.2).
+The current release is [EasyTrim Editor 1.0.2](https://github.com/vakot/easytrim-editor/releases/tag/v1.0.2).
 
-The release currently includes:
+Available release packages:
 
 - Windows x64 NSIS installer (`.exe`);
 - Windows x64 MSI installer (`.msi`);
@@ -43,7 +44,7 @@ Development requires:
 
 - Node.js 22.12 or newer;
 - pnpm 11.18.0;
-- Rust 1.97.1 installed through rustup;
+- Rust 1.97.1 through rustup;
 - FFmpeg and FFprobe on `PATH`;
 - platform-specific Tauri and WebView dependencies.
 
@@ -116,7 +117,7 @@ Release artifacts are built and uploaded manually to avoid consuming GitHub Acti
 Build and upload Windows bundles from Windows:
 
 ```sh
-pnpm release:local -- --tag v1.0.2 --platform windows
+pnpm release:local -- --tag <tag> --platform windows
 ```
 
 ### Linux with Docker
@@ -128,7 +129,7 @@ Docker can build Linux x64 artifacts from Windows, macOS, or Linux:
 pnpm release:linux -- --no-upload
 
 # Build and upload to an existing release
-pnpm release:linux -- --tag v1.0.2
+pnpm release:linux -- --tag <tag>
 ```
 
 Docker Desktop or another Docker daemon with Buildx must be running. The Linux container uses the pinned Node.js, pnpm, and Rust toolchains and does not receive GitHub credentials.
@@ -138,7 +139,8 @@ Docker Desktop or another Docker daemon with Buildx must be running. The Linux c
 Build macOS bundles on macOS:
 
 ```sh
-pnpm release:local -- --tag v1.0.2 --platform macos-apple-silicon
+pnpm release:local -- --tag <tag> --platform macos-apple-silicon
+pnpm release:local -- --tag <tag> --platform macos-intel
 ```
 
 Use `macos-intel` for Intel hardware. Public macOS distribution requires a Developer ID Application certificate and notarization credentials; keep those values in CI secrets and never commit them.
