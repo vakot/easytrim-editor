@@ -23,13 +23,13 @@ export function TimelinePane({ range, timeline, audioTracks }: TimelinePaneProps
           : "size-full min-h-0 min-w-0 overflow-hidden bg-background"
       }
     >
-      <div className="min-w-0" data-testid="timeline-fixed-content">
+      <div className="min-w-0 px-5 py-4" data-testid="timeline-fixed-content">
         {timeline}
       </div>
       {hasAudioTracks ? <hr className="border-t border-border mx-5" /> : null}
       {hasAudioTracks ? (
         <ScrollArea type="auto" className="min-h-0 min-w-0" data-testid="audio-tracks-scroll">
-          <div className="min-w-0 px-5 pb-5">{audioTracks}</div>
+          <div className="min-w-0 px-5 py-4">{audioTracks}</div>
         </ScrollArea>
       ) : null}
     </div>
