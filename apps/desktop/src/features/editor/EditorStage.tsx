@@ -681,12 +681,13 @@ export function EditorStage({
         id="preview-timeline-resize-handle"
         label={t("preview.resize")}
         orientation="horizontal"
+        onDoubleClick={timelinePanelSizing.resetToDefault}
       />
 
       <Panel
         id="timeline-panel"
         panelRef={timelinePanelSizing.panelRef}
-        defaultSize={timelinePanelSizing.constraints.defaultSize}
+        defaultSize={timelinePanelSizing.initialDefaultSize}
         minSize={timelinePanelSizing.constraints.minSize}
         maxSize={timelinePanelSizing.constraints.maxSize}
         groupResizeBehavior="preserve-pixel-size"

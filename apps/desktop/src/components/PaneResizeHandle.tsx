@@ -1,4 +1,5 @@
 import { Separator } from "react-resizable-panels";
+import type { MouseEventHandler } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -6,11 +7,14 @@ interface PaneResizeHandleProps {
   id: string;
   label: string;
   orientation: "horizontal" | "vertical";
+  onDoubleClick?: MouseEventHandler<HTMLDivElement>;
 }
 
-export function PaneResizeHandle({ id, label, orientation }: PaneResizeHandleProps) {
+export function PaneResizeHandle({ id, label, orientation, onDoubleClick }: PaneResizeHandleProps) {
   return (
     <Separator
+      disableDoubleClick={onDoubleClick !== undefined}
+      onDoubleClick={onDoubleClick}
       id={id}
       aria-label={label}
       className={cn(

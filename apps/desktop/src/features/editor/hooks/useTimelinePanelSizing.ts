@@ -35,6 +35,14 @@ export function useTimelinePanelSizing(sourceId: string) {
     [sourceId],
   );
 
+  const resetToDefault = useCallback(() => {
+    const panel = panelRef.current;
+    if (!panel || !measuredConstraints || measuredSourceRef.current !== sourceId) {
+      return;
+    }
+    panel.resize(measuredConstraints.defaultSize);
+  }, [measuredConstraints, panelRef, sourceId]);
+
   useLayoutEffect(() => {
     const panel = panelRef.current;
     if (!panel || !measuredConstraints || measuredSourceRef.current !== sourceId) {
@@ -56,7 +64,9 @@ export function useTimelinePanelSizing(sourceId: string) {
 
   return {
     constraints: measuredConstraints ?? FALLBACK_CONSTRAINTS,
+    initialDefaultSize: FALLBACK_CONSTRAINTS.defaultSize,
     panelRef,
     onSizeConstraintsChange: handleSizeConstraintsChange,
+    resetToDefault,
   };
 }
