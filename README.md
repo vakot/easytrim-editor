@@ -45,7 +45,7 @@ Public macOS distribution requires a Developer ID Application certificate and no
 Build and upload artifacts to an existing GitHub release without using GitHub Actions:
 
 ```sh
-pnpm release:local -- --tag v1.0.1 --platform current
+pnpm release:local -- --tag v1.0.2 --platform current
 ```
 
 Supported platforms are `windows`, `linux`, `macos-intel`, and `macos-apple-silicon`. The command builds the current machine's native bundles and uploads them with `gh release upload`; authenticate with `gh auth login` first. Windows can build Windows artifacts, and Linux can be built inside WSL or a Linux Docker environment. macOS artifacts require a macOS machine because Apple targets cannot be built on Windows.
@@ -57,7 +57,7 @@ Build Linux x64 AppImage and DEB packages from Windows, macOS, or Linux with Doc
 pnpm release:linux -- --no-upload
 
 # Build and upload to an existing GitHub release
-pnpm release:linux -- --tag v1.0.1
+pnpm release:linux -- --tag v1.0.2
 ```
 
 Docker Desktop or a compatible Docker daemon with Buildx must be running. The container targets Linux x64 consistently, including when invoked from an Apple silicon Mac, and uses the pinned Node, pnpm, and Rust versions plus Tauri's Linux system dependencies. GitHub authentication stays on the host; credentials are never copied into the image.
