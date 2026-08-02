@@ -119,7 +119,6 @@ pub async fn render_fast(
     let arguments = build_fast_arguments(&media, &request, &source.path, &output_path)?;
     run_export(
         state,
-        request.source_id,
         output_path,
         display_name,
         arguments,
@@ -146,7 +145,6 @@ pub async fn render_optimized(
     let arguments = build_optimized_arguments(&media, &request, &source.path, &output_path)?;
     run_export(
         state,
-        request.source_id,
         output_path,
         display_name,
         arguments,
@@ -210,7 +208,6 @@ fn duration_micros(trim: &crate::media::export::TrimSelection) -> i64 {
 
 async fn run_export(
     state: State<'_, AppState>,
-    source_id: String,
     output_path: PathBuf,
     display_name: String,
     arguments: Vec<std::ffi::OsString>,
@@ -318,10 +315,6 @@ async fn run_export(
     if output_size == 0 {
         remove_partial_output(&output_path);
         return Err(AppError::render_failed("The rendered output is empty."));
-    }
-    if state.resolve_source(&source_id).is_err() {
-        remove_partial_output(&output_path);
-        return Err(AppError::source_replaced());
     }
     Ok(ExportResult {
         operation_id,
