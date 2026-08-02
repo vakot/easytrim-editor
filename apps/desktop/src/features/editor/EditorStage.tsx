@@ -22,6 +22,7 @@ import { usePlaybackModes } from "./hooks/usePlaybackModes";
 import { usePlaybackSpeed } from "./hooks/usePlaybackSpeed";
 import { useTimelinePanelSizing } from "./hooks/useTimelinePanelSizing";
 import type { EditorShortcutActions, EditorStageProps } from "./types";
+import { synchronizeAudioPosition } from "./utils/audio-sync";
 import { editorShortcutFromEvent, isShortcutBlockedTarget } from "./utils/editor-shortcuts";
 import {
   cancelFrame,
@@ -90,6 +91,7 @@ export function EditorStage({
   const [safeTrimFollowingEnabled, setSafeTrimFollowingEnabled] = useState(true);
   const [transportError, setTransportError] = useState<string | null>(null);
   const displayedPlayheadMicros = clampPlaybackMicros(playheadMicros, trim.sourceDurationMicros);
+  const hasIndependentAudio = Object.keys(audioPreviewUrls).length > 0;
 
   useEffect(() => {
     const video = videoRef.current;
@@ -112,11 +114,10 @@ export function EditorStage({
   useEffect(() => {
     const video = videoRef.current;
     if (video) {
-      const hasIndependentAudio = Object.keys(audioPreviewUrls).length > 0;
       video.muted = hasIndependentAudio;
       video.volume = hasIndependentAudio ? 0 : 1;
     }
-  }, [audioPreviewUrls]);
+  }, [hasIndependentAudio, preview]);
 
   useEffect(() => {
     if (typeof AudioContext === "undefined") {
@@ -446,7 +447,7 @@ export function EditorStage({
     setTransportError(null);
     void audioContextRef.current?.resume();
     seekVideo(video, startMicros);
-    syncAudioPlayback(startSeconds);
+    syncAudioPlayback(startSeconds, true);
 
     const seekingMedia = [video, ...audioElementsRef.current.values()].filter(
       (media) => media.seeking,
@@ -491,15 +492,9 @@ export function EditorStage({
     }
   }
 
-  function syncAudioPlayback(seconds: number) {
+  function syncAudioPlayback(seconds: number, force = false) {
     for (const audio of audioElementsRef.current.values()) {
-      if (Math.abs(audio.currentTime - seconds) > 0.08) {
-        try {
-          audio.currentTime = seconds;
-        } catch {
-          // Audio metadata may not be ready yet.
-        }
-      }
+      synchronizeAudioPosition(audio, seconds, force);
     }
   }
 
@@ -643,6 +638,7 @@ export function EditorStage({
             sourceId={sourceId}
             preview={preview}
             playbackRate={playbackSpeed.speed}
+            muted={hasIndependentAudio}
             videoRef={videoRef}
             onPlaybackError={onPreviewPlaybackError}
             onLoadedMetadata={() => commitSeek(displayedPlayheadMicros)}
