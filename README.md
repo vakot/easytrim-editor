@@ -30,11 +30,12 @@ The release currently includes:
 - Windows x64 NSIS installer (`.exe`);
 - Windows x64 MSI installer (`.msi`);
 - Linux x64 AppImage;
-- Linux x64 Debian package (`.deb`).
+- Linux x64 Debian package (`.deb`);
+- macOS ARM64 disk image (`.dmg`).
 
 FFmpeg is intentionally not bundled. Install FFmpeg and make both `ffmpeg` and `ffprobe` available to the application.
 
-macOS bundles can be produced on macOS. Public macOS distribution additionally requires Apple signing and notarization credentials.
+The macOS ARM64 build targets Apple Silicon Macs. Public macOS distribution additionally requires Apple signing and notarization credentials.
 
 ## Requirements
 
