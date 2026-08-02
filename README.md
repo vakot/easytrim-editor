@@ -50,7 +50,21 @@ pnpm release:local -- --tag v1.0.1 --platform current
 
 Supported platforms are `windows`, `linux`, `macos-intel`, and `macos-apple-silicon`. The command builds the current machine's native bundles and uploads them with `gh release upload`; authenticate with `gh auth login` first. Windows can build Windows artifacts, and Linux can be built inside WSL or a Linux Docker environment. macOS artifacts require a macOS machine because Apple targets cannot be built on Windows.
 
+Build Linux x64 AppImage and DEB packages from Windows, macOS, or Linux with Docker:
+
+```sh
+# Build into artifacts/linux without uploading
+pnpm release:linux -- --no-upload
+
+# Build and upload to an existing GitHub release
+pnpm release:linux -- --tag v1.0.1
+```
+
+Docker Desktop or a compatible Docker daemon with Buildx must be running. The container targets Linux x64 consistently, including when invoked from an Apple silicon Mac, and uses the pinned Node, pnpm, and Rust versions plus Tauri's Linux system dependencies. GitHub authentication stays on the host; credentials are never copied into the image.
+
 Release assets use the same predictable name locally and in GitHub Actions: `EasyTrim_<version>_<os>_<arch>_<bundle><extension>`. For example, Windows NSIS and Apple Silicon DMG builds are uploaded as `EasyTrim_1.0.0_windows_x64_nsis.exe` and `EasyTrim_1.0.0_macos_arm64_dmg.dmg`.
+
+Only final distributable extensions are selected from Tauri bundle directories. Build helpers such as macOS `.icns` and `.sh` files are never staged or uploaded.
 
 GitHub does not build release artifacts automatically on pushes or tags. Use `release:local` whenever possible, or explicitly dispatch the development or stable release workflow and select the required platform. Both manual workflows default to Linux to avoid accidentally starting Windows and macOS runners.
 
