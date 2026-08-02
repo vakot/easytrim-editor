@@ -1,6 +1,6 @@
 # EasyTrim Editor
 
-EasyTrim Editor is a *fast*, *lightweight* desktop video trimmer for making precise clips without saving large project files.
+EasyTrim Editor is a _fast_, _lightweight_ desktop video trimmer for making precise clips without saving large project files.
 
 ![EasyTrim Editor](apps/desktop/public/image.png)
 
@@ -144,7 +144,7 @@ Docker Desktop or another Docker daemon with Buildx must be running. The Linux c
 
 macOS bundles must be built on macOS. Public macOS distribution requires a Developer ID Application certificate and notarization credentials; keep those values in CI secrets and never commit them.
 
-*Release assets use predictable names:*
+_Release assets use predictable names:_
 
 ```text
 EasyTrim_<version>_<os>_<arch>_<bundle><extension>
