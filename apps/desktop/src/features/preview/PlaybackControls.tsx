@@ -26,7 +26,7 @@ import {
 } from "../editor/hooks/usePlaybackSpeed";
 import { useTranslation } from "react-i18next";
 
-const PLAYBACK_SPEED_MARKERS = [1, 2, 3].map((speed) => ({
+const PLAYBACK_SPEED_MARKERS = [0.5, 1, 1.5, 2, 3].map((speed) => ({
   value: PLAYBACK_SPEED_STEPS.indexOf(speed as PlaybackSpeed),
   label: `${speed}×`,
 }));
