@@ -32,6 +32,7 @@ export function TimelinePane({
       <div ref={timelineRef} className="min-w-0" data-testid="timeline-fixed-content">
         {timeline}
       </div>
+      {hasAudioTracks ? <hr className="border-t border-border mx-5" /> : null}
       {hasAudioTracks ? (
         <ScrollArea type="auto" className="min-h-0 min-w-0" data-testid="audio-tracks-scroll">
           <div ref={audioContentRef} className="min-w-0 px-5 pb-5">

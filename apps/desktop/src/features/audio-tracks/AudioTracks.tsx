@@ -42,7 +42,7 @@ export function AudioTracks({
 
   return (
     <section
-      className="grid min-w-0 gap-2 border-t border-border pt-4"
+      className="grid min-w-0 gap-2 pt-4"
       aria-labelledby="timeline-audio-title"
     >
       <h3
