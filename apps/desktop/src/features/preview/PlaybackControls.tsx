@@ -255,8 +255,8 @@ function PlaybackSpeedTool({
           <Gauge />
         </Button>
       </PopoverTrigger>
-      <PopoverContent side="bottom" align="center" className="w-56">
-        <div className="flex items-center gap-3">
+      <PopoverContent side="bottom" align="center" className="w-56 p-2.5">
+        <div className="flex items-center gap-2">
           <Slider
             className="min-w-0 flex-1 [&_[data-slot=slider-track]]:h-1.5"
             min={0}
