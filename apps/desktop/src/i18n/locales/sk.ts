@@ -41,7 +41,8 @@ export const sk = {
     },
   },
   import: {
-    openVideo: "Otvoriť video",
+    openVideo: "Otvoriť",
+    openTooltip: "Vyberte video, ktoré chcete otvoriť v editore.",
     opening: "Otvára sa…",
     welcome: {
       eyebrow: "Začať nový klip",
@@ -191,8 +192,10 @@ export const sk = {
   export: {
     save: "Uložiť",
     saveShortcut: "Uložiť (Ctrl+S)",
+    saveTooltip: "Uložiť vybranú časť bez opätovného kódovania.",
     export: "Exportovať",
     exportShortcut: "Exportovať (Ctrl+E)",
+    exportTooltip: "Vykresliť vybranú časť s nastaveniami exportu.",
     queue: "Front exportov",
     empty: "Zatiaľ žiadne exporty.",
     canceled: "Zrušené",

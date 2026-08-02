@@ -1,6 +1,7 @@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { OptimizedExportDialog } from "./components/OptimizedExportDialog";
 import { useExportController } from "./hooks/useExportController";
@@ -14,14 +15,18 @@ export function ExportPanel(props: ExportPanelProps) {
   return (
     <div className="flex items-center gap-3">
       <Separator orientation="vertical" className="h-7" />
-      <Button
-        type="button"
-        onClick={() => void exportController.startFastCut()}
-        aria-keyshortcuts="Control+S"
-        title={t("export.saveShortcut")}
-      >
-        {t("export.save")}
-      </Button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            type="button"
+            onClick={() => void exportController.startFastCut()}
+            aria-keyshortcuts="Control+S"
+          >
+            {t("export.save")}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{t("export.saveTooltip")}</TooltipContent>
+      </Tooltip>
       <OptimizedExportDialog
         open={exportController.isOptimizedOpen}
         source={props.source}

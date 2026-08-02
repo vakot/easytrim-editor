@@ -8,6 +8,7 @@ import type { Dispatch, SetStateAction } from "react";
 import { useTranslation } from "react-i18next";
 import { LanguageSelector } from "./LanguageSelector";
 import { ThemeSelector } from "./ThemeSelector";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface AppToolbarProps {
   session: SessionState;
@@ -51,9 +52,14 @@ export function AppToolbar({
         <ThemeSelector />
         <LanguageSelector className="w-36" />
         <Separator orientation="vertical" className="h-7" />
-        <Button variant="outline" onClick={onChooseSource} disabled={isChoosingSource}>
-          {isChoosingSource ? t("import.opening") : t("import.openVideo")}
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" onClick={onChooseSource} disabled={isChoosingSource}>
+              {isChoosingSource ? t("import.opening") : t("import.openVideo")}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{t("import.openTooltip")}</TooltipContent>
+        </Tooltip>
         {session.status === "ready" && session.source?.media && session.source.trim ? (
           <ExportPanel
             key={`export-${session.source.selection.sourceId}`}
