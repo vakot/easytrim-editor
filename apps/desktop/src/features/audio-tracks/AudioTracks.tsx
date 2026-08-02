@@ -1,6 +1,7 @@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { timelinePercent } from "@/domain/trim";
+import type { CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 
 import { AudioLevelControl } from "./components/AudioLevelControl";
@@ -41,10 +42,7 @@ export function AudioTracks({
   }
 
   return (
-    <section
-      className="grid min-w-0 gap-2 pt-4"
-      aria-labelledby="timeline-audio-title"
-    >
+    <section className="grid min-w-0 gap-2 pt-4" aria-labelledby="timeline-audio-title">
       <h3
         id="timeline-audio-title"
         className="font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
@@ -78,7 +76,15 @@ export function AudioTracks({
         </div>
       </div>
 
-      <div className="relative grid min-w-0 gap-2">
+      <div
+        className="relative grid min-w-0 gap-2"
+        style={
+          {
+            "--audio-trim-start": `${startPercent}%`,
+            "--audio-trim-end": `${100 - endPercent}%`,
+          } as CSSProperties
+        }
+      >
         {streams.map((stream, index) => {
           const track = tracks.find((candidate) => candidate.streamIndex === stream.streamIndex);
           if (!track) return null;
@@ -90,14 +96,10 @@ export function AudioTracks({
               stream={stream}
               track={track}
               title={title}
-              startPercent={startPercent}
-              endPercent={endPercent}
-              onToggle={() => onToggleTrack(stream.streamIndex)}
-              onVolumeChange={(volumePercent) =>
-                onTrackVolumeChange(stream.streamIndex, volumePercent)
-              }
-              onPrepareWaveform={(width) => onPrepareWaveforms([stream.streamIndex], width)}
-              onWaveformImageError={() => onWaveformImageError(stream.streamIndex)}
+              onToggle={onToggleTrack}
+              onVolumeChange={onTrackVolumeChange}
+              onPrepareWaveform={onPrepareWaveforms}
+              onWaveformImageError={onWaveformImageError}
             />
           );
         })}
