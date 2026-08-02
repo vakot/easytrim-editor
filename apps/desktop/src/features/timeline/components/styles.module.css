@@ -38,7 +38,10 @@
   cursor: grab;
   touch-action: none;
   transform: translate(-50%, -50%);
-  transition: 120ms ease;
+  transition:
+    background-color 120ms ease,
+    box-shadow 120ms ease,
+    transform 120ms ease;
 }
 
 .segment:hover,
@@ -139,7 +142,9 @@
   width: 1.15rem;
   background: var(--primary);
   content: "";
-  transition: 120ms ease;
+  transition:
+    background-color 120ms ease,
+    box-shadow 120ms ease;
   transform: translateX(-50%);
 }
 
