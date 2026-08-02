@@ -14,6 +14,8 @@ const AUDIO_SECTION_GAP = 8;
 const AUDIO_MASTER_CONTROLS_HEIGHT = 36;
 const AUDIO_TRACK_HEIGHT = 48;
 const AUDIO_SECTION_BOTTOM_PADDING = 20;
+const AUDIO_DEFAULT_TRAILING_PADDING = 16;
+const AUDIO_SCROLL_AREA_TRAILING_PADDING = 16;
 
 export const AUDIO_SINGLE_TRACK_HEIGHT =
   AUDIO_SECTION_TOP_PADDING +
@@ -33,8 +35,10 @@ export function timelinePanelSizeConstraints(
     ? AUDIO_SINGLE_TRACK_HEIGHT + (trackCount - 1) * AUDIO_TRACK_STEP
     : 0;
   const minSize = TIMELINE_FIXED_HEIGHT + (trackCount ? TIMELINE_DIVIDER_HEIGHT : 0);
-  const defaultSize = minSize + (trackCount ? AUDIO_SINGLE_TRACK_HEIGHT : 0);
-  const maxSize = minSize + audioContentHeight;
+  const defaultSize =
+    minSize + (trackCount ? AUDIO_SINGLE_TRACK_HEIGHT + AUDIO_DEFAULT_TRAILING_PADDING : 0);
+  const maxSize =
+    minSize + audioContentHeight + (trackCount ? AUDIO_SCROLL_AREA_TRAILING_PADDING : 0);
 
   return {
     minSize,
