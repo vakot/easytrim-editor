@@ -119,6 +119,9 @@ export const en = {
       enabled: "Segment playback: on — constrain playback to the selected segment",
       disabled: "Segment playback: off — play the complete timeline",
     },
+    playbackSpeed: {
+      label: "Playback speed",
+    },
     opening: "Opening preview…",
     preparing: "Preparing compatible preview…",
     preparingDescription: "This can take a moment for high-resolution sources.",
