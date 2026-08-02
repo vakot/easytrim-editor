@@ -1,10 +1,10 @@
 use crate::{
     error::AppError,
     media::{
-        audio::generate_audio_preview,
+        audio::generate_audio_previews,
         probe::{MediaInfo, inspect_media as probe_media},
         proxy::generate_preview,
-        waveform::{generate_waveform, validate_waveform_request},
+        waveform::{generate_waveforms, validate_waveform_request},
     },
     state::{AppState, PreviewStreamSelection},
 };
@@ -112,22 +112,11 @@ pub async fn prepare_audio_previews(
         ));
     }
 
-    let jobs = stream_indexes
-        .into_iter()
-        .map(|stream_index| {
-            let source = source.clone();
-            tauri::async_runtime::spawn_blocking(move || {
-                generate_audio_preview(&source, stream_index)
-                    .map(|artifact| (stream_index, artifact))
-            })
-        })
-        .collect::<Vec<_>>();
-    let mut generated = Vec::with_capacity(jobs.len());
-    for job in jobs {
-        generated.push(job.await.map_err(|_| {
-            AppError::internal("Audio preview preparation stopped unexpectedly.")
-        })??);
-    }
+    let generated = tauri::async_runtime::spawn_blocking(move || {
+        generate_audio_previews(&source, &stream_indexes)
+    })
+    .await
+    .map_err(|_| AppError::internal("Audio preview preparation stopped unexpectedly."))??;
 
     let mut results = Vec::with_capacity(generated.len());
     for (stream_index, artifact) in generated {
@@ -182,28 +171,11 @@ pub async fn prepare_waveforms(
         }
     }
 
-    let jobs = pending_stream_indexes
-        .into_iter()
-        .map(|stream_index| {
-            let waveform_source = waveform_source.clone();
-            tauri::async_runtime::spawn_blocking(move || {
-                let result = generate_waveform(&waveform_source, stream_index, width);
-                match result {
-                    Err(error) if error.code == "cancelled" || error.code == "source_replaced" => {
-                        Err(error)
-                    }
-                    result => Ok((stream_index, result)),
-                }
-            })
-        })
-        .collect::<Vec<_>>();
-    let mut generated = Vec::with_capacity(jobs.len());
-    for job in jobs {
-        generated.push(
-            job.await
-                .map_err(|_| AppError::internal("Waveform generation stopped unexpectedly."))??,
-        );
-    }
+    let generated = tauri::async_runtime::spawn_blocking(move || {
+        generate_waveforms(&waveform_source, &pending_stream_indexes, width)
+    })
+    .await
+    .map_err(|_| AppError::internal("Waveform generation stopped unexpectedly."))??;
 
     for (stream_index, generated) in generated {
         match generated {
