@@ -26,6 +26,11 @@ import {
 } from "../editor/hooks/usePlaybackSpeed";
 import { useTranslation } from "react-i18next";
 
+const PLAYBACK_SPEED_MARKERS = [1, 2, 3].map((speed) => ({
+  value: PLAYBACK_SPEED_STEPS.indexOf(speed as PlaybackSpeed),
+  label: `${speed}×`,
+}));
+
 interface PlaybackControlsProps {
   isPlaying: boolean;
   error: string | null;
@@ -268,6 +273,7 @@ function PlaybackSpeedTool({
               if (nextSpeed !== undefined) onChange(nextSpeed);
             }}
             aria-label={t("preview.playbackSpeed.label")}
+            markers={PLAYBACK_SPEED_MARKERS}
           />
           <output className="w-12 shrink-0 text-right font-mono text-xs text-muted-foreground">
             {speed}×
