@@ -75,7 +75,11 @@ pub fn build_fast_arguments(
     ]);
 
     if request.audio_tracks.is_empty() {
-        arguments.push(OsString::from("-an"));
+        arguments.extend([
+            OsString::from("-an"),
+            OsString::from("-c:v"),
+            OsString::from("copy"),
+        ]);
     } else if request.merge_audio && request.audio_tracks.len() > 1 {
         arguments.extend([
             OsString::from("-filter_complex"),
@@ -598,6 +602,31 @@ mod tests {
         assert!(values.windows(2).any(|pair| pair == ["-map", "0:2"]));
         assert!(values.contains(&"-c".to_owned()));
         assert!(!values.contains(&"0:1".to_owned()));
+    }
+
+    #[test]
+    fn fast_video_only_copy_does_not_reencode_video() {
+        let args = build_fast_arguments(
+            &media(),
+            &FastExportRequest {
+                source_id: "source-1".to_owned(),
+                trim: TrimSelection {
+                    start_micros: 1_000_000,
+                    end_micros: 4_000_000,
+                },
+                audio_tracks: Vec::new(),
+                merge_audio: false,
+            },
+            Path::new("source.mkv"),
+            Path::new("out.mkv"),
+        )
+        .expect("request is valid");
+        let values = args
+            .iter()
+            .map(|value| value.to_string_lossy().to_string())
+            .collect::<Vec<_>>();
+        assert!(values.contains(&"-an".to_owned()));
+        assert!(values.windows(2).any(|pair| pair == ["-c:v", "copy"]));
     }
 
     #[test]

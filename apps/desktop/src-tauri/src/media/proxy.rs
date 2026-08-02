@@ -9,7 +9,7 @@ use std::{
 
 use crate::{
     error::AppError,
-    process::{ProcessOutput, run_bounded_cancellable},
+    process::{ProcessOutput, media_debug, run_bounded_cancellable},
     state::{ActiveSource, PreviewArtifact, PreviewStreamSelection},
 };
 
@@ -24,13 +24,53 @@ pub fn generate_preview(source: &ActiveSource) -> Result<PreviewArtifact, AppErr
     })?;
     let artifact = create_artifact()?;
 
-    let hardware_result = run_encoder(source, streams, artifact.path(), Encoder::Nvidia);
+    if cfg!(target_os = "macos") && can_remux_preview(source) {
+        media_debug(format_args!(
+            "preview: trying fast remux source_id={}",
+            source.source_id
+        ));
+        match run_remux(source, streams, artifact.path()) {
+            Ok(output) if output.status.success() => {
+                media_debug("preview: fast remux succeeded");
+                return Ok(artifact);
+            }
+            Err(error) if error.kind() == io::ErrorKind::Interrupted => {
+                return Err(AppError::source_replaced());
+            }
+            _ => {
+                media_debug("preview: fast remux failed; falling back to encoded preview");
+                let _ = fs::remove_file(artifact.path());
+            }
+        }
+    }
+
+    let hardware_encoder = if cfg!(target_os = "macos") {
+        Encoder::VideoToolbox
+    } else {
+        Encoder::Nvidia
+    };
+    media_debug(format_args!(
+        "preview: trying preferred encoder={} source_id={}",
+        hardware_encoder.name(),
+        source.source_id
+    ));
+    let hardware_result = run_encoder(source, streams, artifact.path(), hardware_encoder);
     match hardware_result {
-        Ok(output) if output.status.success() => return Ok(artifact),
+        Ok(output) if output.status.success() => {
+            media_debug(format_args!(
+                "preview: preferred encoder={} succeeded",
+                hardware_encoder.name()
+            ));
+            return Ok(artifact);
+        }
         Err(error) if error.kind() == io::ErrorKind::Interrupted => {
             return Err(AppError::source_replaced());
         }
         _ => {
+            media_debug(format_args!(
+                "preview: preferred encoder={} failed; falling back to software",
+                hardware_encoder.name()
+            ));
             let _ = fs::remove_file(artifact.path());
         }
     }
@@ -47,10 +87,28 @@ pub fn generate_preview(source: &ActiveSource) -> Result<PreviewArtifact, AppErr
     ))
 }
 
+fn can_remux_preview(source: &ActiveSource) -> bool {
+    source
+        .media
+        .as_ref()
+        .is_some_and(|media| matches!(media.video.codec_name.as_str(), "h264" | "hevc" | "h265"))
+}
+
 #[derive(Clone, Copy)]
 enum Encoder {
     Nvidia,
+    VideoToolbox,
     Software,
+}
+
+impl Encoder {
+    fn name(self) -> &'static str {
+        match self {
+            Self::Nvidia => "h264_nvenc",
+            Self::VideoToolbox => "h264_videotoolbox",
+            Self::Software => "libx264",
+        }
+    }
 }
 
 fn run_encoder(
@@ -95,6 +153,13 @@ fn run_encoder(
             OsString::from("-b:v"),
             OsString::from("0"),
         ]),
+        Encoder::VideoToolbox => arguments.extend([
+            OsString::from("h264_videotoolbox"),
+            OsString::from("-allow_sw"),
+            OsString::from("1"),
+            OsString::from("-b:v"),
+            OsString::from("4M"),
+        ]),
         Encoder::Software => arguments.extend([
             OsString::from("libx264"),
             OsString::from("-preset"),
@@ -112,8 +177,55 @@ fn run_encoder(
         ]);
     }
     arguments.extend([
-        OsString::from("-movflags"),
-        OsString::from("+faststart"),
+        OsString::from("-f"),
+        OsString::from("mp4"),
+        output_path.as_os_str().to_owned(),
+    ]);
+
+    run_bounded_cancellable(
+        OsStr::new("ffmpeg"),
+        &arguments,
+        PROXY_TIMEOUT,
+        PROXY_STDOUT_LIMIT,
+        PROXY_STDERR_LIMIT,
+        || source.cancellation.load(Ordering::Acquire),
+    )
+}
+
+fn run_remux(
+    source: &ActiveSource,
+    streams: PreviewStreamSelection,
+    output_path: &Path,
+) -> io::Result<ProcessOutput> {
+    let mut arguments = vec![
+        OsString::from("-hide_banner"),
+        OsString::from("-nostdin"),
+        OsString::from("-n"),
+        OsString::from("-i"),
+        source.path.as_os_str().to_owned(),
+        OsString::from("-map"),
+        OsString::from(format!("0:{}", streams.video_stream_index)),
+    ];
+    if let Some(audio_stream_index) = streams.audio_stream_index {
+        arguments.extend([
+            OsString::from("-map"),
+            OsString::from(format!("0:{audio_stream_index}")),
+        ]);
+    }
+    arguments.extend([
+        OsString::from("-sn"),
+        OsString::from("-dn"),
+        OsString::from("-c"),
+        OsString::from("copy"),
+    ]);
+    if source
+        .media
+        .as_ref()
+        .is_some_and(|media| matches!(media.video.codec_name.as_str(), "hevc" | "h265"))
+    {
+        arguments.extend([OsString::from("-tag:v"), OsString::from("hvc1")]);
+    }
+    arguments.extend([
         OsString::from("-f"),
         OsString::from("mp4"),
         output_path.as_os_str().to_owned(),

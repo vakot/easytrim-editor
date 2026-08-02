@@ -591,6 +591,15 @@ export function EditorStage({
               startPlayheadAnimation();
             }}
             onPause={() => {
+              // Layout changes can briefly pause the video element while the
+              // transport is still logically playing. Do not let that browser
+              // lifecycle event pause the independent audio graph or change
+              // the transport state. Explicit transport actions update the
+              // ref before calling pause(), so they still reach this branch.
+              if (isPlayingRef.current) {
+                void videoRef.current?.play().catch(() => undefined);
+                return;
+              }
               isPlayingRef.current = false;
               setIsPlaying(false);
               pauseAudioPlayback();

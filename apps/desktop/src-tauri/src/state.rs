@@ -148,15 +148,9 @@ impl AppState {
         if let Some(previous_source) = previous_source {
             previous_source.cancellation.store(true, Ordering::Release);
         }
-        if let Ok(operations) = self.operations.lock() {
-            for cancellation in operations.values() {
-                cancellation.store(true, Ordering::Release);
-            }
-        }
-        self.outputs
-            .lock()
-            .map_err(|_| AppError::internal("The in-memory output registry is unavailable."))?
-            .clear();
+        // Export operations own their resolved input path and output path after they
+        // start. They must outlive the active editing source, so replacing the source
+        // only cancels work tied to that source (preview/waveform jobs above).
         Ok(generation)
     }
 
@@ -574,5 +568,17 @@ mod tests {
             .expect("late cancellation is harmless");
 
         assert!(cancellation.load(Ordering::Acquire));
+    }
+
+    #[test]
+    fn source_replacement_does_not_cancel_export_operations() {
+        let state = AppState::default();
+        let (_generation, cancellation) = state.begin_operation().expect("export starts");
+
+        state
+            .begin_source_replacement()
+            .expect("replacement starts");
+
+        assert!(!cancellation.load(Ordering::Acquire));
     }
 }

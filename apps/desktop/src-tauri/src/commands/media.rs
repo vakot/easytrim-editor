@@ -112,15 +112,22 @@ pub async fn prepare_audio_previews(
         ));
     }
 
-    let generated = tauri::async_runtime::spawn_blocking(move || {
-        let mut generated = Vec::with_capacity(stream_indexes.len());
-        for stream_index in stream_indexes {
-            generated.push((stream_index, generate_audio_preview(&source, stream_index)?));
-        }
-        Ok::<_, AppError>(generated)
-    })
-    .await
-    .map_err(|_| AppError::internal("Audio preview preparation stopped unexpectedly."))??;
+    let jobs = stream_indexes
+        .into_iter()
+        .map(|stream_index| {
+            let source = source.clone();
+            tauri::async_runtime::spawn_blocking(move || {
+                generate_audio_preview(&source, stream_index)
+                    .map(|artifact| (stream_index, artifact))
+            })
+        })
+        .collect::<Vec<_>>();
+    let mut generated = Vec::with_capacity(jobs.len());
+    for job in jobs {
+        generated.push(job.await.map_err(|_| {
+            AppError::internal("Audio preview preparation stopped unexpectedly.")
+        })??);
+    }
 
     let mut results = Vec::with_capacity(generated.len());
     for (stream_index, artifact) in generated {
@@ -175,20 +182,28 @@ pub async fn prepare_waveforms(
         }
     }
 
-    let generated = tauri::async_runtime::spawn_blocking(move || {
-        let mut generated = Vec::with_capacity(pending_stream_indexes.len());
-        for stream_index in pending_stream_indexes {
-            match generate_waveform(&waveform_source, stream_index, width) {
-                Err(error) if error.code == "cancelled" || error.code == "source_replaced" => {
-                    return Err(error);
+    let jobs = pending_stream_indexes
+        .into_iter()
+        .map(|stream_index| {
+            let waveform_source = waveform_source.clone();
+            tauri::async_runtime::spawn_blocking(move || {
+                let result = generate_waveform(&waveform_source, stream_index, width);
+                match result {
+                    Err(error) if error.code == "cancelled" || error.code == "source_replaced" => {
+                        Err(error)
+                    }
+                    result => Ok((stream_index, result)),
                 }
-                result => generated.push((stream_index, result)),
-            }
-        }
-        Ok::<_, AppError>(generated)
-    })
-    .await
-    .map_err(|_| AppError::internal("Waveform generation stopped unexpectedly."))??;
+            })
+        })
+        .collect::<Vec<_>>();
+    let mut generated = Vec::with_capacity(jobs.len());
+    for job in jobs {
+        generated.push(
+            job.await
+                .map_err(|_| AppError::internal("Waveform generation stopped unexpectedly."))??,
+        );
+    }
 
     for (stream_index, generated) in generated {
         match generated {
