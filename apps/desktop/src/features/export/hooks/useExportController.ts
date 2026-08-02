@@ -12,10 +12,10 @@ import {
   type OptimizedExportRequest,
   type OutputSelection,
 } from "@/lib/tauri/media";
-import { isApplicationDialogOpen } from "@/lib/hotkeys";
+import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
 
 import type { ExportPanelProps, ExportSettings, ExportToast } from "../types";
-import { isEditableTarget, outputDefaults } from "../utils/export-options";
+import { outputDefaults } from "../utils/export-options";
 import { useTranslation } from "react-i18next";
 
 export function useExportController({
@@ -235,22 +235,14 @@ export function useExportController({
     setIsOptimizedOpen(true);
   }
 
-  useEffect(() => {
-    function handleExportShortcut(event: KeyboardEvent) {
-      if (isApplicationDialogOpen()) return;
-      if (!event.ctrlKey || event.altKey || event.metaKey || isEditableTarget(event.target)) return;
-      if (event.key.toLowerCase() === "s") {
-        event.preventDefault();
-        void startFastCut();
-      } else if (event.key.toLowerCase() === "e") {
-        event.preventDefault();
-        openOptimizedDialog();
-      }
-    }
-
-    window.addEventListener("keydown", handleExportShortcut, true);
-    return () => window.removeEventListener("keydown", handleExportShortcut, true);
-  });
+  useKeyboardShortcut(
+    (event) => event.key.toLowerCase() === "s" && event.ctrlKey,
+    () => startFastCut(),
+  );
+  useKeyboardShortcut(
+    (event) => event.key.toLowerCase() === "e" && event.ctrlKey,
+    openOptimizedDialog,
+  );
 
   return {
     isOptimizedOpen,

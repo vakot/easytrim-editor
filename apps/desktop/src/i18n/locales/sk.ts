@@ -42,7 +42,7 @@ export const sk = {
   },
   import: {
     openVideo: "Otvoriť",
-    openTooltip: "Vyberte video, ktoré chcete otvoriť v editore.",
+    openTooltip: "Vyberte video, ktoré chcete otvoriť v editore. (Ctrl+O)",
     opening: "Otvára sa…",
     welcome: {
       eyebrow: "Začať nový klip",
@@ -154,7 +154,7 @@ export const sk = {
     moveSegmentHint: "Potiahnutím presuňte vybraný segment — podržaním Shift ho prichytíte",
     trimStart: "Začiatok strihu",
     trimEnd: "Koniec strihu",
-    trimResetHint: "{{label}} — dvojitým kliknutím obnovíte",
+    trimResetHint: "{{label}} — podržaním Shift prichytíte — dvojitým kliknutím obnovíte",
     accessibleSeconds: "{{value}} sekundy",
   },
   audio: {
@@ -192,10 +192,10 @@ export const sk = {
   export: {
     save: "Uložiť",
     saveShortcut: "Uložiť (Ctrl+S)",
-    saveTooltip: "Uložiť vybranú časť bez opätovného kódovania.",
+    saveTooltip: "Uložiť vybranú časť bez opätovného kódovania. (Ctrl+S)",
     export: "Exportovať",
     exportShortcut: "Exportovať (Ctrl+E)",
-    exportTooltip: "Vykresliť vybranú časť s nastaveniami exportu.",
+    exportTooltip: "Vykresliť vybranú časť s nastaveniami exportu. (Ctrl+E)",
     queue: "Front exportov",
     empty: "Zatiaľ žiadne exporty.",
     canceled: "Zrušené",
@@ -215,6 +215,8 @@ export const sk = {
       frameRate: "Snímková frekvencia",
       matchSource: "Podľa zdroja",
       arguments: "Argumenty FFmpeg",
+      copyCommand: "Kopírovať príkaz",
+      copiedCommand: "Skopírované do schránky",
       saveNotice: "Po potvrdení sa otvorí systémové okno na uloženie.",
     },
     sourceResolution: "{{height}}p \u00b7 {{width}} \u00d7 {{height}} (zdroj)",

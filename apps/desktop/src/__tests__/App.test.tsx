@@ -126,6 +126,14 @@ describe("App", () => {
     expect(screen.queryByLabelText("Video editor workspace")).not.toBeInTheDocument();
   });
 
+  it("opens the source picker with Ctrl+O", () => {
+    render(<App />);
+
+    fireEvent.keyDown(window, { key: "o", ctrlKey: true });
+
+    expect(mocks.chooseSource).toHaveBeenCalledTimes(1);
+  });
+
   it("imports a selected video and renders source metadata", async () => {
     mocks.chooseSource.mockResolvedValue(selection);
     const user = userEvent.setup();
@@ -857,8 +865,8 @@ describe("App", () => {
     fireEvent.doubleClick(endHandle);
     expect(endHandle).toHaveAttribute("aria-valuenow", "65000000");
     expect(playhead).toHaveAttribute("aria-valuenow", "30000000");
-    expect(startHandle).toHaveAttribute("title", "Trim start — double-click to reset");
-    expect(endHandle).toHaveAttribute("title", "Trim end — double-click to reset");
+    await user.hover(startHandle);
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("Trim start");
   });
 
   it("drags the complete segment without resizing it or moving the playhead", async () => {
