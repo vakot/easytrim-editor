@@ -114,7 +114,13 @@ Release artifacts are built and uploaded manually to avoid consuming GitHub Acti
 
 ### Windows
 
-Build and upload Windows bundles from Windows:
+Build Windows bundles locally without uploading:
+
+```sh
+pnpm release:local -- --no-upload --output artifacts/windows --platform windows
+```
+
+Build and upload Windows bundles to an existing release:
 
 ```sh
 pnpm release:local -- --tag <tag> --platform windows
@@ -126,7 +132,7 @@ Docker can build Linux x64 artifacts from Windows, macOS, or Linux:
 
 ```sh
 # Build into artifacts/linux without uploading
-pnpm release:linux -- --no-upload
+pnpm release:linux -- --no-upload --output artifacts/linux
 
 # Build and upload to an existing release
 pnpm release:linux -- --tag <tag>
@@ -136,7 +142,14 @@ Docker Desktop or another Docker daemon with Buildx must be running. The Linux c
 
 ### macOS
 
-Build macOS bundles on macOS:
+Build macOS bundles locally without uploading:
+
+```sh
+pnpm release:local -- --no-upload --output artifacts/macos-arm64 --platform macos-apple-silicon
+pnpm release:local -- --no-upload --output artifacts/macos-intel --platform macos-intel
+```
+
+Build and upload macOS bundles to an existing release:
 
 ```sh
 pnpm release:local -- --tag <tag> --platform macos-apple-silicon
