@@ -177,8 +177,6 @@ fn run_encoder(
         ]);
     }
     arguments.extend([
-        OsString::from("-movflags"),
-        OsString::from("+faststart"),
         OsString::from("-f"),
         OsString::from("mp4"),
         output_path.as_os_str().to_owned(),
@@ -228,8 +226,6 @@ fn run_remux(
         arguments.extend([OsString::from("-tag:v"), OsString::from("hvc1")]);
     }
     arguments.extend([
-        OsString::from("-movflags"),
-        OsString::from("+faststart"),
         OsString::from("-f"),
         OsString::from("mp4"),
         output_path.as_os_str().to_owned(),

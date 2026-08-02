@@ -41,8 +41,6 @@ pub fn generate_audio_preview(
         OsString::from("-dn"),
         OsString::from("-c:a"),
         OsString::from("copy"),
-        OsString::from("-movflags"),
-        OsString::from("+faststart"),
         OsString::from("-f"),
         OsString::from("mp4"),
         artifact.path().as_os_str().to_owned(),
