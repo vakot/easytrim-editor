@@ -20,7 +20,6 @@ interface SegmentDragHandleProps {
   onPointerCancel: (event: PointerEvent<HTMLButtonElement>) => void;
   onLostPointerCapture: (event: PointerEvent<HTMLButtonElement>) => void;
   onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void;
-  handleRef: RefObject<HTMLButtonElement | null>;
 }
 
 export function SegmentDragHandle({
@@ -34,13 +33,11 @@ export function SegmentDragHandle({
   onPointerCancel,
   onLostPointerCapture,
   onKeyDown,
-  handleRef,
 }: SegmentDragHandleProps) {
   const { t } = useTranslation();
   const durationMicros = range.endMicros - range.startMicros;
   return (
     <button
-      ref={handleRef}
       className={cn("segment-drag-handle", styles.segment)}
       type="button"
       role="slider"
@@ -85,7 +82,6 @@ interface TrimHandleProps {
   onPointerEnd: () => void;
   onDoubleClick: () => void;
   onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void;
-  handleRef: RefObject<HTMLButtonElement | null>;
 }
 
 export function TrimHandle({
@@ -101,13 +97,11 @@ export function TrimHandle({
   onPointerEnd,
   onDoubleClick,
   onKeyDown,
-  handleRef,
 }: TrimHandleProps) {
   const { t } = useTranslation();
   const label = boundary === "start" ? t("timeline.trimStart") : t("timeline.trimEnd");
   return (
     <button
-      ref={handleRef}
       className={cn(
         "trim-handle",
         `trim-handle-${boundary}`,

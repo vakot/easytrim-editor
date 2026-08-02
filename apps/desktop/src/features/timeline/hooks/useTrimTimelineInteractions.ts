@@ -10,7 +10,6 @@ import {
   moveTrimRange,
   snapMovedTrimRangeToPlayhead,
   settleDirectionalSnapLatch,
-  timelinePercent,
   type DirectionalSnapLatch,
   type SegmentSnapPoint,
   type TrimBoundary,
@@ -53,9 +52,6 @@ export function useTrimTimelineInteractions({
   onScrubEnd,
 }: TrimTimelineInteractionOptions) {
   const trackRef = useRef<HTMLDivElement>(null);
-  const segmentHandleRef = useRef<HTMLButtonElement>(null);
-  const startHandleRef = useRef<HTMLButtonElement>(null);
-  const endHandleRef = useRef<HTMLButtonElement>(null);
   const scrubPointerIdRef = useRef<number | null>(null);
   const trimDragRef = useRef<{
     pointerId: number;
@@ -75,19 +71,6 @@ export function useTrimTimelineInteractions({
   const [trimDragState, setTrimDragState] = useState<TrimDragState | null>(null);
   const segmentDurationMicros = range.endMicros - range.startMicros;
   const segmentCenterMicros = range.startMicros + segmentDurationMicros / 2;
-
-  function applyDragVisuals(nextRange: TrimRange) {
-    const duration = nextRange.sourceDurationMicros;
-    const startPercent = timelinePercent(nextRange.startMicros, duration);
-    const endPercent = timelinePercent(nextRange.endMicros, duration);
-    const centerPercent = timelinePercent(
-      nextRange.startMicros + (nextRange.endMicros - nextRange.startMicros) / 2,
-      duration,
-    );
-    startHandleRef.current?.style.setProperty("left", `${startPercent}%`);
-    endHandleRef.current?.style.setProperty("left", `${endPercent}%`);
-    segmentHandleRef.current?.style.setProperty("left", `${centerPercent}%`);
-  }
 
   function pointerMicros(clientX: number) {
     const bounds = trackRef.current?.getBoundingClientRect();
@@ -133,7 +116,6 @@ export function useTrimTimelineInteractions({
     const snapActive =
       snapToPlayhead && !snapState.anchorIgnored && isNearPlayhead(clientX, pointer.bounds);
     const next = moveTrimBoundary(range, boundary, snapActive ? playheadMicros : pointer.micros);
-    applyDragVisuals(next);
     const followedBoundary = onChange(boundary, next);
     drag.snapLatch = settleDirectionalSnapLatch(
       drag.snapLatch,
@@ -239,7 +221,6 @@ export function useTrimTimelineInteractions({
       snapToPlayhead && !snapState.anchorIgnored
         ? snapMovedTrimRangeToPlayhead(movedRange, playheadMicros, snapReachMicros)
         : { range: movedRange, point: null };
-    applyDragVisuals(snapped.range);
     setSegmentSnapPoint(snapped.point);
     const followedBoundary = onMoveSegment(snapped.range);
     drag.snapLatch = settleDirectionalSnapLatch(
@@ -380,9 +361,6 @@ export function useTrimTimelineInteractions({
     trackRef,
     segmentDragging,
     segmentSnapPoint,
-    segmentHandleRef,
-    startHandleRef,
-    endHandleRef,
     trimDragState,
     handleTrimPointer,
     finishTrimDrag,
