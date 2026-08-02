@@ -112,27 +112,29 @@ cargo test --all-targets
 
 Release artifacts are built and uploaded manually to avoid consuming GitHub Actions minutes on every small change. GitHub Actions is reserved for the lightweight Linux pull-request build and manually dispatched release jobs.
 
-### Windows
+### Bundle build
 
-Build Windows bundles locally without uploading:
+Build and upload bundles:
+
+```sh
+pnpm release:local -- --tag <tag> --platform <platform>
+```
+
+Supported platforms are `windows`, `linux`, `macos-apple-silicon`, and `macos-intel`.
+
+Use `--no-upload` with `--output <directory>` to build local artifacts without uploading them. For example:
 
 ```sh
 pnpm release:local -- --no-upload --output artifacts/windows --platform windows
 ```
 
-Build and upload Windows bundles to an existing release:
-
-```sh
-pnpm release:local -- --tag <tag> --platform windows
-```
-
-### Linux with Docker
+### Bundle build with Docker
 
 Docker can build Linux x64 artifacts from Windows, macOS, or Linux:
 
 ```sh
 # Build into artifacts/linux without uploading
-pnpm release:linux -- --no-upload --output artifacts/linux
+pnpm release:linux -- --no-upload
 
 # Build and upload to an existing release
 pnpm release:linux -- --tag <tag>
@@ -140,23 +142,7 @@ pnpm release:linux -- --tag <tag>
 
 Docker Desktop or another Docker daemon with Buildx must be running. The Linux container uses the pinned Node.js, pnpm, and Rust toolchains and does not receive GitHub credentials.
 
-### macOS
-
-Build macOS bundles locally without uploading:
-
-```sh
-pnpm release:local -- --no-upload --output artifacts/macos-arm64 --platform macos-apple-silicon
-pnpm release:local -- --no-upload --output artifacts/macos-intel --platform macos-intel
-```
-
-Build and upload macOS bundles to an existing release:
-
-```sh
-pnpm release:local -- --tag <tag> --platform macos-apple-silicon
-pnpm release:local -- --tag <tag> --platform macos-intel
-```
-
-Use `macos-intel` for Intel hardware. Public macOS distribution requires a Developer ID Application certificate and notarization credentials; keep those values in CI secrets and never commit them.
+macOS bundles must be built on macOS. Public macOS distribution requires a Developer ID Application certificate and notarization credentials; keep those values in CI secrets and never commit them.
 
 Release assets use predictable names:
 
