@@ -144,6 +144,8 @@ describe("App", () => {
       "src",
       "http://easytrim-media.localhost/source-1?variant=source",
     );
+    expect(screen.getByLabelText("Source video preview")).toHaveAttribute("preload", "auto");
+    expect(screen.getByLabelText("Source video preview")).toHaveAttribute("playsinline");
     expect(screen.getByLabelText("Source video preview")).not.toHaveAttribute("controls");
     expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Previous frame" })).toBeInTheDocument();
