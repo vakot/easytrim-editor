@@ -254,7 +254,6 @@ export function EditorStage({
       audioPlayheadRef.current,
       clamped,
       trimRef.current.sourceDurationMicros,
-      frameRate,
     );
     setPlayheadMicros(clamped);
     seekVideo(videoRef.current, clamped);
@@ -313,7 +312,6 @@ export function EditorStage({
       audioPlayheadRef.current,
       clamped,
       trimRef.current.sourceDurationMicros,
-      frameRate,
     );
     queueScrubSeek(clamped);
   }
@@ -355,7 +353,6 @@ export function EditorStage({
       audioPlayheadRef.current,
       currentMicros,
       durationMicros,
-      frameRate,
     );
     setPlayheadMicros(currentMicros);
     if (isPlayingRef.current && handlePlaybackBoundary(currentMicros)) {
@@ -384,7 +381,6 @@ export function EditorStage({
         audioPlayheadRef.current,
         currentMicros,
         durationMicros,
-        frameRate,
       );
       if (timestamp - lastPlaybackCommitAtRef.current >= 100) {
         lastPlaybackCommitAtRef.current = timestamp;

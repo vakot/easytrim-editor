@@ -263,7 +263,7 @@ function PlaybackSpeedTool({
       <PopoverContent side="bottom" align="center" className="w-56 p-2.5">
         <div className="flex items-center gap-2">
           <Slider
-            className="min-w-0 flex-1 [&_[data-slot=slider-track]]:h-1.5"
+            className="mt-2 min-w-0 flex-1 [&_[data-slot=slider-track]]:h-1.5"
             min={0}
             max={PLAYBACK_SPEED_STEPS.length - 1}
             step={1}

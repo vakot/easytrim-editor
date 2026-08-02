@@ -1,6 +1,3 @@
-import { formatPlaybackTime } from "@/domain/playback";
-import type { FrameRate } from "@/lib/tauri/media";
-
 export function seekVideo(video: HTMLVideoElement | null, micros: number) {
   if (video) seekMediaIfNeeded(video, micros / 1_000_000);
 }
@@ -26,14 +23,12 @@ export function syncPlayheadElements(
   audioPlayhead: HTMLDivElement | null,
   micros: number,
   durationMicros: number,
-  frameRate?: FrameRate,
 ) {
   const percent = durationMicros > 0 ? (micros / durationMicros) * 100 : 0;
   if (playhead) {
     playhead.style.left = `${percent}%`;
     playhead.setAttribute("aria-valuenow", micros.toString());
     playhead.setAttribute("aria-valuetext", `${(micros / 1_000_000).toFixed(3)} seconds`);
-    playhead.title = formatPlaybackTime(micros, frameRate);
   }
   if (audioPlayhead) audioPlayhead.style.left = `${percent}%`;
 }

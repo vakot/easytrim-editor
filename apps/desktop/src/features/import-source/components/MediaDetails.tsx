@@ -37,10 +37,7 @@ export function MediaDetails({ media }: { media: MediaInfo }) {
           key={label}
         >
           <dt className="text-xs text-muted-foreground">{label}</dt>
-          <dd
-            className="max-w-40 truncate text-right text-xs font-medium text-foreground"
-            title={value}
-          >
+          <dd className="max-w-40 truncate text-right text-xs font-medium text-foreground">
             {value}
           </dd>
         </div>

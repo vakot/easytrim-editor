@@ -1,5 +1,6 @@
 import type { AudioTrackState } from "@/app/session-state";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { AudioStream } from "@/lib/tauri/media";
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
@@ -47,13 +48,17 @@ export const AudioTrackRow = memo(function AudioTrackRow({
             />
           </HoverCardTrigger>
           <div className="min-w-0 leading-tight">
-            <p
-              className="truncate text-sm font-semibold transition-colors data-[enabled=false]:text-muted-foreground"
-              data-enabled={track.enabled}
-              title={title}
-            >
-              {title}
-            </p>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <p
+                  className="truncate text-sm font-semibold transition-colors data-[enabled=false]:text-muted-foreground"
+                  data-enabled={track.enabled}
+                >
+                  {title}
+                </p>
+              </TooltipTrigger>
+              <TooltipContent>{title}</TooltipContent>
+            </Tooltip>
             <p className="truncate text-xs leading-5 text-muted-foreground">
               #{stream.streamIndex} · {stream.codecName.toUpperCase()} · {formatChannels(stream, t)}
             </p>
@@ -69,6 +74,7 @@ export const AudioTrackRow = memo(function AudioTrackRow({
             label={t("audio.trackVolume", { title })}
             volumePercent={track.enabled ? track.volumePercent : 0}
             onChange={(volumePercent) => onVolumeChange(stream.streamIndex, volumePercent)}
+            className="mt-2"
           />
         </HoverCardContent>
       </HoverCard>
