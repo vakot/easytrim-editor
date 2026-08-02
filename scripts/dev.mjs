@@ -5,6 +5,7 @@ const child = spawn(command, ["--filter", "@easytrim-editor/desktop", "tauri", "
   env: { ...process.env, EASYTRIM_MEDIA_DEBUG: "1" },
   stdio: "inherit",
   windowsHide: false,
+  shell: process.platform === "win32",
 });
 
 child.once("error", (error) => {
