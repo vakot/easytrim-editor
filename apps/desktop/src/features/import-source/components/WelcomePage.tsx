@@ -46,7 +46,7 @@ export function WelcomePage({
           <p className="text-xs font-bold tracking-[0.14em] text-primary uppercase">
             {t("import.welcome.eyebrow")}
           </p>
-          <h2 id="import-title" className="font-heading text-2xl font-semibold">
+          <h2 id="import-title" className="font-heading text-2xl font-black">
             {t("import.welcome.title")}
           </h2>
           <CardDescription>{t("import.welcome.description")}</CardDescription>
