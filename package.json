@@ -1,7 +1,7 @@
 {
   "name": "easytrim-editor",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "packageManager": "pnpm@11.18.0",
   "engines": {
@@ -18,8 +18,10 @@
     "lint": "eslint . --max-warnings 0",
     "typecheck": "pnpm --filter @easytrim-editor/desktop typecheck",
     "test": "pnpm --filter @easytrim-editor/desktop test",
+    "test:release": "node --test scripts/__tests__/*.test.mjs",
     "release:local": "node scripts/release-local.mjs",
-    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build:web",
+    "release:linux": "node scripts/release-linux-docker.mjs",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm test:release && pnpm build:web",
     "tauri": "pnpm --filter @easytrim-editor/desktop tauri"
   },
   "devDependencies": {

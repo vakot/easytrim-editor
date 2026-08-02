@@ -31,4 +31,5 @@ Desktop.ini
 
 # Temporary workspace artifacts
 .tmp/
+artifacts/
 tmp/
