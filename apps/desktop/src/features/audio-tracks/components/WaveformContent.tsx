@@ -1,5 +1,6 @@
 import type { AudioTrackState } from "@/app/session-state";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useTranslation } from "react-i18next";
 
 interface WaveformContentProps {
@@ -36,7 +37,12 @@ export function WaveformContent({ track, onRetry, onImageError }: WaveformConten
     case "failed":
       return (
         <div className="absolute inset-0 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-          <span title={track.waveform.error.message}>{t("audio.waveformUnavailable")}</span>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span>{t("audio.waveformUnavailable")}</span>
+            </TooltipTrigger>
+            <TooltipContent>{track.waveform.error.message}</TooltipContent>
+          </Tooltip>
           <Button variant="ghost" size="xs" type="button" onClick={onRetry}>
             {t("common.retry")}
           </Button>

@@ -61,9 +61,7 @@ export function AudioTracks({
           />
         </div>
         <div className="flex min-w-0 items-center justify-between gap-4">
-          <p className="truncate text-xs leading-5 text-muted-foreground" title={outputSummary}>
-            {outputSummary}
-          </p>
+          <p className="truncate text-xs leading-5 text-muted-foreground">{outputSummary}</p>
           <div className="flex shrink-0 items-center gap-2">
             <Checkbox id="merge-audio" checked={mergeAudio} onCheckedChange={onToggleMerge} />
             <Label htmlFor="merge-audio" className="text-xs text-muted-foreground">

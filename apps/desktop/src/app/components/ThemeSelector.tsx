@@ -27,7 +27,6 @@ export function ThemeSelector({ className }: { className?: string }) {
         variant="solid"
         className={cn("w-16 px-3", className)}
         aria-label={t("theme.selection", { theme: currentThemeLabel })}
-        title={t("theme.selection", { theme: currentThemeLabel })}
       >
         <CurrentIcon className="size-4" aria-hidden="true" />
       </SelectTrigger>

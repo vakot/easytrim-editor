@@ -4,6 +4,7 @@ import { ExportQueue, type ExportToast } from "@/features/export";
 import { MediaDetails } from "./MediaDetails";
 import { SourceError } from "./SourceError";
 import { useTranslation } from "react-i18next";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface SourceSidebarProps {
   session: SessionState;
@@ -24,13 +25,14 @@ export function SourceSidebar({ session, queue }: SourceSidebarProps) {
           <p className="mb-1 text-xs font-bold tracking-[0.14em] text-primary uppercase">
             {t("import.source.details")}
           </p>
-          <h1
-            id="source-title"
-            className="truncate text-base font-black"
-            title={session.source.selection.displayName}
-          >
-            {session.source.selection.displayName}
-          </h1>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <h1 id="source-title" className="truncate text-base font-black">
+                {session.source.selection.displayName}
+              </h1>
+            </TooltipTrigger>
+            <TooltipContent>{session.source.selection.displayName}</TooltipContent>
+          </Tooltip>
           {session.status === "loading-source" ? (
             <span className="text-xs text-muted-foreground" role="status">
               {t("import.source.inspecting")}
