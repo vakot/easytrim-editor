@@ -1,0 +1,15 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "build": {
+    "beforeBundleCommand": "node ../../scripts/prepare-macos-icon.mjs"
+  },
+  "bundle": {
+    "icon": ["../../../target/icon-assets/macos/logo_mac_composer.icns"],
+    "macOS": {
+      "files": {
+        "Resources/Assets.car": "../../../target/icon-assets/macos/Assets.car"
+      },
+      "infoPlist": "Info.macos.plist"
+    }
+  }
+}

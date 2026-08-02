@@ -70,6 +70,23 @@ GitHub does not build release artifacts automatically on pushes or tags. Use `re
 
 Pull requests run one generic `Build` job on Linux. It performs the web and Rust quality gates and creates a production Tauri executable without packaging or uploading installers. CI does not run again after merging to `master`.
 
+## Desktop icon assets
+
+EasyTrim keeps platform assets separate so each desktop uses its native icon format:
+
+- Windows bundles use `apps/desktop/src-tauri/icons/windows/icon.ico`.
+- Linux bundles use the PNG sizes in `apps/desktop/src-tauri/icons/linux`.
+- macOS bundles compile `apps/desktop/src-tauri/icon-sources/macos/logo_mac_composer.icon` into an Icon Composer asset catalog and legacy ICNS fallback during bundling.
+- The web shell uses `apps/desktop/public/logo-symbol.svg` directly.
+
+After changing `logo-symbol.svg`, regenerate the Windows and Linux files with:
+
+```sh
+pnpm icons:generate
+```
+
+The macOS assets are generated automatically by the native bundle step and require a current Xcode toolchain with Icon Composer support. They cannot be compiled on Windows or Linux.
+
 ## Development
 
 Start the Tauri desktop application with the Vite development server and hot reload:
