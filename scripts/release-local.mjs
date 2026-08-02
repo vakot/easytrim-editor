@@ -36,7 +36,7 @@ const tauriConfig = JSON.parse(
 );
 
 if (shouldUpload && !tag) {
-  fail("missing --tag, for example --tag v1.0.1");
+  fail("missing --tag, for example --tag v1.0.2");
 }
 
 if (!shouldUpload && !outputDirectory) {
