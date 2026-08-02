@@ -214,6 +214,15 @@ describe("sessionReducer", () => {
       sourceId: firstSource.sourceId,
       streamIndex: 2,
     });
+    const masterMuted = sessionReducer(ready, {
+      type: "audio-master-volume-changed",
+      sourceId: firstSource.sourceId,
+      volumePercent: 0,
+    });
+    const masterUnmuted = sessionReducer(masterMuted, {
+      type: "audio-master-toggled",
+      sourceId: firstSource.sourceId,
+    });
 
     expect(ready.source?.audioTracks).toEqual([
       { streamIndex: 2, enabled: true, volumePercent: 50, waveform: { status: "idle" } },
@@ -224,7 +233,67 @@ describe("sessionReducer", () => {
     expect(allDisabled.source?.audioTracks.every((track) => !track.enabled)).toBe(true);
     expect(allEnabled.source?.audioTracks.every((track) => track.enabled)).toBe(true);
     expect(safelyUnmuted.source?.audioTracks[0]?.enabled).toBe(true);
-    expect(safelyUnmuted.source?.audioTracks[0]?.volumePercent).toBeCloseTo(12.559, 2);
+    expect(safelyUnmuted.source?.audioTracks[0]?.volumePercent).toBe(50);
+    expect(masterUnmuted.source?.masterEnabled).toBe(true);
+    expect(masterUnmuted.source?.masterVolumePercent).toBe(50);
+  });
+
+  it("auto-mutes a silent track without overriding a user volume choice", () => {
+    const loading = sessionReducer(initialSessionState, {
+      type: "source-selected",
+      source: firstSource,
+    });
+    const ready = sessionReducer(loading, {
+      type: "source-ready",
+      sourceId: firstSource.sourceId,
+      media: mediaWithAudio(firstSource.sourceId),
+    });
+    const preparing = sessionReducer(ready, {
+      type: "waveforms-loading",
+      sourceId: firstSource.sourceId,
+      jobId: "waveform-1",
+      width: 800,
+      streamIndexes: [2, 4],
+    });
+    const silentResult = sessionReducer(preparing, {
+      type: "waveform-result",
+      result: {
+        status: "ready",
+        sourceId: firstSource.sourceId,
+        jobId: "waveform-1",
+        streamIndex: 2,
+        width: 800,
+        hasSignal: false,
+        url: "http://easytrim-media.localhost/source-1?variant=waveform&stream=2&width=800",
+      },
+    });
+    const userVolume = sessionReducer(silentResult, {
+      type: "audio-track-volume-changed",
+      sourceId: firstSource.sourceId,
+      streamIndex: 4,
+      volumePercent: 25,
+    });
+    const silentResultAfterUserChoice = sessionReducer(userVolume, {
+      type: "waveform-result",
+      result: {
+        status: "ready",
+        sourceId: firstSource.sourceId,
+        jobId: "waveform-1",
+        streamIndex: 4,
+        width: 800,
+        hasSignal: false,
+        url: "http://easytrim-media.localhost/source-1?variant=waveform&stream=4&width=800",
+      },
+    });
+
+    expect(silentResult.source?.audioTracks[0]).toMatchObject({
+      enabled: false,
+      volumePercent: 0,
+    });
+    expect(silentResultAfterUserChoice.source?.audioTracks[1]).toMatchObject({
+      enabled: true,
+      volumePercent: 25,
+    });
   });
 
   it("ignores stale waveform completions after regeneration", () => {

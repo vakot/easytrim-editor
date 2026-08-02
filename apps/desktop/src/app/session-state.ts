@@ -33,7 +33,7 @@ export interface AudioTrackState {
   waveform: WaveformState;
 }
 
-const SAFE_UNMUTE_VOLUME_PERCENT = 50 * 10 ** (-12 / 20);
+const DEFAULT_UNMUTE_VOLUME_PERCENT = 50;
 
 export interface SessionState {
   status: "idle" | "loading-source" | "ready" | "failed";
@@ -232,7 +232,7 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
                   enabled: !track.enabled,
                   volumePercent:
                     !track.enabled && track.volumePercent <= 0
-                      ? SAFE_UNMUTE_VOLUME_PERCENT
+                      ? DEFAULT_UNMUTE_VOLUME_PERCENT
                       : track.volumePercent,
                 }
               : track,
@@ -250,6 +250,10 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
           audioTracks: state.source.audioTracks.map((track) => ({
             ...track,
             enabled: action.enabled,
+            volumePercent:
+              action.enabled && track.volumePercent <= 0
+                ? DEFAULT_UNMUTE_VOLUME_PERCENT
+                : track.volumePercent,
           })),
         },
       };
@@ -283,7 +287,7 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
           masterEnabled: !state.source.masterEnabled,
           masterVolumePercent:
             !state.source.masterEnabled && state.source.masterVolumePercent <= 0
-              ? SAFE_UNMUTE_VOLUME_PERCENT
+              ? DEFAULT_UNMUTE_VOLUME_PERCENT
               : state.source.masterVolumePercent,
         },
       };
@@ -343,6 +347,20 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
             }
             return {
               ...track,
+              enabled:
+                action.result.status === "ready" &&
+                action.result.hasSignal === false &&
+                track.enabled &&
+                track.volumePercent === 50
+                  ? false
+                  : track.enabled,
+              volumePercent:
+                action.result.status === "ready" &&
+                action.result.hasSignal === false &&
+                track.enabled &&
+                track.volumePercent === 50
+                  ? 0
+                  : track.volumePercent,
               waveform:
                 action.result.status === "ready"
                   ? {

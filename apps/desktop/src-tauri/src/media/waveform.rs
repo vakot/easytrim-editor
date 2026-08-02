@@ -9,6 +9,7 @@ use std::{
 
 use crate::{
     error::AppError,
+    media::audio::analyze_audio_activity,
     process::{ProcessOutput, run_bounded_cancellable},
     state::{WaveformArtifact, WaveformSource},
 };
@@ -20,7 +21,7 @@ const WAVEFORM_TIMEOUT: Duration = Duration::from_secs(10 * 60);
 const WAVEFORM_STDOUT_LIMIT: usize = 16 * 1024;
 const WAVEFORM_STDERR_LIMIT: usize = 128 * 1024;
 static NEXT_DIRECTORY_ID: AtomicU64 = AtomicU64::new(0);
-pub type WaveformGenerationResult = (u32, Result<WaveformArtifact, AppError>);
+pub type WaveformGenerationResult = (u32, Option<bool>, Result<WaveformArtifact, AppError>);
 
 pub fn generate_waveforms(
     source: &WaveformSource,
@@ -30,6 +31,9 @@ pub fn generate_waveforms(
     for stream_index in stream_indexes {
         validate_waveform_request(&source.source.audio_stream_indexes, *stream_index, width)?;
     }
+    let activity = analyze_audio_activity(&source.source, stream_indexes)?
+        .into_iter()
+        .collect::<std::collections::HashMap<_, _>>();
     let artifacts = stream_indexes
         .iter()
         .map(|stream_index| {
@@ -69,10 +73,15 @@ pub fn generate_waveforms(
             .into_iter()
             .map(|(stream_index, artifact)| {
                 if artifact.path().is_file() {
-                    (stream_index, Ok(artifact))
+                    (
+                        stream_index,
+                        activity.get(&stream_index).copied().flatten(),
+                        Ok(artifact),
+                    )
                 } else {
                     (
                         stream_index,
+                        None,
                         Err(AppError::waveform_failed(
                             format!(
                                 "Waveform generation produced no image for audio stream #{stream_index}."
@@ -95,6 +104,7 @@ pub fn generate_waveforms(
         .map(|(stream_index, _)| {
             (
                 stream_index,
+                None,
                 Err(AppError::waveform_failed(
                     format!("Waveform generation failed for audio stream #{stream_index}."),
                     diagnostics.clone(),
