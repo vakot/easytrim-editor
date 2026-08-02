@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { LanguageSelector } from "@/app/components/LanguageSelector";
 import { ThemeSelector } from "@/app/components/ThemeSelector";
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
@@ -82,9 +83,12 @@ export function WelcomePage({
         </div>
       ) : null}
       {isSourceDragActive ? <DropOverlay /> : null}
-      <span className="absolute bottom-4 left-4 z-20 text-xs text-muted-foreground">
+      <Badge
+        variant="outline"
+        className="absolute bottom-4 left-4 z-20 border-border/70 bg-card/80 text-muted-foreground shadow-sm backdrop-blur-sm"
+      >
         v{packageJson.version}
-      </span>
+      </Badge>
       <SupportBadge />
     </section>
   );
