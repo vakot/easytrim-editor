@@ -36,8 +36,7 @@ try {
 }
 
 console.log(`Launching production build: ${executablePath}`);
-const productionEnvironment = { ...process.env };
-delete productionEnvironment.EASYTRIM_MEDIA_DEBUG;
+const { EASYTRIM_MEDIA_DEBUG: _mediaDebug, ...productionEnvironment } = process.env;
 const application = spawn(executablePath, process.argv.slice(2), {
   env: productionEnvironment,
   stdio: "inherit",

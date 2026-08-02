@@ -73,8 +73,6 @@ export function EditorStage({
   const currentPlayheadMicrosRef = useRef(trim.startMicros);
   const segmentDragActiveRef = useRef(false);
   const segmentFollowBoundaryRef = useRef<TrimBoundary | null>(null);
-  const initialFrameRevealRef = useRef(false);
-  const initialFrameSeekRef = useRef(false);
   const shortcutActionsRef = useRef<EditorShortcutActions | null>(null);
   trimRef.current = trim;
 
@@ -84,11 +82,6 @@ export function EditorStage({
   const [safeTrimFollowingEnabled, setSafeTrimFollowingEnabled] = useState(true);
   const [transportError, setTransportError] = useState<string | null>(null);
   const displayedPlayheadMicros = clampPlaybackMicros(playheadMicros, trim.sourceDurationMicros);
-  const previewUrl = preview.status === "ready" ? preview.value.url : null;
-
-  useEffect(() => {
-    initialFrameRevealRef.current = false;
-  }, [previewUrl]);
 
   useEffect(
     () => () => {
@@ -298,9 +291,6 @@ export function EditorStage({
   }
 
   function handleTimeUpdate(seconds: number) {
-    if (initialFrameSeekRef.current && !isPlayingRef.current) {
-      return;
-    }
     const durationMicros = trimRef.current.sourceDurationMicros;
     const currentMicros = clampPlaybackMicros(seconds * 1_000_000, durationMicros);
     currentPlayheadMicrosRef.current = currentMicros;
@@ -319,37 +309,6 @@ export function EditorStage({
     if (currentMicros >= durationMicros) {
       stopPlayheadAnimation();
     }
-  }
-
-  function revealInitialFrame() {
-    const video = videoRef.current;
-    if (!video || initialFrameRevealRef.current || video.duration <= 0) {
-      return;
-    }
-
-    initialFrameRevealRef.current = true;
-    const originalSeconds = displayedPlayheadMicros / 1_000_000;
-    const frameSeconds = frameDurationMicros(frameRate) / 1_000_000;
-    const nudgedSeconds = Math.min(originalSeconds + frameSeconds, video.duration);
-
-    if (nudgedSeconds <= originalSeconds) {
-      video.currentTime = originalSeconds;
-      return;
-    }
-
-    initialFrameSeekRef.current = true;
-    const restoreInitialFrame = () => {
-      video.removeEventListener("seeked", restoreInitialFrame);
-      const finishInitialFrameReveal = () => {
-        video.removeEventListener("seeked", finishInitialFrameReveal);
-        initialFrameSeekRef.current = false;
-        commitSeek(displayedPlayheadMicros);
-      };
-      video.addEventListener("seeked", finishInitialFrameReveal, { once: true });
-      video.currentTime = originalSeconds;
-    };
-    video.addEventListener("seeked", restoreInitialFrame, { once: true });
-    video.currentTime = nudgedSeconds;
   }
 
   function startPlayheadAnimation() {
@@ -624,11 +583,7 @@ export function EditorStage({
             preview={preview}
             videoRef={videoRef}
             onPlaybackError={onPreviewPlaybackError}
-            onLoadedMetadata={() => {
-              commitSeek(displayedPlayheadMicros);
-              revealInitialFrame();
-            }}
-            onLoadedData={revealInitialFrame}
+            onLoadedMetadata={() => commitSeek(displayedPlayheadMicros)}
             onTogglePlayback={handleTogglePlayback}
             onPlay={() => {
               isPlayingRef.current = true;
