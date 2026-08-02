@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next";
 import { SupportBadge } from "@/features/support/components/SupportBadge";
 import { UpdateNotice } from "@/features/release/components/UpdateNotice";
 import type { AvailableUpdate } from "@/features/release/release-check";
+import packageJson from "../../../../../../package.json";
 
 interface WelcomePageProps {
   session: SessionState;
@@ -81,6 +82,9 @@ export function WelcomePage({
         </div>
       ) : null}
       {isSourceDragActive ? <DropOverlay /> : null}
+      <span className="absolute bottom-4 left-4 z-20 text-xs text-muted-foreground">
+        v{packageJson.version}
+      </span>
       <SupportBadge />
     </section>
   );
