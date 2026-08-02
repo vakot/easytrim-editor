@@ -1,0 +1,18 @@
+.slider {
+  isolation: isolate;
+}
+
+.track {
+  z-index: 0;
+}
+
+.marker {
+  z-index: 1;
+  top: 50%;
+  height: 0.75rem;
+  transform: translate(-50%, -50%);
+}
+
+.thumb {
+  z-index: 2 !important;
+}

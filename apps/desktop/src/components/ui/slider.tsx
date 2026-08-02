@@ -2,6 +2,7 @@ import * as React from "react";
 import { Slider as SliderPrimitive } from "radix-ui";
 
 import { cn } from "@/lib/utils";
+import styles from "./styles.module.css";
 
 export interface SliderMarker {
   value: number;
@@ -33,6 +34,7 @@ function Slider({
       max={max}
       className={cn(
         "relative flex w-full touch-none items-center select-none data-disabled:opacity-50 data-vertical:h-full data-vertical:min-h-40 data-vertical:w-auto data-vertical:flex-col",
+        styles.slider,
         markers.length > 0 && "py-2",
         className,
       )}
@@ -40,7 +42,10 @@ function Slider({
     >
       <SliderPrimitive.Track
         data-slot="slider-track"
-        className="relative grow overflow-hidden rounded-full bg-muted data-horizontal:h-1 data-horizontal:w-full data-vertical:h-full data-vertical:w-1"
+        className={cn(
+          "relative grow overflow-hidden rounded-full bg-muted data-horizontal:h-1 data-horizontal:w-full data-vertical:h-full data-vertical:w-1",
+          styles.track,
+        )}
       >
         <SliderPrimitive.Range
           data-slot="slider-range"
@@ -52,11 +57,14 @@ function Slider({
           max === min ? 0 : (Math.min(max, Math.max(min, marker.value)) - min) / (max - min);
         return (
           <span
-            className="pointer-events-none absolute inset-y-1/4 w-px -translate-x-1/2 bg-muted-foreground/70"
+            className={cn(
+              "pointer-events-none absolute w-px bg-muted-foreground/70",
+              styles.marker,
+            )}
+            data-slot="slider-marker"
             key={`${marker.value}-${String(marker.label)}`}
             style={{
               left: `calc(${position * 100}% + ${0.375 - position * 0.75}rem)`,
-              zIndex: 1,
             }}
           >
             <span className="absolute bottom-full left-1/2 -translate-x-1/2 whitespace-nowrap pb-0.5 text-[0.625rem] leading-none text-muted-foreground">
@@ -71,8 +79,10 @@ function Slider({
           key={index}
           aria-label={ariaLabel}
           aria-labelledby={ariaLabelledBy}
-          style={{ zIndex: 10 }}
-          className="relative z-10 block size-3 shrink-0 rounded-full border border-ring bg-white ring-ring/50 transition-[color,box-shadow] select-none after:absolute after:-inset-2 hover:ring-3 focus-visible:ring-3 focus-visible:outline-hidden active:ring-3 disabled:pointer-events-none disabled:opacity-50"
+          className={cn(
+            "relative block size-3 shrink-0 rounded-full border border-ring bg-white ring-ring/50 transition-[color,box-shadow] select-none after:absolute after:-inset-2 hover:ring-3 focus-visible:ring-3 focus-visible:outline-hidden active:ring-3 disabled:pointer-events-none disabled:opacity-50",
+            styles.thumb,
+          )}
         />
       ))}
     </SliderPrimitive.Root>
