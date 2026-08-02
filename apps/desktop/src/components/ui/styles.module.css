@@ -13,6 +13,10 @@
   transform: translate(-50%, -50%);
 }
 
+.slider > span:has(> [data-slot="slider-thumb"]) {
+  z-index: 2;
+}
+
 .thumb {
   z-index: 2 !important;
 }
