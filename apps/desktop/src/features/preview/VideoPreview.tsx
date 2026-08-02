@@ -12,6 +12,7 @@ interface VideoPreviewProps {
   videoRef: RefObject<HTMLVideoElement | null>;
   onPlaybackError: (sourceId: string, previewKind: "source" | "proxy") => void;
   onLoadedMetadata: () => void;
+  onLoadedData: () => void;
   onTogglePlayback: () => void;
   onPlay: () => void;
   onPause: () => void;
@@ -25,6 +26,7 @@ export function VideoPreview({
   videoRef,
   onPlaybackError,
   onLoadedMetadata,
+  onLoadedData,
   onTogglePlayback,
   onPlay,
   onPause,
@@ -87,6 +89,7 @@ export function VideoPreview({
         data-preview-kind={value.kind}
         onClick={onTogglePlayback}
         onLoadedMetadata={onLoadedMetadata}
+        onLoadedData={onLoadedData}
         onPlay={onPlay}
         onPause={onPause}
         onTimeUpdate={(event) => onTimeUpdate(event.currentTarget.currentTime)}
