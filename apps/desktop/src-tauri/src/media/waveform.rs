@@ -93,6 +93,7 @@ fn waveform_arguments(
         )),
         OsString::from("-map"),
         OsString::from("[waveform]"),
+        OsString::from("-vn"),
         OsString::from("-frames:v"),
         OsString::from("1"),
         OsString::from("-c:v"),

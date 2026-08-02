@@ -24,7 +24,12 @@ pub fn generate_preview(source: &ActiveSource) -> Result<PreviewArtifact, AppErr
     })?;
     let artifact = create_artifact()?;
 
-    let hardware_result = run_encoder(source, streams, artifact.path(), Encoder::Nvidia);
+    let hardware_encoder = if cfg!(target_os = "macos") {
+        Encoder::VideoToolbox
+    } else {
+        Encoder::Nvidia
+    };
+    let hardware_result = run_encoder(source, streams, artifact.path(), hardware_encoder);
     match hardware_result {
         Ok(output) if output.status.success() => return Ok(artifact),
         Err(error) if error.kind() == io::ErrorKind::Interrupted => {
@@ -50,6 +55,7 @@ pub fn generate_preview(source: &ActiveSource) -> Result<PreviewArtifact, AppErr
 #[derive(Clone, Copy)]
 enum Encoder {
     Nvidia,
+    VideoToolbox,
     Software,
 }
 
@@ -94,6 +100,13 @@ fn run_encoder(
             OsString::from("30"),
             OsString::from("-b:v"),
             OsString::from("0"),
+        ]),
+        Encoder::VideoToolbox => arguments.extend([
+            OsString::from("h264_videotoolbox"),
+            OsString::from("-allow_sw"),
+            OsString::from("1"),
+            OsString::from("-b:v"),
+            OsString::from("4M"),
         ]),
         Encoder::Software => arguments.extend([
             OsString::from("libx264"),
