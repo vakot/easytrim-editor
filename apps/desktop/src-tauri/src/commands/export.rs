@@ -61,7 +61,7 @@ pub struct OptimizedExportPlan {
 }
 
 #[tauri::command]
-pub fn choose_output_path(
+pub async fn choose_output_path(
     app: AppHandle,
     state: State<'_, AppState>,
     default_name: String,
@@ -69,12 +69,18 @@ pub fn choose_output_path(
     if default_name.trim().is_empty() || default_name.len() > 255 {
         return Err(AppError::invalid_request("The output name is required."));
     }
-    let selected = app
-        .dialog()
+    let (sender, receiver) = std::sync::mpsc::channel();
+    app.dialog()
         .file()
         .set_file_name(default_name)
         .add_filter("Video", &["mkv", "mp4", "mov", "webm"])
-        .blocking_save_file();
+        .save_file(move |selected| {
+            let _ = sender.send(selected);
+        });
+    let selected = tauri::async_runtime::spawn_blocking(move || receiver.recv())
+        .await
+        .map_err(|_| AppError::internal("The output dialog task stopped unexpectedly."))?
+        .map_err(|_| AppError::internal("The output dialog closed unexpectedly."))?;
     let Some(selected) = selected else {
         return Ok(None);
     };

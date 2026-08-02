@@ -1,9 +1,6 @@
 name: Stable release
 
 on:
-  push:
-    tags:
-      - "v*.*.*"
   workflow_dispatch:
     inputs:
       tag:
@@ -13,10 +10,9 @@ on:
       platform:
         description: Platform to publish without rebuilding other release assets
         required: true
-        default: all
+        default: linux
         type: choice
         options:
-          - all
           - linux
           - windows
           - macos-intel
@@ -26,7 +22,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: stable-release-${{ github.ref_name }}
+  group: stable-release-${{ inputs.tag }}
   cancel-in-progress: false
 
 env:
@@ -35,41 +31,15 @@ env:
 
 jobs:
   release:
-    name: Stable release (${{ matrix.name }})
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - id: linux
-            name: Linux
-            os: ubuntu-22.04
-            args: --bundles appimage,deb
-            target: ""
-          - name: Windows
-            id: windows
-            os: windows-latest
-            args: ""
-            target: ""
-          - name: macOS Intel
-            id: macos-intel
-            os: macos-15-intel
-            args: --target x86_64-apple-darwin --bundles app,dmg
-            target: x86_64-apple-darwin
-          - name: macOS Apple Silicon
-            id: macos-apple-silicon
-            os: macos-latest
-            args: --target aarch64-apple-darwin --bundles app,dmg
-            target: aarch64-apple-darwin
-
-    if: ${{ github.event_name == 'push' || inputs.platform == 'all' || inputs.platform == matrix.id }}
-    runs-on: ${{ matrix.os }}
+    name: Stable release
+    runs-on: ${{ inputs.platform == 'linux' && 'ubuntu-22.04' || inputs.platform == 'windows' && 'windows-latest' || inputs.platform == 'macos-intel' && 'macos-15-intel' || 'macos-latest' }}
     env:
       APPLE_SIGNING_ENABLED: ${{ secrets.APPLE_CERTIFICATE != '' }}
     steps:
       - name: Check out tagged source
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.tag || github.ref }}
+          ref: ${{ inputs.tag }}
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
@@ -86,7 +56,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: 1.97.1
-          targets: ${{ matrix.target }}
+          targets: ${{ inputs.platform == 'macos-intel' && 'x86_64-apple-darwin' || inputs.platform == 'macos-apple-silicon' && 'aarch64-apple-darwin' || '' }}
 
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
@@ -98,7 +68,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Verify macOS signing configuration
-        if: startsWith(matrix.name, 'macOS') && env.APPLE_SIGNING_ENABLED == 'true'
+        if: startsWith(inputs.platform, 'macos') && env.APPLE_SIGNING_ENABLED == 'true'
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
@@ -117,7 +87,7 @@ jobs:
           test -n "$APPLE_TEAM_ID" || { echo "APPLE_TEAM_ID is not configured"; exit 1; }
 
       - name: Import macOS signing certificate
-        if: startsWith(matrix.name, 'macOS') && env.APPLE_SIGNING_ENABLED == 'true'
+        if: startsWith(inputs.platform, 'macos') && env.APPLE_SIGNING_ENABLED == 'true'
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
@@ -139,11 +109,11 @@ jobs:
         with:
           projectPath: apps/desktop
           tauriScript: pnpm tauri
-          args: ${{ matrix.args }}
-          tagName: ${{ github.event.inputs.tag || github.ref_name }}
-          releaseName: EasyTrim Editor ${{ github.event.inputs.tag || github.ref_name }}
+          args: ${{ inputs.platform == 'linux' && '--bundles appimage,deb' || inputs.platform == 'macos-intel' && '--target x86_64-apple-darwin --bundles app,dmg' || inputs.platform == 'macos-apple-silicon' && '--target aarch64-apple-darwin --bundles app,dmg' || '' }}
+          tagName: ${{ inputs.tag }}
+          releaseName: EasyTrim Editor ${{ inputs.tag }}
           releaseBody: |
-            EasyTrim Editor ${{ github.event.inputs.tag || github.ref_name }}
+            EasyTrim Editor ${{ inputs.tag }}
 
             Standalone Linux, Windows, and macOS desktop builds.
 
@@ -151,12 +121,13 @@ jobs:
           releaseDraft: false
           prerelease: false
           generateReleaseNotes: true
+          releaseAssetNamePattern: EasyTrim_[version]_${{ startsWith(inputs.platform, 'macos') && 'macos' || inputs.platform }}_${{ inputs.platform == 'macos-apple-silicon' && 'arm64' || 'x64' }}_[bundle][ext]
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          APPLE_CERTIFICATE: ${{ startsWith(matrix.name, 'macOS') && secrets.APPLE_CERTIFICATE || '' }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ startsWith(matrix.name, 'macOS') && secrets.APPLE_CERTIFICATE_PASSWORD || '' }}
-          APPLE_SIGNING_IDENTITY: ${{ startsWith(matrix.name, 'macOS') && secrets.APPLE_SIGNING_IDENTITY || '' }}
-          KEYCHAIN_PASSWORD: ${{ startsWith(matrix.name, 'macOS') && secrets.KEYCHAIN_PASSWORD || '' }}
-          APPLE_ID: ${{ startsWith(matrix.name, 'macOS') && secrets.APPLE_ID || '' }}
-          APPLE_PASSWORD: ${{ startsWith(matrix.name, 'macOS') && secrets.APPLE_PASSWORD || '' }}
-          APPLE_TEAM_ID: ${{ startsWith(matrix.name, 'macOS') && secrets.APPLE_TEAM_ID || '' }}
+          APPLE_CERTIFICATE: ${{ startsWith(inputs.platform, 'macos') && secrets.APPLE_CERTIFICATE || '' }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ startsWith(inputs.platform, 'macos') && secrets.APPLE_CERTIFICATE_PASSWORD || '' }}
+          APPLE_SIGNING_IDENTITY: ${{ startsWith(inputs.platform, 'macos') && secrets.APPLE_SIGNING_IDENTITY || '' }}
+          KEYCHAIN_PASSWORD: ${{ startsWith(inputs.platform, 'macos') && secrets.KEYCHAIN_PASSWORD || '' }}
+          APPLE_ID: ${{ startsWith(inputs.platform, 'macos') && secrets.APPLE_ID || '' }}
+          APPLE_PASSWORD: ${{ startsWith(inputs.platform, 'macos') && secrets.APPLE_PASSWORD || '' }}
+          APPLE_TEAM_ID: ${{ startsWith(inputs.platform, 'macos') && secrets.APPLE_TEAM_ID || '' }}

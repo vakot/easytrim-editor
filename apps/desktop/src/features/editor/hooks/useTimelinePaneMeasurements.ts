@@ -7,6 +7,7 @@ import {
 
 export function useTimelinePaneMeasurements(
   onSizeConstraintsChange: (constraints: TimelinePanelSizeConstraints) => void,
+  hasAudioContent: boolean,
 ) {
   const timelineRef = useRef<HTMLDivElement>(null);
   const audioContentRef = useRef<HTMLDivElement>(null);
@@ -14,33 +15,33 @@ export function useTimelinePaneMeasurements(
   useLayoutEffect(() => {
     const timeline = timelineRef.current;
     const audioContent = audioContentRef.current;
-    if (!timeline || !audioContent) {
+    if (!timeline) {
       return;
     }
     const timelineElement: HTMLDivElement = timeline;
-    const audioContentElement: HTMLDivElement = audioContent;
+    const audioContentElement: HTMLDivElement | null = audioContent;
 
     function measure() {
       const timelineHeight = Math.max(
         timelineElement.scrollHeight,
         timelineElement.getBoundingClientRect().height,
       );
-      const audioContentBounds = audioContentElement.getBoundingClientRect();
-      const audioContentHeight = Math.max(
-        audioContentElement.scrollHeight,
-        audioContentBounds.height,
-      );
-      if (timelineHeight <= 0 || audioContentHeight <= 0) {
+      const audioContentBounds = audioContentElement?.getBoundingClientRect();
+      const audioContentHeight = audioContentElement
+        ? Math.max(audioContentElement.scrollHeight, audioContentBounds?.height ?? 0)
+        : 0;
+      if (timelineHeight <= 0 || (hasAudioContent && audioContentHeight <= 0)) {
         return;
       }
 
-      const firstTrack = audioContentElement.querySelector<HTMLElement>(
+      const firstTrack = audioContentElement?.querySelector<HTMLElement>(
         '[data-slot="audio-track-row"]',
       );
-      const paddingBottom =
-        Number.parseFloat(getComputedStyle(audioContentElement).paddingBottom) || 0;
+      const paddingBottom = audioContentElement
+        ? Number.parseFloat(getComputedStyle(audioContentElement).paddingBottom) || 0
+        : 0;
       const firstTrackBottom = firstTrack
-        ? firstTrack.getBoundingClientRect().bottom - audioContentBounds.top + paddingBottom
+        ? firstTrack.getBoundingClientRect().bottom - (audioContentBounds?.top ?? 0) + paddingBottom
         : null;
 
       onSizeConstraintsChange(
@@ -55,10 +56,12 @@ export function useTimelinePaneMeasurements(
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(timelineElement);
-    observer.observe(audioContentElement);
+    if (audioContentElement) {
+      observer.observe(audioContentElement);
+    }
 
     return () => observer.disconnect();
-  }, [onSizeConstraintsChange]);
+  }, [hasAudioContent, onSizeConstraintsChange]);
 
   return { timelineRef, audioContentRef };
 }

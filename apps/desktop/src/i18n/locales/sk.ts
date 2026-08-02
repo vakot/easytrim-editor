@@ -53,6 +53,12 @@ export const sk = {
       formats: "MP4, MOV, MKV, WebM, AVI, TS, MTS, M2TS, M4V, WMV, FLV",
     },
     capabilities: {
+      checkingDescription: "Kontroluje sa pripravenosť požadovaných multimediálnych závislostí.",
+      readyDescription:
+        "Všetky požadované multimediálne závislosti sú nainštalované a pripravené na použitie.",
+      unavailableDescription: "Niektoré požadované multimediálne závislosti nie sú dostupné.",
+      installed: "Nainštalované",
+      missingStatus: "Chýba",
       checking: "Kontrolujú sa multimediálne nástroje…",
       failed: "Kontrola multimediálnych nástrojov zlyhala",
       ready: "Multimediálne nástroje sú pripravené",

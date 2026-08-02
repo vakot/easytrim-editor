@@ -70,7 +70,7 @@ export function TrimTimeline({
 
   return (
     <section
-      className="min-w-0 select-none bg-background px-5 pt-4"
+      className="min-w-0 select-none bg-background px-5 pt-4 pb-2"
       aria-labelledby="timeline-title"
     >
       <TimelineHeader

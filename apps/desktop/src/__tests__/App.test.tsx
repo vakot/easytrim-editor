@@ -246,6 +246,20 @@ describe("App", () => {
     expect(screen.getByRole("toolbar", { name: "Application toolbar" })).toBeInTheDocument();
   });
 
+  it("renders only the timeline when the source has no audio tracks", async () => {
+    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.inspectMedia.mockResolvedValue({ ...media, audioStreams: [] });
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Select video" }));
+
+    expect(await screen.findByRole("heading", { name: "Selected Segment" })).toBeInTheDocument();
+    expect(screen.queryByTestId("audio-tracks-scroll")).not.toBeInTheDocument();
+    expect(screen.queryByText("This source has no audio tracks.")).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Audio tracks" })).not.toBeInTheDocument();
+  });
+
   it("uses Escape to show and then dismiss the return confirmation dialog", async () => {
     mocks.chooseSource.mockResolvedValue(selection);
     const user = userEvent.setup();

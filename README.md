@@ -40,13 +40,47 @@ Install the generated DMG and launch EasyTrim from Finder. The native media proc
 
 Public macOS distribution requires a Developer ID Application certificate and notarization credentials. Configure them only as CI secrets (`APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY`, `KEYCHAIN_PASSWORD`, `APPLE_ID`, `APPLE_PASSWORD`, and `APPLE_TEAM_ID`); never commit certificates or credentials.
 
+## Local release artifacts
+
+Build and upload artifacts to an existing GitHub release without using GitHub Actions:
+
+```sh
+pnpm release:local -- --tag v1.0.1 --platform current
+```
+
+Supported platforms are `windows`, `linux`, `macos-intel`, and `macos-apple-silicon`. The command builds the current machine's native bundles and uploads them with `gh release upload`; authenticate with `gh auth login` first. Windows can build Windows artifacts, and Linux can be built inside WSL or a Linux Docker environment. macOS artifacts require a macOS machine because Apple targets cannot be built on Windows.
+
+Release assets use the same predictable name locally and in GitHub Actions: `EasyTrim_<version>_<os>_<arch>_<bundle><extension>`. For example, Windows NSIS and Apple Silicon DMG builds are uploaded as `EasyTrim_1.0.0_windows_x64_nsis.exe` and `EasyTrim_1.0.0_macos_arm64_dmg.dmg`.
+
+GitHub does not build release artifacts automatically on pushes or tags. Use `release:local` whenever possible, or explicitly dispatch the development or stable release workflow and select the required platform. Both manual workflows default to Linux to avoid accidentally starting Windows and macOS runners.
+
+Pull requests run one generic `Build` job on Linux. It performs the web and Rust quality gates and creates a production Tauri executable without packaging or uploading installers. CI does not run again after merging to `master`.
+
 ## Development
 
-Start the Tauri desktop application:
+Start the Tauri desktop application with the Vite development server and hot reload:
 
 ```powershell
 pnpm dev
 ```
+
+Build both production layers for the current operating system, without creating an installer:
+
+```powershell
+pnpm build
+```
+
+Tauri runs the configured `beforeBuildCommand`, which creates the optimized Vite bundle in `apps/desktop/dist`, then embeds it into the release-mode Rust executable under `target/release`.
+
+Launch that exact production executable locally:
+
+```powershell
+pnpm preview
+```
+
+No local web server is involved. Re-run `pnpm build` after changing frontend or native source. These commands are identical on Windows, Linux, and macOS once that operating system's Tauri build prerequisites are installed.
+
+For frontend-only diagnostics, `pnpm build:web` and `pnpm preview:web` remain available, but native Tauri functionality is unavailable in the browser preview.
 
 Run the frontend quality gate:
 

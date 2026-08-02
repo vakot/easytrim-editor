@@ -88,6 +88,8 @@
   --sidebar-border: #d5d2cb;
   --sidebar-ring: #efbf04;
   --brand-wall: #dedbd5;
+  --brand-wall-easy: #e5e2dc;
+  --brand-wall-trim: #d7d4ce;
   --preview-surface: #dedbd4;
 }
 
@@ -126,6 +128,8 @@
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
   --brand-wall: #29292f;
+  --brand-wall-easy: #34343a;
+  --brand-wall-trim: #242429;
   --preview-surface: #000000;
 }
 
@@ -160,6 +164,8 @@
     --sidebar-border: oklch(1 0 0 / 10%);
     --sidebar-ring: oklch(0.556 0 0);
     --brand-wall: #29292f;
+    --brand-wall-easy: #34343a;
+    --brand-wall-trim: #242429;
     --preview-surface: #000000;
   }
 }
@@ -178,4 +184,17 @@
   html {
     @apply font-sans;
   }
+}
+
+/* Radix renders the custom scrollbar alongside a native viewport scrollbar.
+   Hide the native one consistently in browser and packaged WebView2 builds. */
+.scroll-area-viewport {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scroll-area-viewport::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
