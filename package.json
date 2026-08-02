@@ -8,7 +8,7 @@
     "node": ">=22.12.0"
   },
   "scripts": {
-    "dev": "pnpm --filter @easytrim-editor/desktop tauri dev",
+    "dev": "node scripts/dev.mjs",
     "build": "pnpm --filter @easytrim-editor/desktop tauri build --no-bundle",
     "build:web": "pnpm --filter @easytrim-editor/desktop build",
     "preview": "node scripts/preview-production.mjs",

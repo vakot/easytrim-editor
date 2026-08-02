@@ -9,7 +9,7 @@ use std::{
 
 use crate::{
     error::AppError,
-    process::{ProcessOutput, run_bounded_cancellable},
+    process::{ProcessOutput, media_debug, run_bounded_cancellable},
     state::{ActiveSource, PreviewArtifact, PreviewStreamSelection},
 };
 
@@ -29,13 +29,28 @@ pub fn generate_preview(source: &ActiveSource) -> Result<PreviewArtifact, AppErr
     } else {
         Encoder::Nvidia
     };
+    media_debug(format_args!(
+        "preview: trying preferred encoder={} source_id={}",
+        hardware_encoder.name(),
+        source.source_id
+    ));
     let hardware_result = run_encoder(source, streams, artifact.path(), hardware_encoder);
     match hardware_result {
-        Ok(output) if output.status.success() => return Ok(artifact),
+        Ok(output) if output.status.success() => {
+            media_debug(format_args!(
+                "preview: preferred encoder={} succeeded",
+                hardware_encoder.name()
+            ));
+            return Ok(artifact);
+        }
         Err(error) if error.kind() == io::ErrorKind::Interrupted => {
             return Err(AppError::source_replaced());
         }
         _ => {
+            media_debug(format_args!(
+                "preview: preferred encoder={} failed; falling back to software",
+                hardware_encoder.name()
+            ));
             let _ = fs::remove_file(artifact.path());
         }
     }
@@ -57,6 +72,16 @@ enum Encoder {
     Nvidia,
     VideoToolbox,
     Software,
+}
+
+impl Encoder {
+    fn name(self) -> &'static str {
+        match self {
+            Self::Nvidia => "h264_nvenc",
+            Self::VideoToolbox => "h264_videotoolbox",
+            Self::Software => "libx264",
+        }
+    }
 }
 
 fn run_encoder(

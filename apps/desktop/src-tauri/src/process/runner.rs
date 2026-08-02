@@ -14,6 +14,12 @@ use wait_timeout::ChildExt;
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 const PROCESS_POLL_INTERVAL: Duration = Duration::from_millis(100);
 
+pub fn media_debug(message: impl std::fmt::Display) {
+    if std::env::var_os("EASYTRIM_MEDIA_DEBUG").is_some_and(|value| value == "1") {
+        eprintln!("[easytrim-media] {message}");
+    }
+}
+
 #[derive(Debug)]
 pub struct ProcessOutput {
     pub status: ExitStatus,
@@ -53,6 +59,12 @@ pub fn run_bounded_cancellable(
     }
 
     let executable_path = resolve_executable(executable)?;
+    let command_started_at = Instant::now();
+    media_debug(format_args!(
+        "start {} {:?}",
+        executable_path.display(),
+        arguments
+    ));
     let mut command = Command::new(executable_path);
     command
         .args(arguments)
@@ -109,6 +121,13 @@ pub fn run_bounded_cancellable(
 
     let (stdout, stdout_truncated) = join_reader(stdout_reader)?;
     let (stderr, stderr_truncated) = join_reader(stderr_reader)?;
+
+    media_debug(format_args!(
+        "finish {:?} status={} elapsed_ms={}",
+        executable,
+        status,
+        command_started_at.elapsed().as_millis()
+    ));
 
     Ok(ProcessOutput {
         status,
