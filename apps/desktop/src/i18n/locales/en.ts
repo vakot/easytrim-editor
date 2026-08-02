@@ -35,7 +35,8 @@ export const en = {
     },
   },
   import: {
-    openVideo: "Open video",
+    openVideo: "Open",
+    openTooltip: "Choose a video file to open in the editor.",
     opening: "Opening…",
     welcome: {
       eyebrow: "Start a new clip",
@@ -184,8 +185,10 @@ export const en = {
   export: {
     save: "Save",
     saveShortcut: "Save (Ctrl+S)",
+    saveTooltip: "Save the selected segment without re-encoding.",
     export: "Export",
     exportShortcut: "Export (Ctrl+E)",
+    exportTooltip: "Render the selected segment with your export settings.",
     queue: "Export queue",
     empty: "No exports yet.",
     canceled: "Canceled",

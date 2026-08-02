@@ -1760,7 +1760,7 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: "Select video" }));
     expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Open video" }));
+    await user.click(screen.getByRole("button", { name: "Open" }));
 
     expect(screen.getByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
     expect(mocks.inspectMedia).toHaveBeenCalledTimes(1);

@@ -24,6 +24,7 @@ import { PresetManager } from "./PresetManager";
 import { CommandPreview } from "./CommandPreview";
 import { FRAME_RATE_OPTIONS, rateFromValue, resolutionOptions } from "../utils/export-options";
 import { useTranslation } from "react-i18next";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface OptimizedExportDialogProps {
   open: boolean;
@@ -58,11 +59,14 @@ export function OptimizedExportDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogTrigger asChild>
-        <Button aria-keyshortcuts="Control+E" title={t("export.exportShortcut")}>
-          {t("export.export")}
-        </Button>
-      </DialogTrigger>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <DialogTrigger asChild>
+            <Button aria-keyshortcuts="Control+E">{t("export.export")}</Button>
+          </DialogTrigger>
+        </TooltipTrigger>
+        <TooltipContent>{t("export.exportTooltip")}</TooltipContent>
+      </Tooltip>
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>{t("export.export")}</DialogTitle>

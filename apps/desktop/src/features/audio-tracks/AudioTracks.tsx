@@ -39,7 +39,7 @@ export function AudioTracks({
   }
 
   return (
-    <section className="grid min-w-0 gap-2 pt-4" aria-labelledby="timeline-audio-title">
+    <section className="grid min-w-0 gap-2" aria-labelledby="timeline-audio-title">
       <h3
         id="timeline-audio-title"
         className="font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
