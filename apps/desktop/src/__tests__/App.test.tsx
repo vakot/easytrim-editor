@@ -88,12 +88,12 @@ beforeEach(() => {
   mocks.inspectMedia.mockResolvedValue(media);
   mocks.prepareSourcePreview.mockResolvedValue({
     sourceId: selection.sourceId,
-    url: "http://clipkit-media.localhost/source-1?variant=source",
+    url: "http://easytrim-media.localhost/source-1?variant=source",
     kind: "source",
   });
   mocks.prepareProxyPreview.mockResolvedValue({
     sourceId: selection.sourceId,
-    url: "http://clipkit-media.localhost/source-1?variant=proxy",
+    url: "http://easytrim-media.localhost/source-1?variant=proxy",
     kind: "proxy",
   });
   mocks.prepareWaveforms.mockImplementation(
@@ -104,7 +104,7 @@ beforeEach(() => {
         jobId,
         streamIndex,
         width,
-        url: `http://clipkit-media.localhost/${sourceId}?variant=waveform&stream=${streamIndex}&width=${width}`,
+        url: `http://easytrim-media.localhost/${sourceId}?variant=waveform&stream=${streamIndex}&width=${width}`,
       })),
   );
   mocks.listenForSourceDrops.mockImplementation(
@@ -142,8 +142,10 @@ describe("App", () => {
     expect(screen.getByText("No exports yet.")).toBeInTheDocument();
     expect(screen.getByLabelText("Source video preview")).toHaveAttribute(
       "src",
-      "http://clipkit-media.localhost/source-1?variant=source",
+      "http://easytrim-media.localhost/source-1?variant=source",
     );
+    expect(screen.getByLabelText("Source video preview")).toHaveAttribute("preload", "auto");
+    expect(screen.getByLabelText("Source video preview")).toHaveAttribute("playsinline");
     expect(screen.getByLabelText("Source video preview")).not.toHaveAttribute("controls");
     expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Previous frame" })).toBeInTheDocument();
@@ -203,6 +205,16 @@ describe("App", () => {
       "aria-pressed",
       "true",
     );
+    const playbackSpeedButton = within(videoToolbar).getByRole("button", {
+      name: "Playback speed",
+    });
+    await user.click(playbackSpeedButton);
+    const playbackSpeedSlider = screen.getByRole("slider", { name: "Playback speed" });
+    playbackSpeedSlider.focus();
+    await user.keyboard("{End}");
+    expect(playbackSpeedButton).toHaveAttribute("aria-pressed", "true");
+    fireEvent.doubleClick(playbackSpeedSlider);
+    expect(playbackSpeedButton).toHaveAttribute("aria-pressed", "false");
     expect(within(videoTimelineRow as HTMLElement).queryByText("Video")).not.toBeInTheDocument();
     expect(screen.getByTestId("source-details-panel")).toContainElement(
       screen.getByRole("heading", { name: "holiday.mp4" }),
@@ -221,7 +233,7 @@ describe("App", () => {
     expect(sourceResizeHandle).toHaveAttribute("tabindex", "0");
     expect(timelineResizeHandle).toHaveAttribute("aria-orientation", "horizontal");
     expect(timelineResizeHandle).toHaveAttribute("tabindex", "0");
-    expect(screen.getAllByRole("separator")).toHaveLength(2);
+    expect(screen.getAllByRole("separator")).toHaveLength(3);
     const fixedTimeline = screen.getByTestId("timeline-fixed-content");
     const audioTracksScroll = screen.getByTestId("audio-tracks-scroll");
     expect(screen.getByTestId("timeline-panel")).toContainElement(fixedTimeline);
@@ -244,6 +256,20 @@ describe("App", () => {
       screen.queryByText("Import a video to inspect its source and prepare a precise cut."),
     ).not.toBeInTheDocument();
     expect(screen.getByRole("toolbar", { name: "Application toolbar" })).toBeInTheDocument();
+  });
+
+  it("renders only the timeline when the source has no audio tracks", async () => {
+    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.inspectMedia.mockResolvedValue({ ...media, audioStreams: [] });
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Select video" }));
+
+    expect(await screen.findByRole("heading", { name: "Selected Segment" })).toBeInTheDocument();
+    expect(screen.queryByTestId("audio-tracks-scroll")).not.toBeInTheDocument();
+    expect(screen.queryByText("This source has no audio tracks.")).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Audio tracks" })).not.toBeInTheDocument();
   });
 
   it("uses Escape to show and then dismiss the return confirmation dialog", async () => {
@@ -451,7 +477,7 @@ describe("App", () => {
             jobId,
             streamIndex,
             width,
-            url: `http://clipkit-media.localhost/${sourceId}?variant=waveform&stream=${streamIndex}&width=${width}`,
+            url: `http://easytrim-media.localhost/${sourceId}?variant=waveform&stream=${streamIndex}&width=${width}`,
           })),
       );
     const user = userEvent.setup();
@@ -704,7 +730,7 @@ describe("App", () => {
     expect(await screen.findByText("720p preview")).toBeInTheDocument();
     expect(screen.getByLabelText("Source video preview")).toHaveAttribute(
       "src",
-      "http://clipkit-media.localhost/source-1?variant=proxy",
+      "http://easytrim-media.localhost/source-1?variant=proxy",
     );
   });
 
@@ -750,6 +776,7 @@ describe("App", () => {
       clientX: 350,
       pointerId: 1,
     });
+    await flushAnimationFrame();
 
     expect(screen.getByRole("slider", { name: "Trim start" })).toHaveAttribute(
       "aria-valuenow",
@@ -761,6 +788,7 @@ describe("App", () => {
       clientX: 100 + (16.75 / 65) * 1000,
       pointerId: 2,
     });
+    await flushAnimationFrame();
     expect(screen.getByRole("slider", { name: "Trim end" })).toHaveAttribute(
       "aria-valuenow",
       "17250000",
@@ -947,6 +975,7 @@ describe("App", () => {
       clientX: clientXForSeconds(24.5),
       pointerId: 33,
     });
+    await flushAnimationFrame();
     expect(segmentHandle).not.toHaveAttribute("data-snap-point");
     expect(screen.getByRole("slider", { name: "Trim start" })).toHaveAttribute(
       "aria-valuenow",
@@ -958,6 +987,7 @@ describe("App", () => {
       pointerId: 33,
       shiftKey: true,
     });
+    await flushAnimationFrame();
     expect(segmentHandle).toHaveAttribute("data-snap-point", "end");
     expect(screen.getByRole("slider", { name: "Trim start" })).toHaveAttribute(
       "aria-valuenow",
@@ -968,6 +998,7 @@ describe("App", () => {
       clientX: clientXForSeconds(24.5),
       pointerId: 33,
     });
+    await flushAnimationFrame();
     expect(segmentHandle).not.toHaveAttribute("data-snap-point");
     expect(screen.getByRole("slider", { name: "Trim start" })).toHaveAttribute(
       "aria-valuenow",
@@ -986,6 +1017,7 @@ describe("App", () => {
       pointerId: 33,
       shiftKey: true,
     });
+    await flushAnimationFrame();
     expect(segmentHandle).toHaveAttribute("data-snap-point", "center");
     expect(screen.getByRole("slider", { name: "Trim start" })).toHaveAttribute(
       "aria-valuenow",
@@ -997,6 +1029,7 @@ describe("App", () => {
       pointerId: 33,
       shiftKey: true,
     });
+    await flushAnimationFrame();
     expect(segmentHandle).toHaveAttribute("data-snap-point", "start");
     expect(screen.getByRole("slider", { name: "Trim start" })).toHaveAttribute(
       "aria-valuenow",
@@ -1021,6 +1054,7 @@ describe("App", () => {
       pointerId: 34,
       shiftKey: true,
     });
+    await flushAnimationFrame();
     expect(segmentHandle).toHaveAttribute("data-snap-point", "end");
     expect(screen.getByRole("slider", { name: "Trim end" })).toHaveAttribute(
       "aria-valuenow",
@@ -1041,6 +1075,7 @@ describe("App", () => {
       pointerId: 35,
       shiftKey: true,
     });
+    await flushAnimationFrame();
     expect(segmentHandle).toHaveAttribute("data-snap-point", "center");
     expect(screen.getByRole("slider", { name: "Trim start" })).toHaveAttribute(
       "aria-valuenow",
@@ -1063,6 +1098,7 @@ describe("App", () => {
       pointerId: 36,
       shiftKey: true,
     });
+    await flushAnimationFrame();
     expect(segmentHandle).toHaveAttribute("data-snap-point", "end");
     expect(screen.getByRole("slider", { name: "Trim end" })).toHaveAttribute(
       "aria-valuenow",
@@ -1128,6 +1164,7 @@ describe("App", () => {
       pointerId: 37,
       shiftKey: true,
     });
+    await flushAnimationFrame();
     expect(segmentHandle).toHaveAttribute("data-snap-point", "start");
     expect(trimStart).toHaveAttribute("aria-valuenow", "30000000");
     expect(playhead).toHaveAttribute("aria-valuenow", "30000000");
@@ -1137,6 +1174,7 @@ describe("App", () => {
       pointerId: 37,
       shiftKey: true,
     });
+    await flushAnimationFrame();
     expect(segmentHandle).not.toHaveAttribute("data-snap-point");
     expect(trimStart).toHaveAttribute("aria-valuenow", "31000000");
     expect(playhead).toHaveAttribute("aria-valuenow", "31000000");
@@ -1146,6 +1184,7 @@ describe("App", () => {
       pointerId: 37,
       shiftKey: true,
     });
+    await flushAnimationFrame();
     expect(segmentHandle).not.toHaveAttribute("data-snap-point");
     expect(trimStart).toHaveAttribute("aria-valuenow", "31500000");
     expect(playhead).toHaveAttribute("aria-valuenow", "31500000");
@@ -1155,6 +1194,7 @@ describe("App", () => {
       pointerId: 37,
       shiftKey: true,
     });
+    await flushAnimationFrame();
     expect(segmentHandle).toHaveAttribute("data-snap-point", "start");
     expect(trimStart).toHaveAttribute("aria-valuenow", "31500000");
     fireEvent.pointerUp(segmentHandle, {
@@ -1217,6 +1257,7 @@ describe("App", () => {
       clientX: clientXForSeconds(40),
       pointerId: 40,
     });
+    await flushAnimationFrame();
     expect(playhead).toHaveAttribute("aria-valuenow", "35000000");
     expect(video.currentTime).toBe(35);
     fireEvent.pointerUp(segmentHandle, {
@@ -1246,6 +1287,7 @@ describe("App", () => {
       clientX: clientXForSeconds(20),
       pointerId: 41,
     });
+    await flushAnimationFrame();
     expect(playhead).toHaveAttribute("aria-valuenow", "25000000");
     expect(video.currentTime).toBe(25);
 
@@ -1266,6 +1308,7 @@ describe("App", () => {
       clientX: clientXForSeconds(35),
       pointerId: 41,
     });
+    await flushAnimationFrame();
     expect(playhead).toHaveAttribute("aria-valuenow", "30000000");
     expect(video.currentTime).toBe(30);
     fireEvent.pointerUp(segmentHandle, {
@@ -1298,34 +1341,35 @@ describe("App", () => {
     fireEvent.timeUpdate(video);
     const playhead = screen.getByRole("slider", { name: "Playback position" });
     const clientXForSeconds = (seconds: number) => 100 + (seconds / 65) * 1000;
-    const dragBoundaryTo = (name: "Trim start" | "Trim end", seconds: number) => {
+    const dragBoundaryTo = async (name: "Trim start" | "Trim end", seconds: number) => {
       fireEvent.pointerDown(screen.getByRole("slider", { name }), {
         clientX: clientXForSeconds(seconds),
         pointerId: 1,
       });
+      await flushAnimationFrame();
     };
 
-    dragBoundaryTo("Trim start", 10);
+    await dragBoundaryTo("Trim start", 10);
     expect(playhead).toHaveAttribute("aria-valuenow", "30000000");
     expect(video.currentTime).toBe(30);
 
-    dragBoundaryTo("Trim start", 40);
+    await dragBoundaryTo("Trim start", 40);
     expect(playhead).toHaveAttribute("aria-valuenow", "40000000");
     expect(video.currentTime).toBe(40);
 
-    dragBoundaryTo("Trim start", 20);
+    await dragBoundaryTo("Trim start", 20);
     expect(playhead).toHaveAttribute("aria-valuenow", "40000000");
     expect(video.currentTime).toBe(40);
 
-    dragBoundaryTo("Trim end", 50);
+    await dragBoundaryTo("Trim end", 50);
     expect(playhead).toHaveAttribute("aria-valuenow", "40000000");
     expect(video.currentTime).toBe(40);
 
-    dragBoundaryTo("Trim end", 30);
+    await dragBoundaryTo("Trim end", 30);
     expect(playhead).toHaveAttribute("aria-valuenow", "30000000");
     expect(video.currentTime).toBe(30);
 
-    dragBoundaryTo("Trim end", 50);
+    await dragBoundaryTo("Trim end", 50);
     expect(playhead).toHaveAttribute("aria-valuenow", "30000000");
     expect(video.currentTime).toBe(30);
   });
@@ -1374,6 +1418,7 @@ describe("App", () => {
       clientX: clientXForSeconds(35),
       pointerId: 22,
     });
+    await flushAnimationFrame();
     expect(safeTrimToggle).toHaveAttribute("aria-pressed", "true");
     expect(playhead).toHaveAttribute("aria-valuenow", "35000000");
     expect(video.currentTime).toBe(35);
@@ -1418,6 +1463,7 @@ describe("App", () => {
       pointerId: 23,
       shiftKey: true,
     });
+    await flushAnimationFrame();
     expect(trimStart).toHaveAttribute("data-snap-active", "true");
     expect(trimStart).toHaveAttribute("aria-valuenow", "30000000");
     expect(playhead).toHaveAttribute("aria-valuenow", "30000000");
@@ -1427,6 +1473,7 @@ describe("App", () => {
       pointerId: 23,
       shiftKey: true,
     });
+    await flushAnimationFrame();
     expect(trimStart).not.toHaveAttribute("data-snap-active");
     expect(trimStart).toHaveAttribute("aria-valuenow", "31000000");
     expect(playhead).toHaveAttribute("aria-valuenow", "31000000");
@@ -1436,6 +1483,7 @@ describe("App", () => {
       pointerId: 23,
       shiftKey: true,
     });
+    await flushAnimationFrame();
     expect(trimStart).not.toHaveAttribute("data-snap-active");
     expect(trimStart).toHaveAttribute("aria-valuenow", "31500000");
     expect(playhead).toHaveAttribute("aria-valuenow", "31500000");
@@ -1445,6 +1493,7 @@ describe("App", () => {
       pointerId: 23,
       shiftKey: true,
     });
+    await flushAnimationFrame();
     expect(trimStart).toHaveAttribute("data-snap-active", "true");
     expect(trimStart).toHaveAttribute("aria-valuenow", "31500000");
     fireEvent.pointerUp(trimStart, {
@@ -1546,6 +1595,7 @@ describe("App", () => {
       pointerId: 12,
       shiftKey: true,
     });
+    await flushAnimationFrame();
     expect(screen.getByRole("slider", { name: "Trim start" })).toHaveAttribute(
       "aria-valuenow",
       "30000000",
@@ -1569,6 +1619,7 @@ describe("App", () => {
       pointerId: 14,
       shiftKey: true,
     });
+    await flushAnimationFrame();
     expect(screen.getByRole("slider", { name: "Trim end" })).toHaveAttribute(
       "aria-valuenow",
       "30000000",
@@ -1753,3 +1804,12 @@ describe("App", () => {
     expect(mocks.unlistenDrops).toHaveBeenCalledOnce();
   });
 });
+
+async function flushAnimationFrame() {
+  await act(
+    () =>
+      new Promise<void>((resolve) => {
+        requestAnimationFrame(() => resolve());
+      }),
+  );
+}

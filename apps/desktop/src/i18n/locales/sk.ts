@@ -6,7 +6,7 @@ type TranslationShape<T> = {
 
 export const sk = {
   common: {
-    brand: "CLIP KIT",
+    brand: "EasyTrim Editor",
     cancel: "Zrušiť",
     close: "Zavrieť",
     retry: "Skúsiť znova",
@@ -27,7 +27,7 @@ export const sk = {
   },
   app: {
     toolbar: "Panel aplikácie",
-    returnToWelcome: "Návrat na úvodnú stránku CLIP KIT",
+    returnToWelcome: "Návrat na úvodnú stránku EasyTrim Editor",
     dragUnavailable: "Presunutie súboru nie je dostupné: {{message}}",
     nativeDialog: {
       title: "Čaká sa na systémové okno",
@@ -53,6 +53,12 @@ export const sk = {
       formats: "MP4, MOV, MKV, WebM, AVI, TS, MTS, M2TS, M4V, WMV, FLV",
     },
     capabilities: {
+      checkingDescription: "Kontroluje sa pripravenosť požadovaných multimediálnych závislostí.",
+      readyDescription:
+        "Všetky požadované multimediálne závislosti sú nainštalované a pripravené na použitie.",
+      unavailableDescription: "Niektoré požadované multimediálne závislosti nie sú dostupné.",
+      installed: "Nainštalované",
+      missingStatus: "Chýba",
       checking: "Kontrolujú sa multimediálne nástroje…",
       failed: "Kontrola multimediálnych nástrojov zlyhala",
       ready: "Multimediálne nástroje sú pripravené",
@@ -120,6 +126,9 @@ export const sk = {
       label: "Prehrávanie segmentu",
       enabled: "Prehrávanie segmentu: zapnuté — prehrávanie je obmedzené na vybraný segment",
       disabled: "Prehrávanie segmentu: vypnuté — prehráva sa celá časová os",
+    },
+    playbackSpeed: {
+      label: "Rýchlosť prehrávania",
     },
     opening: "Otvára sa náhľad…",
     preparing: "Pripravuje sa kompatibilný náhľad…",
@@ -209,12 +218,12 @@ export const sk = {
     framesPerSecond: "{{value}} FPS",
   },
   release: {
-    updateAvailable: "Je dostupná nová verzia ClipKit:",
+    updateAvailable: "Je dostupná nová verzia EasyTrim Editor:",
     update: "Aktualizovať",
     dismiss: "Skryť upozornenie na aktualizáciu",
   },
   support: {
-    message: "Podporte autora a pomôžte zlepšovať ClipKit.",
+    message: "Podporte autora a pomôžte zlepšovať EasyTrim Editor.",
     dismiss: "Skryť správu podpory",
     resetDevelopment: "Obnoviť odznak podpory",
   },

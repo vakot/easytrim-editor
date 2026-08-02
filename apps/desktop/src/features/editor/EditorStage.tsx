@@ -19,6 +19,7 @@ import { VideoPreview } from "../preview/VideoPreview";
 import { TrimTimeline } from "../timeline";
 import { TimelinePane } from "./components/TimelinePane";
 import { usePlaybackModes } from "./hooks/usePlaybackModes";
+import { usePlaybackSpeed } from "./hooks/usePlaybackSpeed";
 import { useTimelinePanelSizing } from "./hooks/useTimelinePanelSizing";
 import type { EditorShortcutActions, EditorStageProps } from "./types";
 import { editorShortcutFromEvent, isShortcutBlockedTarget } from "./utils/editor-shortcuts";
@@ -65,29 +66,45 @@ export function EditorStage({
   const playbackFrameRef = useRef<number | null>(null);
   const scrubFrameRef = useRef<number | null>(null);
   const pendingScrubMicrosRef = useRef<number | null>(null);
+  const trimCommitFrameRef = useRef<number | null>(null);
+  const pendingTrimCommitRef = useRef<TrimRange | null>(null);
   const resumeAfterScrubRef = useRef(false);
   const playbackStartSequenceRef = useRef(0);
   const isPlayingRef = useRef(false);
   const lastPlaybackCommitAtRef = useRef(0);
   const trimRef = useRef(trim);
+  const trimPropRef = useRef(trim);
   const currentPlayheadMicrosRef = useRef(trim.startMicros);
   const segmentDragActiveRef = useRef(false);
   const segmentFollowBoundaryRef = useRef<TrimBoundary | null>(null);
   const shortcutActionsRef = useRef<EditorShortcutActions | null>(null);
-  trimRef.current = trim;
+  if (trimPropRef.current !== trim) {
+    trimPropRef.current = trim;
+    trimRef.current = trim;
+  }
 
   const playbackModes = usePlaybackModes();
+  const playbackSpeed = usePlaybackSpeed();
   const [playheadMicros, setPlayheadMicros] = useState(trim.startMicros);
   const [isPlaying, setIsPlaying] = useState(false);
   const [safeTrimFollowingEnabled, setSafeTrimFollowingEnabled] = useState(true);
   const [transportError, setTransportError] = useState<string | null>(null);
   const displayedPlayheadMicros = clampPlaybackMicros(playheadMicros, trim.sourceDurationMicros);
 
+  useEffect(() => {
+    const video = videoRef.current;
+    if (video) video.playbackRate = playbackSpeed.speed;
+    for (const audio of audioElementsRef.current.values()) {
+      audio.playbackRate = playbackSpeed.speed;
+    }
+  }, [audioPreviewUrls, playbackSpeed.speed]);
+
   useEffect(
     () => () => {
       playbackStartSequenceRef.current += 1;
       cancelFrame(playbackFrameRef);
       cancelFrame(scrubFrameRef);
+      cancelFrame(trimCommitFrameRef);
     },
     [],
   );
@@ -132,6 +149,7 @@ export function EditorStage({
       element.crossOrigin = "anonymous";
       element.src = url;
       element.preload = "auto";
+      element.playbackRate = playbackSpeed.speed;
       element.setAttribute("aria-hidden", "true");
       element.style.display = "none";
       document.body.appendChild(element);
@@ -145,7 +163,7 @@ export function EditorStage({
     return () => {
       // Keep the graph alive across volume changes; elements are disposed on source unmount.
     };
-  }, [audioPreviewUrls]);
+  }, [audioPreviewUrls, playbackSpeed.speed]);
 
   useEffect(() => {
     const masterGain = masterGainRef.current;
@@ -244,6 +262,30 @@ export function EditorStage({
     }
   }
 
+  function flushTrimCommit() {
+    cancelFrame(trimCommitFrameRef);
+    const pendingTrim = pendingTrimCommitRef.current;
+    pendingTrimCommitRef.current = null;
+    if (pendingTrim) {
+      onTrimChange(pendingTrim);
+    }
+  }
+
+  function queueTrimCommit(nextTrim: TrimRange) {
+    pendingTrimCommitRef.current = nextTrim;
+    if (trimCommitFrameRef.current !== null) {
+      return;
+    }
+    trimCommitFrameRef.current = requestAnimationFrame(() => {
+      trimCommitFrameRef.current = null;
+      const pendingTrim = pendingTrimCommitRef.current;
+      pendingTrimCommitRef.current = null;
+      if (pendingTrim) {
+        onTrimChange(pendingTrim);
+      }
+    });
+  }
+
   function queueScrubSeek(micros: number) {
     pendingScrubMicrosRef.current = clampPlaybackMicros(
       micros,
@@ -260,6 +302,19 @@ export function EditorStage({
         commitSeek(pendingMicros);
       }
     });
+  }
+
+  function queueSafeTrimSeek(micros: number) {
+    const clamped = clampPlaybackMicros(micros, trimRef.current.sourceDurationMicros);
+    currentPlayheadMicrosRef.current = clamped;
+    syncPlayheadElements(
+      playheadRef.current,
+      audioPlayheadRef.current,
+      clamped,
+      trimRef.current.sourceDurationMicros,
+      frameRate,
+    );
+    queueScrubSeek(clamped);
   }
 
   function flushScrubSeek() {
@@ -359,9 +414,7 @@ export function EditorStage({
     const { action } = boundary;
     if (action.type === "restart") {
       commitSeek(action.positionMicros);
-      if (videoRef.current?.paused) {
-        startMediaPlayback();
-      }
+      startMediaPlayback();
       return true;
     }
 
@@ -508,6 +561,7 @@ export function EditorStage({
     }
     const nextTrim = setTrimBoundaryAtPlayhead(currentTrim, boundary, currentPlayheadMicros);
     trimRef.current = nextTrim;
+    flushTrimCommit();
     onTrimChange(nextTrim);
   }
 
@@ -522,9 +576,9 @@ export function EditorStage({
       : { playheadMicros: currentPlayheadMicros, boundary: null };
 
     trimRef.current = nextTrim;
-    onTrimChange(nextTrim);
+    queueTrimCommit(nextTrim);
     if (follow.playheadMicros !== currentPlayheadMicros) {
-      commitSeek(follow.playheadMicros);
+      queueSafeTrimSeek(follow.playheadMicros);
     }
     return follow.boundary;
   }
@@ -544,9 +598,9 @@ export function EditorStage({
 
     segmentFollowBoundaryRef.current = follow.boundary;
     trimRef.current = nextTrim;
-    onTrimChange(nextTrim);
+    queueTrimCommit(nextTrim);
     if (follow.playheadMicros !== currentPlayheadMicros) {
-      commitSeek(follow.playheadMicros);
+      queueSafeTrimSeek(follow.playheadMicros);
     }
     return follow.boundary;
   }
@@ -559,6 +613,13 @@ export function EditorStage({
   function handleSegmentDragEnd() {
     segmentDragActiveRef.current = false;
     segmentFollowBoundaryRef.current = null;
+    flushTrimCommit();
+    flushScrubSeek();
+  }
+
+  function handleTrimDragEnd() {
+    flushTrimCommit();
+    handleScrubEnd();
   }
 
   shortcutActionsRef.current = {
@@ -581,6 +642,7 @@ export function EditorStage({
           <VideoPreview
             sourceId={sourceId}
             preview={preview}
+            playbackRate={playbackSpeed.speed}
             videoRef={videoRef}
             onPlaybackError={onPreviewPlaybackError}
             onLoadedMetadata={() => commitSeek(displayedPlayheadMicros)}
@@ -591,6 +653,15 @@ export function EditorStage({
               startPlayheadAnimation();
             }}
             onPause={() => {
+              // Layout changes can briefly pause the video element while the
+              // transport is still logically playing. Do not let that browser
+              // lifecycle event pause the independent audio graph or change
+              // the transport state. Explicit transport actions update the
+              // ref before calling pause(), so they still reach this branch.
+              if (isPlayingRef.current) {
+                void videoRef.current?.play().catch(() => undefined);
+                return;
+              }
               isPlayingRef.current = false;
               setIsPlaying(false);
               pauseAudioPlayback();
@@ -622,6 +693,7 @@ export function EditorStage({
         className="min-h-0 min-w-0 bg-background"
       >
         <TimelinePane
+          range={trim}
           onSizeConstraintsChange={timelinePanelSizing.onSizeConstraintsChange}
           timeline={
             <TrimTimeline
@@ -665,16 +737,20 @@ export function EditorStage({
                     safeTrimFollowingEnabled={safeTrimFollowingEnabled}
                     loopPlaybackEnabled={playbackModes.loopEnabled}
                     segmentPlaybackEnabled={playbackModes.segmentEnabled}
+                    playbackSpeed={playbackSpeed.speed}
                     onToggleSafeTrimFollowing={() =>
                       setSafeTrimFollowingEnabled((enabled) => !enabled)
                     }
                     onToggleLoopPlayback={handleToggleLoopPlayback}
                     onToggleSegmentPlayback={handleToggleSegmentPlayback}
+                    onPlaybackSpeedChange={playbackSpeed.setSpeed}
                   />
                 ) : null
               }
               onChange={handleTrimBoundaryChange}
               onMoveSegment={handleSegmentMove}
+              onTrimDragStart={handleScrubStart}
+              onTrimDragEnd={handleTrimDragEnd}
               onSegmentDragStart={handleSegmentDragStart}
               onSegmentDragEnd={handleSegmentDragEnd}
               onSeek={commitSeek}
@@ -684,23 +760,25 @@ export function EditorStage({
             />
           }
           audioTracks={
-            <AudioTracks
-              streams={audioStreams}
-              tracks={audioTracks}
-              masterEnabled={masterEnabled}
-              masterVolumePercent={masterVolumePercent}
-              range={trim}
-              playheadMicros={displayedPlayheadMicros}
-              playheadRef={audioPlayheadRef}
-              mergeAudio={mergeAudio}
-              onToggleTrack={onToggleAudioTrack}
-              onTrackVolumeChange={onAudioTrackVolumeChange}
-              onToggleMaster={onToggleAudioMaster}
-              onMasterVolumeChange={onMasterVolumeChange}
-              onToggleMerge={onToggleAudioMerge}
-              onPrepareWaveforms={onPrepareWaveforms}
-              onWaveformImageError={onWaveformImageError}
-            />
+            audioStreams.length > 0 ? (
+              <AudioTracks
+                streams={audioStreams}
+                tracks={audioTracks}
+                masterEnabled={masterEnabled}
+                masterVolumePercent={masterVolumePercent}
+                range={trim}
+                playheadMicros={displayedPlayheadMicros}
+                playheadRef={audioPlayheadRef}
+                mergeAudio={mergeAudio}
+                onToggleTrack={onToggleAudioTrack}
+                onTrackVolumeChange={onAudioTrackVolumeChange}
+                onToggleMaster={onToggleAudioMaster}
+                onMasterVolumeChange={onMasterVolumeChange}
+                onToggleMerge={onToggleAudioMerge}
+                onPrepareWaveforms={onPrepareWaveforms}
+                onWaveformImageError={onWaveformImageError}
+              />
+            ) : null
           }
         />
       </Panel>

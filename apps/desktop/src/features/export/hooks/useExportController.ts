@@ -149,7 +149,10 @@ export function useExportController({
     request: FastExportRequest | OptimizedExportRequest,
     output: OutputSelection,
   ) {
-    const id = `export-toast-${++toastSequence.current}`;
+    // The controller is remounted when a new source is imported. Include the
+    // source identity so the new controller cannot reuse an old queue item id
+    // and route later progress into the previous export.
+    const id = `export-toast-${source.sourceId}-${++toastSequence.current}`;
     setQueue((current) => [
       ...current,
       {

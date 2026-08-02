@@ -19,6 +19,8 @@ export function TrimTimeline({
   videoToolbar,
   onChange,
   onMoveSegment,
+  onTrimDragStart,
+  onTrimDragEnd,
   onSegmentDragStart,
   onSegmentDragEnd,
   onSeek,
@@ -50,6 +52,8 @@ export function TrimTimeline({
     frameRate,
     onChange,
     onMoveSegment,
+    onTrimDragStart,
+    onTrimDragEnd,
     onSegmentDragStart,
     onSegmentDragEnd,
     onSeek,
@@ -57,20 +61,13 @@ export function TrimTimeline({
     onScrub,
     onScrubEnd,
   });
-  const startPercent = timelinePercent(range.startMicros, range.sourceDurationMicros);
-  const endPercent = timelinePercent(range.endMicros, range.sourceDurationMicros);
-  const segmentDurationMicros = range.endMicros - range.startMicros;
-  const segmentCenterPercent = timelinePercent(
-    range.startMicros + segmentDurationMicros / 2,
-    range.sourceDurationMicros,
-  );
   const minimumDurationMicros = minimumSelectionMicros(range.sourceDurationMicros);
   const playheadValue = clampPlaybackMicros(playheadMicros, range.sourceDurationMicros);
   const playheadPercent = timelinePercent(playheadValue, range.sourceDurationMicros);
 
   return (
     <section
-      className="min-w-0 select-none bg-background px-5 pt-4"
+      className="min-w-0 select-none bg-background px-5 pt-4 pb-2"
       aria-labelledby="timeline-title"
     >
       <TimelineHeader
@@ -108,11 +105,13 @@ export function TrimTimeline({
         >
           <div
             className={styles.selection}
-            style={{ left: `${startPercent}%`, right: `${100 - endPercent}%` }}
+            style={{
+              left: "var(--timeline-trim-start)",
+              right: "var(--timeline-trim-end-inset)",
+            }}
           />
           <SegmentDragHandle
             range={range}
-            percent={segmentCenterPercent}
             dragging={segmentDragging}
             snapPoint={segmentSnapPoint}
             onPointerDown={startSegmentDrag}
@@ -140,7 +139,6 @@ export function TrimTimeline({
             value={range.startMicros}
             minimum={0}
             maximum={range.endMicros - minimumDurationMicros}
-            percent={startPercent}
             dragging={trimDragState?.boundary === "start"}
             snapActive={trimDragState?.boundary === "start" && trimDragState.snapActive}
             onPointerDown={(event) => handleTrimPointer("start", event, true)}
@@ -154,7 +152,6 @@ export function TrimTimeline({
             value={range.endMicros}
             minimum={range.startMicros + minimumDurationMicros}
             maximum={range.sourceDurationMicros}
-            percent={endPercent}
             dragging={trimDragState?.boundary === "end"}
             snapActive={trimDragState?.boundary === "end" && trimDragState.snapActive}
             onPointerDown={(event) => handleTrimPointer("end", event, true)}

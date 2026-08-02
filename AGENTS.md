@@ -1,4 +1,4 @@
-# ClipKit agent instructions
+# EasyTrim Editor agent instructions
 
 This file is the auto-loaded entry point for every repository task. Keep it compact; reusable policy lives in `.agents/rules/`.
 
@@ -23,9 +23,9 @@ Shared rules are authoritative for repository-wide conventions. Skills add stack
 
 ## Skill routing
 
-- Use `clipkit-tauri-rust` for Rust, Tauri, IPC, native state, process lifecycle, security configuration, or packaging.
-- Use `clipkit-ffmpeg-pipeline` for FFprobe/FFmpeg behavior, metadata, trim/export semantics, audio processing, presets, or media benchmarks.
-- Use `clipkit-react-interface` for React, TypeScript, Vite, editor state, timeline interaction, accessibility, or frontend tests.
+- Use `easytrim-editor-tauri-rust` for Rust, Tauri, IPC, native state, process lifecycle, security configuration, or packaging.
+- Use `easytrim-editor-ffmpeg-pipeline` for FFprobe/FFmpeg behavior, metadata, trim/export semantics, audio processing, presets, or media benchmarks.
+- Use `easytrim-editor-react-interface` for React, TypeScript, Vite, editor state, timeline interaction, accessibility, or frontend tests.
 - Use all applicable skills for cross-boundary work. Keep native, media, and UI contract changes synchronized.
 
 ## Review expectations

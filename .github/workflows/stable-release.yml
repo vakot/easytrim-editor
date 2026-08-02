@@ -1,0 +1,133 @@
+name: Stable release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing version tag to publish
+        required: true
+        type: string
+      platform:
+        description: Platform to publish without rebuilding other release assets
+        required: true
+        default: linux
+        type: choice
+        options:
+          - linux
+          - windows
+          - macos-intel
+          - macos-apple-silicon
+
+permissions:
+  contents: write
+
+concurrency:
+  group: stable-release-${{ inputs.tag }}
+  cancel-in-progress: false
+
+env:
+  PNPM_VERSION: 11.18.0
+  NODE_VERSION: 22.13.0
+
+jobs:
+  release:
+    name: Stable release
+    runs-on: ${{ inputs.platform == 'linux' && 'ubuntu-22.04' || inputs.platform == 'windows' && 'windows-latest' || inputs.platform == 'macos-intel' && 'macos-15-intel' || 'macos-latest' }}
+    env:
+      APPLE_SIGNING_ENABLED: ${{ secrets.APPLE_CERTIFICATE != '' }}
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.97.1
+          targets: ${{ inputs.platform == 'macos-intel' && 'x86_64-apple-darwin' || inputs.platform == 'macos-apple-silicon' && 'aarch64-apple-darwin' || '' }}
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xdg-utils
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify macOS signing configuration
+        if: startsWith(inputs.platform, 'macos') && env.APPLE_SIGNING_ENABLED == 'true'
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          test -n "$APPLE_CERTIFICATE" || { echo "APPLE_CERTIFICATE is not configured"; exit 1; }
+          test -n "$APPLE_CERTIFICATE_PASSWORD" || { echo "APPLE_CERTIFICATE_PASSWORD is not configured"; exit 1; }
+          test -n "$APPLE_SIGNING_IDENTITY" || { echo "APPLE_SIGNING_IDENTITY is not configured"; exit 1; }
+          test -n "$KEYCHAIN_PASSWORD" || { echo "KEYCHAIN_PASSWORD is not configured"; exit 1; }
+          test -n "$APPLE_ID" || { echo "APPLE_ID is not configured"; exit 1; }
+          test -n "$APPLE_PASSWORD" || { echo "APPLE_PASSWORD is not configured"; exit 1; }
+          test -n "$APPLE_TEAM_ID" || { echo "APPLE_TEAM_ID is not configured"; exit 1; }
+
+      - name: Import macOS signing certificate
+        if: startsWith(inputs.platform, 'macos') && env.APPLE_SIGNING_ENABLED == 'true'
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          trap 'rm -f certificate.p12' EXIT
+          echo "$APPLE_CERTIFICATE" | base64 --decode > certificate.p12
+          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security set-keychain-settings -t 3600 -u build.keychain
+          security import certificate.p12 -k build.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
+          security find-identity -v -p codesigning build.keychain
+
+      - name: Build and publish stable release
+        uses: tauri-apps/tauri-action@v1
+        with:
+          projectPath: apps/desktop
+          tauriScript: pnpm tauri
+          args: ${{ inputs.platform == 'linux' && '--bundles appimage,deb' || inputs.platform == 'macos-intel' && '--target x86_64-apple-darwin --bundles app,dmg' || inputs.platform == 'macos-apple-silicon' && '--target aarch64-apple-darwin --bundles app,dmg' || '' }}
+          tagName: ${{ inputs.tag }}
+          releaseName: EasyTrim Editor ${{ inputs.tag }}
+          releaseBody: |
+            EasyTrim Editor ${{ inputs.tag }}
+
+            Standalone Linux, Windows, and macOS desktop builds.
+
+            Runtime requirement: install FFmpeg and make `ffmpeg` and `ffprobe` available to EasyTrim Editor. On macOS, EasyTrim Editor also checks the standard Homebrew locations for Finder launches.
+          releaseDraft: false
+          prerelease: false
+          generateReleaseNotes: true
+          releaseAssetNamePattern: EasyTrim_[version]_${{ startsWith(inputs.platform, 'macos') && 'macos' || inputs.platform }}_${{ inputs.platform == 'macos-apple-silicon' && 'arm64' || 'x64' }}_[bundle][ext]
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPLE_CERTIFICATE: ${{ startsWith(inputs.platform, 'macos') && secrets.APPLE_CERTIFICATE || '' }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ startsWith(inputs.platform, 'macos') && secrets.APPLE_CERTIFICATE_PASSWORD || '' }}
+          APPLE_SIGNING_IDENTITY: ${{ startsWith(inputs.platform, 'macos') && secrets.APPLE_SIGNING_IDENTITY || '' }}
+          KEYCHAIN_PASSWORD: ${{ startsWith(inputs.platform, 'macos') && secrets.KEYCHAIN_PASSWORD || '' }}
+          APPLE_ID: ${{ startsWith(inputs.platform, 'macos') && secrets.APPLE_ID || '' }}
+          APPLE_PASSWORD: ${{ startsWith(inputs.platform, 'macos') && secrets.APPLE_PASSWORD || '' }}
+          APPLE_TEAM_ID: ${{ startsWith(inputs.platform, 'macos') && secrets.APPLE_TEAM_ID || '' }}

@@ -1,5 +1,6 @@
 import {
   BetweenHorizontalStart,
+  Gauge,
   Link2,
   Pause,
   Play,
@@ -12,11 +13,23 @@ import {
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Slider } from "@/components/ui/slider";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatPlaybackTime } from "@/domain/playback";
 import type { TrimBoundary } from "@/domain/trim";
 import type { FrameRate } from "@/lib/tauri/media";
+import {
+  DEFAULT_PLAYBACK_SPEED,
+  PLAYBACK_SPEED_STEPS,
+  type PlaybackSpeed,
+} from "../editor/hooks/usePlaybackSpeed";
 import { useTranslation } from "react-i18next";
+
+const PLAYBACK_SPEED_MARKERS = [0.5, 1, 1.5, 2, 3].map((speed) => ({
+  value: PLAYBACK_SPEED_STEPS.indexOf(speed as PlaybackSpeed),
+  label: `${speed}×`,
+}));
 
 interface PlaybackControlsProps {
   isPlaying: boolean;
@@ -164,18 +177,22 @@ interface TimelineToolsProps {
   safeTrimFollowingEnabled: boolean;
   loopPlaybackEnabled: boolean;
   segmentPlaybackEnabled: boolean;
+  playbackSpeed: PlaybackSpeed;
   onToggleSafeTrimFollowing: () => void;
   onToggleLoopPlayback: () => void;
   onToggleSegmentPlayback: () => void;
+  onPlaybackSpeedChange: (speed: PlaybackSpeed) => void;
 }
 
 export function TimelineTools({
   safeTrimFollowingEnabled,
   loopPlaybackEnabled,
   segmentPlaybackEnabled,
+  playbackSpeed,
   onToggleSafeTrimFollowing,
   onToggleLoopPlayback,
   onToggleSegmentPlayback,
+  onPlaybackSpeedChange,
 }: TimelineToolsProps) {
   const { t } = useTranslation();
 
@@ -213,7 +230,58 @@ export function TimelineTools({
       >
         <BetweenHorizontalStart />
       </TimelineToolButton>
+      <PlaybackSpeedTool speed={playbackSpeed} onChange={onPlaybackSpeedChange} />
     </>
+  );
+}
+
+function PlaybackSpeedTool({
+  speed,
+  onChange,
+}: {
+  speed: PlaybackSpeed;
+  onChange: (speed: PlaybackSpeed) => void;
+}) {
+  const { t } = useTranslation();
+  const stepIndex = PLAYBACK_SPEED_STEPS.indexOf(speed);
+  const enabled = speed !== DEFAULT_PLAYBACK_SPEED;
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant={enabled ? "secondary" : "ghost"}
+          size="icon-sm"
+          type="button"
+          aria-label={t("preview.playbackSpeed.label")}
+          aria-pressed={enabled}
+          className={enabled ? "text-primary" : undefined}
+        >
+          <Gauge />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent side="bottom" align="center" className="w-56 p-2.5">
+        <div className="flex items-center gap-2">
+          <Slider
+            className="min-w-0 flex-1 [&_[data-slot=slider-track]]:h-1.5"
+            min={0}
+            max={PLAYBACK_SPEED_STEPS.length - 1}
+            step={1}
+            value={[stepIndex]}
+            onValueChange={([index]) => {
+              const nextSpeed = PLAYBACK_SPEED_STEPS[index ?? stepIndex];
+              if (nextSpeed !== undefined) onChange(nextSpeed);
+            }}
+            onDoubleClick={() => onChange(DEFAULT_PLAYBACK_SPEED)}
+            aria-label={t("preview.playbackSpeed.label")}
+            markers={PLAYBACK_SPEED_MARKERS}
+          />
+          <output className="w-12 shrink-0 text-right font-mono text-xs text-muted-foreground">
+            {speed}×
+          </output>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
 

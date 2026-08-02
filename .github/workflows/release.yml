@@ -1,0 +1,79 @@
+name: Manual development release
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Platform to build and publish
+        required: true
+        default: linux
+        type: choice
+        options:
+          - linux
+          - windows
+          - macos-intel
+          - macos-apple-silicon
+
+permissions:
+  contents: write
+
+concurrency:
+  group: manual-development-release-${{ github.run_id }}
+  cancel-in-progress: false
+
+env:
+  PNPM_VERSION: 11.18.0
+  NODE_VERSION: 22.13.0
+
+jobs:
+  release:
+    name: Release
+    runs-on: ${{ inputs.platform == 'linux' && 'ubuntu-22.04' || inputs.platform == 'windows' && 'windows-latest' || inputs.platform == 'macos-intel' && 'macos-15-intel' || 'macos-latest' }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.97.1
+          targets: ${{ inputs.platform == 'macos-intel' && 'x86_64-apple-darwin' || inputs.platform == 'macos-apple-silicon' && 'aarch64-apple-darwin' || '' }}
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xdg-utils
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build and publish prerelease
+        uses: tauri-apps/tauri-action@v1
+        with:
+          projectPath: apps/desktop
+          tauriScript: pnpm tauri
+          args: ${{ inputs.platform == 'linux' && '--bundles appimage,deb' || inputs.platform == 'macos-intel' && '--target x86_64-apple-darwin --bundles app,dmg' || inputs.platform == 'macos-apple-silicon' && '--target aarch64-apple-darwin --bundles app,dmg' || '' }}
+          tagName: build-${{ github.run_number }}-${{ github.sha }}
+          releaseName: EasyTrim Editor build ${{ github.run_number }}
+          releaseBody: |
+            Automated prerelease for commit ${{ github.sha }}.
+
+            This build is generated from `master` and is intended for validation, not stable distribution.
+          releaseDraft: false
+          prerelease: true
+          generateReleaseNotes: false
+          releaseAssetNamePattern: EasyTrim_[version]_${{ startsWith(inputs.platform, 'macos') && 'macos' || inputs.platform }}_${{ inputs.platform == 'macos-apple-silicon' && 'arm64' || 'x64' }}_[bundle][ext]
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

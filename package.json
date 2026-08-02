@@ -1,22 +1,26 @@
 {
-  "name": "clipkit",
+  "name": "easytrim-editor",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
   "type": "module",
   "packageManager": "pnpm@11.18.0",
   "engines": {
     "node": ">=22.12.0"
   },
   "scripts": {
-    "dev": "pnpm --filter @clipkit/desktop tauri dev",
-    "build": "pnpm --filter @clipkit/desktop build",
+    "dev": "node scripts/dev.mjs",
+    "build": "pnpm --filter @easytrim-editor/desktop tauri build --no-bundle",
+    "build:web": "pnpm --filter @easytrim-editor/desktop build",
+    "preview": "node scripts/preview-production.mjs",
+    "preview:web": "pnpm --filter @easytrim-editor/desktop preview",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint . --max-warnings 0",
-    "typecheck": "pnpm --filter @clipkit/desktop typecheck",
-    "test": "pnpm --filter @clipkit/desktop test",
-    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
-    "tauri": "pnpm --filter @clipkit/desktop tauri"
+    "typecheck": "pnpm --filter @easytrim-editor/desktop typecheck",
+    "test": "pnpm --filter @easytrim-editor/desktop test",
+    "release:local": "node scripts/release-local.mjs",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build:web",
+    "tauri": "pnpm --filter @easytrim-editor/desktop tauri"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

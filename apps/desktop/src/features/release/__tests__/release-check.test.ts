@@ -16,8 +16,8 @@ describe("release checks", () => {
       new Response(
         JSON.stringify({
           tag_name: "v0.2.0",
-          html_url: "https://github.com/vakot/clipkit/releases/tag/v0.2.0",
-          name: "ClipKit 0.2.0",
+          html_url: "https://github.com/vakot/easytrim-editor/releases/tag/v0.2.0",
+          name: "EasyTrim Editor 0.2.0",
           draft: false,
           prerelease: false,
         }),
@@ -28,8 +28,8 @@ describe("release checks", () => {
     await expect(checkForUpdate("0.1.0")).resolves.toEqual({
       currentVersion: "0.1.0",
       version: "0.2.0",
-      name: "ClipKit 0.2.0",
-      url: "https://github.com/vakot/clipkit/releases/tag/v0.2.0",
+      name: "EasyTrim Editor 0.2.0",
+      url: "https://github.com/vakot/easytrim-editor/releases/tag/v0.2.0",
     });
   });
 
@@ -38,7 +38,7 @@ describe("release checks", () => {
       new Response(
         JSON.stringify({
           tag_name: "v0.1.0-beta.1",
-          html_url: "https://github.com/vakot/clipkit/releases/tag/v0.1.0-beta.1",
+          html_url: "https://github.com/vakot/easytrim-editor/releases/tag/v0.1.0-beta.1",
           name: "Beta",
           draft: false,
           prerelease: true,

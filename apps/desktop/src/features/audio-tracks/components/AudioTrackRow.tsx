@@ -1,6 +1,7 @@
 import type { AudioTrackState } from "@/app/session-state";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import type { AudioStream } from "@/lib/tauri/media";
+import { memo } from "react";
 import { useTranslation } from "react-i18next";
 
 import { WAVEFORM_RENDER_WIDTH } from "../hooks/useWaveformPreparation";
@@ -14,20 +15,16 @@ interface AudioTrackRowProps {
   stream: AudioStream;
   track: AudioTrackState;
   title: string;
-  startPercent: number;
-  endPercent: number;
-  onToggle: () => void;
-  onVolumeChange: (volumePercent: number) => void;
-  onPrepareWaveform: (width: number) => void;
-  onWaveformImageError: () => void;
+  onToggle: (streamIndex: number) => void;
+  onVolumeChange: (streamIndex: number, volumePercent: number) => void;
+  onPrepareWaveform: (streamIndexes: number[], width: number) => void;
+  onWaveformImageError: (streamIndex: number) => void;
 }
 
-export function AudioTrackRow({
+export const AudioTrackRow = memo(function AudioTrackRow({
   stream,
   track,
   title,
-  startPercent,
-  endPercent,
   onToggle,
   onVolumeChange,
   onPrepareWaveform,
@@ -46,7 +43,7 @@ export function AudioTrackRow({
             <VolumeButton
               enabled={track.enabled}
               label={t(track.enabled ? "audio.muteTrack" : "audio.enableTrack", { title })}
-              onClick={onToggle}
+              onClick={() => onToggle(stream.streamIndex)}
             />
           </HoverCardTrigger>
           <div className="min-w-0 leading-tight">
@@ -71,7 +68,7 @@ export function AudioTrackRow({
           <AudioLevelControl
             label={t("audio.trackVolume", { title })}
             volumePercent={track.enabled ? track.volumePercent : 0}
-            onChange={onVolumeChange}
+            onChange={(volumePercent) => onVolumeChange(stream.streamIndex, volumePercent)}
           />
         </HoverCardContent>
       </HoverCard>
@@ -81,15 +78,23 @@ export function AudioTrackRow({
       >
         <WaveformContent
           track={track}
-          onRetry={() => onPrepareWaveform(waveformStateWidth(track) || WAVEFORM_RENDER_WIDTH)}
-          onImageError={onWaveformImageError}
+          onRetry={() =>
+            onPrepareWaveform(
+              [stream.streamIndex],
+              waveformStateWidth(track) || WAVEFORM_RENDER_WIDTH,
+            )
+          }
+          onImageError={() => onWaveformImageError(stream.streamIndex)}
         />
         <div
           className="pointer-events-none absolute inset-y-0 border-x border-primary/70 bg-primary/5"
           aria-hidden="true"
-          style={{ left: `${startPercent}%`, right: `${100 - endPercent}%` }}
+          style={{
+            left: "var(--timeline-trim-start)",
+            right: "var(--timeline-trim-end-inset)",
+          }}
         />
       </div>
     </div>
   );
-}
+});

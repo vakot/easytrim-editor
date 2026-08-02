@@ -61,7 +61,7 @@ pub struct OptimizedExportPlan {
 }
 
 #[tauri::command]
-pub fn choose_output_path(
+pub async fn choose_output_path(
     app: AppHandle,
     state: State<'_, AppState>,
     default_name: String,
@@ -69,12 +69,18 @@ pub fn choose_output_path(
     if default_name.trim().is_empty() || default_name.len() > 255 {
         return Err(AppError::invalid_request("The output name is required."));
     }
-    let selected = app
-        .dialog()
+    let (sender, receiver) = std::sync::mpsc::channel();
+    app.dialog()
         .file()
         .set_file_name(default_name)
         .add_filter("Video", &["mkv", "mp4", "mov", "webm"])
-        .blocking_save_file();
+        .save_file(move |selected| {
+            let _ = sender.send(selected);
+        });
+    let selected = tauri::async_runtime::spawn_blocking(move || receiver.recv())
+        .await
+        .map_err(|_| AppError::internal("The output dialog task stopped unexpectedly."))?
+        .map_err(|_| AppError::internal("The output dialog closed unexpectedly."))?;
     let Some(selected) = selected else {
         return Ok(None);
     };
@@ -113,7 +119,6 @@ pub async fn render_fast(
     let arguments = build_fast_arguments(&media, &request, &source.path, &output_path)?;
     run_export(
         state,
-        request.source_id,
         output_path,
         display_name,
         arguments,
@@ -140,7 +145,6 @@ pub async fn render_optimized(
     let arguments = build_optimized_arguments(&media, &request, &source.path, &output_path)?;
     run_export(
         state,
-        request.source_id,
         output_path,
         display_name,
         arguments,
@@ -204,7 +208,6 @@ fn duration_micros(trim: &crate::media::export::TrimSelection) -> i64 {
 
 async fn run_export(
     state: State<'_, AppState>,
-    source_id: String,
     output_path: PathBuf,
     display_name: String,
     arguments: Vec<std::ffi::OsString>,
@@ -312,10 +315,6 @@ async fn run_export(
     if output_size == 0 {
         remove_partial_output(&output_path);
         return Err(AppError::render_failed("The rendered output is empty."));
-    }
-    if state.resolve_source(&source_id).is_err() {
-        remove_partial_output(&output_path);
-        return Err(AppError::source_replaced());
     }
     Ok(ExportResult {
         operation_id,

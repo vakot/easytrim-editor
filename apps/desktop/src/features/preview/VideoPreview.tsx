@@ -9,6 +9,7 @@ import { useTranslation } from "react-i18next";
 interface VideoPreviewProps {
   sourceId: string;
   preview: PreviewState;
+  playbackRate: number;
   videoRef: RefObject<HTMLVideoElement | null>;
   onPlaybackError: (sourceId: string, previewKind: "source" | "proxy") => void;
   onLoadedMetadata: () => void;
@@ -22,6 +23,7 @@ interface VideoPreviewProps {
 export function VideoPreview({
   sourceId,
   preview,
+  playbackRate,
   videoRef,
   onPlaybackError,
   onLoadedMetadata,
@@ -34,6 +36,10 @@ export function VideoPreview({
   const { t } = useTranslation();
   const reportedUrl = useRef<string | null>(null);
   const readyUrl = preview.status === "ready" ? preview.value.url : null;
+
+  useEffect(() => {
+    if (videoRef.current) videoRef.current.playbackRate = playbackRate;
+  }, [playbackRate, readyUrl, videoRef]);
 
   useEffect(() => {
     reportedUrl.current = null;
@@ -80,9 +86,11 @@ export function VideoPreview({
       <video
         ref={videoRef}
         key={value.url}
+        data-playback-rate={playbackRate}
         className="block size-full cursor-pointer object-contain"
         src={value.url}
-        preload="metadata"
+        preload="auto"
+        playsInline
         aria-label={t("preview.sourceLabel")}
         data-preview-kind={value.kind}
         onClick={onTogglePlayback}

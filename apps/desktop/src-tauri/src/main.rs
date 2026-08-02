@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    clipkit_desktop_lib::run()
+    easytrim_editor_desktop_lib::run()
 }

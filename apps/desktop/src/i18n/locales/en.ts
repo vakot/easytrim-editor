@@ -1,6 +1,6 @@
 export const en = {
   common: {
-    brand: "CLIP KIT",
+    brand: "EasyTrim Editor",
     cancel: "Cancel",
     close: "Close",
     retry: "Retry",
@@ -21,7 +21,7 @@ export const en = {
   },
   app: {
     toolbar: "Application toolbar",
-    returnToWelcome: "Return to CLIP KIT welcome page",
+    returnToWelcome: "Return to EasyTrim Editor welcome page",
     dragUnavailable: "Drag and drop is unavailable: {{message}}",
     nativeDialog: {
       title: "Waiting for system dialog",
@@ -47,6 +47,11 @@ export const en = {
       formats: "MP4, MOV, MKV, WebM, AVI, TS, MTS, M2TS, M4V, WMV, FLV",
     },
     capabilities: {
+      checkingDescription: "Checking whether the required media dependencies are ready.",
+      readyDescription: "All required media dependencies are installed and ready to use.",
+      unavailableDescription: "Some required media dependencies are unavailable.",
+      installed: "Installed",
+      missingStatus: "Missing",
       checking: "Checking media tools…",
       failed: "Media tool check failed",
       ready: "Media tools ready",
@@ -113,6 +118,9 @@ export const en = {
       label: "Segment playback",
       enabled: "Segment playback: on — constrain playback to the selected segment",
       disabled: "Segment playback: off — play the complete timeline",
+    },
+    playbackSpeed: {
+      label: "Playback speed",
     },
     opening: "Opening preview…",
     preparing: "Preparing compatible preview…",
@@ -203,12 +211,12 @@ export const en = {
     framesPerSecond: "{{value}} FPS",
   },
   release: {
-    updateAvailable: "A new ClipKit release is available:",
+    updateAvailable: "A new EasyTrim Editor release is available:",
     update: "Update",
     dismiss: "Dismiss update notice",
   },
   support: {
-    message: "Support the author and help keep ClipKit improving.",
+    message: "Support the author and help keep EasyTrim Editor improving.",
     dismiss: "Dismiss support message",
     resetDevelopment: "Reset support badge",
   },

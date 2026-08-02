@@ -1,6 +1,8 @@
 use std::{
     ffi::{OsStr, OsString},
+    fs,
     io::{self, BufRead, BufReader, Read},
+    path::{Path, PathBuf},
     process::{Command, ExitStatus, Stdio},
     thread,
     time::{Duration, Instant},
@@ -8,8 +10,15 @@ use std::{
 
 use wait_timeout::ChildExt;
 
+#[cfg(windows)]
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 const PROCESS_POLL_INTERVAL: Duration = Duration::from_millis(100);
+
+pub fn media_debug(message: impl std::fmt::Display) {
+    if std::env::var_os("EASYTRIM_MEDIA_DEBUG").is_some_and(|value| value == "1") {
+        eprintln!("[easytrim-media] {message}");
+    }
+}
 
 #[derive(Debug)]
 pub struct ProcessOutput {
@@ -49,7 +58,14 @@ pub fn run_bounded_cancellable(
         return Err(cancelled_error());
     }
 
-    let mut command = Command::new(executable);
+    let executable_path = resolve_executable(executable)?;
+    let command_started_at = Instant::now();
+    media_debug(format_args!(
+        "start {} {:?}",
+        executable_path.display(),
+        arguments
+    ));
+    let mut command = Command::new(executable_path);
     command
         .args(arguments)
         .stdin(Stdio::null())
@@ -106,6 +122,13 @@ pub fn run_bounded_cancellable(
     let (stdout, stdout_truncated) = join_reader(stdout_reader)?;
     let (stderr, stderr_truncated) = join_reader(stderr_reader)?;
 
+    media_debug(format_args!(
+        "finish {:?} status={} elapsed_ms={}",
+        executable,
+        status,
+        command_started_at.elapsed().as_millis()
+    ));
+
     Ok(ProcessOutput {
         status,
         stdout,
@@ -128,7 +151,8 @@ pub fn run_progress_cancellable(
         return Err(cancelled_error());
     }
 
-    let mut command = Command::new(executable);
+    let executable_path = resolve_executable(executable)?;
+    let mut command = Command::new(executable_path);
     command
         .args(arguments)
         .stdin(Stdio::null())
@@ -255,6 +279,80 @@ fn join_reader(
         .map_err(|_| io::Error::other("media helper output reader stopped unexpectedly"))?
 }
 
+fn resolve_executable(executable: &OsStr) -> io::Result<PathBuf> {
+    let executable_path = Path::new(executable);
+    if executable_path.is_absolute() || executable_path.components().count() > 1 {
+        return is_executable_file(executable_path)
+            .then(|| executable_path.to_owned())
+            .ok_or_else(|| executable_not_found(executable));
+    }
+
+    let path = std::env::var_os("PATH").unwrap_or_default();
+    let search_paths = {
+        let search_paths = std::env::split_paths(&path);
+
+        #[cfg(target_os = "macos")]
+        let search_paths = search_paths.chain([
+            PathBuf::from("/opt/homebrew/bin"),
+            PathBuf::from("/usr/local/bin"),
+        ]);
+
+        search_paths.collect::<Vec<_>>()
+    };
+
+    find_executable(executable, search_paths).ok_or_else(|| executable_not_found(executable))
+}
+
+fn find_executable(
+    executable: &OsStr,
+    search_paths: impl IntoIterator<Item = PathBuf>,
+) -> Option<PathBuf> {
+    search_paths.into_iter().find_map(|directory| {
+        let candidate = directory.join(executable);
+        if is_executable_file(&candidate) {
+            return Some(candidate);
+        }
+
+        #[cfg(windows)]
+        if Path::new(executable).extension().is_none() {
+            let candidate = candidate.with_extension("exe");
+            if is_executable_file(&candidate) {
+                return Some(candidate);
+            }
+        }
+
+        None
+    })
+}
+
+fn is_executable_file(path: &Path) -> bool {
+    let Ok(metadata) = fs::metadata(path) else {
+        return false;
+    };
+    if !metadata.is_file() {
+        return false;
+    }
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+
+        metadata.permissions().mode() & 0o111 != 0
+    }
+
+    #[cfg(not(unix))]
+    {
+        true
+    }
+}
+
+fn executable_not_found(executable: &OsStr) -> io::Error {
+    io::Error::new(
+        io::ErrorKind::NotFound,
+        format!("executable {:?} was not found on PATH", executable),
+    )
+}
+
 fn terminate_child(child: &mut std::process::Child) -> io::Result<()> {
     if let Err(kill_error) = child.kill()
         && child.try_wait()?.is_none()
@@ -282,7 +380,17 @@ mod tests {
         time::Duration,
     };
 
-    use super::{read_bounded, run_bounded_cancellable, run_progress_cancellable};
+    use super::{
+        read_bounded, resolve_executable, run_bounded_cancellable, run_progress_cancellable,
+    };
+
+    #[test]
+    fn resolves_an_executable_from_the_process_environment() {
+        let executable = if cfg!(windows) { "cmd.exe" } else { "sh" };
+        let path = resolve_executable(OsStr::new(executable)).expect("system shell is available");
+
+        assert!(path.is_absolute());
+    }
 
     #[test]
     fn bounded_reader_drains_but_retains_only_the_limit() {
@@ -323,7 +431,7 @@ mod tests {
         assert_eq!(cancelled.kind(), io::ErrorKind::Interrupted);
 
         let missing = run_progress_cancellable(
-            OsStr::new("clipkit-process-that-does-not-exist"),
+            OsStr::new("easytrim-process-that-does-not-exist"),
             &[],
             Duration::from_secs(1),
             0,

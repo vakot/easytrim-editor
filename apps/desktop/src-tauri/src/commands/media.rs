@@ -1,10 +1,10 @@
 use crate::{
     error::AppError,
     media::{
-        audio::generate_audio_preview,
+        audio::generate_audio_previews,
         probe::{MediaInfo, inspect_media as probe_media},
         proxy::generate_preview,
-        waveform::{generate_waveform, validate_waveform_request},
+        waveform::{generate_waveforms, validate_waveform_request},
     },
     state::{AppState, PreviewStreamSelection},
 };
@@ -113,11 +113,7 @@ pub async fn prepare_audio_previews(
     }
 
     let generated = tauri::async_runtime::spawn_blocking(move || {
-        let mut generated = Vec::with_capacity(stream_indexes.len());
-        for stream_index in stream_indexes {
-            generated.push((stream_index, generate_audio_preview(&source, stream_index)?));
-        }
-        Ok::<_, AppError>(generated)
+        generate_audio_previews(&source, &stream_indexes)
     })
     .await
     .map_err(|_| AppError::internal("Audio preview preparation stopped unexpectedly."))??;
@@ -176,16 +172,7 @@ pub async fn prepare_waveforms(
     }
 
     let generated = tauri::async_runtime::spawn_blocking(move || {
-        let mut generated = Vec::with_capacity(pending_stream_indexes.len());
-        for stream_index in pending_stream_indexes {
-            match generate_waveform(&waveform_source, stream_index, width) {
-                Err(error) if error.code == "cancelled" || error.code == "source_replaced" => {
-                    return Err(error);
-                }
-                result => generated.push((stream_index, result)),
-            }
-        }
-        Ok::<_, AppError>(generated)
+        generate_waveforms(&waveform_source, &pending_stream_indexes, width)
     })
     .await
     .map_err(|_| AppError::internal("Waveform generation stopped unexpectedly."))??;
@@ -264,7 +251,7 @@ pub async fn prepare_proxy_preview(
 #[cfg(any(target_os = "windows", target_os = "android"))]
 fn preview_url(source_id: &str, kind: PreviewKind) -> String {
     format!(
-        "http://clipkit-media.localhost/{source_id}?variant={}",
+        "http://easytrim-media.localhost/{source_id}?variant={}",
         preview_kind_name(kind)
     )
 }
@@ -272,7 +259,7 @@ fn preview_url(source_id: &str, kind: PreviewKind) -> String {
 #[cfg(not(any(target_os = "windows", target_os = "android")))]
 fn preview_url(source_id: &str, kind: PreviewKind) -> String {
     format!(
-        "clipkit-media://localhost/{source_id}?variant={}",
+        "easytrim-media://localhost/{source_id}?variant={}",
         preview_kind_name(kind)
     )
 }
@@ -280,24 +267,24 @@ fn preview_url(source_id: &str, kind: PreviewKind) -> String {
 #[cfg(any(target_os = "windows", target_os = "android"))]
 fn waveform_url(source_id: &str, stream_index: u32, width: u32) -> String {
     format!(
-        "http://clipkit-media.localhost/{source_id}?variant=waveform&stream={stream_index}&width={width}"
+        "http://easytrim-media.localhost/{source_id}?variant=waveform&stream={stream_index}&width={width}"
     )
 }
 
 #[cfg(any(target_os = "windows", target_os = "android"))]
 fn audio_preview_url(source_id: &str, stream_index: u32) -> String {
-    format!("http://clipkit-media.localhost/{source_id}?variant=audio&stream={stream_index}")
+    format!("http://easytrim-media.localhost/{source_id}?variant=audio&stream={stream_index}")
 }
 
 #[cfg(not(any(target_os = "windows", target_os = "android")))]
 fn audio_preview_url(source_id: &str, stream_index: u32) -> String {
-    format!("clipkit-media://localhost/{source_id}?variant=audio&stream={stream_index}")
+    format!("easytrim-media://localhost/{source_id}?variant=audio&stream={stream_index}")
 }
 
 #[cfg(not(any(target_os = "windows", target_os = "android")))]
 fn waveform_url(source_id: &str, stream_index: u32, width: u32) -> String {
     format!(
-        "clipkit-media://localhost/{source_id}?variant=waveform&stream={stream_index}&width={width}"
+        "easytrim-media://localhost/{source_id}?variant=waveform&stream={stream_index}&width={width}"
     )
 }
 

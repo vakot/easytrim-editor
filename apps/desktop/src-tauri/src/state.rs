@@ -25,10 +25,10 @@ pub fn cleanup_stale_media_artifacts() {
         let path = entry.path();
         let name = entry.file_name();
         let name = name.to_string_lossy();
-        let is_clipkit_artifact = name.starts_with("clipkit-preview-")
-            || name.starts_with("clipkit-audio-preview-")
-            || name.starts_with("clipkit-waveform-");
-        if !is_clipkit_artifact || !entry.file_type().is_ok_and(|file_type| file_type.is_dir()) {
+        let is_easytrim_artifact = name.starts_with("easytrim-preview-")
+            || name.starts_with("easytrim-audio-preview-")
+            || name.starts_with("easytrim-waveform-");
+        if !is_easytrim_artifact || !entry.file_type().is_ok_and(|file_type| file_type.is_dir()) {
             continue;
         }
         let is_stale = entry
@@ -148,15 +148,9 @@ impl AppState {
         if let Some(previous_source) = previous_source {
             previous_source.cancellation.store(true, Ordering::Release);
         }
-        if let Ok(operations) = self.operations.lock() {
-            for cancellation in operations.values() {
-                cancellation.store(true, Ordering::Release);
-            }
-        }
-        self.outputs
-            .lock()
-            .map_err(|_| AppError::internal("The in-memory output registry is unavailable."))?
-            .clear();
+        // Export operations own their resolved input path and output path after they
+        // start. They must outlive the active editing source, so replacing the source
+        // only cancels work tied to that source (preview/waveform jobs above).
         Ok(generation)
     }
 
@@ -574,5 +568,17 @@ mod tests {
             .expect("late cancellation is harmless");
 
         assert!(cancellation.load(Ordering::Acquire));
+    }
+
+    #[test]
+    fn source_replacement_does_not_cancel_export_operations() {
+        let state = AppState::default();
+        let (_generation, cancellation) = state.begin_operation().expect("export starts");
+
+        state
+            .begin_source_replacement()
+            .expect("replacement starts");
+
+        assert!(!cancellation.load(Ordering::Acquire));
     }
 }

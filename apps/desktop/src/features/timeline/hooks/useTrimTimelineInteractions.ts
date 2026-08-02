@@ -1,4 +1,4 @@
-import { useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 
 import { clampPlaybackMicros, frameDurationMicros } from "@/domain/playback";
 import {
@@ -16,6 +16,7 @@ import {
   type TrimRange,
 } from "@/domain/trim";
 import type { FrameRate } from "@/lib/tauri/media";
+import { syncTimelineGeometry } from "../utils/timeline-geometry";
 
 const TIMELINE_SNAP_REACH_PX = 12;
 
@@ -25,6 +26,8 @@ interface TrimTimelineInteractionOptions {
   frameRate?: FrameRate;
   onChange: (boundary: TrimBoundary, range: TrimRange) => TrimBoundary | null;
   onMoveSegment: (range: TrimRange) => TrimBoundary | null;
+  onTrimDragStart: () => void;
+  onTrimDragEnd: () => void;
   onSegmentDragStart: () => void;
   onSegmentDragEnd: () => void;
   onSeek: (micros: number) => void;
@@ -44,6 +47,8 @@ export function useTrimTimelineInteractions({
   frameRate,
   onChange,
   onMoveSegment,
+  onTrimDragStart,
+  onTrimDragEnd,
   onSegmentDragStart,
   onSegmentDragEnd,
   onSeek,
@@ -66,34 +71,50 @@ export function useTrimTimelineInteractions({
     snapModifierActive: boolean;
     snapLatch: DirectionalSnapLatch;
   } | null>(null);
+  const rangeRef = useRef(range);
   const [segmentDragging, setSegmentDragging] = useState(false);
   const [segmentSnapPoint, setSegmentSnapPoint] = useState<SegmentSnapPoint | null>(null);
   const [trimDragState, setTrimDragState] = useState<TrimDragState | null>(null);
-  const segmentDurationMicros = range.endMicros - range.startMicros;
-  const segmentCenterMicros = range.startMicros + segmentDurationMicros / 2;
+
+  useEffect(() => {
+    if (!trimDragRef.current && !segmentDragRef.current) {
+      rangeRef.current = range;
+    }
+  }, [range]);
+
+  function syncRange(nextRange: TrimRange) {
+    rangeRef.current = nextRange;
+    syncTimelineGeometry(
+      trackRef.current?.closest<HTMLElement>("[data-slot='timeline-pane']") ?? null,
+      nextRange,
+    );
+  }
 
   function pointerMicros(clientX: number) {
     const bounds = trackRef.current?.getBoundingClientRect();
     if (!bounds) {
       return null;
     }
+    const currentRange = rangeRef.current;
     return {
       bounds,
       micros: microsFromTimelinePosition(
         clientX,
         bounds.left,
         bounds.width,
-        range.sourceDurationMicros,
+        currentRange.sourceDurationMicros,
       ),
     };
   }
 
   function isNearPlayhead(clientX: number, bounds: DOMRect) {
-    if (bounds.width <= 0 || range.sourceDurationMicros <= 0) {
+    const currentRange = rangeRef.current;
+    if (bounds.width <= 0 || currentRange.sourceDurationMicros <= 0) {
       return false;
     }
-    const clampedPlayhead = clampPlaybackMicros(playheadMicros, range.sourceDurationMicros);
-    const playheadX = bounds.left + (clampedPlayhead / range.sourceDurationMicros) * bounds.width;
+    const clampedPlayhead = clampPlaybackMicros(playheadMicros, currentRange.sourceDurationMicros);
+    const playheadX =
+      bounds.left + (clampedPlayhead / currentRange.sourceDurationMicros) * bounds.width;
     return Math.abs(clientX - playheadX) <= TIMELINE_SNAP_REACH_PX;
   }
 
@@ -115,7 +136,12 @@ export function useTrimTimelineInteractions({
     drag.snapLatch = snapState.latch;
     const snapActive =
       snapToPlayhead && !snapState.anchorIgnored && isNearPlayhead(clientX, pointer.bounds);
-    const next = moveTrimBoundary(range, boundary, snapActive ? playheadMicros : pointer.micros);
+    const next = moveTrimBoundary(
+      rangeRef.current,
+      boundary,
+      snapActive ? playheadMicros : pointer.micros,
+    );
+    syncRange(next);
     const followedBoundary = onChange(boundary, next);
     drag.snapLatch = settleDirectionalSnapLatch(
       drag.snapLatch,
@@ -134,9 +160,10 @@ export function useTrimTimelineInteractions({
       trimDragRef.current = {
         pointerId: event.pointerId,
         boundary,
-        lastPointerMicros: boundaryValue(range, boundary),
+        lastPointerMicros: boundaryValue(rangeRef.current, boundary),
         snapLatch: createDirectionalSnapLatch(),
       };
+      onTrimDragStart();
       event.currentTarget.setPointerCapture?.(event.pointerId);
     } else if (
       trimDragRef.current?.pointerId !== event.pointerId ||
@@ -146,47 +173,63 @@ export function useTrimTimelineInteractions({
       return;
     }
     const snapActive = updateTrimFromPointer(boundary, event.clientX, event.shiftKey);
-    setTrimDragState({ boundary, snapActive });
+    setTrimDragState((current) =>
+      current?.boundary === boundary && current.snapActive === snapActive
+        ? current
+        : { boundary, snapActive },
+    );
   }
 
   function finishTrimDrag(boundary: TrimBoundary) {
+    const wasActive = trimDragRef.current?.boundary === boundary;
     if (trimDragRef.current?.boundary === boundary) {
       trimDragRef.current = null;
     }
     setTrimDragState((current) => (current?.boundary === boundary ? null : current));
+    if (wasActive) {
+      onTrimDragEnd();
+    }
   }
 
   function handleTrimKeyboard(boundary: TrimBoundary, event: KeyboardEvent<HTMLButtonElement>) {
+    const currentRange = rangeRef.current;
     const step = keyboardStepMicros(frameRate, event.shiftKey);
     let requested: number | null = null;
     switch (event.key) {
       case "ArrowLeft":
-        requested = boundaryValue(range, boundary) - step;
+        requested = boundaryValue(currentRange, boundary) - step;
         break;
       case "ArrowRight":
-        requested = boundaryValue(range, boundary) + step;
+        requested = boundaryValue(currentRange, boundary) + step;
         break;
       case "PageDown":
-        requested = boundaryValue(range, boundary) - 1_000_000;
+        requested = boundaryValue(currentRange, boundary) - 1_000_000;
         break;
       case "PageUp":
-        requested = boundaryValue(range, boundary) + 1_000_000;
+        requested = boundaryValue(currentRange, boundary) + 1_000_000;
         break;
       case "Home":
         requested = 0;
         break;
       case "End":
-        requested = range.sourceDurationMicros;
+        requested = currentRange.sourceDurationMicros;
         break;
     }
     if (requested === null) return;
     event.preventDefault();
-    onChange(boundary, moveTrimBoundary(range, boundary, requested));
+    const next = moveTrimBoundary(currentRange, boundary, requested);
+    syncRange(next);
+    onChange(boundary, next);
+    onTrimDragEnd();
   }
 
   function resetBoundary(boundary: TrimBoundary) {
-    const requestedMicros = boundary === "start" ? 0 : range.sourceDurationMicros;
-    onChange(boundary, moveTrimBoundary(range, boundary, requestedMicros));
+    const currentRange = rangeRef.current;
+    const requestedMicros = boundary === "start" ? 0 : currentRange.sourceDurationMicros;
+    const next = moveTrimBoundary(currentRange, boundary, requestedMicros);
+    syncRange(next);
+    onChange(boundary, next);
+    onTrimDragEnd();
   }
 
   function segmentPointerPosition(clientX: number) {
@@ -196,7 +239,7 @@ export function useTrimTimelineInteractions({
       pointerMicros: pointer.micros,
       snapReachMicros:
         pointer.bounds.width > 0
-          ? (TIMELINE_SNAP_REACH_PX / pointer.bounds.width) * range.sourceDurationMicros
+          ? (TIMELINE_SNAP_REACH_PX / pointer.bounds.width) * rangeRef.current.sourceDurationMicros
           : 0,
     };
   }
@@ -208,6 +251,8 @@ export function useTrimTimelineInteractions({
   ) {
     const drag = segmentDragRef.current;
     if (!drag) return;
+    const currentRange = rangeRef.current;
+    const segmentDurationMicros = currentRange.endMicros - currentRange.startMicros;
     const pointerDeltaMicros = pointerMicros - drag.lastPointerMicros;
     const snapModifierChanged = drag.snapModifierActive !== snapToPlayhead;
     if (pointerDeltaMicros === 0 && !snapModifierChanged) return;
@@ -216,11 +261,12 @@ export function useTrimTimelineInteractions({
     const snapState = advanceDirectionalSnapLatch(drag.snapLatch, pointerDeltaMicros);
     drag.snapLatch = snapState.latch;
     const requestedStartMicros = pointerMicros - drag.grabOffsetMicros - segmentDurationMicros / 2;
-    const movedRange = moveTrimRange(range, requestedStartMicros);
+    const movedRange = moveTrimRange(currentRange, requestedStartMicros);
     const snapped =
       snapToPlayhead && !snapState.anchorIgnored
         ? snapMovedTrimRangeToPlayhead(movedRange, playheadMicros, snapReachMicros)
         : { range: movedRange, point: null };
+    syncRange(snapped.range);
     setSegmentSnapPoint(snapped.point);
     const followedBoundary = onMoveSegment(snapped.range);
     drag.snapLatch = settleDirectionalSnapLatch(
@@ -235,6 +281,9 @@ export function useTrimTimelineInteractions({
     event.stopPropagation();
     const pointer = segmentPointerPosition(event.clientX);
     if (!pointer) return;
+    const currentRange = rangeRef.current;
+    const segmentCenterMicros =
+      currentRange.startMicros + (currentRange.endMicros - currentRange.startMicros) / 2;
     segmentDragRef.current = {
       pointerId: event.pointerId,
       grabOffsetMicros: pointer.pointerMicros - segmentCenterMicros,
@@ -272,36 +321,41 @@ export function useTrimTimelineInteractions({
   }
 
   function handleSegmentKeyboard(event: KeyboardEvent<HTMLButtonElement>) {
+    const currentRange = rangeRef.current;
+    const segmentDurationMicros = currentRange.endMicros - currentRange.startMicros;
     let requestedStartMicros: number | null = null;
     switch (event.key) {
       case "ArrowLeft":
-        requestedStartMicros = range.startMicros - frameDurationMicros(frameRate);
+        requestedStartMicros = currentRange.startMicros - frameDurationMicros(frameRate);
         break;
       case "ArrowRight":
-        requestedStartMicros = range.startMicros + frameDurationMicros(frameRate);
+        requestedStartMicros = currentRange.startMicros + frameDurationMicros(frameRate);
         break;
       case "PageDown":
-        requestedStartMicros = range.startMicros - 1_000_000;
+        requestedStartMicros = currentRange.startMicros - 1_000_000;
         break;
       case "PageUp":
-        requestedStartMicros = range.startMicros + 1_000_000;
+        requestedStartMicros = currentRange.startMicros + 1_000_000;
         break;
       case "Home":
         requestedStartMicros = 0;
         break;
       case "End":
-        requestedStartMicros = range.sourceDurationMicros - segmentDurationMicros;
+        requestedStartMicros = currentRange.sourceDurationMicros - segmentDurationMicros;
         break;
     }
     if (requestedStartMicros === null) return;
     event.preventDefault();
-    onMoveSegment(moveTrimRange(range, requestedStartMicros));
+    const next = moveTrimRange(currentRange, requestedStartMicros);
+    syncRange(next);
+    onMoveSegment(next);
+    onSegmentDragEnd();
   }
 
   function scrubMicros(clientX: number, snapToTrim: boolean) {
     const pointer = pointerMicros(clientX);
     if (!pointer) return null;
-    return snapToTrim ? clampToTrim(pointer.micros, range) : pointer.micros;
+    return snapToTrim ? clampToTrim(pointer.micros, rangeRef.current) : pointer.micros;
   }
 
   function startScrub(event: PointerEvent<HTMLElement>, captureTarget: HTMLElement) {
@@ -334,6 +388,7 @@ export function useTrimTimelineInteractions({
   }
 
   function handlePlayheadKeyboard(event: KeyboardEvent<HTMLButtonElement>) {
+    const sourceDurationMicros = rangeRef.current.sourceDurationMicros;
     const step = event.shiftKey ? 1_000_000 : frameDurationMicros(frameRate);
     let requested: number | null = null;
     switch (event.key) {
@@ -347,13 +402,13 @@ export function useTrimTimelineInteractions({
         requested = 0;
         break;
       case "End":
-        requested = range.sourceDurationMicros;
+        requested = sourceDurationMicros;
         break;
     }
     if (requested === null) return;
     event.preventDefault();
     onScrubStart();
-    onSeek(clampPlaybackMicros(requested, range.sourceDurationMicros));
+    onSeek(clampPlaybackMicros(requested, sourceDurationMicros));
     onScrubEnd();
   }
 

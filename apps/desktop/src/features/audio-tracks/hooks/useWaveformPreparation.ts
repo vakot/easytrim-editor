@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 import type { AudioTrackState } from "@/app/session-state";
 
@@ -8,10 +8,22 @@ export function useWaveformPreparation(
   tracks: AudioTrackState[],
   prepare: (streamIndexes: number[], width: number) => void,
 ) {
+  const lastRequestRef = useRef<string | null>(null);
+
   useEffect(() => {
     const pending = tracks
       .filter((track) => track.waveform.status === "idle")
       .map((track) => track.streamIndex);
-    if (pending.length > 0) prepare(pending, WAVEFORM_RENDER_WIDTH);
+    if (pending.length === 0) {
+      lastRequestRef.current = null;
+      return;
+    }
+
+    const requestKey = `${WAVEFORM_RENDER_WIDTH}:${pending.join(",")}`;
+    if (lastRequestRef.current === requestKey) {
+      return;
+    }
+    lastRequestRef.current = requestKey;
+    prepare(pending, WAVEFORM_RENDER_WIDTH);
   }, [prepare, tracks]);
 }

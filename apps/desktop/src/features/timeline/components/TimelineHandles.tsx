@@ -11,7 +11,6 @@ import styles from "./styles.module.css";
 
 interface SegmentDragHandleProps {
   range: TrimRange;
-  percent: number;
   dragging: boolean;
   snapPoint: SegmentSnapPoint | null;
   onPointerDown: (event: PointerEvent<HTMLButtonElement>) => void;
@@ -24,7 +23,6 @@ interface SegmentDragHandleProps {
 
 export function SegmentDragHandle({
   range,
-  percent,
   dragging,
   snapPoint,
   onPointerDown,
@@ -54,7 +52,7 @@ export function SegmentDragHandle({
       data-dragging={dragging ? "true" : undefined}
       data-snap-active={snapPoint ? "true" : undefined}
       data-snap-point={snapPoint ?? undefined}
-      style={{ left: `${percent}%` }}
+      style={{ left: "var(--timeline-trim-center)" }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
@@ -74,7 +72,6 @@ interface TrimHandleProps {
   value: number;
   minimum: number;
   maximum: number;
-  percent: number;
   dragging: boolean;
   snapActive: boolean;
   onPointerDown: (event: PointerEvent<HTMLButtonElement>) => void;
@@ -89,7 +86,6 @@ export function TrimHandle({
   value,
   minimum,
   maximum,
-  percent,
   dragging,
   snapActive,
   onPointerDown,
@@ -118,7 +114,9 @@ export function TrimHandle({
       title={t("timeline.trimResetHint", { label })}
       data-dragging={dragging ? "true" : undefined}
       data-snap-active={snapActive ? "true" : undefined}
-      style={{ left: `${percent}%` }}
+      style={{
+        left: boundary === "start" ? "var(--timeline-trim-start)" : "var(--timeline-trim-end)",
+      }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerEnd}
