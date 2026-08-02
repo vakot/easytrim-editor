@@ -89,7 +89,8 @@ export function VideoPreview({
         data-playback-rate={playbackRate}
         className="block size-full cursor-pointer object-contain"
         src={value.url}
-        preload="metadata"
+        preload="auto"
+        playsInline
         aria-label={t("preview.sourceLabel")}
         data-preview-kind={value.kind}
         onClick={onTogglePlayback}
