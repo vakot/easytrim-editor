@@ -19,7 +19,7 @@ export function TimelinePane({ range, timeline, audioTracks }: TimelinePaneProps
       style={timelineGeometryStyle(range)}
       className={
         hasAudioTracks
-          ? "grid size-full min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden bg-background"
+          ? "grid size-full min-h-0 min-w-0 grid-rows-[auto_auto_minmax(0,1fr)] overflow-hidden bg-background"
           : "size-full min-h-0 min-w-0 overflow-hidden bg-background"
       }
     >
