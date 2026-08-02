@@ -10,6 +10,7 @@ interface VideoPreviewProps {
   sourceId: string;
   preview: PreviewState;
   playbackRate: number;
+  muted: boolean;
   videoRef: RefObject<HTMLVideoElement | null>;
   onPlaybackError: (sourceId: string, previewKind: "source" | "proxy") => void;
   onLoadedMetadata: () => void;
@@ -24,6 +25,7 @@ export function VideoPreview({
   sourceId,
   preview,
   playbackRate,
+  muted,
   videoRef,
   onPlaybackError,
   onLoadedMetadata,
@@ -90,6 +92,7 @@ export function VideoPreview({
         className="block size-full cursor-pointer object-contain"
         src={value.url}
         preload="auto"
+        muted={muted}
         playsInline
         aria-label={t("preview.sourceLabel")}
         data-preview-kind={value.kind}

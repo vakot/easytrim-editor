@@ -90,6 +90,7 @@ export function EditorStage({
   const [safeTrimFollowingEnabled, setSafeTrimFollowingEnabled] = useState(true);
   const [transportError, setTransportError] = useState<string | null>(null);
   const displayedPlayheadMicros = clampPlaybackMicros(playheadMicros, trim.sourceDurationMicros);
+  const hasIndependentAudio = Object.keys(audioPreviewUrls).length > 0;
 
   useEffect(() => {
     const video = videoRef.current;
@@ -112,11 +113,10 @@ export function EditorStage({
   useEffect(() => {
     const video = videoRef.current;
     if (video) {
-      const hasIndependentAudio = Object.keys(audioPreviewUrls).length > 0;
       video.muted = hasIndependentAudio;
       video.volume = hasIndependentAudio ? 0 : 1;
     }
-  }, [audioPreviewUrls]);
+  }, [hasIndependentAudio, preview]);
 
   useEffect(() => {
     if (typeof AudioContext === "undefined") {
@@ -643,6 +643,7 @@ export function EditorStage({
             sourceId={sourceId}
             preview={preview}
             playbackRate={playbackSpeed.speed}
+            muted={hasIndependentAudio}
             videoRef={videoRef}
             onPlaybackError={onPreviewPlaybackError}
             onLoadedMetadata={() => commitSeek(displayedPlayheadMicros)}
