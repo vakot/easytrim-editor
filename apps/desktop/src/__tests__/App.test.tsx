@@ -205,6 +205,16 @@ describe("App", () => {
       "aria-pressed",
       "true",
     );
+    const playbackSpeedButton = within(videoToolbar).getByRole("button", {
+      name: "Playback speed",
+    });
+    await user.click(playbackSpeedButton);
+    const playbackSpeedSlider = screen.getByRole("slider", { name: "Playback speed" });
+    playbackSpeedSlider.focus();
+    await user.keyboard("{End}");
+    expect(playbackSpeedButton).toHaveAttribute("aria-pressed", "true");
+    fireEvent.doubleClick(playbackSpeedSlider);
+    expect(playbackSpeedButton).toHaveAttribute("aria-pressed", "false");
     expect(within(videoTimelineRow as HTMLElement).queryByText("Video")).not.toBeInTheDocument();
     expect(screen.getByTestId("source-details-panel")).toContainElement(
       screen.getByRole("heading", { name: "holiday.mp4" }),

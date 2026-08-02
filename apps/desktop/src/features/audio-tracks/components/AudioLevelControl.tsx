@@ -39,6 +39,7 @@ export function AudioLevelControl({
         onDoubleClick={() => onChange(50)}
         aria-label={label}
         title={t("audio.originalLevel")}
+        markers={[{ value: 0, label: "0 dB" }]}
       />
       <output className="w-14 shrink-0 text-right font-mono text-xs text-muted-foreground">
         {formatDecibels(volumePercent)}

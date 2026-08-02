@@ -26,6 +26,11 @@ import {
 } from "../editor/hooks/usePlaybackSpeed";
 import { useTranslation } from "react-i18next";
 
+const PLAYBACK_SPEED_MARKERS = [0.5, 1, 1.5, 2, 3].map((speed) => ({
+  value: PLAYBACK_SPEED_STEPS.indexOf(speed as PlaybackSpeed),
+  label: `${speed}×`,
+}));
+
 interface PlaybackControlsProps {
   isPlaying: boolean;
   error: string | null;
@@ -255,8 +260,8 @@ function PlaybackSpeedTool({
           <Gauge />
         </Button>
       </PopoverTrigger>
-      <PopoverContent side="bottom" align="center" className="w-56">
-        <div className="flex items-center gap-3">
+      <PopoverContent side="bottom" align="center" className="w-56 p-2.5">
+        <div className="flex items-center gap-2">
           <Slider
             className="min-w-0 flex-1 [&_[data-slot=slider-track]]:h-1.5"
             min={0}
@@ -267,7 +272,9 @@ function PlaybackSpeedTool({
               const nextSpeed = PLAYBACK_SPEED_STEPS[index ?? stepIndex];
               if (nextSpeed !== undefined) onChange(nextSpeed);
             }}
+            onDoubleClick={() => onChange(DEFAULT_PLAYBACK_SPEED)}
             aria-label={t("preview.playbackSpeed.label")}
+            markers={PLAYBACK_SPEED_MARKERS}
           />
           <output className="w-12 shrink-0 text-right font-mono text-xs text-muted-foreground">
             {speed}×

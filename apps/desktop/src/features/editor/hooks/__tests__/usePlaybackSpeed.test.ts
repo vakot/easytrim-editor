@@ -12,7 +12,7 @@ describe("usePlaybackSpeed", () => {
     const { result } = renderHook(() => usePlaybackSpeed());
 
     expect(result.current.speed).toBe(DEFAULT_PLAYBACK_SPEED);
-    expect(PLAYBACK_SPEED_STEPS).toEqual([0.5, 1, 1.5, 2, 3, 4, 5]);
+    expect(PLAYBACK_SPEED_STEPS).toEqual([0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 3]);
   });
 
   it("accepts every controlled playback speed step", () => {
