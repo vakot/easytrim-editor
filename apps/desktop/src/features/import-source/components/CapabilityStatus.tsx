@@ -24,7 +24,7 @@ function CapabilityTooltip({ children, content }: { children: ReactNode; content
       </TooltipTrigger>
       <TooltipContent
         sideOffset={6}
-        className="max-w-[12rem] flex-col items-stretch gap-2 whitespace-normal"
+        className="max-w-[16rem] flex-col items-stretch gap-2 whitespace-normal"
       >
         {content}
       </TooltipContent>
