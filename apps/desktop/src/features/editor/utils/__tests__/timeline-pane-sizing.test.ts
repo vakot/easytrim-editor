@@ -8,7 +8,7 @@ describe("timelinePanelSizeConstraints", () => {
       timelinePanelSizeConstraints({
         timelineHeight: 148.2,
         audioContentHeight: 312.4,
-        firstTrackBottom: 126.1,
+        singleTrackAudioHeight: 126.1,
       }),
     ).toEqual({
       minSize: 149,
@@ -22,7 +22,7 @@ describe("timelinePanelSizeConstraints", () => {
       timelinePanelSizeConstraints({
         timelineHeight: 140,
         audioContentHeight: 48,
-        firstTrackBottom: null,
+        singleTrackAudioHeight: null,
       }),
     ).toEqual({
       minSize: 140,
@@ -36,7 +36,7 @@ describe("timelinePanelSizeConstraints", () => {
       timelinePanelSizeConstraints({
         timelineHeight: 140,
         audioContentHeight: 100,
-        firstTrackBottom: 130,
+        singleTrackAudioHeight: 130,
       }),
     ).toEqual({
       minSize: 140,

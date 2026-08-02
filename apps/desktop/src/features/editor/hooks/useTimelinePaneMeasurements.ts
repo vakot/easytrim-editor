@@ -40,7 +40,10 @@ export function useTimelinePaneMeasurements(
       const paddingBottom = audioContentElement
         ? Number.parseFloat(getComputedStyle(audioContentElement).paddingBottom) || 0
         : 0;
-      const firstTrackBottom = firstTrack
+      // The default pane should show the complete fixed timeline plus exactly
+      // one audio track. The audio section's heading, master controls, gaps,
+      // and bottom padding are all included before the first row's bottom.
+      const singleTrackAudioHeight = firstTrack
         ? firstTrack.getBoundingClientRect().bottom - (audioContentBounds?.top ?? 0) + paddingBottom
         : null;
 
@@ -48,7 +51,7 @@ export function useTimelinePaneMeasurements(
         timelinePanelSizeConstraints({
           timelineHeight,
           audioContentHeight,
-          firstTrackBottom,
+          singleTrackAudioHeight,
         }),
       );
     }
