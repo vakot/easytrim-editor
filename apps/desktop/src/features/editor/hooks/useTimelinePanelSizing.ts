@@ -1,7 +1,10 @@
-import { useCallback, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef } from "react";
 import { usePanelRef } from "react-resizable-panels";
 
-import type { TimelinePanelSizeConstraints } from "../utils/timeline-pane-sizing";
+import {
+  timelinePanelSizeConstraints,
+  type TimelinePanelSizeConstraints,
+} from "../utils/timeline-pane-sizing";
 
 const FALLBACK_CONSTRAINTS = {
   minSize: "10rem",
@@ -20,39 +23,29 @@ export function timelinePanelTargetSize(
   return Math.min(constraints.maxSize, Math.max(constraints.minSize, currentSize));
 }
 
-export function useTimelinePanelSizing(sourceId: string) {
+export function useTimelinePanelSizing(sourceId: string, audioTrackCount: number) {
   const panelRef = usePanelRef();
   const initializedSourceRef = useRef<string | null>(null);
-  const measuredSourceRef = useRef<string | null>(null);
-  const [measuredConstraints, setMeasuredConstraints] =
-    useState<TimelinePanelSizeConstraints | null>(null);
-
-  const handleSizeConstraintsChange = useCallback(
-    (next: TimelinePanelSizeConstraints) => {
-      measuredSourceRef.current = sourceId;
-      setMeasuredConstraints(next);
-    },
-    [sourceId],
+  const constraints = useMemo(
+    () => timelinePanelSizeConstraints(audioTrackCount),
+    [audioTrackCount],
   );
 
-  const resetToDefault = useCallback(() => {
-    const panel = panelRef.current;
-    if (!panel || !measuredConstraints || measuredSourceRef.current !== sourceId) {
-      return;
-    }
-    panel.resize(measuredConstraints.defaultSize);
-  }, [measuredConstraints, panelRef, sourceId]);
+  const resetToDefault = useCallback(
+    () => panelRef.current?.resize(constraints.defaultSize),
+    [constraints.defaultSize, panelRef],
+  );
 
   useLayoutEffect(() => {
     const panel = panelRef.current;
-    if (!panel || !measuredConstraints || measuredSourceRef.current !== sourceId) {
+    if (!panel) {
       return;
     }
 
     const currentSize = panel.getSize().inPixels;
     const targetSize = timelinePanelTargetSize(
       currentSize,
-      measuredConstraints,
+      constraints,
       initializedSourceRef.current === null,
     );
 
@@ -60,13 +53,12 @@ export function useTimelinePanelSizing(sourceId: string) {
     if (Math.abs(currentSize - targetSize) >= 1) {
       panel.resize(targetSize);
     }
-  }, [measuredConstraints, panelRef, sourceId]);
+  }, [constraints, panelRef, sourceId]);
 
   return {
-    constraints: measuredConstraints ?? FALLBACK_CONSTRAINTS,
+    constraints,
     initialDefaultSize: FALLBACK_CONSTRAINTS.defaultSize,
     panelRef,
-    onSizeConstraintsChange: handleSizeConstraintsChange,
     resetToDefault,
   };
 }

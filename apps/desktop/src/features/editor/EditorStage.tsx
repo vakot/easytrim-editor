@@ -53,7 +53,7 @@ export function EditorStage({
   audioPreviewUrls,
 }: EditorStageProps) {
   const { t } = useTranslation();
-  const timelinePanelSizing = useTimelinePanelSizing(sourceId);
+  const timelinePanelSizing = useTimelinePanelSizing(sourceId, audioStreams.length);
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioElementsRef = useRef(new Map<number, HTMLAudioElement>());
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -695,7 +695,6 @@ export function EditorStage({
       >
         <TimelinePane
           range={trim}
-          onSizeConstraintsChange={timelinePanelSizing.onSizeConstraintsChange}
           timeline={
             <TrimTimeline
               range={trim}
