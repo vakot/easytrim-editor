@@ -31,6 +31,9 @@ export function TrimTimeline({
     trackRef,
     segmentDragging,
     segmentSnapPoint,
+    segmentHandleRef,
+    startHandleRef,
+    endHandleRef,
     trimDragState,
     handleTrimPointer,
     finishTrimDrag,
@@ -115,6 +118,7 @@ export function TrimTimeline({
             percent={segmentCenterPercent}
             dragging={segmentDragging}
             snapPoint={segmentSnapPoint}
+            handleRef={segmentHandleRef}
             onPointerDown={startSegmentDrag}
             onPointerMove={moveSegmentDrag}
             onPointerUp={(event) => finishSegmentDrag(event, true)}
@@ -143,6 +147,7 @@ export function TrimTimeline({
             percent={startPercent}
             dragging={trimDragState?.boundary === "start"}
             snapActive={trimDragState?.boundary === "start" && trimDragState.snapActive}
+            handleRef={startHandleRef}
             onPointerDown={(event) => handleTrimPointer("start", event, true)}
             onPointerMove={(event) => handleTrimPointer("start", event, false)}
             onPointerEnd={() => finishTrimDrag("start")}
@@ -157,6 +162,7 @@ export function TrimTimeline({
             percent={endPercent}
             dragging={trimDragState?.boundary === "end"}
             snapActive={trimDragState?.boundary === "end" && trimDragState.snapActive}
+            handleRef={endHandleRef}
             onPointerDown={(event) => handleTrimPointer("end", event, true)}
             onPointerMove={(event) => handleTrimPointer("end", event, false)}
             onPointerEnd={() => finishTrimDrag("end")}
