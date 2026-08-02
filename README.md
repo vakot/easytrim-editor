@@ -1,133 +1,168 @@
 # EasyTrim Editor
 
-EasyTrim Editor is a Windows-first desktop video trimmer built with Tauri 2, Rust, React, TypeScript, Vite, and FFmpeg.
+EasyTrim Editor is a fast, lightweight desktop video trimmer for making precise clips without saving large project files.
 
-The repository is a pnpm monorepo. The initial workspace contains one desktop application:
+![EasyTrim Editor](apps/desktop/public/image.png)
 
-```text
-apps/desktop/
-├─ src/          React interface
-└─ src-tauri/    Rust/Tauri native core
-```
+## Features
 
-## Prerequisites
+- Import supported video files by selecting them or dragging them into the editor.
+- Preview the source video with frame-accurate timeline and keyboard controls.
+- Trim the start and end of a segment, or move the complete segment without changing its duration.
+- Use Shift snapping, safe trim, loop playback, selected-segment playback, and adjustable playback speed.
+- Inspect audio tracks with waveform previews.
+- Mute tracks and adjust individual levels from -24 dB to +6 dB.
+- Control overall preview/export volume independently from per-track levels.
+- Keep selected tracks separate or merge them into one output track.
+- Save a fast stream-copy cut when possible.
+- Export an optimized render with resolution, frame-rate, and NVENC preset controls.
+- Monitor active and completed renders in the export queue.
+- Persist language, theme, and export presets between sessions.
+
+The current editing session is kept in memory only. EasyTrim Editor does not save project files or restore an in-progress edit after restart.
+
+## Download
+
+Download the current [EasyTrim Editor 1.0.2 release](https://github.com/vakot/easytrim-editor/releases/tag/v1.0.2).
+
+The release currently includes:
+
+- Windows x64 NSIS installer (`.exe`);
+- Windows x64 MSI installer (`.msi`);
+- Linux x64 AppImage;
+- Linux x64 Debian package (`.deb`).
+
+FFmpeg is intentionally not bundled. Install FFmpeg and make both `ffmpeg` and `ffprobe` available to the application.
+
+macOS bundles can be produced on macOS. Public macOS distribution additionally requires Apple signing and notarization credentials.
+
+## Requirements
+
+Development requires:
 
 - Node.js 22.12 or newer;
-- Corepack, included with Node.js;
-- Rust 1.97.1 through rustup;
-- Microsoft C++ Build Tools with the **Desktop development with C++** workload;
-- Microsoft Edge WebView2;
-- FFmpeg and FFprobe installed and available on `PATH`.
+- pnpm 11.18.0;
+- Rust 1.97.1 installed through rustup;
+- FFmpeg and FFprobe on `PATH`;
+- platform-specific Tauri and WebView dependencies.
 
-On a new Windows environment, enable the pinned pnpm version and install dependencies:
+Windows also requires Microsoft C++ Build Tools with the **Desktop development with C++** workload and Microsoft Edge WebView2.
 
-```powershell
-corepack enable --install-directory "$env:LOCALAPPDATA\Microsoft\WindowsApps"
-pnpm install
-```
+Linux requires the Tauri system libraries used by the release container, including WebKitGTK, AppIndicator, librsvg, patchelf, and xdg-utils.
 
-## macOS release validation
+macOS requires Xcode Command Line Tools. Homebrew FFmpeg installations in the standard Apple Silicon or Intel locations are supported.
 
-macOS development and release builds must run on macOS. Install Xcode Command Line Tools, Node.js, pnpm, Rust 1.97.1, and FFmpeg/FFprobe, then run:
+## Quick start
+
+Install dependencies:
 
 ```sh
 pnpm install --frozen-lockfile
-pnpm check
-pnpm --filter @easytrim-editor/desktop tauri build --bundles app,dmg
 ```
 
-Install the generated DMG and launch EasyTrim from Finder. The native media process runner checks the inherited `PATH` and the standard Apple Silicon and Intel Homebrew locations, so FFmpeg installed with Homebrew remains available to GUI launches. Verify import, preview, audio preview/mixing, fast cut, optimized render, dialogs, timeline controls, themes, language selection, and release/support notices from the installed app.
-
-Public macOS distribution requires a Developer ID Application certificate and notarization credentials. Configure them only as CI secrets (`APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY`, `KEYCHAIN_PASSWORD`, `APPLE_ID`, `APPLE_PASSWORD`, and `APPLE_TEAM_ID`); never commit certificates or credentials.
-
-## Local release artifacts
-
-Build and upload artifacts to an existing GitHub release without using GitHub Actions:
+Start the desktop app in development mode with Vite hot reload:
 
 ```sh
-pnpm release:local -- --tag v1.0.2 --platform current
-```
-
-Supported platforms are `windows`, `linux`, `macos-intel`, and `macos-apple-silicon`. The command builds the current machine's native bundles and uploads them with `gh release upload`; authenticate with `gh auth login` first. Windows can build Windows artifacts, and Linux can be built inside WSL or a Linux Docker environment. macOS artifacts require a macOS machine because Apple targets cannot be built on Windows.
-
-Build Linux x64 AppImage and DEB packages from Windows, macOS, or Linux with Docker:
-
-```sh
-# Build into artifacts/linux without uploading
-pnpm release:linux -- --no-upload
-
-# Build and upload to an existing GitHub release
-pnpm release:linux -- --tag v1.0.2
-```
-
-Docker Desktop or a compatible Docker daemon with Buildx must be running. The container targets Linux x64 consistently, including when invoked from an Apple silicon Mac, and uses the pinned Node, pnpm, and Rust versions plus Tauri's Linux system dependencies. GitHub authentication stays on the host; credentials are never copied into the image.
-
-Release assets use the same predictable name locally and in GitHub Actions: `EasyTrim_<version>_<os>_<arch>_<bundle><extension>`. For example, Windows NSIS and Apple Silicon DMG builds are uploaded as `EasyTrim_1.0.0_windows_x64_nsis.exe` and `EasyTrim_1.0.0_macos_arm64_dmg.dmg`.
-
-Only final distributable extensions are selected from Tauri bundle directories. Build helpers such as macOS `.icns` and `.sh` files are never staged or uploaded.
-
-GitHub does not build release artifacts automatically on pushes or tags. Use `release:local` whenever possible, or explicitly dispatch the development or stable release workflow and select the required platform. Both manual workflows default to Linux to avoid accidentally starting Windows and macOS runners.
-
-Pull requests run one generic `Build` job on Linux. It performs the web and Rust quality gates and creates a production Tauri executable without packaging or uploading installers. CI does not run again after merging to `master`.
-
-## Desktop icon assets
-
-EasyTrim keeps platform assets separate so each desktop uses its native icon format:
-
-- Windows bundles use `apps/desktop/src-tauri/icons/windows/icon.ico`.
-- Linux bundles use the PNG sizes in `apps/desktop/src-tauri/icons/linux`.
-- macOS bundles compile `apps/desktop/src-tauri/icon-sources/macos/logo_mac_composer.icon` into an Icon Composer asset catalog and legacy ICNS fallback during bundling.
-- The web shell uses `apps/desktop/public/logo-symbol.svg` directly.
-
-Tauri also requires `apps/desktop/src-tauri/icons/icon.png` while generating its compile-time application context. This shared fallback is used by development builds; the native bundles still use their platform-specific assets above.
-
-After changing `logo-symbol.svg`, regenerate the Windows and Linux files with:
-
-```sh
-pnpm icons:generate
-```
-
-The macOS assets are generated automatically by the native bundle step and require a current Xcode toolchain with Icon Composer support. They cannot be compiled on Windows or Linux.
-
-## Development
-
-Start the Tauri desktop application with the Vite development server and hot reload:
-
-```powershell
 pnpm dev
 ```
 
-Build both production layers for the current operating system, without creating an installer:
+Build the production frontend and native executable for the current operating system:
 
-```powershell
+```sh
 pnpm build
 ```
 
-Tauri runs the configured `beforeBuildCommand`, which creates the optimized Vite bundle in `apps/desktop/dist`, then embeds it into the release-mode Rust executable under `target/release`.
+Preview that production build in the full Tauri application:
 
-Launch that exact production executable locally:
-
-```powershell
+```sh
 pnpm preview
 ```
 
-No local web server is involved. Re-run `pnpm build` after changing frontend or native source. These commands are identical on Windows, Linux, and macOS once that operating system's Tauri build prerequisites are installed.
+Frontend-only production commands are also available:
 
-For frontend-only diagnostics, `pnpm build:web` and `pnpm preview:web` remain available, but native Tauri functionality is unavailable in the browser preview.
+```sh
+pnpm build:web
+pnpm preview:web
+```
 
-Run the frontend quality gate:
+The frontend-only preview cannot access native FFmpeg or Tauri functionality.
 
-```powershell
+## Quality checks
+
+Run the standard repository checks:
+
+```sh
 pnpm check
 ```
 
-Run the native quality gate:
+This covers formatting, linting, TypeScript checks, tests, release-script tests, and the production web build.
 
-```powershell
+Native Rust checks can be run separately:
+
+```sh
 cargo fmt --all -- --check
 cargo check --all-targets
 cargo clippy --all-targets --all-features -- -D warnings
 cargo test --all-targets
 ```
 
-The application stores no editor state, presets, or project configuration on disk.
+## Release artifacts
+
+Release artifacts are built and uploaded manually to avoid consuming GitHub Actions minutes on every small change. GitHub Actions is reserved for the lightweight Linux pull-request build and manually dispatched release jobs.
+
+### Windows
+
+Build and upload Windows bundles from Windows:
+
+```sh
+pnpm release:local -- --tag v1.0.2 --platform windows
+```
+
+### Linux with Docker
+
+Docker can build Linux x64 artifacts from Windows, macOS, or Linux:
+
+```sh
+# Build into artifacts/linux without uploading
+pnpm release:linux -- --no-upload
+
+# Build and upload to an existing release
+pnpm release:linux -- --tag v1.0.2
+```
+
+Docker Desktop or another Docker daemon with Buildx must be running. The Linux container uses the pinned Node.js, pnpm, and Rust toolchains and does not receive GitHub credentials.
+
+### macOS
+
+Build macOS bundles on macOS:
+
+```sh
+pnpm release:local -- --tag v1.0.2 --platform macos-apple-silicon
+```
+
+Use `macos-intel` for Intel hardware. Public macOS distribution requires a Developer ID Application certificate and notarization credentials; keep those values in CI secrets and never commit them.
+
+Release assets use predictable names:
+
+```text
+EasyTrim_<version>_<os>_<arch>_<bundle><extension>
+```
+
+Only final installers are uploaded. Build-only files such as `.icns` and `.sh` helpers are excluded.
+
+## Project structure
+
+```text
+apps/desktop/
+├── src/                 React, TypeScript, and feature modules
+└── src-tauri/           Rust native process and Tauri integration
+docker/                  Reproducible Linux release build
+scripts/                 Development, icon, preview, and release helpers
+.github/workflows/       Linux CI and manual release workflows
+```
+
+The native layer discovers and runs FFmpeg/FFprobe, handles media inspection and rendering, and exposes typed commands to the React interface. Audio preview, waveforms, fast cuts, and optimized renders are coordinated through this native media layer.
+
+## License
+
+EasyTrim Editor is distributed under the [MIT License](LICENSE).
