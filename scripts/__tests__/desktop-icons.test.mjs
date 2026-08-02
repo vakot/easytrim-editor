@@ -28,6 +28,7 @@ test("desktop platforms use isolated native icon formats", async () => {
 test("web and Apple icon sources remain available", async () => {
   await Promise.all([
     access(new URL("../../apps/desktop/public/logo-symbol.svg", import.meta.url)),
+    access(new URL("../../apps/desktop/src-tauri/icons/icon.png", import.meta.url)),
     access(new URL("../../apps/desktop/src-tauri/icons/windows/icon.ico", import.meta.url)),
     access(new URL("../../apps/desktop/src-tauri/icons/linux/icon.png", import.meta.url)),
     access(

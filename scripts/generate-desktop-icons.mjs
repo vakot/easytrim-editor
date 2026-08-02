@@ -22,6 +22,7 @@ function run(command, args) {
 }
 
 const outputs = [
+  ["icon.png", join(iconRoot, "icon.png")],
   ["icon.ico", join(iconRoot, "windows", "icon.ico")],
   ["32x32.png", join(iconRoot, "linux", "32x32.png")],
   ["128x128.png", join(iconRoot, "linux", "128x128.png")],
@@ -47,7 +48,7 @@ try {
     }),
   );
 
-  console.log(`Prepared ${outputs.length} Windows and Linux desktop icon assets.`);
+  console.log(`Prepared ${outputs.length} shared, Windows, and Linux desktop icon assets.`);
 } finally {
   await rm(temporaryDirectory, { force: true, recursive: true });
 }

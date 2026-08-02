@@ -79,6 +79,8 @@ EasyTrim keeps platform assets separate so each desktop uses its native icon for
 - macOS bundles compile `apps/desktop/src-tauri/icon-sources/macos/logo_mac_composer.icon` into an Icon Composer asset catalog and legacy ICNS fallback during bundling.
 - The web shell uses `apps/desktop/public/logo-symbol.svg` directly.
 
+Tauri also requires `apps/desktop/src-tauri/icons/icon.png` while generating its compile-time application context. This shared fallback is used by development builds; the native bundles still use their platform-specific assets above.
+
 After changing `logo-symbol.svg`, regenerate the Windows and Linux files with:
 
 ```sh
