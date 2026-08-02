@@ -9,7 +9,6 @@ use std::{
 
 use crate::{
     error::AppError,
-    media::audio::analyze_audio_activity,
     process::{ProcessOutput, run_bounded_cancellable},
     state::{WaveformArtifact, WaveformSource},
 };
@@ -19,7 +18,8 @@ pub const MAX_WAVEFORM_WIDTH: u32 = 4_096;
 const WAVEFORM_HEIGHT: u32 = 56;
 const WAVEFORM_TIMEOUT: Duration = Duration::from_secs(10 * 60);
 const WAVEFORM_STDOUT_LIMIT: usize = 16 * 1024;
-const WAVEFORM_STDERR_LIMIT: usize = 128 * 1024;
+const WAVEFORM_STDERR_LIMIT: usize = 512 * 1024;
+const AUDIO_ACTIVITY_THRESHOLD_DB: f64 = -50.0;
 static NEXT_DIRECTORY_ID: AtomicU64 = AtomicU64::new(0);
 pub type WaveformGenerationResult = (u32, Option<bool>, Result<WaveformArtifact, AppError>);
 
@@ -31,9 +31,6 @@ pub fn generate_waveforms(
     for stream_index in stream_indexes {
         validate_waveform_request(&source.source.audio_stream_indexes, *stream_index, width)?;
     }
-    let activity = analyze_audio_activity(&source.source, stream_indexes)?
-        .into_iter()
-        .collect::<std::collections::HashMap<_, _>>();
     let artifacts = stream_indexes
         .iter()
         .map(|stream_index| {
@@ -69,6 +66,7 @@ pub fn generate_waveforms(
     .map_err(process_error)?;
 
     if output.status.success() {
+        let activity = parse_audio_activity(&output.stderr, stream_indexes);
         return Ok(artifacts
             .into_iter()
             .map(|(stream_index, artifact)| {
@@ -143,7 +141,7 @@ fn waveform_arguments(
         .enumerate()
         .map(|(index, stream_index)| {
             format!(
-                "[0:{stream_index}]aformat=channel_layouts=mono,showwavespic=s={width}x{WAVEFORM_HEIGHT}:colors=0x8b5cf6:scale=sqrt[waveform{index}]"
+                "[0:{stream_index}]aformat=channel_layouts=mono,asplit=2[wave_input{index}][activity_input{index}];[wave_input{index}]showwavespic=s={width}x{WAVEFORM_HEIGHT}:colors=0x8b5cf6:scale=sqrt[waveform{index}];[activity_input{index}]volumedetect@stream{stream_index}[activity{index}]"
             )
         })
         .collect::<Vec<_>>()
@@ -172,7 +170,52 @@ fn waveform_arguments(
             output_path.as_os_str().to_owned(),
         ]);
     }
+    for index in 0..stream_indexes.len() {
+        arguments.extend([
+            OsString::from("-map"),
+            OsString::from(format!("[activity{index}]")),
+            OsString::from("-f"),
+            OsString::from("null"),
+            OsString::from("-"),
+        ]);
+    }
     arguments
+}
+
+fn parse_audio_activity(
+    stderr: &[u8],
+    stream_indexes: &[u32],
+) -> std::collections::HashMap<u32, Option<bool>> {
+    let stderr = String::from_utf8_lossy(stderr);
+    stream_indexes
+        .iter()
+        .map(|stream_index| {
+            let marker = format!("[volumedetect@stream{stream_index} ");
+            let mean_volume = stderr.lines().find_map(|line| {
+                if !line.contains(&marker) {
+                    return None;
+                }
+                parse_mean_volume(line.as_bytes())
+            });
+            (*stream_index, mean_volume.map(is_mean_volume_audible))
+        })
+        .collect()
+}
+
+fn parse_mean_volume(stderr: &[u8]) -> Option<f64> {
+    String::from_utf8_lossy(stderr).lines().find_map(|line| {
+        let value = line.split_once("mean_volume:")?.1.trim();
+        let value = value.split_whitespace().next()?;
+        if value.eq_ignore_ascii_case("-inf") {
+            Some(f64::NEG_INFINITY)
+        } else {
+            value.parse().ok()
+        }
+    })
+}
+
+fn is_mean_volume_audible(mean_volume: f64) -> bool {
+    mean_volume >= AUDIO_ACTIVITY_THRESHOLD_DB
 }
 
 fn create_artifact(stream_index: u32) -> Result<WaveformArtifact, AppError> {
@@ -279,7 +322,7 @@ mod tests {
             ]
         }));
         assert!(arguments.iter().any(|argument| {
-            argument == "[0:2]aformat=channel_layouts=mono,showwavespic=s=1280x56:colors=0x8b5cf6:scale=sqrt[waveform0];[0:4]aformat=channel_layouts=mono,showwavespic=s=1280x56:colors=0x8b5cf6:scale=sqrt[waveform1]"
+            argument == "[0:2]aformat=channel_layouts=mono,asplit=2[wave_input0][activity_input0];[wave_input0]showwavespic=s=1280x56:colors=0x8b5cf6:scale=sqrt[waveform0];[activity_input0]volumedetect@stream2[activity0];[0:4]aformat=channel_layouts=mono,asplit=2[wave_input1][activity_input1];[wave_input1]showwavespic=s=1280x56:colors=0x8b5cf6:scale=sqrt[waveform1];[activity_input1]volumedetect@stream4[activity1]"
         }));
         assert_eq!(
             arguments
@@ -287,7 +330,21 @@ mod tests {
                 .filter(|pair| pair[0] == "-map")
                 .map(|pair| pair[1].clone())
                 .collect::<Vec<_>>(),
-            [OsString::from("[waveform0]"), OsString::from("[waveform1]")]
+            [
+                OsString::from("[waveform0]"),
+                OsString::from("[waveform1]"),
+                OsString::from("[activity0]"),
+                OsString::from("[activity1]"),
+            ]
         );
+    }
+
+    #[test]
+    fn parses_activity_by_filter_instance_and_classifies_noise() {
+        let stderr = b"[volumedetect@stream4 @ 0x0] mean_volume: -91.0 dB\n[volumedetect@stream2 @ 0x0] mean_volume: -18.5 dB";
+        let activity = super::parse_audio_activity(stderr, &[2, 4, 6]);
+        assert_eq!(activity.get(&2).copied(), Some(Some(true)));
+        assert_eq!(activity.get(&4).copied(), Some(Some(false)));
+        assert_eq!(activity.get(&6).copied(), Some(None));
     }
 }

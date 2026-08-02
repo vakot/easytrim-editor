@@ -15,7 +15,6 @@ use crate::{
 
 const AUDIO_TIMEOUT: Duration = Duration::from_secs(15 * 60);
 const STDERR_LIMIT: usize = 128 * 1024;
-const AUDIO_ACTIVITY_THRESHOLD_DB: f64 = -50.0;
 static NEXT_DIRECTORY_ID: AtomicU64 = AtomicU64::new(0);
 
 pub fn generate_audio_previews(
@@ -69,86 +68,6 @@ pub fn generate_audio_previews(
             artifacts.iter().map(|(_, artifact)| artifact.path()),
         ),
     ))
-}
-
-pub type AudioActivityResult = (u32, Option<bool>);
-
-/// Estimates whether each stream contains meaningful sound using FFmpeg's mean volume.
-/// A missing or failed measurement remains unknown so optional analysis never blocks import.
-pub fn analyze_audio_activity(
-    source: &ActiveSource,
-    stream_indexes: &[u32],
-) -> Result<Vec<AudioActivityResult>, AppError> {
-    let mut results = Vec::with_capacity(stream_indexes.len());
-    for stream_index in stream_indexes {
-        if !source.audio_stream_indexes.contains(stream_index) {
-            return Err(AppError::invalid_request(format!(
-                "Audio stream #{stream_index} does not belong to the active source."
-            )));
-        }
-
-        match measure_mean_volume(source, *stream_index) {
-            Ok(mean_volume) => {
-                results.push((*stream_index, mean_volume.map(is_mean_volume_audible)))
-            }
-            Err(error) if error.kind() == io::ErrorKind::Interrupted => {
-                return Err(AppError::source_replaced());
-            }
-            Err(_) => results.push((*stream_index, None)),
-        }
-    }
-    Ok(results)
-}
-
-fn measure_mean_volume(source: &ActiveSource, stream_index: u32) -> io::Result<Option<f64>> {
-    let arguments = audio_activity_arguments(&source.path, stream_index);
-    let output = run_bounded_cancellable(
-        OsStr::new("ffmpeg"),
-        &arguments,
-        AUDIO_TIMEOUT,
-        16 * 1024,
-        STDERR_LIMIT,
-        || source.cancellation.load(Ordering::Acquire),
-    )?;
-    if !output.status.success() {
-        return Ok(None);
-    }
-    Ok(parse_mean_volume(&output.stderr))
-}
-
-fn audio_activity_arguments(source_path: &Path, stream_index: u32) -> Vec<OsString> {
-    vec![
-        OsString::from("-hide_banner"),
-        OsString::from("-nostdin"),
-        OsString::from("-i"),
-        source_path.as_os_str().to_owned(),
-        OsString::from("-map"),
-        OsString::from(format!("0:{stream_index}")),
-        OsString::from("-vn"),
-        OsString::from("-sn"),
-        OsString::from("-dn"),
-        OsString::from("-af"),
-        OsString::from("volumedetect"),
-        OsString::from("-f"),
-        OsString::from("null"),
-        OsString::from("-"),
-    ]
-}
-
-fn parse_mean_volume(stderr: &[u8]) -> Option<f64> {
-    String::from_utf8_lossy(stderr).lines().find_map(|line| {
-        let value = line.split_once("mean_volume:")?.1.trim();
-        let value = value.split_whitespace().next()?;
-        if value.eq_ignore_ascii_case("-inf") {
-            Some(f64::NEG_INFINITY)
-        } else {
-            value.parse().ok()
-        }
-    })
-}
-
-fn is_mean_volume_audible(mean_volume: f64) -> bool {
-    mean_volume >= AUDIO_ACTIVITY_THRESHOLD_DB
 }
 
 fn audio_preview_arguments(source_path: &Path, outputs: &[(u32, &Path)]) -> Vec<OsString> {
@@ -240,10 +159,7 @@ fn diagnostics<'a>(
 mod tests {
     use std::{ffi::OsString, path::Path};
 
-    use super::{
-        AUDIO_ACTIVITY_THRESHOLD_DB, audio_activity_arguments, audio_preview_arguments,
-        is_mean_volume_audible, parse_mean_volume,
-    };
+    use super::audio_preview_arguments;
 
     #[test]
     fn builds_one_input_with_multiple_audio_outputs() {
@@ -277,33 +193,5 @@ mod tests {
                 .count(),
             2
         );
-    }
-
-    #[test]
-    fn builds_a_shell_free_volume_scan_for_one_global_stream() {
-        let arguments = audio_activity_arguments(Path::new("C:\\Videos\\source clip.mkv"), 4);
-
-        assert!(
-            arguments
-                .windows(2)
-                .any(|pair| { pair == [OsString::from("-map"), OsString::from("0:4"),] })
-        );
-        assert!(
-            arguments
-                .windows(2)
-                .any(|pair| { pair == [OsString::from("-af"), OsString::from("volumedetect")] })
-        );
-        assert_eq!(arguments.last(), Some(&OsString::from("-")));
-    }
-
-    #[test]
-    fn parses_mean_volume_and_filters_low_level_noise() {
-        assert_eq!(parse_mean_volume(b"mean_volume: -18.5 dB"), Some(-18.5));
-        assert_eq!(
-            parse_mean_volume(b"mean_volume: -inf dB"),
-            Some(f64::NEG_INFINITY)
-        );
-        assert!(is_mean_volume_audible(-49.9));
-        assert!(!is_mean_volume_audible(AUDIO_ACTIVITY_THRESHOLD_DB - 0.1));
     }
 }
