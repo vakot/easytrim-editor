@@ -36,7 +36,7 @@ export const en = {
   },
   import: {
     openVideo: "Open",
-    openTooltip: "Choose a video file to open in the editor.",
+    openTooltip: "Choose a video file to open in the editor. (Ctrl+O)",
     opening: "Opening…",
     welcome: {
       eyebrow: "Start a new clip",
@@ -146,7 +146,7 @@ export const en = {
     moveSegmentHint: "Drag to move the selected segment — hold Shift to snap",
     trimStart: "Trim start",
     trimEnd: "Trim end",
-    trimResetHint: "{{label}} — double-click to reset",
+    trimResetHint: "{{label}} — hold Shift to snap — double-click to reset",
     accessibleSeconds: "{{value}} seconds",
   },
   audio: {
@@ -185,10 +185,10 @@ export const en = {
   export: {
     save: "Save",
     saveShortcut: "Save (Ctrl+S)",
-    saveTooltip: "Save the selected segment without re-encoding.",
+    saveTooltip: "Save the selected segment without re-encoding. (Ctrl+S)",
     export: "Export",
     exportShortcut: "Export (Ctrl+E)",
-    exportTooltip: "Render the selected segment with your export settings.",
+    exportTooltip: "Render the selected segment with your export settings. (Ctrl+E)",
     queue: "Export queue",
     empty: "No exports yet.",
     canceled: "Canceled",
@@ -208,6 +208,8 @@ export const en = {
       frameRate: "Frame rate",
       matchSource: "Match source",
       arguments: "FFmpeg arguments",
+      copyCommand: "Copy command",
+      copiedCommand: "Copied to clipboard",
       saveNotice: "The native save dialog opens after confirmation.",
     },
     sourceResolution: "{{height}}p \u00b7 {{width}} \u00d7 {{height}} (source)",

@@ -11,14 +11,6 @@ export function outputDefaults(sourceName: string) {
   return { fast: `${stem}-cut.mkv`, optimized: `${stem}-optimized.mp4` };
 }
 
-export function isEditableTarget(target: EventTarget | null): boolean {
-  return (
-    target instanceof Element &&
-    target.closest("input, textarea, select, [contenteditable]:not([contenteditable='false'])") !==
-      null
-  );
-}
-
 export function resolutionOptions(source: MediaInfo, t: TFunction) {
   const options: { label: string; value: string }[] = [
     {

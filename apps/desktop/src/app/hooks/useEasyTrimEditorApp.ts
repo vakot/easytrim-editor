@@ -21,6 +21,7 @@ import {
   type PreviewKind,
   type SourceSelection,
 } from "@/lib/tauri/media";
+import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
 
 export function useEasyTrimEditorApp() {
   const [session, dispatch] = useReducer(sessionReducer, initialSessionState);
@@ -256,6 +257,12 @@ export function useEasyTrimEditorApp() {
       setIsNativeDialogOpen(false);
     }
   }, [inspectSource, isChoosingSource]);
+
+  useKeyboardShortcut(
+    (event) =>
+      event.key.toLowerCase() === "o" && event.ctrlKey && !isChoosingSource && !isNativeDialogOpen,
+    handleChooseSource,
+  );
 
   const handleReturnToWelcome = useCallback(() => {
     activeSourceIdRef.current = null;

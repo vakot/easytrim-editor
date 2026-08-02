@@ -54,7 +54,12 @@ export function AppToolbar({
         <Separator orientation="vertical" className="h-7" />
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="outline" onClick={onChooseSource} disabled={isChoosingSource}>
+            <Button
+              variant="outline"
+              onClick={onChooseSource}
+              disabled={isChoosingSource}
+              aria-keyshortcuts="Control+O"
+            >
               {isChoosingSource ? t("import.opening") : t("import.openVideo")}
             </Button>
           </TooltipTrigger>
