@@ -89,7 +89,10 @@ export const AudioTrackRow = memo(function AudioTrackRow({
         <div
           className="pointer-events-none absolute inset-y-0 border-x border-primary/70 bg-primary/5"
           aria-hidden="true"
-          style={{ left: "var(--audio-trim-start)", right: "var(--audio-trim-end)" }}
+          style={{
+            left: "var(--timeline-trim-start)",
+            right: "var(--timeline-trim-end-inset)",
+          }}
         />
       </div>
     </div>

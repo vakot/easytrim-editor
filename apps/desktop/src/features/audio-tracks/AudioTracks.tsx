@@ -1,7 +1,6 @@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { timelinePercent } from "@/domain/trim";
-import type { CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 
 import { AudioLevelControl } from "./components/AudioLevelControl";
@@ -29,8 +28,6 @@ export function AudioTracks({
   onWaveformImageError,
 }: AudioTracksProps) {
   const { t } = useTranslation();
-  const startPercent = timelinePercent(range.startMicros, range.sourceDurationMicros);
-  const endPercent = timelinePercent(range.endMicros, range.sourceDurationMicros);
   const playheadPercent = timelinePercent(playheadMicros, range.sourceDurationMicros);
   const enabledCount = tracks.filter((track) => track.enabled).length;
   const outputSummary = audioOutputSummary(enabledCount, mergeAudio, t);
@@ -76,15 +73,7 @@ export function AudioTracks({
         </div>
       </div>
 
-      <div
-        className="relative grid min-w-0 gap-2"
-        style={
-          {
-            "--audio-trim-start": `${startPercent}%`,
-            "--audio-trim-end": `${100 - endPercent}%`,
-          } as CSSProperties
-        }
-      >
+      <div className="relative grid min-w-0 gap-2">
         {streams.map((stream, index) => {
           const track = tracks.find((candidate) => candidate.streamIndex === stream.streamIndex);
           if (!track) return null;

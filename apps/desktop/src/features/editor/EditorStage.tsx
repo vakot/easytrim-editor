@@ -65,16 +65,22 @@ export function EditorStage({
   const playbackFrameRef = useRef<number | null>(null);
   const scrubFrameRef = useRef<number | null>(null);
   const pendingScrubMicrosRef = useRef<number | null>(null);
+  const trimCommitFrameRef = useRef<number | null>(null);
+  const pendingTrimCommitRef = useRef<TrimRange | null>(null);
   const resumeAfterScrubRef = useRef(false);
   const playbackStartSequenceRef = useRef(0);
   const isPlayingRef = useRef(false);
   const lastPlaybackCommitAtRef = useRef(0);
   const trimRef = useRef(trim);
+  const trimPropRef = useRef(trim);
   const currentPlayheadMicrosRef = useRef(trim.startMicros);
   const segmentDragActiveRef = useRef(false);
   const segmentFollowBoundaryRef = useRef<TrimBoundary | null>(null);
   const shortcutActionsRef = useRef<EditorShortcutActions | null>(null);
-  trimRef.current = trim;
+  if (trimPropRef.current !== trim) {
+    trimPropRef.current = trim;
+    trimRef.current = trim;
+  }
 
   const playbackModes = usePlaybackModes();
   const [playheadMicros, setPlayheadMicros] = useState(trim.startMicros);
@@ -88,6 +94,7 @@ export function EditorStage({
       playbackStartSequenceRef.current += 1;
       cancelFrame(playbackFrameRef);
       cancelFrame(scrubFrameRef);
+      cancelFrame(trimCommitFrameRef);
     },
     [],
   );
@@ -244,6 +251,30 @@ export function EditorStage({
     }
   }
 
+  function flushTrimCommit() {
+    cancelFrame(trimCommitFrameRef);
+    const pendingTrim = pendingTrimCommitRef.current;
+    pendingTrimCommitRef.current = null;
+    if (pendingTrim) {
+      onTrimChange(pendingTrim);
+    }
+  }
+
+  function queueTrimCommit(nextTrim: TrimRange) {
+    pendingTrimCommitRef.current = nextTrim;
+    if (trimCommitFrameRef.current !== null) {
+      return;
+    }
+    trimCommitFrameRef.current = requestAnimationFrame(() => {
+      trimCommitFrameRef.current = null;
+      const pendingTrim = pendingTrimCommitRef.current;
+      pendingTrimCommitRef.current = null;
+      if (pendingTrim) {
+        onTrimChange(pendingTrim);
+      }
+    });
+  }
+
   function queueScrubSeek(micros: number) {
     pendingScrubMicrosRef.current = clampPlaybackMicros(
       micros,
@@ -260,6 +291,19 @@ export function EditorStage({
         commitSeek(pendingMicros);
       }
     });
+  }
+
+  function queueSafeTrimSeek(micros: number) {
+    const clamped = clampPlaybackMicros(micros, trimRef.current.sourceDurationMicros);
+    currentPlayheadMicrosRef.current = clamped;
+    syncPlayheadElements(
+      playheadRef.current,
+      audioPlayheadRef.current,
+      clamped,
+      trimRef.current.sourceDurationMicros,
+      frameRate,
+    );
+    queueScrubSeek(clamped);
   }
 
   function flushScrubSeek() {
@@ -508,6 +552,7 @@ export function EditorStage({
     }
     const nextTrim = setTrimBoundaryAtPlayhead(currentTrim, boundary, currentPlayheadMicros);
     trimRef.current = nextTrim;
+    flushTrimCommit();
     onTrimChange(nextTrim);
   }
 
@@ -522,9 +567,9 @@ export function EditorStage({
       : { playheadMicros: currentPlayheadMicros, boundary: null };
 
     trimRef.current = nextTrim;
-    onTrimChange(nextTrim);
+    queueTrimCommit(nextTrim);
     if (follow.playheadMicros !== currentPlayheadMicros) {
-      commitSeek(follow.playheadMicros);
+      queueSafeTrimSeek(follow.playheadMicros);
     }
     return follow.boundary;
   }
@@ -544,9 +589,9 @@ export function EditorStage({
 
     segmentFollowBoundaryRef.current = follow.boundary;
     trimRef.current = nextTrim;
-    onTrimChange(nextTrim);
+    queueTrimCommit(nextTrim);
     if (follow.playheadMicros !== currentPlayheadMicros) {
-      commitSeek(follow.playheadMicros);
+      queueSafeTrimSeek(follow.playheadMicros);
     }
     return follow.boundary;
   }
@@ -559,6 +604,13 @@ export function EditorStage({
   function handleSegmentDragEnd() {
     segmentDragActiveRef.current = false;
     segmentFollowBoundaryRef.current = null;
+    flushTrimCommit();
+    flushScrubSeek();
+  }
+
+  function handleTrimDragEnd() {
+    flushTrimCommit();
+    flushScrubSeek();
   }
 
   shortcutActionsRef.current = {
@@ -631,6 +683,7 @@ export function EditorStage({
         className="min-h-0 min-w-0 bg-background"
       >
         <TimelinePane
+          range={trim}
           onSizeConstraintsChange={timelinePanelSizing.onSizeConstraintsChange}
           timeline={
             <TrimTimeline
@@ -684,6 +737,7 @@ export function EditorStage({
               }
               onChange={handleTrimBoundaryChange}
               onMoveSegment={handleSegmentMove}
+              onTrimDragEnd={handleTrimDragEnd}
               onSegmentDragStart={handleSegmentDragStart}
               onSegmentDragEnd={handleSegmentDragEnd}
               onSeek={commitSeek}
