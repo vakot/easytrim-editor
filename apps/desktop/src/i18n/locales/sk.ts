@@ -127,6 +127,9 @@ export const sk = {
       enabled: "Prehrávanie segmentu: zapnuté — prehrávanie je obmedzené na vybraný segment",
       disabled: "Prehrávanie segmentu: vypnuté — prehráva sa celá časová os",
     },
+    playbackSpeed: {
+      label: "Rýchlosť prehrávania",
+    },
     opening: "Otvára sa náhľad…",
     preparing: "Pripravuje sa kompatibilný náhľad…",
     preparingDescription: "Pri zdrojoch s vysokým rozlíšením to môže chvíľu trvať.",

@@ -19,6 +19,7 @@ import { VideoPreview } from "../preview/VideoPreview";
 import { TrimTimeline } from "../timeline";
 import { TimelinePane } from "./components/TimelinePane";
 import { usePlaybackModes } from "./hooks/usePlaybackModes";
+import { usePlaybackSpeed } from "./hooks/usePlaybackSpeed";
 import { useTimelinePanelSizing } from "./hooks/useTimelinePanelSizing";
 import type { EditorShortcutActions, EditorStageProps } from "./types";
 import { editorShortcutFromEvent, isShortcutBlockedTarget } from "./utils/editor-shortcuts";
@@ -83,11 +84,20 @@ export function EditorStage({
   }
 
   const playbackModes = usePlaybackModes();
+  const playbackSpeed = usePlaybackSpeed();
   const [playheadMicros, setPlayheadMicros] = useState(trim.startMicros);
   const [isPlaying, setIsPlaying] = useState(false);
   const [safeTrimFollowingEnabled, setSafeTrimFollowingEnabled] = useState(true);
   const [transportError, setTransportError] = useState<string | null>(null);
   const displayedPlayheadMicros = clampPlaybackMicros(playheadMicros, trim.sourceDurationMicros);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (video) video.playbackRate = playbackSpeed.speed;
+    for (const audio of audioElementsRef.current.values()) {
+      audio.playbackRate = playbackSpeed.speed;
+    }
+  }, [audioPreviewUrls, playbackSpeed.speed]);
 
   useEffect(
     () => () => {
@@ -139,6 +149,7 @@ export function EditorStage({
       element.crossOrigin = "anonymous";
       element.src = url;
       element.preload = "auto";
+      element.playbackRate = playbackSpeed.speed;
       element.setAttribute("aria-hidden", "true");
       element.style.display = "none";
       document.body.appendChild(element);
@@ -152,7 +163,7 @@ export function EditorStage({
     return () => {
       // Keep the graph alive across volume changes; elements are disposed on source unmount.
     };
-  }, [audioPreviewUrls]);
+  }, [audioPreviewUrls, playbackSpeed.speed]);
 
   useEffect(() => {
     const masterGain = masterGainRef.current;
@@ -633,6 +644,7 @@ export function EditorStage({
           <VideoPreview
             sourceId={sourceId}
             preview={preview}
+            playbackRate={playbackSpeed.speed}
             videoRef={videoRef}
             onPlaybackError={onPreviewPlaybackError}
             onLoadedMetadata={() => commitSeek(displayedPlayheadMicros)}
@@ -727,11 +739,13 @@ export function EditorStage({
                     safeTrimFollowingEnabled={safeTrimFollowingEnabled}
                     loopPlaybackEnabled={playbackModes.loopEnabled}
                     segmentPlaybackEnabled={playbackModes.segmentEnabled}
+                    playbackSpeed={playbackSpeed.speed}
                     onToggleSafeTrimFollowing={() =>
                       setSafeTrimFollowingEnabled((enabled) => !enabled)
                     }
                     onToggleLoopPlayback={handleToggleLoopPlayback}
                     onToggleSegmentPlayback={handleToggleSegmentPlayback}
+                    onPlaybackSpeedChange={playbackSpeed.setSpeed}
                   />
                 ) : null
               }
