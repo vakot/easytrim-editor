@@ -52,10 +52,11 @@ function Slider({
           max === min ? 0 : (Math.min(max, Math.max(min, marker.value)) - min) / (max - min);
         return (
           <span
-            className="pointer-events-none absolute inset-y-1/4 z-1 w-px -translate-x-1/2 bg-muted-foreground/70"
+            className="pointer-events-none absolute inset-y-1/4 w-px -translate-x-1/2 bg-muted-foreground/70"
             key={`${marker.value}-${String(marker.label)}`}
             style={{
               left: `calc(${position * 100}% + ${0.375 - position * 0.75}rem)`,
+              zIndex: 1,
             }}
           >
             <span className="absolute bottom-full left-1/2 -translate-x-1/2 whitespace-nowrap pb-0.5 text-[0.625rem] leading-none text-muted-foreground">
@@ -70,6 +71,7 @@ function Slider({
           key={index}
           aria-label={ariaLabel}
           aria-labelledby={ariaLabelledBy}
+          style={{ zIndex: 10 }}
           className="relative z-10 block size-3 shrink-0 rounded-full border border-ring bg-white ring-ring/50 transition-[color,box-shadow] select-none after:absolute after:-inset-2 hover:ring-3 focus-visible:ring-3 focus-visible:outline-hidden active:ring-3 disabled:pointer-events-none disabled:opacity-50"
         />
       ))}
