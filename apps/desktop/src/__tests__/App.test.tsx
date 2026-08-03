@@ -229,10 +229,10 @@ describe("App", () => {
     );
     const sourceDetails = screen
       .getByTestId("source-details-panel")
-      .querySelector('[data-slot="source-details"]');
+      .querySelector<HTMLElement>('[data-slot="source-details"]');
     const exportQueueScroll = screen
       .getByTestId("source-details-panel")
-      .querySelector('[data-slot="export-queue-scroll"]');
+      .querySelector<HTMLElement>('[data-slot="export-queue-scroll"]');
     expect(sourceDetails).toContainElement(screen.getByRole("heading", { name: "holiday.mp4" }));
     expect(sourceDetails).not.toContainElement(
       screen.getByRole("heading", { name: "Export queue" }),
@@ -242,7 +242,7 @@ describe("App", () => {
     );
     const sidebarDivider = screen
       .getByTestId("source-details-panel")
-      .querySelector('[data-slot="separator"]');
+      .querySelector<HTMLElement>('[data-slot="separator"]');
     expect(sidebarDivider).not.toBeNull();
     expect(sidebarDivider?.parentElement).toBe(sourceDetails?.parentElement);
     expect(sourceDetails).not.toContainElement(sidebarDivider);
