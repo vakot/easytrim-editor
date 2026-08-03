@@ -570,6 +570,26 @@ describe("App", () => {
     expect(audioPlayhead.style.left).toBe(playhead.style.left);
   });
 
+  it("stops preview playback when the preview errors", async () => {
+    mocks.chooseSource.mockResolvedValue(selection);
+    const user = userEvent.setup();
+
+    render(<App />);
+    await user.click(screen.getByRole("button", { name: "Select video" }));
+
+    const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
+    const videoPause = vi.spyOn(video, "pause").mockImplementation(() => undefined);
+
+    fireEvent.play(video);
+    fireEvent.error(video);
+
+    expect(videoPause).toHaveBeenCalled();
+    expect(await screen.findByLabelText("Source video preview")).toHaveAttribute(
+      "data-preview-kind",
+      "proxy",
+    );
+  });
+
   it("stops or loops at the selected segment boundary", async () => {
     mocks.chooseSource.mockResolvedValue(selection);
     const user = userEvent.setup();
