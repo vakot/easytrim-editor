@@ -1,6 +1,6 @@
 import type { AudioTrackState } from "@/app/session-state";
 import type { AudioStream } from "@/lib/tauri/media";
-import { memo, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { WAVEFORM_RENDER_WIDTH } from "../hooks/useWaveformPreparation";
@@ -31,6 +31,26 @@ export const AudioTrackRow = memo(function AudioTrackRow({
 }: AudioTrackRowProps) {
   const { t } = useTranslation();
   const [volumeControlOpen, setVolumeControlOpen] = useState(false);
+  const [volumeControlMounted, setVolumeControlMounted] = useState(false);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useEffect(
+    () => () => {
+      clearTimeout(closeTimerRef.current);
+    },
+    [],
+  );
+
+  const openVolumeControl = () => {
+    clearTimeout(closeTimerRef.current);
+    setVolumeControlMounted(true);
+    setVolumeControlOpen(true);
+  };
+
+  const closeVolumeControl = () => {
+    setVolumeControlOpen(false);
+    closeTimerRef.current = setTimeout(() => setVolumeControlMounted(false), 100);
+  };
 
   return (
     <div
@@ -39,15 +59,15 @@ export const AudioTrackRow = memo(function AudioTrackRow({
     >
       <div
         className="relative flex min-w-0 items-center gap-2 rounded-lg p-1"
-        onPointerEnter={() => setVolumeControlOpen(true)}
-        onPointerLeave={() => setVolumeControlOpen(false)}
+        onPointerEnter={openVolumeControl}
+        onPointerLeave={closeVolumeControl}
       >
         <button
           className="absolute inset-0 z-1 rounded-lg"
           type="button"
           aria-label={t("audio.trackVolume", { title })}
-          onFocus={() => setVolumeControlOpen(true)}
-          onBlur={() => setVolumeControlOpen(false)}
+          onFocus={openVolumeControl}
+          onBlur={closeVolumeControl}
         />
         <VolumeButton
           className="relative z-2"
@@ -67,10 +87,11 @@ export const AudioTrackRow = memo(function AudioTrackRow({
             #{stream.streamIndex} · {stream.codecName.toUpperCase()} · {formatChannels(stream, t)}
           </p>
         </div>
-        {volumeControlOpen ? (
+        {volumeControlMounted ? (
           <div
-            className="absolute inset-0 z-1 rounded-lg bg-popover p-1 text-sm text-popover-foreground shadow-md ring-1 ring-foreground/10"
+            className="absolute inset-0 z-1 origin-center rounded-lg bg-popover p-1 text-sm text-popover-foreground shadow-md ring-1 ring-foreground/10 outline-hidden duration-100 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
             data-slot="hover-card-content"
+            data-state={volumeControlOpen ? "open" : "closed"}
           >
             <AudioLevelControl
               label={t("audio.trackVolume", { title })}
