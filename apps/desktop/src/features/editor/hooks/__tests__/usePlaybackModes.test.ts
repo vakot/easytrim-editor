@@ -10,12 +10,24 @@ const trim = {
 };
 
 describe("usePlaybackModes", () => {
-  it("defaults to looping the selected segment and allows full-source playback", () => {
+  it("preserves an external playhead while keeping segment playback enabled", () => {
     const { result } = renderHook(() => usePlaybackModes());
 
     expect(result.current.loopEnabled).toBe(true);
     expect(result.current.segmentEnabled).toBe(true);
-    expect(result.current.startMicros(5_000_000, trim)).toBe(10_000_000);
+    expect(result.current.startMicros(5_000_000, trim)).toBe(5_000_000);
+    expect(result.current.consumeBoundary(19_999_999, trim)).toEqual({ reached: false });
+    expect(result.current.consumeBoundary(20_000_000, trim)).toEqual({
+      reached: true,
+      action: { type: "restart", positionMicros: 10_000_000 },
+    });
+
+    expect(result.current.startMicros(25_000_000, trim)).toBe(25_000_000);
+    expect(result.current.consumeBoundary(59_999_999, trim)).toEqual({ reached: false });
+    expect(result.current.consumeBoundary(60_000_000, trim)).toEqual({
+      reached: true,
+      action: { type: "restart", positionMicros: 10_000_000 },
+    });
 
     act(() => result.current.toggleSegment());
 

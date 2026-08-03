@@ -3,8 +3,8 @@ import { useRef, useState } from "react";
 import {
   playbackBoundaryAction,
   playbackRange,
-  playbackStartMicros,
   type PlaybackBoundaryAction,
+  type PlaybackRange,
 } from "@/domain/playback";
 import type { TrimRange } from "@/domain/trim";
 
@@ -15,27 +15,32 @@ export type PlaybackBoundaryResult =
 
 export function usePlaybackModes() {
   const modesRef = useRef({ loopEnabled: true, segmentEnabled: true });
+  const playbackRangeRef = useRef<PlaybackRange | null>(null);
   const boundaryHandledRef = useRef(false);
   const [loopEnabled, setLoopEnabled] = useState(true);
   const [segmentEnabled, setSegmentEnabled] = useState(true);
 
-  function activeRange(trim: TrimRange) {
+  function activeRange(trim: TrimRange, playbackStartMicros: number) {
     return playbackRange(
       trim.sourceDurationMicros,
       trim.startMicros,
-      trim.endMicros,
+      modesRef.current.segmentEnabled && playbackStartMicros >= trim.endMicros
+        ? trim.sourceDurationMicros
+        : trim.endMicros,
       modesRef.current.segmentEnabled,
     );
   }
 
   function startMicros(currentMicros: number, trim: TrimRange) {
-    return playbackStartMicros(currentMicros, activeRange(trim));
+    const range = activeRange(trim, currentMicros);
+    playbackRangeRef.current = range;
+    return currentMicros;
   }
 
   function consumeBoundary(currentMicros: number, trim: TrimRange): PlaybackBoundaryResult {
     const action = playbackBoundaryAction(
       currentMicros,
-      activeRange(trim),
+      playbackRangeRef.current ?? activeRange(trim, trim.startMicros),
       modesRef.current.loopEnabled,
     );
     if (action.type === "continue") {
@@ -46,6 +51,9 @@ export function usePlaybackModes() {
       return { reached: true, action: null };
     }
     boundaryHandledRef.current = true;
+    if (action.type === "restart") {
+      playbackRangeRef.current = activeRange(trim, trim.startMicros);
+    }
     return { reached: true, action };
   }
 
@@ -59,6 +67,7 @@ export function usePlaybackModes() {
     const enabled = !modesRef.current.segmentEnabled;
     modesRef.current.segmentEnabled = enabled;
     boundaryHandledRef.current = false;
+    playbackRangeRef.current = null;
     setSegmentEnabled(enabled);
     return enabled;
   }
