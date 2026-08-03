@@ -1,8 +1,7 @@
 import type { AudioTrackState } from "@/app/session-state";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { AudioStream } from "@/lib/tauri/media";
-import { memo } from "react";
+import { memo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { WAVEFORM_RENDER_WIDTH } from "../hooks/useWaveformPreparation";
@@ -32,33 +31,39 @@ export const AudioTrackRow = memo(function AudioTrackRow({
   onWaveformImageError,
 }: AudioTrackRowProps) {
   const { t } = useTranslation();
+  const [volumeControlOpen, setVolumeControlOpen] = useState(false);
 
   return (
     <div
       className="grid min-w-0 grid-cols-[var(--editor-track-grid-columns)] gap-3"
       data-slot="audio-track-row"
     >
-      <HoverCard openDelay={0} closeDelay={100}>
-        <div className="flex min-w-0 items-center gap-2 rounded-lg px-1 py-1 hover:bg-muted/40">
+      <HoverCard
+        open={volumeControlOpen}
+        onOpenChange={(open) => {
+          if (open) setVolumeControlOpen(true);
+        }}
+      >
+        <div className="flex min-w-0 items-center gap-2 rounded-lg px-1 py-1">
           <HoverCardTrigger asChild>
             <VolumeButton
               enabled={track.enabled}
               label={t(track.enabled ? "audio.muteTrack" : "audio.enableTrack", { title })}
               onClick={() => onToggle(stream.streamIndex)}
+              tooltip={false}
+              onPointerEnter={() => setVolumeControlOpen(true)}
+              onPointerLeave={() => setVolumeControlOpen(false)}
+              onFocus={() => setVolumeControlOpen(true)}
+              onBlur={() => setVolumeControlOpen(false)}
             />
           </HoverCardTrigger>
           <div className="min-w-0 leading-tight">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <p
-                  className="truncate text-sm font-semibold transition-colors data-[enabled=false]:text-muted-foreground"
-                  data-enabled={track.enabled}
-                >
-                  {title}
-                </p>
-              </TooltipTrigger>
-              <TooltipContent>{title}</TooltipContent>
-            </Tooltip>
+            <p
+              className="truncate text-sm font-semibold transition-colors data-[enabled=false]:text-muted-foreground"
+              data-enabled={track.enabled}
+            >
+              {title}
+            </p>
             <p className="truncate text-xs leading-5 text-muted-foreground">
               #{stream.streamIndex} · {stream.codecName.toUpperCase()} · {formatChannels(stream, t)}
             </p>
