@@ -1,21 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
-  cancelOperation,
   chooseOutputPath,
   normalizeAppError,
   planOptimizedExport,
-  renderFast,
-  renderOptimized,
-  type ExportProgress,
   type FastExportRequest,
   type OptimizedExportRequest,
   type OutputSelection,
 } from "@/lib/tauri/media";
 import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
 
-import type { ExportPanelProps, ExportSettings, ExportToast } from "../types";
+import type { ExportPanelProps, ExportSettings } from "../types";
 import { outputDefaults } from "../utils/export-options";
+import { cancelQueuedExport, enqueueExport } from "../utils/export-queue";
 import { useTranslation } from "react-i18next";
 
 export function useExportController({
@@ -40,8 +37,6 @@ export function useExportController({
     argumentsText: presetState.argumentsText,
   });
   const [launchError, setLaunchError] = useState<string | null>(null);
-  const canceledRef = useRef(new Set<string>());
-  const operationIdsRef = useRef(new Map<string, string>());
   const toastSequence = useRef(0);
 
   const masterGain = masterEnabled ? masterVolumePercent / 50 : 0;
@@ -161,73 +156,20 @@ export function useExportController({
         filename: output.displayName,
         path: output.displayPath,
         percentage: 0,
-        status: "rendering",
-        onCancel: () => cancelExport(id),
+        status: "queued",
+        startedAt: null,
+        durationMs: null,
+        onCancel: () => cancelQueuedExport(id),
       },
     ]);
-    void renderQueuedExport(id, route, request, output);
-  }
-
-  async function renderQueuedExport(
-    id: string,
-    route: "fast" | "optimized",
-    request: FastExportRequest | OptimizedExportRequest,
-    output: OutputSelection,
-  ) {
-    const onProgress = (progress: ExportProgress) => {
-      if (canceledRef.current.has(id)) {
-        void cancelOperation(progress.operationId).catch(() => undefined);
-        return;
-      }
-      updateToast(id, (toast) => ({
-        ...toast,
-        operationId: progress.operationId,
-        percentage: Math.round(progress.percentage),
-      }));
-      operationIdsRef.current.set(id, progress.operationId);
-    };
-
-    try {
-      const result =
-        route === "fast"
-          ? await renderFast(request, output.outputId, onProgress)
-          : await renderOptimized(request as OptimizedExportRequest, output.outputId, onProgress);
-      if (canceledRef.current.has(id)) return;
-      updateToast(id, (toast) => ({
-        ...toast,
-        operationId: result.operationId,
-        path: result.displayPath,
-        percentage: 100,
-        status: "completed",
-        onCancel: undefined,
-      }));
-    } catch (error: unknown) {
-      if (canceledRef.current.has(id)) return;
-      const normalized = normalizeAppError(error);
-      const wasCanceled = normalized.code === "cancelled" || normalized.code === "source_replaced";
-      updateToast(id, (toast) => ({
-        ...toast,
-        status: wasCanceled ? "canceled" : "failed",
-        error: wasCanceled ? t("export.canceledMessage") : normalized.message,
-        onCancel: undefined,
-      }));
-    }
-  }
-
-  function updateToast(id: string, update: (toast: ExportToast) => ExportToast) {
-    setQueue((current) => current.map((toast) => (toast.id === id ? update(toast) : toast)));
-  }
-
-  function cancelExport(id: string) {
-    canceledRef.current.add(id);
-    updateToast(id, (toast) => ({
-      ...toast,
-      status: "canceled",
-      error: t("export.canceledMessage"),
-      onCancel: undefined,
-    }));
-    const operationId = operationIdsRef.current.get(id);
-    if (operationId) void cancelOperation(operationId).catch(() => undefined);
+    enqueueExport({
+      id,
+      route,
+      request,
+      output,
+      setQueue,
+      canceledMessage: t("export.canceledMessage"),
+    });
   }
 
   function openOptimizedDialog() {
