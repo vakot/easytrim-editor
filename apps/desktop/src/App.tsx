@@ -3,6 +3,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppToolbar } from "@/app/components/AppToolbar";
 import { NativeDialogOverlay } from "@/app/components/NativeDialogOverlay";
 import { ReturnConfirmationDialog } from "@/app/components/ReturnConfirmationDialog";
+import { StatusBar } from "@/app/components/StatusBar";
 import { useEasyTrimEditorApp } from "@/app/hooks/useEasyTrimEditorApp";
 import { SourceWorkspace } from "@/features/import-source/SourceWorkspace";
 import { useTranslation } from "react-i18next";
@@ -18,7 +19,7 @@ function EasyTrimEditorApp() {
     <TooltipProvider>
       <main
         className={`fixed inset-0 grid h-dvh w-screen min-w-80 overflow-hidden bg-background ${
-          app.hasSource ? "grid-rows-[auto_minmax(0,1fr)]" : "grid-rows-1"
+          app.hasSource ? "grid-rows-[auto_minmax(0,1fr)_auto]" : "grid-rows-1"
         }`}
       >
         {app.hasSource ? (
@@ -74,6 +75,7 @@ function EasyTrimEditorApp() {
           exportQueue={app.exportQueue}
           update={update}
         />
+        {app.hasSource ? <StatusBar /> : null}
       </main>
     </TooltipProvider>
   );
