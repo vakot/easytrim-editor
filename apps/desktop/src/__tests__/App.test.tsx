@@ -45,6 +45,10 @@ const selection: SourceSelection = {
   sourceId: "source-1",
   displayName: "holiday.mp4",
 };
+const replacementSelection: SourceSelection = {
+  sourceId: "source-2",
+  displayName: "replacement.mp4",
+};
 
 const media: MediaInfo = {
   sourceId: selection.sourceId,
@@ -116,6 +120,63 @@ beforeEach(() => {
 });
 
 describe("App", () => {
+  it("preserves editor tools across source replacement and returning to welcome", async () => {
+    mocks.chooseSource
+      .mockResolvedValueOnce(selection)
+      .mockResolvedValueOnce(replacementSelection)
+      .mockResolvedValueOnce(selection);
+    mocks.inspectMedia.mockImplementation(async (sourceId: string) => ({ ...media, sourceId }));
+    mocks.prepareSourcePreview.mockImplementation(async (sourceId: string) => ({
+      sourceId,
+      url: `http://easytrim-media.localhost/${sourceId}?variant=source`,
+      kind: "source" as const,
+    }));
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Select video" }));
+    await screen.findByRole("heading", { name: "Selected Segment" });
+    await user.click(screen.getByRole("button", { name: "Safe trim following" }));
+    await user.click(screen.getByRole("button", { name: "Loop playback" }));
+
+    expect(screen.getByRole("button", { name: "Safe trim following" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+    expect(screen.getByRole("button", { name: "Loop playback" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+
+    await user.click(screen.getByRole("button", { name: "Open" }));
+    await screen.findByRole("heading", { name: "Selected Segment" });
+
+    expect(screen.getByRole("button", { name: "Safe trim following" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+    expect(screen.getByRole("button", { name: "Loop playback" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: "Return to EasyTrim Editor welcome page" }),
+    );
+    await user.click(screen.getByRole("button", { name: "Return to welcome" }));
+    await user.click(screen.getByRole("button", { name: "Select video" }));
+    await screen.findByRole("heading", { name: "Selected Segment" });
+
+    expect(screen.getByRole("button", { name: "Safe trim following" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+    expect(screen.getByRole("button", { name: "Loop playback" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+  });
+
   it("starts with a full workspace import view", async () => {
     render(<App />);
 
@@ -213,6 +274,15 @@ describe("App", () => {
       "aria-pressed",
       "true",
     );
+    expect(within(videoToolbar).getByRole("button", { name: "Reset tools" })).toHaveAttribute(
+      "data-variant",
+      "secondary",
+    );
+    expect(within(videoToolbar).getByRole("button", { name: "Playback speed" })).toHaveAttribute(
+      "data-variant",
+      "secondary",
+    );
+    expect(videoToolbar.querySelector('[aria-hidden="true"]')).toBeInTheDocument();
     const playbackSpeedButton = within(videoToolbar).getByRole("button", {
       name: "Playback speed",
     });
