@@ -237,7 +237,7 @@ export function TimelineTools({
         <PlaybackSpeedTool speed={playbackSpeed} onChange={onPlaybackSpeedChange} />
       </div>
       <div
-        className="mx-2 w-px shrink-0 bg-border"
+        className="mx-1 w-px shrink-0 bg-border"
         data-slot="timeline-tools-divider"
         aria-hidden="true"
       />
