@@ -261,7 +261,7 @@ function PlaybackSpeedTool({
         </Button>
       </PopoverTrigger>
       <PopoverContent side="bottom" align="center" className="w-56 p-2.5">
-        <div className="flex items-center gap-2">
+        <div className="flex w-full min-w-0 items-center gap-2 mt-2">
           <Slider
             className="min-w-0 flex-1"
             min={0}
@@ -277,7 +277,7 @@ function PlaybackSpeedTool({
             markers={PLAYBACK_SPEED_MARKERS}
           />
           <output className="w-10 shrink-0 text-right font-mono text-xs text-muted-foreground">
-            {speed}×
+            {speed.toFixed(2)}×
           </output>
         </div>
       </PopoverContent>
