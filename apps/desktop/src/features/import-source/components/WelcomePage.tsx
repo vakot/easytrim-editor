@@ -1,5 +1,8 @@
+import { ExternalLink } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { LanguageSelector } from "@/app/components/LanguageSelector";
 import { ThemeSelector } from "@/app/components/ThemeSelector";
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
@@ -12,7 +15,8 @@ import { WelcomeBrandWall } from "./WelcomeBrandWall";
 import { useTranslation } from "react-i18next";
 import { SupportBadge } from "@/features/support/components/SupportBadge";
 import { UpdateNotice } from "@/features/release/components/UpdateNotice";
-import type { AvailableUpdate } from "@/features/release/release-check";
+import { getReleaseUrl, type AvailableUpdate } from "@/features/release/release-check";
+import { openExternalUrl } from "@/lib/open-external-url";
 import packageJson from "../../../../../../package.json";
 
 interface WelcomePageProps {
@@ -83,12 +87,38 @@ export function WelcomePage({
         </div>
       ) : null}
       {isSourceDragActive ? <DropOverlay /> : null}
-      <Badge
-        variant="outline"
-        className="absolute bottom-4 left-4 z-20 border-border/70 bg-card/80 text-muted-foreground shadow-sm backdrop-blur-sm"
-      >
-        v{packageJson.version}
-      </Badge>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Badge
+            asChild
+            variant="outline"
+            className="absolute bottom-4 left-4 z-20 border-border/70 bg-card/80 text-muted-foreground shadow-sm backdrop-blur-sm"
+          >
+            <a
+              href={getReleaseUrl(packageJson.version)}
+              onClick={(event) => {
+                event.preventDefault();
+                void openExternalUrl(getReleaseUrl(packageJson.version));
+              }}
+              aria-label={t("release.badgeLink", { version: packageJson.version })}
+            >
+              <span>v{packageJson.version}</span>
+              <span aria-hidden="true">·</span>
+              <span>
+                {update
+                  ? t("release.updateAvailableBadge", { version: update.version })
+                  : t("release.upToDate")}
+              </span>
+              <ExternalLink aria-hidden="true" data-icon="inline-end" />
+            </a>
+          </Badge>
+        </TooltipTrigger>
+        <TooltipContent>
+          {update
+            ? t("release.badgeUpdateTooltip", { version: update.version })
+            : t("release.badgeCurrentTooltip", { version: packageJson.version })}
+        </TooltipContent>
+      </Tooltip>
       <SupportBadge />
     </section>
   );

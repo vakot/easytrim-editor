@@ -218,6 +218,11 @@ export const en = {
   },
   release: {
     updateAvailable: "A new EasyTrim Editor release is available:",
+    updateAvailableBadge: "Update available: v{{version}}",
+    upToDate: "Up to date",
+    badgeLink: "Open installed release v{{version}}",
+    badgeCurrentTooltip: "Open the installed EasyTrim Editor v{{version}} release",
+    badgeUpdateTooltip: "Update available: v{{version}}. Open the installed release",
     update: "Update",
     dismiss: "Dismiss update notice",
   },

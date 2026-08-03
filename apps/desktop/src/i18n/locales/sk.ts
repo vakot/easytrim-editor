@@ -225,6 +225,11 @@ export const sk = {
   },
   release: {
     updateAvailable: "Je dostupná nová verzia EasyTrim Editor:",
+    updateAvailableBadge: "Dostupná aktualizácia: v{{version}}",
+    upToDate: "Aktuálne",
+    badgeLink: "Otvoriť nainštalovanú verziu v{{version}}",
+    badgeCurrentTooltip: "Otvoriť nainštalovanú verziu EasyTrim Editor v{{version}}",
+    badgeUpdateTooltip: "Dostupná aktualizácia: v{{version}}. Otvoriť nainštalovanú verziu",
     update: "Aktualizovať",
     dismiss: "Skryť upozornenie na aktualizáciu",
   },
