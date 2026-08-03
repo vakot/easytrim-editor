@@ -22,6 +22,7 @@ export interface ExportProgress {
   operationId: string;
   elapsedMicros: number;
   speed?: string;
+  fps?: string;
   phase: "running" | "completed";
 }
 
@@ -407,6 +408,7 @@ function parseExportProgress(value: unknown): ExportProgress {
     operationId: requireString(progress.operationId, "operation ID"),
     elapsedMicros: requireInteger(progress.elapsedMicros, "export elapsed time"),
     speed: optionalString(progress.speed),
+    fps: optionalString(progress.fps),
     phase,
   };
 }

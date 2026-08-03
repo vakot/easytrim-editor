@@ -35,6 +35,7 @@ pub struct ExportProgress {
     pub operation_id: String,
     pub elapsed_micros: i64,
     pub speed: Option<String>,
+    pub fps: Option<String>,
     pub phase: ExportPhase,
 }
 
@@ -197,6 +198,7 @@ async fn run_export(
         operation_id: operation_id.clone(),
         elapsed_micros: 0,
         speed: None,
+        fps: None,
         phase: ExportPhase::Running,
     });
     let cancellation_for_check = cancellation.clone();
@@ -222,6 +224,7 @@ async fn run_export(
                             operation_id: operation_for_task.clone(),
                             elapsed_micros,
                             speed: progress_values.get("speed").cloned(),
+                            fps: progress_values.get("fps").cloned(),
                             phase: if value == "end" {
                                 ExportPhase::Completed
                             } else {

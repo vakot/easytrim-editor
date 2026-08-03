@@ -107,10 +107,14 @@ async function renderJob(job: ExportJob) {
         ? Math.min(100, Math.max(0, (progress.elapsedMicros / durationMicros) * 100))
         : 0;
     const speedMultiplier = parseSpeedMultiplier(progress.speed);
-    if (job.frameRate && speedMultiplier !== null) {
-      const currentFps = job.frameRate * speedMultiplier;
-      job.estimatedFps =
-        job.estimatedFps === null ? currentFps : job.estimatedFps * 0.75 + currentFps * 0.25;
+    const reportedFps = parseMetric(progress.fps);
+    if (reportedFps !== null || (job.frameRate && speedMultiplier !== null)) {
+      const currentFps =
+        reportedFps ?? (job.frameRate ? job.frameRate * speedMultiplier! : undefined);
+      if (currentFps !== undefined) {
+        job.estimatedFps =
+          job.estimatedFps === null ? currentFps : job.estimatedFps * 0.75 + currentFps * 0.25;
+      }
     }
     updateToast(job, (toast) => ({
       ...toast,
@@ -158,8 +162,12 @@ async function renderJob(job: ExportJob) {
 }
 
 function parseSpeedMultiplier(speed: string | undefined) {
-  if (!speed) return null;
-  const multiplier = Number.parseFloat(speed.replace(/x$/i, ""));
+  return parseMetric(speed?.replace(/x$/i, ""));
+}
+
+function parseMetric(value: string | undefined) {
+  if (!value) return null;
+  const multiplier = Number.parseFloat(value);
   return Number.isFinite(multiplier) && multiplier >= 0 ? multiplier : null;
 }
 
