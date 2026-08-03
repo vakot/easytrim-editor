@@ -17,6 +17,7 @@ export function StatusBar({
   const appSha = import.meta.env.VITE_APP_SHA?.trim();
   const activeExport = queue.find((item) => item.status === "rendering");
   const activeExportPath = activeExport ? splitFilePath(activeExport.path) : null;
+  const activeExportFps = activeExport?.estimatedFps ?? activeExport?.frameRate;
 
   return (
     <footer
@@ -75,12 +76,10 @@ export function StatusBar({
               {Math.round(activeExport.progressPercent ?? 0)}%
             </span>
           </div>
-          {activeExport.estimatedFps !== undefined ? (
+          {activeExportFps !== undefined ? (
             <>
               <span className="h-4 w-px shrink-0 bg-border" aria-hidden="true" />
-              <span className="shrink-0 tabular-nums">
-                {Math.round(activeExport.estimatedFps)} FPS
-              </span>
+              <span className="shrink-0 tabular-nums">{Math.round(activeExportFps)} FPS</span>
             </>
           ) : null}
           <span className="h-4 w-px shrink-0 bg-border" aria-hidden="true" />
