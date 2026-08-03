@@ -1,14 +1,16 @@
-import { Check, CircleX, Link2, LoaderCircle, TriangleAlert, X } from "lucide-react";
+import { Check, CircleX, ExternalLink, LoaderCircle, TriangleAlert, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { openFileLocation } from "@/lib/tauri/media";
 
 import type { ExportToast } from "../types";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 const statusStyles = {
   rendering: "border-l-primary",
+  queued: "border-l-muted-foreground",
   completed: "border-l-emerald-400",
   failed: "border-l-destructive",
   canceled: "border-l-destructive",
@@ -16,6 +18,14 @@ const statusStyles = {
 
 export function ExportQueue({ queue }: { queue: ExportToast[] }) {
   const { t } = useTranslation();
+  const [now, setNow] = useState(() => Date.now());
+  const hasRenderingItem = queue.some((item) => item.status === "rendering");
+
+  useEffect(() => {
+    if (!hasRenderingItem) return;
+    const interval = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(interval);
+  }, [hasRenderingItem]);
 
   return (
     <section className="grid gap-3" aria-labelledby="export-queue-title">
@@ -35,7 +45,7 @@ export function ExportQueue({ queue }: { queue: ExportToast[] }) {
       ) : (
         <div className="grid gap-2" role="status" aria-live="polite">
           {queue.map((item) => (
-            <ExportQueueItem key={item.id} item={item} />
+            <ExportQueueItem key={item.id} item={item} now={now} />
           ))}
         </div>
       )}
@@ -43,10 +53,17 @@ export function ExportQueue({ queue }: { queue: ExportToast[] }) {
   );
 }
 
-function ExportQueueItem({ item }: { item: ExportToast }) {
+function ExportQueueItem({ item, now }: { item: ExportToast; now: number }) {
   const { t } = useTranslation();
   const isCompleted = item.status === "completed";
-  const statusLabel = item.status === "canceled" ? t("export.canceled") : `${item.percentage}%`;
+  const durationMs =
+    item.status === "rendering" && item.startedAt ? now - item.startedAt : item.durationMs;
+  const statusLabel =
+    item.status === "rendering" || item.status === "completed"
+      ? formatDuration(durationMs ?? 0)
+      : item.status === "failed"
+        ? t("export.status.failure")
+        : t(`export.status.${item.status}`);
 
   function openLocation() {
     if (isCompleted) void openFileLocation(item.path).catch(() => undefined);
@@ -79,28 +96,28 @@ function ExportQueueItem({ item }: { item: ExportToast }) {
               item.status === "completed" && "text-emerald-400",
             )}
           >
-            · {statusLabel}
+            ·{" "}
+            {item.status === "rendering" || item.status === "completed" ? (
+              <span className="inline-grid whitespace-nowrap text-right tabular-nums">
+                <span className="invisible col-start-1 row-start-1" aria-hidden="true">
+                  {durationPlaceholder(statusLabel)}
+                </span>
+                <span className="col-start-1 row-start-1">{statusLabel}</span>
+              </span>
+            ) : (
+              statusLabel
+            )}
           </span>
         </div>
-        <p className="truncate text-xs text-muted-foreground">{item.path}</p>
+        <p className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
+          <span className="truncate">{item.path}</span>
+          {isCompleted ? <ExternalLink className="size-3 shrink-0" aria-hidden="true" /> : null}
+        </p>
         {item.error && item.status !== "canceled" ? (
           <p className="mt-1 text-xs text-destructive">{item.error}</p>
         ) : null}
       </div>
       <div className="flex items-center gap-1">
-        {isCompleted ? (
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={(event) => {
-              event.stopPropagation();
-              openLocation();
-            }}
-            aria-label={t("export.openLocation")}
-          >
-            <Link2 />
-          </Button>
-        ) : null}
         {item.onCancel ? (
           <Button
             variant="destructive"
@@ -124,6 +141,8 @@ function ExportQueueItem({ item }: { item: ExportToast }) {
               <TriangleAlert className="size-4 text-destructive" />
             ) : item.status === "rendering" ? (
               <LoaderCircle className="size-4 animate-spin text-primary" />
+            ) : item.status === "queued" ? (
+              <span className="size-2 rounded-full bg-muted-foreground" />
             ) : (
               <CircleX className="size-4 text-destructive" />
             )}
@@ -132,4 +151,19 @@ function ExportQueueItem({ item }: { item: ExportToast }) {
       </div>
     </div>
   );
+}
+
+function formatDuration(durationMs: number) {
+  const totalSeconds = Math.max(0, Math.floor(durationMs / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  return hours > 0
+    ? `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
+    : `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
+function durationPlaceholder(label: string) {
+  return label.replace(/\d/g, "0");
 }

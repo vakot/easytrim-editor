@@ -5,15 +5,16 @@ import type { ExportPresetAction, ExportPresetState } from "./export-presets";
 import type { TrimRange } from "@/domain/trim";
 import type { FrameRate, MediaInfo } from "@/lib/tauri/media";
 
-export type ExportStatus = "rendering" | "completed" | "failed" | "canceled";
+export type ExportStatus = "queued" | "rendering" | "completed" | "failed" | "canceled";
 
 export interface ExportToast {
   id: string;
   operationId: string | null;
   filename: string;
   path: string;
-  percentage: number;
   status: ExportStatus;
+  startedAt: number | null;
+  durationMs: number | null;
   error?: string;
   onCancel?: () => void;
 }

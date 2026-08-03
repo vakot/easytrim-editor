@@ -20,7 +20,6 @@ export interface TrimSelection {
 
 export interface ExportProgress {
   operationId: string;
-  percentage: number;
   elapsedMicros: number;
   speed?: string;
   phase: "running" | "completed";
@@ -406,7 +405,6 @@ function parseExportProgress(value: unknown): ExportProgress {
   }
   return {
     operationId: requireString(progress.operationId, "operation ID"),
-    percentage: requireFiniteNumber(progress.percentage, "export percentage"),
     elapsedMicros: requireInteger(progress.elapsedMicros, "export elapsed time"),
     speed: optionalString(progress.speed),
     phase,
@@ -629,13 +627,6 @@ function optionalBoolean(value: unknown): boolean | undefined {
 
 function requireInteger(value: unknown, label: string): number {
   if (typeof value !== "number" || !Number.isSafeInteger(value)) {
-    throw invalidResponse(label);
-  }
-  return value;
-}
-
-function requireFiniteNumber(value: unknown, label: string): number {
-  if (typeof value !== "number" || !Number.isFinite(value)) {
     throw invalidResponse(label);
   }
   return value;

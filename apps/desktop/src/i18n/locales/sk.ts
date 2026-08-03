@@ -201,12 +201,13 @@ export const sk = {
     canceled: "Zrušené",
     canceledMessage: "Export bol zrušený.",
     status: {
+      queued: "Vo fronte",
       rendering: "Prebieha",
       completed: "Dokončené",
+      failure: "Chyba",
       failed: "Zlyhalo",
       canceled: "Zrušené",
     },
-    openLocation: "Otvoriť umiestnenie súboru",
     cancelItem: "Zrušiť {{filename}}",
     statusLabel: "Export: {{status}}",
     dialog: {

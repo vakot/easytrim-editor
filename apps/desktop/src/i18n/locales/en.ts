@@ -194,12 +194,13 @@ export const en = {
     canceled: "Canceled",
     canceledMessage: "Export canceled.",
     status: {
+      queued: "Queued",
       rendering: "Rendering",
       completed: "Completed",
+      failure: "Failure",
       failed: "Failed",
       canceled: "Canceled",
     },
-    openLocation: "Open file location",
     cancelItem: "Cancel {{filename}}",
     statusLabel: "{{status}} export",
     dialog: {
