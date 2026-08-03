@@ -72,7 +72,7 @@ function ExportQueueItem({ item, now }: { item: ExportToast; now: number }) {
   return (
     <div
       className={cn(
-        "group relative grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-xl border border-border border-l-4 bg-card p-3",
+        "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-xl border border-border border-l-4 bg-card p-3",
         statusStyles[item.status],
         isCompleted && "cursor-pointer transition-colors hover:bg-muted/60",
       )}
@@ -86,12 +86,6 @@ function ExportQueueItem({ item, now }: { item: ExportToast; now: number }) {
         }
       }}
     >
-      {isCompleted ? (
-        <ExternalLink
-          className="pointer-events-none absolute top-2 right-2 size-3 text-muted-foreground transition-colors group-hover:text-foreground"
-          aria-hidden="true"
-        />
-      ) : null}
       <div className="min-w-0">
         <div className="flex min-w-0 items-baseline gap-1.5 text-sm">
           <strong className="truncate">{item.filename}</strong>
@@ -115,7 +109,10 @@ function ExportQueueItem({ item, now }: { item: ExportToast; now: number }) {
             )}
           </span>
         </div>
-        <p className="truncate text-xs text-muted-foreground">{item.path}</p>
+        <p className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
+          <span className="truncate">{item.path}</span>
+          {isCompleted ? <ExternalLink className="size-3 shrink-0" aria-hidden="true" /> : null}
+        </p>
         {item.error && item.status !== "canceled" ? (
           <p className="mt-1 text-xs text-destructive">{item.error}</p>
         ) : null}
