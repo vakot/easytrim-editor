@@ -82,7 +82,6 @@ export function StatusBar({
               <span className="shrink-0 tabular-nums">{Math.round(activeExportFps)} FPS</span>
             </>
           ) : null}
-          <span className="h-4 w-px shrink-0 bg-border" aria-hidden="true" />
         </div>
       ) : null}
     </footer>
