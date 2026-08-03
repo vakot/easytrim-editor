@@ -117,6 +117,8 @@ async function renderJob(job: ExportJob) {
       progressPercent,
       currentFrame: progress.frame,
       estimatedFps: job.estimatedFps ?? undefined,
+      bitrate: progress.bitrate,
+      fileSizeBytes: progress.totalSize,
     }));
   };
 

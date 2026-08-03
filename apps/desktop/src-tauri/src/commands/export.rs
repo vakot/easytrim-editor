@@ -36,6 +36,8 @@ pub struct ExportProgress {
     pub elapsed_micros: i64,
     pub frame: Option<u64>,
     pub fps: Option<String>,
+    pub bitrate: Option<String>,
+    pub total_size: Option<u64>,
     pub phase: ExportPhase,
 }
 
@@ -199,6 +201,8 @@ async fn run_export(
         elapsed_micros: 0,
         frame: None,
         fps: None,
+        bitrate: None,
+        total_size: None,
         phase: ExportPhase::Running,
     });
     let cancellation_for_check = cancellation.clone();
@@ -227,6 +231,10 @@ async fn run_export(
                                 .get("frame")
                                 .and_then(|value| value.parse::<u64>().ok()),
                             fps: progress_values.get("fps").cloned(),
+                            bitrate: progress_values.get("bitrate").cloned(),
+                            total_size: progress_values
+                                .get("total_size")
+                                .and_then(|value| value.parse::<u64>().ok()),
                             phase: if value == "end" {
                                 ExportPhase::Completed
                             } else {

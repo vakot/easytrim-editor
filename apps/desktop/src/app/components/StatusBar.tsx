@@ -90,6 +90,20 @@ export function StatusBar({
               <span className="shrink-0 tabular-nums">{Math.round(activeExportFps)} FPS</span>
             </>
           ) : null}
+          {activeExport.bitrate ? (
+            <>
+              <span className="h-4 w-px shrink-0 bg-border" aria-hidden="true" />
+              <span className="shrink-0 tabular-nums">{activeExport.bitrate}</span>
+            </>
+          ) : null}
+          {activeExport.fileSizeBytes !== undefined ? (
+            <>
+              <span className="h-4 w-px shrink-0 bg-border" aria-hidden="true" />
+              <span className="shrink-0 tabular-nums">
+                {formatFileSize(activeExport.fileSizeBytes)}
+              </span>
+            </>
+          ) : null}
         </div>
       ) : null}
     </footer>
@@ -104,4 +118,16 @@ function splitFilePath(path: string) {
     directory: path.slice(0, separatorIndex + 1),
     filename: path.slice(separatorIndex + 1),
   };
+}
+
+function formatFileSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  const units = ["KB", "MB", "GB", "TB"];
+  let value = bytes;
+  let unitIndex = -1;
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex += 1;
+  }
+  return `${value.toFixed(value >= 10 ? 0 : 1)} ${units[unitIndex]}`;
 }

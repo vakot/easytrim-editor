@@ -23,6 +23,8 @@ export interface ExportProgress {
   elapsedMicros: number;
   frame?: number;
   fps?: string;
+  bitrate?: string;
+  totalSize?: number;
   phase: "running" | "completed";
 }
 
@@ -409,6 +411,8 @@ function parseExportProgress(value: unknown): ExportProgress {
     elapsedMicros: requireInteger(progress.elapsedMicros, "export elapsed time"),
     frame: optionalInteger(progress.frame, "export frame"),
     fps: optionalString(progress.fps),
+    bitrate: optionalString(progress.bitrate),
+    totalSize: optionalInteger(progress.totalSize, "export total size"),
     phase,
   };
 }
