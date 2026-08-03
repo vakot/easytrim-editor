@@ -570,7 +570,7 @@ describe("App", () => {
     expect(audioPlayhead.style.left).toBe(playhead.style.left);
   });
 
-  it("stops or loops at the selected segment boundary", async () => {
+  it("preserves a post-segment playhead until the source end", async () => {
     mocks.chooseSource.mockResolvedValue(selection);
     const user = userEvent.setup();
     render(<App />);
@@ -594,21 +594,25 @@ describe("App", () => {
     await user.click(loopToggle);
     expect(loopToggle).toHaveAttribute("aria-pressed", "false");
 
+    video.currentTime = 25;
+    fireEvent.timeUpdate(video);
     await user.click(screen.getByRole("button", { name: "Play" }));
-    expect(video.currentTime).toBe(10);
+    expect(video.currentTime).toBe(25);
     fireEvent.play(video);
-    video.currentTime = 20.25;
+    video.currentTime = 65.25;
     fireEvent.timeUpdate(video);
 
     expect(pause).toHaveBeenCalled();
-    expect(playhead).toHaveAttribute("aria-valuenow", "20000000");
+    expect(playhead).toHaveAttribute("aria-valuenow", "65000000");
     expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
 
     pause.mockClear();
     await user.click(loopToggle);
+    video.currentTime = 25;
+    fireEvent.timeUpdate(video);
     await user.click(screen.getByRole("button", { name: "Play" }));
     fireEvent.play(video);
-    video.currentTime = 20.25;
+    video.currentTime = 65.25;
     fireEvent.timeUpdate(video);
 
     expect(loopToggle).toHaveAttribute("aria-pressed", "true");
