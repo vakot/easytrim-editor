@@ -5,6 +5,7 @@ import {
   Pause,
   Play,
   Repeat2,
+  RotateCcw,
   SkipBack,
   SkipForward,
   SquareArrowLeft,
@@ -182,6 +183,7 @@ interface TimelineToolsProps {
   onToggleLoopPlayback: () => void;
   onToggleSegmentPlayback: () => void;
   onPlaybackSpeedChange: (speed: PlaybackSpeed) => void;
+  onReset: () => void;
 }
 
 export function TimelineTools({
@@ -193,44 +195,58 @@ export function TimelineTools({
   onToggleLoopPlayback,
   onToggleSegmentPlayback,
   onPlaybackSpeedChange,
+  onReset,
 }: TimelineToolsProps) {
   const { t } = useTranslation();
 
   return (
     <>
-      <TimelineToolButton
-        enabled={safeTrimFollowingEnabled}
-        label={t("preview.safeTrim.label")}
-        title={t(
-          safeTrimFollowingEnabled ? "preview.safeTrim.enabled" : "preview.safeTrim.disabled",
-        )}
-        onClick={onToggleSafeTrimFollowing}
-      >
-        <Link2 />
-      </TimelineToolButton>
-      <TimelineToolButton
-        enabled={loopPlaybackEnabled}
-        label={t("preview.loopPlayback.label")}
-        title={t(
-          loopPlaybackEnabled ? "preview.loopPlayback.enabled" : "preview.loopPlayback.disabled",
-        )}
-        onClick={onToggleLoopPlayback}
-      >
-        <Repeat2 />
-      </TimelineToolButton>
-      <TimelineToolButton
-        enabled={segmentPlaybackEnabled}
-        label={t("preview.segmentPlayback.label")}
-        title={t(
-          segmentPlaybackEnabled
-            ? "preview.segmentPlayback.enabled"
-            : "preview.segmentPlayback.disabled",
-        )}
-        onClick={onToggleSegmentPlayback}
-      >
-        <BetweenHorizontalStart />
-      </TimelineToolButton>
-      <PlaybackSpeedTool speed={playbackSpeed} onChange={onPlaybackSpeedChange} />
+      <div className="col-span-2 row-span-2 grid grid-flow-col auto-cols-[1.75rem] grid-rows-[repeat(2,1.75rem)] gap-1">
+        <TimelineToolButton
+          enabled={safeTrimFollowingEnabled}
+          label={t("preview.safeTrim.label")}
+          title={t(
+            safeTrimFollowingEnabled ? "preview.safeTrim.enabled" : "preview.safeTrim.disabled",
+          )}
+          onClick={onToggleSafeTrimFollowing}
+        >
+          <Link2 />
+        </TimelineToolButton>
+        <TimelineToolButton
+          enabled={loopPlaybackEnabled}
+          label={t("preview.loopPlayback.label")}
+          title={t(
+            loopPlaybackEnabled ? "preview.loopPlayback.enabled" : "preview.loopPlayback.disabled",
+          )}
+          onClick={onToggleLoopPlayback}
+        >
+          <Repeat2 />
+        </TimelineToolButton>
+        <TimelineToolButton
+          enabled={segmentPlaybackEnabled}
+          label={t("preview.segmentPlayback.label")}
+          title={t(
+            segmentPlaybackEnabled
+              ? "preview.segmentPlayback.enabled"
+              : "preview.segmentPlayback.disabled",
+          )}
+          onClick={onToggleSegmentPlayback}
+        >
+          <BetweenHorizontalStart />
+        </TimelineToolButton>
+        <PlaybackSpeedTool speed={playbackSpeed} onChange={onPlaybackSpeedChange} />
+      </div>
+      <div className="col-start-3 row-span-2 flex items-center gap-1">
+        <div className="h-full w-px bg-border" aria-hidden="true" />
+        <TimelineToolButton
+          enabled={false}
+          label={t("preview.resetTools")}
+          title={t("preview.resetTools")}
+          onClick={onReset}
+        >
+          <RotateCcw />
+        </TimelineToolButton>
+      </div>
     </>
   );
 }
@@ -250,7 +266,7 @@ function PlaybackSpeedTool({
     <Popover>
       <PopoverTrigger asChild>
         <Button
-          variant={enabled ? "secondary" : "ghost"}
+          variant="secondary"
           size="icon-sm"
           type="button"
           aria-label={t("preview.playbackSpeed.label")}
@@ -302,7 +318,7 @@ function TimelineToolButton({
     <Tooltip>
       <TooltipTrigger asChild>
         <Button
-          variant={enabled ? "secondary" : "ghost"}
+          variant="secondary"
           size="icon-sm"
           type="button"
           aria-label={label}

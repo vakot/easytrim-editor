@@ -135,6 +135,7 @@ export const sk = {
     playbackSpeed: {
       label: "Rýchlosť prehrávania",
     },
+    resetTools: "Obnoviť nástroje",
     opening: "Otvára sa náhľad…",
     preparing: "Pripravuje sa kompatibilný náhľad…",
     preparingDescription: "Pri zdrojoch s vysokým rozlíšením to môže chvíľu trvať.",
