@@ -144,6 +144,21 @@ Docker Desktop or another Docker daemon with Buildx must be running. The Linux c
 
 macOS bundles must be built on macOS. Public macOS distribution requires a Developer ID Application certificate and notarization credentials; keep those values in CI secrets and never commit them.
 
+For local macOS validation, build without uploading:
+
+```sh
+pnpm release:local -- --no-upload --output artifacts/macos-arm64 --platform macos-apple-silicon
+```
+
+Unsigned local builds may be blocked by Gatekeeper after downloading. Remove the quarantine attribute only for local testing, then open the generated DMG:
+
+```sh
+xattr -cr artifacts/macos-arm64
+open artifacts/macos-arm64/EasyTrim_1.0.2_macos_arm64_dmg.dmg
+```
+
+This workaround is not a distribution fix. Public macOS releases must be signed and notarized by Apple; the stable release workflow now stops before publishing if those credentials are missing.
+
 _Release assets use predictable names:_
 
 ```text
