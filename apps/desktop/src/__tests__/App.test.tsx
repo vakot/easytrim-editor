@@ -234,6 +234,8 @@ describe("App", () => {
       .getByTestId("source-details-panel")
       .querySelector<HTMLElement>('[data-slot="export-queue-scroll"]');
     expect(sourceDetails).toContainElement(screen.getByRole("heading", { name: "holiday.mp4" }));
+    expect(sourceDetails).not.toHaveTextContent("Video stream");
+    expect(sourceDetails).not.toHaveTextContent("Audio tracks");
     expect(sourceDetails).not.toContainElement(
       screen.getByRole("heading", { name: "Export queue" }),
     );

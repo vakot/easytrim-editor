@@ -25,8 +25,6 @@ export function MediaDetails({ media }: { media: MediaInfo }) {
       t("import.source.metadata.bitrate"),
       formatBitrate(media.bitrate, unknown, (value) => t("units.megabitsPerSecond", { value })),
     ],
-    [t("import.source.metadata.videoStream"), `#${media.video.streamIndex}`],
-    [t("import.source.metadata.audioTracks"), String(media.audioStreams.length)],
   ] as const;
 
   return (

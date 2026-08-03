@@ -92,8 +92,6 @@ export const sk = {
         videoCodec: "Video kodek",
         fileSize: "Veľkosť súboru",
         bitrate: "Dátový tok",
-        videoStream: "Video stopa",
-        audioTracks: "Zvukové stopy",
       },
     },
   },

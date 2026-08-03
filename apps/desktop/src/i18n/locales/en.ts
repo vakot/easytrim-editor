@@ -85,8 +85,6 @@ export const en = {
         videoCodec: "Video codec",
         fileSize: "File size",
         bitrate: "Bitrate",
-        videoStream: "Video stream",
-        audioTracks: "Audio tracks",
       },
     },
   },
