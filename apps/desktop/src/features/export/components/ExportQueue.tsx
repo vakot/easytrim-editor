@@ -57,11 +57,7 @@ function ExportQueueItem({ item, now }: { item: ExportToast; now: number }) {
   const { t } = useTranslation();
   const isCompleted = item.status === "completed";
   const statusLabel =
-    item.status === "canceled"
-      ? t("export.canceled")
-      : item.status === "queued"
-        ? t("export.status.queued")
-        : `${item.percentage}%`;
+    item.status === "rendering" ? `${item.percentage}%` : t(`export.status.${item.status}`);
   const durationMs =
     item.status === "rendering" && item.startedAt ? now - item.startedAt : item.durationMs;
 
