@@ -55,6 +55,7 @@ export function StatusBar({
           >
             {activeExport.filename}
           </span>
+          <span className="h-4 w-px shrink-0 bg-border" aria-hidden="true" />
           <div className="flex shrink-0 items-center gap-2">
             <div
               className="h-1.5 w-28 overflow-hidden rounded-full bg-muted"
@@ -74,10 +75,14 @@ export function StatusBar({
             </span>
           </div>
           {activeExport.estimatedFps !== undefined ? (
-            <span className="shrink-0 tabular-nums">
-              {Math.round(activeExport.estimatedFps)} FPS
-            </span>
+            <>
+              <span className="h-4 w-px shrink-0 bg-border" aria-hidden="true" />
+              <span className="shrink-0 tabular-nums">
+                {Math.round(activeExport.estimatedFps)} FPS
+              </span>
+            </>
           ) : null}
+          <span className="h-4 w-px shrink-0 bg-border" aria-hidden="true" />
           <span className="max-w-[28rem] truncate text-xs" title={activeExport.path}>
             {activeExport.path}
           </span>
