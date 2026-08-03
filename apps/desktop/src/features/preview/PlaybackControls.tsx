@@ -201,7 +201,7 @@ export function TimelineTools({
 
   return (
     <>
-      <div className="col-span-2 row-span-2 grid grid-flow-col auto-cols-[1.75rem] grid-rows-[repeat(2,1.75rem)] gap-1">
+      <div className="grid grid-flow-col auto-cols-[1.75rem] grid-rows-[repeat(2,1.75rem)] gap-1">
         <TimelineToolButton
           enabled={safeTrimFollowingEnabled}
           label={t("preview.safeTrim.label")}
@@ -237,11 +237,11 @@ export function TimelineTools({
         <PlaybackSpeedTool speed={playbackSpeed} onChange={onPlaybackSpeedChange} />
       </div>
       <div
-        className="col-start-3 row-span-2 row-start-1 h-full w-px justify-self-center bg-border"
+        className="mx-2 w-px shrink-0 bg-border"
         data-slot="timeline-tools-divider"
         aria-hidden="true"
       />
-      <div className="col-start-4 row-start-1">
+      <div className="shrink-0 self-start">
         <TimelineToolButton
           enabled={false}
           label={t("preview.resetTools")}
@@ -296,7 +296,7 @@ function PlaybackSpeedTool({
             aria-label={t("preview.playbackSpeed.label")}
             markers={PLAYBACK_SPEED_MARKERS}
           />
-          <output className="w-12 shrink-0 text-right font-mono text-xs text-muted-foreground">
+          <output className="w-10 shrink-0 text-right font-mono text-xs text-muted-foreground">
             {speed}×
           </output>
         </div>

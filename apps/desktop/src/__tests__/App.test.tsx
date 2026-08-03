@@ -255,11 +255,7 @@ describe("App", () => {
     });
     expect(screen.getByText("Tools")).toHaveAttribute("data-slot", "timeline-tools-title");
     expect(videoToolbar).toHaveAttribute("data-slot", "timeline-toolbar");
-    expect(videoToolbar).toHaveClass(
-      "auto-cols-[1.75rem]",
-      "grid-rows-[repeat(2,1.75rem)]",
-      "gap-1",
-    );
+    expect(videoToolbar).toHaveClass("flex", "items-stretch");
     for (const tool of within(videoToolbar).getAllByRole("button")) {
       expect(tool).toHaveAttribute("data-size", "icon-sm");
     }
@@ -279,13 +275,14 @@ describe("App", () => {
       "secondary",
     );
     expect(videoToolbar.querySelector('[data-slot="timeline-tools-divider"]')).toHaveClass(
-      "col-start-3",
-      "row-span-2",
+      "mx-2",
+      "w-px",
+      "shrink-0",
       "bg-border",
     );
     expect(
       within(videoToolbar).getByRole("button", { name: "Reset tools" }).parentElement,
-    ).toHaveClass("col-start-4", "row-start-1");
+    ).toHaveClass("shrink-0", "self-start");
     expect(within(videoToolbar).getByRole("button", { name: "Playback speed" })).toHaveAttribute(
       "data-variant",
       "secondary",
