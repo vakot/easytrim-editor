@@ -80,7 +80,7 @@ export function StatusBar({
             <>
               <span className="h-4 w-px shrink-0 bg-border" aria-hidden="true" />
               <span className="shrink-0 tabular-nums">
-                {activeExport.currentFrame}/{activeExport.totalFrames}
+                {activeExport.currentFrame}f/{activeExport.totalFrames}f
               </span>
             </>
           ) : null}
