@@ -51,7 +51,7 @@ export function AppToolbar({
       <div className="flex items-center justify-end gap-3 pl-4">
         <ThemeSelector />
         <LanguageSelector className="w-36" />
-        <Separator orientation="vertical" className="h-7" />
+        <Separator orientation="vertical" className="h-full" />
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
