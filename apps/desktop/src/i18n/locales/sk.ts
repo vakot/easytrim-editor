@@ -7,6 +7,7 @@ type TranslationShape<T> = {
 export const sk = {
   common: {
     brand: "EasyTrim Editor",
+    shortBrand: "EasyTrim",
     cancel: "Zrušiť",
     close: "Zavrieť",
     retry: "Skúsiť znova",

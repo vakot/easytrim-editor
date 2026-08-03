@@ -1,6 +1,7 @@
 export const en = {
   common: {
     brand: "EasyTrim Editor",
+    shortBrand: "EasyTrim",
     cancel: "Cancel",
     close: "Close",
     retry: "Retry",

@@ -40,12 +40,12 @@ export function AppToolbar({
       aria-label={t("app.toolbar")}
     >
       <button
-        className="w-fit font-heading text-4xl font-black tracking-[0.08em] text-primary outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring"
+        className="w-fit whitespace-nowrap font-heading text-4xl font-black tracking-[0.08em] text-primary outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring"
         type="button"
         aria-label={t("app.returnToWelcome")}
         onClick={onReturnToWelcome}
       >
-        {t("common.brand")}
+        {t("common.shortBrand")}
       </button>
       <CapabilityStatus capabilities={session.capabilities} />
       <div className="flex items-center justify-end gap-3 pl-4">
