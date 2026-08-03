@@ -44,20 +44,26 @@ export const AudioTrackRow = memo(function AudioTrackRow({
           if (open) setVolumeControlOpen(true);
         }}
       >
-        <div className="flex min-w-0 items-center gap-2 rounded-lg px-1 py-1">
+        <div
+          className="relative flex min-w-0 items-center gap-2 rounded-lg p-1"
+          onPointerEnter={() => setVolumeControlOpen(true)}
+          onPointerLeave={() => setVolumeControlOpen(false)}
+        >
           <HoverCardTrigger asChild>
-            <VolumeButton
-              enabled={track.enabled}
-              label={t(track.enabled ? "audio.muteTrack" : "audio.enableTrack", { title })}
-              onClick={() => onToggle(stream.streamIndex)}
-              tooltip={false}
-              onPointerEnter={() => setVolumeControlOpen(true)}
-              onPointerLeave={() => setVolumeControlOpen(false)}
-              onFocus={() => setVolumeControlOpen(true)}
-              onBlur={() => setVolumeControlOpen(false)}
+            <button
+              className="absolute inset-0 z-1 rounded-lg"
+              type="button"
+              aria-label={t("audio.trackVolume", { title })}
             />
           </HoverCardTrigger>
-          <div className="min-w-0 leading-tight">
+          <VolumeButton
+            className="relative z-2"
+            enabled={track.enabled}
+            label={t(track.enabled ? "audio.muteTrack" : "audio.enableTrack", { title })}
+            onClick={() => onToggle(stream.streamIndex)}
+            tooltip={false}
+          />
+          <div className="relative z-0 min-w-0 leading-tight">
             <p
               className="truncate text-sm font-semibold transition-colors data-[enabled=false]:text-muted-foreground"
               data-enabled={track.enabled}
@@ -68,20 +74,18 @@ export const AudioTrackRow = memo(function AudioTrackRow({
               #{stream.streamIndex} · {stream.codecName.toUpperCase()} · {formatChannels(stream, t)}
             </p>
           </div>
+          <HoverCardContent
+            portalled={false}
+            className="!absolute !inset-0 !z-1 !w-auto !transform-none p-1"
+          >
+            <AudioLevelControl
+              label={t("audio.trackVolume", { title })}
+              volumePercent={track.enabled ? track.volumePercent : 0}
+              onChange={(volumePercent) => onVolumeChange(stream.streamIndex, volumePercent)}
+              className="mt-2"
+            />
+          </HoverCardContent>
         </div>
-        <HoverCardContent
-          side="right"
-          align="center"
-          sideOffset={4}
-          className="w-[calc(var(--editor-track-controls-width)-1.5rem)] px-3 py-1"
-        >
-          <AudioLevelControl
-            label={t("audio.trackVolume", { title })}
-            volumePercent={track.enabled ? track.volumePercent : 0}
-            onChange={(volumePercent) => onVolumeChange(stream.streamIndex, volumePercent)}
-            className="mt-2"
-          />
-        </HoverCardContent>
       </HoverCard>
       <div
         className="relative h-12 min-w-0 overflow-hidden rounded-lg border border-border bg-muted/30 transition-opacity data-[enabled=false]:opacity-40"
