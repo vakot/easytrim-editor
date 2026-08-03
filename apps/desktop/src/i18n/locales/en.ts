@@ -194,6 +194,7 @@ export const en = {
     canceled: "Canceled",
     canceledMessage: "Export canceled.",
     status: {
+      queued: "Queued",
       rendering: "Rendering",
       completed: "Completed",
       failed: "Failed",

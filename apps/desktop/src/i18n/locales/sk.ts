@@ -201,6 +201,7 @@ export const sk = {
     canceled: "Zrušené",
     canceledMessage: "Export bol zrušený.",
     status: {
+      queued: "Vo fronte",
       rendering: "Prebieha",
       completed: "Dokončené",
       failed: "Zlyhalo",

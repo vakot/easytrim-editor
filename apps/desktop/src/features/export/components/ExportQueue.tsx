@@ -5,10 +5,12 @@ import { cn } from "@/lib/utils";
 import { openFileLocation } from "@/lib/tauri/media";
 
 import type { ExportToast } from "../types";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 const statusStyles = {
   rendering: "border-l-primary",
+  queued: "border-l-muted-foreground",
   completed: "border-l-emerald-400",
   failed: "border-l-destructive",
   canceled: "border-l-destructive",
@@ -16,6 +18,14 @@ const statusStyles = {
 
 export function ExportQueue({ queue }: { queue: ExportToast[] }) {
   const { t } = useTranslation();
+  const [now, setNow] = useState(() => Date.now());
+  const hasRenderingItem = queue.some((item) => item.status === "rendering");
+
+  useEffect(() => {
+    if (!hasRenderingItem) return;
+    const interval = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(interval);
+  }, [hasRenderingItem]);
 
   return (
     <section className="grid gap-3" aria-labelledby="export-queue-title">
@@ -35,7 +45,7 @@ export function ExportQueue({ queue }: { queue: ExportToast[] }) {
       ) : (
         <div className="grid gap-2" role="status" aria-live="polite">
           {queue.map((item) => (
-            <ExportQueueItem key={item.id} item={item} />
+            <ExportQueueItem key={item.id} item={item} now={now} />
           ))}
         </div>
       )}
@@ -43,10 +53,17 @@ export function ExportQueue({ queue }: { queue: ExportToast[] }) {
   );
 }
 
-function ExportQueueItem({ item }: { item: ExportToast }) {
+function ExportQueueItem({ item, now }: { item: ExportToast; now: number }) {
   const { t } = useTranslation();
   const isCompleted = item.status === "completed";
-  const statusLabel = item.status === "canceled" ? t("export.canceled") : `${item.percentage}%`;
+  const statusLabel =
+    item.status === "canceled"
+      ? t("export.canceled")
+      : item.status === "queued"
+        ? t("export.status.queued")
+        : `${item.percentage}%`;
+  const durationMs =
+    item.status === "rendering" && item.startedAt ? now - item.startedAt : item.durationMs;
 
   function openLocation() {
     if (isCompleted) void openFileLocation(item.path).catch(() => undefined);
@@ -80,6 +97,7 @@ function ExportQueueItem({ item }: { item: ExportToast }) {
             )}
           >
             · {statusLabel}
+            {durationMs !== null ? ` · ${formatDuration(durationMs)}` : null}
           </span>
         </div>
         <p className="truncate text-xs text-muted-foreground">{item.path}</p>
@@ -124,6 +142,8 @@ function ExportQueueItem({ item }: { item: ExportToast }) {
               <TriangleAlert className="size-4 text-destructive" />
             ) : item.status === "rendering" ? (
               <LoaderCircle className="size-4 animate-spin text-primary" />
+            ) : item.status === "queued" ? (
+              <span className="size-2 rounded-full bg-muted-foreground" />
             ) : (
               <CircleX className="size-4 text-destructive" />
             )}
@@ -132,4 +152,15 @@ function ExportQueueItem({ item }: { item: ExportToast }) {
       </div>
     </div>
   );
+}
+
+function formatDuration(durationMs: number) {
+  const totalSeconds = Math.max(0, Math.floor(durationMs / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  return hours > 0
+    ? `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
+    : `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
