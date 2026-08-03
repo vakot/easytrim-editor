@@ -115,6 +115,7 @@ async function renderJob(job: ExportJob) {
       operationId: progress.operationId,
       durationMs: elapsedTime(job),
       progressPercent,
+      currentFrame: progress.frame,
       estimatedFps: job.estimatedFps ?? undefined,
     }));
   };

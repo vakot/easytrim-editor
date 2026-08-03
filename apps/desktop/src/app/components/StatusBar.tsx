@@ -76,6 +76,14 @@ export function StatusBar({
               {Math.round(activeExport.progressPercent ?? 0)}%
             </span>
           </div>
+          {activeExport.totalFrames !== undefined && activeExport.currentFrame !== undefined ? (
+            <>
+              <span className="h-4 w-px shrink-0 bg-border" aria-hidden="true" />
+              <span className="shrink-0 tabular-nums">
+                {activeExport.currentFrame}/{activeExport.totalFrames}
+              </span>
+            </>
+          ) : null}
           {activeExportFps !== undefined ? (
             <>
               <span className="h-4 w-px shrink-0 bg-border" aria-hidden="true" />

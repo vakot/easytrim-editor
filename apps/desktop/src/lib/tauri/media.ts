@@ -21,6 +21,7 @@ export interface TrimSelection {
 export interface ExportProgress {
   operationId: string;
   elapsedMicros: number;
+  frame?: number;
   fps?: string;
   phase: "running" | "completed";
 }
@@ -406,6 +407,7 @@ function parseExportProgress(value: unknown): ExportProgress {
   return {
     operationId: requireString(progress.operationId, "operation ID"),
     elapsedMicros: requireInteger(progress.elapsedMicros, "export elapsed time"),
+    frame: optionalInteger(progress.frame, "export frame"),
     fps: optionalString(progress.fps),
     phase,
   };
