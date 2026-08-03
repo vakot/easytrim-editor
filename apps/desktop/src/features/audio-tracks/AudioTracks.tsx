@@ -47,7 +47,7 @@ export function AudioTracks({
         {t("audio.title")}
       </h3>
       <div className="grid min-w-0 grid-cols-[var(--editor-track-grid-columns)] items-center gap-3">
-        <div className="flex min-w-0 items-center gap-2 px-1 py-1">
+        <div className="flex min-w-0 items-center gap-2 p-1 pr-2">
           <VolumeButton
             enabled={masterEnabled}
             label={t("audio.allTracks")}
