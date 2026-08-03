@@ -118,19 +118,18 @@ export const sk = {
     currentTime: "Aktuálny čas prehrávania",
     safeTrim: {
       label: "Bezpečné sledovanie strihu",
-      enabled:
-        "Bezpečné sledovanie strihu: zapnuté — prehrávacia hlava po zachytení sleduje hranicu strihu",
-      disabled: "Bezpečné sledovanie strihu: vypnuté — prehrávacia hlava zostáva na mieste",
+      enabled: "Prehrávacia hlava po zachytení sleduje hranicu strihu",
+      disabled: "Prehrávacia hlava zostáva na mieste",
     },
     loopPlayback: {
       label: "Opakovať prehrávanie",
-      enabled: "Opakovanie prehrávania: zapnuté — po dosiahnutí konca sa prehrávanie reštartuje",
-      disabled: "Opakovanie prehrávania: vypnuté — po dosiahnutí konca sa prehrávanie zastaví",
+      enabled: "Po dosiahnutí konca sa prehrávanie reštartuje",
+      disabled: "Po dosiahnutí konca sa prehrávanie zastaví",
     },
     segmentPlayback: {
       label: "Prehrávanie segmentu",
-      enabled: "Prehrávanie segmentu: zapnuté — prehrávanie je obmedzené na vybraný segment",
-      disabled: "Prehrávanie segmentu: vypnuté — prehráva sa celá časová os",
+      enabled: "Prehrávanie je obmedzené na vybraný segment",
+      disabled: "Prehráva sa celá časová os",
     },
     playbackSpeed: {
       label: "Rýchlosť prehrávania",
