@@ -16,6 +16,7 @@ export function StatusBar({
   const { t } = useTranslation();
   const appSha = import.meta.env.VITE_APP_SHA?.trim();
   const activeExport = queue.find((item) => item.status === "rendering");
+  const activeExportPath = activeExport ? splitFilePath(activeExport.path) : null;
 
   return (
     <footer
@@ -49,11 +50,11 @@ export function StatusBar({
       </span>
       {activeExport ? (
         <div className="ml-auto flex min-w-0 items-center gap-3 pl-4 text-muted-foreground">
-          <span
-            className="max-w-[24rem] truncate font-medium text-foreground"
-            title={activeExport.filename}
-          >
-            {activeExport.filename}
+          <span className="max-w-[28rem] truncate text-xs" title={activeExport.path}>
+            <span>{activeExportPath?.directory}</span>
+            <span className="font-medium text-foreground">
+              {activeExportPath?.filename ?? activeExport.filename}
+            </span>
           </span>
           <span className="h-4 w-px shrink-0 bg-border" aria-hidden="true" />
           <div className="flex shrink-0 items-center gap-2">
@@ -83,11 +84,18 @@ export function StatusBar({
             </>
           ) : null}
           <span className="h-4 w-px shrink-0 bg-border" aria-hidden="true" />
-          <span className="max-w-[28rem] truncate text-xs" title={activeExport.path}>
-            {activeExport.path}
-          </span>
         </div>
       ) : null}
     </footer>
   );
+}
+
+function splitFilePath(path: string) {
+  const separatorIndex = Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\"));
+  if (separatorIndex < 0) return { directory: "", filename: path };
+
+  return {
+    directory: path.slice(0, separatorIndex + 1),
+    filename: path.slice(separatorIndex + 1),
+  };
 }
