@@ -99,7 +99,7 @@ function ExportQueueItem({ item, now }: { item: ExportToast; now: number }) {
             ·{" "}
             {item.status === "rendering" || item.status === "completed" ? (
               <span className="inline-grid whitespace-nowrap text-right tabular-nums">
-                <span className="invisible col-start-1 row-start-1">
+                <span className="invisible col-start-1 row-start-1" aria-hidden="true">
                   {durationPlaceholder(statusLabel)}
                 </span>
                 <span className="col-start-1 row-start-1">{statusLabel}</span>
@@ -175,5 +175,5 @@ function formatDuration(durationMs: number) {
 }
 
 function durationPlaceholder(label: string) {
-  return label.replace(/\d/g, "8");
+  return label.replace(/\d/g, "0");
 }
