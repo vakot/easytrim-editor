@@ -17,7 +17,7 @@ export function StatusBar({
   const appSha = import.meta.env.VITE_APP_SHA?.trim();
   const activeExport = queue.find((item) => item.status === "rendering");
   const activeExportPath = activeExport ? splitFilePath(activeExport.path) : null;
-  const activeExportFps = activeExport?.estimatedFps ?? activeExport?.frameRate;
+  const activeExportFps = activeExport?.estimatedFps;
 
   return (
     <footer

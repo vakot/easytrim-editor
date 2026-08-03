@@ -159,11 +159,6 @@ export function useExportController({
         startedAt: null,
         durationMs: null,
         progressPercent: 0,
-        frameRate: getFrameRate(
-          route === "optimized" && "frameRate" in request
-            ? request.frameRate
-            : (source.video.averageFrameRate ?? source.video.realFrameRate),
-        ),
         onCancel: () => cancelQueuedExport(id),
       },
     ]);
@@ -172,11 +167,6 @@ export function useExportController({
       route,
       request,
       output,
-      frameRate: getFrameRate(
-        route === "optimized" && "frameRate" in request
-          ? request.frameRate
-          : (source.video.averageFrameRate ?? source.video.realFrameRate),
-      ),
       setQueue,
       canceledMessage: t("export.canceledMessage"),
     });
@@ -208,9 +198,4 @@ export function useExportController({
     startOptimizedRender,
     openOptimizedDialog,
   };
-}
-
-function getFrameRate(rate: { numerator: number; denominator: number } | undefined) {
-  if (!rate || rate.denominator <= 0) return undefined;
-  return rate.numerator / rate.denominator;
 }

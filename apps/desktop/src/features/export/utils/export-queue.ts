@@ -22,7 +22,6 @@ interface ExportJob {
   output: OutputSelection;
   setQueue: Dispatch<SetStateAction<ExportToast[]>>;
   canceledMessage: string;
-  frameRate?: number;
   canceled: boolean;
   operationId: string | null;
   startedAt: number | null;
@@ -106,15 +105,10 @@ async function renderJob(job: ExportJob) {
       durationMicros > 0
         ? Math.min(100, Math.max(0, (progress.elapsedMicros / durationMicros) * 100))
         : 0;
-    const speedMultiplier = parseSpeedMultiplier(progress.speed);
     const reportedFps = parseMetric(progress.fps);
-    if (reportedFps !== null || (job.frameRate && speedMultiplier !== null)) {
-      const currentFps =
-        reportedFps ?? (job.frameRate ? job.frameRate * speedMultiplier! : undefined);
-      if (currentFps !== undefined) {
-        job.estimatedFps =
-          job.estimatedFps === null ? currentFps : job.estimatedFps * 0.75 + currentFps * 0.25;
-      }
+    if (reportedFps !== null) {
+      job.estimatedFps =
+        job.estimatedFps === null ? reportedFps : job.estimatedFps * 0.75 + reportedFps * 0.25;
     }
     updateToast(job, (toast) => ({
       ...toast,
@@ -159,10 +153,6 @@ async function renderJob(job: ExportJob) {
   } finally {
     jobsById.delete(job.id);
   }
-}
-
-function parseSpeedMultiplier(speed: string | undefined) {
-  return parseMetric(speed?.replace(/x$/i, ""));
 }
 
 function parseMetric(value: string | undefined) {
