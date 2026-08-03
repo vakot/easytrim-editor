@@ -34,7 +34,10 @@ pub struct OutputSelection {
 pub struct ExportProgress {
     pub operation_id: String,
     pub elapsed_micros: i64,
-    pub speed: Option<String>,
+    pub frame: Option<u64>,
+    pub fps: Option<String>,
+    pub bitrate: Option<String>,
+    pub total_size: Option<u64>,
     pub phase: ExportPhase,
 }
 
@@ -196,7 +199,10 @@ async fn run_export(
     let _ = on_progress.send(ExportProgress {
         operation_id: operation_id.clone(),
         elapsed_micros: 0,
-        speed: None,
+        frame: None,
+        fps: None,
+        bitrate: None,
+        total_size: None,
         phase: ExportPhase::Running,
     });
     let cancellation_for_check = cancellation.clone();
@@ -221,7 +227,14 @@ async fn run_export(
                         let _ = on_progress.send(ExportProgress {
                             operation_id: operation_for_task.clone(),
                             elapsed_micros,
-                            speed: progress_values.get("speed").cloned(),
+                            frame: progress_values
+                                .get("frame")
+                                .and_then(|value| value.parse::<u64>().ok()),
+                            fps: progress_values.get("fps").cloned(),
+                            bitrate: progress_values.get("bitrate").cloned(),
+                            total_size: progress_values
+                                .get("total_size")
+                                .and_then(|value| value.parse::<u64>().ok()),
                             phase: if value == "end" {
                                 ExportPhase::Completed
                             } else {

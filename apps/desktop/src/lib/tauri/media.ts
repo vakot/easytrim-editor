@@ -21,7 +21,10 @@ export interface TrimSelection {
 export interface ExportProgress {
   operationId: string;
   elapsedMicros: number;
-  speed?: string;
+  frame?: number;
+  fps?: string;
+  bitrate?: string;
+  totalSize?: number;
   phase: "running" | "completed";
 }
 
@@ -406,7 +409,10 @@ function parseExportProgress(value: unknown): ExportProgress {
   return {
     operationId: requireString(progress.operationId, "operation ID"),
     elapsedMicros: requireInteger(progress.elapsedMicros, "export elapsed time"),
-    speed: optionalString(progress.speed),
+    frame: optionalInteger(progress.frame, "export frame"),
+    fps: optionalString(progress.fps),
+    bitrate: optionalString(progress.bitrate),
+    totalSize: optionalInteger(progress.totalSize, "export total size"),
     phase,
   };
 }

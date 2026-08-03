@@ -25,18 +25,22 @@ interface ExportJob {
   canceled: boolean;
   operationId: string | null;
   startedAt: number | null;
+  estimatedFps: number | null;
 }
 
 const pendingJobs: ExportJob[] = [];
 const jobsById = new Map<string, ExportJob>();
 let isDraining = false;
 
-export function enqueueExport(job: Omit<ExportJob, "canceled" | "operationId" | "startedAt">) {
+export function enqueueExport(
+  job: Omit<ExportJob, "canceled" | "operationId" | "startedAt" | "estimatedFps">,
+) {
   const queuedJob: ExportJob = {
     ...job,
     canceled: false,
     operationId: null,
     startedAt: null,
+    estimatedFps: null,
   };
   pendingJobs.push(queuedJob);
   jobsById.set(queuedJob.id, queuedJob);
@@ -96,10 +100,25 @@ async function renderJob(job: ExportJob) {
     }
 
     job.operationId = progress.operationId;
+    const durationMicros = job.request.trim.endMicros - job.request.trim.startMicros;
+    const progressPercent =
+      durationMicros > 0
+        ? Math.min(100, Math.max(0, (progress.elapsedMicros / durationMicros) * 100))
+        : 0;
+    const reportedFps = parseMetric(progress.fps);
+    if (reportedFps !== null) {
+      job.estimatedFps =
+        job.estimatedFps === null ? reportedFps : job.estimatedFps * 0.75 + reportedFps * 0.25;
+    }
     updateToast(job, (toast) => ({
       ...toast,
       operationId: progress.operationId,
       durationMs: elapsedTime(job),
+      progressPercent,
+      currentFrame: progress.frame,
+      estimatedFps: job.estimatedFps ?? undefined,
+      bitrate: progress.bitrate,
+      fileSizeBytes: progress.totalSize,
     }));
   };
 
@@ -137,6 +156,12 @@ async function renderJob(job: ExportJob) {
   } finally {
     jobsById.delete(job.id);
   }
+}
+
+function parseMetric(value: string | undefined) {
+  if (!value) return null;
+  const multiplier = Number.parseFloat(value);
+  return Number.isFinite(multiplier) && multiplier >= 0 ? multiplier : null;
 }
 
 function elapsedTime(job: ExportJob) {

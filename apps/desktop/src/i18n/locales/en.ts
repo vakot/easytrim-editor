@@ -1,10 +1,14 @@
 export const en = {
   common: {
     brand: "EasyTrim Editor",
+    shortBrand: "EasyTrim",
     cancel: "Cancel",
     close: "Close",
     retry: "Retry",
     unknown: "Unknown",
+  },
+  statusBar: {
+    exportProgress: "Export progress",
   },
   language: {
     label: "Language",
@@ -218,6 +222,7 @@ export const en = {
   },
   release: {
     updateAvailable: "A new EasyTrim Editor release is available:",
+    updateAvailableShort: "Update available",
     update: "Update",
     dismiss: "Dismiss update notice",
   },

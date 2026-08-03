@@ -158,6 +158,8 @@ export function useExportController({
         status: "queued",
         startedAt: null,
         durationMs: null,
+        progressPercent: 0,
+        totalFrames: getTotalFrames(request, source.video),
         onCancel: () => cancelQueuedExport(id),
       },
     ]);
@@ -197,4 +199,26 @@ export function useExportController({
     startOptimizedRender,
     openOptimizedDialog,
   };
+}
+
+function getTotalFrames(
+  request: FastExportRequest | OptimizedExportRequest,
+  video: {
+    averageFrameRate?: { numerator: number; denominator: number };
+    realFrameRate?: { numerator: number; denominator: number };
+  },
+) {
+  const frameRate =
+    "frameRate" in request && request.frameRate
+      ? request.frameRate.numerator / request.frameRate.denominator
+      : video.averageFrameRate
+        ? video.averageFrameRate.numerator / video.averageFrameRate.denominator
+        : video.realFrameRate
+          ? video.realFrameRate.numerator / video.realFrameRate.denominator
+          : undefined;
+  if (!frameRate || frameRate <= 0) return undefined;
+  return Math.max(
+    1,
+    Math.round(((request.trim.endMicros - request.trim.startMicros) / 1_000_000) * frameRate),
+  );
 }

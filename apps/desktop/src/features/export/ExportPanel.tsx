@@ -14,7 +14,7 @@ export function ExportPanel(props: ExportPanelProps) {
 
   return (
     <div className="flex items-center gap-3">
-      <Separator orientation="vertical" className="h-7" />
+      <Separator orientation="vertical" className="h-auto self-stretch" />
       <Tooltip>
         <TooltipTrigger asChild>
           <Button

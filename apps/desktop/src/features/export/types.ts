@@ -15,6 +15,12 @@ export interface ExportToast {
   status: ExportStatus;
   startedAt: number | null;
   durationMs: number | null;
+  progressPercent?: number;
+  currentFrame?: number;
+  totalFrames?: number;
+  estimatedFps?: number;
+  bitrate?: string;
+  fileSizeBytes?: number;
   error?: string;
   onCancel?: () => void;
 }

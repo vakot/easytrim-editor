@@ -7,10 +7,14 @@ type TranslationShape<T> = {
 export const sk = {
   common: {
     brand: "EasyTrim Editor",
+    shortBrand: "EasyTrim",
     cancel: "Zrušiť",
     close: "Zavrieť",
     retry: "Skúsiť znova",
     unknown: "Neznáme",
+  },
+  statusBar: {
+    exportProgress: "Priebeh exportu",
   },
   language: {
     label: "Jazyk",
@@ -225,6 +229,7 @@ export const sk = {
   },
   release: {
     updateAvailable: "Je dostupná nová verzia EasyTrim Editor:",
+    updateAvailableShort: "Dostupná aktualizácia",
     update: "Aktualizovať",
     dismiss: "Skryť upozornenie na aktualizáciu",
   },
