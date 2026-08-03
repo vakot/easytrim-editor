@@ -5,7 +5,7 @@ import { timelinePanelSizeConstraints } from "../timeline-pane-sizing";
 describe("timelinePanelSizeConstraints", () => {
   it("uses the timeline as the minimum and one track as the default", () => {
     expect(timelinePanelSizeConstraints(1)).toEqual({
-      minSize: 166,
+      minSize: 165,
       defaultSize: 314,
       maxSize: 314,
     });
@@ -21,7 +21,7 @@ describe("timelinePanelSizeConstraints", () => {
 
   it("adds one fixed row step for each additional track", () => {
     expect(timelinePanelSizeConstraints(3)).toEqual({
-      minSize: 166,
+      minSize: 165,
       defaultSize: 314,
       maxSize: 426,
     });

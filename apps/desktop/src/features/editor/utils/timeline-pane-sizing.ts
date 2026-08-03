@@ -16,6 +16,7 @@ const AUDIO_TRACK_HEIGHT = 48; /* Fixed waveform row height from the `h-12` clas
 const AUDIO_SECTION_BOTTOM_PADDING = 16; /* Scroll content wrapper `pb-4` padding. */
 
 export const AUDIO_SINGLE_TRACK_HEIGHT =
+  TIMELINE_DIVIDER_HEIGHT +
   AUDIO_SECTION_TOP_PADDING +
   AUDIO_SECTION_HEADING_HEIGHT +
   AUDIO_SECTION_GAP +
@@ -26,19 +27,21 @@ export const AUDIO_SINGLE_TRACK_HEIGHT =
 export const AUDIO_TRACK_STEP =
   AUDIO_TRACK_HEIGHT + AUDIO_SECTION_GAP; /* Height added per additional track. */
 
+const getAudioContentHeight = (audioTrackCount: number): number => {
+  const trackCount = Math.max(0, Math.floor(audioTrackCount));
+  if (!trackCount) return 0;
+  return AUDIO_SINGLE_TRACK_HEIGHT + (trackCount - 1) * AUDIO_TRACK_STEP;
+};
+
 export function timelinePanelSizeConstraints(
   audioTrackCount: number,
 ): TimelinePanelSizeConstraints {
   const trackCount = Math.max(0, Math.floor(audioTrackCount));
-  const audioContentHeight = trackCount
-    ? AUDIO_SINGLE_TRACK_HEIGHT + (trackCount - 1) * AUDIO_TRACK_STEP
-    : 0;
-  const minSize = TIMELINE_FIXED_HEIGHT + (trackCount ? TIMELINE_DIVIDER_HEIGHT : 0);
-  const defaultSize = minSize + (trackCount ? AUDIO_SINGLE_TRACK_HEIGHT : 0);
-  const maxSize = minSize + audioContentHeight;
+  const defaultSize = TIMELINE_FIXED_HEIGHT + (trackCount ? AUDIO_SINGLE_TRACK_HEIGHT : 0);
+  const maxSize = TIMELINE_FIXED_HEIGHT + getAudioContentHeight(trackCount);
 
   return {
-    minSize,
+    minSize: TIMELINE_FIXED_HEIGHT,
     defaultSize,
     maxSize,
   };
