@@ -201,7 +201,6 @@ export const en = {
       failed: "Failed",
       canceled: "Canceled",
     },
-    openLocation: "Open file location",
     cancelItem: "Cancel {{filename}}",
     statusLabel: "{{status}} export",
     dialog: {

@@ -1,4 +1,4 @@
-import { Check, CircleX, Link2, LoaderCircle, TriangleAlert, X } from "lucide-react";
+import { Check, CircleX, ExternalLink, LoaderCircle, TriangleAlert, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -72,9 +72,9 @@ function ExportQueueItem({ item, now }: { item: ExportToast; now: number }) {
   return (
     <div
       className={cn(
-        "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-xl border border-border border-l-4 bg-card p-3",
+        "group relative grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-xl border border-border border-l-4 bg-card p-3",
         statusStyles[item.status],
-        isCompleted && "cursor-pointer transition-colors hover:bg-muted/60",
+        isCompleted && "cursor-pointer pr-10 transition-colors hover:bg-muted/60",
       )}
       role={isCompleted ? "button" : undefined}
       tabIndex={isCompleted ? 0 : undefined}
@@ -86,6 +86,12 @@ function ExportQueueItem({ item, now }: { item: ExportToast; now: number }) {
         }
       }}
     >
+      {isCompleted ? (
+        <ExternalLink
+          className="pointer-events-none absolute top-3 right-3 size-4 text-muted-foreground transition-colors group-hover:text-foreground"
+          aria-hidden="true"
+        />
+      ) : null}
       <div className="min-w-0">
         <div className="flex min-w-0 items-baseline gap-1.5 text-sm">
           <strong className="truncate">{item.filename}</strong>
@@ -115,19 +121,6 @@ function ExportQueueItem({ item, now }: { item: ExportToast; now: number }) {
         ) : null}
       </div>
       <div className="flex items-center gap-1">
-        {isCompleted ? (
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={(event) => {
-              event.stopPropagation();
-              openLocation();
-            }}
-            aria-label={t("export.openLocation")}
-          >
-            <Link2 />
-          </Button>
-        ) : null}
         {item.onCancel ? (
           <Button
             variant="destructive"

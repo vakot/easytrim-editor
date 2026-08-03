@@ -208,7 +208,6 @@ export const sk = {
       failed: "Zlyhalo",
       canceled: "Zrušené",
     },
-    openLocation: "Otvoriť umiestnenie súboru",
     cancelItem: "Zrušiť {{filename}}",
     statusLabel: "Export: {{status}}",
     dialog: {
