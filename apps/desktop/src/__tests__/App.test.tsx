@@ -227,6 +227,25 @@ describe("App", () => {
     expect(screen.getByTestId("source-details-panel")).toContainElement(
       screen.getByRole("heading", { name: "holiday.mp4" }),
     );
+    const sourceDetails = screen
+      .getByTestId("source-details-panel")
+      .querySelector('[data-slot="source-details"]');
+    const exportQueueScroll = screen
+      .getByTestId("source-details-panel")
+      .querySelector('[data-slot="export-queue-scroll"]');
+    expect(sourceDetails).toContainElement(screen.getByRole("heading", { name: "holiday.mp4" }));
+    expect(sourceDetails).not.toContainElement(
+      screen.getByRole("heading", { name: "Export queue" }),
+    );
+    expect(exportQueueScroll).toContainElement(
+      screen.getByRole("heading", { name: "Export queue" }),
+    );
+    const sidebarDivider = within(screen.getByTestId("source-details-panel")).getByRole(
+      "separator",
+    );
+    expect(sidebarDivider.parentElement).toBe(sourceDetails?.parentElement);
+    expect(sourceDetails).not.toContainElement(sidebarDivider);
+    expect(exportQueueScroll).not.toContainElement(sidebarDivider);
     expect(screen.getByTestId("preview-panel")).toContainElement(
       screen.getByLabelText("Source video preview"),
     );

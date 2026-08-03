@@ -1,5 +1,6 @@
 import type { SessionState } from "@/app/session-state";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 import { ExportQueue, type ExportToast } from "@/features/export";
 import { MediaDetails } from "./MediaDetails";
 import { SourceError } from "./SourceError";
@@ -19,8 +20,11 @@ export function SourceSidebar({ session, queue }: SourceSidebarProps) {
   }
 
   return (
-    <ScrollArea className="h-full">
-      <aside className="grid content-start gap-5 p-5" aria-labelledby="source-title">
+    <aside
+      className="grid h-full min-h-0 grid-rows-[auto_auto_minmax(0,1fr)]"
+      aria-labelledby="source-title"
+    >
+      <div className="grid content-start gap-5 p-5" data-slot="source-details">
         <div className="min-w-0">
           <p className="mb-1 text-xs font-bold tracking-[0.14em] text-primary uppercase">
             {t("import.source.details")}
@@ -44,8 +48,13 @@ export function SourceSidebar({ session, queue }: SourceSidebarProps) {
         {session.status === "ready" && session.source.media ? (
           <MediaDetails media={session.source.media} />
         ) : null}
-        <ExportQueue queue={queue} />
-      </aside>
-    </ScrollArea>
+      </div>
+      <Separator />
+      <ScrollArea className="min-h-0" data-slot="export-queue-scroll">
+        <div className="p-5">
+          <ExportQueue queue={queue} />
+        </div>
+      </ScrollArea>
+    </aside>
   );
 }
