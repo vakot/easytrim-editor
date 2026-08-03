@@ -16,7 +16,8 @@ export interface ExportToast {
   startedAt: number | null;
   durationMs: number | null;
   progressPercent?: number;
-  speed?: string;
+  frameRate?: number;
+  estimatedFps?: number;
   error?: string;
   onCancel?: () => void;
 }

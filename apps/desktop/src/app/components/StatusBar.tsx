@@ -73,8 +73,10 @@ export function StatusBar({
               {Math.round(activeExport.progressPercent ?? 0)}%
             </span>
           </div>
-          {activeExport.speed ? (
-            <span className="shrink-0 tabular-nums">{activeExport.speed}</span>
+          {activeExport.estimatedFps !== undefined ? (
+            <span className="shrink-0 tabular-nums">
+              {Math.round(activeExport.estimatedFps)} FPS
+            </span>
           ) : null}
           <span className="max-w-[28rem] truncate text-xs" title={activeExport.path}>
             {activeExport.path}

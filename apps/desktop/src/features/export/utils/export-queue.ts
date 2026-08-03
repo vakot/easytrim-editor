@@ -22,21 +22,26 @@ interface ExportJob {
   output: OutputSelection;
   setQueue: Dispatch<SetStateAction<ExportToast[]>>;
   canceledMessage: string;
+  frameRate?: number;
   canceled: boolean;
   operationId: string | null;
   startedAt: number | null;
+  estimatedFps: number | null;
 }
 
 const pendingJobs: ExportJob[] = [];
 const jobsById = new Map<string, ExportJob>();
 let isDraining = false;
 
-export function enqueueExport(job: Omit<ExportJob, "canceled" | "operationId" | "startedAt">) {
+export function enqueueExport(
+  job: Omit<ExportJob, "canceled" | "operationId" | "startedAt" | "estimatedFps">,
+) {
   const queuedJob: ExportJob = {
     ...job,
     canceled: false,
     operationId: null,
     startedAt: null,
+    estimatedFps: null,
   };
   pendingJobs.push(queuedJob);
   jobsById.set(queuedJob.id, queuedJob);
@@ -101,12 +106,18 @@ async function renderJob(job: ExportJob) {
       durationMicros > 0
         ? Math.min(100, Math.max(0, (progress.elapsedMicros / durationMicros) * 100))
         : 0;
+    const speedMultiplier = parseSpeedMultiplier(progress.speed);
+    if (job.frameRate && speedMultiplier !== null) {
+      const currentFps = job.frameRate * speedMultiplier;
+      job.estimatedFps =
+        job.estimatedFps === null ? currentFps : job.estimatedFps * 0.75 + currentFps * 0.25;
+    }
     updateToast(job, (toast) => ({
       ...toast,
       operationId: progress.operationId,
       durationMs: elapsedTime(job),
       progressPercent,
-      speed: progress.speed,
+      estimatedFps: job.estimatedFps ?? undefined,
     }));
   };
 
@@ -144,6 +155,12 @@ async function renderJob(job: ExportJob) {
   } finally {
     jobsById.delete(job.id);
   }
+}
+
+function parseSpeedMultiplier(speed: string | undefined) {
+  if (!speed) return null;
+  const multiplier = Number.parseFloat(speed.replace(/x$/i, ""));
+  return Number.isFinite(multiplier) && multiplier >= 0 ? multiplier : null;
 }
 
 function elapsedTime(job: ExportJob) {
