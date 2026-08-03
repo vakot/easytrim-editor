@@ -74,7 +74,7 @@ function ExportQueueItem({ item, now }: { item: ExportToast; now: number }) {
       className={cn(
         "group relative grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-xl border border-border border-l-4 bg-card p-3",
         statusStyles[item.status],
-        isCompleted && "cursor-pointer pr-10 transition-colors hover:bg-muted/60",
+        isCompleted && "cursor-pointer transition-colors hover:bg-muted/60",
       )}
       role={isCompleted ? "button" : undefined}
       tabIndex={isCompleted ? 0 : undefined}
@@ -88,7 +88,7 @@ function ExportQueueItem({ item, now }: { item: ExportToast; now: number }) {
     >
       {isCompleted ? (
         <ExternalLink
-          className="pointer-events-none absolute top-3 right-3 size-4 text-muted-foreground transition-colors group-hover:text-foreground"
+          className="pointer-events-none absolute top-2 right-2 size-3 text-muted-foreground transition-colors group-hover:text-foreground"
           aria-hidden="true"
         />
       ) : null}
