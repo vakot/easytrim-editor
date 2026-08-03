@@ -226,9 +226,6 @@ export const en = {
     dismiss: "Dismiss support message",
     resetDevelopment: "Reset support badge",
   },
-  statusBar: {
-    queuePlaceholder: "Queue details",
-  },
   units: {
     framesPerSecond: "{{value}} fps",
     megabitsPerSecond: "{{value}} Mbps",

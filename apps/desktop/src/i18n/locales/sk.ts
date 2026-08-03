@@ -233,9 +233,6 @@ export const sk = {
     dismiss: "Skryť správu podpory",
     resetDevelopment: "Obnoviť odznak podpory",
   },
-  statusBar: {
-    queuePlaceholder: "Podrobnosti frontu",
-  },
   units: {
     framesPerSecond: "{{value}} fps",
     megabitsPerSecond: "{{value}} Mb/s",
