@@ -236,8 +236,12 @@ export function TimelineTools({
         </TimelineToolButton>
         <PlaybackSpeedTool speed={playbackSpeed} onChange={onPlaybackSpeedChange} />
       </div>
-      <div className="col-start-3 row-span-2 flex items-center gap-1">
-        <div className="h-full w-px bg-border" aria-hidden="true" />
+      <div
+        className="col-start-3 row-span-2 row-start-1 h-full w-px justify-self-center bg-border"
+        data-slot="timeline-tools-divider"
+        aria-hidden="true"
+      />
+      <div className="col-start-4 row-start-1">
         <TimelineToolButton
           enabled={false}
           label={t("preview.resetTools")}

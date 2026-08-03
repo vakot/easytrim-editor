@@ -278,6 +278,14 @@ describe("App", () => {
       "data-variant",
       "secondary",
     );
+    expect(videoToolbar.querySelector('[data-slot="timeline-tools-divider"]')).toHaveClass(
+      "col-start-3",
+      "row-span-2",
+      "bg-border",
+    );
+    expect(
+      within(videoToolbar).getByRole("button", { name: "Reset tools" }).parentElement,
+    ).toHaveClass("col-start-4", "row-start-1");
     expect(within(videoToolbar).getByRole("button", { name: "Playback speed" })).toHaveAttribute(
       "data-variant",
       "secondary",
