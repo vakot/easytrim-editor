@@ -15,6 +15,8 @@ export interface ExportToast {
   status: ExportStatus;
   startedAt: number | null;
   durationMs: number | null;
+  progressPercent?: number;
+  speed?: string;
   error?: string;
   onCancel?: () => void;
 }

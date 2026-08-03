@@ -96,10 +96,17 @@ async function renderJob(job: ExportJob) {
     }
 
     job.operationId = progress.operationId;
+    const durationMicros = job.request.trim.endMicros - job.request.trim.startMicros;
+    const progressPercent =
+      durationMicros > 0
+        ? Math.min(100, Math.max(0, (progress.elapsedMicros / durationMicros) * 100))
+        : 0;
     updateToast(job, (toast) => ({
       ...toast,
       operationId: progress.operationId,
       durationMs: elapsedTime(job),
+      progressPercent,
+      speed: progress.speed,
     }));
   };
 

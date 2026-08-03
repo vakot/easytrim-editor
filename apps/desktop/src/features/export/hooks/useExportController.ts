@@ -158,6 +158,7 @@ export function useExportController({
         status: "queued",
         startedAt: null,
         durationMs: null,
+        progressPercent: 0,
         onCancel: () => cancelQueuedExport(id),
       },
     ]);

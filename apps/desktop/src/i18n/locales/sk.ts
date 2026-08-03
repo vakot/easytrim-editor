@@ -12,6 +12,9 @@ export const sk = {
     retry: "Skúsiť znova",
     unknown: "Neznáme",
   },
+  statusBar: {
+    exportProgress: "Priebeh exportu",
+  },
   language: {
     label: "Jazyk",
     english: "English",

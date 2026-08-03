@@ -75,7 +75,7 @@ function EasyTrimEditorApp() {
           exportQueue={app.exportQueue}
           update={update}
         />
-        {app.hasSource ? <StatusBar update={update} /> : null}
+        {app.hasSource ? <StatusBar update={update} queue={app.exportQueue} /> : null}
       </main>
     </TooltipProvider>
   );

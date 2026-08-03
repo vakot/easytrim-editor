@@ -6,6 +6,9 @@ export const en = {
     retry: "Retry",
     unknown: "Unknown",
   },
+  statusBar: {
+    exportProgress: "Export progress",
+  },
   language: {
     label: "Language",
     english: "English",
