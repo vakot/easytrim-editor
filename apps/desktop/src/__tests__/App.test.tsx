@@ -240,10 +240,11 @@ describe("App", () => {
     expect(exportQueueScroll).toContainElement(
       screen.getByRole("heading", { name: "Export queue" }),
     );
-    const sidebarDivider = within(screen.getByTestId("source-details-panel")).getByRole(
-      "separator",
-    );
-    expect(sidebarDivider.parentElement).toBe(sourceDetails?.parentElement);
+    const sidebarDivider = screen
+      .getByTestId("source-details-panel")
+      .querySelector('[data-slot="separator"]');
+    expect(sidebarDivider).not.toBeNull();
+    expect(sidebarDivider?.parentElement).toBe(sourceDetails?.parentElement);
     expect(sourceDetails).not.toContainElement(sidebarDivider);
     expect(exportQueueScroll).not.toContainElement(sidebarDivider);
     expect(screen.getByTestId("preview-panel")).toContainElement(
