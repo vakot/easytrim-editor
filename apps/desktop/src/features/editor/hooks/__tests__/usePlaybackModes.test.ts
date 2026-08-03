@@ -1,4 +1,5 @@
 import { act, renderHook } from "@testing-library/react";
+import { useState } from "react";
 import { describe, expect, it } from "vitest";
 
 import { usePlaybackModes } from "../usePlaybackModes";
@@ -10,8 +11,19 @@ const trim = {
 };
 
 describe("usePlaybackModes", () => {
+  function usePlaybackModesHarness() {
+    const [loopEnabled, setLoopEnabled] = useState(true);
+    const [segmentEnabled, setSegmentEnabled] = useState(true);
+    return usePlaybackModes({
+      loopEnabled,
+      segmentEnabled,
+      onLoopEnabledChange: setLoopEnabled,
+      onSegmentEnabledChange: setSegmentEnabled,
+    });
+  }
+
   it("defaults to looping the selected segment and allows full-source playback", () => {
-    const { result } = renderHook(() => usePlaybackModes());
+    const { result } = renderHook(() => usePlaybackModesHarness());
 
     expect(result.current.loopEnabled).toBe(true);
     expect(result.current.segmentEnabled).toBe(true);
@@ -24,7 +36,7 @@ describe("usePlaybackModes", () => {
   });
 
   it("emits each boundary action once until playback returns inside the range", () => {
-    const { result } = renderHook(() => usePlaybackModes());
+    const { result } = renderHook(() => usePlaybackModesHarness());
     act(() => result.current.toggleLoop());
 
     expect(result.current.consumeBoundary(20_000_000, trim)).toEqual({
