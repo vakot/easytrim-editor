@@ -197,6 +197,7 @@ export const en = {
       queued: "Queued",
       rendering: "Rendering",
       completed: "Completed",
+      failure: "Failure",
       failed: "Failed",
       canceled: "Canceled",
     },

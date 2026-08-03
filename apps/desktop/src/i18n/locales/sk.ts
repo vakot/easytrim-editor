@@ -204,6 +204,7 @@ export const sk = {
       queued: "Vo fronte",
       rendering: "Prebieha",
       completed: "Dokončené",
+      failure: "Chyba",
       failed: "Zlyhalo",
       canceled: "Zrušené",
     },

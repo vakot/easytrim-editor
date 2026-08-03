@@ -56,10 +56,14 @@ export function ExportQueue({ queue }: { queue: ExportToast[] }) {
 function ExportQueueItem({ item, now }: { item: ExportToast; now: number }) {
   const { t } = useTranslation();
   const isCompleted = item.status === "completed";
-  const statusLabel =
-    item.status === "rendering" ? `${item.percentage}%` : t(`export.status.${item.status}`);
   const durationMs =
     item.status === "rendering" && item.startedAt ? now - item.startedAt : item.durationMs;
+  const statusLabel =
+    item.status === "rendering" || item.status === "completed"
+      ? formatDuration(durationMs ?? 0)
+      : item.status === "failed"
+        ? t("export.status.failure")
+        : t(`export.status.${item.status}`);
 
   function openLocation() {
     if (isCompleted) void openFileLocation(item.path).catch(() => undefined);
@@ -93,7 +97,6 @@ function ExportQueueItem({ item, now }: { item: ExportToast; now: number }) {
             )}
           >
             · {statusLabel}
-            {durationMs !== null ? ` · ${formatDuration(durationMs)}` : null}
           </span>
         </div>
         <p className="truncate text-xs text-muted-foreground">{item.path}</p>
