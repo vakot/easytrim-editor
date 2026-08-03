@@ -94,7 +94,7 @@ function ExportQueueItem({ item }: { item: ExportToast }) {
             size="icon-sm"
             onClick={(event) => {
               event.stopPropagation();
-                  openLocation();
+              openLocation();
             }}
             aria-label={t("export.openLocation")}
           >
