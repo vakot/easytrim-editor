@@ -263,7 +263,7 @@ function PlaybackSpeedTool({
       <PopoverContent side="bottom" align="center" className="w-56 p-2.5">
         <div className="flex items-center gap-2">
           <Slider
-            className="mt-2 min-w-0 flex-1 [&_[data-slot=slider-track]]:h-1.5"
+            className="min-w-0 flex-1"
             min={0}
             max={PLAYBACK_SPEED_STEPS.length - 1}
             step={1}
@@ -276,7 +276,7 @@ function PlaybackSpeedTool({
             aria-label={t("preview.playbackSpeed.label")}
             markers={PLAYBACK_SPEED_MARKERS}
           />
-          <output className="w-12 shrink-0 text-right font-mono text-xs text-muted-foreground">
+          <output className="w-10 shrink-0 text-right font-mono text-xs text-muted-foreground">
             {speed}×
           </output>
         </div>
