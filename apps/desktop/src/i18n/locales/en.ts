@@ -199,7 +199,7 @@ export const en = {
       failed: "Failed",
       canceled: "Canceled",
     },
-    reveal: "Reveal file in Explorer",
+    openLocation: "Open file location",
     cancelItem: "Cancel {{filename}}",
     statusLabel: "{{status}} export",
     dialog: {

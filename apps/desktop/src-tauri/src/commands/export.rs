@@ -175,7 +175,7 @@ pub fn cancel_operation(operation_id: String, state: State<'_, AppState>) -> Res
 }
 
 #[tauri::command]
-pub fn reveal_in_explorer(path: String) -> Result<(), AppError> {
+pub fn open_file_location(path: String) -> Result<(), AppError> {
     let path = PathBuf::from(path);
     if !path.is_file() {
         return Err(AppError::io_failed(

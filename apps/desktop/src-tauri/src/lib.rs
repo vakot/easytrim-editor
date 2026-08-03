@@ -23,7 +23,7 @@ pub fn run() {
             commands::export::cancel_operation,
             commands::export::choose_output_path,
             commands::export::plan_optimized_export,
-            commands::export::reveal_in_explorer,
+            commands::export::open_file_location,
             commands::export::render_fast,
             commands::export::render_optimized,
             commands::media::inspect_media,
