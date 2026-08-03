@@ -1,9 +1,8 @@
-import { Check, CircleX, LoaderCircle, TriangleAlert, X } from "lucide-react";
+import { Check, CircleX, Link2, LoaderCircle, TriangleAlert, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { revealInExplorer } from "@/lib/tauri/media";
+import { openFileLocation } from "@/lib/tauri/media";
 
 import type { ExportToast } from "../types";
 import { useTranslation } from "react-i18next";
@@ -49,83 +48,88 @@ function ExportQueueItem({ item }: { item: ExportToast }) {
   const isCompleted = item.status === "completed";
   const statusLabel = item.status === "canceled" ? t("export.canceled") : `${item.percentage}%`;
 
-  function reveal() {
-    if (isCompleted) void revealInExplorer(item.path).catch(() => undefined);
+  function openLocation() {
+    if (isCompleted) void openFileLocation(item.path).catch(() => undefined);
   }
 
   return (
-    <Tooltip>
-      <TooltipTrigger asChild disabled={!isCompleted}>
-        <div
-          className={cn(
-            "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-xl border border-border border-l-4 bg-card p-3",
-            statusStyles[item.status],
-            isCompleted && "cursor-pointer transition-colors hover:bg-muted/60",
-          )}
-          role={isCompleted ? "button" : undefined}
-          tabIndex={isCompleted ? 0 : undefined}
-          onClick={reveal}
-          onKeyDown={(event) => {
-            if (isCompleted && (event.key === "Enter" || event.key === " ")) {
-              event.preventDefault();
-              reveal();
-            }
-          }}
-        >
-          <div className="min-w-0">
-            <div className="flex min-w-0 items-baseline gap-1.5 text-sm">
-              <strong className="truncate">{item.filename}</strong>
-              <span
-                className={cn(
-                  "shrink-0 text-primary",
-                  (item.status === "failed" || item.status === "canceled") && "text-destructive",
-                  item.status === "completed" && "text-emerald-400",
-                )}
-              >
-                · {statusLabel}
-              </span>
-            </div>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <p className="truncate text-xs text-muted-foreground">{item.path}</p>
-              </TooltipTrigger>
-              <TooltipContent>{item.path}</TooltipContent>
-            </Tooltip>
-            {item.error && item.status !== "canceled" ? (
-              <p className="mt-1 text-xs text-destructive">{item.error}</p>
-            ) : null}
-          </div>
-          {item.onCancel ? (
-            <Button
-              variant="destructive"
-              size="icon-sm"
-              onClick={(event) => {
-                event.stopPropagation();
-                item.onCancel?.();
-              }}
-              aria-label={t("export.cancelItem", { filename: item.filename })}
-            >
-              <X />
-            </Button>
-          ) : (
-            <span
-              className="grid size-7 place-items-center"
-              aria-label={t("export.statusLabel", { status: t(`export.status.${item.status}`) })}
-            >
-              {item.status === "completed" ? (
-                <Check className="size-4 text-emerald-400" />
-              ) : item.status === "failed" ? (
-                <TriangleAlert className="size-4 text-destructive" />
-              ) : item.status === "rendering" ? (
-                <LoaderCircle className="size-4 animate-spin text-primary" />
-              ) : (
-                <CircleX className="size-4 text-destructive" />
-              )}
-            </span>
-          )}
+    <div
+      className={cn(
+        "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-xl border border-border border-l-4 bg-card p-3",
+        statusStyles[item.status],
+        isCompleted && "cursor-pointer transition-colors hover:bg-muted/60",
+      )}
+      role={isCompleted ? "button" : undefined}
+      tabIndex={isCompleted ? 0 : undefined}
+      onClick={openLocation}
+      onKeyDown={(event) => {
+        if (isCompleted && (event.key === "Enter" || event.key === " ")) {
+          event.preventDefault();
+          openLocation();
+        }
+      }}
+    >
+      <div className="min-w-0">
+        <div className="flex min-w-0 items-baseline gap-1.5 text-sm">
+          <strong className="truncate">{item.filename}</strong>
+          <span
+            className={cn(
+              "shrink-0 text-primary",
+              (item.status === "failed" || item.status === "canceled") && "text-destructive",
+              item.status === "completed" && "text-emerald-400",
+            )}
+          >
+            · {statusLabel}
+          </span>
         </div>
-      </TooltipTrigger>
-      {isCompleted ? <TooltipContent>{t("export.reveal")}</TooltipContent> : null}
-    </Tooltip>
+        <p className="truncate text-xs text-muted-foreground">{item.path}</p>
+        {item.error && item.status !== "canceled" ? (
+          <p className="mt-1 text-xs text-destructive">{item.error}</p>
+        ) : null}
+      </div>
+      <div className="flex items-center gap-1">
+        {isCompleted ? (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={(event) => {
+              event.stopPropagation();
+              openLocation();
+            }}
+            aria-label={t("export.openLocation")}
+          >
+            <Link2 />
+          </Button>
+        ) : null}
+        {item.onCancel ? (
+          <Button
+            variant="destructive"
+            size="icon-sm"
+            onClick={(event) => {
+              event.stopPropagation();
+              item.onCancel?.();
+            }}
+            aria-label={t("export.cancelItem", { filename: item.filename })}
+          >
+            <X />
+          </Button>
+        ) : (
+          <span
+            className="grid size-7 place-items-center"
+            aria-label={t("export.statusLabel", { status: t(`export.status.${item.status}`) })}
+          >
+            {item.status === "completed" ? (
+              <Check className="size-4 text-emerald-400" />
+            ) : item.status === "failed" ? (
+              <TriangleAlert className="size-4 text-destructive" />
+            ) : item.status === "rendering" ? (
+              <LoaderCircle className="size-4 animate-spin text-primary" />
+            ) : (
+              <CircleX className="size-4 text-destructive" />
+            )}
+          </span>
+        )}
+      </div>
+    </div>
   );
 }

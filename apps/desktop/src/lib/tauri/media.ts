@@ -232,9 +232,9 @@ export async function cancelOperation(operationId: string): Promise<void> {
   }
 }
 
-export async function revealInExplorer(path: string): Promise<void> {
+export async function openFileLocation(path: string): Promise<void> {
   try {
-    await invoke("reveal_in_explorer", { path });
+    await invoke("open_file_location", { path });
   } catch (error: unknown) {
     throw normalizeAppError(error);
   }
