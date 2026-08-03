@@ -127,6 +127,7 @@ export const en = {
     playbackSpeed: {
       label: "Playback speed",
     },
+    resetTools: "Reset tools",
     opening: "Opening preview…",
     preparing: "Preparing compatible preview…",
     preparingDescription: "This can take a moment for high-resolution sources.",
