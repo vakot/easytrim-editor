@@ -275,7 +275,7 @@ function PlaybackSpeedTool({
           type="button"
           aria-label={t("preview.playbackSpeed.label")}
           aria-pressed={enabled}
-          className={enabled ? "text-primary" : undefined}
+          className={enabled ? "text-primary aria-expanded:text-primary" : undefined}
         >
           <Gauge />
         </Button>

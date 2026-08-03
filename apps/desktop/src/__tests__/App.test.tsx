@@ -299,8 +299,10 @@ describe("App", () => {
     playbackSpeedSlider.focus();
     await user.keyboard("{End}");
     expect(playbackSpeedButton).toHaveAttribute("aria-pressed", "true");
+    expect(playbackSpeedButton).toHaveClass("text-primary", "aria-expanded:text-primary");
     fireEvent.doubleClick(playbackSpeedSlider);
     expect(playbackSpeedButton).toHaveAttribute("aria-pressed", "false");
+    expect(playbackSpeedButton).not.toHaveClass("text-primary");
     expect(within(videoTimelineRow as HTMLElement).queryByText("Video")).not.toBeInTheDocument();
     expect(screen.getByTestId("source-details-panel")).toContainElement(
       screen.getByRole("heading", { name: "holiday.mp4" }),
