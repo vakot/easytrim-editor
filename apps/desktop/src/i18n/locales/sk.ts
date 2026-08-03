@@ -225,6 +225,7 @@ export const sk = {
   },
   release: {
     updateAvailable: "Je dostupná nová verzia EasyTrim Editor:",
+    updateAvailableShort: "Dostupná aktualizácia",
     update: "Aktualizovať",
     dismiss: "Skryť upozornenie na aktualizáciu",
   },

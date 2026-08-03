@@ -218,6 +218,7 @@ export const en = {
   },
   release: {
     updateAvailable: "A new EasyTrim Editor release is available:",
+    updateAvailableShort: "Update available",
     update: "Update",
     dismiss: "Dismiss update notice",
   },
