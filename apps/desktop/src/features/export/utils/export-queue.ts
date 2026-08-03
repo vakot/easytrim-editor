@@ -99,7 +99,6 @@ async function renderJob(job: ExportJob) {
     updateToast(job, (toast) => ({
       ...toast,
       operationId: progress.operationId,
-      percentage: Math.round(progress.percentage),
       durationMs: elapsedTime(job),
     }));
   };
@@ -119,7 +118,6 @@ async function renderJob(job: ExportJob) {
       ...toast,
       operationId: result.operationId,
       path: result.displayPath,
-      percentage: 100,
       status: "completed",
       durationMs: elapsedTime(job),
       onCancel: undefined,

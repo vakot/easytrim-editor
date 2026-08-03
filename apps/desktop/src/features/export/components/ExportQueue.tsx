@@ -96,7 +96,12 @@ function ExportQueueItem({ item, now }: { item: ExportToast; now: number }) {
               item.status === "completed" && "text-emerald-400",
             )}
           >
-            · {statusLabel}
+            ·{" "}
+            {item.status === "rendering" || item.status === "completed" ? (
+              <span className="inline-block w-[8ch] text-right tabular-nums">{statusLabel}</span>
+            ) : (
+              statusLabel
+            )}
           </span>
         </div>
         <p className="truncate text-xs text-muted-foreground">{item.path}</p>

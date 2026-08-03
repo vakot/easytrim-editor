@@ -155,7 +155,6 @@ export function useExportController({
         operationId: null,
         filename: output.displayName,
         path: output.displayPath,
-        percentage: 0,
         status: "queued",
         startedAt: null,
         durationMs: null,

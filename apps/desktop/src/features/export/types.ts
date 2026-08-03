@@ -12,7 +12,6 @@ export interface ExportToast {
   operationId: string | null;
   filename: string;
   path: string;
-  percentage: number;
   status: ExportStatus;
   startedAt: number | null;
   durationMs: number | null;

@@ -33,7 +33,6 @@ pub struct OutputSelection {
 #[serde(rename_all = "camelCase")]
 pub struct ExportProgress {
     pub operation_id: String,
-    pub percentage: f64,
     pub elapsed_micros: i64,
     pub speed: Option<String>,
     pub phase: ExportPhase,
@@ -117,15 +116,7 @@ pub async fn render_fast(
     let output_path = state.resolve_output(&output_id)?;
     let display_name = output_display_name(&output_path)?;
     let arguments = build_fast_arguments(&media, &request, &source.path, &output_path)?;
-    run_export(
-        state,
-        output_path,
-        display_name,
-        arguments,
-        duration_micros(&request.trim),
-        on_progress,
-    )
-    .await
+    run_export(state, output_path, display_name, arguments, on_progress).await
 }
 
 #[tauri::command]
@@ -143,15 +134,7 @@ pub async fn render_optimized(
     let output_path = state.resolve_output(&output_id)?;
     let display_name = output_display_name(&output_path)?;
     let arguments = build_optimized_arguments(&media, &request, &source.path, &output_path)?;
-    run_export(
-        state,
-        output_path,
-        display_name,
-        arguments,
-        duration_micros(&request.trim),
-        on_progress,
-    )
-    .await
+    run_export(state, output_path, display_name, arguments, on_progress).await
 }
 
 #[tauri::command]
@@ -202,22 +185,16 @@ pub fn open_file_location(path: String) -> Result<(), AppError> {
         .map_err(|error| AppError::io_failed(format!("Could not open the file location: {error}")))
 }
 
-fn duration_micros(trim: &crate::media::export::TrimSelection) -> i64 {
-    trim.end_micros - trim.start_micros
-}
-
 async fn run_export(
     state: State<'_, AppState>,
     output_path: PathBuf,
     display_name: String,
     arguments: Vec<std::ffi::OsString>,
-    duration_micros: i64,
     on_progress: Channel<ExportProgress>,
 ) -> Result<ExportResult, AppError> {
     let (operation_id, cancellation) = state.begin_operation()?;
     let _ = on_progress.send(ExportProgress {
         operation_id: operation_id.clone(),
-        percentage: 0.0,
         elapsed_micros: 0,
         speed: None,
         phase: ExportPhase::Running,
@@ -241,15 +218,8 @@ async fn run_export(
                             .get("out_time_us")
                             .and_then(|value| value.parse::<i64>().ok())
                             .unwrap_or_default();
-                        let percentage = if duration_micros > 0 {
-                            (elapsed_micros as f64 / duration_micros as f64 * 100.0)
-                                .clamp(0.0, 100.0)
-                        } else {
-                            0.0
-                        };
                         let _ = on_progress.send(ExportProgress {
                             operation_id: operation_for_task.clone(),
-                            percentage,
                             elapsed_micros,
                             speed: progress_values.get("speed").cloned(),
                             phase: if value == "end" {
