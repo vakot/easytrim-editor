@@ -68,7 +68,7 @@ export const AudioTrackRow = memo(function AudioTrackRow({
           side="right"
           align="center"
           sideOffset={4}
-          className="w-[calc(var(--editor-track-controls-width)-1.5rem)]"
+          className="w-[calc(var(--editor-track-controls-width)-1.5rem)] px-3 py-1"
         >
           <AudioLevelControl
             label={t("audio.trackVolume", { title })}

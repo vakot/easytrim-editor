@@ -134,6 +134,7 @@ export const sk = {
     },
     playbackSpeed: {
       label: "Rýchlosť prehrávania",
+      tooltip: "Upraviť rýchlosť prehrávania náhľadu",
     },
     opening: "Otvára sa náhľad…",
     preparing: "Pripravuje sa kompatibilný náhľad…",

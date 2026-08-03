@@ -126,6 +126,7 @@ export const en = {
     },
     playbackSpeed: {
       label: "Playback speed",
+      tooltip: "Adjust preview playback speed",
     },
     opening: "Opening preview…",
     preparing: "Preparing compatible preview…",

@@ -247,41 +247,46 @@ function PlaybackSpeedTool({
   const enabled = speed !== DEFAULT_PLAYBACK_SPEED;
 
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          variant={enabled ? "secondary" : "ghost"}
-          size="icon-sm"
-          type="button"
-          aria-label={t("preview.playbackSpeed.label")}
-          aria-pressed={enabled}
-          className={enabled ? "text-primary" : undefined}
-        >
-          <Gauge />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent side="bottom" align="center" className="w-56 p-2.5">
-        <div className="flex w-full min-w-0 items-center gap-2 mt-2">
-          <Slider
-            className="min-w-0 flex-1"
-            min={0}
-            max={PLAYBACK_SPEED_STEPS.length - 1}
-            step={1}
-            value={[stepIndex]}
-            onValueChange={([index]) => {
-              const nextSpeed = PLAYBACK_SPEED_STEPS[index ?? stepIndex];
-              if (nextSpeed !== undefined) onChange(nextSpeed);
-            }}
-            onDoubleClick={() => onChange(DEFAULT_PLAYBACK_SPEED)}
-            aria-label={t("preview.playbackSpeed.label")}
-            markers={PLAYBACK_SPEED_MARKERS}
-          />
-          <output className="w-10 shrink-0 text-right font-mono text-xs text-muted-foreground">
-            {speed.toFixed(2)}×
-          </output>
-        </div>
-      </PopoverContent>
-    </Popover>
+    <Tooltip>
+      <Popover>
+        <TooltipTrigger asChild>
+          <PopoverTrigger asChild>
+            <Button
+              variant={enabled ? "secondary" : "ghost"}
+              size="icon-sm"
+              type="button"
+              aria-label={t("preview.playbackSpeed.label")}
+              aria-pressed={enabled}
+              className={enabled ? "text-primary" : undefined}
+            >
+              <Gauge />
+            </Button>
+          </PopoverTrigger>
+        </TooltipTrigger>
+        <TooltipContent>{t("preview.playbackSpeed.tooltip")}</TooltipContent>
+        <PopoverContent side="bottom" align="center" className="w-56 px-3 py-1">
+          <div className="mt-3 flex w-full min-w-0 items-center gap-2">
+            <Slider
+              className="min-w-0 flex-1"
+              min={0}
+              max={PLAYBACK_SPEED_STEPS.length - 1}
+              step={1}
+              value={[stepIndex]}
+              onValueChange={([index]) => {
+                const nextSpeed = PLAYBACK_SPEED_STEPS[index ?? stepIndex];
+                if (nextSpeed !== undefined) onChange(nextSpeed);
+              }}
+              onDoubleClick={() => onChange(DEFAULT_PLAYBACK_SPEED)}
+              aria-label={t("preview.playbackSpeed.label")}
+              markers={PLAYBACK_SPEED_MARKERS}
+            />
+            <output className="w-10 shrink-0 text-right font-mono text-xs text-muted-foreground">
+              {speed.toFixed(2)}×
+            </output>
+          </div>
+        </PopoverContent>
+      </Popover>
+    </Tooltip>
   );
 }
 
