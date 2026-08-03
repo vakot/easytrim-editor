@@ -86,7 +86,10 @@ for (const artifact of config.artifacts) {
   const artifactDirectory = join(bundleRoot, artifact.bundle);
   const entries = await readdir(artifactDirectory, { withFileTypes: true });
   const matches = entries.filter(
-    (entry) => entry.isFile() && isBundleArtifact(entry.name, artifact),
+    (entry) =>
+      entry.isFile() &&
+      isBundleArtifact(entry.name, artifact) &&
+      entry.name.includes(`_${tauriConfig.version}_`),
   );
 
   if (matches.length !== 1) {
