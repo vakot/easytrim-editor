@@ -98,7 +98,12 @@ function ExportQueueItem({ item, now }: { item: ExportToast; now: number }) {
           >
             ·{" "}
             {item.status === "rendering" || item.status === "completed" ? (
-              <span className="inline-block w-[8ch] text-right tabular-nums">{statusLabel}</span>
+              <span
+                className="inline-block text-right tabular-nums"
+                style={{ width: `${statusLabel.length}ch` }}
+              >
+                {statusLabel}
+              </span>
             ) : (
               statusLabel
             )}
