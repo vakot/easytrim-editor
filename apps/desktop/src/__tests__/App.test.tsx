@@ -227,6 +227,29 @@ describe("App", () => {
     expect(screen.getByTestId("source-details-panel")).toContainElement(
       screen.getByRole("heading", { name: "holiday.mp4" }),
     );
+    const sourceDetails = screen
+      .getByTestId("source-details-panel")
+      .querySelector<HTMLElement>('[data-slot="source-details"]');
+    const exportQueueScroll = screen
+      .getByTestId("source-details-panel")
+      .querySelector<HTMLElement>('[data-slot="export-queue-scroll"]');
+    expect(sourceDetails).toContainElement(screen.getByRole("heading", { name: "holiday.mp4" }));
+    expect(sourceDetails).not.toHaveTextContent("Video stream");
+    expect(sourceDetails).not.toHaveTextContent("Audio tracks");
+    expect(sourceDetails).not.toContainElement(
+      screen.getByRole("heading", { name: "Export queue" }),
+    );
+    expect(exportQueueScroll).toContainElement(
+      screen.getByRole("heading", { name: "Export queue" }),
+    );
+    const sidebarDivider =
+      (Array.from(sourceDetails?.parentElement?.children ?? []).find(
+        (child) => child.getAttribute("data-slot") === "separator",
+      ) as HTMLElement | undefined) ?? null;
+    expect(sidebarDivider).not.toBeNull();
+    expect(sidebarDivider?.parentElement).toBe(sourceDetails?.parentElement);
+    expect(sourceDetails).not.toContainElement(sidebarDivider);
+    expect(exportQueueScroll).not.toContainElement(sidebarDivider);
     expect(screen.getByTestId("preview-panel")).toContainElement(
       screen.getByLabelText("Source video preview"),
     );
@@ -239,9 +262,11 @@ describe("App", () => {
     });
     expect(sourceResizeHandle).toHaveAttribute("aria-orientation", "vertical");
     expect(sourceResizeHandle).toHaveAttribute("tabindex", "0");
+    expect(sourceResizeHandle).toHaveClass("w-2");
     expect(timelineResizeHandle).toHaveAttribute("aria-orientation", "horizontal");
     expect(timelineResizeHandle).toHaveAttribute("tabindex", "0");
-    expect(screen.getAllByRole("separator")).toHaveLength(3);
+    expect(timelineResizeHandle).toHaveClass("h-2");
+    expect(screen.getAllByRole("separator")).toHaveLength(2);
     const fixedTimeline = screen.getByTestId("timeline-fixed-content");
     const audioTracksScroll = screen.getByTestId("audio-tracks-scroll");
     expect(screen.getByTestId("timeline-panel")).toContainElement(fixedTimeline);
@@ -456,9 +481,15 @@ describe("App", () => {
 
       await user.click(screen.getByRole("button", { name: "Mute Commentary" }));
       expect(allTracks).toHaveAttribute("aria-pressed", "true");
-      expect(screen.getByText("1 selected track kept separately.")).toBeInTheDocument();
-      await user.click(screen.getByRole("checkbox", { name: "Merge selected tracks" }));
-      expect(screen.getByText("One selected track — no merge is needed.")).toBeInTheDocument();
+      expect(screen.getByText("1 selected track kept separately")).toBeInTheDocument();
+      const mergeAudio = screen.getByRole("checkbox", { name: "Merge selected tracks" });
+      await user.hover(mergeAudio);
+      expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+      expect(await screen.findByRole("tooltip")).toHaveTextContent(
+        "All selected tracks are merged into one track; this requires encoding.",
+      );
+      await user.click(mergeAudio);
+      expect(screen.getByText("One selected track — no merge is needed")).toBeInTheDocument();
       await user.click(allTracks);
       expect(allTracks).toHaveAttribute("aria-pressed", "false");
       expect(screen.getByText(/One selected track/)).toBeInTheDocument();
@@ -563,6 +594,26 @@ describe("App", () => {
     video.currentTime = 10;
     fireEvent.timeUpdate(video);
     expect(audioPlayhead.style.left).toBe(playhead.style.left);
+  });
+
+  it("stops preview playback when the preview errors", async () => {
+    mocks.chooseSource.mockResolvedValue(selection);
+    const user = userEvent.setup();
+
+    render(<App />);
+    await user.click(screen.getByRole("button", { name: "Select video" }));
+
+    const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
+    const videoPause = vi.spyOn(video, "pause").mockImplementation(() => undefined);
+
+    fireEvent.play(video);
+    fireEvent.error(video);
+
+    expect(videoPause).toHaveBeenCalled();
+    expect(await screen.findByLabelText("Source video preview")).toHaveAttribute(
+      "data-preview-kind",
+      "proxy",
+    );
   });
 
   it("stops or loops at the selected segment boundary", async () => {
