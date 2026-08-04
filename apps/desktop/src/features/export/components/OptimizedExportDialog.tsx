@@ -160,7 +160,7 @@ export function OptimizedExportDialog({
                 <Button
                   type="button"
                   variant="secondary"
-                  size="icon-sm"
+                  size="icon"
                   aria-label={isAspectRatioLocked ? "Unlock aspect ratio" : "Lock aspect ratio"}
                   aria-pressed={isAspectRatioLocked}
                   onClick={() => setIsAspectRatioLocked((locked) => !locked)}
