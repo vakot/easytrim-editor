@@ -75,6 +75,8 @@ describe("VideoPreview", () => {
     fireEvent.click(viewport!);
     const handle = screen.getByRole("button", { name: "Resize crop from top left" });
     expect(handle).toBeVisible();
+    expect(screen.getAllByRole("button", { name: /resize crop from/i })).toHaveLength(8);
+    expect(container.querySelector("[data-crop-rule-of-thirds]")).toBeInTheDocument();
 
     fireEvent.pointerDown(handle, { pointerId: 1, clientX: 0, clientY: 0 });
     fireEvent.pointerUp(viewport!, { pointerId: 1, clientX: 0, clientY: 0 });

@@ -1,15 +1,10 @@
-import { useLayoutEffect, useRef, useState, type PointerEvent, type RefObject } from "react";
+import { useLayoutEffect, useRef, useState, type RefObject } from "react";
 
 import { CursorTooltip } from "@/components/ui/cursor-tooltip";
 
-import {
-  FULL_CROP,
-  isFullCrop,
-  moveCrop,
-  resizeCrop,
-  type CropHandle,
-  type CropRect,
-} from "./utils/crop-geometry";
+import { CropSelection } from "./components/CropSelection";
+import { useCropSelection } from "./hooks/use-crop-selection";
+import { isFullCrop } from "./utils/crop-geometry";
 
 interface CropViewportProps {
   sourceUrl: string;
@@ -27,40 +22,10 @@ interface CropViewportProps {
   onError: () => void;
 }
 
-interface DragState {
-  handle: CropHandle;
-  crop: CropRect;
-  startX: number;
-  startY: number;
-}
-
 interface Bounds {
   width: number;
   height: number;
 }
-
-const HANDLES: Array<{ handle: Exclude<CropHandle, "move">; label: string; className: string }> = [
-  {
-    handle: "top-left",
-    label: "Resize crop from top left",
-    className: "-left-2 -top-2 cursor-nwse-resize",
-  },
-  {
-    handle: "top-right",
-    label: "Resize crop from top right",
-    className: "-right-2 -top-2 cursor-nesw-resize",
-  },
-  {
-    handle: "bottom-left",
-    label: "Resize crop from bottom left",
-    className: "-bottom-2 -left-2 cursor-nesw-resize",
-  },
-  {
-    handle: "bottom-right",
-    label: "Resize crop from bottom right",
-    className: "-bottom-2 -right-2 cursor-nwse-resize",
-  },
-];
 
 export function CropViewport({
   sourceUrl,
@@ -80,9 +45,7 @@ export function CropViewport({
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerBounds, setContainerBounds] = useState<Bounds>({ width: 0, height: 0 });
   const [sourceAspectRatio, setSourceAspectRatio] = useState(16 / 9);
-  const [crop, setCrop] = useState<CropRect>(FULL_CROP);
-  const [cropToolOpen, setCropToolOpen] = useState(false);
-  const [drag, setDrag] = useState<DragState | null>(null);
+  const cropSelection = useCropSelection();
 
   useLayoutEffect(() => {
     const container = containerRef.current;
@@ -97,64 +60,38 @@ export function CropViewport({
     return () => observer.disconnect();
   }, []);
 
-  const editing = cropToolOpen || drag !== null;
-  const cropIsApplied = !editing && !isFullCrop(crop);
+  const cropIsApplied = !cropSelection.isEditing && !isFullCrop(cropSelection.crop);
   const viewportAspectRatio = cropIsApplied
-    ? (sourceAspectRatio * crop.width) / crop.height
+    ? (sourceAspectRatio * cropSelection.crop.width) / cropSelection.crop.height
     : sourceAspectRatio;
   const viewport = containBounds(containerBounds, viewportAspectRatio);
   const sourceFrame = cropIsApplied
     ? {
-        width: viewport.width / crop.width,
-        height: viewport.height / crop.height,
-        left: -(crop.x * viewport.width) / crop.width,
-        top: -(crop.y * viewport.height) / crop.height,
+        width: viewport.width / cropSelection.crop.width,
+        height: viewport.height / cropSelection.crop.height,
+        left: -(cropSelection.crop.x * viewport.width) / cropSelection.crop.width,
+        top: -(cropSelection.crop.y * viewport.height) / cropSelection.crop.height,
       }
     : { width: viewport.width, height: viewport.height, left: 0, top: 0 };
-  const viewportTransition =
-    drag === null
-      ? "transition-[width,height,left,top] duration-200 ease-out motion-reduce:transition-none"
-      : "";
-
-  function startDrag(event: PointerEvent<HTMLElement>, handle: CropHandle) {
-    event.preventDefault();
-    event.stopPropagation();
-    event.currentTarget.setPointerCapture(event.pointerId);
-    setDrag({ handle, crop, startX: event.clientX, startY: event.clientY });
-  }
-
-  function moveDrag(event: PointerEvent<HTMLDivElement>) {
-    if (!drag || viewport.width <= 0 || viewport.height <= 0) return;
-    const deltaX = (event.clientX - drag.startX) / viewport.width;
-    const deltaY = (event.clientY - drag.startY) / viewport.height;
-    setCrop(
-      drag.handle === "move"
-        ? moveCrop(drag.crop, deltaX, deltaY)
-        : resizeCrop(drag.crop, drag.handle, deltaX, deltaY),
-    );
-  }
-
-  function finishDrag() {
-    if (!drag) return;
-    setDrag(null);
-    setCropToolOpen(false);
-  }
+  const viewportTransition = !cropSelection.isEditing
+    ? "transition-[width,height,left,top] duration-200 ease-out motion-reduce:transition-none"
+    : "";
 
   return (
     <CursorTooltip
       ref={containerRef}
       className="group relative size-full overflow-hidden bg-preview-surface"
       tooltipContent="Click preview to crop"
-      disabled={cropToolOpen}
+      disabled={cropSelection.isOpen}
       onClick={() => {
-        if (!cropToolOpen) setCropToolOpen(true);
+        if (!cropSelection.isOpen) cropSelection.open();
       }}
       onDoubleClick={onTogglePlayback}
-      onPointerMove={moveDrag}
-      onPointerUp={finishDrag}
-      onPointerCancel={finishDrag}
+      onPointerMove={(event) => cropSelection.moveDrag(event, viewport)}
+      onPointerUp={cropSelection.finishDrag}
+      onPointerCancel={cropSelection.finishDrag}
     >
-      {!cropToolOpen ? (
+      {!cropSelection.isOpen ? (
         <div
           aria-hidden="true"
           data-crop-preview-affordance
@@ -194,31 +131,12 @@ export function CropViewport({
           onError={onError}
         />
       </div>
-      {editing ? (
-        <div
-          className="absolute border-2 border-primary bg-primary/10"
-          style={{
-            width: viewport.width * crop.width,
-            height: viewport.height * crop.height,
-            left: `calc(50% - ${viewport.width / 2}px + ${viewport.width * crop.x}px)`,
-            top: `calc(50% - ${viewport.height / 2}px + ${viewport.height * crop.y}px)`,
-          }}
-          onClick={(event) => event.stopPropagation()}
-          onPointerDown={(event) => startDrag(event, "move")}
-        >
-          {HANDLES.map(({ handle, label, className }) => (
-            <button
-              key={handle}
-              type="button"
-              aria-label={label}
-              className={`absolute size-4 rounded-full border-2 border-background bg-primary shadow-sm ${className}`}
-              onPointerDown={(event) => startDrag(event, handle)}
-            />
-          ))}
-          <span className="pointer-events-none absolute -top-8 left-0 rounded bg-background/90 px-2 py-1 text-xs text-foreground shadow">
-            Drag to reposition. Drag corners to crop.
-          </span>
-        </div>
+      {cropSelection.isEditing ? (
+        <CropSelection
+          crop={cropSelection.crop}
+          viewport={viewport}
+          onPointerDown={cropSelection.startDrag}
+        />
       ) : null}
     </CursorTooltip>
   );

@@ -5,7 +5,16 @@ export interface CropRect {
   height: number;
 }
 
-export type CropHandle = "move" | "top-left" | "top-right" | "bottom-left" | "bottom-right";
+export type CropHandle =
+  | "move"
+  | "top-left"
+  | "top"
+  | "top-right"
+  | "right"
+  | "bottom-right"
+  | "bottom"
+  | "bottom-left"
+  | "left";
 
 export const FULL_CROP: CropRect = { x: 0, y: 0, width: 1, height: 1 };
 export const MIN_CROP_SIZE = 0.1;
