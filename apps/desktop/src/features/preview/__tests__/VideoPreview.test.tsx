@@ -23,7 +23,7 @@ function readyPreview(url: string): PreviewState {
 }
 
 describe("VideoPreview", () => {
-  it("shows crop resize handles on hover and returns to the contained viewport after a drag", () => {
+  it("opens crop resize handles on click and returns to the contained viewport after a drag", () => {
     const videoRef = createRef<HTMLVideoElement>();
     const { container } = render(
       <VideoPreview
@@ -38,7 +38,10 @@ describe("VideoPreview", () => {
 
     const viewport = container.querySelector("[data-preview-kind]")?.parentElement?.parentElement;
     expect(viewport).not.toBeNull();
-    fireEvent.pointerEnter(viewport!);
+    expect(
+      screen.queryByRole("button", { name: "Resize crop from top left" }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(viewport!);
     const handle = screen.getByRole("button", { name: "Resize crop from top left" });
     expect(handle).toBeVisible();
 

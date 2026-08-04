@@ -1,5 +1,7 @@
 import { useLayoutEffect, useRef, useState, type PointerEvent, type RefObject } from "react";
 
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+
 import {
   FULL_CROP,
   isFullCrop,
@@ -79,7 +81,8 @@ export function CropViewport({
   const [containerBounds, setContainerBounds] = useState<Bounds>({ width: 0, height: 0 });
   const [sourceAspectRatio, setSourceAspectRatio] = useState(16 / 9);
   const [crop, setCrop] = useState<CropRect>(FULL_CROP);
-  const [hovered, setHovered] = useState(false);
+  const [cropToolOpen, setCropToolOpen] = useState(false);
+  const [tooltipOpen, setTooltipOpen] = useState(false);
   const [drag, setDrag] = useState<DragState | null>(null);
 
   useLayoutEffect(() => {
@@ -95,7 +98,7 @@ export function CropViewport({
     return () => observer.disconnect();
   }, []);
 
-  const editing = hovered || drag !== null;
+  const editing = cropToolOpen || drag !== null;
   const cropIsApplied = !editing && !isFullCrop(crop);
   const viewportAspectRatio = cropIsApplied
     ? (sourceAspectRatio * crop.width) / crop.height
@@ -134,82 +137,97 @@ export function CropViewport({
 
   function finishDrag() {
     setDrag(null);
-    setHovered(false);
+    setCropToolOpen(false);
   }
 
   return (
-    <div
-      ref={containerRef}
-      className="relative size-full overflow-hidden bg-preview-surface"
-      onPointerEnter={() => setHovered(true)}
-      onPointerLeave={() => {
-        if (!drag) setHovered(false);
+    <Tooltip
+      open={cropToolOpen ? false : tooltipOpen}
+      onOpenChange={(open) => {
+        if (!cropToolOpen) setTooltipOpen(open);
       }}
-      onPointerMove={moveDrag}
-      onPointerUp={finishDrag}
-      onPointerCancel={finishDrag}
     >
-      <div
-        className={`absolute overflow-hidden ${viewportTransition}`}
-        style={{
-          width: viewport.width,
-          height: viewport.height,
-          left: `calc(50% - ${viewport.width / 2}px)`,
-          top: `calc(50% - ${viewport.height / 2}px)`,
-        }}
-      >
-        <video
-          ref={videoRef}
-          key={sourceUrl}
-          data-playback-rate={playbackRate}
-          className={`absolute max-w-none cursor-pointer ${viewportTransition}`}
-          style={sourceFrame}
-          src={sourceUrl}
-          preload="auto"
-          muted={muted}
-          playsInline
-          aria-label={sourceLabel}
-          data-preview-kind={previewKind}
-          onClick={onTogglePlayback}
-          onLoadedMetadata={(event) => {
-            const { videoWidth, videoHeight } = event.currentTarget;
-            if (videoWidth > 0 && videoHeight > 0) setSourceAspectRatio(videoWidth / videoHeight);
-            onLoadedMetadata();
-          }}
-          onPlay={onPlay}
-          onPause={onPause}
-          onTimeUpdate={(event) => onTimeUpdate(event.currentTarget.currentTime)}
-          onEnded={onEnded}
-          onError={onError}
-        />
-      </div>
-
-      {editing ? (
+      <TooltipTrigger asChild>
         <div
-          className="absolute border-2 border-primary bg-primary/10"
-          style={{
-            width: viewport.width * crop.width,
-            height: viewport.height * crop.height,
-            left: `calc(50% - ${viewport.width / 2}px + ${viewport.width * crop.x}px)`,
-            top: `calc(50% - ${viewport.height / 2}px + ${viewport.height * crop.y}px)`,
+          ref={containerRef}
+          className="relative size-full overflow-hidden bg-preview-surface"
+          onClick={() => {
+            if (cropToolOpen) return;
+            setTooltipOpen(false);
+            setCropToolOpen(true);
           }}
-          onPointerDown={(event) => startDrag(event, "move")}
+          onDoubleClick={onTogglePlayback}
+          onPointerMove={moveDrag}
+          onPointerUp={finishDrag}
+          onPointerCancel={finishDrag}
         >
-          {HANDLES.map(({ handle, label, className }) => (
-            <button
-              key={handle}
-              type="button"
-              aria-label={label}
-              className={`absolute size-4 rounded-full border-2 border-background bg-primary shadow-sm ${className}`}
-              onPointerDown={(event) => startDrag(event, handle)}
+          <div
+            className={`absolute overflow-hidden ${viewportTransition}`}
+            style={{
+              width: viewport.width,
+              height: viewport.height,
+              left: `calc(50% - ${viewport.width / 2}px)`,
+              top: `calc(50% - ${viewport.height / 2}px)`,
+            }}
+          >
+            <video
+              ref={videoRef}
+              key={sourceUrl}
+              data-playback-rate={playbackRate}
+              className={`absolute max-w-none cursor-pointer ${viewportTransition}`}
+              style={sourceFrame}
+              src={sourceUrl}
+              preload="auto"
+              muted={muted}
+              playsInline
+              aria-label={sourceLabel}
+              data-preview-kind={previewKind}
+              onLoadedMetadata={(event) => {
+                const { videoWidth, videoHeight } = event.currentTarget;
+                if (videoWidth > 0 && videoHeight > 0)
+                  setSourceAspectRatio(videoWidth / videoHeight);
+                onLoadedMetadata();
+              }}
+              onPlay={onPlay}
+              onPause={onPause}
+              onTimeUpdate={(event) => onTimeUpdate(event.currentTarget.currentTime)}
+              onEnded={onEnded}
+              onError={onError}
             />
-          ))}
-          <span className="pointer-events-none absolute -top-8 left-0 rounded bg-background/90 px-2 py-1 text-xs text-foreground shadow">
-            Drag to reposition. Drag corners to crop.
-          </span>
+          </div>
+
+          {editing ? (
+            <div
+              className="absolute border-2 border-primary bg-primary/10"
+              style={{
+                width: viewport.width * crop.width,
+                height: viewport.height * crop.height,
+                left: `calc(50% - ${viewport.width / 2}px + ${viewport.width * crop.x}px)`,
+                top: `calc(50% - ${viewport.height / 2}px + ${viewport.height * crop.y}px)`,
+              }}
+              onClick={(event) => event.stopPropagation()}
+              onPointerDown={(event) => startDrag(event, "move")}
+            >
+              {HANDLES.map(({ handle, label, className }) => (
+                <button
+                  key={handle}
+                  type="button"
+                  aria-label={label}
+                  className={`absolute size-4 rounded-full border-2 border-background bg-primary shadow-sm ${className}`}
+                  onPointerDown={(event) => startDrag(event, handle)}
+                />
+              ))}
+              <span className="pointer-events-none absolute -top-8 left-0 rounded bg-background/90 px-2 py-1 text-xs text-foreground shadow">
+                Drag to reposition. Drag corners to crop.
+              </span>
+            </div>
+          ) : null}
         </div>
-      ) : null}
-    </div>
+      </TooltipTrigger>
+      <TooltipContent side="top" sideOffset={8}>
+        Click preview to crop
+      </TooltipContent>
+    </Tooltip>
   );
 }
 
