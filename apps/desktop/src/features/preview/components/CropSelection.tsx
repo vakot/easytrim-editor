@@ -67,10 +67,24 @@ export function CropSelection({ crop, viewport, onPointerDown }: CropSelectionPr
       <div
         aria-hidden="true"
         data-crop-rule-of-thirds
-        className="pointer-events-none absolute inset-0 grid grid-cols-3 grid-rows-3"
+        className="pointer-events-none absolute inset-0"
       >
-        <span className="col-start-2 row-span-3 border-x border-primary/60" />
-        <span className="col-span-3 row-start-2 border-y border-primary/60" />
+        <span
+          data-crop-guide="vertical"
+          className="absolute inset-y-0 left-1/3 border-l-2 border-primary/60"
+        />
+        <span
+          data-crop-guide="vertical"
+          className="absolute inset-y-0 left-2/3 border-l-2 border-primary/60"
+        />
+        <span
+          data-crop-guide="horizontal"
+          className="absolute inset-x-0 top-1/3 border-t-2 border-primary/60"
+        />
+        <span
+          data-crop-guide="horizontal"
+          className="absolute inset-x-0 top-2/3 border-t-2 border-primary/60"
+        />
       </div>
       {HANDLES.map(({ handle, label, className }) => (
         <button

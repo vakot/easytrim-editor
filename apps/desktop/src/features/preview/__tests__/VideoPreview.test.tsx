@@ -77,6 +77,8 @@ describe("VideoPreview", () => {
     expect(handle).toBeVisible();
     expect(screen.getAllByRole("button", { name: /resize crop from/i })).toHaveLength(8);
     expect(container.querySelector("[data-crop-rule-of-thirds]")).toBeInTheDocument();
+    expect(container.querySelectorAll('[data-crop-guide="vertical"]')).toHaveLength(2);
+    expect(container.querySelectorAll('[data-crop-guide="horizontal"]')).toHaveLength(2);
 
     fireEvent.pointerDown(handle, { pointerId: 1, clientX: 0, clientY: 0 });
     fireEvent.pointerUp(viewport!, { pointerId: 1, clientX: 0, clientY: 0 });
