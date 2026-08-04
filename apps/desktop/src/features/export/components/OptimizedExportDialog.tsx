@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -25,6 +26,8 @@ import { CommandPreview } from "./CommandPreview";
 import { FRAME_RATE_OPTIONS, rateFromValue, resolutionOptions } from "../utils/export-options";
 import { useTranslation } from "react-i18next";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Link2, Unlink2 } from "lucide-react";
+import { useState } from "react";
 
 interface OptimizedExportDialogProps {
   open: boolean;
@@ -52,7 +55,9 @@ export function OptimizedExportDialog({
   onExport,
 }: OptimizedExportDialogProps) {
   const { t } = useTranslation();
+  const [isAspectRatioLocked, setIsAspectRatioLocked] = useState(true);
   const resolutionValue = `${settings.resolution.width}x${settings.resolution.height}`;
+  const sourceAspectRatio = source.video.width / source.video.height;
   const frameRateValue = settings.frameRate
     ? `${settings.frameRate.numerator}/${settings.frameRate.denominator}`
     : "source";
@@ -96,6 +101,58 @@ export function OptimizedExportDialog({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="grid gap-1.5">
+            <Label htmlFor="export-width">{t("export.dialog.resolution")}</Label>
+            <div className="flex items-center gap-1.5">
+              <Input
+                id="export-width"
+                inputMode="numeric"
+                value={settings.resolution.width}
+                onChange={(event) => {
+                  const width = Number(event.target.value);
+                  if (!Number.isInteger(width) || width <= 0) return;
+                  onSettingsChange({
+                    ...settings,
+                    resolution: {
+                      width,
+                      height: isAspectRatioLocked
+                        ? Math.max(1, Math.round(width / sourceAspectRatio))
+                        : settings.resolution.height,
+                    },
+                  });
+                }}
+              />
+              <span aria-hidden="true">×</span>
+              <Input
+                aria-label="Height"
+                inputMode="numeric"
+                value={settings.resolution.height}
+                onChange={(event) => {
+                  const height = Number(event.target.value);
+                  if (!Number.isInteger(height) || height <= 0) return;
+                  onSettingsChange({
+                    ...settings,
+                    resolution: {
+                      width: isAspectRatioLocked
+                        ? Math.max(1, Math.round(height * sourceAspectRatio))
+                        : settings.resolution.width,
+                      height,
+                    },
+                  });
+                }}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                aria-label={isAspectRatioLocked ? "Unlock aspect ratio" : "Lock aspect ratio"}
+                aria-pressed={isAspectRatioLocked}
+                onClick={() => setIsAspectRatioLocked((locked) => !locked)}
+              >
+                {isAspectRatioLocked ? <Link2 /> : <Unlink2 />}
+              </Button>
+            </div>
           </div>
           <div className="grid gap-1.5">
             <Label htmlFor="export-frame-rate">{t("export.dialog.frameRate")}</Label>
