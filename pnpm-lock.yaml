@@ -68,9 +68,6 @@ importers:
       react-i18next:
         specifier: ^17.0.11
         version: 17.0.11(i18next@26.3.6(typescript@7.0.2))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@7.0.2)
-      react-image-crop:
-        specifier: 11.1.2
-        version: 11.1.2(react@19.2.8)
       react-resizable-panels:
         specifier: 4.12.2
         version: 4.12.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -3057,11 +3054,6 @@ packages:
         optional: true
       typescript:
         optional: true
-
-  react-image-crop@11.1.2:
-    resolution: {integrity: sha512-+0Pc2fxpwKL4u4oLmdKBw8XSwUceFbXbKEHvFOlsl/MGB1OVNic4uBlAPmEHGXYgoJIq+b63xHbc/aJMG0AVkA==}
-    peerDependencies:
-      react: '>=16.13.1'
 
   react-is@17.0.2:
     resolution: {integrity: sha512-w2GsyukL62IJnlaff/nRegPQR94C/XXamvMWmSHRJ4y7Ts/4ocGRmTHvOs8PSE6pB3dWOrD/nueuU5sduBsQ4w==}
@@ -6440,10 +6432,6 @@ snapshots:
     optionalDependencies:
       react-dom: 19.2.8(react@19.2.8)
       typescript: 7.0.2
-
-  react-image-crop@11.1.2(react@19.2.8):
-    dependencies:
-      react: 19.2.8
 
   react-is@17.0.2: {}
 
