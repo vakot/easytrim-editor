@@ -56,7 +56,7 @@ export function CropSelection({ crop, viewport, selectionRef, onPointerDown }: C
   return (
     <div
       ref={selectionRef}
-      className="absolute origin-center animate-in fade-in-0 zoom-in-95 border-2 border-primary bg-primary/10 duration-200 ease-out motion-reduce:animate-none"
+      className="absolute border-2 border-primary bg-primary/10"
       style={{
         width: viewport.width * crop.width,
         height: viewport.height * crop.height,

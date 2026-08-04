@@ -87,6 +87,7 @@ export function useCropSelection(previewRef: RefObject<HTMLDivElement | null>) {
   return {
     crop,
     isEditing: isOpen || drag !== null,
+    isDragging: drag !== null,
     isOpen,
     selectionRef,
     open,

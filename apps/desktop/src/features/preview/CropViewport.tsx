@@ -86,7 +86,7 @@ export function CropViewport({
         top: -(cropSelection.crop.y * viewport.height) / cropSelection.crop.height,
       }
     : { width: viewport.width, height: viewport.height, left: 0, top: 0 };
-  const viewportTransition = !cropSelection.isEditing
+  const viewportTransition = !cropSelection.isDragging
     ? "transition-[width,height,left,top] duration-200 ease-out motion-reduce:transition-none"
     : "";
 
