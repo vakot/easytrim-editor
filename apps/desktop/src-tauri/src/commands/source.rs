@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use tauri::{AppHandle, State};
+use tauri::{AppHandle, State, WebviewWindow};
 use tauri_plugin_dialog::DialogExt;
 
 use crate::{
@@ -34,8 +34,12 @@ pub async fn choose_source(
 
 #[tauri::command]
 pub fn import_dropped_source(
+    window: WebviewWindow,
     state: State<'_, AppState>,
     path: PathBuf,
 ) -> Result<SourceSelection, AppError> {
+    // Windows can keep Explorer in front after it provides a drop. Regain focus
+    // for the receiving editor, without making a valid import depend on this UX step.
+    let _ = window.set_focus();
     import_source(&state, path)
 }
