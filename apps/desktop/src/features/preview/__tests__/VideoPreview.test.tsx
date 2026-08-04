@@ -69,10 +69,12 @@ describe("VideoPreview", () => {
 
     const viewport = container.querySelector("[data-preview-kind]")?.parentElement?.parentElement;
     expect(viewport).not.toBeNull();
+    expect(viewport).toHaveClass("overflow-hidden");
     expect(
       screen.queryByRole("button", { name: "Resize crop from top left" }),
     ).not.toBeInTheDocument();
     fireEvent.click(viewport!);
+    expect(viewport).toHaveClass("overflow-visible");
     const handle = screen.getByRole("button", { name: "Resize crop from top left" });
     expect(handle).toBeVisible();
     expect(screen.getAllByRole("button", { name: /resize crop from/i })).toHaveLength(8);

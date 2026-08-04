@@ -54,7 +54,7 @@ const HANDLES: Array<{ handle: Exclude<CropHandle, "move">; label: string; class
 export function CropSelection({ crop, viewport, onPointerDown }: CropSelectionProps) {
   return (
     <div
-      className="absolute border-2 border-primary bg-primary/10"
+      className="absolute z-20 border-2 border-primary bg-primary/10"
       style={{
         width: viewport.width * crop.width,
         height: viewport.height * crop.height,

@@ -80,7 +80,9 @@ export function CropViewport({
   return (
     <CursorTooltip
       ref={containerRef}
-      className="group relative size-full overflow-hidden bg-preview-surface"
+      className={`group relative size-full bg-preview-surface ${
+        cropSelection.isEditing ? "overflow-visible" : "overflow-hidden"
+      }`}
       tooltipContent="Click preview to crop"
       disabled={cropSelection.isOpen}
       onClick={() => {
