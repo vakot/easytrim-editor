@@ -1,5 +1,5 @@
 import { LoaderCircle } from "lucide-react";
-import { useEffect, useRef, type RefObject } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 
 import type { PreviewState } from "@/app/session-state";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -38,6 +38,7 @@ export function VideoPreview({
 }: VideoPreviewProps) {
   const { t } = useTranslation();
   const reportedUrl = useRef<string | null>(null);
+  const [cropToolOpen, setCropToolOpen] = useState(false);
   const readyUrl = preview.status === "ready" ? preview.value.url : null;
 
   useEffect(() => {
@@ -85,7 +86,11 @@ export function VideoPreview({
 
   const { value } = preview;
   return (
-    <div className="relative size-full min-h-0 overflow-hidden bg-preview-surface">
+    <div
+      className={`relative size-full min-h-0 bg-preview-surface ${
+        cropToolOpen ? "overflow-visible" : "overflow-hidden"
+      }`}
+    >
       <CropViewport
         key={value.url}
         sourceUrl={value.url}
@@ -105,6 +110,7 @@ export function VideoPreview({
           reportedUrl.current = value.url;
           onPlaybackError(sourceId, value.kind);
         }}
+        onCropToolOpenChange={setCropToolOpen}
       />
       {value.kind === "proxy" ? (
         <Badge variant="secondary" className="absolute top-3 right-3">

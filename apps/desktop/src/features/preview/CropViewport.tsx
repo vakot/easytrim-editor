@@ -1,4 +1,11 @@
-import { useLayoutEffect, useRef, useState, type FocusEvent, type RefObject } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type FocusEvent,
+  type RefObject,
+} from "react";
 
 import { CursorTooltip } from "@/components/ui/cursor-tooltip";
 
@@ -20,6 +27,7 @@ interface CropViewportProps {
   onTimeUpdate: (seconds: number) => void;
   onEnded: () => void;
   onError: () => void;
+  onCropToolOpenChange: (isOpen: boolean) => void;
 }
 
 interface Bounds {
@@ -41,11 +49,16 @@ export function CropViewport({
   onTimeUpdate,
   onEnded,
   onError,
+  onCropToolOpenChange,
 }: CropViewportProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerBounds, setContainerBounds] = useState<Bounds>({ width: 0, height: 0 });
   const [sourceAspectRatio, setSourceAspectRatio] = useState(16 / 9);
   const cropSelection = useCropSelection();
+
+  useEffect(() => {
+    onCropToolOpenChange(cropSelection.isOpen);
+  }, [cropSelection.isOpen, onCropToolOpenChange]);
 
   useLayoutEffect(() => {
     const container = containerRef.current;

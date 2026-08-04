@@ -75,6 +75,7 @@ describe("VideoPreview", () => {
     ).not.toBeInTheDocument();
     fireEvent.click(viewport!);
     expect(viewport).toHaveClass("overflow-visible");
+    expect(container.firstElementChild).toHaveClass("overflow-visible");
     const handle = screen.getByRole("button", { name: "Resize crop from top left" });
     expect(handle).toBeVisible();
     expect(screen.getAllByRole("button", { name: /resize crop from/i })).toHaveLength(8);

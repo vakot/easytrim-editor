@@ -97,9 +97,6 @@ export function CropSelection({ crop, viewport, selectionRef, onPointerDown }: C
           onPointerDown={(event) => onPointerDown(event, handle)}
         />
       ))}
-      <span className="pointer-events-none absolute -top-8 left-0 rounded bg-background/90 px-2 py-1 text-xs text-foreground shadow">
-        Drag to reposition. Drag edges or corners to crop.
-      </span>
     </div>
   );
 }
