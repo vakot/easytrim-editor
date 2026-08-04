@@ -1,11 +1,6 @@
-import {
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type PointerEvent,
-  type RefObject,
-} from "react";
+import { useLayoutEffect, useRef, useState, type PointerEvent, type RefObject } from "react";
+
+import { CursorTooltip } from "@/components/ui/cursor-tooltip";
 
 import {
   FULL_CROP,
@@ -67,8 +62,6 @@ const HANDLES: Array<{ handle: Exclude<CropHandle, "move">; label: string; class
   },
 ];
 
-const CROP_HINT_DELAY_MS = 500;
-
 export function CropViewport({
   sourceUrl,
   previewKind,
@@ -85,13 +78,10 @@ export function CropViewport({
   onError,
 }: CropViewportProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const tooltipTimerRef = useRef<number | null>(null);
   const [containerBounds, setContainerBounds] = useState<Bounds>({ width: 0, height: 0 });
   const [sourceAspectRatio, setSourceAspectRatio] = useState(16 / 9);
   const [crop, setCrop] = useState<CropRect>(FULL_CROP);
   const [cropToolOpen, setCropToolOpen] = useState(false);
-  const [cropHintVisible, setCropHintVisible] = useState(false);
-  const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
   const [drag, setDrag] = useState<DragState | null>(null);
 
   useLayoutEffect(() => {
@@ -106,13 +96,6 @@ export function CropViewport({
     observer.observe(container);
     return () => observer.disconnect();
   }, []);
-
-  useEffect(
-    () => () => {
-      if (tooltipTimerRef.current !== null) window.clearTimeout(tooltipTimerRef.current);
-    },
-    [],
-  );
 
   const editing = cropToolOpen || drag !== null;
   const cropIsApplied = !editing && !isFullCrop(crop);
@@ -156,47 +139,21 @@ export function CropViewport({
     setCropToolOpen(false);
   }
 
-  function clearCropHint() {
-    if (tooltipTimerRef.current !== null) window.clearTimeout(tooltipTimerRef.current);
-    tooltipTimerRef.current = null;
-    setCropHintVisible(false);
-    setTooltipPosition(null);
-  }
-
-  function updateCropHintPosition(event: PointerEvent<HTMLDivElement>) {
-    const bounds = event.currentTarget.getBoundingClientRect();
-    setTooltipPosition({ x: event.clientX - bounds.left + 12, y: event.clientY - bounds.top + 12 });
-  }
-
-  function showCropHint(event: PointerEvent<HTMLDivElement>) {
-    if (cropToolOpen) return;
-    updateCropHintPosition(event);
-    setCropHintVisible(false);
-    if (tooltipTimerRef.current !== null) window.clearTimeout(tooltipTimerRef.current);
-    tooltipTimerRef.current = window.setTimeout(() => {
-      tooltipTimerRef.current = null;
-      setTooltipPosition((position) => position ?? { x: 12, y: 12 });
-      setCropHintVisible(true);
-    }, CROP_HINT_DELAY_MS);
-  }
-
   function handlePointerMove(event: PointerEvent<HTMLDivElement>) {
     moveDrag(event);
-    if (!cropToolOpen) updateCropHintPosition(event);
   }
 
   return (
-    <div
+    <CursorTooltip
       ref={containerRef}
       className="relative size-full overflow-hidden bg-preview-surface"
+      tooltipContent="Click preview to crop"
+      disabled={cropToolOpen}
       onClick={() => {
         if (cropToolOpen) return;
-        clearCropHint();
         setCropToolOpen(true);
       }}
       onDoubleClick={onTogglePlayback}
-      onPointerEnter={showCropHint}
-      onPointerLeave={clearCropHint}
       onPointerMove={handlePointerMove}
       onPointerUp={finishDrag}
       onPointerCancel={finishDrag}
@@ -261,16 +218,7 @@ export function CropViewport({
           </span>
         </div>
       ) : null}
-      {cropHintVisible && tooltipPosition && !cropToolOpen ? (
-        <span
-          role="tooltip"
-          className="pointer-events-none absolute z-10 rounded bg-foreground px-2 py-1 text-xs text-background shadow"
-          style={{ left: tooltipPosition.x, top: tooltipPosition.y }}
-        >
-          Click preview to crop
-        </span>
-      ) : null}
-    </div>
+    </CursorTooltip>
   );
 }
 
