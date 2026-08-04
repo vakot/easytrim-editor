@@ -488,6 +488,16 @@ export function EditorStage({
     }
   }
 
+  function handlePreviewPlaybackError(sourceId: string, previewKind: "source" | "proxy") {
+    playbackStartSequenceRef.current += 1;
+    isPlayingRef.current = false;
+    videoRef.current?.pause();
+    pauseAudioPlayback();
+    setIsPlaying(false);
+    stopPlayheadAnimation();
+    onPreviewPlaybackError(sourceId, previewKind);
+  }
+
   function syncAudioPlayback(seconds: number, force = false) {
     for (const audio of audioElementsRef.current.values()) {
       synchronizeAudioPosition(audio, seconds, force);
@@ -636,7 +646,7 @@ export function EditorStage({
             playbackRate={playbackSpeed.speed}
             muted={hasIndependentAudio}
             videoRef={videoRef}
-            onPlaybackError={onPreviewPlaybackError}
+            onPlaybackError={handlePreviewPlaybackError}
             onLoadedMetadata={() => commitSeek(displayedPlayheadMicros)}
             onTogglePlayback={handleTogglePlayback}
             onPlay={() => {
