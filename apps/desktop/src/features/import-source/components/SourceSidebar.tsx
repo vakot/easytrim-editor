@@ -49,7 +49,7 @@ export function SourceSidebar({ session, queue }: SourceSidebarProps) {
           <MediaDetails media={session.source.media} />
         ) : null}
       </div>
-      <Separator />
+      <Separator className="mx-4" />
       <ScrollArea className="min-h-0" data-slot="export-queue-scroll">
         <div className="p-5">
           <ExportQueue queue={queue} />

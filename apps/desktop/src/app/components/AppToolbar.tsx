@@ -34,54 +34,57 @@ export function AppToolbar({
   const { t } = useTranslation();
 
   return (
-    <div
-      className="grid h-[4.25rem] grid-cols-[1fr_auto_1fr] items-center border-b border-border bg-background px-5"
-      role="toolbar"
-      aria-label={t("app.toolbar")}
-    >
-      <button
-        className="w-fit whitespace-nowrap font-heading text-4xl font-black tracking-[0.08em] text-primary outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring"
-        type="button"
-        aria-label={t("app.returnToWelcome")}
-        onClick={onReturnToWelcome}
+    <div className="bg-background">
+      <div
+        className="grid h-[4.25rem] grid-cols-[1fr_auto_1fr] items-center px-5"
+        role="toolbar"
+        aria-label={t("app.toolbar")}
       >
-        {t("common.shortBrand")}
-      </button>
-      <CapabilityStatus capabilities={session.capabilities} />
-      <div className="flex items-center justify-end gap-3 pl-4">
-        <ThemeSelector />
-        <LanguageSelector className="w-36" />
-        <Separator orientation="vertical" className="h-auto self-stretch" />
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="outline"
-              onClick={onChooseSource}
-              disabled={isChoosingSource}
-              aria-keyshortcuts="Control+O"
-            >
-              {isChoosingSource ? t("import.opening") : t("import.openVideo")}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>{t("import.openTooltip")}</TooltipContent>
-        </Tooltip>
-        {session.status === "ready" && session.source?.media && session.source.trim ? (
-          <ExportPanel
-            key={`export-${session.source.selection.sourceId}`}
-            source={session.source.media}
-            sourceName={session.source.selection.displayName}
-            trim={session.source.trim}
-            audioTracks={session.source.audioTracks}
-            masterEnabled={session.source.masterEnabled}
-            masterVolumePercent={session.source.masterVolumePercent}
-            mergeAudio={session.source.mergeAudio}
-            setQueue={setExportQueue}
-            presetState={exportPresets}
-            onPresetAction={dispatchExportPreset}
-            onNativeDialogStateChange={onNativeDialogStateChange}
-          />
-        ) : null}
+        <button
+          className="w-fit whitespace-nowrap font-heading text-4xl font-black tracking-[0.08em] text-primary outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring"
+          type="button"
+          aria-label={t("app.returnToWelcome")}
+          onClick={onReturnToWelcome}
+        >
+          {t("common.shortBrand")}
+        </button>
+        <CapabilityStatus capabilities={session.capabilities} />
+        <div className="flex items-center justify-end gap-3 pl-4">
+          <ThemeSelector />
+          <LanguageSelector className="w-36" />
+          <Separator orientation="vertical" className="h-auto self-stretch" />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                onClick={onChooseSource}
+                disabled={isChoosingSource}
+                aria-keyshortcuts="Control+O"
+              >
+                {isChoosingSource ? t("import.opening") : t("import.openVideo")}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{t("import.openTooltip")}</TooltipContent>
+          </Tooltip>
+          {session.status === "ready" && session.source?.media && session.source.trim ? (
+            <ExportPanel
+              key={`export-${session.source.selection.sourceId}`}
+              source={session.source.media}
+              sourceName={session.source.selection.displayName}
+              trim={session.source.trim}
+              audioTracks={session.source.audioTracks}
+              masterEnabled={session.source.masterEnabled}
+              masterVolumePercent={session.source.masterVolumePercent}
+              mergeAudio={session.source.mergeAudio}
+              setQueue={setExportQueue}
+              presetState={exportPresets}
+              onPresetAction={dispatchExportPreset}
+              onNativeDialogStateChange={onNativeDialogStateChange}
+            />
+          ) : null}
+        </div>
       </div>
+      <Separator />
     </div>
   );
 }
