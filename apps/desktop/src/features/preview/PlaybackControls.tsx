@@ -1,10 +1,11 @@
 import {
-  BetweenHorizontalStart,
+  BetweenVerticalStart,
   Gauge,
   Link2,
   Pause,
   Play,
   Repeat2,
+  RotateCcw,
   SkipBack,
   SkipForward,
   SquareArrowLeft,
@@ -14,6 +15,7 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatPlaybackTime } from "@/domain/playback";
@@ -182,6 +184,7 @@ interface TimelineToolsProps {
   onToggleLoopPlayback: () => void;
   onToggleSegmentPlayback: () => void;
   onPlaybackSpeedChange: (speed: PlaybackSpeed) => void;
+  onReset: () => void;
 }
 
 export function TimelineTools({
@@ -193,44 +196,63 @@ export function TimelineTools({
   onToggleLoopPlayback,
   onToggleSegmentPlayback,
   onPlaybackSpeedChange,
+  onReset,
 }: TimelineToolsProps) {
   const { t } = useTranslation();
 
   return (
     <>
-      <TimelineToolButton
-        enabled={safeTrimFollowingEnabled}
-        label={t("preview.safeTrim.label")}
-        title={t(
-          safeTrimFollowingEnabled ? "preview.safeTrim.enabled" : "preview.safeTrim.disabled",
-        )}
-        onClick={onToggleSafeTrimFollowing}
-      >
-        <Link2 />
-      </TimelineToolButton>
-      <TimelineToolButton
-        enabled={loopPlaybackEnabled}
-        label={t("preview.loopPlayback.label")}
-        title={t(
-          loopPlaybackEnabled ? "preview.loopPlayback.enabled" : "preview.loopPlayback.disabled",
-        )}
-        onClick={onToggleLoopPlayback}
-      >
-        <Repeat2 />
-      </TimelineToolButton>
-      <TimelineToolButton
-        enabled={segmentPlaybackEnabled}
-        label={t("preview.segmentPlayback.label")}
-        title={t(
-          segmentPlaybackEnabled
-            ? "preview.segmentPlayback.enabled"
-            : "preview.segmentPlayback.disabled",
-        )}
-        onClick={onToggleSegmentPlayback}
-      >
-        <BetweenHorizontalStart />
-      </TimelineToolButton>
-      <PlaybackSpeedTool speed={playbackSpeed} onChange={onPlaybackSpeedChange} />
+      <div className="grid grid-flow-col auto-cols-[1.75rem] grid-rows-[repeat(2,1.75rem)] gap-1">
+        <TimelineToolButton
+          enabled={safeTrimFollowingEnabled}
+          label={t("preview.safeTrim.label")}
+          title={t(
+            safeTrimFollowingEnabled ? "preview.safeTrim.enabled" : "preview.safeTrim.disabled",
+          )}
+          onClick={onToggleSafeTrimFollowing}
+        >
+          <Link2 />
+        </TimelineToolButton>
+        <TimelineToolButton
+          enabled={loopPlaybackEnabled}
+          label={t("preview.loopPlayback.label")}
+          title={t(
+            loopPlaybackEnabled ? "preview.loopPlayback.enabled" : "preview.loopPlayback.disabled",
+          )}
+          onClick={onToggleLoopPlayback}
+        >
+          <Repeat2 />
+        </TimelineToolButton>
+        <TimelineToolButton
+          enabled={segmentPlaybackEnabled}
+          label={t("preview.segmentPlayback.label")}
+          title={t(
+            segmentPlaybackEnabled
+              ? "preview.segmentPlayback.enabled"
+              : "preview.segmentPlayback.disabled",
+          )}
+          onClick={onToggleSegmentPlayback}
+        >
+          <BetweenVerticalStart />
+        </TimelineToolButton>
+        <PlaybackSpeedTool speed={playbackSpeed} onChange={onPlaybackSpeedChange} />
+      </div>
+      <Separator
+        orientation="vertical"
+        className="mx-1"
+        data-slot="timeline-tools-divider"
+        aria-hidden="true"
+      />
+      <div className="shrink-0 self-start">
+        <TimelineToolButton
+          enabled={false}
+          label={t("preview.resetTools")}
+          title={t("preview.resetTools")}
+          onClick={onReset}
+        >
+          <RotateCcw />
+        </TimelineToolButton>
+      </div>
     </>
   );
 }
@@ -252,22 +274,22 @@ function PlaybackSpeedTool({
         <TooltipTrigger asChild>
           <PopoverTrigger asChild>
             <Button
-              variant={enabled ? "secondary" : "ghost"}
+              variant="secondary"
               size="icon-sm"
               type="button"
               aria-label={t("preview.playbackSpeed.label")}
               aria-pressed={enabled}
-              className={enabled ? "text-primary" : undefined}
+              className={enabled ? "text-primary aria-expanded:text-primary" : undefined}
             >
               <Gauge />
             </Button>
           </PopoverTrigger>
         </TooltipTrigger>
         <TooltipContent>{t("preview.playbackSpeed.tooltip")}</TooltipContent>
-        <PopoverContent side="bottom" align="center" className="w-56 px-3 py-1">
-          <div className="mt-3 flex w-full min-w-0 items-center gap-2">
+        <PopoverContent side="bottom" align="center" className="w-56 p-2.5">
+          <div className="flex items-center gap-2">
             <Slider
-              className="min-w-0 flex-1"
+              className="mt-2 min-w-0 flex-1 [&_[data-slot=slider-track]]:h-1.5"
               min={0}
               max={PLAYBACK_SPEED_STEPS.length - 1}
               step={1}
@@ -307,7 +329,7 @@ function TimelineToolButton({
     <Tooltip>
       <TooltipTrigger asChild>
         <Button
-          variant={enabled ? "secondary" : "ghost"}
+          variant="secondary"
           size="icon-sm"
           type="button"
           aria-label={label}

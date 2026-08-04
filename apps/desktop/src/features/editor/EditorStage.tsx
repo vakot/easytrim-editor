@@ -21,6 +21,7 @@ import { TimelinePane } from "./components/TimelinePane";
 import { usePlaybackModes } from "./hooks/usePlaybackModes";
 import { usePlaybackSpeed } from "./hooks/usePlaybackSpeed";
 import { useTimelinePanelSizing } from "./hooks/useTimelinePanelSizing";
+import { useEditorViewState } from "@/app/hooks/useEditorViewState";
 import type { EditorShortcutActions, EditorStageProps } from "./types";
 import { synchronizeAudioPosition } from "./utils/audio-sync";
 import { editorShortcutFromEvent, isShortcutBlockedTarget } from "./utils/editor-shortcuts";
@@ -70,7 +71,9 @@ export function EditorStage({
   const trimCommitFrameRef = useRef<number | null>(null);
   const pendingTrimCommitRef = useRef<TrimRange | null>(null);
   const resumeAfterScrubRef = useRef(false);
+  const timelineInteractionActiveRef = useRef(false);
   const playbackStartSequenceRef = useRef(0);
+  const playbackRequestedRef = useRef(false);
   const isPlayingRef = useRef(false);
   const lastPlaybackCommitAtRef = useRef(0);
   const trimRef = useRef(trim);
@@ -84,11 +87,20 @@ export function EditorStage({
     trimRef.current = trim;
   }
 
-  const playbackModes = usePlaybackModes();
-  const playbackSpeed = usePlaybackSpeed();
+  const { tools, setTools, resetTools, editorStageLayout, setEditorStageLayout } =
+    useEditorViewState();
+  const playbackModes = usePlaybackModes({
+    loopEnabled: tools.loopPlaybackEnabled,
+    segmentEnabled: tools.segmentPlaybackEnabled,
+    onLoopEnabledChange: (loopPlaybackEnabled) => setTools({ ...tools, loopPlaybackEnabled }),
+    onSegmentEnabledChange: (segmentPlaybackEnabled) =>
+      setTools({ ...tools, segmentPlaybackEnabled }),
+  });
+  const playbackSpeed = usePlaybackSpeed(tools.playbackSpeed, (playbackSpeed) =>
+    setTools({ ...tools, playbackSpeed }),
+  );
   const [playheadMicros, setPlayheadMicros] = useState(trim.startMicros);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [safeTrimFollowingEnabled, setSafeTrimFollowingEnabled] = useState(true);
   const [transportError, setTransportError] = useState<string | null>(null);
   const displayedPlayheadMicros = clampPlaybackMicros(playheadMicros, trim.sourceDurationMicros);
   const hasIndependentAudio = Object.keys(audioPreviewUrls).length > 0;
@@ -201,6 +213,9 @@ export function EditorStage({
   useEffect(() => {
     function handleEditorShortcut(event: globalThis.KeyboardEvent) {
       if (isApplicationDialogOpen()) {
+        return;
+      }
+      if (timelineInteractionActiveRef.current) {
         return;
       }
       const actions = shortcutActionsRef.current;
@@ -326,8 +341,10 @@ export function EditorStage({
   }
 
   function handleScrubStart() {
+    timelineInteractionActiveRef.current = true;
     playbackStartSequenceRef.current += 1;
-    resumeAfterScrubRef.current = isPlaying;
+    resumeAfterScrubRef.current = playbackRequestedRef.current || isPlayingRef.current;
+    playbackRequestedRef.current = false;
     isPlayingRef.current = false;
     videoRef.current?.pause();
     pauseAudioPlayback();
@@ -337,9 +354,15 @@ export function EditorStage({
 
   function handleScrubEnd() {
     flushScrubSeek();
+    timelineInteractionActiveRef.current = false;
     const shouldResume = resumeAfterScrubRef.current;
     resumeAfterScrubRef.current = false;
     if (shouldResume) {
+      // Trim handles can change while playback is paused. Refresh the active
+      // playback range before resuming so the next boundary check uses the
+      // committed trim instead of the range captured before the drag.
+      playbackModes.startMicros(currentPlayheadMicrosRef.current, trimRef.current);
+      playbackModes.resetBoundary();
       startMediaPlayback();
     }
   }
@@ -416,6 +439,7 @@ export function EditorStage({
     }
 
     playbackStartSequenceRef.current += 1;
+    playbackRequestedRef.current = false;
     isPlayingRef.current = false;
     videoRef.current?.pause();
     pauseAudioPlayback();
@@ -440,6 +464,7 @@ export function EditorStage({
     const startMicros = currentPlayheadMicrosRef.current;
     const startSeconds = startMicros / 1_000_000;
     const startSequence = ++playbackStartSequenceRef.current;
+    playbackRequestedRef.current = true;
     setTransportError(null);
     void audioContextRef.current?.resume();
     seekVideo(video, startMicros);
@@ -475,9 +500,13 @@ export function EditorStage({
         if (startSequence !== playbackStartSequenceRef.current) {
           return;
         }
-        pauseAudioPlayback();
+        playbackStartSequenceRef.current += 1;
+        playbackRequestedRef.current = false;
         isPlayingRef.current = false;
+        video.pause();
+        pauseAudioPlayback();
         setIsPlaying(false);
+        stopPlayheadAnimation();
         setTransportError(t("preview.playbackFailed"));
       });
   }
@@ -490,6 +519,7 @@ export function EditorStage({
 
   function handlePreviewPlaybackError(sourceId: string, previewKind: "source" | "proxy") {
     playbackStartSequenceRef.current += 1;
+    playbackRequestedRef.current = false;
     isPlayingRef.current = false;
     videoRef.current?.pause();
     pauseAudioPlayback();
@@ -510,8 +540,9 @@ export function EditorStage({
       return;
     }
     setTransportError(null);
-    if (isPlaying) {
+    if (playbackRequestedRef.current || isPlayingRef.current) {
       playbackStartSequenceRef.current += 1;
+      playbackRequestedRef.current = false;
       isPlayingRef.current = false;
       video.pause();
       return;
@@ -529,6 +560,7 @@ export function EditorStage({
 
   function handleStepFrame(direction: -1 | 1) {
     playbackStartSequenceRef.current += 1;
+    playbackRequestedRef.current = false;
     isPlayingRef.current = false;
     videoRef.current?.pause();
     setIsPlaying(false);
@@ -572,7 +604,7 @@ export function EditorStage({
   ): TrimBoundary | null {
     const previousTrim = trimRef.current;
     const currentPlayheadMicros = currentPlayheadMicrosRef.current;
-    const follow = safeTrimFollowingEnabled
+    const follow = tools.safeTrimFollowingEnabled
       ? playheadFollowAfterTrimBoundaryMove(previousTrim, nextTrim, boundary, currentPlayheadMicros)
       : { playheadMicros: currentPlayheadMicros, boundary: null };
 
@@ -588,7 +620,7 @@ export function EditorStage({
     const previousTrim = trimRef.current;
     const currentPlayheadMicros = currentPlayheadMicrosRef.current;
     const follow =
-      safeTrimFollowingEnabled && segmentDragActiveRef.current
+      tools.safeTrimFollowingEnabled && segmentDragActiveRef.current
         ? playheadAfterSegmentMove(
             previousTrim,
             nextTrim,
@@ -609,13 +641,14 @@ export function EditorStage({
   function handleSegmentDragStart() {
     segmentDragActiveRef.current = true;
     segmentFollowBoundaryRef.current = null;
+    handleScrubStart();
   }
 
   function handleSegmentDragEnd() {
     segmentDragActiveRef.current = false;
     segmentFollowBoundaryRef.current = null;
     flushTrimCommit();
-    flushScrubSeek();
+    handleScrubEnd();
   }
 
   function handleTrimDragEnd() {
@@ -633,6 +666,8 @@ export function EditorStage({
   return (
     <Group
       id="editor-stage-panels"
+      defaultLayout={editorStageLayout}
+      onLayoutChanged={setEditorStageLayout}
       orientation="vertical"
       className="min-h-0 min-w-0 bg-background"
       resizeTargetMinimumSize={{ fine: 8, coarse: 24 }}
@@ -650,6 +685,7 @@ export function EditorStage({
             onLoadedMetadata={() => commitSeek(displayedPlayheadMicros)}
             onTogglePlayback={handleTogglePlayback}
             onPlay={() => {
+              playbackRequestedRef.current = true;
               isPlayingRef.current = true;
               setIsPlaying(true);
               startPlayheadAnimation();
@@ -664,6 +700,7 @@ export function EditorStage({
                 void videoRef.current?.play().catch(() => undefined);
                 return;
               }
+              playbackRequestedRef.current = false;
               isPlayingRef.current = false;
               setIsPlaying(false);
               pauseAudioPlayback();
@@ -736,16 +773,20 @@ export function EditorStage({
               videoToolbar={
                 preview.status === "ready" ? (
                   <TimelineTools
-                    safeTrimFollowingEnabled={safeTrimFollowingEnabled}
+                    safeTrimFollowingEnabled={tools.safeTrimFollowingEnabled}
                     loopPlaybackEnabled={playbackModes.loopEnabled}
                     segmentPlaybackEnabled={playbackModes.segmentEnabled}
                     playbackSpeed={playbackSpeed.speed}
                     onToggleSafeTrimFollowing={() =>
-                      setSafeTrimFollowingEnabled((enabled) => !enabled)
+                      setTools({
+                        ...tools,
+                        safeTrimFollowingEnabled: !tools.safeTrimFollowingEnabled,
+                      })
                     }
                     onToggleLoopPlayback={handleToggleLoopPlayback}
                     onToggleSegmentPlayback={handleToggleSegmentPlayback}
                     onPlaybackSpeedChange={playbackSpeed.setSpeed}
+                    onReset={resetTools}
                   />
                 ) : null
               }

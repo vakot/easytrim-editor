@@ -133,6 +133,7 @@ export const sk = {
       label: "Rýchlosť prehrávania",
       tooltip: "Upraviť rýchlosť prehrávania náhľadu",
     },
+    resetTools: "Obnoviť nástroje",
     opening: "Otvára sa náhľad…",
     preparing: "Pripravuje sa kompatibilný náhľad…",
     preparingDescription: "Pri zdrojoch s vysokým rozlíšením to môže chvíľu trvať.",

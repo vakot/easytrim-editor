@@ -1,10 +1,10 @@
-import { useRef, useState } from "react";
+import { useRef } from "react";
 
 import {
   playbackBoundaryAction,
   playbackRange,
-  playbackStartMicros,
   type PlaybackBoundaryAction,
+  type PlaybackRange,
 } from "@/domain/playback";
 import type { TrimRange } from "@/domain/trim";
 
@@ -13,30 +13,42 @@ type ReachedBoundaryAction = Exclude<PlaybackBoundaryAction, { type: "continue" 
 export type PlaybackBoundaryResult =
   { reached: false } | { reached: true; action: ReachedBoundaryAction | null };
 
-export function usePlaybackModes() {
-  const modesRef = useRef({ loopEnabled: true, segmentEnabled: true });
+export function usePlaybackModes({
+  loopEnabled,
+  segmentEnabled,
+  onLoopEnabledChange,
+  onSegmentEnabledChange,
+}: {
+  loopEnabled: boolean;
+  segmentEnabled: boolean;
+  onLoopEnabledChange: (enabled: boolean) => void;
+  onSegmentEnabledChange: (enabled: boolean) => void;
+}) {
+  const playbackRangeRef = useRef<PlaybackRange | null>(null);
   const boundaryHandledRef = useRef(false);
-  const [loopEnabled, setLoopEnabled] = useState(true);
-  const [segmentEnabled, setSegmentEnabled] = useState(true);
 
-  function activeRange(trim: TrimRange) {
+  function activeRange(trim: TrimRange, playbackStartMicrosValue: number) {
     return playbackRange(
       trim.sourceDurationMicros,
       trim.startMicros,
-      trim.endMicros,
-      modesRef.current.segmentEnabled,
+      segmentEnabled && playbackStartMicrosValue >= trim.endMicros
+        ? trim.sourceDurationMicros
+        : trim.endMicros,
+      segmentEnabled,
     );
   }
 
   function startMicros(currentMicros: number, trim: TrimRange) {
-    return playbackStartMicros(currentMicros, activeRange(trim));
+    const range = activeRange(trim, currentMicros);
+    playbackRangeRef.current = range;
+    return currentMicros;
   }
 
   function consumeBoundary(currentMicros: number, trim: TrimRange): PlaybackBoundaryResult {
     const action = playbackBoundaryAction(
       currentMicros,
-      activeRange(trim),
-      modesRef.current.loopEnabled,
+      playbackRangeRef.current ?? activeRange(trim, trim.startMicros),
+      loopEnabled,
     );
     if (action.type === "continue") {
       boundaryHandledRef.current = false;
@@ -46,20 +58,22 @@ export function usePlaybackModes() {
       return { reached: true, action: null };
     }
     boundaryHandledRef.current = true;
+    if (action.type === "restart") {
+      playbackRangeRef.current = activeRange(trim, trim.startMicros);
+    }
     return { reached: true, action };
   }
 
   function toggleLoop() {
-    const enabled = !modesRef.current.loopEnabled;
-    modesRef.current.loopEnabled = enabled;
-    setLoopEnabled(enabled);
+    const enabled = !loopEnabled;
+    onLoopEnabledChange(enabled);
   }
 
   function toggleSegment() {
-    const enabled = !modesRef.current.segmentEnabled;
-    modesRef.current.segmentEnabled = enabled;
+    const enabled = !segmentEnabled;
     boundaryHandledRef.current = false;
-    setSegmentEnabled(enabled);
+    playbackRangeRef.current = null;
+    onSegmentEnabledChange(enabled);
     return enabled;
   }
 

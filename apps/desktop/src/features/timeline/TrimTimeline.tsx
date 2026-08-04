@@ -79,7 +79,7 @@ export function TrimTimeline({
         data-slot="timeline-row"
       >
         <div
-          className="grid w-full grid-flow-col auto-cols-[1.75rem] grid-rows-[repeat(2,1.75rem)] items-center justify-start gap-1"
+          className="flex w-full items-stretch"
           data-slot="timeline-toolbar"
           role="toolbar"
           aria-label={t("timeline.toolsLabel")}
