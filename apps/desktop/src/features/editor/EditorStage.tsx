@@ -72,6 +72,7 @@ export function EditorStage({
   const resumeAfterScrubRef = useRef(false);
   const timelineInteractionActiveRef = useRef(false);
   const playbackStartSequenceRef = useRef(0);
+  const playbackRequestedRef = useRef(false);
   const isPlayingRef = useRef(false);
   const lastPlaybackCommitAtRef = useRef(0);
   const trimRef = useRef(trim);
@@ -332,7 +333,8 @@ export function EditorStage({
   function handleScrubStart() {
     timelineInteractionActiveRef.current = true;
     playbackStartSequenceRef.current += 1;
-    resumeAfterScrubRef.current = isPlaying;
+    resumeAfterScrubRef.current = playbackRequestedRef.current || isPlayingRef.current;
+    playbackRequestedRef.current = false;
     isPlayingRef.current = false;
     videoRef.current?.pause();
     pauseAudioPlayback();
@@ -427,6 +429,7 @@ export function EditorStage({
     }
 
     playbackStartSequenceRef.current += 1;
+    playbackRequestedRef.current = false;
     isPlayingRef.current = false;
     videoRef.current?.pause();
     pauseAudioPlayback();
@@ -451,6 +454,7 @@ export function EditorStage({
     const startMicros = currentPlayheadMicrosRef.current;
     const startSeconds = startMicros / 1_000_000;
     const startSequence = ++playbackStartSequenceRef.current;
+    playbackRequestedRef.current = true;
     setTransportError(null);
     void audioContextRef.current?.resume();
     seekVideo(video, startMicros);
@@ -487,6 +491,7 @@ export function EditorStage({
           return;
         }
         playbackStartSequenceRef.current += 1;
+        playbackRequestedRef.current = false;
         isPlayingRef.current = false;
         video.pause();
         pauseAudioPlayback();
@@ -504,6 +509,7 @@ export function EditorStage({
 
   function handlePreviewPlaybackError(sourceId: string, previewKind: "source" | "proxy") {
     playbackStartSequenceRef.current += 1;
+    playbackRequestedRef.current = false;
     isPlayingRef.current = false;
     videoRef.current?.pause();
     pauseAudioPlayback();
@@ -524,8 +530,9 @@ export function EditorStage({
       return;
     }
     setTransportError(null);
-    if (isPlaying) {
+    if (playbackRequestedRef.current || isPlayingRef.current) {
       playbackStartSequenceRef.current += 1;
+      playbackRequestedRef.current = false;
       isPlayingRef.current = false;
       video.pause();
       return;
@@ -543,6 +550,7 @@ export function EditorStage({
 
   function handleStepFrame(direction: -1 | 1) {
     playbackStartSequenceRef.current += 1;
+    playbackRequestedRef.current = false;
     isPlayingRef.current = false;
     videoRef.current?.pause();
     setIsPlaying(false);
@@ -665,6 +673,7 @@ export function EditorStage({
             onLoadedMetadata={() => commitSeek(displayedPlayheadMicros)}
             onTogglePlayback={handleTogglePlayback}
             onPlay={() => {
+              playbackRequestedRef.current = true;
               isPlayingRef.current = true;
               setIsPlaying(true);
               startPlayheadAnimation();
@@ -679,6 +688,7 @@ export function EditorStage({
                 void videoRef.current?.play().catch(() => undefined);
                 return;
               }
+              playbackRequestedRef.current = false;
               isPlayingRef.current = false;
               setIsPlaying(false);
               pauseAudioPlayback();

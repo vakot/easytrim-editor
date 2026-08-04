@@ -990,6 +990,25 @@ describe("App", () => {
     expect(await screen.findByRole("tooltip")).toHaveTextContent("Trim start");
   });
 
+  it("resumes playback after both pointer cycles of a trim-handle double-click", async () => {
+    mocks.chooseSource.mockResolvedValue(selection);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Select video" }));
+    const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
+    const play = vi.spyOn(video, "play").mockResolvedValue();
+    vi.spyOn(video, "pause").mockImplementation(() => undefined);
+    const startHandle = screen.getByRole("slider", { name: "Trim start" });
+    fireEvent.play(video);
+
+    await user.dblClick(startHandle);
+
+    expect(play).toHaveBeenCalledTimes(2);
+    fireEvent.play(video);
+    expect(screen.getByRole("button", { name: "Pause" })).toBeInTheDocument();
+  });
+
   it("drags the complete segment without resizing it or moving the playhead", async () => {
     mocks.chooseSource.mockResolvedValue(selection);
     const user = userEvent.setup();
