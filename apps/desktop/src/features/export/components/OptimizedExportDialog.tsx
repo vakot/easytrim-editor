@@ -149,11 +149,12 @@ export function OptimizedExportDialog({
               <TooltipTrigger asChild>
                 <Button
                   type="button"
-                  variant={isAspectRatioLocked ? "secondary" : "outline"}
-                  size="icon"
+                  variant="secondary"
+                  size="icon-sm"
                   aria-label={isAspectRatioLocked ? "Unlock aspect ratio" : "Lock aspect ratio"}
                   aria-pressed={isAspectRatioLocked}
                   onClick={() => setIsAspectRatioLocked((locked) => !locked)}
+                  className={isAspectRatioLocked ? "text-primary" : undefined}
                 >
                   {isAspectRatioLocked ? <Link2 /> : <Unlink2 />}
                 </Button>
