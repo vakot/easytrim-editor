@@ -57,6 +57,10 @@ export function OptimizedExportDialog({
   const { t } = useTranslation();
   const [isAspectRatioLocked, setIsAspectRatioLocked] = useState(true);
   const resolutionValue = `${settings.resolution.width}x${settings.resolution.height}`;
+  const resolutionPresets = resolutionOptions(source, t);
+  const hasMatchingResolutionPreset = resolutionPresets.some(
+    (option) => option.value === resolutionValue,
+  );
   const sourceAspectRatio = source.video.width / source.video.height;
   const frameRateValue = settings.frameRate
     ? `${settings.frameRate.numerator}/${settings.frameRate.denominator}`
@@ -83,7 +87,7 @@ export function OptimizedExportDialog({
             <div className="grid gap-1.5">
             <Label htmlFor="export-resolution">{t("export.dialog.resolution")}</Label>
             <Select
-              value={resolutionValue}
+              value={hasMatchingResolutionPreset ? resolutionValue : "custom"}
               onValueChange={(value) => {
                 const [width, height] = value.split("x").map(Number);
                 if (width && height) {
@@ -92,10 +96,12 @@ export function OptimizedExportDialog({
               }}
             >
               <SelectTrigger id="export-resolution" className="w-full">
-                <SelectValue />
+                <SelectValue>
+                  {!hasMatchingResolutionPreset ? "Custom scaling" : undefined}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
-                {resolutionOptions(source, t).map((option) => (
+                {resolutionPresets.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
                   </SelectItem>
