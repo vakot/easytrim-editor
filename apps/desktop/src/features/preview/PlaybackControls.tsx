@@ -1,5 +1,5 @@
 import {
-  BetweenHorizontalStart,
+  BetweenVerticalStart,
   Gauge,
   Link2,
   Pause,
@@ -15,6 +15,7 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatPlaybackTime } from "@/domain/playback";
@@ -232,12 +233,13 @@ export function TimelineTools({
           )}
           onClick={onToggleSegmentPlayback}
         >
-          <BetweenHorizontalStart />
+          <BetweenVerticalStart />
         </TimelineToolButton>
         <PlaybackSpeedTool speed={playbackSpeed} onChange={onPlaybackSpeedChange} />
       </div>
-      <div
-        className="mx-2 w-px shrink-0 bg-border"
+      <Separator
+        orientation="vertical"
+        className="mx-1"
         data-slot="timeline-tools-divider"
         aria-hidden="true"
       />
