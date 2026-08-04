@@ -1845,6 +1845,30 @@ describe("App", () => {
     await waitFor(() => expect(play).toHaveBeenCalledOnce());
   });
 
+  it("blocks timeline shortcuts while a timeline control is being scrubbed", async () => {
+    mocks.chooseSource.mockResolvedValue(selection);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Select video" }));
+    const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
+    const play = vi.spyOn(video, "play").mockResolvedValue();
+    vi.spyOn(video, "pause").mockImplementation(() => undefined);
+    const playhead = screen.getByRole("slider", { name: "Playback position" });
+    const initialPosition = playhead.getAttribute("aria-valuenow");
+
+    fireEvent.pointerDown(playhead, { clientX: 100, pointerId: 21 });
+    fireEvent.keyDown(window, { key: "ArrowRight" });
+    fireEvent.keyDown(window, { key: " " });
+
+    expect(play).not.toHaveBeenCalled();
+    expect(playhead).toHaveAttribute("aria-valuenow", initialPosition);
+
+    fireEvent.pointerUp(playhead, { pointerId: 21 });
+    fireEvent.keyDown(window, { key: " " });
+    expect(play).toHaveBeenCalledOnce();
+  });
+
   it("synchronizes the timeline playhead with video playback", async () => {
     mocks.chooseSource.mockResolvedValue(selection);
     const user = userEvent.setup();

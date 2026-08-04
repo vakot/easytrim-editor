@@ -70,6 +70,7 @@ export function EditorStage({
   const trimCommitFrameRef = useRef<number | null>(null);
   const pendingTrimCommitRef = useRef<TrimRange | null>(null);
   const resumeAfterScrubRef = useRef(false);
+  const timelineInteractionActiveRef = useRef(false);
   const playbackStartSequenceRef = useRef(0);
   const isPlayingRef = useRef(false);
   const lastPlaybackCommitAtRef = useRef(0);
@@ -203,6 +204,9 @@ export function EditorStage({
       if (isApplicationDialogOpen()) {
         return;
       }
+      if (timelineInteractionActiveRef.current) {
+        return;
+      }
       const actions = shortcutActionsRef.current;
       const shortcut = editorShortcutFromEvent(event);
       if (!actions?.enabled || !shortcut) {
@@ -326,6 +330,7 @@ export function EditorStage({
   }
 
   function handleScrubStart() {
+    timelineInteractionActiveRef.current = true;
     playbackStartSequenceRef.current += 1;
     resumeAfterScrubRef.current = isPlaying;
     isPlayingRef.current = false;
@@ -337,6 +342,7 @@ export function EditorStage({
 
   function handleScrubEnd() {
     flushScrubSeek();
+    timelineInteractionActiveRef.current = false;
     const shouldResume = resumeAfterScrubRef.current;
     resumeAfterScrubRef.current = false;
     if (shouldResume) {
