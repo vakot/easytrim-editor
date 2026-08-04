@@ -462,7 +462,11 @@ describe("App", () => {
       await user.click(screen.getByRole("button", { name: "Mute Commentary" }));
       expect(allTracks).toHaveAttribute("aria-pressed", "true");
       expect(screen.getByText("1 selected track kept separately.")).toBeInTheDocument();
-      await user.click(screen.getByRole("checkbox", { name: "Merge selected tracks" }));
+      const mergeAudio = screen.getByRole("checkbox", { name: "Merge selected tracks" });
+      await user.hover(mergeAudio);
+      expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+      expect(await screen.findByRole("tooltip")).toHaveTextContent("Selected audio is encoded.");
+      await user.click(mergeAudio);
       expect(screen.getByText("One selected track — no merge is needed.")).toBeInTheDocument();
       await user.click(allTracks);
       expect(allTracks).toHaveAttribute("aria-pressed", "false");

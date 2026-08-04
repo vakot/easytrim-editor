@@ -20,10 +20,12 @@ describe("resolveInitialLanguage", () => {
 
   it("interpolates selected-track counts in merged audio summaries", () => {
     expect(i18n.getFixedT("en")("audio.output.merged", { count: 3 })).toBe(
-      "3 selected tracks are merged into one track; selected audio is encoded.",
+      "3 selected tracks are merged into one track.",
     );
     expect(i18n.getFixedT("sk")("audio.output.merged", { count: 3 })).toBe(
-      "3 vybrané stopy sa zlúčia do jednej stopy; vybraný zvuk sa zakóduje.",
+      "3 vybrané stopy sa zlúčia do jednej stopy.",
     );
+    expect(i18n.getFixedT("en")("audio.mergeSelectedHint")).toBe("Selected audio is encoded.");
+    expect(i18n.getFixedT("sk")("audio.mergeSelectedHint")).toBe("Vybraný zvuk sa zakóduje.");
   });
 });

@@ -159,6 +159,7 @@ export const en = {
     allTracks: "All audio tracks",
     allTracksVolume: "All audio tracks volume",
     mergeSelected: "Merge selected tracks",
+    mergeSelectedHint: "Selected audio is encoded.",
     defaultTrack: "Audio {{number}}",
     muteTrack: "Mute {{title}}",
     enableTrack: "Enable {{title}}",
@@ -176,10 +177,9 @@ export const en = {
     channels_other: "{{count}} channels",
     output: {
       videoOnly: "Video-only output",
-      merged_one: "{{count}} selected track is merged into one track; selected audio is encoded.",
-      merged_few: "{{count}} selected tracks are merged into one track; selected audio is encoded.",
-      merged_other:
-        "{{count}} selected tracks are merged into one track; selected audio is encoded.",
+      merged_one: "{{count}} selected track is merged into one track.",
+      merged_few: "{{count}} selected tracks are merged into one track.",
+      merged_other: "{{count}} selected tracks are merged into one track.",
       oneTrack: "One selected track — no merge is needed.",
       separate_one: "{{count}} selected track kept separately.",
       separate_few: "{{count}} selected tracks kept separately.",
