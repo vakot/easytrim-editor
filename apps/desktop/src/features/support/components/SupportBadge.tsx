@@ -48,7 +48,7 @@ export function SupportBadge() {
       >
         {t("support.message")}
       </a>
-      <Button variant="ghost" size="icon-xs" aria-label={t("support.dismiss")} onClick={dismiss}>
+      <Button variant="ghost" size="icon-sm" aria-label={t("support.dismiss")} onClick={dismiss}>
         <X aria-hidden="true" />
       </Button>
     </aside>

@@ -5,6 +5,7 @@ import {
   playbackRange,
   playbackStartMicros,
   type PlaybackBoundaryAction,
+  type PlaybackRange,
 } from "@/domain/playback";
 import type { TrimRange } from "@/domain/trim";
 
@@ -24,23 +25,32 @@ export function usePlaybackModes({
   onLoopEnabledChange: (enabled: boolean) => void;
   onSegmentEnabledChange: (enabled: boolean) => void;
 }) {
+  const playbackRangeRef = useRef<PlaybackRange | null>(null);
   const boundaryHandledRef = useRef(false);
 
-  function activeRange(trim: TrimRange) {
+  function activeRange(trim: TrimRange, playbackStartMicrosValue: number) {
     return playbackRange(
       trim.sourceDurationMicros,
       trim.startMicros,
-      trim.endMicros,
+      segmentEnabled && playbackStartMicrosValue >= trim.endMicros
+        ? trim.sourceDurationMicros
+        : trim.endMicros,
       segmentEnabled,
     );
   }
 
   function startMicros(currentMicros: number, trim: TrimRange) {
-    return playbackStartMicros(currentMicros, activeRange(trim));
+    const range = activeRange(trim, currentMicros);
+    playbackRangeRef.current = range;
+    return playbackStartMicros(currentMicros, range);
   }
 
   function consumeBoundary(currentMicros: number, trim: TrimRange): PlaybackBoundaryResult {
-    const action = playbackBoundaryAction(currentMicros, activeRange(trim), loopEnabled);
+    const action = playbackBoundaryAction(
+      currentMicros,
+      playbackRangeRef.current ?? activeRange(trim, trim.startMicros),
+      loopEnabled,
+    );
     if (action.type === "continue") {
       boundaryHandledRef.current = false;
       return { reached: false };
@@ -49,6 +59,9 @@ export function usePlaybackModes({
       return { reached: true, action: null };
     }
     boundaryHandledRef.current = true;
+    if (action.type === "restart") {
+      playbackRangeRef.current = activeRange(trim, trim.startMicros);
+    }
     return { reached: true, action };
   }
 
@@ -60,6 +73,7 @@ export function usePlaybackModes({
   function toggleSegment() {
     const enabled = !segmentEnabled;
     boundaryHandledRef.current = false;
+    playbackRangeRef.current = null;
     onSegmentEnabledChange(enabled);
     return enabled;
   }

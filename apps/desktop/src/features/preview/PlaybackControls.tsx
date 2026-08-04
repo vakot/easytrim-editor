@@ -267,7 +267,9 @@ function PlaybackSpeedTool({
   const enabled = speed !== DEFAULT_PLAYBACK_SPEED;
 
   return (
-    <Popover>
+    <Tooltip>
+      <Popover>
+        <TooltipTrigger asChild>
       <PopoverTrigger asChild>
         <Button
           variant="secondary"
@@ -280,6 +282,8 @@ function PlaybackSpeedTool({
           <Gauge />
         </Button>
       </PopoverTrigger>
+        </TooltipTrigger>
+        <TooltipContent>{t("preview.playbackSpeed.tooltip")}</TooltipContent>
       <PopoverContent side="bottom" align="center" className="w-56 p-2.5">
         <div className="flex items-center gap-2">
           <Slider
@@ -297,11 +301,12 @@ function PlaybackSpeedTool({
             markers={PLAYBACK_SPEED_MARKERS}
           />
           <output className="w-10 shrink-0 text-right font-mono text-xs text-muted-foreground">
-            {speed}×
+            {speed.toFixed(2)}×
           </output>
         </div>
       </PopoverContent>
-    </Popover>
+      </Popover>
+    </Tooltip>
   );
 }
 

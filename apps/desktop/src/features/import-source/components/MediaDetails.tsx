@@ -1,3 +1,6 @@
+import { Fragment } from "react";
+
+import { Separator } from "@/components/ui/separator";
 import type { MediaInfo } from "@/lib/tauri/media";
 import {
   formatBitrate,
@@ -25,22 +28,20 @@ export function MediaDetails({ media }: { media: MediaInfo }) {
       t("import.source.metadata.bitrate"),
       formatBitrate(media.bitrate, unknown, (value) => t("units.megabitsPerSecond", { value })),
     ],
-    [t("import.source.metadata.videoStream"), `#${media.video.streamIndex}`],
-    [t("import.source.metadata.audioTracks"), String(media.audioStreams.length)],
   ] as const;
 
   return (
-    <dl className="grid gap-1" aria-label={t("import.source.metadataLabel")}>
-      {metadata.map(([label, value]) => (
-        <div
-          className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-3 border-b border-border/55 py-2 last:border-0"
-          key={label}
-        >
-          <dt className="text-xs text-muted-foreground">{label}</dt>
-          <dd className="max-w-40 truncate text-right text-xs font-medium text-foreground">
-            {value}
-          </dd>
-        </div>
+    <dl className="grid" aria-label={t("import.source.metadataLabel")}>
+      {metadata.map(([label, value], index) => (
+        <Fragment key={label}>
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-3 py-2">
+            <dt className="text-xs text-muted-foreground">{label}</dt>
+            <dd className="max-w-40 truncate text-right text-xs font-medium text-foreground">
+              {value}
+            </dd>
+          </div>
+          {index < metadata.length - 1 ? <Separator className="bg-border/55" /> : null}
+        </Fragment>
       ))}
     </dl>
   );

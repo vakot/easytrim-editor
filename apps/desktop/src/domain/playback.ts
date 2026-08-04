@@ -42,20 +42,11 @@ export function playbackRange(
   };
 }
 
-export function playbackStartMicros(currentMicros: number, range: PlaybackRange): number {
-  return currentMicros < range.startMicros || currentMicros >= range.endMicros
-    ? range.startMicros
-    : currentMicros;
-}
-
 export function playbackBoundaryAction(
   currentMicros: number,
   range: PlaybackRange,
   loopEnabled: boolean,
 ): PlaybackBoundaryAction {
-  if (currentMicros < range.startMicros) {
-    return { type: "restart", positionMicros: range.startMicros };
-  }
   if (currentMicros < range.endMicros) {
     return { type: "continue" };
   }

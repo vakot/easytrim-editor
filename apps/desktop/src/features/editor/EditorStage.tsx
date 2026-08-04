@@ -71,7 +71,9 @@ export function EditorStage({
   const trimCommitFrameRef = useRef<number | null>(null);
   const pendingTrimCommitRef = useRef<TrimRange | null>(null);
   const resumeAfterScrubRef = useRef(false);
+  const timelineInteractionActiveRef = useRef(false);
   const playbackStartSequenceRef = useRef(0);
+  const playbackRequestedRef = useRef(false);
   const isPlayingRef = useRef(false);
   const lastPlaybackCommitAtRef = useRef(0);
   const trimRef = useRef(trim);
@@ -213,6 +215,9 @@ export function EditorStage({
       if (isApplicationDialogOpen()) {
         return;
       }
+      if (timelineInteractionActiveRef.current) {
+        return;
+      }
       const actions = shortcutActionsRef.current;
       const shortcut = editorShortcutFromEvent(event);
       if (!actions?.enabled || !shortcut) {
@@ -336,8 +341,10 @@ export function EditorStage({
   }
 
   function handleScrubStart() {
+    timelineInteractionActiveRef.current = true;
     playbackStartSequenceRef.current += 1;
-    resumeAfterScrubRef.current = isPlaying;
+    resumeAfterScrubRef.current = playbackRequestedRef.current || isPlayingRef.current;
+    playbackRequestedRef.current = false;
     isPlayingRef.current = false;
     videoRef.current?.pause();
     pauseAudioPlayback();
@@ -347,9 +354,15 @@ export function EditorStage({
 
   function handleScrubEnd() {
     flushScrubSeek();
+    timelineInteractionActiveRef.current = false;
     const shouldResume = resumeAfterScrubRef.current;
     resumeAfterScrubRef.current = false;
     if (shouldResume) {
+      // Trim handles can change while playback is paused. Refresh the active
+      // playback range before resuming so the next boundary check uses the
+      // committed trim instead of the range captured before the drag.
+      playbackModes.startMicros(currentPlayheadMicrosRef.current, trimRef.current);
+      playbackModes.resetBoundary();
       startMediaPlayback();
     }
   }
@@ -426,6 +439,7 @@ export function EditorStage({
     }
 
     playbackStartSequenceRef.current += 1;
+    playbackRequestedRef.current = false;
     isPlayingRef.current = false;
     videoRef.current?.pause();
     pauseAudioPlayback();
@@ -450,6 +464,7 @@ export function EditorStage({
     const startMicros = currentPlayheadMicrosRef.current;
     const startSeconds = startMicros / 1_000_000;
     const startSequence = ++playbackStartSequenceRef.current;
+    playbackRequestedRef.current = true;
     setTransportError(null);
     void audioContextRef.current?.resume();
     seekVideo(video, startMicros);
@@ -485,9 +500,13 @@ export function EditorStage({
         if (startSequence !== playbackStartSequenceRef.current) {
           return;
         }
-        pauseAudioPlayback();
+        playbackStartSequenceRef.current += 1;
+        playbackRequestedRef.current = false;
         isPlayingRef.current = false;
+        video.pause();
+        pauseAudioPlayback();
         setIsPlaying(false);
+        stopPlayheadAnimation();
         setTransportError(t("preview.playbackFailed"));
       });
   }
@@ -496,6 +515,17 @@ export function EditorStage({
     for (const audio of audioElementsRef.current.values()) {
       audio.pause();
     }
+  }
+
+  function handlePreviewPlaybackError(sourceId: string, previewKind: "source" | "proxy") {
+    playbackStartSequenceRef.current += 1;
+    playbackRequestedRef.current = false;
+    isPlayingRef.current = false;
+    videoRef.current?.pause();
+    pauseAudioPlayback();
+    setIsPlaying(false);
+    stopPlayheadAnimation();
+    onPreviewPlaybackError(sourceId, previewKind);
   }
 
   function syncAudioPlayback(seconds: number, force = false) {
@@ -510,8 +540,9 @@ export function EditorStage({
       return;
     }
     setTransportError(null);
-    if (isPlaying) {
+    if (playbackRequestedRef.current || isPlayingRef.current) {
       playbackStartSequenceRef.current += 1;
+      playbackRequestedRef.current = false;
       isPlayingRef.current = false;
       video.pause();
       return;
@@ -529,6 +560,7 @@ export function EditorStage({
 
   function handleStepFrame(direction: -1 | 1) {
     playbackStartSequenceRef.current += 1;
+    playbackRequestedRef.current = false;
     isPlayingRef.current = false;
     videoRef.current?.pause();
     setIsPlaying(false);
@@ -609,13 +641,14 @@ export function EditorStage({
   function handleSegmentDragStart() {
     segmentDragActiveRef.current = true;
     segmentFollowBoundaryRef.current = null;
+    handleScrubStart();
   }
 
   function handleSegmentDragEnd() {
     segmentDragActiveRef.current = false;
     segmentFollowBoundaryRef.current = null;
     flushTrimCommit();
-    flushScrubSeek();
+    handleScrubEnd();
   }
 
   function handleTrimDragEnd() {
@@ -648,10 +681,11 @@ export function EditorStage({
             playbackRate={playbackSpeed.speed}
             muted={hasIndependentAudio}
             videoRef={videoRef}
-            onPlaybackError={onPreviewPlaybackError}
+            onPlaybackError={handlePreviewPlaybackError}
             onLoadedMetadata={() => commitSeek(displayedPlayheadMicros)}
             onTogglePlayback={handleTogglePlayback}
             onPlay={() => {
+              playbackRequestedRef.current = true;
               isPlayingRef.current = true;
               setIsPlaying(true);
               startPlayheadAnimation();
@@ -666,6 +700,7 @@ export function EditorStage({
                 void videoRef.current?.play().catch(() => undefined);
                 return;
               }
+              playbackRequestedRef.current = false;
               isPlayingRef.current = false;
               setIsPlaying(false);
               pauseAudioPlayback();

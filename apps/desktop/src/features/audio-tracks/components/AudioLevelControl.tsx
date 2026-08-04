@@ -8,7 +8,6 @@ import {
   MIN_SLIDER_DECIBELS,
   volumePercentToDecibels,
 } from "../utils/audio-level";
-import styles from "./styles.module.css";
 
 interface AudioLevelControlProps {
   label: string;
@@ -28,7 +27,7 @@ export function AudioLevelControl({
   return (
     <div className={cn("flex w-full min-w-0 items-center gap-2", className)}>
       <Slider
-        className={cn("min-w-0 flex-1", styles.slider)}
+        className="min-w-0 flex-1"
         min={MIN_SLIDER_DECIBELS}
         max={MAX_SLIDER_DECIBELS}
         step={0.5}
@@ -36,7 +35,10 @@ export function AudioLevelControl({
         onValueChange={([value]) => onChange(decibelsToVolumePercent(value ?? decibels))}
         onDoubleClick={() => onChange(50)}
         aria-label={label}
-        markers={[{ value: 0, label: "0 dB" }]}
+        markers={[
+          { value: 0, label: "0 dB" },
+          { value: MIN_SLIDER_DECIBELS, label: "−∞" },
+        ]}
       />
       <output className="w-14 shrink-0 text-right font-mono text-xs text-muted-foreground">
         {formatDecibels(volumePercent)}

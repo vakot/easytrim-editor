@@ -301,6 +301,12 @@ export function useEasyTrimEditorApp() {
       event.preventDefault();
       event.stopPropagation();
 
+      const activeElement = document.activeElement;
+      if (activeElement instanceof HTMLElement && activeElement !== document.body) {
+        activeElement.blur();
+        return;
+      }
+
       if (isReturnConfirmationOpen) {
         setIsReturnConfirmationOpen(false);
       } else {
