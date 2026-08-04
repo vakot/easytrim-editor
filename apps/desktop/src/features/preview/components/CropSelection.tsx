@@ -79,30 +79,32 @@ export function CropSelection({
       onClick={(event) => event.stopPropagation()}
       onPointerDown={(event) => onPointerDown(event, "move")}
     >
-      <svg
-        aria-hidden="true"
-        data-crop-rule-of-thirds
-        className="pointer-events-none absolute inset-0 size-full opacity-80 mix-blend-difference"
-        viewBox="0 0 3 3"
-        preserveAspectRatio="none"
-      >
-        <path
-          data-crop-guide="vertical"
-          d="M1 0V3 M2 0V3"
-          fill="none"
-          stroke="white"
-          strokeWidth="1"
-          vectorEffect="non-scaling-stroke"
-        />
-        <path
-          data-crop-guide="horizontal"
-          d="M0 1H3 M0 2H3"
-          fill="none"
-          stroke="white"
-          strokeWidth="1"
-          vectorEffect="non-scaling-stroke"
-        />
-      </svg>
+      {isDragging ? (
+        <svg
+          aria-hidden="true"
+          data-crop-rule-of-thirds
+          className="pointer-events-none absolute inset-0 size-full opacity-80 mix-blend-difference"
+          viewBox="0 0 3 3"
+          preserveAspectRatio="none"
+        >
+          <path
+            data-crop-guide="vertical"
+            d="M1 0V3 M2 0V3"
+            fill="none"
+            stroke="white"
+            strokeWidth="1"
+            vectorEffect="non-scaling-stroke"
+          />
+          <path
+            data-crop-guide="horizontal"
+            d="M0 1H3 M0 2H3"
+            fill="none"
+            stroke="white"
+            strokeWidth="1"
+            vectorEffect="non-scaling-stroke"
+          />
+        </svg>
+      ) : null}
       {HANDLES.map(({ handle, label, className }) => (
         <button
           key={handle}
