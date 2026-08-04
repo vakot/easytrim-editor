@@ -1,15 +1,8 @@
-import { useLayoutEffect, useRef, useState, type PointerEvent, type RefObject } from "react";
+import { useLayoutEffect, useRef, useState, type RefObject } from "react";
+import ReactCrop, { type PercentCrop } from "react-image-crop";
+import "react-image-crop/dist/ReactCrop.css";
 
 import { CursorTooltip } from "@/components/ui/cursor-tooltip";
-
-import {
-  FULL_CROP,
-  isFullCrop,
-  moveCrop,
-  resizeCrop,
-  type CropHandle,
-  type CropRect,
-} from "./utils/crop-geometry";
 
 interface CropViewportProps {
   sourceUrl: string;
@@ -27,40 +20,12 @@ interface CropViewportProps {
   onError: () => void;
 }
 
-interface DragState {
-  handle: CropHandle;
-  crop: CropRect;
-  startX: number;
-  startY: number;
-}
-
 interface Bounds {
   width: number;
   height: number;
 }
 
-const HANDLES: Array<{ handle: Exclude<CropHandle, "move">; label: string; className: string }> = [
-  {
-    handle: "top-left",
-    label: "Resize crop from top left",
-    className: "-left-2 -top-2 cursor-nwse-resize",
-  },
-  {
-    handle: "top-right",
-    label: "Resize crop from top right",
-    className: "-right-2 -top-2 cursor-nesw-resize",
-  },
-  {
-    handle: "bottom-left",
-    label: "Resize crop from bottom left",
-    className: "-bottom-2 -left-2 cursor-nesw-resize",
-  },
-  {
-    handle: "bottom-right",
-    label: "Resize crop from bottom right",
-    className: "-bottom-2 -right-2 cursor-nwse-resize",
-  },
-];
+const FULL_CROP: PercentCrop = { unit: "%", x: 0, y: 0, width: 100, height: 100 };
 
 export function CropViewport({
   sourceUrl,
@@ -80,9 +45,9 @@ export function CropViewport({
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerBounds, setContainerBounds] = useState<Bounds>({ width: 0, height: 0 });
   const [sourceAspectRatio, setSourceAspectRatio] = useState(16 / 9);
-  const [crop, setCrop] = useState<CropRect>(FULL_CROP);
+  const [crop, setCrop] = useState<PercentCrop>(FULL_CROP);
   const [cropToolOpen, setCropToolOpen] = useState(false);
-  const [drag, setDrag] = useState<DragState | null>(null);
+  const [isCropInteracting, setIsCropInteracting] = useState(false);
 
   useLayoutEffect(() => {
     const container = containerRef.current;
@@ -97,8 +62,7 @@ export function CropViewport({
     return () => observer.disconnect();
   }, []);
 
-  const editing = cropToolOpen || drag !== null;
-  const cropIsApplied = !editing && !isFullCrop(crop);
+  const cropIsApplied = !cropToolOpen && !isFullCrop(crop);
   const viewportAspectRatio = cropIsApplied
     ? (sourceAspectRatio * crop.width) / crop.height
     : sourceAspectRatio;
@@ -111,37 +75,9 @@ export function CropViewport({
         top: -(crop.y * viewport.height) / crop.height,
       }
     : { width: viewport.width, height: viewport.height, left: 0, top: 0 };
-  const viewportTransition =
-    drag === null
-      ? "transition-[width,height,left,top] duration-200 ease-out motion-reduce:transition-none"
-      : "";
-
-  function startDrag(event: PointerEvent<HTMLElement>, handle: CropHandle) {
-    event.preventDefault();
-    event.stopPropagation();
-    event.currentTarget.setPointerCapture(event.pointerId);
-    setDrag({ handle, crop, startX: event.clientX, startY: event.clientY });
-  }
-
-  function moveDrag(event: PointerEvent<HTMLDivElement>) {
-    if (!drag || viewport.width <= 0 || viewport.height <= 0) return;
-    const deltaX = (event.clientX - drag.startX) / viewport.width;
-    const deltaY = (event.clientY - drag.startY) / viewport.height;
-    setCrop(
-      drag.handle === "move"
-        ? moveCrop(drag.crop, deltaX, deltaY)
-        : resizeCrop(drag.crop, drag.handle, deltaX, deltaY),
-    );
-  }
-
-  function finishDrag() {
-    setDrag(null);
-    setCropToolOpen(false);
-  }
-
-  function handlePointerMove(event: PointerEvent<HTMLDivElement>) {
-    moveDrag(event);
-  }
+  const viewportTransition = !isCropInteracting
+    ? "transition-[width,height,left,top] duration-200 ease-out motion-reduce:transition-none"
+    : "";
 
   return (
     <CursorTooltip
@@ -154,9 +90,6 @@ export function CropViewport({
         setCropToolOpen(true);
       }}
       onDoubleClick={onTogglePlayback}
-      onPointerMove={handlePointerMove}
-      onPointerUp={finishDrag}
-      onPointerCancel={finishDrag}
     >
       <div
         className={`absolute overflow-hidden ${viewportTransition}`}
@@ -167,59 +100,51 @@ export function CropViewport({
           top: `calc(50% - ${viewport.height / 2}px)`,
         }}
       >
-        <video
-          ref={videoRef}
-          key={sourceUrl}
-          data-playback-rate={playbackRate}
-          className={`absolute max-w-none cursor-pointer ${viewportTransition}`}
+        <ReactCrop
+          crop={cropToolOpen ? crop : undefined}
+          className={`absolute max-w-none ${viewportTransition}`}
           style={sourceFrame}
-          src={sourceUrl}
-          preload="auto"
-          muted={muted}
-          playsInline
-          aria-label={sourceLabel}
-          data-preview-kind={previewKind}
-          onLoadedMetadata={(event) => {
-            const { videoWidth, videoHeight } = event.currentTarget;
-            if (videoWidth > 0 && videoHeight > 0) setSourceAspectRatio(videoWidth / videoHeight);
-            onLoadedMetadata();
+          keepSelection
+          minWidth={24}
+          minHeight={24}
+          ruleOfThirds
+          onChange={(_pixelCrop, percentageCrop) => setCrop(percentageCrop)}
+          onDragStart={() => setIsCropInteracting(true)}
+          onDragEnd={() => {
+            setIsCropInteracting(false);
+            setCropToolOpen(false);
           }}
-          onPlay={onPlay}
-          onPause={onPause}
-          onTimeUpdate={(event) => onTimeUpdate(event.currentTarget.currentTime)}
-          onEnded={onEnded}
-          onError={onError}
-        />
-      </div>
-
-      {editing ? (
-        <div
-          className="absolute border-2 border-primary bg-primary/10"
-          style={{
-            width: viewport.width * crop.width,
-            height: viewport.height * crop.height,
-            left: `calc(50% - ${viewport.width / 2}px + ${viewport.width * crop.x}px)`,
-            top: `calc(50% - ${viewport.height / 2}px + ${viewport.height * crop.y}px)`,
-          }}
-          onClick={(event) => event.stopPropagation()}
-          onPointerDown={(event) => startDrag(event, "move")}
         >
-          {HANDLES.map(({ handle, label, className }) => (
-            <button
-              key={handle}
-              type="button"
-              aria-label={label}
-              className={`absolute size-4 rounded-full border-2 border-background bg-primary shadow-sm ${className}`}
-              onPointerDown={(event) => startDrag(event, handle)}
-            />
-          ))}
-          <span className="pointer-events-none absolute -top-8 left-0 rounded bg-background/90 px-2 py-1 text-xs text-foreground shadow">
-            Drag to reposition. Drag corners to crop.
-          </span>
-        </div>
-      ) : null}
+          <video
+            ref={videoRef}
+            key={sourceUrl}
+            data-playback-rate={playbackRate}
+            className="block size-full cursor-pointer"
+            src={sourceUrl}
+            preload="auto"
+            muted={muted}
+            playsInline
+            aria-label={sourceLabel}
+            data-preview-kind={previewKind}
+            onLoadedMetadata={(event) => {
+              const { videoWidth, videoHeight } = event.currentTarget;
+              if (videoWidth > 0 && videoHeight > 0) setSourceAspectRatio(videoWidth / videoHeight);
+              onLoadedMetadata();
+            }}
+            onPlay={onPlay}
+            onPause={onPause}
+            onTimeUpdate={(event) => onTimeUpdate(event.currentTarget.currentTime)}
+            onEnded={onEnded}
+            onError={onError}
+          />
+        </ReactCrop>
+      </div>
     </CursorTooltip>
   );
+}
+
+function isFullCrop(crop: PercentCrop): boolean {
+  return crop.x === 0 && crop.y === 0 && crop.width === 100 && crop.height === 100;
 }
 
 function containBounds(container: Bounds, aspectRatio: number): Bounds {

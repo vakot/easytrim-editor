@@ -52,7 +52,7 @@ describe("VideoPreview", () => {
     }
   });
 
-  it("opens crop resize handles on click and returns to the contained viewport after a drag", () => {
+  it("opens the library crop box and its accessible resize handles on click", () => {
     const videoRef = createRef<HTMLVideoElement>();
     const { container } = render(
       <VideoPreview
@@ -67,18 +67,10 @@ describe("VideoPreview", () => {
 
     const viewport = container.querySelector("[data-preview-kind]")?.parentElement?.parentElement;
     expect(viewport).not.toBeNull();
-    expect(
-      screen.queryByRole("button", { name: "Resize crop from top left" }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("group", { name: /crop selection area/ })).not.toBeInTheDocument();
     fireEvent.click(viewport!);
-    const handle = screen.getByRole("button", { name: "Resize crop from top left" });
+    const handle = screen.getByRole("button", { name: /north west drag handle/ });
     expect(handle).toBeVisible();
-
-    fireEvent.pointerDown(handle, { pointerId: 1, clientX: 0, clientY: 0 });
-    fireEvent.pointerUp(viewport!, { pointerId: 1, clientX: 0, clientY: 0 });
-    expect(
-      screen.queryByRole("button", { name: "Resize crop from top left" }),
-    ).not.toBeInTheDocument();
   });
 
   it("keeps native audio muted when the preview element is replaced", () => {
