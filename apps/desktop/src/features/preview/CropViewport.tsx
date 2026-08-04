@@ -109,6 +109,10 @@ export function CropViewport({
         top: -(crop.y * viewport.height) / crop.height,
       }
     : { width: viewport.width, height: viewport.height, left: 0, top: 0 };
+  const viewportTransition =
+    drag === null
+      ? "transition-[width,height,left,top] duration-200 ease-out motion-reduce:transition-none"
+      : "";
 
   function startDrag(event: PointerEvent<HTMLElement>, handle: CropHandle) {
     event.preventDefault();
@@ -146,7 +150,7 @@ export function CropViewport({
       onPointerCancel={finishDrag}
     >
       <div
-        className="absolute overflow-hidden"
+        className={`absolute overflow-hidden ${viewportTransition}`}
         style={{
           width: viewport.width,
           height: viewport.height,
@@ -158,7 +162,7 @@ export function CropViewport({
           ref={videoRef}
           key={sourceUrl}
           data-playback-rate={playbackRate}
-          className="absolute max-w-none cursor-pointer"
+          className={`absolute max-w-none cursor-pointer ${viewportTransition}`}
           style={sourceFrame}
           src={sourceUrl}
           preload="auto"
