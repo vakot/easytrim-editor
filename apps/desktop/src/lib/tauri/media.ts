@@ -54,6 +54,7 @@ export interface AudioTrackSelection {
 
 export interface OptimizedExportRequest extends FastExportRequest {
   resolution: { width: number; height: number };
+  crop?: { x: number; y: number; width: number; height: number };
   frameRate?: { numerator: number; denominator: number };
   arguments: string;
 }

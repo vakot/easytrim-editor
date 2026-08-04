@@ -190,6 +190,7 @@ export const en = {
     save: "Save",
     saveShortcut: "Save (Ctrl+S)",
     saveTooltip: "Save the selected segment without re-encoding. (Ctrl+S)",
+    cropSaveDisabledTooltip: "Cropping requires a full video render.",
     export: "Export",
     exportShortcut: "Export (Ctrl+E)",
     exportTooltip: "Render the selected segment with your export settings. (Ctrl+E)",
