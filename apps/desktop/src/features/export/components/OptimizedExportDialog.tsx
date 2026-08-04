@@ -116,7 +116,9 @@ export function OptimizedExportDialog({
             <div className="flex items-center gap-1.5">
               <Input
                 id="export-width"
+                type="number"
                 inputMode="numeric"
+                min={1}
                 value={settings.resolution.width}
                 onChange={(event) => {
                   const width = Number(event.target.value);
@@ -135,7 +137,9 @@ export function OptimizedExportDialog({
               <span aria-hidden="true">×</span>
               <Input
                 aria-label="Height"
+                type="number"
                 inputMode="numeric"
+                min={1}
                 value={settings.resolution.height}
                 onChange={(event) => {
                   const height = Number(event.target.value);
