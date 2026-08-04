@@ -614,13 +614,14 @@ export function EditorStage({
   function handleSegmentDragStart() {
     segmentDragActiveRef.current = true;
     segmentFollowBoundaryRef.current = null;
+    handleScrubStart();
   }
 
   function handleSegmentDragEnd() {
     segmentDragActiveRef.current = false;
     segmentFollowBoundaryRef.current = null;
     flushTrimCommit();
-    flushScrubSeek();
+    handleScrubEnd();
   }
 
   function handleTrimDragEnd() {
