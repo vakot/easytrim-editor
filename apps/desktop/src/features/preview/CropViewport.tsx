@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState, type RefObject } from "react";
+import { useLayoutEffect, useRef, useState, type FocusEvent, type RefObject } from "react";
 
 import { CursorTooltip } from "@/components/ui/cursor-tooltip";
 
@@ -83,10 +83,20 @@ export function CropViewport({
       className={`group relative size-full bg-preview-surface ${
         cropSelection.isEditing ? "overflow-visible" : "overflow-hidden"
       }`}
+      tabIndex={0}
+      aria-label="Video crop preview"
       tooltipContent="Click preview to crop"
       disabled={cropSelection.isOpen}
-      onClick={() => {
-        if (!cropSelection.isOpen) cropSelection.open();
+      onBlur={(event: FocusEvent<HTMLDivElement>) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) cropSelection.close();
+      }}
+      onClick={(event) => {
+        if (cropSelection.isOpen) {
+          cropSelection.close();
+          return;
+        }
+        event.currentTarget.focus();
+        cropSelection.open();
       }}
       onDoubleClick={onTogglePlayback}
       onPointerMove={(event) => cropSelection.moveDrag(event, viewport)}
@@ -137,6 +147,7 @@ export function CropViewport({
         <CropSelection
           crop={cropSelection.crop}
           viewport={viewport}
+          selectionRef={cropSelection.selectionRef}
           onPointerDown={cropSelection.startDrag}
         />
       ) : null}

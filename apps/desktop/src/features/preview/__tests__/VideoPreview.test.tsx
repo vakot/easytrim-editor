@@ -54,7 +54,7 @@ describe("VideoPreview", () => {
     }
   });
 
-  it("opens crop resize handles on click and closes them after a drag", () => {
+  it("keeps crop controls open after a drag and closes them outside the selection", () => {
     const videoRef = createRef<HTMLVideoElement>();
     const { container } = render(
       <VideoPreview
@@ -86,6 +86,37 @@ describe("VideoPreview", () => {
 
     fireEvent.pointerDown(handle, { pointerId: 1, clientX: 0, clientY: 0 });
     fireEvent.pointerUp(viewport!, { pointerId: 1, clientX: 0, clientY: 0 });
+    expect(handle).toBeVisible();
+
+    fireEvent.click(viewport!);
+    expect(
+      screen.queryByRole("button", { name: "Resize crop from top left" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("closes crop controls with Escape or when focus leaves the preview", () => {
+    const videoRef = createRef<HTMLVideoElement>();
+    const { container } = render(
+      <VideoPreview
+        sourceId="source-1"
+        preview={readyPreview("easytrim-media://preview-1")}
+        playbackRate={1}
+        muted
+        videoRef={videoRef}
+        {...callbacks}
+      />,
+    );
+    const viewport = container.querySelector("[data-preview-kind]")?.parentElement?.parentElement;
+    expect(viewport).not.toBeNull();
+
+    fireEvent.click(viewport!);
+    fireEvent.keyDown(viewport!, { key: "Escape" });
+    expect(
+      screen.queryByRole("button", { name: "Resize crop from top left" }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(viewport!);
+    fireEvent.blur(viewport!, { relatedTarget: document.body });
     expect(
       screen.queryByRole("button", { name: "Resize crop from top left" }),
     ).not.toBeInTheDocument();

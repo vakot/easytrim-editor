@@ -1,10 +1,11 @@
-import type { PointerEvent } from "react";
+import type { PointerEvent, RefObject } from "react";
 
 import type { CropHandle, CropRect } from "../utils/crop-geometry";
 
 interface CropSelectionProps {
   crop: CropRect;
   viewport: { width: number; height: number };
+  selectionRef: RefObject<HTMLDivElement | null>;
   onPointerDown: (event: PointerEvent<HTMLElement>, handle: CropHandle) => void;
 }
 
@@ -51,9 +52,10 @@ const HANDLES: Array<{ handle: Exclude<CropHandle, "move">; label: string; class
   },
 ];
 
-export function CropSelection({ crop, viewport, onPointerDown }: CropSelectionProps) {
+export function CropSelection({ crop, viewport, selectionRef, onPointerDown }: CropSelectionProps) {
   return (
     <div
+      ref={selectionRef}
       className="absolute z-20 border-2 border-primary bg-primary/10"
       style={{
         width: viewport.width * crop.width,
