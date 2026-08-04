@@ -329,6 +329,26 @@ describe("App", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
+  it("uses Escape to clear focus before requesting a return home", async () => {
+    mocks.chooseSource.mockResolvedValue(selection);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Select video" }));
+    await screen.findByRole("heading", { name: "holiday.mp4" });
+    const openButton = screen.getByRole("button", { name: "Open" });
+    openButton.focus();
+    expect(document.activeElement).toBe(openButton);
+
+    fireEvent.keyDown(window, { key: "Escape" });
+
+    expect(document.activeElement).toBe(document.body);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
   it("closes an open export dialog before Escape can request returning home", async () => {
     mocks.chooseSource.mockResolvedValue(selection);
     const user = userEvent.setup();
