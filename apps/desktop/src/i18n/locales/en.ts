@@ -109,21 +109,22 @@ export const en = {
     currentTime: "Current playback time",
     safeTrim: {
       label: "Safe trim following",
-      enabled: "Safe trim following: on — playhead follows a trim border once caught",
-      disabled: "Safe trim following: off — playhead stays in place",
+      enabled: "Playhead follows a trim border once caught",
+      disabled: "Playhead stays in place",
     },
     loopPlayback: {
       label: "Loop playback",
-      enabled: "Loop playback: on — restart when playback reaches its end",
-      disabled: "Loop playback: off — stop when playback reaches its end",
+      enabled: "Restart when playback reaches its end",
+      disabled: "Stop when playback reaches its end",
     },
     segmentPlayback: {
       label: "Segment playback",
-      enabled: "Segment playback: on — constrain playback to the selected segment",
-      disabled: "Segment playback: off — play the complete timeline",
+      enabled: "Constrain playback to the selected segment",
+      disabled: "Play the complete timeline",
     },
     playbackSpeed: {
       label: "Playback speed",
+      tooltip: "Adjust preview playback speed",
     },
     opening: "Opening preview…",
     preparing: "Preparing compatible preview…",

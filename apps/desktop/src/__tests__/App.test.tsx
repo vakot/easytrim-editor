@@ -335,7 +335,7 @@ describe("App", () => {
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
   });
 
-  it("opens a track volume control from the volume button hover and focus", async () => {
+  it("keeps a track volume control open while its volume button is hovered", async () => {
     mocks.chooseSource.mockResolvedValue(selection);
     const user = userEvent.setup();
     render(<App />);
@@ -347,17 +347,11 @@ describe("App", () => {
 
     await user.hover(volumeButton);
     expect(await screen.findByRole("slider", { name: "eng volume" })).toBeInTheDocument();
-    expect(await screen.findByRole("tooltip")).toHaveTextContent("Mute");
+
+    await user.click(volumeButton);
+    expect(screen.getByRole("slider", { name: "eng volume" })).toBeInTheDocument();
 
     await user.unhover(volumeButton);
-    await waitFor(() => {
-      expect(screen.queryByRole("slider", { name: "eng volume" })).not.toBeInTheDocument();
-    });
-
-    volumeButton.focus();
-    expect(await screen.findByRole("slider", { name: "eng volume" })).toBeInTheDocument();
-
-    volumeButton.blur();
     await waitFor(() => {
       expect(screen.queryByRole("slider", { name: "eng volume" })).not.toBeInTheDocument();
     });
@@ -440,14 +434,15 @@ describe("App", () => {
         "true",
       );
       const masterVolume = screen.getByRole("slider", { name: "All audio tracks volume" });
+      const masterVolumeControl = masterVolume.closest('[data-slot="slider"]')?.parentElement;
       expect(masterVolume).toHaveAttribute("aria-valuenow", "0");
       masterVolume.focus();
       await user.keyboard("{End}");
       await waitFor(() => expect(masterVolume).toHaveAttribute("aria-valuenow", "6"));
-      expect(screen.getByText("+6.0 dB")).toBeInTheDocument();
+      expect(masterVolumeControl).toHaveTextContent("+6.0 dB");
       fireEvent.doubleClick(masterVolume);
       expect(masterVolume).toHaveAttribute("aria-valuenow", "0");
-      expect(screen.getByText("+0.0 dB")).toBeInTheDocument();
+      expect(masterVolumeControl).toHaveTextContent("+0.0 dB");
       await user.click(screen.getByRole("button", { name: "Mute eng" }));
       expect(screen.getByRole("button", { name: "Enable eng" })).toHaveAttribute(
         "aria-pressed",
