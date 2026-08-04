@@ -480,9 +480,12 @@ export function EditorStage({
         if (startSequence !== playbackStartSequenceRef.current) {
           return;
         }
-        pauseAudioPlayback();
+        playbackStartSequenceRef.current += 1;
         isPlayingRef.current = false;
+        video.pause();
+        pauseAudioPlayback();
         setIsPlaying(false);
+        stopPlayheadAnimation();
         setTransportError(t("preview.playbackFailed"));
       });
   }

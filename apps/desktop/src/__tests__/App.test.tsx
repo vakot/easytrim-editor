@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   chooseSource: vi.fn(),
   inspectMedia: vi.fn(),
   listenForSourceDrops: vi.fn(),
+  prepareAudioPreviews: vi.fn(),
   prepareProxyPreview: vi.fn(),
   prepareSourcePreview: vi.fn(),
   prepareWaveforms: vi.fn(),
@@ -28,6 +29,7 @@ vi.mock("../lib/tauri/media", async (importOriginal) => {
     chooseSource: mocks.chooseSource,
     inspectMedia: mocks.inspectMedia,
     listenForSourceDrops: mocks.listenForSourceDrops,
+    prepareAudioPreviews: mocks.prepareAudioPreviews,
     prepareProxyPreview: mocks.prepareProxyPreview,
     prepareSourcePreview: mocks.prepareSourcePreview,
     prepareWaveforms: mocks.prepareWaveforms,
@@ -86,6 +88,13 @@ beforeEach(() => {
   mocks.checkMediaCapabilities.mockResolvedValue(capabilities);
   mocks.chooseSource.mockResolvedValue(null);
   mocks.inspectMedia.mockResolvedValue(media);
+  mocks.prepareAudioPreviews.mockResolvedValue([
+    {
+      sourceId: selection.sourceId,
+      streamIndex: 1,
+      url: "http://easytrim-media.localhost/source-1?variant=audio&stream=1",
+    },
+  ]);
   mocks.prepareSourcePreview.mockResolvedValue({
     sourceId: selection.sourceId,
     url: "http://easytrim-media.localhost/source-1?variant=source",
@@ -594,6 +603,68 @@ describe("App", () => {
     video.currentTime = 10;
     fireEvent.timeUpdate(video);
     expect(audioPlayhead.style.left).toBe(playhead.style.left);
+  });
+
+  it("stops all media and remains restartable when independent audio cannot play", async () => {
+    mocks.chooseSource.mockResolvedValue(selection);
+    const user = userEvent.setup();
+    const audio = document.createElement("audio");
+    const audioPlay = vi
+      .spyOn(audio, "play")
+      .mockRejectedValue(new DOMException("Playback interrupted", "AbortError"));
+    const audioPause = vi.spyOn(audio, "pause").mockImplementation(() => undefined);
+    const audioConstructor = vi.fn(function AudioMock() {
+      return audio;
+    });
+    const audioContext = {
+      destination: {},
+      resume: vi.fn().mockResolvedValue(undefined),
+      close: vi.fn().mockResolvedValue(undefined),
+      createGain: vi.fn(() => ({
+        gain: { value: 1 },
+        connect: vi.fn(),
+        disconnect: vi.fn(),
+      })),
+      createMediaElementSource: vi.fn(() => ({
+        connect: vi.fn((destination: unknown) => destination),
+        disconnect: vi.fn(),
+      })),
+    };
+
+    vi.stubGlobal("Audio", audioConstructor);
+    vi.stubGlobal(
+      "AudioContext",
+      vi.fn(function AudioContextMock() {
+        return audioContext;
+      }),
+    );
+
+    try {
+      render(<App />);
+      await user.click(screen.getByRole("button", { name: "Select video" }));
+      const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
+      await waitFor(() => expect(audioConstructor).toHaveBeenCalledOnce());
+      const videoPlay = vi.spyOn(video, "play").mockImplementation(async () => {
+        fireEvent.play(video);
+      });
+      const videoPause = vi.spyOn(video, "pause").mockImplementation(() => undefined);
+
+      await user.click(screen.getByRole("button", { name: "Play" }));
+
+      expect(await screen.findByRole("alert")).toHaveTextContent("Playback could not start.");
+      expect(videoPause).toHaveBeenCalledOnce();
+      expect(audioPause).toHaveBeenCalled();
+      expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
+
+      audioPlay.mockResolvedValueOnce(undefined);
+      await user.click(screen.getByRole("button", { name: "Play" }));
+
+      await waitFor(() => expect(videoPlay).toHaveBeenCalledTimes(2));
+      expect(screen.getByRole("button", { name: "Pause" })).toBeInTheDocument();
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it("stops preview playback when the preview errors", async () => {
