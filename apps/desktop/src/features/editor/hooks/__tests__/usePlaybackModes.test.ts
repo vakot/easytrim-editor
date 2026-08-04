@@ -55,4 +55,27 @@ describe("usePlaybackModes", () => {
       action: { type: "restart", positionMicros: 10_000_000 },
     });
   });
+
+  it("refreshes the active range when trim boundaries change before resume", () => {
+    const { result } = renderHook(() => usePlaybackModes());
+    const updatedTrim = { ...trim, endMicros: 30_000_000 };
+
+    act(() => result.current.startMicros(15_000_000, trim));
+    expect(result.current.consumeBoundary(20_000_000, updatedTrim)).toEqual({
+      reached: true,
+      action: { type: "restart", positionMicros: 10_000_000 },
+    });
+
+    act(() => {
+      result.current.startMicros(15_000_000, updatedTrim);
+      result.current.resetBoundary();
+    });
+    expect(result.current.consumeBoundary(20_000_000, updatedTrim)).toEqual({
+      reached: false,
+    });
+    expect(result.current.consumeBoundary(30_000_000, updatedTrim)).toEqual({
+      reached: true,
+      action: { type: "restart", positionMicros: 10_000_000 },
+    });
+  });
 });

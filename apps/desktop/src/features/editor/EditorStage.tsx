@@ -340,6 +340,11 @@ export function EditorStage({
     const shouldResume = resumeAfterScrubRef.current;
     resumeAfterScrubRef.current = false;
     if (shouldResume) {
+      // Trim handles can change while playback is paused. Refresh the active
+      // playback range before resuming so the next boundary check uses the
+      // committed trim instead of the range captured before the drag.
+      playbackModes.startMicros(currentPlayheadMicrosRef.current, trimRef.current);
+      playbackModes.resetBoundary();
       startMediaPlayback();
     }
   }
