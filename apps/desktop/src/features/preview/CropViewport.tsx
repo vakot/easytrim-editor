@@ -60,6 +60,10 @@ export function CropViewport({
     onCropToolOpenChange(cropSelection.isOpen);
   }, [cropSelection.isOpen, onCropToolOpenChange]);
 
+  useEffect(() => {
+    if (cropSelection.isOpen) videoRef.current?.pause();
+  }, [cropSelection.isOpen, videoRef]);
+
   useLayoutEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -111,7 +115,9 @@ export function CropViewport({
         event.currentTarget.focus();
         cropSelection.open();
       }}
-      onDoubleClick={onTogglePlayback}
+      onDoubleClick={() => {
+        if (!cropSelection.isOpen) onTogglePlayback();
+      }}
       onPointerMove={(event) => cropSelection.moveDrag(event, viewport)}
       onPointerUp={cropSelection.finishDrag}
       onPointerCancel={cropSelection.finishDrag}
@@ -149,7 +155,13 @@ export function CropViewport({
             if (videoWidth > 0 && videoHeight > 0) setSourceAspectRatio(videoWidth / videoHeight);
             onLoadedMetadata();
           }}
-          onPlay={onPlay}
+          onPlay={(event) => {
+            if (cropSelection.isOpen) {
+              event.currentTarget.pause();
+              return;
+            }
+            onPlay();
+          }}
           onPause={onPause}
           onTimeUpdate={(event) => onTimeUpdate(event.currentTarget.currentTime)}
           onEnded={onEnded}

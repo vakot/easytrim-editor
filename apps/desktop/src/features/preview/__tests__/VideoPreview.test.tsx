@@ -1,6 +1,6 @@
 import { createRef } from "react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import type { PreviewState } from "@/app/session-state";
 import { VideoPreview } from "../VideoPreview";
@@ -21,6 +21,14 @@ function readyPreview(url: string): PreviewState {
     value: { sourceId: "source-1", url, kind: "proxy" },
   };
 }
+
+beforeAll(() => {
+  vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => undefined);
+});
+
+afterAll(() => {
+  vi.restoreAllMocks();
+});
 
 describe("VideoPreview", () => {
   it("shows the delayed crop hint at the pointer position and hides it when crop opens", () => {
@@ -100,6 +108,31 @@ describe("VideoPreview", () => {
     expect(
       screen.queryByRole("button", { name: "Resize crop from top left" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("pauses playback while crop controls are open", () => {
+    const videoRef = createRef<HTMLVideoElement>();
+    const { container } = render(
+      <VideoPreview
+        sourceId="source-1"
+        preview={readyPreview("easytrim-media://preview-1")}
+        playbackRate={1}
+        muted
+        videoRef={videoRef}
+        {...callbacks}
+      />,
+    );
+    const viewport = container.querySelector("[data-preview-kind]")?.parentElement?.parentElement;
+    const video = container.querySelector("video");
+    expect(viewport).not.toBeNull();
+    expect(video).not.toBeNull();
+    const pause = vi.spyOn(video!, "pause").mockImplementation(() => undefined);
+
+    fireEvent.click(viewport!);
+    expect(pause).toHaveBeenCalledTimes(1);
+
+    fireEvent.play(video!);
+    expect(pause).toHaveBeenCalledTimes(2);
   });
 
   it("closes crop controls with Escape or when focus leaves the preview", () => {
