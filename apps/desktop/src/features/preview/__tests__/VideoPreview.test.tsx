@@ -81,6 +81,10 @@ describe("VideoPreview", () => {
     expect(handle).toBeVisible();
     expect(screen.getAllByRole("button", { name: /resize crop from/i })).toHaveLength(8);
     expect(container.querySelector("[data-crop-rule-of-thirds]")).toBeInTheDocument();
+    expect(container.querySelector("[data-crop-rule-of-thirds]")?.parentElement).toHaveClass(
+      "animate-in",
+      "zoom-in-95",
+    );
     const verticalGuide = container.querySelector('[data-crop-guide="vertical"]');
     expect(verticalGuide).toBeInTheDocument();
     expect(container.querySelector('[data-crop-guide="horizontal"]')).toBeInTheDocument();
