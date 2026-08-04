@@ -6,7 +6,6 @@ import {
   frameDurationMicros,
   playbackBoundaryAction,
   playbackRange,
-  playbackStartMicros,
 } from "../playback";
 
 describe("playback domain", () => {
@@ -40,19 +39,9 @@ describe("playback domain", () => {
     });
   });
 
-  it("restarts playback inside its active range", () => {
-    const range = { startMicros: 10_000_000, endMicros: 20_000_000 };
-    expect(playbackStartMicros(5_000_000, range)).toBe(10_000_000);
-    expect(playbackStartMicros(15_000_000, range)).toBe(15_000_000);
-    expect(playbackStartMicros(20_000_000, range)).toBe(10_000_000);
-  });
-
   it("stops or loops at the active playback boundary", () => {
     const range = { startMicros: 10_000_000, endMicros: 20_000_000 };
-    expect(playbackBoundaryAction(5_000_000, range, false)).toEqual({
-      type: "restart",
-      positionMicros: 10_000_000,
-    });
+    expect(playbackBoundaryAction(5_000_000, range, false)).toEqual({ type: "continue" });
     expect(playbackBoundaryAction(19_999_999, range, false)).toEqual({ type: "continue" });
     expect(playbackBoundaryAction(20_000_000, range, false)).toEqual({
       type: "stop",
