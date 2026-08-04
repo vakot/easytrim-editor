@@ -39,6 +39,7 @@ describe("VideoPreview", () => {
       );
       const viewport = container.querySelector("[data-preview-kind]")?.parentElement?.parentElement;
       expect(viewport).not.toBeNull();
+      expect(container.querySelector("[data-crop-preview-affordance]")).toBeInTheDocument();
 
       fireEvent.pointerEnter(viewport!, { clientX: 30, clientY: 50 });
       expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
@@ -47,6 +48,7 @@ describe("VideoPreview", () => {
 
       fireEvent.click(viewport!);
       expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+      expect(container.querySelector("[data-crop-preview-affordance]")).not.toBeInTheDocument();
     } finally {
       vi.useRealTimers();
     }

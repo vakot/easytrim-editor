@@ -82,7 +82,7 @@ export function CropViewport({
   return (
     <CursorTooltip
       ref={containerRef}
-      className="relative size-full overflow-hidden bg-preview-surface"
+      className="group relative size-full overflow-hidden bg-preview-surface"
       tooltipContent="Click preview to crop"
       disabled={cropToolOpen}
       onClick={() => {
@@ -91,6 +91,21 @@ export function CropViewport({
       }}
       onDoubleClick={onTogglePlayback}
     >
+      {!cropToolOpen ? (
+        <>
+          <div
+            aria-hidden="true"
+            data-crop-preview-affordance
+            className="pointer-events-none absolute inset-2 z-10 rounded-md border border-primary/70 bg-primary/5 opacity-0 ring-1 ring-primary/20 transition-[opacity,transform] duration-150 ease-out group-hover:scale-[0.995] group-hover:opacity-100 motion-reduce:transition-none"
+          />
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute left-1/2 top-3 z-10 -translate-x-1/2 translate-y-1 rounded-full border border-primary/30 bg-background/85 px-3 py-1 text-xs font-medium text-foreground opacity-0 shadow-sm transition-[opacity,transform] duration-150 ease-out group-hover:translate-y-0 group-hover:opacity-100 motion-reduce:transition-none"
+          >
+            Click to crop
+          </span>
+        </>
+      ) : null}
       <div
         className={`absolute overflow-hidden ${viewportTransition}`}
         style={{
