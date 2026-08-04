@@ -3,7 +3,6 @@ import { useRef } from "react";
 import {
   playbackBoundaryAction,
   playbackRange,
-  playbackStartMicros,
   type PlaybackBoundaryAction,
   type PlaybackRange,
 } from "@/domain/playback";
@@ -42,7 +41,7 @@ export function usePlaybackModes({
   function startMicros(currentMicros: number, trim: TrimRange) {
     const range = activeRange(trim, currentMicros);
     playbackRangeRef.current = range;
-    return playbackStartMicros(currentMicros, range);
+    return currentMicros;
   }
 
   function consumeBoundary(currentMicros: number, trim: TrimRange): PlaybackBoundaryResult {
