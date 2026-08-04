@@ -1,6 +1,8 @@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { timelinePercent } from "@/domain/trim";
+import { Info } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { AudioLevelControl } from "./components/AudioLevelControl";
@@ -47,7 +49,7 @@ export function AudioTracks({
         {t("audio.title")}
       </h3>
       <div className="grid min-w-0 grid-cols-[var(--editor-track-grid-columns)] items-center gap-3">
-        <div className="flex min-w-0 items-center gap-2 px-1 py-1">
+        <div className="flex min-w-0 items-center gap-2 p-1 pr-2">
           <VolumeButton
             enabled={masterEnabled}
             label={t("audio.allTracks")}
@@ -62,12 +64,18 @@ export function AudioTracks({
         </div>
         <div className="flex min-w-0 items-center justify-between gap-4">
           <p className="truncate text-xs leading-5 text-muted-foreground">{outputSummary}</p>
-          <div className="flex shrink-0 items-center gap-2">
-            <Checkbox id="merge-audio" checked={mergeAudio} onCheckedChange={onToggleMerge} />
-            <Label htmlFor="merge-audio" className="text-xs text-muted-foreground">
-              {t("audio.mergeSelected")}
-            </Label>
-          </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex shrink-0 items-center gap-2">
+                <Checkbox id="merge-audio" checked={mergeAudio} onCheckedChange={onToggleMerge} />
+                <Label htmlFor="merge-audio" className="text-xs text-muted-foreground">
+                  {t("audio.mergeSelected")}
+                </Label>
+                <Info aria-hidden="true" className="size-3.5 text-muted-foreground" />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>{t("audio.mergeSelectedHint")}</TooltipContent>
+          </Tooltip>
         </div>
       </div>
 

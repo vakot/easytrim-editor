@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 import type { TrimRange } from "@/domain/trim";
 import { timelineGeometryStyle } from "@/features/timeline/utils/timeline-geometry";
 
@@ -26,7 +27,7 @@ export function TimelinePane({ range, timeline, audioTracks }: TimelinePaneProps
       <div className="min-w-0 px-5 py-4" data-testid="timeline-fixed-content">
         {timeline}
       </div>
-      {hasAudioTracks ? <hr className="border-t border-border mx-5" /> : null}
+      {hasAudioTracks ? <Separator className="mx-5" /> : null}
       {hasAudioTracks ? (
         <ScrollArea type="auto" className="min-h-0 min-w-0" data-testid="audio-tracks-scroll">
           <div className="min-w-0 px-5 py-4">{audioTracks}</div>

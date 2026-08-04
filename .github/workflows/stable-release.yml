@@ -33,8 +33,6 @@ jobs:
   release:
     name: Stable release
     runs-on: ${{ inputs.platform == 'linux' && 'ubuntu-22.04' || inputs.platform == 'windows' && 'windows-latest' || inputs.platform == 'macos-intel' && 'macos-15-intel' || 'macos-latest' }}
-    env:
-      APPLE_SIGNING_ENABLED: ${{ secrets.APPLE_CERTIFICATE != '' }}
     steps:
       - name: Check out tagged source
         uses: actions/checkout@v4
@@ -68,7 +66,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Verify macOS signing configuration
-        if: startsWith(inputs.platform, 'macos') && env.APPLE_SIGNING_ENABLED == 'true'
+        if: startsWith(inputs.platform, 'macos')
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
@@ -87,7 +85,7 @@ jobs:
           test -n "$APPLE_TEAM_ID" || { echo "APPLE_TEAM_ID is not configured"; exit 1; }
 
       - name: Import macOS signing certificate
-        if: startsWith(inputs.platform, 'macos') && env.APPLE_SIGNING_ENABLED == 'true'
+        if: startsWith(inputs.platform, 'macos')
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
