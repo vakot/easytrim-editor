@@ -37,6 +37,7 @@ export interface ExportPanelProps {
   presetState: ExportPresetState;
   onPresetAction: Dispatch<ExportPresetAction>;
   onNativeDialogStateChange: (open: boolean) => void;
+  cropResolution: { width: number; height: number };
 }
 
 export interface ExportSettings {

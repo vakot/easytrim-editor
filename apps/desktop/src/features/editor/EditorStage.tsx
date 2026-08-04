@@ -53,6 +53,8 @@ export function EditorStage({
   onToggleAudioMerge,
   onWaveformImageError,
   audioPreviewUrls,
+  sourceDimensions,
+  onCropResolutionChange,
 }: EditorStageProps) {
   const { t } = useTranslation();
   const timelinePanelSizing = useTimelinePanelSizing(sourceId, audioStreams.length);
@@ -712,6 +714,8 @@ export function EditorStage({
             }}
             onTimeUpdate={handleTimeUpdate}
             onEnded={handlePlaybackEnded}
+            sourceDimensions={sourceDimensions}
+            onCropResolutionChange={onCropResolutionChange}
           />
         </div>
       </Panel>

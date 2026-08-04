@@ -28,6 +28,7 @@ export function SourceWorkspace({
   audioPreviewUrls,
   exportQueue,
   update,
+  onCropResolutionChange,
 }: SourceWorkspaceProps) {
   const { t } = useTranslation();
   const { workspaceLayout, setWorkspaceLayout } = useEditorViewState();
@@ -109,6 +110,8 @@ export function SourceWorkspace({
               onToggleAudioMerge={() => onToggleAudioMerge(sourceId)}
               onWaveformImageError={(streamIndex) => onWaveformImageError(sourceId, streamIndex)}
               audioPreviewUrls={audioPreviewUrls}
+              sourceDimensions={{ width: media.video.width, height: media.video.height }}
+              onCropResolutionChange={onCropResolutionChange}
             />
           ) : null}
           {isSourceDragActive ? <DropOverlay /> : null}

@@ -20,4 +20,5 @@ export interface SourceWorkspaceProps {
   audioPreviewUrls: Record<number, string>;
   exportQueue: ExportToast[];
   update: AvailableUpdate | null;
+  onCropResolutionChange: (resolution: { width: number; height: number }) => void;
 }

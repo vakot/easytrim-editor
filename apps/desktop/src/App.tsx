@@ -10,11 +10,25 @@ import { useTranslation } from "react-i18next";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import { useReleaseCheck } from "@/features/release/hooks/useReleaseCheck";
 import { EditorViewStateProvider } from "@/app/editor-view-state";
+import { useEffect, useState } from "react";
 
 function EasyTrimEditorApp() {
   const app = useEasyTrimEditorApp();
   const { t } = useTranslation();
   const { update } = useReleaseCheck();
+  const source = app.session.source;
+  const sourceDimensions = source?.media
+    ? { width: source.media.video.width, height: source.media.video.height }
+    : null;
+  const [cropResolution, setCropResolution] = useState(sourceDimensions ?? { width: 1, height: 1 });
+
+  useEffect(() => {
+    // Crop dimensions are session UI state derived from the active source.
+    if (source?.media) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCropResolution({ width: source.media.video.width, height: source.media.video.height });
+    }
+  }, [source?.media, source?.selection.sourceId]);
 
   return (
     <TooltipProvider>
@@ -33,6 +47,7 @@ function EasyTrimEditorApp() {
             onChooseSource={() => void app.handleChooseSource()}
             onReturnToWelcome={app.requestReturnToWelcome}
             onNativeDialogStateChange={app.setIsNativeDialogOpen}
+            cropResolution={cropResolution}
           />
         ) : null}
 
@@ -75,6 +90,7 @@ function EasyTrimEditorApp() {
           audioPreviewUrls={app.audioPreviewUrls}
           exportQueue={app.exportQueue}
           update={update}
+          onCropResolutionChange={setCropResolution}
         />
         {app.hasSource ? <StatusBar update={update} queue={app.exportQueue} /> : null}
       </main>

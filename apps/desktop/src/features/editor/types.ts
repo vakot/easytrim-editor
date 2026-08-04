@@ -22,6 +22,8 @@ export interface EditorStageProps {
   onToggleAudioMerge: () => void;
   onWaveformImageError: (streamIndex: number) => void;
   audioPreviewUrls: Record<number, string>;
+  sourceDimensions: { width: number; height: number };
+  onCropResolutionChange: (resolution: { width: number; height: number }) => void;
 }
 
 export interface EditorShortcutActions {

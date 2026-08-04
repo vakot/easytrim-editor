@@ -1,11 +1,12 @@
 import { LoaderCircle } from "lucide-react";
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 
 import type { PreviewState } from "@/app/session-state";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { useTranslation } from "react-i18next";
 import { CropViewport } from "./CropViewport";
+import type { CropRect } from "./utils/crop-geometry";
 
 interface VideoPreviewProps {
   sourceId: string;
@@ -20,6 +21,8 @@ interface VideoPreviewProps {
   onPause: () => void;
   onTimeUpdate: (seconds: number) => void;
   onEnded: () => void;
+  sourceDimensions?: { width: number; height: number };
+  onCropResolutionChange?: (resolution: { width: number; height: number }) => void;
 }
 
 export function VideoPreview({
@@ -35,11 +38,23 @@ export function VideoPreview({
   onPause,
   onTimeUpdate,
   onEnded,
+  sourceDimensions,
+  onCropResolutionChange,
 }: VideoPreviewProps) {
   const { t } = useTranslation();
   const reportedUrl = useRef<string | null>(null);
   const [cropToolOpen, setCropToolOpen] = useState(false);
   const readyUrl = preview.status === "ready" ? preview.value.url : null;
+  const effectiveSourceDimensions = sourceDimensions ?? { width: 1920, height: 1080 };
+  const handleCropChange = useCallback(
+    (crop: CropRect) => {
+      onCropResolutionChange?.({
+        width: Math.max(1, Math.round(effectiveSourceDimensions.width * crop.width)),
+        height: Math.max(1, Math.round(effectiveSourceDimensions.height * crop.height)),
+      });
+    },
+    [effectiveSourceDimensions.height, effectiveSourceDimensions.width, onCropResolutionChange],
+  );
 
   useEffect(() => {
     if (videoRef.current) videoRef.current.playbackRate = playbackRate;
@@ -111,6 +126,7 @@ export function VideoPreview({
           onPlaybackError(sourceId, value.kind);
         }}
         onCropToolOpenChange={setCropToolOpen}
+        onCropChange={handleCropChange}
       />
       {value.kind === "proxy" ? (
         <Badge variant="secondary" className="absolute top-3 right-3">
