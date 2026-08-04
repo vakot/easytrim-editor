@@ -73,6 +73,7 @@ describe("VideoPreview", () => {
     expect(
       screen.queryByRole("button", { name: "Resize crop from top left" }),
     ).not.toBeInTheDocument();
+    fireEvent.pointerDown(viewport!);
     fireEvent.click(viewport!);
     expect(viewport).toHaveClass("overflow-visible");
     expect(container.firstElementChild).toHaveClass("overflow-visible");
@@ -89,6 +90,7 @@ describe("VideoPreview", () => {
     fireEvent.pointerUp(viewport!, { pointerId: 1, clientX: 0, clientY: 0 });
     expect(handle).toBeVisible();
 
+    fireEvent.pointerDown(viewport!);
     fireEvent.click(viewport!);
     expect(
       screen.queryByRole("button", { name: "Resize crop from top left" }),

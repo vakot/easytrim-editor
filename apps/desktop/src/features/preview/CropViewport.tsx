@@ -54,7 +54,7 @@ export function CropViewport({
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerBounds, setContainerBounds] = useState<Bounds>({ width: 0, height: 0 });
   const [sourceAspectRatio, setSourceAspectRatio] = useState(16 / 9);
-  const cropSelection = useCropSelection();
+  const cropSelection = useCropSelection(containerRef);
 
   useEffect(() => {
     onCropToolOpenChange(cropSelection.isOpen);

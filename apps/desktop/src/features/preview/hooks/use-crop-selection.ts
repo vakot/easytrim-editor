@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type RefObject,
+} from "react";
 
 import {
   FULL_CROP,
@@ -20,7 +26,7 @@ interface CropSelectionBounds {
   height: number;
 }
 
-export function useCropSelection() {
+export function useCropSelection(previewRef: RefObject<HTMLDivElement | null>) {
   const [crop, setCrop] = useState<CropRect>(FULL_CROP);
   const [isOpen, setIsOpen] = useState(false);
   const [drag, setDrag] = useState<DragState | null>(null);
@@ -39,7 +45,7 @@ export function useCropSelection() {
     if (!isOpen) return;
 
     function closeOnOutsidePointerDown(event: globalThis.PointerEvent) {
-      if (event.target instanceof Node && selectionRef.current?.contains(event.target)) return;
+      if (event.target instanceof Node && previewRef.current?.contains(event.target)) return;
       close();
     }
 
@@ -53,7 +59,7 @@ export function useCropSelection() {
       document.removeEventListener("pointerdown", closeOnOutsidePointerDown);
       document.removeEventListener("keydown", closeOnEscape);
     };
-  }, [isOpen]);
+  }, [isOpen, previewRef]);
 
   function startDrag(event: ReactPointerEvent<HTMLElement>, handle: CropHandle) {
     event.preventDefault();
