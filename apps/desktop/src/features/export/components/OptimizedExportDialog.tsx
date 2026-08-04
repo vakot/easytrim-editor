@@ -78,8 +78,9 @@ export function OptimizedExportDialog({
           <DialogDescription>{t("export.dialog.description")}</DialogDescription>
         </DialogHeader>
         <PresetManager state={presetState} onAction={onPresetAction} />
-        <div className="grid grid-cols-2 gap-3">
-          <div className="grid gap-1.5">
+        <div className="grid gap-3">
+          <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-end gap-3">
+            <div className="grid gap-1.5">
             <Label htmlFor="export-resolution">{t("export.dialog.resolution")}</Label>
             <Select
               value={resolutionValue}
@@ -102,8 +103,10 @@ export function OptimizedExportDialog({
               </SelectContent>
             </Select>
           </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor="export-width">{t("export.dialog.resolution")}</Label>
+          <div className="flex items-center gap-1.5">
+            <Label className="sr-only" htmlFor="export-width">
+              Width
+            </Label>
             <div className="flex items-center gap-1.5">
               <Input
                 id="export-width"
@@ -142,17 +145,24 @@ export function OptimizedExportDialog({
                   });
                 }}
               />
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                aria-label={isAspectRatioLocked ? "Unlock aspect ratio" : "Lock aspect ratio"}
-                aria-pressed={isAspectRatioLocked}
-                onClick={() => setIsAspectRatioLocked((locked) => !locked)}
-              >
-                {isAspectRatioLocked ? <Link2 /> : <Unlink2 />}
-              </Button>
-            </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant={isAspectRatioLocked ? "secondary" : "outline"}
+                  size="icon"
+                  aria-label={isAspectRatioLocked ? "Unlock aspect ratio" : "Lock aspect ratio"}
+                  aria-pressed={isAspectRatioLocked}
+                  onClick={() => setIsAspectRatioLocked((locked) => !locked)}
+                >
+                  {isAspectRatioLocked ? <Link2 /> : <Unlink2 />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {isAspectRatioLocked ? "Aspect ratio locked" : "Aspect ratio unlocked"}
+              </TooltipContent>
+            </Tooltip>
+          </div>
           </div>
           <div className="grid gap-1.5">
             <Label htmlFor="export-frame-rate">{t("export.dialog.frameRate")}</Label>
