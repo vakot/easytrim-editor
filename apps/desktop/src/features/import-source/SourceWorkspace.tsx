@@ -61,7 +61,7 @@ export function SourceWorkspace({
         minSize="15rem"
         maxSize="30rem"
         groupResizeBehavior="preserve-pixel-size"
-        className="min-h-0 min-w-0 overflow-hidden border-r border-border bg-card/30"
+        className="min-h-0 min-w-0 overflow-hidden bg-card/30"
       >
         <SourceSidebar session={session} queue={exportQueue} />
       </Panel>

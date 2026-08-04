@@ -1,8 +1,7 @@
 import type { AudioTrackState } from "@/app/session-state";
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Card } from "@/components/ui/card";
 import type { AudioStream } from "@/lib/tauri/media";
-import { memo } from "react";
+import { memo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { WAVEFORM_RENDER_WIDTH } from "../hooks/useWaveformPreparation";
@@ -32,52 +31,59 @@ export const AudioTrackRow = memo(function AudioTrackRow({
   onWaveformImageError,
 }: AudioTrackRowProps) {
   const { t } = useTranslation();
+  const [controlsVisible, setControlsVisible] = useState(false);
 
   return (
     <div
       className="grid min-w-0 grid-cols-[var(--editor-track-grid-columns)] gap-3"
       data-slot="audio-track-row"
     >
-      <HoverCard openDelay={0} closeDelay={100}>
-        <div className="flex min-w-0 items-center gap-2 rounded-lg px-1 py-1 hover:bg-muted/40">
-          <HoverCardTrigger asChild>
-            <VolumeButton
-              enabled={track.enabled}
-              label={t(track.enabled ? "audio.muteTrack" : "audio.enableTrack", { title })}
-              onClick={() => onToggle(stream.streamIndex)}
-            />
-          </HoverCardTrigger>
-          <div className="min-w-0 leading-tight">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <p
-                  className="truncate text-sm font-semibold transition-colors data-[enabled=false]:text-muted-foreground"
-                  data-enabled={track.enabled}
-                >
-                  {title}
-                </p>
-              </TooltipTrigger>
-              <TooltipContent>{title}</TooltipContent>
-            </Tooltip>
+      <Card
+        className="relative flex flex-row items-center gap-2 bg-transparent p-1 pr-2 ring-transparent transition-[background-color,box-shadow] duration-150 data-[controls-visible=true]:bg-card data-[controls-visible=true]:ring-foreground/10"
+        data-controls-visible={controlsVisible}
+        onPointerEnter={() => setControlsVisible(true)}
+        onPointerLeave={() => setControlsVisible(false)}
+        onFocusCapture={() => setControlsVisible(true)}
+        onBlurCapture={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget)) setControlsVisible(false);
+        }}
+      >
+        <VolumeButton
+          enabled={track.enabled}
+          label={t(track.enabled ? "audio.muteTrack" : "audio.enableTrack", { title })}
+          onClick={() => onToggle(stream.streamIndex)}
+        />
+        <div className="relative min-w-0 flex-1">
+          <div
+            className="leading-tight opacity-100 transition-opacity duration-150 data-[controls-visible=true]:opacity-0"
+            data-controls-visible={controlsVisible}
+            aria-hidden={controlsVisible}
+          >
+            <p
+              className="truncate text-sm font-semibold transition-colors data-[enabled=false]:text-muted-foreground"
+              data-enabled={track.enabled}
+            >
+              {title}
+            </p>
             <p className="truncate text-xs leading-5 text-muted-foreground">
               #{stream.streamIndex} · {stream.codecName.toUpperCase()} · {formatChannels(stream, t)}
             </p>
           </div>
+          <div
+            className="pointer-events-none absolute inset-0 flex items-center opacity-0 transition-opacity duration-150 data-[controls-visible=true]:pointer-events-auto data-[controls-visible=true]:opacity-100"
+            data-controls-visible={controlsVisible}
+            aria-hidden={!controlsVisible}
+            inert={!controlsVisible}
+          >
+            <AudioLevelControl
+              label={t("audio.trackVolume", { title })}
+              volumePercent={track.enabled ? track.volumePercent : 0}
+              onChange={(volumePercent) => onVolumeChange(stream.streamIndex, volumePercent)}
+              className="mt-2"
+            />
+          </div>
         </div>
-        <HoverCardContent
-          side="right"
-          align="center"
-          sideOffset={4}
-          className="w-[calc(var(--editor-track-controls-width)-1.5rem)]"
-        >
-          <AudioLevelControl
-            label={t("audio.trackVolume", { title })}
-            volumePercent={track.enabled ? track.volumePercent : 0}
-            onChange={(volumePercent) => onVolumeChange(stream.streamIndex, volumePercent)}
-            className="mt-2"
-          />
-        </HoverCardContent>
-      </HoverCard>
+      </Card>
       <div
         className="relative h-12 min-w-0 overflow-hidden rounded-lg border border-border bg-muted/30 transition-opacity data-[enabled=false]:opacity-40"
         data-enabled={track.enabled}
