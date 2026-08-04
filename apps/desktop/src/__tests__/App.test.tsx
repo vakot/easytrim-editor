@@ -463,10 +463,7 @@ describe("App", () => {
       expect(allTracks).toHaveAttribute("aria-pressed", "true");
       expect(screen.getByText("1 selected track kept separately")).toBeInTheDocument();
       const mergeAudio = screen.getByRole("checkbox", { name: "Merge selected tracks" });
-      const mergeAudioInfo = screen.getByRole("button", {
-        name: "All selected tracks are merged into one track; this requires encoding.",
-      });
-      await user.hover(mergeAudioInfo);
+      await user.hover(mergeAudio);
       expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
       expect(await screen.findByRole("tooltip")).toHaveTextContent(
         "All selected tracks are merged into one track; this requires encoding.",

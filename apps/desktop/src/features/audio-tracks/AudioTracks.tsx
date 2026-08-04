@@ -64,24 +64,18 @@ export function AudioTracks({
         </div>
         <div className="flex min-w-0 items-center justify-between gap-4">
           <p className="truncate text-xs leading-5 text-muted-foreground">{outputSummary}</p>
-          <div className="flex shrink-0 items-center gap-2">
-            <Checkbox id="merge-audio" checked={mergeAudio} onCheckedChange={onToggleMerge} />
-            <Label htmlFor="merge-audio" className="text-xs text-muted-foreground">
-              {t("audio.mergeSelected")}
-            </Label>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  className="inline-flex size-4 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-hidden"
-                  aria-label={t("audio.mergeSelectedHint")}
-                >
-                  <Info aria-hidden="true" className="size-3.5" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>{t("audio.mergeSelectedHint")}</TooltipContent>
-            </Tooltip>
-          </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex shrink-0 items-center gap-2">
+                <Checkbox id="merge-audio" checked={mergeAudio} onCheckedChange={onToggleMerge} />
+                <Label htmlFor="merge-audio" className="text-xs text-muted-foreground">
+                  {t("audio.mergeSelected")}
+                </Label>
+                <Info aria-hidden="true" className="size-3.5 text-muted-foreground" />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>{t("audio.mergeSelectedHint")}</TooltipContent>
+          </Tooltip>
         </div>
       </div>
 
