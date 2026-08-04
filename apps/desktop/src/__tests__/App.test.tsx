@@ -409,14 +409,15 @@ describe("App", () => {
         "true",
       );
       const masterVolume = screen.getByRole("slider", { name: "All audio tracks volume" });
+      const masterVolumeControl = masterVolume.closest('[data-slot="slider"]')?.parentElement;
       expect(masterVolume).toHaveAttribute("aria-valuenow", "0");
       masterVolume.focus();
       await user.keyboard("{End}");
       await waitFor(() => expect(masterVolume).toHaveAttribute("aria-valuenow", "6"));
-      expect(screen.getByText("+6.0 dB")).toBeInTheDocument();
+      expect(masterVolumeControl).toHaveTextContent("+6.0 dB");
       fireEvent.doubleClick(masterVolume);
       expect(masterVolume).toHaveAttribute("aria-valuenow", "0");
-      expect(screen.getByText("+0.0 dB")).toBeInTheDocument();
+      expect(masterVolumeControl).toHaveTextContent("+0.0 dB");
       await user.click(screen.getByRole("button", { name: "Mute eng" }));
       expect(screen.getByRole("button", { name: "Enable eng" })).toHaveAttribute(
         "aria-pressed",
