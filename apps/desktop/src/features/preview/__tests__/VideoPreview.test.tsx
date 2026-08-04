@@ -47,7 +47,9 @@ describe("VideoPreview", () => {
       );
       const viewport = container.querySelector("[data-preview-kind]")?.parentElement?.parentElement;
       expect(viewport).not.toBeNull();
-      expect(container.querySelector("[data-crop-preview-affordance]")).toBeInTheDocument();
+      const affordance = container.querySelector("[data-crop-preview-affordance]");
+      expect(affordance).toBeInTheDocument();
+      expect(affordance).toHaveClass("group-focus-visible:opacity-100");
 
       fireEvent.pointerEnter(viewport!, { clientX: 30, clientY: 50 });
       expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
@@ -88,22 +90,27 @@ describe("VideoPreview", () => {
     const handle = screen.getByRole("button", { name: "Resize crop from top left" });
     expect(handle).toBeVisible();
     expect(screen.getAllByRole("button", { name: /resize crop from/i })).toHaveLength(8);
-    expect(container.querySelector("[data-crop-rule-of-thirds]")).toBeInTheDocument();
+    expect(container.querySelector("[data-crop-rule-of-thirds]")).not.toBeInTheDocument();
+    expect(container.querySelectorAll('[data-crop-snap-marker="top"]')).toHaveLength(5);
+    expect(container.querySelectorAll('[data-crop-snap-marker="left"]')).toHaveLength(5);
+    expect(container.querySelectorAll('[data-crop-snap-label="top"]')).toHaveLength(5);
+    expect(container.querySelectorAll('[data-crop-snap-label="left"]')).toHaveLength(5);
+    expect(container.querySelector('[data-crop-snap-marker="top"]')).toHaveClass("h-2");
+    expect(container.querySelector('[data-crop-snap-marker="left"]')).toHaveClass("w-2");
     expect(container.querySelector("[data-preview-kind]")?.parentElement).toHaveClass(
       "transition-[width,height,left,top]",
     );
+    fireEvent.pointerDown(handle, { pointerId: 1, clientX: 0, clientY: 0 });
     expect(container.querySelector("[data-crop-rule-of-thirds]")?.parentElement).toHaveClass(
-      "transition-[width,height,left,top]",
+      "border-primary",
     );
-    const verticalGuide = container.querySelector('[data-crop-guide="vertical"]');
-    expect(verticalGuide).toBeInTheDocument();
+    expect(container.querySelector('[data-crop-guide="vertical"]')).toBeInTheDocument();
     expect(container.querySelector('[data-crop-guide="horizontal"]')).toBeInTheDocument();
     expect(container.querySelector("[data-crop-rule-of-thirds]")).toHaveClass(
       "mix-blend-difference",
     );
-
-    fireEvent.pointerDown(handle, { pointerId: 1, clientX: 0, clientY: 0 });
     fireEvent.pointerUp(viewport!, { pointerId: 1, clientX: 0, clientY: 0 });
+    expect(container.querySelector("[data-crop-rule-of-thirds]")).not.toBeInTheDocument();
     expect(handle).toBeVisible();
 
     fireEvent.pointerDown(viewport!);
@@ -137,6 +144,30 @@ describe("VideoPreview", () => {
 
     fireEvent.play(video!);
     expect(pause).toHaveBeenCalledTimes(2);
+  });
+
+  it("opens and closes crop controls with Enter or Space when the preview is focused", () => {
+    const videoRef = createRef<HTMLVideoElement>();
+    const { container } = render(
+      <VideoPreview
+        sourceId="source-1"
+        preview={readyPreview("easytrim-media://preview-1")}
+        playbackRate={1}
+        muted
+        videoRef={videoRef}
+        {...callbacks}
+      />,
+    );
+    const viewport = container.querySelector("[aria-label='Video crop preview']");
+    expect(viewport).not.toBeNull();
+
+    fireEvent.keyDown(viewport!, { key: "Enter" });
+    expect(screen.getByRole("button", { name: "Resize crop from top left" })).toBeVisible();
+
+    fireEvent.keyDown(viewport!, { key: " " });
+    expect(
+      screen.queryByRole("button", { name: "Resize crop from top left" }),
+    ).not.toBeInTheDocument();
   });
 
   it("closes crop controls with Escape or when focus leaves the preview", () => {

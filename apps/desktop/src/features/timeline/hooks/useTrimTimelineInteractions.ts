@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 
 import { clampPlaybackMicros, frameDurationMicros } from "@/domain/playback";
+import { snapToNearestPoint } from "@/lib/interaction/snap-points";
 import {
   advanceDirectionalSnapLatch,
   clampToTrim,
@@ -115,7 +116,7 @@ export function useTrimTimelineInteractions({
     const clampedPlayhead = clampPlaybackMicros(playheadMicros, currentRange.sourceDurationMicros);
     const playheadX =
       bounds.left + (clampedPlayhead / currentRange.sourceDurationMicros) * bounds.width;
-    return Math.abs(clientX - playheadX) <= TIMELINE_SNAP_REACH_PX;
+    return snapToNearestPoint(clientX, [playheadX], TIMELINE_SNAP_REACH_PX) !== null;
   }
 
   function updateTrimFromPointer(

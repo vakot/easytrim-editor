@@ -14,6 +14,9 @@ import {
   type CropRect,
 } from "../utils/crop-geometry";
 import type { CropFrame } from "../utils/crop-frame";
+import { snapCropToGuides } from "../utils/crop-snapping";
+
+const SNAP_REACH_PX = 12;
 
 interface DragState {
   handle: CropHandle;
@@ -47,8 +50,19 @@ export function useCropSelection(previewRef: RefObject<HTMLDivElement | null>) {
 
   useEffect(() => {
     if (!isOpen || !enterFrom) return;
-    const frameId = window.requestAnimationFrame(() => setEnterFrom(null));
-    return () => window.cancelAnimationFrame(frameId);
+
+    // Opening the tool also changes the viewport bounds to make room for its
+    // scale. Keep the selection at its previous frame for one committed paint,
+    // then release it to the crop frame calculated from those new bounds.
+    let releaseFrameId: number | undefined;
+    const layoutFrameId = window.requestAnimationFrame(() => {
+      releaseFrameId = window.requestAnimationFrame(() => setEnterFrom(null));
+    });
+
+    return () => {
+      window.cancelAnimationFrame(layoutFrameId);
+      if (releaseFrameId !== undefined) window.cancelAnimationFrame(releaseFrameId);
+    };
   }, [enterFrom, isOpen]);
 
   useEffect(() => {
@@ -82,10 +96,17 @@ export function useCropSelection(previewRef: RefObject<HTMLDivElement | null>) {
     if (!drag || viewport.width <= 0 || viewport.height <= 0) return;
     const deltaX = (event.clientX - drag.startX) / viewport.width;
     const deltaY = (event.clientY - drag.startY) / viewport.height;
-    setCrop(
+    const nextCrop =
       drag.handle === "move"
         ? moveCrop(drag.crop, deltaX, deltaY)
-        : resizeCrop(drag.crop, drag.handle, deltaX, deltaY),
+        : resizeCrop(drag.crop, drag.handle, deltaX, deltaY);
+    setCrop(
+      event.shiftKey
+        ? snapCropToGuides(nextCrop, drag.handle, {
+            x: SNAP_REACH_PX / viewport.width,
+            y: SNAP_REACH_PX / viewport.height,
+          })
+        : nextCrop,
     );
   }
 

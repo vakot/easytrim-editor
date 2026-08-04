@@ -10,9 +10,12 @@ import {
 import { CursorTooltip } from "@/components/ui/cursor-tooltip";
 
 import { CropSelection } from "./components/CropSelection";
+import { CropSnapMarkers } from "./components/CropSnapMarkers";
 import { useCropSelection } from "./hooks/use-crop-selection";
 import { centerFrame, cropFrame, type Bounds } from "./utils/crop-frame";
 import { isFullCrop } from "./utils/crop-geometry";
+
+const CROP_TOOL_GUTTER_PX = 16;
 
 interface CropViewportProps {
   sourceUrl: string;
@@ -74,11 +77,20 @@ export function CropViewport({
   }, []);
 
   const cropIsApplied = !cropSelection.isEditing && !isFullCrop(cropSelection.crop);
+  const cropToolGutter = cropSelection.isEditing ? CROP_TOOL_GUTTER_PX : 0;
+  const viewportBounds = {
+    width: Math.max(0, containerBounds.width - cropToolGutter),
+    height: Math.max(0, containerBounds.height - cropToolGutter),
+  };
   const viewportAspectRatio = cropIsApplied
     ? (sourceAspectRatio * cropSelection.crop.width) / cropSelection.crop.height
     : sourceAspectRatio;
-  const viewport = containBounds(containerBounds, viewportAspectRatio);
-  const viewportFrame = centerFrame(containerBounds, viewport);
+  const viewport = containBounds(viewportBounds, viewportAspectRatio);
+  const viewportFrame = {
+    ...centerFrame(viewportBounds, viewport),
+    left: cropToolGutter + (viewportBounds.width - viewport.width) / 2,
+    top: cropToolGutter + (viewportBounds.height - viewport.height) / 2,
+  };
   const selectionFrame = cropFrame(viewportFrame, cropSelection.crop);
   const sourceFrame = cropIsApplied
     ? {
@@ -95,7 +107,7 @@ export function CropViewport({
   return (
     <CursorTooltip
       ref={containerRef}
-      className={`group relative size-full bg-preview-surface ${
+      className={`group relative size-full bg-preview-surface focus-visible:outline-none ${
         cropSelection.isEditing ? "overflow-visible" : "overflow-hidden"
       }`}
       tabIndex={0}
@@ -116,6 +128,16 @@ export function CropViewport({
       onDoubleClick={() => {
         if (!cropSelection.isOpen) onTogglePlayback();
       }}
+      onKeyDown={(event) => {
+        if (event.target !== event.currentTarget || (event.key !== "Enter" && event.key !== " "))
+          return;
+        event.preventDefault();
+        if (cropSelection.isOpen) {
+          cropSelection.close();
+          return;
+        }
+        cropSelection.open(viewportFrame);
+      }}
       onPointerMove={(event) => cropSelection.moveDrag(event, viewport)}
       onPointerUp={cropSelection.finishDrag}
       onPointerCancel={cropSelection.finishDrag}
@@ -124,7 +146,7 @@ export function CropViewport({
         <div
           aria-hidden="true"
           data-crop-preview-affordance
-          className="pointer-events-none absolute inset-0 z-10 border border-primary/70 bg-primary/5 opacity-0 ring-1 ring-primary/20 transition-[opacity,transform] duration-150 ease-out group-hover:opacity-100 motion-reduce:transition-none"
+          className="pointer-events-none absolute inset-0 z-10 border border-primary/70 bg-primary/5 opacity-0 ring-1 ring-primary/20 transition-[opacity,transform] duration-150 ease-out group-hover:opacity-100 group-focus-visible:opacity-100 motion-reduce:transition-none"
         />
       ) : null}
       <div
@@ -167,13 +189,16 @@ export function CropViewport({
         />
       </div>
       {cropSelection.isEditing ? (
-        <CropSelection
-          frame={selectionFrame}
-          enterFrom={cropSelection.enterFrom}
-          isDragging={cropSelection.isDragging}
-          selectionRef={cropSelection.selectionRef}
-          onPointerDown={cropSelection.startDrag}
-        />
+        <>
+          <CropSnapMarkers frame={viewportFrame} />
+          <CropSelection
+            frame={selectionFrame}
+            enterFrom={cropSelection.enterFrom}
+            isDragging={cropSelection.isDragging}
+            selectionRef={cropSelection.selectionRef}
+            onPointerDown={cropSelection.startDrag}
+          />
+        </>
       ) : null}
     </CursorTooltip>
   );
