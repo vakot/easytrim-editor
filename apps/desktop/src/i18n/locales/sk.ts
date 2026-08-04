@@ -196,7 +196,7 @@ export const sk = {
   export: {
     save: "Uložiť",
     saveShortcut: "Uložiť (Ctrl+S)",
-    cropSaveDisabledTooltip: "Orezanie vyžaduje úplné vykreslenie videa. Použite Export.",
+    cropSaveDisabledTooltip: "Orezanie vyžaduje úplné vykreslenie videa.",
     saveTooltip: "Uložiť vybranú časť bez opätovného kódovania. (Ctrl+S)",
     export: "Exportovať",
     exportShortcut: "Exportovať (Ctrl+E)",
