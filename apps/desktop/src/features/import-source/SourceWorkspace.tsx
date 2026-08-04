@@ -7,6 +7,7 @@ import { SourceSidebar } from "./components/SourceSidebar";
 import { WelcomePage } from "./components/WelcomePage";
 import type { SourceWorkspaceProps } from "./types";
 import { useTranslation } from "react-i18next";
+import { useEditorViewState } from "@/app/hooks/useEditorViewState";
 
 export { CapabilityStatus } from "./components/CapabilityStatus";
 
@@ -29,6 +30,7 @@ export function SourceWorkspace({
   update,
 }: SourceWorkspaceProps) {
   const { t } = useTranslation();
+  const { workspaceLayout, setWorkspaceLayout } = useEditorViewState();
 
   if (!session.source) {
     return (
@@ -50,6 +52,8 @@ export function SourceWorkspace({
   return (
     <Group
       id="editor-workspace-panels"
+      defaultLayout={workspaceLayout}
+      onLayoutChanged={setWorkspaceLayout}
       orientation="horizontal"
       className="min-h-0 min-w-0 bg-background"
       resizeTargetMinimumSize={{ fine: 8, coarse: 24 }}

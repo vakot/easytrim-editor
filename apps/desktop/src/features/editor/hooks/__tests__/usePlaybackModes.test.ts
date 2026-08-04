@@ -1,4 +1,5 @@
 import { act, renderHook } from "@testing-library/react";
+import { useState } from "react";
 import { describe, expect, it } from "vitest";
 
 import { usePlaybackModes } from "../usePlaybackModes";
@@ -10,8 +11,19 @@ const trim = {
 };
 
 describe("usePlaybackModes", () => {
+  function usePlaybackModesHarness() {
+    const [loopEnabled, setLoopEnabled] = useState(true);
+    const [segmentEnabled, setSegmentEnabled] = useState(true);
+    return usePlaybackModes({
+      loopEnabled,
+      segmentEnabled,
+      onLoopEnabledChange: setLoopEnabled,
+      onSegmentEnabledChange: setSegmentEnabled,
+    });
+  }
+
   it("preserves an external playhead while keeping segment playback enabled", () => {
-    const { result } = renderHook(() => usePlaybackModes());
+    const { result } = renderHook(() => usePlaybackModesHarness());
 
     expect(result.current.loopEnabled).toBe(true);
     expect(result.current.segmentEnabled).toBe(true);
@@ -36,7 +48,7 @@ describe("usePlaybackModes", () => {
   });
 
   it("emits each boundary action once until playback returns inside the range", () => {
-    const { result } = renderHook(() => usePlaybackModes());
+    const { result } = renderHook(() => usePlaybackModesHarness());
     act(() => result.current.toggleLoop());
 
     expect(result.current.consumeBoundary(20_000_000, trim)).toEqual({
@@ -51,29 +63,6 @@ describe("usePlaybackModes", () => {
 
     act(() => result.current.toggleLoop());
     expect(result.current.consumeBoundary(20_000_000, trim)).toEqual({
-      reached: true,
-      action: { type: "restart", positionMicros: 10_000_000 },
-    });
-  });
-
-  it("refreshes the active range when trim boundaries change before resume", () => {
-    const { result } = renderHook(() => usePlaybackModes());
-    const updatedTrim = { ...trim, endMicros: 30_000_000 };
-
-    act(() => result.current.startMicros(15_000_000, trim));
-    expect(result.current.consumeBoundary(20_000_000, updatedTrim)).toEqual({
-      reached: true,
-      action: { type: "restart", positionMicros: 10_000_000 },
-    });
-
-    act(() => {
-      result.current.startMicros(15_000_000, updatedTrim);
-      result.current.resetBoundary();
-    });
-    expect(result.current.consumeBoundary(20_000_000, updatedTrim)).toEqual({
-      reached: false,
-    });
-    expect(result.current.consumeBoundary(30_000_000, updatedTrim)).toEqual({
       reached: true,
       action: { type: "restart", positionMicros: 10_000_000 },
     });

@@ -21,6 +21,7 @@ import { TimelinePane } from "./components/TimelinePane";
 import { usePlaybackModes } from "./hooks/usePlaybackModes";
 import { usePlaybackSpeed } from "./hooks/usePlaybackSpeed";
 import { useTimelinePanelSizing } from "./hooks/useTimelinePanelSizing";
+import { useEditorViewState } from "@/app/hooks/useEditorViewState";
 import type { EditorShortcutActions, EditorStageProps } from "./types";
 import { synchronizeAudioPosition } from "./utils/audio-sync";
 import { editorShortcutFromEvent, isShortcutBlockedTarget } from "./utils/editor-shortcuts";
@@ -86,11 +87,20 @@ export function EditorStage({
     trimRef.current = trim;
   }
 
-  const playbackModes = usePlaybackModes();
-  const playbackSpeed = usePlaybackSpeed();
+  const { tools, setTools, resetTools, editorStageLayout, setEditorStageLayout } =
+    useEditorViewState();
+  const playbackModes = usePlaybackModes({
+    loopEnabled: tools.loopPlaybackEnabled,
+    segmentEnabled: tools.segmentPlaybackEnabled,
+    onLoopEnabledChange: (loopPlaybackEnabled) => setTools({ ...tools, loopPlaybackEnabled }),
+    onSegmentEnabledChange: (segmentPlaybackEnabled) =>
+      setTools({ ...tools, segmentPlaybackEnabled }),
+  });
+  const playbackSpeed = usePlaybackSpeed(tools.playbackSpeed, (playbackSpeed) =>
+    setTools({ ...tools, playbackSpeed }),
+  );
   const [playheadMicros, setPlayheadMicros] = useState(trim.startMicros);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [safeTrimFollowingEnabled, setSafeTrimFollowingEnabled] = useState(true);
   const [transportError, setTransportError] = useState<string | null>(null);
   const displayedPlayheadMicros = clampPlaybackMicros(playheadMicros, trim.sourceDurationMicros);
   const hasIndependentAudio = Object.keys(audioPreviewUrls).length > 0;
@@ -594,7 +604,7 @@ export function EditorStage({
   ): TrimBoundary | null {
     const previousTrim = trimRef.current;
     const currentPlayheadMicros = currentPlayheadMicrosRef.current;
-    const follow = safeTrimFollowingEnabled
+    const follow = tools.safeTrimFollowingEnabled
       ? playheadFollowAfterTrimBoundaryMove(previousTrim, nextTrim, boundary, currentPlayheadMicros)
       : { playheadMicros: currentPlayheadMicros, boundary: null };
 
@@ -610,7 +620,7 @@ export function EditorStage({
     const previousTrim = trimRef.current;
     const currentPlayheadMicros = currentPlayheadMicrosRef.current;
     const follow =
-      safeTrimFollowingEnabled && segmentDragActiveRef.current
+      tools.safeTrimFollowingEnabled && segmentDragActiveRef.current
         ? playheadAfterSegmentMove(
             previousTrim,
             nextTrim,
@@ -656,6 +666,8 @@ export function EditorStage({
   return (
     <Group
       id="editor-stage-panels"
+      defaultLayout={editorStageLayout}
+      onLayoutChanged={setEditorStageLayout}
       orientation="vertical"
       className="min-h-0 min-w-0 bg-background"
       resizeTargetMinimumSize={{ fine: 8, coarse: 24 }}
@@ -761,16 +773,20 @@ export function EditorStage({
               videoToolbar={
                 preview.status === "ready" ? (
                   <TimelineTools
-                    safeTrimFollowingEnabled={safeTrimFollowingEnabled}
+                    safeTrimFollowingEnabled={tools.safeTrimFollowingEnabled}
                     loopPlaybackEnabled={playbackModes.loopEnabled}
                     segmentPlaybackEnabled={playbackModes.segmentEnabled}
                     playbackSpeed={playbackSpeed.speed}
                     onToggleSafeTrimFollowing={() =>
-                      setSafeTrimFollowingEnabled((enabled) => !enabled)
+                      setTools({
+                        ...tools,
+                        safeTrimFollowingEnabled: !tools.safeTrimFollowingEnabled,
+                      })
                     }
                     onToggleLoopPlayback={handleToggleLoopPlayback}
                     onToggleSegmentPlayback={handleToggleSegmentPlayback}
                     onPlaybackSpeedChange={playbackSpeed.setSpeed}
+                    onReset={resetTools}
                   />
                 ) : null
               }

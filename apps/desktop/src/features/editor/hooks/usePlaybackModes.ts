@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef } from "react";
 
 import {
   playbackBoundaryAction,
@@ -13,21 +13,28 @@ type ReachedBoundaryAction = Exclude<PlaybackBoundaryAction, { type: "continue" 
 export type PlaybackBoundaryResult =
   { reached: false } | { reached: true; action: ReachedBoundaryAction | null };
 
-export function usePlaybackModes() {
-  const modesRef = useRef({ loopEnabled: true, segmentEnabled: true });
+export function usePlaybackModes({
+  loopEnabled,
+  segmentEnabled,
+  onLoopEnabledChange,
+  onSegmentEnabledChange,
+}: {
+  loopEnabled: boolean;
+  segmentEnabled: boolean;
+  onLoopEnabledChange: (enabled: boolean) => void;
+  onSegmentEnabledChange: (enabled: boolean) => void;
+}) {
   const playbackRangeRef = useRef<PlaybackRange | null>(null);
   const boundaryHandledRef = useRef(false);
-  const [loopEnabled, setLoopEnabled] = useState(true);
-  const [segmentEnabled, setSegmentEnabled] = useState(true);
 
-  function activeRange(trim: TrimRange, playbackStartMicros: number) {
+  function activeRange(trim: TrimRange, playbackStartMicrosValue: number) {
     return playbackRange(
       trim.sourceDurationMicros,
       trim.startMicros,
-      modesRef.current.segmentEnabled && playbackStartMicros >= trim.endMicros
+      segmentEnabled && playbackStartMicrosValue >= trim.endMicros
         ? trim.sourceDurationMicros
         : trim.endMicros,
-      modesRef.current.segmentEnabled,
+      segmentEnabled,
     );
   }
 
@@ -41,7 +48,7 @@ export function usePlaybackModes() {
     const action = playbackBoundaryAction(
       currentMicros,
       playbackRangeRef.current ?? activeRange(trim, trim.startMicros),
-      modesRef.current.loopEnabled,
+      loopEnabled,
     );
     if (action.type === "continue") {
       boundaryHandledRef.current = false;
@@ -58,17 +65,15 @@ export function usePlaybackModes() {
   }
 
   function toggleLoop() {
-    const enabled = !modesRef.current.loopEnabled;
-    modesRef.current.loopEnabled = enabled;
-    setLoopEnabled(enabled);
+    const enabled = !loopEnabled;
+    onLoopEnabledChange(enabled);
   }
 
   function toggleSegment() {
-    const enabled = !modesRef.current.segmentEnabled;
-    modesRef.current.segmentEnabled = enabled;
+    const enabled = !segmentEnabled;
     boundaryHandledRef.current = false;
     playbackRangeRef.current = null;
-    setSegmentEnabled(enabled);
+    onSegmentEnabledChange(enabled);
     return enabled;
   }
 

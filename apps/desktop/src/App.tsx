@@ -9,6 +9,7 @@ import { SourceWorkspace } from "@/features/import-source/SourceWorkspace";
 import { useTranslation } from "react-i18next";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import { useReleaseCheck } from "@/features/release/hooks/useReleaseCheck";
+import { EditorViewStateProvider } from "@/app/editor-view-state";
 
 function EasyTrimEditorApp() {
   const app = useEasyTrimEditorApp();
@@ -84,7 +85,9 @@ function EasyTrimEditorApp() {
 function App() {
   return (
     <ThemeProvider>
-      <EasyTrimEditorApp />
+      <EditorViewStateProvider>
+        <EasyTrimEditorApp />
+      </EditorViewStateProvider>
     </ThemeProvider>
   );
 }
