@@ -1,6 +1,8 @@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { timelinePercent } from "@/domain/trim";
+import { Info } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { AudioLevelControl } from "./components/AudioLevelControl";
@@ -62,12 +64,18 @@ export function AudioTracks({
         </div>
         <div className="flex min-w-0 items-center justify-between gap-4">
           <p className="truncate text-xs leading-5 text-muted-foreground">{outputSummary}</p>
-          <div className="flex shrink-0 items-center gap-2">
-            <Checkbox id="merge-audio" checked={mergeAudio} onCheckedChange={onToggleMerge} />
-            <Label htmlFor="merge-audio" className="text-xs text-muted-foreground">
-              {t("audio.mergeSelected")}
-            </Label>
-          </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex shrink-0 items-center gap-2">
+                <Checkbox id="merge-audio" checked={mergeAudio} onCheckedChange={onToggleMerge} />
+                <Label htmlFor="merge-audio" className="text-xs text-muted-foreground">
+                  {t("audio.mergeSelected")}
+                </Label>
+                <Info aria-hidden="true" className="size-3.5 text-muted-foreground" />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>{t("audio.mergeSelectedHint")}</TooltipContent>
+          </Tooltip>
         </div>
       </div>
 
