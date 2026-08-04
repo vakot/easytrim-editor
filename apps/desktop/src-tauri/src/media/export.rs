@@ -147,7 +147,7 @@ pub fn build_optimized_arguments(
         &request.trim,
         &request.audio_tracks,
     )?;
-    validate_resolution(source, &request.resolution)?;
+    validate_resolution(&request.resolution)?;
     if let Some(frame_rate) = &request.frame_rate
         && (frame_rate.numerator == 0 || frame_rate.denominator == 0)
     {
@@ -289,50 +289,13 @@ fn validate_common_request(
     Ok(())
 }
 
-fn validate_resolution(
-    source: &MediaInfo,
-    resolution: &ResolutionSelection,
-) -> Result<(), AppError> {
-    let (source_width, source_height) = display_dimensions(source);
-    if resolution.width == 0
-        || resolution.height == 0
-        || resolution.width > source_width
-        || resolution.height > source_height
-    {
+fn validate_resolution(resolution: &ResolutionSelection) -> Result<(), AppError> {
+    if resolution.width == 0 || resolution.height == 0 {
         return Err(AppError::invalid_request(
-            "The output resolution must fit within the source.",
-        ));
-    }
-    let is_source_resolution =
-        resolution.width == source_width && resolution.height == source_height;
-    if !is_source_resolution
-        && (!resolution.width.is_multiple_of(2) || !resolution.height.is_multiple_of(2))
-    {
-        return Err(AppError::invalid_request(
-            "Scaled output dimensions must be divisible by two.",
-        ));
-    }
-    let scaled_width = u64::from(resolution.width) * u64::from(source_height);
-    let scaled_height = u64::from(resolution.height) * u64::from(source_width);
-    let rounding_tolerance = u64::from(source_width.max(source_height)) * 2;
-    if scaled_width.abs_diff(scaled_height) > rounding_tolerance {
-        return Err(AppError::invalid_request(
-            "The output resolution must preserve the source aspect ratio.",
+            "The output resolution must be greater than zero.",
         ));
     }
     Ok(())
-}
-
-fn display_dimensions(source: &MediaInfo) -> (u32, u32) {
-    if source
-        .video
-        .rotation_degrees
-        .is_some_and(|rotation| rotation.rem_euclid(180) == 90)
-    {
-        (source.video.height, source.video.width)
-    } else {
-        (source.video.width, source.video.height)
-    }
 }
 
 fn audio_tracks_need_reencode(audio_tracks: &[AudioTrackSelection]) -> bool {
@@ -854,7 +817,7 @@ mod tests {
     }
 
     #[test]
-    fn rotated_sources_use_display_dimensions_for_resolution_validation() {
+    fn custom_resolution_dimensions_are_accepted() {
         let mut rotated = media();
         rotated.video.width = 1080;
         rotated.video.height = 1920;
