@@ -5,6 +5,7 @@ import type { PreviewState } from "@/app/session-state";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { useTranslation } from "react-i18next";
+import { CropViewport } from "./CropViewport";
 
 interface VideoPreviewProps {
   sourceId: string;
@@ -84,23 +85,20 @@ export function VideoPreview({
 
   const { value } = preview;
   return (
-    <div className="relative flex size-full min-h-0 items-center justify-center overflow-hidden bg-preview-surface">
-      <video
-        ref={videoRef}
+    <div className="relative size-full min-h-0 overflow-hidden bg-preview-surface">
+      <CropViewport
         key={value.url}
-        data-playback-rate={playbackRate}
-        className="block size-full cursor-pointer object-contain"
-        src={value.url}
-        preload="auto"
+        sourceUrl={value.url}
+        previewKind={value.kind}
+        sourceLabel={t("preview.sourceLabel")}
+        playbackRate={playbackRate}
         muted={muted}
-        playsInline
-        aria-label={t("preview.sourceLabel")}
-        data-preview-kind={value.kind}
-        onClick={onTogglePlayback}
+        videoRef={videoRef}
+        onTogglePlayback={onTogglePlayback}
         onLoadedMetadata={onLoadedMetadata}
         onPlay={onPlay}
         onPause={onPause}
-        onTimeUpdate={(event) => onTimeUpdate(event.currentTarget.currentTime)}
+        onTimeUpdate={onTimeUpdate}
         onEnded={onEnded}
         onError={() => {
           if (reportedUrl.current === value.url) return;
