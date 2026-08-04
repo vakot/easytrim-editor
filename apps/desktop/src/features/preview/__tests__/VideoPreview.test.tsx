@@ -1,9 +1,8 @@
 import { createRef } from "react";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import type { PreviewState } from "@/app/session-state";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { VideoPreview } from "../VideoPreview";
 
 const callbacks = {
@@ -24,10 +23,11 @@ function readyPreview(url: string): PreviewState {
 }
 
 describe("VideoPreview", () => {
-  it("opens crop resize handles on click and returns to the contained viewport after a drag", () => {
-    const videoRef = createRef<HTMLVideoElement>();
-    const { container } = render(
-      <TooltipProvider>
+  it("shows the delayed crop hint at the pointer position and hides it when crop opens", () => {
+    vi.useFakeTimers();
+    try {
+      const videoRef = createRef<HTMLVideoElement>();
+      const { container } = render(
         <VideoPreview
           sourceId="source-1"
           preview={readyPreview("easytrim-media://preview-1")}
@@ -35,8 +35,34 @@ describe("VideoPreview", () => {
           muted
           videoRef={videoRef}
           {...callbacks}
-        />
-      </TooltipProvider>,
+        />,
+      );
+      const viewport = container.querySelector("[data-preview-kind]")?.parentElement?.parentElement;
+      expect(viewport).not.toBeNull();
+
+      fireEvent.pointerEnter(viewport!, { clientX: 30, clientY: 50 });
+      expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+      act(() => vi.advanceTimersByTime(500));
+      expect(screen.getByRole("tooltip")).toHaveStyle({ left: "42px", top: "62px" });
+
+      fireEvent.click(viewport!);
+      expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("opens crop resize handles on click and returns to the contained viewport after a drag", () => {
+    const videoRef = createRef<HTMLVideoElement>();
+    const { container } = render(
+      <VideoPreview
+        sourceId="source-1"
+        preview={readyPreview("easytrim-media://preview-1")}
+        playbackRate={1}
+        muted
+        videoRef={videoRef}
+        {...callbacks}
+      />,
     );
 
     const viewport = container.querySelector("[data-preview-kind]")?.parentElement?.parentElement;
@@ -58,31 +84,27 @@ describe("VideoPreview", () => {
   it("keeps native audio muted when the preview element is replaced", () => {
     const videoRef = createRef<HTMLVideoElement>();
     const { container, rerender } = render(
-      <TooltipProvider>
-        <VideoPreview
-          sourceId="source-1"
-          preview={readyPreview("easytrim-media://preview-1")}
-          playbackRate={1}
-          muted
-          videoRef={videoRef}
-          {...callbacks}
-        />
-      </TooltipProvider>,
+      <VideoPreview
+        sourceId="source-1"
+        preview={readyPreview("easytrim-media://preview-1")}
+        playbackRate={1}
+        muted
+        videoRef={videoRef}
+        {...callbacks}
+      />,
     );
     const firstVideo = container.querySelector("video");
     expect(firstVideo).toHaveProperty("muted", true);
 
     rerender(
-      <TooltipProvider>
-        <VideoPreview
-          sourceId="source-1"
-          preview={readyPreview("easytrim-media://preview-2")}
-          playbackRate={1}
-          muted
-          videoRef={videoRef}
-          {...callbacks}
-        />
-      </TooltipProvider>,
+      <VideoPreview
+        sourceId="source-1"
+        preview={readyPreview("easytrim-media://preview-2")}
+        playbackRate={1}
+        muted
+        videoRef={videoRef}
+        {...callbacks}
+      />,
     );
     const replacementVideo = container.querySelector("video");
     expect(replacementVideo).not.toBe(firstVideo);
