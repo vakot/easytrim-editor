@@ -164,6 +164,7 @@ export function OptimizedExportDialog({
             </Tooltip>
           </div>
           </div>
+          </div>
           <div className="grid gap-1.5">
             <Label htmlFor="export-frame-rate">{t("export.dialog.frameRate")}</Label>
             <Select
