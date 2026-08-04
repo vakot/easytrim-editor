@@ -127,6 +127,7 @@ describe("VideoPreview", () => {
     expect(viewport).not.toBeNull();
     expect(video).not.toBeNull();
     const pause = vi.spyOn(video!, "pause").mockImplementation(() => undefined);
+    pause.mockClear();
 
     fireEvent.click(viewport!);
     expect(pause).toHaveBeenCalledTimes(1);
