@@ -56,7 +56,7 @@ export function CropSelection({ crop, viewport, selectionRef, onPointerDown }: C
   return (
     <div
       ref={selectionRef}
-      className="absolute z-20 border-2 border-primary bg-primary/10"
+      className="absolute border-2 border-primary bg-primary/10"
       style={{
         width: viewport.width * crop.width,
         height: viewport.height * crop.height,
@@ -66,34 +66,36 @@ export function CropSelection({ crop, viewport, selectionRef, onPointerDown }: C
       onClick={(event) => event.stopPropagation()}
       onPointerDown={(event) => onPointerDown(event, "move")}
     >
-      <div
+      <svg
         aria-hidden="true"
         data-crop-rule-of-thirds
-        className="pointer-events-none absolute inset-0"
+        className="pointer-events-none absolute inset-0 size-full opacity-80 mix-blend-difference"
+        viewBox="0 0 3 3"
+        preserveAspectRatio="none"
       >
-        <span
+        <path
           data-crop-guide="vertical"
-          className="absolute inset-y-0 left-1/3 w-px bg-white opacity-80 mix-blend-difference"
+          d="M1 0V3 M2 0V3"
+          fill="none"
+          stroke="white"
+          strokeWidth="1"
+          vectorEffect="non-scaling-stroke"
         />
-        <span
-          data-crop-guide="vertical"
-          className="absolute inset-y-0 left-2/3 w-px bg-white opacity-80 mix-blend-difference"
-        />
-        <span
+        <path
           data-crop-guide="horizontal"
-          className="absolute inset-x-0 top-1/3 h-px bg-white opacity-80 mix-blend-difference"
+          d="M0 1H3 M0 2H3"
+          fill="none"
+          stroke="white"
+          strokeWidth="1"
+          vectorEffect="non-scaling-stroke"
         />
-        <span
-          data-crop-guide="horizontal"
-          className="absolute inset-x-0 top-2/3 h-px bg-white opacity-80 mix-blend-difference"
-        />
-      </div>
+      </svg>
       {HANDLES.map(({ handle, label, className }) => (
         <button
           key={handle}
           type="button"
           aria-label={label}
-          className={`absolute size-4 rounded-full border-2 border-background bg-primary shadow-sm ${className}`}
+          className={`absolute z-10 size-4 rounded-full border-2 border-background bg-primary shadow-sm ${className}`}
           onPointerDown={(event) => onPointerDown(event, handle)}
         />
       ))}
