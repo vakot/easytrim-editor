@@ -13,6 +13,7 @@ import {
   type CropHandle,
   type CropRect,
 } from "../utils/crop-geometry";
+import type { CropFrame } from "../utils/crop-frame";
 
 interface DragState {
   handle: CropHandle;
@@ -30,16 +31,25 @@ export function useCropSelection(previewRef: RefObject<HTMLDivElement | null>) {
   const [crop, setCrop] = useState<CropRect>(FULL_CROP);
   const [isOpen, setIsOpen] = useState(false);
   const [drag, setDrag] = useState<DragState | null>(null);
+  const [enterFrom, setEnterFrom] = useState<CropFrame | null>(null);
   const selectionRef = useRef<HTMLDivElement>(null);
 
-  function open() {
+  function open(frame: CropFrame) {
+    setEnterFrom(frame);
     setIsOpen(true);
   }
 
   function close() {
     setDrag(null);
     setIsOpen(false);
+    setEnterFrom(null);
   }
+
+  useEffect(() => {
+    if (!isOpen || !enterFrom) return;
+    const frameId = window.requestAnimationFrame(() => setEnterFrom(null));
+    return () => window.cancelAnimationFrame(frameId);
+  }, [enterFrom, isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -89,6 +99,7 @@ export function useCropSelection(previewRef: RefObject<HTMLDivElement | null>) {
     isEditing: isOpen || drag !== null,
     isDragging: drag !== null,
     isOpen,
+    enterFrom,
     selectionRef,
     open,
     close,

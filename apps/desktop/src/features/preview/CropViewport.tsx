@@ -11,6 +11,7 @@ import { CursorTooltip } from "@/components/ui/cursor-tooltip";
 
 import { CropSelection } from "./components/CropSelection";
 import { useCropSelection } from "./hooks/use-crop-selection";
+import { centerFrame, cropFrame, type Bounds } from "./utils/crop-frame";
 import { isFullCrop } from "./utils/crop-geometry";
 
 interface CropViewportProps {
@@ -28,11 +29,6 @@ interface CropViewportProps {
   onEnded: () => void;
   onError: () => void;
   onCropToolOpenChange: (isOpen: boolean) => void;
-}
-
-interface Bounds {
-  width: number;
-  height: number;
 }
 
 export function CropViewport({
@@ -82,6 +78,8 @@ export function CropViewport({
     ? (sourceAspectRatio * cropSelection.crop.width) / cropSelection.crop.height
     : sourceAspectRatio;
   const viewport = containBounds(containerBounds, viewportAspectRatio);
+  const viewportFrame = centerFrame(containerBounds, viewport);
+  const selectionFrame = cropFrame(viewportFrame, cropSelection.crop);
   const sourceFrame = cropIsApplied
     ? {
         width: viewport.width / cropSelection.crop.width,
@@ -113,7 +111,7 @@ export function CropViewport({
           return;
         }
         event.currentTarget.focus();
-        cropSelection.open();
+        cropSelection.open(viewportFrame);
       }}
       onDoubleClick={() => {
         if (!cropSelection.isOpen) onTogglePlayback();
@@ -134,8 +132,8 @@ export function CropViewport({
         style={{
           width: viewport.width,
           height: viewport.height,
-          left: `calc(50% - ${viewport.width / 2}px)`,
-          top: `calc(50% - ${viewport.height / 2}px)`,
+          left: viewportFrame.left,
+          top: viewportFrame.top,
         }}
       >
         <video
@@ -170,8 +168,9 @@ export function CropViewport({
       </div>
       {cropSelection.isEditing ? (
         <CropSelection
-          crop={cropSelection.crop}
-          viewport={viewport}
+          frame={selectionFrame}
+          enterFrom={cropSelection.enterFrom}
+          isDragging={cropSelection.isDragging}
           selectionRef={cropSelection.selectionRef}
           onPointerDown={cropSelection.startDrag}
         />

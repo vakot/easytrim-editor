@@ -92,6 +92,9 @@ describe("VideoPreview", () => {
     expect(container.querySelector("[data-preview-kind]")?.parentElement).toHaveClass(
       "transition-[width,height,left,top]",
     );
+    expect(container.querySelector("[data-crop-rule-of-thirds]")?.parentElement).toHaveClass(
+      "transition-[width,height,left,top]",
+    );
     const verticalGuide = container.querySelector('[data-crop-guide="vertical"]');
     expect(verticalGuide).toBeInTheDocument();
     expect(container.querySelector('[data-crop-guide="horizontal"]')).toBeInTheDocument();

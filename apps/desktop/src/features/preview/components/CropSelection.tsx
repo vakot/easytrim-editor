@@ -1,10 +1,12 @@
 import type { PointerEvent, RefObject } from "react";
 
-import type { CropHandle, CropRect } from "../utils/crop-geometry";
+import type { CropHandle } from "../utils/crop-geometry";
+import type { CropFrame } from "../utils/crop-frame";
 
 interface CropSelectionProps {
-  crop: CropRect;
-  viewport: { width: number; height: number };
+  frame: CropFrame;
+  enterFrom: CropFrame | null;
+  isDragging: boolean;
   selectionRef: RefObject<HTMLDivElement | null>;
   onPointerDown: (event: PointerEvent<HTMLElement>, handle: CropHandle) => void;
 }
@@ -52,16 +54,27 @@ const HANDLES: Array<{ handle: Exclude<CropHandle, "move">; label: string; class
   },
 ];
 
-export function CropSelection({ crop, viewport, selectionRef, onPointerDown }: CropSelectionProps) {
+export function CropSelection({
+  frame,
+  enterFrom,
+  isDragging,
+  selectionRef,
+  onPointerDown,
+}: CropSelectionProps) {
+  const displayedFrame = enterFrom ?? frame;
+  const transition = !isDragging
+    ? "transition-[width,height,left,top] duration-200 ease-out motion-reduce:transition-none"
+    : "";
+
   return (
     <div
       ref={selectionRef}
-      className="absolute border-2 border-primary bg-primary/10"
+      className={`absolute border-2 border-primary bg-primary/10 ${transition}`}
       style={{
-        width: viewport.width * crop.width,
-        height: viewport.height * crop.height,
-        left: `calc(50% - ${viewport.width / 2}px + ${viewport.width * crop.x}px)`,
-        top: `calc(50% - ${viewport.height / 2}px + ${viewport.height * crop.y}px)`,
+        width: displayedFrame.width,
+        height: displayedFrame.height,
+        left: displayedFrame.left,
+        top: displayedFrame.top,
       }}
       onClick={(event) => event.stopPropagation()}
       onPointerDown={(event) => onPointerDown(event, "move")}
