@@ -28,6 +28,7 @@ export function useExportController({
   onPresetAction,
   onNativeDialogStateChange,
   cropResolution,
+  crop,
 }: ExportPanelProps) {
   const { t } = useTranslation();
   const defaults = useMemo(() => outputDefaults(sourceName), [sourceName]);
@@ -66,6 +67,7 @@ export function useExportController({
       audioTracks: selectedAudio,
       mergeAudio,
       resolution: settings.resolution,
+      crop,
       frameRate: settings.frameRate
         ? {
             numerator: settings.frameRate.numerator,
@@ -80,6 +82,7 @@ export function useExportController({
       selectedAudio,
       settings.frameRate,
       settings.resolution,
+      crop,
       source.sourceId,
       trim.endMicros,
       trim.startMicros,

@@ -23,6 +23,7 @@ interface VideoPreviewProps {
   onEnded: () => void;
   sourceDimensions?: { width: number; height: number };
   onCropResolutionChange?: (resolution: { width: number; height: number }) => void;
+  onCropChange?: (crop: CropRect) => void;
 }
 
 export function VideoPreview({
@@ -40,6 +41,7 @@ export function VideoPreview({
   onEnded,
   sourceDimensions,
   onCropResolutionChange,
+  onCropChange,
 }: VideoPreviewProps) {
   const { t } = useTranslation();
   const reportedUrl = useRef<string | null>(null);
@@ -48,12 +50,13 @@ export function VideoPreview({
   const effectiveSourceDimensions = sourceDimensions ?? { width: 1920, height: 1080 };
   const handleCropChange = useCallback(
     (crop: CropRect) => {
+      onCropChange?.(crop);
       onCropResolutionChange?.({
         width: Math.max(1, Math.round(effectiveSourceDimensions.width * crop.width)),
         height: Math.max(1, Math.round(effectiveSourceDimensions.height * crop.height)),
       });
     },
-    [effectiveSourceDimensions.height, effectiveSourceDimensions.width, onCropResolutionChange],
+    [effectiveSourceDimensions.height, effectiveSourceDimensions.width, onCropChange, onCropResolutionChange],
   );
 
   useEffect(() => {
@@ -126,7 +129,7 @@ export function VideoPreview({
           onPlaybackError(sourceId, value.kind);
         }}
         onCropToolOpenChange={setCropToolOpen}
-        onCropChange={handleCropChange}
+      onCropChange={handleCropChange}
       />
       {value.kind === "proxy" ? (
         <Badge variant="secondary" className="absolute top-3 right-3">

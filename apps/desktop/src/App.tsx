@@ -11,6 +11,7 @@ import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import { useReleaseCheck } from "@/features/release/hooks/useReleaseCheck";
 import { EditorViewStateProvider } from "@/app/editor-view-state";
 import { useEffect, useState } from "react";
+import { FULL_CROP, type CropRect } from "@/features/preview/utils/crop-geometry";
 
 function EasyTrimEditorApp() {
   const app = useEasyTrimEditorApp();
@@ -21,12 +22,14 @@ function EasyTrimEditorApp() {
     ? { width: source.media.video.width, height: source.media.video.height }
     : null;
   const [cropResolution, setCropResolution] = useState(sourceDimensions ?? { width: 1, height: 1 });
+  const [crop, setCrop] = useState<CropRect>(FULL_CROP);
 
   useEffect(() => {
     // Crop dimensions are session UI state derived from the active source.
     if (source?.media) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setCropResolution({ width: source.media.video.width, height: source.media.video.height });
+      setCrop(FULL_CROP);
     }
   }, [source?.media, source?.selection.sourceId]);
 
@@ -48,6 +51,7 @@ function EasyTrimEditorApp() {
             onReturnToWelcome={app.requestReturnToWelcome}
             onNativeDialogStateChange={app.setIsNativeDialogOpen}
             cropResolution={cropResolution}
+            crop={crop}
           />
         ) : null}
 
@@ -91,6 +95,7 @@ function EasyTrimEditorApp() {
           exportQueue={app.exportQueue}
           update={update}
           onCropResolutionChange={setCropResolution}
+          onCropChange={setCrop}
         />
         {app.hasSource ? <StatusBar update={update} queue={app.exportQueue} /> : null}
       </main>

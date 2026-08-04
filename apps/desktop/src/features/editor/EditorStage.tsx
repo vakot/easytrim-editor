@@ -55,6 +55,7 @@ export function EditorStage({
   audioPreviewUrls,
   sourceDimensions,
   onCropResolutionChange,
+  onCropChange,
 }: EditorStageProps) {
   const { t } = useTranslation();
   const timelinePanelSizing = useTimelinePanelSizing(sourceId, audioStreams.length);
@@ -716,6 +717,7 @@ export function EditorStage({
             onEnded={handlePlaybackEnded}
             sourceDimensions={sourceDimensions}
             onCropResolutionChange={onCropResolutionChange}
+            onCropChange={onCropChange}
           />
         </div>
       </Panel>

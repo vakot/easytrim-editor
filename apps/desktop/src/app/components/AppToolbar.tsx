@@ -20,6 +20,7 @@ interface AppToolbarProps {
   onReturnToWelcome: () => void;
   onNativeDialogStateChange: (open: boolean) => void;
   cropResolution: { width: number; height: number };
+  crop?: { x: number; y: number; width: number; height: number };
 }
 
 export function AppToolbar({
@@ -32,6 +33,7 @@ export function AppToolbar({
   onReturnToWelcome,
   onNativeDialogStateChange,
   cropResolution,
+  crop,
 }: AppToolbarProps) {
   const { t } = useTranslation();
 
@@ -83,6 +85,7 @@ export function AppToolbar({
               onPresetAction={dispatchExportPreset}
               onNativeDialogStateChange={onNativeDialogStateChange}
               cropResolution={cropResolution}
+              crop={crop}
             />
           ) : null}
         </div>

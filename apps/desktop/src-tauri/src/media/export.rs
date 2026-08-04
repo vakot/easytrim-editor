@@ -27,6 +27,15 @@ pub struct ResolutionSelection {
     pub height: u32,
 }
 
+#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct CropSelection {
+    pub x: f64,
+    pub y: f64,
+    pub width: f64,
+    pub height: f64,
+}
+
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct FastExportRequest {
@@ -43,7 +52,7 @@ pub struct AudioTrackSelection {
     pub volume_percent: u16,
 }
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct OptimizedExportRequest {
     pub source_id: String,
@@ -51,6 +60,7 @@ pub struct OptimizedExportRequest {
     pub audio_tracks: Vec<AudioTrackSelection>,
     pub merge_audio: bool,
     pub resolution: ResolutionSelection,
+    pub crop: Option<CropSelection>,
     pub frame_rate: Option<FrameRateSelection>,
     pub arguments: String,
 }
@@ -148,6 +158,7 @@ pub fn build_optimized_arguments(
         &request.audio_tracks,
     )?;
     validate_resolution(&request.resolution)?;
+    validate_crop(request.crop.as_ref())?;
     if let Some(frame_rate) = &request.frame_rate
         && (frame_rate.numerator == 0 || frame_rate.denominator == 0)
     {
@@ -192,13 +203,27 @@ pub fn build_optimized_arguments(
     if request.audio_tracks.is_empty() {
         arguments.push(OsString::from("-an"));
     }
-    arguments.extend([
-        OsString::from("-vf"),
-        OsString::from(format!(
-            "scale={}:{}",
-            request.resolution.width, request.resolution.height
-        )),
-    ]);
+    let video_filter = request
+        .crop
+        .as_ref()
+        .map(|crop| {
+            format!(
+                "crop=iw*{}:ih*{}:iw*{}:ih*{},scale={}:{}",
+                crop.width,
+                crop.height,
+                crop.x,
+                crop.y,
+                request.resolution.width,
+                request.resolution.height
+            )
+        })
+        .unwrap_or_else(|| {
+            format!(
+                "scale={}:{}",
+                request.resolution.width, request.resolution.height
+            )
+        });
+    arguments.extend([OsString::from("-vf"), OsString::from(video_filter)]);
     if let Some(frame_rate) = &request.frame_rate {
         arguments.extend([
             OsString::from("-r"),
@@ -294,6 +319,20 @@ fn validate_resolution(resolution: &ResolutionSelection) -> Result<(), AppError>
         return Err(AppError::invalid_request(
             "The output resolution must be greater than zero.",
         ));
+    }
+    Ok(())
+}
+
+fn validate_crop(crop: Option<&CropSelection>) -> Result<(), AppError> {
+    if let Some(crop) = crop
+        && (crop.x < 0.0
+            || crop.y < 0.0
+            || crop.width <= 0.0
+            || crop.height <= 0.0
+            || crop.x + crop.width > 1.0
+            || crop.y + crop.height > 1.0)
+    {
+        return Err(AppError::invalid_request("The crop selection is invalid."));
     }
     Ok(())
 }
@@ -532,6 +571,7 @@ mod tests {
                 width: 1920,
                 height: 1080,
             },
+            crop: None,
             frame_rate: None,
             arguments: arguments.to_owned(),
         }
@@ -683,6 +723,7 @@ mod tests {
                     width: 1920,
                     height: 1080,
                 },
+                crop: None,
                 frame_rate: Some(FrameRateSelection {
                     numerator: 30,
                     denominator: 1,

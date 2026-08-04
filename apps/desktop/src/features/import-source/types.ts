@@ -21,4 +21,5 @@ export interface SourceWorkspaceProps {
   exportQueue: ExportToast[];
   update: AvailableUpdate | null;
   onCropResolutionChange: (resolution: { width: number; height: number }) => void;
+  onCropChange: (crop: { x: number; y: number; width: number; height: number }) => void;
 }
