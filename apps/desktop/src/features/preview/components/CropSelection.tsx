@@ -71,19 +71,19 @@ export function CropSelection({ crop, viewport, onPointerDown }: CropSelectionPr
       >
         <span
           data-crop-guide="vertical"
-          className="absolute inset-y-0 left-1/3 border-l-2 border-primary/60"
+          className="absolute inset-y-0 left-1/3 w-px bg-white opacity-80 mix-blend-difference"
         />
         <span
           data-crop-guide="vertical"
-          className="absolute inset-y-0 left-2/3 border-l-2 border-primary/60"
+          className="absolute inset-y-0 left-2/3 w-px bg-white opacity-80 mix-blend-difference"
         />
         <span
           data-crop-guide="horizontal"
-          className="absolute inset-x-0 top-1/3 border-t-2 border-primary/60"
+          className="absolute inset-x-0 top-1/3 h-px bg-white opacity-80 mix-blend-difference"
         />
         <span
           data-crop-guide="horizontal"
-          className="absolute inset-x-0 top-2/3 border-t-2 border-primary/60"
+          className="absolute inset-x-0 top-2/3 h-px bg-white opacity-80 mix-blend-difference"
         />
       </div>
       {HANDLES.map(({ handle, label, className }) => (
