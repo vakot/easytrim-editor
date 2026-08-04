@@ -2,6 +2,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { timelinePercent } from "@/domain/trim";
+import { Info } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { AudioLevelControl } from "./components/AudioLevelControl";
@@ -63,17 +64,24 @@ export function AudioTracks({
         </div>
         <div className="flex min-w-0 items-center justify-between gap-4">
           <p className="truncate text-xs leading-5 text-muted-foreground">{outputSummary}</p>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="flex shrink-0 items-center gap-2">
-                <Checkbox id="merge-audio" checked={mergeAudio} onCheckedChange={onToggleMerge} />
-                <Label htmlFor="merge-audio" className="text-xs text-muted-foreground">
-                  {t("audio.mergeSelected")}
-                </Label>
-              </div>
-            </TooltipTrigger>
-            <TooltipContent>{t("audio.mergeSelectedHint")}</TooltipContent>
-          </Tooltip>
+          <div className="flex shrink-0 items-center gap-2">
+            <Checkbox id="merge-audio" checked={mergeAudio} onCheckedChange={onToggleMerge} />
+            <Label htmlFor="merge-audio" className="text-xs text-muted-foreground">
+              {t("audio.mergeSelected")}
+            </Label>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex size-4 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-hidden"
+                  aria-label={t("audio.mergeSelectedHint")}
+                >
+                  <Info aria-hidden="true" className="size-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>{t("audio.mergeSelectedHint")}</TooltipContent>
+            </Tooltip>
+          </div>
         </div>
       </div>
 
