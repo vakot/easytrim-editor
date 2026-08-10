@@ -31,7 +31,7 @@ export function usePlaybackModes({
     return playbackRange(
       trim.sourceDurationMicros,
       trim.startMicros,
-      segmentEnabled && playbackStartMicrosValue >= trim.endMicros
+      segmentEnabled && playbackStartMicrosValue > trim.endMicros
         ? trim.sourceDurationMicros
         : trim.endMicros,
       segmentEnabled,
