@@ -11,6 +11,7 @@ import {
 import { useTheme } from "@/app/theme/use-theme";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const colorClasses: Record<Exclude<PrimaryColor, `#${string}`>, string> = {
   amber: "bg-[#efbf04]",
@@ -42,22 +43,27 @@ export function PrimaryColorSelector() {
 
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          size="icon"
-          type="button"
-          aria-label={t("themeColor.selection", {
-            color: t(`themeColor.${primaryColor}`, selectedColor),
-          })}
-        >
-          <span
-            className="size-5 rounded-full ring-1 ring-foreground/15"
-            aria-hidden="true"
-            style={{ backgroundColor: selectedColor }}
-          />
-        </Button>
-      </PopoverTrigger>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon"
+              type="button"
+              aria-label={t("themeColor.selection", {
+                color: t(`themeColor.${primaryColor}`, selectedColor),
+              })}
+            >
+              <span
+                className="size-5 rounded-full ring-1 ring-foreground/15"
+                aria-hidden="true"
+                style={{ backgroundColor: selectedColor }}
+              />
+            </Button>
+          </PopoverTrigger>
+        </TooltipTrigger>
+        <TooltipContent>{t("themeColor.tooltip")}</TooltipContent>
+      </Tooltip>
       <PopoverContent className="w-auto space-y-3 p-3" align="end">
         <SpectrumWheel
           color={selectedColor}

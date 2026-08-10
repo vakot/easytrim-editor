@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { STORAGE_KEYS } from "@/lib/storage";
 import { PrimaryColorSelector } from "../PrimaryColorSelector";
 
@@ -14,9 +15,11 @@ describe("PrimaryColorSelector", () => {
   it("updates the primary color, exposes its selection, and persists it with theme preferences", async () => {
     const user = userEvent.setup();
     render(
-      <ThemeProvider>
-        <PrimaryColorSelector />
-      </ThemeProvider>,
+      <TooltipProvider>
+        <ThemeProvider>
+          <PrimaryColorSelector />
+        </ThemeProvider>
+      </TooltipProvider>,
     );
 
     expect(document.documentElement).toHaveAttribute("data-primary-color", "amber");
@@ -33,9 +36,11 @@ describe("PrimaryColorSelector", () => {
   it("restores a saved color on load", () => {
     localStorage.setItem(STORAGE_KEYS.preferences, JSON.stringify({ primaryColor: "emerald" }));
     render(
-      <ThemeProvider>
-        <PrimaryColorSelector />
-      </ThemeProvider>,
+      <TooltipProvider>
+        <ThemeProvider>
+          <PrimaryColorSelector />
+        </ThemeProvider>
+      </TooltipProvider>,
     );
 
     expect(document.documentElement).toHaveAttribute("data-primary-color", "emerald");
@@ -44,9 +49,11 @@ describe("PrimaryColorSelector", () => {
   it("continuously updates and persists a color while scrubbing the spectrum wheel", async () => {
     const user = userEvent.setup();
     render(
-      <ThemeProvider>
-        <PrimaryColorSelector />
-      </ThemeProvider>,
+      <TooltipProvider>
+        <ThemeProvider>
+          <PrimaryColorSelector />
+        </ThemeProvider>
+      </TooltipProvider>,
     );
 
     await user.click(screen.getByRole("button", { name: "Theme color: Amber" }));

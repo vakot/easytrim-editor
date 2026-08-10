@@ -31,6 +31,7 @@ export const sk = {
   },
   themeColor: {
     label: "Farba motГ­vu",
+    tooltip: "Vyberte hlavnГє farbu aplikГЎcie",
     presets: "PredvoДѕby farby motГ­vu",
     spectrum: "Spektrum farieb motГ­vu. OdtieЕ€ upravГ­te ЕЎГ­pkami doДѕava a doprava.",
     selection: "Farba motГ­vu: {{color}}",
