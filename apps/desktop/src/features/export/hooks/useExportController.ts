@@ -27,15 +27,23 @@ export function useExportController({
   presetState,
   onPresetAction,
   onNativeDialogStateChange,
+  cropResolution,
+  crop,
 }: ExportPanelProps) {
   const { t } = useTranslation();
   const defaults = useMemo(() => outputDefaults(sourceName), [sourceName]);
   const [isOptimizedOpen, setIsOptimizedOpen] = useState(false);
   const [settings, setSettings] = useState<ExportSettings>({
-    resolution: { width: source.video.width, height: source.video.height },
+    resolution: cropResolution,
     frameRate: undefined,
     argumentsText: presetState.argumentsText,
   });
+
+  useEffect(() => {
+    // Keep export defaults synchronized with the active crop selection.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSettings((current) => ({ ...current, resolution: cropResolution }));
+  }, [cropResolution]);
   const [launchError, setLaunchError] = useState<string | null>(null);
   const toastSequence = useRef(0);
 
@@ -59,6 +67,7 @@ export function useExportController({
       audioTracks: selectedAudio,
       mergeAudio,
       resolution: settings.resolution,
+      crop,
       frameRate: settings.frameRate
         ? {
             numerator: settings.frameRate.numerator,
@@ -73,6 +82,7 @@ export function useExportController({
       selectedAudio,
       settings.frameRate,
       settings.resolution,
+      crop,
       source.sourceId,
       trim.endMicros,
       trim.startMicros,

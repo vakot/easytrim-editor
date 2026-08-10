@@ -11,21 +11,29 @@ import { useTranslation } from "react-i18next";
 export function ExportPanel(props: ExportPanelProps) {
   const { t } = useTranslation();
   const exportController = useExportController(props);
+  const cropApplied = props.crop
+    ? props.crop.x !== 0 || props.crop.y !== 0 || props.crop.width !== 1 || props.crop.height !== 1
+    : false;
 
   return (
     <div className="flex items-center gap-3">
       <Separator orientation="vertical" className="h-auto self-stretch" />
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button
-            type="button"
-            onClick={() => void exportController.startFastCut()}
-            aria-keyshortcuts="Control+S"
-          >
-            {t("export.save")}
-          </Button>
+          <span>
+            <Button
+              type="button"
+              onClick={() => void exportController.startFastCut()}
+              aria-keyshortcuts="Control+S"
+              disabled={cropApplied}
+            >
+              {t("export.save")}
+            </Button>
+          </span>
         </TooltipTrigger>
-        <TooltipContent>{t("export.saveTooltip")}</TooltipContent>
+        <TooltipContent>
+          {cropApplied ? t("export.cropSaveDisabledTooltip") : t("export.saveTooltip")}
+        </TooltipContent>
       </Tooltip>
       <OptimizedExportDialog
         open={exportController.isOptimizedOpen}

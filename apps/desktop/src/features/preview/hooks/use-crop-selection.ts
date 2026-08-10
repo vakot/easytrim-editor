@@ -30,7 +30,10 @@ interface CropSelectionBounds {
   height: number;
 }
 
-export function useCropSelection(previewRef: RefObject<HTMLDivElement | null>) {
+export function useCropSelection(
+  previewRef: RefObject<HTMLDivElement | null>,
+  onCropChange?: (crop: CropRect) => void,
+) {
   const [crop, setCrop] = useState<CropRect>(FULL_CROP);
   const [isOpen, setIsOpen] = useState(false);
   const [drag, setDrag] = useState<DragState | null>(null);
@@ -47,6 +50,10 @@ export function useCropSelection(previewRef: RefObject<HTMLDivElement | null>) {
     setIsOpen(false);
     setEnterFrom(null);
   }
+
+  useEffect(() => {
+    onCropChange?.(crop);
+  }, [crop, onCropChange]);
 
   useEffect(() => {
     if (!isOpen || !enterFrom) return;
