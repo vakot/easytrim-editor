@@ -38,7 +38,7 @@ export function CropSnapMarkers({ frame }: CropSnapMarkersProps) {
           <span
             data-crop-snap-label="left"
             className="absolute right-full top-1/2 -translate-y-1/2 rotate-180 text whitespace-nowrap pl-0.75 text-[0.625rem] leading-none text-muted-foreground"
-            style={{ writingMode: 'vertical-lr' }}
+            style={{ writingMode: "vertical-lr" }}
           >
             {formatPercent(point)}
           </span>

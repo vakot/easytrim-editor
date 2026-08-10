@@ -58,7 +58,12 @@ export function VideoPreview({
         height: Math.max(1, Math.round(effectiveSourceDimensions.height * crop.height)),
       });
     },
-    [effectiveSourceDimensions.height, effectiveSourceDimensions.width, onCropChange, onCropResolutionChange],
+    [
+      effectiveSourceDimensions.height,
+      effectiveSourceDimensions.width,
+      onCropChange,
+      onCropResolutionChange,
+    ],
   );
 
   useEffect(() => {
@@ -135,7 +140,7 @@ export function VideoPreview({
           onPlaybackError(sourceId, value.kind);
         }}
         onCropToolOpenChange={setCropToolOpen}
-      onCropChange={handleCropChange}
+        onCropChange={handleCropChange}
       />
       {value.kind === "proxy" ? (
         <Badge variant="secondary" className="absolute top-3 right-3">
