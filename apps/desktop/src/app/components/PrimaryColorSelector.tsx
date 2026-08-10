@@ -9,6 +9,7 @@ import {
   type PrimaryColor,
 } from "@/app/theme/theme";
 import { useTheme } from "@/app/theme/use-theme";
+import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 const colorClasses: Record<Exclude<PrimaryColor, `#${string}`>, string> = {
@@ -41,17 +42,21 @@ export function PrimaryColorSelector() {
 
   return (
     <Popover>
-      <PopoverTrigger
-        className="flex size-10 items-center justify-center rounded-md border border-border bg-card outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring"
-        aria-label={t("themeColor.selection", {
-          color: t(`themeColor.${primaryColor}`, selectedColor),
-        })}
-      >
-        <span
-          className="size-5 rounded-full ring-1 ring-foreground/15"
-          aria-hidden="true"
-          style={{ backgroundColor: selectedColor }}
-        />
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          size="icon"
+          type="button"
+          aria-label={t("themeColor.selection", {
+            color: t(`themeColor.${primaryColor}`, selectedColor),
+          })}
+        >
+          <span
+            className="size-5 rounded-full ring-1 ring-foreground/15"
+            aria-hidden="true"
+            style={{ backgroundColor: selectedColor }}
+          />
+        </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto space-y-3 p-3" align="end">
         <SpectrumWheel
