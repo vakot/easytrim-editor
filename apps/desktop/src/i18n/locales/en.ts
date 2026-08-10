@@ -23,6 +23,16 @@ export const en = {
     light: "Light",
     dark: "Dark",
   },
+  themeColor: {
+    label: "Theme color",
+    selection: "Theme color: {{color}}",
+    option: "Use {{color}} theme color",
+    amber: "Amber",
+    rose: "Rose",
+    violet: "Violet",
+    blue: "Blue",
+    emerald: "Emerald",
+  },
   app: {
     toolbar: "Application toolbar",
     returnToWelcome: "Return to EasyTrim Editor welcome page",

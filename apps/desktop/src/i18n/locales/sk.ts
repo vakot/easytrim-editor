@@ -29,6 +29,16 @@ export const sk = {
     light: "Svetlý",
     dark: "Tmavý",
   },
+  themeColor: {
+    label: "Farba motГ­vu",
+    selection: "Farba motГ­vu: {{color}}",
+    option: "PouЕѕiЕҐ farbu motГ­vu {{color}}",
+    amber: "JantГЎrovГЎ",
+    rose: "RГҐЕѕovГЎ",
+    violet: "FialovГЎ",
+    blue: "ModrГЎ",
+    emerald: "SmaragdovГЎ",
+  },
   app: {
     toolbar: "Panel aplikácie",
     returnToWelcome: "Návrat na úvodnú stránku EasyTrim Editor",
