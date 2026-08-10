@@ -25,6 +25,8 @@ export const en = {
   },
   themeColor: {
     label: "Theme color",
+    presets: "Theme color presets",
+    spectrum: "Theme color spectrum. Use the Left and Right Arrow keys to adjust the hue.",
     selection: "Theme color: {{color}}",
     option: "Use {{color}} theme color",
     amber: "Amber",

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -39,5 +39,27 @@ describe("PrimaryColorSelector", () => {
     );
 
     expect(document.documentElement).toHaveAttribute("data-primary-color", "emerald");
+  });
+
+  it("selects and persists a color directly from the spectrum wheel", async () => {
+    const user = userEvent.setup();
+    render(
+      <ThemeProvider>
+        <PrimaryColorSelector />
+      </ThemeProvider>,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Theme color: Amber" }));
+    const spectrum = screen.getByRole("button", { name: /Theme color spectrum/ });
+    Object.defineProperty(spectrum, "getBoundingClientRect", {
+      value: () => new DOMRect(0, 0, 192, 192),
+    });
+    fireEvent.pointerDown(spectrum, { clientX: 180, clientY: 96 });
+
+    const selectedColor = document.documentElement.dataset.primaryColor;
+    expect(selectedColor).toMatch(/^#[0-9a-f]{6}$/);
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEYS.preferences) ?? "{}")).toMatchObject({
+      primaryColor: selectedColor,
+    });
   });
 });

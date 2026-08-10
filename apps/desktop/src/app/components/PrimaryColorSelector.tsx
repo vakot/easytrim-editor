@@ -1,11 +1,17 @@
 import { Check } from "lucide-react";
+import { type KeyboardEvent, type PointerEvent, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
+import {
+  colorFromSpectrumPosition,
+  PRIMARY_COLORS,
+  resolvePrimaryColor,
+  type PrimaryColor,
+} from "@/app/theme/theme";
 import { useTheme } from "@/app/theme/use-theme";
-import { PRIMARY_COLORS, type PrimaryColor } from "@/app/theme/theme";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
-const colorClasses: Record<PrimaryColor, string> = {
+const colorClasses: Record<Exclude<PrimaryColor, `#${string}`>, string> = {
   amber: "bg-[#efbf04]",
   rose: "bg-[#e85d75]",
   violet: "bg-[#8b6ee8]",
@@ -16,24 +22,25 @@ const colorClasses: Record<PrimaryColor, string> = {
 export function PrimaryColorSelector() {
   const { t } = useTranslation();
   const { primaryColor, setPrimaryColor } = useTheme();
+  const selectedColor = resolvePrimaryColor(primaryColor);
 
   return (
     <Popover>
       <PopoverTrigger
         className="flex size-10 items-center justify-center rounded-md outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring"
-        aria-label={t("themeColor.selection", { color: t(`themeColor.${primaryColor}`) })}
+        aria-label={t("themeColor.selection", {
+          color: t(`themeColor.${primaryColor}`, selectedColor),
+        })}
       >
         <span
           className="size-5 rounded-full ring-1 ring-foreground/15"
           aria-hidden="true"
-          style={{
-            background:
-              "conic-gradient(from 210deg, #e85d75, #efbf04, #32a876, #4299e1, #8b6ee8, #e85d75)",
-          }}
+          style={{ backgroundColor: selectedColor }}
         />
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-2" align="end">
-        <div className="flex gap-1" role="group" aria-label={t("themeColor.label")}>
+      <PopoverContent className="w-auto space-y-3 p-3" align="end">
+        <SpectrumWheel color={selectedColor} onChange={setPrimaryColor} />
+        <div className="flex gap-1" role="group" aria-label={t("themeColor.presets")}>
           {PRIMARY_COLORS.map((color) => {
             const selected = color === primaryColor;
             return (
@@ -55,4 +62,92 @@ export function PrimaryColorSelector() {
       </PopoverContent>
     </Popover>
   );
+}
+
+function SpectrumWheel({
+  color,
+  onChange,
+}: {
+  color: string;
+  onChange: (color: PrimaryColor) => void;
+}) {
+  const { t } = useTranslation();
+  const wheelRef = useRef<HTMLButtonElement>(null);
+
+  const chooseColor = (event: PointerEvent<HTMLButtonElement>) => {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    onChange(
+      colorFromSpectrumPosition(
+        event.clientX - bounds.left,
+        event.clientY - bounds.top,
+        bounds.width,
+      ),
+    );
+  };
+  const adjustHue = (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+    event.preventDefault();
+    const bounds = wheelRef.current?.getBoundingClientRect();
+    if (!bounds) return;
+    const change = event.key === "ArrowRight" ? 8 : -8;
+    const center = bounds.width / 2;
+    const currentHue = colorToHue(color);
+    const nextHue = (((currentHue + change) % 360) + 360) % 360;
+    const angle = ((nextHue - 90) * Math.PI) / 180;
+    onChange(
+      colorFromSpectrumPosition(
+        center + Math.cos(angle) * center,
+        center + Math.sin(angle) * center,
+        bounds.width,
+      ),
+    );
+  };
+
+  return (
+    <button
+      ref={wheelRef}
+      className="relative block size-48 rounded-full outline-none ring-1 ring-foreground/10 focus-visible:ring-2 focus-visible:ring-ring"
+      type="button"
+      aria-label={t("themeColor.spectrum")}
+      onPointerDown={chooseColor}
+      onKeyDown={adjustHue}
+      style={{
+        background:
+          "radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(255,255,255,0) 70%), conic-gradient(from 0deg, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000)",
+      }}
+    >
+      <span
+        className="absolute size-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-md"
+        aria-hidden="true"
+        style={colorMarkerPosition(color)}
+      />
+    </button>
+  );
+}
+
+function colorToHue(color: string): number {
+  const red = Number.parseInt(color.slice(1, 3), 16) / 255;
+  const green = Number.parseInt(color.slice(3, 5), 16) / 255;
+  const blue = Number.parseInt(color.slice(5, 7), 16) / 255;
+  const maximum = Math.max(red, green, blue);
+  const minimum = Math.min(red, green, blue);
+  const delta = maximum - minimum;
+  if (delta === 0) return 0;
+  const hueBase =
+    maximum === red
+      ? (green - blue) / delta
+      : maximum === green
+        ? (blue - red) / delta + 2
+        : (red - green) / delta + 4;
+  return (hueBase * 60 + 360) % 360;
+}
+
+function colorMarkerPosition(color: string) {
+  const hue = colorToHue(color);
+  const angle = ((hue - 90) * Math.PI) / 180;
+  return {
+    left: `${50 + Math.cos(angle) * 45}%`,
+    top: `${50 + Math.sin(angle) * 45}%`,
+    backgroundColor: color,
+  };
 }

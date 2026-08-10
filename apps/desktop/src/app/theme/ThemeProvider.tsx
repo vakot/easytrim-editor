@@ -11,6 +11,7 @@ import { STORAGE_KEYS, readStoredJson, writeStoredJson } from "@/lib/storage";
 import {
   isThemePreference,
   isPrimaryColor,
+  primaryColorPalette,
   resolveTheme,
   subscribeToSystemTheme,
   systemPrefersDark,
@@ -47,12 +48,21 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     root.classList.toggle("dark", preference === "dark");
     root.dataset.theme = resolvedTheme;
     root.dataset.primaryColor = primaryColor;
+    const palette = primaryColorPalette(primaryColor);
+    root.style.setProperty("--primary-light", palette.light);
+    root.style.setProperty("--primary-foreground-light", palette.lightForeground);
+    root.style.setProperty("--primary-dark", palette.dark);
+    root.style.setProperty("--primary-foreground-dark", palette.darkForeground);
     root.style.colorScheme = resolvedTheme;
 
     return () => {
       root.classList.remove("light", "dark");
       delete root.dataset.theme;
       delete root.dataset.primaryColor;
+      root.style.removeProperty("--primary-light");
+      root.style.removeProperty("--primary-foreground-light");
+      root.style.removeProperty("--primary-dark");
+      root.style.removeProperty("--primary-foreground-dark");
       root.style.removeProperty("color-scheme");
     };
   }, [preference, primaryColor, resolvedTheme]);
