@@ -8,6 +8,7 @@ export interface ThemeContextValue {
   primaryColor: PrimaryColor;
   setPreference: (preference: ThemePreference) => void;
   setPrimaryColor: (primaryColor: PrimaryColor) => void;
+  previewPrimaryColor: (primaryColor: PrimaryColor | null) => void;
 }
 
 export const ThemeContext = createContext<ThemeContextValue | null>(null);

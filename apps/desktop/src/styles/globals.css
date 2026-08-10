@@ -231,6 +231,14 @@
   }
 }
 
+/* Color token updates during spectrum scrubbing should track the pointer immediately.
+   Other motion remains available; only color interpolation is suppressed for components
+   that opt into Tailwind's generic color/all transition utilities. */
+:root[data-primary-color-scrubbing] [class*="transition-colors"],
+:root[data-primary-color-scrubbing] [class*="transition-all"] {
+  transition-property: transform, opacity, box-shadow;
+}
+
 /* Radix renders the custom scrollbar alongside a native viewport scrollbar.
    Hide the native one consistently in browser and packaged WebView2 builds. */
 .scroll-area-viewport {

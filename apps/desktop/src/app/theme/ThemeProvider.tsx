@@ -41,6 +41,16 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const stored = readStoredJson<Record<string, unknown>>(STORAGE_KEYS.preferences) ?? {};
     writeStoredJson(STORAGE_KEYS.preferences, { ...stored, primaryColor: nextPrimaryColor });
   }, []);
+  const previewPrimaryColor = useCallback(
+    (nextPrimaryColor: PrimaryColor | null) => {
+      const root = document.documentElement;
+      root.toggleAttribute("data-primary-color-scrubbing", nextPrimaryColor !== null);
+      const appliedColor = nextPrimaryColor ?? primaryColor;
+      root.dataset.primaryColor = appliedColor;
+      applyPrimaryColor(root, appliedColor);
+    },
+    [primaryColor],
+  );
 
   useLayoutEffect(() => {
     const root = document.documentElement;
@@ -48,17 +58,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     root.classList.toggle("dark", preference === "dark");
     root.dataset.theme = resolvedTheme;
     root.dataset.primaryColor = primaryColor;
-    const palette = primaryColorPalette(primaryColor);
-    root.style.setProperty("--primary-light", palette.light);
-    root.style.setProperty("--primary-foreground-light", palette.lightForeground);
-    root.style.setProperty("--primary-dark", palette.dark);
-    root.style.setProperty("--primary-foreground-dark", palette.darkForeground);
+    applyPrimaryColor(root, primaryColor);
     root.style.colorScheme = resolvedTheme;
 
     return () => {
       root.classList.remove("light", "dark");
       delete root.dataset.theme;
       delete root.dataset.primaryColor;
+      root.removeAttribute("data-primary-color-scrubbing");
       root.style.removeProperty("--primary-light");
       root.style.removeProperty("--primary-foreground-light");
       root.style.removeProperty("--primary-dark");
@@ -74,9 +81,25 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       primaryColor,
       setPreference: updatePreference,
       setPrimaryColor: updatePrimaryColor,
+      previewPrimaryColor,
     }),
-    [preference, primaryColor, resolvedTheme, updatePreference, updatePrimaryColor],
+    [
+      preference,
+      primaryColor,
+      resolvedTheme,
+      updatePreference,
+      updatePrimaryColor,
+      previewPrimaryColor,
+    ],
   );
 
   return <ThemeContext value={value}>{children}</ThemeContext>;
+}
+
+function applyPrimaryColor(root: HTMLElement, primaryColor: PrimaryColor) {
+  const palette = primaryColorPalette(primaryColor);
+  root.style.setProperty("--primary-light", palette.light);
+  root.style.setProperty("--primary-foreground-light", palette.lightForeground);
+  root.style.setProperty("--primary-dark", palette.dark);
+  root.style.setProperty("--primary-foreground-dark", palette.darkForeground);
 }

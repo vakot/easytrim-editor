@@ -1,5 +1,5 @@
 import { Check } from "lucide-react";
-import { type KeyboardEvent, type PointerEvent, useRef } from "react";
+import { type KeyboardEvent, type PointerEvent, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -21,8 +21,23 @@ const colorClasses: Record<Exclude<PrimaryColor, `#${string}`>, string> = {
 
 export function PrimaryColorSelector() {
   const { t } = useTranslation();
-  const { primaryColor, setPrimaryColor } = useTheme();
-  const selectedColor = resolvePrimaryColor(primaryColor);
+  const { primaryColor, previewPrimaryColor, setPrimaryColor } = useTheme();
+  const [previewColor, setPreviewColor] = useState<PrimaryColor | null>(null);
+  const selectedPrimaryColor = previewColor ?? primaryColor;
+  const selectedColor = resolvePrimaryColor(selectedPrimaryColor);
+
+  const preview = (color: PrimaryColor) => {
+    setPreviewColor(color);
+    previewPrimaryColor(color);
+  };
+  const commit = (color: PrimaryColor) => {
+    setPreviewColor(null);
+    setPrimaryColor(color);
+  };
+  const cancel = () => {
+    setPreviewColor(null);
+    previewPrimaryColor(null);
+  };
 
   return (
     <Popover>
@@ -39,7 +54,12 @@ export function PrimaryColorSelector() {
         />
       </PopoverTrigger>
       <PopoverContent className="w-auto space-y-3 p-3" align="end">
-        <SpectrumWheel color={selectedColor} onChange={setPrimaryColor} />
+        <SpectrumWheel
+          color={selectedColor}
+          onPreview={preview}
+          onCommit={commit}
+          onCancel={cancel}
+        />
         <div className="flex gap-1" role="group" aria-label={t("themeColor.presets")}>
           {PRIMARY_COLORS.map((color) => {
             const selected = color === primaryColor;
@@ -50,7 +70,7 @@ export function PrimaryColorSelector() {
                 type="button"
                 aria-label={t("themeColor.option", { color: t(`themeColor.${color}`) })}
                 aria-pressed={selected}
-                onClick={() => setPrimaryColor(color)}
+                onClick={() => commit(color)}
               >
                 {selected ? (
                   <Check className="size-4 text-white drop-shadow-sm" aria-hidden="true" />
@@ -66,24 +86,29 @@ export function PrimaryColorSelector() {
 
 function SpectrumWheel({
   color,
-  onChange,
+  onPreview,
+  onCommit,
+  onCancel,
 }: {
   color: string;
-  onChange: (color: PrimaryColor) => void;
+  onPreview: (color: PrimaryColor) => void;
+  onCommit: (color: PrimaryColor) => void;
+  onCancel: () => void;
 }) {
   const { t } = useTranslation();
   const wheelRef = useRef<HTMLButtonElement>(null);
   const activePointerId = useRef<number | null>(null);
+  const scrubbedColor = useRef<PrimaryColor | null>(null);
 
   const chooseColor = (event: PointerEvent<HTMLButtonElement>) => {
     const bounds = event.currentTarget.getBoundingClientRect();
-    onChange(
-      colorFromSpectrumPosition(
-        event.clientX - bounds.left,
-        event.clientY - bounds.top,
-        bounds.width,
-      ),
+    const selectedColor = colorFromSpectrumPosition(
+      event.clientX - bounds.left,
+      event.clientY - bounds.top,
+      bounds.width,
     );
+    scrubbedColor.current = selectedColor;
+    onPreview(selectedColor);
   };
   const startScrubbing = (event: PointerEvent<HTMLButtonElement>) => {
     activePointerId.current = event.pointerId;
@@ -93,12 +118,15 @@ function SpectrumWheel({
   const scrubColor = (event: PointerEvent<HTMLButtonElement>) => {
     if (activePointerId.current === event.pointerId) chooseColor(event);
   };
-  const stopScrubbing = (event: PointerEvent<HTMLButtonElement>) => {
+  const stopScrubbing = (event: PointerEvent<HTMLButtonElement>, commit: boolean) => {
     if (activePointerId.current !== event.pointerId) return;
     activePointerId.current = null;
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
+    if (commit && scrubbedColor.current) onCommit(scrubbedColor.current);
+    if (!commit) onCancel();
+    scrubbedColor.current = null;
   };
   const adjustHue = (event: KeyboardEvent<HTMLButtonElement>) => {
     if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
@@ -110,7 +138,7 @@ function SpectrumWheel({
     const { hue: currentHue } = colorToHsl(color);
     const nextHue = (((currentHue + change) % 360) + 360) % 360;
     const angle = ((nextHue - 90) * Math.PI) / 180;
-    onChange(
+    onCommit(
       colorFromSpectrumPosition(
         center + Math.cos(angle) * center,
         center + Math.sin(angle) * center,
@@ -127,8 +155,8 @@ function SpectrumWheel({
       aria-label={t("themeColor.spectrum")}
       onPointerDown={startScrubbing}
       onPointerMove={scrubColor}
-      onPointerUp={stopScrubbing}
-      onPointerCancel={stopScrubbing}
+      onPointerUp={(event) => stopScrubbing(event, true)}
+      onPointerCancel={(event) => stopScrubbing(event, false)}
       onKeyDown={adjustHue}
       style={{
         background:
