@@ -8,6 +8,7 @@ import type { Dispatch, SetStateAction } from "react";
 import { useTranslation } from "react-i18next";
 import { LanguageSelector } from "./LanguageSelector";
 import { ThemeSelector } from "./ThemeSelector";
+import { PrimaryColorSelector } from "./PrimaryColorSelector";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface AppToolbarProps {
@@ -54,6 +55,7 @@ export function AppToolbar({
         </button>
         <CapabilityStatus capabilities={session.capabilities} />
         <div className="flex items-center justify-end gap-3 pl-4">
+          <PrimaryColorSelector />
           <ThemeSelector />
           <LanguageSelector className="w-36" />
           <Separator orientation="vertical" className="h-auto self-stretch" />

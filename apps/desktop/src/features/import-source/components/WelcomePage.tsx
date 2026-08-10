@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { LanguageSelector } from "@/app/components/LanguageSelector";
 import { ThemeSelector } from "@/app/components/ThemeSelector";
+import { PrimaryColorSelector } from "@/app/components/PrimaryColorSelector";
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import type { SessionState } from "@/app/session-state";
@@ -40,6 +41,7 @@ export function WelcomePage({
       <WelcomeBrandWall />
       {update ? <UpdateNotice update={update} /> : null}
       <div className="absolute top-5 right-5 z-20 flex items-center gap-2">
+        <PrimaryColorSelector />
         <ThemeSelector />
         <LanguageSelector className="w-36" />
       </div>
