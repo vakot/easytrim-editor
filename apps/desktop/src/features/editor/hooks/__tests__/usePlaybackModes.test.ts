@@ -41,6 +41,15 @@ describe("usePlaybackModes", () => {
       action: { type: "restart", positionMicros: 10_000_000 },
     });
 
+    act(() => {
+      result.current.resetBoundary();
+      result.current.startMicros(trim.endMicros, trim);
+    });
+    expect(result.current.consumeBoundary(trim.endMicros, trim)).toEqual({
+      reached: true,
+      action: { type: "restart", positionMicros: trim.startMicros },
+    });
+
     act(() => result.current.toggleSegment());
 
     expect(result.current.segmentEnabled).toBe(false);
