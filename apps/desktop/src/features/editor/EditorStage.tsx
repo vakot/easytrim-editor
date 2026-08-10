@@ -579,6 +579,8 @@ export function EditorStage({
     if (!resumeAfterCropRef.current) return;
     resumeAfterCropRef.current = false;
     startMediaPlayback();
+    // startMediaPlayback is intentionally read from the stable editor lifecycle.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function handleStepFrame(direction: -1 | 1) {
