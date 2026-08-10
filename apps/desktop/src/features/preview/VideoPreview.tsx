@@ -24,6 +24,7 @@ interface VideoPreviewProps {
   sourceDimensions?: { width: number; height: number };
   onCropResolutionChange?: (resolution: { width: number; height: number }) => void;
   onCropChange?: (crop: CropRect) => void;
+  onCropToolOpenChange?: (isOpen: boolean) => void;
 }
 
 export function VideoPreview({
@@ -42,6 +43,7 @@ export function VideoPreview({
   sourceDimensions,
   onCropResolutionChange,
   onCropChange,
+  onCropToolOpenChange,
 }: VideoPreviewProps) {
   const { t } = useTranslation();
   const reportedUrl = useRef<string | null>(null);
@@ -66,6 +68,10 @@ export function VideoPreview({
   useEffect(() => {
     reportedUrl.current = null;
   }, [readyUrl]);
+
+  useEffect(() => {
+    onCropToolOpenChange?.(cropToolOpen);
+  }, [cropToolOpen, onCropToolOpenChange]);
 
   if (preview.status === "idle" || preview.status === "loading") {
     const isProxy = preview.status === "loading" && preview.kind === "proxy";

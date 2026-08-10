@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Group, Panel } from "react-resizable-panels";
 import { useTranslation } from "react-i18next";
 
@@ -78,6 +78,7 @@ export function EditorStage({
   const playbackStartSequenceRef = useRef(0);
   const playbackRequestedRef = useRef(false);
   const isPlayingRef = useRef(false);
+  const resumeAfterCropRef = useRef(false);
   const lastPlaybackCommitAtRef = useRef(0);
   const trimRef = useRef(trim);
   const trimPropRef = useRef(trim);
@@ -561,6 +562,25 @@ export function EditorStage({
     startMediaPlayback();
   }
 
+  const handleCropToolOpenChange = useCallback((isOpen: boolean) => {
+    if (isOpen) {
+      resumeAfterCropRef.current = playbackRequestedRef.current || isPlayingRef.current;
+      if (!resumeAfterCropRef.current) return;
+      playbackStartSequenceRef.current += 1;
+      playbackRequestedRef.current = false;
+      isPlayingRef.current = false;
+      videoRef.current?.pause();
+      pauseAudioPlayback();
+      setIsPlaying(false);
+      stopPlayheadAnimation();
+      return;
+    }
+
+    if (!resumeAfterCropRef.current) return;
+    resumeAfterCropRef.current = false;
+    startMediaPlayback();
+  }, []);
+
   function handleStepFrame(direction: -1 | 1) {
     playbackStartSequenceRef.current += 1;
     playbackRequestedRef.current = false;
@@ -718,6 +738,7 @@ export function EditorStage({
             sourceDimensions={sourceDimensions}
             onCropResolutionChange={onCropResolutionChange}
             onCropChange={onCropChange}
+            onCropToolOpenChange={handleCropToolOpenChange}
           />
         </div>
       </Panel>
