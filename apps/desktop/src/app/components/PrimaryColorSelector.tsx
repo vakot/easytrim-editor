@@ -42,7 +42,7 @@ export function PrimaryColorSelector() {
   return (
     <Popover>
       <PopoverTrigger
-        className="flex size-10 items-center justify-center rounded-md outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring"
+        className="flex size-10 items-center justify-center rounded-md border border-border bg-card outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring"
         aria-label={t("themeColor.selection", {
           color: t(`themeColor.${primaryColor}`, selectedColor),
         })}
