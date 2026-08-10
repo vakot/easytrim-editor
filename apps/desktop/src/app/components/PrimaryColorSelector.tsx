@@ -73,6 +73,7 @@ function SpectrumWheel({
 }) {
   const { t } = useTranslation();
   const wheelRef = useRef<HTMLButtonElement>(null);
+  const activePointerId = useRef<number | null>(null);
 
   const chooseColor = (event: PointerEvent<HTMLButtonElement>) => {
     const bounds = event.currentTarget.getBoundingClientRect();
@@ -83,6 +84,21 @@ function SpectrumWheel({
         bounds.width,
       ),
     );
+  };
+  const startScrubbing = (event: PointerEvent<HTMLButtonElement>) => {
+    activePointerId.current = event.pointerId;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    chooseColor(event);
+  };
+  const scrubColor = (event: PointerEvent<HTMLButtonElement>) => {
+    if (activePointerId.current === event.pointerId) chooseColor(event);
+  };
+  const stopScrubbing = (event: PointerEvent<HTMLButtonElement>) => {
+    if (activePointerId.current !== event.pointerId) return;
+    activePointerId.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
   };
   const adjustHue = (event: KeyboardEvent<HTMLButtonElement>) => {
     if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
@@ -106,10 +122,13 @@ function SpectrumWheel({
   return (
     <button
       ref={wheelRef}
-      className="relative block size-48 rounded-full outline-none ring-1 ring-foreground/10 focus-visible:ring-2 focus-visible:ring-ring"
+      className="relative block size-48 touch-none cursor-crosshair rounded-full outline-none ring-1 ring-foreground/10 focus-visible:ring-2 focus-visible:ring-ring"
       type="button"
       aria-label={t("themeColor.spectrum")}
-      onPointerDown={chooseColor}
+      onPointerDown={startScrubbing}
+      onPointerMove={scrubColor}
+      onPointerUp={stopScrubbing}
+      onPointerCancel={stopScrubbing}
       onKeyDown={adjustHue}
       style={{
         background:
