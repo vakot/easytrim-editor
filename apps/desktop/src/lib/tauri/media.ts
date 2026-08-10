@@ -235,6 +235,22 @@ export async function cancelOperation(operationId: string): Promise<void> {
   }
 }
 
+export async function reserveExportSource(sourceId: string): Promise<void> {
+  try {
+    await invoke("reserve_export_source", { sourceId });
+  } catch (error: unknown) {
+    throw normalizeAppError(error);
+  }
+}
+
+export async function releaseExportSource(sourceId: string): Promise<void> {
+  try {
+    await invoke("release_export_source", { sourceId });
+  } catch (error: unknown) {
+    throw normalizeAppError(error);
+  }
+}
+
 export async function openFileLocation(path: string): Promise<void> {
   try {
     await invoke("open_file_location", { path });

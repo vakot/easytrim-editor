@@ -4,6 +4,7 @@ import {
   chooseOutputPath,
   normalizeAppError,
   planOptimizedExport,
+  reserveExportSource,
   type FastExportRequest,
   type OptimizedExportRequest,
   type OutputSelection,
@@ -141,7 +142,7 @@ export function useExportController({
     onNativeDialogStateChange(true);
     try {
       const output = await chooseOutputPath(defaultName);
-      if (output) startQueuedExport(route, request, output);
+      if (output) await startQueuedExport(route, request, output);
     } catch (error: unknown) {
       setLaunchError(normalizeAppError(error).message);
     } finally {
@@ -149,11 +150,12 @@ export function useExportController({
     }
   }
 
-  function startQueuedExport(
+  async function startQueuedExport(
     route: "fast" | "optimized",
     request: FastExportRequest | OptimizedExportRequest,
     output: OutputSelection,
   ) {
+    await reserveExportSource(request.sourceId);
     // The controller is remounted when a new source is imported. Include the
     // source identity so the new controller cannot reuse an old queue item id
     // and route later progress into the previous export.

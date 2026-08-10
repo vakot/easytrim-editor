@@ -239,6 +239,16 @@
   transition-property: transform, opacity, box-shadow;
 }
 
+/* Timeline handles use CSS-module transitions rather than Tailwind utility names.
+   Keep their position/drag motion, but apply their primary-derived colors immediately. */
+:root[data-primary-color-scrubbing] .segment-drag-handle {
+  transition-property: transform;
+}
+
+:root[data-primary-color-scrubbing] .trim-handle::before {
+  transition-property: none;
+}
+
 /* Radix renders the custom scrollbar alongside a native viewport scrollbar.
    Hide the native one consistently in browser and packaged WebView2 builds. */
 .scroll-area-viewport {

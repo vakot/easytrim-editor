@@ -136,6 +136,13 @@ pub struct AppState {
     session: Mutex<SessionState>,
     outputs: Mutex<HashMap<String, PathBuf>>,
     operations: Mutex<HashMap<String, Arc<AtomicBool>>>,
+    export_sources: Mutex<HashMap<String, RetainedExportSource>>,
+}
+
+#[derive(Clone, Debug)]
+struct RetainedExportSource {
+    source: ActiveSource,
+    reservations: u32,
 }
 
 impl AppState {
@@ -250,6 +257,49 @@ impl AppState {
                 audio_stream_indexes: source.audio_stream_indexes.clone(),
             })
             .ok_or_else(AppError::source_replaced)
+    }
+
+    pub fn reserve_export_source(&self, source_id: &str) -> Result<(), AppError> {
+        let source = self.resolve_source(source_id)?;
+        let mut export_sources = self
+            .export_sources
+            .lock()
+            .map_err(|_| AppError::internal("The queued export source registry is unavailable."))?;
+        let record = export_sources
+            .entry(source_id.to_owned())
+            .or_insert(RetainedExportSource {
+                source,
+                reservations: 0,
+            });
+        record.reservations = record.reservations.saturating_add(1);
+        Ok(())
+    }
+
+    pub fn resolve_export_source(&self, source_id: &str) -> Result<ActiveSource, AppError> {
+        self.resolve_source(source_id).or_else(|_| {
+            self.export_sources
+                .lock()
+                .map_err(|_| {
+                    AppError::internal("The queued export source registry is unavailable.")
+                })?
+                .get(source_id)
+                .map(|record| record.source.clone())
+                .ok_or_else(AppError::source_replaced)
+        })
+    }
+
+    pub fn release_export_source(&self, source_id: &str) -> Result<(), AppError> {
+        let mut export_sources = self
+            .export_sources
+            .lock()
+            .map_err(|_| AppError::internal("The queued export source registry is unavailable."))?;
+        if let Some(record) = export_sources.get_mut(source_id) {
+            record.reservations = record.reservations.saturating_sub(1);
+            if record.reservations == 0 {
+                export_sources.remove(source_id);
+            }
+        }
+        Ok(())
     }
 
     pub fn remember_inspected_streams(
@@ -588,5 +638,29 @@ mod tests {
             .expect("replacement starts");
 
         assert!(!cancellation.load(Ordering::Acquire));
+    }
+
+    #[test]
+    fn queued_export_source_survives_source_replacement_until_released() {
+        let state = AppState::default();
+        let generation = state
+            .begin_source_replacement()
+            .expect("source replacement starts");
+        let source_id = state
+            .complete_source_replacement(generation, source("queued.mp4"))
+            .expect("source installs");
+        state
+            .reserve_export_source(&source_id)
+            .expect("queue reserves the source");
+
+        state
+            .begin_source_replacement()
+            .expect("next source replacement starts");
+
+        assert!(state.resolve_export_source(&source_id).is_ok());
+        state
+            .release_export_source(&source_id)
+            .expect("queue releases the source");
+        assert!(state.resolve_export_source(&source_id).is_err());
     }
 }
