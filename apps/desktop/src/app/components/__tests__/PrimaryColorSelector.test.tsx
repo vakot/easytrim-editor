@@ -54,7 +54,9 @@ describe("PrimaryColorSelector", () => {
     Object.defineProperty(spectrum, "getBoundingClientRect", {
       value: () => new DOMRect(0, 0, 192, 192),
     });
-    fireEvent.pointerDown(spectrum, { pointerId: 1, clientX: 180, clientY: 96 });
+    fireEvent.pointerDown(spectrum, { pointerId: 1, clientX: 96, clientY: 96 });
+    expect(document.documentElement).toHaveAttribute("data-primary-color", "#808080");
+    expect(spectrum.querySelector("span")).toHaveStyle({ left: "50%", top: "50%" });
     const startingColor = document.documentElement.dataset.primaryColor;
     fireEvent.pointerMove(spectrum, { pointerId: 1, clientX: 96, clientY: 12 });
     fireEvent.pointerUp(spectrum, { pointerId: 1 });

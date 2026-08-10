@@ -107,7 +107,7 @@ function SpectrumWheel({
     if (!bounds) return;
     const change = event.key === "ArrowRight" ? 8 : -8;
     const center = bounds.width / 2;
-    const currentHue = colorToHue(color);
+    const { hue: currentHue } = colorToHsl(color);
     const nextHue = (((currentHue + change) % 360) + 360) % 360;
     const angle = ((nextHue - 90) * Math.PI) / 180;
     onChange(
@@ -144,29 +144,33 @@ function SpectrumWheel({
   );
 }
 
-function colorToHue(color: string): number {
+function colorToHsl(color: string) {
   const red = Number.parseInt(color.slice(1, 3), 16) / 255;
   const green = Number.parseInt(color.slice(3, 5), 16) / 255;
   const blue = Number.parseInt(color.slice(5, 7), 16) / 255;
   const maximum = Math.max(red, green, blue);
   const minimum = Math.min(red, green, blue);
   const delta = maximum - minimum;
-  if (delta === 0) return 0;
+  if (delta === 0) return { hue: 0, saturation: 0 };
   const hueBase =
     maximum === red
       ? (green - blue) / delta
       : maximum === green
         ? (blue - red) / delta + 2
         : (red - green) / delta + 4;
-  return (hueBase * 60 + 360) % 360;
+  return {
+    hue: (hueBase * 60 + 360) % 360,
+    saturation: (delta / (1 - Math.abs(maximum + minimum - 1))) * 100,
+  };
 }
 
 function colorMarkerPosition(color: string) {
-  const hue = colorToHue(color);
+  const { hue, saturation } = colorToHsl(color);
   const angle = ((hue - 90) * Math.PI) / 180;
+  const radius = (saturation / 100) * 45;
   return {
-    left: `${50 + Math.cos(angle) * 45}%`,
-    top: `${50 + Math.sin(angle) * 45}%`,
+    left: `${50 + Math.cos(angle) * radius}%`,
+    top: `${50 + Math.sin(angle) * radius}%`,
     backgroundColor: color,
   };
 }

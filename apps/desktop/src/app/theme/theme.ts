@@ -39,10 +39,10 @@ export function primaryColorPalette(color: PrimaryColor) {
   const { hue, saturation } = hexToHsl(hex);
   return {
     color: hex,
-    light: hslToHex(hue, Math.max(saturation, 48), 42),
+    light: hslToHex(hue, saturation, 42),
     lightForeground: saturation < 34 && hue > 35 && hue < 70 ? "#241d00" : "#ffffff",
-    dark: hslToHex(hue, Math.max(saturation, 54), 67),
-    darkForeground: hslToHex(hue, Math.max(saturation, 42), 13),
+    dark: hslToHex(hue, saturation, 67),
+    darkForeground: hslToHex(hue, saturation, 13),
   };
 }
 
