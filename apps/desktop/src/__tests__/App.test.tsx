@@ -284,8 +284,7 @@ describe("App", () => {
       "secondary",
     );
     expect(videoToolbar.querySelector('[data-slot="timeline-tools-divider"]')).toHaveClass(
-      "mx-2",
-      "w-px",
+      "mx-1",
       "shrink-0",
       "bg-border",
     );
