@@ -1,5 +1,6 @@
 import {
   cancelOperation,
+  releaseExportSource,
   normalizeAppError,
   renderFast,
   renderOptimized,
@@ -62,6 +63,8 @@ export function cancelQueuedExport(id: string) {
 
   if (job.operationId) {
     void cancelOperation(job.operationId).catch(() => undefined);
+  } else {
+    void releaseExportSource(job.request.sourceId).catch(() => undefined);
   }
 }
 
@@ -145,11 +148,10 @@ async function renderJob(job: ExportJob) {
     if (job.canceled) return;
 
     const normalized = normalizeAppError(error);
-    const wasCanceled = normalized.code === "cancelled" || normalized.code === "source_replaced";
     updateToast(job, (toast) => ({
       ...toast,
-      status: wasCanceled ? "canceled" : "failed",
-      error: wasCanceled ? job.canceledMessage : normalized.message,
+      status: "failed",
+      error: normalized.message,
       durationMs: elapsedTime(job),
       onCancel: undefined,
     }));

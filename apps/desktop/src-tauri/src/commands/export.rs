@@ -111,15 +111,27 @@ pub async fn render_fast(
     on_progress: Channel<ExportProgress>,
     state: State<'_, AppState>,
 ) -> Result<ExportResult, AppError> {
-    let source = state.resolve_source(&request.source_id)?;
-    let media = source
-        .media
-        .clone()
-        .ok_or_else(|| AppError::invalid_request("Inspect the video before exporting."))?;
-    let output_path = state.resolve_output(&output_id)?;
-    let display_name = output_display_name(&output_path)?;
-    let arguments = build_fast_arguments(&media, &request, &source.path, &output_path)?;
-    run_export(state, output_path, display_name, arguments, on_progress).await
+    let result = async {
+        let source = state.resolve_export_source(&request.source_id)?;
+        let media = source
+            .media
+            .clone()
+            .ok_or_else(|| AppError::invalid_request("Inspect the video before exporting."))?;
+        let output_path = state.resolve_output(&output_id)?;
+        let display_name = output_display_name(&output_path)?;
+        let arguments = build_fast_arguments(&media, &request, &source.path, &output_path)?;
+        run_export(
+            state.clone(),
+            output_path,
+            display_name,
+            arguments,
+            on_progress,
+        )
+        .await
+    }
+    .await;
+    state.release_export_source(&request.source_id)?;
+    result
 }
 
 #[tauri::command]
@@ -129,15 +141,27 @@ pub async fn render_optimized(
     on_progress: Channel<ExportProgress>,
     state: State<'_, AppState>,
 ) -> Result<ExportResult, AppError> {
-    let source = state.resolve_source(&request.source_id)?;
-    let media = source
-        .media
-        .clone()
-        .ok_or_else(|| AppError::invalid_request("Inspect the video before exporting."))?;
-    let output_path = state.resolve_output(&output_id)?;
-    let display_name = output_display_name(&output_path)?;
-    let arguments = build_optimized_arguments(&media, &request, &source.path, &output_path)?;
-    run_export(state, output_path, display_name, arguments, on_progress).await
+    let result = async {
+        let source = state.resolve_export_source(&request.source_id)?;
+        let media = source
+            .media
+            .clone()
+            .ok_or_else(|| AppError::invalid_request("Inspect the video before exporting."))?;
+        let output_path = state.resolve_output(&output_id)?;
+        let display_name = output_display_name(&output_path)?;
+        let arguments = build_optimized_arguments(&media, &request, &source.path, &output_path)?;
+        run_export(
+            state.clone(),
+            output_path,
+            display_name,
+            arguments,
+            on_progress,
+        )
+        .await
+    }
+    .await;
+    state.release_export_source(&request.source_id)?;
+    result
 }
 
 #[tauri::command]
@@ -158,6 +182,22 @@ pub fn plan_optimized_export(
 #[tauri::command]
 pub fn cancel_operation(operation_id: String, state: State<'_, AppState>) -> Result<(), AppError> {
     state.cancel_operation(&operation_id)
+}
+
+#[tauri::command]
+pub fn reserve_export_source(
+    source_id: String,
+    state: State<'_, AppState>,
+) -> Result<(), AppError> {
+    state.reserve_export_source(&source_id)
+}
+
+#[tauri::command]
+pub fn release_export_source(
+    source_id: String,
+    state: State<'_, AppState>,
+) -> Result<(), AppError> {
+    state.release_export_source(&source_id)
 }
 
 #[tauri::command]
