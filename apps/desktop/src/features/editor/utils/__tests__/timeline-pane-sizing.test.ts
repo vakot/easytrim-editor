@@ -27,19 +27,19 @@ describe("timelinePanelSizeConstraints", () => {
     });
   });
 
-  it("adds the fixed webcam section to panel and double-click target sizes", () => {
+  it("keeps the timeline minimum while adding webcam height to expanded sizes", () => {
     expect(timelinePanelSizeConstraints(0, true)).toEqual({
-      minSize: 270,
+      minSize: 165,
       defaultSize: 270,
       maxSize: 270,
     });
     expect(timelinePanelSizeConstraints(1, true)).toEqual({
-      minSize: 270,
+      minSize: 165,
       defaultSize: 419,
       maxSize: 419,
     });
     expect(timelinePanelSizeConstraints(3, true)).toEqual({
-      minSize: 270,
+      minSize: 165,
       defaultSize: 419,
       maxSize: 531,
     });

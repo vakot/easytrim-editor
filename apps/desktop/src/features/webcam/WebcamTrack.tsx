@@ -1,4 +1,15 @@
-import { Expand, Eye, EyeOff, Shrink, Video } from "lucide-react";
+import {
+  ArrowDownLeft,
+  ArrowDownRight,
+  ArrowUpLeft,
+  ArrowUpRight,
+  Expand,
+  Eye,
+  EyeOff,
+  type LucideIcon,
+  Shrink,
+  Video,
+} from "lucide-react";
 import type { RefObject } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -24,6 +35,14 @@ import {
   webcamPositionFor,
   webcamPositionIsInset,
 } from "./webcam-positions";
+import type { WebcamCorner } from "./webcam-positions";
+
+const WEBCAM_POSITION_ICONS = {
+  topLeft: ArrowUpLeft,
+  topRight: ArrowUpRight,
+  bottomLeft: ArrowDownLeft,
+  bottomRight: ArrowDownRight,
+} as const satisfies Record<WebcamCorner, LucideIcon>;
 
 interface WebcamTrackProps {
   webcam: WebcamState;
@@ -63,7 +82,7 @@ export function WebcamTrack({
         className="grid min-w-0 grid-cols-[var(--editor-track-grid-columns)] gap-3"
         data-slot="webcam-track-row"
       >
-        <Card className="flex flex-row items-center justify-between bg-transparent p-1 pr-2">
+        <Card className="flex flex-row items-center justify-between bg-transparent p-1">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -92,11 +111,19 @@ export function WebcamTrack({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {WEBCAM_CORNER_PRESETS.map((preset) => (
-                  <SelectItem key={preset.value} value={preset.value}>
-                    {t(preset.labelKey)}
-                  </SelectItem>
-                ))}
+                {WEBCAM_CORNER_PRESETS.map((preset) => {
+                  const PositionIcon = WEBCAM_POSITION_ICONS[preset.value];
+                  return (
+                    <SelectItem key={preset.value} value={preset.value}>
+                      <PositionIcon
+                        aria-hidden="true"
+                        data-slot="webcam-position-icon"
+                        data-position={preset.value}
+                      />
+                      {t(preset.labelKey)}
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
             <Tooltip>

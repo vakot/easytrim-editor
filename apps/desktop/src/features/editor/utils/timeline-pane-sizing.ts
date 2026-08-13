@@ -55,7 +55,7 @@ export function timelinePanelSizeConstraints(
   const maxSize = fixedContentHeight + getAudioContentHeight(trackCount);
 
   return {
-    minSize: fixedContentHeight,
+    minSize: TIMELINE_FIXED_HEIGHT,
     defaultSize,
     maxSize,
   };

@@ -415,6 +415,11 @@ describe("App", () => {
     expect(insetButton).toHaveAttribute("data-variant", "ghost");
     expect(insetButton).toHaveAttribute("data-size", "icon-sm");
     expect(insetButton).toHaveAttribute("aria-pressed", "false");
+    expect(
+      positionSelect.querySelector(
+        '[data-slot="webcam-position-icon"][data-position="bottomRight"]',
+      ),
+    ).toBeInTheDocument();
     await user.click(insetButton);
     expect(screen.getByRole("button", { name: "Disable webcam inset" })).toHaveAttribute(
       "aria-pressed",
@@ -448,6 +453,21 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: "Hide webcam" }));
     expect(screen.queryByLabelText("Webcam overlay preview")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Save" })).toBeEnabled();
+
+    await user.click(screen.getByRole("button", { name: "Show webcam" }));
+    await user.click(positionSelect);
+    for (const [name, position] of [
+      ["Top left", "topLeft"],
+      ["Top right", "topRight"],
+      ["Bottom left", "bottomLeft"],
+      ["Bottom right", "bottomRight"],
+    ] as const) {
+      expect(
+        screen
+          .getByRole("option", { name })
+          .querySelector(`[data-slot="webcam-position-icon"][data-position="${position}"]`),
+      ).toBeInTheDocument();
+    }
   });
 
   it("renders only the timeline when the source has no audio tracks", async () => {
