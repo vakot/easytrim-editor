@@ -240,9 +240,10 @@ pub fn build_optimized_arguments(
     if request.audio_tracks.is_empty() {
         arguments.push(OsString::from("-an"));
     }
-    if filter_graphs.is_empty() {
+    if webcam_source.is_none() {
         arguments.extend([OsString::from("-vf"), OsString::from(video_filter)]);
-    } else {
+    }
+    if !filter_graphs.is_empty() {
         arguments.extend([
             OsString::from("-filter_complex"),
             OsString::from(filter_graphs.join(";")),
@@ -880,6 +881,39 @@ mod tests {
         );
         assert!(values.windows(2).any(|pair| pair == ["-r", "30/1"]));
         assert!(values.windows(2).any(|pair| pair == ["-c:v", "hevc_nvenc"]));
+    }
+
+    #[test]
+    fn optimized_audio_filter_does_not_bypass_video_scaling() {
+        let mut request = optimized_request("-c:v libx264 -crf 20");
+        request.resolution = ResolutionSelection {
+            width: 2560,
+            height: 1440,
+        };
+        request.audio_tracks[0].volume_percent = 100;
+
+        let values = build_optimized_arguments(
+            &media(),
+            &request,
+            Path::new("source.mkv"),
+            None,
+            Path::new("out.mp4"),
+        )
+        .expect("filtered audio and scaled video are valid")
+        .into_iter()
+        .map(|value| value.to_string_lossy().to_string())
+        .collect::<Vec<_>>();
+
+        assert!(
+            values
+                .windows(2)
+                .any(|pair| pair == ["-vf", "scale=2560:1440"])
+        );
+        assert!(values.windows(2).any(|pair| {
+            pair[0] == "-filter_complex" && pair[1].contains("volume=2.000000[audio0]")
+        }));
+        assert!(values.windows(2).any(|pair| pair == ["-map", "0:0"]));
+        assert!(values.windows(2).any(|pair| pair == ["-map", "[audio0]"]));
     }
 
     #[test]

@@ -108,6 +108,7 @@ Also detect duplicate/conflicting `-map`, `-vf`/`-filter:v`, `-af`/`-filter:a`, 
 - Produce dimensions divisible by two for common 4:2:0 encoders.
 - Do not upscale when the source already fits the requested bound.
 - Respect display rotation when deciding whether the content is portrait or landscape.
+- Keep the selected video scale active when audio volume or merge processing also requires a complex filter graph.
 
 Example intent:
 
