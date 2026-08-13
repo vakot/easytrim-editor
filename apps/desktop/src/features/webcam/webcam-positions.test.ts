@@ -29,10 +29,10 @@ describe("webcamPositionStyle", () => {
 
   it("offsets only from the selected vertical edge", () => {
     expect(webcamPositionStyle("bottomRightOffset")).toEqual({
-      bottom: "8.9%",
+      bottom: "8%",
       right: "0%",
     });
-    expect(webcamPositionStyle("topLeftOffset")).toEqual({ top: "8.9%", left: "0%" });
+    expect(webcamPositionStyle("topLeftOffset")).toEqual({ top: "8%", left: "0%" });
   });
 
   it("maps corner and offset controls to the existing export presets", () => {

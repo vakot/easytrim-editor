@@ -369,10 +369,10 @@ fn webcam_filter_graph(
         WebcamPosition::TopRight => ("W-w".to_owned(), "0".to_owned()),
         WebcamPosition::BottomLeft => ("0".to_owned(), "H-h".to_owned()),
         WebcamPosition::BottomRight => ("W-w".to_owned(), "H-h".to_owned()),
-        WebcamPosition::TopLeftOffset => ("0".to_owned(), "96".to_owned()),
-        WebcamPosition::TopRightOffset => ("W-w".to_owned(), "96".to_owned()),
-        WebcamPosition::BottomLeftOffset => ("0".to_owned(), "H-h-96".to_owned()),
-        WebcamPosition::BottomRightOffset => ("W-w".to_owned(), "H-h-96".to_owned()),
+        WebcamPosition::TopLeftOffset => ("0".to_owned(), "H*0.08".to_owned()),
+        WebcamPosition::TopRightOffset => ("W-w".to_owned(), "H*0.08".to_owned()),
+        WebcamPosition::BottomLeftOffset => ("0".to_owned(), "H-h-H*0.08".to_owned()),
+        WebcamPosition::BottomRightOffset => ("W-w".to_owned(), "H-h-H*0.08".to_owned()),
     };
     format!(
         "[0:{}]{main_filter},setpts=PTS-STARTPTS[main];[1:{}]scale={}:-2,setpts=PTS-STARTPTS[webcam];[main][webcam]overlay={x}:{y}:eof_action=pass:repeatlast=0[vout]",
@@ -1049,10 +1049,10 @@ mod tests {
         webcam.source_id = "webcam-2".to_owned();
         webcam.video.stream_index = 3;
         for (position, coordinates) in [
-            (WebcamPosition::TopLeftOffset, "0:96"),
-            (WebcamPosition::TopRightOffset, "W-w:96"),
-            (WebcamPosition::BottomLeftOffset, "0:H-h-96"),
-            (WebcamPosition::BottomRightOffset, "W-w:H-h-96"),
+            (WebcamPosition::TopLeftOffset, "0:H*0.08"),
+            (WebcamPosition::TopRightOffset, "W-w:H*0.08"),
+            (WebcamPosition::BottomLeftOffset, "0:H-h-H*0.08"),
+            (WebcamPosition::BottomRightOffset, "W-w:H-h-H*0.08"),
         ] {
             let mut request = optimized_request("-c:v libx264 -crf 20");
             request.webcam = Some(WebcamOverlaySelection {

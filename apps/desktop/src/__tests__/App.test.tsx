@@ -431,7 +431,7 @@ describe("App", () => {
       "aria-pressed",
       "true",
     );
-    expect(webcamPreview).toHaveStyle({ bottom: "8.9%", right: "0%" });
+    expect(webcamPreview).toHaveStyle({ bottom: "8%", right: "0%" });
     const timelinePane = screen.getByTestId("timeline-fixed-content").parentElement;
     const webcamSection = screen.getByTestId("webcam-track-section");
     const audioTracksScroll = screen.getByTestId("audio-tracks-scroll");

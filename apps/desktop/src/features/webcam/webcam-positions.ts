@@ -40,7 +40,7 @@ export const WEBCAM_CORNER_PRESETS = [
   horizontal: "left" | "right";
 }>;
 
-const WEBCAM_VERTICAL_OFFSET_PERCENT = 8.9;
+const WEBCAM_VERTICAL_OFFSET_PERCENT = 8;
 
 export function isWebcamCorner(value: string): value is WebcamCorner {
   return WEBCAM_CORNER_PRESETS.some((preset) => preset.value === value);
