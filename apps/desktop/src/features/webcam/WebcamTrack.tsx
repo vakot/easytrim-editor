@@ -135,14 +135,14 @@ export function WebcamTrack({
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  variant="ghost"
+                  variant="secondary"
                   size="icon-sm"
                   type="button"
                   disabled={!webcam.enabled || !webcam.media}
                   aria-label={offsetActionLabel}
                   aria-pressed={offset}
                   onClick={() => onPositionChange(webcamPositionFor(corner, !offset))}
-                  className="text-primary"
+                  className={offset ? "text-primary" : undefined}
                 >
                   <MoveVertical data-slot="webcam-offset-icon" />
                 </Button>

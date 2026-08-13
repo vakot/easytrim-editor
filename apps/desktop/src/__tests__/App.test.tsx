@@ -417,9 +417,11 @@ describe("App", () => {
     expect(webcamControls).toHaveClass("gap-1");
     expect(webcamControls).not.toHaveClass("gap-(--card-spacing)", "justify-between");
     expect(positionSelect.parentElement?.lastElementChild).toBe(offsetButton);
-    expect(offsetButton).toHaveAttribute("data-variant", "ghost");
+    expect(offsetButton).toHaveAttribute("data-variant", "secondary");
     expect(offsetButton).toHaveAttribute("data-size", "icon-sm");
     expect(offsetButton).toHaveAttribute("aria-pressed", "false");
+    expect(offsetButton).toHaveClass("bg-secondary", "text-secondary-foreground");
+    expect(offsetButton).not.toHaveClass("text-primary");
     expect(offsetButton.querySelector('[data-slot="webcam-offset-icon"]')).toBeInTheDocument();
     expect(positionSelect).toHaveTextContent("Bottom right");
     expect(positionSelect.querySelector('[data-slot="webcam-position-icon"]')).toBeNull();
@@ -427,6 +429,10 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "Disable webcam offset" })).toHaveAttribute(
       "aria-pressed",
       "true",
+    );
+    expect(screen.getByRole("button", { name: "Disable webcam offset" })).toHaveClass(
+      "bg-secondary",
+      "text-primary",
     );
     expect(webcamPreview).toHaveStyle({ bottom: "8%", right: "0%" });
     const timelinePane = screen.getByTestId("timeline-fixed-content").parentElement;
