@@ -14,10 +14,12 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 interface AppToolbarProps {
   session: SessionState;
   isChoosingSource: boolean;
+  isChoosingWebcam: boolean;
   setExportQueue: Dispatch<SetStateAction<ExportToast[]>>;
   exportPresets: ExportPresetState;
   dispatchExportPreset: Dispatch<ExportPresetAction>;
   onChooseSource: () => void;
+  onChooseWebcam: () => void;
   onReturnToWelcome: () => void;
   onNativeDialogStateChange: (open: boolean) => void;
   cropResolution: { width: number; height: number };
@@ -27,10 +29,12 @@ interface AppToolbarProps {
 export function AppToolbar({
   session,
   isChoosingSource,
+  isChoosingWebcam,
   setExportQueue,
   exportPresets,
   dispatchExportPreset,
   onChooseSource,
+  onChooseWebcam,
   onReturnToWelcome,
   onNativeDialogStateChange,
   cropResolution,
@@ -72,6 +76,18 @@ export function AppToolbar({
             </TooltipTrigger>
             <TooltipContent>{t("import.openTooltip")}</TooltipContent>
           </Tooltip>
+          {session.status === "ready" && session.source ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" onClick={onChooseWebcam} disabled={isChoosingWebcam}>
+                  {isChoosingWebcam
+                    ? t("webcam.adding")
+                    : t(session.source.webcam ? "webcam.replace" : "webcam.add")}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{t("webcam.addTooltip")}</TooltipContent>
+            </Tooltip>
+          ) : null}
           {session.status === "ready" && session.source?.media && session.source.trim ? (
             <ExportPanel
               key={`export-${session.source.selection.sourceId}`}
@@ -82,6 +98,7 @@ export function AppToolbar({
               masterEnabled={session.source.masterEnabled}
               masterVolumePercent={session.source.masterVolumePercent}
               mergeAudio={session.source.mergeAudio}
+              webcam={session.source.webcam}
               setQueue={setExportQueue}
               presetState={exportPresets}
               onPresetAction={dispatchExportPreset}

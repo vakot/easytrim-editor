@@ -34,6 +34,7 @@ pub fn run() {
             commands::media::prepare_source_preview,
             commands::media::prepare_waveforms,
             commands::source::choose_source,
+            commands::source::choose_webcam_source,
             commands::source::import_dropped_source
         ])
         .run(tauri::generate_context!())

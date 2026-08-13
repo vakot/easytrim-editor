@@ -10,6 +10,7 @@ Use typed requests and results. Names may evolve, but responsibilities stay narr
 
 ```text
 choose_source() -> SourceSelection
+choose_webcam_source() -> SourceSelection
 inspect_media(source_id) -> MediaInfo
 prepare_source_preview(source_id) -> PreviewInfo
 prepare_proxy_preview(source_id) -> PreviewInfo
@@ -36,6 +37,7 @@ source token and invalidates stale completion.
 - Serialize frame rates as numerator/denominator plus an optional display value.
 - Preserve FFprobe global stream indexes.
 - Give every imported source and long-running operation an opaque runtime ID.
+- Keep main and webcam paths in separate in-memory source slots; expose neither path to the frontend.
 - Include source/operation IDs in asynchronous progress and completion payloads.
 - Use discriminated error codes with a human message and optional bounded diagnostics.
 
@@ -57,8 +59,9 @@ internal
 
 ## Session invariants
 
-- Exactly zero or one source is active.
-- Replacing a source invalidates its trim/audio state and all source-bound helper results.
+- Exactly zero or one main source and zero or one optional webcam source are active.
+- Replacing the main source invalidates both sources, trim/audio state, and all source-bound helper results.
+- Replacing the webcam source leaves the main source active and invalidates only webcam-bound helper results.
 - Runtime named presets survive source replacement but not application restart.
 - At most one final export runs in the MVP.
 - Concurrent proxy/waveform work must use cancellation and stale source/job ID guards.

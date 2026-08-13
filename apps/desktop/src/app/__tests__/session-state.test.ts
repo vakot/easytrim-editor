@@ -61,6 +61,42 @@ function mediaWithAudio(sourceId: string): MediaInfo {
 }
 
 describe("sessionReducer", () => {
+  it("tracks an optional webcam independently and ignores stale webcam completion", () => {
+    const ready = sessionReducer(
+      sessionReducer(initialSessionState, { type: "source-selected", source: firstSource }),
+      { type: "source-ready", sourceId: firstSource.sourceId, media: media(firstSource.sourceId) },
+    );
+    const selected = sessionReducer(ready, {
+      type: "webcam-selected",
+      sourceId: firstSource.sourceId,
+      webcam: { sourceId: "webcam-1", displayName: "camera.mp4" },
+    });
+    const stale = sessionReducer(selected, {
+      type: "webcam-ready",
+      sourceId: firstSource.sourceId,
+      webcamId: "webcam-old",
+      media: media("webcam-old"),
+    });
+    const webcamReady = sessionReducer(selected, {
+      type: "webcam-ready",
+      sourceId: firstSource.sourceId,
+      webcamId: "webcam-1",
+      media: media("webcam-1"),
+    });
+    const hidden = sessionReducer(webcamReady, {
+      type: "webcam-toggled",
+      sourceId: firstSource.sourceId,
+    });
+
+    expect(stale).toBe(selected);
+    expect(webcamReady.source?.webcam).toMatchObject({
+      enabled: true,
+      position: "bottomRight",
+      media: { sourceId: "webcam-1" },
+    });
+    expect(hidden.source?.webcam?.enabled).toBe(false);
+  });
+
   it("ignores metadata from a source that has already been replaced", () => {
     const loadingFirst = sessionReducer(initialSessionState, {
       type: "source-selected",

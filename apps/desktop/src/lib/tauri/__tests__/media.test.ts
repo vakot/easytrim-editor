@@ -12,6 +12,7 @@ vi.mock("@tauri-apps/api/webview", () => ({
 
 import {
   chooseSource,
+  chooseWebcamSource,
   inspectMedia,
   listenForSourceDrops,
   planOptimizedExport,
@@ -49,6 +50,16 @@ describe("media IPC adapter", () => {
       sourceId: "source-3",
       displayName: "clip.mp4",
     });
+  });
+
+  it("uses a dedicated native picker for the webcam source", async () => {
+    mocks.invoke.mockResolvedValue({ sourceId: "webcam-4", displayName: "camera.mp4" });
+
+    await expect(chooseWebcamSource()).resolves.toEqual({
+      sourceId: "webcam-4",
+      displayName: "camera.mp4",
+    });
+    expect(mocks.invoke).toHaveBeenCalledWith("choose_webcam_source");
   });
 
   it("rejects malformed native metadata at the IPC boundary", async () => {

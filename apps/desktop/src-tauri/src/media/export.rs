@@ -52,6 +52,26 @@ pub struct AudioTrackSelection {
     pub volume_percent: u16,
 }
 
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub enum WebcamPosition {
+    TopLeft,
+    TopRight,
+    BottomLeft,
+    BottomRight,
+    TopLeftOffset,
+    TopRightOffset,
+    BottomLeftOffset,
+    BottomRightOffset,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct WebcamOverlaySelection {
+    pub source_id: String,
+    pub position: WebcamPosition,
+}
+
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct OptimizedExportRequest {
@@ -59,6 +79,7 @@ pub struct OptimizedExportRequest {
     pub trim: TrimSelection,
     pub audio_tracks: Vec<AudioTrackSelection>,
     pub merge_audio: bool,
+    pub webcam: Option<WebcamOverlaySelection>,
     pub resolution: ResolutionSelection,
     pub crop: Option<CropSelection>,
     pub frame_rate: Option<FrameRateSelection>,
@@ -149,6 +170,7 @@ pub fn build_optimized_arguments(
     source: &MediaInfo,
     request: &OptimizedExportRequest,
     source_path: &Path,
+    webcam_source: Option<(&MediaInfo, &Path)>,
     output_path: &Path,
 ) -> Result<Vec<OsString>, AppError> {
     validate_common_request(
@@ -167,25 +189,39 @@ pub fn build_optimized_arguments(
         ));
     }
 
-    let mut arguments = common_input_arguments(source_path, &request.trim);
-    arguments.extend([
-        OsString::from("-map"),
-        OsString::from(format!("0:{}", source.video.stream_index)),
-    ]);
-    if request.merge_audio && request.audio_tracks.len() > 1 {
+    let webcam_source = validate_webcam_request(request.webcam.as_ref(), webcam_source)?;
+    let mut arguments = optimized_input_arguments(
+        source_path,
+        webcam_source.map(|(_, path)| path),
+        &request.trim,
+    );
+    let video_filter = video_filter_graph(request);
+    let mut filter_graphs = Vec::new();
+    if let (Some(selection), Some((webcam_media, _))) = (request.webcam.as_ref(), webcam_source) {
+        filter_graphs.push(webcam_filter_graph(
+            source,
+            webcam_media,
+            selection,
+            &video_filter,
+            &request.resolution,
+        ));
+        arguments.extend([OsString::from("-map"), OsString::from("[vout]")]);
+    } else {
         arguments.extend([
-            OsString::from("-filter_complex"),
-            OsString::from(audio_filter_graph(&request.audio_tracks, true)),
+            OsString::from("-map"),
+            OsString::from(format!("0:{}", source.video.stream_index)),
+        ]);
+    }
+    if request.merge_audio && request.audio_tracks.len() > 1 {
+        filter_graphs.push(audio_filter_graph(&request.audio_tracks, true));
+        arguments.extend([
             OsString::from("-map"),
             OsString::from("[aout]"),
             OsString::from("-ac"),
             OsString::from("2"),
         ]);
     } else if audio_tracks_need_reencode(&request.audio_tracks) {
-        arguments.extend([
-            OsString::from("-filter_complex"),
-            OsString::from(audio_filter_graph(&request.audio_tracks, false)),
-        ]);
+        filter_graphs.push(audio_filter_graph(&request.audio_tracks, false));
         for index in 0..request.audio_tracks.len() {
             arguments.extend([
                 OsString::from("-map"),
@@ -203,27 +239,14 @@ pub fn build_optimized_arguments(
     if request.audio_tracks.is_empty() {
         arguments.push(OsString::from("-an"));
     }
-    let video_filter = request
-        .crop
-        .as_ref()
-        .map(|crop| {
-            format!(
-                "crop=iw*{}:ih*{}:iw*{}:ih*{},scale={}:{}",
-                crop.width,
-                crop.height,
-                crop.x,
-                crop.y,
-                request.resolution.width,
-                request.resolution.height
-            )
-        })
-        .unwrap_or_else(|| {
-            format!(
-                "scale={}:{}",
-                request.resolution.width, request.resolution.height
-            )
-        });
-    arguments.extend([OsString::from("-vf"), OsString::from(video_filter)]);
+    if filter_graphs.is_empty() {
+        arguments.extend([OsString::from("-vf"), OsString::from(video_filter)]);
+    } else {
+        arguments.extend([
+            OsString::from("-filter_complex"),
+            OsString::from(filter_graphs.join(";")),
+        ]);
+    }
     if let Some(frame_rate) = &request.frame_rate {
         arguments.extend([
             OsString::from("-r"),
@@ -247,12 +270,14 @@ pub fn build_optimized_arguments(
 
 pub fn optimized_command_preview(
     source: &MediaInfo,
+    webcam: Option<&MediaInfo>,
     request: &OptimizedExportRequest,
 ) -> Result<String, AppError> {
     let arguments = build_optimized_arguments(
         source,
         request,
         Path::new("<source>"),
+        webcam.map(|media| (media, Path::new("<webcam>"))),
         Path::new("<output>"),
     )?;
     Ok(std::iter::once(OsString::from("ffmpeg"))
@@ -260,6 +285,113 @@ pub fn optimized_command_preview(
         .map(|argument| quote_preview_argument(&argument))
         .collect::<Vec<_>>()
         .join(" "))
+}
+
+fn optimized_input_arguments(
+    source_path: &Path,
+    webcam_path: Option<&Path>,
+    trim: &TrimSelection,
+) -> Vec<OsString> {
+    let mut arguments = vec![
+        OsString::from("-hide_banner"),
+        OsString::from("-nostdin"),
+        OsString::from("-progress"),
+        OsString::from("pipe:1"),
+        OsString::from("-ss"),
+        OsString::from(format_seconds(trim.start_micros)),
+        OsString::from("-i"),
+        source_path.as_os_str().to_owned(),
+    ];
+    if let Some(webcam_path) = webcam_path {
+        arguments.extend([
+            OsString::from("-ss"),
+            OsString::from(format_seconds(trim.start_micros)),
+            OsString::from("-i"),
+            webcam_path.as_os_str().to_owned(),
+        ]);
+    }
+    arguments.extend([
+        OsString::from("-t"),
+        OsString::from(format_seconds(trim.end_micros - trim.start_micros)),
+    ]);
+    arguments
+}
+
+fn video_filter_graph(request: &OptimizedExportRequest) -> String {
+    request
+        .crop
+        .as_ref()
+        .map(|crop| {
+            format!(
+                "crop=iw*{}:ih*{}:iw*{}:ih*{},scale={}:{}",
+                crop.width,
+                crop.height,
+                crop.x,
+                crop.y,
+                request.resolution.width,
+                request.resolution.height
+            )
+        })
+        .unwrap_or_else(|| {
+            format!(
+                "scale={}:{}",
+                request.resolution.width, request.resolution.height
+            )
+        })
+}
+
+fn validate_webcam_request<'a>(
+    selection: Option<&WebcamOverlaySelection>,
+    source: Option<(&'a MediaInfo, &'a Path)>,
+) -> Result<Option<(&'a MediaInfo, &'a Path)>, AppError> {
+    match (selection, source) {
+        (None, None) => Ok(None),
+        (Some(selection), Some((media, path))) if selection.source_id == media.source_id => {
+            Ok(Some((media, path)))
+        }
+        (Some(_), Some(_)) => Err(AppError::source_replaced()),
+        _ => Err(AppError::invalid_request(
+            "The webcam overlay source is unavailable.",
+        )),
+    }
+}
+
+fn webcam_filter_graph(
+    source: &MediaInfo,
+    webcam: &MediaInfo,
+    selection: &WebcamOverlaySelection,
+    main_filter: &str,
+    resolution: &ResolutionSelection,
+) -> String {
+    let webcam_width = ((resolution.width as f64 * 0.24).round() as u32).max(2) & !1;
+    let margin = match selection.position {
+        WebcamPosition::TopLeft
+        | WebcamPosition::TopRight
+        | WebcamPosition::BottomLeft
+        | WebcamPosition::BottomRight => 24,
+        WebcamPosition::TopLeftOffset
+        | WebcamPosition::TopRightOffset
+        | WebcamPosition::BottomLeftOffset
+        | WebcamPosition::BottomRightOffset => 96,
+    };
+    let (x, y) = match selection.position {
+        WebcamPosition::TopLeft | WebcamPosition::TopLeftOffset => {
+            (margin.to_string(), margin.to_string())
+        }
+        WebcamPosition::TopRight | WebcamPosition::TopRightOffset => {
+            (format!("W-w-{margin}"), margin.to_string())
+        }
+        WebcamPosition::BottomLeft | WebcamPosition::BottomLeftOffset => {
+            (margin.to_string(), format!("H-h-{margin}"))
+        }
+        WebcamPosition::BottomRight | WebcamPosition::BottomRightOffset => {
+            (format!("W-w-{margin}"), format!("H-h-{margin}"))
+        }
+    };
+    format!(
+        "[0:{}]{main_filter},setpts=PTS-STARTPTS[main];[1:{}]scale={}:-2,setpts=PTS-STARTPTS[webcam];[main][webcam]overlay={x}:{y}:eof_action=pass:repeatlast=0[vout]",
+        source.video.stream_index, webcam.video.stream_index, webcam_width,
+    )
 }
 
 fn common_input_arguments(source_path: &Path, trim: &TrimSelection) -> Vec<OsString> {
@@ -498,8 +630,8 @@ mod tests {
 
     use super::{
         AudioTrackSelection, FastExportRequest, FrameRateSelection, OptimizedExportRequest,
-        ResolutionSelection, TrimSelection, build_fast_arguments, build_optimized_arguments,
-        optimized_command_preview,
+        ResolutionSelection, TrimSelection, WebcamOverlaySelection, WebcamPosition,
+        build_fast_arguments, build_optimized_arguments, optimized_command_preview,
     };
     use crate::media::probe::{AudioStream, MediaInfo, VideoStream};
 
@@ -567,6 +699,7 @@ mod tests {
                 volume_percent: 50,
             }],
             merge_audio: false,
+            webcam: None,
             resolution: ResolutionSelection {
                 width: 1920,
                 height: 1080,
@@ -719,6 +852,7 @@ mod tests {
                     volume_percent: 50,
                 }],
                 merge_audio: false,
+                webcam: None,
                 resolution: ResolutionSelection {
                     width: 1920,
                     height: 1080,
@@ -731,6 +865,7 @@ mod tests {
                 arguments: "-c:v hevc_nvenc -cq 24".to_owned(),
             },
             Path::new("source.mkv"),
+            None,
             Path::new("out.mp4"),
         )
         .expect("request is valid");
@@ -755,6 +890,7 @@ mod tests {
             &media(),
             &request,
             Path::new("source.mkv"),
+            None,
             Path::new("out.mp4"),
         )
         .expect_err("user input must not override the source");
@@ -773,6 +909,7 @@ mod tests {
                 &media(),
                 &optimized_request(arguments),
                 Path::new("source.mkv"),
+                None,
                 Path::new("out.mp4"),
             )
             .expect_err("application-owned arguments and malformed options must fail");
@@ -790,6 +927,7 @@ mod tests {
             &video_only,
             &request,
             Path::new("source.mkv"),
+            None,
             Path::new("out.mp4"),
         )
         .expect("video-only request is valid")
@@ -809,6 +947,7 @@ mod tests {
             &media(),
             &request,
             Path::new("source.mkv"),
+            None,
             Path::new("out.mp4"),
         )
         .expect_err("a stream can only be selected once");
@@ -820,6 +959,7 @@ mod tests {
     fn optimized_preview_is_assembled_by_native_code_without_private_paths() {
         let preview = optimized_command_preview(
             &media(),
+            None,
             &optimized_request("-c:v libx264 -metadata title=\"My clip\""),
         )
         .expect("preview request is valid");
@@ -841,6 +981,7 @@ mod tests {
             &media(),
             &optimized_request("-c:v libx264 -crf 20"),
             &source_path,
+            None,
             &output_path,
         )
         .expect("paths are passed as opaque arguments");
@@ -874,9 +1015,45 @@ mod tests {
                 &rotated,
                 &request,
                 Path::new("source.mp4"),
+                None,
                 Path::new("out.mp4"),
             )
             .is_ok()
         );
+    }
+
+    #[test]
+    fn optimized_webcam_overlay_adds_second_input_and_maps_only_composited_video() {
+        let mut webcam = media();
+        webcam.source_id = "webcam-2".to_owned();
+        webcam.video.stream_index = 3;
+        let mut request = optimized_request("-c:v libx264 -crf 20");
+        request.webcam = Some(WebcamOverlaySelection {
+            source_id: webcam.source_id.clone(),
+            position: WebcamPosition::BottomRight,
+        });
+
+        let values = build_optimized_arguments(
+            &media(),
+            &request,
+            Path::new("source.mkv"),
+            Some((&webcam, Path::new("webcam.mkv"))),
+            Path::new("out.mp4"),
+        )
+        .expect("webcam overlay request is valid")
+        .into_iter()
+        .map(|value| value.to_string_lossy().to_string())
+        .collect::<Vec<_>>();
+
+        assert_eq!(
+            values.iter().filter(|value| value.as_str() == "-i").count(),
+            2
+        );
+        assert!(values.windows(2).any(|pair| pair == ["-map", "[vout]"]));
+        assert!(values.iter().any(|value| {
+            value.contains("[1:3]scale=460:-2")
+                && value.contains("overlay=W-w-24:H-h-24:eof_action=pass:repeatlast=0[vout]")
+        }));
+        assert!(!values.iter().any(|value| value == "1:1"));
     }
 }

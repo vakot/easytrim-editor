@@ -11,6 +11,7 @@ import {
 import {
   checkMediaCapabilities,
   chooseSource,
+  chooseWebcamSource,
   inspectMedia,
   listenForSourceDrops,
   normalizeAppError,
@@ -20,16 +21,19 @@ import {
   prepareWaveforms,
   type PreviewKind,
   type SourceSelection,
+  type WebcamPosition,
 } from "@/lib/tauri/media";
 import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
 
 export function useEasyTrimEditorApp() {
   const [session, dispatch] = useReducer(sessionReducer, initialSessionState);
   const [isChoosingSource, setIsChoosingSource] = useState(false);
+  const [isChoosingWebcam, setIsChoosingWebcam] = useState(false);
   const [isNativeDialogOpen, setIsNativeDialogOpen] = useState(false);
   const [isReturnConfirmationOpen, setIsReturnConfirmationOpen] = useState(false);
   const [isSourceDragActive, setIsSourceDragActive] = useState(false);
   const [dropListenerError, setDropListenerError] = useState<string | null>(null);
+  const [webcamError, setWebcamError] = useState<string | null>(null);
   const [exportQueue, setExportQueue] = useState<ExportToast[]>([]);
   const [exportPresets, dispatchExportPreset] = useReducer(
     exportPresetReducer,
@@ -47,6 +51,7 @@ export function useEasyTrimEditorApp() {
 
   const inspectSource = useCallback((source: SourceSelection) => {
     activeSourceIdRef.current = source.sourceId;
+    setWebcamError(null);
     setAudioPreviewUrls({});
     dispatch({ type: "source-selected", source });
     void inspectMedia(source.sourceId)
@@ -258,6 +263,54 @@ export function useEasyTrimEditorApp() {
     }
   }, [inspectSource, isChoosingSource]);
 
+  const handleChooseWebcam = useCallback(async () => {
+    const sourceId = session.source?.selection.sourceId;
+    if (!sourceId || isChoosingWebcam) return;
+
+    setIsChoosingWebcam(true);
+    setWebcamError(null);
+    setIsNativeDialogOpen(true);
+    let webcamId: string | null = null;
+    try {
+      const webcam = await chooseWebcamSource();
+      if (!webcam) return;
+      webcamId = webcam.sourceId;
+      dispatch({ type: "webcam-selected", sourceId, webcam });
+      const media = await inspectMedia(webcam.sourceId);
+      dispatch({ type: "webcam-ready", sourceId, webcamId: webcam.sourceId, media });
+      dispatch({
+        type: "webcam-preview-loading",
+        sourceId,
+        webcamId: webcam.sourceId,
+        kind: "source",
+      });
+      const preview = await prepareSourcePreview(webcam.sourceId);
+      dispatch({ type: "webcam-preview-ready", sourceId, webcamId: webcam.sourceId, preview });
+    } catch (error: unknown) {
+      if (webcamId) {
+        dispatch({
+          type: "webcam-failed",
+          sourceId,
+          webcamId,
+          error: normalizeAppError(error),
+        });
+      } else {
+        setWebcamError(normalizeAppError(error).message);
+      }
+    } finally {
+      setIsChoosingWebcam(false);
+      setIsNativeDialogOpen(false);
+    }
+  }, [isChoosingWebcam, session.source?.selection.sourceId]);
+
+  const handleToggleWebcam = useCallback((sourceId: string) => {
+    dispatch({ type: "webcam-toggled", sourceId });
+  }, []);
+
+  const handleWebcamPositionChange = useCallback((sourceId: string, position: WebcamPosition) => {
+    dispatch({ type: "webcam-position-changed", sourceId, position });
+  }, []);
+
   useKeyboardShortcut(
     (event) =>
       event.key.toLowerCase() === "o" && event.ctrlKey && !isChoosingSource && !isNativeDialogOpen,
@@ -322,10 +375,12 @@ export function useEasyTrimEditorApp() {
     session,
     hasSource,
     isChoosingSource,
+    isChoosingWebcam,
     isNativeDialogOpen,
     isReturnConfirmationOpen,
     isSourceDragActive,
     dropListenerError,
+    webcamError,
     exportQueue,
     exportPresets,
     dispatchExportPreset,
@@ -334,6 +389,7 @@ export function useEasyTrimEditorApp() {
     setIsNativeDialogOpen,
     setIsReturnConfirmationOpen,
     handleChooseSource,
+    handleChooseWebcam,
     handleReturnToWelcome,
     requestReturnToWelcome,
     handlePreviewPlaybackError,
@@ -345,5 +401,7 @@ export function useEasyTrimEditorApp() {
     handleMasterVolumeChange,
     handleToggleAudioMerge,
     handleWaveformImageError,
+    handleToggleWebcam,
+    handleWebcamPositionChange,
   };
 }

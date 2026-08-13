@@ -145,3 +145,13 @@ Calculate percentage from processed output time divided by selected duration, cl
 Apply the media gate in the [quality rule](../../../rules/quality.md). Add mode-specific tolerances for the behavior changed; do not weaken shared stream, duration, mapping, or readability assertions.
 
 Use `-n` unless the user has explicitly selected and confirmed an existing output through the native save dialog; only that confirmation authorizes `-y`.
+
+## 9. Webcam overlay
+
+- Treat the webcam as one optional synchronized second video input; do not infer or expose manual timing offsets in the POC.
+- Seek both inputs to the same canonical trim start and cap the output to the selected duration.
+- Map the webcam's validated global video stream index explicitly and never map webcam audio.
+- Scale the webcam to the code-defined small-overlay size while preserving its aspect ratio.
+- Compose it through one application-owned filter graph and map only the labeled composited video output.
+- If the webcam ends early, pass through the main video without retaining the webcam's last frame or introducing a black placeholder.
+- When webcam is absent or disabled, omit the second input and overlay graph entirely so the ordinary fast-copy route remains available.

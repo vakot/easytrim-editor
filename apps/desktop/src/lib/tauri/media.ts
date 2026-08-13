@@ -47,12 +47,31 @@ export interface FastExportRequest {
   mergeAudio: boolean;
 }
 
+export const WEBCAM_POSITIONS = [
+  "topLeft",
+  "topRight",
+  "bottomLeft",
+  "bottomRight",
+  "topLeftOffset",
+  "topRightOffset",
+  "bottomLeftOffset",
+  "bottomRightOffset",
+] as const;
+
+export type WebcamPosition = (typeof WEBCAM_POSITIONS)[number];
+
+export interface WebcamOverlaySelection {
+  sourceId: string;
+  position: WebcamPosition;
+}
+
 export interface AudioTrackSelection {
   streamIndex: number;
   volumePercent: number;
 }
 
 export interface OptimizedExportRequest extends FastExportRequest {
+  webcam?: WebcamOverlaySelection;
   resolution: { width: number; height: number };
   crop?: { x: number; y: number; width: number; height: number };
   frameRate?: { numerator: number; denominator: number };
@@ -170,6 +189,15 @@ export type SourceDropEvent = { status: "drag"; active: boolean } | SourceImport
 export async function chooseSource(): Promise<SourceSelection | null> {
   try {
     const value = await invoke<unknown>("choose_source");
+    return value === null ? null : parseSourceSelection(value);
+  } catch (error: unknown) {
+    throw normalizeAppError(error);
+  }
+}
+
+export async function chooseWebcamSource(): Promise<SourceSelection | null> {
+  try {
+    const value = await invoke<unknown>("choose_webcam_source");
     return value === null ? null : parseSourceSelection(value);
   } catch (error: unknown) {
     throw normalizeAppError(error);

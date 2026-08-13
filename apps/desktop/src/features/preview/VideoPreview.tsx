@@ -1,7 +1,7 @@
 import { LoaderCircle } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 
-import type { PreviewState } from "@/app/session-state";
+import type { PreviewState, WebcamState } from "@/app/session-state";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { useTranslation } from "react-i18next";
@@ -25,6 +25,8 @@ interface VideoPreviewProps {
   onCropResolutionChange?: (resolution: { width: number; height: number }) => void;
   onCropChange?: (crop: CropRect) => void;
   onCropToolOpenChange?: (isOpen: boolean) => void;
+  webcam?: WebcamState | null;
+  webcamVideoRef?: RefObject<HTMLVideoElement | null>;
 }
 
 export function VideoPreview({
@@ -44,9 +46,12 @@ export function VideoPreview({
   onCropResolutionChange,
   onCropChange,
   onCropToolOpenChange,
+  webcam,
+  webcamVideoRef,
 }: VideoPreviewProps) {
   const { t } = useTranslation();
   const reportedUrl = useRef<string | null>(null);
+  const fallbackWebcamVideoRef = useRef<HTMLVideoElement>(null);
   const [cropToolOpen, setCropToolOpen] = useState(false);
   const readyUrl = preview.status === "ready" ? preview.value.url : null;
   const effectiveSourceDimensions = sourceDimensions ?? { width: 1920, height: 1080 };
@@ -141,6 +146,8 @@ export function VideoPreview({
         }}
         onCropToolOpenChange={setCropToolOpen}
         onCropChange={handleCropChange}
+        webcam={webcam ?? null}
+        webcamVideoRef={webcamVideoRef ?? fallbackWebcamVideoRef}
       />
       {value.kind === "proxy" ? (
         <Badge variant="secondary" className="absolute top-3 right-3">

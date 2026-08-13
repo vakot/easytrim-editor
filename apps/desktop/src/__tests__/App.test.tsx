@@ -12,6 +12,7 @@ import type {
 const mocks = vi.hoisted(() => ({
   checkMediaCapabilities: vi.fn(),
   chooseSource: vi.fn(),
+  chooseWebcamSource: vi.fn(),
   inspectMedia: vi.fn(),
   listenForSourceDrops: vi.fn(),
   prepareAudioPreviews: vi.fn(),
@@ -27,6 +28,7 @@ vi.mock("../lib/tauri/media", async (importOriginal) => {
     ...original,
     checkMediaCapabilities: mocks.checkMediaCapabilities,
     chooseSource: mocks.chooseSource,
+    chooseWebcamSource: mocks.chooseWebcamSource,
     inspectMedia: mocks.inspectMedia,
     listenForSourceDrops: mocks.listenForSourceDrops,
     prepareAudioPreviews: mocks.prepareAudioPreviews,
@@ -91,6 +93,7 @@ beforeEach(() => {
   sourceDropListener = undefined;
   mocks.checkMediaCapabilities.mockResolvedValue(capabilities);
   mocks.chooseSource.mockResolvedValue(null);
+  mocks.chooseWebcamSource.mockResolvedValue(null);
   mocks.inspectMedia.mockResolvedValue(media);
   mocks.prepareAudioPreviews.mockResolvedValue([
     {
@@ -374,6 +377,41 @@ describe("App", () => {
       screen.queryByText("Import a video to inspect its source and prepare a precise cut."),
     ).not.toBeInTheDocument();
     expect(screen.getByRole("toolbar", { name: "Application toolbar" })).toBeInTheDocument();
+  });
+
+  it("adds, positions, and disables a synchronized webcam overlay", async () => {
+    const webcamSelection = { sourceId: "webcam-2", displayName: "camera.mp4" };
+    const webcamMedia: MediaInfo = {
+      ...media,
+      sourceId: webcamSelection.sourceId,
+      video: { ...media.video, width: 1920, height: 1080 },
+      audioStreams: [],
+    };
+    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.chooseWebcamSource.mockResolvedValue(webcamSelection);
+    mocks.inspectMedia.mockImplementation(async (sourceId: string) =>
+      sourceId === webcamSelection.sourceId ? webcamMedia : media,
+    );
+    mocks.prepareSourcePreview.mockImplementation(async (sourceId: string) => ({
+      sourceId,
+      url: `http://easytrim-media.localhost/${sourceId}?variant=source`,
+      kind: "source" as const,
+    }));
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Select video" }));
+    await screen.findByRole("heading", { name: "holiday.mp4" });
+    await user.click(screen.getByRole("button", { name: "Add webcam" }));
+
+    expect(await screen.findByRole("heading", { name: "Webcam" })).toBeInTheDocument();
+    expect(screen.getByText("camera.mp4")).toBeInTheDocument();
+    expect(screen.getByLabelText("Webcam overlay preview")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
+
+    await user.click(screen.getByRole("button", { name: "Hide webcam" }));
+    expect(screen.queryByLabelText("Webcam overlay preview")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save" })).toBeEnabled();
   });
 
   it("renders only the timeline when the source has no audio tracks", async () => {

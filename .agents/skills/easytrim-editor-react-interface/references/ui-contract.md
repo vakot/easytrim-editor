@@ -17,6 +17,13 @@ source: null | {
   preview
   trim
   audioSelections
+  webcam: null | {
+    sourceId
+    metadata
+    preview
+    enabled
+    positionPreset
+  }
   optimizedSettings
   outputNameBase
 }
@@ -83,6 +90,15 @@ Waveform failure leaves the row enabled and exportable. Show a compact unavailab
 Use the always-visible master slider for output and preview gain without rewriting per-track levels.
 Per-track sliders range from mute through +6 dB, reset to 0 dB on double-click, and muted tracks
 are excluded from export and merge inputs.
+
+## 4a. Webcam row
+
+- Support one optional synchronized webcam video selected through a dedicated native file picker.
+- Show it as an always-visible timeline row alongside audio tracks; do not hide controls on hover.
+- Use an eye-style enable control. A disabled webcam behaves exactly like no webcam source in preview and export.
+- Keep webcam audio unsupported and never map it to output.
+- Keep position and inset geometry in code-defined presets so new presets do not require new state fields.
+- An enabled webcam requires optimized rendering; fast stream-copy remains available when it is absent or disabled.
 
 ## 5. Export settings
 
