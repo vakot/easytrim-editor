@@ -96,6 +96,7 @@ are excluded from export and merge inputs.
 - Support one optional synchronized webcam video selected through a dedicated native file picker.
 - Show it as an always-visible timeline row alongside audio tracks; do not hide controls on hover.
 - Use an eye-style enable control. A disabled webcam behaves exactly like no webcam source in preview and export.
+- Display the webcam preview as a plain rectangular source image without rounded corners, borders, shadows, frames, or color treatment.
 - Keep webcam audio unsupported and never map it to output.
 - Keep position and inset geometry in code-defined presets so new presets do not require new state fields.
 - An enabled webcam requires optimized rendering; fast stream-copy remains available when it is absent or disabled.

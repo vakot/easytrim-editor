@@ -406,7 +406,9 @@ describe("App", () => {
 
     expect(await screen.findByRole("heading", { name: "Webcam" })).toBeInTheDocument();
     expect(screen.getByText("camera.mp4")).toBeInTheDocument();
-    expect(screen.getByLabelText("Webcam overlay preview")).toBeInTheDocument();
+    const webcamPreview = screen.getByLabelText("Webcam overlay preview");
+    expect(webcamPreview).toBeInTheDocument();
+    expect(webcamPreview).not.toHaveClass("rounded-sm", "shadow-lg", "ring-1", "ring-black/40");
     expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
 
     await user.click(screen.getByRole("button", { name: "Hide webcam" }));
