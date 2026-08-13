@@ -6,10 +6,9 @@ This file is the auto-loaded entry point for every repository task. Keep it comp
 
 Before modifying files:
 
-1. Read `plans/ffmpeg-ui-mvp.md`.
-2. Read every rule listed under **Always-on rules** once for the task.
-3. Inspect the current worktree and preserve unrelated user changes.
-4. Load every project skill whose description matches the task.
+1. Read every rule listed under **Always-on rules** once for the task.
+2. Inspect the current worktree and preserve unrelated user changes.
+3. Load every project skill whose description matches the task.
 
 Shared rules are authoritative for repository-wide conventions. Skills add stack-specific workflow and domain contracts without duplicating shared policy.
 
@@ -31,7 +30,7 @@ Shared rules are authoritative for repository-wide conventions. Skills add stack
 ## Review expectations
 
 - Treat correctness, cancellation, source replacement, stream selection, path handling, and accidental persistence as high-risk review areas.
-- Keep product behavior aligned with the MVP plan; update the plan when an accepted decision changes.
+- Keep product behavior aligned with the repository contracts and update those contracts when an accepted decision changes.
 - Explain Rust/Tauri design decisions in plain language in the final handoff because native implementation is AI-owned.
 
 ## Code Review Rules

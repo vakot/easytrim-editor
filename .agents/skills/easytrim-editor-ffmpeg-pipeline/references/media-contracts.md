@@ -108,6 +108,7 @@ Also detect duplicate/conflicting `-map`, `-vf`/`-filter:v`, `-af`/`-filter:a`, 
 - Produce dimensions divisible by two for common 4:2:0 encoders.
 - Do not upscale when the source already fits the requested bound.
 - Respect display rotation when deciding whether the content is portrait or landscape.
+- Keep the selected video scale active when audio volume or merge processing also requires a complex filter graph.
 
 Example intent:
 
@@ -145,3 +146,14 @@ Calculate percentage from processed output time divided by selected duration, cl
 Apply the media gate in the [quality rule](../../../rules/quality.md). Add mode-specific tolerances for the behavior changed; do not weaken shared stream, duration, mapping, or readability assertions.
 
 Use `-n` unless the user has explicitly selected and confirmed an existing output through the native save dialog; only that confirmation authorizes `-y`.
+
+## 9. Webcam overlay
+
+- Treat the webcam as one optional synchronized second video input; do not infer or expose manual timing offsets in the POC.
+- Seek both inputs to the same canonical trim start and cap the output to the selected duration.
+- Map the webcam's validated global video stream index explicitly and never map webcam audio.
+- Scale the webcam height to 24% of the cropped output frame's shorter side and derive its width from the webcam source aspect ratio; recalculate it whenever the crop or output dimensions change.
+- Keep the selected left/right output edge flush for every preset; offset presets add margin equal to 8% of the output viewport height only from the selected top/bottom edge.
+- Compose it through one application-owned filter graph, reassert the selected output dimensions after composition, and map only that labeled final video output.
+- If the webcam ends early, pass through the main video without retaining the webcam's last frame or introducing a black placeholder.
+- When webcam is absent or disabled, omit the second input and overlay graph entirely so the ordinary fast-copy route remains available.

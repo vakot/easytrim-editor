@@ -16,7 +16,7 @@ Follow the auto-loaded `AGENTS.md`. Before frontend changes, read:
 - [runtime and security](../../rules/security-runtime.md) when IPC, paths, state lifetime, or local assets are involved;
 - [UI contract](references/ui-contract.md).
 
-Read `plans/ffmpeg-ui-mvp.md`, inspect existing components/state/Tauri adapter/styles/tests, and identify the user action, state transition, and native command involved.
+Inspect existing components/state/Tauri adapter/styles/tests and identify the user action, state transition, and native command involved.
 
 Use `easytrim-editor-tauri-rust` for IPC/native changes and `easytrim-editor-ffmpeg-pipeline` when controls alter media behavior.
 

@@ -125,7 +125,9 @@ struct ActiveSourceRecord {
 #[derive(Debug, Default)]
 struct SessionState {
     active_source: Option<ActiveSourceRecord>,
+    active_webcam: Option<ActiveSourceRecord>,
     latest_generation: u64,
+    latest_webcam_generation: u64,
 }
 
 #[derive(Debug, Default)]
@@ -151,14 +153,35 @@ impl AppState {
         let mut session = self.lock_session()?;
         session.latest_generation = generation;
         let previous_source = session.active_source.take();
+        let previous_webcam = session.active_webcam.take();
         drop(session);
 
         if let Some(previous_source) = previous_source {
             previous_source.cancellation.store(true, Ordering::Release);
         }
+        if let Some(previous_webcam) = previous_webcam {
+            previous_webcam.cancellation.store(true, Ordering::Release);
+        }
         // Export operations own their resolved input path and output path after they
         // start. They must outlive the active editing source, so replacing the source
         // only cancels work tied to that source (preview/waveform jobs above).
+        Ok(generation)
+    }
+
+    pub fn begin_webcam_replacement(&self) -> Result<u64, AppError> {
+        let generation = self.next_generation.fetch_add(1, Ordering::Relaxed) + 1;
+        let mut session = self.lock_session()?;
+        if session.active_source.is_none() {
+            return Err(AppError::invalid_request(
+                "Open a main video before adding a webcam recording.",
+            ));
+        }
+        session.latest_webcam_generation = generation;
+        let previous_webcam = session.active_webcam.take();
+        drop(session);
+        if let Some(previous_webcam) = previous_webcam {
+            previous_webcam.cancellation.store(true, Ordering::Release);
+        }
         Ok(generation)
     }
 
@@ -226,37 +249,36 @@ impl AppState {
         }
 
         let source_id = format!("source-{generation}");
-        session.active_source = Some(ActiveSourceRecord {
-            source_id: source_id.clone(),
-            path: source.path,
-            cancellation: Arc::new(AtomicBool::new(false)),
-            media: None,
-            preview_streams: None,
-            preview: None,
-            audio_previews: HashMap::new(),
-            audio_stream_indexes: Vec::new(),
-            waveform_job: None,
-            waveforms: HashMap::new(),
-        });
+        session.active_source = Some(new_source_record(source_id.clone(), source.path));
 
+        Ok(source_id)
+    }
+
+    pub fn complete_webcam_replacement(
+        &self,
+        generation: u64,
+        source: ValidatedSource,
+    ) -> Result<String, AppError> {
+        let mut session = self.lock_session()?;
+        if session.latest_webcam_generation != generation || session.active_source.is_none() {
+            return Err(AppError::source_replaced());
+        }
+
+        let source_id = format!("webcam-{generation}");
+        session.active_webcam = Some(new_source_record(source_id.clone(), source.path));
         Ok(source_id)
     }
 
     pub fn resolve_source(&self, source_id: &str) -> Result<ActiveSource, AppError> {
         let session = self.lock_session()?;
-        session
-            .active_source
-            .as_ref()
-            .filter(|source| source.source_id == source_id)
-            .map(|source| ActiveSource {
-                source_id: source.source_id.clone(),
-                path: source.path.clone(),
-                cancellation: Arc::clone(&source.cancellation),
-                media: source.media.clone(),
-                preview_streams: source.preview_streams,
-                audio_stream_indexes: source.audio_stream_indexes.clone(),
-            })
-            .ok_or_else(AppError::source_replaced)
+        active_source(&session, source_id).map(|source| ActiveSource {
+            source_id: source.source_id.clone(),
+            path: source.path.clone(),
+            cancellation: Arc::clone(&source.cancellation),
+            media: source.media.clone(),
+            preview_streams: source.preview_streams,
+            audio_stream_indexes: source.audio_stream_indexes.clone(),
+        })
     }
 
     pub fn reserve_export_source(&self, source_id: &str) -> Result<(), AppError> {
@@ -457,11 +479,7 @@ impl AppState {
         stream_index: u32,
     ) -> Result<PathBuf, AppError> {
         let session = self.lock_session()?;
-        let source = session
-            .active_source
-            .as_ref()
-            .filter(|source| source.source_id == source_id)
-            .ok_or_else(AppError::source_replaced)?;
+        let source = active_source(&session, source_id)?;
         source
             .audio_previews
             .get(&stream_index)
@@ -471,11 +489,7 @@ impl AppState {
 
     pub fn resolve_preview_path(&self, source_id: &str) -> Result<PathBuf, AppError> {
         let session = self.lock_session()?;
-        let source = session
-            .active_source
-            .as_ref()
-            .filter(|source| source.source_id == source_id)
-            .ok_or_else(AppError::source_replaced)?;
+        let source = active_source(&session, source_id)?;
         Ok(source
             .preview
             .as_ref()
@@ -484,11 +498,7 @@ impl AppState {
 
     pub fn preview_is_ready(&self, source_id: &str) -> Result<bool, AppError> {
         let session = self.lock_session()?;
-        let source = session
-            .active_source
-            .as_ref()
-            .filter(|source| source.source_id == source_id)
-            .ok_or_else(AppError::source_replaced)?;
+        let source = active_source(&session, source_id)?;
         Ok(source.preview.is_some())
     }
 
@@ -507,6 +517,12 @@ fn active_source<'a>(
         .active_source
         .as_ref()
         .filter(|source| source.source_id == source_id)
+        .or_else(|| {
+            session
+                .active_webcam
+                .as_ref()
+                .filter(|source| source.source_id == source_id)
+        })
         .ok_or_else(AppError::source_replaced)
 }
 
@@ -514,11 +530,36 @@ fn active_source_mut<'a>(
     session: &'a mut SessionState,
     source_id: &str,
 ) -> Result<&'a mut ActiveSourceRecord, AppError> {
-    session
+    if session
         .active_source
+        .as_ref()
+        .is_some_and(|source| source.source_id == source_id)
+    {
+        return session
+            .active_source
+            .as_mut()
+            .ok_or_else(AppError::source_replaced);
+    }
+    session
+        .active_webcam
         .as_mut()
         .filter(|source| source.source_id == source_id)
         .ok_or_else(AppError::source_replaced)
+}
+
+fn new_source_record(source_id: String, path: PathBuf) -> ActiveSourceRecord {
+    ActiveSourceRecord {
+        source_id,
+        path,
+        cancellation: Arc::new(AtomicBool::new(false)),
+        media: None,
+        preview_streams: None,
+        preview: None,
+        audio_previews: HashMap::new(),
+        audio_stream_indexes: Vec::new(),
+        waveform_job: None,
+        waveforms: HashMap::new(),
+    }
 }
 
 #[cfg(test)]
@@ -590,6 +631,32 @@ mod tests {
             .expect("replacement import starts");
 
         assert!(cancellation.load(Ordering::Acquire));
+    }
+
+    #[test]
+    fn webcam_replacement_preserves_main_source_and_main_replacement_clears_webcam() {
+        let state = AppState::default();
+        let main_generation = state
+            .begin_source_replacement()
+            .expect("main import starts");
+        let main_id = state
+            .complete_source_replacement(main_generation, source("main.mp4"))
+            .expect("main source installs");
+        let webcam_generation = state
+            .begin_webcam_replacement()
+            .expect("webcam import starts");
+        let webcam_id = state
+            .complete_webcam_replacement(webcam_generation, source("webcam.mp4"))
+            .expect("webcam source installs");
+
+        assert!(state.resolve_source(&main_id).is_ok());
+        assert!(state.resolve_source(&webcam_id).is_ok());
+
+        state
+            .begin_source_replacement()
+            .expect("main replacement starts");
+        assert!(state.resolve_source(&main_id).is_err());
+        assert!(state.resolve_source(&webcam_id).is_err());
     }
 
     #[test]

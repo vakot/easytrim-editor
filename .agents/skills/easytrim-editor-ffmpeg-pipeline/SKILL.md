@@ -15,7 +15,7 @@ Follow the auto-loaded `AGENTS.md`. Before media changes, read:
 - [quality gates](../../rules/quality.md);
 - [media contracts](references/media-contracts.md).
 
-Read `plans/ffmpeg-ui-mvp.md`, inspect media DTOs/builders/capability detection/fixtures, and probe representative inputs before assuming stream layout, timing, rotation, color metadata, or compatibility.
+Inspect media DTOs/builders/capability detection/fixtures, and probe representative inputs before assuming stream layout, timing, rotation, color metadata, or compatibility.
 
 Use `easytrim-editor-tauri-rust` for process/IPC changes and `easytrim-editor-react-interface` when controls or labels change media semantics.
 

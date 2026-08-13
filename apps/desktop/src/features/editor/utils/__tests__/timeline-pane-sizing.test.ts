@@ -26,4 +26,22 @@ describe("timelinePanelSizeConstraints", () => {
       maxSize: 426,
     });
   });
+
+  it("keeps the timeline minimum while adding webcam height to expanded sizes", () => {
+    expect(timelinePanelSizeConstraints(0, true)).toEqual({
+      minSize: 165,
+      defaultSize: 270,
+      maxSize: 270,
+    });
+    expect(timelinePanelSizeConstraints(1, true)).toEqual({
+      minSize: 165,
+      defaultSize: 419,
+      maxSize: 419,
+    });
+    expect(timelinePanelSizeConstraints(3, true)).toEqual({
+      minSize: 165,
+      defaultSize: 419,
+      maxSize: 531,
+    });
+  });
 });

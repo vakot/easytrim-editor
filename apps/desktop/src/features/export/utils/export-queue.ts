@@ -65,6 +65,9 @@ export function cancelQueuedExport(id: string) {
     void cancelOperation(job.operationId).catch(() => undefined);
   } else {
     void releaseExportSource(job.request.sourceId).catch(() => undefined);
+    if ("webcam" in job.request && job.request.webcam) {
+      void releaseExportSource(job.request.webcam.sourceId).catch(() => undefined);
+    }
   }
 }
 

@@ -44,10 +44,12 @@ function EasyTrimEditorApp() {
           <AppToolbar
             session={app.session}
             isChoosingSource={app.isChoosingSource}
+            isChoosingWebcam={app.isChoosingWebcam}
             setExportQueue={app.setExportQueue}
             exportPresets={app.exportPresets}
             dispatchExportPreset={app.dispatchExportPreset}
             onChooseSource={() => void app.handleChooseSource()}
+            onChooseWebcam={() => void app.handleChooseWebcam()}
             onReturnToWelcome={app.requestReturnToWelcome}
             onNativeDialogStateChange={app.setIsNativeDialogOpen}
             cropResolution={cropResolution}
@@ -77,6 +79,15 @@ function EasyTrimEditorApp() {
           </Alert>
         ) : null}
 
+        {app.webcamError ? (
+          <Alert
+            variant="destructive"
+            className="fixed top-20 left-1/2 z-50 w-auto -translate-x-1/2"
+          >
+            <AlertDescription>{app.webcamError}</AlertDescription>
+          </Alert>
+        ) : null}
+
         <SourceWorkspace
           session={app.session}
           isChoosingSource={app.isChoosingSource}
@@ -91,6 +102,8 @@ function EasyTrimEditorApp() {
           onMasterVolumeChange={app.handleMasterVolumeChange}
           onToggleAudioMerge={app.handleToggleAudioMerge}
           onWaveformImageError={app.handleWaveformImageError}
+          onToggleWebcam={app.handleToggleWebcam}
+          onWebcamPositionChange={app.handleWebcamPositionChange}
           audioPreviewUrls={app.audioPreviewUrls}
           exportQueue={app.exportQueue}
           update={update}

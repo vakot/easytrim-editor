@@ -5,6 +5,7 @@ import {
   normalizeAppError,
   planOptimizedExport,
   reserveExportSource,
+  releaseExportSource,
   type FastExportRequest,
   type OptimizedExportRequest,
   type OutputSelection,
@@ -24,6 +25,7 @@ export function useExportController({
   masterEnabled,
   masterVolumePercent,
   mergeAudio,
+  webcam,
   setQueue,
   presetState,
   onPresetAction,
@@ -67,6 +69,10 @@ export function useExportController({
       trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
       audioTracks: selectedAudio,
       mergeAudio,
+      webcam:
+        webcam?.enabled && webcam.media
+          ? { sourceId: webcam.selection.sourceId, position: webcam.position }
+          : undefined,
       resolution: settings.resolution,
       crop,
       frameRate: settings.frameRate
@@ -79,6 +85,7 @@ export function useExportController({
     }),
     [
       mergeAudio,
+      webcam,
       presetState.argumentsText,
       selectedAudio,
       settings.frameRate,
@@ -156,6 +163,14 @@ export function useExportController({
     output: OutputSelection,
   ) {
     await reserveExportSource(request.sourceId);
+    if ("webcam" in request && request.webcam) {
+      try {
+        await reserveExportSource(request.webcam.sourceId);
+      } catch (error: unknown) {
+        await releaseExportSource(request.sourceId).catch(() => undefined);
+        throw error;
+      }
+    }
     // The controller is remounted when a new source is imported. Include the
     // source identity so the new controller cannot reuse an old queue item id
     // and route later progress into the previous export.

@@ -2,6 +2,7 @@ import type { SessionState } from "@/app/session-state";
 import type { TrimRange } from "@/domain/trim";
 import type { ExportToast } from "@/features/export";
 import type { AvailableUpdate } from "@/features/release/release-check";
+import type { WebcamPosition } from "@/lib/tauri/media";
 
 export interface SourceWorkspaceProps {
   session: SessionState;
@@ -17,6 +18,8 @@ export interface SourceWorkspaceProps {
   onMasterVolumeChange: (sourceId: string, volumePercent: number) => void;
   onToggleAudioMerge: (sourceId: string) => void;
   onWaveformImageError: (sourceId: string, streamIndex: number) => void;
+  onToggleWebcam: (sourceId: string) => void;
+  onWebcamPositionChange: (sourceId: string, position: WebcamPosition) => void;
   audioPreviewUrls: Record<number, string>;
   exportQueue: ExportToast[];
   update: AvailableUpdate | null;

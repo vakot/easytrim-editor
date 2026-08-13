@@ -12,6 +12,7 @@ import type {
 const mocks = vi.hoisted(() => ({
   checkMediaCapabilities: vi.fn(),
   chooseSource: vi.fn(),
+  chooseWebcamSource: vi.fn(),
   inspectMedia: vi.fn(),
   listenForSourceDrops: vi.fn(),
   prepareAudioPreviews: vi.fn(),
@@ -27,6 +28,7 @@ vi.mock("../lib/tauri/media", async (importOriginal) => {
     ...original,
     checkMediaCapabilities: mocks.checkMediaCapabilities,
     chooseSource: mocks.chooseSource,
+    chooseWebcamSource: mocks.chooseWebcamSource,
     inspectMedia: mocks.inspectMedia,
     listenForSourceDrops: mocks.listenForSourceDrops,
     prepareAudioPreviews: mocks.prepareAudioPreviews,
@@ -91,6 +93,7 @@ beforeEach(() => {
   sourceDropListener = undefined;
   mocks.checkMediaCapabilities.mockResolvedValue(capabilities);
   mocks.chooseSource.mockResolvedValue(null);
+  mocks.chooseWebcamSource.mockResolvedValue(null);
   mocks.inspectMedia.mockResolvedValue(media);
   mocks.prepareAudioPreviews.mockResolvedValue([
     {
@@ -374,6 +377,126 @@ describe("App", () => {
       screen.queryByText("Import a video to inspect its source and prepare a precise cut."),
     ).not.toBeInTheDocument();
     expect(screen.getByRole("toolbar", { name: "Application toolbar" })).toBeInTheDocument();
+  });
+
+  it("adds, positions, and disables a synchronized webcam overlay", async () => {
+    const webcamSelection = { sourceId: "webcam-2", displayName: "camera.mp4" };
+    const webcamMedia: MediaInfo = {
+      ...media,
+      sourceId: webcamSelection.sourceId,
+      video: { ...media.video, width: 1920, height: 1080 },
+      audioStreams: [],
+    };
+    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.chooseWebcamSource.mockResolvedValue(webcamSelection);
+    mocks.inspectMedia.mockImplementation(async (sourceId: string) =>
+      sourceId === webcamSelection.sourceId ? webcamMedia : media,
+    );
+    mocks.prepareSourcePreview.mockImplementation(async (sourceId: string) => ({
+      sourceId,
+      url: `http://easytrim-media.localhost/${sourceId}?variant=source`,
+      kind: "source" as const,
+    }));
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Select video" }));
+    await screen.findByRole("heading", { name: "holiday.mp4" });
+    await user.click(screen.getByRole("button", { name: "Add webcam" }));
+
+    expect(await screen.findByRole("heading", { name: "Webcam" })).toBeInTheDocument();
+    expect(screen.getByText("camera.mp4")).toBeInTheDocument();
+    const webcamPreview = screen.getByLabelText("Webcam overlay preview");
+    expect(webcamPreview).toBeInTheDocument();
+    expect(webcamPreview).not.toHaveClass("rounded-sm", "shadow-lg", "ring-1", "ring-black/40");
+    const webcamToggle = screen.getByRole("button", { name: "Hide webcam" });
+    const webcamControls = webcamToggle.closest('[data-slot="card"]');
+    const webcamSourceDetails = webcamControls?.querySelector(
+      '[data-slot="webcam-source-details"]',
+    );
+    expect(webcamControls).toHaveAttribute("data-controls-visible", "false");
+    expect(webcamControls).toHaveClass("gap-2", "bg-transparent");
+    expect(webcamSourceDetails).toHaveAttribute("aria-hidden", "false");
+    expect(webcamControls?.querySelector('[data-slot="webcam-source-title"]')).toHaveTextContent(
+      "camera.mp4",
+    );
+    expect(
+      webcamControls?.querySelector('[data-slot="webcam-source-dimensions"]'),
+    ).toHaveTextContent("1920 × 1080");
+    expect(screen.queryByRole("combobox", { name: "Webcam position" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Enable webcam offset" })).not.toBeInTheDocument();
+
+    fireEvent.pointerEnter(webcamControls!);
+
+    expect(webcamControls).toHaveAttribute("data-controls-visible", "true");
+    expect(webcamSourceDetails).toHaveAttribute("aria-hidden", "true");
+    const positionSelect = screen.getByRole("combobox", { name: "Webcam position" });
+    const offsetButton = screen.getByRole("button", { name: "Enable webcam offset" });
+    expect(positionSelect).toHaveClass("min-w-0", "w-full", "flex-1");
+    expect(positionSelect.parentElement).toHaveClass("absolute", "inset-0", "flex");
+    expect(positionSelect.closest('[data-slot="card"]')).toBe(webcamControls);
+    expect(webcamControls).not.toHaveClass("gap-(--card-spacing)", "justify-between");
+    expect(positionSelect.parentElement?.lastElementChild).toBe(offsetButton);
+    expect(offsetButton).toHaveAttribute("data-variant", "secondary");
+    expect(offsetButton).toHaveAttribute("data-size", "icon-sm");
+    expect(offsetButton).toHaveAttribute("aria-pressed", "false");
+    expect(offsetButton).toHaveClass("bg-secondary", "text-secondary-foreground");
+    expect(offsetButton).not.toHaveClass("text-primary");
+    expect(offsetButton.querySelector('[data-slot="webcam-offset-icon"]')).toBeInTheDocument();
+    expect(positionSelect).toHaveTextContent("Bottom right");
+    expect(positionSelect.querySelector('[data-slot="webcam-position-icon"]')).toBeNull();
+    await user.click(offsetButton);
+    expect(screen.getByRole("button", { name: "Disable webcam offset" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByRole("button", { name: "Disable webcam offset" })).toHaveClass(
+      "bg-secondary",
+      "text-primary",
+    );
+    expect(webcamPreview).toHaveStyle({ bottom: "8%", right: "0%" });
+    const timelinePane = screen.getByTestId("timeline-fixed-content").parentElement;
+    const webcamSection = screen.getByTestId("webcam-track-section");
+    const audioTracksScroll = screen.getByTestId("audio-tracks-scroll");
+    expect(screen.getByTestId("timeline-panel")).toContainElement(webcamSection);
+    expect(webcamSection).toContainElement(screen.getByRole("heading", { name: "Webcam" }));
+    expect(webcamSection.querySelector('[data-slot="webcam-track-status"]')).toHaveTextContent(
+      "Synchronized video overlay · audio ignored",
+    );
+    expect(webcamSection.querySelector('[data-slot="webcam-track-status"]')).not.toHaveTextContent(
+      "camera.mp4",
+    );
+    const sourceVideo = screen.getByLabelText("Source video preview") as HTMLVideoElement;
+    const timelinePlayhead = screen.getByRole("slider", { name: "Playback position" });
+    const webcamPlayhead = webcamSection.querySelector(
+      '[data-slot="webcam-playhead"]',
+    ) as HTMLElement;
+    sourceVideo.currentTime = 13;
+    fireEvent.timeUpdate(sourceVideo);
+    expect(webcamPlayhead.style.left).toBe(timelinePlayhead.style.left);
+    expect(audioTracksScroll).not.toContainElement(screen.getByRole("heading", { name: "Webcam" }));
+    expect(webcamSection.querySelector('[data-slot="scroll-area-viewport"]')).toBeNull();
+    expect(timelinePane?.querySelectorAll(':scope > [data-slot="separator"]')).toHaveLength(2);
+    expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
+
+    await user.click(screen.getByRole("button", { name: "Hide webcam" }));
+    expect(screen.queryByLabelText("Webcam overlay preview")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save" })).toBeEnabled();
+
+    await user.click(screen.getByRole("button", { name: "Show webcam" }));
+    await user.click(positionSelect);
+    for (const [name, position] of [
+      ["Top left", "topLeft"],
+      ["Top right", "topRight"],
+      ["Bottom left", "bottomLeft"],
+      ["Bottom right", "bottomRight"],
+    ] as const) {
+      expect(
+        screen
+          .getByRole("option", { name })
+          .querySelector(`[data-slot="webcam-position-icon"][data-position="${position}"]`),
+      ).toBeInTheDocument();
+    }
   });
 
   it("renders only the timeline when the source has no audio tracks", async () => {

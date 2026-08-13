@@ -8,6 +8,8 @@ import {
 } from "react";
 
 import { CursorTooltip } from "@/components/ui/cursor-tooltip";
+import type { WebcamState } from "@/app/session-state";
+import { webcamOverlayHeight, webcamPositionStyle } from "@/features/webcam";
 
 import { CropSelection } from "./components/CropSelection";
 import { CropSnapMarkers } from "./components/CropSnapMarkers";
@@ -34,6 +36,8 @@ interface CropViewportProps {
   onError: () => void;
   onCropToolOpenChange: (isOpen: boolean) => void;
   onCropChange: (crop: CropRect) => void;
+  webcam: WebcamState | null;
+  webcamVideoRef: RefObject<HTMLVideoElement | null>;
 }
 
 export function CropViewport({
@@ -52,6 +56,8 @@ export function CropViewport({
   onError,
   onCropToolOpenChange,
   onCropChange,
+  webcam,
+  webcamVideoRef,
 }: CropViewportProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerBounds, setContainerBounds] = useState<Bounds>({ width: 0, height: 0 });
@@ -190,6 +196,29 @@ export function CropViewport({
           onEnded={onEnded}
           onError={onError}
         />
+        {webcam?.enabled && webcam.preview.status === "ready" ? (
+          <video
+            ref={webcamVideoRef}
+            key={webcam.preview.value.url}
+            src={webcam.preview.value.url}
+            preload="auto"
+            muted
+            playsInline
+            aria-label="Webcam overlay preview"
+            className="pointer-events-none absolute z-10 w-auto object-contain"
+            style={{
+              ...webcamPositionStyle(webcam.position),
+              height: webcamOverlayHeight(viewport),
+            }}
+            onLoadedMetadata={(event) => {
+              event.currentTarget.currentTime = videoRef.current?.currentTime ?? 0;
+              event.currentTarget.playbackRate = playbackRate;
+              if (videoRef.current && !videoRef.current.paused) {
+                void event.currentTarget.play().catch(() => undefined);
+              }
+            }}
+          />
+        ) : null}
       </div>
       {cropSelection.isEditing ? (
         <>

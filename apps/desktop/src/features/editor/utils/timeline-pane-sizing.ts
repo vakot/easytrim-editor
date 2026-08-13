@@ -14,6 +14,11 @@ const AUDIO_SECTION_GAP = 8; /* Vertical `gap-2` between audio section items. */
 const AUDIO_MASTER_CONTROLS_HEIGHT = 36; /* Master controls row: 28px button plus 8px vertical padding. */
 const AUDIO_TRACK_HEIGHT = 48; /* Fixed waveform row height from the `h-12` class. */
 const AUDIO_SECTION_BOTTOM_PADDING = 16; /* Scroll content wrapper `pb-4` padding. */
+const WEBCAM_SECTION_TOP_PADDING = 16; /* Fixed webcam section wrapper `pt-4` padding. */
+const WEBCAM_SECTION_HEADING_HEIGHT = 16; /* Webcam heading line-box height. */
+const WEBCAM_SECTION_GAP = 8; /* Vertical `gap-2` before the webcam row. */
+const WEBCAM_TRACK_HEIGHT = 48; /* Fixed webcam row height from the `h-12` class. */
+const WEBCAM_SECTION_BOTTOM_PADDING = 16; /* Fixed webcam section wrapper `pb-4` padding. */
 
 export const AUDIO_SINGLE_TRACK_HEIGHT =
   TIMELINE_DIVIDER_HEIGHT +
@@ -26,6 +31,13 @@ export const AUDIO_SINGLE_TRACK_HEIGHT =
   AUDIO_SECTION_BOTTOM_PADDING;
 export const AUDIO_TRACK_STEP =
   AUDIO_TRACK_HEIGHT + AUDIO_SECTION_GAP; /* Height added per additional track. */
+export const WEBCAM_SECTION_HEIGHT =
+  TIMELINE_DIVIDER_HEIGHT +
+  WEBCAM_SECTION_TOP_PADDING +
+  WEBCAM_SECTION_HEADING_HEIGHT +
+  WEBCAM_SECTION_GAP +
+  WEBCAM_TRACK_HEIGHT +
+  WEBCAM_SECTION_BOTTOM_PADDING;
 
 const getAudioContentHeight = (audioTrackCount: number): number => {
   const trackCount = Math.max(0, Math.floor(audioTrackCount));
@@ -35,10 +47,12 @@ const getAudioContentHeight = (audioTrackCount: number): number => {
 
 export function timelinePanelSizeConstraints(
   audioTrackCount: number,
+  hasWebcam = false,
 ): TimelinePanelSizeConstraints {
   const trackCount = Math.max(0, Math.floor(audioTrackCount));
-  const defaultSize = TIMELINE_FIXED_HEIGHT + (trackCount ? AUDIO_SINGLE_TRACK_HEIGHT : 0);
-  const maxSize = TIMELINE_FIXED_HEIGHT + getAudioContentHeight(trackCount);
+  const fixedContentHeight = TIMELINE_FIXED_HEIGHT + (hasWebcam ? WEBCAM_SECTION_HEIGHT : 0);
+  const defaultSize = fixedContentHeight + (trackCount ? AUDIO_SINGLE_TRACK_HEIGHT : 0);
+  const maxSize = fixedContentHeight + getAudioContentHeight(trackCount);
 
   return {
     minSize: TIMELINE_FIXED_HEIGHT,
