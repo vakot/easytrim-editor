@@ -208,8 +208,8 @@ export const en = {
     hide: "Hide webcam",
     show: "Show webcam",
     position: "Webcam position",
-    enableInset: "Enable webcam inset",
-    disableInset: "Disable webcam inset",
+    enableOffset: "Enable webcam offset",
+    disableOffset: "Disable webcam offset",
     inspecting: "Inspecting…",
     syncedTrack: "Synchronized video overlay · audio ignored",
     positions: {

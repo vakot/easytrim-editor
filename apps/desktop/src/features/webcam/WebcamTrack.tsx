@@ -3,11 +3,10 @@ import {
   ArrowDownRight,
   ArrowUpLeft,
   ArrowUpRight,
-  Expand,
   Eye,
   EyeOff,
   type LucideIcon,
-  Shrink,
+  MoveVertical,
   Video,
 } from "lucide-react";
 import type { RefObject } from "react";
@@ -33,7 +32,7 @@ import {
   WEBCAM_CORNER_PRESETS,
   webcamPositionCorner,
   webcamPositionFor,
-  webcamPositionIsInset,
+  webcamPositionIsOffset,
 } from "./webcam-positions";
 import type { WebcamCorner } from "./webcam-positions";
 
@@ -67,8 +66,8 @@ export function WebcamTrack({
     : t("webcam.inspecting");
 
   const corner = webcamPositionCorner(webcam.position);
-  const inset = webcamPositionIsInset(webcam.position);
-  const insetActionLabel = t(inset ? "webcam.disableInset" : "webcam.enableInset");
+  const offset = webcamPositionIsOffset(webcam.position);
+  const offsetActionLabel = t(offset ? "webcam.disableOffset" : "webcam.enableOffset");
 
   return (
     <section className="grid min-w-0 gap-2" aria-labelledby="timeline-webcam-title">
@@ -104,7 +103,7 @@ export function WebcamTrack({
               value={corner}
               disabled={!webcam.enabled || !webcam.media}
               onValueChange={(value) => {
-                if (isWebcamCorner(value)) onPositionChange(webcamPositionFor(value, inset));
+                if (isWebcamCorner(value)) onPositionChange(webcamPositionFor(value, offset));
               }}
             >
               <SelectTrigger
@@ -137,15 +136,15 @@ export function WebcamTrack({
                   size="icon-sm"
                   type="button"
                   disabled={!webcam.enabled || !webcam.media}
-                  aria-label={insetActionLabel}
-                  aria-pressed={inset}
-                  onClick={() => onPositionChange(webcamPositionFor(corner, !inset))}
+                  aria-label={offsetActionLabel}
+                  aria-pressed={offset}
+                  onClick={() => onPositionChange(webcamPositionFor(corner, !offset))}
                   className="text-primary"
                 >
-                  {inset ? <Shrink /> : <Expand />}
+                  <MoveVertical data-slot="webcam-offset-icon" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>{insetActionLabel}</TooltipContent>
+              <TooltipContent>{offsetActionLabel}</TooltipContent>
             </Tooltip>
           </div>
         </Card>

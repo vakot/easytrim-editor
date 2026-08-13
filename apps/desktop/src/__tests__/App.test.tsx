@@ -410,23 +410,24 @@ describe("App", () => {
     expect(webcamPreview).toBeInTheDocument();
     expect(webcamPreview).not.toHaveClass("rounded-sm", "shadow-lg", "ring-1", "ring-black/40");
     const positionSelect = screen.getByRole("combobox", { name: "Webcam position" });
-    const insetButton = screen.getByRole("button", { name: "Enable webcam inset" });
+    const offsetButton = screen.getByRole("button", { name: "Enable webcam offset" });
     expect(positionSelect).toHaveClass("min-w-0", "w-full", "flex-1");
     expect(positionSelect.parentElement).toHaveClass("min-w-0", "w-full", "flex-1");
     const webcamControls = positionSelect.closest('[data-slot="card"]');
     expect(webcamControls).toHaveClass("gap-1");
     expect(webcamControls).not.toHaveClass("gap-(--card-spacing)", "justify-between");
-    expect(positionSelect.parentElement?.lastElementChild).toBe(insetButton);
-    expect(insetButton).toHaveAttribute("data-variant", "ghost");
-    expect(insetButton).toHaveAttribute("data-size", "icon-sm");
-    expect(insetButton).toHaveAttribute("aria-pressed", "false");
+    expect(positionSelect.parentElement?.lastElementChild).toBe(offsetButton);
+    expect(offsetButton).toHaveAttribute("data-variant", "ghost");
+    expect(offsetButton).toHaveAttribute("data-size", "icon-sm");
+    expect(offsetButton).toHaveAttribute("aria-pressed", "false");
+    expect(offsetButton.querySelector('[data-slot="webcam-offset-icon"]')).toBeInTheDocument();
     expect(
       positionSelect.querySelector(
         '[data-slot="webcam-position-icon"][data-position="bottomRight"]',
       ),
     ).toBeInTheDocument();
-    await user.click(insetButton);
-    expect(screen.getByRole("button", { name: "Disable webcam inset" })).toHaveAttribute(
+    await user.click(offsetButton);
+    expect(screen.getByRole("button", { name: "Disable webcam offset" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );

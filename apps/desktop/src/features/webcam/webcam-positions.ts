@@ -6,41 +6,41 @@ export type WebcamCorner = "topLeft" | "topRight" | "bottomLeft" | "bottomRight"
 export const WEBCAM_CORNER_PRESETS = [
   {
     value: "topLeft",
-    insetValue: "topLeftOffset",
+    offsetValue: "topLeftOffset",
     labelKey: "webcam.positions.topLeft",
     vertical: "top",
     horizontal: "left",
   },
   {
     value: "topRight",
-    insetValue: "topRightOffset",
+    offsetValue: "topRightOffset",
     labelKey: "webcam.positions.topRight",
     vertical: "top",
     horizontal: "right",
   },
   {
     value: "bottomLeft",
-    insetValue: "bottomLeftOffset",
+    offsetValue: "bottomLeftOffset",
     labelKey: "webcam.positions.bottomLeft",
     vertical: "bottom",
     horizontal: "left",
   },
   {
     value: "bottomRight",
-    insetValue: "bottomRightOffset",
+    offsetValue: "bottomRightOffset",
     labelKey: "webcam.positions.bottomRight",
     vertical: "bottom",
     horizontal: "right",
   },
 ] as const satisfies ReadonlyArray<{
   value: WebcamCorner;
-  insetValue: WebcamPosition;
+  offsetValue: WebcamPosition;
   labelKey: string;
   vertical: "top" | "bottom";
   horizontal: "left" | "right";
 }>;
 
-const WEBCAM_VERTICAL_INSET_PERCENT = 8.9;
+const WEBCAM_VERTICAL_OFFSET_PERCENT = 8.9;
 
 export function isWebcamCorner(value: string): value is WebcamCorner {
   return WEBCAM_CORNER_PRESETS.some((preset) => preset.value === value);
@@ -49,28 +49,30 @@ export function isWebcamCorner(value: string): value is WebcamCorner {
 export function webcamPositionCorner(position: WebcamPosition): WebcamCorner {
   return (
     WEBCAM_CORNER_PRESETS.find(
-      (preset) => preset.value === position || preset.insetValue === position,
+      (preset) => preset.value === position || preset.offsetValue === position,
     )?.value ?? "bottomRight"
   );
 }
 
-export function webcamPositionIsInset(position: WebcamPosition): boolean {
-  return WEBCAM_CORNER_PRESETS.some((preset) => preset.insetValue === position);
+export function webcamPositionIsOffset(position: WebcamPosition): boolean {
+  return WEBCAM_CORNER_PRESETS.some((preset) => preset.offsetValue === position);
 }
 
-export function webcamPositionFor(corner: WebcamCorner, inset: boolean): WebcamPosition {
+export function webcamPositionFor(corner: WebcamCorner, offset: boolean): WebcamPosition {
   const preset = WEBCAM_CORNER_PRESETS.find((candidate) => candidate.value === corner);
-  return inset ? (preset?.insetValue ?? "bottomRightOffset") : corner;
+  return offset ? (preset?.offsetValue ?? "bottomRightOffset") : corner;
 }
 
 export function webcamPositionStyle(position: WebcamPosition): CSSProperties {
   const preset = WEBCAM_CORNER_PRESETS.find(
-    (candidate) => candidate.value === position || candidate.insetValue === position,
+    (candidate) => candidate.value === position || candidate.offsetValue === position,
   );
   if (!preset) return {};
-  const verticalInsetPercent = webcamPositionIsInset(position) ? WEBCAM_VERTICAL_INSET_PERCENT : 0;
+  const verticalOffsetPercent = webcamPositionIsOffset(position)
+    ? WEBCAM_VERTICAL_OFFSET_PERCENT
+    : 0;
   return {
-    [preset.vertical]: `${verticalInsetPercent}%`,
+    [preset.vertical]: `${verticalOffsetPercent}%`,
     [preset.horizontal]: "0%",
   };
 }

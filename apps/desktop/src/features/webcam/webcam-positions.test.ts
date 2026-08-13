@@ -4,7 +4,7 @@ import {
   WEBCAM_CORNER_PRESETS,
   webcamPositionCorner,
   webcamPositionFor,
-  webcamPositionIsInset,
+  webcamPositionIsOffset,
   webcamPositionStyle,
 } from "./webcam-positions";
 
@@ -35,11 +35,11 @@ describe("webcamPositionStyle", () => {
     expect(webcamPositionStyle("topLeftOffset")).toEqual({ top: "8.9%", left: "0%" });
   });
 
-  it("maps corner and inset controls to the existing export presets", () => {
+  it("maps corner and offset controls to the existing export presets", () => {
     expect(webcamPositionFor("topLeft", false)).toBe("topLeft");
     expect(webcamPositionFor("topLeft", true)).toBe("topLeftOffset");
     expect(webcamPositionCorner("topLeftOffset")).toBe("topLeft");
-    expect(webcamPositionIsInset("topLeftOffset")).toBe(true);
-    expect(webcamPositionIsInset("topLeft")).toBe(false);
+    expect(webcamPositionIsOffset("topLeftOffset")).toBe(true);
+    expect(webcamPositionIsOffset("topLeft")).toBe(false);
   });
 });
