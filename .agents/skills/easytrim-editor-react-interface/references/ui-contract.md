@@ -101,7 +101,7 @@ are excluded from export and merge inputs.
 - Move the webcam playhead through the same CSS-positioned, per-animation-frame DOM update path as the audio playhead; do not wait for lower-frequency React time commits.
 - Use an eye-style enable control. A disabled webcam behaves exactly like no webcam source in preview and export.
 - Display the webcam preview as a plain rectangular source image without rounded corners, borders, shadows, frames, or color treatment.
-- Set the webcam height to 8% of the active cropped viewport's shorter side and derive its width from the webcam source aspect ratio; recalculate it after crop changes.
+- Set the webcam height to 24% of the active cropped viewport's shorter side and derive its width from the webcam source aspect ratio; recalculate it after crop changes.
 - Show four corners in a full-available-width position selector with matching diagonal arrow icons in its dropdown items and a label-only selected value, plus an adjacent offset toggle using a vertical-movement icon and the same secondary-button pressed-state treatment as the timeline toolbar controls.
 - Keep the selected left/right edge flush in both modes; when the offset toggle is active, offset only from the selected top/bottom edge by 8% of the video viewport height.
 - Keep webcam audio unsupported and never map it to output.

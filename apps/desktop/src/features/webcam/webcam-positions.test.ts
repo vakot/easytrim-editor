@@ -46,12 +46,12 @@ describe("webcamPositionStyle", () => {
 });
 
 describe("webcamOverlayHeight", () => {
-  it("uses eight percent of the shorter frame side", () => {
-    expect(webcamOverlayHeight({ width: 1920, height: 1080 })).toBe(86.4);
-    expect(webcamOverlayHeight({ width: 1080, height: 1920 })).toBe(86.4);
+  it("uses twenty-four percent of the shorter frame side", () => {
+    expect(webcamOverlayHeight({ width: 1920, height: 1080 })).toBe(259.2);
+    expect(webcamOverlayHeight({ width: 1080, height: 1920 })).toBe(259.2);
   });
 
   it("updates from the cropped frame dimensions", () => {
-    expect(webcamOverlayHeight({ width: 720, height: 1080 })).toBe(57.6);
+    expect(webcamOverlayHeight({ width: 720, height: 1080 })).toBe(172.8);
   });
 });

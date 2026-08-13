@@ -152,7 +152,7 @@ Use `-n` unless the user has explicitly selected and confirmed an existing outpu
 - Treat the webcam as one optional synchronized second video input; do not infer or expose manual timing offsets in the POC.
 - Seek both inputs to the same canonical trim start and cap the output to the selected duration.
 - Map the webcam's validated global video stream index explicitly and never map webcam audio.
-- Scale the webcam height to 8% of the cropped output frame's shorter side and derive its width from the webcam source aspect ratio; recalculate it whenever the crop or output dimensions change.
+- Scale the webcam height to 24% of the cropped output frame's shorter side and derive its width from the webcam source aspect ratio; recalculate it whenever the crop or output dimensions change.
 - Keep the selected left/right output edge flush for every preset; offset presets add margin equal to 8% of the output viewport height only from the selected top/bottom edge.
 - Compose it through one application-owned filter graph, reassert the selected output dimensions after composition, and map only that labeled final video output.
 - If the webcam ends early, pass through the main video without retaining the webcam's last frame or introducing a black placeholder.

@@ -5,7 +5,7 @@ use serde::Deserialize;
 use crate::{error::AppError, media::probe::MediaInfo};
 
 const MICROS_PER_SECOND: f64 = 1_000_000.0;
-const WEBCAM_SHORT_SIDE_RATIO: f64 = 0.08;
+const WEBCAM_SHORT_SIDE_RATIO: f64 = 0.24;
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -1089,7 +1089,7 @@ mod tests {
         assert!(values.windows(2).any(|pair| pair == ["-map", "[vout]"]));
         assert!(values.iter().any(|value| {
             value.contains("[0:0]scale=2560:1440")
-                && value.contains("[1:3]scale=-2:116")
+                && value.contains("[1:3]scale=-2:346")
                 && value.contains(
                     "overlay=W-w:H-h:eof_action=pass:repeatlast=0[composited];[composited]scale=2560:1440,setsar=1[vout]",
                 )
@@ -1104,14 +1104,14 @@ mod tests {
                 width: 2560,
                 height: 1440,
             }),
-            116
+            346
         );
         assert_eq!(
             webcam_overlay_height(&ResolutionSelection {
                 width: 720,
                 height: 1280,
             }),
-            58
+            172
         );
     }
 

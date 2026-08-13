@@ -41,7 +41,7 @@ export const WEBCAM_CORNER_PRESETS = [
 }>;
 
 const WEBCAM_VERTICAL_OFFSET_PERCENT = 8;
-const WEBCAM_SHORT_SIDE_PERCENT = 8;
+const WEBCAM_SHORT_SIDE_PERCENT = 24;
 
 export function webcamOverlayHeight(frame: { width: number; height: number }): number {
   return (Math.min(frame.width, frame.height) * WEBCAM_SHORT_SIDE_PERCENT) / 100;
