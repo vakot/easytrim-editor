@@ -421,6 +421,14 @@ describe("App", () => {
       "true",
     );
     expect(webcamPreview).toHaveStyle({ bottom: "8.9%", right: "0%" });
+    const timelinePane = screen.getByTestId("timeline-fixed-content").parentElement;
+    const webcamSection = screen.getByTestId("webcam-track-section");
+    const audioTracksScroll = screen.getByTestId("audio-tracks-scroll");
+    expect(screen.getByTestId("timeline-panel")).toContainElement(webcamSection);
+    expect(webcamSection).toContainElement(screen.getByRole("heading", { name: "Webcam" }));
+    expect(audioTracksScroll).not.toContainElement(screen.getByRole("heading", { name: "Webcam" }));
+    expect(webcamSection.querySelector('[data-slot="scroll-area-viewport"]')).toBeNull();
+    expect(timelinePane?.querySelectorAll(':scope > [data-slot="separator"]')).toHaveLength(2);
     expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
 
     await user.click(screen.getByRole("button", { name: "Hide webcam" }));

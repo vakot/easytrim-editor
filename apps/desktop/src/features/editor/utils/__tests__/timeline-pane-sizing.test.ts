@@ -26,4 +26,22 @@ describe("timelinePanelSizeConstraints", () => {
       maxSize: 426,
     });
   });
+
+  it("adds the fixed webcam section to panel and double-click target sizes", () => {
+    expect(timelinePanelSizeConstraints(0, true)).toEqual({
+      minSize: 270,
+      defaultSize: 270,
+      maxSize: 270,
+    });
+    expect(timelinePanelSizeConstraints(1, true)).toEqual({
+      minSize: 270,
+      defaultSize: 419,
+      maxSize: 419,
+    });
+    expect(timelinePanelSizeConstraints(3, true)).toEqual({
+      minSize: 270,
+      defaultSize: 419,
+      maxSize: 531,
+    });
+  });
 });

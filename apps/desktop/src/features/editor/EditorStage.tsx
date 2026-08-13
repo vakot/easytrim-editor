@@ -64,7 +64,8 @@ export function EditorStage({
   const { t } = useTranslation();
   const timelinePanelSizing = useTimelinePanelSizing(
     sourceId,
-    audioStreams.length + (webcam ? 1 : 0),
+    audioStreams.length,
+    webcam !== null,
   );
   const videoRef = useRef<HTMLVideoElement>(null);
   const webcamVideoRef = useRef<HTMLVideoElement>(null);
@@ -858,38 +859,36 @@ export function EditorStage({
               onScrubEnd={handleScrubEnd}
             />
           }
+          webcamTrack={
+            webcam ? (
+              <WebcamTrack
+                webcam={webcam}
+                onToggle={onToggleWebcam}
+                onPositionChange={onWebcamPositionChange}
+                range={trim}
+                playheadMicros={displayedPlayheadMicros}
+              />
+            ) : null
+          }
           audioTracks={
-            webcam || audioStreams.length > 0 ? (
-              <div className="grid min-w-0 gap-4">
-                {webcam ? (
-                  <WebcamTrack
-                    webcam={webcam}
-                    onToggle={onToggleWebcam}
-                    onPositionChange={onWebcamPositionChange}
-                    range={trim}
-                    playheadMicros={displayedPlayheadMicros}
-                  />
-                ) : null}
-                {audioStreams.length > 0 ? (
-                  <AudioTracks
-                    streams={audioStreams}
-                    tracks={audioTracks}
-                    masterEnabled={masterEnabled}
-                    masterVolumePercent={masterVolumePercent}
-                    range={trim}
-                    playheadMicros={displayedPlayheadMicros}
-                    playheadRef={audioPlayheadRef}
-                    mergeAudio={mergeAudio}
-                    onToggleTrack={onToggleAudioTrack}
-                    onTrackVolumeChange={onAudioTrackVolumeChange}
-                    onToggleMaster={onToggleAudioMaster}
-                    onMasterVolumeChange={onMasterVolumeChange}
-                    onToggleMerge={onToggleAudioMerge}
-                    onPrepareWaveforms={onPrepareWaveforms}
-                    onWaveformImageError={onWaveformImageError}
-                  />
-                ) : null}
-              </div>
+            audioStreams.length > 0 ? (
+              <AudioTracks
+                streams={audioStreams}
+                tracks={audioTracks}
+                masterEnabled={masterEnabled}
+                masterVolumePercent={masterVolumePercent}
+                range={trim}
+                playheadMicros={displayedPlayheadMicros}
+                playheadRef={audioPlayheadRef}
+                mergeAudio={mergeAudio}
+                onToggleTrack={onToggleAudioTrack}
+                onTrackVolumeChange={onAudioTrackVolumeChange}
+                onToggleMaster={onToggleAudioMaster}
+                onMasterVolumeChange={onMasterVolumeChange}
+                onToggleMerge={onToggleAudioMerge}
+                onPrepareWaveforms={onPrepareWaveforms}
+                onWaveformImageError={onWaveformImageError}
+              />
             ) : null
           }
         />

@@ -23,12 +23,16 @@ export function timelinePanelTargetSize(
   return Math.min(constraints.maxSize, Math.max(constraints.minSize, currentSize));
 }
 
-export function useTimelinePanelSizing(sourceId: string, audioTrackCount: number) {
+export function useTimelinePanelSizing(
+  sourceId: string,
+  audioTrackCount: number,
+  hasWebcam: boolean,
+) {
   const panelRef = usePanelRef();
   const initializedSourceRef = useRef<string | null>(null);
   const constraints = useMemo(
-    () => timelinePanelSizeConstraints(audioTrackCount),
-    [audioTrackCount],
+    () => timelinePanelSizeConstraints(audioTrackCount, hasWebcam),
+    [audioTrackCount, hasWebcam],
   );
 
   const resetToDefault = useCallback(
