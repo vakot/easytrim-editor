@@ -82,7 +82,7 @@ export function WebcamTrack({
         className="grid min-w-0 grid-cols-[var(--editor-track-grid-columns)] gap-3"
         data-slot="webcam-track-row"
       >
-        <Card className="flex flex-row items-center justify-between bg-transparent p-1">
+        <Card className="flex flex-row items-center gap-1 bg-transparent p-1">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -99,7 +99,7 @@ export function WebcamTrack({
             </TooltipTrigger>
             <TooltipContent>{t(webcam.enabled ? "webcam.hide" : "webcam.show")}</TooltipContent>
           </Tooltip>
-          <div className="flex min-w-0 flex-1 items-center gap-1">
+          <div className="flex min-w-0 w-full flex-1 items-center gap-1">
             <Select
               value={corner}
               disabled={!webcam.enabled || !webcam.media}
@@ -107,7 +107,11 @@ export function WebcamTrack({
                 if (isWebcamCorner(value)) onPositionChange(webcamPositionFor(value, inset));
               }}
             >
-              <SelectTrigger size="sm" aria-label={t("webcam.position")} className="min-w-0 flex-1">
+              <SelectTrigger
+                size="sm"
+                aria-label={t("webcam.position")}
+                className="min-w-0 w-full flex-1"
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
