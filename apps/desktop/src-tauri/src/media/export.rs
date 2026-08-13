@@ -374,9 +374,15 @@ fn webcam_filter_graph(
         WebcamPosition::BottomLeftOffset => ("0".to_owned(), "H-h-H*0.08".to_owned()),
         WebcamPosition::BottomRightOffset => ("W-w".to_owned(), "H-h-H*0.08".to_owned()),
     };
+    // Keep the selected resolution as an invariant of the labeled graph output,
+    // rather than relying on the overlay filter to preserve its main input size.
     format!(
-        "[0:{}]{main_filter},setpts=PTS-STARTPTS[main];[1:{}]scale={}:-2,setpts=PTS-STARTPTS[webcam];[main][webcam]overlay={x}:{y}:eof_action=pass:repeatlast=0[vout]",
-        source.video.stream_index, webcam.video.stream_index, webcam_width,
+        "[0:{}]{main_filter},setpts=PTS-STARTPTS[main];[1:{}]scale={}:-2,setpts=PTS-STARTPTS[webcam];[main][webcam]overlay={x}:{y}:eof_action=pass:repeatlast=0[composited];[composited]scale={}:{},setsar=1[vout]",
+        source.video.stream_index,
+        webcam.video.stream_index,
+        webcam_width,
+        resolution.width,
+        resolution.height,
     )
 }
 
@@ -1009,11 +1015,15 @@ mod tests {
     }
 
     #[test]
-    fn optimized_webcam_overlay_adds_second_input_and_maps_only_composited_video() {
+    fn optimized_webcam_overlay_preserves_the_requested_output_resolution() {
         let mut webcam = media();
         webcam.source_id = "webcam-2".to_owned();
         webcam.video.stream_index = 3;
         let mut request = optimized_request("-c:v libx264 -crf 20");
+        request.resolution = ResolutionSelection {
+            width: 2560,
+            height: 1440,
+        };
         request.webcam = Some(WebcamOverlaySelection {
             source_id: webcam.source_id.clone(),
             position: WebcamPosition::BottomRight,
@@ -1037,8 +1047,11 @@ mod tests {
         );
         assert!(values.windows(2).any(|pair| pair == ["-map", "[vout]"]));
         assert!(values.iter().any(|value| {
-            value.contains("[1:3]scale=460:-2")
-                && value.contains("overlay=W-w:H-h:eof_action=pass:repeatlast=0[vout]")
+            value.contains("[0:0]scale=2560:1440")
+                && value.contains("[1:3]scale=614:-2")
+                && value.contains(
+                    "overlay=W-w:H-h:eof_action=pass:repeatlast=0[composited];[composited]scale=2560:1440,setsar=1[vout]",
+                )
         }));
         assert!(!values.iter().any(|value| value == "1:1"));
     }
@@ -1068,7 +1081,9 @@ mod tests {
                 Path::new("out.mp4"),
             )
             .expect("offset webcam overlay request is valid");
-            let expected = format!("overlay={coordinates}:eof_action=pass:repeatlast=0[vout]");
+            let expected = format!(
+                "overlay={coordinates}:eof_action=pass:repeatlast=0[composited];[composited]scale=1920:1080,setsar=1[vout]"
+            );
 
             assert!(
                 values
