@@ -60,7 +60,7 @@ export function WebcamTrack({
         className="grid min-w-0 grid-cols-[var(--editor-track-grid-columns)] gap-3"
         data-slot="webcam-track-row"
       >
-        <Card className="flex flex-row items-center gap-2 bg-transparent p-1 pr-2">
+        <Card className="flex flex-row items-center justify-between bg-transparent p-1 pr-2">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -77,10 +77,6 @@ export function WebcamTrack({
             </TooltipTrigger>
             <TooltipContent>{t(webcam.enabled ? "webcam.hide" : "webcam.show")}</TooltipContent>
           </Tooltip>
-          <div className="min-w-0 flex-1 leading-tight">
-            <p className="truncate text-sm font-semibold">{webcam.selection.displayName}</p>
-            <p className="truncate text-xs leading-5 text-muted-foreground">{dimensions}</p>
-          </div>
           <div className="flex shrink-0 items-center gap-1">
             <Select
               value={corner}
@@ -124,9 +120,19 @@ export function WebcamTrack({
           data-enabled={webcam.enabled}
         >
           <div className="absolute inset-0 bg-[linear-gradient(135deg,transparent_25%,color-mix(in_oklab,var(--primary)_12%,transparent)_25%,color-mix(in_oklab,var(--primary)_12%,transparent)_50%,transparent_50%,transparent_75%,color-mix(in_oklab,var(--primary)_12%,transparent)_75%)] bg-[length:24px_24px]" />
-          <div className="relative flex items-center gap-2 px-3 text-xs text-muted-foreground">
+          <div className="relative z-10 flex min-w-0 items-center gap-2 px-3">
             <Video className="size-4 text-primary" aria-hidden="true" />
-            {webcam.error ? webcam.error.message : t("webcam.syncedTrack")}
+            <div className="min-w-0 leading-tight">
+              <p className="truncate text-sm font-semibold" data-slot="webcam-track-primary">
+                {webcam.selection.displayName}
+              </p>
+              <p
+                className="truncate text-xs leading-5 text-muted-foreground"
+                data-slot="webcam-track-secondary"
+              >
+                {dimensions} · {webcam.error ? webcam.error.message : t("webcam.syncedTrack")}
+              </p>
+            </div>
           </div>
           <div
             className="pointer-events-none absolute inset-y-0 border-x border-primary/70 bg-primary/5"

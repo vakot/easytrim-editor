@@ -426,6 +426,12 @@ describe("App", () => {
     const audioTracksScroll = screen.getByTestId("audio-tracks-scroll");
     expect(screen.getByTestId("timeline-panel")).toContainElement(webcamSection);
     expect(webcamSection).toContainElement(screen.getByRole("heading", { name: "Webcam" }));
+    expect(webcamSection.querySelector('[data-slot="webcam-track-primary"]')).toHaveTextContent(
+      "camera.mp4",
+    );
+    expect(webcamSection.querySelector('[data-slot="webcam-track-secondary"]')).toHaveTextContent(
+      "1920 × 1080 · Synchronized video overlay · audio ignored",
+    );
     expect(audioTracksScroll).not.toContainElement(screen.getByRole("heading", { name: "Webcam" }));
     expect(webcamSection.querySelector('[data-slot="scroll-area-viewport"]')).toBeNull();
     expect(timelinePane?.querySelectorAll(':scope > [data-slot="separator"]')).toHaveLength(2);
