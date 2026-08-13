@@ -152,6 +152,7 @@ Use `-n` unless the user has explicitly selected and confirmed an existing outpu
 - Seek both inputs to the same canonical trim start and cap the output to the selected duration.
 - Map the webcam's validated global video stream index explicitly and never map webcam audio.
 - Scale the webcam to the code-defined small-overlay size while preserving its aspect ratio.
+- Place standard corner presets directly against both output edges; apply margins only to explicitly inset presets.
 - Compose it through one application-owned filter graph and map only the labeled composited video output.
 - If the webcam ends early, pass through the main video without retaining the webcam's last frame or introducing a black placeholder.
 - When webcam is absent or disabled, omit the second input and overlay graph entirely so the ordinary fast-copy route remains available.

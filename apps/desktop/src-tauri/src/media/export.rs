@@ -364,29 +364,15 @@ fn webcam_filter_graph(
     resolution: &ResolutionSelection,
 ) -> String {
     let webcam_width = ((resolution.width as f64 * 0.24).round() as u32).max(2) & !1;
-    let margin = match selection.position {
-        WebcamPosition::TopLeft
-        | WebcamPosition::TopRight
-        | WebcamPosition::BottomLeft
-        | WebcamPosition::BottomRight => 24,
-        WebcamPosition::TopLeftOffset
-        | WebcamPosition::TopRightOffset
-        | WebcamPosition::BottomLeftOffset
-        | WebcamPosition::BottomRightOffset => 96,
-    };
     let (x, y) = match selection.position {
-        WebcamPosition::TopLeft | WebcamPosition::TopLeftOffset => {
-            (margin.to_string(), margin.to_string())
-        }
-        WebcamPosition::TopRight | WebcamPosition::TopRightOffset => {
-            (format!("W-w-{margin}"), margin.to_string())
-        }
-        WebcamPosition::BottomLeft | WebcamPosition::BottomLeftOffset => {
-            (margin.to_string(), format!("H-h-{margin}"))
-        }
-        WebcamPosition::BottomRight | WebcamPosition::BottomRightOffset => {
-            (format!("W-w-{margin}"), format!("H-h-{margin}"))
-        }
+        WebcamPosition::TopLeft => ("0".to_owned(), "0".to_owned()),
+        WebcamPosition::TopRight => ("W-w".to_owned(), "0".to_owned()),
+        WebcamPosition::BottomLeft => ("0".to_owned(), "H-h".to_owned()),
+        WebcamPosition::BottomRight => ("W-w".to_owned(), "H-h".to_owned()),
+        WebcamPosition::TopLeftOffset => ("96".to_owned(), "96".to_owned()),
+        WebcamPosition::TopRightOffset => ("W-w-96".to_owned(), "96".to_owned()),
+        WebcamPosition::BottomLeftOffset => ("96".to_owned(), "H-h-96".to_owned()),
+        WebcamPosition::BottomRightOffset => ("W-w-96".to_owned(), "H-h-96".to_owned()),
     };
     format!(
         "[0:{}]{main_filter},setpts=PTS-STARTPTS[main];[1:{}]scale={}:-2,setpts=PTS-STARTPTS[webcam];[main][webcam]overlay={x}:{y}:eof_action=pass:repeatlast=0[vout]",
@@ -1052,8 +1038,35 @@ mod tests {
         assert!(values.windows(2).any(|pair| pair == ["-map", "[vout]"]));
         assert!(values.iter().any(|value| {
             value.contains("[1:3]scale=460:-2")
-                && value.contains("overlay=W-w-24:H-h-24:eof_action=pass:repeatlast=0[vout]")
+                && value.contains("overlay=W-w:H-h:eof_action=pass:repeatlast=0[vout]")
         }));
         assert!(!values.iter().any(|value| value == "1:1"));
+    }
+
+    #[test]
+    fn optimized_inset_webcam_overlay_keeps_its_margin() {
+        let mut webcam = media();
+        webcam.source_id = "webcam-2".to_owned();
+        webcam.video.stream_index = 3;
+        let mut request = optimized_request("-c:v libx264 -crf 20");
+        request.webcam = Some(WebcamOverlaySelection {
+            source_id: webcam.source_id.clone(),
+            position: WebcamPosition::TopLeftOffset,
+        });
+
+        let values = build_optimized_arguments(
+            &media(),
+            &request,
+            Path::new("source.mkv"),
+            Some((&webcam, Path::new("webcam.mkv"))),
+            Path::new("out.mp4"),
+        )
+        .expect("inset webcam overlay request is valid");
+
+        assert!(values.iter().any(|value| {
+            value
+                .to_string_lossy()
+                .contains("overlay=96:96:eof_action=pass:repeatlast=0[vout]")
+        }));
     }
 }
