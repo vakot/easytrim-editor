@@ -67,6 +67,7 @@ export function WebcamTrack({
 
   const corner = webcamPositionCorner(webcam.position);
   const offset = webcamPositionIsOffset(webcam.position);
+  const selectedCornerPreset = WEBCAM_CORNER_PRESETS.find((preset) => preset.value === corner);
   const offsetActionLabel = t(offset ? "webcam.disableOffset" : "webcam.enableOffset");
 
   return (
@@ -111,7 +112,9 @@ export function WebcamTrack({
                 aria-label={t("webcam.position")}
                 className="min-w-0 w-full flex-1"
               >
-                <SelectValue />
+                <SelectValue>
+                  {selectedCornerPreset ? t(selectedCornerPreset.labelKey) : null}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {WEBCAM_CORNER_PRESETS.map((preset) => {

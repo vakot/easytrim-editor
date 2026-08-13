@@ -100,7 +100,7 @@ are excluded from export and merge inputs.
 - Move the webcam playhead through the same CSS-positioned, per-animation-frame DOM update path as the audio playhead; do not wait for lower-frequency React time commits.
 - Use an eye-style enable control. A disabled webcam behaves exactly like no webcam source in preview and export.
 - Display the webcam preview as a plain rectangular source image without rounded corners, borders, shadows, frames, or color treatment.
-- Show four corners in a full-available-width position selector with matching diagonal arrow icons, and an adjacent always-visible offset toggle using a vertical-movement icon and the same pressed icon-button treatment as track mute controls.
+- Show four corners in a full-available-width position selector with matching diagonal arrow icons in its dropdown items and a label-only selected value, plus an adjacent always-visible offset toggle using a vertical-movement icon and the same pressed icon-button treatment as track mute controls.
 - Keep the selected left/right edge flush in both modes; when the offset toggle is active, offset only from the selected top/bottom edge by 8% of the video viewport height.
 - Keep webcam audio unsupported and never map it to output.
 - Keep position and offset geometry in code-defined presets so new presets do not require new state fields.

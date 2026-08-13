@@ -421,11 +421,8 @@ describe("App", () => {
     expect(offsetButton).toHaveAttribute("data-size", "icon-sm");
     expect(offsetButton).toHaveAttribute("aria-pressed", "false");
     expect(offsetButton.querySelector('[data-slot="webcam-offset-icon"]')).toBeInTheDocument();
-    expect(
-      positionSelect.querySelector(
-        '[data-slot="webcam-position-icon"][data-position="bottomRight"]',
-      ),
-    ).toBeInTheDocument();
+    expect(positionSelect).toHaveTextContent("Bottom right");
+    expect(positionSelect.querySelector('[data-slot="webcam-position-icon"]')).toBeNull();
     await user.click(offsetButton);
     expect(screen.getByRole("button", { name: "Disable webcam offset" })).toHaveAttribute(
       "aria-pressed",
