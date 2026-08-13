@@ -97,7 +97,8 @@ are excluded from export and merge inputs.
 - Show it as an always-visible timeline row alongside audio tracks; do not hide controls on hover.
 - Use an eye-style enable control. A disabled webcam behaves exactly like no webcam source in preview and export.
 - Display the webcam preview as a plain rectangular source image without rounded corners, borders, shadows, frames, or color treatment.
-- Place standard corner presets flush against both viewport edges; apply margins only to explicitly inset presets.
+- Show four corners in the position selector and an adjacent always-visible inset toggle using the same pressed icon-button treatment as track mute controls.
+- Place standard corner presets flush against both viewport edges; apply margins only when the inset toggle is active.
 - Keep webcam audio unsupported and never map it to output.
 - Keep position and inset geometry in code-defined presets so new presets do not require new state fields.
 - An enabled webcam requires optimized rendering; fast stream-copy remains available when it is absent or disabled.

@@ -1,80 +1,76 @@
 import type { WebcamPosition } from "@/lib/tauri/media";
 import type { CSSProperties } from "react";
 
-export const WEBCAM_POSITION_PRESETS = [
+export type WebcamCorner = "topLeft" | "topRight" | "bottomLeft" | "bottomRight";
+
+export const WEBCAM_CORNER_PRESETS = [
   {
     value: "topLeft",
+    insetValue: "topLeftOffset",
     labelKey: "webcam.positions.topLeft",
-    insetPercent: 0,
     vertical: "top",
     horizontal: "left",
   },
   {
     value: "topRight",
+    insetValue: "topRightOffset",
     labelKey: "webcam.positions.topRight",
-    insetPercent: 0,
     vertical: "top",
     horizontal: "right",
   },
   {
     value: "bottomLeft",
+    insetValue: "bottomLeftOffset",
     labelKey: "webcam.positions.bottomLeft",
-    insetPercent: 0,
     vertical: "bottom",
     horizontal: "left",
   },
   {
     value: "bottomRight",
+    insetValue: "bottomRightOffset",
     labelKey: "webcam.positions.bottomRight",
-    insetPercent: 0,
-    vertical: "bottom",
-    horizontal: "right",
-  },
-  {
-    value: "topLeftOffset",
-    labelKey: "webcam.positions.topLeftOffset",
-    insetPercent: 8.9,
-    vertical: "top",
-    horizontal: "left",
-  },
-  {
-    value: "topRightOffset",
-    labelKey: "webcam.positions.topRightOffset",
-    insetPercent: 8.9,
-    vertical: "top",
-    horizontal: "right",
-  },
-  {
-    value: "bottomLeftOffset",
-    labelKey: "webcam.positions.bottomLeftOffset",
-    insetPercent: 8.9,
-    vertical: "bottom",
-    horizontal: "left",
-  },
-  {
-    value: "bottomRightOffset",
-    labelKey: "webcam.positions.bottomRightOffset",
-    insetPercent: 8.9,
     vertical: "bottom",
     horizontal: "right",
   },
 ] as const satisfies ReadonlyArray<{
-  value: WebcamPosition;
+  value: WebcamCorner;
+  insetValue: WebcamPosition;
   labelKey: string;
-  insetPercent: number;
   vertical: "top" | "bottom";
   horizontal: "left" | "right";
 }>;
 
-export function isWebcamPosition(value: string): value is WebcamPosition {
-  return WEBCAM_POSITION_PRESETS.some((preset) => preset.value === value);
+const WEBCAM_INSET_PERCENT = 8.9;
+
+export function isWebcamCorner(value: string): value is WebcamCorner {
+  return WEBCAM_CORNER_PRESETS.some((preset) => preset.value === value);
+}
+
+export function webcamPositionCorner(position: WebcamPosition): WebcamCorner {
+  return (
+    WEBCAM_CORNER_PRESETS.find(
+      (preset) => preset.value === position || preset.insetValue === position,
+    )?.value ?? "bottomRight"
+  );
+}
+
+export function webcamPositionIsInset(position: WebcamPosition): boolean {
+  return WEBCAM_CORNER_PRESETS.some((preset) => preset.insetValue === position);
+}
+
+export function webcamPositionFor(corner: WebcamCorner, inset: boolean): WebcamPosition {
+  const preset = WEBCAM_CORNER_PRESETS.find((candidate) => candidate.value === corner);
+  return inset ? (preset?.insetValue ?? "bottomRightOffset") : corner;
 }
 
 export function webcamPositionStyle(position: WebcamPosition): CSSProperties {
-  const preset = WEBCAM_POSITION_PRESETS.find((candidate) => candidate.value === position);
+  const preset = WEBCAM_CORNER_PRESETS.find(
+    (candidate) => candidate.value === position || candidate.insetValue === position,
+  );
   if (!preset) return {};
+  const insetPercent = webcamPositionIsInset(position) ? WEBCAM_INSET_PERCENT : 0;
   return {
-    [preset.vertical]: `${preset.insetPercent}%`,
-    [preset.horizontal]: `${preset.insetPercent}%`,
+    [preset.vertical]: `${insetPercent}%`,
+    [preset.horizontal]: `${insetPercent}%`,
   };
 }

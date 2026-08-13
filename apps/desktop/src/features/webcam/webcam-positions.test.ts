@@ -1,8 +1,23 @@
 import { describe, expect, it } from "vitest";
 
-import { webcamPositionStyle } from "./webcam-positions";
+import {
+  WEBCAM_CORNER_PRESETS,
+  webcamPositionCorner,
+  webcamPositionFor,
+  webcamPositionIsInset,
+  webcamPositionStyle,
+} from "./webcam-positions";
 
 describe("webcamPositionStyle", () => {
+  it("exposes only the four corners in the position selector", () => {
+    expect(WEBCAM_CORNER_PRESETS.map((preset) => preset.value)).toEqual([
+      "topLeft",
+      "topRight",
+      "bottomLeft",
+      "bottomRight",
+    ]);
+  });
+
   it.each([
     ["topLeft", { top: "0%", left: "0%" }],
     ["topRight", { top: "0%", right: "0%" }],
@@ -17,5 +32,13 @@ describe("webcamPositionStyle", () => {
       bottom: "8.9%",
       right: "8.9%",
     });
+  });
+
+  it("maps corner and inset controls to the existing export presets", () => {
+    expect(webcamPositionFor("topLeft", false)).toBe("topLeft");
+    expect(webcamPositionFor("topLeft", true)).toBe("topLeftOffset");
+    expect(webcamPositionCorner("topLeftOffset")).toBe("topLeft");
+    expect(webcamPositionIsInset("topLeftOffset")).toBe(true);
+    expect(webcamPositionIsInset("topLeft")).toBe(false);
   });
 });

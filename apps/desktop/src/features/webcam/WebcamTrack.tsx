@@ -1,4 +1,4 @@
-import { Eye, EyeOff, Video } from "lucide-react";
+import { Expand, Eye, EyeOff, Shrink, Video } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import type { WebcamState } from "@/app/session-state";
@@ -16,7 +16,13 @@ import type { WebcamPosition } from "@/lib/tauri/media";
 import type { TrimRange } from "@/domain/trim";
 import { timelinePercent } from "@/domain/trim";
 
-import { isWebcamPosition, WEBCAM_POSITION_PRESETS } from "./webcam-positions";
+import {
+  isWebcamCorner,
+  WEBCAM_CORNER_PRESETS,
+  webcamPositionCorner,
+  webcamPositionFor,
+  webcamPositionIsInset,
+} from "./webcam-positions";
 
 interface WebcamTrackProps {
   webcam: WebcamState;
@@ -37,6 +43,10 @@ export function WebcamTrack({
   const dimensions = webcam.media
     ? `${webcam.media.video.width} × ${webcam.media.video.height}`
     : t("webcam.inspecting");
+
+  const corner = webcamPositionCorner(webcam.position);
+  const inset = webcamPositionIsInset(webcam.position);
+  const insetActionLabel = t(inset ? "webcam.disableInset" : "webcam.enableInset");
 
   return (
     <section className="grid min-w-0 gap-2" aria-labelledby="timeline-webcam-title">
@@ -71,24 +81,43 @@ export function WebcamTrack({
             <p className="truncate text-sm font-semibold">{webcam.selection.displayName}</p>
             <p className="truncate text-xs leading-5 text-muted-foreground">{dimensions}</p>
           </div>
-          <Select
-            value={webcam.position}
-            disabled={!webcam.enabled || !webcam.media}
-            onValueChange={(value) => {
-              if (isWebcamPosition(value)) onPositionChange(value);
-            }}
-          >
-            <SelectTrigger size="sm" aria-label={t("webcam.position")} className="max-w-40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {WEBCAM_POSITION_PRESETS.map((preset) => (
-                <SelectItem key={preset.value} value={preset.value}>
-                  {t(preset.labelKey)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex shrink-0 items-center gap-1">
+            <Select
+              value={corner}
+              disabled={!webcam.enabled || !webcam.media}
+              onValueChange={(value) => {
+                if (isWebcamCorner(value)) onPositionChange(webcamPositionFor(value, inset));
+              }}
+            >
+              <SelectTrigger size="sm" aria-label={t("webcam.position")} className="max-w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {WEBCAM_CORNER_PRESETS.map((preset) => (
+                  <SelectItem key={preset.value} value={preset.value}>
+                    {t(preset.labelKey)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  type="button"
+                  disabled={!webcam.enabled || !webcam.media}
+                  aria-label={insetActionLabel}
+                  aria-pressed={inset}
+                  onClick={() => onPositionChange(webcamPositionFor(corner, !inset))}
+                  className="text-primary"
+                >
+                  {inset ? <Shrink /> : <Expand />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{insetActionLabel}</TooltipContent>
+            </Tooltip>
+          </div>
         </Card>
         <div
           className="relative flex h-12 min-w-0 items-center overflow-hidden rounded-lg border border-border bg-muted/30 transition-opacity data-[enabled=false]:opacity-40"

@@ -215,6 +215,8 @@ export const sk = {
     hide: "Skryť webkameru",
     show: "Zobraziť webkameru",
     position: "Pozícia webkamery",
+    enableInset: "Zapnúť odsadenie webkamery",
+    disableInset: "Vypnúť odsadenie webkamery",
     inspecting: "Analyzuje sa…",
     syncedTrack: "Synchronizované video prekrytie · zvuk sa ignoruje",
     positions: {
@@ -222,10 +224,6 @@ export const sk = {
       topRight: "Vpravo hore",
       bottomLeft: "Vľavo dole",
       bottomRight: "Vpravo dole",
-      topLeftOffset: "Vľavo hore · odsadené",
-      topRightOffset: "Vpravo hore · odsadené",
-      bottomLeftOffset: "Vľavo dole · odsadené",
-      bottomRightOffset: "Vpravo dole · odsadené",
     },
   },
   export: {

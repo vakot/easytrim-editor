@@ -409,6 +409,18 @@ describe("App", () => {
     const webcamPreview = screen.getByLabelText("Webcam overlay preview");
     expect(webcamPreview).toBeInTheDocument();
     expect(webcamPreview).not.toHaveClass("rounded-sm", "shadow-lg", "ring-1", "ring-black/40");
+    const positionSelect = screen.getByRole("combobox", { name: "Webcam position" });
+    const insetButton = screen.getByRole("button", { name: "Enable webcam inset" });
+    expect(positionSelect.parentElement?.lastElementChild).toBe(insetButton);
+    expect(insetButton).toHaveAttribute("data-variant", "ghost");
+    expect(insetButton).toHaveAttribute("data-size", "icon-sm");
+    expect(insetButton).toHaveAttribute("aria-pressed", "false");
+    await user.click(insetButton);
+    expect(screen.getByRole("button", { name: "Disable webcam inset" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(webcamPreview).toHaveStyle({ bottom: "8.9%", right: "8.9%" });
     expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
 
     await user.click(screen.getByRole("button", { name: "Hide webcam" }));
