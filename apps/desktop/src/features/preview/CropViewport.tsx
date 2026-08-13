@@ -9,7 +9,7 @@ import {
 
 import { CursorTooltip } from "@/components/ui/cursor-tooltip";
 import type { WebcamState } from "@/app/session-state";
-import { webcamPositionStyle } from "@/features/webcam";
+import { webcamOverlayHeight, webcamPositionStyle } from "@/features/webcam";
 
 import { CropSelection } from "./components/CropSelection";
 import { CropSnapMarkers } from "./components/CropSnapMarkers";
@@ -205,8 +205,11 @@ export function CropViewport({
             muted
             playsInline
             aria-label="Webcam overlay preview"
-            className="pointer-events-none absolute z-10 h-auto w-[24%] object-contain"
-            style={webcamPositionStyle(webcam.position)}
+            className="pointer-events-none absolute z-10 w-auto object-contain"
+            style={{
+              ...webcamPositionStyle(webcam.position),
+              height: webcamOverlayHeight(viewport),
+            }}
             onLoadedMetadata={(event) => {
               event.currentTarget.currentTime = videoRef.current?.currentTime ?? 0;
               event.currentTarget.playbackRate = playbackRate;

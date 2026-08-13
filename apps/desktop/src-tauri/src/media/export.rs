@@ -5,6 +5,7 @@ use serde::Deserialize;
 use crate::{error::AppError, media::probe::MediaInfo};
 
 const MICROS_PER_SECOND: f64 = 1_000_000.0;
+const WEBCAM_SHORT_SIDE_RATIO: f64 = 0.08;
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -363,7 +364,7 @@ fn webcam_filter_graph(
     main_filter: &str,
     resolution: &ResolutionSelection,
 ) -> String {
-    let webcam_width = ((resolution.width as f64 * 0.24).round() as u32).max(2) & !1;
+    let webcam_height = webcam_overlay_height(resolution);
     let (x, y) = match selection.position {
         WebcamPosition::TopLeft => ("0".to_owned(), "0".to_owned()),
         WebcamPosition::TopRight => ("W-w".to_owned(), "0".to_owned()),
@@ -377,13 +378,18 @@ fn webcam_filter_graph(
     // Keep the selected resolution as an invariant of the labeled graph output,
     // rather than relying on the overlay filter to preserve its main input size.
     format!(
-        "[0:{}]{main_filter},setpts=PTS-STARTPTS[main];[1:{}]scale={}:-2,setpts=PTS-STARTPTS[webcam];[main][webcam]overlay={x}:{y}:eof_action=pass:repeatlast=0[composited];[composited]scale={}:{},setsar=1[vout]",
+        "[0:{}]{main_filter},setpts=PTS-STARTPTS[main];[1:{}]scale=-2:{},setpts=PTS-STARTPTS[webcam];[main][webcam]overlay={x}:{y}:eof_action=pass:repeatlast=0[composited];[composited]scale={}:{},setsar=1[vout]",
         source.video.stream_index,
         webcam.video.stream_index,
-        webcam_width,
+        webcam_height,
         resolution.width,
         resolution.height,
     )
+}
+
+fn webcam_overlay_height(resolution: &ResolutionSelection) -> u32 {
+    let short_side = resolution.width.min(resolution.height);
+    (((f64::from(short_side) * WEBCAM_SHORT_SIDE_RATIO) / 2.0).round() as u32 * 2).max(2)
 }
 
 fn common_input_arguments(source_path: &Path, trim: &TrimSelection) -> Vec<OsString> {
@@ -624,6 +630,7 @@ mod tests {
         AudioTrackSelection, FastExportRequest, FrameRateSelection, OptimizedExportRequest,
         ResolutionSelection, TrimSelection, WebcamOverlaySelection, WebcamPosition,
         build_fast_arguments, build_optimized_arguments, optimized_command_preview,
+        webcam_overlay_height,
     };
     use crate::media::probe::{AudioStream, MediaInfo, VideoStream};
 
@@ -1048,12 +1055,30 @@ mod tests {
         assert!(values.windows(2).any(|pair| pair == ["-map", "[vout]"]));
         assert!(values.iter().any(|value| {
             value.contains("[0:0]scale=2560:1440")
-                && value.contains("[1:3]scale=614:-2")
+                && value.contains("[1:3]scale=-2:116")
                 && value.contains(
                     "overlay=W-w:H-h:eof_action=pass:repeatlast=0[composited];[composited]scale=2560:1440,setsar=1[vout]",
                 )
         }));
         assert!(!values.iter().any(|value| value == "1:1"));
+    }
+
+    #[test]
+    fn webcam_height_uses_the_shorter_cropped_output_side() {
+        assert_eq!(
+            webcam_overlay_height(&ResolutionSelection {
+                width: 2560,
+                height: 1440,
+            }),
+            116
+        );
+        assert_eq!(
+            webcam_overlay_height(&ResolutionSelection {
+                width: 720,
+                height: 1280,
+            }),
+            58
+        );
     }
 
     #[test]

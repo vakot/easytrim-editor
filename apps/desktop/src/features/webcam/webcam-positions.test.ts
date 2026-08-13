@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   WEBCAM_CORNER_PRESETS,
+  webcamOverlayHeight,
   webcamPositionCorner,
   webcamPositionFor,
   webcamPositionIsOffset,
@@ -41,5 +42,16 @@ describe("webcamPositionStyle", () => {
     expect(webcamPositionCorner("topLeftOffset")).toBe("topLeft");
     expect(webcamPositionIsOffset("topLeftOffset")).toBe(true);
     expect(webcamPositionIsOffset("topLeft")).toBe(false);
+  });
+});
+
+describe("webcamOverlayHeight", () => {
+  it("uses eight percent of the shorter frame side", () => {
+    expect(webcamOverlayHeight({ width: 1920, height: 1080 })).toBe(86.4);
+    expect(webcamOverlayHeight({ width: 1080, height: 1920 })).toBe(86.4);
+  });
+
+  it("updates from the cropped frame dimensions", () => {
+    expect(webcamOverlayHeight({ width: 720, height: 1080 })).toBe(57.6);
   });
 });
