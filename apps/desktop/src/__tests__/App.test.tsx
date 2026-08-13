@@ -411,6 +411,8 @@ describe("App", () => {
     expect(webcamPreview).not.toHaveClass("rounded-sm", "shadow-lg", "ring-1", "ring-black/40");
     const positionSelect = screen.getByRole("combobox", { name: "Webcam position" });
     const insetButton = screen.getByRole("button", { name: "Enable webcam inset" });
+    expect(positionSelect).toHaveClass("min-w-0", "flex-1");
+    expect(positionSelect.parentElement).toHaveClass("min-w-0", "flex-1");
     expect(positionSelect.parentElement?.lastElementChild).toBe(insetButton);
     expect(insetButton).toHaveAttribute("data-variant", "ghost");
     expect(insetButton).toHaveAttribute("data-size", "icon-sm");

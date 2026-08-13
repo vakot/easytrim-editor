@@ -99,7 +99,7 @@ export function WebcamTrack({
             </TooltipTrigger>
             <TooltipContent>{t(webcam.enabled ? "webcam.hide" : "webcam.show")}</TooltipContent>
           </Tooltip>
-          <div className="flex shrink-0 items-center gap-1">
+          <div className="flex min-w-0 flex-1 items-center gap-1">
             <Select
               value={corner}
               disabled={!webcam.enabled || !webcam.media}
@@ -107,7 +107,7 @@ export function WebcamTrack({
                 if (isWebcamCorner(value)) onPositionChange(webcamPositionFor(value, inset));
               }}
             >
-              <SelectTrigger size="sm" aria-label={t("webcam.position")} className="max-w-32">
+              <SelectTrigger size="sm" aria-label={t("webcam.position")} className="min-w-0 flex-1">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
