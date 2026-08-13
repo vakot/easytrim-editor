@@ -420,7 +420,7 @@ describe("App", () => {
       "aria-pressed",
       "true",
     );
-    expect(webcamPreview).toHaveStyle({ bottom: "8.9%", right: "8.9%" });
+    expect(webcamPreview).toHaveStyle({ bottom: "8.9%", right: "0%" });
     expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
 
     await user.click(screen.getByRole("button", { name: "Hide webcam" }));

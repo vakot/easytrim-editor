@@ -40,7 +40,7 @@ export const WEBCAM_CORNER_PRESETS = [
   horizontal: "left" | "right";
 }>;
 
-const WEBCAM_INSET_PERCENT = 8.9;
+const WEBCAM_VERTICAL_INSET_PERCENT = 8.9;
 
 export function isWebcamCorner(value: string): value is WebcamCorner {
   return WEBCAM_CORNER_PRESETS.some((preset) => preset.value === value);
@@ -68,9 +68,9 @@ export function webcamPositionStyle(position: WebcamPosition): CSSProperties {
     (candidate) => candidate.value === position || candidate.insetValue === position,
   );
   if (!preset) return {};
-  const insetPercent = webcamPositionIsInset(position) ? WEBCAM_INSET_PERCENT : 0;
+  const verticalInsetPercent = webcamPositionIsInset(position) ? WEBCAM_VERTICAL_INSET_PERCENT : 0;
   return {
-    [preset.vertical]: `${insetPercent}%`,
-    [preset.horizontal]: `${insetPercent}%`,
+    [preset.vertical]: `${verticalInsetPercent}%`,
+    [preset.horizontal]: "0%",
   };
 }
