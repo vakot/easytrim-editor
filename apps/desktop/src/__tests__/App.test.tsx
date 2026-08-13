@@ -409,12 +409,32 @@ describe("App", () => {
     const webcamPreview = screen.getByLabelText("Webcam overlay preview");
     expect(webcamPreview).toBeInTheDocument();
     expect(webcamPreview).not.toHaveClass("rounded-sm", "shadow-lg", "ring-1", "ring-black/40");
+    const webcamToggle = screen.getByRole("button", { name: "Hide webcam" });
+    const webcamControls = webcamToggle.closest('[data-slot="card"]');
+    const webcamSourceDetails = webcamControls?.querySelector(
+      '[data-slot="webcam-source-details"]',
+    );
+    expect(webcamControls).toHaveAttribute("data-controls-visible", "false");
+    expect(webcamControls).toHaveClass("gap-2", "bg-transparent");
+    expect(webcamSourceDetails).toHaveAttribute("aria-hidden", "false");
+    expect(webcamControls?.querySelector('[data-slot="webcam-source-title"]')).toHaveTextContent(
+      "camera.mp4",
+    );
+    expect(
+      webcamControls?.querySelector('[data-slot="webcam-source-dimensions"]'),
+    ).toHaveTextContent("1920 × 1080");
+    expect(screen.queryByRole("combobox", { name: "Webcam position" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Enable webcam offset" })).not.toBeInTheDocument();
+
+    fireEvent.pointerEnter(webcamControls!);
+
+    expect(webcamControls).toHaveAttribute("data-controls-visible", "true");
+    expect(webcamSourceDetails).toHaveAttribute("aria-hidden", "true");
     const positionSelect = screen.getByRole("combobox", { name: "Webcam position" });
     const offsetButton = screen.getByRole("button", { name: "Enable webcam offset" });
     expect(positionSelect).toHaveClass("min-w-0", "w-full", "flex-1");
-    expect(positionSelect.parentElement).toHaveClass("min-w-0", "w-full", "flex-1");
-    const webcamControls = positionSelect.closest('[data-slot="card"]');
-    expect(webcamControls).toHaveClass("gap-1");
+    expect(positionSelect.parentElement).toHaveClass("absolute", "inset-0", "flex");
+    expect(positionSelect.closest('[data-slot="card"]')).toBe(webcamControls);
     expect(webcamControls).not.toHaveClass("gap-(--card-spacing)", "justify-between");
     expect(positionSelect.parentElement?.lastElementChild).toBe(offsetButton);
     expect(offsetButton).toHaveAttribute("data-variant", "secondary");
@@ -440,11 +460,11 @@ describe("App", () => {
     const audioTracksScroll = screen.getByTestId("audio-tracks-scroll");
     expect(screen.getByTestId("timeline-panel")).toContainElement(webcamSection);
     expect(webcamSection).toContainElement(screen.getByRole("heading", { name: "Webcam" }));
-    expect(webcamSection.querySelector('[data-slot="webcam-track-primary"]')).toHaveTextContent(
-      "camera.mp4",
+    expect(webcamSection.querySelector('[data-slot="webcam-track-status"]')).toHaveTextContent(
+      "Synchronized video overlay · audio ignored",
     );
-    expect(webcamSection.querySelector('[data-slot="webcam-track-secondary"]')).toHaveTextContent(
-      "1920 × 1080 · Synchronized video overlay · audio ignored",
+    expect(webcamSection.querySelector('[data-slot="webcam-track-status"]')).not.toHaveTextContent(
+      "camera.mp4",
     );
     const sourceVideo = screen.getByLabelText("Source video preview") as HTMLVideoElement;
     const timelinePlayhead = screen.getByRole("slider", { name: "Playback position" });
