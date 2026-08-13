@@ -432,6 +432,14 @@ describe("App", () => {
     expect(webcamSection.querySelector('[data-slot="webcam-track-secondary"]')).toHaveTextContent(
       "1920 × 1080 · Synchronized video overlay · audio ignored",
     );
+    const sourceVideo = screen.getByLabelText("Source video preview") as HTMLVideoElement;
+    const timelinePlayhead = screen.getByRole("slider", { name: "Playback position" });
+    const webcamPlayhead = webcamSection.querySelector(
+      '[data-slot="webcam-playhead"]',
+    ) as HTMLElement;
+    sourceVideo.currentTime = 13;
+    fireEvent.timeUpdate(sourceVideo);
+    expect(webcamPlayhead.style.left).toBe(timelinePlayhead.style.left);
     expect(audioTracksScroll).not.toContainElement(screen.getByRole("heading", { name: "Webcam" }));
     expect(webcamSection.querySelector('[data-slot="scroll-area-viewport"]')).toBeNull();
     expect(timelinePane?.querySelectorAll(':scope > [data-slot="separator"]')).toHaveLength(2);

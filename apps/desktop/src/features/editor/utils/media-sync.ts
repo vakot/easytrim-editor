@@ -21,6 +21,7 @@ export function waitForSeekToSettle(media: HTMLMediaElement): Promise<void> {
 export function syncPlayheadElements(
   playhead: HTMLButtonElement | null,
   audioPlayhead: HTMLDivElement | null,
+  webcamPlayhead: HTMLDivElement | null,
   micros: number,
   durationMicros: number,
 ) {
@@ -31,6 +32,7 @@ export function syncPlayheadElements(
     playhead.setAttribute("aria-valuetext", `${(micros / 1_000_000).toFixed(3)} seconds`);
   }
   if (audioPlayhead) audioPlayhead.style.left = `${percent}%`;
+  if (webcamPlayhead) webcamPlayhead.style.left = `${percent}%`;
 }
 
 export function cancelFrame(frameRef: { current: number | null }) {

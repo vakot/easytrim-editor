@@ -77,6 +77,7 @@ export function EditorStage({
   const masterGainRef = useRef<GainNode | null>(null);
   const playheadRef = useRef<HTMLButtonElement>(null);
   const audioPlayheadRef = useRef<HTMLDivElement>(null);
+  const webcamPlayheadRef = useRef<HTMLDivElement>(null);
   const playbackFrameRef = useRef<number | null>(null);
   const scrubFrameRef = useRef<number | null>(null);
   const pendingScrubMicrosRef = useRef<number | null>(null);
@@ -281,6 +282,7 @@ export function EditorStage({
     syncPlayheadElements(
       playheadRef.current,
       audioPlayheadRef.current,
+      webcamPlayheadRef.current,
       clamped,
       trimRef.current.sourceDurationMicros,
     );
@@ -340,6 +342,7 @@ export function EditorStage({
     syncPlayheadElements(
       playheadRef.current,
       audioPlayheadRef.current,
+      webcamPlayheadRef.current,
       clamped,
       trimRef.current.sourceDurationMicros,
     );
@@ -390,6 +393,7 @@ export function EditorStage({
     syncPlayheadElements(
       playheadRef.current,
       audioPlayheadRef.current,
+      webcamPlayheadRef.current,
       currentMicros,
       durationMicros,
     );
@@ -418,6 +422,7 @@ export function EditorStage({
       syncPlayheadElements(
         playheadRef.current,
         audioPlayheadRef.current,
+        webcamPlayheadRef.current,
         currentMicros,
         durationMicros,
       );
@@ -867,6 +872,7 @@ export function EditorStage({
                 onPositionChange={onWebcamPositionChange}
                 range={trim}
                 playheadMicros={displayedPlayheadMicros}
+                playheadRef={webcamPlayheadRef}
               />
             ) : null
           }

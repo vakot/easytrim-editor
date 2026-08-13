@@ -1,4 +1,5 @@
 import { Expand, Eye, EyeOff, Shrink, Video } from "lucide-react";
+import type { RefObject } from "react";
 import { useTranslation } from "react-i18next";
 
 import type { WebcamState } from "@/app/session-state";
@@ -30,6 +31,7 @@ interface WebcamTrackProps {
   onPositionChange: (position: WebcamPosition) => void;
   range: TrimRange;
   playheadMicros: number;
+  playheadRef: RefObject<HTMLDivElement | null>;
 }
 
 export function WebcamTrack({
@@ -38,6 +40,7 @@ export function WebcamTrack({
   onPositionChange,
   range,
   playheadMicros,
+  playheadRef,
 }: WebcamTrackProps) {
   const { t } = useTranslation();
   const dimensions = webcam.media
@@ -143,7 +146,9 @@ export function WebcamTrack({
             }}
           />
           <div
-            className="pointer-events-none absolute inset-y-0 border-l border-dashed border-foreground/70"
+            ref={playheadRef}
+            className="webcam-playhead pointer-events-none absolute inset-y-0 border-l border-dashed border-foreground/70"
+            data-slot="webcam-playhead"
             aria-hidden="true"
             style={{ left: `${timelinePercent(playheadMicros, range.sourceDurationMicros)}%` }}
           />
