@@ -215,6 +215,7 @@ export const sk = {
     hide: "Skryť webkameru",
     show: "Zobraziť webkameru",
     position: "Pozícia webkamery",
+    toolsLabel: "Nástroje webkamery",
     enableOffset: "Zapnúť odsadenie webkamery",
     disableOffset: "Vypnúť odsadenie webkamery",
     inspecting: "Analyzuje sa…",

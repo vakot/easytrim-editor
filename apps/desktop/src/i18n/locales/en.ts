@@ -208,6 +208,7 @@ export const en = {
     hide: "Hide webcam",
     show: "Show webcam",
     position: "Webcam position",
+    toolsLabel: "Webcam tools",
     enableOffset: "Enable webcam offset",
     disableOffset: "Disable webcam offset",
     inspecting: "Inspecting…",

@@ -409,42 +409,44 @@ describe("App", () => {
     const webcamPreview = screen.getByLabelText("Webcam overlay preview");
     expect(webcamPreview).toBeInTheDocument();
     expect(webcamPreview).not.toHaveClass("rounded-sm", "shadow-lg", "ring-1", "ring-black/40");
+    const webcamSection = screen.getByTestId("webcam-track-section");
     const webcamToggle = screen.getByRole("button", { name: "Hide webcam" });
-    const webcamControls = webcamToggle.closest('[data-slot="card"]');
-    const webcamSourceDetails = webcamControls?.querySelector(
-      '[data-slot="webcam-source-details"]',
-    );
-    expect(webcamControls).toHaveAttribute("data-controls-visible", "false");
-    expect(webcamControls).toHaveClass("gap-2", "bg-transparent");
-    expect(webcamSourceDetails).toHaveAttribute("aria-hidden", "false");
-    expect(webcamControls?.querySelector('[data-slot="webcam-source-title"]')).toHaveTextContent(
-      "camera.mp4",
+    const positionSelect = screen.getByRole("combobox", { name: "Webcam position" });
+    const webcamSourceDetails = webcamSection.querySelector('[data-slot="webcam-source-details"]');
+    expect(webcamToggle.parentElement).toContainElement(positionSelect);
+    expect(positionSelect).toHaveClass("min-w-0", "w-full", "flex-1");
+    expect(positionSelect).toHaveTextContent("Bottom right");
+    expect(positionSelect.querySelector('[data-slot="webcam-position-icon"]')).toBeNull();
+    expect(webcamSourceDetails).toHaveClass(
+      "truncate",
+      "text-xs",
+      "leading-5",
+      "text-muted-foreground",
     );
     expect(
-      webcamControls?.querySelector('[data-slot="webcam-source-dimensions"]'),
+      webcamSourceDetails?.querySelector('[data-slot="webcam-source-title"]'),
+    ).toHaveTextContent("camera.mp4");
+    expect(
+      webcamSourceDetails?.querySelector('[data-slot="webcam-source-dimensions"]'),
     ).toHaveTextContent("1920 × 1080");
-    expect(screen.queryByRole("combobox", { name: "Webcam position" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Enable webcam offset" })).not.toBeInTheDocument();
-
-    fireEvent.pointerEnter(webcamControls!);
-
-    expect(webcamControls).toHaveAttribute("data-controls-visible", "true");
-    expect(webcamSourceDetails).toHaveAttribute("aria-hidden", "true");
-    const positionSelect = screen.getByRole("combobox", { name: "Webcam position" });
+    expect(webcamSection.querySelector('[data-slot="card"]')).toBeNull();
+    expect(webcamSection.querySelector('[data-slot="webcam-tools-title"]')).toHaveTextContent(
+      "Tools",
+    );
+    const webcamTools = screen.getByRole("toolbar", { name: "Webcam tools" });
     const offsetButton = screen.getByRole("button", { name: "Enable webcam offset" });
-    expect(positionSelect).toHaveClass("min-w-0", "w-full", "flex-1");
-    expect(positionSelect.parentElement).toHaveClass("absolute", "inset-0", "flex");
-    expect(positionSelect.closest('[data-slot="card"]')).toBe(webcamControls);
-    expect(webcamControls).not.toHaveClass("gap-(--card-spacing)", "justify-between");
-    expect(positionSelect.parentElement?.lastElementChild).toBe(offsetButton);
+    expect(webcamTools.firstElementChild).toBe(offsetButton);
+    expect(webcamTools).toHaveClass(
+      "grid-flow-col",
+      "auto-cols-[1.75rem]",
+      "grid-rows-[repeat(2,1.75rem)]",
+    );
     expect(offsetButton).toHaveAttribute("data-variant", "secondary");
     expect(offsetButton).toHaveAttribute("data-size", "icon-sm");
     expect(offsetButton).toHaveAttribute("aria-pressed", "false");
     expect(offsetButton).toHaveClass("bg-secondary", "text-secondary-foreground");
     expect(offsetButton).not.toHaveClass("text-primary");
     expect(offsetButton.querySelector('[data-slot="webcam-offset-icon"]')).toBeInTheDocument();
-    expect(positionSelect).toHaveTextContent("Bottom right");
-    expect(positionSelect.querySelector('[data-slot="webcam-position-icon"]')).toBeNull();
     await user.click(offsetButton);
     expect(screen.getByRole("button", { name: "Disable webcam offset" })).toHaveAttribute(
       "aria-pressed",
@@ -456,7 +458,6 @@ describe("App", () => {
     );
     expect(webcamPreview).toHaveStyle({ bottom: "8%", right: "0%" });
     const timelinePane = screen.getByTestId("timeline-fixed-content").parentElement;
-    const webcamSection = screen.getByTestId("webcam-track-section");
     const audioTracksScroll = screen.getByTestId("audio-tracks-scroll");
     expect(screen.getByTestId("timeline-panel")).toContainElement(webcamSection);
     expect(webcamSection).toContainElement(screen.getByRole("heading", { name: "Webcam" }));
@@ -465,6 +466,13 @@ describe("App", () => {
     );
     expect(webcamSection.querySelector('[data-slot="webcam-track-status"]')).not.toHaveTextContent(
       "camera.mp4",
+    );
+    expect(webcamSection.querySelector('[data-slot="webcam-track-status"]')).toHaveClass(
+      "text-xs",
+      "text-muted-foreground",
+    );
+    expect(webcamSection.querySelector('[data-slot="webcam-track-status"]')).not.toHaveClass(
+      "font-semibold",
     );
     const sourceVideo = screen.getByLabelText("Source video preview") as HTMLVideoElement;
     const timelinePlayhead = screen.getByRole("slider", { name: "Playback position" });

@@ -16,8 +16,10 @@ const AUDIO_TRACK_HEIGHT = 48; /* Fixed waveform row height from the `h-12` clas
 const AUDIO_SECTION_BOTTOM_PADDING = 16; /* Scroll content wrapper `pb-4` padding. */
 const WEBCAM_SECTION_TOP_PADDING = 16; /* Fixed webcam section wrapper `pt-4` padding. */
 const WEBCAM_SECTION_HEADING_HEIGHT = 16; /* Webcam heading line-box height. */
-const WEBCAM_SECTION_GAP = 8; /* Vertical `gap-2` before the webcam row. */
-const WEBCAM_TRACK_HEIGHT = 48; /* Fixed webcam row height from the `h-12` class. */
+const WEBCAM_SECTION_GAP = 8; /* Vertical `gap-2` between webcam section items. */
+const WEBCAM_MASTER_CONTROLS_HEIGHT = 36; /* Position row: 28px controls plus 8px padding. */
+const WEBCAM_TOOLS_HEADING_HEIGHT = 16; /* Tools heading line-box height. */
+const WEBCAM_TOOLS_HEIGHT = 60; /* Two 28px tool rows plus a 4px gap. */
 const WEBCAM_SECTION_BOTTOM_PADDING = 16; /* Fixed webcam section wrapper `pb-4` padding. */
 
 export const AUDIO_SINGLE_TRACK_HEIGHT =
@@ -36,7 +38,11 @@ export const WEBCAM_SECTION_HEIGHT =
   WEBCAM_SECTION_TOP_PADDING +
   WEBCAM_SECTION_HEADING_HEIGHT +
   WEBCAM_SECTION_GAP +
-  WEBCAM_TRACK_HEIGHT +
+  WEBCAM_MASTER_CONTROLS_HEIGHT +
+  WEBCAM_SECTION_GAP +
+  WEBCAM_TOOLS_HEADING_HEIGHT +
+  WEBCAM_SECTION_GAP +
+  WEBCAM_TOOLS_HEIGHT +
   WEBCAM_SECTION_BOTTOM_PADDING;
 
 const getAudioContentHeight = (audioTrackCount: number): number => {
