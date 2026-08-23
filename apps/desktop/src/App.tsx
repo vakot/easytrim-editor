@@ -12,6 +12,7 @@ import { useReleaseCheck } from "@/features/release/hooks/useReleaseCheck";
 import { EditorViewStateProvider } from "@/app/editor-view-state";
 import { useEffect, useState } from "react";
 import { FULL_CROP, type CropRect } from "@/features/preview/utils/crop-geometry";
+import { CustomTitleBar } from "@/app/components/CustomTitleBar";
 
 function EasyTrimEditorApp() {
   const app = useEasyTrimEditorApp();
@@ -37,9 +38,12 @@ function EasyTrimEditorApp() {
     <TooltipProvider>
       <main
         className={`fixed inset-0 grid h-dvh w-screen min-w-80 overflow-hidden bg-background ${
-          app.hasSource ? "grid-rows-[auto_minmax(0,1fr)_auto]" : "grid-rows-1"
+          app.hasSource
+            ? "grid-rows-[2.25rem_auto_minmax(0,1fr)_auto]"
+            : "grid-rows-[2.25rem_minmax(0,1fr)]"
         }`}
       >
+        <CustomTitleBar onLogoClick={app.requestReturnToWelcome} />
         {app.hasSource ? (
           <AppToolbar
             session={app.session}
