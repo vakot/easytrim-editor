@@ -1,7 +1,8 @@
-import { useCallback, useLayoutEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { usePanelRef } from "react-resizable-panels";
 
 import {
+  TIMELINE_FIXED_HEIGHT,
   timelinePanelSizeConstraints,
   type TimelinePanelSizeConstraints,
 } from "../utils/timeline-pane-sizing";
@@ -16,28 +17,22 @@ export function timelinePanelTargetSize(
   currentSize: number,
   constraints: TimelinePanelSizeConstraints,
   initialize: boolean,
-  preferredSize?: number,
 ): number {
-  const targetSize = preferredSize ?? (initialize ? constraints.defaultSize : currentSize);
-  return Math.min(constraints.maxSize, Math.max(constraints.minSize, targetSize));
+  if (initialize) {
+    return constraints.defaultSize;
+  }
+  return Math.min(constraints.maxSize, Math.max(constraints.minSize, currentSize));
 }
 
-export function useTimelinePanelSizing(sourceId: string, audioTrackCount: number) {
+export function useTimelinePanelSizing(
+  sourceId: string,
+  audioTrackCount: number,
+  isVisible: boolean,
+) {
   const panelRef = usePanelRef();
   const initializedSourceRef = useRef<string | null>(null);
-  const lastVisibleSizeRef = useRef<number | null>(null);
-  const wasAudioPanelVisibleRef = useRef(audioTrackCount > 0);
   const constraints = useMemo(
     () => timelinePanelSizeConstraints(audioTrackCount),
-    [audioTrackCount],
-  );
-
-  const rememberVisibleSize = useCallback(
-    (size: number) => {
-      if (audioTrackCount > 0) {
-        lastVisibleSizeRef.current = size;
-      }
-    },
     [audioTrackCount],
   );
 
@@ -53,33 +48,34 @@ export function useTimelinePanelSizing(sourceId: string, audioTrackCount: number
     }
 
     const currentSize = panel.getSize().inPixels;
-    const isAudioPanelVisible = audioTrackCount > 0;
-    const isRestoringVisibleSize =
-      isAudioPanelVisible &&
-      !wasAudioPanelVisibleRef.current &&
-      lastVisibleSizeRef.current !== null;
     const targetSize = timelinePanelTargetSize(
       currentSize,
       constraints,
       initializedSourceRef.current === null,
-      isRestoringVisibleSize ? (lastVisibleSizeRef.current ?? undefined) : undefined,
     );
 
     initializedSourceRef.current = sourceId;
-    wasAudioPanelVisibleRef.current = isAudioPanelVisible;
-    if (isAudioPanelVisible) {
-      lastVisibleSizeRef.current = targetSize;
-    }
     if (Math.abs(currentSize - targetSize) >= 1) {
       panel.resize(targetSize);
     }
   }, [constraints, panelRef, sourceId]);
 
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel) return;
+
+    if (isVisible) {
+      panel.expand();
+    } else {
+      panel.collapse();
+    }
+  }, [isVisible, panelRef]);
+
   return {
     constraints,
+    collapsedSize: TIMELINE_FIXED_HEIGHT,
     initialDefaultSize: FALLBACK_CONSTRAINTS.defaultSize,
     panelRef,
-    rememberVisibleSize,
     resetToDefault,
   };
 }

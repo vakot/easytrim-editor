@@ -62,7 +62,8 @@ export function EditorStage({
     useEditorViewState();
   const timelinePanelSizing = useTimelinePanelSizing(
     sourceId,
-    showAudioTracks ? audioStreams.length : 0,
+    audioStreams.length,
+    showAudioTracks,
   );
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioElementsRef = useRef(new Map<number, HTMLAudioElement>());
@@ -768,9 +769,10 @@ export function EditorStage({
         id="timeline-panel"
         panelRef={timelinePanelSizing.panelRef}
         defaultSize={timelinePanelSizing.initialDefaultSize}
+        collapsible
+        collapsedSize={timelinePanelSizing.collapsedSize}
         minSize={timelinePanelSizing.constraints.minSize}
         maxSize={timelinePanelSizing.constraints.maxSize}
-        onResize={(size) => timelinePanelSizing.rememberVisibleSize(size.inPixels)}
         groupResizeBehavior="preserve-pixel-size"
         className="min-h-0 min-w-0 bg-background"
       >
