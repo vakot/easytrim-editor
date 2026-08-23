@@ -63,7 +63,12 @@ export function CustomTitleBar({
   };
 
   const handleTitleBarDoubleClick = (event: MouseEvent<HTMLElement>) => {
-    if (event.target instanceof Element && event.target.closest("button")) return;
+    if (
+      event.target instanceof Element &&
+      event.target.closest('button, [role="menu"], [role="menuitem"]')
+    ) {
+      return;
+    }
 
     event.preventDefault();
     pendingDrag.current = null;

@@ -35,6 +35,7 @@ export const en = {
     violet: "Violet",
     blue: "Blue",
     emerald: "Emerald",
+    custom: "Custom",
   },
   app: {
     toolbar: "Application toolbar",

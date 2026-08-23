@@ -30,6 +30,7 @@ export const sk = {
     dark: "Tmavý",
   },
   themeColor: {
+    custom: "Vlastna",
     label: "Farba motГ­vu",
     tooltip: "Vyberte hlavnГє farbu aplikГЎcie",
     presets: "PredvoДѕby farby motГ­vu",

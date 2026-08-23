@@ -42,6 +42,57 @@ describe("CustomTitleBar", () => {
     expect(screen.getByRole("menuitem", { name: /Open File/ })).toBeInTheDocument();
   });
 
+  it("does not toggle maximize when a menu or submenu item is double-clicked", async () => {
+    const user = userEvent.setup();
+    const menuRender = render(
+      <ThemeProvider>
+        <CustomTitleBar
+          onLogoClick={vi.fn()}
+          menuControls={
+            <TopBarMenus
+              isChoosingSource={false}
+              canSave
+              canExport
+              onChooseSource={vi.fn()}
+              onSave={vi.fn()}
+              onExport={vi.fn()}
+            />
+          }
+        />
+      </ThemeProvider>,
+    );
+
+    await user.click(screen.getByRole("button", { name: "File" }));
+    fireEvent.doubleClick(screen.getByRole("menuitem", { name: /Open File/ }));
+    expect(windowActions.toggleWindowMaximize).not.toHaveBeenCalled();
+    menuRender.unmount();
+
+    render(
+      <ThemeProvider>
+        <CustomTitleBar
+          onLogoClick={vi.fn()}
+          menuControls={
+            <TopBarMenus
+              isChoosingSource={false}
+              canSave
+              canExport
+              onChooseSource={vi.fn()}
+              onSave={vi.fn()}
+              onExport={vi.fn()}
+            />
+          }
+        />
+      </ThemeProvider>,
+    );
+    await user.click(screen.getByRole("button", { name: "View" }));
+    const themeItem = screen.getByText("Theme").closest<HTMLElement>('[role="menuitem"]');
+    expect(themeItem).not.toBeNull();
+    themeItem?.focus();
+    await user.keyboard("{ArrowRight}");
+    fireEvent.doubleClick(screen.getByRole("menuitem", { name: "System" }));
+    expect(windowActions.toggleWindowMaximize).not.toHaveBeenCalled();
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
     windowActions.isWindowMaximized.mockResolvedValue(false);
