@@ -32,9 +32,11 @@ describe("CustomTitleBar", () => {
   it("delegates dragging and window controls to the native adapter", async () => {
     render(<CustomTitleBar onLogoClick={vi.fn()} />);
 
-    const dragRegion = screen.getByRole("banner").querySelector("[data-tauri-drag-region]");
+    const dragRegion = screen.getByRole("banner").querySelector("header > div");
     if (!dragRegion) throw new Error("Expected title bar drag region");
-    fireEvent.mouseDown(dragRegion, { button: 0 });
+    fireEvent.pointerDown(dragRegion, { button: 0, clientX: 10, clientY: 10, pointerId: 1 });
+    fireEvent.pointerMove(dragRegion, { clientX: 20, clientY: 10, pointerId: 1 });
+    fireEvent.pointerUp(dragRegion, { pointerId: 1 });
     fireEvent.click(screen.getByRole("button", { name: "Minimize" }));
     fireEvent.click(screen.getByRole("button", { name: "Maximize" }));
     fireEvent.click(screen.getByRole("button", { name: "Close" }));
