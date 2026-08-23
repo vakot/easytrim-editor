@@ -6,33 +6,21 @@ import { EditorStage } from "@/features/editor";
 import { DropOverlay } from "./components/DropOverlay";
 import { SourceSidebar } from "./components/SourceSidebar";
 import { WelcomePage } from "./components/WelcomePage";
-import type { SourceWorkspaceProps } from "./types";
 import { useTranslation } from "react-i18next";
 import { useEditorViewState } from "@/app/hooks/useEditorViewState";
+import { useEditorSession } from "@/app/hooks/useEditorSession";
+import { useSourceDetails } from "@/app/hooks/useSourceDetails";
+import { useReleaseCheck } from "@/features/release/hooks/useReleaseCheck";
 
 export { CapabilityStatus } from "./components/CapabilityStatus";
 
-export function SourceWorkspace({
-  session,
-  isChoosingSource,
-  isSourceDragActive,
-  onChooseSource,
-  onPreviewPlaybackError,
-  onTrimChange,
-  onPrepareWaveforms,
-  onToggleAudioTrack,
-  onAudioTrackVolumeChange,
-  onToggleAudioMaster,
-  onMasterVolumeChange,
-  onToggleAudioMerge,
-  onWaveformImageError,
-  audioPreviewUrls,
-  exportQueue,
-  update,
-  onCropResolutionChange,
-  onCropChange,
-}: SourceWorkspaceProps) {
+export function SourceWorkspace() {
   const { t } = useTranslation();
+  const app = useEditorSession();
+  const sourceDetails = useSourceDetails();
+  const { session, isChoosingSource, isSourceDragActive, exportQueue } = app;
+  const { update } = useReleaseCheck();
+  const onChooseSource = () => void app.handleChooseSource();
   const { showSourceDetails, setShowSourceDetails, workspaceLayout, setWorkspaceLayout } =
     useEditorViewState();
   const sourceDetailsPanelRef = usePanelRef();
@@ -61,7 +49,6 @@ export function SourceWorkspace({
   }
 
   const source = session.source;
-  const sourceId = source.selection.sourceId;
   const media = source.media;
   const trimRange = source.trim;
 
@@ -106,35 +93,7 @@ export function SourceWorkspace({
         >
           {session.status === "ready" && media && trimRange ? (
             <EditorStage
-              key={sourceId}
-              sourceId={sourceId}
-              preview={source.preview}
-              trim={trimRange}
-              frameRate={media.video.averageFrameRate ?? media.video.realFrameRate}
-              audioStreams={media.audioStreams}
-              audioTracks={source.audioTracks}
-              masterEnabled={source.masterEnabled}
-              masterVolumePercent={source.masterVolumePercent}
-              mergeAudio={source.mergeAudio}
-              onPreviewPlaybackError={onPreviewPlaybackError}
-              onTrimChange={(trim) => onTrimChange(sourceId, trim)}
-              onPrepareWaveforms={(streamIndexes, width) =>
-                onPrepareWaveforms(sourceId, streamIndexes, width)
-              }
-              onToggleAudioTrack={(streamIndex) => onToggleAudioTrack(sourceId, streamIndex)}
-              onAudioTrackVolumeChange={(streamIndex, volumePercent) =>
-                onAudioTrackVolumeChange(sourceId, streamIndex, volumePercent)
-              }
-              onToggleAudioMaster={() => onToggleAudioMaster(sourceId)}
-              onMasterVolumeChange={(volumePercent) =>
-                onMasterVolumeChange(sourceId, volumePercent)
-              }
-              onToggleAudioMerge={() => onToggleAudioMerge(sourceId)}
-              onWaveformImageError={(streamIndex) => onWaveformImageError(sourceId, streamIndex)}
-              audioPreviewUrls={audioPreviewUrls}
-              sourceDimensions={{ width: media.video.width, height: media.video.height }}
-              onCropResolutionChange={onCropResolutionChange}
-              onCropChange={onCropChange}
+              key={sourceDetails.sourceId}
             />
           ) : null}
           {isSourceDragActive ? <DropOverlay /> : null}
