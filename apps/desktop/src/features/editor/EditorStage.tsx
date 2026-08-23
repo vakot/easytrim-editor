@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Group, Panel } from "react-resizable-panels";
+import { Group, Panel, type Layout } from "react-resizable-panels";
 import { useTranslation } from "react-i18next";
 
 import { PaneResizeHandle } from "../../components/PaneResizeHandle";
@@ -105,6 +105,14 @@ export function EditorStage({
   });
   const playbackSpeed = usePlaybackSpeed(tools.playbackSpeed, (playbackSpeed) =>
     setTools({ ...tools, playbackSpeed }),
+  );
+  const handleEditorStageLayoutChanged = useCallback(
+    (layout: Layout) => {
+      if (showAudioTracks) {
+        setEditorStageLayout(layout);
+      }
+    },
+    [setEditorStageLayout, showAudioTracks],
   );
   const [playheadMicros, setPlayheadMicros] = useState(trim.startMicros);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -695,7 +703,7 @@ export function EditorStage({
     <Group
       id="editor-stage-panels"
       defaultLayout={editorStageLayout}
-      onLayoutChanged={setEditorStageLayout}
+      onLayoutChanged={handleEditorStageLayoutChanged}
       orientation="vertical"
       className="min-h-0 min-w-0 bg-background"
       resizeTargetMinimumSize={{ fine: 8, coarse: 24 }}
@@ -762,6 +770,7 @@ export function EditorStage({
         defaultSize={timelinePanelSizing.initialDefaultSize}
         minSize={timelinePanelSizing.constraints.minSize}
         maxSize={timelinePanelSizing.constraints.maxSize}
+        onResize={(size) => timelinePanelSizing.rememberVisibleSize(size.inPixels)}
         groupResizeBehavior="preserve-pixel-size"
         className="min-h-0 min-w-0 bg-background"
       >

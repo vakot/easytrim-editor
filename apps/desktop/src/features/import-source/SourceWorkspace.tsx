@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { Group, Panel, usePanelRef } from "react-resizable-panels";
+import { useCallback, useEffect } from "react";
+import { Group, Panel, type Layout, usePanelRef } from "react-resizable-panels";
 
 import { PaneResizeHandle } from "@/components/PaneResizeHandle";
 import { EditorStage } from "@/features/editor";
@@ -35,6 +35,14 @@ export function SourceWorkspace({
   const { t } = useTranslation();
   const { showSourceDetails, workspaceLayout, setWorkspaceLayout } = useEditorViewState();
   const sourceDetailsPanelRef = usePanelRef();
+  const handleWorkspaceLayoutChanged = useCallback(
+    (layout: Layout) => {
+      if (showSourceDetails) {
+        setWorkspaceLayout(layout);
+      }
+    },
+    [setWorkspaceLayout, showSourceDetails],
+  );
 
   useEffect(() => {
     const panel = sourceDetailsPanelRef.current;
@@ -68,7 +76,7 @@ export function SourceWorkspace({
     <Group
       id="editor-workspace-panels"
       defaultLayout={workspaceLayout}
-      onLayoutChanged={setWorkspaceLayout}
+      onLayoutChanged={handleWorkspaceLayoutChanged}
       orientation="horizontal"
       className="min-h-0 min-w-0 bg-background"
       resizeTargetMinimumSize={{ fine: 8, coarse: 24 }}

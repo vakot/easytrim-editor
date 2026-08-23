@@ -21,4 +21,12 @@ describe("timelinePanelTargetSize", () => {
     expect(timelinePanelTargetSize(100, constraints, false)).toBe(180);
     expect(timelinePanelTargetSize(900, constraints, false)).toBe(620);
   });
+
+  it("restores a remembered size after a pane is shown again", () => {
+    expect(timelinePanelTargetSize(180, constraints, false, 420)).toBe(420);
+  });
+
+  it("clamps a remembered size to the current pane bounds", () => {
+    expect(timelinePanelTargetSize(180, constraints, false, 900)).toBe(620);
+  });
 });

@@ -16,18 +16,28 @@ export function timelinePanelTargetSize(
   currentSize: number,
   constraints: TimelinePanelSizeConstraints,
   initialize: boolean,
+  preferredSize?: number,
 ): number {
-  if (initialize) {
-    return constraints.defaultSize;
-  }
-  return Math.min(constraints.maxSize, Math.max(constraints.minSize, currentSize));
+  const targetSize = preferredSize ?? (initialize ? constraints.defaultSize : currentSize);
+  return Math.min(constraints.maxSize, Math.max(constraints.minSize, targetSize));
 }
 
 export function useTimelinePanelSizing(sourceId: string, audioTrackCount: number) {
   const panelRef = usePanelRef();
   const initializedSourceRef = useRef<string | null>(null);
+  const lastVisibleSizeRef = useRef<number | null>(null);
+  const wasAudioPanelVisibleRef = useRef(audioTrackCount > 0);
   const constraints = useMemo(
     () => timelinePanelSizeConstraints(audioTrackCount),
+    [audioTrackCount],
+  );
+
+  const rememberVisibleSize = useCallback(
+    (size: number) => {
+      if (audioTrackCount > 0) {
+        lastVisibleSizeRef.current = size;
+      }
+    },
     [audioTrackCount],
   );
 
@@ -43,13 +53,23 @@ export function useTimelinePanelSizing(sourceId: string, audioTrackCount: number
     }
 
     const currentSize = panel.getSize().inPixels;
+    const isAudioPanelVisible = audioTrackCount > 0;
+    const isRestoringVisibleSize =
+      isAudioPanelVisible &&
+      !wasAudioPanelVisibleRef.current &&
+      lastVisibleSizeRef.current !== null;
     const targetSize = timelinePanelTargetSize(
       currentSize,
       constraints,
       initializedSourceRef.current === null,
+      isRestoringVisibleSize ? (lastVisibleSizeRef.current ?? undefined) : undefined,
     );
 
     initializedSourceRef.current = sourceId;
+    wasAudioPanelVisibleRef.current = isAudioPanelVisible;
+    if (isAudioPanelVisible) {
+      lastVisibleSizeRef.current = targetSize;
+    }
     if (Math.abs(currentSize - targetSize) >= 1) {
       panel.resize(targetSize);
     }
@@ -59,6 +79,7 @@ export function useTimelinePanelSizing(sourceId: string, audioTrackCount: number
     constraints,
     initialDefaultSize: FALLBACK_CONSTRAINTS.defaultSize,
     panelRef,
+    rememberVisibleSize,
     resetToDefault,
   };
 }
