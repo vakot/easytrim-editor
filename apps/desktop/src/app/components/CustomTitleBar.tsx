@@ -114,8 +114,6 @@ export function CustomTitleBar({ onLogoClick, panelControls }: CustomTitleBarPro
         </span>
       </button>
 
-      {panelControls ? <div className="flex h-full items-center px-1">{panelControls}</div> : null}
-
       <div
         className="h-full min-w-0 flex-1 cursor-default"
         onPointerDown={handleDragPointerDown}
@@ -124,6 +122,8 @@ export function CustomTitleBar({ onLogoClick, panelControls }: CustomTitleBarPro
         onPointerCancel={handleDragPointerEnd}
         aria-hidden="true"
       />
+
+      {panelControls ? <div className="flex h-full items-center px-1">{panelControls}</div> : null}
 
       <div
         className="flex h-full items-stretch"
