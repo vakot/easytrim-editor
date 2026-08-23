@@ -42,10 +42,10 @@ export const en = {
     dragUnavailable: "Drag and drop is unavailable: {{message}}",
     panels: {
       group: "Editor panels",
-      hideSourceDetails: "Hide source details panel",
-      showSourceDetails: "Show source details panel",
-      hideAudioTracks: "Hide audio tracks panel",
-      showAudioTracks: "Show audio tracks panel",
+      hideLeftPane: "Hide left pane",
+      showLeftPane: "Show left pane",
+      hideBottomPane: "Hide bottom pane",
+      showBottomPane: "Show bottom pane",
     },
     windowControls: {
       titleBar: "Window title bar",

@@ -23,9 +23,7 @@ export function PanelVisibilityControls({ hasAudioTracks }: PanelVisibilityContr
             variant="ghost"
             size="icon-sm"
             aria-label={
-              showSourceDetails
-                ? t("app.panels.hideSourceDetails")
-                : t("app.panels.showSourceDetails")
+              showSourceDetails ? t("app.panels.hideLeftPane") : t("app.panels.showLeftPane")
             }
             aria-pressed={showSourceDetails}
             data-state={showSourceDetails ? "on" : "off"}
@@ -40,9 +38,7 @@ export function PanelVisibilityControls({ hasAudioTracks }: PanelVisibilityContr
           </Button>
         </TooltipTrigger>
         <TooltipContent>
-          {showSourceDetails
-            ? t("app.panels.hideSourceDetails")
-            : t("app.panels.showSourceDetails")}
+          {showSourceDetails ? t("app.panels.hideLeftPane") : t("app.panels.showLeftPane")}
         </TooltipContent>
       </Tooltip>
 
@@ -54,7 +50,7 @@ export function PanelVisibilityControls({ hasAudioTracks }: PanelVisibilityContr
             size="icon-sm"
             disabled={!hasAudioTracks}
             aria-label={
-              showAudioTracks ? t("app.panels.hideAudioTracks") : t("app.panels.showAudioTracks")
+              showAudioTracks ? t("app.panels.hideBottomPane") : t("app.panels.showBottomPane")
             }
             aria-pressed={showAudioTracks}
             data-state={showAudioTracks ? "on" : "off"}
@@ -69,7 +65,7 @@ export function PanelVisibilityControls({ hasAudioTracks }: PanelVisibilityContr
           </Button>
         </TooltipTrigger>
         <TooltipContent>
-          {showAudioTracks ? t("app.panels.hideAudioTracks") : t("app.panels.showAudioTracks")}
+          {showAudioTracks ? t("app.panels.hideBottomPane") : t("app.panels.showBottomPane")}
         </TooltipContent>
       </Tooltip>
     </div>

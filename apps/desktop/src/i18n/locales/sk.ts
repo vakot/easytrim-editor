@@ -48,10 +48,10 @@ export const sk = {
     dragUnavailable: "Presunutie súboru nie je dostupné: {{message}}",
     panels: {
       group: "Panely editora",
-      hideSourceDetails: "Skryť panel podrobností zdroja",
-      showSourceDetails: "Zobraziť panel podrobností zdroja",
-      hideAudioTracks: "Skryť panel zvukových stôp",
-      showAudioTracks: "Zobraziť panel zvukových stôp",
+      hideLeftPane: "Skryť ľavý panel",
+      showLeftPane: "Zobraziť ľavý panel",
+      hideBottomPane: "Skryť spodný panel",
+      showBottomPane: "Zobraziť spodný panel",
     },
     windowControls: {
       titleBar: "Titulkový panel okna",

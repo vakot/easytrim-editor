@@ -399,10 +399,10 @@ describe("App", () => {
     expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
 
     const sourceDetailsToggle = screen.getByRole("button", {
-      name: "Hide source details panel",
+      name: "Hide left pane",
     });
     const audioTracksToggle = screen.getByRole("button", {
-      name: "Hide audio tracks panel",
+      name: "Hide bottom pane",
     });
     expect(sourceDetailsToggle).toHaveAttribute("aria-pressed", "true");
     expect(audioTracksToggle).toHaveAttribute("aria-pressed", "true");
@@ -415,7 +415,7 @@ describe("App", () => {
       "false",
     );
 
-    await user.click(screen.getByRole("button", { name: "Show source details panel" }));
+    await user.click(screen.getByRole("button", { name: "Show left pane" }));
     expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
 
     await user.click(audioTracksToggle);
@@ -426,7 +426,7 @@ describe("App", () => {
       "false",
     );
 
-    await user.click(screen.getByRole("button", { name: "Show audio tracks panel" }));
+    await user.click(screen.getByRole("button", { name: "Show bottom pane" }));
     expect(screen.getByTestId("audio-tracks-scroll")).toBeInTheDocument();
     expect(document.getElementById("preview-timeline-resize-handle")).toHaveAttribute(
       "aria-hidden",
