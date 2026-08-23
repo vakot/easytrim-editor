@@ -73,6 +73,7 @@ export function SegmentDragHandle({
 }
 
 interface TrimHandleProps {
+  disabled?: boolean;
   boundary: TrimBoundary;
   value: number;
   minimum: number;
@@ -87,6 +88,7 @@ interface TrimHandleProps {
 }
 
 export function TrimHandle({
+  disabled = false,
   boundary,
   value,
   minimum,
@@ -110,6 +112,7 @@ export function TrimHandle({
             `trim-handle-${boundary}`,
             styles.trim,
             boundary === "start" ? styles.start : styles.end,
+            disabled && "pointer-events-none cursor-not-allowed opacity-50",
           )}
           type="button"
           role="slider"
@@ -118,6 +121,7 @@ export function TrimHandle({
           aria-valuemax={maximum}
           aria-valuenow={value}
           aria-valuetext={t("timeline.accessibleSeconds", { value: formatAccessibleTime(value) })}
+          disabled={disabled}
           data-dragging={dragging ? "true" : undefined}
           data-snap-active={snapActive ? "true" : undefined}
           style={{

@@ -34,6 +34,7 @@ const PLAYBACK_SPEED_MARKERS = [0.5, 1, 1.5, 2, 3].map((speed) => ({
 }));
 
 interface PlaybackControlsProps {
+  disabled?: boolean;
   isPlaying: boolean;
   error: string | null;
   canSetSegmentStart: boolean;
@@ -44,6 +45,7 @@ interface PlaybackControlsProps {
 }
 
 export function PlaybackControls({
+  disabled = false,
   isPlaying,
   error,
   canSetSegmentStart,
@@ -61,9 +63,11 @@ export function PlaybackControls({
           label={t("preview.setStart")}
           shortcut="I"
           title={
-            canSetSegmentStart ? t("preview.setStartShortcut") : t("preview.setStartUnavailable")
+            !disabled && canSetSegmentStart
+              ? t("preview.setStartShortcut")
+              : t("preview.setStartUnavailable")
           }
-          disabled={!canSetSegmentStart}
+          disabled={disabled || !canSetSegmentStart}
           onClick={() => onSetSegmentBoundary("start")}
         >
           <SquareArrowRight />
@@ -72,6 +76,7 @@ export function PlaybackControls({
           label={t("preview.previousFrame")}
           shortcut="ArrowLeft"
           title={t("preview.previousFrameShortcut")}
+          disabled={disabled}
           onClick={() => onStepFrame(-1)}
         >
           <SkipBack />
@@ -80,6 +85,7 @@ export function PlaybackControls({
           label={isPlaying ? t("preview.pause") : t("preview.play")}
           shortcut="Space"
           title={isPlaying ? t("preview.pauseShortcut") : t("preview.playShortcut")}
+          disabled={disabled}
           primary
           onClick={onTogglePlayback}
         >
@@ -89,6 +95,7 @@ export function PlaybackControls({
           label={t("preview.nextFrame")}
           shortcut="ArrowRight"
           title={t("preview.nextFrameShortcut")}
+          disabled={disabled}
           onClick={() => onStepFrame(1)}
         >
           <SkipForward />
@@ -96,8 +103,12 @@ export function PlaybackControls({
         <TransportButton
           label={t("preview.setEnd")}
           shortcut="O"
-          title={canSetSegmentEnd ? t("preview.setEndShortcut") : t("preview.setEndUnavailable")}
-          disabled={!canSetSegmentEnd}
+          title={
+            !disabled && canSetSegmentEnd
+              ? t("preview.setEndShortcut")
+              : t("preview.setEndUnavailable")
+          }
+          disabled={disabled || !canSetSegmentEnd}
           onClick={() => onSetSegmentBoundary("end")}
         >
           <SquareArrowLeft />

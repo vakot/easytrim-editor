@@ -205,6 +205,21 @@ describe("App", () => {
       "aria-description",
       "Timeline values will appear after a video is opened.",
     );
+    expect(screen.getByLabelText("Current playback time")).toHaveTextContent("--- / ---");
+    expect(screen.queryByRole("heading", { name: "Audio tracks" })).not.toBeInTheDocument();
+    expect(screen.getByRole("toolbar", { name: "Video timeline tools" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Play" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Previous frame" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Next frame" })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Set segment start to current position" }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Set segment end to current position" }),
+    ).toBeDisabled();
+    expect(screen.getByRole("slider", { name: "Trim start" })).toBeDisabled();
+    expect(screen.getByRole("slider", { name: "Trim end" })).toBeDisabled();
+    expect(screen.queryByRole("slider", { name: "Playback position" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "File" })).toBeInTheDocument();
   });
 

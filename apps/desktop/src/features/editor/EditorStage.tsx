@@ -18,7 +18,8 @@ import { PlaybackControls, PlaybackTimecode, TimelineTools } from "../preview/Pl
 import { VideoPreview } from "../preview/VideoPreview";
 import { TrimTimeline } from "../timeline";
 import { TimelinePane } from "./components/TimelinePane";
-import { EmptyEditorStage } from "./EmptyEditorStage";
+import { PreviewPane } from "./components/PreviewPane";
+import { EditorStageEmpty } from "./EditorStageEmpty";
 import { usePlaybackModes } from "./hooks/usePlaybackModes";
 import { usePlaybackSpeed } from "./hooks/usePlaybackSpeed";
 import { useTimelinePanelSizing } from "./hooks/useTimelinePanelSizing";
@@ -34,12 +35,8 @@ import {
   waitForSeekToSettle,
 } from "./utils/media-sync";
 
-export function EditorStage(props: EditorStageProps) {
-  if ("empty" in props) {
-    return <EmptyEditorStage />;
-  }
-
-  return <LoadedEditorStage {...props} />;
+export function EditorStage({ source }: EditorStageProps) {
+  return source ? <LoadedEditorStage {...source} /> : <EditorStageEmpty />;
 }
 
 function LoadedEditorStage({
@@ -719,7 +716,7 @@ function LoadedEditorStage({
       aria-label={t("preview.panes")}
     >
       <Panel id="preview-panel" minSize="14rem" className="min-h-0 min-w-0">
-        <div className="grid size-full min-h-0 place-items-center overflow-auto bg-preview-surface p-4">
+        <PreviewPane>
           <VideoPreview
             sourceId={sourceId}
             preview={preview}
@@ -762,7 +759,7 @@ function LoadedEditorStage({
             onCropChange={onCropChange}
             onCropToolOpenChange={handleCropToolOpenChange}
           />
-        </div>
+        </PreviewPane>
       </Panel>
 
       <PaneResizeHandle

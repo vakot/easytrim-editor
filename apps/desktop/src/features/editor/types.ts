@@ -27,11 +27,9 @@ export interface LoadedEditorStageProps {
   onCropChange: (crop: { x: number; y: number; width: number; height: number }) => void;
 }
 
-export interface EmptyEditorStageProps {
-  empty: true;
+export interface EditorStageProps {
+  source: LoadedEditorStageProps | null;
 }
-
-export type EditorStageProps = LoadedEditorStageProps | EmptyEditorStageProps;
 
 export interface EditorShortcutActions {
   enabled: boolean;

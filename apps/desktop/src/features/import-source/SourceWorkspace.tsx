@@ -59,7 +59,7 @@ export function SourceWorkspace({
           className="relative min-h-0 min-w-0 overflow-hidden"
           aria-label={t("import.source.previewArea")}
         >
-          <EditorStage empty />
+          <EditorStage source={null} />
           {isSourceDragActive ? <DropOverlay /> : null}
         </div>
       </div>
@@ -67,6 +67,42 @@ export function SourceWorkspace({
   }
 
   const source = session.source;
+  const editorSource =
+    source && session.status === "ready" && source.media && source.trim
+      ? {
+          sourceId: source.selection.sourceId,
+          preview: source.preview,
+          trim: source.trim,
+          frameRate: source.media.video.averageFrameRate ?? source.media.video.realFrameRate,
+          audioStreams: source.media.audioStreams,
+          audioTracks: source.audioTracks,
+          masterEnabled: source.masterEnabled,
+          masterVolumePercent: source.masterVolumePercent,
+          mergeAudio: source.mergeAudio,
+          onPreviewPlaybackError,
+          onTrimChange: (trim: Parameters<typeof onTrimChange>[1]) =>
+            onTrimChange(source.selection.sourceId, trim),
+          onPrepareWaveforms: (streamIndexes: number[], width: number) =>
+            onPrepareWaveforms(source.selection.sourceId, streamIndexes, width),
+          onToggleAudioTrack: (streamIndex: number) =>
+            onToggleAudioTrack(source.selection.sourceId, streamIndex),
+          onAudioTrackVolumeChange: (streamIndex: number, volumePercent: number) =>
+            onAudioTrackVolumeChange(source.selection.sourceId, streamIndex, volumePercent),
+          onToggleAudioMaster: () => onToggleAudioMaster(source.selection.sourceId),
+          onMasterVolumeChange: (volumePercent: number) =>
+            onMasterVolumeChange(source.selection.sourceId, volumePercent),
+          onToggleAudioMerge: () => onToggleAudioMerge(source.selection.sourceId),
+          onWaveformImageError: (streamIndex: number) =>
+            onWaveformImageError(source.selection.sourceId, streamIndex),
+          audioPreviewUrls,
+          sourceDimensions: {
+            width: source.media.video.width,
+            height: source.media.video.height,
+          },
+          onCropResolutionChange,
+          onCropChange,
+        }
+      : null;
 
   return (
     <Group
@@ -107,46 +143,7 @@ export function SourceWorkspace({
           className="relative h-full min-h-0 min-w-0"
           aria-label={t("import.source.previewArea")}
         >
-          {source && session.status === "ready" && source.media && source.trim ? (
-            <EditorStage
-              key={source.selection.sourceId}
-              sourceId={source.selection.sourceId}
-              preview={source.preview}
-              trim={source.trim}
-              frameRate={source.media.video.averageFrameRate ?? source.media.video.realFrameRate}
-              audioStreams={source.media.audioStreams}
-              audioTracks={source.audioTracks}
-              masterEnabled={source.masterEnabled}
-              masterVolumePercent={source.masterVolumePercent}
-              mergeAudio={source.mergeAudio}
-              onPreviewPlaybackError={onPreviewPlaybackError}
-              onTrimChange={(trim) => onTrimChange(source.selection.sourceId, trim)}
-              onPrepareWaveforms={(streamIndexes, width) =>
-                onPrepareWaveforms(source.selection.sourceId, streamIndexes, width)
-              }
-              onToggleAudioTrack={(streamIndex) =>
-                onToggleAudioTrack(source.selection.sourceId, streamIndex)
-              }
-              onAudioTrackVolumeChange={(streamIndex, volumePercent) =>
-                onAudioTrackVolumeChange(source.selection.sourceId, streamIndex, volumePercent)
-              }
-              onToggleAudioMaster={() => onToggleAudioMaster(source.selection.sourceId)}
-              onMasterVolumeChange={(volumePercent) =>
-                onMasterVolumeChange(source.selection.sourceId, volumePercent)
-              }
-              onToggleAudioMerge={() => onToggleAudioMerge(source.selection.sourceId)}
-              onWaveformImageError={(streamIndex) =>
-                onWaveformImageError(source.selection.sourceId, streamIndex)
-              }
-              audioPreviewUrls={audioPreviewUrls}
-              sourceDimensions={{
-                width: source.media.video.width,
-                height: source.media.video.height,
-              }}
-              onCropResolutionChange={onCropResolutionChange}
-              onCropChange={onCropChange}
-            />
-          ) : null}
+          {editorSource ? <EditorStage key={editorSource.sourceId} source={editorSource} /> : null}
           {isSourceDragActive ? <DropOverlay /> : null}
         </div>
       </Panel>

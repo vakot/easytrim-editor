@@ -1,0 +1,63 @@
+import { useTranslation } from "react-i18next";
+
+const EMPTY_STAGE_WIDTH = "w-[clamp(12rem,35vw,24rem)] max-w-[calc(100vw-3rem)]";
+const EMPTY_LOGO_WIDTH = "w-[clamp(9rem,26vw,18rem)] max-w-[calc(100vw-3rem)]";
+
+export function PreviewPaneEmpty() {
+  const { t } = useTranslation();
+  const shortcuts = [
+    { label: t("import.emptyStage.shortcuts.open"), keys: ["Ctrl", "O"] },
+    { label: t("import.emptyStage.shortcuts.save"), keys: ["Ctrl", "S"] },
+    { label: t("import.emptyStage.shortcuts.export"), keys: ["Ctrl", "E"] },
+    { label: t("import.emptyStage.shortcuts.playPause"), keys: ["Space"] },
+    {
+      label: t("import.emptyStage.shortcuts.previousNextFrame"),
+      keys: ["←", "→"],
+      separator: "/",
+    },
+    {
+      label: t("import.emptyStage.shortcuts.setMarkers"),
+      keys: ["I", "O"],
+      separator: "/",
+    },
+  ];
+
+  return (
+    <div className={`grid ${EMPTY_STAGE_WIDTH} justify-items-center gap-5 px-6 text-center`}>
+      <img
+        src="/logo-symbol.svg"
+        alt=""
+        aria-hidden="true"
+        className={`${EMPTY_LOGO_WIDTH} pointer-events-none aspect-square grayscale opacity-100`}
+      />
+      <div
+        className="grid w-full gap-1.5 text-left text-xs text-muted-foreground"
+        role="list"
+        aria-label={t("import.emptyStage.shortcutsLabel")}
+      >
+        {shortcuts.map((shortcut) => (
+          <div className="flex min-w-0 items-center gap-2" key={shortcut.label} role="listitem">
+            <span className="shrink-0">{shortcut.label}</span>
+            <span
+              className="min-w-4 flex-1 border-b border-dotted border-border/70"
+              aria-hidden="true"
+            />
+            <span
+              className="flex shrink-0 items-center gap-1"
+              aria-label={shortcut.keys.join(` ${shortcut.separator ?? "+"} `)}
+            >
+              {shortcut.keys.map((key, index) => (
+                <span className="flex items-center gap-1" key={key}>
+                  {index > 0 ? <span aria-hidden="true">{shortcut.separator ?? "+"}</span> : null}
+                  <kbd className="rounded border border-border bg-card px-1.5 py-0.5 font-mono text-[11px] text-foreground shadow-sm">
+                    {key}
+                  </kbd>
+                </span>
+              ))}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
