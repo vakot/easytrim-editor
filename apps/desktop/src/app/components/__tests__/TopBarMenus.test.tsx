@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
@@ -70,5 +70,51 @@ describe("TopBarMenus", () => {
 
     expect(screen.getByRole("menuitem", { name: /English/ })).toHaveTextContent("EN");
     expect(screen.getByRole("menuitem", { name: /Slov/ })).toHaveTextContent("SK");
+  });
+
+  it("switches between open menus on hover but stays click-to-open when closed", async () => {
+    const user = userEvent.setup();
+    render(
+      <TooltipProvider>
+        <ThemeProvider>
+          <TopBarMenus
+            isChoosingSource={false}
+            canSave
+            canExport
+            onChooseSource={vi.fn()}
+            onSave={vi.fn()}
+            onExport={vi.fn()}
+          />
+        </ThemeProvider>
+      </TooltipProvider>,
+    );
+
+    const fileButton = screen.getByRole("button", { name: "File" });
+    const editButton = screen.getByRole("button", { name: "Edit" });
+    const viewButton = screen.getByRole("button", { name: "View" });
+
+    await user.hover(editButton);
+    expect(screen.queryByRole("menuitem", { name: /Save/ })).not.toBeInTheDocument();
+
+    await user.click(fileButton);
+    expect(screen.getByRole("menuitem", { name: /Open File/ })).toBeInTheDocument();
+    await user.hover(editButton);
+
+    await waitFor(() => {
+      expect(screen.getByRole("menuitem", { name: /Save/ })).toHaveTextContent("Ctrl+S");
+      expect(screen.queryByRole("menuitem", { name: /Open File/ })).not.toBeInTheDocument();
+    });
+
+    await user.hover(viewButton);
+    await waitFor(() => {
+      expect(screen.getByRole("menuitem", { name: /Theme/ })).toBeInTheDocument();
+      expect(screen.queryByRole("menuitem", { name: /Save/ })).not.toBeInTheDocument();
+    });
+
+    await user.hover(fileButton);
+    await waitFor(() => {
+      expect(screen.getByRole("menuitem", { name: /Open File/ })).toBeInTheDocument();
+      expect(screen.queryByRole("menuitem", { name: /Theme/ })).not.toBeInTheDocument();
+    });
   });
 });

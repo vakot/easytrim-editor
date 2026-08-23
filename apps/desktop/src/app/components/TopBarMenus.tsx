@@ -1,4 +1,5 @@
 import { Monitor, Moon, Sun } from "lucide-react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { ContextMenu, type ContextMenuOption } from "@/components/ui/context-menu";
@@ -16,6 +17,7 @@ interface TopBarMenusProps {
 }
 
 const themeIcons = { system: Monitor, light: Sun, dark: Moon } as const;
+type TopBarMenuId = "file" | "edit" | "view";
 
 const colorClasses: Record<Exclude<PrimaryColor, `#${string}`>, string> = {
   amber: "bg-[#efbf04]",
@@ -35,8 +37,32 @@ export function TopBarMenus({
 }: TopBarMenusProps) {
   const { t, i18n } = useTranslation();
   const { preference, primaryColor, setPreference, setPrimaryColor } = useTheme();
+  const [openMenu, setOpenMenu] = useState<TopBarMenuId | null>(null);
+  const [switchingMenu, setSwitchingMenu] = useState<TopBarMenuId | null>(null);
   const currentLanguage = isSupportedLanguage(i18n.resolvedLanguage) ? i18n.resolvedLanguage : "en";
   const CurrentThemeIcon = themeIcons[preference];
+
+  const menuProps = (id: TopBarMenuId) => ({
+    open: openMenu === id,
+    onOpenChange: (isOpen: boolean) => {
+      if (!isOpen && switchingMenu === id) {
+        setSwitchingMenu(null);
+        return;
+      }
+
+      if (isOpen) setSwitchingMenu(null);
+      setOpenMenu((current) => {
+        if (isOpen) return id;
+        return current === id ? null : current;
+      });
+    },
+    onTriggerPointerEnter: () => {
+      if (openMenu !== null && openMenu !== id) {
+        setSwitchingMenu(id);
+        setOpenMenu(id);
+      }
+    },
+  });
 
   const themeOptions: ContextMenuOption[] = (["system", "light", "dark"] as const).map((value) => {
     const Icon = themeIcons[value];
@@ -65,6 +91,7 @@ export function TopBarMenus({
   return (
     <nav className="flex h-full items-center gap-0.5" aria-label={t("app.topBarMenus.label")}>
       <ContextMenu
+        {...menuProps("file")}
         label={t("app.topBarMenus.file")}
         options={[
           {
@@ -77,6 +104,7 @@ export function TopBarMenus({
         ]}
       />
       <ContextMenu
+        {...menuProps("edit")}
         label={t("app.topBarMenus.edit")}
         options={[
           {
@@ -96,6 +124,7 @@ export function TopBarMenus({
         ]}
       />
       <ContextMenu
+        {...menuProps("view")}
         label={t("app.topBarMenus.view")}
         options={[
           {

@@ -18,16 +18,27 @@ interface ContextMenuProps {
   label: string;
   options: readonly ContextMenuOption[];
   className?: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  onTriggerPointerEnter?: () => void;
 }
 
-export function ContextMenu({ label, options, className }: ContextMenuProps) {
+export function ContextMenu({
+  label,
+  options,
+  className,
+  open,
+  onOpenChange,
+  onTriggerPointerEnter,
+}: ContextMenuProps) {
   return (
-    <DropdownMenuPrimitive.Root>
+    <DropdownMenuPrimitive.Root modal={false} open={open} onOpenChange={onOpenChange}>
       <DropdownMenuPrimitive.Trigger asChild>
         <Button
           type="button"
           variant="ghost"
           size="sm"
+          onPointerEnter={onTriggerPointerEnter}
           className={cn(
             "text-foreground/80 data-[state=open]:bg-accent data-[state=open]:text-foreground",
             className,
