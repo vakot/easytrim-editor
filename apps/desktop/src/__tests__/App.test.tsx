@@ -86,6 +86,14 @@ const media: MediaInfo = {
 
 let sourceDropListener: ((event: SourceDropEvent) => void) | undefined;
 
+async function openSource(user: ReturnType<typeof userEvent.setup>) {
+  const fileMenu = screen.getByRole("button", { name: "File" });
+  if (fileMenu.getAttribute("aria-expanded") !== "true") {
+    await user.click(fileMenu);
+  }
+  await user.click(screen.getByRole("menuitem", { name: /Open File/ }));
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   sourceDropListener = undefined;
@@ -129,11 +137,8 @@ beforeEach(() => {
 });
 
 describe("App", () => {
-  it("preserves editor tools across source replacement and returning to welcome", async () => {
-    mocks.chooseSource
-      .mockResolvedValueOnce(selection)
-      .mockResolvedValueOnce(replacementSelection)
-      .mockResolvedValueOnce(selection);
+  it("preserves editor tools across source replacement", async () => {
+    mocks.chooseSource.mockResolvedValueOnce(selection).mockResolvedValueOnce(replacementSelection);
     mocks.inspectMedia.mockImplementation(async (sourceId: string) => ({ ...media, sourceId }));
     mocks.prepareSourcePreview.mockImplementation(async (sourceId: string) => ({
       sourceId,
@@ -143,7 +148,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Select video" }));
+    await openSource(user);
     await screen.findByRole("heading", { name: "Selected Segment" });
     await user.click(screen.getByRole("button", { name: "Safe trim following" }));
     await user.click(screen.getByRole("button", { name: "Loop playback" }));
@@ -170,30 +175,13 @@ describe("App", () => {
       "aria-pressed",
       "false",
     );
-
-    await user.click(screen.getByRole("button", { name: "EasyTrim Editor" }));
-    await user.click(screen.getByRole("button", { name: "Return to welcome" }));
-    await user.click(screen.getByRole("button", { name: "Select video" }));
-    await screen.findByRole("heading", { name: "Selected Segment" });
-
-    expect(screen.getByRole("button", { name: "Safe trim following" })).toHaveAttribute(
-      "aria-pressed",
-      "false",
-    );
-    expect(screen.getByRole("button", { name: "Loop playback" })).toHaveAttribute(
-      "aria-pressed",
-      "false",
-    );
   });
 
-  it("starts with a full workspace import view", async () => {
+  it("starts with an empty editor shell", () => {
     render(<App />);
 
-    expect(screen.getByText("Start a new clip")).toBeInTheDocument();
-    expect(screen.getByText("Drop a supported video here")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Open a video" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Select video" })).toBeInTheDocument();
     expect(screen.queryByLabelText("Video editor workspace")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "File" })).toBeInTheDocument();
   });
 
   it("opens the source picker with Ctrl+O", () => {
@@ -209,7 +197,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Select video" }));
+    await openSource(user);
 
     expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
     expect(await screen.findByText("3840 × 2160")).toBeInTheDocument();
@@ -368,11 +356,6 @@ describe("App", () => {
     expect(audioTracksScroll).toHaveClass("overflow-hidden");
     expect(audioTracksScroll.querySelector('[data-slot="scroll-area-viewport"]')).not.toBeNull();
     expect(screen.queryByTestId("timeline-pane-scroll")).not.toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Open a video" })).not.toBeInTheDocument();
-    expect(screen.queryByText("Local video editor")).not.toBeInTheDocument();
-    expect(
-      screen.queryByText("Import a video to inspect its source and prepare a precise cut."),
-    ).not.toBeInTheDocument();
     expect(screen.getByRole("banner", { name: "Window title bar" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "File" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Edit" })).toBeInTheDocument();
@@ -385,7 +368,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Select video" }));
+    await openSource(user);
 
     expect(await screen.findByRole("heading", { name: "Selected Segment" })).toBeInTheDocument();
     expect(screen.queryByTestId("audio-tracks-scroll")).not.toBeInTheDocument();
@@ -398,7 +381,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Select video" }));
+    await openSource(user);
     expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
 
     const sourceDetailsToggle = screen.getByRole("button", {
@@ -437,64 +420,12 @@ describe("App", () => {
     );
   });
 
-  it("uses Escape to show and then dismiss the return confirmation dialog", async () => {
-    mocks.chooseSource.mockResolvedValue(selection);
-    const user = userEvent.setup();
-    render(<App />);
-
-    await user.click(screen.getByRole("button", { name: "Select video" }));
-    expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
-
-    fireEvent.keyDown(window, { key: "Escape" });
-    expect(screen.getByRole("dialog")).toBeInTheDocument();
-
-    fireEvent.keyDown(window, { key: "Escape" });
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-  });
-
-  it("uses Escape to clear focus before requesting a return home", async () => {
-    mocks.chooseSource.mockResolvedValue(selection);
-    const user = userEvent.setup();
-    render(<App />);
-
-    await user.click(screen.getByRole("button", { name: "Select video" }));
-    await screen.findByRole("heading", { name: "holiday.mp4" });
-    const fileMenuButton = screen.getByRole("button", { name: "File" });
-    fileMenuButton.focus();
-    expect(document.activeElement).toBe(fileMenuButton);
-
-    fireEvent.keyDown(window, { key: "Escape" });
-
-    expect(document.activeElement).toBe(document.body);
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-
-    fireEvent.keyDown(window, { key: "Escape" });
-    expect(screen.getByRole("dialog")).toBeInTheDocument();
-  });
-
-  it("closes an open export dialog before Escape can request returning home", async () => {
-    mocks.chooseSource.mockResolvedValue(selection);
-    const user = userEvent.setup();
-    render(<App />);
-
-    await user.click(screen.getByRole("button", { name: "Select video" }));
-    await screen.findByRole("heading", { name: "holiday.mp4" });
-    screen.getByRole("button", { name: "Edit" }).focus();
-    await user.keyboard("{Enter}");
-    await user.click(screen.getByRole("menuitem", { name: /Optimized Export/ }));
-    expect(screen.getByRole("dialog")).toBeInTheDocument();
-
-    fireEvent.keyDown(window, { key: "Escape" });
-
-    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
-  });
-
   it("keeps a track volume control open while its volume button is hovered", async () => {
     mocks.chooseSource.mockResolvedValue(selection);
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Select video" }));
+    await openSource(user);
     await screen.findByRole("heading", { name: "holiday.mp4" });
     const volumeButton = screen.getByRole("button", { name: "Mute eng" });
     expect(volumeButton).not.toHaveAttribute("title");
@@ -528,7 +459,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Select video" }));
+    await openSource(user);
     const mutedButton = await screen.findByRole("button", { name: "Enable eng" });
     expect(mutedButton).toHaveAttribute("aria-pressed", "false");
 
@@ -573,7 +504,7 @@ describe("App", () => {
 
     try {
       render(<App />);
-      await user.click(screen.getByRole("button", { name: "Select video" }));
+      await openSource(user);
 
       expect(await screen.findByRole("heading", { name: "Audio tracks" })).toBeInTheDocument();
       const allTracks = screen.getByRole("button", { name: "All audio tracks" });
@@ -702,7 +633,7 @@ describe("App", () => {
 
     try {
       render(<App />);
-      await user.click(screen.getByRole("button", { name: "Select video" }));
+      await openSource(user);
 
       const retry = await screen.findByRole("button", { name: "Retry" });
       expect(screen.getByRole("button", { name: "Mute eng" })).toHaveAttribute(
@@ -722,7 +653,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Select video" }));
+    await openSource(user);
     const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
     const play = vi.spyOn(video, "play").mockResolvedValue();
     const pause = vi.spyOn(video, "pause").mockImplementation(() => undefined);
@@ -786,7 +717,7 @@ describe("App", () => {
 
     try {
       render(<App />);
-      await user.click(screen.getByRole("button", { name: "Select video" }));
+      await openSource(user);
       const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
       await waitFor(() => expect(audioConstructor).toHaveBeenCalledOnce());
       const videoPlay = vi.spyOn(video, "play").mockImplementation(async () => {
@@ -817,7 +748,7 @@ describe("App", () => {
     const user = userEvent.setup();
 
     render(<App />);
-    await user.click(screen.getByRole("button", { name: "Select video" }));
+    await openSource(user);
 
     const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
     const videoPause = vi.spyOn(video, "pause").mockImplementation(() => undefined);
@@ -837,7 +768,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Select video" }));
+    await openSource(user);
     const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
     const play = vi.spyOn(video, "play").mockResolvedValue();
     const pause = vi.spyOn(video, "pause").mockImplementation(() => undefined);
@@ -889,7 +820,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Select video" }));
+    await openSource(user);
     const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
     const play = vi.spyOn(video, "play").mockResolvedValue();
     vi.spyOn(video, "pause").mockImplementation(() => undefined);
@@ -915,7 +846,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Select video" }));
+    await openSource(user);
     const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
     const play = vi.spyOn(video, "play").mockResolvedValue();
     const pause = vi.spyOn(video, "pause").mockImplementation(() => undefined);
@@ -962,7 +893,7 @@ describe("App", () => {
     const user = userEvent.setup();
     const view = render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Select video" }));
+    await openSource(user);
     await screen.findByLabelText("Source video preview");
     view.unmount();
 
@@ -975,7 +906,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Select video" }));
+    await openSource(user);
     const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
     const startHandle = screen.getByRole("slider", { name: "Trim start" });
     const endHandle = screen.getByRole("slider", { name: "Trim end" });
@@ -1024,7 +955,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Select video" }));
+    await openSource(user);
     const directPreview = await screen.findByLabelText("Source video preview");
     fireEvent.error(directPreview);
 
@@ -1043,7 +974,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Select video" }));
+    await openSource(user);
     const startHandle = await screen.findByRole("slider", { name: "Trim start" });
     const endHandle = screen.getByRole("slider", { name: "Trim end" });
 
@@ -1062,7 +993,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Select video" }));
+    await openSource(user);
     const timeline = await screen.findByLabelText("Video trim timeline");
     vi.spyOn(timeline, "getBoundingClientRect").mockReturnValue({
       x: 100,
@@ -1108,7 +1039,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Select video" }));
+    await openSource(user);
     const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
     const startHandle = screen.getByRole("slider", { name: "Trim start" });
     const endHandle = screen.getByRole("slider", { name: "Trim end" });
@@ -1140,7 +1071,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Select video" }));
+    await openSource(user);
     const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
     const play = vi.spyOn(video, "play").mockResolvedValue();
     vi.spyOn(video, "pause").mockImplementation(() => undefined);
@@ -1159,7 +1090,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Select video" }));
+    await openSource(user);
     const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
     const timeline = screen.getByLabelText("Video trim timeline");
     vi.spyOn(timeline, "getBoundingClientRect").mockReturnValue({
@@ -1260,7 +1191,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Select video" }));
+    await openSource(user);
     const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
     const timeline = screen.getByLabelText("Video trim timeline");
     vi.spyOn(timeline, "getBoundingClientRect").mockReturnValue({
@@ -1440,7 +1371,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Select video" }));
+    await openSource(user);
     const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
     const timeline = screen.getByLabelText("Video trim timeline");
     vi.spyOn(timeline, "getBoundingClientRect").mockReturnValue({
@@ -1532,7 +1463,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Select video" }));
+    await openSource(user);
     const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
     const timeline = screen.getByLabelText("Video trim timeline");
     vi.spyOn(timeline, "getBoundingClientRect").mockReturnValue({
@@ -1645,7 +1576,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Select video" }));
+    await openSource(user);
     const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
     const timeline = screen.getByLabelText("Video trim timeline");
     vi.spyOn(timeline, "getBoundingClientRect").mockReturnValue({
@@ -1702,7 +1633,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Select video" }));
+    await openSource(user);
     const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
     const timeline = screen.getByLabelText("Video trim timeline");
     vi.spyOn(timeline, "getBoundingClientRect").mockReturnValue({
@@ -1752,7 +1683,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Select video" }));
+    await openSource(user);
     const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
     const timeline = screen.getByLabelText("Video trim timeline");
     vi.spyOn(timeline, "getBoundingClientRect").mockReturnValue({
@@ -1830,7 +1761,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Select video" }));
+    await openSource(user);
     const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
     vi.spyOn(video, "pause").mockImplementation(() => undefined);
     const timeline = screen.getByLabelText("Video trim timeline");
@@ -1959,7 +1890,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Select video" }));
+    await openSource(user);
     const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
     const play = vi.spyOn(video, "play").mockResolvedValue();
     vi.spyOn(video, "pause").mockImplementation(() => undefined);
@@ -2014,7 +1945,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Select video" }));
+    await openSource(user);
     const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
     const play = vi.spyOn(video, "play").mockResolvedValue();
     vi.spyOn(video, "pause").mockImplementation(() => undefined);
@@ -2038,7 +1969,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Select video" }));
+    await openSource(user);
     const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
     video.currentTime = 12.5;
     fireEvent.timeUpdate(video);
@@ -2057,7 +1988,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Select video" }));
+    await openSource(user);
     fireEvent.error(await screen.findByLabelText("Source video preview"));
     const proxyPreview = await screen.findByText("720p preview");
     expect(proxyPreview).toBeInTheDocument();
@@ -2074,7 +2005,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Select video" }));
+    await openSource(user);
     expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
 
     screen.getByRole("button", { name: "File" }).focus();
@@ -2103,7 +2034,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Select video" }));
+    await openSource(user);
     expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
 
     act(() => {
@@ -2134,7 +2065,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Select video" }));
+    await openSource(user);
     expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
 
     act(() => sourceDropListener?.({ status: "drag", active: true }));

@@ -61,7 +61,6 @@ export const initialSessionState: SessionState = {
 type SessionAction =
   | { type: "capabilities-ready"; capabilities: MediaCapabilities }
   | { type: "capabilities-failed"; error: AppError }
-  | { type: "return-to-welcome" }
   | { type: "source-selected"; source: SourceSelection }
   | { type: "source-ready"; sourceId: string; media: MediaInfo }
   | { type: "source-failed"; sourceId?: string; error: AppError }
@@ -109,13 +108,6 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
       return {
         ...state,
         capabilities: { status: "failed", error: action.error },
-      };
-    case "return-to-welcome":
-      return {
-        ...state,
-        status: "idle",
-        source: null,
-        lastError: null,
       };
     case "source-selected":
       return {

@@ -1,7 +1,6 @@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { NativeDialogOverlay } from "@/app/components/NativeDialogOverlay";
-import { ReturnConfirmationDialog } from "@/app/components/ReturnConfirmationDialog";
 import { StatusBar } from "@/app/components/StatusBar";
 import { useEasyTrimEditorApp } from "@/app/hooks/useEasyTrimEditorApp";
 import { CapabilityStatus, SourceWorkspace } from "@/features/import-source/SourceWorkspace";
@@ -50,7 +49,6 @@ function EasyTrimEditorApp() {
         }`}
       >
         <CustomTitleBar
-          onLogoClick={app.requestReturnToWelcome}
           menuControls={
             <TopBarMenus
               isChoosingSource={app.isChoosingSource}
@@ -61,9 +59,7 @@ function EasyTrimEditorApp() {
               onExport={() => exportPanelRef.current?.openOptimizedDialog()}
             />
           }
-          statusContent={
-            app.hasSource ? <CapabilityStatus capabilities={app.session.capabilities} /> : null
-          }
+          statusContent={<CapabilityStatus capabilities={app.session.capabilities} />}
           panelControls={
             app.hasSource ? (
               <PanelVisibilityControls
@@ -94,15 +90,6 @@ function EasyTrimEditorApp() {
           />
         ) : null}
 
-        <ReturnConfirmationDialog
-          open={app.isReturnConfirmationOpen}
-          onCancel={() => app.setIsReturnConfirmationOpen(false)}
-          onConfirm={() => {
-            app.setIsReturnConfirmationOpen(false);
-            app.handleReturnToWelcome();
-          }}
-        />
-
         {app.isNativeDialogOpen ? <NativeDialogOverlay /> : null}
 
         {app.dropListenerError ? (
@@ -116,11 +103,18 @@ function EasyTrimEditorApp() {
           </Alert>
         ) : null}
 
+        {!app.hasSource && app.session.lastError ? (
+          <Alert
+            variant="destructive"
+            className="fixed top-20 left-1/2 z-50 w-auto -translate-x-1/2"
+          >
+            <AlertDescription>{app.session.lastError.message}</AlertDescription>
+          </Alert>
+        ) : null}
+
         <SourceWorkspace
           session={app.session}
-          isChoosingSource={app.isChoosingSource}
           isSourceDragActive={app.isSourceDragActive}
-          onChooseSource={() => void app.handleChooseSource()}
           onPreviewPlaybackError={app.handlePreviewPlaybackError}
           onTrimChange={app.handleTrimChange}
           onPrepareWaveforms={app.handlePrepareWaveforms}
@@ -132,7 +126,6 @@ function EasyTrimEditorApp() {
           onWaveformImageError={app.handleWaveformImageError}
           audioPreviewUrls={app.audioPreviewUrls}
           exportQueue={app.exportQueue}
-          update={update}
           onCropResolutionChange={setCropResolution}
           onCropChange={setCrop}
         />

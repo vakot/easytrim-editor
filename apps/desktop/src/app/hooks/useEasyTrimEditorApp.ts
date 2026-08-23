@@ -27,7 +27,6 @@ export function useEasyTrimEditorApp() {
   const [session, dispatch] = useReducer(sessionReducer, initialSessionState);
   const [isChoosingSource, setIsChoosingSource] = useState(false);
   const [isNativeDialogOpen, setIsNativeDialogOpen] = useState(false);
-  const [isReturnConfirmationOpen, setIsReturnConfirmationOpen] = useState(false);
   const [isSourceDragActive, setIsSourceDragActive] = useState(false);
   const [dropListenerError, setDropListenerError] = useState<string | null>(null);
   const [exportQueue, setExportQueue] = useState<ExportToast[]>([]);
@@ -264,66 +263,11 @@ export function useEasyTrimEditorApp() {
     handleChooseSource,
   );
 
-  const handleReturnToWelcome = useCallback(() => {
-    activeSourceIdRef.current = null;
-    setAudioPreviewUrls({});
-    dispatch({ type: "return-to-welcome" });
-  }, []);
-
-  const requestReturnToWelcome = useCallback(() => {
-    if (hasSource) {
-      setIsReturnConfirmationOpen(true);
-    }
-  }, [hasSource]);
-
-  useEffect(() => {
-    if (!hasSource) {
-      return;
-    }
-
-    function handleEscape(event: KeyboardEvent) {
-      if (event.key !== "Escape" || isNativeDialogOpen) {
-        return;
-      }
-
-      const openDialog = document.querySelector<HTMLElement>(
-        '[data-slot="dialog-content"][data-state="open"]',
-      );
-      if (openDialog) {
-        if (isReturnConfirmationOpen) {
-          setIsReturnConfirmationOpen(false);
-        } else {
-          openDialog.querySelector<HTMLElement>('[data-slot="dialog-close"]')?.click();
-        }
-        return;
-      }
-
-      event.preventDefault();
-      event.stopPropagation();
-
-      const activeElement = document.activeElement;
-      if (activeElement instanceof HTMLElement && activeElement !== document.body) {
-        activeElement.blur();
-        return;
-      }
-
-      if (isReturnConfirmationOpen) {
-        setIsReturnConfirmationOpen(false);
-      } else {
-        requestReturnToWelcome();
-      }
-    }
-
-    window.addEventListener("keydown", handleEscape, true);
-    return () => window.removeEventListener("keydown", handleEscape, true);
-  }, [hasSource, isNativeDialogOpen, isReturnConfirmationOpen, requestReturnToWelcome]);
-
   return {
     session,
     hasSource,
     isChoosingSource,
     isNativeDialogOpen,
-    isReturnConfirmationOpen,
     isSourceDragActive,
     dropListenerError,
     exportQueue,
@@ -332,10 +276,7 @@ export function useEasyTrimEditorApp() {
     audioPreviewUrls,
     setExportQueue,
     setIsNativeDialogOpen,
-    setIsReturnConfirmationOpen,
     handleChooseSource,
-    handleReturnToWelcome,
-    requestReturnToWelcome,
     handlePreviewPlaybackError,
     handleTrimChange,
     handlePrepareWaveforms,

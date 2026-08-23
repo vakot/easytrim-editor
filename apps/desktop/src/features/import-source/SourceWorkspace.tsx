@@ -5,7 +5,6 @@ import { PaneResizeHandle } from "@/components/PaneResizeHandle";
 import { EditorStage } from "@/features/editor";
 import { DropOverlay } from "./components/DropOverlay";
 import { SourceSidebar } from "./components/SourceSidebar";
-import { WelcomePage } from "./components/WelcomePage";
 import type { SourceWorkspaceProps } from "./types";
 import { useTranslation } from "react-i18next";
 import { useEditorViewState } from "@/app/hooks/useEditorViewState";
@@ -14,9 +13,7 @@ export { CapabilityStatus } from "./components/CapabilityStatus";
 
 export function SourceWorkspace({
   session,
-  isChoosingSource,
   isSourceDragActive,
-  onChooseSource,
   onPreviewPlaybackError,
   onTrimChange,
   onPrepareWaveforms,
@@ -28,7 +25,6 @@ export function SourceWorkspace({
   onWaveformImageError,
   audioPreviewUrls,
   exportQueue,
-  update,
   onCropResolutionChange,
   onCropChange,
 }: SourceWorkspaceProps) {
@@ -49,15 +45,7 @@ export function SourceWorkspace({
   }, [showSourceDetails, sourceDetailsPanelRef]);
 
   if (!session.source) {
-    return (
-      <WelcomePage
-        session={session}
-        isChoosingSource={isChoosingSource}
-        isSourceDragActive={isSourceDragActive}
-        onChooseSource={onChooseSource}
-        update={update}
-      />
-    );
+    return null;
   }
 
   const source = session.source;
