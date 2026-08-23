@@ -108,6 +108,8 @@ export function TopBarMenus({
       label: t("themeColor.custom"),
       hint: customPrimaryColor.toUpperCase(),
       selected: primaryColorKey === CUSTOM_PRIMARY_COLOR,
+      onSelect: () => setPrimaryColor(customPrimaryColor),
+      openSubmenuOnClick: false,
       submenuContent: <CustomColorPickerPanel />,
     },
   ];

@@ -14,6 +14,7 @@ export interface ContextMenuOption {
   disabled?: boolean;
   onSelect?: (event: Event) => void;
   render?: (trigger: ReactNode) => ReactNode;
+  openSubmenuOnClick?: boolean;
   submenuContent?: ReactNode;
   submenu?: readonly ContextMenuOption[];
 }
@@ -72,6 +73,10 @@ function ContextMenuOptionItem({ option }: { option: ContextMenuOption }) {
       <DropdownMenuPrimitive.Sub>
         <DropdownMenuPrimitive.SubTrigger
           disabled={option.disabled}
+          onClick={(event) => {
+            option.onSelect?.(event.nativeEvent);
+            if (option.openSubmenuOnClick === false) event.preventDefault();
+          }}
           data-selected={option.selected ? "true" : "false"}
           aria-current={option.selected ? "true" : undefined}
           className="flex min-h-8 w-full items-center gap-3 rounded-md px-2.5 py-1.5 text-left text-sm outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground focus:bg-accent focus:text-accent-foreground"

@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { STORAGE_KEYS } from "@/lib/storage";
 import { TopBarMenus } from "../TopBarMenus";
 
 describe("TopBarMenus", () => {
@@ -94,6 +95,10 @@ describe("TopBarMenus", () => {
 
   it("shows hex values for presets and opens the custom spectrum picker", async () => {
     const user = userEvent.setup();
+    localStorage.setItem(
+      STORAGE_KEYS.preferences,
+      JSON.stringify({ primaryColor: "blue", customPrimaryColor: "#123456" }),
+    );
     render(
       <TooltipProvider>
         <ThemeProvider>
@@ -127,10 +132,14 @@ describe("TopBarMenus", () => {
       expect(item.querySelector('[aria-hidden="true"]')).not.toBeNull();
     }
     const customItem = screen.getByRole("menuitem", { name: /Custom/ });
-    expect(customItem).toHaveTextContent("#EFBF04");
+    expect(customItem).toHaveTextContent("#123456");
     expect(customItem.querySelector('[aria-hidden="true"]')).not.toBeNull();
 
     await user.click(customItem);
+    expect(document.documentElement).toHaveAttribute("data-primary-color", "#123456");
+    expect(screen.queryByRole("button", { name: /Theme color spectrum/ })).not.toBeInTheDocument();
+
+    await user.hover(customItem);
     const spectrum = await screen.findByRole("button", { name: /Theme color spectrum/ });
     expect(spectrum).toBeVisible();
     const colorMenus = screen.getAllByRole("menu", { name: "Color" });
