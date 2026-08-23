@@ -182,6 +182,11 @@ describe("App", () => {
 
     expect(screen.getByLabelText("Video editor workspace")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "No video loaded" })).toBeInTheDocument();
+    expect(
+      screen
+        .getByLabelText("Video preview and timeline area")
+        .querySelector('img[src="/logo-symbol.svg"]'),
+    ).toBeInTheDocument();
     expect(screen.getByLabelText("Video trim timeline")).toHaveAttribute(
       "aria-description",
       "Timeline values will appear after a video is opened.",

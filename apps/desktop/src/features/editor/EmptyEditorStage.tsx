@@ -1,4 +1,3 @@
-import { Film } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 const EMPTY_VALUE = "—";
@@ -12,11 +11,14 @@ export function EmptyEditorStage() {
       aria-label={t("import.source.previewArea")}
     >
       <section className="grid min-h-0 place-items-center border-b border-border/70 bg-muted/10">
-        <div className="grid justify-items-center gap-3 px-6 text-center">
-          <span className="grid size-14 place-items-center rounded-2xl border border-border/70 bg-card text-muted-foreground">
-            <Film className="size-7" aria-hidden="true" />
-          </span>
-          <div className="grid gap-1">
+        <div className="relative grid justify-items-center gap-3 px-6 text-center">
+          <img
+            src="/logo-symbol.svg"
+            alt=""
+            aria-hidden="true"
+            className="pointer-events-none size-[clamp(12rem,35vw,24rem)] grayscale opacity-100"
+          />
+          <div className="absolute inset-x-0 bottom-0 grid gap-1 bg-background/80 px-4 py-2">
             <h1 className="text-sm font-semibold text-foreground">
               {t("import.emptyStage.title")}
             </h1>
