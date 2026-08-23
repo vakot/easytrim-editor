@@ -90,6 +90,11 @@ export const en = {
       label: "Drop video to open",
       description: "The current edit will be reset.",
     },
+    emptyStage: {
+      title: "No video loaded",
+      description: "Open a video to begin editing.",
+      timelinePlaceholder: "Timeline values will appear after a video is opened.",
+    },
     source: {
       workspace: "Video editor workspace",
       resizeDetails: "Resize source details",

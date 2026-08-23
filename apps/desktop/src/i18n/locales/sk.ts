@@ -97,6 +97,11 @@ export const sk = {
       label: "Pustením otvoríte video",
       description: "Aktuálne úpravy sa obnovia.",
     },
+    emptyStage: {
+      title: "Nie je načítané žiadne video",
+      description: "Otvorte video a začnite s úpravami.",
+      timelinePlaceholder: "Hodnoty časovej osi sa zobrazia po otvorení videa.",
+    },
     source: {
       workspace: "Pracovná plocha editora videa",
       resizeDetails: "Zmeniť veľkosť detailov zdroja",

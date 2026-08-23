@@ -177,10 +177,15 @@ describe("App", () => {
     );
   });
 
-  it("starts with an empty editor shell", () => {
+  it("starts on the empty editor stage", () => {
     render(<App />);
 
-    expect(screen.queryByLabelText("Video editor workspace")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Video editor workspace")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "No video loaded" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Video trim timeline")).toHaveAttribute(
+      "aria-description",
+      "Timeline values will appear after a video is opened.",
+    );
     expect(screen.getByRole("button", { name: "File" })).toBeInTheDocument();
   });
 

@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { Group, Panel, usePanelRef } from "react-resizable-panels";
 
 import { PaneResizeHandle } from "@/components/PaneResizeHandle";
-import { EditorStage } from "@/features/editor";
+import { EditorStage, EmptyEditorStage } from "@/features/editor";
 import { DropOverlay } from "./components/DropOverlay";
 import { SourceSidebar } from "./components/SourceSidebar";
 import type { SourceWorkspaceProps } from "./types";
@@ -45,7 +45,15 @@ export function SourceWorkspace({
   }, [showSourceDetails, sourceDetailsPanelRef]);
 
   if (!session.source) {
-    return null;
+    return (
+      <section
+        className="relative min-h-0 min-w-0 overflow-hidden bg-background"
+        aria-label={t("import.source.workspace")}
+      >
+        <EmptyEditorStage />
+        {isSourceDragActive ? <DropOverlay /> : null}
+      </section>
+    );
   }
 
   const source = session.source;
