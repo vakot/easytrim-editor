@@ -32,8 +32,10 @@ describe("TopBarMenus", () => {
 
     await user.click(fileButton);
 
-    expect(screen.getByRole("menuitem", { name: /Open File/ })).toHaveTextContent("Ctrl+O");
-    await user.click(screen.getByRole("menuitem", { name: /Open File/ }));
+    const openFileItem = screen.getByRole("menuitem", { name: /Open File/ });
+    expect(openFileItem).toHaveTextContent("Ctrl+O");
+    expect(openFileItem).toHaveClass("min-w-48");
+    await user.click(openFileItem);
     expect(screen.queryByRole("menuitem", { name: /Open File/ })).not.toBeInTheDocument();
   });
 
