@@ -1,7 +1,10 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CustomTitleBar } from "../CustomTitleBar";
+import { TopBarMenus } from "../TopBarMenus";
+import { ThemeProvider } from "@/app/theme/ThemeProvider";
 
 const windowActions = vi.hoisted(() => ({
   closeWindow: vi.fn(() => Promise.resolve()),
@@ -14,6 +17,31 @@ const windowActions = vi.hoisted(() => ({
 vi.mock("@/lib/tauri/window", () => windowActions);
 
 describe("CustomTitleBar", () => {
+  it("keeps menu controls interactive inside the title bar", async () => {
+    const user = userEvent.setup();
+    render(
+      <ThemeProvider>
+        <CustomTitleBar
+          onLogoClick={vi.fn()}
+          menuControls={
+            <TopBarMenus
+              isChoosingSource={false}
+              canSave
+              canExport
+              onChooseSource={vi.fn()}
+              onSave={vi.fn()}
+              onExport={vi.fn()}
+            />
+          }
+        />
+      </ThemeProvider>,
+    );
+
+    await user.click(screen.getByRole("button", { name: "File" }));
+
+    expect(screen.getByRole("menuitem", { name: /Open File/ })).toBeInTheDocument();
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
     windowActions.isWindowMaximized.mockResolvedValue(false);
@@ -43,6 +71,22 @@ describe("CustomTitleBar", () => {
     expect(panelControls.compareDocumentPosition(windowControls)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING,
     );
+  });
+
+  it("centers status content independently of the title bar side controls", () => {
+    render(
+      <CustomTitleBar
+        onLogoClick={vi.fn()}
+        menuControls={<span data-testid="menu-controls" />}
+        statusContent={<span data-testid="status-content">Media tools ready</span>}
+        panelControls={<span data-testid="panel-controls" />}
+      />,
+    );
+
+    const statusContent = screen.getByTestId("status-content");
+    const statusSlot = statusContent.parentElement;
+    expect(statusSlot).not.toBeNull();
+    expect(statusSlot).toHaveClass("absolute", "left-1/2", "-translate-x-1/2");
   });
 
   it("delegates dragging and window controls to the native adapter", async () => {

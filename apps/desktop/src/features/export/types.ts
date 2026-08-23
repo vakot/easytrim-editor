@@ -41,6 +41,11 @@ export interface ExportPanelProps {
   crop?: { x: number; y: number; width: number; height: number };
 }
 
+export interface ExportPanelHandle {
+  startFastCut: () => void;
+  openOptimizedDialog: () => void;
+}
+
 export interface ExportSettings {
   resolution: { width: number; height: number };
   frameRate: FrameRate | undefined;

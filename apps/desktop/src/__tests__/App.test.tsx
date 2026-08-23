@@ -157,7 +157,9 @@ describe("App", () => {
       "false",
     );
 
-    await user.click(screen.getByRole("button", { name: "Open" }));
+    screen.getByRole("button", { name: "File" }).focus();
+    await user.keyboard("{Enter}");
+    await user.click(screen.getByRole("menuitem", { name: /Open File/ }));
     await screen.findByRole("heading", { name: "Selected Segment" });
 
     expect(screen.getByRole("button", { name: "Safe trim following" })).toHaveAttribute(
@@ -169,9 +171,7 @@ describe("App", () => {
       "false",
     );
 
-    await user.click(
-      screen.getByRole("button", { name: "Return to EasyTrim Editor welcome page" }),
-    );
+    await user.click(screen.getByRole("button", { name: "EasyTrim Editor" }));
     await user.click(screen.getByRole("button", { name: "Return to welcome" }));
     await user.click(screen.getByRole("button", { name: "Select video" }));
     await screen.findByRole("heading", { name: "Selected Segment" });
@@ -373,7 +373,10 @@ describe("App", () => {
     expect(
       screen.queryByText("Import a video to inspect its source and prepare a precise cut."),
     ).not.toBeInTheDocument();
-    expect(screen.getByRole("toolbar", { name: "Application toolbar" })).toBeInTheDocument();
+    expect(screen.getByRole("banner", { name: "Window title bar" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "File" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Edit" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "View" })).toBeInTheDocument();
   });
 
   it("renders only the timeline when the source has no audio tracks", async () => {
@@ -456,9 +459,9 @@ describe("App", () => {
 
     await user.click(screen.getByRole("button", { name: "Select video" }));
     await screen.findByRole("heading", { name: "holiday.mp4" });
-    const openButton = screen.getByRole("button", { name: "Open" });
-    openButton.focus();
-    expect(document.activeElement).toBe(openButton);
+    const fileMenuButton = screen.getByRole("button", { name: "File" });
+    fileMenuButton.focus();
+    expect(document.activeElement).toBe(fileMenuButton);
 
     fireEvent.keyDown(window, { key: "Escape" });
 
@@ -476,7 +479,9 @@ describe("App", () => {
 
     await user.click(screen.getByRole("button", { name: "Select video" }));
     await screen.findByRole("heading", { name: "holiday.mp4" });
-    await user.click(screen.getByRole("button", { name: "Export" }));
+    screen.getByRole("button", { name: "Edit" }).focus();
+    await user.keyboard("{Enter}");
+    await user.click(screen.getByRole("menuitem", { name: /Optimized Export/ }));
     expect(screen.getByRole("dialog")).toBeInTheDocument();
 
     fireEvent.keyDown(window, { key: "Escape" });
@@ -2072,7 +2077,9 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: "Select video" }));
     expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Open" }));
+    screen.getByRole("button", { name: "File" }).focus();
+    await user.keyboard("{Enter}");
+    await user.click(screen.getByRole("menuitem", { name: /Open File/ }));
 
     expect(screen.getByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
     expect(mocks.inspectMedia).toHaveBeenCalledTimes(1);
