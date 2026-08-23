@@ -192,6 +192,11 @@ describe("App", () => {
     expect(shortcuts).toHaveTextContent("Ctrl");
     expect(shortcuts).toHaveTextContent("Play / pause");
     expect(shortcuts).toHaveTextContent("Set start marker");
+    expect(shortcuts.querySelectorAll('[data-slot="keyboard-key"]')).toHaveLength(11);
+    expect(shortcuts.querySelector('[data-slot="keyboard-key"]')).toHaveClass(
+      "rounded-md",
+      "border",
+    );
     expect(screen.getByLabelText("Video trim timeline")).toHaveAttribute(
       "aria-description",
       "Timeline values will appear after a video is opened.",

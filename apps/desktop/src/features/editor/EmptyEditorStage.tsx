@@ -54,7 +54,10 @@ export function EmptyEditorStage() {
                   {shortcut.keys.map((key, index) => (
                     <span className="flex items-center gap-1" key={key}>
                       {index > 0 ? <span aria-hidden="true">+</span> : null}
-                      <kbd className="rounded border border-border bg-card px-1.5 py-0.5 font-mono text-[11px] text-foreground shadow-sm">
+                      <kbd
+                        data-slot="keyboard-key"
+                        className="inline-flex h-7 min-w-8 items-center justify-center rounded-md border border-border/80 bg-muted px-2 font-sans text-[13px] leading-none text-foreground shadow-[0_1px_2px_rgb(0_0_0/0.2)]"
+                      >
                         {key}
                       </kbd>
                     </span>
