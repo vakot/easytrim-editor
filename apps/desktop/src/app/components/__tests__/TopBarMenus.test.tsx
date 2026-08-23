@@ -93,7 +93,7 @@ describe("TopBarMenus", () => {
     );
   });
 
-  it("shows hex values for presets and opens the custom spectrum picker", async () => {
+  it("shows hex values and accepts custom input as soon as it is valid", async () => {
     const user = userEvent.setup();
     localStorage.setItem(
       STORAGE_KEYS.preferences,
@@ -142,6 +142,16 @@ describe("TopBarMenus", () => {
     await user.hover(customItem);
     const spectrum = await screen.findByRole("button", { name: /Theme color spectrum/ });
     expect(spectrum).toBeVisible();
+    const hexInput = screen.getByRole("textbox", { name: "Custom hex" });
+    expect(hexInput).toHaveValue("#123456");
+    await user.clear(hexInput);
+    await user.type(hexInput, "#abcdef");
+    expect(hexInput).toHaveValue("#abcdef");
+    expect(document.documentElement).toHaveAttribute("data-primary-color", "#abcdef");
+    await user.clear(hexInput);
+    await user.type(hexInput, "#abcdeg");
+    expect(document.documentElement).toHaveAttribute("data-primary-color", "#abcdef");
+
     const colorMenus = screen.getAllByRole("menu", { name: "Color" });
     const customMenu = colorMenus[colorMenus.length - 1];
     expect(customMenu).toBeDefined();

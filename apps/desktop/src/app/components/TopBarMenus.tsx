@@ -6,11 +6,13 @@ import { SpectrumWheel } from "@/app/components/PrimaryColorSelector";
 import {
   CUSTOM_PRIMARY_COLOR,
   PRIMARY_COLORS,
+  isCustomPrimaryColor,
   resolvePrimaryColor,
   type PrimaryColor,
 } from "@/app/theme/theme";
 import { useTheme } from "@/app/theme/use-theme";
 import { ContextMenu, type ContextMenuOption } from "@/components/ui/context-menu";
+import { Input } from "@/components/ui/input";
 import { isSupportedLanguage, type SupportedLanguage } from "@/i18n/resources";
 
 interface TopBarMenusProps {
@@ -189,19 +191,27 @@ function CustomColorPickerPanel() {
   const { t } = useTranslation();
   const { customPrimaryColor, previewPrimaryColor, setPrimaryColor } = useTheme();
   const [previewColor, setPreviewColor] = useState<PrimaryColor | null>(null);
+  const [hexValue, setHexValue] = useState<string>(customPrimaryColor);
   const selectedColor = resolvePrimaryColor(previewColor ?? customPrimaryColor);
 
   const preview = (color: PrimaryColor) => {
     setPreviewColor(color);
+    setHexValue(resolvePrimaryColor(color));
     previewPrimaryColor(color);
   };
   const commit = (color: PrimaryColor) => {
     setPreviewColor(null);
+    setHexValue(resolvePrimaryColor(color));
     setPrimaryColor(color);
   };
   const cancel = () => {
     setPreviewColor(null);
+    setHexValue(customPrimaryColor);
     previewPrimaryColor(null);
+  };
+  const updateHexValue = (value: string) => {
+    setHexValue(value);
+    if (isCustomPrimaryColor(value)) commit(value);
   };
 
   return (
@@ -214,7 +224,17 @@ function CustomColorPickerPanel() {
       />
       <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
         <span>{t("themeColor.custom")}</span>
-        <code className="font-mono text-foreground">{selectedColor.toUpperCase()}</code>
+        <Input
+          aria-label={`${t("themeColor.custom")} hex`}
+          className="h-7 w-24 px-1.5 font-mono text-xs text-foreground"
+          maxLength={7}
+          onChange={(event) => updateHexValue(event.target.value)}
+          onClick={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+          pattern="#[0-9a-fA-F]{6}"
+          spellCheck={false}
+          value={hexValue}
+        />
       </div>
     </div>
   );
