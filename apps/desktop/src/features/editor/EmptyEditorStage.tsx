@@ -1,10 +1,12 @@
 import { useTranslation } from "react-i18next";
+import { useEditorViewState } from "@/app/hooks/useEditorViewState";
 
 const EMPTY_VALUE = "—";
 const EMPTY_STAGE_WIDTH = "w-[clamp(12rem,35vw,24rem)] max-w-[calc(100vw-3rem)]";
 
 export function EmptyEditorStage() {
   const { t } = useTranslation();
+  const { showAudioTracks } = useEditorViewState();
   const shortcuts = [
     { label: t("import.emptyStage.shortcuts.open"), keys: ["Ctrl", "O"] },
     { label: t("import.emptyStage.shortcuts.save"), keys: ["Ctrl", "S"] },
@@ -18,8 +20,11 @@ export function EmptyEditorStage() {
 
   return (
     <div
-      className="grid h-full min-h-0 min-w-0 grid-rows-[minmax(0,1fr)_minmax(11rem,30%)] bg-background"
-      aria-label={t("import.source.previewArea")}
+      className={`grid h-full min-h-0 min-w-0 bg-background ${
+        showAudioTracks
+          ? "grid-rows-[minmax(0,1fr)_minmax(11rem,30%)]"
+          : "grid-rows-[minmax(0,1fr)_0]"
+      }`}
     >
       <section className="grid min-h-0 place-items-center border-b border-border/70 bg-muted/10">
         <div className={`grid ${EMPTY_STAGE_WIDTH} justify-items-center gap-5 px-6 text-center`}>
@@ -66,7 +71,7 @@ export function EmptyEditorStage() {
         </div>
       </section>
 
-      <section className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] bg-background">
+      <section className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden bg-background">
         <div className="flex items-center justify-between gap-4 border-b border-border/70 px-4 py-2">
           <span className="text-xs font-semibold text-foreground">
             {t("timeline.selectedSegment")}

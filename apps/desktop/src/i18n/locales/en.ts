@@ -93,6 +93,7 @@ export const en = {
     emptyStage: {
       title: "No video loaded",
       description: "Open a video to begin editing.",
+      noSource: "No source selected",
       timelinePlaceholder: "Timeline values will appear after a video is opened.",
       shortcutsLabel: "Keyboard shortcuts",
       shortcuts: {

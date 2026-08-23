@@ -18,11 +18,12 @@ import { PlaybackControls, PlaybackTimecode, TimelineTools } from "../preview/Pl
 import { VideoPreview } from "../preview/VideoPreview";
 import { TrimTimeline } from "../timeline";
 import { TimelinePane } from "./components/TimelinePane";
+import { EmptyEditorStage } from "./EmptyEditorStage";
 import { usePlaybackModes } from "./hooks/usePlaybackModes";
 import { usePlaybackSpeed } from "./hooks/usePlaybackSpeed";
 import { useTimelinePanelSizing } from "./hooks/useTimelinePanelSizing";
 import { useEditorViewState } from "@/app/hooks/useEditorViewState";
-import type { EditorShortcutActions, EditorStageProps } from "./types";
+import type { EditorShortcutActions, EditorStageProps, LoadedEditorStageProps } from "./types";
 import { synchronizeAudioPosition } from "./utils/audio-sync";
 import { editorShortcutFromEvent, isShortcutBlockedTarget } from "./utils/editor-shortcuts";
 import {
@@ -33,7 +34,15 @@ import {
   waitForSeekToSettle,
 } from "./utils/media-sync";
 
-export function EditorStage({
+export function EditorStage(props: EditorStageProps) {
+  if ("empty" in props) {
+    return <EmptyEditorStage />;
+  }
+
+  return <LoadedEditorStage {...props} />;
+}
+
+function LoadedEditorStage({
   sourceId,
   preview,
   trim,
@@ -56,7 +65,7 @@ export function EditorStage({
   sourceDimensions,
   onCropResolutionChange,
   onCropChange,
-}: EditorStageProps) {
+}: LoadedEditorStageProps) {
   const { t } = useTranslation();
   const {
     tools,

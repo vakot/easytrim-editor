@@ -2,7 +2,7 @@ import type { AudioTrackState, PreviewState } from "@/app/session-state";
 import type { TrimBoundary, TrimRange } from "@/domain/trim";
 import type { AudioStream, FrameRate } from "@/lib/tauri/media";
 
-export interface EditorStageProps {
+export interface LoadedEditorStageProps {
   sourceId: string;
   preview: PreviewState;
   trim: TrimRange;
@@ -26,6 +26,12 @@ export interface EditorStageProps {
   onCropResolutionChange: (resolution: { width: number; height: number }) => void;
   onCropChange: (crop: { x: number; y: number; width: number; height: number }) => void;
 }
+
+export interface EmptyEditorStageProps {
+  empty: true;
+}
+
+export type EditorStageProps = LoadedEditorStageProps | EmptyEditorStageProps;
 
 export interface EditorShortcutActions {
   enabled: boolean;

@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { Group, Panel, usePanelRef } from "react-resizable-panels";
 
 import { PaneResizeHandle } from "@/components/PaneResizeHandle";
-import { EditorStage, EmptyEditorStage } from "@/features/editor";
+import { EditorStage } from "@/features/editor";
 import { DropOverlay } from "./components/DropOverlay";
 import { SourceSidebar } from "./components/SourceSidebar";
 import type { SourceWorkspaceProps } from "./types";
@@ -46,20 +46,27 @@ export function SourceWorkspace({
 
   if (!session.source) {
     return (
-      <section
-        className="relative min-h-0 min-w-0 overflow-hidden bg-background"
+      <div
+        className={`grid h-full min-h-0 min-w-0 overflow-hidden bg-background ${
+          showSourceDetails ? "grid-cols-[20rem_minmax(0,1fr)]" : "grid-cols-[0_minmax(0,1fr)]"
+        }`}
         aria-label={t("import.source.workspace")}
       >
-        <EmptyEditorStage />
-        {isSourceDragActive ? <DropOverlay /> : null}
-      </section>
+        <div className="min-w-0 overflow-hidden bg-card/30">
+          <SourceSidebar session={session} queue={exportQueue} />
+        </div>
+        <div
+          className="relative min-h-0 min-w-0 overflow-hidden"
+          aria-label={t("import.source.previewArea")}
+        >
+          <EditorStage empty />
+          {isSourceDragActive ? <DropOverlay /> : null}
+        </div>
+      </div>
     );
   }
 
   const source = session.source;
-  const sourceId = source.selection.sourceId;
-  const media = source.media;
-  const trimRange = source.trim;
 
   return (
     <Group
@@ -100,35 +107,42 @@ export function SourceWorkspace({
           className="relative h-full min-h-0 min-w-0"
           aria-label={t("import.source.previewArea")}
         >
-          {session.status === "ready" && media && trimRange ? (
+          {source && session.status === "ready" && source.media && source.trim ? (
             <EditorStage
-              key={sourceId}
-              sourceId={sourceId}
+              key={source.selection.sourceId}
+              sourceId={source.selection.sourceId}
               preview={source.preview}
-              trim={trimRange}
-              frameRate={media.video.averageFrameRate ?? media.video.realFrameRate}
-              audioStreams={media.audioStreams}
+              trim={source.trim}
+              frameRate={source.media.video.averageFrameRate ?? source.media.video.realFrameRate}
+              audioStreams={source.media.audioStreams}
               audioTracks={source.audioTracks}
               masterEnabled={source.masterEnabled}
               masterVolumePercent={source.masterVolumePercent}
               mergeAudio={source.mergeAudio}
               onPreviewPlaybackError={onPreviewPlaybackError}
-              onTrimChange={(trim) => onTrimChange(sourceId, trim)}
+              onTrimChange={(trim) => onTrimChange(source.selection.sourceId, trim)}
               onPrepareWaveforms={(streamIndexes, width) =>
-                onPrepareWaveforms(sourceId, streamIndexes, width)
+                onPrepareWaveforms(source.selection.sourceId, streamIndexes, width)
               }
-              onToggleAudioTrack={(streamIndex) => onToggleAudioTrack(sourceId, streamIndex)}
+              onToggleAudioTrack={(streamIndex) =>
+                onToggleAudioTrack(source.selection.sourceId, streamIndex)
+              }
               onAudioTrackVolumeChange={(streamIndex, volumePercent) =>
-                onAudioTrackVolumeChange(sourceId, streamIndex, volumePercent)
+                onAudioTrackVolumeChange(source.selection.sourceId, streamIndex, volumePercent)
               }
-              onToggleAudioMaster={() => onToggleAudioMaster(sourceId)}
+              onToggleAudioMaster={() => onToggleAudioMaster(source.selection.sourceId)}
               onMasterVolumeChange={(volumePercent) =>
-                onMasterVolumeChange(sourceId, volumePercent)
+                onMasterVolumeChange(source.selection.sourceId, volumePercent)
               }
-              onToggleAudioMerge={() => onToggleAudioMerge(sourceId)}
-              onWaveformImageError={(streamIndex) => onWaveformImageError(sourceId, streamIndex)}
+              onToggleAudioMerge={() => onToggleAudioMerge(source.selection.sourceId)}
+              onWaveformImageError={(streamIndex) =>
+                onWaveformImageError(source.selection.sourceId, streamIndex)
+              }
               audioPreviewUrls={audioPreviewUrls}
-              sourceDimensions={{ width: media.video.width, height: media.video.height }}
+              sourceDimensions={{
+                width: source.media.video.width,
+                height: source.media.video.height,
+              }}
               onCropResolutionChange={onCropResolutionChange}
               onCropChange={onCropChange}
             />

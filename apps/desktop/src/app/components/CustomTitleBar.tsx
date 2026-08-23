@@ -108,7 +108,7 @@ export function CustomTitleBar({
 
   return (
     <header
-      className="relative flex h-9 min-h-9 items-center border-b border-border/70 bg-background/95 text-foreground select-none"
+      className="relative z-50 flex h-9 min-h-9 items-center border-b border-border/70 bg-background/95 text-foreground select-none"
       aria-label={t("app.windowControls.titleBar")}
       onDoubleClickCapture={handleTitleBarDoubleClick}
     >

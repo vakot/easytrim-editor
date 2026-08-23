@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import type { SessionState } from "@/app/session-state";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -14,10 +15,7 @@ interface SourceSidebarProps {
 
 export function SourceSidebar({ session, queue }: SourceSidebarProps) {
   const { t } = useTranslation();
-
-  if (!session.source) {
-    return null;
-  }
+  const source = session.source;
 
   return (
     <aside
@@ -29,24 +27,32 @@ export function SourceSidebar({ session, queue }: SourceSidebarProps) {
           <p className="mb-1 text-xs font-bold tracking-[0.14em] text-primary uppercase">
             {t("import.source.details")}
           </p>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <h1 id="source-title" className="truncate text-base font-black">
-                {session.source.selection.displayName}
-              </h1>
-            </TooltipTrigger>
-            <TooltipContent>{session.source.selection.displayName}</TooltipContent>
-          </Tooltip>
-          {session.status === "loading-source" ? (
+          {source ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <h1 id="source-title" className="truncate text-base font-black">
+                  {source.selection.displayName}
+                </h1>
+              </TooltipTrigger>
+              <TooltipContent>{source.selection.displayName}</TooltipContent>
+            </Tooltip>
+          ) : (
+            <h1 id="source-title" className="truncate text-base font-black">
+              {t("import.emptyStage.noSource")}
+            </h1>
+          )}
+          {source && session.status === "loading-source" ? (
             <span className="text-xs text-muted-foreground" role="status">
               {t("import.source.inspecting")}
             </span>
           ) : null}
         </div>
 
-        {session.lastError ? <SourceError error={session.lastError} /> : null}
-        {session.status === "ready" && session.source.media ? (
-          <MediaDetails media={session.source.media} />
+        {source && session.lastError ? <SourceError error={session.lastError} /> : null}
+        {session.status === "ready" && source?.media ? (
+          <MediaDetails media={source.media} />
+        ) : !source ? (
+          <EmptyMediaDetails />
         ) : null}
       </div>
       <Separator className="mx-4" />
@@ -56,5 +62,32 @@ export function SourceSidebar({ session, queue }: SourceSidebarProps) {
         </div>
       </ScrollArea>
     </aside>
+  );
+}
+
+function EmptyMediaDetails() {
+  const { t } = useTranslation();
+  const metadata = [
+    t("import.source.metadata.container"),
+    t("import.source.metadata.duration"),
+    t("import.source.metadata.resolution"),
+    t("import.source.metadata.frameRate"),
+    t("import.source.metadata.videoCodec"),
+    t("import.source.metadata.fileSize"),
+    t("import.source.metadata.bitrate"),
+  ];
+
+  return (
+    <dl className="grid" aria-label={t("import.source.metadataLabel")}>
+      {metadata.map((label, index) => (
+        <Fragment key={label}>
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-3 py-2">
+            <dt className="text-xs text-muted-foreground">{label}</dt>
+            <dd className="text-right text-xs font-medium text-muted-foreground">—</dd>
+          </div>
+          {index < metadata.length - 1 ? <Separator className="bg-border/55" /> : null}
+        </Fragment>
+      ))}
+    </dl>
   );
 }
