@@ -98,8 +98,6 @@ export const sk = {
       description: "Aktuálne úpravy sa obnovia.",
     },
     emptyStage: {
-      title: "Nie je načítané žiadne video",
-      description: "Otvorte video a začnite s úpravami.",
       noSource: "Nie je vybraný žiadny zdroj",
       timelinePlaceholder: "Hodnoty časovej osi sa zobrazia po otvorení videa.",
       shortcutsLabel: "Klávesové skratky",

@@ -3,6 +3,7 @@ import { useEditorViewState } from "@/app/hooks/useEditorViewState";
 
 const EMPTY_VALUE = "—";
 const EMPTY_STAGE_WIDTH = "w-[clamp(12rem,35vw,24rem)] max-w-[calc(100vw-3rem)]";
+const EMPTY_LOGO_WIDTH = "w-[clamp(9rem,26vw,18rem)] max-w-[calc(100vw-3rem)]";
 
 export function EmptyEditorStage() {
   const { t } = useTranslation();
@@ -35,14 +36,8 @@ export function EmptyEditorStage() {
             src="/logo-symbol.svg"
             alt=""
             aria-hidden="true"
-            className={`${EMPTY_STAGE_WIDTH} pointer-events-none aspect-square grayscale opacity-100`}
+            className={`${EMPTY_LOGO_WIDTH} pointer-events-none aspect-square grayscale opacity-100`}
           />
-          <div className="grid gap-1">
-            <h1 className="text-sm font-semibold text-foreground">
-              {t("import.emptyStage.title")}
-            </h1>
-            <p className="text-xs text-muted-foreground">{t("import.emptyStage.description")}</p>
-          </div>
           <div
             className="grid w-full gap-1.5 text-left text-xs text-muted-foreground"
             role="list"

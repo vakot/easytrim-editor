@@ -187,7 +187,8 @@ describe("App", () => {
     expect(screen.getByRole("group", { name: "Editor panels" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Hide left pane" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Hide bottom pane" })).not.toBeDisabled();
-    expect(screen.getByRole("heading", { name: "No video loaded" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "No video loaded" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Open a video to begin editing.")).not.toBeInTheDocument();
     expect(
       screen
         .getByLabelText("Video preview and timeline area")
