@@ -9,6 +9,7 @@ export interface ContextMenuOption {
   id: string;
   label: ReactNode;
   hint?: ReactNode;
+  selected?: boolean;
   disabled?: boolean;
   onSelect?: () => void;
   submenu?: readonly ContextMenuOption[];
@@ -68,6 +69,8 @@ function ContextMenuOptionItem({ option }: { option: ContextMenuOption }) {
       <DropdownMenuPrimitive.Sub>
         <DropdownMenuPrimitive.SubTrigger
           disabled={option.disabled}
+          data-selected={option.selected ? "true" : "false"}
+          aria-current={option.selected ? "true" : undefined}
           className="flex min-h-8 w-full items-center gap-3 rounded-md px-2.5 py-1.5 text-left text-sm outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 focus:bg-accent focus:text-accent-foreground"
         >
           <ContextMenuOptionContent option={option} />
@@ -91,7 +94,9 @@ function ContextMenuOptionItem({ option }: { option: ContextMenuOption }) {
     <DropdownMenuPrimitive.Item
       disabled={option.disabled}
       onSelect={option.onSelect}
-      className="flex min-h-8 w-full cursor-default items-center gap-3 rounded-md px-2.5 py-1.5 text-left text-sm outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 focus:bg-accent focus:text-accent-foreground"
+      data-selected={option.selected ? "true" : "false"}
+      aria-current={option.selected ? "true" : undefined}
+      className="flex min-h-8 w-full cursor-default items-center gap-3 rounded-md px-2.5 py-1.5 text-left text-sm outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
     >
       <ContextMenuOptionContent option={option} />
     </DropdownMenuPrimitive.Item>

@@ -60,6 +60,18 @@ describe("TopBarMenus", () => {
     for (const label of ["System", "Light", "Dark"]) {
       expect(screen.getByRole("menuitem", { name: label }).querySelector("svg")).not.toBeNull();
     }
+    expect(screen.getByRole("menuitem", { name: "System" })).toHaveAttribute(
+      "data-selected",
+      "true",
+    );
+    expect(screen.getByRole("menuitem", { name: "Light" })).toHaveAttribute(
+      "data-selected",
+      "false",
+    );
+    expect(screen.getByRole("menuitem", { name: "Dark" })).toHaveAttribute(
+      "data-selected",
+      "false",
+    );
 
     await user.keyboard("{Escape}");
     await user.click(screen.getByRole("button", { name: "View" }));
@@ -70,6 +82,14 @@ describe("TopBarMenus", () => {
 
     expect(screen.getByRole("menuitem", { name: /English/ })).toHaveTextContent("EN");
     expect(screen.getByRole("menuitem", { name: /Slov/ })).toHaveTextContent("SK");
+    expect(screen.getByRole("menuitem", { name: /English/ })).toHaveAttribute(
+      "data-selected",
+      "true",
+    );
+    expect(screen.getByRole("menuitem", { name: /Slov/ })).toHaveAttribute(
+      "data-selected",
+      "false",
+    );
   });
 
   it("switches between open menus on hover but stays click-to-open when closed", async () => {

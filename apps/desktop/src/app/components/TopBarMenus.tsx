@@ -70,6 +70,7 @@ export function TopBarMenus({
       id: `theme-${value}`,
       label: t(`theme.${value}`),
       hint: <Icon className="size-4" aria-hidden="true" />,
+      selected: value === preference,
       onSelect: () => setPreference(value),
     };
   });
@@ -78,6 +79,7 @@ export function TopBarMenus({
     id: `color-${color}`,
     label: t(`themeColor.${color}`),
     hint: <ColorSample color={color} selected={color === primaryColor} />,
+    selected: color === primaryColor,
     onSelect: () => setPrimaryColor(color),
   }));
 
@@ -85,6 +87,7 @@ export function TopBarMenus({
     id: `language-${language}`,
     label: t(language === "en" ? "language.english" : "language.slovak"),
     hint: language.toUpperCase(),
+    selected: language === currentLanguage,
     onSelect: () => void i18n.changeLanguage(language as SupportedLanguage),
   }));
 
