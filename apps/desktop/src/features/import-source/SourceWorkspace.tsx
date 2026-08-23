@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect } from "react";
 import { Group, Panel, type Layout, usePanelRef } from "react-resizable-panels";
 
 import { PaneResizeHandle } from "@/components/PaneResizeHandle";
@@ -11,8 +11,6 @@ import { useTranslation } from "react-i18next";
 import { useEditorViewState } from "@/app/hooks/useEditorViewState";
 
 export { CapabilityStatus } from "./components/CapabilityStatus";
-
-const SOURCE_DETAILS_DEFAULT_SIZE = 320;
 
 export function SourceWorkspace({
   session,
@@ -35,12 +33,8 @@ export function SourceWorkspace({
   onCropChange,
 }: SourceWorkspaceProps) {
   const { t } = useTranslation();
-  const { showSourceDetails, setShowSourceDetails, workspaceLayout, setWorkspaceLayout } =
-    useEditorViewState();
+  const { showSourceDetails, workspaceLayout, setWorkspaceLayout } = useEditorViewState();
   const sourceDetailsPanelRef = usePanelRef();
-  const lastVisibleSourceDetailsSizeRef = useRef<number | null>(null);
-  const sourceDetailsVisibilityCommandRef = useRef<boolean | null>(null);
-  const sourceDetailsVisibilitySyncedFromResizeRef = useRef(false);
   const handleWorkspaceLayoutChanged = useCallback(
     (layout: Layout) => {
       if (showSourceDetails) {
@@ -54,39 +48,12 @@ export function SourceWorkspace({
     const panel = sourceDetailsPanelRef.current;
     if (!panel) return;
 
-    if (sourceDetailsVisibilitySyncedFromResizeRef.current) {
-      sourceDetailsVisibilitySyncedFromResizeRef.current = false;
-      return;
-    }
-
-    sourceDetailsVisibilityCommandRef.current = showSourceDetails;
     if (showSourceDetails) {
-      panel.resize(lastVisibleSourceDetailsSizeRef.current ?? SOURCE_DETAILS_DEFAULT_SIZE);
+      panel.expand();
     } else {
       panel.collapse();
     }
   }, [showSourceDetails, sourceDetailsPanelRef]);
-
-  const handleSourceDetailsResize = useCallback(
-    (size: { inPixels: number }) => {
-      const isVisible = size.inPixels > 1;
-      if (isVisible) {
-        lastVisibleSourceDetailsSizeRef.current = size.inPixels;
-      }
-
-      if (
-        sourceDetailsVisibilityCommandRef.current === isVisible ||
-        showSourceDetails === isVisible
-      ) {
-        sourceDetailsVisibilityCommandRef.current = null;
-        return;
-      }
-
-      sourceDetailsVisibilitySyncedFromResizeRef.current = true;
-      setShowSourceDetails(isVisible);
-    },
-    [setShowSourceDetails, showSourceDetails],
-  );
 
   if (!session.source) {
     return (
@@ -121,19 +88,19 @@ export function SourceWorkspace({
         collapsible
         collapsedSize={0}
         defaultSize="20rem"
-        minSize={0}
+        minSize="15rem"
         maxSize="30rem"
-        onResize={handleSourceDetailsResize}
         groupResizeBehavior="preserve-pixel-size"
         className="min-h-0 min-w-0 overflow-hidden bg-card/30"
       >
-        <SourceSidebar session={session} queue={exportQueue} />
+        {showSourceDetails ? <SourceSidebar session={session} queue={exportQueue} /> : null}
       </Panel>
 
       <PaneResizeHandle
         id="source-details-resize-handle"
         label={t("import.source.resizeDetails")}
         orientation="vertical"
+        disabled={!showSourceDetails}
       />
 
       <Panel id="editor-content-panel" minSize="44rem" className="min-h-0 min-w-0 overflow-hidden">

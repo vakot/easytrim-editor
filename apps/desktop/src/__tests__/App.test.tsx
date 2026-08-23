@@ -408,10 +408,9 @@ describe("App", () => {
     expect(audioTracksToggle).toHaveAttribute("aria-pressed", "true");
 
     await user.click(sourceDetailsToggle);
-    expect(sourceDetailsToggle).toHaveAttribute("aria-pressed", "false");
-    expect(screen.getByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Export queue" })).toBeInTheDocument();
-    expect(screen.getByRole("separator", { name: "Resize source details" })).not.toHaveAttribute(
+    expect(screen.queryByRole("heading", { name: "holiday.mp4" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Export queue" })).not.toBeInTheDocument();
+    expect(document.getElementById("source-details-resize-handle")).toHaveAttribute(
       "aria-hidden",
       "true",
     );
