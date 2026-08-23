@@ -10,13 +10,17 @@ import {
 import { STORAGE_KEYS, readStoredJson, writeStoredJson } from "@/lib/storage";
 import {
   isThemePreference,
-  isPrimaryColor,
+  isCustomPrimaryColor,
+  isPrimaryColorKey,
+  CUSTOM_PRIMARY_COLOR,
   primaryColorPalette,
   resolveTheme,
   subscribeToSystemTheme,
   systemPrefersDark,
   type ThemePreference,
   type PrimaryColor,
+  type PrimaryColorKey,
+  type CustomPrimaryColor,
 } from "./theme";
 import { ThemeContext } from "./theme-context";
 
@@ -25,10 +29,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const stored = readStoredJson<{ theme?: unknown }>(STORAGE_KEYS.preferences);
     return isThemePreference(stored?.theme) ? stored.theme : "system";
   });
-  const [primaryColor, setPrimaryColor] = useState<PrimaryColor>(() => {
-    const stored = readStoredJson<{ primaryColor?: unknown }>(STORAGE_KEYS.preferences);
-    return isPrimaryColor(stored?.primaryColor) ? stored.primaryColor : "amber";
-  });
+  const [colorState, setColorState] = useState(() => readStoredColorState());
+  const { primaryColor, primaryColorKey, customPrimaryColor } = colorState;
   const systemDark = useSyncExternalStore(subscribeToSystemTheme, systemPrefersDark, () => false);
   const resolvedTheme = resolveTheme(preference, systemDark);
   const updatePreference = useCallback((nextPreference: ThemePreference) => {
@@ -36,20 +38,37 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const stored = readStoredJson<Record<string, unknown>>(STORAGE_KEYS.preferences) ?? {};
     writeStoredJson(STORAGE_KEYS.preferences, { ...stored, theme: nextPreference });
   }, []);
-  const updatePrimaryColor = useCallback((nextPrimaryColor: PrimaryColor) => {
-    setPrimaryColor(nextPrimaryColor);
-    const stored = readStoredJson<Record<string, unknown>>(STORAGE_KEYS.preferences) ?? {};
-    writeStoredJson(STORAGE_KEYS.preferences, { ...stored, primaryColor: nextPrimaryColor });
-  }, []);
+  const updatePrimaryColor = useCallback(
+    (nextPrimaryColor: PrimaryColor) => {
+      const nextPrimaryColorKey: PrimaryColorKey = isCustomPrimaryColor(nextPrimaryColor)
+        ? CUSTOM_PRIMARY_COLOR
+        : nextPrimaryColor;
+      const nextCustomPrimaryColor = isCustomPrimaryColor(nextPrimaryColor)
+        ? nextPrimaryColor
+        : colorState.customPrimaryColor;
+      const stored = readStoredJson<Record<string, unknown>>(STORAGE_KEYS.preferences) ?? {};
+      writeStoredJson(STORAGE_KEYS.preferences, {
+        ...stored,
+        primaryColor: nextPrimaryColorKey,
+        customPrimaryColor: nextCustomPrimaryColor,
+      });
+      setColorState({
+        primaryColor: nextPrimaryColor,
+        primaryColorKey: nextPrimaryColorKey,
+        customPrimaryColor: nextCustomPrimaryColor,
+      });
+    },
+    [colorState.customPrimaryColor],
+  );
   const previewPrimaryColor = useCallback(
     (nextPrimaryColor: PrimaryColor | null) => {
       const root = document.documentElement;
       root.toggleAttribute("data-primary-color-scrubbing", nextPrimaryColor !== null);
-      const appliedColor = nextPrimaryColor ?? primaryColor;
+      const appliedColor = nextPrimaryColor ?? colorState.primaryColor;
       root.dataset.primaryColor = appliedColor;
       applyPrimaryColor(root, appliedColor);
     },
-    [primaryColor],
+    [colorState.primaryColor],
   );
 
   useLayoutEffect(() => {
@@ -57,8 +76,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     root.classList.toggle("light", preference === "light");
     root.classList.toggle("dark", preference === "dark");
     root.dataset.theme = resolvedTheme;
-    root.dataset.primaryColor = primaryColor;
-    applyPrimaryColor(root, primaryColor);
+    root.dataset.primaryColor = colorState.primaryColor;
+    applyPrimaryColor(root, colorState.primaryColor);
     root.style.colorScheme = resolvedTheme;
 
     return () => {
@@ -72,13 +91,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       root.style.removeProperty("--primary-foreground-dark");
       root.style.removeProperty("color-scheme");
     };
-  }, [preference, primaryColor, resolvedTheme]);
+  }, [preference, colorState.primaryColor, resolvedTheme]);
 
   const value = useMemo(
     () => ({
       preference,
       resolvedTheme,
       primaryColor,
+      primaryColorKey,
+      customPrimaryColor,
       setPreference: updatePreference,
       setPrimaryColor: updatePrimaryColor,
       previewPrimaryColor,
@@ -86,6 +107,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     [
       preference,
       primaryColor,
+      primaryColorKey,
+      customPrimaryColor,
       resolvedTheme,
       updatePreference,
       updatePrimaryColor,
@@ -94,6 +117,53 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   );
 
   return <ThemeContext value={value}>{children}</ThemeContext>;
+}
+
+interface StoredColorPreferences {
+  primaryColor?: unknown;
+  customPrimaryColor?: unknown;
+}
+
+interface ColorState {
+  primaryColor: PrimaryColor;
+  primaryColorKey: PrimaryColorKey;
+  customPrimaryColor: CustomPrimaryColor;
+}
+
+function readStoredColorState(): ColorState {
+  const stored = readStoredJson<StoredColorPreferences>(STORAGE_KEYS.preferences);
+  const storedCustomPrimaryColor = isCustomPrimaryColor(stored?.customPrimaryColor)
+    ? stored.customPrimaryColor
+    : "#efbf04";
+
+  if (isPrimaryColorKey(stored?.primaryColor)) {
+    if (stored.primaryColor === CUSTOM_PRIMARY_COLOR) {
+      return {
+        primaryColor: storedCustomPrimaryColor,
+        primaryColorKey: CUSTOM_PRIMARY_COLOR,
+        customPrimaryColor: storedCustomPrimaryColor,
+      };
+    }
+    return {
+      primaryColor: stored.primaryColor,
+      primaryColorKey: stored.primaryColor,
+      customPrimaryColor: storedCustomPrimaryColor,
+    };
+  }
+
+  if (isCustomPrimaryColor(stored?.primaryColor)) {
+    return {
+      primaryColor: stored.primaryColor,
+      primaryColorKey: CUSTOM_PRIMARY_COLOR,
+      customPrimaryColor: stored.primaryColor,
+    };
+  }
+
+  return {
+    primaryColor: "amber",
+    primaryColorKey: "amber",
+    customPrimaryColor: storedCustomPrimaryColor,
+  };
 }
 
 function applyPrimaryColor(root: HTMLElement, primaryColor: PrimaryColor) {

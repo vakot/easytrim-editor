@@ -11,7 +11,8 @@ export interface ContextMenuOption {
   hint?: ReactNode;
   selected?: boolean;
   disabled?: boolean;
-  onSelect?: () => void;
+  onSelect?: (event: Event) => void;
+  render?: (trigger: ReactNode) => ReactNode;
   submenu?: readonly ContextMenuOption[];
 }
 
@@ -71,7 +72,7 @@ function ContextMenuOptionItem({ option }: { option: ContextMenuOption }) {
           disabled={option.disabled}
           data-selected={option.selected ? "true" : "false"}
           aria-current={option.selected ? "true" : undefined}
-          className="flex min-h-8 w-full items-center gap-3 rounded-md px-2.5 py-1.5 text-left text-sm outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 focus:bg-accent focus:text-accent-foreground"
+          className="flex min-h-8 w-full items-center gap-3 rounded-md px-2.5 py-1.5 text-left text-sm outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
         >
           <ContextMenuOptionContent option={option} />
           <ChevronRight className="ml-auto size-4 shrink-0" aria-hidden="true" />
@@ -90,7 +91,7 @@ function ContextMenuOptionItem({ option }: { option: ContextMenuOption }) {
     );
   }
 
-  return (
+  const item = (
     <DropdownMenuPrimitive.Item
       disabled={option.disabled}
       onSelect={option.onSelect}
@@ -101,6 +102,8 @@ function ContextMenuOptionItem({ option }: { option: ContextMenuOption }) {
       <ContextMenuOptionContent option={option} />
     </DropdownMenuPrimitive.Item>
   );
+
+  return option.render ? option.render(item) : item;
 }
 
 function ContextMenuOptionContent({ option }: { option: ContextMenuOption }) {

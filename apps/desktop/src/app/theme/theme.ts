@@ -5,8 +5,12 @@ export type ThemePreference = (typeof THEME_PREFERENCES)[number];
 export type ResolvedTheme = Exclude<ThemePreference, "system">;
 
 export const PRIMARY_COLORS = ["amber", "rose", "violet", "blue", "emerald"] as const;
+export const CUSTOM_PRIMARY_COLOR = "custom" as const;
+export const PRIMARY_COLOR_KEYS = [...PRIMARY_COLORS, CUSTOM_PRIMARY_COLOR] as const;
 
-export type PrimaryColor = (typeof PRIMARY_COLORS)[number] | `#${string}`;
+export type PrimaryColorKey = (typeof PRIMARY_COLOR_KEYS)[number];
+export type CustomPrimaryColor = `#${string}`;
+export type PrimaryColor = (typeof PRIMARY_COLORS)[number] | CustomPrimaryColor;
 
 const primaryColorValues = {
   amber: "#efbf04",
@@ -24,8 +28,16 @@ export function isPrimaryColor(value: unknown): value is PrimaryColor {
   return (
     typeof value === "string" &&
     (PRIMARY_COLORS.includes(value as (typeof PRIMARY_COLORS)[number]) ||
-      /^#[0-9a-f]{6}$/i.test(value))
+      isCustomPrimaryColor(value))
   );
+}
+
+export function isPrimaryColorKey(value: unknown): value is PrimaryColorKey {
+  return typeof value === "string" && PRIMARY_COLOR_KEYS.includes(value as PrimaryColorKey);
+}
+
+export function isCustomPrimaryColor(value: unknown): value is CustomPrimaryColor {
+  return typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value);
 }
 
 export function resolvePrimaryColor(color: PrimaryColor): string {

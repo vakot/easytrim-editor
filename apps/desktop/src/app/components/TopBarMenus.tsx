@@ -1,11 +1,18 @@
 import { Monitor, Moon, Sun } from "lucide-react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
-import { ContextMenu, type ContextMenuOption } from "@/components/ui/context-menu";
-import { isSupportedLanguage, type SupportedLanguage } from "@/i18n/resources";
-import { PRIMARY_COLORS, resolvePrimaryColor, type PrimaryColor } from "@/app/theme/theme";
+import { SpectrumWheel } from "@/app/components/PrimaryColorSelector";
+import {
+  CUSTOM_PRIMARY_COLOR,
+  PRIMARY_COLORS,
+  resolvePrimaryColor,
+  type PrimaryColor,
+} from "@/app/theme/theme";
 import { useTheme } from "@/app/theme/use-theme";
+import { ContextMenu, type ContextMenuOption } from "@/components/ui/context-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { isSupportedLanguage, type SupportedLanguage } from "@/i18n/resources";
 
 interface TopBarMenusProps {
   isChoosingSource: boolean;
@@ -36,7 +43,14 @@ export function TopBarMenus({
   onExport,
 }: TopBarMenusProps) {
   const { t, i18n } = useTranslation();
-  const { preference, primaryColor, setPreference, setPrimaryColor } = useTheme();
+  const {
+    preference,
+    primaryColor,
+    primaryColorKey,
+    customPrimaryColor,
+    setPreference,
+    setPrimaryColor,
+  } = useTheme();
   const [openMenu, setOpenMenu] = useState<TopBarMenuId | null>(null);
   const [switchingMenu, setSwitchingMenu] = useState<TopBarMenuId | null>(null);
   const currentLanguage = isSupportedLanguage(i18n.resolvedLanguage) ? i18n.resolvedLanguage : "en";
@@ -75,13 +89,23 @@ export function TopBarMenus({
     };
   });
 
-  const colorOptions: ContextMenuOption[] = PRIMARY_COLORS.map((color) => ({
-    id: `color-${color}`,
-    label: t(`themeColor.${color}`),
-    hint: <ColorSample color={color} selected={color === primaryColor} />,
-    selected: color === primaryColor,
-    onSelect: () => setPrimaryColor(color),
-  }));
+  const colorOptions: ContextMenuOption[] = [
+    ...PRIMARY_COLORS.map((color) => ({
+      id: `color-${color}`,
+      label: t(`themeColor.${color}`),
+      hint: resolvePrimaryColor(color).toUpperCase(),
+      selected: color === primaryColorKey,
+      onSelect: () => setPrimaryColor(color),
+    })),
+    {
+      id: "color-custom",
+      label: t("themeColor.custom"),
+      hint: customPrimaryColor.toUpperCase(),
+      selected: primaryColorKey === CUSTOM_PRIMARY_COLOR,
+      onSelect: (event) => event.preventDefault(),
+      render: (trigger: ReactNode) => <CustomColorPopover>{trigger}</CustomColorPopover>,
+    },
+  ];
 
   const languageOptions: ContextMenuOption[] = (["en", "sk"] as const).map((language) => ({
     id: `language-${language}`,
@@ -151,6 +175,44 @@ export function TopBarMenus({
         ]}
       />
     </nav>
+  );
+}
+
+function CustomColorPopover({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
+  const { customPrimaryColor, previewPrimaryColor, setPrimaryColor } = useTheme();
+  const [previewColor, setPreviewColor] = useState<PrimaryColor | null>(null);
+  const selectedColor = resolvePrimaryColor(previewColor ?? customPrimaryColor);
+
+  const preview = (color: PrimaryColor) => {
+    setPreviewColor(color);
+    previewPrimaryColor(color);
+  };
+  const commit = (color: PrimaryColor) => {
+    setPreviewColor(null);
+    setPrimaryColor(color);
+  };
+  const cancel = () => {
+    setPreviewColor(null);
+    previewPrimaryColor(null);
+  };
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>{children}</PopoverTrigger>
+      <PopoverContent side="right" align="start" className="w-auto space-y-3 p-3">
+        <SpectrumWheel
+          color={selectedColor}
+          onPreview={preview}
+          onCommit={commit}
+          onCancel={cancel}
+        />
+        <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
+          <span>{t("themeColor.custom")}</span>
+          <code className="font-mono text-foreground">{selectedColor.toUpperCase()}</code>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
 

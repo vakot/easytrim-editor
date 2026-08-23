@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 
 import {
   colorFromSpectrumPosition,
+  CUSTOM_PRIMARY_COLOR,
   PRIMARY_COLORS,
   resolvePrimaryColor,
   type PrimaryColor,
@@ -23,10 +24,12 @@ const colorClasses: Record<Exclude<PrimaryColor, `#${string}`>, string> = {
 
 export function PrimaryColorSelector() {
   const { t } = useTranslation();
-  const { primaryColor, previewPrimaryColor, setPrimaryColor } = useTheme();
+  const { primaryColor, primaryColorKey, previewPrimaryColor, setPrimaryColor } = useTheme();
   const [previewColor, setPreviewColor] = useState<PrimaryColor | null>(null);
   const selectedPrimaryColor = previewColor ?? primaryColor;
   const selectedColor = resolvePrimaryColor(selectedPrimaryColor);
+  const selectedColorLabel =
+    primaryColorKey === CUSTOM_PRIMARY_COLOR ? selectedColor : t(`themeColor.${primaryColorKey}`);
 
   const preview = (color: PrimaryColor) => {
     setPreviewColor(color);
@@ -51,7 +54,7 @@ export function PrimaryColorSelector() {
               size="icon"
               type="button"
               aria-label={t("themeColor.selection", {
-                color: t(`themeColor.${primaryColor}`, selectedColor),
+                color: selectedColorLabel,
               })}
             >
               <span
@@ -73,7 +76,7 @@ export function PrimaryColorSelector() {
         />
         <div className="flex gap-1" role="group" aria-label={t("themeColor.presets")}>
           {PRIMARY_COLORS.map((color) => {
-            const selected = color === primaryColor;
+            const selected = color === primaryColorKey;
             return (
               <button
                 key={color}
@@ -95,7 +98,7 @@ export function PrimaryColorSelector() {
   );
 }
 
-function SpectrumWheel({
+export function SpectrumWheel({
   color,
   onPreview,
   onCommit,

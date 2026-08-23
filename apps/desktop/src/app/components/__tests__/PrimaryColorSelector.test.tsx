@@ -72,7 +72,25 @@ describe("PrimaryColorSelector", () => {
     expect(selectedColor).toMatch(/^#[0-9a-f]{6}$/);
     expect(selectedColor).not.toBe(startingColor);
     expect(JSON.parse(localStorage.getItem(STORAGE_KEYS.preferences) ?? "{}")).toMatchObject({
-      primaryColor: selectedColor,
+      primaryColor: "custom",
+      customPrimaryColor: selectedColor,
     });
+  });
+
+  it("restores the selected custom color and its palette key", () => {
+    localStorage.setItem(
+      STORAGE_KEYS.preferences,
+      JSON.stringify({ primaryColor: "custom", customPrimaryColor: "#123456" }),
+    );
+    render(
+      <TooltipProvider>
+        <ThemeProvider>
+          <PrimaryColorSelector />
+        </ThemeProvider>
+      </TooltipProvider>,
+    );
+
+    expect(document.documentElement).toHaveAttribute("data-primary-color", "#123456");
+    expect(screen.getByRole("button", { name: "Theme color: #123456" })).toBeVisible();
   });
 });

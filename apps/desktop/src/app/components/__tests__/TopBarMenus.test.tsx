@@ -92,6 +92,40 @@ describe("TopBarMenus", () => {
     );
   });
 
+  it("shows hex values for presets and opens the custom spectrum picker", async () => {
+    const user = userEvent.setup();
+    render(
+      <TooltipProvider>
+        <ThemeProvider>
+          <TopBarMenus
+            isChoosingSource={false}
+            canSave
+            canExport
+            onChooseSource={vi.fn()}
+            onSave={vi.fn()}
+            onExport={vi.fn()}
+          />
+        </ThemeProvider>
+      </TooltipProvider>,
+    );
+
+    await user.click(screen.getByRole("button", { name: "View" }));
+    const colorItem = screen.getByText("Color").closest<HTMLElement>('[role="menuitem"]');
+    expect(colorItem).not.toBeNull();
+    colorItem?.focus();
+    await user.keyboard("{ArrowRight}");
+
+    expect(screen.getByRole("menuitem", { name: /Amber/ })).toHaveTextContent("#EFBF04");
+    expect(screen.getByRole("menuitem", { name: /Rose/ })).toHaveTextContent("#E85D75");
+    expect(screen.getByRole("menuitem", { name: /Violet/ })).toHaveTextContent("#8B6EE8");
+    expect(screen.getByRole("menuitem", { name: /Blue/ })).toHaveTextContent("#4299E1");
+    expect(screen.getByRole("menuitem", { name: /Emerald/ })).toHaveTextContent("#32A876");
+    expect(screen.getByRole("menuitem", { name: /Custom/ })).toHaveTextContent("#EFBF04");
+
+    await user.click(screen.getByRole("menuitem", { name: /Custom/ }));
+    expect(screen.getByRole("button", { name: /Theme color spectrum/ })).toBeVisible();
+  });
+
   it("switches between open menus on hover but stays click-to-open when closed", async () => {
     const user = userEvent.setup();
     render(
