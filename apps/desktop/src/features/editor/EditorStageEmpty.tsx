@@ -43,7 +43,7 @@ export function EditorStageEmpty() {
         className="min-h-0 min-w-0"
         style={{ flex: `${showAudioTracks ? previewSize : 100} 1 0%` }}
       >
-        <PreviewPane empty />
+        <PreviewPane source={null} />
       </div>
 
       <EmptyStageResizeHandle

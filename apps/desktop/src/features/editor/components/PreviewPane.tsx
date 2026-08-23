@@ -1,16 +1,14 @@
-import type { ReactNode } from "react";
-
 import { PreviewPaneEmpty } from "./PreviewPaneEmpty";
+import { PreviewPaneContent, type PreviewPaneContentProps } from "./PreviewPaneContent";
 
 interface PreviewPaneProps {
-  children?: ReactNode;
-  empty?: boolean;
+  source: PreviewPaneContentProps | null;
 }
 
-export function PreviewPane({ children, empty = false }: PreviewPaneProps) {
+export function PreviewPane({ source }: PreviewPaneProps) {
   return (
     <div className="grid size-full min-h-0 place-items-center overflow-auto bg-preview-surface p-4">
-      {empty ? <PreviewPaneEmpty /> : children}
+      {source ? <PreviewPaneContent {...source} /> : <PreviewPaneEmpty />}
     </div>
   );
 }

@@ -15,7 +15,6 @@ import {
 import { AudioTracks } from "../audio-tracks";
 import { isApplicationDialogOpen } from "@/lib/hotkeys";
 import { PlaybackControls, PlaybackTimecode, TimelineTools } from "../preview/PlaybackControls";
-import { VideoPreview } from "../preview/VideoPreview";
 import { TrimTimeline } from "../timeline";
 import { TimelinePane } from "./components/TimelinePane";
 import { PreviewPane } from "./components/PreviewPane";
@@ -716,23 +715,23 @@ function LoadedEditorStage({
       aria-label={t("preview.panes")}
     >
       <Panel id="preview-panel" minSize="14rem" className="min-h-0 min-w-0">
-        <PreviewPane>
-          <VideoPreview
-            sourceId={sourceId}
-            preview={preview}
-            playbackRate={playbackSpeed.speed}
-            muted={hasIndependentAudio}
-            videoRef={videoRef}
-            onPlaybackError={handlePreviewPlaybackError}
-            onLoadedMetadata={() => commitSeek(displayedPlayheadMicros)}
-            onTogglePlayback={handleTogglePlayback}
-            onPlay={() => {
+        <PreviewPane
+          source={{
+            sourceId,
+            preview,
+            playbackRate: playbackSpeed.speed,
+            muted: hasIndependentAudio,
+            videoRef,
+            onPlaybackError: handlePreviewPlaybackError,
+            onLoadedMetadata: () => commitSeek(displayedPlayheadMicros),
+            onTogglePlayback: handleTogglePlayback,
+            onPlay: () => {
               playbackRequestedRef.current = true;
               isPlayingRef.current = true;
               setIsPlaying(true);
               startPlayheadAnimation();
-            }}
-            onPause={() => {
+            },
+            onPause: () => {
               // Layout changes can briefly pause the video element while the
               // transport is still logically playing. Do not let that browser
               // lifecycle event pause the independent audio graph or change
@@ -751,15 +750,15 @@ function LoadedEditorStage({
               if (video) {
                 handleTimeUpdate(video.currentTime);
               }
-            }}
-            onTimeUpdate={handleTimeUpdate}
-            onEnded={handlePlaybackEnded}
-            sourceDimensions={sourceDimensions}
-            onCropResolutionChange={onCropResolutionChange}
-            onCropChange={onCropChange}
-            onCropToolOpenChange={handleCropToolOpenChange}
-          />
-        </PreviewPane>
+            },
+            onTimeUpdate: handleTimeUpdate,
+            onEnded: handlePlaybackEnded,
+            sourceDimensions,
+            onCropResolutionChange,
+            onCropChange,
+            onCropToolOpenChange: handleCropToolOpenChange,
+          }}
+        />
       </Panel>
 
       <PaneResizeHandle
