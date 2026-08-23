@@ -1,0 +1,95 @@
+import { ChevronRight } from "lucide-react";
+import { type ReactNode } from "react";
+import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui";
+
+import { cn } from "@/lib/utils";
+
+export interface ContextMenuOption {
+  id: string;
+  label: ReactNode;
+  hint?: ReactNode;
+  disabled?: boolean;
+  onSelect?: () => void;
+  submenu?: readonly ContextMenuOption[];
+}
+
+interface ContextMenuProps {
+  label: string;
+  options: readonly ContextMenuOption[];
+  className?: string;
+}
+
+export function ContextMenu({ label, options, className }: ContextMenuProps) {
+  return (
+    <DropdownMenuPrimitive.Root>
+      <DropdownMenuPrimitive.Trigger
+        className={cn(
+          "inline-flex h-8 items-center rounded-md px-3 text-sm text-foreground/80 outline-none transition-colors hover:bg-accent hover:text-foreground focus-visible:bg-accent focus-visible:text-foreground data-[state=open]:bg-accent data-[state=open]:text-foreground",
+          className,
+        )}
+      >
+        {label}
+      </DropdownMenuPrimitive.Trigger>
+      <DropdownMenuPrimitive.Portal>
+        <DropdownMenuPrimitive.Content
+          align="start"
+          sideOffset={4}
+          className="z-50 min-w-56 rounded-lg border bg-popover p-1 text-popover-foreground shadow-lg ring-1 ring-foreground/10"
+        >
+          {options.map((option) => (
+            <ContextMenuOptionItem key={option.id} option={option} />
+          ))}
+        </DropdownMenuPrimitive.Content>
+      </DropdownMenuPrimitive.Portal>
+    </DropdownMenuPrimitive.Root>
+  );
+}
+
+function ContextMenuOptionItem({ option }: { option: ContextMenuOption }) {
+  if (option.submenu) {
+    return (
+      <DropdownMenuPrimitive.Sub>
+        <DropdownMenuPrimitive.SubTrigger
+          disabled={option.disabled}
+          className="flex min-h-8 w-full items-center gap-3 rounded-md px-2.5 py-1.5 text-left text-sm outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 focus:bg-accent focus:text-accent-foreground"
+        >
+          <ContextMenuOptionContent option={option} />
+          <ChevronRight className="ml-auto size-4 shrink-0" aria-hidden="true" />
+        </DropdownMenuPrimitive.SubTrigger>
+        <DropdownMenuPrimitive.Portal>
+          <DropdownMenuPrimitive.SubContent
+            sideOffset={4}
+            className="z-50 min-w-48 rounded-lg border bg-popover p-1 text-popover-foreground shadow-lg ring-1 ring-foreground/10"
+          >
+            {option.submenu.map((child) => (
+              <ContextMenuOptionItem key={child.id} option={child} />
+            ))}
+          </DropdownMenuPrimitive.SubContent>
+        </DropdownMenuPrimitive.Portal>
+      </DropdownMenuPrimitive.Sub>
+    );
+  }
+
+  return (
+    <DropdownMenuPrimitive.Item
+      disabled={option.disabled}
+      onSelect={option.onSelect}
+      className="flex min-h-8 w-full cursor-default items-center gap-3 rounded-md px-2.5 py-1.5 text-left text-sm outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 focus:bg-accent focus:text-accent-foreground"
+    >
+      <ContextMenuOptionContent option={option} />
+    </DropdownMenuPrimitive.Item>
+  );
+}
+
+function ContextMenuOptionContent({ option }: { option: ContextMenuOption }) {
+  return (
+    <>
+      <span className="min-w-0 flex-1 truncate">{option.label}</span>
+      {option.hint ? (
+        <span className="ml-auto flex shrink-0 items-center justify-end gap-1.5 pl-6 text-xs text-muted-foreground">
+          {option.hint}
+        </span>
+      ) : null}
+    </>
+  );
+}

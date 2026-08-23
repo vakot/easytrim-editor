@@ -43,6 +43,18 @@ export const sk = {
     emerald: "SmaragdovГЎ",
   },
   app: {
+    topBarMenus: {
+      label: "Ponuky aplikácie",
+      file: "Súbor",
+      edit: "Upraviť",
+      view: "Zobraziť",
+      openFile: "Otvoriť súbor",
+      save: "Uložiť",
+      optimizedExport: "Optimalizovaný export",
+      theme: "Téma",
+      color: "Farba",
+      language: "Jazyk",
+    },
     toolbar: "Panel aplikácie",
     returnToWelcome: "Návrat na úvodnú stránku EasyTrim Editor",
     dragUnavailable: "Presunutie súboru nie je dostupné: {{message}}",

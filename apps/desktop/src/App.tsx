@@ -1,30 +1,35 @@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AppToolbar } from "@/app/components/AppToolbar";
 import { NativeDialogOverlay } from "@/app/components/NativeDialogOverlay";
 import { ReturnConfirmationDialog } from "@/app/components/ReturnConfirmationDialog";
 import { StatusBar } from "@/app/components/StatusBar";
 import { useEasyTrimEditorApp } from "@/app/hooks/useEasyTrimEditorApp";
-import { SourceWorkspace } from "@/features/import-source/SourceWorkspace";
+import { CapabilityStatus, SourceWorkspace } from "@/features/import-source/SourceWorkspace";
 import { useTranslation } from "react-i18next";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import { useReleaseCheck } from "@/features/release/hooks/useReleaseCheck";
 import { EditorViewStateProvider } from "@/app/editor-view-state";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FULL_CROP, type CropRect } from "@/features/preview/utils/crop-geometry";
 import { CustomTitleBar } from "@/app/components/CustomTitleBar";
 import { PanelVisibilityControls } from "@/app/components/PanelVisibilityControls";
+import { TopBarMenus } from "@/app/components/TopBarMenus";
+import { ExportPanel, type ExportPanelHandle } from "@/features/export";
 
 function EasyTrimEditorApp() {
   const app = useEasyTrimEditorApp();
   const { t } = useTranslation();
   const { update } = useReleaseCheck();
   const source = app.session.source;
+  const exportPanelRef = useRef<ExportPanelHandle>(null);
   const sourceDimensions = source?.media
     ? { width: source.media.video.width, height: source.media.video.height }
     : null;
   const [cropResolution, setCropResolution] = useState(sourceDimensions ?? { width: 1, height: 1 });
   const [crop, setCrop] = useState<CropRect>(FULL_CROP);
+  const canExport = app.session.status === "ready" && Boolean(source?.media && source.trim);
+  const cropApplied = crop.x !== 0 || crop.y !== 0 || crop.width !== 1 || crop.height !== 1;
+  const canSave = canExport && !cropApplied;
 
   useEffect(() => {
     // Crop dimensions are session UI state derived from the active source.
@@ -40,12 +45,25 @@ function EasyTrimEditorApp() {
       <main
         className={`fixed inset-0 grid h-dvh w-screen min-w-80 overflow-hidden bg-background ${
           app.hasSource
-            ? "grid-rows-[2.25rem_auto_minmax(0,1fr)_auto]"
+            ? "grid-rows-[2.25rem_minmax(0,1fr)_auto]"
             : "grid-rows-[2.25rem_minmax(0,1fr)]"
         }`}
       >
         <CustomTitleBar
           onLogoClick={app.requestReturnToWelcome}
+          menuControls={
+            <TopBarMenus
+              isChoosingSource={app.isChoosingSource}
+              canSave={canSave}
+              canExport={canExport}
+              onChooseSource={() => void app.handleChooseSource()}
+              onSave={() => exportPanelRef.current?.startFastCut()}
+              onExport={() => exportPanelRef.current?.openOptimizedDialog()}
+            />
+          }
+          statusContent={
+            app.hasSource ? <CapabilityStatus capabilities={app.session.capabilities} /> : null
+          }
           panelControls={
             app.hasSource ? (
               <PanelVisibilityControls
@@ -54,18 +72,25 @@ function EasyTrimEditorApp() {
             ) : null
           }
         />
-        {app.hasSource ? (
-          <AppToolbar
-            session={app.session}
-            isChoosingSource={app.isChoosingSource}
-            setExportQueue={app.setExportQueue}
-            exportPresets={app.exportPresets}
-            dispatchExportPreset={app.dispatchExportPreset}
-            onChooseSource={() => void app.handleChooseSource()}
-            onReturnToWelcome={app.requestReturnToWelcome}
+
+        {canExport && source?.media && source.trim ? (
+          <ExportPanel
+            key={`export-${source.selection.sourceId}`}
+            ref={exportPanelRef}
+            source={source.media}
+            sourceName={source.selection.displayName}
+            trim={source.trim}
+            audioTracks={source.audioTracks}
+            masterEnabled={source.masterEnabled}
+            masterVolumePercent={source.masterVolumePercent}
+            mergeAudio={source.mergeAudio}
+            setQueue={app.setExportQueue}
+            presetState={app.exportPresets}
+            onPresetAction={app.dispatchExportPreset}
             onNativeDialogStateChange={app.setIsNativeDialogOpen}
             cropResolution={cropResolution}
             crop={crop}
+            showActions={false}
           />
         ) : null}
 

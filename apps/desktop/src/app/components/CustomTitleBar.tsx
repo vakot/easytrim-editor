@@ -13,6 +13,8 @@ import {
 
 interface CustomTitleBarProps {
   onLogoClick: () => void;
+  menuControls?: ReactNode;
+  statusContent?: ReactNode;
   panelControls?: ReactNode;
 }
 
@@ -25,7 +27,12 @@ interface PendingDrag {
 
 const DRAG_START_DISTANCE = 4;
 
-export function CustomTitleBar({ onLogoClick, panelControls }: CustomTitleBarProps) {
+export function CustomTitleBar({
+  onLogoClick,
+  menuControls,
+  statusContent,
+  panelControls,
+}: CustomTitleBarProps) {
   const { t } = useTranslation();
   const [isMaximized, setIsMaximized] = useState(false);
   const [windowActionError, setWindowActionError] = useState(false);
@@ -98,7 +105,7 @@ export function CustomTitleBar({ onLogoClick, panelControls }: CustomTitleBarPro
 
   return (
     <header
-      className="flex h-9 min-h-9 items-center border-b border-border/70 bg-background/95 text-foreground select-none"
+      className="relative flex h-9 min-h-9 items-center border-b border-border/70 bg-background/95 text-foreground select-none"
       aria-label={t("app.windowControls.titleBar")}
       onDoubleClickCapture={handleTitleBarDoubleClick}
     >
@@ -113,6 +120,10 @@ export function CustomTitleBar({ onLogoClick, panelControls }: CustomTitleBarPro
           {t("common.brand")}
         </span>
       </button>
+
+      {menuControls ? <div className="flex h-full items-center px-1">{menuControls}</div> : null}
+
+      {statusContent ? <div className="flex h-full items-center px-2">{statusContent}</div> : null}
 
       <div
         className="h-full min-w-0 flex-1 cursor-default"

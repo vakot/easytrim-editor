@@ -40,6 +40,7 @@ interface OptimizedExportDialogProps {
   commandPreview: string;
   commandPreviewError: string | null;
   onExport: () => void;
+  showTrigger?: boolean;
 }
 
 export function OptimizedExportDialog({
@@ -53,6 +54,7 @@ export function OptimizedExportDialog({
   commandPreview,
   commandPreviewError,
   onExport,
+  showTrigger = true,
 }: OptimizedExportDialogProps) {
   const { t } = useTranslation();
   const [isAspectRatioLocked, setIsAspectRatioLocked] = useState(true);
@@ -68,14 +70,16 @@ export function OptimizedExportDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <DialogTrigger asChild>
-            <Button aria-keyshortcuts="Control+E">{t("export.export")}</Button>
-          </DialogTrigger>
-        </TooltipTrigger>
-        <TooltipContent>{t("export.exportTooltip")}</TooltipContent>
-      </Tooltip>
+      {showTrigger ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DialogTrigger asChild>
+              <Button aria-keyshortcuts="Control+E">{t("export.export")}</Button>
+            </DialogTrigger>
+          </TooltipTrigger>
+          <TooltipContent>{t("export.exportTooltip")}</TooltipContent>
+        </Tooltip>
+      ) : null}
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>{t("export.export")}</DialogTitle>
