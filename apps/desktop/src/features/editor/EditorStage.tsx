@@ -3,9 +3,18 @@ import { useTranslation } from "react-i18next";
 
 import { PaneResizeHandle } from "@/components/PaneResizeHandle";
 import { useEditorViewState } from "@/app/hooks/useEditorViewState";
-import { usePlayback, useSourceDetails, useTimeline, useTimelineTools } from "@/app/hooks/useEditorContracts";
+import {
+  usePlayback,
+  useSourceDetails,
+  useTimeline,
+  useTimelineTools,
+} from "@/app/hooks/useEditorContracts";
 import { AudioTracks } from "@/features/audio-tracks";
-import { PlaybackControls, PlaybackTimecode, TimelineTools } from "@/features/preview/PlaybackControls";
+import {
+  PlaybackControls,
+  PlaybackTimecode,
+  TimelineTools,
+} from "@/features/preview/PlaybackControls";
 import { VideoPreview } from "@/features/preview/VideoPreview";
 import { TrimTimeline } from "@/features/timeline";
 import { TimelinePane } from "./components/TimelinePane";

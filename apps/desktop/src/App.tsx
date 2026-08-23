@@ -26,7 +26,11 @@ function EasyTrimEditorApp() {
   const source = sourceDetails.source;
   const exportPanelRef = useRef<ExportPanelHandle>(null);
   const canExport = app.session.status === "ready" && Boolean(source?.media && source.trim);
-  const cropApplied = sourceDetails.crop.x !== 0 || sourceDetails.crop.y !== 0 || sourceDetails.crop.width !== 1 || sourceDetails.crop.height !== 1;
+  const cropApplied =
+    sourceDetails.crop.x !== 0 ||
+    sourceDetails.crop.y !== 0 ||
+    sourceDetails.crop.width !== 1 ||
+    sourceDetails.crop.height !== 1;
   const canSave = canExport && !cropApplied;
 
   return (

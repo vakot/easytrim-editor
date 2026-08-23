@@ -92,9 +92,7 @@ export function SourceWorkspace() {
           aria-label={t("import.source.previewArea")}
         >
           {session.status === "ready" && media && trimRange ? (
-            <EditorStage
-              key={sourceDetails.sourceId}
-            />
+            <EditorStage key={sourceDetails.sourceId} />
           ) : null}
           {isSourceDragActive ? <DropOverlay /> : null}
         </div>

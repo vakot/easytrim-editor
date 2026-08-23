@@ -14,12 +14,12 @@ export function useTimelineTools() {
   return {
     ...tools,
     playbackSpeed: tools.playbackSpeed,
-    setPlaybackSpeed: (playbackSpeed: EditorToolState["playbackSpeed"]) => update({ playbackSpeed }),
+    setPlaybackSpeed: (playbackSpeed: EditorToolState["playbackSpeed"]) =>
+      update({ playbackSpeed }),
     toggleSafeTrimFollowing: () =>
       update({ safeTrimFollowingEnabled: !tools.safeTrimFollowingEnabled }),
     toggleLoopPlayback: () => update({ loopPlaybackEnabled: !tools.loopPlaybackEnabled }),
-    toggleSegmentPlayback: () =>
-      update({ segmentPlaybackEnabled: !tools.segmentPlaybackEnabled }),
+    toggleSegmentPlayback: () => update({ segmentPlaybackEnabled: !tools.segmentPlaybackEnabled }),
     reset: resetTools,
   };
 }
