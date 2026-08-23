@@ -2,6 +2,7 @@ import { ChevronRight } from "lucide-react";
 import { type ReactNode } from "react";
 import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui";
 
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export interface ContextMenuOption {
@@ -22,13 +23,18 @@ interface ContextMenuProps {
 export function ContextMenu({ label, options, className }: ContextMenuProps) {
   return (
     <DropdownMenuPrimitive.Root>
-      <DropdownMenuPrimitive.Trigger
-        className={cn(
-          "inline-flex h-8 items-center rounded-md px-3 text-sm text-foreground/80 outline-none transition-colors hover:bg-accent hover:text-foreground focus-visible:bg-accent focus-visible:text-foreground data-[state=open]:bg-accent data-[state=open]:text-foreground",
-          className,
-        )}
-      >
-        {label}
+      <DropdownMenuPrimitive.Trigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className={cn(
+            "text-foreground/80 data-[state=open]:bg-accent data-[state=open]:text-foreground",
+            className,
+          )}
+        >
+          {label}
+        </Button>
       </DropdownMenuPrimitive.Trigger>
       <DropdownMenuPrimitive.Portal>
         <DropdownMenuPrimitive.Content

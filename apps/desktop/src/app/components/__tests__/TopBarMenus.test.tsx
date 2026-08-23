@@ -24,7 +24,12 @@ describe("TopBarMenus", () => {
       </TooltipProvider>,
     );
 
-    await user.click(screen.getByRole("button", { name: "File" }));
+    const fileButton = screen.getByRole("button", { name: "File" });
+    expect(fileButton).toHaveAttribute("data-slot", "button");
+    expect(fileButton).toHaveAttribute("data-size", "sm");
+    expect(fileButton).toHaveClass("h-7");
+
+    await user.click(fileButton);
 
     expect(screen.getByRole("menuitem", { name: /Open File/ })).toHaveTextContent("Ctrl+O");
   });
