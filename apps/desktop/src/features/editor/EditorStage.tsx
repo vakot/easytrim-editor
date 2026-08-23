@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Group, Panel } from "react-resizable-panels";
 import { useTranslation } from "react-i18next";
 
@@ -96,7 +96,6 @@ function LoadedEditorStage({
   const playbackStartSequenceRef = useRef(0);
   const playbackRequestedRef = useRef(false);
   const isPlayingRef = useRef(false);
-  const resumeAfterCropRef = useRef(false);
   const lastPlaybackCommitAtRef = useRef(0);
   const trimRef = useRef(trim);
   const trimPropRef = useRef(trim);
@@ -578,27 +577,6 @@ function LoadedEditorStage({
     startMediaPlayback();
   }
 
-  const handleCropToolOpenChange = useCallback((isOpen: boolean) => {
-    if (isOpen) {
-      resumeAfterCropRef.current = playbackRequestedRef.current || isPlayingRef.current;
-      if (!resumeAfterCropRef.current) return;
-      playbackStartSequenceRef.current += 1;
-      playbackRequestedRef.current = false;
-      isPlayingRef.current = false;
-      videoRef.current?.pause();
-      pauseAudioPlayback();
-      setIsPlaying(false);
-      stopPlayheadAnimation();
-      return;
-    }
-
-    if (!resumeAfterCropRef.current) return;
-    resumeAfterCropRef.current = false;
-    startMediaPlayback();
-    // startMediaPlayback is intentionally read from the stable editor lifecycle.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   function handleStepFrame(direction: -1 | 1) {
     playbackStartSequenceRef.current += 1;
     playbackRequestedRef.current = false;
@@ -722,16 +700,17 @@ function LoadedEditorStage({
             playbackRate: playbackSpeed.speed,
             muted: hasIndependentAudio,
             videoRef,
+            isPlaying,
             onPlaybackError: handlePreviewPlaybackError,
             onLoadedMetadata: () => commitSeek(displayedPlayheadMicros),
             onTogglePlayback: handleTogglePlayback,
-            onPlay: () => {
+            onPlaybackStarted: () => {
               playbackRequestedRef.current = true;
               isPlayingRef.current = true;
               setIsPlaying(true);
               startPlayheadAnimation();
             },
-            onPause: () => {
+            onPlaybackPaused: () => {
               // Layout changes can briefly pause the video element while the
               // transport is still logically playing. Do not let that browser
               // lifecycle event pause the independent audio graph or change
@@ -753,10 +732,19 @@ function LoadedEditorStage({
             },
             onTimeUpdate: handleTimeUpdate,
             onEnded: handlePlaybackEnded,
+            onPauseForCrop: () => {
+              playbackStartSequenceRef.current += 1;
+              playbackRequestedRef.current = false;
+              isPlayingRef.current = false;
+              videoRef.current?.pause();
+              pauseAudioPlayback();
+              setIsPlaying(false);
+              stopPlayheadAnimation();
+            },
+            onResumeAfterCrop: startMediaPlayback,
             sourceDimensions,
             onCropResolutionChange,
             onCropChange,
-            onCropToolOpenChange: handleCropToolOpenChange,
           }}
         />
       </Panel>
