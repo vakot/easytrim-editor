@@ -169,13 +169,15 @@ describe("TopBarMenus", () => {
     fireEvent.pointerCancel(spectrum, { pointerId: 1 });
     expect(customItem).toHaveTextContent("#123456");
     const hexInput = screen.getByRole("textbox", { name: "Custom hex" });
-    expect(hexInput).toHaveValue("#123456");
+    expect(hexInput).toHaveValue("123456");
+    expect(hexInput.previousElementSibling).toHaveAttribute("aria-hidden", "true");
     await user.clear(hexInput);
-    await user.type(hexInput, "#abcdef");
-    expect(hexInput).toHaveValue("#abcdef");
+    expect(hexInput.previousElementSibling).toHaveTextContent("#");
+    await user.type(hexInput, "abcdef");
+    expect(hexInput).toHaveValue("abcdef");
     expect(document.documentElement).toHaveAttribute("data-primary-color", "#abcdef");
     await user.clear(hexInput);
-    await user.type(hexInput, "#abcdeg");
+    await user.type(hexInput, "abcdeg");
     expect(document.documentElement).toHaveAttribute("data-primary-color", "#abcdef");
 
     const colorMenus = screen.getAllByRole("menu", { name: "Color" });
@@ -192,7 +194,7 @@ describe("TopBarMenus", () => {
     expect(screen.getByRole("button", { name: /Theme color spectrum/ })).toBeVisible();
 
     await user.clear(hexInput);
-    await user.type(hexInput, "#abcdef");
+    await user.type(hexInput, "abcdef");
     await user.keyboard("{Enter}");
     expect(screen.queryByRole("menuitem", { name: /Custom/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Theme color spectrum/ })).not.toBeInTheDocument();
