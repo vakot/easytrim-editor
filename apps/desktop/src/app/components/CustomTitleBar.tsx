@@ -123,7 +123,11 @@ export function CustomTitleBar({
 
       {menuControls ? <div className="flex h-full items-center px-1">{menuControls}</div> : null}
 
-      {statusContent ? <div className="flex h-full items-center px-2">{statusContent}</div> : null}
+      {statusContent ? (
+        <div className="absolute left-1/2 top-1/2 flex h-full -translate-x-1/2 -translate-y-1/2 items-center px-2">
+          {statusContent}
+        </div>
+      ) : null}
 
       <div
         className="h-full min-w-0 flex-1 cursor-default"

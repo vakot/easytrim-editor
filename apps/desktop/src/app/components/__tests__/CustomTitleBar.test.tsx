@@ -73,6 +73,22 @@ describe("CustomTitleBar", () => {
     );
   });
 
+  it("centers status content independently of the title bar side controls", () => {
+    render(
+      <CustomTitleBar
+        onLogoClick={vi.fn()}
+        menuControls={<span data-testid="menu-controls" />}
+        statusContent={<span data-testid="status-content">Media tools ready</span>}
+        panelControls={<span data-testid="panel-controls" />}
+      />,
+    );
+
+    const statusContent = screen.getByTestId("status-content");
+    const statusSlot = statusContent.parentElement;
+    expect(statusSlot).not.toBeNull();
+    expect(statusSlot).toHaveClass("absolute", "left-1/2", "-translate-x-1/2");
+  });
+
   it("delegates dragging and window controls to the native adapter", async () => {
     render(<CustomTitleBar onLogoClick={vi.fn()} />);
 
