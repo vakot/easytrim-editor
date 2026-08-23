@@ -174,6 +174,12 @@ describe("TopBarMenus", () => {
     fireEvent.pointerLeave(customItem, { clientX: 199, clientY: 16 });
     fireEvent.pointerMove(spectrum, { clientX: 208, clientY: 16 });
     expect(screen.getByRole("button", { name: /Theme color spectrum/ })).toBeVisible();
+
+    await user.clear(hexInput);
+    await user.type(hexInput, "#abcdef");
+    await user.keyboard("{Enter}");
+    expect(screen.queryByRole("menuitem", { name: /Custom/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Theme color spectrum/ })).not.toBeInTheDocument();
   });
 
   it("switches between open menus on hover but stays click-to-open when closed", async () => {

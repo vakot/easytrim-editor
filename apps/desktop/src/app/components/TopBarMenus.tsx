@@ -64,6 +64,11 @@ export function TopBarMenus({
     setPreviewColor(null);
     previewPrimaryColor(null);
   };
+  const closeMenu = () => {
+    clearPreview();
+    setSwitchingMenu(null);
+    setOpenMenu(null);
+  };
 
   const menuProps = (id: TopBarMenuId) => ({
     open: openMenu === id,
@@ -125,7 +130,11 @@ export function TopBarMenus({
       },
       openSubmenuOnClick: false,
       submenuContent: (
-        <CustomColorPickerPanel previewColor={previewColor} onPreviewChange={setPreviewColor} />
+        <CustomColorPickerPanel
+          previewColor={previewColor}
+          onPreviewChange={setPreviewColor}
+          onClose={closeMenu}
+        />
       ),
     },
   ];
@@ -204,9 +213,11 @@ export function TopBarMenus({
 function CustomColorPickerPanel({
   previewColor,
   onPreviewChange,
+  onClose,
 }: {
   previewColor: PrimaryColor | null;
   onPreviewChange: (color: PrimaryColor | null) => void;
+  onClose: () => void;
 }) {
   const { t } = useTranslation();
   const { customPrimaryColor, previewPrimaryColor, setPrimaryColor } = useTheme();
@@ -249,6 +260,12 @@ function CustomColorPickerPanel({
           maxLength={7}
           onChange={(event) => updateHexValue(event.target.value)}
           onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => {
+            if (event.key !== "Enter") return;
+            event.preventDefault();
+            if (isCustomPrimaryColor(hexValue)) commit(hexValue);
+            onClose();
+          }}
           onPointerDown={(event) => event.stopPropagation()}
           pattern="#[0-9a-fA-F]{6}"
           spellCheck={false}
