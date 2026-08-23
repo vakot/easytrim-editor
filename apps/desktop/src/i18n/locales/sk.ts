@@ -122,6 +122,7 @@ export const sk = {
       loadError: "Video sa nepodarilo načítať",
       technicalDetails: "Technické podrobnosti",
       metadataLabel: "Metadáta videa",
+      noSourceValue: "Žiadny zdroj",
       metadata: {
         container: "Kontajner",
         duration: "Trvanie",

@@ -183,6 +183,7 @@ describe("App", () => {
     expect(screen.getByLabelText("Video editor workspace")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "No source selected" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Export queue" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Video metadata")).toHaveTextContent("No source");
     expect(screen.getByRole("group", { name: "Editor panels" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Hide left pane" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Hide bottom pane" })).not.toBeDisabled();

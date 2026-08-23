@@ -115,6 +115,7 @@ export const en = {
       loadError: "Could not load this video",
       technicalDetails: "Technical details",
       metadataLabel: "Video metadata",
+      noSourceValue: "No source",
       metadata: {
         container: "Container",
         duration: "Duration",
