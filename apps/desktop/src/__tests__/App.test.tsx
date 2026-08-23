@@ -196,7 +196,9 @@ describe("App", () => {
     expect(shortcuts).toHaveTextContent("Open video");
     expect(shortcuts).toHaveTextContent("Ctrl");
     expect(shortcuts).toHaveTextContent("Play / pause");
+    expect(shortcuts).toHaveTextContent("Previous/Next frame");
     expect(shortcuts).toHaveTextContent("Set start marker");
+    expect(within(shortcuts).getAllByRole("listitem")).toHaveLength(7);
     expect(screen.getByLabelText("Video trim timeline")).toHaveAttribute(
       "aria-description",
       "Timeline values will appear after a video is opened.",

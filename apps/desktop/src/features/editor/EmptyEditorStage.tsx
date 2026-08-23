@@ -12,8 +12,11 @@ export function EmptyEditorStage() {
     { label: t("import.emptyStage.shortcuts.save"), keys: ["Ctrl", "S"] },
     { label: t("import.emptyStage.shortcuts.export"), keys: ["Ctrl", "E"] },
     { label: t("import.emptyStage.shortcuts.playPause"), keys: ["Space"] },
-    { label: t("import.emptyStage.shortcuts.previousFrame"), keys: ["←"] },
-    { label: t("import.emptyStage.shortcuts.nextFrame"), keys: ["→"] },
+    {
+      label: t("import.emptyStage.shortcuts.previousNextFrame"),
+      keys: ["←", "→"],
+      separator: "/",
+    },
     { label: t("import.emptyStage.shortcuts.setStart"), keys: ["I"] },
     { label: t("import.emptyStage.shortcuts.setEnd"), keys: ["O"] },
   ];
@@ -54,11 +57,13 @@ export function EmptyEditorStage() {
                 />
                 <span
                   className="flex shrink-0 items-center gap-1"
-                  aria-label={shortcut.keys.join(" + ")}
+                  aria-label={shortcut.keys.join(` ${shortcut.separator ?? "+"} `)}
                 >
                   {shortcut.keys.map((key, index) => (
                     <span className="flex items-center gap-1" key={key}>
-                      {index > 0 ? <span aria-hidden="true">+</span> : null}
+                      {index > 0 ? (
+                        <span aria-hidden="true">{shortcut.separator ?? "+"}</span>
+                      ) : null}
                       <kbd className="rounded border border-border bg-card px-1.5 py-0.5 font-mono text-[11px] text-foreground shadow-sm">
                         {key}
                       </kbd>
