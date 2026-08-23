@@ -147,7 +147,6 @@ export function TopBarMenus({
     label: t(language === "en" ? "language.english" : "language.slovak"),
     hint: language.toUpperCase(),
     selected: language === currentLanguage,
-    shouldCloseOnClick: false,
     onSelect: () => void i18n.changeLanguage(language as SupportedLanguage),
   }));
 

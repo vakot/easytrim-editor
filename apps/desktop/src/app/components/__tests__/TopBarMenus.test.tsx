@@ -60,6 +60,7 @@ describe("TopBarMenus", () => {
     await user.click(viewButton);
     const themeItem = screen.getByText("Theme").closest<HTMLElement>('[role="menuitem"]');
     expect(themeItem).not.toBeNull();
+    expect(themeItem).toHaveClass("min-w-56");
     themeItem?.focus();
     await user.keyboard("{ArrowRight}");
 
@@ -102,6 +103,8 @@ describe("TopBarMenus", () => {
       "data-selected",
       "false",
     );
+    await user.click(screen.getByRole("menuitem", { name: /English/ }));
+    expect(screen.queryByRole("menuitem", { name: /English/ })).not.toBeInTheDocument();
   });
 
   it("shows hex values and accepts custom input as soon as it is valid", async () => {
