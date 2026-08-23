@@ -142,6 +142,16 @@ describe("TopBarMenus", () => {
     await user.hover(customItem);
     const spectrum = await screen.findByRole("button", { name: /Theme color spectrum/ });
     expect(spectrum).toBeVisible();
+    Object.defineProperty(spectrum, "getBoundingClientRect", {
+      value: () => new DOMRect(0, 0, 192, 192),
+    });
+    fireEvent.pointerDown(spectrum, { pointerId: 1, clientX: 96, clientY: 96 });
+    expect(customItem).toHaveTextContent("#808080");
+    expect(colorItem?.querySelector('[aria-hidden="true"]')).toHaveStyle({
+      backgroundColor: "rgb(128, 128, 128)",
+    });
+    fireEvent.pointerCancel(spectrum, { pointerId: 1 });
+    expect(customItem).toHaveTextContent("#123456");
     const hexInput = screen.getByRole("textbox", { name: "Custom hex" });
     expect(hexInput).toHaveValue("#123456");
     await user.clear(hexInput);

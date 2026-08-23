@@ -49,17 +49,26 @@ export function TopBarMenus({
     primaryColor,
     primaryColorKey,
     customPrimaryColor,
+    previewPrimaryColor,
     setPreference,
     setPrimaryColor,
   } = useTheme();
   const [openMenu, setOpenMenu] = useState<TopBarMenuId | null>(null);
   const [switchingMenu, setSwitchingMenu] = useState<TopBarMenuId | null>(null);
+  const [previewColor, setPreviewColor] = useState<PrimaryColor | null>(null);
   const currentLanguage = isSupportedLanguage(i18n.resolvedLanguage) ? i18n.resolvedLanguage : "en";
   const CurrentThemeIcon = themeIcons[preference];
+  const displayedPrimaryColor = previewColor ?? primaryColor;
+  const displayedCustomColor = previewColor ?? customPrimaryColor;
+  const clearPreview = () => {
+    setPreviewColor(null);
+    previewPrimaryColor(null);
+  };
 
   const menuProps = (id: TopBarMenuId) => ({
     open: openMenu === id,
     onOpenChange: (isOpen: boolean) => {
+      if (!isOpen) clearPreview();
       if (!isOpen && switchingMenu === id) {
         setSwitchingMenu(null);
         return;
@@ -103,16 +112,21 @@ export function TopBarMenus({
       id: "color-custom",
       leading: (
         <ColorSample
-          color={customPrimaryColor}
+          color={displayedCustomColor}
           selected={primaryColorKey === CUSTOM_PRIMARY_COLOR}
         />
       ),
       label: t("themeColor.custom"),
-      hint: customPrimaryColor.toUpperCase(),
+      hint: displayedCustomColor.toUpperCase(),
       selected: primaryColorKey === CUSTOM_PRIMARY_COLOR,
-      onSelect: () => setPrimaryColor(customPrimaryColor),
+      onSelect: () => {
+        setPreviewColor(null);
+        setPrimaryColor(customPrimaryColor);
+      },
       openSubmenuOnClick: false,
-      submenuContent: <CustomColorPickerPanel />,
+      submenuContent: (
+        <CustomColorPickerPanel previewColor={previewColor} onPreviewChange={setPreviewColor} />
+      ),
     },
   ];
 
@@ -172,7 +186,7 @@ export function TopBarMenus({
           {
             id: "color",
             label: t("app.topBarMenus.color"),
-            hint: <ColorSample color={primaryColor} />,
+            hint: <ColorSample color={displayedPrimaryColor} />,
             submenu: colorOptions,
           },
           {
@@ -187,25 +201,30 @@ export function TopBarMenus({
   );
 }
 
-function CustomColorPickerPanel() {
+function CustomColorPickerPanel({
+  previewColor,
+  onPreviewChange,
+}: {
+  previewColor: PrimaryColor | null;
+  onPreviewChange: (color: PrimaryColor | null) => void;
+}) {
   const { t } = useTranslation();
   const { customPrimaryColor, previewPrimaryColor, setPrimaryColor } = useTheme();
-  const [previewColor, setPreviewColor] = useState<PrimaryColor | null>(null);
   const [hexValue, setHexValue] = useState<string>(customPrimaryColor);
   const selectedColor = resolvePrimaryColor(previewColor ?? customPrimaryColor);
 
   const preview = (color: PrimaryColor) => {
-    setPreviewColor(color);
+    onPreviewChange(color);
     setHexValue(resolvePrimaryColor(color));
     previewPrimaryColor(color);
   };
   const commit = (color: PrimaryColor) => {
-    setPreviewColor(null);
+    onPreviewChange(null);
     setHexValue(resolvePrimaryColor(color));
     setPrimaryColor(color);
   };
   const cancel = () => {
-    setPreviewColor(null);
+    onPreviewChange(null);
     setHexValue(customPrimaryColor);
     previewPrimaryColor(null);
   };
