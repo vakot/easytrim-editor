@@ -33,6 +33,8 @@ describe("TopBarMenus", () => {
     await user.click(fileButton);
 
     expect(screen.getByRole("menuitem", { name: /Open File/ })).toHaveTextContent("Ctrl+O");
+    await user.click(screen.getByRole("menuitem", { name: /Open File/ }));
+    expect(screen.queryByRole("menuitem", { name: /Open File/ })).not.toBeInTheDocument();
   });
 
   it("keeps Theme and Language metadata visible for every submenu option", async () => {
@@ -52,7 +54,8 @@ describe("TopBarMenus", () => {
       </TooltipProvider>,
     );
 
-    await user.click(screen.getByRole("button", { name: "View" }));
+    const viewButton = screen.getByRole("button", { name: "View" });
+    await user.click(viewButton);
     const themeItem = screen.getByText("Theme").closest<HTMLElement>('[role="menuitem"]');
     expect(themeItem).not.toBeNull();
     themeItem?.focus();
@@ -74,8 +77,14 @@ describe("TopBarMenus", () => {
       "false",
     );
 
+    await user.click(screen.getByRole("menuitem", { name: "Light" }));
+    expect(screen.getByRole("menuitem", { name: "Light" })).toHaveAttribute(
+      "data-selected",
+      "true",
+    );
     await user.keyboard("{Escape}");
-    await user.click(screen.getByRole("button", { name: "View" }));
+    await user.keyboard("{Escape}");
+    await user.click(viewButton);
     const languageItem = screen.getByText("Language").closest<HTMLElement>('[role="menuitem"]');
     expect(languageItem).not.toBeNull();
     languageItem?.focus();
@@ -134,6 +143,8 @@ describe("TopBarMenus", () => {
     const customItem = screen.getByRole("menuitem", { name: /Custom/ });
     expect(customItem).toHaveTextContent("#123456");
     expect(customItem.querySelector('[aria-hidden="true"]')).not.toBeNull();
+    await user.click(screen.getByRole("menuitem", { name: /Amber/ }));
+    expect(screen.getByRole("menuitem", { name: /Amber/ })).toBeInTheDocument();
 
     await user.click(customItem);
     expect(document.documentElement).toHaveAttribute("data-primary-color", "#123456");

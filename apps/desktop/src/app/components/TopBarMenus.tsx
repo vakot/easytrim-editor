@@ -100,6 +100,7 @@ export function TopBarMenus({
       label: t(`theme.${value}`),
       hint: <Icon className="size-4" aria-hidden="true" />,
       selected: value === preference,
+      shouldCloseOnClick: false,
       onSelect: () => setPreference(value),
     };
   });
@@ -111,6 +112,7 @@ export function TopBarMenus({
       label: t(`themeColor.${color}`),
       hint: resolvePrimaryColor(color).toUpperCase(),
       selected: color === primaryColorKey,
+      shouldCloseOnClick: false,
       onSelect: () => setPrimaryColor(color),
     })),
     {
@@ -124,6 +126,7 @@ export function TopBarMenus({
       label: t("themeColor.custom"),
       hint: displayedCustomColor.toUpperCase(),
       selected: primaryColorKey === CUSTOM_PRIMARY_COLOR,
+      shouldCloseOnClick: false,
       onSelect: () => {
         setPreviewColor(null);
         setPrimaryColor(customPrimaryColor);
@@ -144,6 +147,7 @@ export function TopBarMenus({
     label: t(language === "en" ? "language.english" : "language.slovak"),
     hint: language.toUpperCase(),
     selected: language === currentLanguage,
+    shouldCloseOnClick: false,
     onSelect: () => void i18n.changeLanguage(language as SupportedLanguage),
   }));
 
@@ -190,18 +194,21 @@ export function TopBarMenus({
             id: "theme",
             label: t("app.topBarMenus.theme"),
             hint: <CurrentThemeIcon className="size-4" aria-label={t(`theme.${preference}`)} />,
+            shouldCloseOnClick: false,
             submenu: themeOptions,
           },
           {
             id: "color",
             label: t("app.topBarMenus.color"),
             hint: <ColorSample color={displayedPrimaryColor} />,
+            shouldCloseOnClick: false,
             submenu: colorOptions,
           },
           {
             id: "language",
             label: t("app.topBarMenus.language"),
             hint: currentLanguage.toUpperCase(),
+            shouldCloseOnClick: false,
             submenu: languageOptions,
           },
         ]}
