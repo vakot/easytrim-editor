@@ -40,6 +40,16 @@ export const en = {
     toolbar: "Application toolbar",
     returnToWelcome: "Return to EasyTrim Editor welcome page",
     dragUnavailable: "Drag and drop is unavailable: {{message}}",
+    windowControls: {
+      titleBar: "Window title bar",
+      group: "Window controls",
+      logo: "EasyTrim Editor",
+      minimize: "Minimize",
+      maximize: "Maximize",
+      restore: "Restore",
+      close: "Close",
+      error: "The window control could not be completed.",
+    },
     nativeDialog: {
       title: "Waiting for system dialog",
       description: "Choose a file location to continue.",

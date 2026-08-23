@@ -46,6 +46,16 @@ export const sk = {
     toolbar: "Panel aplikácie",
     returnToWelcome: "Návrat na úvodnú stránku EasyTrim Editor",
     dragUnavailable: "Presunutie súboru nie je dostupné: {{message}}",
+    windowControls: {
+      titleBar: "Titulkový panel okna",
+      group: "Ovládanie okna",
+      logo: "EasyTrim Editor",
+      minimize: "Minimalizovať",
+      maximize: "Maximalizovať",
+      restore: "Obnoviť",
+      close: "Zavrieť",
+      error: "Ovládanie okna sa nepodarilo dokončiť.",
+    },
     nativeDialog: {
       title: "Čaká sa na systémové okno",
       description: "Pokračujte výberom umiestnenia súboru.",
