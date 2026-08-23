@@ -1,5 +1,5 @@
 import { Separator as ResizeSeparator } from "react-resizable-panels";
-import type { MouseEventHandler } from "react";
+import type { FocusEventHandler, MouseEventHandler, PointerEventHandler } from "react";
 
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
@@ -9,6 +9,8 @@ interface PaneResizeHandleProps {
   label: string;
   orientation: "horizontal" | "vertical";
   onDoubleClick?: MouseEventHandler<HTMLDivElement>;
+  onFocus?: FocusEventHandler<HTMLDivElement>;
+  onPointerEnter?: PointerEventHandler<HTMLDivElement>;
   disabled?: boolean;
 }
 
@@ -17,6 +19,8 @@ export function PaneResizeHandle({
   label,
   orientation,
   onDoubleClick,
+  onFocus,
+  onPointerEnter,
   disabled = false,
 }: PaneResizeHandleProps) {
   return (
@@ -24,6 +28,8 @@ export function PaneResizeHandle({
       disabled={disabled}
       disableDoubleClick={onDoubleClick !== undefined}
       onDoubleClick={onDoubleClick}
+      onFocus={onFocus}
+      onPointerEnter={onPointerEnter}
       id={id}
       aria-label={label}
       aria-hidden={disabled}

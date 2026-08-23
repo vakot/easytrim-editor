@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Group, Panel } from "react-resizable-panels";
 import { useTranslation } from "react-i18next";
 
-import { PaneResizeHandle } from "../../components/PaneResizeHandle";
 import { clampPlaybackMicros, frameDurationMicros } from "../../domain/playback";
 import {
   canSetTrimBoundaryAtPlayhead,
@@ -17,11 +15,11 @@ import { isApplicationDialogOpen } from "@/lib/hotkeys";
 import { PlaybackControls, PlaybackTimecode, TimelineTools } from "../preview/PlaybackControls";
 import { TrimTimeline } from "../timeline";
 import { TimelinePane } from "./components/TimelinePane";
+import { EditorStagePanels } from "./components/EditorStagePanels";
 import { PreviewPane } from "./components/PreviewPane";
 import { EditorStageEmpty } from "./EditorStageEmpty";
 import { usePlaybackModes } from "./hooks/usePlaybackModes";
 import { usePlaybackSpeed } from "./hooks/usePlaybackSpeed";
-import { useTimelinePanelSizing } from "./hooks/useTimelinePanelSizing";
 import { useEditorViewState } from "@/app/hooks/useEditorViewState";
 import type { EditorShortcutActions, EditorStageProps, LoadedEditorStageProps } from "./types";
 import { synchronizeAudioPosition } from "./utils/audio-sync";
@@ -63,20 +61,7 @@ function LoadedEditorStage({
   onCropChange,
 }: LoadedEditorStageProps) {
   const { t } = useTranslation();
-  const {
-    tools,
-    setTools,
-    resetTools,
-    editorStageLayout,
-    setEditorStageLayout,
-    showAudioTracks,
-    setShowAudioTracks,
-  } = useEditorViewState();
-  const timelinePanelSizing = useTimelinePanelSizing(
-    sourceId,
-    audioStreams.length,
-    showAudioTracks,
-  );
+  const { tools, setTools, resetTools, showAudioTracks } = useEditorViewState();
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioElementsRef = useRef(new Map<number, HTMLAudioElement>());
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -683,16 +668,10 @@ function LoadedEditorStage({
   };
 
   return (
-    <Group
-      id="editor-stage-panels"
-      defaultLayout={editorStageLayout}
-      onLayoutChanged={setEditorStageLayout}
-      orientation="vertical"
-      className="min-h-0 min-w-0 bg-background"
-      resizeTargetMinimumSize={{ fine: 8, coarse: 24 }}
-      aria-label={t("preview.panes")}
-    >
-      <Panel id="preview-panel" minSize="14rem" className="min-h-0 min-w-0">
+    <EditorStagePanels
+      sourceId={sourceId}
+      audioTrackCount={audioStreams.length}
+      preview={
         <PreviewPane
           sourceId={sourceId}
           preview={preview}
@@ -745,31 +724,8 @@ function LoadedEditorStage({
           onCropResolutionChange={onCropResolutionChange}
           onCropChange={onCropChange}
         />
-      </Panel>
-
-      <PaneResizeHandle
-        id="preview-timeline-resize-handle"
-        label={t("preview.resize")}
-        orientation="horizontal"
-        onDoubleClick={timelinePanelSizing.resetToDefault}
-      />
-
-      <Panel
-        id="timeline-panel"
-        panelRef={timelinePanelSizing.panelRef}
-        defaultSize={timelinePanelSizing.initialDefaultSize}
-        collapsible
-        collapsedSize={timelinePanelSizing.collapsedSize}
-        minSize={timelinePanelSizing.constraints.minSize}
-        maxSize={timelinePanelSizing.constraints.maxSize}
-        onResize={(size) => {
-          const isCollapsed =
-            timelinePanelSizing.panelRef.current?.isCollapsed() ?? size.inPixels <= 0;
-          setShowAudioTracks(!isCollapsed);
-        }}
-        groupResizeBehavior="preserve-pixel-size"
-        className="min-h-0 min-w-0 bg-background"
-      >
+      }
+      timeline={
         <TimelinePane
           range={trim}
           timeline={
@@ -862,7 +818,7 @@ function LoadedEditorStage({
             ) : null
           }
         />
-      </Panel>
-    </Group>
+      }
+    />
   );
 }

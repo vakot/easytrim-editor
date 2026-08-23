@@ -24,12 +24,13 @@ export function timelinePanelTargetSize(
 }
 
 export function useTimelinePanelSizing(
-  sourceId: string,
+  sourceId: string | null,
   audioTrackCount: number,
   isVisible: boolean,
+  preserveInitialSize = false,
 ) {
   const panelRef = usePanelRef();
-  const initializedSourceRef = useRef<string | null>(null);
+  const initializedRef = useRef(false);
   const constraints = useMemo(
     () => timelinePanelSizeConstraints(audioTrackCount),
     [audioTrackCount],
@@ -54,14 +55,14 @@ export function useTimelinePanelSizing(
     const targetSize = timelinePanelTargetSize(
       currentSize,
       constraints,
-      initializedSourceRef.current === null,
+      !initializedRef.current && !preserveInitialSize,
     );
 
-    initializedSourceRef.current = sourceId;
+    initializedRef.current = true;
     if (Math.abs(currentSize - targetSize) >= 1) {
       panel.resize(targetSize);
     }
-  }, [constraints, panelRef, sourceId]);
+  }, [constraints, panelRef, preserveInitialSize, sourceId]);
 
   useEffect(() => {
     const panel = panelRef.current;
