@@ -14,6 +14,7 @@ export interface ContextMenuOption {
   disabled?: boolean;
   onSelect?: (event: Event) => void;
   render?: (trigger: ReactNode) => ReactNode;
+  submenuContent?: ReactNode;
   submenu?: readonly ContextMenuOption[];
 }
 
@@ -66,7 +67,7 @@ export function ContextMenu({
 }
 
 function ContextMenuOptionItem({ option }: { option: ContextMenuOption }) {
-  if (option.submenu) {
+  if (option.submenu || option.submenuContent) {
     return (
       <DropdownMenuPrimitive.Sub>
         <DropdownMenuPrimitive.SubTrigger
@@ -83,9 +84,10 @@ function ContextMenuOptionItem({ option }: { option: ContextMenuOption }) {
             sideOffset={4}
             className="z-50 min-w-48 rounded-lg border bg-popover p-1 text-popover-foreground shadow-lg ring-1 ring-foreground/10"
           >
-            {option.submenu.map((child) => (
-              <ContextMenuOptionItem key={child.id} option={child} />
-            ))}
+            {option.submenuContent ??
+              option.submenu?.map((child) => (
+                <ContextMenuOptionItem key={child.id} option={child} />
+              ))}
           </DropdownMenuPrimitive.SubContent>
         </DropdownMenuPrimitive.Portal>
       </DropdownMenuPrimitive.Sub>

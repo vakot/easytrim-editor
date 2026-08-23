@@ -1,5 +1,5 @@
 import { Monitor, Moon, Sun } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { SpectrumWheel } from "@/app/components/PrimaryColorSelector";
@@ -11,7 +11,6 @@ import {
 } from "@/app/theme/theme";
 import { useTheme } from "@/app/theme/use-theme";
 import { ContextMenu, type ContextMenuOption } from "@/components/ui/context-menu";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { isSupportedLanguage, type SupportedLanguage } from "@/i18n/resources";
 
 interface TopBarMenusProps {
@@ -109,8 +108,7 @@ export function TopBarMenus({
       label: t("themeColor.custom"),
       hint: customPrimaryColor.toUpperCase(),
       selected: primaryColorKey === CUSTOM_PRIMARY_COLOR,
-      onSelect: (event) => event.preventDefault(),
-      render: (trigger: ReactNode) => <CustomColorPopover>{trigger}</CustomColorPopover>,
+      submenuContent: <CustomColorPickerPanel />,
     },
   ];
 
@@ -185,7 +183,7 @@ export function TopBarMenus({
   );
 }
 
-function CustomColorPopover({ children }: { children: ReactNode }) {
+function CustomColorPickerPanel() {
   const { t } = useTranslation();
   const { customPrimaryColor, previewPrimaryColor, setPrimaryColor } = useTheme();
   const [previewColor, setPreviewColor] = useState<PrimaryColor | null>(null);
@@ -205,21 +203,18 @@ function CustomColorPopover({ children }: { children: ReactNode }) {
   };
 
   return (
-    <Popover>
-      <PopoverTrigger asChild>{children}</PopoverTrigger>
-      <PopoverContent side="right" align="start" className="w-auto space-y-3 p-3">
-        <SpectrumWheel
-          color={selectedColor}
-          onPreview={preview}
-          onCommit={commit}
-          onCancel={cancel}
-        />
-        <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
-          <span>{t("themeColor.custom")}</span>
-          <code className="font-mono text-foreground">{selectedColor.toUpperCase()}</code>
-        </div>
-      </PopoverContent>
-    </Popover>
+    <div className="w-auto space-y-3 p-2" onPointerMove={(event) => event.stopPropagation()}>
+      <SpectrumWheel
+        color={selectedColor}
+        onPreview={preview}
+        onCommit={commit}
+        onCancel={cancel}
+      />
+      <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
+        <span>{t("themeColor.custom")}</span>
+        <code className="font-mono text-foreground">{selectedColor.toUpperCase()}</code>
+      </div>
+    </div>
   );
 }
 

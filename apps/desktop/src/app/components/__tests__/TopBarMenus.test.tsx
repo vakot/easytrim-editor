@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
@@ -130,7 +130,20 @@ describe("TopBarMenus", () => {
     expect(customItem).toHaveTextContent("#EFBF04");
     expect(customItem.querySelector('[aria-hidden="true"]')).not.toBeNull();
 
-    await user.click(screen.getByRole("menuitem", { name: /Custom/ }));
+    await user.click(customItem);
+    const spectrum = await screen.findByRole("button", { name: /Theme color spectrum/ });
+    expect(spectrum).toBeVisible();
+    const colorMenus = screen.getAllByRole("menu", { name: "Color" });
+    const customMenu = colorMenus[colorMenus.length - 1];
+    expect(customMenu).toBeDefined();
+    Object.defineProperty(customItem, "getBoundingClientRect", {
+      value: () => new DOMRect(0, 0, 200, 32),
+    });
+    Object.defineProperty(customMenu, "getBoundingClientRect", {
+      value: () => new DOMRect(204, 0, 210, 240),
+    });
+    fireEvent.pointerLeave(customItem, { clientX: 199, clientY: 16 });
+    fireEvent.pointerMove(spectrum, { clientX: 208, clientY: 16 });
     expect(screen.getByRole("button", { name: /Theme color spectrum/ })).toBeVisible();
   });
 
