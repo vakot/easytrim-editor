@@ -92,6 +92,7 @@ export function TopBarMenus({
   const colorOptions: ContextMenuOption[] = [
     ...PRIMARY_COLORS.map((color) => ({
       id: `color-${color}`,
+      leading: <ColorSample color={color} selected={color === primaryColorKey} />,
       label: t(`themeColor.${color}`),
       hint: resolvePrimaryColor(color).toUpperCase(),
       selected: color === primaryColorKey,
@@ -99,6 +100,12 @@ export function TopBarMenus({
     })),
     {
       id: "color-custom",
+      leading: (
+        <ColorSample
+          color={customPrimaryColor}
+          selected={primaryColorKey === CUSTOM_PRIMARY_COLOR}
+        />
+      ),
       label: t("themeColor.custom"),
       hint: customPrimaryColor.toUpperCase(),
       selected: primaryColorKey === CUSTOM_PRIMARY_COLOR,

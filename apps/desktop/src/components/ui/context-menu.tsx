@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 
 export interface ContextMenuOption {
   id: string;
+  leading?: ReactNode;
   label: ReactNode;
   hint?: ReactNode;
   selected?: boolean;
@@ -109,6 +110,9 @@ function ContextMenuOptionItem({ option }: { option: ContextMenuOption }) {
 function ContextMenuOptionContent({ option }: { option: ContextMenuOption }) {
   return (
     <>
+      {option.leading ? (
+        <span className="flex shrink-0 items-center justify-center">{option.leading}</span>
+      ) : null}
       <span className="min-w-0 flex-1 truncate">{option.label}</span>
       {option.hint ? (
         <span className="ml-auto flex shrink-0 items-center justify-end gap-1.5 pl-6 text-xs text-muted-foreground">

@@ -115,12 +115,20 @@ describe("TopBarMenus", () => {
     colorItem?.focus();
     await user.keyboard("{ArrowRight}");
 
-    expect(screen.getByRole("menuitem", { name: /Amber/ })).toHaveTextContent("#EFBF04");
-    expect(screen.getByRole("menuitem", { name: /Rose/ })).toHaveTextContent("#E85D75");
-    expect(screen.getByRole("menuitem", { name: /Violet/ })).toHaveTextContent("#8B6EE8");
-    expect(screen.getByRole("menuitem", { name: /Blue/ })).toHaveTextContent("#4299E1");
-    expect(screen.getByRole("menuitem", { name: /Emerald/ })).toHaveTextContent("#32A876");
-    expect(screen.getByRole("menuitem", { name: /Custom/ })).toHaveTextContent("#EFBF04");
+    for (const [name, hex] of [
+      ["Amber", "#EFBF04"],
+      ["Rose", "#E85D75"],
+      ["Violet", "#8B6EE8"],
+      ["Blue", "#4299E1"],
+      ["Emerald", "#32A876"],
+    ] as const) {
+      const item = screen.getByRole("menuitem", { name: new RegExp(name) });
+      expect(item).toHaveTextContent(hex);
+      expect(item.querySelector('[aria-hidden="true"]')).not.toBeNull();
+    }
+    const customItem = screen.getByRole("menuitem", { name: /Custom/ });
+    expect(customItem).toHaveTextContent("#EFBF04");
+    expect(customItem.querySelector('[aria-hidden="true"]')).not.toBeNull();
 
     await user.click(screen.getByRole("menuitem", { name: /Custom/ }));
     expect(screen.getByRole("button", { name: /Theme color spectrum/ })).toBeVisible();
