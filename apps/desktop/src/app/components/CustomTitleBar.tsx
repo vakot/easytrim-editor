@@ -1,6 +1,7 @@
 import { Copy, Minus, Square, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import type { MouseEvent } from "react";
 
 import {
   closeWindow,
@@ -43,10 +44,18 @@ export function CustomTitleBar({ onLogoClick }: CustomTitleBarProps) {
     });
   };
 
+  const handleTitleBarDoubleClick = (event: MouseEvent<HTMLElement>) => {
+    if (event.target instanceof Element && event.target.closest("button")) return;
+
+    event.preventDefault();
+    handleToggleMaximize();
+  };
+
   return (
     <header
       className="flex h-9 min-h-9 items-center border-b border-border/70 bg-background/95 text-foreground select-none"
       aria-label={t("app.windowControls.titleBar")}
+      onDoubleClickCapture={handleTitleBarDoubleClick}
     >
       <button
         type="button"
@@ -66,7 +75,6 @@ export function CustomTitleBar({ onLogoClick }: CustomTitleBarProps) {
         onMouseDown={(event) => {
           if (event.button === 0) runWindowAction(startWindowDragging);
         }}
-        onDoubleClick={handleToggleMaximize}
         aria-hidden="true"
       />
 

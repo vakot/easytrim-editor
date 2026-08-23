@@ -47,4 +47,15 @@ describe("CustomTitleBar", () => {
       expect(screen.getByRole("button", { name: "Restore" })).toBeInTheDocument();
     });
   });
+
+  it("toggles maximize when the draggable title bar is double-clicked", async () => {
+    render(<CustomTitleBar onLogoClick={vi.fn()} />);
+
+    fireEvent.doubleClick(screen.getByRole("banner"));
+
+    await waitFor(() => {
+      expect(windowActions.toggleWindowMaximize).toHaveBeenCalledOnce();
+      expect(screen.getByRole("button", { name: "Restore" })).toBeInTheDocument();
+    });
+  });
 });
