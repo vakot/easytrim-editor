@@ -58,7 +58,20 @@ export function EditorStage({
   onCropChange,
 }: EditorStageProps) {
   const { t } = useTranslation();
-  const timelinePanelSizing = useTimelinePanelSizing(sourceId, audioStreams.length);
+  const {
+    tools,
+    setTools,
+    resetTools,
+    editorStageLayout,
+    setEditorStageLayout,
+    showAudioTracks,
+    setShowAudioTracks,
+  } = useEditorViewState();
+  const timelinePanelSizing = useTimelinePanelSizing(
+    sourceId,
+    audioStreams.length,
+    showAudioTracks,
+  );
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioElementsRef = useRef(new Map<number, HTMLAudioElement>());
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -91,8 +104,6 @@ export function EditorStage({
     trimRef.current = trim;
   }
 
-  const { tools, setTools, resetTools, editorStageLayout, setEditorStageLayout } =
-    useEditorViewState();
   const playbackModes = usePlaybackModes({
     loopEnabled: tools.loopPlaybackEnabled,
     segmentEnabled: tools.segmentPlaybackEnabled,
@@ -756,8 +767,15 @@ export function EditorStage({
         id="timeline-panel"
         panelRef={timelinePanelSizing.panelRef}
         defaultSize={timelinePanelSizing.initialDefaultSize}
+        collapsible
+        collapsedSize={timelinePanelSizing.collapsedSize}
         minSize={timelinePanelSizing.constraints.minSize}
         maxSize={timelinePanelSizing.constraints.maxSize}
+        onResize={(size) => {
+          const isCollapsed =
+            timelinePanelSizing.panelRef.current?.isCollapsed() ?? size.inPixels <= 0;
+          setShowAudioTracks(!isCollapsed);
+        }}
         groupResizeBehavior="preserve-pixel-size"
         className="min-h-0 min-w-0 bg-background"
       >
@@ -832,7 +850,7 @@ export function EditorStage({
             />
           }
           audioTracks={
-            audioStreams.length > 0 ? (
+            showAudioTracks && audioStreams.length > 0 ? (
               <AudioTracks
                 streams={audioStreams}
                 tracks={audioTracks}

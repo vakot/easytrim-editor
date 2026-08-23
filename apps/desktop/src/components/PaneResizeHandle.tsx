@@ -9,17 +9,27 @@ interface PaneResizeHandleProps {
   label: string;
   orientation: "horizontal" | "vertical";
   onDoubleClick?: MouseEventHandler<HTMLDivElement>;
+  disabled?: boolean;
 }
 
-export function PaneResizeHandle({ id, label, orientation, onDoubleClick }: PaneResizeHandleProps) {
+export function PaneResizeHandle({
+  id,
+  label,
+  orientation,
+  onDoubleClick,
+  disabled = false,
+}: PaneResizeHandleProps) {
   return (
     <ResizeSeparator
+      disabled={disabled}
       disableDoubleClick={onDoubleClick !== undefined}
       onDoubleClick={onDoubleClick}
       id={id}
       aria-label={label}
+      aria-hidden={disabled}
       className={cn(
         "group relative z-20 shrink-0 bg-transparent outline-none",
+        disabled && "pointer-events-none hidden",
         orientation === "vertical" ? "w-2" : "h-2",
       )}
     >

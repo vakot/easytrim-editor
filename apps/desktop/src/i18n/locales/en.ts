@@ -40,6 +40,13 @@ export const en = {
     toolbar: "Application toolbar",
     returnToWelcome: "Return to EasyTrim Editor welcome page",
     dragUnavailable: "Drag and drop is unavailable: {{message}}",
+    panels: {
+      group: "Editor panels",
+      hideLeftPane: "Hide left pane",
+      showLeftPane: "Show left pane",
+      hideBottomPane: "Hide bottom pane",
+      showBottomPane: "Show bottom pane",
+    },
     windowControls: {
       titleBar: "Window title bar",
       group: "Window controls",

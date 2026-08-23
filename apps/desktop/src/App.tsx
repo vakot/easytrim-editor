@@ -13,6 +13,7 @@ import { EditorViewStateProvider } from "@/app/editor-view-state";
 import { useEffect, useState } from "react";
 import { FULL_CROP, type CropRect } from "@/features/preview/utils/crop-geometry";
 import { CustomTitleBar } from "@/app/components/CustomTitleBar";
+import { PanelVisibilityControls } from "@/app/components/PanelVisibilityControls";
 
 function EasyTrimEditorApp() {
   const app = useEasyTrimEditorApp();
@@ -43,7 +44,16 @@ function EasyTrimEditorApp() {
             : "grid-rows-[2.25rem_minmax(0,1fr)]"
         }`}
       >
-        <CustomTitleBar onLogoClick={app.requestReturnToWelcome} />
+        <CustomTitleBar
+          onLogoClick={app.requestReturnToWelcome}
+          panelControls={
+            app.hasSource ? (
+              <PanelVisibilityControls
+                hasAudioTracks={Boolean(source?.media?.audioStreams.length)}
+              />
+            ) : null
+          }
+        />
         {app.hasSource ? (
           <AppToolbar
             session={app.session}

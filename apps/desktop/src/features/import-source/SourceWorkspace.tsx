@@ -1,4 +1,5 @@
-import { Group, Panel } from "react-resizable-panels";
+import { useEffect } from "react";
+import { Group, Panel, usePanelRef } from "react-resizable-panels";
 
 import { PaneResizeHandle } from "@/components/PaneResizeHandle";
 import { EditorStage } from "@/features/editor";
@@ -32,7 +33,20 @@ export function SourceWorkspace({
   onCropChange,
 }: SourceWorkspaceProps) {
   const { t } = useTranslation();
-  const { workspaceLayout, setWorkspaceLayout } = useEditorViewState();
+  const { showSourceDetails, setShowSourceDetails, workspaceLayout, setWorkspaceLayout } =
+    useEditorViewState();
+  const sourceDetailsPanelRef = usePanelRef();
+
+  useEffect(() => {
+    const panel = sourceDetailsPanelRef.current;
+    if (!panel) return;
+
+    if (showSourceDetails) {
+      panel.expand();
+    } else {
+      panel.collapse();
+    }
+  }, [showSourceDetails, sourceDetailsPanelRef]);
 
   if (!session.source) {
     return (
@@ -63,9 +77,16 @@ export function SourceWorkspace({
     >
       <Panel
         id="source-details-panel"
+        panelRef={sourceDetailsPanelRef}
+        collapsible
+        collapsedSize={0}
         defaultSize="20rem"
         minSize="15rem"
         maxSize="30rem"
+        onResize={(size) => {
+          const isCollapsed = sourceDetailsPanelRef.current?.isCollapsed() ?? size.inPixels <= 0;
+          setShowSourceDetails(!isCollapsed);
+        }}
         groupResizeBehavior="preserve-pixel-size"
         className="min-h-0 min-w-0 overflow-hidden bg-card/30"
       >

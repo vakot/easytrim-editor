@@ -29,6 +29,22 @@ describe("CustomTitleBar", () => {
     expect(screen.getByRole("button", { name: "Close" })).toBeInTheDocument();
   });
 
+  it("places panel controls beside the native window controls", () => {
+    render(
+      <CustomTitleBar
+        onLogoClick={vi.fn()}
+        panelControls={<span data-testid="panel-controls" />}
+      />,
+    );
+
+    const panelControls = screen.getByTestId("panel-controls");
+    const windowControls = screen.getByRole("group", { name: "Window controls" });
+
+    expect(panelControls.compareDocumentPosition(windowControls)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+  });
+
   it("delegates dragging and window controls to the native adapter", async () => {
     render(<CustomTitleBar onLogoClick={vi.fn()} />);
 

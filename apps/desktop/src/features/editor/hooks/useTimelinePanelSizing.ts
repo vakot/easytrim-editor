@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { usePanelRef } from "react-resizable-panels";
 
 import {
@@ -23,7 +23,11 @@ export function timelinePanelTargetSize(
   return Math.min(constraints.maxSize, Math.max(constraints.minSize, currentSize));
 }
 
-export function useTimelinePanelSizing(sourceId: string, audioTrackCount: number) {
+export function useTimelinePanelSizing(
+  sourceId: string,
+  audioTrackCount: number,
+  isVisible: boolean,
+) {
   const panelRef = usePanelRef();
   const initializedSourceRef = useRef<string | null>(null);
   const constraints = useMemo(
@@ -42,6 +46,10 @@ export function useTimelinePanelSizing(sourceId: string, audioTrackCount: number
       return;
     }
 
+    if (panel.isCollapsed()) {
+      return;
+    }
+
     const currentSize = panel.getSize().inPixels;
     const targetSize = timelinePanelTargetSize(
       currentSize,
@@ -55,8 +63,20 @@ export function useTimelinePanelSizing(sourceId: string, audioTrackCount: number
     }
   }, [constraints, panelRef, sourceId]);
 
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel) return;
+
+    if (isVisible) {
+      panel.expand();
+    } else {
+      panel.collapse();
+    }
+  }, [isVisible, panelRef]);
+
   return {
     constraints,
+    collapsedSize: 0,
     initialDefaultSize: FALLBACK_CONSTRAINTS.defaultSize,
     panelRef,
     resetToDefault,
