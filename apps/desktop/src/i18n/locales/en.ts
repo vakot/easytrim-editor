@@ -94,6 +94,17 @@ export const en = {
       title: "No video loaded",
       description: "Open a video to begin editing.",
       timelinePlaceholder: "Timeline values will appear after a video is opened.",
+      shortcutsLabel: "Keyboard shortcuts",
+      shortcuts: {
+        open: "Open video",
+        save: "Save fast cut",
+        export: "Optimized render",
+        playPause: "Play / pause",
+        previousFrame: "Previous frame",
+        nextFrame: "Next frame",
+        setStart: "Set start marker",
+        setEnd: "Set end marker",
+      },
     },
     source: {
       workspace: "Video editor workspace",

@@ -101,6 +101,17 @@ export const sk = {
       title: "Nie je načítané žiadne video",
       description: "Otvorte video a začnite s úpravami.",
       timelinePlaceholder: "Hodnoty časovej osi sa zobrazia po otvorení videa.",
+      shortcutsLabel: "Klávesové skratky",
+      shortcuts: {
+        open: "Otvoriť video",
+        save: "Uložiť rýchly strih",
+        export: "Optimalizované vykreslenie",
+        playPause: "Prehrať / pozastaviť",
+        previousFrame: "Predchádzajúca snímka",
+        nextFrame: "Nasledujúca snímka",
+        setStart: "Nastaviť začiatok značky",
+        setEnd: "Nastaviť koniec značky",
+      },
     },
     source: {
       workspace: "Pracovná plocha editora videa",

@@ -187,6 +187,11 @@ describe("App", () => {
         .getByLabelText("Video preview and timeline area")
         .querySelector('img[src="/logo-symbol.svg"]'),
     ).toBeInTheDocument();
+    const shortcuts = screen.getByRole("list", { name: "Keyboard shortcuts" });
+    expect(shortcuts).toHaveTextContent("Open video");
+    expect(shortcuts).toHaveTextContent("Ctrl");
+    expect(shortcuts).toHaveTextContent("Play / pause");
+    expect(shortcuts).toHaveTextContent("Set start marker");
     expect(screen.getByLabelText("Video trim timeline")).toHaveAttribute(
       "aria-description",
       "Timeline values will appear after a video is opened.",

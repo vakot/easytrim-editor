@@ -1,9 +1,20 @@
 import { useTranslation } from "react-i18next";
 
 const EMPTY_VALUE = "—";
+const EMPTY_STAGE_WIDTH = "w-[clamp(12rem,35vw,24rem)] max-w-[calc(100vw-3rem)]";
 
 export function EmptyEditorStage() {
   const { t } = useTranslation();
+  const shortcuts = [
+    { label: t("import.emptyStage.shortcuts.open"), keys: ["Ctrl", "O"] },
+    { label: t("import.emptyStage.shortcuts.save"), keys: ["Ctrl", "S"] },
+    { label: t("import.emptyStage.shortcuts.export"), keys: ["Ctrl", "E"] },
+    { label: t("import.emptyStage.shortcuts.playPause"), keys: ["Space"] },
+    { label: t("import.emptyStage.shortcuts.previousFrame"), keys: ["←"] },
+    { label: t("import.emptyStage.shortcuts.nextFrame"), keys: ["→"] },
+    { label: t("import.emptyStage.shortcuts.setStart"), keys: ["I"] },
+    { label: t("import.emptyStage.shortcuts.setEnd"), keys: ["O"] },
+  ];
 
   return (
     <div
@@ -11,18 +22,46 @@ export function EmptyEditorStage() {
       aria-label={t("import.source.previewArea")}
     >
       <section className="grid min-h-0 place-items-center border-b border-border/70 bg-muted/10">
-        <div className="relative grid justify-items-center gap-3 px-6 text-center">
+        <div className={`grid ${EMPTY_STAGE_WIDTH} justify-items-center gap-5 px-6 text-center`}>
           <img
             src="/logo-symbol.svg"
             alt=""
             aria-hidden="true"
-            className="pointer-events-none size-[clamp(12rem,35vw,24rem)] grayscale opacity-100"
+            className={`${EMPTY_STAGE_WIDTH} pointer-events-none aspect-square grayscale opacity-100`}
           />
-          <div className="absolute inset-x-0 bottom-0 grid gap-1 bg-background/80 px-4 py-2">
+          <div className="grid gap-1">
             <h1 className="text-sm font-semibold text-foreground">
               {t("import.emptyStage.title")}
             </h1>
             <p className="text-xs text-muted-foreground">{t("import.emptyStage.description")}</p>
+          </div>
+          <div
+            className="grid w-full gap-1.5 text-left text-xs text-muted-foreground"
+            role="list"
+            aria-label={t("import.emptyStage.shortcutsLabel")}
+          >
+            {shortcuts.map((shortcut) => (
+              <div className="flex min-w-0 items-center gap-2" key={shortcut.label} role="listitem">
+                <span className="shrink-0">{shortcut.label}</span>
+                <span
+                  className="min-w-4 flex-1 border-b border-dotted border-border/70"
+                  aria-hidden="true"
+                />
+                <span
+                  className="flex shrink-0 items-center gap-1"
+                  aria-label={shortcut.keys.join(" + ")}
+                >
+                  {shortcut.keys.map((key, index) => (
+                    <span className="flex items-center gap-1" key={key}>
+                      {index > 0 ? <span aria-hidden="true">+</span> : null}
+                      <kbd className="rounded border border-border bg-card px-1.5 py-0.5 font-mono text-[11px] text-foreground shadow-sm">
+                        {key}
+                      </kbd>
+                    </span>
+                  ))}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
       </section>
