@@ -1,7 +1,7 @@
 import { Copy, Minus, Square, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { MouseEvent, PointerEvent } from "react";
+import type { MouseEvent, PointerEvent, ReactNode } from "react";
 
 import {
   closeWindow,
@@ -13,6 +13,7 @@ import {
 
 interface CustomTitleBarProps {
   onLogoClick: () => void;
+  panelControls?: ReactNode;
 }
 
 interface PendingDrag {
@@ -24,7 +25,7 @@ interface PendingDrag {
 
 const DRAG_START_DISTANCE = 4;
 
-export function CustomTitleBar({ onLogoClick }: CustomTitleBarProps) {
+export function CustomTitleBar({ onLogoClick, panelControls }: CustomTitleBarProps) {
   const { t } = useTranslation();
   const [isMaximized, setIsMaximized] = useState(false);
   const [windowActionError, setWindowActionError] = useState(false);
@@ -112,6 +113,8 @@ export function CustomTitleBar({ onLogoClick }: CustomTitleBarProps) {
           {t("common.brand")}
         </span>
       </button>
+
+      {panelControls ? <div className="flex h-full items-center px-1">{panelControls}</div> : null}
 
       <div
         className="h-full min-w-0 flex-1 cursor-default"

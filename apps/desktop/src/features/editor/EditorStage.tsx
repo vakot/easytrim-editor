@@ -58,7 +58,12 @@ export function EditorStage({
   onCropChange,
 }: EditorStageProps) {
   const { t } = useTranslation();
-  const timelinePanelSizing = useTimelinePanelSizing(sourceId, audioStreams.length);
+  const { tools, setTools, resetTools, editorStageLayout, setEditorStageLayout, showAudioTracks } =
+    useEditorViewState();
+  const timelinePanelSizing = useTimelinePanelSizing(
+    sourceId,
+    showAudioTracks ? audioStreams.length : 0,
+  );
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioElementsRef = useRef(new Map<number, HTMLAudioElement>());
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -91,8 +96,6 @@ export function EditorStage({
     trimRef.current = trim;
   }
 
-  const { tools, setTools, resetTools, editorStageLayout, setEditorStageLayout } =
-    useEditorViewState();
   const playbackModes = usePlaybackModes({
     loopEnabled: tools.loopPlaybackEnabled,
     segmentEnabled: tools.segmentPlaybackEnabled,
@@ -749,7 +752,8 @@ export function EditorStage({
         id="preview-timeline-resize-handle"
         label={t("preview.resize")}
         orientation="horizontal"
-        onDoubleClick={timelinePanelSizing.resetToDefault}
+        onDoubleClick={showAudioTracks ? timelinePanelSizing.resetToDefault : undefined}
+        disabled={!showAudioTracks}
       />
 
       <Panel
@@ -832,7 +836,7 @@ export function EditorStage({
             />
           }
           audioTracks={
-            audioStreams.length > 0 ? (
+            showAudioTracks && audioStreams.length > 0 ? (
               <AudioTracks
                 streams={audioStreams}
                 tracks={audioTracks}

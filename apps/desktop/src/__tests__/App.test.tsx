@@ -390,6 +390,50 @@ describe("App", () => {
     expect(screen.queryByRole("heading", { name: "Audio tracks" })).not.toBeInTheDocument();
   });
 
+  it("toggles source details and audio panels while keeping the timeline visible", async () => {
+    mocks.chooseSource.mockResolvedValue(selection);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Select video" }));
+    expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
+
+    const sourceDetailsToggle = screen.getByRole("button", {
+      name: "Hide source details panel",
+    });
+    const audioTracksToggle = screen.getByRole("button", {
+      name: "Hide audio tracks panel",
+    });
+    expect(sourceDetailsToggle).toHaveAttribute("aria-pressed", "true");
+    expect(audioTracksToggle).toHaveAttribute("aria-pressed", "true");
+
+    await user.click(sourceDetailsToggle);
+    expect(screen.queryByRole("heading", { name: "holiday.mp4" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Export queue" })).not.toBeInTheDocument();
+    expect(document.getElementById("source-details-resize-handle")).toHaveAttribute(
+      "aria-hidden",
+      "true",
+    );
+
+    await user.click(screen.getByRole("button", { name: "Show source details panel" }));
+    expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
+
+    await user.click(audioTracksToggle);
+    expect(screen.queryByTestId("audio-tracks-scroll")).not.toBeInTheDocument();
+    expect(screen.getByTestId("timeline-fixed-content")).toBeInTheDocument();
+    expect(document.getElementById("preview-timeline-resize-handle")).toHaveAttribute(
+      "aria-hidden",
+      "true",
+    );
+
+    await user.click(screen.getByRole("button", { name: "Show audio tracks panel" }));
+    expect(screen.getByTestId("audio-tracks-scroll")).toBeInTheDocument();
+    expect(document.getElementById("preview-timeline-resize-handle")).toHaveAttribute(
+      "aria-hidden",
+      "false",
+    );
+  });
+
   it("uses Escape to show and then dismiss the return confirmation dialog", async () => {
     mocks.chooseSource.mockResolvedValue(selection);
     const user = userEvent.setup();

@@ -46,6 +46,13 @@ export const sk = {
     toolbar: "Panel aplikácie",
     returnToWelcome: "Návrat na úvodnú stránku EasyTrim Editor",
     dragUnavailable: "Presunutie súboru nie je dostupné: {{message}}",
+    panels: {
+      group: "Panely editora",
+      hideSourceDetails: "Skryť panel podrobností zdroja",
+      showSourceDetails: "Zobraziť panel podrobností zdroja",
+      hideAudioTracks: "Skryť panel zvukových stôp",
+      showAudioTracks: "Zobraziť panel zvukových stôp",
+    },
     windowControls: {
       titleBar: "Titulkový panel okna",
       group: "Ovládanie okna",

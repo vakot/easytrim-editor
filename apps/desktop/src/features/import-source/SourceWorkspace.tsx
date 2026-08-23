@@ -1,4 +1,5 @@
-import { Group, Panel } from "react-resizable-panels";
+import { useEffect } from "react";
+import { Group, Panel, usePanelRef } from "react-resizable-panels";
 
 import { PaneResizeHandle } from "@/components/PaneResizeHandle";
 import { EditorStage } from "@/features/editor";
@@ -32,7 +33,19 @@ export function SourceWorkspace({
   onCropChange,
 }: SourceWorkspaceProps) {
   const { t } = useTranslation();
-  const { workspaceLayout, setWorkspaceLayout } = useEditorViewState();
+  const { showSourceDetails, workspaceLayout, setWorkspaceLayout } = useEditorViewState();
+  const sourceDetailsPanelRef = usePanelRef();
+
+  useEffect(() => {
+    const panel = sourceDetailsPanelRef.current;
+    if (!panel) return;
+
+    if (showSourceDetails) {
+      panel.expand();
+    } else {
+      panel.collapse();
+    }
+  }, [showSourceDetails, sourceDetailsPanelRef]);
 
   if (!session.source) {
     return (
@@ -63,19 +76,23 @@ export function SourceWorkspace({
     >
       <Panel
         id="source-details-panel"
+        panelRef={sourceDetailsPanelRef}
+        collapsible
+        collapsedSize={0}
         defaultSize="20rem"
         minSize="15rem"
         maxSize="30rem"
         groupResizeBehavior="preserve-pixel-size"
         className="min-h-0 min-w-0 overflow-hidden bg-card/30"
       >
-        <SourceSidebar session={session} queue={exportQueue} />
+        {showSourceDetails ? <SourceSidebar session={session} queue={exportQueue} /> : null}
       </Panel>
 
       <PaneResizeHandle
         id="source-details-resize-handle"
         label={t("import.source.resizeDetails")}
         orientation="vertical"
+        disabled={!showSourceDetails}
       />
 
       <Panel id="editor-content-panel" minSize="44rem" className="min-h-0 min-w-0 overflow-hidden">
