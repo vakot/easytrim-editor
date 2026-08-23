@@ -694,58 +694,56 @@ function LoadedEditorStage({
     >
       <Panel id="preview-panel" minSize="14rem" className="min-h-0 min-w-0">
         <PreviewPane
-          source={{
-            sourceId,
-            preview,
-            playbackRate: playbackSpeed.speed,
-            muted: hasIndependentAudio,
-            videoRef,
-            isPlaying,
-            onPlaybackError: handlePreviewPlaybackError,
-            onLoadedMetadata: () => commitSeek(displayedPlayheadMicros),
-            onTogglePlayback: handleTogglePlayback,
-            onPlaybackStarted: () => {
-              playbackRequestedRef.current = true;
-              isPlayingRef.current = true;
-              setIsPlaying(true);
-              startPlayheadAnimation();
-            },
-            onPlaybackPaused: () => {
-              // Layout changes can briefly pause the video element while the
-              // transport is still logically playing. Do not let that browser
-              // lifecycle event pause the independent audio graph or change
-              // the transport state. Explicit transport actions update the
-              // ref before calling pause(), so they still reach this branch.
-              if (isPlayingRef.current) {
-                void videoRef.current?.play().catch(() => undefined);
-                return;
-              }
-              playbackRequestedRef.current = false;
-              isPlayingRef.current = false;
-              setIsPlaying(false);
-              pauseAudioPlayback();
-              stopPlayheadAnimation();
-              const video = videoRef.current;
-              if (video) {
-                handleTimeUpdate(video.currentTime);
-              }
-            },
-            onTimeUpdate: handleTimeUpdate,
-            onEnded: handlePlaybackEnded,
-            onPauseForCrop: () => {
-              playbackStartSequenceRef.current += 1;
-              playbackRequestedRef.current = false;
-              isPlayingRef.current = false;
-              videoRef.current?.pause();
-              pauseAudioPlayback();
-              setIsPlaying(false);
-              stopPlayheadAnimation();
-            },
-            onResumeAfterCrop: startMediaPlayback,
-            sourceDimensions,
-            onCropResolutionChange,
-            onCropChange,
+          sourceId={sourceId}
+          preview={preview}
+          playbackRate={playbackSpeed.speed}
+          muted={hasIndependentAudio}
+          videoRef={videoRef}
+          isPlaying={isPlaying}
+          onPlaybackError={handlePreviewPlaybackError}
+          onLoadedMetadata={() => commitSeek(displayedPlayheadMicros)}
+          onTogglePlayback={handleTogglePlayback}
+          onPlaybackStarted={() => {
+            playbackRequestedRef.current = true;
+            isPlayingRef.current = true;
+            setIsPlaying(true);
+            startPlayheadAnimation();
           }}
+          onPlaybackPaused={() => {
+            // Layout changes can briefly pause the video element while the
+            // transport is still logically playing. Do not let that browser
+            // lifecycle event pause the independent audio graph or change
+            // the transport state. Explicit transport actions update the
+            // ref before calling pause(), so they still reach this branch.
+            if (isPlayingRef.current) {
+              void videoRef.current?.play().catch(() => undefined);
+              return;
+            }
+            playbackRequestedRef.current = false;
+            isPlayingRef.current = false;
+            setIsPlaying(false);
+            pauseAudioPlayback();
+            stopPlayheadAnimation();
+            const video = videoRef.current;
+            if (video) {
+              handleTimeUpdate(video.currentTime);
+            }
+          }}
+          onTimeUpdate={handleTimeUpdate}
+          onEnded={handlePlaybackEnded}
+          onPauseForCrop={() => {
+            playbackStartSequenceRef.current += 1;
+            playbackRequestedRef.current = false;
+            isPlayingRef.current = false;
+            videoRef.current?.pause();
+            pauseAudioPlayback();
+            setIsPlaying(false);
+            stopPlayheadAnimation();
+          }}
+          onResumeAfterCrop={startMediaPlayback}
+          sourceDimensions={sourceDimensions}
+          onCropResolutionChange={onCropResolutionChange}
+          onCropChange={onCropChange}
         />
       </Panel>
 
