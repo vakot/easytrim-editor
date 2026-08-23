@@ -88,6 +88,7 @@ function ContextMenuOptionItem({ option }: { option: ContextMenuOption }) {
         <DropdownMenuPrimitive.Portal>
           <DropdownMenuPrimitive.SubContent
             sideOffset={4}
+            alignOffset={-4}
             onFocusOutside={option.submenuContent ? (event) => event.preventDefault() : undefined}
             className="z-50 min-w-48 rounded-lg border bg-popover p-1 text-popover-foreground shadow-lg ring-1 ring-foreground/10"
           >
