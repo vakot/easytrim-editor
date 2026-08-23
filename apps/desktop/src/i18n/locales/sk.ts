@@ -107,8 +107,7 @@ export const sk = {
         export: "Optimalizované vykreslenie",
         playPause: "Prehrať / pozastaviť",
         previousNextFrame: "Predchádzajúca/Nasledujúca snímka",
-        setStart: "Nastaviť začiatok značky",
-        setEnd: "Nastaviť koniec značky",
+        setMarkers: "Nastaviť začiatok/koniec značky",
       },
     },
     source: {

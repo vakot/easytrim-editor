@@ -100,8 +100,7 @@ export const en = {
         export: "Optimized render",
         playPause: "Play / pause",
         previousNextFrame: "Previous/Next frame",
-        setStart: "Set start marker",
-        setEnd: "Set end marker",
+        setMarkers: "Set start/end marker",
       },
     },
     source: {

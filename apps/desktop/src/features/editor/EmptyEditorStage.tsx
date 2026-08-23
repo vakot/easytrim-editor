@@ -2,8 +2,7 @@ import { useTranslation } from "react-i18next";
 import { useEditorViewState } from "@/app/hooks/useEditorViewState";
 
 const EMPTY_VALUE = "—";
-const EMPTY_STAGE_WIDTH = "w-[clamp(12rem,35vw,24rem)] max-w-[calc(100vw-3rem)]";
-const EMPTY_LOGO_WIDTH = "w-[clamp(9rem,26vw,18rem)] max-w-[calc(100vw-3rem)]";
+const EMPTY_STAGE_WIDTH = "w-[clamp(9rem,26vw,18rem)] max-w-[calc(100vw-3rem)]";
 
 export function EmptyEditorStage() {
   const { t } = useTranslation();
@@ -18,8 +17,11 @@ export function EmptyEditorStage() {
       keys: ["←", "→"],
       separator: "/",
     },
-    { label: t("import.emptyStage.shortcuts.setStart"), keys: ["I"] },
-    { label: t("import.emptyStage.shortcuts.setEnd"), keys: ["O"] },
+    {
+      label: t("import.emptyStage.shortcuts.setMarkers"),
+      keys: ["I", "O"],
+      separator: "/",
+    },
   ];
 
   return (
@@ -36,7 +38,7 @@ export function EmptyEditorStage() {
             src="/logo-symbol.svg"
             alt=""
             aria-hidden="true"
-            className={`${EMPTY_LOGO_WIDTH} pointer-events-none aspect-square grayscale opacity-100`}
+            className={`${EMPTY_STAGE_WIDTH} pointer-events-none aspect-square grayscale opacity-100`}
           />
           <div
             className="grid w-full gap-1.5 text-left text-xs text-muted-foreground"
