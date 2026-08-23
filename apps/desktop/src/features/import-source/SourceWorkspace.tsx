@@ -1,5 +1,5 @@
-import { useCallback, useEffect } from "react";
-import { Group, Panel, type Layout, usePanelRef } from "react-resizable-panels";
+import { useEffect } from "react";
+import { Group, Panel, usePanelRef } from "react-resizable-panels";
 
 import { PaneResizeHandle } from "@/components/PaneResizeHandle";
 import { EditorStage } from "@/features/editor";
@@ -33,16 +33,9 @@ export function SourceWorkspace({
   onCropChange,
 }: SourceWorkspaceProps) {
   const { t } = useTranslation();
-  const { showSourceDetails, workspaceLayout, setWorkspaceLayout } = useEditorViewState();
+  const { showSourceDetails, setShowSourceDetails, workspaceLayout, setWorkspaceLayout } =
+    useEditorViewState();
   const sourceDetailsPanelRef = usePanelRef();
-  const handleWorkspaceLayoutChanged = useCallback(
-    (layout: Layout) => {
-      if (showSourceDetails) {
-        setWorkspaceLayout(layout);
-      }
-    },
-    [setWorkspaceLayout, showSourceDetails],
-  );
 
   useEffect(() => {
     const panel = sourceDetailsPanelRef.current;
@@ -76,7 +69,7 @@ export function SourceWorkspace({
     <Group
       id="editor-workspace-panels"
       defaultLayout={workspaceLayout}
-      onLayoutChanged={handleWorkspaceLayoutChanged}
+      onLayoutChanged={setWorkspaceLayout}
       orientation="horizontal"
       className="min-h-0 min-w-0 bg-background"
       resizeTargetMinimumSize={{ fine: 8, coarse: 24 }}
@@ -90,17 +83,20 @@ export function SourceWorkspace({
         defaultSize="20rem"
         minSize="15rem"
         maxSize="30rem"
+        onResize={(size) => {
+          const isCollapsed = sourceDetailsPanelRef.current?.isCollapsed() ?? size.inPixels <= 0;
+          setShowSourceDetails(!isCollapsed);
+        }}
         groupResizeBehavior="preserve-pixel-size"
         className="min-h-0 min-w-0 overflow-hidden bg-card/30"
       >
-        {showSourceDetails ? <SourceSidebar session={session} queue={exportQueue} /> : null}
+        <SourceSidebar session={session} queue={exportQueue} />
       </Panel>
 
       <PaneResizeHandle
         id="source-details-resize-handle"
         label={t("import.source.resizeDetails")}
         orientation="vertical"
-        disabled={!showSourceDetails}
       />
 
       <Panel id="editor-content-panel" minSize="44rem" className="min-h-0 min-w-0 overflow-hidden">

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Group, Panel, type Layout } from "react-resizable-panels";
+import { Group, Panel } from "react-resizable-panels";
 import { useTranslation } from "react-i18next";
 
 import { PaneResizeHandle } from "../../components/PaneResizeHandle";
@@ -58,8 +58,15 @@ export function EditorStage({
   onCropChange,
 }: EditorStageProps) {
   const { t } = useTranslation();
-  const { tools, setTools, resetTools, editorStageLayout, setEditorStageLayout, showAudioTracks } =
-    useEditorViewState();
+  const {
+    tools,
+    setTools,
+    resetTools,
+    editorStageLayout,
+    setEditorStageLayout,
+    showAudioTracks,
+    setShowAudioTracks,
+  } = useEditorViewState();
   const timelinePanelSizing = useTimelinePanelSizing(
     sourceId,
     audioStreams.length,
@@ -106,14 +113,6 @@ export function EditorStage({
   });
   const playbackSpeed = usePlaybackSpeed(tools.playbackSpeed, (playbackSpeed) =>
     setTools({ ...tools, playbackSpeed }),
-  );
-  const handleEditorStageLayoutChanged = useCallback(
-    (layout: Layout) => {
-      if (showAudioTracks) {
-        setEditorStageLayout(layout);
-      }
-    },
-    [setEditorStageLayout, showAudioTracks],
   );
   const [playheadMicros, setPlayheadMicros] = useState(trim.startMicros);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -704,7 +703,7 @@ export function EditorStage({
     <Group
       id="editor-stage-panels"
       defaultLayout={editorStageLayout}
-      onLayoutChanged={handleEditorStageLayoutChanged}
+      onLayoutChanged={setEditorStageLayout}
       orientation="vertical"
       className="min-h-0 min-w-0 bg-background"
       resizeTargetMinimumSize={{ fine: 8, coarse: 24 }}
@@ -761,8 +760,7 @@ export function EditorStage({
         id="preview-timeline-resize-handle"
         label={t("preview.resize")}
         orientation="horizontal"
-        onDoubleClick={showAudioTracks ? timelinePanelSizing.resetToDefault : undefined}
-        disabled={!showAudioTracks}
+        onDoubleClick={timelinePanelSizing.resetToDefault}
       />
 
       <Panel
@@ -773,6 +771,11 @@ export function EditorStage({
         collapsedSize={timelinePanelSizing.collapsedSize}
         minSize={timelinePanelSizing.constraints.minSize}
         maxSize={timelinePanelSizing.constraints.maxSize}
+        onResize={(size) => {
+          const isCollapsed =
+            timelinePanelSizing.panelRef.current?.isCollapsed() ?? size.inPixels <= 0;
+          setShowAudioTracks(!isCollapsed);
+        }}
         groupResizeBehavior="preserve-pixel-size"
         className="min-h-0 min-w-0 bg-background"
       >

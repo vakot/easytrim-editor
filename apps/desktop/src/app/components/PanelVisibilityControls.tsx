@@ -1,4 +1,4 @@
-import { PanelBottom, PanelLeft } from "lucide-react";
+import { PanelBottom, PanelBottomDashed, PanelLeft, PanelLeftDashed } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -32,7 +32,11 @@ export function PanelVisibilityControls({ hasAudioTracks }: PanelVisibilityContr
             className={showSourceDetails ? "text-primary" : undefined}
             onClick={() => setShowSourceDetails(!showSourceDetails)}
           >
-            <PanelLeft className="size-4" aria-hidden="true" />
+            {showSourceDetails ? (
+              <PanelLeft className="size-4" aria-hidden="true" />
+            ) : (
+              <PanelLeftDashed className="size-4" aria-hidden="true" />
+            )}
           </Button>
         </TooltipTrigger>
         <TooltipContent>
@@ -57,7 +61,11 @@ export function PanelVisibilityControls({ hasAudioTracks }: PanelVisibilityContr
             className={showAudioTracks ? "text-primary" : undefined}
             onClick={() => setShowAudioTracks(!showAudioTracks)}
           >
-            <PanelBottom className="size-4" aria-hidden="true" />
+            {showAudioTracks ? (
+              <PanelBottom className="size-4" aria-hidden="true" />
+            ) : (
+              <PanelBottomDashed className="size-4" aria-hidden="true" />
+            )}
           </Button>
         </TooltipTrigger>
         <TooltipContent>

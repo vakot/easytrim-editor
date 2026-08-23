@@ -408,11 +408,11 @@ describe("App", () => {
     expect(audioTracksToggle).toHaveAttribute("aria-pressed", "true");
 
     await user.click(sourceDetailsToggle);
-    expect(screen.queryByRole("heading", { name: "holiday.mp4" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Export queue" })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Export queue" })).toBeInTheDocument();
     expect(document.getElementById("source-details-resize-handle")).toHaveAttribute(
       "aria-hidden",
-      "true",
+      "false",
     );
 
     await user.click(screen.getByRole("button", { name: "Show source details panel" }));
@@ -423,7 +423,7 @@ describe("App", () => {
     expect(screen.getByTestId("timeline-fixed-content")).toBeInTheDocument();
     expect(document.getElementById("preview-timeline-resize-handle")).toHaveAttribute(
       "aria-hidden",
-      "true",
+      "false",
     );
 
     await user.click(screen.getByRole("button", { name: "Show audio tracks panel" }));

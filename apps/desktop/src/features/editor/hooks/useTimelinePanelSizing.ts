@@ -2,7 +2,6 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react"
 import { usePanelRef } from "react-resizable-panels";
 
 import {
-  TIMELINE_FIXED_HEIGHT,
   timelinePanelSizeConstraints,
   type TimelinePanelSizeConstraints,
 } from "../utils/timeline-pane-sizing";
@@ -47,6 +46,10 @@ export function useTimelinePanelSizing(
       return;
     }
 
+    if (panel.isCollapsed()) {
+      return;
+    }
+
     const currentSize = panel.getSize().inPixels;
     const targetSize = timelinePanelTargetSize(
       currentSize,
@@ -73,7 +76,7 @@ export function useTimelinePanelSizing(
 
   return {
     constraints,
-    collapsedSize: TIMELINE_FIXED_HEIGHT,
+    collapsedSize: 0,
     initialDefaultSize: FALLBACK_CONSTRAINTS.defaultSize,
     panelRef,
     resetToDefault,
