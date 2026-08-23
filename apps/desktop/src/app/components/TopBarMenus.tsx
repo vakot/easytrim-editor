@@ -43,7 +43,7 @@ export function TopBarMenus({
     return {
       id: `theme-${value}`,
       label: t(`theme.${value}`),
-      hint: value === preference ? <Icon className="size-4" aria-hidden="true" /> : undefined,
+      hint: <Icon className="size-4" aria-hidden="true" />,
       onSelect: () => setPreference(value),
     };
   });
@@ -58,7 +58,7 @@ export function TopBarMenus({
   const languageOptions: ContextMenuOption[] = (["en", "sk"] as const).map((language) => ({
     id: `language-${language}`,
     label: t(language === "en" ? "language.english" : "language.slovak"),
-    hint: language === currentLanguage ? language.toUpperCase() : undefined,
+    hint: language.toUpperCase(),
     onSelect: () => void i18n.changeLanguage(language as SupportedLanguage),
   }));
 
