@@ -1,6 +1,6 @@
 import type { Dispatch, SetStateAction } from "react";
 
-import type { AudioTrackState } from "@/app/session-state";
+import type { AudioTrackState, WebcamState } from "@/app/session-state";
 import type { ExportPresetAction, ExportPresetState } from "./export-presets";
 import type { TrimRange } from "@/domain/trim";
 import type { FrameRate, MediaInfo } from "@/lib/tauri/media";
@@ -33,6 +33,7 @@ export interface ExportPanelProps {
   masterEnabled: boolean;
   masterVolumePercent: number;
   mergeAudio: boolean;
+  webcam: WebcamState | null;
   setQueue: Dispatch<SetStateAction<ExportToast[]>>;
   presetState: ExportPresetState;
   onPresetAction: Dispatch<ExportPresetAction>;

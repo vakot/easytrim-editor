@@ -1,6 +1,6 @@
-import type { AudioTrackState, PreviewState } from "@/app/session-state";
+import type { AudioTrackState, PreviewState, WebcamState } from "@/app/session-state";
 import type { TrimBoundary, TrimRange } from "@/domain/trim";
-import type { AudioStream, FrameRate } from "@/lib/tauri/media";
+import type { AudioStream, FrameRate, WebcamPosition } from "@/lib/tauri/media";
 
 export interface EditorStageProps {
   sourceId: string;
@@ -12,6 +12,7 @@ export interface EditorStageProps {
   masterEnabled: boolean;
   masterVolumePercent: number;
   mergeAudio: boolean;
+  webcam: WebcamState | null;
   onPreviewPlaybackError: (sourceId: string, previewKind: "source" | "proxy") => void;
   onTrimChange: (trim: TrimRange) => void;
   onPrepareWaveforms: (streamIndexes: number[], width: number) => void;
@@ -21,6 +22,8 @@ export interface EditorStageProps {
   onMasterVolumeChange: (volumePercent: number) => void;
   onToggleAudioMerge: () => void;
   onWaveformImageError: (streamIndex: number) => void;
+  onToggleWebcam: () => void;
+  onWebcamPositionChange: (position: WebcamPosition) => void;
   audioPreviewUrls: Record<number, string>;
   sourceDimensions: { width: number; height: number };
   onCropResolutionChange: (resolution: { width: number; height: number }) => void;

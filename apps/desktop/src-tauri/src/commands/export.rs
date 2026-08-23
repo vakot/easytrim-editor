@@ -141,6 +141,10 @@ pub async fn render_optimized(
     on_progress: Channel<ExportProgress>,
     state: State<'_, AppState>,
 ) -> Result<ExportResult, AppError> {
+    let webcam_source_id = request
+        .webcam
+        .as_ref()
+        .map(|webcam| webcam.source_id.clone());
     let result = async {
         let source = state.resolve_export_source(&request.source_id)?;
         let media = source
@@ -149,7 +153,25 @@ pub async fn render_optimized(
             .ok_or_else(|| AppError::invalid_request("Inspect the video before exporting."))?;
         let output_path = state.resolve_output(&output_id)?;
         let display_name = output_display_name(&output_path)?;
-        let arguments = build_optimized_arguments(&media, &request, &source.path, &output_path)?;
+        let webcam_source = if let Some(webcam) = &request.webcam {
+            Some(state.resolve_export_source(&webcam.source_id)?)
+        } else {
+            None
+        };
+        let webcam_media = webcam_source
+            .as_ref()
+            .map(|webcam| {
+                webcam
+                    .media
+                    .as_ref()
+                    .map(|media| (media, webcam.path.as_path()))
+                    .ok_or_else(|| {
+                        AppError::invalid_request("Inspect the webcam video before exporting.")
+                    })
+            })
+            .transpose()?;
+        let arguments =
+            build_optimized_arguments(&media, &request, &source.path, webcam_media, &output_path)?;
         run_export(
             state.clone(),
             output_path,
@@ -161,6 +183,9 @@ pub async fn render_optimized(
     }
     .await;
     state.release_export_source(&request.source_id)?;
+    if let Some(webcam_source_id) = webcam_source_id {
+        state.release_export_source(&webcam_source_id)?;
+    }
     result
 }
 
@@ -174,8 +199,21 @@ pub fn plan_optimized_export(
         .media
         .as_ref()
         .ok_or_else(|| AppError::invalid_request("Inspect the video before exporting."))?;
+    let webcam_source = request
+        .webcam
+        .as_ref()
+        .map(|webcam| state.resolve_source(&webcam.source_id))
+        .transpose()?;
+    let webcam_media = webcam_source
+        .as_ref()
+        .map(|webcam| {
+            webcam.media.as_ref().ok_or_else(|| {
+                AppError::invalid_request("Inspect the webcam video before exporting.")
+            })
+        })
+        .transpose()?;
     Ok(OptimizedExportPlan {
-        command_preview: optimized_command_preview(media, &request)?,
+        command_preview: optimized_command_preview(media, webcam_media, &request)?,
     })
 }
 

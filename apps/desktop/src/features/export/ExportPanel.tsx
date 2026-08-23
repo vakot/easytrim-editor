@@ -14,6 +14,8 @@ export function ExportPanel(props: ExportPanelProps) {
   const cropApplied = props.crop
     ? props.crop.x !== 0 || props.crop.y !== 0 || props.crop.width !== 1 || props.crop.height !== 1
     : false;
+  const webcamEnabled = Boolean(props.webcam?.enabled && props.webcam.media);
+  const fastSaveDisabled = cropApplied || webcamEnabled;
 
   return (
     <div className="flex items-center gap-3">
@@ -25,14 +27,18 @@ export function ExportPanel(props: ExportPanelProps) {
               type="button"
               onClick={() => void exportController.startFastCut()}
               aria-keyshortcuts="Control+S"
-              disabled={cropApplied}
+              disabled={fastSaveDisabled}
             >
               {t("export.save")}
             </Button>
           </span>
         </TooltipTrigger>
         <TooltipContent>
-          {cropApplied ? t("export.cropSaveDisabledTooltip") : t("export.saveTooltip")}
+          {cropApplied
+            ? t("export.cropSaveDisabledTooltip")
+            : webcamEnabled
+              ? t("export.webcamSaveDisabledTooltip")
+              : t("export.saveTooltip")}
         </TooltipContent>
       </Tooltip>
       <OptimizedExportDialog

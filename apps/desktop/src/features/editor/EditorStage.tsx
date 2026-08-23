@@ -17,6 +17,7 @@ import { isApplicationDialogOpen } from "@/lib/hotkeys";
 import { PlaybackControls, PlaybackTimecode, TimelineTools } from "../preview/PlaybackControls";
 import { VideoPreview } from "../preview/VideoPreview";
 import { TrimTimeline } from "../timeline";
+import { WebcamTrack } from "../webcam";
 import { TimelinePane } from "./components/TimelinePane";
 import { usePlaybackModes } from "./hooks/usePlaybackModes";
 import { usePlaybackSpeed } from "./hooks/usePlaybackSpeed";
@@ -43,6 +44,7 @@ export function EditorStage({
   masterEnabled,
   masterVolumePercent,
   mergeAudio,
+  webcam,
   onPreviewPlaybackError,
   onTrimChange,
   onPrepareWaveforms,
@@ -52,14 +54,21 @@ export function EditorStage({
   onMasterVolumeChange,
   onToggleAudioMerge,
   onWaveformImageError,
+  onToggleWebcam,
+  onWebcamPositionChange,
   audioPreviewUrls,
   sourceDimensions,
   onCropResolutionChange,
   onCropChange,
 }: EditorStageProps) {
   const { t } = useTranslation();
-  const timelinePanelSizing = useTimelinePanelSizing(sourceId, audioStreams.length);
+  const timelinePanelSizing = useTimelinePanelSizing(
+    sourceId,
+    audioStreams.length,
+    webcam !== null,
+  );
   const videoRef = useRef<HTMLVideoElement>(null);
+  const webcamVideoRef = useRef<HTMLVideoElement>(null);
   const audioElementsRef = useRef(new Map<number, HTMLAudioElement>());
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioNodesRef = useRef(
@@ -68,6 +77,7 @@ export function EditorStage({
   const masterGainRef = useRef<GainNode | null>(null);
   const playheadRef = useRef<HTMLButtonElement>(null);
   const audioPlayheadRef = useRef<HTMLDivElement>(null);
+  const webcamPlayheadRef = useRef<HTMLDivElement>(null);
   const playbackFrameRef = useRef<number | null>(null);
   const scrubFrameRef = useRef<number | null>(null);
   const pendingScrubMicrosRef = useRef<number | null>(null);
@@ -112,6 +122,7 @@ export function EditorStage({
   useEffect(() => {
     const video = videoRef.current;
     if (video) video.playbackRate = playbackSpeed.speed;
+    if (webcamVideoRef.current) webcamVideoRef.current.playbackRate = playbackSpeed.speed;
     for (const audio of audioElementsRef.current.values()) {
       audio.playbackRate = playbackSpeed.speed;
     }
@@ -271,11 +282,13 @@ export function EditorStage({
     syncPlayheadElements(
       playheadRef.current,
       audioPlayheadRef.current,
+      webcamPlayheadRef.current,
       clamped,
       trimRef.current.sourceDurationMicros,
     );
     setPlayheadMicros(clamped);
     seekVideo(videoRef.current, clamped);
+    seekVideo(webcamVideoRef.current, clamped);
     for (const audio of audioElementsRef.current.values()) {
       seekMediaIfNeeded(audio, clamped / 1_000_000);
     }
@@ -329,6 +342,7 @@ export function EditorStage({
     syncPlayheadElements(
       playheadRef.current,
       audioPlayheadRef.current,
+      webcamPlayheadRef.current,
       clamped,
       trimRef.current.sourceDurationMicros,
     );
@@ -351,6 +365,7 @@ export function EditorStage({
     playbackRequestedRef.current = false;
     isPlayingRef.current = false;
     videoRef.current?.pause();
+    webcamVideoRef.current?.pause();
     pauseAudioPlayback();
     setIsPlaying(false);
     stopPlayheadAnimation();
@@ -378,6 +393,7 @@ export function EditorStage({
     syncPlayheadElements(
       playheadRef.current,
       audioPlayheadRef.current,
+      webcamPlayheadRef.current,
       currentMicros,
       durationMicros,
     );
@@ -406,6 +422,7 @@ export function EditorStage({
       syncPlayheadElements(
         playheadRef.current,
         audioPlayheadRef.current,
+        webcamPlayheadRef.current,
         currentMicros,
         durationMicros,
       );
@@ -446,6 +463,7 @@ export function EditorStage({
     playbackRequestedRef.current = false;
     isPlayingRef.current = false;
     videoRef.current?.pause();
+    webcamVideoRef.current?.pause();
     pauseAudioPlayback();
     setIsPlaying(false);
     stopPlayheadAnimation();
@@ -474,9 +492,9 @@ export function EditorStage({
     seekVideo(video, startMicros);
     syncAudioPlayback(startSeconds, true);
 
-    const seekingMedia = [video, ...audioElementsRef.current.values()].filter(
-      (media) => media.seeking,
-    );
+    const seekingMedia = [video, webcamVideoRef.current, ...audioElementsRef.current.values()]
+      .filter((media): media is HTMLMediaElement => media !== null)
+      .filter((media) => media.seeking);
     if (seekingMedia.length === 0) {
       beginMediaPlayback(video, startSequence);
       return;
@@ -498,7 +516,11 @@ export function EditorStage({
           return;
         }
         syncAudioPlayback(video.currentTime);
-        return Promise.all([...audioElementsRef.current.values()].map((audio) => audio.play()));
+        const webcamPlayback = webcam?.enabled ? webcamVideoRef.current?.play() : undefined;
+        return Promise.all([
+          ...[...audioElementsRef.current.values()].map((audio) => audio.play()),
+          ...(webcamPlayback ? [webcamPlayback] : []),
+        ]);
       })
       .catch(() => {
         if (startSequence !== playbackStartSequenceRef.current) {
@@ -508,6 +530,7 @@ export function EditorStage({
         playbackRequestedRef.current = false;
         isPlayingRef.current = false;
         video.pause();
+        webcamVideoRef.current?.pause();
         pauseAudioPlayback();
         setIsPlaying(false);
         stopPlayheadAnimation();
@@ -526,6 +549,7 @@ export function EditorStage({
     playbackRequestedRef.current = false;
     isPlayingRef.current = false;
     videoRef.current?.pause();
+    webcamVideoRef.current?.pause();
     pauseAudioPlayback();
     setIsPlaying(false);
     stopPlayheadAnimation();
@@ -535,6 +559,9 @@ export function EditorStage({
   function syncAudioPlayback(seconds: number, force = false) {
     for (const audio of audioElementsRef.current.values()) {
       synchronizeAudioPosition(audio, seconds, force);
+    }
+    if (webcam?.enabled && webcamVideoRef.current) {
+      synchronizeAudioPosition(webcamVideoRef.current, seconds, force);
     }
   }
 
@@ -549,6 +576,7 @@ export function EditorStage({
       playbackRequestedRef.current = false;
       isPlayingRef.current = false;
       video.pause();
+      webcamVideoRef.current?.pause();
       return;
     }
     const startMicros = playbackModes.startMicros(
@@ -570,6 +598,7 @@ export function EditorStage({
       playbackRequestedRef.current = false;
       isPlayingRef.current = false;
       videoRef.current?.pause();
+      webcamVideoRef.current?.pause();
       pauseAudioPlayback();
       setIsPlaying(false);
       stopPlayheadAnimation();
@@ -588,6 +617,7 @@ export function EditorStage({
     playbackRequestedRef.current = false;
     isPlayingRef.current = false;
     videoRef.current?.pause();
+    webcamVideoRef.current?.pause();
     setIsPlaying(false);
     stopPlayheadAnimation();
     commitSeek(currentPlayheadMicrosRef.current + direction * frameDurationMicros(frameRate));
@@ -728,6 +758,7 @@ export function EditorStage({
               playbackRequestedRef.current = false;
               isPlayingRef.current = false;
               setIsPlaying(false);
+              webcamVideoRef.current?.pause();
               pauseAudioPlayback();
               stopPlayheadAnimation();
               const video = videoRef.current;
@@ -741,6 +772,8 @@ export function EditorStage({
             onCropResolutionChange={onCropResolutionChange}
             onCropChange={onCropChange}
             onCropToolOpenChange={handleCropToolOpenChange}
+            webcam={webcam}
+            webcamVideoRef={webcamVideoRef}
           />
         </div>
       </Panel>
@@ -830,6 +863,18 @@ export function EditorStage({
               onScrub={queueScrubSeek}
               onScrubEnd={handleScrubEnd}
             />
+          }
+          webcamTrack={
+            webcam ? (
+              <WebcamTrack
+                webcam={webcam}
+                onToggle={onToggleWebcam}
+                onPositionChange={onWebcamPositionChange}
+                range={trim}
+                playheadMicros={displayedPlayheadMicros}
+                playheadRef={webcamPlayheadRef}
+              />
+            ) : null
           }
           audioTracks={
             audioStreams.length > 0 ? (

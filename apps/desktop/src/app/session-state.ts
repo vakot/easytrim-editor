@@ -6,6 +6,7 @@ import type {
   PreviewKind,
   SourceSelection,
   WaveformResult,
+  WebcamPosition,
 } from "../lib/tauri/media";
 import { createFullTrimRange, isValidTrimRange, type TrimRange } from "../domain/trim";
 
@@ -33,6 +34,15 @@ export interface AudioTrackState {
   waveform: WaveformState;
 }
 
+export interface WebcamState {
+  selection: SourceSelection;
+  media: MediaInfo | null;
+  preview: PreviewState;
+  enabled: boolean;
+  position: WebcamPosition;
+  error: AppError | null;
+}
+
 const DEFAULT_UNMUTE_VOLUME_PERCENT = 50;
 
 export interface SessionState {
@@ -47,6 +57,7 @@ export interface SessionState {
     masterEnabled: boolean;
     masterVolumePercent: number;
     mergeAudio: boolean;
+    webcam: WebcamState | null;
   } | null;
   lastError: AppError | null;
 }
@@ -80,6 +91,13 @@ type SessionAction =
       volumePercent: number;
     }
   | { type: "audio-merge-toggled"; sourceId: string }
+  | { type: "webcam-selected"; sourceId: string; webcam: SourceSelection }
+  | { type: "webcam-ready"; sourceId: string; webcamId: string; media: MediaInfo }
+  | { type: "webcam-preview-loading"; sourceId: string; webcamId: string; kind: PreviewKind }
+  | { type: "webcam-preview-ready"; sourceId: string; webcamId: string; preview: PreviewDescriptor }
+  | { type: "webcam-failed"; sourceId: string; webcamId: string; error: AppError }
+  | { type: "webcam-toggled"; sourceId: string }
+  | { type: "webcam-position-changed"; sourceId: string; position: WebcamPosition }
   | {
       type: "waveforms-loading";
       sourceId: string;
@@ -130,6 +148,7 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
           masterEnabled: true,
           masterVolumePercent: 50,
           mergeAudio: false,
+          webcam: null,
         },
         lastError: null,
       };
@@ -312,6 +331,101 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
         source: {
           ...state.source,
           mergeAudio: !state.source.mergeAudio,
+        },
+      };
+    case "webcam-selected":
+      if (state.source?.selection.sourceId !== action.sourceId) return state;
+      return {
+        ...state,
+        source: {
+          ...state.source,
+          webcam: {
+            selection: action.webcam,
+            media: null,
+            preview: { status: "idle" },
+            enabled: true,
+            position: "bottomRight",
+            error: null,
+          },
+        },
+      };
+    case "webcam-ready":
+      if (
+        state.source?.selection.sourceId !== action.sourceId ||
+        state.source.webcam?.selection.sourceId !== action.webcamId ||
+        action.media.sourceId !== action.webcamId
+      )
+        return state;
+      return {
+        ...state,
+        source: {
+          ...state.source,
+          webcam: { ...state.source.webcam, media: action.media, error: null },
+        },
+      };
+    case "webcam-preview-loading":
+      if (
+        state.source?.selection.sourceId !== action.sourceId ||
+        state.source.webcam?.selection.sourceId !== action.webcamId
+      )
+        return state;
+      return {
+        ...state,
+        source: {
+          ...state.source,
+          webcam: { ...state.source.webcam, preview: { status: "loading", kind: action.kind } },
+        },
+      };
+    case "webcam-preview-ready":
+      if (
+        state.source?.selection.sourceId !== action.sourceId ||
+        state.source.webcam?.selection.sourceId !== action.webcamId ||
+        action.preview.sourceId !== action.webcamId
+      )
+        return state;
+      return {
+        ...state,
+        source: {
+          ...state.source,
+          webcam: { ...state.source.webcam, preview: { status: "ready", value: action.preview } },
+        },
+      };
+    case "webcam-failed":
+      if (
+        state.source?.selection.sourceId !== action.sourceId ||
+        state.source.webcam?.selection.sourceId !== action.webcamId
+      )
+        return state;
+      return {
+        ...state,
+        source: {
+          ...state.source,
+          webcam: {
+            ...state.source.webcam,
+            enabled: false,
+            preview: { status: "failed", error: action.error },
+            error: action.error,
+          },
+        },
+      };
+    case "webcam-toggled":
+      if (state.source?.selection.sourceId !== action.sourceId || !state.source.webcam)
+        return state;
+      return {
+        ...state,
+        source: {
+          ...state.source,
+          webcam: { ...state.source.webcam, enabled: !state.source.webcam.enabled },
+        },
+      };
+    case "webcam-position-changed":
+      if (state.source?.selection.sourceId !== action.sourceId || !state.source.webcam)
+        return state;
+      return {
+        ...state,
+        source: {
+          ...state.source,
+          webcam: { ...state.source.webcam, position: action.position },
         },
       };
     case "waveforms-loading":

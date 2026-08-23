@@ -25,6 +25,8 @@ export function SourceWorkspace({
   onMasterVolumeChange,
   onToggleAudioMerge,
   onWaveformImageError,
+  onToggleWebcam,
+  onWebcamPositionChange,
   audioPreviewUrls,
   exportQueue,
   update,
@@ -95,6 +97,7 @@ export function SourceWorkspace({
               masterEnabled={source.masterEnabled}
               masterVolumePercent={source.masterVolumePercent}
               mergeAudio={source.mergeAudio}
+              webcam={source.webcam}
               onPreviewPlaybackError={onPreviewPlaybackError}
               onTrimChange={(trim) => onTrimChange(sourceId, trim)}
               onPrepareWaveforms={(streamIndexes, width) =>
@@ -110,6 +113,8 @@ export function SourceWorkspace({
               }
               onToggleAudioMerge={() => onToggleAudioMerge(sourceId)}
               onWaveformImageError={(streamIndex) => onWaveformImageError(sourceId, streamIndex)}
+              onToggleWebcam={() => onToggleWebcam(sourceId)}
+              onWebcamPositionChange={(position) => onWebcamPositionChange(sourceId, position)}
               audioPreviewUrls={audioPreviewUrls}
               sourceDimensions={{ width: media.video.width, height: media.video.height }}
               onCropResolutionChange={onCropResolutionChange}
