@@ -183,7 +183,7 @@ export function ContextMenus({
       id: `color-${color}`,
       icon: <ColorSample color={color} selected={color === primaryColorKey} />,
       children: t(`themeColor.${color}`),
-      suffix: resolvePrimaryColor(color).toUpperCase(),
+      suffix: <span className="font-mono">{resolvePrimaryColor(color).toUpperCase()}</span>,
       selected: color === primaryColorKey,
       shouldCloseOnClick: false,
       onSelect: () => setPrimaryColor(color),
@@ -197,7 +197,7 @@ export function ContextMenus({
         />
       ),
       children: t("themeColor.custom"),
-      suffix: displayedCustomColor.toUpperCase(),
+      suffix: <span className="font-mono">{displayedCustomColor.toUpperCase()}</span>,
       selected: primaryColorKey === CUSTOM_PRIMARY_COLOR,
       shouldCloseOnClick: false,
       onSelect: () => {
@@ -280,6 +280,7 @@ export function ContextMenus({
         : updateStatus === "available" && availableVersion
           ? t("app.topBarMenus.updateTo", { version: availableVersion })
           : t("app.topBarMenus.checkForUpdates");
+          
   const updateHint =
     updateStatus === "checking" ? (
       <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
