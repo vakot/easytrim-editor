@@ -13,6 +13,7 @@ import {
   RefreshCw,
   RotateCcw,
   Sun,
+  Languages
 } from "lucide-react";
 import { useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
