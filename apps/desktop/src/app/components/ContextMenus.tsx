@@ -297,7 +297,11 @@ export function ContextMenus({
           {
             id: "support-project",
             label: t("app.topBarMenus.supportProject"),
+<<<<<<< HEAD
             hint: <BrandIcon className="size-4" icon={kofiBrandIcon} />,
+=======
+            hint: <ExternalLink className="size-4" aria-hidden="true" />,
+>>>>>>> origin/master
             onSelect: () => void openExternalUrl(SUPPORT_PROJECT_URL),
           },
           { id: "help-divider-version", separator: true },

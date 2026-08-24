@@ -70,6 +70,8 @@ describe("ContextMenus", () => {
     await user.click(screen.getByRole("button", { name: "Help" }));
     await user.click(screen.getByRole("menuitem", { name: "Project Page" }));
     await user.click(screen.getByRole("button", { name: "Help" }));
+    await user.click(screen.getByRole("menuitem", { name: "Changelog" }));
+    await user.click(screen.getByRole("button", { name: "Help" }));
     await user.click(screen.getByRole("menuitem", { name: "Support the Project" }));
     await user.click(screen.getByRole("button", { name: "Help" }));
     await user.click(screen.getByRole("menuitem", { name: "Version 1.0.5" }));
