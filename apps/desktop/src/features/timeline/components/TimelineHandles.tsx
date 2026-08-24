@@ -41,7 +41,11 @@ export function SegmentDragHandle({
     <Tooltip>
       <TooltipTrigger asChild>
         <button
-          className={cn("segment-drag-handle", styles.segment, disabled && "cursor-not-allowed")}
+          className={cn(
+            "segment-drag-handle",
+            styles.segment,
+            disabled && ["cursor-not-allowed", styles.segmentDisabled],
+          )}
           type="button"
           role="slider"
           aria-label={t("timeline.moveSegment")}

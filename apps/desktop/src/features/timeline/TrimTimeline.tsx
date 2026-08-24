@@ -109,19 +109,18 @@ export function TrimTimeline({
               right: "var(--timeline-trim-end-inset)",
             }}
           />
-          {!disabled ? (
-            <SegmentDragHandle
-              range={range}
-              dragging={segmentDragging}
-              snapPoint={segmentSnapPoint}
-              onPointerDown={startSegmentDrag}
-              onPointerMove={moveSegmentDrag}
-              onPointerUp={(event) => finishSegmentDrag(event, true)}
-              onPointerCancel={(event) => finishSegmentDrag(event, false)}
-              onLostPointerCapture={(event) => finishSegmentDrag(event, false)}
-              onKeyDown={handleSegmentKeyboard}
-            />
-          ) : null}
+          <SegmentDragHandle
+            range={range}
+            dragging={segmentDragging}
+            snapPoint={segmentSnapPoint}
+            onPointerDown={startSegmentDrag}
+            onPointerMove={moveSegmentDrag}
+            onPointerUp={(event) => finishSegmentDrag(event, true)}
+            onPointerCancel={(event) => finishSegmentDrag(event, false)}
+            onLostPointerCapture={(event) => finishSegmentDrag(event, false)}
+            onKeyDown={handleSegmentKeyboard}
+            disabled={disabled}
+          />
           {!disabled ? (
             <Playhead
               playheadRef={playheadRef}
