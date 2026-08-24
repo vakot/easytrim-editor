@@ -9,6 +9,7 @@ export const en = {
   },
   statusBar: {
     exportProgress: "Export progress",
+    update: "Update",
   },
   language: {
     label: "Language",

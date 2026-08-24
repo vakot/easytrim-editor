@@ -1,11 +1,15 @@
 import { useTranslation } from "react-i18next";
 
+import { useAppUpdates } from "@/app/update-context";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
 import packageJson from "../../../../../package.json";
 import type { ExportToast } from "@/features/export";
 
 export function StatusBar({ queue }: { queue: ExportToast[] }) {
   const { t } = useTranslation();
+  const { status: updateStatus, availableVersion, isInstalling, installUpdate } = useAppUpdates();
+  const hasAvailableUpdate = updateStatus === "available" && availableVersion !== null;
   const activeExport = queue.find((item) => item.status === "rendering");
   const activeExportPath = activeExport ? splitFilePath(activeExport.path) : null;
   const activeExportFps = activeExport?.estimatedFps;
@@ -19,6 +23,16 @@ export function StatusBar({ queue }: { queue: ExportToast[] }) {
       >
         <span className="flex min-w-0 items-center gap-1.5">
           <span>v{packageJson.version}</span>
+          {hasAvailableUpdate ? (
+            <Button
+              type="button"
+              size="xs"
+              disabled={isInstalling}
+              onClick={() => void installUpdate()}
+            >
+              {t("statusBar.update")}
+            </Button>
+          ) : null}
         </span>
         {activeExport ? (
           <div className="ml-auto flex min-w-0 items-center gap-3 pl-4 text-muted-foreground">
