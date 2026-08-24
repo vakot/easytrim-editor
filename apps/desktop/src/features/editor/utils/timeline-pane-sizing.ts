@@ -6,7 +6,7 @@ export interface TimelinePanelSizeConstraints {
 
 // These values mirror the fixed CSS layout. The timeline and audio controls
 // do not depend on media metadata, so constraints are available before render.
-export const TIMELINE_FIXED_HEIGHT = 165; /* Fixed trim-timeline content height, in pixels. */
+export const TIMELINE_FIXED_HEIGHT = 170; /* Fixed trim-timeline content height, in pixels. */
 const TIMELINE_DIVIDER_HEIGHT = 1; /* Horizontal separator height between timeline and audio. */
 const AUDIO_SECTION_TOP_PADDING = 16; /* Audio section `pt-4` padding. */
 const AUDIO_SECTION_HEADING_HEIGHT = 16; /* Audio heading line-box height. */
