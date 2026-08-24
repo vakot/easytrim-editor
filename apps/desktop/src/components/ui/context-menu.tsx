@@ -1,5 +1,5 @@
 import { ChevronRight } from "lucide-react";
-import { type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui";
 
 import { Button } from "@/components/ui/button";
@@ -70,36 +70,7 @@ export function ContextMenu({
 
 function ContextMenuOptionItem({ option }: { option: ContextMenuOption }) {
   if (option.submenu || option.submenuContent) {
-    return (
-      <DropdownMenuPrimitive.Sub>
-        <DropdownMenuPrimitive.SubTrigger
-          disabled={option.disabled}
-          onClick={(event) => {
-            option.onSelect?.(event.nativeEvent);
-            if (option.openSubmenuOnClick === false) event.preventDefault();
-          }}
-          data-selected={option.selected ? "true" : "false"}
-          aria-current={option.selected ? "true" : undefined}
-          className="flex min-h-8 min-w-56 w-full items-center gap-3 rounded-md px-2.5 py-1.5 text-left text-sm outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-        >
-          <ContextMenuOptionContent option={option} />
-          <ChevronRight className="ml-auto size-4 shrink-0" aria-hidden="true" />
-        </DropdownMenuPrimitive.SubTrigger>
-        <DropdownMenuPrimitive.Portal>
-          <DropdownMenuPrimitive.SubContent
-            sideOffset={4}
-            alignOffset={-4}
-            onFocusOutside={option.submenuContent ? (event) => event.preventDefault() : undefined}
-            className="z-50 min-w-56 rounded-lg border bg-popover p-1 text-popover-foreground shadow-lg ring-1 ring-foreground/10"
-          >
-            {option.submenuContent ??
-              option.submenu?.map((child) => (
-                <ContextMenuOptionItem key={child.id} option={child} />
-              ))}
-          </DropdownMenuPrimitive.SubContent>
-        </DropdownMenuPrimitive.Portal>
-      </DropdownMenuPrimitive.Sub>
-    );
+    return <ContextMenuSubmenuOptionItem option={option} />;
   }
 
   const item = (
@@ -118,6 +89,48 @@ function ContextMenuOptionItem({ option }: { option: ContextMenuOption }) {
   );
 
   return option.render ? option.render(item) : item;
+}
+
+function ContextMenuSubmenuOptionItem({ option }: { option: ContextMenuOption }) {
+  const instantSwitch = option.openSubmenuOnClick !== false;
+  const [open, setOpen] = useState(false);
+  const submenuProps = instantSwitch ? { open, onOpenChange: setOpen } : {};
+
+  return (
+    <DropdownMenuPrimitive.Sub {...submenuProps}>
+      <DropdownMenuPrimitive.SubTrigger
+        disabled={option.disabled}
+        onPointerMove={
+          instantSwitch
+            ? (event) => {
+                if (!option.disabled && !event.defaultPrevented) setOpen(true);
+              }
+            : undefined
+        }
+        onClick={(event) => {
+          option.onSelect?.(event.nativeEvent);
+          if (!instantSwitch) event.preventDefault();
+        }}
+        data-selected={option.selected ? "true" : "false"}
+        aria-current={option.selected ? "true" : undefined}
+        className="flex min-h-8 min-w-56 w-full items-center gap-3 rounded-md px-2.5 py-1.5 text-left text-sm outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+      >
+        <ContextMenuOptionContent option={option} />
+        <ChevronRight className="ml-auto size-4 shrink-0" aria-hidden="true" />
+      </DropdownMenuPrimitive.SubTrigger>
+      <DropdownMenuPrimitive.Portal>
+        <DropdownMenuPrimitive.SubContent
+          sideOffset={4}
+          alignOffset={-4}
+          onFocusOutside={option.submenuContent ? (event) => event.preventDefault() : undefined}
+          className="z-50 min-w-56 rounded-lg border bg-popover p-1 text-popover-foreground shadow-lg ring-1 ring-foreground/10"
+        >
+          {option.submenuContent ??
+            option.submenu?.map((child) => <ContextMenuOptionItem key={child.id} option={child} />)}
+        </DropdownMenuPrimitive.SubContent>
+      </DropdownMenuPrimitive.Portal>
+    </DropdownMenuPrimitive.Sub>
+  );
 }
 
 function ContextMenuOptionContent({ option }: { option: ContextMenuOption }) {
