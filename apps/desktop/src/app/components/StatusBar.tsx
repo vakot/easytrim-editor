@@ -9,33 +9,6 @@ import type { ExportToast } from "@/features/export";
 
 export function StatusBar({ queue }: { queue: ExportToast[] }) {
   const { t } = useTranslation();
-  const {
-    status: updateStatus,
-    availableVersion,
-    isInstalling,
-    checkForUpdates,
-    installUpdate,
-  } = useAppUpdates();
-  const updateAction =
-    isInstalling || updateStatus === "checking"
-      ? {
-          label: t("statusBar.loading"),
-          icon: <LoaderCircle className="size-3 animate-spin" aria-hidden="true" />,
-          disabled: true,
-        }
-      : updateStatus === "available" && availableVersion !== null
-        ? {
-            label: t("statusBar.update"),
-            icon: <Download className="size-3" aria-hidden="true" />,
-            disabled: false,
-          }
-        : updateStatus === "error"
-          ? {
-              label: t("statusBar.error"),
-              icon: <CircleAlert className="size-3" aria-hidden="true" />,
-              disabled: false,
-            }
-          : null;
   const activeExport = queue.find((item) => item.status === "rendering");
   const activeExportPath = activeExport ? splitFilePath(activeExport.path) : null;
   const activeExportFps = activeExport?.estimatedFps;
@@ -49,19 +22,7 @@ export function StatusBar({ queue }: { queue: ExportToast[] }) {
       >
         <span className="flex min-w-0 items-center gap-1.5">
           <span>v{packageJson.version}</span>
-          {updateAction ? (
-            <Button
-              type="button"
-              size="xs"
-              disabled={updateAction.disabled}
-              onClick={() =>
-                void (updateStatus === "available" ? installUpdate() : checkForUpdates())
-              }
-            >
-              {updateAction.icon}
-              {updateAction.label}
-            </Button>
-          ) : null}
+          <StatusBarUpdateButton />
         </span>
         {activeExport ? (
           <div className="ml-auto flex min-w-0 items-center gap-3 pl-4 text-muted-foreground">
@@ -122,6 +83,51 @@ export function StatusBar({ queue }: { queue: ExportToast[] }) {
         ) : null}
       </footer>
     </div>
+  );
+}
+
+function StatusBarUpdateButton() {
+  const { t } = useTranslation();
+  const {
+    status: updateStatus,
+    availableVersion,
+    isInstalling,
+    checkForUpdates,
+    installUpdate,
+  } = useAppUpdates();
+  const updateAction =
+    isInstalling || updateStatus === "checking"
+      ? {
+          label: t("statusBar.loading"),
+          icon: <LoaderCircle className="size-3 animate-spin" aria-hidden="true" />,
+          disabled: true,
+        }
+      : updateStatus === "available" && availableVersion !== null
+        ? {
+            label: t("statusBar.update"),
+            icon: <Download className="size-3" aria-hidden="true" />,
+            disabled: false,
+          }
+        : updateStatus === "error"
+          ? {
+              label: t("statusBar.error"),
+              icon: <CircleAlert className="size-3" aria-hidden="true" />,
+              disabled: false,
+            }
+          : null;
+
+  if (!updateAction) return null;
+
+  return (
+    <Button
+      type="button"
+      size="xs"
+      disabled={updateAction.disabled}
+      onClick={() => void (updateStatus === "available" ? installUpdate() : checkForUpdates())}
+    >
+      {updateAction.icon}
+      {updateAction.label}
+    </Button>
   );
 }
 
