@@ -684,12 +684,12 @@ export function useEditorInteractionController(): EditorInteractionValue {
 
   useEffect(() => {
     shortcutActionsRef.current = {
-      enabled: preview.status === "ready",
+      enabled: isPlaybackReady,
       togglePlayback: handleTogglePlayback,
       stepFrame: handleStepFrame,
       setSegmentBoundary: handleSetSegmentBoundary,
     };
-  }, [handleSetSegmentBoundary, handleStepFrame, handleTogglePlayback, preview.status]);
+  }, [handleSetSegmentBoundary, handleStepFrame, handleTogglePlayback, isPlaybackReady]);
 
   return {
     videoRef,

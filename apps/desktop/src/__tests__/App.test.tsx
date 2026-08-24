@@ -223,7 +223,7 @@ describe("App", () => {
     expect(screen.queryByTestId("audio-tracks-scroll")).not.toBeInTheDocument();
   });
 
-  it("keeps the editor covered and transport disabled until the preview can play", async () => {
+  it("keeps the editor covered and interactions disabled until the preview can play", async () => {
     const readyState = vi
       .spyOn(HTMLMediaElement.prototype, "readyState", "get")
       .mockReturnValue(HTMLMediaElement.HAVE_METADATA);
@@ -235,11 +235,21 @@ describe("App", () => {
       await openSourcePicker(user);
       const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
       const play = vi.spyOn(video, "play").mockResolvedValue();
+      const trimStart = screen.getByRole("slider", { name: "Trim start" });
+      const trimEnd = screen.getByRole("slider", { name: "Trim end" });
 
       expect(screen.getByTestId("editor-loading-overlay")).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Play" })).toBeDisabled();
+      video.currentTime = 10;
+      fireEvent.timeUpdate(video);
       fireEvent.keyDown(window, { key: " " });
+      fireEvent.keyDown(window, { key: "ArrowRight" });
+      fireEvent.keyDown(window, { key: "i" });
+      fireEvent.keyDown(window, { key: "o" });
       expect(play).not.toHaveBeenCalled();
+      expect(video.currentTime).toBe(10);
+      expect(trimStart).toHaveAttribute("aria-valuenow", "0");
+      expect(trimEnd).toHaveAttribute("aria-valuenow", "65000000");
 
       readyState.mockReturnValue(HTMLMediaElement.HAVE_FUTURE_DATA);
       fireEvent.canPlay(video);
@@ -248,6 +258,8 @@ describe("App", () => {
         expect(screen.queryByTestId("editor-loading-overlay")).not.toBeInTheDocument(),
       );
       expect(screen.getByRole("button", { name: "Play" })).not.toBeDisabled();
+      fireEvent.keyDown(window, { key: " " });
+      expect(play).toHaveBeenCalledOnce();
     } finally {
       readyState.mockRestore();
     }
