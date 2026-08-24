@@ -1,6 +1,13 @@
 import { relaunch } from "@tauri-apps/plugin-process";
 import { check } from "@tauri-apps/plugin-updater";
 
+const updaterEndpoint =
+  "https://github.com/vakot/easytrim-editor/releases/latest/download/latest.json";
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 export interface AvailableUpdate {
   version: string;
   install: () => Promise<void>;
@@ -11,14 +18,30 @@ export function isTauriRuntime(): boolean {
 }
 
 export async function checkForUpdates(): Promise<AvailableUpdate | null> {
-  const update = await check();
-  if (!update) return null;
+  try {
+    const update = await check();
+    if (!update) return null;
 
-  return {
-    version: update.version,
-    install: async () => {
-      await update.downloadAndInstall();
-      await relaunch();
-    },
-  };
+    return {
+      version: update.version,
+      install: async () => {
+        try {
+          await update.downloadAndInstall();
+          await relaunch();
+        } catch (error) {
+          console.error("[updates] Update installation failed", {
+            message: getErrorMessage(error),
+            version: update.version,
+          });
+          throw error;
+        }
+      },
+    };
+  } catch (error) {
+    console.error("[updates] Update check failed", {
+      endpoint: updaterEndpoint,
+      message: getErrorMessage(error),
+    });
+    throw error;
+  }
 }
