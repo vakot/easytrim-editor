@@ -1,6 +1,15 @@
-import { copyFile, mkdir, mkdtemp, readFile, readdir, rm } from "node:fs/promises";
+import {
+  access,
+  copyFile,
+  mkdir,
+  mkdtemp,
+  readFile,
+  readdir,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join, relative, resolve } from "node:path";
+import { basename, join, relative, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 
 import {
@@ -24,6 +33,15 @@ function fail(message) {
   process.exit(1);
 }
 
+function getUpdaterPlatform(platform) {
+  return {
+    windows: "windows-x86_64",
+    linux: "linux-x86_64",
+    "macos-intel": "darwin-x86_64",
+    "macos-apple-silicon": "darwin-aarch64",
+  }[platform];
+}
+
 const tag = readOption("tag");
 const requestedPlatform = readOption("platform", "current");
 const outputDirectory = readOption("output");
@@ -35,12 +53,16 @@ const tauriConfig = JSON.parse(
   await readFile(join("apps", "desktop", "src-tauri", "tauri.conf.json"), "utf8"),
 );
 
-if (shouldUpload && !tag) {
+if (!tag) {
   fail("missing --tag, for example --tag v1.0.2");
 }
 
-if (!shouldUpload && !outputDirectory) {
-  fail("--no-upload requires --output so the generated artifacts are preserved");
+if (!process.env.TAURI_SIGNING_PRIVATE_KEY && !process.env.TAURI_SIGNING_PRIVATE_KEY_PATH) {
+  fail("missing TAURI_SIGNING_PRIVATE_KEY or TAURI_SIGNING_PRIVATE_KEY_PATH");
+}
+
+if (!process.env.TAURI_SIGNING_PRIVATE_KEY_PASSWORD) {
+  fail("missing TAURI_SIGNING_PRIVATE_KEY_PASSWORD");
 }
 
 if (!config) {
@@ -119,16 +141,48 @@ try {
         stagingDirectory,
         getReleaseArtifactName(tauriConfig.version, config, artifact),
       );
+      const signature = `${path}.sig`;
+
+      try {
+        await access(signature);
+      } catch {
+        fail(`missing signature for ${relative(process.cwd(), path)}`);
+      }
+
       await copyFile(path, stagedArtifact);
-      return stagedArtifact;
+      await copyFile(signature, `${stagedArtifact}.sig`);
+      return { artifact, path: stagedArtifact, signature: `${stagedArtifact}.sig` };
     }),
   );
 
-  console.log(`Prepared ${stagedArtifacts.length} artifact(s) in ${stagingDirectory}.`);
+  const updaterArtifact =
+    stagedArtifacts.find(({ artifact }) => artifact.bundle === "nsis") ?? stagedArtifacts[0];
+  const updaterJsonPath = join(stagingDirectory, "latest.json");
+  const updaterJson = {
+    version: tauriConfig.version,
+    notes: `EasyTrim Editor ${tag}`,
+    pub_date: new Date().toISOString(),
+    platforms: {
+      [getUpdaterPlatform(platform)]: {
+        signature: (await readFile(updaterArtifact.signature, "utf8")).trim(),
+        url: `https://github.com/vakot/easytrim-editor/releases/download/${tag}/${basename(updaterArtifact.path)}`,
+      },
+    },
+  };
+
+  await writeFile(updaterJsonPath, `${JSON.stringify(updaterJson, null, 2)}\n`, "utf8");
+
+  console.log(
+    `Prepared ${stagedArtifacts.length} signed artifact(s) and latest.json in ${stagingDirectory}.`,
+  );
 
   if (shouldUpload) {
-    console.log(`Uploading ${stagedArtifacts.length} artifact(s) to GitHub release ${tag}...`);
-    const upload = spawnSync("gh", ["release", "upload", tag, ...stagedArtifacts, "--clobber"], {
+    const uploadPaths = [
+      ...stagedArtifacts.flatMap(({ path, signature }) => [path, signature]),
+      updaterJsonPath,
+    ];
+    console.log(`Uploading signed artifacts and latest.json to GitHub release ${tag}...`);
+    const upload = spawnSync("gh", ["release", "upload", tag, ...uploadPaths, "--clobber"], {
       stdio: "inherit",
       shell: process.platform === "win32",
     });
