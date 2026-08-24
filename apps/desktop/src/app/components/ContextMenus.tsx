@@ -375,10 +375,7 @@ export function ContextMenus({
             <Merge className="size-4" aria-hidden="true" />,
             "mergeAudioEnabled",
           ),
-          {
-            id: "settings-reset-divider",
-            separator: true,
-          },
+          { id: "settings-reset-divider", separator: true },
           {
             id: "settings-reset",
             label: t("app.settings.resetToDefault"),
