@@ -1,8 +1,6 @@
 import { Download, ExternalLink, LoaderCircle, Monitor, Moon, RefreshCw, Sun } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { siGithub, siKofi } from "simple-icons";
-
 import { SpectrumWheel } from "@/app/components/PrimaryColorSelector";
 import {
   CUSTOM_PRIMARY_COLOR,
@@ -14,6 +12,7 @@ import {
 import { useTheme } from "@/app/theme/use-theme";
 import { useAppUpdates } from "@/app/update-context";
 import { BrandIcon } from "@/components/BrandIcon";
+import { githubBrandIcon, kofiBrandIcon } from "@/components/brand-icons";
 import { ContextMenu, type ContextMenuOption } from "@/components/ui/context-menu";
 import { Input } from "@/components/ui/input";
 import { isSupportedLanguage, type SupportedLanguage } from "@/i18n/resources";
@@ -279,7 +278,7 @@ export function ContextMenus({
             label: t("app.topBarMenus.projectPage"),
             hint: (
               <>
-                <BrandIcon className="size-4" icon={siGithub} />
+                <BrandIcon className="size-4" icon={githubBrandIcon} />
                 <ExternalLink className="size-4" aria-hidden="true" />
               </>
             ),
@@ -291,7 +290,7 @@ export function ContextMenus({
             label: t("app.topBarMenus.supportProject"),
             hint: (
               <>
-                <BrandIcon className="size-4" icon={siKofi} />
+                <BrandIcon className="size-4" icon={kofiBrandIcon} />
                 <ExternalLink className="size-4" aria-hidden="true" />
               </>
             ),

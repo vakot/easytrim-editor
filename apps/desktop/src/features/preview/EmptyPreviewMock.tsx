@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
-import { siKofi } from "simple-icons";
 
 import { BrandIcon } from "@/components/BrandIcon";
+import { kofiBrandIcon } from "@/components/brand-icons";
 import { openExternalUrl } from "@/lib/open-external-url";
 import styles from "./EmptyPreviewMock.module.css";
 
@@ -107,7 +107,7 @@ export function EmptyPreviewMock() {
               void openExternalUrl(KOFI_URL);
             }}
           >
-            <BrandIcon className="size-3.5 text-primary" icon={siKofi} />
+            <BrandIcon className="size-3.5 text-primary" icon={kofiBrandIcon} />
             <span>{t("support.onKofi")}</span>
           </a>
         </div>

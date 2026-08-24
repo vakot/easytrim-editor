@@ -1,8 +1,12 @@
 import type { SVGProps } from "react";
-import type { SimpleIcon } from "simple-icons";
+
+export interface BrandIconDefinition {
+  slug: string;
+  path: string;
+}
 
 interface BrandIconProps extends Omit<SVGProps<SVGSVGElement>, "children"> {
-  icon: SimpleIcon;
+  icon: BrandIconDefinition;
 }
 
 export function BrandIcon({ icon, ...props }: BrandIconProps) {
