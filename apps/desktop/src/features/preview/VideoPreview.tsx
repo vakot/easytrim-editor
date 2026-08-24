@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useTranslation } from "react-i18next";
 import { CropViewport } from "./CropViewport";
 import type { CropRect } from "./utils/crop-geometry";
+import { VideoPreviewEmpty } from "@/features/preview/VideoPreviewEmpty";
 
 interface VideoPreviewProps {
   sourceId: string | null;
@@ -27,7 +28,24 @@ interface VideoPreviewProps {
   onCropToolOpenChange?: (isOpen: boolean) => void;
 }
 
-export function VideoPreview({
+type VideoPreviewContentProps = Omit<VideoPreviewProps, "sourceId"> & {
+  sourceId: string;
+};
+
+export function VideoPreview(props: VideoPreviewProps) {
+  const { sourceId } = props;
+  if (!sourceId) {
+    return <VideoPreviewEmpty />;
+  }
+
+  return (
+    <section className="grid size-full min-h-0 place-items-center bg-preview-surface p-4">
+      <VideoPreviewContent {...props} sourceId={sourceId} />
+    </section>
+  );
+}
+
+function VideoPreviewContent({
   sourceId,
   preview,
   playbackRate,
@@ -44,7 +62,7 @@ export function VideoPreview({
   onCropResolutionChange,
   onCropChange,
   onCropToolOpenChange,
-}: VideoPreviewProps) {
+}: VideoPreviewContentProps) {
   const { t } = useTranslation();
   const reportedUrl = useRef<string | null>(null);
   const [cropToolOpen, setCropToolOpen] = useState(false);
@@ -77,15 +95,6 @@ export function VideoPreview({
   useEffect(() => {
     onCropToolOpenChange?.(cropToolOpen);
   }, [cropToolOpen, onCropToolOpenChange]);
-
-  if (!sourceId) {
-    return (
-      <div
-        className="size-full min-h-0 bg-preview-surface"
-        aria-label={t("import.source.noSource")}
-      />
-    );
-  }
 
   if (preview.status === "idle" || preview.status === "loading") {
     const isProxy = preview.status === "loading" && preview.kind === "proxy";

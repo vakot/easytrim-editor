@@ -1,13 +1,14 @@
 import { useEffect } from "react";
 import { Group, Panel, usePanelRef } from "react-resizable-panels";
 
-import { PaneResizeHandle } from "@/components/PaneResizeHandle";
+import { PanelSeparator } from "@/components/PanelSeparator";
 import { EditorStage } from "@/features/editor";
 import { DropOverlay } from "./components/DropOverlay";
 import { SourceSidebar } from "./components/SourceSidebar";
 import { useTranslation } from "react-i18next";
 import { useEditorViewState } from "@/app/hooks/useEditorViewState";
 import { useEditorSession } from "@/app/hooks/useEditorSession";
+import { PanelContent } from "@/components/PanelContent";
 
 export { CapabilityStatus } from "./components/CapabilityStatus";
 
@@ -36,7 +37,6 @@ export function SourceWorkspace() {
       defaultLayout={workspaceLayout}
       onLayoutChanged={setWorkspaceLayout}
       orientation="horizontal"
-      className="min-h-0 min-w-0 bg-background"
       resizeTargetMinimumSize={{ fine: 8, coarse: 24 }}
       aria-label={t("import.source.workspace")}
     >
@@ -53,22 +53,25 @@ export function SourceWorkspace() {
           setShowSourceDetails(!isCollapsed);
         }}
         groupResizeBehavior="preserve-pixel-size"
-        className="min-h-0 min-w-0 overflow-hidden bg-card/30"
+        className="min-h-0 min-w-0 overflow-hidden"
       >
-        <SourceSidebar session={session} queue={exportQueue} />
+        <div className="h-full pl-1 pb-1">
+          <PanelContent>
+            <SourceSidebar session={session} queue={exportQueue} />
+          </PanelContent>
+        </div>
       </Panel>
 
-      <PaneResizeHandle
+      <PanelSeparator
         id="source-details-resize-handle"
         label={t("import.source.resizeDetails")}
         orientation="vertical"
+        collapsed={!showSourceDetails}
+        className="mb-1"
       />
 
-      <Panel id="editor-content-panel" minSize="44rem" className="min-h-0 min-w-0 overflow-hidden">
-        <div
-          className="relative h-full min-h-0 min-w-0"
-          aria-label={t("import.source.previewArea")}
-        >
+      <Panel id="editor-content-panel" minSize="44rem" className="pr-1">
+        <div className="relative h-full w-full" aria-label={t("import.source.previewArea")}>
           <EditorStage key={session.source?.selection.sourceId ?? "no-source"} />
           {isSourceDragActive ? <DropOverlay /> : null}
         </div>

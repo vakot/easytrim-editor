@@ -16,10 +16,9 @@ export function StatusBar({ queue }: { queue: ExportToast[] }) {
 
   return (
     <div className="bg-card/30">
-      <Separator />
       <footer
         data-slot="status-bar"
-        className="flex h-8 min-h-8 shrink-0 items-center px-4 py-1 text-xs text-muted-foreground"
+        className="flex h-7 min-h-7 shrink-0 items-center px-4 pb-1 text-xs text-muted-foreground"
       >
         <span className="flex min-w-0 items-center gap-1.5">
           <span>v{packageJson.version}</span>
@@ -27,7 +26,7 @@ export function StatusBar({ queue }: { queue: ExportToast[] }) {
         </span>
         {activeExport ? (
           <div className="ml-auto flex min-w-0 items-center gap-3 pl-4 text-muted-foreground">
-            <span className="max-w-[28rem] truncate text-xs" title={activeExport.path}>
+            <span className="max-w-md truncate text-xs" title={activeExport.path}>
               <span>{activeExportPath?.directory}</span>
               <span className="font-medium text-foreground">
                 {activeExportPath?.filename ?? activeExport.filename}

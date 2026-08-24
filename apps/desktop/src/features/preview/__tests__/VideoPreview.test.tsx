@@ -31,6 +31,26 @@ afterAll(() => {
 });
 
 describe("VideoPreview", () => {
+  it("renders the empty preview when no source is loaded", () => {
+    const videoRef = createRef<HTMLVideoElement>();
+    render(
+      <VideoPreview
+        sourceId={null}
+        preview={{ status: "idle" }}
+        playbackRate={1}
+        muted
+        videoRef={videoRef}
+        {...callbacks}
+      />,
+    );
+
+    expect(screen.getByRole("region", { name: "Empty preview" })).toBeInTheDocument();
+    expect(screen.getAllByRole("listitem")).toHaveLength(6);
+    expect(screen.getByText("Open File")).toBeInTheDocument();
+    expect(screen.getByText("Support on Ko-fi.com")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /resize crop/i })).not.toBeInTheDocument();
+  });
+
   it("shows the delayed crop hint at the pointer position and hides it when crop opens", () => {
     vi.useFakeTimers();
     try {
@@ -86,7 +106,6 @@ describe("VideoPreview", () => {
     fireEvent.pointerDown(viewport!);
     fireEvent.click(viewport!);
     expect(viewport).toHaveClass("overflow-visible");
-    expect(container.firstElementChild).toHaveClass("overflow-visible");
     const handle = screen.getByRole("button", { name: "Resize crop from top left" });
     expect(handle).toBeVisible();
     expect(screen.getAllByRole("button", { name: /resize crop from/i })).toHaveLength(8);

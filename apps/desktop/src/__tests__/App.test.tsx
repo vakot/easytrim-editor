@@ -399,10 +399,10 @@ describe("App", () => {
     });
     expect(sourceResizeHandle).toHaveAttribute("aria-orientation", "vertical");
     expect(sourceResizeHandle).toHaveAttribute("tabindex", "0");
-    expect(sourceResizeHandle).toHaveClass("w-2");
+    expect(sourceResizeHandle).toHaveClass("w-1");
     expect(timelineResizeHandle).toHaveAttribute("aria-orientation", "horizontal");
     expect(timelineResizeHandle).toHaveAttribute("tabindex", "0");
-    expect(timelineResizeHandle).toHaveClass("h-2");
+    expect(timelineResizeHandle).toHaveClass("h-1");
     expect(screen.getAllByRole("separator")).toHaveLength(2);
     const fixedTimeline = screen.getByTestId("timeline-fixed-content");
     const audioTracksScroll = screen.getByTestId("audio-tracks-scroll");
