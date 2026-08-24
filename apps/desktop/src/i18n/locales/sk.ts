@@ -72,7 +72,6 @@ export const sk = {
     settings: {
       timelineTools: "Nástroje časovej osi",
       audioTools: "Zvukové nástroje",
-      resetSection: "Obnoviť predvolené",
       resetTools: "Obnoviť nástroje",
       resetConfirmation: "Obnoviť všetky predvolené hodnoty nástrojov?",
       language: "Jazyk",
