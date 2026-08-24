@@ -223,6 +223,36 @@ describe("App", () => {
     expect(screen.queryByTestId("audio-tracks-scroll")).not.toBeInTheDocument();
   });
 
+  it("keeps the editor covered and transport disabled until the preview can play", async () => {
+    const readyState = vi
+      .spyOn(HTMLMediaElement.prototype, "readyState", "get")
+      .mockReturnValue(HTMLMediaElement.HAVE_METADATA);
+    mocks.chooseSource.mockResolvedValue(selection);
+    const user = userEvent.setup();
+
+    try {
+      render(<App />);
+      await openSourcePicker(user);
+      const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
+      const play = vi.spyOn(video, "play").mockResolvedValue();
+
+      expect(screen.getByTestId("editor-loading-overlay")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Play" })).toBeDisabled();
+      fireEvent.keyDown(window, { key: " " });
+      expect(play).not.toHaveBeenCalled();
+
+      readyState.mockReturnValue(HTMLMediaElement.HAVE_FUTURE_DATA);
+      fireEvent.canPlay(video);
+
+      await waitFor(() =>
+        expect(screen.queryByTestId("editor-loading-overlay")).not.toBeInTheDocument(),
+      );
+      expect(screen.getByRole("button", { name: "Play" })).not.toBeDisabled();
+    } finally {
+      readyState.mockRestore();
+    }
+  });
+
   it("uses the video element audio clock for a single-track source", async () => {
     mocks.chooseSource.mockResolvedValue(selection);
     const user = userEvent.setup();
