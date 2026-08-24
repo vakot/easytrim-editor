@@ -51,7 +51,7 @@ function Switch({
       <SwitchPrimitive.Thumb
         data-slot="switch-thumb"
         data-size={size}
-        className={cn(thumbVariants({ size, className }))}
+        className={cn(thumbVariants({ size }))}
       />
     </SwitchPrimitive.Root>
   );

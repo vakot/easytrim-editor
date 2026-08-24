@@ -1,5 +1,5 @@
 import { ChevronRight } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { Fragment, useState, type ReactNode } from "react";
 import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui";
 
 import { Button } from "@/components/ui/button";
@@ -115,7 +115,7 @@ function ContextMenuOptionList({ options }: { options: readonly ContextMenuOptio
     }
 
     if (isContextMenuCustom(option)) {
-      return option.render();
+      return <Fragment key={option.id}>{option.render()}</Fragment>;
     }
 
     return <ContextMenuOptionItem key={option.id} option={option} onPointerMove={closeSubmenu} />;
