@@ -46,6 +46,7 @@ export const en = {
       label: "Application menus",
       file: "File",
       view: "View",
+      settings: "Settings",
       help: "Help",
       openFile: "Open File",
       closeFile: "Close File",
@@ -62,6 +63,9 @@ export const en = {
       projectPage: "Project Page",
       supportProject: "Support the Project",
       version: "Version {{version}}",
+    },
+    settings: {
+      language: "Language",
     },
     panels: {
       group: "Editor panels",

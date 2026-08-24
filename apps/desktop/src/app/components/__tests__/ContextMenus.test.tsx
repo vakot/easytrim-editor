@@ -213,7 +213,6 @@ describe("ContextMenus", () => {
 
     const viewButton = screen.getByRole("button", { name: "View" });
     await user.click(viewButton);
-    expect(screen.getByRole("separator")).toBeInTheDocument();
     const themeItem = screen.getByText("Theme").closest<HTMLElement>('[role="menuitem"]');
     expect(themeItem).not.toBeNull();
     expect(themeItem).toHaveClass("min-w-56");
@@ -243,8 +242,9 @@ describe("ContextMenus", () => {
     );
     await user.keyboard("{Escape}");
     await user.keyboard("{Escape}");
-    await user.click(viewButton);
-    const languageItem = screen.getByText("Language").closest<HTMLElement>('[role="menuitem"]');
+    const settingsButton = screen.getByRole("button", { name: "Settings" });
+    await user.click(settingsButton);
+    const languageItem = screen.getByRole("menuitem", { name: /Language/ });
     expect(languageItem).not.toBeNull();
     languageItem?.focus();
     await user.keyboard("{ArrowRight}");
