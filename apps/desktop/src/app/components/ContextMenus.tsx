@@ -294,11 +294,6 @@ export function ContextMenus({
         {...menuProps("settings")}
         label={t("app.topBarMenus.settings")}
         options={[
-          {
-            id: "settings-timeline-section",
-            section: true,
-            label: t("app.settings.timelineTools"),
-          },
           settingsToolOption(
             "setting-safe-trim",
             t("app.settings.snap"),
@@ -317,14 +312,14 @@ export function ContextMenus({
             <Scissors className="size-4" aria-hidden="true" />,
             "segmentPlaybackEnabled",
           ),
-          { id: "settings-audio-section", section: true, label: t("app.settings.audioTools") },
+          { id: "settings-audio-divider", separator: true },
           settingsToolOption(
             "setting-merge-audio",
             t("app.settings.mergeAudio"),
             <Merge className="size-4" aria-hidden="true" />,
             "mergeAudioEnabled",
           ),
-          { id: "settings-language-section", section: true, label: t("app.settings.language") },
+          { id: "settings-language-divider", separator: true },
           {
             id: "language",
             label: t("app.topBarMenus.language"),
