@@ -122,10 +122,10 @@ pnpm release:local -- --tag <tag> --platform <platform>
 
 Supported platforms are `windows`, `linux`, `macos-apple-silicon`, and `macos-intel`.
 
-Use `--no-upload` with `--output <directory>` to build local artifacts without uploading them. For example:
+The command requires the Tauri signing key and password environment variables. Use `--no-upload` with `--output <directory>` to build and inspect signed artifacts without uploading them. The output includes installers, signatures, and `latest.json`:
 
 ```sh
-pnpm release:local -- --no-upload --output artifacts/windows --platform windows
+pnpm release:local -- --tag v1.0.7 --no-upload --output artifacts/windows --platform windows
 ```
 
 ### Bundle build with Docker
