@@ -2,12 +2,16 @@ import { renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const panelMock = vi.hoisted(() => {
-  const model = { currentSize: 400 };
+  const model = { currentSize: 400, collapsed: false };
   const panel = {
-    collapse: vi.fn(),
-    expand: vi.fn(),
+    collapse: vi.fn(() => {
+      model.collapsed = true;
+    }),
+    expand: vi.fn(() => {
+      model.collapsed = false;
+    }),
     getSize: vi.fn(() => ({ inPixels: model.currentSize })),
-    isCollapsed: vi.fn(() => false),
+    isCollapsed: vi.fn(() => model.collapsed),
     resize: vi.fn((size: number) => {
       model.currentSize = size;
     }),
@@ -33,6 +37,7 @@ const constraints = {
 
 beforeEach(() => {
   panelMock.model.currentSize = 400;
+  panelMock.model.collapsed = false;
   vi.clearAllMocks();
 });
 
@@ -64,6 +69,58 @@ describe("timelinePanelTargetSize", () => {
 });
 
 describe("useTimelinePanelSizing", () => {
+  it("uses the fixed timeline-only size for the initial empty state", () => {
+    const { result } = renderHook(() => useTimelinePanelSizing(null, null, true));
+
+    expect(result.current.constraints).toEqual({ minSize: 170, defaultSize: 170, maxSize: 170 });
+    expect(result.current.initialDefaultSize).toBe(170);
+    expect(panelMock.panel.resize).toHaveBeenCalledOnce();
+    expect(panelMock.panel.resize).toHaveBeenCalledWith(170);
+  });
+
+  it("resets an explicitly cleared source and initializes the next source from its default", () => {
+    const { rerender } = renderHook(
+      ({ sourceId, audioTrackCount }) => useTimelinePanelSizing(sourceId, audioTrackCount, true),
+      {
+        initialProps: {
+          sourceId: "source-1" as string | null,
+          audioTrackCount: 3 as number | null,
+        },
+      },
+    );
+    panelMock.model.currentSize = 400;
+    panelMock.panel.resize.mockClear();
+
+    rerender({ sourceId: null, audioTrackCount: null });
+    expect(panelMock.panel.resize).toHaveBeenCalledOnce();
+    expect(panelMock.panel.resize).toHaveBeenLastCalledWith(170);
+
+    panelMock.panel.resize.mockClear();
+    rerender({ sourceId: "source-2", audioTrackCount: null });
+    rerender({ sourceId: "source-2", audioTrackCount: 1 });
+
+    expect(panelMock.panel.resize).toHaveBeenCalledOnce();
+    expect(panelMock.panel.resize).toHaveBeenCalledWith(319);
+  });
+
+  it("keeps an explicitly cleared timeline collapsed", () => {
+    const { rerender, result } = renderHook(
+      ({ sourceId, audioTrackCount }) => useTimelinePanelSizing(sourceId, audioTrackCount, false),
+      {
+        initialProps: {
+          sourceId: "source-1" as string | null,
+          audioTrackCount: 3 as number | null,
+        },
+      },
+    );
+    panelMock.panel.resize.mockClear();
+
+    rerender({ sourceId: null, audioTrackCount: null });
+
+    expect(result.current.constraints).toEqual({ minSize: 170, defaultSize: 170, maxSize: 170 });
+    expect(panelMock.panel.resize).not.toHaveBeenCalled();
+  });
+
   it("preserves the user size while replacement metadata is pending", () => {
     const { rerender } = renderHook(
       ({ sourceId, audioTrackCount }) => useTimelinePanelSizing(sourceId, audioTrackCount, true),

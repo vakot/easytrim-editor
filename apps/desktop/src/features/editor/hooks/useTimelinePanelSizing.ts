@@ -11,6 +11,7 @@ const FALLBACK_CONSTRAINTS = {
   defaultSize: "22rem",
   maxSize: "70%",
 } as const;
+const EMPTY_TIMELINE_CONSTRAINTS = timelinePanelSizeConstraints(0);
 
 export function timelinePanelTargetSize(
   currentSize: number,
@@ -33,7 +34,7 @@ export function timelinePanelConstraintsForSource(
 }
 
 export function useTimelinePanelSizing(
-  sourceId: string,
+  sourceId: string | null,
   audioTrackCount: number | null,
   isVisible: boolean,
 ) {
@@ -47,7 +48,10 @@ export function useTimelinePanelSizing(
       ? null
       : { audioTrackCount, constraints: timelinePanelSizeConstraints(audioTrackCount) },
   );
-  const constraints = confirmed?.constraints ?? FALLBACK_CONSTRAINTS;
+  const constraints =
+    sourceId === null
+      ? EMPTY_TIMELINE_CONSTRAINTS
+      : (confirmed?.constraints ?? FALLBACK_CONSTRAINTS);
 
   useLayoutEffect(() => {
     if (audioTrackCount === null) return;
@@ -71,9 +75,22 @@ export function useTimelinePanelSizing(
 
   useLayoutEffect(() => {
     const panel = panelRef.current;
-    if (!panel || audioTrackCount === null || confirmed?.audioTrackCount !== audioTrackCount) {
+    if (!panel) {
       return;
     }
+
+    if (sourceId === null) {
+      initializedSourceRef.current = null;
+      if (!panel.isCollapsed()) {
+        const currentSize = panel.getSize().inPixels;
+        if (Math.abs(currentSize - EMPTY_TIMELINE_CONSTRAINTS.defaultSize) >= 1) {
+          panel.resize(EMPTY_TIMELINE_CONSTRAINTS.defaultSize);
+        }
+      }
+      return;
+    }
+
+    if (audioTrackCount === null || confirmed?.audioTrackCount !== audioTrackCount) return;
 
     if (panel.isCollapsed()) {
       return;
@@ -106,7 +123,7 @@ export function useTimelinePanelSizing(
   return {
     constraints,
     collapsedSize: 0,
-    initialDefaultSize: FALLBACK_CONSTRAINTS.defaultSize,
+    initialDefaultSize: EMPTY_TIMELINE_CONSTRAINTS.defaultSize,
     panelRef,
     resetToDefault,
   };

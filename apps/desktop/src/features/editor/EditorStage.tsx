@@ -42,7 +42,7 @@ export function EditorStage() {
     source.hasSource && source.preview.status !== "failed" && !playback.isReady;
 
   const timelinePanelSizing = useTimelinePanelSizing(
-    source.sourceId ?? "no-source",
+    source.sourceId,
     source.media?.audioStreams.length ?? null,
     showTimeline,
   );
