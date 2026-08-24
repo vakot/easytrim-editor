@@ -235,7 +235,7 @@ function TimelineScale({
         {[0, 0.25, 0.5, 0.75, 1].map((fraction) => (
           <span key={fraction}>
             {disabled
-              ? "—"
+              ? "00:00:00:00f"
               : formatPlaybackTime(Math.round(range.sourceDurationMicros * fraction), frameRate)}
           </span>
         ))}

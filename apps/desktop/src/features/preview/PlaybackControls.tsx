@@ -171,11 +171,13 @@ export function PlaybackTimecode({
 
   return (
     <output className="font-mono text-xs text-foreground" aria-label={t("preview.currentTime")}>
-      {currentMicros === null ? "—" : formatPlaybackTime(currentMicros, frameRate)}
+      {currentMicros === null ? "00:00:00:00f" : formatPlaybackTime(currentMicros, frameRate)}
       <span className="text-muted-foreground">
         {" "}
         /{" "}
-        {sourceDurationMicros === null ? "—" : formatPlaybackTime(sourceDurationMicros, frameRate)}
+        {sourceDurationMicros === null
+          ? "00:00:00:00f"
+          : formatPlaybackTime(sourceDurationMicros, frameRate)}
       </span>
     </output>
   );
