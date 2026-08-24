@@ -65,10 +65,7 @@ export const en = {
       version: "Version {{version}}",
     },
     settings: {
-      timelineTools: "Timeline tools",
-      audioTools: "Audio tools",
-      resetSection: "Reset to default",
-      resetTools: "Reset tools",
+      resetToDefault: "Reset to default",
       resetConfirmation: "Reset all tool defaults to their original values?",
       language: "Language",
       snap: "Snap",

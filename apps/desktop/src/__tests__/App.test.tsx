@@ -500,14 +500,29 @@ describe("App", () => {
     expect(within(videoToolbar).getByRole("button", { name: "Safe trim following" })).toBe(
       screen.getByRole("button", { name: "Safe trim following" }),
     );
+    expect(
+      within(videoToolbar)
+        .getByRole("button", { name: "Safe trim following" })
+        .querySelector(".lucide-magnet"),
+    ).not.toBeNull();
     expect(within(videoToolbar).getByRole("button", { name: "Loop playback" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
+    expect(
+      within(videoToolbar)
+        .getByRole("button", { name: "Loop playback" })
+        .querySelector(".lucide-repeat"),
+    ).not.toBeNull();
     expect(within(videoToolbar).getByRole("button", { name: "Segment playback" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
+    expect(
+      within(videoToolbar)
+        .getByRole("button", { name: "Segment playback" })
+        .querySelector(".lucide-between-vertical-start"),
+    ).not.toBeNull();
     expect(within(videoToolbar).getByRole("button", { name: "Reset tools" })).toHaveAttribute(
       "data-variant",
       "secondary",

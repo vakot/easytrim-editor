@@ -141,6 +141,20 @@ describe("ContextMenus", () => {
     for (const label of ["Snap", "Loop", "Follow segment", "Merge audio"]) {
       expect(screen.getByRole("switch", { name: label })).toBeInTheDocument();
     }
+    const settingsMenu = screen.getAllByRole("menu").at(-1);
+    expect(settingsMenu).toBeDefined();
+    expect(within(settingsMenu!).getAllByRole("separator")).toHaveLength(3);
+    expect(screen.queryByText("Timeline tools", { exact: true })).not.toBeInTheDocument();
+    expect(screen.queryByText("Audio tools", { exact: true })).not.toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Snap" })).toContainElement(
+      settingsMenu!.querySelector(".lucide-magnet"),
+    );
+    expect(screen.getByRole("menuitem", { name: "Loop" })).toContainElement(
+      settingsMenu!.querySelector(".lucide-repeat"),
+    );
+    expect(screen.getByRole("menuitem", { name: "Follow segment" })).toContainElement(
+      settingsMenu!.querySelector(".lucide-between-vertical-start"),
+    );
   });
 
   it("confirms before resetting tool defaults", async () => {
@@ -165,10 +179,11 @@ describe("ContextMenus", () => {
     const loopSwitch = screen.getByRole("switch", { name: "Loop" });
     await user.click(loopSwitch);
     expect(loopSwitch).not.toBeChecked();
-    await user.click(screen.getByRole("menuitem", { name: "Reset tools" }));
+    await user.click(screen.getByRole("menuitem", { name: "Reset to default" }));
 
     expect(confirmSpy).toHaveBeenCalledOnce();
     expect(loopSwitch).toBeChecked();
+    expect(screen.getByRole("menuitem", { name: "Reset to default" })).toBeInTheDocument();
     confirmSpy.mockRestore();
   });
 

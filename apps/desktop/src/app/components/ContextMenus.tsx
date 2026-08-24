@@ -1,4 +1,5 @@
 import {
+  BetweenVerticalStart,
   CheckCircle2,
   CircleAlert,
   Download,
@@ -11,7 +12,6 @@ import {
   Repeat,
   RefreshCw,
   RotateCcw,
-  Scissors,
   Sun,
 } from "lucide-react";
 import { useRef, useState, type ReactNode } from "react";
@@ -338,11 +338,6 @@ export function ContextMenus({
         {...menuProps("settings")}
         label={t("app.topBarMenus.settings")}
         options={[
-          {
-            id: "settings-timeline-section",
-            section: true,
-            label: t("app.settings.timelineTools"),
-          },
           settingsToolOption(
             "setting-safe-trim",
             t("app.settings.snap"),
@@ -358,10 +353,10 @@ export function ContextMenus({
           settingsToolOption(
             "setting-segment",
             t("app.settings.followSegment"),
-            <Scissors className="size-4" aria-hidden="true" />,
+            <BetweenVerticalStart className="size-4" aria-hidden="true" />,
             "segmentPlaybackEnabled",
           ),
-          { id: "settings-audio-section", section: true, label: t("app.settings.audioTools") },
+          { id: "settings-audio-divider", separator: true },
           settingsToolOption(
             "setting-merge-audio",
             t("app.settings.mergeAudio"),
@@ -369,19 +364,19 @@ export function ContextMenus({
             "mergeAudioEnabled",
           ),
           {
-            id: "settings-reset-section",
-            section: true,
-            label: t("app.settings.resetSection"),
+            id: "settings-reset-divider",
+            separator: true,
           },
           {
             id: "settings-reset",
-            label: t("app.settings.resetTools"),
+            label: t("app.settings.resetToDefault"),
             leading: <RotateCcw className="size-4" aria-hidden="true" />,
+            shouldCloseOnClick: false,
             onSelect: () => {
               if (window.confirm(t("app.settings.resetConfirmation"))) resetToolDefaults();
             },
           },
-          { id: "settings-language-section", section: true, label: t("app.settings.language") },
+          { id: "settings-language-divider", separator: true },
           {
             id: "language",
             label: t("app.topBarMenus.language"),
