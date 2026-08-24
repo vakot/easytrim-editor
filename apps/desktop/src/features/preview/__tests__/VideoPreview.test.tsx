@@ -8,6 +8,7 @@ import { VideoPreview } from "../VideoPreview";
 const callbacks = {
   onPlaybackError: vi.fn(),
   onLoadedMetadata: vi.fn(),
+  onCanPlay: vi.fn(),
   onTogglePlayback: vi.fn(),
   onPlay: vi.fn(),
   onPause: vi.fn(),
@@ -231,6 +232,7 @@ describe("VideoPreview", () => {
     );
     const firstVideo = container.querySelector("video");
     expect(firstVideo).toHaveProperty("muted", true);
+    expect(firstVideo).toHaveAttribute("crossorigin", "anonymous");
 
     rerender(
       <VideoPreview
@@ -245,5 +247,6 @@ describe("VideoPreview", () => {
     const replacementVideo = container.querySelector("video");
     expect(replacementVideo).not.toBe(firstVideo);
     expect(replacementVideo).toHaveProperty("muted", true);
+    expect(replacementVideo).toHaveAttribute("crossorigin", "anonymous");
   });
 });

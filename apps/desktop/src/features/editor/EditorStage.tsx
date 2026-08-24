@@ -1,5 +1,6 @@
 import { Group, Panel } from "react-resizable-panels";
 import { useTranslation } from "react-i18next";
+import { LoaderCircle } from "lucide-react";
 
 import { PanelSeparator } from "@/components/PanelSeparator";
 import { useEditorViewState } from "@/app/hooks/useEditorViewState";
@@ -36,7 +37,9 @@ export function EditorStage() {
   const { editorStageLayout, setEditorStageLayout, showTimeline, setShowTimeline } =
     useEditorViewState();
   const timelineRange = source.trim ?? EMPTY_TIMELINE_RANGE;
-  const controlsDisabled = !source.isReady;
+  const controlsDisabled = !source.isReady || !playback.isReady;
+  const showLoadingOverlay =
+    source.hasSource && source.preview.status !== "failed" && !playback.isReady;
 
   const timelinePanelSizing = useTimelinePanelSizing(
     source.sourceId ?? "no-source",
@@ -50,9 +53,10 @@ export function EditorStage() {
       defaultLayout={editorStageLayout}
       onLayoutChanged={setEditorStageLayout}
       orientation="vertical"
-      className="min-h-0 min-w-0 bg-background"
+      className="relative min-h-0 min-w-0 bg-background"
       resizeTargetMinimumSize={{ fine: 8, coarse: 24 }}
       aria-label={t("preview.panes")}
+      aria-busy={showLoadingOverlay}
     >
       <Panel id="preview-panel" minSize="14rem" className="min-h-0 min-w-0">
         <PanelContent className="bg-preview-surface">
@@ -60,10 +64,12 @@ export function EditorStage() {
             sourceId={source.sourceId}
             preview={source.preview}
             playbackRate={playback.playbackRate}
-            muted={Object.keys(source.audioPreviewUrls).length > 0}
+            nativeLoopEnabled={playback.nativeLoopEnabled}
+            muted={playback.videoMuted}
             videoRef={playback.videoRef}
             onPlaybackError={(_, previewKind) => playback.onPreviewPlaybackError(previewKind)}
             onLoadedMetadata={playback.onLoadedMetadata}
+            onCanPlay={playback.onCanPlay}
             onTogglePlayback={playback.toggle}
             onPlay={playback.onPlay}
             onPause={playback.onPause}
@@ -168,6 +174,7 @@ export function EditorStage() {
                   playheadMicros={timeline.playheadMicros}
                   playheadRef={playback.audioPlayheadRef}
                   mergeAudio={source.mergeAudio}
+                  waveformPreparationEnabled={playback.isReady}
                   onToggleTrack={source.onToggleAudioTrack}
                   onTrackVolumeChange={source.onAudioTrackVolumeChange}
                   onToggleMaster={source.onToggleAudioMaster}
@@ -181,6 +188,23 @@ export function EditorStage() {
           />
         </PanelContent>
       </Panel>
+      {showLoadingOverlay ? (
+        <div
+          className="absolute inset-0 z-30 grid place-items-center bg-background/75 backdrop-blur-sm"
+          role="status"
+          aria-live="polite"
+          data-testid="editor-loading-overlay"
+        >
+          <div className="grid place-items-center gap-2 text-center text-sm text-muted-foreground">
+            <LoaderCircle className="size-7 animate-spin text-primary" aria-hidden="true" />
+            <strong className="text-foreground">
+              {source.preview.status === "loading" && source.preview.kind === "proxy"
+                ? t("preview.preparing")
+                : t("preview.opening")}
+            </strong>
+          </div>
+        </div>
+      ) : null}
     </Group>
   );
 }

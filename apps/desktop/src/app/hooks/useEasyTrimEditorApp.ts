@@ -36,6 +36,10 @@ export function useEasyTrimEditorApp() {
     loadExportPresetState,
   );
   const [audioPreviewUrls, setAudioPreviewUrls] = useState<Record<number, string>>({});
+  const [audioPreviewPreparation, setAudioPreviewPreparation] = useState<{
+    sourceId: string | null;
+    status: "idle" | "loading" | "ready" | "unavailable";
+  }>({ sourceId: null, status: "idle" });
   const activeSourceIdRef = useRef<string | null>(null);
   const waveformJobSequence = useRef(0);
   const hasSource = session.source !== null;
@@ -47,29 +51,39 @@ export function useEasyTrimEditorApp() {
   const inspectSource = useCallback((source: SourceSelection) => {
     activeSourceIdRef.current = source.sourceId;
     setAudioPreviewUrls({});
+    setAudioPreviewPreparation({ sourceId: source.sourceId, status: "idle" });
     dispatch({ type: "source-selected", source });
     void inspectMedia(source.sourceId)
       .then((media) => {
+        if (activeSourceIdRef.current !== source.sourceId) return undefined;
         dispatch({ type: "source-ready", sourceId: source.sourceId, media });
-        void prepareAudioPreviews(
-          source.sourceId,
-          media.audioStreams.map((stream) => stream.streamIndex),
-        )
-          .then((previews) => {
-            if (activeSourceIdRef.current !== source.sourceId) {
-              return;
-            }
-            setAudioPreviewUrls(
-              Object.fromEntries(previews.map((preview) => [preview.streamIndex, preview.url])),
-            );
-          })
-          .catch(() => {
-            // Audio-only preview is an optimization; the source video remains usable if it fails.
-          });
+        const audioStreamIndexes = media.audioStreams.map((stream) => stream.streamIndex);
+        if (audioStreamIndexes.length <= 1) {
+          setAudioPreviewPreparation({ sourceId: source.sourceId, status: "ready" });
+        } else {
+          setAudioPreviewPreparation({ sourceId: source.sourceId, status: "loading" });
+          void prepareAudioPreviews(source.sourceId, audioStreamIndexes)
+            .then((previews) => {
+              if (activeSourceIdRef.current !== source.sourceId) {
+                return;
+              }
+              setAudioPreviewUrls(
+                Object.fromEntries(previews.map((preview) => [preview.streamIndex, preview.url])),
+              );
+              setAudioPreviewPreparation({ sourceId: source.sourceId, status: "ready" });
+            })
+            .catch(() => {
+              // Audio-only preview is an optimization; the source video remains usable if it fails.
+              if (activeSourceIdRef.current === source.sourceId) {
+                setAudioPreviewPreparation({ sourceId: source.sourceId, status: "unavailable" });
+              }
+            });
+        }
         dispatch({ type: "preview-loading", sourceId: source.sourceId, kind: "source" });
         return prepareSourcePreview(source.sourceId);
       })
       .then((preview) => {
+        if (!preview) return;
         dispatch({ type: "preview-ready", sourceId: source.sourceId, preview });
       })
       .catch((error: unknown) => {
@@ -266,6 +280,7 @@ export function useEasyTrimEditorApp() {
   const clearSource = useCallback(() => {
     activeSourceIdRef.current = null;
     setAudioPreviewUrls({});
+    setAudioPreviewPreparation({ sourceId: null, status: "idle" });
     dispatch({ type: "source-cleared" });
   }, []);
 
@@ -331,6 +346,7 @@ export function useEasyTrimEditorApp() {
     exportPresets,
     dispatchExportPreset,
     audioPreviewUrls,
+    audioPreviewPreparation,
     setExportQueue,
     setIsNativeDialogOpen,
     handleChooseSource,

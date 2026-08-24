@@ -11,11 +11,30 @@ export function seekMediaIfNeeded(media: HTMLMediaElement, seconds: number) {
   }
 }
 
-export function waitForSeekToSettle(media: HTMLMediaElement): Promise<void> {
-  if (!media.seeking) return Promise.resolve();
-  return new Promise((resolve) => {
-    media.addEventListener("seeked", () => resolve(), { once: true });
-  });
+export type PlaybackFrameHandle =
+  { kind: "video"; id: number; video: HTMLVideoElement } | { kind: "animation"; id: number };
+
+export function requestPlaybackFrame(
+  video: HTMLVideoElement,
+  callback: (now: number, mediaTimeSeconds: number) => void,
+): PlaybackFrameHandle {
+  if (typeof video.requestVideoFrameCallback === "function") {
+    const id = video.requestVideoFrameCallback((now, metadata) => {
+      callback(now, metadata.mediaTime);
+    });
+    return { kind: "video", id, video };
+  }
+
+  const id = requestAnimationFrame((now) => callback(now, video.currentTime));
+  return { kind: "animation", id };
+}
+
+export function cancelPlaybackFrame(frameRef: { current: PlaybackFrameHandle | null }) {
+  const handle = frameRef.current;
+  if (!handle) return;
+  if (handle.kind === "video") handle.video.cancelVideoFrameCallback(handle.id);
+  else cancelAnimationFrame(handle.id);
+  frameRef.current = null;
 }
 
 export function syncPlayheadElements(

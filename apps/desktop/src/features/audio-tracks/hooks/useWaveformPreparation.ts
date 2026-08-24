@@ -6,11 +6,14 @@ export const WAVEFORM_RENDER_WIDTH = 4096;
 
 export function useWaveformPreparation(
   tracks: AudioTrackState[],
+  enabled: boolean,
   prepare: (streamIndexes: number[], width: number) => void,
 ) {
   const lastRequestRef = useRef<string | null>(null);
 
   useEffect(() => {
+    if (!enabled) return;
+
     const pending = tracks
       .filter((track) => track.waveform.status === "idle")
       .map((track) => track.streamIndex);
@@ -25,5 +28,5 @@ export function useWaveformPreparation(
     }
     lastRequestRef.current = requestKey;
     prepare(pending, WAVEFORM_RENDER_WIDTH);
-  }, [prepare, tracks]);
+  }, [enabled, prepare, tracks]);
 }

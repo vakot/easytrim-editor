@@ -17,6 +17,7 @@ export function useSourceDetails() {
     audioStreams: source?.media?.audioStreams ?? [],
     audioTracks: source?.audioTracks ?? [],
     audioPreviewUrls: app.audioPreviewUrls,
+    audioPreviewPreparation: app.audioPreviewPreparation,
     masterEnabled: source?.masterEnabled ?? true,
     masterVolumePercent: source?.masterVolumePercent ?? 50,
     mergeAudio: source?.mergeAudio ?? false,

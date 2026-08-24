@@ -4,7 +4,7 @@ Apply this rule before declaring any implementation or refactor complete.
 
 ## Definition of done
 
-- Behavior matches the MVP plan and every applicable domain contract.
+- Behavior matches every applicable domain contract and accepted product decision.
 - New behavior and important failure paths have tests at the lowest useful layer.
 - Formatting, linting, type checking, compilation, and applicable tests pass.
 - Cross-boundary DTOs, UI states, error codes, and documentation agree.

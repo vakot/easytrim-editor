@@ -93,6 +93,44 @@ async function openSourcePicker(user: ReturnType<typeof userEvent.setup>) {
   (document.activeElement as HTMLElement | null)?.blur();
 }
 
+function installAudioMocks(initiallyReady = true) {
+  const audioElements: HTMLAudioElement[] = [];
+  const audioConstructor = vi.fn(function AudioMock() {
+    const element = document.createElement("audio");
+    Object.defineProperty(element, "readyState", {
+      configurable: true,
+      get: () =>
+        initiallyReady ? HTMLMediaElement.HAVE_FUTURE_DATA : HTMLMediaElement.HAVE_METADATA,
+    });
+    audioElements.push(element);
+    return element;
+  });
+  const audioContext = {
+    destination: {},
+    resume: vi.fn().mockResolvedValue(undefined),
+    close: vi.fn().mockResolvedValue(undefined),
+    createGain: vi.fn(() => ({
+      gain: { value: 1 },
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+    })),
+    createMediaElementSource: vi.fn(() => ({
+      connect: vi.fn((destination: unknown) => destination),
+      disconnect: vi.fn(),
+    })),
+  };
+
+  vi.stubGlobal("Audio", audioConstructor);
+  vi.stubGlobal(
+    "AudioContext",
+    vi.fn(function AudioContextMock() {
+      return audioContext;
+    }),
+  );
+
+  return { audioConstructor, audioContext, audioElements };
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   sourceDropListener = undefined;
@@ -221,6 +259,145 @@ describe("App", () => {
     expect(screen.queryByRole("slider", { name: "Playback position" })).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Source video preview")).not.toBeInTheDocument();
     expect(screen.queryByTestId("audio-tracks-scroll")).not.toBeInTheDocument();
+  });
+
+  it("keeps the editor covered and interactions disabled until the preview can play", async () => {
+    const readyState = vi
+      .spyOn(HTMLMediaElement.prototype, "readyState", "get")
+      .mockReturnValue(HTMLMediaElement.HAVE_METADATA);
+    mocks.chooseSource.mockResolvedValue(selection);
+    const user = userEvent.setup();
+
+    try {
+      render(<App />);
+      await openSourcePicker(user);
+      const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
+      const play = vi.spyOn(video, "play").mockResolvedValue();
+      const trimStart = screen.getByRole("slider", { name: "Trim start" });
+      const trimEnd = screen.getByRole("slider", { name: "Trim end" });
+
+      expect(screen.getByTestId("editor-loading-overlay")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Play" })).toBeDisabled();
+      video.currentTime = 10;
+      fireEvent.timeUpdate(video);
+      fireEvent.keyDown(window, { key: " " });
+      fireEvent.keyDown(window, { key: "ArrowRight" });
+      fireEvent.keyDown(window, { key: "i" });
+      fireEvent.keyDown(window, { key: "o" });
+      expect(play).not.toHaveBeenCalled();
+      expect(video.currentTime).toBe(10);
+      expect(trimStart).toHaveAttribute("aria-valuenow", "0");
+      expect(trimEnd).toHaveAttribute("aria-valuenow", "65000000");
+
+      readyState.mockReturnValue(HTMLMediaElement.HAVE_FUTURE_DATA);
+      fireEvent.canPlay(video);
+
+      await waitFor(() =>
+        expect(screen.queryByTestId("editor-loading-overlay")).not.toBeInTheDocument(),
+      );
+      expect(screen.getByRole("button", { name: "Play" })).not.toBeDisabled();
+      fireEvent.keyDown(window, { key: " " });
+      expect(play).toHaveBeenCalledOnce();
+    } finally {
+      readyState.mockRestore();
+    }
+  });
+
+  it("starts waveforms only after multi-track playback is ready without waiting for them", async () => {
+    let resolveAudioPreviews!: (
+      previews: Array<{ sourceId: string; streamIndex: number; url: string }>,
+    ) => void;
+    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.inspectMedia.mockResolvedValue({
+      ...media,
+      audioStreams: [
+        ...media.audioStreams,
+        {
+          streamIndex: 2,
+          codecName: "ac3",
+          channels: 6,
+          channelLayout: "5.1",
+          sampleRateHz: 48_000,
+          title: "Commentary",
+          isDefault: false,
+        },
+      ],
+    });
+    mocks.prepareAudioPreviews.mockReturnValue(
+      new Promise((resolve) => {
+        resolveAudioPreviews = resolve;
+      }),
+    );
+    mocks.prepareWaveforms.mockReturnValue(new Promise(() => undefined));
+    const play = vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
+    const { audioContext, audioElements } = installAudioMocks(false);
+    const user = userEvent.setup();
+
+    try {
+      render(<App />);
+      await openSourcePicker(user);
+      await screen.findByLabelText("Source video preview");
+
+      expect(screen.getByTestId("editor-loading-overlay")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Play" })).toBeDisabled();
+      expect(mocks.prepareWaveforms).not.toHaveBeenCalled();
+
+      await act(async () => {
+        resolveAudioPreviews([
+          {
+            sourceId: selection.sourceId,
+            streamIndex: 1,
+            url: "http://easytrim-media.localhost/source-1?variant=audio&stream=1",
+          },
+          {
+            sourceId: selection.sourceId,
+            streamIndex: 2,
+            url: "http://easytrim-media.localhost/source-1?variant=audio&stream=2",
+          },
+        ]);
+      });
+
+      await waitFor(() => expect(audioElements).toHaveLength(2));
+      expect(screen.getByTestId("editor-loading-overlay")).toBeInTheDocument();
+      expect(mocks.prepareWaveforms).not.toHaveBeenCalled();
+      for (const audio of audioElements) fireEvent.canPlay(audio);
+
+      await waitFor(() =>
+        expect(screen.queryByTestId("editor-loading-overlay")).not.toBeInTheDocument(),
+      );
+      expect(screen.getByRole("button", { name: "Play" })).not.toBeDisabled();
+      await waitFor(() =>
+        expect(mocks.prepareWaveforms).toHaveBeenCalledWith(
+          selection.sourceId,
+          expect.stringMatching(/^waveform-/),
+          [1, 2],
+          4_096,
+        ),
+      );
+      expect(screen.getAllByText("Preparing waveform…")).toHaveLength(2);
+
+      await user.click(screen.getByRole("button", { name: "Play" }));
+
+      expect(audioContext.resume).toHaveBeenCalledOnce();
+      expect(play).toHaveBeenCalledTimes(3);
+      expect(screen.getByRole("button", { name: "Play" })).not.toBeDisabled();
+    } finally {
+      play.mockRestore();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("uses the video element audio clock for a single-track source", async () => {
+    mocks.chooseSource.mockResolvedValue(selection);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await openSourcePicker(user);
+    const video = await screen.findByLabelText("Source video preview");
+
+    expect(mocks.prepareAudioPreviews).not.toHaveBeenCalled();
+    expect(video).toHaveProperty("muted", false);
+    expect(video).toHaveAttribute("crossorigin", "anonymous");
   });
 
   it("opens the source picker with Ctrl+O", () => {
@@ -606,6 +783,19 @@ describe("App", () => {
         },
       ],
     });
+    mocks.prepareAudioPreviews.mockResolvedValue([
+      {
+        sourceId: selection.sourceId,
+        streamIndex: 1,
+        url: "http://easytrim-media.localhost/source-1?variant=audio&stream=1",
+      },
+      {
+        sourceId: selection.sourceId,
+        streamIndex: 2,
+        url: "http://easytrim-media.localhost/source-1?variant=audio&stream=2",
+      },
+    ]);
+    installAudioMocks();
     const user = userEvent.setup();
 
     try {
@@ -696,6 +886,7 @@ describe("App", () => {
       );
     } finally {
       bounds.mockRestore();
+      vi.unstubAllGlobals();
     }
   });
 
@@ -789,6 +980,21 @@ describe("App", () => {
 
   it("stops all media and remains restartable when independent audio cannot play", async () => {
     mocks.chooseSource.mockResolvedValue(selection);
+    mocks.inspectMedia.mockResolvedValue({
+      ...media,
+      audioStreams: [
+        ...media.audioStreams,
+        {
+          streamIndex: 2,
+          codecName: "aac",
+          channels: 2,
+          channelLayout: "stereo",
+          sampleRateHz: 48_000,
+          language: "commentary",
+          isDefault: false,
+        },
+      ],
+    });
     const user = userEvent.setup();
     const audio = document.createElement("audio");
     const audioPlay = vi
@@ -834,6 +1040,7 @@ describe("App", () => {
       await user.click(screen.getByRole("button", { name: "Play" }));
 
       expect(await screen.findByRole("alert")).toHaveTextContent("Playback could not start.");
+      expect(audioContext.resume).toHaveBeenCalledOnce();
       expect(videoPause).toHaveBeenCalledOnce();
       expect(audioPause).toHaveBeenCalled();
       expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
@@ -876,8 +1083,15 @@ describe("App", () => {
 
     await openSourcePicker(user);
     const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
-    const play = vi.spyOn(video, "play").mockResolvedValue();
-    const pause = vi.spyOn(video, "pause").mockImplementation(() => undefined);
+    let paused = true;
+    Object.defineProperty(video, "paused", { configurable: true, get: () => paused });
+    const play = vi.spyOn(video, "play").mockImplementation(() => {
+      paused = false;
+      return Promise.resolve();
+    });
+    const pause = vi.spyOn(video, "pause").mockImplementation(() => {
+      paused = true;
+    });
 
     video.currentTime = 10;
     fireEvent.timeUpdate(video);
@@ -918,7 +1132,7 @@ describe("App", () => {
     expect(pause).not.toHaveBeenCalled();
     expect(video.currentTime).toBe(10);
     expect(playhead).toHaveAttribute("aria-valuenow", "10000000");
-    expect(play).toHaveBeenCalled();
+    expect(play).toHaveBeenCalledTimes(2);
   });
 
   it("restarts the complete timeline after the video ends when looping is enabled", async () => {
@@ -934,6 +1148,7 @@ describe("App", () => {
     const segmentToggle = screen.getByRole("button", { name: "Segment playback" });
     await user.click(segmentToggle);
     expect(segmentToggle).toHaveAttribute("aria-pressed", "false");
+    expect(video.loop).toBe(true);
     await user.click(screen.getByRole("button", { name: "Play" }));
     fireEvent.play(video);
     video.currentTime = 65;
@@ -1991,7 +2206,7 @@ describe("App", () => {
     expect(playhead).toHaveAttribute("aria-valuenow", "30000000");
   });
 
-  it("waits for a scrub seek to settle before resuming playback", async () => {
+  it("resumes playback immediately while the browser settles a scrub seek", async () => {
     mocks.chooseSource.mockResolvedValue(selection);
     const user = userEvent.setup();
     render(<App />);
@@ -2038,12 +2253,12 @@ describe("App", () => {
       get: () => seeking,
     });
     fireEvent.pointerUp(playhead, { clientX: 600, pointerId: 7 });
-    expect(play).not.toHaveBeenCalled();
+    expect(play).toHaveBeenCalledOnce();
     expect(seekAssignments).toBe(1);
 
     seeking = false;
     fireEvent.seeked(video);
-    await waitFor(() => expect(play).toHaveBeenCalledOnce());
+    expect(play).toHaveBeenCalledOnce();
   });
 
   it("blocks timeline shortcuts while a timeline control is being scrubbed", async () => {

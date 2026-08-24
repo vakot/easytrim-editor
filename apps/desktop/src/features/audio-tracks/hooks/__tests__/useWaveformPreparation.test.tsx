@@ -19,9 +19,24 @@ describe("useWaveformPreparation", () => {
   it("requests each pending waveform set once under Strict Mode", () => {
     const prepare = vi.fn();
 
-    renderHook(() => useWaveformPreparation(tracks, prepare), {
+    renderHook(() => useWaveformPreparation(tracks, true, prepare), {
       wrapper: StrictModeWrapper,
     });
+
+    expect(prepare).toHaveBeenCalledOnce();
+    expect(prepare).toHaveBeenCalledWith([1, 2], WAVEFORM_RENDER_WIDTH);
+  });
+
+  it("waits for playable media before requesting waveforms", () => {
+    const prepare = vi.fn();
+    const { rerender } = renderHook(
+      ({ enabled }) => useWaveformPreparation(tracks, enabled, prepare),
+      { initialProps: { enabled: false } },
+    );
+
+    expect(prepare).not.toHaveBeenCalled();
+
+    rerender({ enabled: true });
 
     expect(prepare).toHaveBeenCalledOnce();
     expect(prepare).toHaveBeenCalledWith([1, 2], WAVEFORM_RENDER_WIDTH);
