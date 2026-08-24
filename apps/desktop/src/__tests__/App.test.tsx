@@ -200,19 +200,21 @@ describe("App", () => {
     expect(screen.getByLabelText("Video editor workspace")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "No source" })).toBeInTheDocument();
     expect(screen.getAllByText("No source").length).toBeGreaterThan(1);
-    expect(screen.getByRole("list", { name: "Keyboard shortcuts" })).toHaveTextContent("Open file");
-    expect(screen.getByRole("list", { name: "Keyboard shortcuts" })).toHaveTextContent("Save cut");
+    expect(screen.getByRole("list", { name: "Keyboard shortcuts" })).toHaveTextContent("Open File");
     expect(screen.getByRole("list", { name: "Keyboard shortcuts" })).toHaveTextContent(
-      "Export optimized",
+      "Save Lossless Cut",
     );
     expect(screen.getByRole("list", { name: "Keyboard shortcuts" })).toHaveTextContent(
-      "Play/Pause",
+      "Optimize & Export",
     );
     expect(screen.getByRole("list", { name: "Keyboard shortcuts" })).toHaveTextContent(
-      "Prev/next frame",
+      "Play / Pause",
     );
     expect(screen.getByRole("list", { name: "Keyboard shortcuts" })).toHaveTextContent(
-      "Set start/end here",
+      "Previous / Next Frame",
+    );
+    expect(screen.getByRole("list", { name: "Keyboard shortcuts" })).toHaveTextContent(
+      "Mark In / Mark Out",
     );
     expect(screen.getByLabelText("Current playback time")).toHaveTextContent(
       "00:00:00:00f / 00:00:00:00f",

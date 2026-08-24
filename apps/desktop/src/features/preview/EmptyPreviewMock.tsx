@@ -1,22 +1,42 @@
 import { useTranslation } from "react-i18next";
 
 const shortcuts = [
-  { id: "open-file", label: "openFile", keys: ["Ctrl", "O"], separator: undefined },
-  { id: "save-cut", label: "saveCut", keys: ["Ctrl", "S"], separator: undefined },
+  {
+    id: "open-file",
+    label: "app.topBarMenus.openFile",
+    keys: ["Ctrl", "O"],
+    separator: undefined,
+  },
+  {
+    id: "save-lossless-cut",
+    label: "app.topBarMenus.saveLosslessCut",
+    keys: ["Ctrl", "S"],
+    separator: undefined,
+  },
   {
     id: "export-optimized",
-    label: "exportOptimized",
+    label: "app.topBarMenus.optimizeExport",
     keys: ["Ctrl", "E"],
     separator: undefined,
   },
-  { id: "play-pause", label: "playPause", keys: ["Space"], separator: undefined },
+  {
+    id: "play-pause",
+    label: "preview.emptyMock.shortcuts.playPause",
+    keys: ["Space"],
+    separator: undefined,
+  },
   {
     id: "previous-next-frame",
-    label: "previousNextFrame",
+    label: "preview.emptyMock.shortcuts.previousNextFrame",
     keys: ["←", "→"],
     separator: "/",
   },
-  { id: "set-boundaries", label: "setBoundaries", keys: ["I", "O"], separator: "/" },
+  {
+    id: "mark-in-out",
+    label: "preview.emptyMock.shortcuts.markInOut",
+    keys: ["I", "O"],
+    separator: "/",
+  },
 ] as const;
 
 export function EmptyPreviewMock() {
@@ -42,21 +62,30 @@ export function EmptyPreviewMock() {
         >
           {shortcuts.map((shortcut) => (
             <div className="flex min-w-0 items-center gap-3" key={shortcut.id} role="listitem">
-              <span className="shrink-0">{t(`preview.emptyMock.shortcuts.${shortcut.label}`)}</span>
+              <span className="shrink-0">{t(shortcut.label)}</span>
               <span
                 className="min-w-4 flex-1 border-b border-dotted border-muted-foreground/40"
                 aria-hidden="true"
               />
               <span
                 className="flex shrink-0 items-center gap-1"
-                aria-label={shortcut.keys.join(" + ")}
+                aria-label={shortcut.keys.join(` ${shortcut.separator ?? "+"} `)}
               >
                 {shortcut.keys.map((key) => (
                   <span className="flex items-center gap-1" key={key}>
                     {key !== shortcut.keys[0] ? (
                       <span aria-hidden="true">{shortcut.separator ?? "+"}</span>
                     ) : null}
-                    <kbd className="rounded border border-border bg-card px-2 py-1 font-mono text-sm text-foreground shadow-sm">
+                    {/* <kbd className="rounded border border-border bg-card px-2 py-1 font-mono text-sm text-foreground shadow-sm"> */}
+                      <kbd
+  className="
+    inline-flex min-w-8 items-center justify-center
+    rounded-md border border-zinc-700
+    bg-zinc-900 px-2 py-1
+    font-mono text-sm font-medium text-zinc-100
+    shadow-[inset_0_-1px_0_rgba(255,255,255,0.08)]
+  "
+>
                       {key}
                     </kbd>
                   </span>
