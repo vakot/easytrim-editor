@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
+import { AppUpdatesContext } from "@/app/update-context";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { openExternalUrl } from "@/lib/open-external-url";
 import { STORAGE_KEYS } from "@/lib/storage";
@@ -32,11 +33,17 @@ describe("ContextMenus", () => {
 
     await user.click(screen.getByRole("button", { name: "Help" }));
     expect(screen.getByRole("menuitem", { name: "Changelog" })).toHaveTextContent("Changelog");
+    expect(screen.getByRole("menuitem", { name: "Check for Updates…" })).toHaveTextContent(
+      "Check for Updates…",
+    );
     expect(screen.getByRole("menuitem", { name: "Support the Project" })).toHaveTextContent(
       "Support the Project",
     );
     expect(screen.getByRole("menuitem", { name: "Version 1.0.5" })).toHaveTextContent("1.0.5");
     expect(screen.getAllByRole("separator")).toHaveLength(2);
+
+    await user.click(screen.getByRole("menuitem", { name: "Check for Updates…" }));
+    expect(screen.getByRole("menuitem", { name: "Check for Updates…" })).toBeInTheDocument();
 
     await user.click(screen.getByRole("menuitem", { name: "Changelog" }));
     await user.click(screen.getByRole("button", { name: "Help" }));
@@ -49,6 +56,72 @@ describe("ContextMenus", () => {
       ["https://ko-fi.com/vakot"],
       ["https://github.com/vakot/easytrim-editor/releases/tag/v1.0.5"],
     ]);
+  });
+
+  it("shows visible feedback when no update is available", async () => {
+    const user = userEvent.setup();
+    render(
+      <TooltipProvider>
+        <ThemeProvider>
+          <AppUpdatesContext.Provider
+            value={{
+              status: "up-to-date",
+              availableVersion: null,
+              isInstalling: false,
+              checkForUpdates: vi.fn(),
+              installUpdate: vi.fn(),
+            }}
+          >
+            <ContextMenus
+              isChoosingSource={false}
+              canSave
+              canExport
+              onChooseSource={vi.fn()}
+              onSave={vi.fn()}
+              onExport={vi.fn()}
+            />
+          </AppUpdatesContext.Provider>
+        </ThemeProvider>
+      </TooltipProvider>,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Help" }));
+    const updateItem = screen.getByRole("menuitem", { name: "Up to Date" });
+    expect(updateItem).toBeInTheDocument();
+    expect(updateItem.querySelector("svg")).not.toBeNull();
+  });
+
+  it("shows retry feedback after an update check fails", async () => {
+    const user = userEvent.setup();
+    render(
+      <TooltipProvider>
+        <ThemeProvider>
+          <AppUpdatesContext.Provider
+            value={{
+              status: "error",
+              availableVersion: null,
+              isInstalling: false,
+              checkForUpdates: vi.fn(),
+              installUpdate: vi.fn(),
+            }}
+          >
+            <ContextMenus
+              isChoosingSource={false}
+              canSave
+              canExport
+              onChooseSource={vi.fn()}
+              onSave={vi.fn()}
+              onExport={vi.fn()}
+            />
+          </AppUpdatesContext.Provider>
+        </ThemeProvider>
+      </TooltipProvider>,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Help" }));
+    const updateItem = screen.getByRole("menuitem", { name: "Check for Updates…" });
+    expect(updateItem).toBeInTheDocument();
+    expect(updateItem.querySelector("svg")).not.toBeNull();
   });
 
   it("opens the File menu with its action and hotkey hint", async () => {

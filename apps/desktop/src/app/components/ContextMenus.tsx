@@ -1,4 +1,14 @@
-import { ExternalLink, Monitor, Moon, Sun } from "lucide-react";
+import {
+  CheckCircle2,
+  CircleAlert,
+  Download,
+  ExternalLink,
+  LoaderCircle,
+  Monitor,
+  Moon,
+  RefreshCw,
+  Sun,
+} from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -11,6 +21,7 @@ import {
   type PrimaryColor,
 } from "@/app/theme/theme";
 import { useTheme } from "@/app/theme/use-theme";
+import { useAppUpdates } from "@/app/update-context";
 import { ContextMenu, type ContextMenuOption } from "@/components/ui/context-menu";
 import { Input } from "@/components/ui/input";
 import { isSupportedLanguage, type SupportedLanguage } from "@/i18n/resources";
@@ -54,6 +65,13 @@ export function ContextMenus({
   onExport,
 }: ContextMenusProps) {
   const { t, i18n } = useTranslation();
+  const {
+    status: updateStatus,
+    availableVersion,
+    isInstalling,
+    checkForUpdates,
+    installUpdate,
+  } = useAppUpdates();
   const {
     preference,
     primaryColor,
@@ -160,6 +178,27 @@ export function ContextMenus({
     onSelect: () => void i18n.changeLanguage(language as SupportedLanguage),
   }));
 
+  const updateLabel =
+    updateStatus === "checking"
+      ? t("app.topBarMenus.checkingForUpdates")
+      : updateStatus === "up-to-date"
+        ? t("app.topBarMenus.upToDate")
+        : updateStatus === "available" && availableVersion
+          ? t("app.topBarMenus.updateTo", { version: availableVersion })
+          : t("app.topBarMenus.checkForUpdates");
+  const updateHint =
+    updateStatus === "checking" ? (
+      <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
+    ) : updateStatus === "available" ? (
+      <Download className="size-4" aria-hidden="true" />
+    ) : updateStatus === "up-to-date" ? (
+      <CheckCircle2 className="size-4 text-emerald-500" aria-hidden="true" />
+    ) : updateStatus === "error" ? (
+      <CircleAlert className="size-4 text-destructive" aria-hidden="true" />
+    ) : updateStatus === "idle" ? (
+      <RefreshCw className="size-4" aria-hidden="true" />
+    ) : undefined;
+
   // TODO: Move Language to a dedicated Settings menu once Settings is introduced.
 
   return (
@@ -236,6 +275,15 @@ export function ContextMenus({
             label: t("app.topBarMenus.changelog"),
             hint: <ExternalLink className="size-4" aria-hidden="true" />,
             onSelect: () => void openExternalUrl(CHANGELOG_URL),
+          },
+          {
+            id: "check-for-updates",
+            label: updateLabel,
+            hint: updateHint,
+            disabled: updateStatus === "checking" || isInstalling,
+            shouldCloseOnClick: false,
+            onSelect: () =>
+              void (updateStatus === "available" ? installUpdate() : checkForUpdates()),
           },
           { id: "help-divider-support", separator: true },
           {

@@ -11,9 +11,18 @@ use state::{AppState, cleanup_stale_media_artifacts};
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     cleanup_stale_media_artifacts();
-    tauri::Builder::default()
+    let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_opener::init());
+
+    #[cfg(desktop)]
+    {
+        builder = builder
+            .plugin(tauri_plugin_process::init())
+            .plugin(tauri_plugin_updater::Builder::new().build());
+    }
+
+    builder
         .register_uri_scheme_protocol("easytrim-media", |context, request| {
             media::preview::respond(context.app_handle(), request)
         })

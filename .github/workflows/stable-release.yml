@@ -103,7 +103,7 @@ jobs:
           security find-identity -v -p codesigning build.keychain
 
       - name: Build and publish stable release
-        uses: tauri-apps/tauri-action@v1
+        uses: tauri-apps/tauri-action@v0.6.2
         with:
           projectPath: apps/desktop
           tauriScript: pnpm tauri
@@ -119,9 +119,12 @@ jobs:
           releaseDraft: false
           prerelease: false
           generateReleaseNotes: true
+          includeUpdaterJson: true
           releaseAssetNamePattern: EasyTrim_[version]_${{ startsWith(inputs.platform, 'macos') && 'macos' || inputs.platform }}_${{ inputs.platform == 'macos-apple-silicon' && 'arm64' || 'x64' }}_[bundle][ext]
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
           APPLE_CERTIFICATE: ${{ startsWith(inputs.platform, 'macos') && secrets.APPLE_CERTIFICATE || '' }}
           APPLE_CERTIFICATE_PASSWORD: ${{ startsWith(inputs.platform, 'macos') && secrets.APPLE_CERTIFICATE_PASSWORD || '' }}
           APPLE_SIGNING_IDENTITY: ${{ startsWith(inputs.platform, 'macos') && secrets.APPLE_SIGNING_IDENTITY || '' }}
