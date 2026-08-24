@@ -72,6 +72,8 @@ export const sk = {
     settings: {
       resetToDefault: "Obnoviť predvolené",
       resetConfirmation: "Obnoviť všetky predvolené hodnoty nástrojov?",
+      enabledByDefault: "Predvolene zapnuté",
+      disabledByDefault: "Predvolene vypnuté",
       language: "Jazyk",
       snap: "Prichytenie",
       loop: "Opakovanie",

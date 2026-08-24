@@ -31,6 +31,7 @@ import { githubBrandIcon, kofiBrandIcon } from "@/components/brand-icons";
 import { ContextMenu, type ContextMenuOption } from "@/components/ui/context-menu";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { isSupportedLanguage, type SupportedLanguage } from "@/i18n/resources";
 import { openExternalUrl } from "@/lib/open-external-url";
 import {
@@ -232,19 +233,30 @@ export function ContextMenus({
     ariaLabel: label,
     leading: icon,
     hint: (
-      <Switch
-        aria-label={label}
-        checked={toolDefaults[key]}
-        onCheckedChange={(enabled) => setToolDefault(key, enabled)}
-        onClick={(event) => event.stopPropagation()}
-        onKeyDown={() => {
-          switchInteractionRef.current = true;
-        }}
-        onPointerDown={(event) => {
-          switchInteractionRef.current = true;
-          event.stopPropagation();
-        }}
-      />
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="inline-flex">
+            <Switch
+              aria-label={label}
+              checked={toolDefaults[key]}
+              onCheckedChange={(enabled) => setToolDefault(key, enabled)}
+              onClick={(event) => event.stopPropagation()}
+              onKeyDown={() => {
+                switchInteractionRef.current = true;
+              }}
+              onPointerDown={(event) => {
+                switchInteractionRef.current = true;
+                event.stopPropagation();
+              }}
+            />
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="right">
+          {t(
+            toolDefaults[key] ? "app.settings.enabledByDefault" : "app.settings.disabledByDefault",
+          )}
+        </TooltipContent>
+      </Tooltip>
     ),
     shouldCloseOnClick: false,
     onSelect: () => {

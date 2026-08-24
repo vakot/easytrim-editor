@@ -187,6 +187,66 @@ describe("ContextMenus", () => {
     confirmSpy.mockRestore();
   });
 
+  it("shows the default state in tool switch tooltips", async () => {
+    const user = userEvent.setup();
+    render(
+      <TooltipProvider>
+        <ThemeProvider>
+          <ContextMenus
+            isChoosingSource={false}
+            canSave
+            canExport
+            onChooseSource={vi.fn()}
+            onSave={vi.fn()}
+            onExport={vi.fn()}
+          />
+        </ThemeProvider>
+      </TooltipProvider>,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Settings" }));
+    const loopSwitch = screen.getByRole("switch", { name: "Loop" });
+    const loopTrigger = loopSwitch.parentElement;
+    expect(loopTrigger).not.toBeNull();
+    await user.hover(loopTrigger!);
+    await waitFor(() => {
+      expect(screen.getByRole("tooltip")).toHaveTextContent("Enabled by default");
+    });
+  });
+
+  it("shows disabled by default for disabled tool switches", async () => {
+    const user = userEvent.setup();
+    render(
+      <TooltipProvider>
+        <ThemeProvider>
+          <ContextMenus
+            isChoosingSource={false}
+            canSave
+            canExport
+            onChooseSource={vi.fn()}
+            onSave={vi.fn()}
+            onExport={vi.fn()}
+            toolDefaults={{
+              safeTrimFollowingEnabled: false,
+              loopPlaybackEnabled: false,
+              segmentPlaybackEnabled: false,
+              mergeAudioEnabled: false,
+            }}
+            onToolDefaultChange={vi.fn()}
+          />
+        </ThemeProvider>
+      </TooltipProvider>,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Settings" }));
+    const mergeTrigger = screen.getByRole("switch", { name: "Merge audio" }).parentElement;
+    expect(mergeTrigger).not.toBeNull();
+    await user.hover(mergeTrigger!);
+    await waitFor(() => {
+      expect(screen.getByRole("tooltip")).toHaveTextContent("Disabled by default");
+    });
+  });
+
   it("shows retry feedback after an update check fails", async () => {
     const user = userEvent.setup();
     render(
