@@ -290,24 +290,14 @@ export function ContextMenus({
           {
             id: "project-page",
             label: t("app.topBarMenus.projectPage"),
-            hint: (
-              <>
-                <BrandIcon className="size-4" icon={githubBrandIcon} />
-                <ExternalLink className="size-4" aria-hidden="true" />
-              </>
-            ),
+            hint: <BrandIcon className="size-4" icon={githubBrandIcon} />,
             onSelect: () => void openExternalUrl(PROJECT_PAGE_URL),
           },
           { id: "help-divider-support", separator: true },
           {
             id: "support-project",
             label: t("app.topBarMenus.supportProject"),
-            hint: (
-              <>
-                <BrandIcon className="size-4" icon={kofiBrandIcon} />
-                <ExternalLink className="size-4" aria-hidden="true" />
-              </>
-            ),
+            hint: <BrandIcon className="size-4" icon={kofiBrandIcon} />,
             onSelect: () => void openExternalUrl(SUPPORT_PROJECT_URL),
           },
           { id: "help-divider-version", separator: true },

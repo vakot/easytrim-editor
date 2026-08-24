@@ -57,6 +57,14 @@ describe("ContextMenus", () => {
         .getByRole("menuitem", { name: "Support the Project" })
         .querySelector('[data-brand-icon="kofi"]'),
     ).not.toBeNull();
+    expect(
+      screen.getByRole("menuitem", { name: "Project Page" }).querySelector(".lucide-external-link"),
+    ).toBeNull();
+    expect(
+      screen
+        .getByRole("menuitem", { name: "Support the Project" })
+        .querySelector(".lucide-external-link"),
+    ).toBeNull();
 
     await user.click(screen.getByRole("menuitem", { name: "Changelog" }));
     await user.click(screen.getByRole("button", { name: "Help" }));
