@@ -1,5 +1,7 @@
 import { useTranslation } from "react-i18next";
 
+import styles from "./EmptyPreviewMock.module.css";
+
 const shortcuts = [
   {
     id: "open-file",
@@ -44,10 +46,10 @@ export function EmptyPreviewMock() {
 
   return (
     <section
-      className="grid size-full min-h-0 place-items-center overflow-auto bg-preview-surface px-6 py-8"
+      className={`${styles.preview} grid size-full min-h-0 place-items-center overflow-auto bg-preview-surface px-6 py-8`}
       aria-label={t("preview.emptyMock.label")}
     >
-      <div className="grid w-[clamp(12rem,35vw,24rem)] max-w-full justify-items-center gap-10">
+      <div className="grid w-[clamp(10rem,28vw,18rem)] max-w-full justify-items-center gap-10">
         <img
           src="/logo-symbol.svg"
           alt=""
@@ -56,7 +58,7 @@ export function EmptyPreviewMock() {
         />
 
         <div
-          className="grid w-full gap-2 text-left text-base text-muted-foreground"
+          className={`${styles.hints} grid w-full gap-2 text-left text-sm text-muted-foreground`}
           role="list"
           aria-label={t("preview.emptyMock.shortcutsLabel")}
         >
@@ -74,18 +76,14 @@ export function EmptyPreviewMock() {
                 {shortcut.keys.map((key) => (
                   <span className="flex items-center gap-1" key={key}>
                     {key !== shortcut.keys[0] ? (
-                      <span aria-hidden="true">{shortcut.separator ?? "+"}</span>
+                      <span
+                        className="inline-flex w-3 shrink-0 justify-center font-mono text-xs"
+                        aria-hidden="true"
+                      >
+                        {shortcut.separator ?? "+"}
+                      </span>
                     ) : null}
-                    {/* <kbd className="rounded border border-border bg-card px-2 py-1 font-mono text-sm text-foreground shadow-sm"> */}
-                      <kbd
-  className="
-    inline-flex min-w-8 items-center justify-center
-    rounded-md border border-zinc-700
-    bg-zinc-900 px-2 py-1
-    font-mono text-sm font-medium text-zinc-100
-    shadow-[inset_0_-1px_0_rgba(255,255,255,0.08)]
-  "
->
+                    <kbd className="inline-flex min-w-6 items-center justify-center rounded border border-border bg-card px-1.5 py-0.5 font-mono text-xs font-medium text-card-foreground shadow-sm">
                       {key}
                     </kbd>
                   </span>
