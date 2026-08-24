@@ -143,6 +143,35 @@ describe("ContextMenus", () => {
     }
   });
 
+  it("confirms before resetting tool defaults", async () => {
+    const user = userEvent.setup();
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+    render(
+      <TooltipProvider>
+        <ThemeProvider>
+          <ContextMenus
+            isChoosingSource={false}
+            canSave
+            canExport
+            onChooseSource={vi.fn()}
+            onSave={vi.fn()}
+            onExport={vi.fn()}
+          />
+        </ThemeProvider>
+      </TooltipProvider>,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Settings" }));
+    const loopSwitch = screen.getByRole("switch", { name: "Loop" });
+    await user.click(loopSwitch);
+    expect(loopSwitch).not.toBeChecked();
+    await user.click(screen.getByRole("menuitem", { name: "Reset tools" }));
+
+    expect(confirmSpy).toHaveBeenCalledOnce();
+    expect(loopSwitch).toBeChecked();
+    confirmSpy.mockRestore();
+  });
+
   it("shows retry feedback after an update check fails", async () => {
     const user = userEvent.setup();
     render(

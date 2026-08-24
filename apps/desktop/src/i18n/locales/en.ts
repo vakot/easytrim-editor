@@ -67,6 +67,8 @@ export const en = {
     settings: {
       timelineTools: "Timeline tools",
       audioTools: "Audio tools",
+      resetTools: "Reset tools",
+      resetConfirmation: "Reset all tool defaults to their original values?",
       language: "Language",
       snap: "Snap",
       loop: "Loop",
