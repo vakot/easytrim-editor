@@ -16,7 +16,7 @@ Follow the auto-loaded `AGENTS.md`. Before native changes, read:
 - [quality gates](../../rules/quality.md);
 - [native architecture contract](references/architecture.md).
 
-Read `plans/ffmpeg-ui-mvp.md`, inspect the current manifests/lockfiles and affected TypeScript IPC types, and confirm actual Rust/Tauri versions before using an API.
+Inspect the current manifests, lockfiles, and affected TypeScript IPC types, and confirm actual Rust/Tauri versions before using an API.
 
 Use `easytrim-editor-ffmpeg-pipeline` for media behavior and `easytrim-editor-react-interface` when an IPC contract changes the UI.
 

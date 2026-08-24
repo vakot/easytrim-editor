@@ -15,7 +15,7 @@ Follow the auto-loaded `AGENTS.md`. Before media changes, read:
 - [quality gates](../../rules/quality.md);
 - [media contracts](references/media-contracts.md).
 
-Read `plans/ffmpeg-ui-mvp.md`, inspect media DTOs/builders/capability detection/fixtures, and probe representative inputs before assuming stream layout, timing, rotation, color metadata, or compatibility.
+Inspect media DTOs, builders, capability detection, and fixtures, then probe representative inputs before assuming stream layout, timing, rotation, color metadata, or compatibility.
 
 Use `easytrim-editor-tauri-rust` for process/IPC changes and `easytrim-editor-react-interface` when controls or labels change media semantics.
 
@@ -66,7 +66,7 @@ The shared runtime/security rule owns process construction. Additionally:
 - Preserve the container for merged output only when compatible; otherwise select Matroska and show the extension before export.
 - Fail instead of silently dropping or transcoding an incompatible selected stream.
 
-Do not add hidden exact-cut repair encoding to the MVP fast route.
+Do not add hidden exact-cut repair encoding to the fast route.
 
 ## Optimized render
 

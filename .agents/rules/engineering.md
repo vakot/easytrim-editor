@@ -4,8 +4,8 @@ Apply this rule to every repository change.
 
 ## Work from explicit contracts
 
-- Treat `plans/ffmpeg-ui-mvp.md` as the product source of truth.
-- Preserve the MVP's single-clip, one-screen, in-memory-only scope unless the user explicitly expands it.
+- Treat current domain contracts, accepted architecture, and explicit user decisions as the product source of truth.
+- Preserve the product's established scope unless the user explicitly expands it.
 - Identify affected boundaries before editing: React UI, Tauri IPC, Rust domain/application logic, FFmpeg behavior, or packaging.
 - Update every affected contract in the same change. Do not leave Rust DTOs, TypeScript types, UI labels, tests, and documentation inconsistent.
 - Prefer the smallest complete implementation over speculative abstractions or future-facing framework layers.
@@ -40,6 +40,6 @@ Apply this rule to every repository change.
 
 - Keep TypeScript strict and Rust idiomatic.
 - Explain non-obvious Rust ownership, concurrency, and Tauri security choices in review notes.
-- Update the MVP plan or relevant rule only when product or architectural policy actually changes.
-- Do not add auxiliary documentation that duplicates rules, skills, code comments, or the plan.
+- Update the relevant contract or rule only when product or architectural policy actually changes.
+- Do not add auxiliary documentation that duplicates rules, skills, or code comments.
 - Do not leave unresolved placeholders, TODO error handling, dead feature flags, or knowingly skipped required tests in completed work.

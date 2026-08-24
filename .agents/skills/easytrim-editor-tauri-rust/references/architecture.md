@@ -60,7 +60,7 @@ internal
 - Exactly zero or one source is active.
 - Replacing a source invalidates its trim/audio state and all source-bound helper results.
 - Runtime named presets survive source replacement but not application restart.
-- At most one final export runs in the MVP.
+- At most one final export runs at a time.
 - Concurrent proxy/waveform work must use cancellation and stale source/job ID guards.
 - A failed replacement remains the failed new import; never restore the previous source.
 - Successful user-selected output is never temporary and is never deleted by cleanup.
