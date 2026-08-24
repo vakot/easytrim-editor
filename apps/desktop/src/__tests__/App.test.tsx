@@ -204,6 +204,10 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "Play" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Previous frame" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Next frame" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Safe trim following" })).not.toBeDisabled();
+    expect(screen.getByRole("button", { name: "Loop playback" })).not.toBeDisabled();
+    expect(screen.getByRole("button", { name: "Segment playback" })).not.toBeDisabled();
+    expect(screen.getByRole("button", { name: "Playback speed" })).not.toBeDisabled();
     expect(screen.getAllByText("---").length).toBeGreaterThanOrEqual(8);
     expect(screen.queryByRole("slider", { name: "Playback position" })).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Source video preview")).not.toBeInTheDocument();

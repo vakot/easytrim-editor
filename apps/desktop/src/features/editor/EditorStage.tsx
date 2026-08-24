@@ -135,7 +135,6 @@ export function EditorStage() {
                   loopPlaybackEnabled={tools.loopPlaybackEnabled}
                   segmentPlaybackEnabled={tools.segmentPlaybackEnabled}
                   playbackSpeed={tools.playbackSpeed}
-                  disabled={controlsDisabled}
                   onToggleSafeTrimFollowing={tools.toggleSafeTrimFollowing}
                   onToggleLoopPlayback={tools.toggleLoopPlayback}
                   onToggleSegmentPlayback={tools.toggleSegmentPlayback}
