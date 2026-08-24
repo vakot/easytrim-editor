@@ -10,10 +10,11 @@ import {
   Moon,
   Repeat,
   RefreshCw,
+  RotateCcw,
   Scissors,
   Sun,
 } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { SpectrumWheel } from "@/app/components/PrimaryColorSelector";
 import {
@@ -93,6 +94,8 @@ export function ContextMenus({
   const [switchingMenu, setSwitchingMenu] = useState<ContextMenuId | null>(null);
   const [previewColor, setPreviewColor] = useState<PrimaryColor | null>(null);
   const [toolDefaults, setToolDefaults] = useState<ToolDefaults>(DEFAULT_TOOL_DEFAULTS);
+  const switchInteractionRef = useRef(false);
+  const resetToolDefaults = () => setToolDefaults(DEFAULT_TOOL_DEFAULTS);
   const currentLanguage = isSupportedLanguage(i18n.resolvedLanguage) ? i18n.resolvedLanguage : "en";
   const CurrentThemeIcon = themeIcons[preference];
   const displayedPrimaryColor = previewColor ?? primaryColor;
@@ -205,11 +208,23 @@ export function ContextMenus({
           setToolDefaults((current) => ({ ...current, [key]: enabled }))
         }
         onClick={(event) => event.stopPropagation()}
-        onPointerDown={(event) => event.stopPropagation()}
+        onKeyDown={() => {
+          switchInteractionRef.current = true;
+        }}
+        onPointerDown={(event) => {
+          switchInteractionRef.current = true;
+          event.stopPropagation();
+        }}
       />
     ),
     shouldCloseOnClick: false,
-    onSelect: () => setToolDefaults((current) => ({ ...current, [key]: !current[key] })),
+    onSelect: (event) => {
+      if (switchInteractionRef.current) {
+        switchInteractionRef.current = false;
+        return;
+      }
+      setToolDefaults((current) => ({ ...current, [key]: !current[key] }));
+    },
   });
 
   const updateLabel =
@@ -324,6 +339,19 @@ export function ContextMenus({
             <Merge className="size-4" aria-hidden="true" />,
             "mergeAudioEnabled",
           ),
+          {
+            id: "settings-reset-section",
+            section: true,
+            label: t("app.settings.resetSection"),
+          },
+          {
+            id: "settings-reset",
+            label: t("app.settings.resetTools"),
+            leading: <RotateCcw className="size-4" aria-hidden="true" />,
+            onSelect: () => {
+              if (window.confirm(t("app.settings.resetConfirmation"))) resetToolDefaults();
+            },
+          },
           { id: "settings-language-section", section: true, label: t("app.settings.language") },
           {
             id: "language",
