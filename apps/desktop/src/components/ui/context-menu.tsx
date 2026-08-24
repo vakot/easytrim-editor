@@ -87,7 +87,7 @@ function ContextMenuOptionList({ options }: { options: readonly ContextMenuOptio
 
   return options.map((option) => {
     if (isContextMenuSeparator(option)) {
-      return <DropdownMenuPrimitive.Separator key={option.id} className="my-1 h-px bg-border" />;
+      return <DropdownMenuPrimitive.Separator key={option.id} className="my-1 mx-2 h-px bg-border" />;
     }
 
     return (
