@@ -62,7 +62,7 @@ type SessionAction =
   | { type: "capabilities-ready"; capabilities: MediaCapabilities }
   | { type: "capabilities-failed"; error: AppError }
   | { type: "source-cleared" }
-  | { type: "source-selected"; source: SourceSelection }
+  | { type: "source-selected"; source: SourceSelection; mergeAudio?: boolean }
   | { type: "source-ready"; sourceId: string; media: MediaInfo }
   | { type: "source-failed"; sourceId?: string; error: AppError }
   | { type: "preview-loading"; sourceId: string; kind: PreviewKind }
@@ -80,6 +80,7 @@ type SessionAction =
       volumePercent: number;
     }
   | { type: "audio-merge-toggled"; sourceId: string }
+  | { type: "audio-merge-set"; sourceId: string; enabled: boolean }
   | {
       type: "waveforms-loading";
       sourceId: string;
@@ -129,7 +130,7 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
           audioTracks: [],
           masterEnabled: true,
           masterVolumePercent: 50,
-          mergeAudio: false,
+          mergeAudio: action.mergeAudio ?? false,
         },
         lastError: null,
       };
@@ -312,6 +313,17 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
         source: {
           ...state.source,
           mergeAudio: !state.source.mergeAudio,
+        },
+      };
+    case "audio-merge-set":
+      if (state.source?.selection.sourceId !== action.sourceId) {
+        return state;
+      }
+      return {
+        ...state,
+        source: {
+          ...state.source,
+          mergeAudio: action.enabled,
         },
       };
     case "waveforms-loading":

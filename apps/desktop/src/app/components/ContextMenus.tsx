@@ -33,7 +33,13 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { isSupportedLanguage, type SupportedLanguage } from "@/i18n/resources";
 import { openExternalUrl } from "@/lib/open-external-url";
-import { DEFAULT_TOOL_DEFAULTS, type ToolDefaultKey, type ToolDefaults } from "@/app/tool-settings";
+import {
+  DEFAULT_TOOL_DEFAULTS,
+  loadToolDefaults,
+  persistToolDefaults,
+  type ToolDefaultKey,
+  type ToolDefaults,
+} from "@/app/tool-settings";
 import packageJson from "../../../../../package.json";
 
 interface ContextMenusProps {
@@ -45,6 +51,9 @@ interface ContextMenusProps {
   onCloseFile?: () => void;
   onSave: () => void;
   onExport: () => void;
+  toolDefaults?: ToolDefaults;
+  onToolDefaultChange?: (key: ToolDefaultKey, enabled: boolean) => void;
+  onResetToolDefaults?: () => void;
 }
 
 const themeIcons = { system: Monitor, light: Sun, dark: Moon } as const;
@@ -72,6 +81,9 @@ export function ContextMenus({
   onCloseFile = () => undefined,
   onSave,
   onExport,
+  toolDefaults: controlledToolDefaults,
+  onToolDefaultChange: controlledToolDefaultChange,
+  onResetToolDefaults: controlledResetToolDefaults,
 }: ContextMenusProps) {
   const { t, i18n } = useTranslation();
   const {
@@ -93,9 +105,28 @@ export function ContextMenus({
   const [openMenu, setOpenMenu] = useState<ContextMenuId | null>(null);
   const [switchingMenu, setSwitchingMenu] = useState<ContextMenuId | null>(null);
   const [previewColor, setPreviewColor] = useState<PrimaryColor | null>(null);
-  const [toolDefaults, setToolDefaults] = useState<ToolDefaults>(DEFAULT_TOOL_DEFAULTS);
+  const [fallbackToolDefaults, setFallbackToolDefaults] = useState<ToolDefaults>(loadToolDefaults);
   const switchInteractionRef = useRef(false);
-  const resetToolDefaults = () => setToolDefaults(DEFAULT_TOOL_DEFAULTS);
+  const toolDefaults = controlledToolDefaults ?? fallbackToolDefaults;
+  const setToolDefault = (key: ToolDefaultKey, enabled: boolean) => {
+    if (controlledToolDefaultChange) {
+      controlledToolDefaultChange(key, enabled);
+      return;
+    }
+    setFallbackToolDefaults((current) => {
+      const next = { ...current, [key]: enabled };
+      persistToolDefaults(next);
+      return next;
+    });
+  };
+  const resetToolDefaults = () => {
+    if (controlledResetToolDefaults) {
+      controlledResetToolDefaults();
+      return;
+    }
+    setFallbackToolDefaults(DEFAULT_TOOL_DEFAULTS);
+    persistToolDefaults(DEFAULT_TOOL_DEFAULTS);
+  };
   const currentLanguage = isSupportedLanguage(i18n.resolvedLanguage) ? i18n.resolvedLanguage : "en";
   const CurrentThemeIcon = themeIcons[preference];
   const displayedPrimaryColor = previewColor ?? primaryColor;
@@ -204,9 +235,7 @@ export function ContextMenus({
       <Switch
         aria-label={label}
         checked={toolDefaults[key]}
-        onCheckedChange={(enabled) =>
-          setToolDefaults((current) => ({ ...current, [key]: enabled }))
-        }
+        onCheckedChange={(enabled) => setToolDefault(key, enabled)}
         onClick={(event) => event.stopPropagation()}
         onKeyDown={() => {
           switchInteractionRef.current = true;
@@ -223,7 +252,7 @@ export function ContextMenus({
         switchInteractionRef.current = false;
         return;
       }
-      setToolDefaults((current) => ({ ...current, [key]: !current[key] }));
+      setToolDefault(key, !toolDefaults[key]);
     },
   });
 
