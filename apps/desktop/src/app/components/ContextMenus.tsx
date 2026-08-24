@@ -267,6 +267,7 @@ export function ContextMenus({
             label: updateLabel,
             hint: updateHint,
             disabled: updateStatus === "checking" || isInstalling,
+            shouldCloseOnClick: false,
             onSelect: () =>
               void (updateStatus === "available" ? installUpdate() : checkForUpdates()),
           },
