@@ -32,6 +32,9 @@ describe("ContextMenus", () => {
 
     await user.click(screen.getByRole("button", { name: "Help" }));
     expect(screen.getByRole("menuitem", { name: "Changelog" })).toHaveTextContent("Changelog");
+    expect(screen.getByRole("menuitem", { name: "Check for Updates…" })).toHaveTextContent(
+      "Check for Updates…",
+    );
     expect(screen.getByRole("menuitem", { name: "Support the Project" })).toHaveTextContent(
       "Support the Project",
     );

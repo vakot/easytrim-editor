@@ -15,6 +15,7 @@ import { EditorSessionProvider } from "@/app/editor-session-context";
 import { useEditorSession } from "@/app/hooks/useEditorSession";
 import { EditorContractsProvider } from "@/app/editor-contracts";
 import { useSourceDetails } from "@/app/hooks/useSourceDetails";
+import { AppUpdatesProvider } from "@/app/AppUpdatesProvider";
 
 function EasyTrimEditorApp() {
   const app = useEditorSession();
@@ -93,15 +94,17 @@ function EasyTrimEditorApp() {
 
 function App() {
   return (
-    <ThemeProvider>
-      <EditorSessionProvider>
-        <EditorViewStateProvider>
-          <EditorContractsProvider>
-            <EasyTrimEditorApp />
-          </EditorContractsProvider>
-        </EditorViewStateProvider>
-      </EditorSessionProvider>
-    </ThemeProvider>
+    <AppUpdatesProvider>
+      <ThemeProvider>
+        <EditorSessionProvider>
+          <EditorViewStateProvider>
+            <EditorContractsProvider>
+              <EasyTrimEditorApp />
+            </EditorContractsProvider>
+          </EditorViewStateProvider>
+        </EditorSessionProvider>
+      </ThemeProvider>
+    </AppUpdatesProvider>
   );
 }
 
