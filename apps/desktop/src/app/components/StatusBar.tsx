@@ -117,7 +117,7 @@ function StatusBarUpdateButton() {
     <Button
       type="button"
       size="xs"
-      className={updateAction.className}
+      variant={updateAction.variant}
       disabled={updateAction.disabled}
       onClick={handleUpdateClick}
     >
@@ -131,7 +131,7 @@ interface StatusBarUpdateAction {
   label: string;
   icon: ReactNode;
   disabled: boolean;
-  className?: string;
+  variant: "default" | "destructive";
 }
 
 interface StatusBarUpdateLabels {
@@ -151,6 +151,7 @@ function getUpdateButtonAction(
       label: labels.loading,
       icon: <LoaderCircle className="size-3 animate-spin" aria-hidden="true" />,
       disabled: true,
+      variant: "default",
     };
   }
 
@@ -159,6 +160,7 @@ function getUpdateButtonAction(
       label: labels.update,
       icon: <Download className="size-3" aria-hidden="true" />,
       disabled: false,
+      variant: "default",
     };
   }
 
@@ -167,8 +169,7 @@ function getUpdateButtonAction(
       label: labels.error,
       icon: <CircleAlert className="size-3" aria-hidden="true" />,
       disabled: false,
-      className:
-        "bg-destructive text-white hover:bg-destructive/80 focus-visible:border-destructive focus-visible:ring-destructive/40",
+      variant: "destructive",
     };
   }
 
