@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, type RefObject } from "react"
 import type { PreviewState } from "@/app/session-state";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useTranslation } from "react-i18next";
 import { CropViewport } from "./CropViewport";
 import type { CropRect } from "./utils/crop-geometry";
@@ -167,9 +168,21 @@ function VideoPreviewContent({
         onCropChange={handleCropChange}
       />
       {value.kind === "proxy" ? (
-        <Badge variant="secondary" className="absolute top-3 right-3">
-          {t("preview.proxyBadge")}
-        </Badge>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Badge
+              variant="secondary"
+              role="status"
+              tabIndex={0}
+              className="absolute top-3 right-3 cursor-help"
+            >
+              {t("preview.proxyBadge")}
+            </Badge>
+          </TooltipTrigger>
+          <TooltipContent sideOffset={6} className="max-w-[18rem] whitespace-normal text-center">
+            {t("preview.proxyBadgeDescription")}
+          </TooltipContent>
+        </Tooltip>
       ) : null}
     </div>
   );

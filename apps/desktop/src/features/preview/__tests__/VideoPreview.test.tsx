@@ -1,8 +1,9 @@
-import { createRef } from "react";
+import { createRef, type ReactElement, type ReactNode } from "react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import type { PreviewState } from "@/app/session-state";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { VideoPreview } from "../VideoPreview";
 
 const callbacks = {
@@ -23,6 +24,14 @@ function readyPreview(url: string): PreviewState {
   };
 }
 
+function TooltipTestProvider({ children }: { children: ReactNode }) {
+  return <TooltipProvider delayDuration={0}>{children}</TooltipProvider>;
+}
+
+function renderPreview(element: ReactElement) {
+  return render(element, { wrapper: TooltipTestProvider });
+}
+
 beforeAll(() => {
   vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => undefined);
 });
@@ -32,9 +41,31 @@ afterAll(() => {
 });
 
 describe("VideoPreview", () => {
+  it("explains why a compatible proxy is used from the keyboard", () => {
+    const videoRef = createRef<HTMLVideoElement>();
+    renderPreview(
+      <VideoPreview
+        sourceId="source-1"
+        preview={readyPreview("easytrim-media://preview-1")}
+        playbackRate={1}
+        muted
+        videoRef={videoRef}
+        {...callbacks}
+      />,
+    );
+
+    const badge = screen.getByText("Compatible preview");
+    expect(badge).toHaveAttribute("tabindex", "0");
+    fireEvent.focus(badge);
+
+    expect(screen.getByRole("tooltip")).toHaveTextContent(
+      "The original source could not play directly, so EasyTrim prepared a compatible proxy that may use reduced quality. Exports still use the original file.",
+    );
+  });
+
   it("renders the empty preview when no source is loaded", () => {
     const videoRef = createRef<HTMLVideoElement>();
-    render(
+    renderPreview(
       <VideoPreview
         sourceId={null}
         preview={{ status: "idle" }}
@@ -56,7 +87,7 @@ describe("VideoPreview", () => {
     vi.useFakeTimers();
     try {
       const videoRef = createRef<HTMLVideoElement>();
-      const { container } = render(
+      const { container } = renderPreview(
         <VideoPreview
           sourceId="source-1"
           preview={readyPreview("easytrim-media://preview-1")}
@@ -87,7 +118,7 @@ describe("VideoPreview", () => {
 
   it("keeps crop controls open after a drag and closes them outside the selection", () => {
     const videoRef = createRef<HTMLVideoElement>();
-    const { container } = render(
+    const { container } = renderPreview(
       <VideoPreview
         sourceId="source-1"
         preview={readyPreview("easytrim-media://preview-1")}
@@ -142,7 +173,7 @@ describe("VideoPreview", () => {
 
   it("pauses playback while crop controls are open", () => {
     const videoRef = createRef<HTMLVideoElement>();
-    const { container } = render(
+    const { container } = renderPreview(
       <VideoPreview
         sourceId="source-1"
         preview={readyPreview("easytrim-media://preview-1")}
@@ -168,7 +199,7 @@ describe("VideoPreview", () => {
 
   it("opens and closes crop controls with Enter or Space when the preview is focused", () => {
     const videoRef = createRef<HTMLVideoElement>();
-    const { container } = render(
+    const { container } = renderPreview(
       <VideoPreview
         sourceId="source-1"
         preview={readyPreview("easytrim-media://preview-1")}
@@ -192,7 +223,7 @@ describe("VideoPreview", () => {
 
   it("closes crop controls with Escape or when focus leaves the preview", () => {
     const videoRef = createRef<HTMLVideoElement>();
-    const { container } = render(
+    const { container } = renderPreview(
       <VideoPreview
         sourceId="source-1"
         preview={readyPreview("easytrim-media://preview-1")}
@@ -220,7 +251,7 @@ describe("VideoPreview", () => {
 
   it("keeps native audio muted when the preview element is replaced", () => {
     const videoRef = createRef<HTMLVideoElement>();
-    const { container, rerender } = render(
+    const { container, rerender } = renderPreview(
       <VideoPreview
         sourceId="source-1"
         preview={readyPreview("easytrim-media://preview-1")}

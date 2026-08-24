@@ -1283,7 +1283,7 @@ describe("App", () => {
     await waitFor(() => {
       expect(mocks.prepareProxyPreview).toHaveBeenCalledWith(selection.sourceId);
     });
-    expect(await screen.findByText("720p preview")).toBeInTheDocument();
+    expect(await screen.findByText("Compatible preview")).toBeInTheDocument();
     expect(screen.getByLabelText("Source video preview")).toHaveAttribute(
       "src",
       "http://easytrim-media.localhost/source-1?variant=proxy",
@@ -2311,7 +2311,7 @@ describe("App", () => {
 
     await openSourcePicker(user);
     fireEvent.error(await screen.findByLabelText("Source video preview"));
-    const proxyPreview = await screen.findByText("720p preview");
+    const proxyPreview = await screen.findByText("Compatible preview");
     expect(proxyPreview).toBeInTheDocument();
     fireEvent.error(screen.getByLabelText("Source video preview"));
 

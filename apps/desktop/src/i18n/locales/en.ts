@@ -176,7 +176,9 @@ export const en = {
     preparingDescription: "This can take a moment for high-resolution sources.",
     error: "Could not preview this video",
     sourceLabel: "Source video preview",
-    proxyBadge: "720p preview",
+    proxyBadge: "Compatible preview",
+    proxyBadgeDescription:
+      "The original source could not play directly, so EasyTrim prepared a compatible proxy that may use reduced quality. Exports still use the original file.",
     playbackFailed: "Playback could not start.",
   },
   timeline: {
