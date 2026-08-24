@@ -216,7 +216,7 @@ function ContextMenuItemPrimitive({
 }) {
   return (
     <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
-      <span className="flex size-3 shrink-0 items-center justify-center" data-slot="menu-icon">
+      <span className="flex size-3 shrink-0 items-center justify-center text-muted-foreground" data-slot="menu-icon">
         {icon}
       </span>
       <span className="min-w-0 flex-1 truncate" data-slot="menu-name">
