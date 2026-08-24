@@ -3,42 +3,35 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { NativeDialogOverlay } from "@/app/components/NativeDialogOverlay";
 import { ReturnConfirmationDialog } from "@/app/components/ReturnConfirmationDialog";
 import { StatusBar } from "@/app/components/StatusBar";
-import { useEasyTrimEditorApp } from "@/app/hooks/useEasyTrimEditorApp";
 import { CapabilityStatus, SourceWorkspace } from "@/features/import-source/SourceWorkspace";
 import { useTranslation } from "react-i18next";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import { useReleaseCheck } from "@/features/release/hooks/useReleaseCheck";
 import { EditorViewStateProvider } from "@/app/editor-view-state";
-import { useEffect, useRef, useState } from "react";
-import { FULL_CROP, type CropRect } from "@/features/preview/utils/crop-geometry";
+import { useRef } from "react";
 import { CustomTitleBar } from "@/app/components/CustomTitleBar";
 import { PanelVisibilityControls } from "@/app/components/PanelVisibilityControls";
 import { TopBarMenus } from "@/app/components/TopBarMenus";
 import { ExportPanel, type ExportPanelHandle } from "@/features/export";
+import { EditorSessionProvider } from "@/app/editor-session-context";
+import { useEditorSession } from "@/app/hooks/useEditorSession";
+import { EditorContractsProvider } from "@/app/editor-contracts";
+import { useSourceDetails } from "@/app/hooks/useSourceDetails";
 
 function EasyTrimEditorApp() {
-  const app = useEasyTrimEditorApp();
+  const app = useEditorSession();
+  const sourceDetails = useSourceDetails();
   const { t } = useTranslation();
   const { update } = useReleaseCheck();
-  const source = app.session.source;
+  const source = sourceDetails.source;
   const exportPanelRef = useRef<ExportPanelHandle>(null);
-  const sourceDimensions = source?.media
-    ? { width: source.media.video.width, height: source.media.video.height }
-    : null;
-  const [cropResolution, setCropResolution] = useState(sourceDimensions ?? { width: 1, height: 1 });
-  const [crop, setCrop] = useState<CropRect>(FULL_CROP);
   const canExport = app.session.status === "ready" && Boolean(source?.media && source.trim);
-  const cropApplied = crop.x !== 0 || crop.y !== 0 || crop.width !== 1 || crop.height !== 1;
+  const cropApplied =
+    sourceDetails.crop.x !== 0 ||
+    sourceDetails.crop.y !== 0 ||
+    sourceDetails.crop.width !== 1 ||
+    sourceDetails.crop.height !== 1;
   const canSave = canExport && !cropApplied;
-
-  useEffect(() => {
-    // Crop dimensions are session UI state derived from the active source.
-    if (source?.media) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setCropResolution({ width: source.media.video.width, height: source.media.video.height });
-      setCrop(FULL_CROP);
-    }
-  }, [source?.media, source?.selection.sourceId]);
 
   return (
     <TooltipProvider>
@@ -88,8 +81,8 @@ function EasyTrimEditorApp() {
             presetState={app.exportPresets}
             onPresetAction={app.dispatchExportPreset}
             onNativeDialogStateChange={app.setIsNativeDialogOpen}
-            cropResolution={cropResolution}
-            crop={crop}
+            cropResolution={sourceDetails.cropResolution}
+            crop={sourceDetails.crop}
             showActions={false}
           />
         ) : null}
@@ -116,26 +109,7 @@ function EasyTrimEditorApp() {
           </Alert>
         ) : null}
 
-        <SourceWorkspace
-          session={app.session}
-          isChoosingSource={app.isChoosingSource}
-          isSourceDragActive={app.isSourceDragActive}
-          onChooseSource={() => void app.handleChooseSource()}
-          onPreviewPlaybackError={app.handlePreviewPlaybackError}
-          onTrimChange={app.handleTrimChange}
-          onPrepareWaveforms={app.handlePrepareWaveforms}
-          onToggleAudioTrack={app.handleToggleAudioTrack}
-          onAudioTrackVolumeChange={app.handleAudioTrackVolumeChange}
-          onToggleAudioMaster={app.handleToggleAudioMaster}
-          onMasterVolumeChange={app.handleMasterVolumeChange}
-          onToggleAudioMerge={app.handleToggleAudioMerge}
-          onWaveformImageError={app.handleWaveformImageError}
-          audioPreviewUrls={app.audioPreviewUrls}
-          exportQueue={app.exportQueue}
-          update={update}
-          onCropResolutionChange={setCropResolution}
-          onCropChange={setCrop}
-        />
+        <SourceWorkspace />
         {app.hasSource ? <StatusBar update={update} queue={app.exportQueue} /> : null}
       </main>
     </TooltipProvider>
@@ -145,9 +119,13 @@ function EasyTrimEditorApp() {
 function App() {
   return (
     <ThemeProvider>
-      <EditorViewStateProvider>
-        <EasyTrimEditorApp />
-      </EditorViewStateProvider>
+      <EditorSessionProvider>
+        <EditorViewStateProvider>
+          <EditorContractsProvider>
+            <EasyTrimEditorApp />
+          </EditorContractsProvider>
+        </EditorViewStateProvider>
+      </EditorSessionProvider>
     </ThemeProvider>
   );
 }
