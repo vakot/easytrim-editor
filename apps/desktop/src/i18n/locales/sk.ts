@@ -70,10 +70,9 @@ export const sk = {
       version: "Verzia {{version}}",
     },
     settings: {
-      timelineTools: "Nástroje časovej osi",
-      audioTools: "Zvukové nástroje",
-      resetTools: "Obnoviť nástroje",
-      resetConfirmation: "Obnoviť všetky predvolené hodnoty nástrojov?",
+      resetToDefault: "Obnoviť predvolené",
+      enabledByDefault: "Predvolene zapnuté",
+      disabledByDefault: "Predvolene vypnuté",
       language: "Jazyk",
       snap: "Prichytenie",
       loop: "Opakovanie",

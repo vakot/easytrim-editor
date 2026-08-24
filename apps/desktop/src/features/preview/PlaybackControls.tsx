@@ -1,10 +1,10 @@
 import {
   BetweenVerticalStart,
   Gauge,
-  Link2,
+  Magnet,
   Pause,
   Play,
-  Repeat2,
+  Repeat,
   RotateCcw,
   SkipBack,
   SkipForward,
@@ -219,7 +219,7 @@ export function TimelineTools({
           )}
           onClick={onToggleSafeTrimFollowing}
         >
-          <Link2 />
+          <Magnet />
         </TimelineToolButton>
         <TimelineToolButton
           enabled={loopPlaybackEnabled}
@@ -229,7 +229,7 @@ export function TimelineTools({
           )}
           onClick={onToggleLoopPlayback}
         >
-          <Repeat2 />
+          <Repeat />
         </TimelineToolButton>
         <TimelineToolButton
           enabled={segmentPlaybackEnabled}

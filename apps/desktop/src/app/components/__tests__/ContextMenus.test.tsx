@@ -141,11 +141,24 @@ describe("ContextMenus", () => {
     for (const label of ["Snap", "Loop", "Follow segment", "Merge audio"]) {
       expect(screen.getByRole("switch", { name: label })).toBeInTheDocument();
     }
+    const settingsMenu = screen.getAllByRole("menu").at(-1);
+    expect(settingsMenu).toBeDefined();
+    expect(within(settingsMenu!).getAllByRole("separator")).toHaveLength(3);
+    expect(screen.queryByText("Timeline tools", { exact: true })).not.toBeInTheDocument();
+    expect(screen.queryByText("Audio tools", { exact: true })).not.toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Snap" })).toContainElement(
+      settingsMenu!.querySelector(".lucide-magnet"),
+    );
+    expect(screen.getByRole("menuitem", { name: "Loop" })).toContainElement(
+      settingsMenu!.querySelector(".lucide-repeat"),
+    );
+    expect(screen.getByRole("menuitem", { name: "Follow segment" })).toContainElement(
+      settingsMenu!.querySelector(".lucide-between-vertical-start"),
+    );
   });
 
-  it("confirms before resetting tool defaults", async () => {
+  it("resets tools defaults", async () => {
     const user = userEvent.setup();
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
     render(
       <TooltipProvider>
         <ThemeProvider>
@@ -165,11 +178,70 @@ describe("ContextMenus", () => {
     const loopSwitch = screen.getByRole("switch", { name: "Loop" });
     await user.click(loopSwitch);
     expect(loopSwitch).not.toBeChecked();
-    await user.click(screen.getByRole("menuitem", { name: "Reset tools" }));
+    await user.click(screen.getByRole("menuitem", { name: "Reset to default" }));
 
-    expect(confirmSpy).toHaveBeenCalledOnce();
     expect(loopSwitch).toBeChecked();
-    confirmSpy.mockRestore();
+    expect(screen.getByRole("menuitem", { name: "Reset to default" })).toBeInTheDocument();
+  });
+
+  it("shows the default state in tool switch tooltips", async () => {
+    const user = userEvent.setup();
+    render(
+      <TooltipProvider>
+        <ThemeProvider>
+          <ContextMenus
+            isChoosingSource={false}
+            canSave
+            canExport
+            onChooseSource={vi.fn()}
+            onSave={vi.fn()}
+            onExport={vi.fn()}
+          />
+        </ThemeProvider>
+      </TooltipProvider>,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Settings" }));
+    const loopSwitch = screen.getByRole("switch", { name: "Loop" });
+    const loopTrigger = loopSwitch.parentElement;
+    expect(loopTrigger).not.toBeNull();
+    await user.hover(loopTrigger!);
+    await waitFor(() => {
+      expect(screen.getByRole("tooltip")).toHaveTextContent("Enabled by default");
+    });
+  });
+
+  it("shows disabled by default for disabled tool switches", async () => {
+    const user = userEvent.setup();
+    render(
+      <TooltipProvider>
+        <ThemeProvider>
+          <ContextMenus
+            isChoosingSource={false}
+            canSave
+            canExport
+            onChooseSource={vi.fn()}
+            onSave={vi.fn()}
+            onExport={vi.fn()}
+            toolDefaults={{
+              safeTrimFollowingEnabled: false,
+              loopPlaybackEnabled: false,
+              segmentPlaybackEnabled: false,
+              mergeAudioEnabled: false,
+            }}
+            onToolDefaultChange={vi.fn()}
+          />
+        </ThemeProvider>
+      </TooltipProvider>,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Settings" }));
+    const mergeTrigger = screen.getByRole("switch", { name: "Merge audio" }).parentElement;
+    expect(mergeTrigger).not.toBeNull();
+    await user.hover(mergeTrigger!);
+    await waitFor(() => {
+      expect(screen.getByRole("tooltip")).toHaveTextContent("Disabled by default");
+    });
   });
 
   it("shows retry feedback after an update check fails", async () => {

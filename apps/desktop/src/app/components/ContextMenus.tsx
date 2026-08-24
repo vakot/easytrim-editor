@@ -1,4 +1,5 @@
 import {
+  BetweenVerticalStart,
   CheckCircle2,
   CircleAlert,
   Download,
@@ -11,7 +12,6 @@ import {
   Repeat,
   RefreshCw,
   RotateCcw,
-  Scissors,
   Sun,
 } from "lucide-react";
 import { useRef, useState, type ReactNode } from "react";
@@ -31,6 +31,7 @@ import { githubBrandIcon, kofiBrandIcon } from "@/components/brand-icons";
 import { ContextMenu, type ContextMenuOption } from "@/components/ui/context-menu";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { isSupportedLanguage, type SupportedLanguage } from "@/i18n/resources";
 import { openExternalUrl } from "@/lib/open-external-url";
 import {
@@ -232,19 +233,30 @@ export function ContextMenus({
     ariaLabel: label,
     leading: icon,
     hint: (
-      <Switch
-        aria-label={label}
-        checked={toolDefaults[key]}
-        onCheckedChange={(enabled) => setToolDefault(key, enabled)}
-        onClick={(event) => event.stopPropagation()}
-        onKeyDown={() => {
-          switchInteractionRef.current = true;
-        }}
-        onPointerDown={(event) => {
-          switchInteractionRef.current = true;
-          event.stopPropagation();
-        }}
-      />
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="inline-flex">
+            <Switch
+              aria-label={label}
+              checked={toolDefaults[key]}
+              onCheckedChange={(enabled) => setToolDefault(key, enabled)}
+              onClick={(event) => event.stopPropagation()}
+              onKeyDown={() => {
+                switchInteractionRef.current = true;
+              }}
+              onPointerDown={(event) => {
+                switchInteractionRef.current = true;
+                event.stopPropagation();
+              }}
+            />
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="right">
+          {t(
+            toolDefaults[key] ? "app.settings.enabledByDefault" : "app.settings.disabledByDefault",
+          )}
+        </TooltipContent>
+      </Tooltip>
     ),
     shouldCloseOnClick: false,
     onSelect: () => {
@@ -353,7 +365,7 @@ export function ContextMenus({
           settingsToolOption(
             "setting-segment",
             t("app.settings.followSegment"),
-            <Scissors className="size-4" aria-hidden="true" />,
+            <BetweenVerticalStart className="size-4" aria-hidden="true" />,
             "segmentPlaybackEnabled",
           ),
           { id: "settings-audio-divider", separator: true },
@@ -366,11 +378,10 @@ export function ContextMenus({
           { id: "settings-reset-divider", separator: true },
           {
             id: "settings-reset",
-            label: t("app.settings.resetTools"),
+            label: t("app.settings.resetToDefault"),
             leading: <RotateCcw className="size-4" aria-hidden="true" />,
-            onSelect: () => {
-              if (window.confirm(t("app.settings.resetConfirmation"))) resetToolDefaults();
-            },
+            shouldCloseOnClick: false,
+            onSelect: resetToolDefaults,
           },
           { id: "settings-language-divider", separator: true },
           {
