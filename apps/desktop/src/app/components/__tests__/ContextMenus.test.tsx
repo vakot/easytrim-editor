@@ -8,12 +8,15 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { openExternalUrl } from "@/lib/open-external-url";
 import { STORAGE_KEYS } from "@/lib/storage";
 import { ContextMenus } from "../ContextMenus";
+import packageJson from "../../../../../../package.json";
 
 vi.mock("@/lib/open-external-url", () => ({
   openExternalUrl: vi.fn(),
 }));
 
 describe("ContextMenus", () => {
+  const versionMenuLabel = `Version ${packageJson.version}`;
+
   it("opens Help links with the current release version", async () => {
     const user = userEvent.setup();
     render(
@@ -39,7 +42,9 @@ describe("ContextMenus", () => {
     expect(screen.getByRole("menuitem", { name: "Support the Project" })).toHaveTextContent(
       "Support the Project",
     );
-    expect(screen.getByRole("menuitem", { name: "Version 1.0.5" })).toHaveTextContent("1.0.5");
+    expect(screen.getByRole("menuitem", { name: versionMenuLabel })).toHaveTextContent(
+      packageJson.version,
+    );
     expect(screen.getAllByRole("separator")).toHaveLength(2);
 
     await user.click(screen.getByRole("menuitem", { name: "Check for Updates…" }));
@@ -72,13 +77,13 @@ describe("ContextMenus", () => {
     await user.click(screen.getByRole("button", { name: "Help" }));
     await user.click(screen.getByRole("menuitem", { name: "Support the Project" }));
     await user.click(screen.getByRole("button", { name: "Help" }));
-    await user.click(screen.getByRole("menuitem", { name: "Version 1.0.5" }));
+    await user.click(screen.getByRole("menuitem", { name: versionMenuLabel }));
 
     expect(vi.mocked(openExternalUrl).mock.calls).toEqual([
       ["https://github.com/vakot/easytrim-editor/releases"],
       ["https://github.com/vakot/easytrim-editor"],
       ["https://ko-fi.com/vakot"],
-      ["https://github.com/vakot/easytrim-editor/releases/tag/v1.0.5"],
+      [`https://github.com/vakot/easytrim-editor/releases/tag/v${packageJson.version}`],
     ]);
   });
 
