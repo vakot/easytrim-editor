@@ -34,6 +34,7 @@ const EMPTY_TRIM: TrimRange = {
   endMicros: 0,
   sourceDurationMicros: 0,
 };
+const AUDIO_SYNC_INTERVAL_MS = 100;
 
 export interface EditorInteractionValue {
   videoRef: React.RefObject<HTMLVideoElement | null>;
@@ -128,6 +129,7 @@ export function useEditorInteractionController(): EditorInteractionValue {
   const isPlayingRef = useRef(false);
   const resumeAfterCropRef = useRef(false);
   const lastPlaybackCommitAtRef = useRef(0);
+  const lastAudioSyncAtRef = useRef(0);
   const trimRef = useRef(trim);
   const currentPlayheadMicrosRef = useRef(trim.startMicros);
   const segmentDragActiveRef = useRef(false);
@@ -357,11 +359,11 @@ export function useEditorInteractionController(): EditorInteractionValue {
     const startSequence = ++playbackStartSequenceRef.current;
     playbackRequestedRef.current = true;
     setTransportError(null);
-    void audioContextRef.current?.resume();
     seekVideo(video, startMicros);
     syncAudioPlayback(startMicros / 1_000_000, true);
     const media = [video, ...audioElementsRef.current.values()];
-    void Promise.all(media.map((element) => element.play())).catch(() => {
+    const resumeAudioContext = audioContextRef.current?.resume() ?? Promise.resolve();
+    void Promise.all([resumeAudioContext, ...media.map((element) => element.play())]).catch(() => {
       if (startSequence !== playbackStartSequenceRef.current) return;
       playbackStartSequenceRef.current += 1;
       playbackRequestedRef.current = false;
@@ -420,7 +422,10 @@ export function useEditorInteractionController(): EditorInteractionValue {
         lastPlaybackCommitAtRef.current = timestamp;
         setPlayheadMicros(currentMicros);
       }
-      syncAudioPlayback(mediaTimeSeconds);
+      if (timestamp - lastAudioSyncAtRef.current >= AUDIO_SYNC_INTERVAL_MS) {
+        lastAudioSyncAtRef.current = timestamp;
+        syncAudioPlayback(mediaTimeSeconds);
+      }
       if (!nativeLoopEnabledRef.current && handlePlaybackBoundary(currentMicros)) {
         playbackFrameRef.current = video.paused ? null : requestPlaybackFrame(video, update);
         return;

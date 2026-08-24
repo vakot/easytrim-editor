@@ -263,6 +263,7 @@ describe("App", () => {
 
     expect(mocks.prepareAudioPreviews).not.toHaveBeenCalled();
     expect(video).toHaveProperty("muted", false);
+    expect(video).toHaveAttribute("crossorigin", "anonymous");
   });
 
   it("opens the source picker with Ctrl+O", () => {
@@ -891,6 +892,7 @@ describe("App", () => {
       await user.click(screen.getByRole("button", { name: "Play" }));
 
       expect(await screen.findByRole("alert")).toHaveTextContent("Playback could not start.");
+      expect(audioContext.resume).toHaveBeenCalledOnce();
       expect(videoPause).toHaveBeenCalledOnce();
       expect(audioPause).toHaveBeenCalled();
       expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();

@@ -176,6 +176,7 @@ export function CropViewport({
           data-playback-rate={playbackRate}
           className={`absolute max-w-none cursor-pointer ${viewportTransition}`}
           style={sourceFrame}
+          crossOrigin="anonymous"
           src={sourceUrl}
           preload="auto"
           muted={muted}
