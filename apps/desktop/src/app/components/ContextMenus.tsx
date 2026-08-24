@@ -13,7 +13,7 @@ import {
   RefreshCw,
   RotateCcw,
   Sun,
-  Languages
+  Languages,
 } from "lucide-react";
 import { useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
@@ -280,7 +280,7 @@ export function ContextMenus({
         : updateStatus === "available" && availableVersion
           ? t("app.topBarMenus.updateTo", { version: availableVersion })
           : t("app.topBarMenus.checkForUpdates");
-          
+
   const updateHint =
     updateStatus === "checking" ? (
       <LoaderCircle className="size-3 animate-spin" aria-hidden="true" />

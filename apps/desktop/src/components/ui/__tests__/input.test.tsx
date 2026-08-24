@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { Input } from "./input";
+import { Input } from "../input";
 
 describe("Input", () => {
   it("allows consumers to override the value text size", () => {
