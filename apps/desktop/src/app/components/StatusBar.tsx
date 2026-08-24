@@ -1,7 +1,8 @@
 import { CircleAlert, Download, LoaderCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import type { ReactNode } from "react";
 
-import { useAppUpdates } from "@/app/update-context";
+import { useAppUpdates, type UpdateStatus } from "@/app/update-context";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import packageJson from "../../../../../package.json";
@@ -95,40 +96,79 @@ function StatusBarUpdateButton() {
     checkForUpdates,
     installUpdate,
   } = useAppUpdates();
-  const updateAction =
-    isInstalling || updateStatus === "checking"
-      ? {
-          label: t("statusBar.loading"),
-          icon: <LoaderCircle className="size-3 animate-spin" aria-hidden="true" />,
-          disabled: true,
-        }
-      : updateStatus === "available" && availableVersion !== null
-        ? {
-            label: t("statusBar.update"),
-            icon: <Download className="size-3" aria-hidden="true" />,
-            disabled: false,
-          }
-        : updateStatus === "error"
-          ? {
-              label: t("statusBar.error"),
-              icon: <CircleAlert className="size-3" aria-hidden="true" />,
-              disabled: false,
-            }
-          : null;
+  const updateAction = getUpdateButtonAction(updateStatus, availableVersion, isInstalling, {
+    loading: t("statusBar.loading"),
+    update: t("statusBar.update"),
+    error: t("statusBar.error"),
+  });
 
   if (!updateAction) return null;
+
+  const handleUpdateClick = () => {
+    if (updateStatus === "available") {
+      void installUpdate();
+      return;
+    }
+
+    void checkForUpdates();
+  };
 
   return (
     <Button
       type="button"
       size="xs"
       disabled={updateAction.disabled}
-      onClick={() => void (updateStatus === "available" ? installUpdate() : checkForUpdates())}
+      onClick={handleUpdateClick}
     >
       {updateAction.icon}
       {updateAction.label}
     </Button>
   );
+}
+
+interface StatusBarUpdateAction {
+  label: string;
+  icon: ReactNode;
+  disabled: boolean;
+}
+
+interface StatusBarUpdateLabels {
+  loading: string;
+  update: string;
+  error: string;
+}
+
+function getUpdateButtonAction(
+  status: UpdateStatus,
+  availableVersion: string | null,
+  isLoading: boolean,
+  labels: StatusBarUpdateLabels,
+): StatusBarUpdateAction | null {
+  if (isLoading || status === "checking") {
+    return {
+      label: labels.loading,
+      icon: <LoaderCircle className="size-3 animate-spin" aria-hidden="true" />,
+      disabled: true,
+    };
+  }
+
+  if (status === "available" && availableVersion !== null) {
+    return {
+      label: labels.update,
+      icon: <Download className="size-3" aria-hidden="true" />,
+      disabled: false,
+    };
+  }
+
+  if (status === "error") {
+    return {
+      label: labels.error,
+      icon: <CircleAlert className="size-3" aria-hidden="true" />,
+      disabled: false,
+    };
+  }
+
+  return null;
 }
 
 function splitFilePath(path: string) {
