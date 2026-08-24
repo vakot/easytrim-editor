@@ -1,19 +1,10 @@
-import { ExternalLink } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Separator } from "@/components/ui/separator";
 import packageJson from "../../../../../package.json";
-import { openExternalUrl } from "@/lib/open-external-url";
-import type { AvailableUpdate } from "@/features/release/release-check";
 import type { ExportToast } from "@/features/export";
 
-export function StatusBar({
-  update,
-  queue,
-}: {
-  update: AvailableUpdate | null;
-  queue: ExportToast[];
-}) {
+export function StatusBar({ queue }: { queue: ExportToast[] }) {
   const { t } = useTranslation();
   const appSha = import.meta.env.VITE_APP_SHA?.trim();
   const activeExport = queue.find((item) => item.status === "rendering");
@@ -29,25 +20,9 @@ export function StatusBar({
       >
         <span className="flex min-w-0 items-center gap-1.5">
           <span>v{packageJson.version}</span>
-          {update ? (
-            <>
-              <span aria-hidden="true">·</span>
-              <a
-                href={update.url}
-                className="inline-flex items-center gap-0.5 text-primary underline-offset-2 hover:underline"
-                onClick={(event) => {
-                  event.preventDefault();
-                  void openExternalUrl(update.url);
-                }}
-              >
-                <span>{t("release.updateAvailableShort")}</span>
-                <ExternalLink className="size-3" aria-hidden="true" />
-              </a>
-            </>
-          ) : null}
           {appSha ? (
             <>
-              <span aria-hidden="true">·</span>
+              <span aria-hidden="true">&middot;</span>
               <code>{appSha.slice(0, 7)}</code>
             </>
           ) : null}

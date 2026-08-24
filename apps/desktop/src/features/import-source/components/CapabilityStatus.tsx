@@ -5,7 +5,7 @@ import type { SessionState } from "@/app/session-state";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { capabilityError } from "@/features/import-source/utils/media-formatters";
 import { useTranslation } from "react-i18next";
-import styles from "./styles.module.css";
+import styles from "./CapabilityStatus.module.css";
 
 function StatusDot({ tone }: { tone: "success" | "error" | "neutral" }) {
   const color =

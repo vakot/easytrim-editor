@@ -56,8 +56,6 @@ export const sk = {
       color: "Farba",
       language: "Jazyk",
     },
-    toolbar: "Panel aplikácie",
-    returnToWelcome: "Návrat na úvodnú stránku EasyTrim Editor",
     dragUnavailable: "Presunutie súboru nie je dostupné: {{message}}",
     panels: {
       group: "Panely editora",
@@ -69,7 +67,6 @@ export const sk = {
     windowControls: {
       titleBar: "Titulkový panel okna",
       group: "Ovládanie okna",
-      logo: "EasyTrim Editor",
       minimize: "Minimalizovať",
       maximize: "Maximalizovať",
       restore: "Obnoviť",
@@ -80,26 +77,8 @@ export const sk = {
       title: "Čaká sa na systémové okno",
       description: "Pokračujte výberom umiestnenia súboru.",
     },
-    returnDialog: {
-      eyebrow: "Opustiť editor",
-      title: "Vrátiť sa na úvodnú stránku?",
-      description: "Aktuálny strih a nastavenia zvuku sa vymažú.",
-      confirm: "Vrátiť sa na úvod",
-    },
   },
   import: {
-    openVideo: "Otvoriť",
-    openTooltip: "Vyberte video, ktoré chcete otvoriť v editore. (Ctrl+O)",
-    opening: "Otvára sa…",
-    welcome: {
-      eyebrow: "Začať nový klip",
-      title: "Otvoriť video",
-      description: "Importujte jeden zdroj a ihneď začnite strihať.",
-      selectVideo: "Vybrať video",
-      alternative: "alebo",
-      drop: "Sem presuňte podporované video",
-      formats: "MP4, MOV, MKV, WebM, AVI, TS, MTS, M2TS, M4V, WMV, FLV",
-    },
     capabilities: {
       checkingDescription: "Kontroluje sa pripravenosť požadovaných multimediálnych závislostí.",
       readyDescription:
@@ -280,12 +259,6 @@ export const sk = {
     },
     sourceResolution: "{{height}}p \u00b7 {{width}} \u00d7 {{height}} (zdroj)",
     framesPerSecond: "{{value}} FPS",
-  },
-  release: {
-    updateAvailable: "Je dostupná nová verzia EasyTrim Editor:",
-    updateAvailableShort: "Dostupná aktualizácia",
-    update: "Aktualizovať",
-    dismiss: "Skryť upozornenie na aktualizáciu",
   },
   support: {
     message: "Podporte autora a pomôžte zlepšovať EasyTrim Editor.",

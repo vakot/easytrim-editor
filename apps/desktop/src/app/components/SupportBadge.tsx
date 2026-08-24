@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { STORAGE_KEYS, readStoredJson, writeStoredJson } from "@/lib/storage";
 import { openExternalUrl } from "@/lib/open-external-url";
 
-import { AUTHOR_SUPPORT_URL } from "@/features/release/release-check";
+const AUTHOR_SUPPORT_URL = "https://ko-fi.com/vakot";
 
 export function SupportBadge() {
   const { t } = useTranslation();

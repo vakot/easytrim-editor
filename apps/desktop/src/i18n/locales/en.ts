@@ -38,8 +38,6 @@ export const en = {
     custom: "Custom",
   },
   app: {
-    toolbar: "Application toolbar",
-    returnToWelcome: "Return to EasyTrim Editor welcome page",
     dragUnavailable: "Drag and drop is unavailable: {{message}}",
     topBarMenus: {
       label: "Application menus",
@@ -63,7 +61,6 @@ export const en = {
     windowControls: {
       titleBar: "Window title bar",
       group: "Window controls",
-      logo: "EasyTrim Editor",
       minimize: "Minimize",
       maximize: "Maximize",
       restore: "Restore",
@@ -74,26 +71,8 @@ export const en = {
       title: "Waiting for system dialog",
       description: "Choose a file location to continue.",
     },
-    returnDialog: {
-      eyebrow: "Leave editor",
-      title: "Return to welcome page?",
-      description: "Your current trim and audio settings will be cleared.",
-      confirm: "Return to welcome",
-    },
   },
   import: {
-    openVideo: "Open",
-    openTooltip: "Choose a video file to open in the editor. (Ctrl+O)",
-    opening: "Opening…",
-    welcome: {
-      eyebrow: "Start a new clip",
-      title: "Open a video",
-      description: "Import one source and start cutting immediately.",
-      selectVideo: "Select video",
-      alternative: "or",
-      drop: "Drop a supported video here",
-      formats: "MP4, MOV, MKV, WebM, AVI, TS, MTS, M2TS, M4V, WMV, FLV",
-    },
     capabilities: {
       checkingDescription: "Checking whether the required media dependencies are ready.",
       readyDescription: "All required media dependencies are installed and ready to use.",
@@ -273,12 +252,6 @@ export const en = {
     },
     sourceResolution: "{{height}}p \u00b7 {{width}} \u00d7 {{height}} (source)",
     framesPerSecond: "{{value}} FPS",
-  },
-  release: {
-    updateAvailable: "A new EasyTrim Editor release is available:",
-    updateAvailableShort: "Update available",
-    update: "Update",
-    dismiss: "Dismiss update notice",
   },
   support: {
     message: "Support the author and help keep EasyTrim Editor improving.",

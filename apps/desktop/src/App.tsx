@@ -1,12 +1,11 @@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { NativeDialogOverlay } from "@/app/components/NativeDialogOverlay";
-import { ReturnConfirmationDialog } from "@/app/components/ReturnConfirmationDialog";
 import { StatusBar } from "@/app/components/StatusBar";
+import { SupportBadge } from "@/app/components/SupportBadge";
 import { CapabilityStatus, SourceWorkspace } from "@/features/import-source/SourceWorkspace";
 import { useTranslation } from "react-i18next";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
-import { useReleaseCheck } from "@/features/release/hooks/useReleaseCheck";
 import { EditorViewStateProvider } from "@/app/editor-view-state";
 import { useRef } from "react";
 import { CustomTitleBar } from "@/app/components/CustomTitleBar";
@@ -22,7 +21,6 @@ function EasyTrimEditorApp() {
   const app = useEditorSession();
   const sourceDetails = useSourceDetails();
   const { t } = useTranslation();
-  const { update } = useReleaseCheck();
   const source = sourceDetails.source;
   const exportPanelRef = useRef<ExportPanelHandle>(null);
   const canExport = app.session.status === "ready" && Boolean(source?.media && source.trim);
@@ -37,7 +35,6 @@ function EasyTrimEditorApp() {
     <TooltipProvider>
       <main className="fixed inset-0 grid h-dvh w-screen min-w-80 overflow-hidden bg-background grid-rows-[2.25rem_minmax(0,1fr)_auto]">
         <CustomTitleBar
-          onLogoClick={app.requestReturnToWelcome}
           menuControls={
             <ContextMenus
               isChoosingSource={app.isChoosingSource}
@@ -75,15 +72,6 @@ function EasyTrimEditorApp() {
           />
         ) : null}
 
-        <ReturnConfirmationDialog
-          open={app.isReturnConfirmationOpen}
-          onCancel={() => app.setIsReturnConfirmationOpen(false)}
-          onConfirm={() => {
-            app.setIsReturnConfirmationOpen(false);
-            app.handleReturnToWelcome();
-          }}
-        />
-
         {app.isNativeDialogOpen ? <NativeDialogOverlay /> : null}
 
         {app.dropListenerError ? (
@@ -97,8 +85,11 @@ function EasyTrimEditorApp() {
           </Alert>
         ) : null}
 
-        <SourceWorkspace />
-        <StatusBar update={update} queue={app.exportQueue} />
+        <div className="relative min-h-0 min-w-0">
+          <SourceWorkspace />
+          <SupportBadge />
+        </div>
+        <StatusBar queue={app.exportQueue} />
       </main>
     </TooltipProvider>
   );
