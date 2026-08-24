@@ -11,7 +11,7 @@ import { EditorViewStateProvider } from "@/app/editor-view-state";
 import { useRef } from "react";
 import { CustomTitleBar } from "@/app/components/CustomTitleBar";
 import { PanelVisibilityControls } from "@/app/components/PanelVisibilityControls";
-import { TopBarMenus } from "@/app/components/TopBarMenus";
+import { ContextMenus } from "@/app/components/ContextMenus";
 import { ExportPanel, type ExportPanelHandle } from "@/features/export";
 import { EditorSessionProvider } from "@/app/editor-session-context";
 import { useEditorSession } from "@/app/hooks/useEditorSession";
@@ -45,7 +45,7 @@ function EasyTrimEditorApp() {
         <CustomTitleBar
           onLogoClick={app.requestReturnToWelcome}
           menuControls={
-            <TopBarMenus
+            <ContextMenus
               isChoosingSource={app.isChoosingSource}
               canSave={canSave}
               canExport={canExport}

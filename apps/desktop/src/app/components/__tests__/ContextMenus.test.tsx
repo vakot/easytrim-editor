@@ -5,15 +5,15 @@ import { describe, expect, it, vi } from "vitest";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { STORAGE_KEYS } from "@/lib/storage";
-import { TopBarMenus } from "../TopBarMenus";
+import { ContextMenus } from "../ContextMenus";
 
-describe("TopBarMenus", () => {
+describe("ContextMenus", () => {
   it("opens the File menu with its action and hotkey hint", async () => {
     const user = userEvent.setup();
     render(
       <TooltipProvider>
         <ThemeProvider>
-          <TopBarMenus
+          <ContextMenus
             isChoosingSource={false}
             canSave
             canExport
@@ -44,7 +44,7 @@ describe("TopBarMenus", () => {
     render(
       <TooltipProvider>
         <ThemeProvider>
-          <TopBarMenus
+          <ContextMenus
             isChoosingSource={false}
             canSave
             canExport
@@ -116,7 +116,7 @@ describe("TopBarMenus", () => {
     render(
       <TooltipProvider>
         <ThemeProvider>
-          <TopBarMenus
+          <ContextMenus
             isChoosingSource={false}
             canSave
             canExport
@@ -205,7 +205,7 @@ describe("TopBarMenus", () => {
     render(
       <TooltipProvider>
         <ThemeProvider>
-          <TopBarMenus
+          <ContextMenus
             isChoosingSource={false}
             canSave
             canExport

@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CustomTitleBar } from "../CustomTitleBar";
-import { TopBarMenus } from "../TopBarMenus";
+import { ContextMenus } from "../ContextMenus";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 
 const windowActions = vi.hoisted(() => ({
@@ -24,7 +24,7 @@ describe("CustomTitleBar", () => {
         <CustomTitleBar
           onLogoClick={vi.fn()}
           menuControls={
-            <TopBarMenus
+            <ContextMenus
               isChoosingSource={false}
               canSave
               canExport
@@ -49,7 +49,7 @@ describe("CustomTitleBar", () => {
         <CustomTitleBar
           onLogoClick={vi.fn()}
           menuControls={
-            <TopBarMenus
+            <ContextMenus
               isChoosingSource={false}
               canSave
               canExport
@@ -72,7 +72,7 @@ describe("CustomTitleBar", () => {
         <CustomTitleBar
           onLogoClick={vi.fn()}
           menuControls={
-            <TopBarMenus
+            <ContextMenus
               isChoosingSource={false}
               canSave
               canExport
