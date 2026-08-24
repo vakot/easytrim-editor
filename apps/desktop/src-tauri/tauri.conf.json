@@ -34,7 +34,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDIyQ0FBQ0RFMUEzNTU2NDQKUldSRVZqVWEzcXpLSWdpR3dEY05VdXpFK3E0WVlQVkdNUkxrUXBxaFBENGd6K2NMc1V3VmFOclkK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDgwNTM5MUQyMzQxNDkzOEQKUldTTmt4UTAwcEZUZ0ZDekVpTiszMzNwbVkrZ3kvWSsvbFBXc1JwMU1qbEx6ZkRYdWRmUlRlR2wK",
       "endpoints": [
         "https://github.com/vakot/easytrim-editor/releases/latest/download/latest.json"
       ],
