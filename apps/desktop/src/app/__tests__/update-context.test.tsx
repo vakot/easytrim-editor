@@ -5,6 +5,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AppUpdatesProvider } from "@/app/AppUpdatesProvider";
 import { useAppUpdates } from "@/app/update-context";
 
+const availableVersion = "next-version";
+
 const nativeUpdates = vi.hoisted(() => ({
   checkForUpdates: vi.fn(),
   isTauriRuntime: vi.fn(() => true),
@@ -37,7 +39,7 @@ describe("AppUpdatesProvider", () => {
 
   it("checks on mount and installs the available update", async () => {
     const install = vi.fn(() => Promise.resolve());
-    nativeUpdates.checkForUpdates.mockResolvedValue({ version: "1.0.6", install });
+    nativeUpdates.checkForUpdates.mockResolvedValue({ version: availableVersion, install });
     const user = userEvent.setup();
 
     render(
@@ -47,7 +49,7 @@ describe("AppUpdatesProvider", () => {
     );
 
     await waitFor(() => expect(screen.getByTestId("status")).toHaveTextContent("available"));
-    expect(screen.getByTestId("version")).toHaveTextContent("1.0.6");
+    expect(screen.getByTestId("version")).toHaveTextContent(availableVersion);
     await user.click(screen.getByRole("button", { name: "Install" }));
 
     await waitFor(() => expect(install).toHaveBeenCalledOnce());
@@ -70,7 +72,7 @@ describe("AppUpdatesProvider", () => {
 
   it("keeps an error state when update installation fails", async () => {
     const install = vi.fn(() => Promise.reject(new Error("installation failed")));
-    nativeUpdates.checkForUpdates.mockResolvedValue({ version: "1.0.6", install });
+    nativeUpdates.checkForUpdates.mockResolvedValue({ version: availableVersion, install });
     const user = userEvent.setup();
 
     render(
