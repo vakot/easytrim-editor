@@ -261,9 +261,7 @@ export const sk = {
     framesPerSecond: "{{value}} FPS",
   },
   support: {
-    message: "Podporte autora a pomôžte zlepšovať EasyTrim Editor.",
-    dismiss: "Skryť správu podpory",
-    resetDevelopment: "Obnoviť odznak podpory",
+    onKofi: "Podporte na Ko-fi.com",
   },
   units: {
     framesPerSecond: "{{value}} fps",

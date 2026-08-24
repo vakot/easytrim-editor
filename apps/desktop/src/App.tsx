@@ -2,7 +2,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { NativeDialogOverlay } from "@/app/components/NativeDialogOverlay";
 import { StatusBar } from "@/app/components/StatusBar";
-import { SupportBadge } from "@/app/components/SupportBadge";
 import { CapabilityStatus, SourceWorkspace } from "@/features/import-source/SourceWorkspace";
 import { useTranslation } from "react-i18next";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
@@ -85,10 +84,7 @@ function EasyTrimEditorApp() {
           </Alert>
         ) : null}
 
-        <div className="relative min-h-0 min-w-0">
-          <SourceWorkspace />
-          <SupportBadge />
-        </div>
+        <SourceWorkspace />
         <StatusBar queue={app.exportQueue} />
       </main>
     </TooltipProvider>

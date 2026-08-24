@@ -199,6 +199,7 @@ describe("App", () => {
     expect(screen.getByRole("list", { name: "Keyboard shortcuts" })).toHaveTextContent(
       "Mark In / Mark Out",
     );
+    expect(screen.getByRole("link", { name: "Support on Ko-fi.com" })).toBeInTheDocument();
     expect(screen.getByLabelText("Current playback time")).toHaveTextContent(
       "00:00:00:00f / 00:00:00:00f",
     );

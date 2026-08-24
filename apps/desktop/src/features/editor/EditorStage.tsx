@@ -56,7 +56,7 @@ export function EditorStage() {
     >
       <Panel id="preview-panel" minSize="14rem" className="min-h-0 min-w-0">
         {source.sourceId ? (
-          <div className="grid size-full min-h-0 place-items-center overflow-auto bg-preview-surface p-4">
+          <div className="grid size-full min-h-0 place-items-center bg-preview-surface p-4">
             <VideoPreview
               sourceId={source.sourceId}
               preview={source.preview}

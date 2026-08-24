@@ -254,9 +254,7 @@ export const en = {
     framesPerSecond: "{{value}} FPS",
   },
   support: {
-    message: "Support the author and help keep EasyTrim Editor improving.",
-    dismiss: "Dismiss support message",
-    resetDevelopment: "Reset support badge",
+    onKofi: "Support on Ko-fi.com",
   },
   units: {
     framesPerSecond: "{{value}} fps",
