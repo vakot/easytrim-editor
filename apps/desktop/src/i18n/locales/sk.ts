@@ -183,7 +183,9 @@ export const sk = {
     preparingDescription: "Pri zdrojoch s vysokým rozlíšením to môže chvíľu trvať.",
     error: "Náhľad videa sa nepodarilo zobraziť",
     sourceLabel: "Náhľad zdrojového videa",
-    proxyBadge: "Náhľad 720p",
+    proxyBadge: "Kompatibilný náhľad",
+    proxyBadgeDescription:
+      "Pôvodný zdroj nebolo možné prehrať priamo, preto EasyTrim pripravil kompatibilný náhľad, ktorý môže mať nižšiu kvalitu. Export stále používa pôvodný súbor.",
     playbackFailed: "Prehrávanie sa nepodarilo spustiť.",
   },
   timeline: {
