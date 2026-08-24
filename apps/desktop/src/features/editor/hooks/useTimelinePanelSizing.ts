@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo } from "react";
 import { usePanelRef } from "react-resizable-panels";
 
 import {
@@ -6,31 +6,18 @@ import {
   type TimelinePanelSizeConstraints,
 } from "../utils/timeline-pane-sizing";
 
-const FALLBACK_CONSTRAINTS = {
-  minSize: "10rem",
-  defaultSize: "22rem",
-  maxSize: "70%",
+const PENDING_SOURCE_CONSTRAINTS = {
+  minSize: 170,
+  defaultSize: 170,
+  maxSize: "100%",
 } as const;
 const EMPTY_TIMELINE_CONSTRAINTS = timelinePanelSizeConstraints(0);
 
 export function timelinePanelTargetSize(
   currentSize: number,
   constraints: TimelinePanelSizeConstraints,
-  initialize: boolean,
 ): number {
-  if (initialize) {
-    return constraints.defaultSize;
-  }
   return Math.min(constraints.maxSize, Math.max(constraints.minSize, currentSize));
-}
-
-export function timelinePanelConstraintsForSource(
-  audioTrackCount: number | null,
-  previousConstraints: TimelinePanelSizeConstraints | null,
-): TimelinePanelSizeConstraints | null {
-  return audioTrackCount === null
-    ? previousConstraints
-    : timelinePanelSizeConstraints(audioTrackCount);
 }
 
 export function useTimelinePanelSizing(
@@ -39,34 +26,15 @@ export function useTimelinePanelSizing(
   isVisible: boolean,
 ) {
   const panelRef = usePanelRef();
-  const initializedSourceRef = useRef<string | null>(null);
-  const [confirmed, setConfirmed] = useState<{
-    audioTrackCount: number;
-    constraints: TimelinePanelSizeConstraints;
-  } | null>(() =>
-    audioTrackCount === null
-      ? null
-      : { audioTrackCount, constraints: timelinePanelSizeConstraints(audioTrackCount) },
+  const constraints = useMemo(
+    () =>
+      sourceId === null
+        ? EMPTY_TIMELINE_CONSTRAINTS
+        : audioTrackCount === null
+          ? PENDING_SOURCE_CONSTRAINTS
+          : timelinePanelSizeConstraints(audioTrackCount),
+    [audioTrackCount, sourceId],
   );
-  const constraints =
-    sourceId === null
-      ? EMPTY_TIMELINE_CONSTRAINTS
-      : (confirmed?.constraints ?? FALLBACK_CONSTRAINTS);
-
-  useLayoutEffect(() => {
-    if (audioTrackCount === null) return;
-    // Keep the last confirmed constraints while replacement metadata is pending.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setConfirmed((current) => {
-      const nextConstraints = timelinePanelConstraintsForSource(
-        audioTrackCount,
-        current?.constraints ?? null,
-      );
-      if (!nextConstraints) return current;
-      if (current?.audioTrackCount === audioTrackCount) return current;
-      return { audioTrackCount, constraints: nextConstraints };
-    });
-  }, [audioTrackCount]);
 
   const resetToDefault = useCallback(
     () => panelRef.current?.resize(constraints.defaultSize),
@@ -80,7 +48,6 @@ export function useTimelinePanelSizing(
     }
 
     if (sourceId === null) {
-      initializedSourceRef.current = null;
       if (!panel.isCollapsed()) {
         const currentSize = panel.getSize().inPixels;
         if (Math.abs(currentSize - EMPTY_TIMELINE_CONSTRAINTS.defaultSize) >= 1) {
@@ -90,7 +57,7 @@ export function useTimelinePanelSizing(
       return;
     }
 
-    if (audioTrackCount === null || confirmed?.audioTrackCount !== audioTrackCount) return;
+    if (audioTrackCount === null) return;
 
     if (panel.isCollapsed()) {
       return;
@@ -99,15 +66,13 @@ export function useTimelinePanelSizing(
     const currentSize = panel.getSize().inPixels;
     const targetSize = timelinePanelTargetSize(
       currentSize,
-      confirmed.constraints,
-      initializedSourceRef.current === null,
+      timelinePanelSizeConstraints(audioTrackCount),
     );
 
-    initializedSourceRef.current = sourceId;
     if (Math.abs(currentSize - targetSize) >= 1) {
       panel.resize(targetSize);
     }
-  }, [audioTrackCount, confirmed, panelRef, sourceId]);
+  }, [audioTrackCount, panelRef, sourceId]);
 
   useEffect(() => {
     const panel = panelRef.current;
