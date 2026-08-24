@@ -15,9 +15,7 @@ interface SourceSidebarProps {
 export function SourceSidebar({ session, queue }: SourceSidebarProps) {
   const { t } = useTranslation();
 
-  if (!session.source) {
-    return null;
-  }
+  const sourceName = session.source?.selection.displayName ?? t("import.source.noSource");
 
   return (
     <aside
@@ -32,10 +30,10 @@ export function SourceSidebar({ session, queue }: SourceSidebarProps) {
           <Tooltip>
             <TooltipTrigger asChild>
               <h1 id="source-title" className="truncate text-base font-black">
-                {session.source.selection.displayName}
+                {sourceName}
               </h1>
             </TooltipTrigger>
-            <TooltipContent>{session.source.selection.displayName}</TooltipContent>
+            <TooltipContent>{sourceName}</TooltipContent>
           </Tooltip>
           {session.status === "loading-source" ? (
             <span className="text-xs text-muted-foreground" role="status">
@@ -45,9 +43,7 @@ export function SourceSidebar({ session, queue }: SourceSidebarProps) {
         </div>
 
         {session.lastError ? <SourceError error={session.lastError} /> : null}
-        {session.status === "ready" && session.source.media ? (
-          <MediaDetails media={session.source.media} />
-        ) : null}
+        <MediaDetails media={session.source?.media ?? null} />
       </div>
       <Separator className="mx-4" />
       <ScrollArea className="min-h-0" data-slot="export-queue-scroll">

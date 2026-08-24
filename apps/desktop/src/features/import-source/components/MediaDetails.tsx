@@ -10,23 +10,40 @@ import {
 } from "@/features/import-source/utils/media-formatters";
 import { useTranslation } from "react-i18next";
 
-export function MediaDetails({ media }: { media: MediaInfo }) {
+export function MediaDetails({ media }: { media: MediaInfo | null }) {
   const { t } = useTranslation();
-  const frameRate = media.video.averageFrameRate ?? media.video.realFrameRate;
-  const unknown = t("common.unknown");
+  const noSource = t("import.source.noSource");
+  const frameRate = media?.video.averageFrameRate ?? media?.video.realFrameRate;
+  const unknown = media ? t("common.unknown") : noSource;
   const metadata = [
-    [t("import.source.metadata.container"), media.formatLongName ?? media.formatName],
-    [t("import.source.metadata.duration"), formatDuration(media.durationMicros)],
-    [t("import.source.metadata.resolution"), `${media.video.width} × ${media.video.height}`],
+    [
+      t("import.source.metadata.container"),
+      media ? (media.formatLongName ?? media.formatName) : noSource,
+    ],
+    [t("import.source.metadata.duration"), media ? formatDuration(media.durationMicros) : noSource],
+    [
+      t("import.source.metadata.resolution"),
+      media ? `${media.video.width} × ${media.video.height}` : noSource,
+    ],
     [
       t("import.source.metadata.frameRate"),
-      formatFrameRate(frameRate, unknown, (value) => t("units.framesPerSecond", { value })),
+      media
+        ? formatFrameRate(frameRate, unknown, (value) => t("units.framesPerSecond", { value }))
+        : noSource,
     ],
-    [t("import.source.metadata.videoCodec"), media.video.codecName.toUpperCase()],
-    [t("import.source.metadata.fileSize"), formatBytes(media.sizeBytes, unknown)],
+    [
+      t("import.source.metadata.videoCodec"),
+      media ? media.video.codecName.toUpperCase() : noSource,
+    ],
+    [
+      t("import.source.metadata.fileSize"),
+      media ? formatBytes(media.sizeBytes, unknown) : noSource,
+    ],
     [
       t("import.source.metadata.bitrate"),
-      formatBitrate(media.bitrate, unknown, (value) => t("units.megabitsPerSecond", { value })),
+      media
+        ? formatBitrate(media.bitrate, unknown, (value) => t("units.megabitsPerSecond", { value }))
+        : noSource,
     ],
   ] as const;
 

@@ -116,6 +116,7 @@ export const en = {
       resizeDetails: "Resize source details",
       previewArea: "Video preview and timeline area",
       details: "Source details",
+      noSource: "No source",
       inspecting: "Inspecting…",
       loadError: "Could not load this video",
       technicalDetails: "Technical details",

@@ -38,6 +38,7 @@ interface PlaybackControlsProps {
   error: string | null;
   canSetSegmentStart: boolean;
   canSetSegmentEnd: boolean;
+  disabled?: boolean;
   onTogglePlayback: () => void;
   onStepFrame: (direction: -1 | 1) => void;
   onSetSegmentBoundary: (boundary: TrimBoundary) => void;
@@ -48,6 +49,7 @@ export function PlaybackControls({
   error,
   canSetSegmentStart,
   canSetSegmentEnd,
+  disabled = false,
   onTogglePlayback,
   onStepFrame,
   onSetSegmentBoundary,
@@ -63,7 +65,7 @@ export function PlaybackControls({
           title={
             canSetSegmentStart ? t("preview.setStartShortcut") : t("preview.setStartUnavailable")
           }
-          disabled={!canSetSegmentStart}
+          disabled={disabled || !canSetSegmentStart}
           onClick={() => onSetSegmentBoundary("start")}
         >
           <SquareArrowRight />
@@ -72,6 +74,7 @@ export function PlaybackControls({
           label={t("preview.previousFrame")}
           shortcut="ArrowLeft"
           title={t("preview.previousFrameShortcut")}
+          disabled={disabled}
           onClick={() => onStepFrame(-1)}
         >
           <SkipBack />
@@ -81,6 +84,7 @@ export function PlaybackControls({
           shortcut="Space"
           title={isPlaying ? t("preview.pauseShortcut") : t("preview.playShortcut")}
           primary
+          disabled={disabled}
           onClick={onTogglePlayback}
         >
           {isPlaying ? <Pause /> : <Play />}
@@ -89,6 +93,7 @@ export function PlaybackControls({
           label={t("preview.nextFrame")}
           shortcut="ArrowRight"
           title={t("preview.nextFrameShortcut")}
+          disabled={disabled}
           onClick={() => onStepFrame(1)}
         >
           <SkipForward />
@@ -97,7 +102,7 @@ export function PlaybackControls({
           label={t("preview.setEnd")}
           shortcut="O"
           title={canSetSegmentEnd ? t("preview.setEndShortcut") : t("preview.setEndUnavailable")}
-          disabled={!canSetSegmentEnd}
+          disabled={disabled || !canSetSegmentEnd}
           onClick={() => onSetSegmentBoundary("end")}
         >
           <SquareArrowLeft />
@@ -152,8 +157,8 @@ function TransportButton({
 }
 
 interface PlaybackTimecodeProps {
-  currentMicros: number;
-  sourceDurationMicros: number;
+  currentMicros: number | null;
+  sourceDurationMicros: number | null;
   frameRate?: FrameRate;
 }
 
@@ -166,10 +171,13 @@ export function PlaybackTimecode({
 
   return (
     <output className="font-mono text-xs text-foreground" aria-label={t("preview.currentTime")}>
-      {formatPlaybackTime(currentMicros, frameRate)}
+      {currentMicros === null ? "---" : formatPlaybackTime(currentMicros, frameRate)}
       <span className="text-muted-foreground">
         {" "}
-        / {formatPlaybackTime(sourceDurationMicros, frameRate)}
+        /{" "}
+        {sourceDurationMicros === null
+          ? "---"
+          : formatPlaybackTime(sourceDurationMicros, frameRate)}
       </span>
     </output>
   );
@@ -180,6 +188,7 @@ interface TimelineToolsProps {
   loopPlaybackEnabled: boolean;
   segmentPlaybackEnabled: boolean;
   playbackSpeed: PlaybackSpeed;
+  disabled?: boolean;
   onToggleSafeTrimFollowing: () => void;
   onToggleLoopPlayback: () => void;
   onToggleSegmentPlayback: () => void;
@@ -192,6 +201,7 @@ export function TimelineTools({
   loopPlaybackEnabled,
   segmentPlaybackEnabled,
   playbackSpeed,
+  disabled = false,
   onToggleSafeTrimFollowing,
   onToggleLoopPlayback,
   onToggleSegmentPlayback,
@@ -210,6 +220,7 @@ export function TimelineTools({
             safeTrimFollowingEnabled ? "preview.safeTrim.enabled" : "preview.safeTrim.disabled",
           )}
           onClick={onToggleSafeTrimFollowing}
+          disabled={disabled}
         >
           <Link2 />
         </TimelineToolButton>
@@ -220,6 +231,7 @@ export function TimelineTools({
             loopPlaybackEnabled ? "preview.loopPlayback.enabled" : "preview.loopPlayback.disabled",
           )}
           onClick={onToggleLoopPlayback}
+          disabled={disabled}
         >
           <Repeat2 />
         </TimelineToolButton>
@@ -232,10 +244,15 @@ export function TimelineTools({
               : "preview.segmentPlayback.disabled",
           )}
           onClick={onToggleSegmentPlayback}
+          disabled={disabled}
         >
           <BetweenVerticalStart />
         </TimelineToolButton>
-        <PlaybackSpeedTool speed={playbackSpeed} onChange={onPlaybackSpeedChange} />
+        <PlaybackSpeedTool
+          speed={playbackSpeed}
+          onChange={onPlaybackSpeedChange}
+          disabled={disabled}
+        />
       </div>
       <Separator
         orientation="vertical"
@@ -249,6 +266,7 @@ export function TimelineTools({
           label={t("preview.resetTools")}
           title={t("preview.resetTools")}
           onClick={onReset}
+          disabled={disabled}
         >
           <RotateCcw />
         </TimelineToolButton>
@@ -260,9 +278,11 @@ export function TimelineTools({
 function PlaybackSpeedTool({
   speed,
   onChange,
+  disabled,
 }: {
   speed: PlaybackSpeed;
   onChange: (speed: PlaybackSpeed) => void;
+  disabled: boolean;
 }) {
   const { t } = useTranslation();
   const stepIndex = PLAYBACK_SPEED_STEPS.indexOf(speed);
@@ -279,6 +299,7 @@ function PlaybackSpeedTool({
               type="button"
               aria-label={t("preview.playbackSpeed.label")}
               aria-pressed={enabled}
+              disabled={disabled}
               className={enabled ? "text-primary aria-expanded:text-primary" : undefined}
             >
               <Gauge />
@@ -318,12 +339,14 @@ function TimelineToolButton({
   title,
   onClick,
   children,
+  disabled = false,
 }: {
   enabled: boolean;
   label: string;
   title: string;
   onClick: () => void;
   children: React.ReactNode;
+  disabled?: boolean;
 }) {
   return (
     <Tooltip>
@@ -334,6 +357,7 @@ function TimelineToolButton({
           type="button"
           aria-label={label}
           aria-pressed={enabled}
+          disabled={disabled}
           onClick={onClick}
           className={enabled ? "text-primary" : undefined}
         >

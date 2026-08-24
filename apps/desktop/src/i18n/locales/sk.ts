@@ -123,6 +123,7 @@ export const sk = {
       resizeDetails: "Zmeniť veľkosť detailov zdroja",
       previewArea: "Oblasť náhľadu videa a časovej osi",
       details: "Detaily zdroja",
+      noSource: "Žiadny zdroj",
       inspecting: "Analyzuje sa…",
       loadError: "Video sa nepodarilo načítať",
       technicalDetails: "Technické podrobnosti",
