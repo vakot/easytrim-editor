@@ -6,7 +6,6 @@ import type { ExportToast } from "@/features/export";
 
 export function StatusBar({ queue }: { queue: ExportToast[] }) {
   const { t } = useTranslation();
-  const appSha = import.meta.env.VITE_APP_SHA?.trim();
   const activeExport = queue.find((item) => item.status === "rendering");
   const activeExportPath = activeExport ? splitFilePath(activeExport.path) : null;
   const activeExportFps = activeExport?.estimatedFps;
@@ -20,12 +19,6 @@ export function StatusBar({ queue }: { queue: ExportToast[] }) {
       >
         <span className="flex min-w-0 items-center gap-1.5">
           <span>v{packageJson.version}</span>
-          {appSha ? (
-            <>
-              <span aria-hidden="true">&middot;</span>
-              <code>{appSha.slice(0, 7)}</code>
-            </>
-          ) : null}
         </span>
         {activeExport ? (
           <div className="ml-auto flex min-w-0 items-center gap-3 pl-4 text-muted-foreground">
