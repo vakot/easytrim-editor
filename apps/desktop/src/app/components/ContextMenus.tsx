@@ -41,7 +41,7 @@ interface ContextMenusProps {
 }
 
 const themeIcons = { system: Monitor, light: Sun, dark: Moon } as const;
-type ContextMenuId = "file" | "view" | "help";
+type ContextMenuId = "file" | "view" | "settings" | "help";
 
 const CHANGELOG_URL = "https://github.com/vakot/easytrim-editor/releases";
 const PROJECT_PAGE_URL = "https://github.com/vakot/easytrim-editor";
@@ -201,8 +201,6 @@ export function ContextMenus({
       <RefreshCw className="size-4" aria-hidden="true" />
     ) : undefined;
 
-  // TODO: Move Language to a dedicated Settings menu once Settings is introduced.
-
   return (
     <nav className="flex h-full items-center gap-0.5" aria-label={t("app.topBarMenus.label")}>
       <ContextMenu
@@ -258,7 +256,13 @@ export function ContextMenus({
             shouldCloseOnClick: false,
             submenu: colorOptions,
           },
-          { id: "view-divider", separator: true },
+        ]}
+      />
+      <ContextMenu
+        {...menuProps("settings")}
+        label={t("app.topBarMenus.settings")}
+        options={[
+          { id: "settings-language-section", section: true, label: t("app.settings.language") },
           {
             id: "language",
             label: t("app.topBarMenus.language"),

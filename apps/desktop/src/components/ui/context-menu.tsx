@@ -25,7 +25,14 @@ export interface ContextMenuSeparatorOption {
   separator: true;
 }
 
-export type ContextMenuOption = ContextMenuItemOption | ContextMenuSeparatorOption;
+export interface ContextMenuSectionOption {
+  id: string;
+  section: true;
+  label: ReactNode;
+}
+
+export type ContextMenuOption =
+  ContextMenuItemOption | ContextMenuSeparatorOption | ContextMenuSectionOption;
 
 interface ContextMenuProps {
   label: string;
@@ -91,6 +98,17 @@ function ContextMenuOptionList({ options }: { options: readonly ContextMenuOptio
         <DropdownMenuPrimitive.Separator key={option.id} className="my-1 mx-2 h-px bg-border" />
       );
     }
+    if (isContextMenuSection(option)) {
+      return (
+        <div
+          key={option.id}
+          className="px-2.5 pt-2 pb-1 text-[0.65rem] font-semibold tracking-[0.14em] text-muted-foreground uppercase"
+          role="presentation"
+        >
+          {option.label}
+        </div>
+      );
+    }
 
     return (
       <ContextMenuOptionItem
@@ -106,6 +124,10 @@ function ContextMenuOptionList({ options }: { options: readonly ContextMenuOptio
 
 function isContextMenuSeparator(option: ContextMenuOption): option is ContextMenuSeparatorOption {
   return "separator" in option;
+}
+
+function isContextMenuSection(option: ContextMenuOption): option is ContextMenuSectionOption {
+  return "section" in option;
 }
 
 function ContextMenuOptionItem({
