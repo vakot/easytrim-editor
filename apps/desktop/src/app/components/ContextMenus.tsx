@@ -1,4 +1,14 @@
-import { Download, ExternalLink, LoaderCircle, Monitor, Moon, RefreshCw, Sun } from "lucide-react";
+import {
+  CheckCircle2,
+  CircleAlert,
+  Download,
+  ExternalLink,
+  LoaderCircle,
+  Monitor,
+  Moon,
+  RefreshCw,
+  Sun,
+} from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -181,6 +191,10 @@ export function ContextMenus({
       <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
     ) : updateStatus === "available" ? (
       <Download className="size-4" aria-hidden="true" />
+    ) : updateStatus === "up-to-date" ? (
+      <CheckCircle2 className="size-4 text-emerald-500" aria-hidden="true" />
+    ) : updateStatus === "error" ? (
+      <CircleAlert className="size-4 text-destructive" aria-hidden="true" />
     ) : updateStatus === "idle" ? (
       <RefreshCw className="size-4" aria-hidden="true" />
     ) : undefined;
