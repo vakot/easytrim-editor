@@ -200,7 +200,7 @@ describe("App", () => {
     expect(screen.getByLabelText("Video editor workspace")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "No source" })).toBeInTheDocument();
     expect(screen.getAllByText("No source").length).toBeGreaterThan(1);
-    expect(screen.getByLabelText("Current playback time")).toHaveTextContent("--- / ---");
+    expect(screen.getByLabelText("Current playback time")).toHaveTextContent("— / —");
     expect(screen.getByRole("button", { name: "Play" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Previous frame" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Next frame" })).toBeDisabled();
@@ -208,7 +208,7 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "Loop playback" })).not.toBeDisabled();
     expect(screen.getByRole("button", { name: "Segment playback" })).not.toBeDisabled();
     expect(screen.getByRole("button", { name: "Playback speed" })).not.toBeDisabled();
-    expect(screen.getAllByText("---").length).toBeGreaterThanOrEqual(8);
+    expect(screen.getAllByText("—").length).toBeGreaterThanOrEqual(8);
     expect(screen.queryByRole("slider", { name: "Playback position" })).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Source video preview")).not.toBeInTheDocument();
     expect(screen.queryByTestId("audio-tracks-scroll")).not.toBeInTheDocument();

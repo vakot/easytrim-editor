@@ -16,7 +16,7 @@ export function TimelineTimeValue({
         {label}
       </dt>
       <dd className="m-0 font-mono text-xs tabular-nums">
-        {micros === null ? "---" : formatPlaybackTime(micros, frameRate)}
+        {micros === null ? "—" : formatPlaybackTime(micros, frameRate)}
       </dd>
     </div>
   );
