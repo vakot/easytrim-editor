@@ -13,6 +13,7 @@ import {
   RefreshCw,
   RotateCcw,
   Sun,
+  Languages,
 } from "lucide-react";
 import { useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
@@ -169,8 +170,8 @@ export function ContextMenus({
     const Icon = themeIcons[value];
     return {
       id: `theme-${value}`,
-      label: t(`theme.${value}`),
-      hint: <Icon className="size-4" aria-hidden="true" />,
+      children: t(`theme.${value}`),
+      icon: <Icon className="size-3" aria-hidden="true" />,
       selected: value === preference,
       shouldCloseOnClick: false,
       onSelect: () => setPreference(value),
@@ -180,64 +181,67 @@ export function ContextMenus({
   const colorOptions: ContextMenuOption[] = [
     ...PRIMARY_COLORS.map((color) => ({
       id: `color-${color}`,
-      leading: <ColorSample color={color} selected={color === primaryColorKey} />,
-      label: t(`themeColor.${color}`),
-      hint: resolvePrimaryColor(color).toUpperCase(),
+      icon: <ColorSample color={color} selected={color === primaryColorKey} />,
+      children: t(`themeColor.${color}`),
+      suffix: <span className="font-mono">{resolvePrimaryColor(color).toUpperCase()}</span>,
       selected: color === primaryColorKey,
       shouldCloseOnClick: false,
       onSelect: () => setPrimaryColor(color),
     })),
     {
       id: "color-custom",
-      leading: (
+      icon: (
         <ColorSample
           color={displayedCustomColor}
           selected={primaryColorKey === CUSTOM_PRIMARY_COLOR}
         />
       ),
-      label: t("themeColor.custom"),
-      hint: displayedCustomColor.toUpperCase(),
+      children: t("themeColor.custom"),
+      suffix: <span className="font-mono">{displayedCustomColor.toUpperCase()}</span>,
       selected: primaryColorKey === CUSTOM_PRIMARY_COLOR,
       shouldCloseOnClick: false,
       onSelect: () => {
         setPreviewColor(null);
         setPrimaryColor(customPrimaryColor);
       },
-      openSubmenuOnClick: false,
-      submenuContent: (
-        <CustomColorPickerPanel
-          previewColor={previewColor}
-          onPreviewChange={setPreviewColor}
-          onClose={closeMenu}
-        />
-      ),
+      options: [
+        {
+          id: "custom-color-picker",
+          render: () => (
+            <CustomColorPickerPanel
+              previewColor={previewColor}
+              onPreviewChange={setPreviewColor}
+              onClose={closeMenu}
+            />
+          ),
+        },
+      ],
     },
   ];
 
-  const languageOptions: ContextMenuOption[] = (["en", "sk"] as const).map((language) => ({
+  const languageOptionsV2: ContextMenuOption[] = (["en", "sk"] as const).map((language) => ({
     id: `language-${language}`,
-    label: t(language === "en" ? "language.english" : "language.slovak"),
-    hint: language.toUpperCase(),
+    children: t(language === "en" ? "language.english" : "language.slovak"),
+    suffix: language.toUpperCase(),
     selected: language === currentLanguage,
     onSelect: () => void i18n.changeLanguage(language as SupportedLanguage),
   }));
 
   const settingsToolOption = (
     id: string,
-    label: string,
+    children: ReactNode,
     icon: ReactNode,
     key: ToolDefaultKey,
   ): ContextMenuOption => ({
     id,
-    label,
-    ariaLabel: label,
-    leading: icon,
-    hint: (
+    children,
+    icon,
+    suffix: (
       <Tooltip>
         <TooltipTrigger asChild>
           <span className="inline-flex">
             <Switch
-              aria-label={label}
+              size="sm"
               checked={toolDefaults[key]}
               onCheckedChange={(enabled) => setToolDefault(key, enabled)}
               onClick={(event) => event.stopPropagation()}
@@ -276,137 +280,141 @@ export function ContextMenus({
         : updateStatus === "available" && availableVersion
           ? t("app.topBarMenus.updateTo", { version: availableVersion })
           : t("app.topBarMenus.checkForUpdates");
+
   const updateHint =
     updateStatus === "checking" ? (
-      <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
+      <LoaderCircle className="size-3 animate-spin" aria-hidden="true" />
     ) : updateStatus === "available" ? (
-      <Download className="size-4" aria-hidden="true" />
+      <Download className="size-3" aria-hidden="true" />
     ) : updateStatus === "up-to-date" ? (
-      <CheckCircle2 className="size-4 text-emerald-500" aria-hidden="true" />
+      <CheckCircle2 className="size-3 text-emerald-500" aria-hidden="true" />
     ) : updateStatus === "error" ? (
-      <CircleAlert className="size-4 text-destructive" aria-hidden="true" />
+      <CircleAlert className="size-3 text-destructive" aria-hidden="true" />
     ) : updateStatus === "idle" ? (
-      <RefreshCw className="size-4" aria-hidden="true" />
+      <RefreshCw className="size-3" aria-hidden="true" />
     ) : undefined;
 
   return (
     <nav className="flex h-full items-center gap-0.5" aria-label={t("app.topBarMenus.label")}>
       <ContextMenu
         {...menuProps("file")}
-        label={t("app.topBarMenus.file")}
         options={[
           {
             id: "open-file",
-            label: t("app.topBarMenus.openFile"),
-            hint: "Ctrl+O",
+            children: t("app.topBarMenus.openFile"),
+            suffix: "Ctrl+O",
             disabled: isChoosingSource,
             onSelect: onChooseSource,
           },
           {
             id: "close-file",
-            label: t("app.topBarMenus.closeFile"),
-            hint: "Ctrl+Q",
+            children: t("app.topBarMenus.closeFile"),
+            suffix: "Ctrl+Q",
             disabled: !hasSource,
             onSelect: onCloseFile,
           },
           { id: "file-divider", separator: true },
           {
             id: "save-lossless-cut",
-            label: t("app.topBarMenus.saveLosslessCut"),
-            hint: "Ctrl+S",
+            children: t("app.topBarMenus.saveLosslessCut"),
+            suffix: "Ctrl+S",
             disabled: !canSave,
             onSelect: onSave,
           },
           {
             id: "optimize-export",
-            label: t("app.topBarMenus.optimizeExport"),
-            hint: "Ctrl+E",
+            children: t("app.topBarMenus.optimizeExport"),
+            suffix: "Ctrl+E",
             disabled: !canExport,
             onSelect: onExport,
           },
         ]}
-      />
+      >
+        {t("app.topBarMenus.file")}
+      </ContextMenu>
       <ContextMenu
         {...menuProps("view")}
-        label={t("app.topBarMenus.view")}
         options={[
           {
             id: "theme",
-            label: t("app.topBarMenus.theme"),
-            hint: <CurrentThemeIcon className="size-4" aria-label={t(`theme.${preference}`)} />,
+            children: t("app.topBarMenus.theme"),
+            icon: <CurrentThemeIcon className="size-3" aria-label={t(`theme.${preference}`)} />,
             shouldCloseOnClick: false,
-            submenu: themeOptions,
+            options: themeOptions,
           },
           {
             id: "color",
-            label: t("app.topBarMenus.color"),
-            hint: <ColorSample color={displayedPrimaryColor} />,
+            children: t("app.topBarMenus.color"),
+            icon: <ColorSample color={displayedPrimaryColor} />,
             shouldCloseOnClick: false,
-            submenu: colorOptions,
+            options: colorOptions,
           },
         ]}
-      />
+      >
+        {t("app.topBarMenus.view")}
+      </ContextMenu>
       <ContextMenu
         {...menuProps("settings")}
-        label={t("app.topBarMenus.settings")}
         options={[
           settingsToolOption(
             "setting-safe-trim",
             t("app.settings.snap"),
-            <Magnet className="size-4" aria-hidden="true" />,
+            <Magnet className="size-3" aria-hidden="true" />,
             "safeTrimFollowingEnabled",
           ),
           settingsToolOption(
             "setting-loop",
             t("app.settings.loop"),
-            <Repeat className="size-4" aria-hidden="true" />,
+            <Repeat className="size-3" aria-hidden="true" />,
             "loopPlaybackEnabled",
           ),
           settingsToolOption(
             "setting-segment",
             t("app.settings.followSegment"),
-            <BetweenVerticalStart className="size-4" aria-hidden="true" />,
+            <BetweenVerticalStart className="size-3" aria-hidden="true" />,
             "segmentPlaybackEnabled",
           ),
           { id: "settings-audio-divider", separator: true },
           settingsToolOption(
             "setting-merge-audio",
             t("app.settings.mergeAudio"),
-            <Merge className="size-4" aria-hidden="true" />,
+            <Merge className="size-3" aria-hidden="true" />,
             "mergeAudioEnabled",
           ),
           { id: "settings-reset-divider", separator: true },
           {
             id: "settings-reset",
-            label: t("app.settings.resetToDefault"),
-            leading: <RotateCcw className="size-4" aria-hidden="true" />,
+            children: t("app.settings.resetToDefault"),
+            icon: <RotateCcw className="size-3" aria-hidden="true" />,
             shouldCloseOnClick: false,
             onSelect: resetToolDefaults,
           },
           { id: "settings-language-divider", separator: true },
           {
             id: "language",
-            label: t("app.topBarMenus.language"),
-            hint: currentLanguage.toUpperCase(),
+            children: t("app.topBarMenus.language"),
+            icon: <Languages className="size-3" aria-hidden="true" />,
+            suffix: currentLanguage.toUpperCase(),
             shouldCloseOnClick: false,
-            submenu: languageOptions,
+            options: languageOptionsV2,
           },
         ]}
-      />
+      >
+        {t("app.topBarMenus.settings")}
+      </ContextMenu>
       <ContextMenu
         {...menuProps("help")}
-        label={t("app.topBarMenus.help")}
         options={[
           {
             id: "changelog",
-            label: t("app.topBarMenus.changelog"),
-            hint: <ExternalLink className="size-4" aria-hidden="true" />,
+            children: t("app.topBarMenus.changelog"),
+            icon: <ExternalLink className="size-3" aria-hidden="true" />,
             onSelect: () => void openExternalUrl(CHANGELOG_URL),
           },
           {
             id: "check-for-updates",
-            label: updateLabel,
-            hint: updateHint,
+            children: updateLabel,
+            icon: updateHint,
             disabled: updateStatus === "checking" || isInstalling,
             shouldCloseOnClick: false,
             onSelect: () =>
@@ -414,26 +422,28 @@ export function ContextMenus({
           },
           {
             id: "project-page",
-            label: t("app.topBarMenus.projectPage"),
-            hint: <BrandIcon className="size-4" icon={githubBrandIcon} />,
+            children: t("app.topBarMenus.projectPage"),
+            icon: <BrandIcon className="size-3" icon={githubBrandIcon} />,
             onSelect: () => void openExternalUrl(PROJECT_PAGE_URL),
           },
           { id: "help-divider-support", separator: true },
           {
             id: "support-project",
-            label: t("app.topBarMenus.supportProject"),
-            hint: <BrandIcon className="size-4" icon={kofiBrandIcon} />,
+            children: t("app.topBarMenus.supportProject"),
+            icon: <BrandIcon className="size-3" icon={kofiBrandIcon} />,
             onSelect: () => void openExternalUrl(SUPPORT_PROJECT_URL),
           },
           { id: "help-divider-version", separator: true },
           {
             id: "version",
-            label: t("app.topBarMenus.version", { version: packageJson.version }),
-            hint: <ExternalLink className="size-4" aria-hidden="true" />,
+            children: t("app.topBarMenus.version", { version: packageJson.version }),
+            icon: <ExternalLink className="size-3" aria-hidden="true" />,
             onSelect: () => void openExternalUrl(VERSION_RELEASE_URL),
           },
         ]}
-      />
+      >
+        Help
+      </ContextMenu>
     </nav>
   );
 }
@@ -483,17 +493,17 @@ function CustomColorPickerPanel({
       />
       <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
         <span>{t("themeColor.custom")}</span>
-        <div className="flex h-7 w-18 items-center rounded-lg border border-input bg-transparent px-1.5 transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
+        <div className="flex h-6 w-15 items-center rounded-lg border border-input bg-transparent px-1.5 transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
           <span
             aria-hidden="true"
-            className="pointer-events-none select-none shrink-0 font-mono text-sm text-muted-foreground"
+            className="pointer-events-none select-none shrink-0 font-mono text-xs text-muted-foreground"
             data-slot="hex-prefix"
           >
             #
           </span>
           <Input
             aria-label={`${t("themeColor.custom")} hex`}
-            className="h-full w-auto min-w-0 flex-1 rounded-none border-0 px-0 py-0 font-mono text-sm text-foreground shadow-none focus-visible:border-0 focus-visible:ring-0"
+            className="h-full w-auto min-w-0 flex-1 rounded-none border-0 px-0 py-0 font-mono text-xs text-foreground shadow-none focus-visible:border-0 focus-visible:ring-0"
             maxLength={6}
             onChange={(event) =>
               updateHexValue(event.target.value.replace(/[^0-9a-fA-F]/g, "").slice(0, 6))
@@ -523,7 +533,7 @@ function ColorSample({ color, selected = false }: { color: PrimaryColor; selecte
     : colorClasses[color as Exclude<PrimaryColor, `#${string}`>];
   return (
     <span
-      className={`size-3.5 rounded-full ring-1 ring-foreground/20 ${sampleClass ?? ""} ${selected ? "ring-2 ring-foreground ring-offset-1 ring-offset-popover" : ""}`}
+      className={`size-3 rounded-full ring-1 ring-foreground/20 ${sampleClass ?? ""} ${selected ? "ring-2 ring-foreground ring-offset-1 ring-offset-popover" : ""}`}
       style={sampleClass ? undefined : { backgroundColor: resolvePrimaryColor(color) }}
       aria-hidden="true"
     />

@@ -139,7 +139,8 @@ describe("ContextMenus", () => {
 
     await user.click(screen.getByRole("button", { name: "Settings" }));
     for (const label of ["Snap", "Loop", "Follow segment", "Merge audio"]) {
-      expect(screen.getByRole("switch", { name: label })).toBeInTheDocument();
+      const row = screen.getByRole("menuitem", { name: label });
+      expect(within(row).getByRole("switch")).toBeInTheDocument();
     }
     const settingsMenu = screen.getAllByRole("menu").at(-1);
     expect(settingsMenu).toBeDefined();
@@ -175,7 +176,8 @@ describe("ContextMenus", () => {
     );
 
     await user.click(screen.getByRole("button", { name: "Settings" }));
-    const loopSwitch = screen.getByRole("switch", { name: "Loop" });
+    const loopRow = screen.getByRole("menuitem", { name: "Loop" });
+    const loopSwitch = within(loopRow).getByRole("switch");
     await user.click(loopSwitch);
     expect(loopSwitch).not.toBeChecked();
     await user.click(screen.getByRole("menuitem", { name: "Reset to default" }));
@@ -202,7 +204,8 @@ describe("ContextMenus", () => {
     );
 
     await user.click(screen.getByRole("button", { name: "Settings" }));
-    const loopSwitch = screen.getByRole("switch", { name: "Loop" });
+    const loopRow = screen.getByRole("menuitem", { name: "Loop" });
+    const loopSwitch = within(loopRow).getByRole("switch");
     const loopTrigger = loopSwitch.parentElement;
     expect(loopTrigger).not.toBeNull();
     await user.hover(loopTrigger!);
@@ -236,7 +239,10 @@ describe("ContextMenus", () => {
     );
 
     await user.click(screen.getByRole("button", { name: "Settings" }));
-    const mergeTrigger = screen.getByRole("switch", { name: "Merge audio" }).parentElement;
+    const mergeSwitch = within(screen.getByRole("menuitem", { name: "Merge audio" })).getByRole(
+      "switch",
+    );
+    const mergeTrigger = mergeSwitch.parentElement;
     expect(mergeTrigger).not.toBeNull();
     await user.hover(mergeTrigger!);
     await waitFor(() => {
@@ -299,8 +305,8 @@ describe("ContextMenus", () => {
 
     const fileButton = screen.getByRole("button", { name: "File" });
     expect(fileButton).toHaveAttribute("data-slot", "button");
-    expect(fileButton).toHaveAttribute("data-size", "sm");
-    expect(fileButton).toHaveClass("h-7");
+    expect(fileButton).toHaveAttribute("data-size", "xs");
+    expect(fileButton).toHaveClass("h-6");
 
     await user.click(fileButton);
     expect(screen.getByRole("separator")).toBeInTheDocument();
@@ -339,7 +345,7 @@ describe("ContextMenus", () => {
     await user.click(viewButton);
     const themeItem = screen.getByText("Theme").closest<HTMLElement>('[role="menuitem"]');
     expect(themeItem).not.toBeNull();
-    expect(themeItem).toHaveClass("min-w-56");
+    expect(themeItem).toHaveClass("min-w-48");
     themeItem?.focus();
     await user.keyboard("{ArrowRight}");
 
@@ -433,9 +439,7 @@ describe("ContextMenus", () => {
 
     await user.click(customItem);
     expect(document.documentElement).toHaveAttribute("data-primary-color", "#123456");
-    expect(screen.queryByRole("button", { name: /Theme color spectrum/ })).not.toBeInTheDocument();
 
-    await user.hover(customItem);
     const spectrum = await screen.findByRole("button", { name: /Theme color spectrum/ });
     expect(spectrum).toBeVisible();
     Object.defineProperty(spectrum, "getBoundingClientRect", {
@@ -453,11 +457,16 @@ describe("ContextMenus", () => {
     expect(hexInput.previousElementSibling).toHaveAttribute("aria-hidden", "true");
     await user.clear(hexInput);
     expect(hexInput.previousElementSibling).toHaveTextContent("#");
-    await user.type(hexInput, "abcdef");
-    expect(hexInput).toHaveValue("abcdef");
+    fireEvent.change(hexInput, { target: { value: "abcde" } });
+    expect(hexInput).toHaveValue("abcde");
+    fireEvent.change(hexInput, { target: { value: "abcdef" } });
     expect(document.documentElement).toHaveAttribute("data-primary-color", "#abcdef");
-    await user.clear(hexInput);
-    await user.type(hexInput, "abcdeg");
+
+    const reopenedCustomItem = screen.getByRole("menuitem", { name: /Custom/ });
+    await user.click(reopenedCustomItem);
+    const reopenedSpectrum = await screen.findByRole("button", { name: /Theme color spectrum/ });
+    const reopenedHexInput = screen.getByRole("textbox", { name: "Custom hex" });
+    fireEvent.change(reopenedHexInput, { target: { value: "abcdeg" } });
     expect(document.documentElement).toHaveAttribute("data-primary-color", "#abcdef");
 
     const colorMenus = screen.getAllByRole("menu", { name: "Color" });
@@ -470,11 +479,10 @@ describe("ContextMenus", () => {
       value: () => new DOMRect(204, 0, 210, 240),
     });
     fireEvent.pointerLeave(customItem, { clientX: 199, clientY: 16 });
-    fireEvent.pointerMove(spectrum, { clientX: 208, clientY: 16 });
+    fireEvent.pointerMove(reopenedSpectrum, { clientX: 208, clientY: 16 });
     expect(screen.getByRole("button", { name: /Theme color spectrum/ })).toBeVisible();
 
-    await user.clear(hexInput);
-    await user.type(hexInput, "abcdef");
+    reopenedHexInput.focus();
     await user.keyboard("{Enter}");
     expect(screen.queryByRole("menuitem", { name: /Custom/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Theme color spectrum/ })).not.toBeInTheDocument();
