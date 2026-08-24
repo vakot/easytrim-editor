@@ -117,6 +117,7 @@ function StatusBarUpdateButton() {
     <Button
       type="button"
       size="xs"
+      className={updateAction.className}
       disabled={updateAction.disabled}
       onClick={handleUpdateClick}
     >
@@ -130,6 +131,7 @@ interface StatusBarUpdateAction {
   label: string;
   icon: ReactNode;
   disabled: boolean;
+  className?: string;
 }
 
 interface StatusBarUpdateLabels {
@@ -165,6 +167,8 @@ function getUpdateButtonAction(
       label: labels.error,
       icon: <CircleAlert className="size-3" aria-hidden="true" />,
       disabled: false,
+      className:
+        "bg-destructive text-white hover:bg-destructive/80 focus-visible:border-destructive focus-visible:ring-destructive/40",
     };
   }
 
