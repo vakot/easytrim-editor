@@ -135,7 +135,7 @@ function ContextMenuOptionItem({
       data-selected={option.selected ? "true" : "false"}
       aria-label={option.ariaLabel}
       aria-current={option.selected ? "true" : undefined}
-      className="flex min-h-8 min-w-48 w-full cursor-default items-center gap-3 rounded-md px-2.5 py-1.5 text-left text-sm outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+      className="flex min-h-8 min-w-48 w-full cursor-default items-center gap-3 rounded-md px-2.5 py-1.5 text-left text-sm outline-none data-disabled:pointer-events-none data-disabled:opacity-50 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
     >
       <ContextMenuOptionContent option={option} />
     </DropdownMenuPrimitive.Item>
@@ -175,7 +175,7 @@ function ContextMenuSubmenuOptionItem({
         }}
         data-selected={option.selected ? "true" : "false"}
         aria-current={option.selected ? "true" : undefined}
-        className="flex min-h-8 min-w-56 w-full items-center gap-3 rounded-md px-2.5 py-1.5 text-left text-sm outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+        className="flex min-h-8 min-w-56 w-full items-center gap-3 rounded-md px-2.5 py-1.5 text-left text-sm outline-none data-disabled:pointer-events-none data-disabled:opacity-50 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
       >
         <ContextMenuOptionContent option={option} />
         <ChevronRight className="ml-auto size-4 shrink-0" aria-hidden="true" />
