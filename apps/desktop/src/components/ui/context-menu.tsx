@@ -59,23 +59,55 @@ export function ContextMenu({
           sideOffset={4}
           className="z-50 min-w-56 rounded-lg border bg-popover p-1 text-popover-foreground shadow-lg ring-1 ring-foreground/10"
         >
-          {options.map((option) => (
-            <ContextMenuOptionItem key={option.id} option={option} />
-          ))}
+          <ContextMenuOptionList options={options} />
         </DropdownMenuPrimitive.Content>
       </DropdownMenuPrimitive.Portal>
     </DropdownMenuPrimitive.Root>
   );
 }
 
-function ContextMenuOptionItem({ option }: { option: ContextMenuOption }) {
+function ContextMenuOptionList({ options }: { options: readonly ContextMenuOption[] }) {
+  const [openSubmenuId, setOpenSubmenuId] = useState<string | null>(null);
+
+  const setSubmenuOpen = (id: string, isOpen: boolean) => {
+    setOpenSubmenuId((currentId) => {
+      if (isOpen) return id;
+      return currentId === id ? null : currentId;
+    });
+  };
+
+  const closeSubmenu = () => setOpenSubmenuId(null);
+
+  return options.map((option) => (
+    <ContextMenuOptionItem
+      key={option.id}
+      option={option}
+      open={openSubmenuId === option.id}
+      onOpenChange={(isOpen) => setSubmenuOpen(option.id, isOpen)}
+      onPointerMove={closeSubmenu}
+    />
+  ));
+}
+
+function ContextMenuOptionItem({
+  option,
+  open,
+  onOpenChange,
+  onPointerMove,
+}: {
+  option: ContextMenuOption;
+  open: boolean;
+  onOpenChange: (isOpen: boolean) => void;
+  onPointerMove: () => void;
+}) {
   if (option.submenu || option.submenuContent) {
-    return <ContextMenuSubmenuOptionItem option={option} />;
+    return <ContextMenuSubmenuOptionItem option={option} open={open} onOpenChange={onOpenChange} />;
   }
 
   const item = (
     <DropdownMenuPrimitive.Item
       disabled={option.disabled}
+      onPointerMove={option.disabled ? undefined : onPointerMove}
       onSelect={(event) => {
         option.onSelect?.(event);
         if (option.shouldCloseOnClick === false) event.preventDefault();
@@ -91,25 +123,34 @@ function ContextMenuOptionItem({ option }: { option: ContextMenuOption }) {
   return option.render ? option.render(item) : item;
 }
 
-function ContextMenuSubmenuOptionItem({ option }: { option: ContextMenuOption }) {
+function ContextMenuSubmenuOptionItem({
+  option,
+  open,
+  onOpenChange,
+}: {
+  option: ContextMenuOption;
+  open: boolean;
+  onOpenChange: (isOpen: boolean) => void;
+}) {
   const instantSwitch = option.openSubmenuOnClick !== false;
-  const [open, setOpen] = useState(false);
-  const submenuProps = instantSwitch ? { open, onOpenChange: setOpen } : {};
 
   return (
-    <DropdownMenuPrimitive.Sub {...submenuProps}>
+    <DropdownMenuPrimitive.Sub open={open} onOpenChange={onOpenChange}>
       <DropdownMenuPrimitive.SubTrigger
         disabled={option.disabled}
         onPointerMove={
           instantSwitch
             ? (event) => {
-                if (!option.disabled && !event.defaultPrevented) setOpen(true);
+                if (!option.disabled && !event.defaultPrevented) onOpenChange(true);
               }
             : undefined
         }
         onClick={(event) => {
           option.onSelect?.(event.nativeEvent);
-          if (!instantSwitch) event.preventDefault();
+          if (!instantSwitch) {
+            onOpenChange(false);
+            event.preventDefault();
+          }
         }}
         data-selected={option.selected ? "true" : "false"}
         aria-current={option.selected ? "true" : undefined}
@@ -126,7 +167,7 @@ function ContextMenuSubmenuOptionItem({ option }: { option: ContextMenuOption })
           className="z-50 min-w-56 rounded-lg border bg-popover p-1 text-popover-foreground shadow-lg ring-1 ring-foreground/10"
         >
           {option.submenuContent ??
-            option.submenu?.map((child) => <ContextMenuOptionItem key={child.id} option={child} />)}
+            (option.submenu ? <ContextMenuOptionList options={option.submenu} /> : null)}
         </DropdownMenuPrimitive.SubContent>
       </DropdownMenuPrimitive.Portal>
     </DropdownMenuPrimitive.Sub>

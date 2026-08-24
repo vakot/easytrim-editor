@@ -281,5 +281,6 @@ describe("ContextMenus", () => {
     expect(
       within(colorSubmenu!).queryByRole("menuitem", { name: "System" }),
     ).not.toBeInTheDocument();
+    expect(screen.getAllByRole("menu")).toHaveLength(2);
   });
 });
