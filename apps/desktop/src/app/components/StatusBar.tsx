@@ -1,12 +1,15 @@
+import { CircleAlert, Download, LoaderCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import type { ReactNode } from "react";
 
+import { useAppUpdates, type UpdateStatus } from "@/app/update-context";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import packageJson from "../../../../../package.json";
 import type { ExportToast } from "@/features/export";
 
 export function StatusBar({ queue }: { queue: ExportToast[] }) {
   const { t } = useTranslation();
-  const appSha = import.meta.env.VITE_APP_SHA?.trim();
   const activeExport = queue.find((item) => item.status === "rendering");
   const activeExportPath = activeExport ? splitFilePath(activeExport.path) : null;
   const activeExportFps = activeExport?.estimatedFps;
@@ -20,12 +23,7 @@ export function StatusBar({ queue }: { queue: ExportToast[] }) {
       >
         <span className="flex min-w-0 items-center gap-1.5">
           <span>v{packageJson.version}</span>
-          {appSha ? (
-            <>
-              <span aria-hidden="true">&middot;</span>
-              <code>{appSha.slice(0, 7)}</code>
-            </>
-          ) : null}
+          <StatusBarUpdateButton />
         </span>
         {activeExport ? (
           <div className="ml-auto flex min-w-0 items-center gap-3 pl-4 text-muted-foreground">
@@ -87,6 +85,95 @@ export function StatusBar({ queue }: { queue: ExportToast[] }) {
       </footer>
     </div>
   );
+}
+
+function StatusBarUpdateButton() {
+  const { t } = useTranslation();
+  const {
+    status: updateStatus,
+    availableVersion,
+    isInstalling,
+    checkForUpdates,
+    installUpdate,
+  } = useAppUpdates();
+  const updateAction = getUpdateButtonAction(updateStatus, availableVersion, isInstalling, {
+    loading: t("statusBar.loading"),
+    update: t("statusBar.update"),
+    error: t("statusBar.error"),
+  });
+
+  if (!updateAction) return null;
+
+  const handleUpdateClick = () => {
+    if (updateStatus === "available") {
+      void installUpdate();
+      return;
+    }
+
+    void checkForUpdates();
+  };
+
+  return (
+    <Button
+      type="button"
+      size="xs"
+      variant={updateAction.variant}
+      disabled={updateAction.disabled}
+      onClick={handleUpdateClick}
+    >
+      {updateAction.icon}
+      {updateAction.label}
+    </Button>
+  );
+}
+
+interface StatusBarUpdateAction {
+  label: string;
+  icon: ReactNode;
+  disabled: boolean;
+  variant: "default" | "destructive";
+}
+
+interface StatusBarUpdateLabels {
+  loading: string;
+  update: string;
+  error: string;
+}
+
+function getUpdateButtonAction(
+  status: UpdateStatus,
+  availableVersion: string | null,
+  isLoading: boolean,
+  labels: StatusBarUpdateLabels,
+): StatusBarUpdateAction | null {
+  if (isLoading || status === "checking") {
+    return {
+      label: labels.loading,
+      icon: <LoaderCircle className="size-3 animate-spin" aria-hidden="true" />,
+      disabled: true,
+      variant: "default",
+    };
+  }
+
+  if (status === "available" && availableVersion !== null) {
+    return {
+      label: labels.update,
+      icon: <Download className="size-3" aria-hidden="true" />,
+      disabled: false,
+      variant: "default",
+    };
+  }
+
+  if (status === "error") {
+    return {
+      label: labels.error,
+      icon: <CircleAlert className="size-3" aria-hidden="true" />,
+      disabled: false,
+      variant: "destructive",
+    };
+  }
+
+  return null;
 }
 
 function splitFilePath(path: string) {

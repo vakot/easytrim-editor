@@ -9,6 +9,9 @@ export const en = {
   },
   statusBar: {
     exportProgress: "Export progress",
+    update: "Update",
+    error: "Error",
+    loading: "Loading",
   },
   language: {
     label: "Language",

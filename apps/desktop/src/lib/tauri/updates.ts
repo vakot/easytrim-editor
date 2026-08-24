@@ -17,6 +17,13 @@ export function isTauriRuntime(): boolean {
   return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 }
 
+function isWindowsRuntime(): boolean {
+  return (
+    typeof navigator !== "undefined" &&
+    (/Windows/i.test(navigator.userAgent) || /Win/i.test(navigator.platform))
+  );
+}
+
 export async function checkForUpdates(): Promise<AvailableUpdate | null> {
   try {
     const update = await check();
@@ -27,7 +34,17 @@ export async function checkForUpdates(): Promise<AvailableUpdate | null> {
       install: async () => {
         try {
           await update.downloadAndInstall();
-          await relaunch();
+          console.info("[updates] Update installer launched", {
+            version: update.version,
+            relaunchRequired: !isWindowsRuntime(),
+          });
+
+          // Windows exits the application automatically when the installer is
+          // launched. Calling relaunch here can report a false installation
+          // failure after the update has already started.
+          if (!isWindowsRuntime()) {
+            await relaunch();
+          }
         } catch (error) {
           console.error("[updates] Update installation failed", {
             message: getErrorMessage(error),

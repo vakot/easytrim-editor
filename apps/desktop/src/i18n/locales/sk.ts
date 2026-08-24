@@ -15,6 +15,9 @@ export const sk = {
   },
   statusBar: {
     exportProgress: "Priebeh exportu",
+    update: "Aktualizovať",
+    error: "Chyba",
+    loading: "Načítava sa",
   },
   language: {
     label: "Jazyk",
