@@ -140,6 +140,18 @@ export const sk = {
     },
   },
   preview: {
+    emptyMock: {
+      label: "Prázdny náhľad",
+      shortcutsLabel: "Klávesové skratky",
+      shortcuts: {
+        openFile: "Otvoriť súbor",
+        saveCut: "Uložiť strih",
+        exportOptimized: "Optimalizovať export",
+        playPause: "Prehrať/Pozastaviť",
+        previousNextFrame: "Predchádzajúca/nasledujúca snímka",
+        setBoundaries: "Nastaviť začiatok/koniec tu",
+      },
+    },
     panes: "Panely náhľadu a časovej osi",
     resize: "Zmeniť veľkosť náhľadu a časovej osi",
     controls: "Ovládanie prehrávania náhľadu",
