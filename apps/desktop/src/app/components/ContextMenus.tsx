@@ -27,7 +27,7 @@ interface ContextMenusProps {
 }
 
 const themeIcons = { system: Monitor, light: Sun, dark: Moon } as const;
-type TopBarMenuId = "file" | "edit" | "view";
+type TopBarMenuId = "file" | "view";
 
 const colorClasses: Record<Exclude<PrimaryColor, `#${string}`>, string> = {
   amber: "bg-[#efbf04]",
@@ -154,6 +154,8 @@ export function ContextMenus({
     onSelect: () => void i18n.changeLanguage(language as SupportedLanguage),
   }));
 
+  // TODO: Move Language to a dedicated Settings menu once Settings is introduced.
+
   return (
     <nav className="flex h-full items-center gap-0.5" aria-label={t("app.topBarMenus.label")}>
       <ContextMenu
@@ -174,22 +176,17 @@ export function ContextMenus({
             disabled: !hasSource,
             onSelect: onCloseFile,
           },
-        ]}
-      />
-      <ContextMenu
-        {...menuProps("edit")}
-        label={t("app.topBarMenus.edit")}
-        options={[
+          { id: "file-divider", separator: true },
           {
-            id: "save",
-            label: t("app.topBarMenus.save"),
+            id: "save-lossless-cut",
+            label: t("app.topBarMenus.saveLosslessCut"),
             hint: "Ctrl+S",
             disabled: !canSave,
             onSelect: onSave,
           },
           {
-            id: "optimized-export",
-            label: t("app.topBarMenus.optimizedExport"),
+            id: "optimize-export",
+            label: t("app.topBarMenus.optimizeExport"),
             hint: "Ctrl+E",
             disabled: !canExport,
             onSelect: onExport,
@@ -214,6 +211,7 @@ export function ContextMenus({
             shouldCloseOnClick: false,
             submenu: colorOptions,
           },
+          { id: "view-divider", separator: true },
           {
             id: "language",
             label: t("app.topBarMenus.language"),

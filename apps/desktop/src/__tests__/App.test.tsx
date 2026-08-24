@@ -422,7 +422,7 @@ describe("App", () => {
     ).not.toBeInTheDocument();
     expect(screen.getByRole("banner", { name: "Window title bar" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "File" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Edit" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "View" })).toBeInTheDocument();
   });
 
@@ -526,9 +526,9 @@ describe("App", () => {
 
     await openSourcePicker(user);
     await screen.findByRole("heading", { name: "holiday.mp4" });
-    screen.getByRole("button", { name: "Edit" }).focus();
+    screen.getByRole("button", { name: "File" }).focus();
     await user.keyboard("{Enter}");
-    await user.click(screen.getByRole("menuitem", { name: /Optimized Export/ }));
+    await user.click(screen.getByRole("menuitem", { name: /Optimize & Export/ }));
     expect(screen.getByRole("dialog")).toBeInTheDocument();
 
     fireEvent.keyDown(window, { key: "Escape" });

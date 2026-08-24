@@ -5,7 +5,7 @@ import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-export interface ContextMenuOption {
+interface ContextMenuItemOption {
   id: string;
   leading?: ReactNode;
   label: ReactNode;
@@ -19,6 +19,13 @@ export interface ContextMenuOption {
   submenuContent?: ReactNode;
   submenu?: readonly ContextMenuOption[];
 }
+
+export interface ContextMenuSeparatorOption {
+  id: string;
+  separator: true;
+}
+
+export type ContextMenuOption = ContextMenuItemOption | ContextMenuSeparatorOption;
 
 interface ContextMenuProps {
   label: string;
@@ -78,15 +85,25 @@ function ContextMenuOptionList({ options }: { options: readonly ContextMenuOptio
 
   const closeSubmenu = () => setOpenSubmenuId(null);
 
-  return options.map((option) => (
-    <ContextMenuOptionItem
-      key={option.id}
-      option={option}
-      open={openSubmenuId === option.id}
-      onOpenChange={(isOpen) => setSubmenuOpen(option.id, isOpen)}
-      onPointerMove={closeSubmenu}
-    />
-  ));
+  return options.map((option) => {
+    if (isContextMenuSeparator(option)) {
+      return <DropdownMenuPrimitive.Separator key={option.id} className="my-1 mx-2 h-px bg-border" />;
+    }
+
+    return (
+      <ContextMenuOptionItem
+        key={option.id}
+        option={option}
+        open={openSubmenuId === option.id}
+        onOpenChange={(isOpen) => setSubmenuOpen(option.id, isOpen)}
+        onPointerMove={closeSubmenu}
+      />
+    );
+  });
+}
+
+function isContextMenuSeparator(option: ContextMenuOption): option is ContextMenuSeparatorOption {
+  return "separator" in option;
 }
 
 function ContextMenuOptionItem({
@@ -95,7 +112,7 @@ function ContextMenuOptionItem({
   onOpenChange,
   onPointerMove,
 }: {
-  option: ContextMenuOption;
+  option: ContextMenuItemOption;
   open: boolean;
   onOpenChange: (isOpen: boolean) => void;
   onPointerMove: () => void;
@@ -128,7 +145,7 @@ function ContextMenuSubmenuOptionItem({
   open,
   onOpenChange,
 }: {
-  option: ContextMenuOption;
+  option: ContextMenuItemOption;
   open: boolean;
   onOpenChange: (isOpen: boolean) => void;
 }) {
@@ -174,7 +191,7 @@ function ContextMenuSubmenuOptionItem({
   );
 }
 
-function ContextMenuOptionContent({ option }: { option: ContextMenuOption }) {
+function ContextMenuOptionContent({ option }: { option: ContextMenuItemOption }) {
   return (
     <>
       {option.leading ? (
