@@ -70,7 +70,13 @@ export const sk = {
       version: "Verzia {{version}}",
     },
     settings: {
+      timelineTools: "Nástroje časovej osi",
+      audioTools: "Zvukové nástroje",
       language: "Jazyk",
+      snap: "Prichytenie",
+      loop: "Opakovanie",
+      followSegment: "Sledovať segment",
+      mergeAudio: "Zlúčiť zvuk",
     },
     dragUnavailable: "Presunutie súboru nie je dostupné: {{message}}",
     panels: {

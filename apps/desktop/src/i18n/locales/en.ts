@@ -65,7 +65,13 @@ export const en = {
       version: "Version {{version}}",
     },
     settings: {
+      timelineTools: "Timeline tools",
+      audioTools: "Audio tools",
       language: "Language",
+      snap: "Snap",
+      loop: "Loop",
+      followSegment: "Follow segment",
+      mergeAudio: "Merge audio",
     },
     panels: {
       group: "Editor panels",

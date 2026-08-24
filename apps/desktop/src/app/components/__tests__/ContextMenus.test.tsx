@@ -120,6 +120,29 @@ describe("ContextMenus", () => {
     expect(updateItem.querySelector("svg")).not.toBeNull();
   });
 
+  it("shows a switch row for every configurable tool", async () => {
+    const user = userEvent.setup();
+    render(
+      <TooltipProvider>
+        <ThemeProvider>
+          <ContextMenus
+            isChoosingSource={false}
+            canSave
+            canExport
+            onChooseSource={vi.fn()}
+            onSave={vi.fn()}
+            onExport={vi.fn()}
+          />
+        </ThemeProvider>
+      </TooltipProvider>,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Settings" }));
+    for (const label of ["Snap", "Loop", "Follow segment", "Merge audio"]) {
+      expect(screen.getByRole("switch", { name: label })).toBeInTheDocument();
+    }
+  });
+
   it("shows retry feedback after an update check fails", async () => {
     const user = userEvent.setup();
     render(
