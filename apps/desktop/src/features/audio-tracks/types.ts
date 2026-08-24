@@ -13,6 +13,7 @@ export interface AudioTracksProps {
   playheadMicros: number;
   playheadRef: RefObject<HTMLDivElement | null>;
   mergeAudio: boolean;
+  waveformPreparationEnabled: boolean;
   onToggleTrack: (streamIndex: number) => void;
   onTrackVolumeChange: (streamIndex: number, volumePercent: number) => void;
   onToggleMaster: () => void;

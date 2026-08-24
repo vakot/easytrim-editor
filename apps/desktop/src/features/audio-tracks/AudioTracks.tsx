@@ -21,6 +21,7 @@ export function AudioTracks({
   playheadMicros,
   playheadRef,
   mergeAudio,
+  waveformPreparationEnabled,
   onToggleTrack,
   onTrackVolumeChange,
   onToggleMaster,
@@ -34,7 +35,7 @@ export function AudioTracks({
   const enabledCount = tracks.filter((track) => track.enabled).length;
   const outputSummary = audioOutputSummary(enabledCount, mergeAudio, t);
 
-  useWaveformPreparation(tracks, onPrepareWaveforms);
+  useWaveformPreparation(tracks, waveformPreparationEnabled, onPrepareWaveforms);
 
   if (streams.length === 0) {
     return <p className="text-sm text-muted-foreground">{t("audio.noTracks")}</p>;

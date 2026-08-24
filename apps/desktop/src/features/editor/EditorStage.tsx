@@ -174,6 +174,7 @@ export function EditorStage() {
                   playheadMicros={timeline.playheadMicros}
                   playheadRef={playback.audioPlayheadRef}
                   mergeAudio={source.mergeAudio}
+                  waveformPreparationEnabled={playback.isReady}
                   onToggleTrack={source.onToggleAudioTrack}
                   onTrackVolumeChange={source.onAudioTrackVolumeChange}
                   onToggleMaster={source.onToggleAudioMaster}

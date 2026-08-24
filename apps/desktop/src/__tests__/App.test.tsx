@@ -93,6 +93,44 @@ async function openSourcePicker(user: ReturnType<typeof userEvent.setup>) {
   (document.activeElement as HTMLElement | null)?.blur();
 }
 
+function installAudioMocks(initiallyReady = true) {
+  const audioElements: HTMLAudioElement[] = [];
+  const audioConstructor = vi.fn(function AudioMock() {
+    const element = document.createElement("audio");
+    Object.defineProperty(element, "readyState", {
+      configurable: true,
+      get: () =>
+        initiallyReady ? HTMLMediaElement.HAVE_FUTURE_DATA : HTMLMediaElement.HAVE_METADATA,
+    });
+    audioElements.push(element);
+    return element;
+  });
+  const audioContext = {
+    destination: {},
+    resume: vi.fn().mockResolvedValue(undefined),
+    close: vi.fn().mockResolvedValue(undefined),
+    createGain: vi.fn(() => ({
+      gain: { value: 1 },
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+    })),
+    createMediaElementSource: vi.fn(() => ({
+      connect: vi.fn((destination: unknown) => destination),
+      disconnect: vi.fn(),
+    })),
+  };
+
+  vi.stubGlobal("Audio", audioConstructor);
+  vi.stubGlobal(
+    "AudioContext",
+    vi.fn(function AudioContextMock() {
+      return audioContext;
+    }),
+  );
+
+  return { audioConstructor, audioContext, audioElements };
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   sourceDropListener = undefined;
@@ -262,6 +300,90 @@ describe("App", () => {
       expect(play).toHaveBeenCalledOnce();
     } finally {
       readyState.mockRestore();
+    }
+  });
+
+  it("starts waveforms only after multi-track playback is ready without waiting for them", async () => {
+    let resolveAudioPreviews!: (
+      previews: Array<{ sourceId: string; streamIndex: number; url: string }>,
+    ) => void;
+    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.inspectMedia.mockResolvedValue({
+      ...media,
+      audioStreams: [
+        ...media.audioStreams,
+        {
+          streamIndex: 2,
+          codecName: "ac3",
+          channels: 6,
+          channelLayout: "5.1",
+          sampleRateHz: 48_000,
+          title: "Commentary",
+          isDefault: false,
+        },
+      ],
+    });
+    mocks.prepareAudioPreviews.mockReturnValue(
+      new Promise((resolve) => {
+        resolveAudioPreviews = resolve;
+      }),
+    );
+    mocks.prepareWaveforms.mockReturnValue(new Promise(() => undefined));
+    const play = vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
+    const { audioContext, audioElements } = installAudioMocks(false);
+    const user = userEvent.setup();
+
+    try {
+      render(<App />);
+      await openSourcePicker(user);
+      await screen.findByLabelText("Source video preview");
+
+      expect(screen.getByTestId("editor-loading-overlay")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Play" })).toBeDisabled();
+      expect(mocks.prepareWaveforms).not.toHaveBeenCalled();
+
+      await act(async () => {
+        resolveAudioPreviews([
+          {
+            sourceId: selection.sourceId,
+            streamIndex: 1,
+            url: "http://easytrim-media.localhost/source-1?variant=audio&stream=1",
+          },
+          {
+            sourceId: selection.sourceId,
+            streamIndex: 2,
+            url: "http://easytrim-media.localhost/source-1?variant=audio&stream=2",
+          },
+        ]);
+      });
+
+      await waitFor(() => expect(audioElements).toHaveLength(2));
+      expect(screen.getByTestId("editor-loading-overlay")).toBeInTheDocument();
+      expect(mocks.prepareWaveforms).not.toHaveBeenCalled();
+      for (const audio of audioElements) fireEvent.canPlay(audio);
+
+      await waitFor(() =>
+        expect(screen.queryByTestId("editor-loading-overlay")).not.toBeInTheDocument(),
+      );
+      expect(screen.getByRole("button", { name: "Play" })).not.toBeDisabled();
+      await waitFor(() =>
+        expect(mocks.prepareWaveforms).toHaveBeenCalledWith(
+          selection.sourceId,
+          expect.stringMatching(/^waveform-/),
+          [1, 2],
+          4_096,
+        ),
+      );
+      expect(screen.getAllByText("Preparing waveform…")).toHaveLength(2);
+
+      await user.click(screen.getByRole("button", { name: "Play" }));
+
+      expect(audioContext.resume).toHaveBeenCalledOnce();
+      expect(play).toHaveBeenCalledTimes(3);
+      expect(screen.getByRole("button", { name: "Play" })).not.toBeDisabled();
+    } finally {
+      play.mockRestore();
+      vi.unstubAllGlobals();
     }
   });
 
@@ -661,6 +783,19 @@ describe("App", () => {
         },
       ],
     });
+    mocks.prepareAudioPreviews.mockResolvedValue([
+      {
+        sourceId: selection.sourceId,
+        streamIndex: 1,
+        url: "http://easytrim-media.localhost/source-1?variant=audio&stream=1",
+      },
+      {
+        sourceId: selection.sourceId,
+        streamIndex: 2,
+        url: "http://easytrim-media.localhost/source-1?variant=audio&stream=2",
+      },
+    ]);
+    installAudioMocks();
     const user = userEvent.setup();
 
     try {
@@ -751,6 +886,7 @@ describe("App", () => {
       );
     } finally {
       bounds.mockRestore();
+      vi.unstubAllGlobals();
     }
   });
 
