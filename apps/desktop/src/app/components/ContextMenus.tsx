@@ -381,9 +381,7 @@ export function ContextMenus({
             label: t("app.settings.resetToDefault"),
             leading: <RotateCcw className="size-4" aria-hidden="true" />,
             shouldCloseOnClick: false,
-            onSelect: () => {
-              if (window.confirm(t("app.settings.resetConfirmation"))) resetToolDefaults();
-            },
+            onSelect: resetToolDefaults,
           },
           { id: "settings-language-divider", separator: true },
           {

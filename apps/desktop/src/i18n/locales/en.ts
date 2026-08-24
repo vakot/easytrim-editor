@@ -66,7 +66,6 @@ export const en = {
     },
     settings: {
       resetToDefault: "Reset to default",
-      resetConfirmation: "Reset all tool defaults to their original values?",
       enabledByDefault: "Enabled by default",
       disabledByDefault: "Disabled by default",
       language: "Language",
