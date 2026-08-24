@@ -4,10 +4,53 @@ import { describe, expect, it, vi } from "vitest";
 
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { openExternalUrl } from "@/lib/open-external-url";
 import { STORAGE_KEYS } from "@/lib/storage";
 import { ContextMenus } from "../ContextMenus";
 
+vi.mock("@/lib/open-external-url", () => ({
+  openExternalUrl: vi.fn(),
+}));
+
 describe("ContextMenus", () => {
+  it("opens Help links with the current release version", async () => {
+    const user = userEvent.setup();
+    render(
+      <TooltipProvider>
+        <ThemeProvider>
+          <ContextMenus
+            isChoosingSource={false}
+            canSave
+            canExport
+            onChooseSource={vi.fn()}
+            onSave={vi.fn()}
+            onExport={vi.fn()}
+          />
+        </ThemeProvider>
+      </TooltipProvider>,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Help" }));
+    expect(screen.getByRole("menuitem", { name: "Changelog" })).toHaveTextContent("Changelog");
+    expect(screen.getByRole("menuitem", { name: "Support the Project" })).toHaveTextContent(
+      "Support the Project",
+    );
+    expect(screen.getByRole("menuitem", { name: "Version 1.0.5" })).toHaveTextContent("1.0.5");
+    expect(screen.getAllByRole("separator")).toHaveLength(2);
+
+    await user.click(screen.getByRole("menuitem", { name: "Changelog" }));
+    await user.click(screen.getByRole("button", { name: "Help" }));
+    await user.click(screen.getByRole("menuitem", { name: "Support the Project" }));
+    await user.click(screen.getByRole("button", { name: "Help" }));
+    await user.click(screen.getByRole("menuitem", { name: "Version 1.0.5" }));
+
+    expect(vi.mocked(openExternalUrl).mock.calls).toEqual([
+      ["https://github.com/vakot/easytrim-editor/releases"],
+      ["https://ko-fi.com/vakot"],
+      ["https://github.com/vakot/easytrim-editor/releases/tag/v1.0.5"],
+    ]);
+  });
+
   it("opens the File menu with its action and hotkey hint", async () => {
     const user = userEvent.setup();
     const onCloseFile = vi.fn();

@@ -43,6 +43,7 @@ export const en = {
       label: "Application menus",
       file: "File",
       view: "View",
+      help: "Help",
       openFile: "Open File",
       closeFile: "Close File",
       saveLosslessCut: "Save Lossless Cut",
@@ -50,6 +51,9 @@ export const en = {
       theme: "Theme",
       color: "Color",
       language: "Language",
+      changelog: "Changelog",
+      supportProject: "Support the Project",
+      version: "Version {{version}}",
     },
     panels: {
       group: "Editor panels",
