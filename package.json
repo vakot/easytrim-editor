@@ -1,7 +1,7 @@
 {
   "name": "easytrim-editor",
   "private": true,
-  "version": "1.0.7",
+  "version": "1.0.8",
   "type": "module",
   "packageManager": "pnpm@11.18.0",
   "engines": {
@@ -21,6 +21,7 @@
     "test:release": "node --test scripts/__tests__/*.test.mjs",
     "icons:generate": "node scripts/generate-desktop-icons.mjs",
     "icons:prepare-macos": "node scripts/prepare-macos-icon.mjs",
+    "version:bump": "node scripts/bump-version.mjs",
     "release:local": "node scripts/release-local.mjs",
     "release:linux": "node scripts/release-linux-docker.mjs",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm test:release && pnpm build:web",
