@@ -55,7 +55,37 @@ describe("AppUpdatesProvider", () => {
     expect(screen.getByTestId("version")).toHaveTextContent("");
   });
 
-  it("returns to the retry state after an automatic or manual check fails", async () => {
+  it("keeps the up-to-date state after a successful check with no update", async () => {
+    nativeUpdates.checkForUpdates.mockResolvedValue(null);
+
+    render(
+      <AppUpdatesProvider>
+        <UpdateProbe />
+      </AppUpdatesProvider>,
+    );
+
+    await waitFor(() => expect(screen.getByTestId("status")).toHaveTextContent("up-to-date"));
+    expect(screen.getByTestId("version")).toHaveTextContent("");
+  });
+
+  it("keeps an error state when update installation fails", async () => {
+    const install = vi.fn(() => Promise.reject(new Error("installation failed")));
+    nativeUpdates.checkForUpdates.mockResolvedValue({ version: "1.0.6", install });
+    const user = userEvent.setup();
+
+    render(
+      <AppUpdatesProvider>
+        <UpdateProbe />
+      </AppUpdatesProvider>,
+    );
+
+    await waitFor(() => expect(screen.getByTestId("status")).toHaveTextContent("available"));
+    await user.click(screen.getByRole("button", { name: "Install" }));
+
+    await waitFor(() => expect(screen.getByTestId("status")).toHaveTextContent("error"));
+  });
+
+  it("keeps an error state after an automatic or manual check fails", async () => {
     nativeUpdates.checkForUpdates
       .mockRejectedValueOnce(new Error("network unavailable"))
       .mockRejectedValueOnce(new Error("network unavailable"));
@@ -68,10 +98,10 @@ describe("AppUpdatesProvider", () => {
     );
 
     await waitFor(() => expect(nativeUpdates.checkForUpdates).toHaveBeenCalledOnce());
-    expect(screen.getByTestId("status")).toHaveTextContent("idle");
+    expect(screen.getByTestId("status")).toHaveTextContent("error");
     await user.click(screen.getByRole("button", { name: "Check" }));
 
     await waitFor(() => expect(nativeUpdates.checkForUpdates).toHaveBeenCalledTimes(2));
-    expect(screen.getByTestId("status")).toHaveTextContent("idle");
+    expect(screen.getByTestId("status")).toHaveTextContent("error");
   });
 });
