@@ -135,9 +135,9 @@ function ContextMenuOptionItem({
       data-selected={option.selected ? "true" : "false"}
       aria-label={option.ariaLabel}
       aria-current={option.selected ? "true" : undefined}
-      className="flex min-h-8 min-w-48 w-full cursor-default items-center gap-3 rounded-md px-2.5 py-1.5 text-left text-sm outline-none data-disabled:pointer-events-none data-disabled:opacity-50 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+      className="flex min-h-8 min-w-48 w-full cursor-default items-center rounded-md px-2.5 py-1.5 text-left text-sm outline-none data-disabled:pointer-events-none data-disabled:opacity-50 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
     >
-      <ContextMenuOptionContent option={option} />
+      <ContextMenuItemLayout icon={option.leading} name={option.label} suffix={option.hint} />
     </DropdownMenuPrimitive.Item>
   );
 
@@ -175,10 +175,14 @@ function ContextMenuSubmenuOptionItem({
         }}
         data-selected={option.selected ? "true" : "false"}
         aria-current={option.selected ? "true" : undefined}
-        className="flex min-h-8 min-w-56 w-full items-center gap-3 rounded-md px-2.5 py-1.5 text-left text-sm outline-none data-disabled:pointer-events-none data-disabled:opacity-50 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+        className="flex min-h-8 min-w-56 w-full items-center rounded-md px-2.5 py-1.5 text-left text-sm outline-none data-disabled:pointer-events-none data-disabled:opacity-50 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
       >
-        <ContextMenuOptionContent option={option} />
-        <ChevronRight className="ml-auto size-4 shrink-0" aria-hidden="true" />
+        <ContextMenuItemLayout
+          icon={option.leading}
+          name={option.label}
+          suffix={option.hint}
+          chevron
+        />
       </DropdownMenuPrimitive.SubTrigger>
       <DropdownMenuPrimitive.Portal>
         <DropdownMenuPrimitive.SubContent
@@ -195,18 +199,36 @@ function ContextMenuSubmenuOptionItem({
   );
 }
 
-function ContextMenuOptionContent({ option }: { option: ContextMenuItemOption }) {
+function ContextMenuItemLayout({
+  icon,
+  name,
+  suffix,
+  chevron = false,
+}: {
+  icon?: ReactNode;
+  name: ReactNode;
+  suffix?: ReactNode;
+  chevron?: boolean;
+}) {
   return (
-    <>
-      {option.leading ? (
-        <span className="flex shrink-0 items-center justify-center">{option.leading}</span>
-      ) : null}
-      <span className="min-w-0 flex-1 truncate">{option.label}</span>
-      {option.hint ? (
-        <span className="ml-auto flex shrink-0 items-center justify-end gap-1.5 pl-6 text-xs text-muted-foreground">
-          {option.hint}
+    <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
+      <span className="flex size-4 shrink-0 items-center justify-center" data-slot="menu-icon">
+        {icon}
+      </span>
+      <span className="min-w-0 flex-1 truncate" data-slot="menu-name">
+        {name}
+      </span>
+      {suffix ? (
+        <span
+          className="flex shrink-0 items-center justify-end text-xs text-muted-foreground"
+          data-slot="menu-suffix"
+        >
+          {suffix}
         </span>
       ) : null}
-    </>
+      <span className="flex size-4 shrink-0 items-center justify-center" data-slot="menu-chevron">
+        {chevron ? <ChevronRight className="size-4" aria-hidden="true" /> : null}
+      </span>
+    </div>
   );
 }
