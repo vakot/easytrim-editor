@@ -7,7 +7,6 @@ type TranslationShape<T> = {
 export const sk = {
   common: {
     brand: "EasyTrim Editor",
-    shortBrand: "EasyTrim",
     cancel: "Zrušiť",
     close: "Zavrieť",
     retry: "Skúsiť znova",
@@ -25,7 +24,6 @@ export const sk = {
     slovak: "Slovenčina",
   },
   theme: {
-    label: "Motív",
     selection: "Motív: {{theme}}",
     systemSelection: "Systémový ({{resolved}})",
     system: "Systémový",
@@ -34,7 +32,6 @@ export const sk = {
   },
   themeColor: {
     custom: "Vlastna",
-    label: "Farba motГ­vu",
     tooltip: "Vyberte hlavnГє farbu aplikГЎcie",
     presets: "PredvoДѕby farby motГ­vu",
     spectrum: "Spektrum farieb motГ­vu. OdtieЕ€ upravГ­te ЕЎГ­pkami doДѕava a doprava.",
@@ -52,7 +49,6 @@ export const sk = {
       file: "Súbor",
       view: "Zobraziť",
       settings: "Nastavenia",
-      help: "Pomoc",
       openFile: "Otvoriť súbor",
       closeFile: "Zavrieť súbor",
       saveLosslessCut: "Uložiť bez prekódovania",
@@ -73,7 +69,6 @@ export const sk = {
       resetToDefault: "Obnoviť predvolené",
       enabledByDefault: "Predvolene zapnuté",
       disabledByDefault: "Predvolene vypnuté",
-      language: "Jazyk",
       snap: "Prichytenie",
       loop: "Opakovanie",
       followSegment: "Sledovať segment",
@@ -228,11 +223,8 @@ export const sk = {
     muteTrack: "Stlmiť {{title}}",
     enableTrack: "Povoliť {{title}}",
     trackVolume: "Hlasitosť: {{title}}",
-    enabledState: "{{label}}: zapnuté",
-    mutedState: "{{label}}: stlmené",
     mute: "Stlmiť",
     unmute: "Zrušiť stlmenie",
-    originalLevel: "0 dB je pôvodná úroveň",
     preparingWaveform: "Pripravuje sa priebeh zvuku…",
     waveformUnavailable: "Priebeh zvuku nie je dostupný",
     unknownLayout: "neznáme rozloženie",
@@ -252,11 +244,9 @@ export const sk = {
   },
   export: {
     save: "Uložiť",
-    saveShortcut: "Uložiť (Ctrl+S)",
     cropSaveDisabledTooltip: "Orezanie vyžaduje úplné vykreslenie videa.",
     saveTooltip: "Uložiť vybranú časť bez opätovného kódovania. (Ctrl+S)",
     export: "Exportovať",
-    exportShortcut: "Exportovať (Ctrl+E)",
     exportTooltip: "Vykresliť vybranú časť s nastaveniami exportu. (Ctrl+E)",
     queue: "Front exportov",
     empty: "Zatiaľ žiadne exporty.",

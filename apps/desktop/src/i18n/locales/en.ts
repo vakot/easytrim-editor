@@ -1,7 +1,6 @@
 export const en = {
   common: {
     brand: "EasyTrim Editor",
-    shortBrand: "EasyTrim",
     cancel: "Cancel",
     close: "Close",
     retry: "Retry",
@@ -19,7 +18,6 @@ export const en = {
     slovak: "Slovenčina",
   },
   theme: {
-    label: "Theme",
     selection: "Theme: {{theme}}",
     systemSelection: "System ({{resolved}})",
     system: "System",
@@ -27,7 +25,6 @@ export const en = {
     dark: "Dark",
   },
   themeColor: {
-    label: "Theme color",
     tooltip: "Choose the app's primary color",
     presets: "Theme color presets",
     spectrum: "Theme color spectrum. Use the Left and Right Arrow keys to adjust the hue.",
@@ -47,7 +44,6 @@ export const en = {
       file: "File",
       view: "View",
       settings: "Settings",
-      help: "Help",
       openFile: "Open File",
       closeFile: "Close File",
       saveLosslessCut: "Save Lossless Cut",
@@ -68,7 +64,6 @@ export const en = {
       resetToDefault: "Reset to default",
       enabledByDefault: "Enabled by default",
       disabledByDefault: "Disabled by default",
-      language: "Language",
       snap: "Snap",
       loop: "Loop",
       followSegment: "Follow segment",
@@ -221,11 +216,8 @@ export const en = {
     muteTrack: "Mute {{title}}",
     enableTrack: "Enable {{title}}",
     trackVolume: "{{title}} volume",
-    enabledState: "{{label}}: enabled",
-    mutedState: "{{label}}: muted",
     mute: "Mute",
     unmute: "Unmute",
-    originalLevel: "0 dB is the original level",
     preparingWaveform: "Preparing waveform…",
     waveformUnavailable: "Waveform unavailable",
     unknownLayout: "unknown layout",
@@ -245,11 +237,9 @@ export const en = {
   },
   export: {
     save: "Save",
-    saveShortcut: "Save (Ctrl+S)",
     saveTooltip: "Save the selected segment without re-encoding. (Ctrl+S)",
     cropSaveDisabledTooltip: "Cropping requires a full video render.",
     export: "Export",
-    exportShortcut: "Export (Ctrl+E)",
     exportTooltip: "Render the selected segment with your export settings. (Ctrl+E)",
     queue: "Export queue",
     empty: "No exports yet.",
