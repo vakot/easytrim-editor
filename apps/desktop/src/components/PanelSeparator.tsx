@@ -1,7 +1,6 @@
 import { Separator as ResizeSeparator } from "react-resizable-panels";
 import type { MouseEventHandler } from "react";
 
-import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 
 interface PanelSeparatorProps {
@@ -10,6 +9,8 @@ interface PanelSeparatorProps {
   orientation: "horizontal" | "vertical";
   onDoubleClick?: MouseEventHandler<HTMLDivElement>;
   disabled?: boolean;
+  collapsed?: boolean;
+  className?: string;
 }
 
 export function PanelSeparator({
@@ -18,6 +19,8 @@ export function PanelSeparator({
   orientation,
   onDoubleClick,
   disabled = false,
+  collapsed = false,
+  className,
 }: PanelSeparatorProps) {
   return (
     <ResizeSeparator
@@ -30,18 +33,23 @@ export function PanelSeparator({
       className={cn(
         "group relative z-20 shrink-0 bg-transparent outline-none",
         disabled && "pointer-events-none hidden",
-        orientation === "vertical" ? "w-2" : "h-2",
+        orientation === "vertical" ? "w-1" : "h-1",
+        className,
       )}
     >
-      <Separator
-        orientation={orientation}
-        className={cn(
-          "pointer-events-none transition-colors group-hover:bg-primary/70 group-focus-visible:bg-primary group-data-[separator=active]:bg-primary group-data-[separator=drag]:bg-primary",
-          orientation === "vertical"
-            ? "absolute inset-y-0 left-1/2 h-full -translate-x-1/2"
-            : "absolute inset-x-0 top-1/2 w-full -translate-y-1/2",
-        )}
-      />
+      <div className="pointer-events-none absolute inset-0 z-10 rounded transition-colors group-hover:bg-primary/70 group-focus-visible:bg-primary group-data-[separator=active]:bg-primary group-data-[separator=drag]:bg-primary" />
+      {!collapsed ? (
+        <div
+          className={cn(
+            "absolute left-1/2 top-1/2 -translate-1/2 flex gap-0.5",
+            orientation === "vertical" ? "flex-col" : "flex-row",
+          )}
+        >
+          <div aria-hidden="true" className="size-0.5 rounded-full bg-secondary-foreground" />
+          <div aria-hidden="true" className="size-0.5 rounded-full bg-secondary-foreground" />
+          <div aria-hidden="true" className="size-0.5 rounded-full bg-secondary-foreground" />
+        </div>
+      ) : null}
     </ResizeSeparator>
   );
 }

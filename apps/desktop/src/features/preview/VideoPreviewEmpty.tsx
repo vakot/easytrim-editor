@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { BrandIcon } from "@/components/BrandIcon";
 import { kofiBrandIcon } from "@/components/brand-icons";
 import { openExternalUrl } from "@/lib/open-external-url";
-import styles from "./EmptyPreviewMock.module.css";
+import styles from "./VideoPreviewEmpty.module.css";
 
 const KOFI_URL = "https://ko-fi.com/vakot";
 
@@ -46,7 +46,7 @@ const shortcuts = [
   },
 ] as const;
 
-export function EmptyPreviewMock() {
+export function VideoPreviewEmpty() {
   const { t } = useTranslation();
 
   return (

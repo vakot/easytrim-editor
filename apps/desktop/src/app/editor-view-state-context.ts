@@ -16,8 +16,8 @@ export interface EditorViewStateValue {
   resetTools: () => void;
   showSourceDetails: boolean;
   setShowSourceDetails: (visible: boolean) => void;
-  showAudioTracks: boolean;
-  setShowAudioTracks: (visible: boolean) => void;
+  showTimeline: boolean;
+  setShowTimeline: (visible: boolean) => void;
   workspaceLayout: Layout | undefined;
   setWorkspaceLayout: (layout: Layout) => void;
   editorStageLayout: Layout | undefined;

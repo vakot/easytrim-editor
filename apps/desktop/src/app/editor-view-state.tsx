@@ -13,7 +13,7 @@ const initialTools: EditorToolState = {
 export function EditorViewStateProvider({ children }: { children: ReactNode }) {
   const [tools, setTools] = useState<EditorToolState>(initialTools);
   const [showSourceDetails, setShowSourceDetails] = useState(true);
-  const [showAudioTracks, setShowAudioTracks] = useState(true);
+  const [showTimeline, setShowTimeline] = useState(true);
   const [workspaceLayout, setWorkspaceLayout] = useState<Layout>();
   const [editorStageLayout, setEditorStageLayout] = useState<Layout>();
 
@@ -25,8 +25,8 @@ export function EditorViewStateProvider({ children }: { children: ReactNode }) {
         resetTools: () => setTools(initialTools),
         showSourceDetails,
         setShowSourceDetails,
-        showAudioTracks,
-        setShowAudioTracks,
+        showTimeline,
+        setShowTimeline,
         workspaceLayout,
         setWorkspaceLayout,
         editorStageLayout,

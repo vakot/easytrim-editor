@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useTranslation } from "react-i18next";
 import { CropViewport } from "./CropViewport";
 import type { CropRect } from "./utils/crop-geometry";
+import { VideoPreviewEmpty } from "@/features/preview/VideoPreviewEmpty";
 
 interface VideoPreviewProps {
   sourceId: string | null;
@@ -27,7 +28,19 @@ interface VideoPreviewProps {
   onCropToolOpenChange?: (isOpen: boolean) => void;
 }
 
-export function VideoPreview({
+export function VideoPreview(props: VideoPreviewProps) {
+  if (!props.sourceId) {
+    return <VideoPreviewEmpty />;
+  }
+
+  return (
+    <section className="grid size-full min-h-0 place-items-center bg-preview-surface p-4">
+      <VideoPreviewContent {...props} />
+    </section>
+  );
+}
+
+function VideoPreviewContent({
   sourceId,
   preview,
   playbackRate,

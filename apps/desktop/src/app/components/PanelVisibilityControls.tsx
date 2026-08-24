@@ -7,7 +7,7 @@ import { useEditorViewState } from "@/app/hooks/useEditorViewState";
 
 export function PanelVisibilityControls() {
   const { t } = useTranslation();
-  const { showSourceDetails, setShowSourceDetails, showAudioTracks, setShowAudioTracks } =
+  const { showSourceDetails, setShowSourceDetails, showTimeline, setShowTimeline } =
     useEditorViewState();
 
   return (
@@ -45,14 +45,14 @@ export function PanelVisibilityControls() {
             variant="ghost"
             size="icon-sm"
             aria-label={
-              showAudioTracks ? t("app.panels.hideBottomPane") : t("app.panels.showBottomPane")
+              showTimeline ? t("app.panels.hideBottomPane") : t("app.panels.showBottomPane")
             }
-            aria-pressed={showAudioTracks}
-            data-state={showAudioTracks ? "on" : "off"}
-            className={showAudioTracks ? "text-primary" : undefined}
-            onClick={() => setShowAudioTracks(!showAudioTracks)}
+            aria-pressed={showTimeline}
+            data-state={showTimeline ? "on" : "off"}
+            className={showTimeline ? "text-primary" : undefined}
+            onClick={() => setShowTimeline(!showTimeline)}
           >
-            {showAudioTracks ? (
+            {showTimeline ? (
               <PanelBottom className="size-4" aria-hidden="true" />
             ) : (
               <PanelBottomDashed className="size-4" aria-hidden="true" />
@@ -60,7 +60,7 @@ export function PanelVisibilityControls() {
           </Button>
         </TooltipTrigger>
         <TooltipContent>
-          {showAudioTracks ? t("app.panels.hideBottomPane") : t("app.panels.showBottomPane")}
+          {showTimeline ? t("app.panels.hideBottomPane") : t("app.panels.showBottomPane")}
         </TooltipContent>
       </Tooltip>
     </div>
