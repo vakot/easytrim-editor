@@ -43,7 +43,7 @@ export function EditorStage() {
 
   const timelinePanelSizing = useTimelinePanelSizing(
     source.sourceId ?? "no-source",
-    source.audioStreams.length,
+    source.media?.audioStreams.length ?? null,
     showTimeline,
   );
 
