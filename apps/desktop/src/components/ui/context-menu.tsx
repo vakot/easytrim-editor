@@ -9,6 +9,7 @@ interface ContextMenuItemOption {
   id: string;
   leading?: ReactNode;
   label: ReactNode;
+  ariaLabel?: string;
   hint?: ReactNode;
   selected?: boolean;
   disabled?: boolean;
@@ -154,6 +155,7 @@ function ContextMenuOptionItem({
         if (option.shouldCloseOnClick === false) event.preventDefault();
       }}
       data-selected={option.selected ? "true" : "false"}
+      aria-label={option.ariaLabel}
       aria-current={option.selected ? "true" : undefined}
       className="flex min-h-8 min-w-48 w-full cursor-default items-center gap-3 rounded-md px-2.5 py-1.5 text-left text-sm outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
     >

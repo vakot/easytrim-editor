@@ -4,12 +4,16 @@ import {
   Download,
   ExternalLink,
   LoaderCircle,
+  Magnet,
+  Merge,
   Monitor,
   Moon,
+  Repeat,
   RefreshCw,
+  Scissors,
   Sun,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { SpectrumWheel } from "@/app/components/PrimaryColorSelector";
 import {
@@ -25,8 +29,10 @@ import { BrandIcon } from "@/components/BrandIcon";
 import { githubBrandIcon, kofiBrandIcon } from "@/components/brand-icons";
 import { ContextMenu, type ContextMenuOption } from "@/components/ui/context-menu";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { isSupportedLanguage, type SupportedLanguage } from "@/i18n/resources";
 import { openExternalUrl } from "@/lib/open-external-url";
+import { DEFAULT_TOOL_DEFAULTS, type ToolDefaultKey, type ToolDefaults } from "@/app/tool-settings";
 import packageJson from "../../../../../package.json";
 
 interface ContextMenusProps {
@@ -86,6 +92,7 @@ export function ContextMenus({
   const [openMenu, setOpenMenu] = useState<ContextMenuId | null>(null);
   const [switchingMenu, setSwitchingMenu] = useState<ContextMenuId | null>(null);
   const [previewColor, setPreviewColor] = useState<PrimaryColor | null>(null);
+  const [toolDefaults, setToolDefaults] = useState<ToolDefaults>(DEFAULT_TOOL_DEFAULTS);
   const currentLanguage = isSupportedLanguage(i18n.resolvedLanguage) ? i18n.resolvedLanguage : "en";
   const CurrentThemeIcon = themeIcons[preference];
   const displayedPrimaryColor = previewColor ?? primaryColor;
@@ -180,6 +187,31 @@ export function ContextMenus({
     onSelect: () => void i18n.changeLanguage(language as SupportedLanguage),
   }));
 
+  const settingsToolOption = (
+    id: string,
+    label: string,
+    icon: ReactNode,
+    key: ToolDefaultKey,
+  ): ContextMenuOption => ({
+    id,
+    label,
+    ariaLabel: label,
+    leading: icon,
+    hint: (
+      <Switch
+        aria-label={label}
+        checked={toolDefaults[key]}
+        onCheckedChange={(enabled) =>
+          setToolDefaults((current) => ({ ...current, [key]: enabled }))
+        }
+        onClick={(event) => event.stopPropagation()}
+        onPointerDown={(event) => event.stopPropagation()}
+      />
+    ),
+    shouldCloseOnClick: false,
+    onSelect: () => setToolDefaults((current) => ({ ...current, [key]: !current[key] })),
+  });
+
   const updateLabel =
     updateStatus === "checking"
       ? t("app.topBarMenus.checkingForUpdates")
@@ -262,6 +294,36 @@ export function ContextMenus({
         {...menuProps("settings")}
         label={t("app.topBarMenus.settings")}
         options={[
+          {
+            id: "settings-timeline-section",
+            section: true,
+            label: t("app.settings.timelineTools"),
+          },
+          settingsToolOption(
+            "setting-safe-trim",
+            t("app.settings.snap"),
+            <Magnet className="size-4" aria-hidden="true" />,
+            "safeTrimFollowingEnabled",
+          ),
+          settingsToolOption(
+            "setting-loop",
+            t("app.settings.loop"),
+            <Repeat className="size-4" aria-hidden="true" />,
+            "loopPlaybackEnabled",
+          ),
+          settingsToolOption(
+            "setting-segment",
+            t("app.settings.followSegment"),
+            <Scissors className="size-4" aria-hidden="true" />,
+            "segmentPlaybackEnabled",
+          ),
+          { id: "settings-audio-section", section: true, label: t("app.settings.audioTools") },
+          settingsToolOption(
+            "setting-merge-audio",
+            t("app.settings.mergeAudio"),
+            <Merge className="size-4" aria-hidden="true" />,
+            "mergeAudioEnabled",
+          ),
           { id: "settings-language-section", section: true, label: t("app.settings.language") },
           {
             id: "language",
