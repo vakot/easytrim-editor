@@ -61,6 +61,23 @@ function mediaWithAudio(sourceId: string): MediaInfo {
 }
 
 describe("sessionReducer", () => {
+  it("applies the saved merge default to a newly selected source", () => {
+    const loading = sessionReducer(initialSessionState, {
+      type: "source-selected",
+      source: firstSource,
+      mergeAudio: true,
+    });
+
+    expect(loading.source?.mergeAudio).toBe(true);
+
+    const resetForNextSource = sessionReducer(loading, {
+      type: "source-selected",
+      source: secondSource,
+      mergeAudio: false,
+    });
+    expect(resetForNextSource.source?.mergeAudio).toBe(false);
+  });
+
   it("ignores metadata from a source that has already been replaced", () => {
     const loadingFirst = sessionReducer(initialSessionState, {
       type: "source-selected",

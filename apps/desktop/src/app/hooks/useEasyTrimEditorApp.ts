@@ -23,7 +23,7 @@ import {
 } from "@/lib/tauri/media";
 import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
 
-export function useEasyTrimEditorApp() {
+export function useEasyTrimEditorApp(defaultMergeAudio = false) {
   const [session, dispatch] = useReducer(sessionReducer, initialSessionState);
   const [isChoosingSource, setIsChoosingSource] = useState(false);
   const [isNativeDialogOpen, setIsNativeDialogOpen] = useState(false);
@@ -48,63 +48,66 @@ export function useEasyTrimEditorApp() {
     persistExportPresetState(exportPresets);
   }, [exportPresets]);
 
-  const inspectSource = useCallback((source: SourceSelection) => {
-    activeSourceIdRef.current = source.sourceId;
-    setAudioPreviewUrls({});
-    setAudioPreviewPreparation({ sourceId: source.sourceId, status: "idle" });
-    dispatch({ type: "source-selected", source });
-    void inspectMedia(source.sourceId)
-      .then((media) => {
-        if (activeSourceIdRef.current !== source.sourceId) return undefined;
-        dispatch({ type: "source-ready", sourceId: source.sourceId, media });
-        const audioStreamIndexes = media.audioStreams.map((stream) => stream.streamIndex);
-        if (audioStreamIndexes.length <= 1) {
-          setAudioPreviewPreparation({ sourceId: source.sourceId, status: "ready" });
-        } else {
-          setAudioPreviewPreparation({ sourceId: source.sourceId, status: "loading" });
-          void prepareAudioPreviews(source.sourceId, audioStreamIndexes)
-            .then((previews) => {
-              if (activeSourceIdRef.current !== source.sourceId) {
-                return;
-              }
-              setAudioPreviewUrls(
-                Object.fromEntries(previews.map((preview) => [preview.streamIndex, preview.url])),
-              );
-              setAudioPreviewPreparation({ sourceId: source.sourceId, status: "ready" });
-            })
-            .catch(() => {
-              // Audio-only preview is an optimization; the source video remains usable if it fails.
-              if (activeSourceIdRef.current === source.sourceId) {
-                setAudioPreviewPreparation({ sourceId: source.sourceId, status: "unavailable" });
-              }
-            });
-        }
-        dispatch({ type: "preview-loading", sourceId: source.sourceId, kind: "source" });
-        return prepareSourcePreview(source.sourceId);
-      })
-      .then((preview) => {
-        if (!preview) return;
-        dispatch({ type: "preview-ready", sourceId: source.sourceId, preview });
-      })
-      .catch((error: unknown) => {
-        const normalized = normalizeAppError(error);
-        dispatch(
-          normalized.code === "probe_failed" ||
-            normalized.code === "unsupported_media" ||
-            normalized.code === "io_failed"
-            ? {
-                type: "source-failed",
-                sourceId: source.sourceId,
-                error: normalized,
-              }
-            : {
-                type: "preview-failed",
-                sourceId: source.sourceId,
-                error: normalized,
-              },
-        );
-      });
-  }, []);
+  const inspectSource = useCallback(
+    (source: SourceSelection) => {
+      activeSourceIdRef.current = source.sourceId;
+      setAudioPreviewUrls({});
+      setAudioPreviewPreparation({ sourceId: source.sourceId, status: "idle" });
+      dispatch({ type: "source-selected", source, mergeAudio: defaultMergeAudio });
+      void inspectMedia(source.sourceId)
+        .then((media) => {
+          if (activeSourceIdRef.current !== source.sourceId) return undefined;
+          dispatch({ type: "source-ready", sourceId: source.sourceId, media });
+          const audioStreamIndexes = media.audioStreams.map((stream) => stream.streamIndex);
+          if (audioStreamIndexes.length <= 1) {
+            setAudioPreviewPreparation({ sourceId: source.sourceId, status: "ready" });
+          } else {
+            setAudioPreviewPreparation({ sourceId: source.sourceId, status: "loading" });
+            void prepareAudioPreviews(source.sourceId, audioStreamIndexes)
+              .then((previews) => {
+                if (activeSourceIdRef.current !== source.sourceId) {
+                  return;
+                }
+                setAudioPreviewUrls(
+                  Object.fromEntries(previews.map((preview) => [preview.streamIndex, preview.url])),
+                );
+                setAudioPreviewPreparation({ sourceId: source.sourceId, status: "ready" });
+              })
+              .catch(() => {
+                // Audio-only preview is an optimization; the source video remains usable if it fails.
+                if (activeSourceIdRef.current === source.sourceId) {
+                  setAudioPreviewPreparation({ sourceId: source.sourceId, status: "unavailable" });
+                }
+              });
+          }
+          dispatch({ type: "preview-loading", sourceId: source.sourceId, kind: "source" });
+          return prepareSourcePreview(source.sourceId);
+        })
+        .then((preview) => {
+          if (!preview) return;
+          dispatch({ type: "preview-ready", sourceId: source.sourceId, preview });
+        })
+        .catch((error: unknown) => {
+          const normalized = normalizeAppError(error);
+          dispatch(
+            normalized.code === "probe_failed" ||
+              normalized.code === "unsupported_media" ||
+              normalized.code === "io_failed"
+              ? {
+                  type: "source-failed",
+                  sourceId: source.sourceId,
+                  error: normalized,
+                }
+              : {
+                  type: "preview-failed",
+                  sourceId: source.sourceId,
+                  error: normalized,
+                },
+          );
+        });
+    },
+    [defaultMergeAudio],
+  );
 
   const handlePreviewPlaybackError = useCallback((sourceId: string, previewKind: PreviewKind) => {
     if (previewKind === "proxy") {
@@ -183,6 +186,10 @@ export function useEasyTrimEditorApp() {
 
   const handleToggleAudioMerge = useCallback((sourceId: string) => {
     dispatch({ type: "audio-merge-toggled", sourceId });
+  }, []);
+
+  const handleSetAudioMerge = useCallback((sourceId: string, enabled: boolean) => {
+    dispatch({ type: "audio-merge-set", sourceId, enabled });
   }, []);
 
   const handleWaveformImageError = useCallback((sourceId: string, streamIndex: number) => {
@@ -359,6 +366,7 @@ export function useEasyTrimEditorApp() {
     handleToggleAudioMaster,
     handleMasterVolumeChange,
     handleToggleAudioMerge,
+    handleSetAudioMerge,
     handleWaveformImageError,
   };
 }

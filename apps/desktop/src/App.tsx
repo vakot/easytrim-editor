@@ -16,9 +16,12 @@ import { useEditorSession } from "@/app/hooks/useEditorSession";
 import { EditorContractsProvider } from "@/app/editor-contracts";
 import { useSourceDetails } from "@/app/hooks/useSourceDetails";
 import { AppUpdatesProvider } from "@/app/AppUpdatesProvider";
+import { useEditorViewState } from "@/app/hooks/useEditorViewState";
+import { DEFAULT_TOOL_DEFAULTS, type ToolDefaultKey } from "@/app/tool-settings";
 
 function EasyTrimEditorApp() {
   const app = useEditorSession();
+  const { toolDefaults, setToolDefault, resetToolDefaults } = useEditorViewState();
   const sourceDetails = useSourceDetails();
   const { t } = useTranslation();
   const source = sourceDetails.source;
@@ -30,6 +33,18 @@ function EasyTrimEditorApp() {
     sourceDetails.crop.width !== 1 ||
     sourceDetails.crop.height !== 1;
   const canSave = canExport && !cropApplied;
+  const handleToolDefaultChange = (key: ToolDefaultKey, enabled: boolean) => {
+    setToolDefault(key, enabled);
+    if (key === "mergeAudioEnabled" && sourceDetails.sourceId) {
+      app.handleSetAudioMerge(sourceDetails.sourceId, enabled);
+    }
+  };
+  const handleResetToolDefaults = () => {
+    resetToolDefaults();
+    if (sourceDetails.sourceId) {
+      app.handleSetAudioMerge(sourceDetails.sourceId, DEFAULT_TOOL_DEFAULTS.mergeAudioEnabled);
+    }
+  };
 
   return (
     <TooltipProvider>
@@ -45,6 +60,9 @@ function EasyTrimEditorApp() {
               onCloseFile={app.handleCloseFile}
               onSave={() => exportPanelRef.current?.startFastCut()}
               onExport={() => exportPanelRef.current?.openOptimizedDialog()}
+              toolDefaults={toolDefaults}
+              onToolDefaultChange={handleToolDefaultChange}
+              onResetToolDefaults={handleResetToolDefaults}
             />
           }
           statusContent={<CapabilityStatus capabilities={app.session.capabilities} />}
@@ -96,13 +114,13 @@ function App() {
   return (
     <AppUpdatesProvider>
       <ThemeProvider>
-        <EditorSessionProvider>
-          <EditorViewStateProvider>
+        <EditorViewStateProvider>
+          <EditorSessionProvider>
             <EditorContractsProvider>
               <EasyTrimEditorApp />
             </EditorContractsProvider>
-          </EditorViewStateProvider>
-        </EditorSessionProvider>
+          </EditorSessionProvider>
+        </EditorViewStateProvider>
       </ThemeProvider>
     </AppUpdatesProvider>
   );

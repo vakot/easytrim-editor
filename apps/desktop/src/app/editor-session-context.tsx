@@ -3,9 +3,11 @@ import { useEffect, useState, type ReactNode } from "react";
 import { FULL_CROP, type CropRect } from "@/features/preview/utils/crop-geometry";
 import { useEasyTrimEditorApp } from "@/app/hooks/useEasyTrimEditorApp";
 import { EditorSessionContext } from "@/app/editor-session-context-value";
+import { useEditorViewState } from "@/app/hooks/useEditorViewState";
 
 export function EditorSessionProvider({ children }: { children: ReactNode }) {
-  const app = useEasyTrimEditorApp();
+  const { toolDefaults } = useEditorViewState();
+  const app = useEasyTrimEditorApp(toolDefaults.mergeAudioEnabled);
   const source = app.session.source;
   const sourceDimensions = source?.media
     ? { width: source.media.video.width, height: source.media.video.height }
