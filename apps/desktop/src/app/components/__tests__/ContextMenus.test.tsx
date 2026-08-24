@@ -44,8 +44,31 @@ describe("ContextMenus", () => {
 
     await user.click(screen.getByRole("menuitem", { name: "Check for Updates…" }));
     expect(screen.getByRole("menuitem", { name: "Check for Updates…" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Project Page" })).toHaveTextContent(
+      "Project Page",
+    );
+    expect(
+      screen
+        .getByRole("menuitem", { name: "Project Page" })
+        .querySelector('[data-brand-icon="github"]'),
+    ).not.toBeNull();
+    expect(
+      screen
+        .getByRole("menuitem", { name: "Support the Project" })
+        .querySelector('[data-brand-icon="kofi"]'),
+    ).not.toBeNull();
+    expect(
+      screen.getByRole("menuitem", { name: "Project Page" }).querySelector(".lucide-external-link"),
+    ).toBeNull();
+    expect(
+      screen
+        .getByRole("menuitem", { name: "Support the Project" })
+        .querySelector(".lucide-external-link"),
+    ).toBeNull();
 
     await user.click(screen.getByRole("menuitem", { name: "Changelog" }));
+    await user.click(screen.getByRole("button", { name: "Help" }));
+    await user.click(screen.getByRole("menuitem", { name: "Project Page" }));
     await user.click(screen.getByRole("button", { name: "Help" }));
     await user.click(screen.getByRole("menuitem", { name: "Support the Project" }));
     await user.click(screen.getByRole("button", { name: "Help" }));
@@ -53,6 +76,7 @@ describe("ContextMenus", () => {
 
     expect(vi.mocked(openExternalUrl).mock.calls).toEqual([
       ["https://github.com/vakot/easytrim-editor/releases"],
+      ["https://github.com/vakot/easytrim-editor"],
       ["https://ko-fi.com/vakot"],
       ["https://github.com/vakot/easytrim-editor/releases/tag/v1.0.5"],
     ]);
