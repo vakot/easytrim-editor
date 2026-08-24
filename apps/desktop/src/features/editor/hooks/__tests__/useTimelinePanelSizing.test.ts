@@ -56,9 +56,9 @@ describe("timelinePanelTargetSize", () => {
 
   it("replaces retained bounds once the next source track count is known", () => {
     expect(timelinePanelConstraintsForSource(0, constraints)).toEqual({
-      minSize: 165,
-      defaultSize: 165,
-      maxSize: 165,
+      minSize: 170,
+      defaultSize: 170,
+      maxSize: 170,
     });
   });
 });
@@ -92,6 +92,6 @@ describe("useTimelinePanelSizing", () => {
     rerender({ sourceId: "source-2", audioTrackCount: 1 });
 
     expect(panelMock.panel.resize).toHaveBeenCalledOnce();
-    expect(panelMock.panel.resize).toHaveBeenCalledWith(314);
+    expect(panelMock.panel.resize).toHaveBeenCalledWith(319);
   });
 });
