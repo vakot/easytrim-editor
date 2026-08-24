@@ -41,11 +41,7 @@ export function SegmentDragHandle({
     <Tooltip>
       <TooltipTrigger asChild>
         <button
-          className={cn(
-            "segment-drag-handle",
-            styles.segment,
-            disabled && "cursor-not-allowed opacity-50 grayscale",
-          )}
+          className={cn("segment-drag-handle", styles.segment, disabled && "cursor-not-allowed")}
           type="button"
           role="slider"
           aria-label={t("timeline.moveSegment")}
@@ -119,7 +115,7 @@ export function TrimHandle({
             `trim-handle-${boundary}`,
             styles.trim,
             boundary === "start" ? styles.start : styles.end,
-            disabled && "cursor-not-allowed opacity-50 grayscale",
+            disabled && cn("cursor-not-allowed", styles.trimDisabled),
           )}
           type="button"
           role="slider"

@@ -90,7 +90,7 @@ export function TrimTimeline({
         </div>
         <div
           ref={trackRef}
-          className={`${styles.track} ${disabled ? "cursor-not-allowed opacity-60 grayscale" : ""}`}
+          className={`${styles.track} ${disabled ? `cursor-not-allowed ${styles.trackDisabled}` : ""}`}
           aria-label={t("timeline.trackLabel")}
           onPointerDown={(event) => {
             if (!disabled && event.target === event.currentTarget) {
@@ -103,7 +103,7 @@ export function TrimTimeline({
           onLostPointerCapture={(event) => finishScrub(event, false)}
         >
           <div
-            className={`${styles.selection} ${disabled ? "opacity-40 grayscale" : ""}`}
+            className={`${styles.selection} ${disabled ? styles.selectionDisabled : ""}`}
             style={{
               left: "var(--timeline-trim-start)",
               right: "var(--timeline-trim-end-inset)",
