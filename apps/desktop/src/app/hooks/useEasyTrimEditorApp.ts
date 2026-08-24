@@ -270,6 +270,23 @@ export function useEasyTrimEditorApp() {
     dispatch({ type: "return-to-welcome" });
   }, []);
 
+  const handleCloseFile = useCallback(() => {
+    if (!hasSource) {
+      return;
+    }
+    handleReturnToWelcome();
+  }, [handleReturnToWelcome, hasSource]);
+
+  useKeyboardShortcut(
+    (event) =>
+      event.key.toLowerCase() === "q" &&
+      event.ctrlKey &&
+      hasSource &&
+      !isChoosingSource &&
+      !isNativeDialogOpen,
+    handleCloseFile,
+  );
+
   const requestReturnToWelcome = useCallback(() => {
     if (hasSource) {
       setIsReturnConfirmationOpen(true);
@@ -334,6 +351,7 @@ export function useEasyTrimEditorApp() {
     setIsNativeDialogOpen,
     setIsReturnConfirmationOpen,
     handleChooseSource,
+    handleCloseFile,
     handleReturnToWelcome,
     requestReturnToWelcome,
     handlePreviewPlaybackError,

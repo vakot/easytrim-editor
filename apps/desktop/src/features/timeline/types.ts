@@ -5,6 +5,7 @@ import type { FrameRate } from "@/lib/tauri/media";
 
 export interface TrimTimelineProps {
   range: TrimRange;
+  disabled?: boolean;
   playheadMicros: number;
   playheadRef: RefObject<HTMLButtonElement | null>;
   frameRate?: FrameRate;

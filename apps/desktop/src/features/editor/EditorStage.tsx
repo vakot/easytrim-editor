@@ -20,6 +20,12 @@ import { TrimTimeline } from "@/features/timeline";
 import { TimelinePane } from "./components/TimelinePane";
 import { useTimelinePanelSizing } from "./hooks/useTimelinePanelSizing";
 
+const EMPTY_TIMELINE_RANGE = {
+  startMicros: 0,
+  endMicros: 1_000_000,
+  sourceDurationMicros: 1_000_000,
+} as const;
+
 export function EditorStage() {
   const { t } = useTranslation();
   const source = useSourceDetails();
@@ -28,14 +34,14 @@ export function EditorStage() {
   const tools = useTimelineTools();
   const { editorStageLayout, setEditorStageLayout, showAudioTracks, setShowAudioTracks } =
     useEditorViewState();
+  const timelineRange = source.trim ?? EMPTY_TIMELINE_RANGE;
+  const controlsDisabled = !source.isReady;
 
   const timelinePanelSizing = useTimelinePanelSizing(
     source.sourceId ?? "no-source",
     source.audioStreams.length,
     showAudioTracks,
   );
-
-  if (!source.sourceId || !source.media || !source.trim || !source.sourceDimensions) return null;
 
   return (
     <Group
@@ -62,7 +68,7 @@ export function EditorStage() {
             onPause={playback.onPause}
             onTimeUpdate={playback.onTimeUpdate}
             onEnded={playback.onEnded}
-            sourceDimensions={source.sourceDimensions}
+            sourceDimensions={source.sourceDimensions ?? undefined}
             onCropResolutionChange={source.onCropResolutionChange}
             onCropChange={source.onCropChange}
             onCropToolOpenChange={playback.onCropToolOpenChange}
@@ -94,49 +100,47 @@ export function EditorStage() {
         className="min-h-0 min-w-0 bg-background"
       >
         <TimelinePane
-          range={source.trim}
+          range={timelineRange}
           timeline={
             <TrimTimeline
-              range={source.trim}
+              range={timelineRange}
+              disabled={controlsDisabled}
               playheadMicros={timeline.playheadMicros}
               playheadRef={timeline.playheadRef}
               frameRate={source.frameRate}
               playbackControls={
-                source.preview.status === "ready" ? (
-                  <PlaybackControls
-                    isPlaying={playback.isPlaying}
-                    error={playback.transportError}
-                    canSetSegmentStart={timeline.canSetSegmentStart}
-                    canSetSegmentEnd={timeline.canSetSegmentEnd}
-                    onTogglePlayback={playback.toggle}
-                    onStepFrame={playback.stepFrame}
-                    onSetSegmentBoundary={playback.setSegmentBoundary}
-                  />
-                ) : null
+                <PlaybackControls
+                  isPlaying={playback.isPlaying}
+                  error={playback.transportError}
+                  canSetSegmentStart={timeline.canSetSegmentStart}
+                  canSetSegmentEnd={timeline.canSetSegmentEnd}
+                  disabled={controlsDisabled}
+                  onTogglePlayback={playback.toggle}
+                  onStepFrame={playback.stepFrame}
+                  onSetSegmentBoundary={playback.setSegmentBoundary}
+                />
               }
               playbackTimecode={
-                source.preview.status === "ready" ? (
-                  <PlaybackTimecode
-                    currentMicros={timeline.playheadMicros}
-                    sourceDurationMicros={source.trim.sourceDurationMicros}
-                    frameRate={source.frameRate}
-                  />
-                ) : null
+                <PlaybackTimecode
+                  currentMicros={controlsDisabled ? null : timeline.playheadMicros}
+                  sourceDurationMicros={
+                    controlsDisabled ? null : timelineRange.sourceDurationMicros
+                  }
+                  frameRate={source.frameRate}
+                />
               }
               videoToolbar={
-                source.preview.status === "ready" ? (
-                  <TimelineTools
-                    safeTrimFollowingEnabled={tools.safeTrimFollowingEnabled}
-                    loopPlaybackEnabled={tools.loopPlaybackEnabled}
-                    segmentPlaybackEnabled={tools.segmentPlaybackEnabled}
-                    playbackSpeed={tools.playbackSpeed}
-                    onToggleSafeTrimFollowing={tools.toggleSafeTrimFollowing}
-                    onToggleLoopPlayback={tools.toggleLoopPlayback}
-                    onToggleSegmentPlayback={tools.toggleSegmentPlayback}
-                    onPlaybackSpeedChange={tools.setPlaybackSpeed}
-                    onReset={tools.reset}
-                  />
-                ) : null
+                <TimelineTools
+                  safeTrimFollowingEnabled={tools.safeTrimFollowingEnabled}
+                  loopPlaybackEnabled={tools.loopPlaybackEnabled}
+                  segmentPlaybackEnabled={tools.segmentPlaybackEnabled}
+                  playbackSpeed={tools.playbackSpeed}
+                  onToggleSafeTrimFollowing={tools.toggleSafeTrimFollowing}
+                  onToggleLoopPlayback={tools.toggleLoopPlayback}
+                  onToggleSegmentPlayback={tools.toggleSegmentPlayback}
+                  onPlaybackSpeedChange={tools.setPlaybackSpeed}
+                  onReset={tools.reset}
+                />
               }
               onChange={timeline.onChange}
               onMoveSegment={timeline.onMoveSegment}
@@ -157,7 +161,7 @@ export function EditorStage() {
                 tracks={source.audioTracks}
                 masterEnabled={source.masterEnabled}
                 masterVolumePercent={source.masterVolumePercent}
-                range={source.trim}
+                range={timelineRange}
                 playheadMicros={timeline.playheadMicros}
                 playheadRef={playback.audioPlayheadRef}
                 mergeAudio={source.mergeAudio}

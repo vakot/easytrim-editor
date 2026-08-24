@@ -9,7 +9,7 @@ import { CropViewport } from "./CropViewport";
 import type { CropRect } from "./utils/crop-geometry";
 
 interface VideoPreviewProps {
-  sourceId: string;
+  sourceId: string | null;
   preview: PreviewState;
   playbackRate: number;
   muted: boolean;
@@ -77,6 +77,15 @@ export function VideoPreview({
   useEffect(() => {
     onCropToolOpenChange?.(cropToolOpen);
   }, [cropToolOpen, onCropToolOpenChange]);
+
+  if (!sourceId) {
+    return (
+      <div
+        className="size-full min-h-0 bg-preview-surface"
+        aria-label={t("import.source.noSource")}
+      />
+    );
+  }
 
   if (preview.status === "idle" || preview.status === "loading") {
     const isProxy = preview.status === "loading" && preview.kind === "proxy";

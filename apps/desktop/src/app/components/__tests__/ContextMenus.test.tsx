@@ -10,14 +10,17 @@ import { ContextMenus } from "../ContextMenus";
 describe("ContextMenus", () => {
   it("opens the File menu with its action and hotkey hint", async () => {
     const user = userEvent.setup();
+    const onCloseFile = vi.fn();
     render(
       <TooltipProvider>
         <ThemeProvider>
           <ContextMenus
             isChoosingSource={false}
+            hasSource
             canSave
             canExport
             onChooseSource={vi.fn()}
+            onCloseFile={onCloseFile}
             onSave={vi.fn()}
             onExport={vi.fn()}
           />
@@ -37,6 +40,12 @@ describe("ContextMenus", () => {
     expect(openFileItem).toHaveClass("min-w-48");
     await user.click(openFileItem);
     expect(screen.queryByRole("menuitem", { name: /Open File/ })).not.toBeInTheDocument();
+
+    await user.click(fileButton);
+    const closeFileItem = screen.getByRole("menuitem", { name: /Close File/ });
+    expect(closeFileItem).toHaveTextContent("Ctrl+Q");
+    await user.click(closeFileItem);
+    expect(onCloseFile).toHaveBeenCalledOnce();
   });
 
   it("keeps Theme and Language metadata visible for every submenu option", async () => {

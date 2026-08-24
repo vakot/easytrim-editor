@@ -17,9 +17,11 @@ import { isSupportedLanguage, type SupportedLanguage } from "@/i18n/resources";
 
 interface ContextMenusProps {
   isChoosingSource: boolean;
+  hasSource?: boolean;
   canSave: boolean;
   canExport: boolean;
   onChooseSource: () => void;
+  onCloseFile?: () => void;
   onSave: () => void;
   onExport: () => void;
 }
@@ -37,9 +39,11 @@ const colorClasses: Record<Exclude<PrimaryColor, `#${string}`>, string> = {
 
 export function ContextMenus({
   isChoosingSource,
+  hasSource = false,
   canSave,
   canExport,
   onChooseSource,
+  onCloseFile = () => undefined,
   onSave,
   onExport,
 }: ContextMenusProps) {
@@ -162,6 +166,13 @@ export function ContextMenus({
             hint: "Ctrl+O",
             disabled: isChoosingSource,
             onSelect: onChooseSource,
+          },
+          {
+            id: "close-file",
+            label: t("app.topBarMenus.closeFile"),
+            hint: "Ctrl+Q",
+            disabled: !hasSource,
+            onSelect: onCloseFile,
           },
         ]}
       />

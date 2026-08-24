@@ -13,12 +13,29 @@
   cursor: pointer;
 }
 
+.trackDisabled {
+  filter: grayscale(1);
+  background:
+    repeating-linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--muted-foreground) 10%, var(--muted)) 0 1px,
+      var(--muted) 1px 6.25%
+    ),
+    color-mix(in oklch, var(--muted) 86%, var(--background));
+  border-color: color-mix(in oklch, var(--border) 72%, var(--muted-foreground));
+}
+
 .selection {
   position: absolute;
   inset-block: 0;
   border-block: 2px solid var(--primary);
   background: color-mix(in oklch, var(--primary) 12%, transparent);
   pointer-events: none;
+}
+
+.selectionDisabled {
+  opacity: 0.4;
+  filter: grayscale(1);
 }
 
 .segment {
@@ -59,6 +76,17 @@
   box-shadow:
     0 0 0 2px color-mix(in oklch, var(--foreground) 68%, transparent),
     0 0 0.95rem color-mix(in oklch, var(--primary) 72%, transparent);
+}
+
+.segment.segmentDisabled,
+.segment.segmentDisabled:hover,
+.segment.segmentDisabled[data-dragging="true"] {
+  border-color: color-mix(in oklch, var(--muted-foreground) 56%, var(--muted));
+  color: var(--muted-foreground);
+  background: color-mix(in oklch, var(--muted-foreground) 72%, var(--muted));
+  box-shadow: none;
+  cursor: not-allowed;
+  filter: grayscale(1);
 }
 
 .segment:focus-visible {
@@ -165,6 +193,19 @@
   margin: auto;
   border-radius: 999px;
   background: color-mix(in oklch, var(--primary-foreground) 58%, transparent);
+}
+
+.trimDisabled {
+  filter: grayscale(1);
+  color: var(--muted-foreground);
+}
+
+.trimDisabled::before {
+  background: color-mix(in oklch, var(--muted-foreground) 56%, var(--muted));
+}
+
+.trimDisabled > span {
+  background: color-mix(in oklch, var(--muted-foreground) 72%, var(--muted));
 }
 
 .trim:focus-visible {

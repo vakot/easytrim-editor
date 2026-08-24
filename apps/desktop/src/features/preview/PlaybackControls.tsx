@@ -38,6 +38,7 @@ interface PlaybackControlsProps {
   error: string | null;
   canSetSegmentStart: boolean;
   canSetSegmentEnd: boolean;
+  disabled?: boolean;
   onTogglePlayback: () => void;
   onStepFrame: (direction: -1 | 1) => void;
   onSetSegmentBoundary: (boundary: TrimBoundary) => void;
@@ -48,6 +49,7 @@ export function PlaybackControls({
   error,
   canSetSegmentStart,
   canSetSegmentEnd,
+  disabled = false,
   onTogglePlayback,
   onStepFrame,
   onSetSegmentBoundary,
@@ -63,7 +65,7 @@ export function PlaybackControls({
           title={
             canSetSegmentStart ? t("preview.setStartShortcut") : t("preview.setStartUnavailable")
           }
-          disabled={!canSetSegmentStart}
+          disabled={disabled || !canSetSegmentStart}
           onClick={() => onSetSegmentBoundary("start")}
         >
           <SquareArrowRight />
@@ -72,6 +74,7 @@ export function PlaybackControls({
           label={t("preview.previousFrame")}
           shortcut="ArrowLeft"
           title={t("preview.previousFrameShortcut")}
+          disabled={disabled}
           onClick={() => onStepFrame(-1)}
         >
           <SkipBack />
@@ -81,6 +84,7 @@ export function PlaybackControls({
           shortcut="Space"
           title={isPlaying ? t("preview.pauseShortcut") : t("preview.playShortcut")}
           primary
+          disabled={disabled}
           onClick={onTogglePlayback}
         >
           {isPlaying ? <Pause /> : <Play />}
@@ -89,6 +93,7 @@ export function PlaybackControls({
           label={t("preview.nextFrame")}
           shortcut="ArrowRight"
           title={t("preview.nextFrameShortcut")}
+          disabled={disabled}
           onClick={() => onStepFrame(1)}
         >
           <SkipForward />
@@ -97,7 +102,7 @@ export function PlaybackControls({
           label={t("preview.setEnd")}
           shortcut="O"
           title={canSetSegmentEnd ? t("preview.setEndShortcut") : t("preview.setEndUnavailable")}
-          disabled={!canSetSegmentEnd}
+          disabled={disabled || !canSetSegmentEnd}
           onClick={() => onSetSegmentBoundary("end")}
         >
           <SquareArrowLeft />
@@ -152,8 +157,8 @@ function TransportButton({
 }
 
 interface PlaybackTimecodeProps {
-  currentMicros: number;
-  sourceDurationMicros: number;
+  currentMicros: number | null;
+  sourceDurationMicros: number | null;
   frameRate?: FrameRate;
 }
 
@@ -166,10 +171,13 @@ export function PlaybackTimecode({
 
   return (
     <output className="font-mono text-xs text-foreground" aria-label={t("preview.currentTime")}>
-      {formatPlaybackTime(currentMicros, frameRate)}
+      {currentMicros === null ? "00:00:00:00f" : formatPlaybackTime(currentMicros, frameRate)}
       <span className="text-muted-foreground">
         {" "}
-        / {formatPlaybackTime(sourceDurationMicros, frameRate)}
+        /{" "}
+        {sourceDurationMicros === null
+          ? "00:00:00:00f"
+          : formatPlaybackTime(sourceDurationMicros, frameRate)}
       </span>
     </output>
   );

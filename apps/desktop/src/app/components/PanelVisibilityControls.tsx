@@ -5,11 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useEditorViewState } from "@/app/hooks/useEditorViewState";
 
-interface PanelVisibilityControlsProps {
-  hasAudioTracks: boolean;
-}
-
-export function PanelVisibilityControls({ hasAudioTracks }: PanelVisibilityControlsProps) {
+export function PanelVisibilityControls() {
   const { t } = useTranslation();
   const { showSourceDetails, setShowSourceDetails, showAudioTracks, setShowAudioTracks } =
     useEditorViewState();
@@ -48,7 +44,6 @@ export function PanelVisibilityControls({ hasAudioTracks }: PanelVisibilityContr
             type="button"
             variant="ghost"
             size="icon-sm"
-            disabled={!hasAudioTracks}
             aria-label={
               showAudioTracks ? t("app.panels.hideBottomPane") : t("app.panels.showBottomPane")
             }

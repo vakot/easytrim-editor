@@ -11,6 +11,7 @@ import type { TrimTimelineProps } from "./types";
 
 export function TrimTimeline({
   range,
+  disabled = false,
   playheadMicros,
   playheadRef,
   frameRate,
@@ -70,10 +71,11 @@ export function TrimTimeline({
       <TimelineHeader
         range={range}
         frameRate={frameRate}
+        disabled={disabled}
         playbackControls={playbackControls}
         playbackTimecode={playbackTimecode}
       />
-      <TimelineScale range={range} frameRate={frameRate} />
+      <TimelineScale range={range} frameRate={frameRate} disabled={disabled} />
       <div
         className="grid min-w-0 grid-cols-[var(--editor-track-grid-columns)] items-center gap-3"
         data-slot="timeline-row"
@@ -88,10 +90,10 @@ export function TrimTimeline({
         </div>
         <div
           ref={trackRef}
-          className={styles.track}
+          className={`${styles.track} ${disabled ? `cursor-not-allowed ${styles.trackDisabled}` : ""}`}
           aria-label={t("timeline.trackLabel")}
           onPointerDown={(event) => {
-            if (event.target === event.currentTarget) {
+            if (!disabled && event.target === event.currentTarget) {
               startScrub(event, event.currentTarget);
             }
           }}
@@ -101,7 +103,7 @@ export function TrimTimeline({
           onLostPointerCapture={(event) => finishScrub(event, false)}
         >
           <div
-            className={styles.selection}
+            className={`${styles.selection} ${disabled ? styles.selectionDisabled : ""}`}
             style={{
               left: "var(--timeline-trim-start)",
               right: "var(--timeline-trim-end-inset)",
@@ -117,20 +119,23 @@ export function TrimTimeline({
             onPointerCancel={(event) => finishSegmentDrag(event, false)}
             onLostPointerCapture={(event) => finishSegmentDrag(event, false)}
             onKeyDown={handleSegmentKeyboard}
+            disabled={disabled}
           />
-          <Playhead
-            playheadRef={playheadRef}
-            percent={playheadPercent}
-            value={playheadValue}
-            maximum={range.sourceDurationMicros}
-            frameRate={frameRate}
-            onPointerDown={(event) => startScrub(event, event.currentTarget)}
-            onPointerMove={moveScrub}
-            onPointerUp={(event) => finishScrub(event, true)}
-            onPointerCancel={(event) => finishScrub(event, false)}
-            onLostPointerCapture={(event) => finishScrub(event, false)}
-            onKeyDown={handlePlayheadKeyboard}
-          />
+          {!disabled ? (
+            <Playhead
+              playheadRef={playheadRef}
+              percent={playheadPercent}
+              value={playheadValue}
+              maximum={range.sourceDurationMicros}
+              frameRate={frameRate}
+              onPointerDown={(event) => startScrub(event, event.currentTarget)}
+              onPointerMove={moveScrub}
+              onPointerUp={(event) => finishScrub(event, true)}
+              onPointerCancel={(event) => finishScrub(event, false)}
+              onLostPointerCapture={(event) => finishScrub(event, false)}
+              onKeyDown={handlePlayheadKeyboard}
+            />
+          ) : null}
           <TrimHandle
             boundary="start"
             value={range.startMicros}
@@ -143,6 +148,7 @@ export function TrimTimeline({
             onPointerEnd={() => finishTrimDrag("start")}
             onDoubleClick={() => resetBoundary("start")}
             onKeyDown={(event) => handleTrimKeyboard("start", event)}
+            disabled={disabled}
           />
           <TrimHandle
             boundary="end"
@@ -156,6 +162,7 @@ export function TrimTimeline({
             onPointerEnd={() => finishTrimDrag("end")}
             onDoubleClick={() => resetBoundary("end")}
             onKeyDown={(event) => handleTrimKeyboard("end", event)}
+            disabled={disabled}
           />
         </div>
       </div>
@@ -166,9 +173,13 @@ export function TrimTimeline({
 function TimelineHeader({
   range,
   frameRate,
+  disabled,
   playbackControls,
   playbackTimecode,
-}: Pick<TrimTimelineProps, "range" | "frameRate" | "playbackControls" | "playbackTimecode">) {
+}: Pick<
+  TrimTimelineProps,
+  "range" | "frameRate" | "disabled" | "playbackControls" | "playbackTimecode"
+>) {
   const { t } = useTranslation();
   return (
     <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-6">
@@ -185,17 +196,17 @@ function TimelineHeader({
       <dl className="m-0 flex justify-self-end gap-5" aria-label={t("timeline.trimValues")}>
         <TimelineTimeValue
           label={t("timeline.start")}
-          micros={range.startMicros}
+          micros={disabled ? null : range.startMicros}
           frameRate={frameRate}
         />
         <TimelineTimeValue
           label={t("timeline.end")}
-          micros={range.endMicros}
+          micros={disabled ? null : range.endMicros}
           frameRate={frameRate}
         />
         <TimelineTimeValue
           label={t("timeline.duration")}
-          micros={range.endMicros - range.startMicros}
+          micros={disabled ? null : range.endMicros - range.startMicros}
           frameRate={frameRate}
         />
       </dl>
@@ -203,7 +214,11 @@ function TimelineHeader({
   );
 }
 
-function TimelineScale({ range, frameRate }: Pick<TrimTimelineProps, "range" | "frameRate">) {
+function TimelineScale({
+  range,
+  frameRate,
+  disabled,
+}: Pick<TrimTimelineProps, "range" | "frameRate" | "disabled">) {
   const { t } = useTranslation();
   return (
     <div
@@ -219,7 +234,9 @@ function TimelineScale({ range, frameRate }: Pick<TrimTimelineProps, "range" | "
       <div className="flex justify-between font-mono text-[0.625rem] text-muted-foreground">
         {[0, 0.25, 0.5, 0.75, 1].map((fraction) => (
           <span key={fraction}>
-            {formatPlaybackTime(Math.round(range.sourceDurationMicros * fraction), frameRate)}
+            {disabled
+              ? "00:00:00:00f"
+              : formatPlaybackTime(Math.round(range.sourceDurationMicros * fraction), frameRate)}
           </span>
         ))}
       </div>

@@ -35,35 +35,23 @@ function EasyTrimEditorApp() {
 
   return (
     <TooltipProvider>
-      <main
-        className={`fixed inset-0 grid h-dvh w-screen min-w-80 overflow-hidden bg-background ${
-          app.hasSource
-            ? "grid-rows-[2.25rem_minmax(0,1fr)_auto]"
-            : "grid-rows-[2.25rem_minmax(0,1fr)]"
-        }`}
-      >
+      <main className="fixed inset-0 grid h-dvh w-screen min-w-80 overflow-hidden bg-background grid-rows-[2.25rem_minmax(0,1fr)_auto]">
         <CustomTitleBar
           onLogoClick={app.requestReturnToWelcome}
           menuControls={
             <ContextMenus
               isChoosingSource={app.isChoosingSource}
+              hasSource={app.hasSource}
               canSave={canSave}
               canExport={canExport}
               onChooseSource={() => void app.handleChooseSource()}
+              onCloseFile={app.handleCloseFile}
               onSave={() => exportPanelRef.current?.startFastCut()}
               onExport={() => exportPanelRef.current?.openOptimizedDialog()}
             />
           }
-          statusContent={
-            app.hasSource ? <CapabilityStatus capabilities={app.session.capabilities} /> : null
-          }
-          panelControls={
-            app.hasSource ? (
-              <PanelVisibilityControls
-                hasAudioTracks={Boolean(source?.media?.audioStreams.length)}
-              />
-            ) : null
-          }
+          statusContent={<CapabilityStatus capabilities={app.session.capabilities} />}
+          panelControls={<PanelVisibilityControls />}
         />
 
         {canExport && source?.media && source.trim ? (
@@ -110,7 +98,7 @@ function EasyTrimEditorApp() {
         ) : null}
 
         <SourceWorkspace />
-        {app.hasSource ? <StatusBar update={update} queue={app.exportQueue} /> : null}
+        <StatusBar update={update} queue={app.exportQueue} />
       </main>
     </TooltipProvider>
   );

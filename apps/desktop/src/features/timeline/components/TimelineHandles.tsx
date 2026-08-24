@@ -20,6 +20,7 @@ interface SegmentDragHandleProps {
   onPointerCancel: (event: PointerEvent<HTMLButtonElement>) => void;
   onLostPointerCapture: (event: PointerEvent<HTMLButtonElement>) => void;
   onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void;
+  disabled?: boolean;
 }
 
 export function SegmentDragHandle({
@@ -32,6 +33,7 @@ export function SegmentDragHandle({
   onPointerCancel,
   onLostPointerCapture,
   onKeyDown,
+  disabled = false,
 }: SegmentDragHandleProps) {
   const { t } = useTranslation();
   const durationMicros = range.endMicros - range.startMicros;
@@ -39,7 +41,11 @@ export function SegmentDragHandle({
     <Tooltip>
       <TooltipTrigger asChild>
         <button
-          className={cn("segment-drag-handle", styles.segment)}
+          className={cn(
+            "segment-drag-handle",
+            styles.segment,
+            disabled && ["cursor-not-allowed", styles.segmentDisabled],
+          )}
           type="button"
           role="slider"
           aria-label={t("timeline.moveSegment")}
@@ -61,6 +67,7 @@ export function SegmentDragHandle({
           onPointerCancel={onPointerCancel}
           onLostPointerCapture={onLostPointerCapture}
           onKeyDown={onKeyDown}
+          disabled={disabled}
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="m7 7-5 5 5 5v-3h10v3l5-5-5-5v3H7z" />
@@ -84,6 +91,7 @@ interface TrimHandleProps {
   onPointerEnd: () => void;
   onDoubleClick: () => void;
   onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void;
+  disabled?: boolean;
 }
 
 export function TrimHandle({
@@ -98,6 +106,7 @@ export function TrimHandle({
   onPointerEnd,
   onDoubleClick,
   onKeyDown,
+  disabled = false,
 }: TrimHandleProps) {
   const { t } = useTranslation();
   const label = boundary === "start" ? t("timeline.trimStart") : t("timeline.trimEnd");
@@ -110,6 +119,7 @@ export function TrimHandle({
             `trim-handle-${boundary}`,
             styles.trim,
             boundary === "start" ? styles.start : styles.end,
+            disabled && cn("cursor-not-allowed", styles.trimDisabled),
           )}
           type="button"
           role="slider"
@@ -130,6 +140,7 @@ export function TrimHandle({
           onLostPointerCapture={onPointerEnd}
           onDoubleClick={onDoubleClick}
           onKeyDown={onKeyDown}
+          disabled={disabled}
         >
           <span aria-hidden="true" />
         </button>

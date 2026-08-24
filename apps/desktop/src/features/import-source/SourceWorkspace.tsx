@@ -5,22 +5,16 @@ import { PaneResizeHandle } from "@/components/PaneResizeHandle";
 import { EditorStage } from "@/features/editor";
 import { DropOverlay } from "./components/DropOverlay";
 import { SourceSidebar } from "./components/SourceSidebar";
-import { WelcomePage } from "./components/WelcomePage";
 import { useTranslation } from "react-i18next";
 import { useEditorViewState } from "@/app/hooks/useEditorViewState";
 import { useEditorSession } from "@/app/hooks/useEditorSession";
-import { useSourceDetails } from "@/app/hooks/useSourceDetails";
-import { useReleaseCheck } from "@/features/release/hooks/useReleaseCheck";
 
 export { CapabilityStatus } from "./components/CapabilityStatus";
 
 export function SourceWorkspace() {
   const { t } = useTranslation();
   const app = useEditorSession();
-  const sourceDetails = useSourceDetails();
-  const { session, isChoosingSource, isSourceDragActive, exportQueue } = app;
-  const { update } = useReleaseCheck();
-  const onChooseSource = () => void app.handleChooseSource();
+  const { session, isSourceDragActive, exportQueue } = app;
   const { showSourceDetails, setShowSourceDetails, workspaceLayout, setWorkspaceLayout } =
     useEditorViewState();
   const sourceDetailsPanelRef = usePanelRef();
@@ -35,22 +29,6 @@ export function SourceWorkspace() {
       panel.collapse();
     }
   }, [showSourceDetails, sourceDetailsPanelRef]);
-
-  if (!session.source) {
-    return (
-      <WelcomePage
-        session={session}
-        isChoosingSource={isChoosingSource}
-        isSourceDragActive={isSourceDragActive}
-        onChooseSource={onChooseSource}
-        update={update}
-      />
-    );
-  }
-
-  const source = session.source;
-  const media = source.media;
-  const trimRange = source.trim;
 
   return (
     <Group
@@ -91,9 +69,7 @@ export function SourceWorkspace() {
           className="relative h-full min-h-0 min-w-0"
           aria-label={t("import.source.previewArea")}
         >
-          {session.status === "ready" && media && trimRange ? (
-            <EditorStage key={sourceDetails.sourceId} />
-          ) : null}
+          <EditorStage key={session.source?.selection.sourceId ?? "no-source"} />
           {isSourceDragActive ? <DropOverlay /> : null}
         </div>
       </Panel>

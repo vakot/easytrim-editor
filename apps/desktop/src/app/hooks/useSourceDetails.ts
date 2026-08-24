@@ -8,6 +8,7 @@ export function useSourceDetails() {
 
   return {
     source,
+    hasSource: source !== null,
     sourceId,
     sourceName: source?.selection.displayName ?? null,
     media: source?.media ?? null,
