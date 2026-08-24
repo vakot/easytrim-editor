@@ -49,9 +49,7 @@ function EasyTrimEditorApp() {
             />
           }
           statusContent={<CapabilityStatus capabilities={app.session.capabilities} />}
-          panelControls={
-            <PanelVisibilityControls hasAudioTracks={Boolean(source?.media?.audioStreams.length)} />
-          }
+          panelControls={<PanelVisibilityControls />}
         />
 
         {canExport && source?.media && source.trim ? (

@@ -204,6 +204,7 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "Play" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Previous frame" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Next frame" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Hide bottom pane" })).not.toBeDisabled();
     expect(screen.getByRole("button", { name: "Safe trim following" })).not.toBeDisabled();
     expect(screen.getByRole("button", { name: "Loop playback" })).not.toBeDisabled();
     expect(screen.getByRole("button", { name: "Segment playback" })).not.toBeDisabled();
