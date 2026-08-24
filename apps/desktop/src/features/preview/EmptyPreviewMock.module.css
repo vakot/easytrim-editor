@@ -1,0 +1,15 @@
+.preview {
+  container: empty-preview / size;
+}
+
+@container empty-preview (max-width: 28rem) {
+  .hints {
+    display: none;
+  }
+}
+
+@container empty-preview (max-height: 34rem) {
+  .hints {
+    display: none;
+  }
+}

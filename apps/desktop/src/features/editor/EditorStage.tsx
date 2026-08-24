@@ -15,6 +15,7 @@ import {
   PlaybackTimecode,
   TimelineTools,
 } from "@/features/preview/PlaybackControls";
+import { EmptyPreviewMock } from "@/features/preview/EmptyPreviewMock";
 import { VideoPreview } from "@/features/preview/VideoPreview";
 import { TrimTimeline } from "@/features/timeline";
 import { TimelinePane } from "./components/TimelinePane";
@@ -54,26 +55,30 @@ export function EditorStage() {
       aria-label={t("preview.panes")}
     >
       <Panel id="preview-panel" minSize="14rem" className="min-h-0 min-w-0">
-        <div className="grid size-full min-h-0 place-items-center overflow-auto bg-preview-surface p-4">
-          <VideoPreview
-            sourceId={source.sourceId}
-            preview={source.preview}
-            playbackRate={playback.playbackRate}
-            muted={Object.keys(source.audioPreviewUrls).length > 0}
-            videoRef={playback.videoRef}
-            onPlaybackError={(_, previewKind) => playback.onPreviewPlaybackError(previewKind)}
-            onLoadedMetadata={playback.onLoadedMetadata}
-            onTogglePlayback={playback.toggle}
-            onPlay={playback.onPlay}
-            onPause={playback.onPause}
-            onTimeUpdate={playback.onTimeUpdate}
-            onEnded={playback.onEnded}
-            sourceDimensions={source.sourceDimensions ?? undefined}
-            onCropResolutionChange={source.onCropResolutionChange}
-            onCropChange={source.onCropChange}
-            onCropToolOpenChange={playback.onCropToolOpenChange}
-          />
-        </div>
+        {source.sourceId ? (
+          <div className="grid size-full min-h-0 place-items-center overflow-auto bg-preview-surface p-4">
+            <VideoPreview
+              sourceId={source.sourceId}
+              preview={source.preview}
+              playbackRate={playback.playbackRate}
+              muted={Object.keys(source.audioPreviewUrls).length > 0}
+              videoRef={playback.videoRef}
+              onPlaybackError={(_, previewKind) => playback.onPreviewPlaybackError(previewKind)}
+              onLoadedMetadata={playback.onLoadedMetadata}
+              onTogglePlayback={playback.toggle}
+              onPlay={playback.onPlay}
+              onPause={playback.onPause}
+              onTimeUpdate={playback.onTimeUpdate}
+              onEnded={playback.onEnded}
+              sourceDimensions={source.sourceDimensions ?? undefined}
+              onCropResolutionChange={source.onCropResolutionChange}
+              onCropChange={source.onCropChange}
+              onCropToolOpenChange={playback.onCropToolOpenChange}
+            />
+          </div>
+        ) : (
+          <EmptyPreviewMock />
+        )}
       </Panel>
 
       <PaneResizeHandle

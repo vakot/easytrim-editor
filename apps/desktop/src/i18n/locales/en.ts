@@ -133,6 +133,15 @@ export const en = {
     },
   },
   preview: {
+    emptyMock: {
+      label: "Empty preview",
+      shortcutsLabel: "Keyboard shortcuts",
+      shortcuts: {
+        playPause: "Play / Pause",
+        previousNextFrame: "Previous / Next Frame",
+        markInOut: "Mark In / Mark Out",
+      },
+    },
     panes: "Preview and timeline panes",
     resize: "Resize preview and timeline",
     controls: "Preview playback controls",

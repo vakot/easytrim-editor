@@ -140,6 +140,15 @@ export const sk = {
     },
   },
   preview: {
+    emptyMock: {
+      label: "Prázdny náhľad",
+      shortcutsLabel: "Klávesové skratky",
+      shortcuts: {
+        playPause: "Prehrať / Pozastaviť",
+        previousNextFrame: "Predchádzajúca / Nasledujúca Snímka",
+        markInOut: "Označiť Začiatok / Koniec",
+      },
+    },
     panes: "Panely náhľadu a časovej osi",
     resize: "Zmeniť veľkosť náhľadu a časovej osi",
     controls: "Ovládanie prehrávania náhľadu",
