@@ -1,5 +1,5 @@
 import { ChevronRight } from "lucide-react";
-import { type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui";
 
 import { Button } from "@/components/ui/button";
@@ -59,52 +59,55 @@ export function ContextMenu({
           sideOffset={4}
           className="z-50 min-w-56 rounded-lg border bg-popover p-1 text-popover-foreground shadow-lg ring-1 ring-foreground/10"
         >
-          {options.map((option) => (
-            <ContextMenuOptionItem key={option.id} option={option} />
-          ))}
+          <ContextMenuOptionList options={options} />
         </DropdownMenuPrimitive.Content>
       </DropdownMenuPrimitive.Portal>
     </DropdownMenuPrimitive.Root>
   );
 }
 
-function ContextMenuOptionItem({ option }: { option: ContextMenuOption }) {
+function ContextMenuOptionList({ options }: { options: readonly ContextMenuOption[] }) {
+  const [openSubmenuId, setOpenSubmenuId] = useState<string | null>(null);
+
+  const setSubmenuOpen = (id: string, isOpen: boolean) => {
+    setOpenSubmenuId((currentId) => {
+      if (isOpen) return id;
+      return currentId === id ? null : currentId;
+    });
+  };
+
+  const closeSubmenu = () => setOpenSubmenuId(null);
+
+  return options.map((option) => (
+    <ContextMenuOptionItem
+      key={option.id}
+      option={option}
+      open={openSubmenuId === option.id}
+      onOpenChange={(isOpen) => setSubmenuOpen(option.id, isOpen)}
+      onPointerMove={closeSubmenu}
+    />
+  ));
+}
+
+function ContextMenuOptionItem({
+  option,
+  open,
+  onOpenChange,
+  onPointerMove,
+}: {
+  option: ContextMenuOption;
+  open: boolean;
+  onOpenChange: (isOpen: boolean) => void;
+  onPointerMove: () => void;
+}) {
   if (option.submenu || option.submenuContent) {
-    return (
-      <DropdownMenuPrimitive.Sub>
-        <DropdownMenuPrimitive.SubTrigger
-          disabled={option.disabled}
-          onClick={(event) => {
-            option.onSelect?.(event.nativeEvent);
-            if (option.openSubmenuOnClick === false) event.preventDefault();
-          }}
-          data-selected={option.selected ? "true" : "false"}
-          aria-current={option.selected ? "true" : undefined}
-          className="flex min-h-8 min-w-56 w-full items-center gap-3 rounded-md px-2.5 py-1.5 text-left text-sm outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-        >
-          <ContextMenuOptionContent option={option} />
-          <ChevronRight className="ml-auto size-4 shrink-0" aria-hidden="true" />
-        </DropdownMenuPrimitive.SubTrigger>
-        <DropdownMenuPrimitive.Portal>
-          <DropdownMenuPrimitive.SubContent
-            sideOffset={4}
-            alignOffset={-4}
-            onFocusOutside={option.submenuContent ? (event) => event.preventDefault() : undefined}
-            className="z-50 min-w-56 rounded-lg border bg-popover p-1 text-popover-foreground shadow-lg ring-1 ring-foreground/10"
-          >
-            {option.submenuContent ??
-              option.submenu?.map((child) => (
-                <ContextMenuOptionItem key={child.id} option={child} />
-              ))}
-          </DropdownMenuPrimitive.SubContent>
-        </DropdownMenuPrimitive.Portal>
-      </DropdownMenuPrimitive.Sub>
-    );
+    return <ContextMenuSubmenuOptionItem option={option} open={open} onOpenChange={onOpenChange} />;
   }
 
   const item = (
     <DropdownMenuPrimitive.Item
       disabled={option.disabled}
+      onPointerMove={option.disabled ? undefined : onPointerMove}
       onSelect={(event) => {
         option.onSelect?.(event);
         if (option.shouldCloseOnClick === false) event.preventDefault();
@@ -118,6 +121,57 @@ function ContextMenuOptionItem({ option }: { option: ContextMenuOption }) {
   );
 
   return option.render ? option.render(item) : item;
+}
+
+function ContextMenuSubmenuOptionItem({
+  option,
+  open,
+  onOpenChange,
+}: {
+  option: ContextMenuOption;
+  open: boolean;
+  onOpenChange: (isOpen: boolean) => void;
+}) {
+  const instantSwitch = option.openSubmenuOnClick !== false;
+
+  return (
+    <DropdownMenuPrimitive.Sub open={open} onOpenChange={onOpenChange}>
+      <DropdownMenuPrimitive.SubTrigger
+        disabled={option.disabled}
+        onPointerMove={
+          instantSwitch
+            ? (event) => {
+                if (!option.disabled && !event.defaultPrevented) onOpenChange(true);
+              }
+            : undefined
+        }
+        onClick={(event) => {
+          option.onSelect?.(event.nativeEvent);
+          if (!instantSwitch) {
+            onOpenChange(false);
+            event.preventDefault();
+          }
+        }}
+        data-selected={option.selected ? "true" : "false"}
+        aria-current={option.selected ? "true" : undefined}
+        className="flex min-h-8 min-w-56 w-full items-center gap-3 rounded-md px-2.5 py-1.5 text-left text-sm outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+      >
+        <ContextMenuOptionContent option={option} />
+        <ChevronRight className="ml-auto size-4 shrink-0" aria-hidden="true" />
+      </DropdownMenuPrimitive.SubTrigger>
+      <DropdownMenuPrimitive.Portal>
+        <DropdownMenuPrimitive.SubContent
+          sideOffset={4}
+          alignOffset={-4}
+          onFocusOutside={option.submenuContent ? (event) => event.preventDefault() : undefined}
+          className="z-50 min-w-56 rounded-lg border bg-popover p-1 text-popover-foreground shadow-lg ring-1 ring-foreground/10"
+        >
+          {option.submenuContent ??
+            (option.submenu ? <ContextMenuOptionList options={option.submenu} /> : null)}
+        </DropdownMenuPrimitive.SubContent>
+      </DropdownMenuPrimitive.Portal>
+    </DropdownMenuPrimitive.Sub>
+  );
 }
 
 function ContextMenuOptionContent({ option }: { option: ContextMenuOption }) {

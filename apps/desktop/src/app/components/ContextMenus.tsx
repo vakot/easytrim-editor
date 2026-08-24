@@ -15,7 +15,7 @@ import { ContextMenu, type ContextMenuOption } from "@/components/ui/context-men
 import { Input } from "@/components/ui/input";
 import { isSupportedLanguage, type SupportedLanguage } from "@/i18n/resources";
 
-interface TopBarMenusProps {
+interface ContextMenusProps {
   isChoosingSource: boolean;
   canSave: boolean;
   canExport: boolean;
@@ -35,14 +35,14 @@ const colorClasses: Record<Exclude<PrimaryColor, `#${string}`>, string> = {
   emerald: "bg-[#32a876]",
 };
 
-export function TopBarMenus({
+export function ContextMenus({
   isChoosingSource,
   canSave,
   canExport,
   onChooseSource,
   onSave,
   onExport,
-}: TopBarMenusProps) {
+}: ContextMenusProps) {
   const { t, i18n } = useTranslation();
   const {
     preference,

@@ -1,19 +1,19 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { STORAGE_KEYS } from "@/lib/storage";
-import { TopBarMenus } from "../TopBarMenus";
+import { ContextMenus } from "../ContextMenus";
 
-describe("TopBarMenus", () => {
+describe("ContextMenus", () => {
   it("opens the File menu with its action and hotkey hint", async () => {
     const user = userEvent.setup();
     render(
       <TooltipProvider>
         <ThemeProvider>
-          <TopBarMenus
+          <ContextMenus
             isChoosingSource={false}
             canSave
             canExport
@@ -44,7 +44,7 @@ describe("TopBarMenus", () => {
     render(
       <TooltipProvider>
         <ThemeProvider>
-          <TopBarMenus
+          <ContextMenus
             isChoosingSource={false}
             canSave
             canExport
@@ -116,7 +116,7 @@ describe("TopBarMenus", () => {
     render(
       <TooltipProvider>
         <ThemeProvider>
-          <TopBarMenus
+          <ContextMenus
             isChoosingSource={false}
             canSave
             canExport
@@ -205,7 +205,7 @@ describe("TopBarMenus", () => {
     render(
       <TooltipProvider>
         <ThemeProvider>
-          <TopBarMenus
+          <ContextMenus
             isChoosingSource={false}
             canSave
             canExport
@@ -244,5 +244,43 @@ describe("TopBarMenus", () => {
       expect(screen.getByRole("menuitem", { name: /Open File/ })).toBeInTheDocument();
       expect(screen.queryByRole("menuitem", { name: /Theme/ })).not.toBeInTheDocument();
     });
+  });
+
+  it("switches between submenus immediately on hover", async () => {
+    const user = userEvent.setup();
+    render(
+      <TooltipProvider>
+        <ThemeProvider>
+          <ContextMenus
+            isChoosingSource={false}
+            canSave
+            canExport
+            onChooseSource={vi.fn()}
+            onSave={vi.fn()}
+            onExport={vi.fn()}
+          />
+        </ThemeProvider>
+      </TooltipProvider>,
+    );
+
+    await user.click(screen.getByRole("button", { name: "View" }));
+    const themeItem = screen.getByRole("menuitem", { name: /Theme/ });
+    const colorItem = screen.getByRole("menuitem", { name: /Color/ });
+
+    fireEvent.pointerMove(themeItem, { pointerType: "mouse" });
+    const themeSubmenu = screen.getAllByRole("menu").at(-1);
+    expect(themeSubmenu).toBeDefined();
+    expect(within(themeSubmenu!).getByRole("menuitem", { name: "System" })).toBeInTheDocument();
+
+    fireEvent.pointerMove(colorItem, { pointerType: "mouse" });
+    const colorSubmenu = screen.getAllByRole("menu").at(-1);
+    expect(colorSubmenu).toBeDefined();
+    expect(
+      within(colorSubmenu!).getByRole("menuitem", { name: /Amber#EFBF04/ }),
+    ).toBeInTheDocument();
+    expect(
+      within(colorSubmenu!).queryByRole("menuitem", { name: "System" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getAllByRole("menu")).toHaveLength(2);
   });
 });
