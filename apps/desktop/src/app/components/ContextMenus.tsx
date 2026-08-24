@@ -171,7 +171,7 @@ export function ContextMenus({
     return {
       id: `theme-${value}`,
       children: t(`theme.${value}`),
-      icon: <Icon className="size-4" aria-hidden="true" />,
+      icon: <Icon className="size-3" aria-hidden="true" />,
       selected: value === preference,
       shouldCloseOnClick: false,
       onSelect: () => setPreference(value),
@@ -283,15 +283,15 @@ export function ContextMenus({
           
   const updateHint =
     updateStatus === "checking" ? (
-      <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
+      <LoaderCircle className="size-3 animate-spin" aria-hidden="true" />
     ) : updateStatus === "available" ? (
-      <Download className="size-4" aria-hidden="true" />
+      <Download className="size-3" aria-hidden="true" />
     ) : updateStatus === "up-to-date" ? (
-      <CheckCircle2 className="size-4 text-emerald-500" aria-hidden="true" />
+      <CheckCircle2 className="size-3 text-emerald-500" aria-hidden="true" />
     ) : updateStatus === "error" ? (
-      <CircleAlert className="size-4 text-destructive" aria-hidden="true" />
+      <CircleAlert className="size-3 text-destructive" aria-hidden="true" />
     ) : updateStatus === "idle" ? (
-      <RefreshCw className="size-4" aria-hidden="true" />
+      <RefreshCw className="size-3" aria-hidden="true" />
     ) : undefined;
 
   return (
@@ -393,6 +393,7 @@ export function ContextMenus({
           {
             id: "language",
             children: t("app.topBarMenus.language"),
+            icon: <Languages className="size-3" aria-hidden="true" />,
             suffix: currentLanguage.toUpperCase(),
             shouldCloseOnClick: false,
             options: languageOptionsV2,
@@ -492,17 +493,17 @@ function CustomColorPickerPanel({
       />
       <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
         <span>{t("themeColor.custom")}</span>
-        <div className="flex h-7 w-18 items-center rounded-lg border border-input bg-transparent px-1.5 transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
+        <div className="flex h-6 w-15 items-center rounded-lg border border-input bg-transparent px-1.5 transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
           <span
             aria-hidden="true"
-            className="pointer-events-none select-none shrink-0 font-mono text-sm text-muted-foreground"
+            className="pointer-events-none select-none shrink-0 font-mono text-xs text-muted-foreground"
             data-slot="hex-prefix"
           >
             #
           </span>
           <Input
             aria-label={`${t("themeColor.custom")} hex`}
-            className="h-full w-auto min-w-0 flex-1 rounded-none border-0 px-0 py-0 font-mono text-sm text-foreground shadow-none focus-visible:border-0 focus-visible:ring-0"
+            className="h-full w-auto min-w-0 flex-1 rounded-none border-0 px-0 py-0 font-mono text-xs text-foreground shadow-none focus-visible:border-0 focus-visible:ring-0"
             maxLength={6}
             onChange={(event) =>
               updateHexValue(event.target.value.replace(/[^0-9a-fA-F]/g, "").slice(0, 6))
