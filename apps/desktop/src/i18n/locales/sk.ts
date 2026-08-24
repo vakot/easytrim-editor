@@ -50,6 +50,7 @@ export const sk = {
       edit: "Upraviť",
       view: "Zobraziť",
       openFile: "Otvoriť súbor",
+      closeFile: "Zavrieť súbor",
       save: "Uložiť",
       optimizedExport: "Optimalizovaný export",
       theme: "Téma",

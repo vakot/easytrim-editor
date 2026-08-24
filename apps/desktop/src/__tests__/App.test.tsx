@@ -224,6 +224,31 @@ describe("App", () => {
     expect(mocks.chooseSource).toHaveBeenCalledTimes(1);
   });
 
+  it("closes the active source with the File menu and Ctrl+Q", async () => {
+    mocks.chooseSource.mockResolvedValue(selection);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await openSourcePicker(user);
+    expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
+
+    screen.getByRole("button", { name: "File" }).focus();
+    await user.keyboard("{Enter}");
+    expect(screen.getByRole("menuitem", { name: /Close File/ })).toHaveTextContent("Ctrl+Q");
+    await user.keyboard("{Escape}");
+
+    fireEvent.keyDown(window, { key: "q", ctrlKey: true });
+
+    expect(await screen.findByRole("heading", { name: "No source" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "holiday.mp4" })).not.toBeInTheDocument();
+    screen.getByRole("button", { name: "File" }).focus();
+    await user.keyboard("{Enter}");
+    expect(screen.getByRole("menuitem", { name: /Close File/ })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+  });
+
   it("imports a selected video and renders source metadata", async () => {
     mocks.chooseSource.mockResolvedValue(selection);
     const user = userEvent.setup();

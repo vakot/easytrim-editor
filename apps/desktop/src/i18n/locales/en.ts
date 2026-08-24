@@ -47,6 +47,7 @@ export const en = {
       edit: "Edit",
       view: "View",
       openFile: "Open File",
+      closeFile: "Close File",
       save: "Save",
       optimizedExport: "Optimized Export",
       theme: "Theme",

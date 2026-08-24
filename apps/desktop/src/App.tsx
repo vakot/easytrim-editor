@@ -41,9 +41,11 @@ function EasyTrimEditorApp() {
           menuControls={
             <ContextMenus
               isChoosingSource={app.isChoosingSource}
+              hasSource={app.hasSource}
               canSave={canSave}
               canExport={canExport}
               onChooseSource={() => void app.handleChooseSource()}
+              onCloseFile={app.handleCloseFile}
               onSave={() => exportPanelRef.current?.startFastCut()}
               onExport={() => exportPanelRef.current?.openOptimizedDialog()}
             />
