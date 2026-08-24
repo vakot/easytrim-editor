@@ -47,7 +47,6 @@ export const sk = {
     topBarMenus: {
       label: "Ponuky aplikácie",
       file: "Súbor",
-      edit: "Upraviť",
       view: "Zobraziť",
       openFile: "Otvoriť súbor",
       closeFile: "Zavrieť súbor",

@@ -34,6 +34,7 @@ describe("ContextMenus", () => {
     expect(fileButton).toHaveClass("h-7");
 
     await user.click(fileButton);
+    expect(screen.getByRole("separator")).toBeInTheDocument();
 
     const openFileItem = screen.getByRole("menuitem", { name: /Open File/ });
     expect(openFileItem).toHaveTextContent("Ctrl+O");
@@ -67,6 +68,7 @@ describe("ContextMenus", () => {
 
     const viewButton = screen.getByRole("button", { name: "View" });
     await user.click(viewButton);
+    expect(screen.getByRole("separator")).toBeInTheDocument();
     const themeItem = screen.getByText("Theme").closest<HTMLElement>('[role="menuitem"]');
     expect(themeItem).not.toBeNull();
     expect(themeItem).toHaveClass("min-w-56");
@@ -227,25 +229,15 @@ describe("ContextMenus", () => {
     );
 
     const fileButton = screen.getByRole("button", { name: "File" });
-    const editButton = screen.getByRole("button", { name: "Edit" });
     const viewButton = screen.getByRole("button", { name: "View" });
-
-    await user.hover(editButton);
-    expect(screen.queryByRole("menuitem", { name: /Save/ })).not.toBeInTheDocument();
 
     await user.click(fileButton);
     expect(screen.getByRole("menuitem", { name: /Open File/ })).toBeInTheDocument();
-    await user.hover(editButton);
-
-    await waitFor(() => {
-      expect(screen.getByRole("menuitem", { name: /Save/ })).toHaveTextContent("Ctrl+S");
-      expect(screen.queryByRole("menuitem", { name: /Open File/ })).not.toBeInTheDocument();
-    });
-
     await user.hover(viewButton);
+
     await waitFor(() => {
+      expect(screen.queryByRole("menuitem", { name: /Open File/ })).not.toBeInTheDocument();
       expect(screen.getByRole("menuitem", { name: /Theme/ })).toBeInTheDocument();
-      expect(screen.queryByRole("menuitem", { name: /Save/ })).not.toBeInTheDocument();
     });
 
     await user.hover(fileButton);

@@ -44,7 +44,6 @@ export const en = {
     topBarMenus: {
       label: "Application menus",
       file: "File",
-      edit: "Edit",
       view: "View",
       openFile: "Open File",
       closeFile: "Close File",
