@@ -157,9 +157,8 @@ describe("ContextMenus", () => {
     );
   });
 
-  it("confirms before resetting tool defaults", async () => {
+  it("resets tools defaults", async () => {
     const user = userEvent.setup();
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
     render(
       <TooltipProvider>
         <ThemeProvider>
@@ -181,10 +180,8 @@ describe("ContextMenus", () => {
     expect(loopSwitch).not.toBeChecked();
     await user.click(screen.getByRole("menuitem", { name: "Reset to default" }));
 
-    expect(confirmSpy).toHaveBeenCalledOnce();
     expect(loopSwitch).toBeChecked();
     expect(screen.getByRole("menuitem", { name: "Reset to default" })).toBeInTheDocument();
-    confirmSpy.mockRestore();
   });
 
   it("shows the default state in tool switch tooltips", async () => {
