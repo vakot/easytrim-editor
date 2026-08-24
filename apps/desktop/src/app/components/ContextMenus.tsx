@@ -1,6 +1,7 @@
 import { Download, ExternalLink, LoaderCircle, Monitor, Moon, RefreshCw, Sun } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { siGithub, siKofi } from "simple-icons";
 
 import { SpectrumWheel } from "@/app/components/PrimaryColorSelector";
 import {
@@ -12,6 +13,7 @@ import {
 } from "@/app/theme/theme";
 import { useTheme } from "@/app/theme/use-theme";
 import { useAppUpdates } from "@/app/update-context";
+import { BrandIcon } from "@/components/BrandIcon";
 import { ContextMenu, type ContextMenuOption } from "@/components/ui/context-menu";
 import { Input } from "@/components/ui/input";
 import { isSupportedLanguage, type SupportedLanguage } from "@/i18n/resources";
@@ -33,6 +35,7 @@ const themeIcons = { system: Monitor, light: Sun, dark: Moon } as const;
 type ContextMenuId = "file" | "view" | "help";
 
 const CHANGELOG_URL = "https://github.com/vakot/easytrim-editor/releases";
+const PROJECT_PAGE_URL = "https://github.com/vakot/easytrim-editor";
 const SUPPORT_PROJECT_URL = "https://ko-fi.com/vakot";
 const VERSION_RELEASE_URL = `https://github.com/vakot/easytrim-editor/releases/tag/v${packageJson.version}`;
 
@@ -271,11 +274,27 @@ export function ContextMenus({
             onSelect: () =>
               void (updateStatus === "available" ? installUpdate() : checkForUpdates()),
           },
+          {
+            id: "project-page",
+            label: t("app.topBarMenus.projectPage"),
+            hint: (
+              <>
+                <BrandIcon className="size-4" icon={siGithub} />
+                <ExternalLink className="size-4" aria-hidden="true" />
+              </>
+            ),
+            onSelect: () => void openExternalUrl(PROJECT_PAGE_URL),
+          },
           { id: "help-divider-support", separator: true },
           {
             id: "support-project",
             label: t("app.topBarMenus.supportProject"),
-            hint: <ExternalLink className="size-4" aria-hidden="true" />,
+            hint: (
+              <>
+                <BrandIcon className="size-4" icon={siKofi} />
+                <ExternalLink className="size-4" aria-hidden="true" />
+              </>
+            ),
             onSelect: () => void openExternalUrl(SUPPORT_PROJECT_URL),
           },
           { id: "help-divider-version", separator: true },

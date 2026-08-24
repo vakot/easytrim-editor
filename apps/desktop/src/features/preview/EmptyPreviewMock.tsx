@@ -1,6 +1,7 @@
-import { Coffee } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { siKofi } from "simple-icons";
 
+import { BrandIcon } from "@/components/BrandIcon";
 import { openExternalUrl } from "@/lib/open-external-url";
 import styles from "./EmptyPreviewMock.module.css";
 
@@ -106,7 +107,7 @@ export function EmptyPreviewMock() {
               void openExternalUrl(KOFI_URL);
             }}
           >
-            <Coffee className="size-3.5 text-primary" aria-hidden="true" />
+            <BrandIcon className="size-3.5 text-primary" icon={siKofi} />
             <span>{t("support.onKofi")}</span>
           </a>
         </div>

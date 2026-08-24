@@ -200,6 +200,11 @@ describe("App", () => {
       "Mark In / Mark Out",
     );
     expect(screen.getByRole("link", { name: "Support on Ko-fi.com" })).toBeInTheDocument();
+    expect(
+      screen
+        .getByRole("link", { name: "Support on Ko-fi.com" })
+        .querySelector('[data-brand-icon="kofi"]'),
+    ).not.toBeNull();
     expect(screen.getByLabelText("Current playback time")).toHaveTextContent(
       "00:00:00:00f / 00:00:00:00f",
     );

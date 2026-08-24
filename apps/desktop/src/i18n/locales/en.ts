@@ -56,6 +56,7 @@ export const en = {
       checkingForUpdates: "Checking for Updates…",
       upToDate: "Up to Date",
       updateTo: "Update to v{{version}}",
+      projectPage: "Project Page",
       supportProject: "Support the Project",
       version: "Version {{version}}",
     },

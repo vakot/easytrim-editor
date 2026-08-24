@@ -61,6 +61,7 @@ export const sk = {
       checkingForUpdates: "Kontrolujú sa aktualizácie…",
       upToDate: "Aktuálna verzia",
       updateTo: "Aktualizovať na v{{version}}",
+      projectPage: "Stránka projektu",
       supportProject: "Podporte projekt",
       version: "Verzia {{version}}",
     },
