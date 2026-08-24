@@ -1,8 +1,8 @@
 import { Group } from "react-resizable-panels";
 import { useTranslation } from "react-i18next";
 
-import { PaneResizeHandle } from "@/components/PaneResizeHandle";
 import { Panel } from "@/components/Panel";
+import { PanelSeparator } from "@/components/PanelSeparator";
 import { useEditorViewState } from "@/app/hooks/useEditorViewState";
 import {
   usePlayback,
@@ -82,7 +82,7 @@ export function EditorStage() {
         )}
       </Panel>
 
-      <PaneResizeHandle
+      <PanelSeparator
         id="preview-timeline-resize-handle"
         label={t("preview.resize")}
         orientation="horizontal"

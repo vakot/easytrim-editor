@@ -4,7 +4,7 @@ import type { MouseEventHandler } from "react";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 
-interface PaneResizeHandleProps {
+interface PanelSeparatorProps {
   id: string;
   label: string;
   orientation: "horizontal" | "vertical";
@@ -12,13 +12,13 @@ interface PaneResizeHandleProps {
   disabled?: boolean;
 }
 
-export function PaneResizeHandle({
+export function PanelSeparator({
   id,
   label,
   orientation,
   onDoubleClick,
   disabled = false,
-}: PaneResizeHandleProps) {
+}: PanelSeparatorProps) {
   return (
     <ResizeSeparator
       disabled={disabled}

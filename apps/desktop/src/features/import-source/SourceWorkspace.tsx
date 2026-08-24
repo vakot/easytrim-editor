@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 import { Group, usePanelRef } from "react-resizable-panels";
 
-import { PaneResizeHandle } from "@/components/PaneResizeHandle";
 import { Panel } from "@/components/Panel";
+import { PanelSeparator } from "@/components/PanelSeparator";
 import { EditorStage } from "@/features/editor";
 import { DropOverlay } from "./components/DropOverlay";
 import { SourceSidebar } from "./components/SourceSidebar";
@@ -59,7 +59,7 @@ export function SourceWorkspace() {
         <SourceSidebar session={session} queue={exportQueue} />
       </Panel>
 
-      <PaneResizeHandle
+      <PanelSeparator
         id="source-details-resize-handle"
         label={t("import.source.resizeDetails")}
         orientation="vertical"
