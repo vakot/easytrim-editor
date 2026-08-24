@@ -528,7 +528,7 @@ describe("App", () => {
     await screen.findByRole("heading", { name: "holiday.mp4" });
     screen.getByRole("button", { name: "File" }).focus();
     await user.keyboard("{Enter}");
-    await user.click(screen.getByRole("menuitem", { name: /Optimized Export/ }));
+    await user.click(screen.getByRole("menuitem", { name: /Optimize & Export/ }));
     expect(screen.getByRole("dialog")).toBeInTheDocument();
 
     fireEvent.keyDown(window, { key: "Escape" });
