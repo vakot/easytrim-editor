@@ -1,7 +1,8 @@
 import { useEffect } from "react";
-import { Group, Panel, usePanelRef } from "react-resizable-panels";
+import { Group, usePanelRef } from "react-resizable-panels";
 
 import { PaneResizeHandle } from "@/components/PaneResizeHandle";
+import { Panel } from "@/components/Panel";
 import { EditorStage } from "@/features/editor";
 import { DropOverlay } from "./components/DropOverlay";
 import { SourceSidebar } from "./components/SourceSidebar";

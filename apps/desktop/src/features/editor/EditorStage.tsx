@@ -1,7 +1,8 @@
-import { Group, Panel } from "react-resizable-panels";
+import { Group } from "react-resizable-panels";
 import { useTranslation } from "react-i18next";
 
 import { PaneResizeHandle } from "@/components/PaneResizeHandle";
+import { Panel } from "@/components/Panel";
 import { useEditorViewState } from "@/app/hooks/useEditorViewState";
 import {
   usePlayback,
