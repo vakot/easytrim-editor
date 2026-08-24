@@ -22,7 +22,6 @@ describe("CustomTitleBar", () => {
     render(
       <ThemeProvider>
         <CustomTitleBar
-          onLogoClick={vi.fn()}
           menuControls={
             <ContextMenus
               isChoosingSource={false}
@@ -47,7 +46,6 @@ describe("CustomTitleBar", () => {
     const menuRender = render(
       <ThemeProvider>
         <CustomTitleBar
-          onLogoClick={vi.fn()}
           menuControls={
             <ContextMenus
               isChoosingSource={false}
@@ -70,7 +68,6 @@ describe("CustomTitleBar", () => {
     render(
       <ThemeProvider>
         <CustomTitleBar
-          onLogoClick={vi.fn()}
           menuControls={
             <ContextMenus
               isChoosingSource={false}
@@ -99,22 +96,17 @@ describe("CustomTitleBar", () => {
   });
 
   it("shows the app logo and accessible window controls", () => {
-    render(<CustomTitleBar onLogoClick={vi.fn()} />);
+    render(<CustomTitleBar />);
 
     expect(screen.getByRole("banner", { name: "Window title bar" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "EasyTrim Editor" })).toBeInTheDocument();
+    expect(screen.getByText("EasyTrim Editor")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Minimize" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Maximize" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Close" })).toBeInTheDocument();
   });
 
   it("places panel controls beside the native window controls", () => {
-    render(
-      <CustomTitleBar
-        onLogoClick={vi.fn()}
-        panelControls={<span data-testid="panel-controls" />}
-      />,
-    );
+    render(<CustomTitleBar panelControls={<span data-testid="panel-controls" />} />);
 
     const panelControls = screen.getByTestId("panel-controls");
     const windowControls = screen.getByRole("group", { name: "Window controls" });
@@ -127,7 +119,6 @@ describe("CustomTitleBar", () => {
   it("centers status content independently of the title bar side controls", () => {
     render(
       <CustomTitleBar
-        onLogoClick={vi.fn()}
         menuControls={<span data-testid="menu-controls" />}
         statusContent={<span data-testid="status-content">Media tools ready</span>}
         panelControls={<span data-testid="panel-controls" />}
@@ -141,9 +132,11 @@ describe("CustomTitleBar", () => {
   });
 
   it("delegates dragging and window controls to the native adapter", async () => {
-    render(<CustomTitleBar onLogoClick={vi.fn()} />);
+    render(<CustomTitleBar />);
 
-    const dragRegion = screen.getByRole("banner").querySelector("header > div");
+    const dragRegion = screen
+      .getByRole("banner")
+      .querySelector<HTMLElement>('header > div[aria-hidden="true"]');
     if (!dragRegion) throw new Error("Expected title bar drag region");
     fireEvent.pointerDown(dragRegion, { button: 0, clientX: 10, clientY: 10, pointerId: 1 });
     fireEvent.pointerMove(dragRegion, { clientX: 20, clientY: 10, pointerId: 1 });
@@ -162,7 +155,7 @@ describe("CustomTitleBar", () => {
   });
 
   it("toggles maximize when the draggable title bar is double-clicked", async () => {
-    render(<CustomTitleBar onLogoClick={vi.fn()} />);
+    render(<CustomTitleBar />);
 
     fireEvent.doubleClick(screen.getByRole("banner"));
 

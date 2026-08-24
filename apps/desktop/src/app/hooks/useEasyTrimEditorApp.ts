@@ -27,7 +27,6 @@ export function useEasyTrimEditorApp() {
   const [session, dispatch] = useReducer(sessionReducer, initialSessionState);
   const [isChoosingSource, setIsChoosingSource] = useState(false);
   const [isNativeDialogOpen, setIsNativeDialogOpen] = useState(false);
-  const [isReturnConfirmationOpen, setIsReturnConfirmationOpen] = useState(false);
   const [isSourceDragActive, setIsSourceDragActive] = useState(false);
   const [dropListenerError, setDropListenerError] = useState<string | null>(null);
   const [exportQueue, setExportQueue] = useState<ExportToast[]>([]);
@@ -264,18 +263,18 @@ export function useEasyTrimEditorApp() {
     handleChooseSource,
   );
 
-  const handleReturnToWelcome = useCallback(() => {
+  const clearSource = useCallback(() => {
     activeSourceIdRef.current = null;
     setAudioPreviewUrls({});
-    dispatch({ type: "return-to-welcome" });
+    dispatch({ type: "source-cleared" });
   }, []);
 
   const handleCloseFile = useCallback(() => {
     if (!hasSource) {
       return;
     }
-    handleReturnToWelcome();
-  }, [handleReturnToWelcome, hasSource]);
+    clearSource();
+  }, [clearSource, hasSource]);
 
   useKeyboardShortcut(
     (event) =>
@@ -286,12 +285,6 @@ export function useEasyTrimEditorApp() {
       !isNativeDialogOpen,
     handleCloseFile,
   );
-
-  const requestReturnToWelcome = useCallback(() => {
-    if (hasSource) {
-      setIsReturnConfirmationOpen(true);
-    }
-  }, [hasSource]);
 
   useEffect(() => {
     if (!hasSource) {
@@ -307,11 +300,7 @@ export function useEasyTrimEditorApp() {
         '[data-slot="dialog-content"][data-state="open"]',
       );
       if (openDialog) {
-        if (isReturnConfirmationOpen) {
-          setIsReturnConfirmationOpen(false);
-        } else {
-          openDialog.querySelector<HTMLElement>('[data-slot="dialog-close"]')?.click();
-        }
+        openDialog.querySelector<HTMLElement>('[data-slot="dialog-close"]')?.click();
         return;
       }
 
@@ -324,23 +313,18 @@ export function useEasyTrimEditorApp() {
         return;
       }
 
-      if (isReturnConfirmationOpen) {
-        setIsReturnConfirmationOpen(false);
-      } else {
-        requestReturnToWelcome();
-      }
+      // Escape only clears focus or closes an open dialog. Closing a source is explicit.
     }
 
     window.addEventListener("keydown", handleEscape, true);
     return () => window.removeEventListener("keydown", handleEscape, true);
-  }, [hasSource, isNativeDialogOpen, isReturnConfirmationOpen, requestReturnToWelcome]);
+  }, [hasSource, isNativeDialogOpen]);
 
   return {
     session,
     hasSource,
     isChoosingSource,
     isNativeDialogOpen,
-    isReturnConfirmationOpen,
     isSourceDragActive,
     dropListenerError,
     exportQueue,
@@ -349,11 +333,8 @@ export function useEasyTrimEditorApp() {
     audioPreviewUrls,
     setExportQueue,
     setIsNativeDialogOpen,
-    setIsReturnConfirmationOpen,
     handleChooseSource,
     handleCloseFile,
-    handleReturnToWelcome,
-    requestReturnToWelcome,
     handlePreviewPlaybackError,
     handleTrimChange,
     handlePrepareWaveforms,

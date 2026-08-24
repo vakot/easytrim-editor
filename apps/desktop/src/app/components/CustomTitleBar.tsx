@@ -12,7 +12,6 @@ import {
 } from "@/lib/tauri/window";
 
 interface CustomTitleBarProps {
-  onLogoClick: () => void;
   menuControls?: ReactNode;
   statusContent?: ReactNode;
   panelControls?: ReactNode;
@@ -28,7 +27,6 @@ interface PendingDrag {
 const DRAG_START_DISTANCE = 4;
 
 export function CustomTitleBar({
-  onLogoClick,
   menuControls,
   statusContent,
   panelControls,
@@ -114,17 +112,12 @@ export function CustomTitleBar({
       aria-label={t("app.windowControls.titleBar")}
       onDoubleClickCapture={handleTitleBarDoubleClick}
     >
-      <button
-        type="button"
-        className="group flex h-full items-center gap-2 px-3 text-left outline-none focus-visible:bg-accent"
-        aria-label={t("app.windowControls.logo")}
-        onClick={onLogoClick}
-      >
+      <div className="flex h-full items-center gap-2 px-3 text-left">
         <img className="size-5" src="/logo-symbol.svg" alt="" />
-        <span className="text-xs font-semibold tracking-wide text-foreground/80 group-hover:text-foreground">
+        <span className="text-xs font-semibold tracking-wide text-foreground/80">
           {t("common.brand")}
         </span>
-      </button>
+      </div>
 
       {menuControls ? <div className="flex h-full items-center px-1">{menuControls}</div> : null}
 

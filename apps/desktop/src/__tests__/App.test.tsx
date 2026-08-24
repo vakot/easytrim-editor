@@ -136,11 +136,8 @@ beforeEach(() => {
 });
 
 describe("App", () => {
-  it("preserves editor tools across source replacement and returning to welcome", async () => {
-    mocks.chooseSource
-      .mockResolvedValueOnce(selection)
-      .mockResolvedValueOnce(replacementSelection)
-      .mockResolvedValueOnce(selection);
+  it("preserves editor tools across source replacement", async () => {
+    mocks.chooseSource.mockResolvedValueOnce(selection).mockResolvedValueOnce(replacementSelection);
     mocks.inspectMedia.mockImplementation(async (sourceId: string) => ({ ...media, sourceId }));
     mocks.prepareSourcePreview.mockImplementation(async (sourceId: string) => ({
       sourceId,
@@ -177,20 +174,6 @@ describe("App", () => {
       "aria-pressed",
       "false",
     );
-
-    await user.click(screen.getByRole("button", { name: "EasyTrim Editor" }));
-    await user.click(screen.getByRole("button", { name: "Return to welcome" }));
-    await openSourcePicker(user);
-    await screen.findByRole("heading", { name: "Selected Segment" });
-
-    expect(screen.getByRole("button", { name: "Safe trim following" })).toHaveAttribute(
-      "aria-pressed",
-      "false",
-    );
-    expect(screen.getByRole("button", { name: "Loop playback" })).toHaveAttribute(
-      "aria-pressed",
-      "false",
-    );
   });
 
   it("starts with the editor in a no-source state", async () => {
@@ -216,6 +199,7 @@ describe("App", () => {
     expect(screen.getByRole("list", { name: "Keyboard shortcuts" })).toHaveTextContent(
       "Mark In / Mark Out",
     );
+    expect(screen.getByRole("link", { name: "Support on Ko-fi.com" })).toBeInTheDocument();
     expect(screen.getByLabelText("Current playback time")).toHaveTextContent(
       "00:00:00:00f / 00:00:00:00f",
     );
@@ -500,22 +484,7 @@ describe("App", () => {
     );
   });
 
-  it("uses Escape to show and then dismiss the return confirmation dialog", async () => {
-    mocks.chooseSource.mockResolvedValue(selection);
-    const user = userEvent.setup();
-    render(<App />);
-
-    await openSourcePicker(user);
-    expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
-
-    fireEvent.keyDown(window, { key: "Escape" });
-    expect(screen.getByRole("dialog")).toBeInTheDocument();
-
-    fireEvent.keyDown(window, { key: "Escape" });
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-  });
-
-  it("uses Escape to clear focus before requesting a return home", async () => {
+  it("uses Escape to clear focus without closing the source", async () => {
     mocks.chooseSource.mockResolvedValue(selection);
     const user = userEvent.setup();
     render(<App />);
@@ -532,10 +501,10 @@ describe("App", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 
     fireEvent.keyDown(window, { key: "Escape" });
-    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
   });
 
-  it("closes an open export dialog before Escape can request returning home", async () => {
+  it("closes an open export dialog on Escape", async () => {
     mocks.chooseSource.mockResolvedValue(selection);
     const user = userEvent.setup();
     render(<App />);

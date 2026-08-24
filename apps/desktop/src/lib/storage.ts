@@ -1,7 +1,6 @@
 export const STORAGE_KEYS = {
   preferences: "easytrim.preferences.v1",
   exportPresets: "easytrim.export-presets.v1",
-  supportBadgeDismissed: "easytrim.support-badge-dismissed.v1",
 } as const;
 
 export function readStoredJson<T>(key: string): T | null {
