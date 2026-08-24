@@ -1,15 +1,41 @@
+import { CircleAlert, Download, LoaderCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { useAppUpdates } from "@/app/update-context";
-import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import packageJson from "../../../../../package.json";
 import type { ExportToast } from "@/features/export";
 
 export function StatusBar({ queue }: { queue: ExportToast[] }) {
   const { t } = useTranslation();
-  const { status: updateStatus, availableVersion, isInstalling, installUpdate } = useAppUpdates();
-  const hasAvailableUpdate = updateStatus === "available" && availableVersion !== null;
+  const {
+    status: updateStatus,
+    availableVersion,
+    isInstalling,
+    checkForUpdates,
+    installUpdate,
+  } = useAppUpdates();
+  const updateAction =
+    isInstalling || updateStatus === "checking"
+      ? {
+          label: t("statusBar.loading"),
+          icon: <LoaderCircle className="size-3 animate-spin" aria-hidden="true" />,
+          disabled: true,
+        }
+      : updateStatus === "available" && availableVersion !== null
+        ? {
+            label: t("statusBar.update"),
+            icon: <Download className="size-3" aria-hidden="true" />,
+            disabled: false,
+          }
+        : updateStatus === "error"
+          ? {
+              label: t("statusBar.error"),
+              icon: <CircleAlert className="size-3" aria-hidden="true" />,
+              disabled: false,
+            }
+          : null;
   const activeExport = queue.find((item) => item.status === "rendering");
   const activeExportPath = activeExport ? splitFilePath(activeExport.path) : null;
   const activeExportFps = activeExport?.estimatedFps;
@@ -23,14 +49,17 @@ export function StatusBar({ queue }: { queue: ExportToast[] }) {
       >
         <span className="flex min-w-0 items-center gap-1.5">
           <span>v{packageJson.version}</span>
-          {hasAvailableUpdate ? (
+          {updateAction ? (
             <Button
               type="button"
               size="xs"
-              disabled={isInstalling}
-              onClick={() => void installUpdate()}
+              disabled={updateAction.disabled}
+              onClick={() =>
+                void (updateStatus === "available" ? installUpdate() : checkForUpdates())
+              }
             >
-              {t("statusBar.update")}
+              {updateAction.icon}
+              {updateAction.label}
             </Button>
           ) : null}
         </span>
