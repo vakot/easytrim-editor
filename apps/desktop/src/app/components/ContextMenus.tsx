@@ -262,7 +262,6 @@ export function ContextMenus({
         {...menuProps("settings")}
         label={t("app.topBarMenus.settings")}
         options={[
-          { id: "settings-language-divider", separator: true },
           {
             id: "language",
             label: t("app.topBarMenus.language"),
