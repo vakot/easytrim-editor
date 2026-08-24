@@ -109,7 +109,6 @@ function isContextMenuSeparator(option: ContextMenuOption): option is ContextMen
   return "separator" in option;
 }
 
-
 function ContextMenuOptionItem({
   option,
   open,
