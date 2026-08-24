@@ -48,6 +48,7 @@ export const sk = {
       label: "Ponuky aplikácie",
       file: "Súbor",
       view: "Zobraziť",
+      help: "Pomoc",
       openFile: "Otvoriť súbor",
       closeFile: "Zavrieť súbor",
       saveLosslessCut: "Uložiť bez prekódovania",
@@ -55,6 +56,9 @@ export const sk = {
       theme: "Téma",
       color: "Farba",
       language: "Jazyk",
+      changelog: "Zoznam zmien",
+      supportProject: "Podporte projekt",
+      version: "Verzia {{version}}",
     },
     dragUnavailable: "Presunutie súboru nie je dostupné: {{message}}",
     panels: {

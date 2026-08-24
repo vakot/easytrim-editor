@@ -1,4 +1,4 @@
-import { Monitor, Moon, Sun } from "lucide-react";
+import { ExternalLink, Monitor, Moon, Sun } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -14,6 +14,8 @@ import { useTheme } from "@/app/theme/use-theme";
 import { ContextMenu, type ContextMenuOption } from "@/components/ui/context-menu";
 import { Input } from "@/components/ui/input";
 import { isSupportedLanguage, type SupportedLanguage } from "@/i18n/resources";
+import { openExternalUrl } from "@/lib/open-external-url";
+import packageJson from "../../../../../package.json";
 
 interface ContextMenusProps {
   isChoosingSource: boolean;
@@ -27,7 +29,11 @@ interface ContextMenusProps {
 }
 
 const themeIcons = { system: Monitor, light: Sun, dark: Moon } as const;
-type TopBarMenuId = "file" | "view";
+type ContextMenuId = "file" | "view" | "help";
+
+const CHANGELOG_URL = "https://github.com/vakot/easytrim-editor/releases";
+const SUPPORT_PROJECT_URL = "https://ko-fi.com/vakot";
+const VERSION_RELEASE_URL = `https://github.com/vakot/easytrim-editor/releases/tag/v${packageJson.version}`;
 
 const colorClasses: Record<Exclude<PrimaryColor, `#${string}`>, string> = {
   amber: "bg-[#efbf04]",
@@ -57,8 +63,8 @@ export function ContextMenus({
     setPreference,
     setPrimaryColor,
   } = useTheme();
-  const [openMenu, setOpenMenu] = useState<TopBarMenuId | null>(null);
-  const [switchingMenu, setSwitchingMenu] = useState<TopBarMenuId | null>(null);
+  const [openMenu, setOpenMenu] = useState<ContextMenuId | null>(null);
+  const [switchingMenu, setSwitchingMenu] = useState<ContextMenuId | null>(null);
   const [previewColor, setPreviewColor] = useState<PrimaryColor | null>(null);
   const currentLanguage = isSupportedLanguage(i18n.resolvedLanguage) ? i18n.resolvedLanguage : "en";
   const CurrentThemeIcon = themeIcons[preference];
@@ -74,7 +80,7 @@ export function ContextMenus({
     setOpenMenu(null);
   };
 
-  const menuProps = (id: TopBarMenuId) => ({
+  const menuProps = (id: ContextMenuId) => ({
     open: openMenu === id,
     onOpenChange: (isOpen: boolean) => {
       if (!isOpen) clearPreview();
@@ -218,6 +224,32 @@ export function ContextMenus({
             hint: currentLanguage.toUpperCase(),
             shouldCloseOnClick: false,
             submenu: languageOptions,
+          },
+        ]}
+      />
+      <ContextMenu
+        {...menuProps("help")}
+        label={t("app.topBarMenus.help")}
+        options={[
+          {
+            id: "changelog",
+            label: t("app.topBarMenus.changelog"),
+            hint: <ExternalLink className="size-4" aria-hidden="true" />,
+            onSelect: () => void openExternalUrl(CHANGELOG_URL),
+          },
+          { id: "help-divider-support", separator: true },
+          {
+            id: "support-project",
+            label: t("app.topBarMenus.supportProject"),
+            hint: <ExternalLink className="size-4" aria-hidden="true" />,
+            onSelect: () => void openExternalUrl(SUPPORT_PROJECT_URL),
+          },
+          { id: "help-divider-version", separator: true },
+          {
+            id: "version",
+            label: t("app.topBarMenus.version", { version: packageJson.version }),
+            hint: <ExternalLink className="size-4" aria-hidden="true" />,
+            onSelect: () => void openExternalUrl(VERSION_RELEASE_URL),
           },
         ]}
       />
