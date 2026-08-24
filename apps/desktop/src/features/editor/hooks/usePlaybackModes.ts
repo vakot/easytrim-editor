@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 
 import {
   playbackBoundaryAction,
@@ -26,15 +26,21 @@ export function usePlaybackModes({
 }) {
   const playbackRangeRef = useRef<PlaybackRange | null>(null);
   const boundaryHandledRef = useRef(false);
+  const loopEnabledRef = useRef(loopEnabled);
+  const segmentEnabledRef = useRef(segmentEnabled);
+  useEffect(() => {
+    loopEnabledRef.current = loopEnabled;
+    segmentEnabledRef.current = segmentEnabled;
+  }, [loopEnabled, segmentEnabled]);
 
   function activeRange(trim: TrimRange, playbackStartMicrosValue: number) {
     return playbackRange(
       trim.sourceDurationMicros,
       trim.startMicros,
-      segmentEnabled && playbackStartMicrosValue > trim.endMicros
+      segmentEnabledRef.current && playbackStartMicrosValue > trim.endMicros
         ? trim.sourceDurationMicros
         : trim.endMicros,
-      segmentEnabled,
+      segmentEnabledRef.current,
     );
   }
 
@@ -48,7 +54,7 @@ export function usePlaybackModes({
     const action = playbackBoundaryAction(
       currentMicros,
       playbackRangeRef.current ?? activeRange(trim, trim.startMicros),
-      loopEnabled,
+      loopEnabledRef.current,
     );
     if (action.type === "continue") {
       boundaryHandledRef.current = false;

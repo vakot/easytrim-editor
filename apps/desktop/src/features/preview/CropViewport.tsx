@@ -23,10 +23,12 @@ interface CropViewportProps {
   previewKind: "source" | "proxy";
   sourceLabel: string;
   playbackRate: number;
+  nativeLoopEnabled: boolean;
   muted: boolean;
   videoRef: RefObject<HTMLVideoElement | null>;
   onTogglePlayback: () => void;
   onLoadedMetadata: () => void;
+  onCanPlay: () => void;
   onPlay: () => void;
   onPause: () => void;
   onTimeUpdate: (seconds: number) => void;
@@ -41,10 +43,12 @@ export function CropViewport({
   previewKind,
   sourceLabel,
   playbackRate,
+  nativeLoopEnabled,
   muted,
   videoRef,
   onTogglePlayback,
   onLoadedMetadata,
+  onCanPlay,
   onPlay,
   onPause,
   onTimeUpdate,
@@ -65,6 +69,11 @@ export function CropViewport({
   useEffect(() => {
     if (cropSelection.isOpen) videoRef.current?.pause();
   }, [cropSelection.isOpen, videoRef]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (video && video.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) onCanPlay();
+  }, [onCanPlay, sourceUrl, videoRef]);
 
   useLayoutEffect(() => {
     const container = containerRef.current;
@@ -170,6 +179,7 @@ export function CropViewport({
           src={sourceUrl}
           preload="auto"
           muted={muted}
+          loop={nativeLoopEnabled}
           playsInline
           aria-label={sourceLabel}
           data-preview-kind={previewKind}
@@ -178,6 +188,7 @@ export function CropViewport({
             if (videoWidth > 0 && videoHeight > 0) setSourceAspectRatio(videoWidth / videoHeight);
             onLoadedMetadata();
           }}
+          onCanPlay={onCanPlay}
           onPlay={(event) => {
             if (cropSelection.isOpen) {
               event.currentTarget.pause();

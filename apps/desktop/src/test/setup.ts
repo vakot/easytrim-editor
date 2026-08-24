@@ -1,4 +1,11 @@
 import "@testing-library/jest-dom/vitest";
+
+// JSDOM does not load media. Treat rendered media elements as playable unless a
+// test overrides readiness to exercise loading behavior explicitly.
+Object.defineProperty(HTMLMediaElement.prototype, "readyState", {
+  configurable: true,
+  get: () => HTMLMediaElement.HAVE_FUTURE_DATA,
+});
 import "@/i18n/config";
 import { cleanup } from "@testing-library/react";
 import { afterEach } from "vitest";

@@ -60,10 +60,12 @@ export function EditorStage() {
             sourceId={source.sourceId}
             preview={source.preview}
             playbackRate={playback.playbackRate}
-            muted={Object.keys(source.audioPreviewUrls).length > 0}
+            nativeLoopEnabled={playback.nativeLoopEnabled}
+            muted={playback.videoMuted}
             videoRef={playback.videoRef}
             onPlaybackError={(_, previewKind) => playback.onPreviewPlaybackError(previewKind)}
             onLoadedMetadata={playback.onLoadedMetadata}
+            onCanPlay={playback.onCanPlay}
             onTogglePlayback={playback.toggle}
             onPlay={playback.onPlay}
             onPause={playback.onPause}

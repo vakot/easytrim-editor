@@ -223,6 +223,18 @@ describe("App", () => {
     expect(screen.queryByTestId("audio-tracks-scroll")).not.toBeInTheDocument();
   });
 
+  it("uses the video element audio clock for a single-track source", async () => {
+    mocks.chooseSource.mockResolvedValue(selection);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await openSourcePicker(user);
+    const video = await screen.findByLabelText("Source video preview");
+
+    expect(mocks.prepareAudioPreviews).not.toHaveBeenCalled();
+    expect(video).toHaveProperty("muted", false);
+  });
+
   it("opens the source picker with Ctrl+O", () => {
     render(<App />);
 
@@ -789,6 +801,21 @@ describe("App", () => {
 
   it("stops all media and remains restartable when independent audio cannot play", async () => {
     mocks.chooseSource.mockResolvedValue(selection);
+    mocks.inspectMedia.mockResolvedValue({
+      ...media,
+      audioStreams: [
+        ...media.audioStreams,
+        {
+          streamIndex: 2,
+          codecName: "aac",
+          channels: 2,
+          channelLayout: "stereo",
+          sampleRateHz: 48_000,
+          language: "commentary",
+          isDefault: false,
+        },
+      ],
+    });
     const user = userEvent.setup();
     const audio = document.createElement("audio");
     const audioPlay = vi
@@ -876,8 +903,15 @@ describe("App", () => {
 
     await openSourcePicker(user);
     const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
-    const play = vi.spyOn(video, "play").mockResolvedValue();
-    const pause = vi.spyOn(video, "pause").mockImplementation(() => undefined);
+    let paused = true;
+    Object.defineProperty(video, "paused", { configurable: true, get: () => paused });
+    const play = vi.spyOn(video, "play").mockImplementation(() => {
+      paused = false;
+      return Promise.resolve();
+    });
+    const pause = vi.spyOn(video, "pause").mockImplementation(() => {
+      paused = true;
+    });
 
     video.currentTime = 10;
     fireEvent.timeUpdate(video);
@@ -918,7 +952,7 @@ describe("App", () => {
     expect(pause).not.toHaveBeenCalled();
     expect(video.currentTime).toBe(10);
     expect(playhead).toHaveAttribute("aria-valuenow", "10000000");
-    expect(play).toHaveBeenCalled();
+    expect(play).toHaveBeenCalledTimes(2);
   });
 
   it("restarts the complete timeline after the video ends when looping is enabled", async () => {
@@ -934,6 +968,7 @@ describe("App", () => {
     const segmentToggle = screen.getByRole("button", { name: "Segment playback" });
     await user.click(segmentToggle);
     expect(segmentToggle).toHaveAttribute("aria-pressed", "false");
+    expect(video.loop).toBe(true);
     await user.click(screen.getByRole("button", { name: "Play" }));
     fireEvent.play(video);
     video.currentTime = 65;
@@ -1991,7 +2026,7 @@ describe("App", () => {
     expect(playhead).toHaveAttribute("aria-valuenow", "30000000");
   });
 
-  it("waits for a scrub seek to settle before resuming playback", async () => {
+  it("resumes playback immediately while the browser settles a scrub seek", async () => {
     mocks.chooseSource.mockResolvedValue(selection);
     const user = userEvent.setup();
     render(<App />);
@@ -2038,12 +2073,12 @@ describe("App", () => {
       get: () => seeking,
     });
     fireEvent.pointerUp(playhead, { clientX: 600, pointerId: 7 });
-    expect(play).not.toHaveBeenCalled();
+    expect(play).toHaveBeenCalledOnce();
     expect(seekAssignments).toBe(1);
 
     seeking = false;
     fireEvent.seeked(video);
-    await waitFor(() => expect(play).toHaveBeenCalledOnce());
+    expect(play).toHaveBeenCalledOnce();
   });
 
   it("blocks timeline shortcuts while a timeline control is being scrubbed", async () => {

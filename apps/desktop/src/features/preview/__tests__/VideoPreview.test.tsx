@@ -8,6 +8,7 @@ import { VideoPreview } from "../VideoPreview";
 const callbacks = {
   onPlaybackError: vi.fn(),
   onLoadedMetadata: vi.fn(),
+  onCanPlay: vi.fn(),
   onTogglePlayback: vi.fn(),
   onPlay: vi.fn(),
   onPause: vi.fn(),

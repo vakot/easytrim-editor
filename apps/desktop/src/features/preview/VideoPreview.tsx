@@ -13,10 +13,12 @@ interface VideoPreviewProps {
   sourceId: string | null;
   preview: PreviewState;
   playbackRate: number;
+  nativeLoopEnabled?: boolean;
   muted: boolean;
   videoRef: RefObject<HTMLVideoElement | null>;
   onPlaybackError: (sourceId: string, previewKind: "source" | "proxy") => void;
   onLoadedMetadata: () => void;
+  onCanPlay: () => void;
   onTogglePlayback: () => void;
   onPlay: () => void;
   onPause: () => void;
@@ -49,10 +51,12 @@ function VideoPreviewContent({
   sourceId,
   preview,
   playbackRate,
+  nativeLoopEnabled = false,
   muted,
   videoRef,
   onPlaybackError,
   onLoadedMetadata,
+  onCanPlay,
   onTogglePlayback,
   onPlay,
   onPause,
@@ -144,10 +148,12 @@ function VideoPreviewContent({
         previewKind={value.kind}
         sourceLabel={t("preview.sourceLabel")}
         playbackRate={playbackRate}
+        nativeLoopEnabled={nativeLoopEnabled}
         muted={muted}
         videoRef={videoRef}
         onTogglePlayback={onTogglePlayback}
         onLoadedMetadata={onLoadedMetadata}
+        onCanPlay={onCanPlay}
         onPlay={onPlay}
         onPause={onPause}
         onTimeUpdate={onTimeUpdate}
