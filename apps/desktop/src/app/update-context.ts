@@ -1,6 +1,6 @@
 import { createContext, useContext } from "react";
 
-export type UpdateStatus = "idle" | "checking" | "up-to-date" | "available";
+export type UpdateStatus = "idle" | "checking" | "up-to-date" | "available" | "error";
 
 export interface AppUpdates {
   status: UpdateStatus;

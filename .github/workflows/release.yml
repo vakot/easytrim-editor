@@ -60,7 +60,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build and publish prerelease
-        uses: tauri-apps/tauri-action@v1
+        uses: tauri-apps/tauri-action@v0.6.2
         with:
           projectPath: apps/desktop
           tauriScript: pnpm tauri
@@ -74,6 +74,7 @@ jobs:
           releaseDraft: false
           prerelease: true
           generateReleaseNotes: false
+          includeUpdaterJson: true
           releaseAssetNamePattern: EasyTrim_[version]_${{ startsWith(inputs.platform, 'macos') && 'macos' || inputs.platform }}_${{ inputs.platform == 'macos-apple-silicon' && 'arm64' || 'x64' }}_[bundle][ext]
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

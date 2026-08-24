@@ -32,7 +32,7 @@ export function AppUpdatesProvider({ children }: { children: ReactNode }) {
     } catch {
       updateRef.current = null;
       setAvailableVersion(null);
-      setStatus("idle");
+      setStatus("error");
     } finally {
       isCheckingRef.current = false;
     }
@@ -53,7 +53,7 @@ export function AppUpdatesProvider({ children }: { children: ReactNode }) {
     } catch {
       updateRef.current = null;
       setAvailableVersion(null);
-      setStatus("idle");
+      setStatus("error");
     } finally {
       isInstallingRef.current = false;
       setIsInstalling(false);
