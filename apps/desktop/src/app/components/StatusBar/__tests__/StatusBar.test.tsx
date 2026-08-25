@@ -59,7 +59,7 @@ function renderQueue(queue: ExportQueueItem[]) {
 }
 
 describe("StatusBar", () => {
-  it("keeps the last started export while a newer item is queued", () => {
+  it("does not show a completed export while a newer item is queued", () => {
     const completed = exportToast({ status: "completed", progressPercent: 96 });
     const queued = exportToast({
       id: "export-2",
@@ -69,10 +69,10 @@ describe("StatusBar", () => {
       durationMs: null,
     });
 
-    expect(selectStatusBarExport([completed, queued])).toBe(completed);
+    expect(selectStatusBarExport([completed, queued])).toBeUndefined();
   });
 
-  it("keeps the last export visible through an empty selection transition", () => {
+  it("clears the status bar while waiting for the next export to start", () => {
     const completed = exportToast({
       status: "completed",
       filename: "finished.mp4",
@@ -88,7 +88,7 @@ describe("StatusBar", () => {
         <StatusBar />
       </TooltipProvider>,
     );
-    expect(screen.getByText("finished.mp4")).toBeInTheDocument();
+    expect(screen.queryByText("finished.mp4")).not.toBeInTheDocument();
 
     mocks.queue = [
       exportToast({
@@ -110,26 +110,18 @@ describe("StatusBar", () => {
     expect(screen.getByText("next.mp4")).toBeInTheDocument();
   });
 
-  it("shows completed exports as a green full progress indicator", () => {
-    renderQueue([exportToast({ status: "completed", currentFrame: 4, totalFrames: 8 })]);
-    const progress = screen.getByRole("progressbar");
-    expect(progress).toHaveAttribute("aria-valuenow", "100");
-    expect(progress.firstElementChild).toHaveClass("bg-emerald-400");
-  });
-
   it("renders placeholders for metrics that are not available yet", () => {
     renderQueue([exportToast({ status: "rendering", startedAt: null, operationId: null })]);
     expect(screen.getByText("0f / 0f")).toBeInTheDocument();
     expect(screen.getByText("0 FPS")).toBeInTheDocument();
   });
 
-  it.each(["failed", "canceled"] as const)(
-    "shows %s exports with destructive styling",
+  it.each(["completed", "failed", "canceled"] as const)(
+    "clears the export details for %s exports",
     (status) => {
       renderQueue([exportToast({ status, progressPercent: 37 })]);
-      const progress = screen.getByRole("progressbar");
-      expect(progress).toHaveAttribute("aria-valuenow", "37");
-      expect(progress.firstElementChild).toHaveClass("bg-destructive");
+      expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+      expect(screen.queryByText("clip.mp4")).not.toBeInTheDocument();
     },
   );
 });

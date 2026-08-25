@@ -1,6 +1,6 @@
 import { CircleAlert, Download, LoaderCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useEffect, useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 
 import type { UpdateStatus } from "@/app/contexts/app-updates-context";
 import { useAppUpdates } from "@/app/hooks/useAppUpdates";
@@ -11,35 +11,14 @@ import packageJson from "../../../../../../package.json";
 import { formatExportDuration, formatExportFileSize } from "@/features/export";
 import { useAppSelector } from "@/app/store/hooks";
 import { selectExportQueue } from "@/app/store/slices/export-slice";
-import type { ExportQueueItem } from "@/app/store/slices/export-slice";
 import { selectStatusBarExport, splitFilePath } from "./utils";
 
 export function StatusBar() {
   const { t } = useTranslation();
   const queue = useAppSelector(selectExportQueue);
-  const selectedExport = selectStatusBarExport(queue);
-  const [rememberedExport, setRememberedExport] = useState<ExportQueueItem | null>(
-    selectedExport ?? null,
-  );
-  useEffect(() => {
-    if (!selectedExport) return;
-    // Keep the latest eligible export available if the queue has a transient gap.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setRememberedExport(selectedExport);
-  }, [selectedExport]);
-  const activeExport = selectedExport ?? rememberedExport;
+  const activeExport = selectStatusBarExport(queue);
   const activeExportPath = activeExport ? splitFilePath(activeExport.path) : null;
-  const progressPercent = activeExport
-    ? activeExport.status === "completed"
-      ? 100
-      : Math.round(activeExport.progressPercent ?? 0)
-    : 0;
-  const progressFillClass =
-    activeExport?.status === "completed"
-      ? "bg-emerald-400"
-      : activeExport?.status === "failed" || activeExport?.status === "canceled"
-        ? "bg-destructive"
-        : "bg-primary";
+  const progressPercent = activeExport ? Math.round(activeExport.progressPercent ?? 0) : 0;
 
   return (
     <div className="bg-card/30">
@@ -70,7 +49,7 @@ export function StatusBar() {
                 aria-valuenow={progressPercent}
               >
                 <div
-                  className={`h-full rounded-full transition-[width] duration-150 ${progressFillClass}`}
+                  className="h-full rounded-full bg-primary transition-[width] duration-150"
                   style={{ width: `${progressPercent}%` }}
                 />
               </div>
