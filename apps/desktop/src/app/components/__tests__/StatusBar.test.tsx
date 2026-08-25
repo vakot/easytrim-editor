@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { ExportToast } from "@/features/export";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
-vi.mock("@/app/update-context", () => ({
+vi.mock("@/app/hooks/useAppUpdates", () => ({
   useAppUpdates: () => ({
     status: "idle",
     availableVersion: null,

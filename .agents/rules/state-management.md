@@ -51,14 +51,16 @@ descriptors when the UI needs to observe them.
 
 ## Store structure
 
-- Use Redux Toolkit and one application store composed from focused reducers/slices.
+- Use Redux Toolkit and one application store composed from focused reducers/slices. Keep the
+  application store, typed hooks, and Redux Persist integration in `app/store/`.
 - Do not create a monolithic `appSlice`, a catch-all slice, or slices based only on
   React component boundaries.
 - Choose boundaries from product/domain ownership and invariants. A coherent session
   and source domain may remain one slice even when it has many fields; tiny slices
   without independent ownership are not an improvement.
-- Keep product state under `apps/desktop/src/app/` or the owning feature, following
-  the repository dependency direction.
+- Keep product state under `apps/desktop/src/app/store/` or the owning feature, following
+  the repository dependency direction. Application-owned slices live under `app/store/slices/`;
+  feature-owned Redux domains may remain with their owning feature.
 - Keep the store serializable by default. Configure middleware deliberately and do
   not disable serializability checks globally to hide warnings.
 - Redux state is runtime-only by default. Persistence is explicit and opt-in per

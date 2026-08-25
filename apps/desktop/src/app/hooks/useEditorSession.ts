@@ -1,6 +1,6 @@
 import { useContext } from "react";
 
-import { EditorSessionContext } from "@/app/editor-session-context-value";
+import { EditorSessionContext } from "@/app/contexts/editor-session-context";
 
 export function useEditorSession() {
   const value = useContext(EditorSessionContext);

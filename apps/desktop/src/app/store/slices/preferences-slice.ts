@@ -1,7 +1,7 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
+import { type RootState } from "@/app/store/store";
 import { DEFAULT_TOOL_DEFAULTS, type ToolDefaultKey, type ToolDefaults } from "@/app/tool-settings";
-import type { RootState } from "@/app/store";
 
 export interface PreferencesState {
   toolDefaults: ToolDefaults;

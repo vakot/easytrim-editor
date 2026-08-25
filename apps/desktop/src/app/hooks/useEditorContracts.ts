@@ -1,6 +1,6 @@
 import { useContext } from "react";
 
-import { EditorInteractionContext } from "@/app/editor-contracts-context";
+import { EditorInteractionContext } from "@/app/contexts/editor-contracts-context";
 import { useSourceDetails } from "@/app/hooks/useSourceDetails";
 import { useTimelineTools } from "@/app/hooks/useTimelineTools";
 

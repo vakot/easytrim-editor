@@ -1,14 +1,9 @@
 import { afterEach, describe, expect, it } from "vitest";
 import type { Persistor, Storage as PersistStorage } from "redux-persist";
 
-import { toolDefaultChanged, toolDefaultsReset } from "@/app/preferences-slice";
-import {
-  createAppPersistor,
-  createAppStore,
-  persistConfig,
-  resolveReduxPersistStorage,
-  type AppStore,
-} from "@/app/store";
+import { toolDefaultChanged, toolDefaultsReset } from "@/app/store/slices/preferences-slice";
+import { createAppPersistor, createAppStore, type AppStore } from "@/app/store/store";
+import { persistConfig, resolveReduxPersistStorage } from "@/app/store/persistence";
 import { DEFAULT_TOOL_DEFAULTS } from "@/app/tool-settings";
 
 interface TestStorage extends PersistStorage {

@@ -3,7 +3,7 @@ import { useMemo, useRef, type ReactNode } from "react";
 import {
   ExportPanelControllerContext,
   type ExportPanelController,
-} from "@/app/export-panel-context";
+} from "@/app/contexts/export-panel-context";
 import type { ExportPanelHandle } from "@/features/export";
 
 export function ExportPanelControllerProvider({ children }: { children: ReactNode }) {

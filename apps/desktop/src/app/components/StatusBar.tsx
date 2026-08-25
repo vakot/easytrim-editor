@@ -2,7 +2,8 @@ import { CircleAlert, Download, LoaderCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useEffect, useState, type ReactNode } from "react";
 
-import { useAppUpdates, type UpdateStatus } from "@/app/update-context";
+import type { UpdateStatus } from "@/app/contexts/app-updates-context";
+import { useAppUpdates } from "@/app/hooks/useAppUpdates";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
