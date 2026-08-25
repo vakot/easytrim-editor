@@ -1,5 +1,6 @@
 import {
   exportLaunchFailed,
+  optimizedExportDialogClosed,
   optimizedExportDialogOpened,
   optimizedExportPlanFailed,
   optimizedExportPlanReceived,
@@ -118,7 +119,7 @@ export const startFastCutRequested = (): AppThunk => (dispatch, getState) => {
 };
 
 export const startOptimizedExportRequested = (): AppThunk => (dispatch, getState) => {
-  dispatch({ type: "export/optimizedExportDialogClosed" });
+  dispatch(optimizedExportDialogClosed());
   void startQueuedExport("optimized", dispatch, getState);
 };
 
