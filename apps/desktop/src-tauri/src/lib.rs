@@ -42,6 +42,8 @@ pub fn run() {
             commands::media::prepare_proxy_preview,
             commands::media::prepare_source_preview,
             commands::media::prepare_waveforms,
+            commands::queue::available_queue_finish_actions,
+            commands::queue::perform_queue_finish_action,
             commands::source::choose_source,
             commands::source::import_dropped_source
         ])
