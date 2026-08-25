@@ -12,7 +12,7 @@ import { formatExportDuration, formatExportFileSize } from "@/features/export";
 import { useAppSelector } from "@/app/store/hooks";
 import { selectExportQueue } from "@/app/store/slices/export-slice";
 import type { ExportQueueItem } from "@/app/store/slices/export-slice";
-import { selectStatusBarExport } from "./utils";
+import { selectStatusBarExport, splitFilePath } from "./utils";
 
 export function StatusBar() {
   const { t } = useTranslation();
@@ -207,14 +207,4 @@ function getUpdateButtonAction(
   }
 
   return null;
-}
-
-function splitFilePath(path: string) {
-  const separatorIndex = Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\"));
-  if (separatorIndex < 0) return { directory: "", filename: path };
-
-  return {
-    directory: path.slice(0, separatorIndex + 1),
-    filename: path.slice(separatorIndex + 1),
-  };
 }
