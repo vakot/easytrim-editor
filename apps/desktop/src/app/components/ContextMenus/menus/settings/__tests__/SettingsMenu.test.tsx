@@ -40,6 +40,20 @@ describe("SettingsMenu Redux integration", () => {
     expect(store.getState().preferences.toolDefaults.loopPlaybackEnabled).toBe(false);
   });
 
+  it("shows queue auto start enabled by default and updates its preference", async () => {
+    const user = userEvent.setup();
+    const store = renderSettings();
+    const autoStartQueueSwitch = within(
+      screen.getByRole("menuitem", { name: "Auto-start Queue" }),
+    ).getByRole("switch");
+
+    expect(autoStartQueueSwitch).toBeChecked();
+
+    await user.click(autoStartQueueSwitch);
+
+    expect(store.getState().preferences.toolDefaults.autoStartQueue).toBe(false);
+  });
+
   it("resets Preferences without rewriting active editor tools", async () => {
     const user = userEvent.setup();
     const store = renderSettings();

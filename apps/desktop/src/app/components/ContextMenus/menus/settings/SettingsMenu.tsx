@@ -1,4 +1,12 @@
-import { BetweenVerticalStart, Languages, Magnet, Merge, Repeat, RotateCcw } from "lucide-react";
+import {
+  BetweenVerticalStart,
+  Languages,
+  Magnet,
+  Merge,
+  Play,
+  Repeat,
+  RotateCcw,
+} from "lucide-react";
 import { useRef, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -119,6 +127,12 @@ export function SettingsMenu({ navigation }: { navigation: MenuNavigation }) {
           t("app.settings.followSegment"),
           <BetweenVerticalStart className="size-3" aria-hidden="true" />,
           "segmentPlaybackEnabled",
+        ),
+        settingsToolOption(
+          "setting-auto-start-queue",
+          t("app.settings.autoStartQueue"),
+          <Play className="size-3" aria-hidden="true" />,
+          "autoStartQueue",
         ),
         { id: "settings-audio-divider", separator: true },
         settingsToolOption(

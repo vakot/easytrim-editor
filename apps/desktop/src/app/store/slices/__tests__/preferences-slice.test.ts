@@ -45,6 +45,7 @@ describe("preferences Redux domain", () => {
           snapPlaybackEnabled: false,
           loopPlaybackEnabled: false,
           segmentPlaybackEnabled: false,
+          autoStartQueue: false,
           mergeAudioEnabled: true,
         },
       },
@@ -59,6 +60,7 @@ describe("preferences Redux domain", () => {
       snapPlaybackEnabled: false,
       loopPlaybackEnabled: true,
       segmentPlaybackEnabled: false,
+      autoStartQueue: true,
       mergeAudioEnabled: true,
     };
     const state = { preferences: { toolDefaults } } as RootState;

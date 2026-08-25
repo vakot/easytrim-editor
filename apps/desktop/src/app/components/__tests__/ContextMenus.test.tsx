@@ -42,6 +42,7 @@ const menuState = vi.hoisted(() => ({
       snapPlaybackEnabled: true,
       loopPlaybackEnabled: true,
       segmentPlaybackEnabled: true,
+      autoStartQueue: true,
       mergeAudioEnabled: false,
     } as ToolDefaults,
   },
@@ -373,7 +374,7 @@ describe("ContextMenus", () => {
     );
 
     await user.click(screen.getByRole("button", { name: "Settings" }));
-    for (const label of ["Snap", "Loop", "Follow segment", "Merge audio"]) {
+    for (const label of ["Snap", "Loop", "Follow segment", "Auto-start Queue", "Merge audio"]) {
       const row = screen.getByRole("menuitem", { name: label });
       expect(within(row).getByRole("switch")).toBeInTheDocument();
     }
@@ -390,6 +391,9 @@ describe("ContextMenus", () => {
     );
     expect(screen.getByRole("menuitem", { name: "Follow segment" })).toContainElement(
       settingsMenu!.querySelector(".lucide-between-vertical-start"),
+    );
+    expect(screen.getByRole("menuitem", { name: "Auto-start Queue" })).toContainElement(
+      settingsMenu!.querySelector(".lucide-play"),
     );
   });
 
@@ -448,6 +452,7 @@ describe("ContextMenus", () => {
               snapPlaybackEnabled: false,
               loopPlaybackEnabled: false,
               segmentPlaybackEnabled: false,
+              autoStartQueue: false,
               mergeAudioEnabled: false,
             }}
             onToolDefaultChange={vi.fn()}

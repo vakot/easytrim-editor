@@ -78,6 +78,7 @@ export const sk = {
       snap: "Prichytenie",
       loop: "Opakovanie",
       followSegment: "Sledovať segment",
+      autoStartQueue: "Automatické spustenie frontu",
       mergeAudio: "Zlúčiť zvuk",
     },
     queue: {
