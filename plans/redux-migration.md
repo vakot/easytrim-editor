@@ -84,7 +84,7 @@ of truth.
 | Export presets and settings        | Redux now                 | `exportPresets` slice; explicit `export-presets.ts` storage adapter                                | Completed Phase 5; reusable presets retain reviewed feature persistence, active export settings stay runtime-only |
 | Import/drop workflow status        | Redux now                 | `import-workflow` slice; application-lifetime source-media runtime                                 | Completed Phase 4; runtime-only workflow state                                                                    |
 | Updater status                     | Keep Context              | `AppUpdatesProvider`; native `AvailableUpdate` object in a ref                                     | Keep service Context; audit serializable status in Phase 7                                                        |
-| Theme and style environment        | Keep Context              | `ThemeProvider`, `ThemeContext`, `localStorage` adapter                                            | Keep environment Context; no Redux persistence                                                                    |
+| Theme and style environment        | Redux plus Keep Context  | `theme` Redux slice for canonical preferences; `ThemeProvider` and `ThemeContext` for runtime environment | Phase 7; persist canonical preference values through the root allow-list; keep OS/DOM/preview runtime-only      |
 | Imperative export-panel controller | Removed                   | `ExportPanel`, controller Context/provider, refs, and `useExportController`                        | Completed Phase 5; direct Redux actions and a mounted dialog replace the legacy chain                             |
 | Editor interaction contracts       | Keep runtime/native-owned | `EditorInteractionContext` and `useEditorInteractionController`                                    | Keep Context for refs/callbacks/media lifecycle; reduce only if a later boundary makes that safe                  |
 | Component and pointer UI state     | Keep local                | Feature/component hooks and local state                                                            | Remains local throughout the migration                                                                            |
@@ -162,12 +162,13 @@ domain actions as well. Active editor tools remain separate runtime state and mu
 mutate Preferences.
 
 Persistence is opt-in through `redux-persist` at the application store boundary.
-Preferences is currently the only configured persisted Redux domain, selected by the
-root allow-list and rehydrated through the root `PersistGate`. Its complete current
-state is persisted under the new Redux Persist key. The old `easytrim.preferences.v1`
-schema is intentionally not read or migrated. Reducers remain pure, and Settings has
-no storage responsibility. Unconfigured runtime-only domains are neither hydrated nor
-persisted; nested `persistReducer` configuration remains available for future
+Preferences is one of the configured persisted Redux domains, selected by the root
+allow-list and rehydrated through the root `PersistGate`. Its complete current state is
+persisted under the new Redux Persist key. The old `easytrim.preferences.v1` schema is
+intentionally not read or migrated for theme or tool preferences; i18n may continue to
+use that key for its independent language setting. Reducers remain pure, and Settings
+has no storage responsibility. Unconfigured runtime-only domains are neither hydrated
+nor persisted; nested `persistReducer` configuration remains available for future
 partial-field persistence.
 
 Lifetime: defaults survive source replacement and application restart through Redux
@@ -379,11 +380,14 @@ Redux; the native updater object and install operation remain in the provider/se
 
 ### 11. Theme and style environment — keep Context
 
-Current owner: `ThemeProvider` and `ThemeContext`. It manages theme resolution against
-the system preference, primary-color scrubbing, DOM CSS variables, and accepted
-preference persistence through `lib/storage.ts`. Keep it as an environment/style
-boundary. Color wheel drafts and pointer state remain local. Redux is not a reason to
-replace this Context or add a persistence layer.
+Canonical owner: `app/store/slices/theme-slice.ts`, which stores the serializable theme
+preference, selected primary color, and custom primary color. The `theme` slice is
+explicitly included in the root Redux Persist allow-list. `ThemeProvider` and
+`ThemeContext` remain the runtime/environment boundary for system-theme subscription,
+resolved-theme derivation, DOM classes/data attributes/CSS variables, and transient
+primary-color preview. Color wheel drafts and pointer state remain local and are never
+persisted. The provider does not read or write the legacy theme/color fields in
+`easytrim.preferences.v1`.
 
 ### 12. Imperative controller and local UI state — keep
 
@@ -416,8 +420,9 @@ rehydration. Redux remains runtime-only by default, reducers remain pure, and UI
 components only dispatch. Nested persisted reducers may be introduced later when a
 domain needs field-level persistence.
 Preferences was originally planned as Phase 2A and is complete early as Phase 1's
-permanent Redux pilot; it is the first and currently only explicitly configured
-persisted domain. Legacy Preferences storage migration is intentionally unsupported.
+permanent Redux pilot; it was the first explicitly configured persisted domain.
+Phase 7 adds the canonical theme domain to the same explicit allow-list. Legacy
+Preferences storage migration is intentionally unsupported.
 The remaining Phase 2 domains are editor tools and editor layout.
 
 ### Phase 1.5 — Application state infrastructure structure
@@ -635,7 +640,7 @@ transports canonical Redux application state:
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------ |
 | `EditorInteractionContext` | Playback and timeline runtime capabilities: media refs, Web Audio coordination, readiness, playhead rendering, scrubbing, transport commands, and trim interaction callbacks | It owns DOM/media refs, Web Audio objects, animation handles, and imperative callbacks that must not be serialized or dispatched per frame | `app/components/Providers/EditorContractsProvider.tsx` |
 | `AppUpdatesContext`        | Shared updater status and check/install commands for `StatusBar` and `HelpMenu`                                                                                              | The available updater object and installation operation are non-serializable runtime resources; the Context is a narrow service boundary   | `app/components/Providers/AppUpdatesProvider.tsx`      |
-| `ThemeContext`             | Theme resolution, system-theme subscription, DOM CSS variables, color scrubbing, and accepted theme/color persistence                                                        | It is an environment/style boundary with system and DOM lifecycles, local drafts, and CSS side effects rather than editor state            | `app/theme/ThemeProvider.tsx`                          |
+| `ThemeContext`             | Resolved theme, system-theme subscription, DOM CSS variables, and transient color scrubbing; canonical theme preferences are selected directly from Redux | Runtime/environment lifecycle and DOM side effects remain non-serializable or transient; Redux owns the persisted canonical configuration | `app/theme/ThemeProvider.tsx`                          |
 
 The updater Context now has a `null` default and `useAppUpdates` throws when consumed
 outside its required provider; fake no-op commands are not retained. The runtime
@@ -652,20 +657,22 @@ The final application composition is intentionally:
 
 ```text
 AppUpdatesProvider
-  ThemeProvider
-    Redux Provider
-      PersistGate
+  Redux Provider
+    PersistGate
+      ThemeProvider
         EditorContractsProvider (EditorInteractionContext runtime boundary)
           EasyTrimEditorApp
             TooltipProvider (third-party UI provider)
 ```
 
-Redux remains the owner of editor/application state, while typed Tauri adapters,
+Redux remains the owner of editor/application state, including canonical theme
+preferences, while typed Tauri adapters,
 `source-media-runtime`, and the export runtime retain native handles, subscriptions,
 process/cancellation resources, and other non-serializable orchestration. Persistence
-is unchanged: Redux Persist allow-lists only `preferences`; theme/i18n continue using
-their accepted `easytrim.preferences.v1` environment storage, and no runtime Context
-state is persisted.
+includes the explicit `preferences` and `theme` Redux domains. The legacy
+`easytrim.preferences.v1` key remains only for i18n's independent language setting; no
+theme/color compatibility migration is performed, and no runtime Context state is
+persisted.
 
 Phase 8 remains responsible for the broader aggregate-selector and application prop/
 callback transport audit. Phase 7 does not reopen playback architecture or move runtime
