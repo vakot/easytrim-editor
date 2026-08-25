@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import { useAppUpdates } from "@/app/update-context";
+import { useAppUpdates } from "@/app/hooks/useAppUpdates";
 import { BrandIcon } from "@/components/BrandIcon";
 import { githubBrandIcon, kofiBrandIcon } from "@/components/brand-icons";
 import { ContextMenu } from "@/components/ui/context-menu";

@@ -92,10 +92,12 @@ export const en = {
     },
     panels: {
       group: "Editor panels",
-      hideLeftPane: "Hide left pane",
-      showLeftPane: "Show left pane",
-      hideBottomPane: "Hide bottom pane",
-      showBottomPane: "Show bottom pane",
+      layoutMenu: "Layout controls",
+      leftPanel: "Left panel",
+      bottomPanel: "Bottom panel",
+      hidePanel: "Hide {{panel}}",
+      showPanel: "Show {{panel}}",
+      resetLayout: "Reset editor layout",
     },
     windowControls: {
       titleBar: "Window title bar",
@@ -178,8 +180,8 @@ export const en = {
     setEndShortcut: "Set segment end to current position (O)",
     setEndUnavailable: "Move after the source start to set segment end",
     currentTime: "Current playback time",
-    safeTrim: {
-      label: "Safe trim following",
+    snapPlayback: {
+      label: "Snap playback",
       enabled: "Playhead follows a trim border once caught",
       disabled: "Playhead stays in place",
     },

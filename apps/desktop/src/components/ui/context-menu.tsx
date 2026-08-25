@@ -1,5 +1,5 @@
 import { ChevronRight } from "lucide-react";
-import { Fragment, useState, type ReactNode } from "react";
+import { Fragment, useRef, useState, type ReactNode } from "react";
 import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui";
 
 import { Button } from "@/components/ui/button";
@@ -46,6 +46,7 @@ interface ContextMenuProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   onTriggerPointerEnter?: () => void;
+  onTriggerPointerLeave?: () => void;
 }
 
 export function ContextMenu({
@@ -55,7 +56,10 @@ export function ContextMenu({
   open,
   onOpenChange,
   onTriggerPointerEnter,
+  onTriggerPointerLeave,
 }: ContextMenuProps) {
+  const triggerInteractionRef = useRef<"pointer" | "keyboard" | null>(null);
+
   return (
     <DropdownMenuPrimitive.Root modal={false} open={open} onOpenChange={onOpenChange}>
       <DropdownMenuPrimitive.Trigger asChild>
@@ -63,7 +67,20 @@ export function ContextMenu({
           type="button"
           variant="ghost"
           size="xs"
-          onPointerEnter={onTriggerPointerEnter}
+          onKeyDown={() => {
+            triggerInteractionRef.current = "keyboard";
+          }}
+          onPointerDown={() => {
+            triggerInteractionRef.current = "pointer";
+          }}
+          onPointerEnter={() => {
+            triggerInteractionRef.current = "pointer";
+            onTriggerPointerEnter?.();
+          }}
+          onPointerLeave={() => {
+            triggerInteractionRef.current = "pointer";
+            onTriggerPointerLeave?.();
+          }}
           className={cn(
             "text-foreground/80 data-[state=open]:bg-accent data-[state=open]:text-foreground",
             className,
@@ -74,6 +91,10 @@ export function ContextMenu({
       </DropdownMenuPrimitive.Trigger>
       <DropdownMenuPrimitive.Portal>
         <DropdownMenuPrimitive.Content
+          onCloseAutoFocus={(event) => {
+            if (triggerInteractionRef.current === "pointer") event.preventDefault();
+            triggerInteractionRef.current = null;
+          }}
           align="start"
           sideOffset={4}
           className="z-50 min-w-56 rounded-md border bg-popover p-1 text-popover-foreground shadow-lg ring-1 ring-foreground/10"

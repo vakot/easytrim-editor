@@ -1,8 +1,10 @@
 import { createRef, type ReactElement, type ReactNode } from "react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { Provider } from "react-redux";
 
-import type { PreviewState } from "@/app/session-state";
+import { createAppStore } from "@/app/store/store";
+import type { PreviewState } from "@/app/store/slices/preview-slice";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { VideoPreview } from "../VideoPreview";
 
@@ -25,7 +27,11 @@ function readyPreview(url: string): PreviewState {
 }
 
 function TooltipTestProvider({ children }: { children: ReactNode }) {
-  return <TooltipProvider delayDuration={0}>{children}</TooltipProvider>;
+  return (
+    <Provider store={createAppStore()}>
+      <TooltipProvider delayDuration={0}>{children}</TooltipProvider>
+    </Provider>
+  );
 }
 
 function renderPreview(element: ReactElement) {
@@ -47,7 +53,6 @@ describe("VideoPreview", () => {
       <VideoPreview
         sourceId="source-1"
         preview={readyPreview("easytrim-media://preview-1")}
-        playbackRate={1}
         muted
         videoRef={videoRef}
         {...callbacks}
@@ -69,7 +74,6 @@ describe("VideoPreview", () => {
       <VideoPreview
         sourceId={null}
         preview={{ status: "idle" }}
-        playbackRate={1}
         muted
         videoRef={videoRef}
         {...callbacks}
@@ -91,7 +95,6 @@ describe("VideoPreview", () => {
         <VideoPreview
           sourceId="source-1"
           preview={readyPreview("easytrim-media://preview-1")}
-          playbackRate={1}
           muted
           videoRef={videoRef}
           {...callbacks}
@@ -122,7 +125,6 @@ describe("VideoPreview", () => {
       <VideoPreview
         sourceId="source-1"
         preview={readyPreview("easytrim-media://preview-1")}
-        playbackRate={1}
         muted
         videoRef={videoRef}
         {...callbacks}
@@ -177,7 +179,6 @@ describe("VideoPreview", () => {
       <VideoPreview
         sourceId="source-1"
         preview={readyPreview("easytrim-media://preview-1")}
-        playbackRate={1}
         muted
         videoRef={videoRef}
         {...callbacks}
@@ -203,7 +204,6 @@ describe("VideoPreview", () => {
       <VideoPreview
         sourceId="source-1"
         preview={readyPreview("easytrim-media://preview-1")}
-        playbackRate={1}
         muted
         videoRef={videoRef}
         {...callbacks}
@@ -227,7 +227,6 @@ describe("VideoPreview", () => {
       <VideoPreview
         sourceId="source-1"
         preview={readyPreview("easytrim-media://preview-1")}
-        playbackRate={1}
         muted
         videoRef={videoRef}
         {...callbacks}
@@ -255,13 +254,13 @@ describe("VideoPreview", () => {
       <VideoPreview
         sourceId="source-1"
         preview={readyPreview("easytrim-media://preview-1")}
-        playbackRate={1}
         muted
         videoRef={videoRef}
         {...callbacks}
       />,
     );
     const firstVideo = container.querySelector("video");
+    const firstVideoPause = vi.spyOn(firstVideo!, "pause").mockImplementation(() => undefined);
     expect(firstVideo).toHaveProperty("muted", true);
     expect(firstVideo).toHaveAttribute("crossorigin", "anonymous");
 
@@ -269,7 +268,6 @@ describe("VideoPreview", () => {
       <VideoPreview
         sourceId="source-1"
         preview={readyPreview("easytrim-media://preview-2")}
-        playbackRate={1}
         muted
         videoRef={videoRef}
         {...callbacks}
@@ -277,6 +275,7 @@ describe("VideoPreview", () => {
     );
     const replacementVideo = container.querySelector("video");
     expect(replacementVideo).not.toBe(firstVideo);
+    expect(firstVideoPause).toHaveBeenCalled();
     expect(replacementVideo).toHaveProperty("muted", true);
     expect(replacementVideo).toHaveAttribute("crossorigin", "anonymous");
   });

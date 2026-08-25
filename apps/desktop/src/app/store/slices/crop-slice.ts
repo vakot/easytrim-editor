@@ -1,0 +1,74 @@
+import { createSelector, createSlice, type PayloadAction } from "@reduxjs/toolkit";
+
+import { sourceCleared, sourceFailed, sourceSelected } from "@/app/store/actions/source-actions";
+import { selectSourceMedia } from "@/app/store/slices/source-slice";
+import { FULL_CROP, type CropRect } from "@/domain/crop";
+import type { RootState } from "../store";
+
+export interface CropState {
+  sourceId: string | null;
+  value: CropRect;
+}
+
+export interface CropResolution {
+  width: number;
+  height: number;
+}
+
+export const initialCropState: CropState = { sourceId: null, value: FULL_CROP };
+
+const cropSlice = createSlice({
+  name: "crop",
+  initialState: initialCropState,
+  reducers: {
+    cropChanged: (
+      state,
+      action: PayloadAction<{ sourceId: string; crop: CropRect; resolution: CropResolution }>,
+    ) => {
+      if (state.sourceId !== action.payload.sourceId) return;
+      state.value = action.payload.crop;
+    },
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(sourceSelected, (state, action) => {
+        state.sourceId = action.payload.source.sourceId;
+        state.value = FULL_CROP;
+      })
+      .addCase(sourceCleared, (state) => {
+        state.sourceId = null;
+        state.value = FULL_CROP;
+      })
+      .addCase(sourceFailed, (state, action) => {
+        if (action.payload.sourceId) return;
+        state.sourceId = null;
+        state.value = FULL_CROP;
+      });
+  },
+});
+
+export const { cropChanged } = cropSlice.actions;
+export const cropReducer = cropSlice.reducer;
+
+const EMPTY_RESOLUTION: CropResolution = { width: 1, height: 1 };
+
+export const selectCrop = (state: RootState): CropRect => state.crop.value;
+export function cropResolutionFor(
+  sourceDimensions: CropResolution | null,
+  crop: CropRect,
+): CropResolution {
+  if (!sourceDimensions) return EMPTY_RESOLUTION;
+  return {
+    width: Math.max(1, Math.round(sourceDimensions.width * crop.width)),
+    height: Math.max(1, Math.round(sourceDimensions.height * crop.height)),
+  };
+}
+
+export const selectCropApplied = (state: RootState): boolean => {
+  const crop = selectCrop(state);
+  return crop.x !== 0 || crop.y !== 0 || crop.width !== 1 || crop.height !== 1;
+};
+export const selectCropResolution = createSelector(
+  [selectSourceMedia, selectCrop],
+  (media, crop): CropResolution => cropResolutionFor(media?.video ?? null, crop),
+);

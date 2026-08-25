@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 import { Badge } from "@/components/ui/badge";
-import type { SessionState } from "@/app/session-state";
+import type { CapabilityState } from "@/app/store/slices/source-slice";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { capabilityError } from "@/features/import-source/utils/media-formatters";
 import { useTranslation } from "react-i18next";
@@ -32,7 +32,7 @@ function CapabilityTooltip({ children, content }: { children: ReactNode; content
   );
 }
 
-export function CapabilityStatus({ capabilities }: { capabilities: SessionState["capabilities"] }) {
+export function CapabilityStatus({ capabilities }: { capabilities: CapabilityState }) {
   const { t } = useTranslation();
 
   if (capabilities.status === "checking") {

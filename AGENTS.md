@@ -1,52 +1,273 @@
-# EasyTrim Editor agent instructions
+# Repository Agent Instructions
 
-This file is the auto-loaded entry point for every repository task. Keep it compact; reusable policy lives in `.agents/rules/`.
+This file defines the top-level rules for automated coding agents working in this repository.
 
-## Required context
+Detailed rules are maintained in focused documents under `.agents/rules/`. Read the relevant instruction files before performing work.
 
-Before modifying files:
+## Priorities
 
-1. Read every rule listed under **Always-on rules** once for the task.
-2. Inspect the current worktree and preserve unrelated user changes.
-3. Load every project skill whose description matches the task.
+Follow these priorities in order:
 
-Shared rules are authoritative for repository-wide conventions. Skills add stack-specific workflow and domain contracts without duplicating shared policy.
+1. Correctness
+2. Preserve existing user work
+3. Respect the requested scope
+4. Maintainability
+5. Verification
+6. Clean Git history
+7. Simplicity
 
-## Always-on rules
+Prefer the smallest complete change that satisfies the task.
 
-- [Engineering](.agents/rules/engineering.md) — scope, design, dependencies, errors, documentation, and maintainability.
-- [Repository structure](.agents/rules/structure.md) — directory ownership, dependency direction, naming, and growth conventions.
-- [Runtime and security](.agents/rules/security-runtime.md) — native authority, process safety, Tauri permissions, temporary files, and in-memory-only state.
-- [Quality gates](.agents/rules/quality.md) — tests, static checks, media verification, and completion reporting.
-- [Git and pull requests](.agents/rules/git-workflow.md) — topic branches, Conventional Commits, push policy, and PR format.
+Do not implement speculative future requirements.
 
-## Skill routing
+Do not perform unrelated cleanup, refactoring, formatting, dependency upgrades, or architectural changes unless required by the task.
 
-- Use `easytrim-editor-tauri-rust` for Rust, Tauri, IPC, native state, process lifecycle, security configuration, or packaging.
-- Use `easytrim-editor-ffmpeg-pipeline` for FFprobe/FFmpeg behavior, metadata, trim/export semantics, audio processing, presets, or media benchmarks.
-- Use `easytrim-editor-react-interface` for React, TypeScript, Vite, editor state, timeline interaction, accessibility, or frontend tests.
-- Use all applicable skills for cross-boundary work. Keep native, media, and UI contract changes synchronized.
+Follow existing repository conventions before introducing new ones.
 
-## Review expectations
+## Instruction Files
 
-- Treat correctness, cancellation, source replacement, stream selection, path handling, and accidental persistence as high-risk review areas.
-- Keep product behavior aligned with current accepted contracts and update relevant documentation when an accepted decision changes.
-- Explain Rust/Tauri design decisions in plain language in the final handoff because native implementation is AI-owned.
+Detailed rules are organized as follows:
 
-## Code Review Rules
+- `.agents/rules/code-quality.md` — implementation quality, scope discipline, architecture, dependencies, naming, error handling, maintainability, and general healthy-code practices
+- `.agents/rules/commits.md` — commit structure, naming, scope, authorship, and atomicity
+- `.agents/rules/git.md` — branches, working-tree safety, staging, remote operations, and history preservation
+- `.agents/rules/orchestration.md` — subagent usage, delegation, ownership, parallelization, and orchestrator responsibilities
+- `.agents/rules/pull-requests.md` — pull request naming, creation, template usage, and PR workflow
+- `.agents/rules/verification.md` — builds, tests, checks, self-review, and completion verification
 
-### Media command safety
+Pull requests must use:
 
-- Flag any FFmpeg/FFprobe execution through a shell or interpolated command string. Safe path: invoke a validated executable with an argument array in Rust.
+- `.github/PULL_REQUEST_TEMPLATE.md`
 
-### Session-only state
+These instruction files are part of the repository workflow and must be followed when relevant to the current task.
 
-- Flag project, preset, path, or editor-state persistence outside temporary media cache. Safe path: retain state in memory and clean session artifacts.
+## Before Editing
 
-### Stream correctness
+Before modifying the repository:
 
-- Flag exports that rely on FFmpeg automatic stream selection or type-relative indexes. Safe path: use validated FFprobe global indexes and explicit maps.
+1. inspect the current branch;
+2. inspect the working tree;
+3. identify existing uncommitted changes;
+4. read the instruction files relevant to the task;
+5. inspect the relevant code and existing architecture;
+6. determine the minimum logical scope required.
 
-### Boundary integrity
+At minimum, inspect:
 
-- Flag frontend code that receives arbitrary filesystem/process authority or contains FFmpeg command construction. Safe path: use narrow typed Tauri commands backed by Rust-owned paths and processes.
+```bash
+git status
+git branch --show-current
+```
+
+Treat unrelated user-authored changes as protected.
+
+Never discard, overwrite, reset, revert, or unnecessarily reformat unrelated user work.
+
+## Scope
+
+Implement only what is required for the current task.
+
+Do not introduce unrelated:
+
+- refactors;
+- cleanup;
+- formatting changes;
+- dependency upgrades;
+- architectural redesign;
+- speculative abstractions;
+- future-facing functionality.
+
+Prefer existing project patterns and direct solutions when they are sufficient.
+
+See `.agents/rules/code-quality.md`.
+
+## Git Workflow
+
+Every logically independent feature or unit of work must use its own branch.
+
+Create a new branch whenever explicitly requested by the user.
+
+Never perform implementation work directly on protected primary branches such as `main` or `master`.
+
+Branch names must follow:
+
+```text
+<type>/<username>/<optional_ticket_id>/<title>
+```
+
+Examples without a ticket:
+
+```text
+feature/johndoe/user-preferences
+fix/johndoe/session-expiration
+refactor/johndoe/request-handler
+```
+
+Examples with a ticket:
+
+```text
+feature/johndoe/PROJ-142/user-preferences
+fix/johndoe/PROJ-231/session-expiration
+```
+
+If there is no ticket ID, omit that segment completely.
+
+Do not push automatically.
+
+Do not perform destructive or history-rewriting Git operations unless explicitly requested.
+
+See `.agents/rules/git.md`.
+
+## Commits
+
+Every logically independent change or addition should be represented by its own commit.
+
+For multi-step implementation work, commit incrementally during development. Complete, verify, and commit each coherent independently reversible unit before continuing to the next one.
+
+Do not accumulate an entire multi-part implementation into one final commit when the work contains independently understandable or reversible milestones.
+
+Create commits whenever explicitly requested by the user. When the user requests implementation on a dedicated branch or asks for a pull request, incremental local commits required by this workflow are implicitly authorized.
+
+Commit messages must follow:
+
+```text
+<type>(<context>): <title>
+```
+
+Examples:
+
+```text
+feat(settings): add user preferences
+fix(auth): handle expired sessions
+refactor(api): simplify request handling
+```
+
+Commits must:
+
+- contain one logical change;
+- have exactly one author;
+- use the repository/user's configured Git identity;
+- contain no automated-agent co-author attribution;
+- contain no generated contributor trailers;
+- contain no commit body by default;
+- not be pushed automatically.
+
+Do not rewrite existing commits unless explicitly requested.
+
+See `.agents/rules/commits.md`.
+
+## Pull Requests
+
+Create a pull request only when explicitly requested by the user.
+
+Pull request titles must follow:
+
+```text
+<type>(<context>): [<optional_ticket_id>] <title>
+```
+
+The ticket segment is optional and must be omitted completely when no ticket exists.
+
+Pull requests must strictly use the current repository template:
+
+```text
+.github/PULL_REQUEST_TEMPLATE.md
+```
+
+Do not replace or restructure the template.
+
+A PR request authorizes only the minimum remote operations required to publish the requested pull request. It does not authorize merging or unrelated remote changes.
+
+See `.agents/rules/pull-requests.md`.
+
+## Agent Orchestration
+
+Do not use subagents by default.
+
+Use them when independent research, implementation, or verification materially improves the task.
+
+Prefer:
+
+```text
+parallel research
+→ orchestrator decision
+→ controlled implementation
+→ independent verification
+```
+
+Never assign overlapping write scopes to multiple agents simultaneously.
+
+The main agent remains responsible for architecture, integration, scope, verification, and Git discipline.
+
+See `.agents/rules/orchestration.md`.
+
+## Verification
+
+Before reporting implementation work as complete:
+
+1. inspect the final diff;
+2. verify that no unrelated changes were introduced;
+3. run relevant builds, tests, and configured checks where possible;
+4. inspect the final repository state;
+5. review substantial changes as if reviewing another developer's pull request.
+
+Never claim that a check passed if it was not run.
+
+Report unavailable verification explicitly.
+
+See `.agents/rules/verification.md`.
+
+## Git Authorization Boundaries
+
+Treat Git operations as separate permissions.
+
+Implementation does not automatically authorize a commit unless the user explicitly requests commits, requests implementation on a dedicated branch, requests a pull request, or the repository workflow explicitly requires incremental commits for the requested work.
+
+When commits are authorized, create them incrementally as coherent units are completed rather than waiting until the end of the task.
+
+A commit does not authorize a push.
+
+A push does not authorize a pull request.
+
+A pull request does not authorize a merge.
+
+History rewriting, force-pushing, branch deletion, tagging, releasing, and merging require explicit authorization unless a repository-specific workflow explicitly states otherwise.
+
+## Repository-Specific Rules
+
+In addition to the generic repository rules above, EasyTrim Editor maintains project-specific architectural and runtime rules.
+
+Read every applicable project-specific rule before modifying the corresponding area:
+
+- `.agents/rules/structure.md` — repository structure, directory ownership, dependency direction, naming, component organization, and growth conventions.
+- `.agents/rules/security-runtime.md` — Tauri/native authority, FFmpeg and process safety, filesystem boundaries, temporary media, permissions, and runtime resource ownership.
+- `.agents/rules/state-management.md` — frontend state ownership, Redux Toolkit architecture, slice boundaries, selectors, persistence, Context usage, direct Redux consumers, and state migration conventions.
+
+Project-specific rules refine the generic rules for EasyTrim Editor. When a project-specific rule defines a more precise contract for this repository, follow the project-specific rule.
+
+Do not duplicate project-specific architecture into generic rule files. Keep reusable agent behavior in the generic rules and EasyTrim-specific contracts in the project-specific rules.
+
+## Project Skills
+
+EasyTrim Editor provides task-specific skills under `.agents/skills/`.
+
+Load every skill whose domain matches the requested work before implementation.
+
+- Use `easytrim-editor-tauri-rust` for Rust, Tauri, IPC, native state, process lifecycle, filesystem/native boundaries, security configuration, packaging, or platform-specific behavior.
+- Use `easytrim-editor-ffmpeg-pipeline` for FFprobe/FFmpeg behavior, media inspection, metadata, stream selection, trim/export semantics, audio processing, presets, proxy/preview media, or media benchmarks.
+- Use `easytrim-editor-react-interface` for React, TypeScript, Vite, component architecture, editor UI, timeline interaction, accessibility, frontend wiring, or frontend tests.
+- Use `easytrim-editor-redux-state` for Redux Toolkit, global state ownership, store/slice architecture, selectors, typed hooks, persistence, shared lifecycle events, or migration away from Context, reducer, hook, or props-based state transport.
+
+Load all applicable skills for work that crosses domain boundaries.
+
+Skills supplement repository rules with stack-specific implementation guidance. They do not replace generic or project-specific rules.
+
+For cross-boundary changes, keep contracts synchronized across all affected layers. In particular:
+
+- frontend code must use narrow typed native boundaries rather than acquiring arbitrary filesystem or process authority;
+- FFmpeg/FFprobe execution and media stream semantics remain native/media concerns rather than frontend concerns;
+- shared serializable application state follows the Redux ownership rules, while non-serializable runtime resources remain with their appropriate runtime owner.
+
+## Guiding Rule
+
+Understand the existing repository, make the smallest correct change, preserve user work, verify the result, and perform only the Git and remote operations authorized by the user.

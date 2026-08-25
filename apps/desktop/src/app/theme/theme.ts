@@ -7,6 +7,8 @@ export type ResolvedTheme = Exclude<ThemePreference, "system">;
 export const PRIMARY_COLORS = ["amber", "rose", "violet", "blue", "emerald"] as const;
 export const CUSTOM_PRIMARY_COLOR = "custom" as const;
 export const PRIMARY_COLOR_KEYS = [...PRIMARY_COLORS, CUSTOM_PRIMARY_COLOR] as const;
+export const DEFAULT_PRIMARY_COLOR = "amber" as const;
+export const DEFAULT_CUSTOM_PRIMARY_COLOR = "#efbf04" as const;
 
 export type PrimaryColorKey = (typeof PRIMARY_COLOR_KEYS)[number];
 export type CustomPrimaryColor = `#${string}`;

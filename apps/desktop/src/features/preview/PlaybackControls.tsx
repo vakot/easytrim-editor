@@ -18,14 +18,28 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
+import {
+  createEditorToolsStateFromPreferences,
+  editorToolsReset,
+  loopPlaybackToggled,
+  playbackSpeedChanged,
+  segmentPlaybackToggled,
+  selectLoopPlaybackEnabled,
+  selectPlaybackSpeed,
+  selectSnapPlaybackEnabled,
+  selectSegmentPlaybackEnabled,
+  snapPlaybackToggled,
+} from "@/app/store/slices/editor-tools-slice";
+import { selectToolDefaults } from "@/app/store/slices/preferences-slice";
 import { formatPlaybackTime } from "@/domain/playback";
-import type { TrimBoundary } from "@/domain/trim";
-import type { FrameRate } from "@/lib/tauri/media";
 import {
   DEFAULT_PLAYBACK_SPEED,
   PLAYBACK_SPEED_STEPS,
   type PlaybackSpeed,
-} from "../editor/hooks/usePlaybackSpeed";
+} from "@/domain/playback-speed";
+import type { TrimBoundary } from "@/domain/trim";
+import type { FrameRate } from "@/lib/tauri/media";
 import { useTranslation } from "react-i18next";
 
 const PLAYBACK_SPEED_MARKERS = [0.5, 1, 1.5, 2, 3].map((speed) => ({
@@ -183,67 +197,14 @@ export function PlaybackTimecode({
   );
 }
 
-interface TimelineToolsProps {
-  safeTrimFollowingEnabled: boolean;
-  loopPlaybackEnabled: boolean;
-  segmentPlaybackEnabled: boolean;
-  playbackSpeed: PlaybackSpeed;
-  onToggleSafeTrimFollowing: () => void;
-  onToggleLoopPlayback: () => void;
-  onToggleSegmentPlayback: () => void;
-  onPlaybackSpeedChange: (speed: PlaybackSpeed) => void;
-  onReset: () => void;
-}
-
-export function TimelineTools({
-  safeTrimFollowingEnabled,
-  loopPlaybackEnabled,
-  segmentPlaybackEnabled,
-  playbackSpeed,
-  onToggleSafeTrimFollowing,
-  onToggleLoopPlayback,
-  onToggleSegmentPlayback,
-  onPlaybackSpeedChange,
-  onReset,
-}: TimelineToolsProps) {
-  const { t } = useTranslation();
-
+export function TimelineTools() {
   return (
     <>
       <div className="grid grid-flow-col auto-cols-[1.75rem] grid-rows-[repeat(2,1.75rem)] gap-1">
-        <TimelineToolButton
-          enabled={safeTrimFollowingEnabled}
-          label={t("preview.safeTrim.label")}
-          title={t(
-            safeTrimFollowingEnabled ? "preview.safeTrim.enabled" : "preview.safeTrim.disabled",
-          )}
-          onClick={onToggleSafeTrimFollowing}
-        >
-          <Magnet />
-        </TimelineToolButton>
-        <TimelineToolButton
-          enabled={loopPlaybackEnabled}
-          label={t("preview.loopPlayback.label")}
-          title={t(
-            loopPlaybackEnabled ? "preview.loopPlayback.enabled" : "preview.loopPlayback.disabled",
-          )}
-          onClick={onToggleLoopPlayback}
-        >
-          <Repeat />
-        </TimelineToolButton>
-        <TimelineToolButton
-          enabled={segmentPlaybackEnabled}
-          label={t("preview.segmentPlayback.label")}
-          title={t(
-            segmentPlaybackEnabled
-              ? "preview.segmentPlayback.enabled"
-              : "preview.segmentPlayback.disabled",
-          )}
-          onClick={onToggleSegmentPlayback}
-        >
-          <BetweenVerticalStart />
-        </TimelineToolButton>
-        <PlaybackSpeedTool speed={playbackSpeed} onChange={onPlaybackSpeedChange} />
+        <SnapPlaybackTool />
+        <LoopPlaybackTool />
+        <SegmentPlaybackTool />
+        <PlaybackSpeedTool />
       </div>
       <Separator
         orientation="vertical"
@@ -252,27 +213,67 @@ export function TimelineTools({
         aria-hidden="true"
       />
       <div className="shrink-0 self-start">
-        <TimelineToolButton
-          enabled={false}
-          label={t("preview.resetTools")}
-          title={t("preview.resetTools")}
-          onClick={onReset}
-        >
-          <RotateCcw />
-        </TimelineToolButton>
+        <ResetToolsTool />
       </div>
     </>
   );
 }
 
-function PlaybackSpeedTool({
-  speed,
-  onChange,
-}: {
-  speed: PlaybackSpeed;
-  onChange: (speed: PlaybackSpeed) => void;
-}) {
+function SnapPlaybackTool() {
   const { t } = useTranslation();
+  const enabled = useAppSelector(selectSnapPlaybackEnabled);
+  const dispatch = useAppDispatch();
+
+  return (
+    <TimelineToolButton
+      enabled={enabled}
+      label={t("preview.snapPlayback.label")}
+      title={t(enabled ? "preview.snapPlayback.enabled" : "preview.snapPlayback.disabled")}
+      onClick={() => dispatch(snapPlaybackToggled())}
+    >
+      <Magnet />
+    </TimelineToolButton>
+  );
+}
+
+function LoopPlaybackTool() {
+  const { t } = useTranslation();
+  const enabled = useAppSelector(selectLoopPlaybackEnabled);
+  const dispatch = useAppDispatch();
+
+  return (
+    <TimelineToolButton
+      enabled={enabled}
+      label={t("preview.loopPlayback.label")}
+      title={t(enabled ? "preview.loopPlayback.enabled" : "preview.loopPlayback.disabled")}
+      onClick={() => dispatch(loopPlaybackToggled())}
+    >
+      <Repeat />
+    </TimelineToolButton>
+  );
+}
+
+function SegmentPlaybackTool() {
+  const { t } = useTranslation();
+  const enabled = useAppSelector(selectSegmentPlaybackEnabled);
+  const dispatch = useAppDispatch();
+
+  return (
+    <TimelineToolButton
+      enabled={enabled}
+      label={t("preview.segmentPlayback.label")}
+      title={t(enabled ? "preview.segmentPlayback.enabled" : "preview.segmentPlayback.disabled")}
+      onClick={() => dispatch(segmentPlaybackToggled())}
+    >
+      <BetweenVerticalStart />
+    </TimelineToolButton>
+  );
+}
+
+function PlaybackSpeedTool() {
+  const { t } = useTranslation();
+  const speed = useAppSelector(selectPlaybackSpeed);
+  const dispatch = useAppDispatch();
   const stepIndex = PLAYBACK_SPEED_STEPS.indexOf(speed);
   const enabled = speed !== DEFAULT_PLAYBACK_SPEED;
 
@@ -304,9 +305,9 @@ function PlaybackSpeedTool({
               value={[stepIndex]}
               onValueChange={([index]) => {
                 const nextSpeed = PLAYBACK_SPEED_STEPS[index ?? stepIndex];
-                if (nextSpeed !== undefined) onChange(nextSpeed);
+                if (nextSpeed !== undefined) dispatch(playbackSpeedChanged(nextSpeed));
               }}
-              onDoubleClick={() => onChange(DEFAULT_PLAYBACK_SPEED)}
+              onDoubleClick={() => dispatch(playbackSpeedChanged(DEFAULT_PLAYBACK_SPEED))}
               aria-label={t("preview.playbackSpeed.label")}
               markers={PLAYBACK_SPEED_MARKERS}
             />
@@ -317,6 +318,25 @@ function PlaybackSpeedTool({
         </PopoverContent>
       </Popover>
     </Tooltip>
+  );
+}
+
+function ResetToolsTool() {
+  const { t } = useTranslation();
+  const toolDefaults = useAppSelector(selectToolDefaults);
+  const dispatch = useAppDispatch();
+
+  return (
+    <TimelineToolButton
+      enabled={false}
+      label={t("preview.resetTools")}
+      title={t("preview.resetTools")}
+      onClick={() =>
+        dispatch(editorToolsReset(createEditorToolsStateFromPreferences(toolDefaults)))
+      }
+    >
+      <RotateCcw />
+    </TimelineToolButton>
   );
 }
 

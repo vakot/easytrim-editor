@@ -2,8 +2,8 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { AppUpdatesProvider } from "@/app/AppUpdatesProvider";
-import { useAppUpdates } from "@/app/update-context";
+import { AppUpdatesProvider } from "@/app/components/Providers/AppUpdatesProvider";
+import { useAppUpdates } from "@/app/hooks/useAppUpdates";
 
 const availableVersion = "next-version";
 
@@ -55,6 +55,12 @@ describe("AppUpdatesProvider", () => {
     await waitFor(() => expect(install).toHaveBeenCalledOnce());
     expect(screen.getByTestId("status")).toHaveTextContent("idle");
     expect(screen.getByTestId("version")).toHaveTextContent("");
+  });
+
+  it("requires the AppUpdatesProvider boundary", () => {
+    expect(() => render(<UpdateProbe />)).toThrowError(
+      "useAppUpdates must be used within AppUpdatesProvider.",
+    );
   });
 
   it("keeps the up-to-date state after a successful check with no update", async () => {

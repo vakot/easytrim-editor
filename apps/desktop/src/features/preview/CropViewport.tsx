@@ -14,7 +14,6 @@ import { CropSnapMarkers } from "./components/CropSnapMarkers";
 import { useCropSelection } from "./hooks/use-crop-selection";
 import { centerFrame, cropFrame, type Bounds } from "./utils/crop-frame";
 import { isFullCrop } from "./utils/crop-geometry";
-import type { CropRect } from "./utils/crop-geometry";
 
 const CROP_TOOL_GUTTER_PX = 16;
 
@@ -35,7 +34,6 @@ interface CropViewportProps {
   onEnded: () => void;
   onError: () => void;
   onCropToolOpenChange: (isOpen: boolean) => void;
-  onCropChange: (crop: CropRect) => void;
 }
 
 export function CropViewport({
@@ -55,12 +53,11 @@ export function CropViewport({
   onEnded,
   onError,
   onCropToolOpenChange,
-  onCropChange,
 }: CropViewportProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerBounds, setContainerBounds] = useState<Bounds>({ width: 0, height: 0 });
   const [sourceAspectRatio, setSourceAspectRatio] = useState(16 / 9);
-  const cropSelection = useCropSelection(containerRef, onCropChange);
+  const cropSelection = useCropSelection(containerRef);
 
   useEffect(() => {
     onCropToolOpenChange(cropSelection.isOpen);
@@ -74,6 +71,11 @@ export function CropViewport({
     const video = videoRef.current;
     if (video && video.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) onCanPlay();
   }, [onCanPlay, sourceUrl, videoRef]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    return () => video?.pause();
+  }, [sourceUrl, videoRef]);
 
   useLayoutEffect(() => {
     const container = containerRef.current;

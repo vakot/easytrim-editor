@@ -2,6 +2,12 @@ import { Check } from "lucide-react";
 import { type KeyboardEvent, type PointerEvent, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
+import {
+  primaryColorChanged,
+  selectPrimaryColor,
+  selectPrimaryColorKey,
+} from "@/app/store/slices/theme-slice";
 import {
   colorFromSpectrumPosition,
   CUSTOM_PRIMARY_COLOR,
@@ -24,7 +30,10 @@ const colorClasses: Record<Exclude<PrimaryColor, `#${string}`>, string> = {
 
 export function PrimaryColorSelector() {
   const { t } = useTranslation();
-  const { primaryColor, primaryColorKey, previewPrimaryColor, setPrimaryColor } = useTheme();
+  const { previewPrimaryColor } = useTheme();
+  const dispatch = useAppDispatch();
+  const primaryColor = useAppSelector(selectPrimaryColor);
+  const primaryColorKey = useAppSelector(selectPrimaryColorKey);
   const [previewColor, setPreviewColor] = useState<PrimaryColor | null>(null);
   const selectedPrimaryColor = previewColor ?? primaryColor;
   const selectedColor = resolvePrimaryColor(selectedPrimaryColor);
@@ -37,7 +46,7 @@ export function PrimaryColorSelector() {
   };
   const commit = (color: PrimaryColor) => {
     setPreviewColor(null);
-    setPrimaryColor(color);
+    dispatch(primaryColorChanged(color));
   };
   const cancel = () => {
     setPreviewColor(null);

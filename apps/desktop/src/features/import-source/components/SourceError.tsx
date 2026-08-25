@@ -1,8 +1,8 @@
-import type { SessionState } from "@/app/session-state";
+import type { AppError } from "@/lib/tauri/media";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useTranslation } from "react-i18next";
 
-export function SourceError({ error }: { error: NonNullable<SessionState["lastError"]> }) {
+export function SourceError({ error }: { error: AppError }) {
   const { t } = useTranslation();
 
   return (

@@ -2,9 +2,15 @@ import { BetweenVerticalStart, Languages, Magnet, Merge, Repeat, RotateCcw } fro
 import { useRef, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
+import {
+  selectToolDefaults,
+  toolDefaultChanged,
+  toolDefaultsReset,
+} from "@/app/store/slices/preferences-slice";
+import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
+import { audioMergeChanged } from "@/app/store/slices/audio-slice";
+import { selectSourceSelection } from "@/app/store/slices/source-slice";
 import { DEFAULT_TOOL_DEFAULTS, type ToolDefaultKey } from "@/app/tool-settings";
-import { useEditorSession } from "@/app/hooks/useEditorSession";
-import { useEditorViewState } from "@/app/hooks/useEditorViewState";
 import { ContextMenu, type ContextMenuOption } from "@/components/ui/context-menu";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -14,24 +20,27 @@ import type { MenuNavigation } from "../../types";
 
 export function SettingsMenu({ navigation }: { navigation: MenuNavigation }) {
   const { t, i18n } = useTranslation();
-  const app = useEditorSession();
-  const { toolDefaults, setToolDefault, resetToolDefaults } = useEditorViewState();
+  const dispatch = useAppDispatch();
+  const sourceSelection = useAppSelector(selectSourceSelection);
+  const toolDefaults = useAppSelector(selectToolDefaults);
   const switchInteractionRef = useRef(false);
   const currentLanguage = isSupportedLanguage(i18n.resolvedLanguage) ? i18n.resolvedLanguage : "en";
 
   const updateToolDefault = (key: ToolDefaultKey, enabled: boolean) => {
-    setToolDefault(key, enabled);
-    if (key === "mergeAudioEnabled" && app.session.source) {
-      app.handleSetAudioMerge(app.session.source.selection.sourceId, enabled);
+    dispatch(toolDefaultChanged({ key, enabled }));
+    if (key === "mergeAudioEnabled" && sourceSelection) {
+      dispatch(audioMergeChanged({ sourceId: sourceSelection.sourceId, enabled }));
     }
   };
 
   const resetDefaults = () => {
-    resetToolDefaults();
-    if (app.session.source) {
-      app.handleSetAudioMerge(
-        app.session.source.selection.sourceId,
-        DEFAULT_TOOL_DEFAULTS.mergeAudioEnabled,
+    dispatch(toolDefaultsReset());
+    if (sourceSelection) {
+      dispatch(
+        audioMergeChanged({
+          sourceId: sourceSelection.sourceId,
+          enabled: DEFAULT_TOOL_DEFAULTS.mergeAudioEnabled,
+        }),
       );
     }
   };
@@ -94,10 +103,10 @@ export function SettingsMenu({ navigation }: { navigation: MenuNavigation }) {
       {...navigation}
       options={[
         settingsToolOption(
-          "setting-safe-trim",
+          "setting-snap-playback",
           t("app.settings.snap"),
           <Magnet className="size-3" aria-hidden="true" />,
-          "safeTrimFollowingEnabled",
+          "snapPlaybackEnabled",
         ),
         settingsToolOption(
           "setting-loop",

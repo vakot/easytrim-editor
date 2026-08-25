@@ -16,13 +16,9 @@ export type PlaybackBoundaryResult =
 export function usePlaybackModes({
   loopEnabled,
   segmentEnabled,
-  onLoopEnabledChange,
-  onSegmentEnabledChange,
 }: {
   loopEnabled: boolean;
   segmentEnabled: boolean;
-  onLoopEnabledChange: (enabled: boolean) => void;
-  onSegmentEnabledChange: (enabled: boolean) => void;
 }) {
   const playbackRangeRef = useRef<PlaybackRange | null>(null);
   const boundaryHandledRef = useRef(false);
@@ -70,30 +66,13 @@ export function usePlaybackModes({
     return { reached: true, action };
   }
 
-  function toggleLoop() {
-    const enabled = !loopEnabled;
-    onLoopEnabledChange(enabled);
-  }
-
-  function toggleSegment() {
-    const enabled = !segmentEnabled;
-    boundaryHandledRef.current = false;
-    playbackRangeRef.current = null;
-    onSegmentEnabledChange(enabled);
-    return enabled;
-  }
-
   function resetBoundary() {
     boundaryHandledRef.current = false;
   }
 
   return {
-    loopEnabled,
-    segmentEnabled,
     startMicros,
     consumeBoundary,
-    toggleLoop,
-    toggleSegment,
     resetBoundary,
   };
 }

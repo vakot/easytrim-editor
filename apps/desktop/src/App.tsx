@@ -1,76 +1,144 @@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { useEffect } from "react";
 import { NativeDialogOverlay } from "@/app/components/NativeDialogOverlay";
 import { StatusBar } from "@/app/components/StatusBar";
 import { CapabilityStatus, SourceWorkspace } from "@/features/import-source/SourceWorkspace";
 import { useTranslation } from "react-i18next";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
-import { EditorViewStateProvider } from "@/app/editor-view-state";
 import { CustomTitleBar } from "@/app/components/CustomTitleBar";
 import { PanelVisibilityControls } from "@/app/components/PanelVisibilityControls";
 import { ContextMenus } from "@/app/components/ContextMenus";
-import { ExportPanel } from "@/features/export";
-import { EditorSessionProvider } from "@/app/editor-session-context";
-import { useEditorSession } from "@/app/hooks/useEditorSession";
-import { EditorContractsProvider } from "@/app/editor-contracts";
-import { useSourceDetails } from "@/app/hooks/useSourceDetails";
-import { AppUpdatesProvider } from "@/app/AppUpdatesProvider";
-import { ExportPanelControllerProvider } from "@/app/ExportPanelControllerProvider";
-import { useExportPanelController } from "@/app/hooks/useExportPanelController";
+import { OptimizedExportDialog } from "@/features/export/components/OptimizedExportDialog";
+import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
+import {
+  selectCapabilities,
+  selectHasSource,
+  selectSourceReady,
+} from "@/app/store/slices/source-slice";
+import { selectCropApplied } from "@/app/store/slices/crop-slice";
+import {
+  selectDropListenerError,
+  selectIsChoosingSource,
+  selectIsNativeDialogOpen,
+} from "@/app/store/slices/import-workflow-slice";
+import {
+  closeSourceRequested,
+  chooseSourceRequested,
+} from "@/app/store/thunks/source-media-thunks";
+import { EditorContractsProvider } from "@/app/components/Providers/EditorContractsProvider";
+import { AppUpdatesProvider } from "@/app/components/Providers/AppUpdatesProvider";
+import { selectHasQueuedExports, selectQueueStarted } from "@/app/store/slices/export-slice";
+import {
+  loadQueueFinishActions,
+  openOptimizedExportDialog,
+  startExportQueue,
+  startFastCutRequested,
+} from "@/app/store/thunks/export-thunks";
+import { persistor, store } from "@/app/store/store";
+import { Provider as ReduxProvider } from "react-redux";
+import { PersistGate } from "redux-persist/integration/react";
+import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
 
 function EasyTrimEditorApp() {
-  const app = useEditorSession();
-  const sourceDetails = useSourceDetails();
+  const dispatch = useAppDispatch();
+  const capabilities = useAppSelector(selectCapabilities);
+  const canExport = useAppSelector(selectSourceReady);
+  const cropApplied = useAppSelector(selectCropApplied);
+  const queueStarted = useAppSelector(selectQueueStarted);
+  const hasQueuedExports = useAppSelector(selectHasQueuedExports);
+  const hasSource = useAppSelector(selectHasSource);
+  const isChoosingSource = useAppSelector(selectIsChoosingSource);
+  const isNativeDialogOpen = useAppSelector(selectIsNativeDialogOpen);
+  const dropListenerError = useAppSelector(selectDropListenerError);
   const { t } = useTranslation();
-  const source = sourceDetails.source;
-  const { panelRef: exportPanelRef } = useExportPanelController();
-  const canExport = app.session.status === "ready" && Boolean(source?.media && source.trim);
+  useEffect(() => {
+    void dispatch(loadQueueFinishActions());
+  }, [dispatch]);
+
+  useKeyboardShortcut(
+    (event) =>
+      event.key.toLowerCase() === "o" && event.ctrlKey && !isChoosingSource && !isNativeDialogOpen,
+    () => void dispatch(chooseSourceRequested()),
+  );
+  useKeyboardShortcut(
+    (event) =>
+      event.key.toLowerCase() === "q" &&
+      event.ctrlKey &&
+      hasSource &&
+      !isChoosingSource &&
+      !isNativeDialogOpen,
+    () => void dispatch(closeSourceRequested()),
+  );
+  useKeyboardShortcut(
+    (event) => event.key.toLowerCase() === "s" && event.ctrlKey && canExport && !cropApplied,
+    () => void dispatch(startFastCutRequested()),
+  );
+  useKeyboardShortcut(
+    (event) => event.key.toLowerCase() === "e" && event.ctrlKey && canExport,
+    () => void dispatch(openOptimizedExportDialog()),
+  );
+  useKeyboardShortcut(
+    (event) =>
+      event.key === "Enter" &&
+      !queueStarted &&
+      hasQueuedExports &&
+      document.activeElement === document.body,
+    () => void dispatch(startExportQueue()),
+  );
+
+  useEffect(() => {
+    if (!hasSource) return;
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key !== "Escape" || isNativeDialogOpen) return;
+
+      const openDialog = document.querySelector<HTMLElement>(
+        '[data-slot="dialog-content"][data-state="open"]',
+      );
+      if (openDialog) {
+        openDialog.querySelector<HTMLElement>('[data-slot="dialog-close"]')?.click();
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      const activeElement = document.activeElement;
+      if (activeElement instanceof HTMLElement && activeElement !== document.body) {
+        activeElement.blur();
+      }
+    }
+
+    window.addEventListener("keydown", handleEscape, true);
+    return () => window.removeEventListener("keydown", handleEscape, true);
+  }, [hasSource, isNativeDialogOpen]);
 
   return (
     <TooltipProvider>
       <main className="fixed inset-0 grid h-dvh w-screen min-w-80 overflow-hidden bg-background grid-rows-[2.25rem_minmax(0,1fr)_auto]">
         <CustomTitleBar
           menuControls={<ContextMenus />}
-          statusContent={<CapabilityStatus capabilities={app.session.capabilities} />}
+          statusContent={<CapabilityStatus capabilities={capabilities} />}
           panelControls={<PanelVisibilityControls />}
         />
 
-        {canExport && source?.media && source.trim ? (
-          <ExportPanel
-            key={`export-${source.selection.sourceId}`}
-            ref={exportPanelRef}
-            source={source.media}
-            sourceName={source.selection.displayName}
-            trim={source.trim}
-            audioTracks={source.audioTracks}
-            masterEnabled={source.masterEnabled}
-            masterVolumePercent={source.masterVolumePercent}
-            mergeAudio={source.mergeAudio}
-            setQueue={app.setExportQueue}
-            presetState={app.exportPresets}
-            onPresetAction={app.dispatchExportPreset}
-            onNativeDialogStateChange={app.setIsNativeDialogOpen}
-            cropResolution={sourceDetails.cropResolution}
-            crop={sourceDetails.crop}
-            showActions={false}
-          />
-        ) : null}
+        <OptimizedExportDialog />
 
-        {app.isNativeDialogOpen ? <NativeDialogOverlay /> : null}
+        {isNativeDialogOpen ? <NativeDialogOverlay /> : null}
 
-        {app.dropListenerError ? (
+        {dropListenerError ? (
           <Alert
             variant="destructive"
             className="fixed top-20 left-1/2 z-50 w-auto -translate-x-1/2"
           >
             <AlertDescription>
-              {t("app.dragUnavailable", { message: app.dropListenerError })}
+              {t("app.dragUnavailable", { message: dropListenerError.message })}
             </AlertDescription>
           </Alert>
         ) : null}
 
         <SourceWorkspace />
-        <StatusBar queue={app.exportQueue} />
+        <StatusBar />
       </main>
     </TooltipProvider>
   );
@@ -79,17 +147,15 @@ function EasyTrimEditorApp() {
 function App() {
   return (
     <AppUpdatesProvider>
-      <ThemeProvider>
-        <EditorViewStateProvider>
-          <EditorSessionProvider>
-            <ExportPanelControllerProvider>
-              <EditorContractsProvider>
-                <EasyTrimEditorApp />
-              </EditorContractsProvider>
-            </ExportPanelControllerProvider>
-          </EditorSessionProvider>
-        </EditorViewStateProvider>
-      </ThemeProvider>
+      <ReduxProvider store={store}>
+        <PersistGate loading={null} persistor={persistor}>
+          <ThemeProvider>
+            <EditorContractsProvider>
+              <EasyTrimEditorApp />
+            </EditorContractsProvider>
+          </ThemeProvider>
+        </PersistGate>
+      </ReduxProvider>
     </AppUpdatesProvider>
   );
 }

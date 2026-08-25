@@ -1,10 +1,13 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { Provider } from "react-redux";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CustomTitleBar } from "../CustomTitleBar";
 import { ContextMenus } from "../ContextMenus";
+import { store } from "@/app/store/store";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
+import { AppUpdatesContext } from "@/app/contexts/app-updates-context";
 
 const windowActions = vi.hoisted(() => ({
   closeWindow: vi.fn(() => Promise.resolve()),
@@ -16,69 +19,25 @@ const windowActions = vi.hoisted(() => ({
 
 vi.mock("@/lib/tauri/window", () => windowActions);
 
-const menuState = vi.hoisted(() => ({
-  app: {
-    isChoosingSource: false,
-    hasSource: false,
-    session: { source: null },
-    exportQueue: [],
-    queueStarted: false,
-    queueFinishAction: "nothing",
-    availableQueueFinishActions: ["exit", "nothing"],
-    handleChooseSource: vi.fn(),
-    handleCloseFile: vi.fn(),
-    setQueueStarted: vi.fn(),
-    cancelActiveExport: vi.fn(),
-    cancelQueue: vi.fn(),
-    setQueueFinishAction: vi.fn(),
-    handleSetAudioMerge: vi.fn(),
-  },
-  sourceDetails: {
-    isReady: true,
-    source: null,
-    sourceId: null,
-    crop: { x: 0, y: 0, width: 1, height: 1 },
-  },
-  viewState: {
-    toolDefaults: {
-      safeTrimFollowingEnabled: true,
-      loopPlaybackEnabled: true,
-      segmentPlaybackEnabled: true,
-      mergeAudioEnabled: false,
-    },
-    setToolDefault: vi.fn(),
-    resetToolDefaults: vi.fn(),
-  },
-  exportPanel: {
-    panelRef: { current: null },
-    startFastCut: vi.fn(),
-    openOptimizedDialog: vi.fn(),
-  },
-}));
-
-vi.mock("@/app/hooks/useEditorSession", () => ({
-  useEditorSession: () => menuState.app,
-}));
-
-vi.mock("@/app/hooks/useSourceDetails", () => ({
-  useSourceDetails: () => menuState.sourceDetails,
-}));
-
-vi.mock("@/app/hooks/useEditorViewState", () => ({
-  useEditorViewState: () => menuState.viewState,
-}));
-
-vi.mock("@/app/hooks/useExportPanelController", () => ({
-  useExportPanelController: () => menuState.exportPanel,
-}));
-
 describe("CustomTitleBar", () => {
   it("keeps menu controls interactive inside the title bar", async () => {
     const user = userEvent.setup();
     render(
-      <ThemeProvider>
-        <CustomTitleBar menuControls={<ContextMenus />} />
-      </ThemeProvider>,
+      <Provider store={store}>
+        <ThemeProvider>
+          <AppUpdatesContext.Provider
+            value={{
+              status: "idle",
+              availableVersion: null,
+              isInstalling: false,
+              checkForUpdates: vi.fn(),
+              installUpdate: vi.fn(),
+            }}
+          >
+            <CustomTitleBar menuControls={<ContextMenus />} />
+          </AppUpdatesContext.Provider>
+        </ThemeProvider>
+      </Provider>,
     );
 
     await user.click(screen.getByRole("button", { name: "File" }));
@@ -89,9 +48,21 @@ describe("CustomTitleBar", () => {
   it("does not toggle maximize when a menu or submenu item is double-clicked", async () => {
     const user = userEvent.setup();
     const menuRender = render(
-      <ThemeProvider>
-        <CustomTitleBar menuControls={<ContextMenus />} />
-      </ThemeProvider>,
+      <Provider store={store}>
+        <ThemeProvider>
+          <AppUpdatesContext.Provider
+            value={{
+              status: "idle",
+              availableVersion: null,
+              isInstalling: false,
+              checkForUpdates: vi.fn(),
+              installUpdate: vi.fn(),
+            }}
+          >
+            <CustomTitleBar menuControls={<ContextMenus />} />
+          </AppUpdatesContext.Provider>
+        </ThemeProvider>
+      </Provider>,
     );
 
     await user.click(screen.getByRole("button", { name: "File" }));
@@ -100,9 +71,21 @@ describe("CustomTitleBar", () => {
     menuRender.unmount();
 
     render(
-      <ThemeProvider>
-        <CustomTitleBar menuControls={<ContextMenus />} />
-      </ThemeProvider>,
+      <Provider store={store}>
+        <ThemeProvider>
+          <AppUpdatesContext.Provider
+            value={{
+              status: "idle",
+              availableVersion: null,
+              isInstalling: false,
+              checkForUpdates: vi.fn(),
+              installUpdate: vi.fn(),
+            }}
+          >
+            <CustomTitleBar menuControls={<ContextMenus />} />
+          </AppUpdatesContext.Provider>
+        </ThemeProvider>
+      </Provider>,
     );
     await user.click(screen.getByRole("button", { name: "View" }));
     const themeItem = screen.getByText("Theme").closest<HTMLElement>('[role="menuitem"]');

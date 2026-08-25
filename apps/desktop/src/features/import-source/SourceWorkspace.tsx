@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Group, Panel, usePanelRef } from "react-resizable-panels";
 
 import { PanelSeparator } from "@/components/PanelSeparator";
@@ -6,36 +6,52 @@ import { EditorStage } from "@/features/editor";
 import { DropOverlay } from "./components/DropOverlay";
 import { SourceSidebar } from "./components/SourceSidebar";
 import { useTranslation } from "react-i18next";
-import { useEditorViewState } from "@/app/hooks/useEditorViewState";
-import { useEditorSession } from "@/app/hooks/useEditorSession";
+import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
+import {
+  selectPanelVisibility,
+  selectWorkspaceLayout,
+  panelVisibilityChanged,
+  workspaceLayoutChanged,
+} from "@/app/store/slices/editor-layout-slice";
+import { selectSourceSelection } from "@/app/store/slices/source-slice";
+import { selectIsSourceDragActive } from "@/app/store/slices/import-workflow-slice";
 import { PanelContent } from "@/components/PanelContent";
 
 export { CapabilityStatus } from "./components/CapabilityStatus";
 
 export function SourceWorkspace() {
   const { t } = useTranslation();
-  const app = useEditorSession();
-  const { session, isSourceDragActive, exportQueue } = app;
-  const { showSourceDetails, setShowSourceDetails, workspaceLayout, setWorkspaceLayout } =
-    useEditorViewState();
+  const isSourceDragActive = useAppSelector(selectIsSourceDragActive);
+  const sourceSelection = useAppSelector(selectSourceSelection);
+  const dispatch = useAppDispatch();
+  const isLeftPanelVisible = useAppSelector((state) => selectPanelVisibility(state, "left"));
+  const workspaceLayout = useAppSelector(selectWorkspaceLayout);
   const sourceDetailsPanelRef = usePanelRef();
+  const previousWorkspaceLayout = useRef(workspaceLayout);
 
   useEffect(() => {
     const panel = sourceDetailsPanelRef.current;
     if (!panel) return;
 
-    if (showSourceDetails) {
+    if (isLeftPanelVisible) {
       panel.expand();
     } else {
       panel.collapse();
     }
-  }, [showSourceDetails, sourceDetailsPanelRef]);
+  }, [isLeftPanelVisible, sourceDetailsPanelRef]);
+
+  useEffect(() => {
+    if (workspaceLayout === undefined && previousWorkspaceLayout.current !== undefined) {
+      sourceDetailsPanelRef.current?.resize("20rem");
+    }
+    previousWorkspaceLayout.current = workspaceLayout;
+  }, [sourceDetailsPanelRef, workspaceLayout]);
 
   return (
     <Group
       id="editor-workspace-panels"
       defaultLayout={workspaceLayout}
-      onLayoutChanged={setWorkspaceLayout}
+      onLayoutChanged={(layout) => dispatch(workspaceLayoutChanged(layout))}
       orientation="horizontal"
       resizeTargetMinimumSize={{ fine: 8, coarse: 24 }}
       aria-label={t("import.source.workspace")}
@@ -50,14 +66,14 @@ export function SourceWorkspace() {
         maxSize="30rem"
         onResize={(size) => {
           const isCollapsed = sourceDetailsPanelRef.current?.isCollapsed() ?? size.inPixels <= 0;
-          setShowSourceDetails(!isCollapsed);
+          dispatch(panelVisibilityChanged({ panelId: "left", visible: !isCollapsed }));
         }}
         groupResizeBehavior="preserve-pixel-size"
         className="min-h-0 min-w-0 overflow-hidden"
       >
         <div className="h-full pl-1 pb-1">
           <PanelContent>
-            <SourceSidebar session={session} queue={exportQueue} />
+            <SourceSidebar />
           </PanelContent>
         </div>
       </Panel>
@@ -66,13 +82,13 @@ export function SourceWorkspace() {
         id="source-details-resize-handle"
         label={t("import.source.resizeDetails")}
         orientation="vertical"
-        collapsed={!showSourceDetails}
+        collapsed={!isLeftPanelVisible}
         className="mb-1"
       />
 
       <Panel id="editor-content-panel" minSize="44rem" className="pr-1">
         <div className="relative h-full w-full" aria-label={t("import.source.previewArea")}>
-          <EditorStage key={session.source?.selection.sourceId ?? "no-source"} />
+          <EditorStage key={sourceSelection?.sourceId ?? "no-source"} />
           {isSourceDragActive ? <DropOverlay /> : null}
         </div>
       </Panel>

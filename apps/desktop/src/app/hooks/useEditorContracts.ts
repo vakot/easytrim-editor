@@ -1,8 +1,8 @@
 import { useContext } from "react";
 
-import { EditorInteractionContext } from "@/app/editor-contracts-context";
-import { useSourceDetails } from "@/app/hooks/useSourceDetails";
-import { useTimelineTools } from "@/app/hooks/useTimelineTools";
+import { EditorInteractionContext } from "@/app/contexts/editor-contracts-context";
+import { useAppSelector } from "@/app/store/hooks";
+import { selectTrim } from "@/app/store/slices/trim-slice";
 
 function useEditorInteraction() {
   const value = useContext(EditorInteractionContext);
@@ -17,12 +17,10 @@ export function usePlayback() {
   return {
     videoRef: interaction.videoRef,
     audioPlayheadRef: interaction.audioPlayheadRef,
-    playheadMicros: interaction.playheadMicros,
     displayedPlayheadMicros: interaction.displayedPlayheadMicros,
     isPlaying: interaction.isPlaying,
     isReady: interaction.isPlaybackReady,
     transportError: interaction.transportError,
-    playbackRate: interaction.playbackRate,
     nativeLoopEnabled: interaction.nativeLoopEnabled,
     videoMuted: interaction.videoMuted,
     onLoadedMetadata: interaction.onLoadedMetadata,
@@ -43,10 +41,10 @@ export function usePlayback() {
 }
 
 export function useTimeline() {
-  const source = useSourceDetails();
   const interaction = useEditorInteraction();
+  const trim = useAppSelector(selectTrim);
   return {
-    trim: source.trim,
+    trim,
     playheadMicros: interaction.displayedPlayheadMicros,
     playheadRef: interaction.playheadRef,
     audioPlayheadRef: interaction.audioPlayheadRef,
@@ -64,5 +62,3 @@ export function useTimeline() {
     onScrubEnd: interaction.onScrubEnd,
   };
 }
-
-export { useSourceDetails, useTimelineTools };

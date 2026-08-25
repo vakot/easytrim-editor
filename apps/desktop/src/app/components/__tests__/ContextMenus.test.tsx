@@ -1,74 +1,100 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import {
+  fireEvent,
+  render as renderWithTestingLibrary,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactElement } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { DEFAULT_TOOL_DEFAULTS, type ToolDefaults } from "@/app/tool-settings";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
-import { AppUpdatesContext } from "@/app/update-context";
+import { AppUpdatesContext } from "@/app/contexts/app-updates-context";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { openExternalUrl } from "@/lib/open-external-url";
-import { STORAGE_KEYS } from "@/lib/storage";
 import { ContextMenus as AppContextMenus } from "../ContextMenus";
 import type { QueueFinishAction } from "@/lib/tauri/queue";
 import packageJson from "../../../../../../package.json";
 
 const menuState = vi.hoisted(() => ({
-  app: {
+  dispatch: vi.fn(),
+  importWorkflow: {
     isChoosingSource: false,
-    hasSource: false,
-    session: {
-      status: "ready" as const,
-      source: null as { selection: { sourceId: string } } | null,
-    },
-    exportQueue: [] as Array<{ status: "queued" | "rendering" }>,
+  },
+  source: {
+    isReady: true,
+    selection: null as { sourceId: string } | null,
+    media: null as Record<string, never> | null,
+  },
+  crop: {
+    value: { x: 0, y: 0, width: 1, height: 1 },
+  },
+  export: {
+    queue: [] as Array<{ status: "queued" | "rendering" }>,
     queueStarted: false,
     queueFinishAction: "nothing" as QueueFinishAction,
     availableQueueFinishActions: ["exit", "nothing"] as QueueFinishAction[],
-    handleChooseSource: vi.fn(),
-    handleCloseFile: vi.fn(),
-    setQueueStarted: vi.fn(),
-    cancelActiveExport: vi.fn(),
-    cancelQueue: vi.fn(),
-    setQueueFinishAction: vi.fn(),
-    handleSetAudioMerge: vi.fn(),
   },
-  sourceDetails: {
-    isReady: true,
-    source: null as { selection: { sourceId: string } } | null,
-    sourceId: null as string | null,
-    crop: { x: 0, y: 0, width: 1, height: 1 },
-  },
-  viewState: {
+  preferences: {
     toolDefaults: {
-      safeTrimFollowingEnabled: true,
+      snapPlaybackEnabled: true,
       loopPlaybackEnabled: true,
       segmentPlaybackEnabled: true,
       mergeAudioEnabled: false,
     } as ToolDefaults,
-    setToolDefault: vi.fn(),
-    resetToolDefaults: vi.fn(),
   },
-  exportPanel: {
-    startFastCut: vi.fn(),
-    openOptimizedDialog: vi.fn(),
+  theme: {
+    preference: "system" as "system" | "light" | "dark",
+    primaryColor: "amber" as string,
+    customPrimaryColor: "#efbf04" as `#${string}`,
   },
 }));
 
-vi.mock("@/app/hooks/useEditorSession", () => ({
-  useEditorSession: () => menuState.app,
-}));
+const defaultAppUpdates = {
+  status: "idle" as const,
+  availableVersion: null,
+  isInstalling: false,
+  checkForUpdates: vi.fn(async () => undefined),
+  installUpdate: vi.fn(async () => undefined),
+};
 
-vi.mock("@/app/hooks/useSourceDetails", () => ({
-  useSourceDetails: () => menuState.sourceDetails,
-}));
+function render(ui: ReactElement) {
+  return renderWithTestingLibrary(
+    <AppUpdatesContext.Provider value={defaultAppUpdates}>{ui}</AppUpdatesContext.Provider>,
+  );
+}
 
-vi.mock("@/app/hooks/useEditorViewState", () => ({
-  useEditorViewState: () => menuState.viewState,
-}));
-
-vi.mock("@/app/hooks/useExportPanelController", () => ({
-  useExportPanelController: () => menuState.exportPanel,
+vi.mock("@/app/store/hooks", () => ({
+  useAppDispatch: () => menuState.dispatch,
+  useAppSelector: (selector: (state: unknown) => unknown) =>
+    selector({
+      preferences: menuState.preferences,
+      theme: menuState.theme,
+      importWorkflow: menuState.importWorkflow,
+      source: {
+        status: menuState.source.selection && menuState.source.isReady ? "ready" : "idle",
+        sourceId: menuState.source.selection?.sourceId ?? null,
+        selection: menuState.source.selection,
+        media: menuState.source.media,
+        error: null,
+        capabilities: { status: "checking" },
+      },
+      crop: menuState.crop,
+      export: {
+        queue: menuState.export.queue,
+        queueStarted: menuState.export.queueStarted,
+        queueFinishAction: menuState.export.queueFinishAction,
+        availableQueueFinishActions: menuState.export.availableQueueFinishActions,
+        optimizedDialogOpen: false,
+        optimizedSettings: null,
+        optimizedPlanRequestId: null,
+        commandPreview: "",
+        commandPreviewError: null,
+        launchError: null,
+      },
+    }),
 }));
 
 vi.mock("@/lib/open-external-url", () => ({
@@ -83,72 +109,81 @@ describe("ContextMenus", () => {
     hasSource?: boolean;
     canSave?: boolean;
     canExport?: boolean;
-    onChooseSource?: () => void;
-    onCloseFile?: () => void;
-    onSave?: () => void;
-    onExport?: () => void;
     queueStarted?: boolean;
     hasQueuedItems?: boolean;
     hasActiveItem?: boolean;
-    onQueueStartedChange?: (enabled: boolean) => void;
-    onCancelActive?: () => void;
-    onCancelQueue?: () => void;
     queueFinishAction?: QueueFinishAction;
     availableQueueFinishActions?: QueueFinishAction[];
-    onQueueFinishActionChange?: (action: QueueFinishAction) => void;
     toolDefaults?: ToolDefaults;
     onToolDefaultChange?: (key: keyof ToolDefaults, enabled: boolean) => void;
     onResetToolDefaults?: () => void;
+    themePreference?: "system" | "light" | "dark";
+    primaryColor?: string;
+    customPrimaryColor?: `#${string}`;
   };
 
   function configureMenuState(overrides: MenuTestOverrides = {}, notify: () => void = () => {}) {
-    menuState.app.isChoosingSource = overrides.isChoosingSource ?? false;
-    menuState.app.hasSource = overrides.hasSource ?? false;
-    menuState.app.session.source = overrides.hasSource
-      ? { selection: { sourceId: "source-id" } }
-      : null;
-    menuState.app.exportQueue = [
-      ...(overrides.hasQueuedItems ? [{ status: "queued" as const }] : []),
-      ...(overrides.hasActiveItem ? [{ status: "rendering" as const }] : []),
-    ];
-    menuState.app.queueStarted = overrides.queueStarted ?? false;
-    menuState.app.queueFinishAction = overrides.queueFinishAction ?? "nothing";
-    menuState.app.availableQueueFinishActions = overrides.availableQueueFinishActions ?? [
-      "exit",
-      "nothing",
-    ];
-    menuState.app.handleChooseSource = vi.fn(overrides.onChooseSource);
-    menuState.app.handleCloseFile = vi.fn(overrides.onCloseFile);
-    menuState.app.setQueueStarted = vi.fn(overrides.onQueueStartedChange);
-    menuState.app.cancelActiveExport = vi.fn(overrides.onCancelActive);
-    menuState.app.cancelQueue = vi.fn(overrides.onCancelQueue);
-    menuState.app.setQueueFinishAction = vi.fn(overrides.onQueueFinishActionChange);
-    menuState.viewState.toolDefaults = overrides.toolDefaults ?? { ...DEFAULT_TOOL_DEFAULTS };
-    const setToolDefault =
-      overrides.onToolDefaultChange ??
-      ((key: keyof ToolDefaults, enabled: boolean) => {
-        menuState.viewState.toolDefaults[key] = enabled;
-      });
-    menuState.viewState.setToolDefault = vi.fn((key: keyof ToolDefaults, enabled: boolean) => {
-      setToolDefault(key, enabled);
-      notify();
-    });
-    const resetToolDefaults =
-      overrides.onResetToolDefaults ??
-      (() => {
-        menuState.viewState.toolDefaults = { ...DEFAULT_TOOL_DEFAULTS };
-      });
-    menuState.viewState.resetToolDefaults = vi.fn(() => {
-      resetToolDefaults();
-      notify();
-    });
-    menuState.sourceDetails.isReady = overrides.canExport ?? true;
-    menuState.sourceDetails.crop =
+    menuState.importWorkflow.isChoosingSource = overrides.isChoosingSource ?? false;
+    menuState.source.selection = overrides.hasSource ? { sourceId: "source-id" } : null;
+    menuState.source.isReady = overrides.canExport ?? true;
+    menuState.source.media = menuState.source.selection && menuState.source.isReady ? {} : null;
+    menuState.crop.value =
       overrides.canSave === false
         ? { x: 0.1, y: 0, width: 0.9, height: 1 }
         : { x: 0, y: 0, width: 1, height: 1 };
-    menuState.exportPanel.startFastCut = vi.fn(overrides.onSave);
-    menuState.exportPanel.openOptimizedDialog = vi.fn(overrides.onExport);
+    menuState.export.queue = [
+      ...(overrides.hasQueuedItems ? [{ status: "queued" as const }] : []),
+      ...(overrides.hasActiveItem ? [{ status: "rendering" as const }] : []),
+    ];
+    menuState.export.queueStarted = overrides.queueStarted ?? false;
+    menuState.export.queueFinishAction = overrides.queueFinishAction ?? "nothing";
+    menuState.export.availableQueueFinishActions = overrides.availableQueueFinishActions ?? [
+      "exit",
+      "nothing",
+    ];
+    menuState.preferences.toolDefaults = overrides.toolDefaults ?? { ...DEFAULT_TOOL_DEFAULTS };
+    menuState.theme.preference = overrides.themePreference ?? "system";
+    menuState.theme.primaryColor = overrides.primaryColor ?? "amber";
+    menuState.theme.customPrimaryColor = overrides.customPrimaryColor ?? "#efbf04";
+    const setToolDefault =
+      overrides.onToolDefaultChange ??
+      ((key: keyof ToolDefaults, enabled: boolean) => {
+        menuState.preferences.toolDefaults[key] = enabled;
+      });
+    const resetToolDefaults =
+      overrides.onResetToolDefaults ??
+      (() => {
+        menuState.preferences.toolDefaults = { ...DEFAULT_TOOL_DEFAULTS };
+      });
+    menuState.dispatch = vi.fn((action: { type: string; payload?: unknown }) => {
+      if (
+        action.type === "preferences/toolDefaultChanged" &&
+        typeof action.payload === "object" &&
+        action.payload !== null &&
+        "key" in action.payload &&
+        "enabled" in action.payload
+      ) {
+        const payload = action.payload as { key: keyof ToolDefaults; enabled: boolean };
+        setToolDefault(payload.key, payload.enabled);
+      }
+      if (action.type === "preferences/toolDefaultsReset") {
+        resetToolDefaults();
+      }
+      if (action.type === "theme/themePreferenceChanged") {
+        menuState.theme.preference = action.payload as "system" | "light" | "dark";
+      }
+      if (action.type === "theme/primaryColorChanged") {
+        menuState.theme.primaryColor = action.payload as string;
+        if ((action.payload as string).startsWith("#")) {
+          menuState.theme.customPrimaryColor = action.payload as `#${string}`;
+        }
+      }
+      if (action.type === "theme/customPrimaryColorChanged") {
+        menuState.theme.primaryColor = action.payload as string;
+        menuState.theme.customPrimaryColor = action.payload as `#${string}`;
+      }
+      notify();
+    });
   }
 
   function ContextMenus(overrides: MenuTestOverrides = {}) {
@@ -158,15 +193,27 @@ describe("ContextMenus", () => {
       configureMenuState(overrides, () => forceUpdate((value) => value + 1));
       initialized.current = true;
     }
-    return <AppContextMenus />;
+    return (
+      <ThemeProvider>
+        <AppContextMenus />
+      </ThemeProvider>
+    );
   }
 
   function renderMenus(overrides: MenuTestOverrides = {}) {
     return render(
       <TooltipProvider>
-        <ThemeProvider>
+        <AppUpdatesContext.Provider
+          value={{
+            status: "idle",
+            availableVersion: null,
+            isInstalling: false,
+            checkForUpdates: vi.fn(),
+            installUpdate: vi.fn(),
+          }}
+        >
           <ContextMenus {...overrides} />
-        </ThemeProvider>
+        </AppUpdatesContext.Provider>
       </TooltipProvider>,
     );
   }
@@ -182,8 +229,7 @@ describe("ContextMenus", () => {
 
   it("shows the opt-in queue start control only when queued work is waiting", async () => {
     const user = userEvent.setup();
-    const onQueueStartedChange = vi.fn();
-    renderMenus({ hasQueuedItems: true, onQueueStartedChange });
+    renderMenus({ hasQueuedItems: true });
 
     await user.click(screen.getByRole("button", { name: "Queue" }));
     const startItem = screen.getByRole("menuitem", { name: /Start queue/ });
@@ -192,13 +238,12 @@ describe("ContextMenus", () => {
     expect(screen.getAllByRole("separator")).toHaveLength(2);
 
     await user.click(startItem);
-    expect(onQueueStartedChange).toHaveBeenCalledWith(true);
+    expect(menuState.dispatch).toHaveBeenCalledWith(expect.any(Function));
   });
 
   it("requires confirmation before canceling the queue", async () => {
     const user = userEvent.setup();
-    const onCancelQueue = vi.fn();
-    renderMenus({ hasQueuedItems: true, hasActiveItem: true, onCancelQueue });
+    renderMenus({ hasQueuedItems: true, hasActiveItem: true });
 
     await user.click(screen.getByRole("button", { name: "Queue" }));
     expect(screen.getByRole("menuitem", { name: "Skip" })).toBeInTheDocument();
@@ -206,19 +251,16 @@ describe("ContextMenus", () => {
 
     await user.click(screen.getByRole("menuitem", { name: "Cancel" }));
     expect(screen.getByRole("heading", { name: "Cancel export queue?" })).toBeInTheDocument();
-    expect(onCancelQueue).not.toHaveBeenCalled();
 
     const cancelButtons = screen.getAllByRole("button", { name: "Cancel" });
     await user.click(cancelButtons[1]!);
-    expect(onCancelQueue).toHaveBeenCalledOnce();
+    expect(menuState.dispatch).toHaveBeenCalledWith(expect.any(Function));
   });
 
   it("selects an available queue finish action", async () => {
     const user = userEvent.setup();
-    const onQueueFinishActionChange = vi.fn();
     renderMenus({
       availableQueueFinishActions: ["exit", "nothing"],
-      onQueueFinishActionChange,
     });
 
     await user.click(screen.getByRole("button", { name: "Queue" }));
@@ -226,7 +268,9 @@ describe("ContextMenus", () => {
     finishItem.focus();
     await user.keyboard("{ArrowRight}");
     await user.click(screen.getByRole("menuitem", { name: "Exit" }));
-    expect(onQueueFinishActionChange).toHaveBeenCalledWith("exit");
+    expect(menuState.dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "export/queueFinishActionChanged", payload: "exit" }),
+    );
   });
 
   it("opens Help links with the current release version", async () => {
@@ -234,14 +278,7 @@ describe("ContextMenus", () => {
     render(
       <TooltipProvider>
         <ThemeProvider>
-          <ContextMenus
-            isChoosingSource={false}
-            canSave
-            canExport
-            onChooseSource={vi.fn()}
-            onSave={vi.fn()}
-            onExport={vi.fn()}
-          />
+          <ContextMenus isChoosingSource={false} canSave canExport />
         </ThemeProvider>
       </TooltipProvider>,
     );
@@ -313,14 +350,7 @@ describe("ContextMenus", () => {
               installUpdate: vi.fn(),
             }}
           >
-            <ContextMenus
-              isChoosingSource={false}
-              canSave
-              canExport
-              onChooseSource={vi.fn()}
-              onSave={vi.fn()}
-              onExport={vi.fn()}
-            />
+            <ContextMenus isChoosingSource={false} canSave canExport />
           </AppUpdatesContext.Provider>
         </ThemeProvider>
       </TooltipProvider>,
@@ -337,14 +367,7 @@ describe("ContextMenus", () => {
     render(
       <TooltipProvider>
         <ThemeProvider>
-          <ContextMenus
-            isChoosingSource={false}
-            canSave
-            canExport
-            onChooseSource={vi.fn()}
-            onSave={vi.fn()}
-            onExport={vi.fn()}
-          />
+          <ContextMenus isChoosingSource={false} canSave canExport />
         </ThemeProvider>
       </TooltipProvider>,
     );
@@ -375,14 +398,7 @@ describe("ContextMenus", () => {
     render(
       <TooltipProvider>
         <ThemeProvider>
-          <ContextMenus
-            isChoosingSource={false}
-            canSave
-            canExport
-            onChooseSource={vi.fn()}
-            onSave={vi.fn()}
-            onExport={vi.fn()}
-          />
+          <ContextMenus isChoosingSource={false} canSave canExport />
         </ThemeProvider>
       </TooltipProvider>,
     );
@@ -403,14 +419,7 @@ describe("ContextMenus", () => {
     render(
       <TooltipProvider>
         <ThemeProvider>
-          <ContextMenus
-            isChoosingSource={false}
-            canSave
-            canExport
-            onChooseSource={vi.fn()}
-            onSave={vi.fn()}
-            onExport={vi.fn()}
-          />
+          <ContextMenus isChoosingSource={false} canSave canExport />
         </ThemeProvider>
       </TooltipProvider>,
     );
@@ -435,11 +444,8 @@ describe("ContextMenus", () => {
             isChoosingSource={false}
             canSave
             canExport
-            onChooseSource={vi.fn()}
-            onSave={vi.fn()}
-            onExport={vi.fn()}
             toolDefaults={{
-              safeTrimFollowingEnabled: false,
+              snapPlaybackEnabled: false,
               loopPlaybackEnabled: false,
               segmentPlaybackEnabled: false,
               mergeAudioEnabled: false,
@@ -476,14 +482,7 @@ describe("ContextMenus", () => {
               installUpdate: vi.fn(),
             }}
           >
-            <ContextMenus
-              isChoosingSource={false}
-              canSave
-              canExport
-              onChooseSource={vi.fn()}
-              onSave={vi.fn()}
-              onExport={vi.fn()}
-            />
+            <ContextMenus isChoosingSource={false} canSave canExport />
           </AppUpdatesContext.Provider>
         </ThemeProvider>
       </TooltipProvider>,
@@ -497,20 +496,10 @@ describe("ContextMenus", () => {
 
   it("opens the File menu with its action and hotkey hint", async () => {
     const user = userEvent.setup();
-    const onCloseFile = vi.fn();
     render(
       <TooltipProvider>
         <ThemeProvider>
-          <ContextMenus
-            isChoosingSource={false}
-            hasSource
-            canSave
-            canExport
-            onChooseSource={vi.fn()}
-            onCloseFile={onCloseFile}
-            onSave={vi.fn()}
-            onExport={vi.fn()}
-          />
+          <ContextMenus isChoosingSource={false} hasSource canSave canExport />
         </ThemeProvider>
       </TooltipProvider>,
     );
@@ -533,7 +522,7 @@ describe("ContextMenus", () => {
     const closeFileItem = screen.getByRole("menuitem", { name: /Close File/ });
     expect(closeFileItem).toHaveTextContent("Ctrl+Q");
     await user.click(closeFileItem);
-    expect(onCloseFile).toHaveBeenCalledOnce();
+    expect(menuState.dispatch).toHaveBeenCalledTimes(2);
   });
 
   it("keeps Theme and Language metadata visible for every submenu option", async () => {
@@ -541,14 +530,7 @@ describe("ContextMenus", () => {
     render(
       <TooltipProvider>
         <ThemeProvider>
-          <ContextMenus
-            isChoosingSource={false}
-            canSave
-            canExport
-            onChooseSource={vi.fn()}
-            onSave={vi.fn()}
-            onExport={vi.fn()}
-          />
+          <ContextMenus isChoosingSource={false} canSave canExport />
         </ThemeProvider>
       </TooltipProvider>,
     );
@@ -607,10 +589,6 @@ describe("ContextMenus", () => {
 
   it("shows hex values and accepts custom input as soon as it is valid", async () => {
     const user = userEvent.setup();
-    localStorage.setItem(
-      STORAGE_KEYS.preferences,
-      JSON.stringify({ primaryColor: "blue", customPrimaryColor: "#123456" }),
-    );
     render(
       <TooltipProvider>
         <ThemeProvider>
@@ -618,9 +596,8 @@ describe("ContextMenus", () => {
             isChoosingSource={false}
             canSave
             canExport
-            onChooseSource={vi.fn()}
-            onSave={vi.fn()}
-            onExport={vi.fn()}
+            primaryColor="blue"
+            customPrimaryColor="#123456"
           />
         </ThemeProvider>
       </TooltipProvider>,
@@ -649,7 +626,7 @@ describe("ContextMenus", () => {
     await user.click(screen.getByRole("menuitem", { name: /Amber/ }));
     expect(screen.getByRole("menuitem", { name: /Amber/ })).toBeInTheDocument();
 
-    await user.click(customItem);
+    await user.click(screen.getByRole("menuitem", { name: /Custom/ }));
     expect(document.documentElement).toHaveAttribute("data-primary-color", "#123456");
 
     const spectrum = await screen.findByRole("button", { name: /Theme color spectrum/ });
@@ -705,14 +682,7 @@ describe("ContextMenus", () => {
     render(
       <TooltipProvider>
         <ThemeProvider>
-          <ContextMenus
-            isChoosingSource={false}
-            canSave
-            canExport
-            onChooseSource={vi.fn()}
-            onSave={vi.fn()}
-            onExport={vi.fn()}
-          />
+          <ContextMenus isChoosingSource={false} canSave canExport />
         </ThemeProvider>
       </TooltipProvider>,
     );
@@ -736,19 +706,60 @@ describe("ContextMenus", () => {
     });
   });
 
+  it("closes the active menu on the first outside click after hovering to another menu", async () => {
+    const user = userEvent.setup();
+    renderMenus();
+
+    await user.click(screen.getByRole("button", { name: "File" }));
+    for (const menuName of ["View", "Queue", "Settings", "Help"]) {
+      await user.hover(screen.getByRole("button", { name: menuName }));
+    }
+
+    await waitFor(() => {
+      expect(screen.getByRole("menuitem", { name: /Check for Updates/ })).toBeInTheDocument();
+    });
+
+    await user.click(document.body);
+
+    expect(screen.queryByRole("menuitem", { name: /Check for Updates/ })).not.toBeInTheDocument();
+  });
+
+  it("does not focus the previous trigger while switching menus with the pointer", async () => {
+    const user = userEvent.setup();
+    renderMenus();
+
+    const fileButton = screen.getByRole("button", { name: "File" });
+    const viewButton = screen.getByRole("button", { name: "View" });
+    const queueButton = screen.getByRole("button", { name: "Queue" });
+
+    await user.click(fileButton);
+    await user.hover(viewButton);
+    expect(fileButton).not.toHaveFocus();
+
+    await user.hover(queueButton);
+    expect(viewButton).not.toHaveFocus();
+  });
+
+  it("restores focus to the trigger after closing a keyboard-opened menu", async () => {
+    const user = userEvent.setup();
+    renderMenus();
+
+    const fileButton = screen.getByRole("button", { name: "File" });
+    fileButton.focus();
+    await user.keyboard("{Enter}");
+    expect(screen.getByRole("menuitem", { name: /Open File/ })).toBeInTheDocument();
+
+    await user.keyboard("{Escape}");
+
+    expect(fileButton).toHaveFocus();
+  });
+
   it("switches between submenus immediately on hover", async () => {
     const user = userEvent.setup();
     render(
       <TooltipProvider>
         <ThemeProvider>
-          <ContextMenus
-            isChoosingSource={false}
-            canSave
-            canExport
-            onChooseSource={vi.fn()}
-            onSave={vi.fn()}
-            onExport={vi.fn()}
-          />
+          <ContextMenus isChoosingSource={false} canSave canExport />
         </ThemeProvider>
       </TooltipProvider>,
     );
