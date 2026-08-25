@@ -1,0 +1,11 @@
+import { useContext } from "react";
+
+import { ExportPanelControllerContext } from "@/app/export-panel-context";
+
+export function useExportPanelController() {
+  const value = useContext(ExportPanelControllerContext);
+  if (!value) {
+    throw new Error("useExportPanelController must be used within ExportPanelControllerProvider.");
+  }
+  return value;
+}

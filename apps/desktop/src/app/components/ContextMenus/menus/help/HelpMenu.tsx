@@ -13,6 +13,7 @@ import { BrandIcon } from "@/components/BrandIcon";
 import { githubBrandIcon, kofiBrandIcon } from "@/components/brand-icons";
 import { ContextMenu } from "@/components/ui/context-menu";
 import { openExternalUrl } from "@/lib/open-external-url";
+import packageJson from "../../../../../../../../package.json";
 
 import type { MenuNavigation } from "../../types";
 
@@ -20,12 +21,7 @@ const CHANGELOG_URL = "https://github.com/vakot/easytrim-editor/releases";
 const PROJECT_PAGE_URL = "https://github.com/vakot/easytrim-editor";
 const SUPPORT_PROJECT_URL = "https://ko-fi.com/vakot";
 
-interface HelpMenuProps {
-  navigation: MenuNavigation;
-  version: string;
-}
-
-export function HelpMenu({ navigation, version }: HelpMenuProps) {
+export function HelpMenu({ navigation }: { navigation: MenuNavigation }) {
   const { t } = useTranslation();
   const {
     status: updateStatus,
@@ -90,9 +86,10 @@ export function HelpMenu({ navigation, version }: HelpMenuProps) {
         { id: "help-divider-version", separator: true },
         {
           id: "version",
-          children: t("app.topBarMenus.version", { version }),
+          children: t("app.topBarMenus.version", { version: packageJson.version }),
           icon: <ExternalLink className="size-3" aria-hidden="true" />,
-          onSelect: () => void openExternalUrl(`${PROJECT_PAGE_URL}/releases/tag/v${version}`),
+          onSelect: () =>
+            void openExternalUrl(`${PROJECT_PAGE_URL}/releases/tag/v${packageJson.version}`),
         },
       ]}
     >

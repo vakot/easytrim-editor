@@ -1,33 +1,24 @@
 import { useTranslation } from "react-i18next";
 
+import { useEditorSession } from "@/app/hooks/useEditorSession";
+import { useExportPanelController } from "@/app/hooks/useExportPanelController";
+import { useSourceDetails } from "@/app/hooks/useSourceDetails";
 import { ContextMenu } from "@/components/ui/context-menu";
 
 import type { MenuNavigation } from "../../types";
 
-interface FileMenuProps {
-  navigation: MenuNavigation;
-  isChoosingSource: boolean;
-  hasSource: boolean;
-  canSave: boolean;
-  canExport: boolean;
-  onChooseSource: () => void;
-  onCloseFile: () => void;
-  onSave: () => void;
-  onExport: () => void;
-}
-
-export function FileMenu({
-  navigation,
-  isChoosingSource,
-  hasSource,
-  canSave,
-  canExport,
-  onChooseSource,
-  onCloseFile,
-  onSave,
-  onExport,
-}: FileMenuProps) {
+export function FileMenu({ navigation }: { navigation: MenuNavigation }) {
   const { t } = useTranslation();
+  const app = useEditorSession();
+  const sourceDetails = useSourceDetails();
+  const exportPanel = useExportPanelController();
+  const canExport = sourceDetails.isReady;
+  const cropApplied =
+    sourceDetails.crop.x !== 0 ||
+    sourceDetails.crop.y !== 0 ||
+    sourceDetails.crop.width !== 1 ||
+    sourceDetails.crop.height !== 1;
+  const canSave = canExport && !cropApplied;
 
   return (
     <ContextMenu
@@ -37,15 +28,15 @@ export function FileMenu({
           id: "open-file",
           children: t("app.topBarMenus.openFile"),
           suffix: "Ctrl+O",
-          disabled: isChoosingSource,
-          onSelect: onChooseSource,
+          disabled: app.isChoosingSource,
+          onSelect: () => void app.handleChooseSource(),
         },
         {
           id: "close-file",
           children: t("app.topBarMenus.closeFile"),
           suffix: "Ctrl+Q",
-          disabled: !hasSource,
-          onSelect: onCloseFile,
+          disabled: !app.hasSource,
+          onSelect: app.handleCloseFile,
         },
         { id: "file-divider", separator: true },
         {
@@ -53,14 +44,14 @@ export function FileMenu({
           children: t("app.topBarMenus.saveLosslessCut"),
           suffix: "Ctrl+S",
           disabled: !canSave,
-          onSelect: onSave,
+          onSelect: exportPanel.startFastCut,
         },
         {
           id: "optimize-export",
           children: t("app.topBarMenus.optimizeExport"),
           suffix: "Ctrl+E",
           disabled: !canExport,
-          onSelect: onExport,
+          onSelect: exportPanel.openOptimizedDialog,
         },
       ]}
     >
