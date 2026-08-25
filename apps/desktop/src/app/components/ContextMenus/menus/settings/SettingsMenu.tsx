@@ -1,14 +1,10 @@
 import { BetweenVerticalStart, Languages, Magnet, Merge, Repeat, RotateCcw } from "lucide-react";
-import { useRef, useState, type ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
-import {
-  DEFAULT_TOOL_DEFAULTS,
-  loadToolDefaults,
-  persistToolDefaults,
-  type ToolDefaultKey,
-  type ToolDefaults,
-} from "@/app/tool-settings";
+import { DEFAULT_TOOL_DEFAULTS, type ToolDefaultKey } from "@/app/tool-settings";
+import { useEditorSession } from "@/app/hooks/useEditorSession";
+import { useEditorViewState } from "@/app/hooks/useEditorViewState";
 import { ContextMenu, type ContextMenuOption } from "@/components/ui/context-menu";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -16,44 +12,28 @@ import { isSupportedLanguage, type SupportedLanguage } from "@/i18n/resources";
 
 import type { MenuNavigation } from "../../types";
 
-interface SettingsMenuProps {
-  navigation: MenuNavigation;
-  toolDefaults?: ToolDefaults;
-  onToolDefaultChange?: (key: ToolDefaultKey, enabled: boolean) => void;
-  onResetToolDefaults?: () => void;
-}
-
-export function SettingsMenu({
-  navigation,
-  toolDefaults: controlledToolDefaults,
-  onToolDefaultChange: controlledToolDefaultChange,
-  onResetToolDefaults: controlledResetToolDefaults,
-}: SettingsMenuProps) {
+export function SettingsMenu({ navigation }: { navigation: MenuNavigation }) {
   const { t, i18n } = useTranslation();
-  const [fallbackToolDefaults, setFallbackToolDefaults] = useState<ToolDefaults>(loadToolDefaults);
+  const app = useEditorSession();
+  const { toolDefaults, setToolDefault, resetToolDefaults } = useEditorViewState();
   const switchInteractionRef = useRef(false);
-  const toolDefaults = controlledToolDefaults ?? fallbackToolDefaults;
   const currentLanguage = isSupportedLanguage(i18n.resolvedLanguage) ? i18n.resolvedLanguage : "en";
 
-  const setToolDefault = (key: ToolDefaultKey, enabled: boolean) => {
-    if (controlledToolDefaultChange) {
-      controlledToolDefaultChange(key, enabled);
-      return;
+  const updateToolDefault = (key: ToolDefaultKey, enabled: boolean) => {
+    setToolDefault(key, enabled);
+    if (key === "mergeAudioEnabled" && app.session.source) {
+      app.handleSetAudioMerge(app.session.source.selection.sourceId, enabled);
     }
-    setFallbackToolDefaults((current) => {
-      const next = { ...current, [key]: enabled };
-      persistToolDefaults(next);
-      return next;
-    });
   };
 
-  const resetToolDefaults = () => {
-    if (controlledResetToolDefaults) {
-      controlledResetToolDefaults();
-      return;
+  const resetDefaults = () => {
+    resetToolDefaults();
+    if (app.session.source) {
+      app.handleSetAudioMerge(
+        app.session.source.selection.sourceId,
+        DEFAULT_TOOL_DEFAULTS.mergeAudioEnabled,
+      );
     }
-    setFallbackToolDefaults(DEFAULT_TOOL_DEFAULTS);
-    persistToolDefaults(DEFAULT_TOOL_DEFAULTS);
   };
 
   const settingsToolOption = (
@@ -72,7 +52,7 @@ export function SettingsMenu({
             <Switch
               size="sm"
               checked={toolDefaults[key]}
-              onCheckedChange={(enabled) => setToolDefault(key, enabled)}
+              onCheckedChange={(enabled) => updateToolDefault(key, enabled)}
               onClick={(event) => event.stopPropagation()}
               onKeyDown={() => {
                 switchInteractionRef.current = true;
@@ -97,7 +77,7 @@ export function SettingsMenu({
         switchInteractionRef.current = false;
         return;
       }
-      setToolDefault(key, !toolDefaults[key]);
+      updateToolDefault(key, !toolDefaults[key]);
     },
   });
 
@@ -144,7 +124,7 @@ export function SettingsMenu({
           children: t("app.settings.resetToDefault"),
           icon: <RotateCcw className="size-3" aria-hidden="true" />,
           shouldCloseOnClick: false,
-          onSelect: resetToolDefaults,
+          onSelect: resetDefaults,
         },
         { id: "settings-language-divider", separator: true },
         {

@@ -1,15 +1,75 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { ComponentProps } from "react";
+import { useRef, useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 
+import { DEFAULT_TOOL_DEFAULTS, type ToolDefaults } from "@/app/tool-settings";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import { AppUpdatesContext } from "@/app/update-context";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { openExternalUrl } from "@/lib/open-external-url";
 import { STORAGE_KEYS } from "@/lib/storage";
-import { ContextMenus } from "../ContextMenus";
+import { ContextMenus as AppContextMenus } from "../ContextMenus";
+import type { QueueFinishAction } from "@/lib/tauri/queue";
 import packageJson from "../../../../../../package.json";
+
+const menuState = vi.hoisted(() => ({
+  app: {
+    isChoosingSource: false,
+    hasSource: false,
+    session: {
+      status: "ready" as const,
+      source: null as { selection: { sourceId: string } } | null,
+    },
+    exportQueue: [] as Array<{ status: "queued" | "rendering" }>,
+    queueStarted: false,
+    queueFinishAction: "nothing" as QueueFinishAction,
+    availableQueueFinishActions: ["exit", "nothing"] as QueueFinishAction[],
+    handleChooseSource: vi.fn(),
+    handleCloseFile: vi.fn(),
+    setQueueStarted: vi.fn(),
+    cancelActiveExport: vi.fn(),
+    cancelQueue: vi.fn(),
+    setQueueFinishAction: vi.fn(),
+    handleSetAudioMerge: vi.fn(),
+  },
+  sourceDetails: {
+    isReady: true,
+    source: null as { selection: { sourceId: string } } | null,
+    sourceId: null as string | null,
+    crop: { x: 0, y: 0, width: 1, height: 1 },
+  },
+  viewState: {
+    toolDefaults: {
+      safeTrimFollowingEnabled: true,
+      loopPlaybackEnabled: true,
+      segmentPlaybackEnabled: true,
+      mergeAudioEnabled: false,
+    } as ToolDefaults,
+    setToolDefault: vi.fn(),
+    resetToolDefaults: vi.fn(),
+  },
+  exportPanel: {
+    startFastCut: vi.fn(),
+    openOptimizedDialog: vi.fn(),
+  },
+}));
+
+vi.mock("@/app/hooks/useEditorSession", () => ({
+  useEditorSession: () => menuState.app,
+}));
+
+vi.mock("@/app/hooks/useSourceDetails", () => ({
+  useSourceDetails: () => menuState.sourceDetails,
+}));
+
+vi.mock("@/app/hooks/useEditorViewState", () => ({
+  useEditorViewState: () => menuState.viewState,
+}));
+
+vi.mock("@/app/hooks/useExportPanelController", () => ({
+  useExportPanelController: () => menuState.exportPanel,
+}));
 
 vi.mock("@/lib/open-external-url", () => ({
   openExternalUrl: vi.fn(),
@@ -18,19 +78,94 @@ vi.mock("@/lib/open-external-url", () => ({
 describe("ContextMenus", () => {
   const versionMenuLabel = `Version ${packageJson.version}`;
 
-  function renderMenus(overrides: Partial<ComponentProps<typeof ContextMenus>> = {}) {
+  type MenuTestOverrides = {
+    isChoosingSource?: boolean;
+    hasSource?: boolean;
+    canSave?: boolean;
+    canExport?: boolean;
+    onChooseSource?: () => void;
+    onCloseFile?: () => void;
+    onSave?: () => void;
+    onExport?: () => void;
+    queueStarted?: boolean;
+    hasQueuedItems?: boolean;
+    hasActiveItem?: boolean;
+    onQueueStartedChange?: (enabled: boolean) => void;
+    onCancelActive?: () => void;
+    onCancelQueue?: () => void;
+    queueFinishAction?: QueueFinishAction;
+    availableQueueFinishActions?: QueueFinishAction[];
+    onQueueFinishActionChange?: (action: QueueFinishAction) => void;
+    toolDefaults?: ToolDefaults;
+    onToolDefaultChange?: (key: keyof ToolDefaults, enabled: boolean) => void;
+    onResetToolDefaults?: () => void;
+  };
+
+  function configureMenuState(overrides: MenuTestOverrides = {}, notify: () => void = () => {}) {
+    menuState.app.isChoosingSource = overrides.isChoosingSource ?? false;
+    menuState.app.hasSource = overrides.hasSource ?? false;
+    menuState.app.session.source = overrides.hasSource
+      ? { selection: { sourceId: "source-id" } }
+      : null;
+    menuState.app.exportQueue = [
+      ...(overrides.hasQueuedItems ? [{ status: "queued" as const }] : []),
+      ...(overrides.hasActiveItem ? [{ status: "rendering" as const }] : []),
+    ];
+    menuState.app.queueStarted = overrides.queueStarted ?? false;
+    menuState.app.queueFinishAction = overrides.queueFinishAction ?? "nothing";
+    menuState.app.availableQueueFinishActions = overrides.availableQueueFinishActions ?? [
+      "exit",
+      "nothing",
+    ];
+    menuState.app.handleChooseSource = vi.fn(overrides.onChooseSource);
+    menuState.app.handleCloseFile = vi.fn(overrides.onCloseFile);
+    menuState.app.setQueueStarted = vi.fn(overrides.onQueueStartedChange);
+    menuState.app.cancelActiveExport = vi.fn(overrides.onCancelActive);
+    menuState.app.cancelQueue = vi.fn(overrides.onCancelQueue);
+    menuState.app.setQueueFinishAction = vi.fn(overrides.onQueueFinishActionChange);
+    menuState.viewState.toolDefaults = overrides.toolDefaults ?? { ...DEFAULT_TOOL_DEFAULTS };
+    const setToolDefault =
+      overrides.onToolDefaultChange ??
+      ((key: keyof ToolDefaults, enabled: boolean) => {
+        menuState.viewState.toolDefaults[key] = enabled;
+      });
+    menuState.viewState.setToolDefault = vi.fn((key: keyof ToolDefaults, enabled: boolean) => {
+      setToolDefault(key, enabled);
+      notify();
+    });
+    const resetToolDefaults =
+      overrides.onResetToolDefaults ??
+      (() => {
+        menuState.viewState.toolDefaults = { ...DEFAULT_TOOL_DEFAULTS };
+      });
+    menuState.viewState.resetToolDefaults = vi.fn(() => {
+      resetToolDefaults();
+      notify();
+    });
+    menuState.sourceDetails.isReady = overrides.canExport ?? true;
+    menuState.sourceDetails.crop =
+      overrides.canSave === false
+        ? { x: 0.1, y: 0, width: 0.9, height: 1 }
+        : { x: 0, y: 0, width: 1, height: 1 };
+    menuState.exportPanel.startFastCut = vi.fn(overrides.onSave);
+    menuState.exportPanel.openOptimizedDialog = vi.fn(overrides.onExport);
+  }
+
+  function ContextMenus(overrides: MenuTestOverrides = {}) {
+    const [, forceUpdate] = useState(0);
+    const initialized = useRef(false);
+    if (!initialized.current) {
+      configureMenuState(overrides, () => forceUpdate((value) => value + 1));
+      initialized.current = true;
+    }
+    return <AppContextMenus />;
+  }
+
+  function renderMenus(overrides: MenuTestOverrides = {}) {
     return render(
       <TooltipProvider>
         <ThemeProvider>
-          <ContextMenus
-            isChoosingSource={false}
-            canSave
-            canExport
-            onChooseSource={vi.fn()}
-            onSave={vi.fn()}
-            onExport={vi.fn()}
-            {...overrides}
-          />
+          <ContextMenus {...overrides} />
         </ThemeProvider>
       </TooltipProvider>,
     );
