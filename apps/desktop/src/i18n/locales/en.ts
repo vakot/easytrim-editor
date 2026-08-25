@@ -96,6 +96,7 @@ export const en = {
       showLeftPane: "Show left pane",
       hideBottomPane: "Hide bottom pane",
       showBottomPane: "Show bottom pane",
+      resetLayout: "Reset editor layout",
     },
     windowControls: {
       titleBar: "Window title bar",

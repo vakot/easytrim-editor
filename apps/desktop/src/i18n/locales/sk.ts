@@ -101,6 +101,7 @@ export const sk = {
       showLeftPane: "Zobraziť ľavý panel",
       hideBottomPane: "Skryť spodný panel",
       showBottomPane: "Zobraziť spodný panel",
+      resetLayout: "Obnoviť rozloženie editora",
     },
     windowControls: {
       titleBar: "Titulkový panel okna",

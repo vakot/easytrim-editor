@@ -5,7 +5,6 @@ import { StatusBar } from "@/app/components/StatusBar";
 import { CapabilityStatus, SourceWorkspace } from "@/features/import-source/SourceWorkspace";
 import { useTranslation } from "react-i18next";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
-import { EditorViewStateProvider } from "@/app/editor-view-state";
 import { CustomTitleBar } from "@/app/components/CustomTitleBar";
 import { PanelVisibilityControls } from "@/app/components/PanelVisibilityControls";
 import { ContextMenus } from "@/app/components/ContextMenus";
@@ -85,15 +84,13 @@ function App() {
       <ThemeProvider>
         <ReduxProvider store={store}>
           <PersistGate loading={null} persistor={persistor}>
-            <EditorViewStateProvider>
-              <EditorSessionProvider>
-                <ExportPanelControllerProvider>
-                  <EditorContractsProvider>
-                    <EasyTrimEditorApp />
-                  </EditorContractsProvider>
-                </ExportPanelControllerProvider>
-              </EditorSessionProvider>
-            </EditorViewStateProvider>
+            <EditorSessionProvider>
+              <ExportPanelControllerProvider>
+                <EditorContractsProvider>
+                  <EasyTrimEditorApp />
+                </EditorContractsProvider>
+              </ExportPanelControllerProvider>
+            </EditorSessionProvider>
           </PersistGate>
         </ReduxProvider>
       </ThemeProvider>

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Group, Panel, usePanelRef } from "react-resizable-panels";
 
 import { PanelSeparator } from "@/components/PanelSeparator";
@@ -6,7 +6,13 @@ import { EditorStage } from "@/features/editor";
 import { DropOverlay } from "./components/DropOverlay";
 import { SourceSidebar } from "./components/SourceSidebar";
 import { useTranslation } from "react-i18next";
-import { useEditorViewState } from "@/app/hooks/useEditorViewState";
+import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
+import {
+  selectShowSourceDetails,
+  selectWorkspaceLayout,
+  sourceDetailsVisibilityChanged,
+  workspaceLayoutChanged,
+} from "@/app/store/slices/editor-layout-slice";
 import { useEditorSession } from "@/app/hooks/useEditorSession";
 import { PanelContent } from "@/components/PanelContent";
 
@@ -16,9 +22,11 @@ export function SourceWorkspace() {
   const { t } = useTranslation();
   const app = useEditorSession();
   const { session, isSourceDragActive, exportQueue } = app;
-  const { showSourceDetails, setShowSourceDetails, workspaceLayout, setWorkspaceLayout } =
-    useEditorViewState();
+  const dispatch = useAppDispatch();
+  const showSourceDetails = useAppSelector(selectShowSourceDetails);
+  const workspaceLayout = useAppSelector(selectWorkspaceLayout);
   const sourceDetailsPanelRef = usePanelRef();
+  const previousWorkspaceLayout = useRef(workspaceLayout);
 
   useEffect(() => {
     const panel = sourceDetailsPanelRef.current;
@@ -31,11 +39,18 @@ export function SourceWorkspace() {
     }
   }, [showSourceDetails, sourceDetailsPanelRef]);
 
+  useEffect(() => {
+    if (workspaceLayout === undefined && previousWorkspaceLayout.current !== undefined) {
+      sourceDetailsPanelRef.current?.resize("20rem");
+    }
+    previousWorkspaceLayout.current = workspaceLayout;
+  }, [sourceDetailsPanelRef, workspaceLayout]);
+
   return (
     <Group
       id="editor-workspace-panels"
       defaultLayout={workspaceLayout}
-      onLayoutChanged={setWorkspaceLayout}
+      onLayoutChanged={(layout) => dispatch(workspaceLayoutChanged(layout))}
       orientation="horizontal"
       resizeTargetMinimumSize={{ fine: 8, coarse: 24 }}
       aria-label={t("import.source.workspace")}
@@ -50,7 +65,7 @@ export function SourceWorkspace() {
         maxSize="30rem"
         onResize={(size) => {
           const isCollapsed = sourceDetailsPanelRef.current?.isCollapsed() ?? size.inPixels <= 0;
-          setShowSourceDetails(!isCollapsed);
+          dispatch(sourceDetailsVisibilityChanged(!isCollapsed));
         }}
         groupResizeBehavior="preserve-pixel-size"
         className="min-h-0 min-w-0 overflow-hidden"

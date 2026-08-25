@@ -13,6 +13,7 @@ import {
   createEditorToolsStateFromPreferences,
   editorToolsInitialized,
 } from "../app/store/slices/editor-tools-slice";
+import { editorLayoutReset } from "../app/store/slices/editor-layout-slice";
 import { DEFAULT_TOOL_DEFAULTS } from "../app/tool-settings";
 
 const mocks = vi.hoisted(() => ({
@@ -139,6 +140,7 @@ function installAudioMocks(initiallyReady = true) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  store.dispatch(editorLayoutReset());
   store.dispatch(
     editorToolsInitialized(createEditorToolsStateFromPreferences(DEFAULT_TOOL_DEFAULTS)),
   );
@@ -687,6 +689,28 @@ describe("App", () => {
     expect(document.getElementById("preview-timeline-resize-handle")).toHaveAttribute(
       "aria-hidden",
       "false",
+    );
+  });
+
+  it("resets editor panel visibility from the panel controls", async () => {
+    mocks.chooseSource.mockResolvedValue(selection);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await openSourcePicker(user);
+    await screen.findByRole("heading", { name: "holiday.mp4" });
+    await user.click(screen.getByRole("button", { name: "Hide left pane" }));
+    await user.click(screen.getByRole("button", { name: "Hide bottom pane" }));
+
+    await user.click(screen.getByRole("button", { name: "Reset editor layout" }));
+
+    expect(screen.getByRole("button", { name: "Hide left pane" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByRole("button", { name: "Hide bottom pane" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
     );
   });
 
