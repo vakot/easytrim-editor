@@ -24,6 +24,7 @@ const navigation = {
   open: true,
   onOpenChange: vi.fn(),
   onTriggerPointerEnter: vi.fn(),
+  onTriggerPointerLeave: vi.fn(),
 };
 
 afterEach(() => {

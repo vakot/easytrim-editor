@@ -108,6 +108,7 @@ export function ViewMenu({ navigation }: ViewMenuProps) {
         navigation.onOpenChange(isOpen);
       }}
       onTriggerPointerEnter={navigation.onTriggerPointerEnter}
+      onTriggerPointerLeave={navigation.onTriggerPointerLeave}
       options={[
         {
           id: "theme",
