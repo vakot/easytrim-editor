@@ -7,14 +7,18 @@ import { useAppUpdates } from "@/app/hooks/useAppUpdates";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import packageJson from "../../../../../package.json";
-import { formatExportDuration, formatExportFileSize, type ExportToast } from "@/features/export";
-import { selectStatusBarExport } from "./status-bar-utils";
+import packageJson from "../../../../../../package.json";
+import { formatExportDuration, formatExportFileSize } from "@/features/export";
+import { useAppSelector } from "@/app/store/hooks";
+import { selectExportQueue } from "@/app/store/slices/export-slice";
+import type { ExportQueueItem } from "@/app/store/slices/export-slice";
+import { selectStatusBarExport, splitFilePath } from "./utils";
 
-export function StatusBar({ queue }: { queue: ExportToast[] }) {
+export function StatusBar() {
   const { t } = useTranslation();
+  const queue = useAppSelector(selectExportQueue);
   const selectedExport = selectStatusBarExport(queue);
-  const [rememberedExport, setRememberedExport] = useState<ExportToast | null>(
+  const [rememberedExport, setRememberedExport] = useState<ExportQueueItem | null>(
     selectedExport ?? null,
   );
   useEffect(() => {
@@ -203,14 +207,4 @@ function getUpdateButtonAction(
   }
 
   return null;
-}
-
-function splitFilePath(path: string) {
-  const separatorIndex = Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\"));
-  if (separatorIndex < 0) return { directory: "", filename: path };
-
-  return {
-    directory: path.slice(0, separatorIndex + 1),
-    filename: path.slice(separatorIndex + 1),
-  };
 }

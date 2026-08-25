@@ -2,7 +2,19 @@ import { CircleStop, LogOut, Moon, Play, Power } from "lucide-react";
 import { useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
-import { useEditorSession } from "@/app/hooks/useEditorSession";
+import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
+import {
+  queueFinishActionChanged,
+  selectAvailableQueueFinishActions,
+  selectExportQueue,
+  selectQueueFinishAction,
+  selectQueueStarted,
+} from "@/app/store/slices/export-slice";
+import {
+  cancelActiveExportRequested,
+  cancelAllExportsRequested,
+  startExportQueue,
+} from "@/app/store/thunks/export-thunks";
 import { Button } from "@/components/ui/button";
 import { ContextMenu, type ContextMenuOption } from "@/components/ui/context-menu";
 import {
@@ -20,12 +32,15 @@ import type { MenuNavigation } from "../../types";
 
 export function QueueMenu({ navigation }: { navigation: MenuNavigation }) {
   const { t } = useTranslation();
-  const app = useEditorSession();
+  const dispatch = useAppDispatch();
   const [isCancelQueueConfirmOpen, setIsCancelQueueConfirmOpen] = useState(false);
   const queueSwitchInteractionRef = useRef(false);
-  const queueStarted = app.queueStarted;
-  const hasQueuedItems = app.exportQueue.some((toast) => toast.status === "queued");
-  const hasActiveItem = app.exportQueue.some((toast) => toast.status === "rendering");
+  const queue = useAppSelector(selectExportQueue);
+  const queueStarted = useAppSelector(selectQueueStarted);
+  const queueFinishAction = useAppSelector(selectQueueFinishAction);
+  const availableQueueFinishActions = useAppSelector(selectAvailableQueueFinishActions);
+  const hasQueuedItems = queue.some((toast) => toast.status === "queued");
+  const hasActiveItem = queue.some((toast) => toast.status === "rendering");
   const queueFinishLabels: Record<QueueFinishAction, string> = {
     exit: t("app.queue.finish.exit"),
     systemSleep: t("app.queue.finish.systemSleep"),
@@ -38,13 +53,13 @@ export function QueueMenu({ navigation }: { navigation: MenuNavigation }) {
     systemShutdown: <Power className="size-3" aria-hidden="true" />,
     nothing: <CircleStop className="size-3" aria-hidden="true" />,
   };
-  const queueFinishOptions: ContextMenuOption[] = app.availableQueueFinishActions.map((action) => ({
+  const queueFinishOptions: ContextMenuOption[] = availableQueueFinishActions.map((action) => ({
     id: `queue-finish-${action}`,
     children: queueFinishLabels[action],
     icon: queueFinishIcons[action],
-    selected: action === app.queueFinishAction,
+    selected: action === queueFinishAction,
     shouldCloseOnClick: false,
-    onSelect: () => app.setQueueFinishAction(action),
+    onSelect: () => dispatch(queueFinishActionChanged(action)),
   }));
   const startQueueOptions: ContextMenuOption[] =
     hasQueuedItems && !queueStarted
@@ -60,7 +75,9 @@ export function QueueMenu({ navigation }: { navigation: MenuNavigation }) {
                   size="sm"
                   checked={queueStarted}
                   aria-label={t("app.queue.start")}
-                  onCheckedChange={app.setQueueStarted}
+                  onCheckedChange={(enabled) => {
+                    if (enabled) void dispatch(startExportQueue());
+                  }}
                   onClick={(event) => event.stopPropagation()}
                   onKeyDown={() => {
                     queueSwitchInteractionRef.current = true;
@@ -78,7 +95,7 @@ export function QueueMenu({ navigation }: { navigation: MenuNavigation }) {
                 queueSwitchInteractionRef.current = false;
                 return;
               }
-              app.setQueueStarted(true);
+              void dispatch(startExportQueue());
             },
           },
           { id: "queue-start-divider", separator: true },
@@ -96,7 +113,7 @@ export function QueueMenu({ navigation }: { navigation: MenuNavigation }) {
             children: t("app.queue.skip"),
             icon: <CircleStop className="size-3" aria-hidden="true" />,
             disabled: !hasActiveItem,
-            onSelect: app.cancelActiveExport,
+            onSelect: () => void dispatch(cancelActiveExportRequested()),
           },
           {
             id: "cancel-queue",
@@ -110,7 +127,7 @@ export function QueueMenu({ navigation }: { navigation: MenuNavigation }) {
             id: "queue-finish",
             children: t("app.queue.onFinish"),
             icon: <Play className="size-3" aria-hidden="true" />,
-            suffix: queueFinishLabels[app.queueFinishAction],
+            suffix: queueFinishLabels[queueFinishAction],
             shouldCloseOnClick: false,
             options: queueFinishOptions,
           },
@@ -132,7 +149,7 @@ export function QueueMenu({ navigation }: { navigation: MenuNavigation }) {
               variant="destructive"
               onClick={() => {
                 setIsCancelQueueConfirmOpen(false);
-                app.cancelQueue();
+                void dispatch(cancelAllExportsRequested());
               }}
             >
               {t("app.queue.cancel")}

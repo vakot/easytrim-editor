@@ -1,10 +1,11 @@
-import { Check, CircleX, ExternalLink, LoaderCircle, TriangleAlert, X } from "lucide-react";
+import { Check, CircleX, ExternalLink, TriangleAlert, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { openFileLocation } from "@/lib/tauri/media";
-
-import type { ExportToast } from "../types";
+import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
+import { selectExportQueue, type ExportQueueItem } from "@/app/store/slices/export-slice";
+import { cancelExportRequested } from "@/app/store/thunks/export-thunks";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -16,8 +17,9 @@ const statusStyles = {
   canceled: "border-l-destructive",
 } as const;
 
-export function ExportQueue({ queue }: { queue: ExportToast[] }) {
+export function ExportQueue() {
   const { t } = useTranslation();
+  const queue = useAppSelector(selectExportQueue);
   const [now, setNow] = useState(() => Date.now());
   const hasRenderingItem = queue.some((item) => item.status === "rendering");
 
@@ -53,8 +55,9 @@ export function ExportQueue({ queue }: { queue: ExportToast[] }) {
   );
 }
 
-function ExportQueueItem({ item, now }: { item: ExportToast; now: number }) {
+function ExportQueueItem({ item, now }: { item: ExportQueueItem; now: number }) {
   const { t } = useTranslation();
+  const dispatch = useAppDispatch();
   const isCompleted = item.status === "completed";
   const durationMs =
     item.status === "rendering" && item.startedAt ? now - item.startedAt : item.durationMs;
@@ -118,13 +121,13 @@ function ExportQueueItem({ item, now }: { item: ExportToast; now: number }) {
         ) : null}
       </div>
       <div className="flex items-center gap-1">
-        {item.onCancel ? (
+        {item.status === "queued" || item.status === "rendering" ? (
           <Button
             variant="destructive"
             size="icon-sm"
             onClick={(event) => {
               event.stopPropagation();
-              item.onCancel?.();
+              dispatch(cancelExportRequested(item.id));
             }}
             aria-label={t("export.cancelItem", { filename: item.filename })}
           >
@@ -139,10 +142,6 @@ function ExportQueueItem({ item, now }: { item: ExportToast; now: number }) {
               <Check className="size-4 text-emerald-400" />
             ) : item.status === "failed" ? (
               <TriangleAlert className="size-4 text-destructive" />
-            ) : item.status === "rendering" ? (
-              <LoaderCircle className="size-4 animate-spin text-primary" />
-            ) : item.status === "queued" ? (
-              <span className="size-2 rounded-full bg-muted-foreground" />
             ) : (
               <CircleX className="size-4 text-destructive" />
             )}

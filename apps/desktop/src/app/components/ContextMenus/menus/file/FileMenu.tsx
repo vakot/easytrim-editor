@@ -1,6 +1,5 @@
 import { useTranslation } from "react-i18next";
 
-import { useExportPanelController } from "@/app/hooks/useExportPanelController";
 import { useAppSelector } from "@/app/store/hooks";
 import { useAppDispatch } from "@/app/store/hooks";
 import { selectCropApplied } from "@/app/store/slices/crop-slice";
@@ -10,6 +9,7 @@ import {
   chooseSourceRequested,
   closeSourceRequested,
 } from "@/app/store/thunks/source-media-thunks";
+import { openOptimizedExportDialog, startFastCutRequested } from "@/app/store/thunks/export-thunks";
 import { ContextMenu } from "@/components/ui/context-menu";
 
 import type { MenuNavigation } from "../../types";
@@ -17,7 +17,6 @@ import type { MenuNavigation } from "../../types";
 export function FileMenu({ navigation }: { navigation: MenuNavigation }) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const exportPanel = useExportPanelController();
   const canExport = useAppSelector(selectSourceReady);
   const hasSource = useAppSelector(selectHasSource);
   const isChoosingSource = useAppSelector(selectIsChoosingSource);
@@ -48,14 +47,14 @@ export function FileMenu({ navigation }: { navigation: MenuNavigation }) {
           children: t("app.topBarMenus.saveLosslessCut"),
           suffix: "Ctrl+S",
           disabled: !canSave,
-          onSelect: exportPanel.startFastCut,
+          onSelect: () => void dispatch(startFastCutRequested()),
         },
         {
           id: "optimize-export",
           children: t("app.topBarMenus.optimizeExport"),
           suffix: "Ctrl+E",
           disabled: !canExport,
-          onSelect: exportPanel.openOptimizedDialog,
+          onSelect: () => void dispatch(openOptimizedExportDialog()),
         },
       ]}
     >

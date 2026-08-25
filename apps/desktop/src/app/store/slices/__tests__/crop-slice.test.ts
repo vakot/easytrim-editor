@@ -19,6 +19,7 @@ describe("crop slice", () => {
       cropChanged({
         sourceId: firstSource.sourceId,
         crop: { x: 0.1, y: 0, width: 0.8, height: 1 },
+        resolution: { width: 1536, height: 1080 },
       }),
     );
     const cleared = cropReducer(changed, sourceCleared());
@@ -27,7 +28,7 @@ describe("crop slice", () => {
     expect(cleared.value).toEqual({ x: 0, y: 0, width: 1, height: 1 });
   });
 
-  it("derives crop resolution from source media instead of storing dimensions", () => {
+  it("derives crop resolution from the active crop and source media", () => {
     const store = createAppStore();
     store.dispatch(sourceSelected({ source: firstSource }));
     store.dispatch(
@@ -37,5 +38,14 @@ describe("crop slice", () => {
     expect(store.getState().crop).not.toHaveProperty("resolution");
     expect(store.getState().source.media?.video).toMatchObject({ width: 1920, height: 1080 });
     expect(selectCropResolution(store.getState())).toEqual({ width: 1920, height: 1080 });
+
+    store.dispatch(
+      cropChanged({
+        sourceId: firstSource.sourceId,
+        crop: { x: 0.1, y: 0, width: 0.8, height: 1 },
+        resolution: { width: 1536, height: 1080 },
+      }),
+    );
+    expect(selectCropResolution(store.getState())).toEqual({ width: 1536, height: 1080 });
   });
 });

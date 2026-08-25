@@ -1,17 +1,22 @@
+import type { AppDispatch, RootState } from "@/app/store/store";
+import {
+  exportCanceled,
+  exportCompleted,
+  exportFailed,
+  exportProgressReceived,
+  exportStarted,
+  type ExportQueueItem,
+} from "@/app/store/slices/export-slice";
 import {
   cancelOperation,
-  releaseExportSource,
   normalizeAppError,
+  releaseExportSource,
   renderFast,
   renderOptimized,
   type ExportProgress,
-  type FastExportRequest,
-  type OptimizedExportRequest,
-  type OutputSelection,
 } from "@/lib/tauri/media";
+import { performQueueFinishAction } from "@/lib/tauri/queue";
 
-import type { Dispatch, SetStateAction } from "react";
-import type { ExportToast } from "../types";
 import {
   estimateExportSize,
   estimateExportTime,
@@ -19,50 +24,48 @@ import {
   parseFfmpegNumber,
 } from "./export-metrics";
 
-type ExportRoute = "fast" | "optimized";
-type ExportRequest = FastExportRequest | OptimizedExportRequest;
-
-interface ExportJob {
-  id: string;
-  route: ExportRoute;
-  request: ExportRequest;
-  output: OutputSelection;
-  setQueue: Dispatch<SetStateAction<ExportToast[]>>;
-  canceledMessage: string;
+interface RuntimeExportJob {
+  item: ExportQueueItem;
   canceled: boolean;
   operationId: string | null;
   startedAt: number | null;
+  dispatch: AppDispatch;
+  getState: () => RootState;
 }
 
-const pendingJobs: ExportJob[] = [];
-const jobsById = new Map<string, ExportJob>();
+const pendingJobs: RuntimeExportJob[] = [];
+const jobsById = new Map<string, RuntimeExportJob>();
 let isDraining = false;
 let executionEnabled = false;
+let queueHadWork = false;
+let suppressQueueFinishAction = false;
 
-export function setExportQueueExecutionEnabled(enabled: boolean) {
+export function setExportQueueExecutionEnabled(
+  enabled: boolean,
+  dispatch: AppDispatch,
+  getState: () => RootState,
+) {
   executionEnabled = enabled;
-  if (enabled) void drainQueue();
+  if (enabled) void drainQueue(dispatch, getState);
 }
 
-export function cancelActiveExport() {
-  const activeJob = [...jobsById.values()].find((job) => job.startedAt !== null);
-  if (activeJob) cancelQueuedExport(activeJob.id);
-}
-
-export function cancelAllQueuedExports() {
-  [...jobsById.keys()].forEach((id) => cancelQueuedExport(id));
-}
-
-export function enqueueExport(job: Omit<ExportJob, "canceled" | "operationId" | "startedAt">) {
-  const queuedJob: ExportJob = {
-    ...job,
+export function enqueueExport(
+  item: ExportQueueItem,
+  dispatch: AppDispatch,
+  getState: () => RootState,
+) {
+  const job: RuntimeExportJob = {
+    item,
     canceled: false,
     operationId: null,
     startedAt: null,
+    dispatch,
+    getState,
   };
-  pendingJobs.push(queuedJob);
-  jobsById.set(queuedJob.id, queuedJob);
-  void drainQueue();
+  pendingJobs.push(job);
+  jobsById.set(item.id, job);
+  queueHadWork = true;
+  void drainQueue(dispatch, getState);
 }
 
 export function cancelQueuedExport(id: string) {
@@ -70,22 +73,26 @@ export function cancelQueuedExport(id: string) {
   if (!job || job.canceled) return;
 
   job.canceled = true;
-  updateToast(job, (toast) => ({
-    ...toast,
-    status: "canceled",
-    error: job.canceledMessage,
-    onCancel: undefined,
-    durationMs: job.startedAt ? Date.now() - job.startedAt : null,
-  }));
-
+  job.dispatch(exportCanceled({ id, durationMs: elapsedTime(job) }));
   if (job.operationId) {
     void cancelOperation(job.operationId).catch(() => undefined);
   } else {
-    void releaseExportSource(job.request.sourceId).catch(() => undefined);
+    void releaseExportSource(job.item.request.sourceId).catch(() => undefined);
   }
+  void drainQueue(job.dispatch, job.getState);
 }
 
-async function drainQueue() {
+export function cancelActiveExport() {
+  const activeJob = [...jobsById.values()].find((job) => job.startedAt !== null);
+  if (activeJob) cancelQueuedExport(activeJob.item.id);
+}
+
+export function cancelAllQueuedExports() {
+  suppressQueueFinishAction = true;
+  [...jobsById.keys()].forEach((id) => cancelQueuedExport(id));
+}
+
+async function drainQueue(dispatch: AppDispatch, getState: () => RootState) {
   if (isDraining || !executionEnabled) return;
   isDraining = true;
 
@@ -94,26 +101,22 @@ async function drainQueue() {
       const job = pendingJobs.shift();
       if (!job) continue;
       if (job.canceled) {
-        jobsById.delete(job.id);
+        jobsById.delete(job.item.id);
         continue;
       }
 
       job.startedAt = Date.now();
-      updateToast(job, (toast) => ({
-        ...toast,
-        status: "rendering",
-        startedAt: job.startedAt,
-      }));
-
+      dispatch(exportStarted({ id: job.item.id, startedAt: job.startedAt }));
       await renderJob(job);
     }
   } finally {
     isDraining = false;
-    if (executionEnabled && pendingJobs.length > 0) void drainQueue();
+    maybePerformQueueFinishAction(dispatch, getState);
+    if (executionEnabled && pendingJobs.length > 0) void drainQueue(dispatch, getState);
   }
 }
 
-async function renderJob(job: ExportJob) {
+async function renderJob(job: RuntimeExportJob) {
   const onProgress = (progress: ExportProgress) => {
     if (job.canceled) {
       void cancelOperation(progress.operationId).catch(() => undefined);
@@ -121,7 +124,7 @@ async function renderJob(job: ExportJob) {
     }
 
     job.operationId = progress.operationId;
-    const durationMicros = job.request.trim.endMicros - job.request.trim.startMicros;
+    const durationMicros = job.item.request.trim.endMicros - job.item.request.trim.startMicros;
     const progressPercent =
       durationMicros > 0
         ? Math.min(100, Math.max(0, (progress.elapsedMicros / durationMicros) * 100))
@@ -137,60 +140,75 @@ async function renderJob(job: ExportJob) {
       progress.elapsedMicros,
       durationMicros,
     );
-    updateToast(job, (toast) => ({
-      ...toast,
-      operationId: progress.operationId,
-      durationMs: elapsedTime(job),
-      progressPercent,
-      currentFrame: progress.frame,
-      fps: parseFfmpegNumber(progress.fps) ?? undefined,
-      bitrate: parseFfmpegBitrate(progress.bitrate) === null ? undefined : progress.bitrate,
-      fileSizeBytes: progress.totalSize,
-      estimatedFileSizeBytes: estimatedSize?.totalBytes,
-      estimatedElapsedTimeMs: estimatedTime?.elapsedMs,
-      estimatedTotalTimeMs: estimatedTime?.totalMs,
-    }));
+
+    job.dispatch(
+      exportProgressReceived({
+        id: job.item.id,
+        progress,
+        durationMs: elapsedTime(job),
+        progressPercent,
+        fps: parseFfmpegNumber(progress.fps) ?? undefined,
+        bitrate: parseFfmpegBitrate(progress.bitrate) === null ? undefined : progress.bitrate,
+        estimatedFileSizeBytes: estimatedSize?.totalBytes,
+        estimatedElapsedTimeMs: estimatedTime?.elapsedMs,
+        estimatedTotalTimeMs: estimatedTime?.totalMs,
+      }),
+    );
   };
 
   try {
     const result =
-      job.route === "fast"
-        ? await renderFast(job.request as FastExportRequest, job.output.outputId, onProgress)
+      job.item.route === "fast"
+        ? await renderFast(job.item.request, job.item.outputId, onProgress)
         : await renderOptimized(
-            job.request as OptimizedExportRequest,
-            job.output.outputId,
+            job.item.request as import("@/lib/tauri/media").OptimizedExportRequest,
+            job.item.outputId,
             onProgress,
           );
 
-    if (job.canceled) return;
-    updateToast(job, (toast) => ({
-      ...toast,
-      operationId: result.operationId,
-      path: result.displayPath,
-      status: "completed",
-      durationMs: elapsedTime(job),
-      onCancel: undefined,
-    }));
+    if (!job.canceled) {
+      job.dispatch(exportCompleted({ id: job.item.id, result, durationMs: elapsedTime(job) }));
+    }
   } catch (error: unknown) {
-    if (job.canceled) return;
-
-    const normalized = normalizeAppError(error);
-    updateToast(job, (toast) => ({
-      ...toast,
-      status: "failed",
-      error: normalized.message,
-      durationMs: elapsedTime(job),
-      onCancel: undefined,
-    }));
+    if (!job.canceled) {
+      job.dispatch(
+        exportFailed({
+          id: job.item.id,
+          error: normalizeAppError(error),
+          durationMs: elapsedTime(job),
+        }),
+      );
+    }
   } finally {
-    jobsById.delete(job.id);
+    jobsById.delete(job.item.id);
   }
 }
 
-function elapsedTime(job: ExportJob) {
+function elapsedTime(job: RuntimeExportJob) {
   return job.startedAt ? Date.now() - job.startedAt : null;
 }
 
-function updateToast(job: ExportJob, update: (toast: ExportToast) => ExportToast) {
-  job.setQueue((current) => current.map((toast) => (toast.id === job.id ? update(toast) : toast)));
+function maybePerformQueueFinishAction(dispatch: AppDispatch, getState: () => RootState) {
+  if (isDraining || pendingJobs.length > 0 || jobsById.size > 0 || !queueHadWork) return;
+  queueHadWork = false;
+  if (suppressQueueFinishAction) {
+    suppressQueueFinishAction = false;
+    return;
+  }
+  const hasTerminalWork = getState().export.queue.some(
+    (item) => item.status === "completed" || item.status === "failed",
+  );
+  if (!hasTerminalWork) return;
+  const action = getState().export.queueFinishAction;
+  if (action !== "nothing") void performQueueFinishAction(action).catch(() => undefined);
+  void dispatch;
+}
+
+export function resetExportQueueRuntimeForTests() {
+  pendingJobs.length = 0;
+  jobsById.clear();
+  isDraining = false;
+  executionEnabled = false;
+  queueHadWork = false;
+  suppressQueueFinishAction = false;
 }

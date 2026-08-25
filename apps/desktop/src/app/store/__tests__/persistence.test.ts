@@ -7,6 +7,7 @@ import {
   playbackSpeedChanged,
 } from "@/app/store/slices/editor-tools-slice";
 import { toolDefaultChanged, toolDefaultsReset } from "@/app/store/slices/preferences-slice";
+import { optimizedExportDialogOpened, queueEntryAdded } from "@/app/store/slices/export-slice";
 import { createAppPersistor, createAppStore, type AppStore } from "@/app/store/store";
 import { persistConfig, resolveReduxPersistStorage } from "@/app/store/persistence";
 import { DEFAULT_TOOL_DEFAULTS } from "@/app/tool-settings";
@@ -99,6 +100,8 @@ describe("Redux Persist store integration", () => {
     expect(persistConfig.whitelist).not.toContain("crop");
     expect(persistConfig.whitelist).not.toContain("audio");
     expect(persistConfig.whitelist).not.toContain("preview");
+    expect(persistConfig.whitelist).not.toContain("export");
+    expect(persistConfig.whitelist).not.toContain("exportPresets");
   });
 
   it("rehydrates Preferences through redux-persist", async () => {
@@ -159,6 +162,41 @@ describe("Redux Persist store integration", () => {
     expect(JSON.parse(String(persistedRoot.preferences))).toEqual({
       toolDefaults: DEFAULT_TOOL_DEFAULTS,
     });
+  });
+
+  it("never persists export runtime state, queue entries, or dialog state", async () => {
+    const { store, persistor, storage } = await createPersistedTestStore();
+    store.dispatch(
+      optimizedExportDialogOpened({
+        resolution: { width: 1920, height: 1080 },
+        frameRate: undefined,
+      }),
+    );
+    store.dispatch(
+      queueEntryAdded({
+        id: "export-1",
+        route: "fast",
+        request: {
+          sourceId: "source-1",
+          trim: { startMicros: 0, endMicros: 1_000_000 },
+          audioTracks: [],
+          mergeAudio: false,
+        },
+        outputId: "output-1",
+        filename: "clip.mkv",
+        path: "C:/Exports/clip.mkv",
+        status: "queued",
+        operationId: null,
+        startedAt: null,
+        durationMs: null,
+        progressPercent: 0,
+      }),
+    );
+    await persistor.flush();
+
+    const persistedRoot = await readPersistedRoot(storage);
+    expect(persistedRoot).not.toHaveProperty("export");
+    expect(persistedRoot).not.toHaveProperty("exportPresets");
   });
 
   it("does not read the legacy Preferences storage key", async () => {

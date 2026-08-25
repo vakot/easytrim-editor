@@ -17,25 +17,25 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { selectTriggerVariants } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-
+import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
+import { presetNameError, type ExportPreset } from "../export-presets";
 import {
-  presetNameError,
-  selectedExportPreset,
-  type ExportPreset,
-  type ExportPresetAction,
-  type ExportPresetState,
-} from "../export-presets";
-
-interface PresetManagerProps {
-  state: ExportPresetState;
-  onAction: (action: ExportPresetAction) => void;
-}
+  exportArgumentsChanged,
+  exportPresetCreated,
+  exportPresetDeleted,
+  exportPresetSelected,
+  exportPresetUpdated,
+  selectExportPresets,
+  selectSelectedExportPreset,
+} from "@/app/store/slices/export-presets-slice";
 
 type PresetDialogMode = "create" | "edit";
 
-export function PresetManager({ state, onAction }: PresetManagerProps) {
+export function PresetManager() {
   const { t } = useTranslation();
-  const selectedPreset = selectedExportPreset(state);
+  const dispatch = useAppDispatch();
+  const state = useAppSelector(selectExportPresets);
+  const selectedPreset = useAppSelector(selectSelectedExportPreset);
   const [dialogMode, setDialogMode] = useState<PresetDialogMode | null>(null);
   const [editingPresetId, setEditingPresetId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
@@ -67,12 +67,12 @@ export function PresetManager({ state, onAction }: PresetManagerProps) {
     }
 
     if (dialogMode === "edit" && editingPresetId) {
-      onAction({ type: "preset-selected", presetId: editingPresetId });
-      onAction({ type: "arguments-changed", argumentsText: draftArguments });
-      onAction({ type: "preset-updated", name: draftName });
+      dispatch(exportPresetSelected(editingPresetId));
+      dispatch(exportArgumentsChanged(draftArguments));
+      dispatch(exportPresetUpdated({ name: draftName }));
     } else {
-      onAction({ type: "arguments-changed", argumentsText: draftArguments });
-      onAction({ type: "preset-created", name: draftName });
+      dispatch(exportArgumentsChanged(draftArguments));
+      dispatch(exportPresetCreated({ name: draftName }));
     }
     setDialogMode(null);
   }
@@ -104,7 +104,7 @@ export function PresetManager({ state, onAction }: PresetManagerProps) {
                 <div key={preset.id} className="flex items-center gap-1">
                   <DropdownMenuPrimitive.Item
                     className="min-w-0 flex-1 cursor-pointer rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent"
-                    onSelect={() => onAction({ type: "preset-selected", presetId: preset.id })}
+                    onSelect={() => dispatch(exportPresetSelected(preset.id))}
                   >
                     <span className="block truncate">{preset.name}</span>
                     {preset.description ? (
@@ -216,8 +216,8 @@ export function PresetManager({ state, onAction }: PresetManagerProps) {
               variant="destructive"
               onClick={() => {
                 if (presetToDelete) {
-                  onAction({ type: "preset-selected", presetId: presetToDelete.id });
-                  onAction({ type: "preset-deleted" });
+                  dispatch(exportPresetSelected(presetToDelete.id));
+                  dispatch(exportPresetDeleted());
                 }
                 setPresetToDelete(null);
               }}

@@ -18,51 +18,6 @@ const windowActions = vi.hoisted(() => ({
 
 vi.mock("@/lib/tauri/window", () => windowActions);
 
-const menuState = vi.hoisted(() => ({
-  app: {
-    isChoosingSource: false,
-    hasSource: false,
-    crop: { x: 0, y: 0, width: 1, height: 1 },
-    exportQueue: [],
-    queueStarted: false,
-    queueFinishAction: "nothing",
-    availableQueueFinishActions: ["exit", "nothing"],
-    setQueueStarted: vi.fn(),
-    cancelActiveExport: vi.fn(),
-    cancelQueue: vi.fn(),
-    setQueueFinishAction: vi.fn(),
-  },
-  sourceDetails: {
-    isReady: true,
-    source: null,
-    sourceId: null,
-    crop: { x: 0, y: 0, width: 1, height: 1 },
-  },
-  viewState: {
-    toolDefaults: {
-      snapPlaybackEnabled: true,
-      loopPlaybackEnabled: true,
-      segmentPlaybackEnabled: true,
-      mergeAudioEnabled: false,
-    },
-    setToolDefault: vi.fn(),
-    resetToolDefaults: vi.fn(),
-  },
-  exportPanel: {
-    panelRef: { current: null },
-    startFastCut: vi.fn(),
-    openOptimizedDialog: vi.fn(),
-  },
-}));
-
-vi.mock("@/app/hooks/useEditorSession", () => ({
-  useEditorSession: () => menuState.app,
-}));
-
-vi.mock("@/app/hooks/useExportPanelController", () => ({
-  useExportPanelController: () => menuState.exportPanel,
-}));
-
 describe("CustomTitleBar", () => {
   it("keeps menu controls interactive inside the title bar", async () => {
     const user = userEvent.setup();
