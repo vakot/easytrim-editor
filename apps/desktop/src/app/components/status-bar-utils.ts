@@ -1,6 +1,6 @@
-import type { ExportToast } from "@/features/export";
+import type { ExportQueueItem } from "@/app/store/slices/export-slice";
 
-export function selectStatusBarExport(queue: ExportToast[]) {
+export function selectStatusBarExport(queue: ExportQueueItem[]) {
   const renderingExport = [...queue].reverse().find((item) => item.status === "rendering");
   if (renderingExport) return renderingExport;
 

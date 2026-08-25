@@ -91,6 +91,17 @@ vi.mock("@/app/store/hooks", () => ({
         previews: null,
       },
       preview: { sourceId: null, value: { status: "idle" } },
+      export: {
+        queue: menuState.app.exportQueue,
+        queueStarted: menuState.app.queueStarted,
+        queueFinishAction: menuState.app.queueFinishAction,
+        availableQueueFinishActions: menuState.app.availableQueueFinishActions,
+        optimizedDialogOpen: false,
+        optimizedSettings: null,
+        commandPreview: "",
+        commandPreviewError: null,
+        launchError: null,
+      },
     }),
 }));
 
@@ -227,7 +238,7 @@ describe("ContextMenus", () => {
     expect(screen.getAllByRole("separator")).toHaveLength(2);
 
     await user.click(startItem);
-    expect(onQueueStartedChange).toHaveBeenCalledWith(true);
+    expect(menuState.viewState.dispatch).toHaveBeenCalledWith(expect.any(Function));
   });
 
   it("requires confirmation before canceling the queue", async () => {
@@ -245,7 +256,7 @@ describe("ContextMenus", () => {
 
     const cancelButtons = screen.getAllByRole("button", { name: "Cancel" });
     await user.click(cancelButtons[1]!);
-    expect(onCancelQueue).toHaveBeenCalledOnce();
+    expect(menuState.viewState.dispatch).toHaveBeenCalledWith(expect.any(Function));
   });
 
   it("selects an available queue finish action", async () => {
@@ -261,7 +272,9 @@ describe("ContextMenus", () => {
     finishItem.focus();
     await user.keyboard("{ArrowRight}");
     await user.click(screen.getByRole("menuitem", { name: "Exit" }));
-    expect(onQueueFinishActionChange).toHaveBeenCalledWith("exit");
+    expect(menuState.viewState.dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "export/queueFinishActionChanged", payload: "exit" }),
+    );
   });
 
   it("opens Help links with the current release version", async () => {

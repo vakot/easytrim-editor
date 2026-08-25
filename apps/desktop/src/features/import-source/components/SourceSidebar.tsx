@@ -7,17 +7,13 @@ import {
 } from "@/app/store/slices/source-slice";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { ExportQueue, type ExportToast } from "@/features/export";
+import { ExportQueue } from "@/features/export";
 import { MediaDetails } from "./MediaDetails";
 import { SourceError } from "./SourceError";
 import { useTranslation } from "react-i18next";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-interface SourceSidebarProps {
-  queue: ExportToast[];
-}
-
-export function SourceSidebar({ queue }: SourceSidebarProps) {
+export function SourceSidebar() {
   const { t } = useTranslation();
   const sourceSelection = useAppSelector(selectSourceSelection);
   const media = useAppSelector(selectSourceMedia);
@@ -57,7 +53,7 @@ export function SourceSidebar({ queue }: SourceSidebarProps) {
       <Separator className="mx-4" />
       <ScrollArea className="min-h-0" data-slot="export-queue-scroll">
         <div className="p-5">
-          <ExportQueue queue={queue} />
+          <ExportQueue />
         </div>
       </ScrollArea>
     </aside>

@@ -8,13 +8,17 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import packageJson from "../../../../../package.json";
-import { formatExportDuration, formatExportFileSize, type ExportToast } from "@/features/export";
+import { formatExportDuration, formatExportFileSize } from "@/features/export";
+import { useAppSelector } from "@/app/store/hooks";
+import { selectExportQueue } from "@/app/store/slices/export-slice";
+import type { ExportQueueItem } from "@/app/store/slices/export-slice";
 import { selectStatusBarExport } from "./status-bar-utils";
 
-export function StatusBar({ queue }: { queue: ExportToast[] }) {
+export function StatusBar() {
   const { t } = useTranslation();
+  const queue = useAppSelector(selectExportQueue);
   const selectedExport = selectStatusBarExport(queue);
-  const [rememberedExport, setRememberedExport] = useState<ExportToast | null>(
+  const [rememberedExport, setRememberedExport] = useState<ExportQueueItem | null>(
     selectedExport ?? null,
   );
   useEffect(() => {

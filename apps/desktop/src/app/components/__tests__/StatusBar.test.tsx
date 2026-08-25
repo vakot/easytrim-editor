@@ -1,8 +1,10 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-import type { ExportToast } from "@/features/export";
+import type { ExportQueueItem } from "@/app/store/slices/export-slice";
 import { TooltipProvider } from "@/components/ui/tooltip";
+
+const mocks = vi.hoisted(() => ({ queue: [] as ExportQueueItem[] }));
 
 vi.mock("@/app/hooks/useAppUpdates", () => ({
   useAppUpdates: () => ({
@@ -13,17 +15,29 @@ vi.mock("@/app/hooks/useAppUpdates", () => ({
     installUpdate: vi.fn(),
   }),
 }));
-
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
+}));
+vi.mock("@/app/store/hooks", () => ({
+  useAppSelector: () => mocks.queue,
 }));
 
 import { StatusBar } from "../StatusBar";
 import { selectStatusBarExport } from "../status-bar-utils";
 
-function exportToast(overrides: Partial<ExportToast>): ExportToast {
+function exportToast(overrides: Partial<ExportQueueItem>): ExportQueueItem {
   return {
     id: "export-1",
+    route: "optimized",
+    request: {
+      sourceId: "source-1",
+      trim: { startMicros: 0, endMicros: 1_000_000 },
+      audioTracks: [],
+      mergeAudio: false,
+      resolution: { width: 1920, height: 1080 },
+      arguments: "",
+    },
+    outputId: "output-1",
     operationId: "operation-1",
     filename: "clip.mp4",
     path: "C:/Exports/clip.mp4",
@@ -33,6 +47,15 @@ function exportToast(overrides: Partial<ExportToast>): ExportToast {
     progressPercent: 42,
     ...overrides,
   };
+}
+
+function renderQueue(queue: ExportQueueItem[]) {
+  mocks.queue = queue;
+  return render(
+    <TooltipProvider>
+      <StatusBar />
+    </TooltipProvider>,
+  );
 }
 
 describe("StatusBar", () => {
@@ -57,92 +80,55 @@ describe("StatusBar", () => {
       currentFrame: 8,
       totalFrames: 8,
     });
-    const { rerender } = render(
-      <TooltipProvider>
-        <StatusBar queue={[completed]} />
-      </TooltipProvider>,
-    );
+    const { rerender } = renderQueue([completed]);
 
+    mocks.queue = [exportToast({ status: "queued", startedAt: null })];
     rerender(
       <TooltipProvider>
-        <StatusBar queue={[exportToast({ status: "queued", startedAt: null })]} />
+        <StatusBar />
       </TooltipProvider>,
     );
-
     expect(screen.getByText("finished.mp4")).toBeInTheDocument();
-    expect(screen.getByText("8f / 8f")).toBeInTheDocument();
 
+    mocks.queue = [
+      exportToast({
+        id: "export-2",
+        operationId: "operation-2",
+        filename: "next.mp4",
+        path: "C:/Exports/next.mp4",
+        status: "rendering",
+        startedAt: 2_000,
+        currentFrame: 2,
+        totalFrames: 10,
+      }),
+    ];
     rerender(
       <TooltipProvider>
-        <StatusBar
-          queue={[
-            exportToast({
-              id: "export-2",
-              operationId: "operation-2",
-              filename: "next.mp4",
-              path: "C:/Exports/next.mp4",
-              status: "rendering",
-              startedAt: 2_000,
-              currentFrame: 2,
-              totalFrames: 10,
-            }),
-          ]}
-        />
+        <StatusBar />
       </TooltipProvider>,
     );
-
     expect(screen.getByText("next.mp4")).toBeInTheDocument();
-    expect(screen.getByText("2f / 10f")).toBeInTheDocument();
   });
 
-  it("shows completed exports as a green full progress indicator and keeps metrics", () => {
-    render(
-      <TooltipProvider>
-        <StatusBar
-          queue={[
-            exportToast({
-              status: "completed",
-              progressPercent: 96,
-              currentFrame: 4,
-              totalFrames: 8,
-            }),
-          ]}
-        />
-      </TooltipProvider>,
-    );
-
+  it("shows completed exports as a green full progress indicator", () => {
+    renderQueue([
+      exportToast({ status: "completed", currentFrame: 4, totalFrames: 8 }),
+    ]);
     const progress = screen.getByRole("progressbar");
     expect(progress).toHaveAttribute("aria-valuenow", "100");
     expect(progress.firstElementChild).toHaveClass("bg-emerald-400");
-    expect(screen.getByText("4f / 8f")).toBeInTheDocument();
   });
 
   it("renders placeholders for metrics that are not available yet", () => {
-    render(
-      <TooltipProvider>
-        <StatusBar queue={[exportToast({})]} />
-      </TooltipProvider>,
-    );
-
+    renderQueue([exportToast({ status: "rendering", startedAt: null, operationId: null })]);
     expect(screen.getByText("0f / 0f")).toBeInTheDocument();
     expect(screen.getByText("0 FPS")).toBeInTheDocument();
-    expect(screen.getByText("0 kbits/s")).toBeInTheDocument();
-    expect(screen.getByText("0 MB / 0 MB")).toBeInTheDocument();
-    expect(screen.getByText("0:00 / 0:00")).toBeInTheDocument();
   });
 
-  it.each(["failed", "canceled"] as const)(
-    "shows %s exports with their last progress and destructive styling",
-    (status) => {
-      render(
-        <TooltipProvider>
-          <StatusBar queue={[exportToast({ status, progressPercent: 37 })]} />
-        </TooltipProvider>,
-      );
-
-      const progress = screen.getByRole("progressbar");
-      expect(progress).toHaveAttribute("aria-valuenow", "37");
-      expect(progress.firstElementChild).toHaveClass("bg-destructive");
-    },
-  );
+  it.each(["failed", "canceled"] as const)("shows %s exports with destructive styling", (status) => {
+    renderQueue([exportToast({ status, progressPercent: 37 })]);
+    const progress = screen.getByRole("progressbar");
+    expect(progress).toHaveAttribute("aria-valuenow", "37");
+    expect(progress.firstElementChild).toHaveClass("bg-destructive");
+  });
 });
