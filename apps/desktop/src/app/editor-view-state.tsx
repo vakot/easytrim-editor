@@ -1,35 +1,17 @@
 import { useState, type ReactNode } from "react";
 import type { Layout } from "react-resizable-panels";
 
-import { EditorViewStateContext, type EditorToolState } from "@/app/editor-view-state-context";
-import { selectToolDefaults } from "@/app/store/slices/preferences-slice";
-import { useAppSelector } from "@/app/store/hooks";
-
-function createActiveToolState(defaults: ReturnType<typeof selectToolDefaults>): EditorToolState {
-  return {
-    safeTrimFollowingEnabled: defaults.safeTrimFollowingEnabled,
-    loopPlaybackEnabled: defaults.loopPlaybackEnabled,
-    segmentPlaybackEnabled: defaults.segmentPlaybackEnabled,
-    playbackSpeed: 1,
-  };
-}
+import { EditorViewStateContext } from "@/app/editor-view-state-context";
 
 export function EditorViewStateProvider({ children }: { children: ReactNode }) {
-  const toolDefaults = useAppSelector(selectToolDefaults);
-  const [tools, setTools] = useState(() => createActiveToolState(toolDefaults));
   const [showSourceDetails, setShowSourceDetails] = useState(true);
   const [showTimeline, setShowTimeline] = useState(true);
   const [workspaceLayout, setWorkspaceLayout] = useState<Layout>();
   const [editorStageLayout, setEditorStageLayout] = useState<Layout>();
 
-  const resetTools = () => setTools(createActiveToolState(toolDefaults));
-
   return (
     <EditorViewStateContext.Provider
       value={{
-        tools,
-        setTools,
-        resetTools,
         showSourceDetails,
         setShowSourceDetails,
         showTimeline,

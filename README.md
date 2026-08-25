@@ -10,7 +10,7 @@ EasyTrim Editor is a _fast_, _lightweight_ desktop video trimmer for making prec
 - Preview the source video with frame-accurate timeline and keyboard controls.
 - Trim the beginning and end of a selected segment by dragging its handles.
 - Move the whole selected segment without changing its duration.
-- Use Shift snapping, safe trim, looping, segment playback, and adjustable playback speed.
+- Use Shift snapping, snap playback, looping, segment playback, and adjustable playback speed.
 - Inspect audio tracks with waveform previews.
 - Mute tracks or adjust each track from -24 dB to +6 dB.
 - Control overall preview/export volume independently from per-track levels.

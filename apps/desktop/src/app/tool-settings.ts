@@ -1,5 +1,5 @@
 export interface ToolDefaults {
-  safeTrimFollowingEnabled: boolean;
+  snapPlaybackEnabled: boolean;
   loopPlaybackEnabled: boolean;
   segmentPlaybackEnabled: boolean;
   mergeAudioEnabled: boolean;
@@ -8,7 +8,7 @@ export interface ToolDefaults {
 export type ToolDefaultKey = keyof ToolDefaults;
 
 export const DEFAULT_TOOL_DEFAULTS: ToolDefaults = {
-  safeTrimFollowingEnabled: true,
+  snapPlaybackEnabled: true,
   loopPlaybackEnabled: true,
   segmentPlaybackEnabled: true,
   mergeAudioEnabled: false,

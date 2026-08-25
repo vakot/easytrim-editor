@@ -6,7 +6,7 @@ import {
   preferencesReducer,
   selectLoopPlaybackDefault,
   selectMergeAudioDefault,
-  selectSafeTrimFollowingDefault,
+  selectSnapPlaybackDefault,
   selectSegmentPlaybackDefault,
   selectToolDefaults,
   toolDefaultChanged,
@@ -26,10 +26,10 @@ describe("preferences Redux domain", () => {
     };
     const nextState = preferencesReducer(
       initialState,
-      toolDefaultChanged({ key: "safeTrimFollowingEnabled", enabled: false }),
+      toolDefaultChanged({ key: "snapPlaybackEnabled", enabled: false }),
     );
 
-    expect(nextState.toolDefaults.safeTrimFollowingEnabled).toBe(false);
+    expect(nextState.toolDefaults.snapPlaybackEnabled).toBe(false);
     expect(nextState.toolDefaults.loopPlaybackEnabled).toBe(
       initialState.toolDefaults.loopPlaybackEnabled,
     );
@@ -42,7 +42,7 @@ describe("preferences Redux domain", () => {
     const state = preferencesReducer(
       {
         toolDefaults: {
-          safeTrimFollowingEnabled: false,
+          snapPlaybackEnabled: false,
           loopPlaybackEnabled: false,
           segmentPlaybackEnabled: false,
           mergeAudioEnabled: true,
@@ -56,7 +56,7 @@ describe("preferences Redux domain", () => {
 
   it("selects focused preference values", () => {
     const toolDefaults: ToolDefaults = {
-      safeTrimFollowingEnabled: false,
+      snapPlaybackEnabled: false,
       loopPlaybackEnabled: true,
       segmentPlaybackEnabled: false,
       mergeAudioEnabled: true,
@@ -64,7 +64,7 @@ describe("preferences Redux domain", () => {
     const state = { preferences: { toolDefaults } } as RootState;
 
     expect(selectToolDefaults(state)).toEqual(toolDefaults);
-    expect(selectSafeTrimFollowingDefault(state)).toBe(false);
+    expect(selectSnapPlaybackDefault(state)).toBe(false);
     expect(selectLoopPlaybackDefault(state)).toBe(true);
     expect(selectSegmentPlaybackDefault(state)).toBe(false);
     expect(selectMergeAudioDefault(state)).toBe(true);

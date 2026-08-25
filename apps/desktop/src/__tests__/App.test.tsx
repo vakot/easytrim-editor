@@ -8,6 +8,12 @@ import type {
   SourceDropEvent,
   SourceSelection,
 } from "../lib/tauri/media";
+import { store } from "../app/store/store";
+import {
+  createEditorToolsStateFromPreferences,
+  editorToolsInitialized,
+} from "../app/store/slices/editor-tools-slice";
+import { DEFAULT_TOOL_DEFAULTS } from "../app/tool-settings";
 
 const mocks = vi.hoisted(() => ({
   checkMediaCapabilities: vi.fn(),
@@ -133,6 +139,9 @@ function installAudioMocks(initiallyReady = true) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  store.dispatch(
+    editorToolsInitialized(createEditorToolsStateFromPreferences(DEFAULT_TOOL_DEFAULTS)),
+  );
   sourceDropListener = undefined;
   mocks.checkMediaCapabilities.mockResolvedValue(capabilities);
   mocks.chooseSource.mockResolvedValue(null);
@@ -187,10 +196,10 @@ describe("App", () => {
 
     await openSourcePicker(user);
     await screen.findByRole("heading", { name: "Selected Segment" });
-    await user.click(screen.getByRole("button", { name: "Safe trim following" }));
+    await user.click(screen.getByRole("button", { name: "Snap playback" }));
     await user.click(screen.getByRole("button", { name: "Loop playback" }));
 
-    expect(screen.getByRole("button", { name: "Safe trim following" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "Snap playback" })).toHaveAttribute(
       "aria-pressed",
       "false",
     );
@@ -204,7 +213,7 @@ describe("App", () => {
     await user.click(screen.getByRole("menuitem", { name: /Open File/ }));
     await screen.findByRole("heading", { name: "Selected Segment" });
 
-    expect(screen.getByRole("button", { name: "Safe trim following" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "Snap playback" })).toHaveAttribute(
       "aria-pressed",
       "false",
     );
@@ -251,7 +260,7 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "Next frame" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Hide bottom pane" })).not.toBeDisabled();
     expect(screen.getByRole("slider", { name: "Move selected segment" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Safe trim following" })).not.toBeDisabled();
+    expect(screen.getByRole("button", { name: "Snap playback" })).not.toBeDisabled();
     expect(screen.getByRole("button", { name: "Loop playback" })).not.toBeDisabled();
     expect(screen.getByRole("button", { name: "Segment playback" })).not.toBeDisabled();
     expect(screen.getByRole("button", { name: "Playback speed" })).not.toBeDisabled();
@@ -497,12 +506,12 @@ describe("App", () => {
     for (const tool of within(videoToolbar).getAllByRole("button")) {
       expect(tool).toHaveAttribute("data-size", "icon-sm");
     }
-    expect(within(videoToolbar).getByRole("button", { name: "Safe trim following" })).toBe(
-      screen.getByRole("button", { name: "Safe trim following" }),
+    expect(within(videoToolbar).getByRole("button", { name: "Snap playback" })).toBe(
+      screen.getByRole("button", { name: "Snap playback" }),
     );
     expect(
       within(videoToolbar)
-        .getByRole("button", { name: "Safe trim following" })
+        .getByRole("button", { name: "Snap playback" })
         .querySelector(".lucide-magnet"),
     ).not.toBeNull();
     expect(within(videoToolbar).getByRole("button", { name: "Loop playback" })).toHaveAttribute(
@@ -1451,9 +1460,9 @@ describe("App", () => {
     video.currentTime = 30;
     fireEvent.timeUpdate(video);
 
-    const safeTrimToggle = screen.getByRole("button", { name: "Safe trim following" });
-    await user.click(safeTrimToggle);
-    expect(safeTrimToggle).toHaveAttribute("aria-pressed", "false");
+    const snapPlaybackToggle = screen.getByRole("button", { name: "Snap playback" });
+    await user.click(snapPlaybackToggle);
+    expect(snapPlaybackToggle).toHaveAttribute("aria-pressed", "false");
 
     const segmentHandle = screen.getByRole("slider", { name: "Move selected segment" });
     const playhead = screen.getByRole("slider", { name: "Playback position" });
@@ -1522,7 +1531,7 @@ describe("App", () => {
     expect(video.currentTime).toBe(30);
   });
 
-  it("snaps all dragged segment points regardless of the safe-trim state", async () => {
+  it("snaps all dragged segment points regardless of the snap-playback state", async () => {
     mocks.chooseSource.mockResolvedValue(selection);
     const user = userEvent.setup();
     render(<App />);
@@ -1552,8 +1561,8 @@ describe("App", () => {
     video.currentTime = 30;
     fireEvent.timeUpdate(video);
 
-    const safeTrimToggle = screen.getByRole("button", { name: "Safe trim following" });
-    await user.click(safeTrimToggle);
+    const snapPlaybackToggle = screen.getByRole("button", { name: "Snap playback" });
+    await user.click(snapPlaybackToggle);
     const segmentHandle = screen.getByRole("slider", { name: "Move selected segment" });
     const playhead = screen.getByRole("slider", { name: "Playback position" });
 
@@ -1632,7 +1641,7 @@ describe("App", () => {
     });
     expect(playhead).toHaveAttribute("aria-valuenow", "30000000");
 
-    await user.click(safeTrimToggle);
+    await user.click(snapPlaybackToggle);
     video.currentTime = 35;
     fireEvent.timeUpdate(video);
     fireEvent.pointerDown(segmentHandle, {
@@ -1964,7 +1973,7 @@ describe("App", () => {
     expect(video.currentTime).toBe(30);
   });
 
-  it("lets the safe-trim toggle disable and restore playhead following", async () => {
+  it("lets the snap-playback toggle disable and restore playhead following", async () => {
     mocks.chooseSource.mockResolvedValue(selection);
     const user = userEvent.setup();
     render(<App />);
@@ -1984,15 +1993,15 @@ describe("App", () => {
       toJSON: () => ({}),
     });
     const clientXForSeconds = (seconds: number) => 100 + (seconds / 65) * 1000;
-    const safeTrimToggle = screen.getByRole("button", { name: "Safe trim following" });
+    const snapPlaybackToggle = screen.getByRole("button", { name: "Snap playback" });
     const playhead = screen.getByRole("slider", { name: "Playback position" });
 
     video.currentTime = 30;
     fireEvent.timeUpdate(video);
-    expect(safeTrimToggle).toHaveAttribute("aria-pressed", "true");
+    expect(snapPlaybackToggle).toHaveAttribute("aria-pressed", "true");
 
-    await user.click(safeTrimToggle);
-    expect(safeTrimToggle).toHaveAttribute("aria-pressed", "false");
+    await user.click(snapPlaybackToggle);
+    expect(snapPlaybackToggle).toHaveAttribute("aria-pressed", "false");
     fireEvent.pointerDown(screen.getByRole("slider", { name: "Trim start" }), {
       clientX: clientXForSeconds(40),
       pointerId: 20,
@@ -2003,13 +2012,13 @@ describe("App", () => {
       clientX: clientXForSeconds(20),
       pointerId: 21,
     });
-    await user.click(safeTrimToggle);
+    await user.click(snapPlaybackToggle);
     fireEvent.pointerDown(screen.getByRole("slider", { name: "Trim start" }), {
       clientX: clientXForSeconds(35),
       pointerId: 22,
     });
     await flushAnimationFrame();
-    expect(safeTrimToggle).toHaveAttribute("aria-pressed", "true");
+    expect(snapPlaybackToggle).toHaveAttribute("aria-pressed", "true");
     expect(playhead).toHaveAttribute("aria-valuenow", "35000000");
     expect(video.currentTime).toBe(35);
   });

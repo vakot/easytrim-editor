@@ -4,12 +4,7 @@ import { LoaderCircle } from "lucide-react";
 
 import { PanelSeparator } from "@/components/PanelSeparator";
 import { useEditorViewState } from "@/app/hooks/useEditorViewState";
-import {
-  usePlayback,
-  useSourceDetails,
-  useTimeline,
-  useTimelineTools,
-} from "@/app/hooks/useEditorContracts";
+import { usePlayback, useSourceDetails, useTimeline } from "@/app/hooks/useEditorContracts";
 import { AudioTracks } from "@/features/audio-tracks";
 import {
   PlaybackControls,
@@ -33,7 +28,6 @@ export function EditorStage() {
   const source = useSourceDetails();
   const playback = usePlayback();
   const timeline = useTimeline();
-  const tools = useTimelineTools();
   const { editorStageLayout, setEditorStageLayout, showTimeline, setShowTimeline } =
     useEditorViewState();
   const timelineRange = source.trim ?? EMPTY_TIMELINE_RANGE;
@@ -138,19 +132,7 @@ export function EditorStage() {
                     frameRate={source.frameRate}
                   />
                 }
-                videoToolbar={
-                  <TimelineTools
-                    safeTrimFollowingEnabled={tools.safeTrimFollowingEnabled}
-                    loopPlaybackEnabled={tools.loopPlaybackEnabled}
-                    segmentPlaybackEnabled={tools.segmentPlaybackEnabled}
-                    playbackSpeed={tools.playbackSpeed}
-                    onToggleSafeTrimFollowing={tools.toggleSafeTrimFollowing}
-                    onToggleLoopPlayback={tools.toggleLoopPlayback}
-                    onToggleSegmentPlayback={tools.toggleSegmentPlayback}
-                    onPlaybackSpeedChange={tools.setPlaybackSpeed}
-                    onReset={tools.reset}
-                  />
-                }
+                videoToolbar={<TimelineTools />}
                 onChange={timeline.onChange}
                 onMoveSegment={timeline.onMoveSegment}
                 onTrimDragStart={timeline.onTrimDragStart}

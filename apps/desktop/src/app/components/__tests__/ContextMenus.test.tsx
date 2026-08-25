@@ -41,7 +41,7 @@ const menuState = vi.hoisted(() => ({
   },
   viewState: {
     toolDefaults: {
-      safeTrimFollowingEnabled: true,
+      snapPlaybackEnabled: true,
       loopPlaybackEnabled: true,
       segmentPlaybackEnabled: true,
       mergeAudioEnabled: false,
@@ -62,10 +62,6 @@ vi.mock("@/app/hooks/useEditorSession", () => ({
 
 vi.mock("@/app/hooks/useSourceDetails", () => ({
   useSourceDetails: () => menuState.sourceDetails,
-}));
-
-vi.mock("@/app/hooks/useEditorViewState", () => ({
-  useEditorViewState: () => menuState.viewState,
 }));
 
 vi.mock("@/app/store/hooks", () => ({
@@ -456,7 +452,7 @@ describe("ContextMenus", () => {
             onSave={vi.fn()}
             onExport={vi.fn()}
             toolDefaults={{
-              safeTrimFollowingEnabled: false,
+              snapPlaybackEnabled: false,
               loopPlaybackEnabled: false,
               segmentPlaybackEnabled: false,
               mergeAudioEnabled: false,

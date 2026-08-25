@@ -11,7 +11,12 @@ import {
   type TrimRange,
 } from "@/domain/trim";
 import { isApplicationDialogOpen } from "@/lib/hotkeys";
-import { useTimelineTools } from "@/app/hooks/useTimelineTools";
+import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
+import {
+  loopPlaybackChanged,
+  segmentPlaybackChanged,
+  selectEditorTools,
+} from "@/app/store/slices/editor-tools-slice";
 import { useSourceDetails } from "@/app/hooks/useSourceDetails";
 import { usePlaybackModes } from "@/features/editor/hooks/usePlaybackModes";
 import { synchronizeAudioPosition } from "@/features/editor/utils/audio-sync";
@@ -76,7 +81,8 @@ export interface EditorInteractionValue {
 export function useEditorInteractionController(): EditorInteractionValue {
   const { t } = useTranslation();
   const source = useSourceDetails();
-  const tools = useTimelineTools();
+  const dispatch = useAppDispatch();
+  const tools = useAppSelector(selectEditorTools);
   const trim = source.trim ?? EMPTY_TRIM;
   const preview = source.preview;
   const frameRate = source.frameRate;
@@ -173,8 +179,8 @@ export function useEditorInteractionController(): EditorInteractionValue {
   const playbackModes = usePlaybackModes({
     loopEnabled: tools.loopPlaybackEnabled,
     segmentEnabled: tools.segmentPlaybackEnabled,
-    onLoopEnabledChange: () => tools.toggleLoopPlayback(),
-    onSegmentEnabledChange: () => tools.toggleSegmentPlayback(),
+    onLoopEnabledChange: (enabled) => dispatch(loopPlaybackChanged(enabled)),
+    onSegmentEnabledChange: (enabled) => dispatch(segmentPlaybackChanged(enabled)),
   });
   const displayedPlayheadMicros = clampPlaybackMicros(playheadMicros, trim.sourceDurationMicros);
 
@@ -566,7 +572,7 @@ export function useEditorInteractionController(): EditorInteractionValue {
   const handleTrimBoundaryChange = useCallback(
     (boundary: TrimBoundary, nextTrim: TrimRange) => {
       const currentMicros = currentPlayheadMicrosRef.current;
-      const follow = tools.safeTrimFollowingEnabled
+      const follow = tools.snapPlaybackEnabled
         ? playheadFollowAfterTrimBoundaryMove(trimRef.current, nextTrim, boundary, currentMicros)
         : { playheadMicros: currentMicros, boundary: null };
       trimRef.current = nextTrim;
@@ -574,13 +580,13 @@ export function useEditorInteractionController(): EditorInteractionValue {
       if (follow.playheadMicros !== currentMicros) queueScrubSeek(follow.playheadMicros);
       return follow.boundary;
     },
-    [queueScrubSeek, queueTrimCommit, tools.safeTrimFollowingEnabled],
+    [queueScrubSeek, queueTrimCommit, tools.snapPlaybackEnabled],
   );
   const handleSegmentMove = useCallback(
     (nextTrim: TrimRange) => {
       const currentMicros = currentPlayheadMicrosRef.current;
       const follow =
-        tools.safeTrimFollowingEnabled && segmentDragActiveRef.current
+        tools.snapPlaybackEnabled && segmentDragActiveRef.current
           ? playheadAfterSegmentMove(
               trimRef.current,
               nextTrim,
@@ -594,7 +600,7 @@ export function useEditorInteractionController(): EditorInteractionValue {
       if (follow.playheadMicros !== currentMicros) queueScrubSeek(follow.playheadMicros);
       return follow.boundary;
     },
-    [queueScrubSeek, queueTrimCommit, tools.safeTrimFollowingEnabled],
+    [queueScrubSeek, queueTrimCommit, tools.snapPlaybackEnabled],
   );
   const handleSegmentDragStart = useCallback(() => {
     segmentDragActiveRef.current = true;
