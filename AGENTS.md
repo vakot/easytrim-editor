@@ -236,3 +236,38 @@ History rewriting, force-pushing, branch deletion, tagging, releasing, and mergi
 ## Guiding Rule
 
 Understand the existing repository, make the smallest correct change, preserve user work, verify the result, and perform only the Git and remote operations authorized by the user.
+
+## Repository-Specific Rules
+
+In addition to the generic repository rules above, EasyTrim Editor maintains project-specific architectural and runtime rules.
+
+Read every applicable project-specific rule before modifying the corresponding area:
+
+- `.agents/rules/structure.md` — repository structure, directory ownership, dependency direction, naming, component organization, and growth conventions.
+- `.agents/rules/security-runtime.md` — Tauri/native authority, FFmpeg and process safety, filesystem boundaries, temporary media, permissions, and runtime resource ownership.
+- `.agents/rules/state-management.md` — frontend state ownership, Redux Toolkit architecture, slice boundaries, selectors, persistence, Context usage, direct Redux consumers, and state migration conventions.
+
+Project-specific rules refine the generic rules for EasyTrim Editor. When a project-specific rule defines a more precise contract for this repository, follow the project-specific rule.
+
+Do not duplicate project-specific architecture into generic rule files. Keep reusable agent behavior in the generic rules and EasyTrim-specific contracts in the project-specific rules.
+
+## Project Skills
+
+EasyTrim Editor provides task-specific skills under `.agents/skills/`.
+
+Load every skill whose domain matches the requested work before implementation.
+
+- Use `easytrim-editor-tauri-rust` for Rust, Tauri, IPC, native state, process lifecycle, filesystem/native boundaries, security configuration, packaging, or platform-specific behavior.
+- Use `easytrim-editor-ffmpeg-pipeline` for FFprobe/FFmpeg behavior, media inspection, metadata, stream selection, trim/export semantics, audio processing, presets, proxy/preview media, or media benchmarks.
+- Use `easytrim-editor-react-interface` for React, TypeScript, Vite, component architecture, editor UI, timeline interaction, accessibility, frontend wiring, or frontend tests.
+- Use `easytrim-editor-redux-state` for Redux Toolkit, global state ownership, store/slice architecture, selectors, typed hooks, persistence, shared lifecycle events, or migration away from Context, reducer, hook, or props-based state transport.
+
+Load all applicable skills for work that crosses domain boundaries.
+
+Skills supplement repository rules with stack-specific implementation guidance. They do not replace generic or project-specific rules.
+
+For cross-boundary changes, keep contracts synchronized across all affected layers. In particular:
+
+- frontend code must use narrow typed native boundaries rather than acquiring arbitrary filesystem or process authority;
+- FFmpeg/FFprobe execution and media stream semantics remain native/media concerns rather than frontend concerns;
+- shared serializable application state follows the Redux ownership rules, while non-serializable runtime resources remain with their appropriate runtime owner.
