@@ -18,6 +18,7 @@ Shared rules are authoritative for repository-wide conventions. Skills add stack
 - [Repository structure](.agents/rules/structure.md) — directory ownership, dependency direction, naming, and growth conventions.
 - [Runtime and security](.agents/rules/security-runtime.md) — native authority, process safety, Tauri permissions, temporary files, and in-memory-only state.
 - [Quality gates](.agents/rules/quality.md) — tests, static checks, media verification, and completion reporting.
+- [State management](.agents/rules/state-management.md) — frontend ownership, Redux Toolkit, selectors, effects, and migration boundaries.
 - [Git and pull requests](.agents/rules/git-workflow.md) — topic branches, Conventional Commits, push policy, and PR format.
 
 ## Skill routing
@@ -25,6 +26,7 @@ Shared rules are authoritative for repository-wide conventions. Skills add stack
 - Use `easytrim-editor-tauri-rust` for Rust, Tauri, IPC, native state, process lifecycle, security configuration, or packaging.
 - Use `easytrim-editor-ffmpeg-pipeline` for FFprobe/FFmpeg behavior, metadata, trim/export semantics, audio processing, presets, or media benchmarks.
 - Use `easytrim-editor-react-interface` for React, TypeScript, Vite, editor state, timeline interaction, accessibility, or frontend tests.
+- Use `easytrim-editor-redux-state` for Redux Toolkit, state ownership, store/slice architecture, selectors, typed hooks, or Context/useReducer migration.
 - Use all applicable skills for cross-boundary work. Keep native, media, and UI contract changes synchronized.
 
 ## Review expectations
