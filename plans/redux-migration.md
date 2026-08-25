@@ -631,11 +631,11 @@ broad-selector cleanup outside playback-specific wiring.
 The Phase 7 inventory found three project-owned Contexts and no remaining Context that
 transports canonical Redux application state:
 
-| Context | Responsibility | Why Redux is inappropriate | Provider |
-| --- | --- | --- | --- |
+| Context                    | Responsibility                                                                                                                                                               | Why Redux is inappropriate                                                                                                                 | Provider                                               |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------ |
 | `EditorInteractionContext` | Playback and timeline runtime capabilities: media refs, Web Audio coordination, readiness, playhead rendering, scrubbing, transport commands, and trim interaction callbacks | It owns DOM/media refs, Web Audio objects, animation handles, and imperative callbacks that must not be serialized or dispatched per frame | `app/components/Providers/EditorContractsProvider.tsx` |
-| `AppUpdatesContext` | Shared updater status and check/install commands for `StatusBar` and `HelpMenu` | The available updater object and installation operation are non-serializable runtime resources; the Context is a narrow service boundary | `app/components/Providers/AppUpdatesProvider.tsx` |
-| `ThemeContext` | Theme resolution, system-theme subscription, DOM CSS variables, color scrubbing, and accepted theme/color persistence | It is an environment/style boundary with system and DOM lifecycles, local drafts, and CSS side effects rather than editor state | `app/theme/ThemeProvider.tsx` |
+| `AppUpdatesContext`        | Shared updater status and check/install commands for `StatusBar` and `HelpMenu`                                                                                              | The available updater object and installation operation are non-serializable runtime resources; the Context is a narrow service boundary   | `app/components/Providers/AppUpdatesProvider.tsx`      |
+| `ThemeContext`             | Theme resolution, system-theme subscription, DOM CSS variables, color scrubbing, and accepted theme/color persistence                                                        | It is an environment/style boundary with system and DOM lifecycles, local drafts, and CSS side effects rather than editor state            | `app/theme/ThemeProvider.tsx`                          |
 
 The updater Context now has a `null` default and `useAppUpdates` throws when consumed
 outside its required provider; fake no-op commands are not retained. The runtime
