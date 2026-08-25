@@ -108,7 +108,6 @@ export function PanelVisibilityControls() {
         className="size-7 p-0"
         open={layoutMenuOpen}
         onOpenChange={setLayoutMenuOpen}
-        onTriggerClick={() => setLayoutMenuOpen((open) => !open)}
       >
         <>
           <LayoutPanelLeft className="size-4" aria-hidden="true" />
