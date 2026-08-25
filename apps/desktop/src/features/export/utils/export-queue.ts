@@ -74,12 +74,21 @@ export function cancelQueuedExport(id: string) {
 
   job.canceled = true;
   job.dispatch(exportCanceled({ id, durationMs: elapsedTime(job) }));
+  if (job.startedAt === null) {
+    removePendingJob(job);
+  }
   if (job.operationId) {
     void cancelOperation(job.operationId).catch(() => undefined);
   } else {
     void releaseExportSource(job.item.request.sourceId).catch(() => undefined);
   }
   void drainQueue(job.dispatch, job.getState);
+}
+
+function removePendingJob(job: RuntimeExportJob) {
+  const pendingIndex = pendingJobs.indexOf(job);
+  if (pendingIndex >= 0) pendingJobs.splice(pendingIndex, 1);
+  jobsById.delete(job.item.id);
 }
 
 export function cancelActiveExport() {
