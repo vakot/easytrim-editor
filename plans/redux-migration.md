@@ -193,7 +193,8 @@ values. Active tools survive source replacement for the lifetime of the applicat
 but do not survive restart through persistence.
 
 Actions are `editorToolsInitialized`, `editorToolsReset`,
-`safeTrimFollowingToggled`, `loopPlaybackToggled`, `loopPlaybackChanged`,
+`safeTrimFollowingToggled`, `safeTrimFollowingChanged`, `loopPlaybackToggled`,
+`loopPlaybackChanged`,
 `segmentPlaybackToggled`, `segmentPlaybackChanged`, and `playbackSpeedChanged`.
 Focused selectors are `selectEditorTools`, `selectSafeTrimFollowingEnabled`,
 `selectLoopPlaybackEnabled`, `selectSegmentPlaybackEnabled`, and `selectPlaybackSpeed`.

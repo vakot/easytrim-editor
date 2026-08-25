@@ -32,6 +32,9 @@ const editorToolsSlice = createSlice({
     safeTrimFollowingToggled: (state) => {
       state.safeTrimFollowingEnabled = !state.safeTrimFollowingEnabled;
     },
+    safeTrimFollowingChanged: (state, action: PayloadAction<boolean>) => {
+      state.safeTrimFollowingEnabled = action.payload;
+    },
     loopPlaybackToggled: (state) => {
       state.loopPlaybackEnabled = !state.loopPlaybackEnabled;
     },
@@ -54,6 +57,7 @@ export const {
   editorToolsInitialized,
   editorToolsReset,
   safeTrimFollowingToggled,
+  safeTrimFollowingChanged,
   loopPlaybackToggled,
   loopPlaybackChanged,
   segmentPlaybackToggled,

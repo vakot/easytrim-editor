@@ -15,6 +15,7 @@ import {
   selectPlaybackSpeed,
   selectSafeTrimFollowingEnabled,
   selectSegmentPlaybackEnabled,
+  safeTrimFollowingChanged,
   segmentPlaybackToggled,
 } from "@/app/store/slices/editor-tools-slice";
 import { DEFAULT_PLAYBACK_SPEED, type PlaybackSpeed } from "@/domain/playback-speed";
@@ -57,6 +58,20 @@ describe("editor tools Redux domain", () => {
     expect(editorToolsReducer(initialState, { type: "preferences/toolDefaultChanged" })).toEqual(
       initialState,
     );
+  });
+
+  it("supports explicitly changing safe trim following", () => {
+    const initialState = editorToolsReducer(
+      undefined,
+      editorToolsInitialized(createEditorToolsStateFromPreferences(DEFAULT_TOOL_DEFAULTS)),
+    );
+
+    const nextState = editorToolsReducer(initialState, safeTrimFollowingChanged(false));
+
+    expect(nextState.safeTrimFollowingEnabled).toBe(false);
+    expect(nextState.loopPlaybackEnabled).toBe(initialState.loopPlaybackEnabled);
+    expect(nextState.segmentPlaybackEnabled).toBe(initialState.segmentPlaybackEnabled);
+    expect(nextState.playbackSpeed).toBe(initialState.playbackSpeed);
   });
 
   it("supports mode toggles and the allowed playback-speed values", () => {
