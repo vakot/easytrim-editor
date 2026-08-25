@@ -6,6 +6,7 @@ import {
   optimizedExportPlanReceived,
   optimizedExportPlanRequested,
   optimizedExportSettingsChanged,
+  queueEntryAdded,
   queueFinishActionsAvailable,
   queuePaused,
   queueStarted,
@@ -156,7 +157,7 @@ async function startQueuedExport(
       progressPercent: 0,
       totalFrames: getTotalFrames(request, media.video),
     };
-    dispatch({ type: "export/queueEntryAdded", payload: item });
+    dispatch(queueEntryAdded(item));
     enqueueExport(item, dispatch, getState);
   } catch (error: unknown) {
     dispatch(exportLaunchFailed(normalizeAppError(error)));
