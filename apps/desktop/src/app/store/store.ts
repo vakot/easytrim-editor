@@ -12,6 +12,7 @@ import {
 
 import { createPersistedReducer, reduxStorage, type PersistStorage } from "@/app/store/persistence";
 import { editorLayoutReducer } from "@/app/store/slices/editor-layout-slice";
+import { importWorkflowReducer } from "@/app/store/slices/import-workflow-slice";
 import {
   createEditorToolsStateFromPreferences,
   editorToolsInitialized,
@@ -23,6 +24,7 @@ import { sessionReducer } from "@/app/store/slices/session-slice";
 const rootReducer = combineReducers({
   editorLayout: editorLayoutReducer,
   editorTools: editorToolsReducer,
+  importWorkflow: importWorkflowReducer,
   preferences: preferencesReducer,
   session: sessionReducer,
 });

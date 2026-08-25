@@ -3,7 +3,13 @@ import { useTranslation } from "react-i18next";
 import { useEditorSession } from "@/app/hooks/useEditorSession";
 import { useExportPanelController } from "@/app/hooks/useExportPanelController";
 import { useAppSelector } from "@/app/store/hooks";
+import { useAppDispatch } from "@/app/store/hooks";
 import { selectHasSource, selectSourceReady } from "@/app/store/slices/session-slice";
+import { selectIsChoosingSource } from "@/app/store/slices/import-workflow-slice";
+import {
+  chooseSourceRequested,
+  closeSourceRequested,
+} from "@/app/store/thunks/source-media-thunks";
 import { ContextMenu } from "@/components/ui/context-menu";
 
 import type { MenuNavigation } from "../../types";
@@ -11,9 +17,11 @@ import type { MenuNavigation } from "../../types";
 export function FileMenu({ navigation }: { navigation: MenuNavigation }) {
   const { t } = useTranslation();
   const app = useEditorSession();
+  const dispatch = useAppDispatch();
   const exportPanel = useExportPanelController();
   const canExport = useAppSelector(selectSourceReady);
   const hasSource = useAppSelector(selectHasSource);
+  const isChoosingSource = useAppSelector(selectIsChoosingSource);
   const cropApplied =
     app.crop.x !== 0 || app.crop.y !== 0 || app.crop.width !== 1 || app.crop.height !== 1;
   const canSave = canExport && !cropApplied;
@@ -26,15 +34,15 @@ export function FileMenu({ navigation }: { navigation: MenuNavigation }) {
           id: "open-file",
           children: t("app.topBarMenus.openFile"),
           suffix: "Ctrl+O",
-          disabled: app.isChoosingSource,
-          onSelect: () => void app.handleChooseSource(),
+          disabled: isChoosingSource,
+          onSelect: () => void dispatch(chooseSourceRequested()),
         },
         {
           id: "close-file",
           children: t("app.topBarMenus.closeFile"),
           suffix: "Ctrl+Q",
           disabled: !hasSource,
-          onSelect: app.handleCloseFile,
+          onSelect: () => void dispatch(closeSourceRequested()),
         },
         { id: "file-divider", separator: true },
         {

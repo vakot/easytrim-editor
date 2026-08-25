@@ -2,6 +2,7 @@ import { createSelector, createSlice, type PayloadAction } from "@reduxjs/toolki
 
 import type {
   AppError,
+  AudioPreviewDescriptor,
   MediaCapabilities,
   MediaInfo,
   PreviewDescriptor,
@@ -29,6 +30,17 @@ export type WaveformState =
   | { status: "ready"; jobId: string; width: number; url: string }
   | { status: "failed"; jobId: string; width: number; error: AppError };
 
+export type AudioPreviewState =
+  | { sourceId: string; status: "idle"; previews: AudioPreviewDescriptor[] }
+  | { sourceId: string; status: "loading"; previews: AudioPreviewDescriptor[] }
+  | { sourceId: string; status: "ready"; previews: AudioPreviewDescriptor[] }
+  | {
+      sourceId: string;
+      status: "unavailable";
+      previews: AudioPreviewDescriptor[];
+      error: AppError;
+    };
+
 export interface AudioTrackState {
   streamIndex: number;
   enabled: boolean;
@@ -50,6 +62,7 @@ export interface SessionState {
     masterEnabled: boolean;
     masterVolumePercent: number;
     mergeAudio: boolean;
+    audioPreviews: AudioPreviewState;
   } | null;
   lastError: AppError | null;
 }
@@ -93,6 +106,7 @@ const sessionSlice = createSlice({
         masterEnabled: true,
         masterVolumePercent: 50,
         mergeAudio: action.payload.mergeAudio ?? false,
+        audioPreviews: { sourceId: action.payload.source.sourceId, status: "idle", previews: [] },
       };
       state.lastError = null;
     },
@@ -138,6 +152,41 @@ const sessionSlice = createSlice({
     previewFailed: (state, action: PayloadAction<{ sourceId: string; error: AppError }>) => {
       if (state.source?.selection.sourceId !== action.payload.sourceId) return;
       state.source.preview = { status: "failed", error: action.payload.error };
+    },
+    audioPreviewsLoading: (state, action: PayloadAction<{ sourceId: string }>) => {
+      if (state.source?.selection.sourceId !== action.payload.sourceId) return;
+      state.source.audioPreviews = {
+        sourceId: action.payload.sourceId,
+        status: "loading",
+        previews: [],
+      };
+    },
+    audioPreviewsReady: (
+      state,
+      action: PayloadAction<{ sourceId: string; previews: AudioPreviewDescriptor[] }>,
+    ) => {
+      if (
+        state.source?.selection.sourceId !== action.payload.sourceId ||
+        action.payload.previews.some((preview) => preview.sourceId !== action.payload.sourceId)
+      )
+        return;
+      state.source.audioPreviews = {
+        sourceId: action.payload.sourceId,
+        status: "ready",
+        previews: action.payload.previews,
+      };
+    },
+    audioPreviewsUnavailable: (
+      state,
+      action: PayloadAction<{ sourceId: string; error: AppError }>,
+    ) => {
+      if (state.source?.selection.sourceId !== action.payload.sourceId) return;
+      state.source.audioPreviews = {
+        sourceId: action.payload.sourceId,
+        status: "unavailable",
+        previews: [],
+        error: action.payload.error,
+      };
     },
     trimChanged: (state, action: PayloadAction<{ sourceId: string; trim: TrimRange }>) => {
       if (
@@ -305,6 +354,9 @@ export const {
   previewLoading,
   previewReady,
   previewFailed,
+  audioPreviewsLoading,
+  audioPreviewsReady,
+  audioPreviewsUnavailable,
   trimChanged,
   audioTrackToggled,
   audioTracksSetEnabled,
@@ -334,6 +386,8 @@ export const selectSourceMedia = (state: RootState): MediaInfo | null =>
   selectActiveSource(state)?.media ?? null;
 export const selectPreview = (state: RootState): PreviewState =>
   selectActiveSource(state)?.preview ?? EMPTY_PREVIEW;
+export const selectAudioPreviews = (state: RootState): AudioPreviewState | null =>
+  selectActiveSource(state)?.audioPreviews ?? null;
 export const selectTrim = (state: RootState): TrimRange | null =>
   selectActiveSource(state)?.trim ?? null;
 export const selectAudioTracks = (state: RootState): AudioTrackState[] =>

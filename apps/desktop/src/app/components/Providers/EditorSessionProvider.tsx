@@ -3,13 +3,11 @@ import { useEffect, useState, type ReactNode } from "react";
 import { FULL_CROP, type CropRect } from "@/features/preview/utils/crop-geometry";
 import { useEasyTrimEditorApp } from "@/app/hooks/useEasyTrimEditorApp";
 import { EditorSessionContext } from "@/app/contexts/editor-session-context";
-import { selectMergeAudioDefault } from "@/app/store/slices/preferences-slice";
 import { selectSourceMedia } from "@/app/store/slices/session-slice";
 import { useAppSelector } from "@/app/store/hooks";
 
 export function EditorSessionProvider({ children }: { children: ReactNode }) {
-  const defaultMergeAudio = useAppSelector(selectMergeAudioDefault);
-  const app = useEasyTrimEditorApp(defaultMergeAudio);
+  const app = useEasyTrimEditorApp();
   const media = useAppSelector(selectSourceMedia);
   const sourceDimensions = media
     ? { width: media.video.width, height: media.video.height }

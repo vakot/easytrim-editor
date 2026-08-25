@@ -27,13 +27,10 @@ const menuState = vi.hoisted(() => ({
     queueStarted: false,
     queueFinishAction: "nothing",
     availableQueueFinishActions: ["exit", "nothing"],
-    handleChooseSource: vi.fn(),
-    handleCloseFile: vi.fn(),
     setQueueStarted: vi.fn(),
     cancelActiveExport: vi.fn(),
     cancelQueue: vi.fn(),
     setQueueFinishAction: vi.fn(),
-    handleSetAudioMerge: vi.fn(),
   },
   sourceDetails: {
     isReady: true,

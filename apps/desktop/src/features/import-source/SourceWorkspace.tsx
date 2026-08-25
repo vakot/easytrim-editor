@@ -15,6 +15,7 @@ import {
 } from "@/app/store/slices/editor-layout-slice";
 import { useEditorSession } from "@/app/hooks/useEditorSession";
 import { selectSourceSelection } from "@/app/store/slices/session-slice";
+import { selectIsSourceDragActive } from "@/app/store/slices/import-workflow-slice";
 import { PanelContent } from "@/components/PanelContent";
 
 export { CapabilityStatus } from "./components/CapabilityStatus";
@@ -22,7 +23,8 @@ export { CapabilityStatus } from "./components/CapabilityStatus";
 export function SourceWorkspace() {
   const { t } = useTranslation();
   const app = useEditorSession();
-  const { isSourceDragActive, exportQueue } = app;
+  const isSourceDragActive = useAppSelector(selectIsSourceDragActive);
+  const { exportQueue } = app;
   const sourceSelection = useAppSelector(selectSourceSelection);
   const dispatch = useAppDispatch();
   const isLeftPanelVisible = useAppSelector((state) => selectPanelVisibility(state, "left"));
