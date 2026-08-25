@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { MediaInfo, SourceDropEvent, SourceSelection } from "@/lib/tauri/media";
 import { createAppStore } from "@/app/store/store";
 import { selectIsSourceDragActive } from "@/app/store/slices/import-workflow-slice";
-import { selectActiveSource } from "@/app/store/slices/session-slice";
+import { selectSourceMedia, selectSourceError } from "@/app/store/slices/source-slice";
 import { startSourceMediaRuntime } from "@/app/store/source-media-runtime";
 
 const mocks = vi.hoisted(() => ({
@@ -74,7 +74,7 @@ describe("source/media application runtime", () => {
 
     sourceDropListener?.({ status: "selected", source });
     await vi.waitFor(() =>
-      expect(selectActiveSource(appStore.getState())?.media?.sourceId).toBe(source.sourceId),
+      expect(selectSourceMedia(appStore.getState())?.sourceId).toBe(source.sourceId),
     );
     expect(mocks.inspectMedia).toHaveBeenCalledWith(source.sourceId);
 
@@ -96,7 +96,7 @@ describe("source/media application runtime", () => {
       code: "drop_listener_failed",
       message: "Drop listener failed",
     });
-    expect(appStore.getState().session.lastError).toEqual({
+    expect(selectSourceError(appStore.getState())).toEqual({
       code: "drop_listener_failed",
       message: "Drop listener failed",
     });

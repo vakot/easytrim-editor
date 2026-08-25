@@ -66,18 +66,31 @@ vi.mock("@/app/store/hooks", () => ({
         isSourceDragActive: false,
         dropListenerError: null,
       },
-      session: {
+      source: {
         status: menuState.app.hasSource && menuState.sourceDetails.isReady ? "ready" : "idle",
-        source: menuState.app.hasSource
-          ? {
-              selection: { sourceId: "source-id" },
-              media: menuState.sourceDetails.isReady ? {} : null,
-              trim: menuState.sourceDetails.isReady ? {} : null,
-            }
-          : null,
+        sourceId: menuState.app.hasSource ? "source-id" : null,
+        selection: menuState.app.hasSource ? { sourceId: "source-id" } : null,
+        media: menuState.app.hasSource && menuState.sourceDetails.isReady ? {} : null,
+        error: null,
         capabilities: { status: "checking" },
-        lastError: null,
       },
+      trim: {
+        sourceId: menuState.app.hasSource ? "source-id" : null,
+        value: menuState.app.hasSource && menuState.sourceDetails.isReady ? {} : null,
+      },
+      crop: {
+        sourceId: menuState.app.hasSource ? "source-id" : null,
+        value: menuState.sourceDetails.crop,
+      },
+      audio: {
+        sourceId: menuState.app.hasSource ? "source-id" : null,
+        tracks: [],
+        masterEnabled: true,
+        masterVolumePercent: 50,
+        mergeAudio: false,
+        previews: null,
+      },
+      preview: { sourceId: null, value: { status: "idle" } },
     }),
 }));
 

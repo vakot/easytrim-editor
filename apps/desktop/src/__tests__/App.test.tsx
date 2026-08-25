@@ -14,7 +14,8 @@ import {
   editorToolsInitialized,
 } from "../app/store/slices/editor-tools-slice";
 import { editorLayoutReset } from "../app/store/slices/editor-layout-slice";
-import { sourceCleared } from "../app/store/slices/session-slice";
+import { sourceCleared } from "../app/store/actions/source-actions";
+import { selectHasSource } from "../app/store/slices/source-slice";
 import { startSourceMediaRuntime } from "../app/store/source-media-runtime";
 import { checkMediaCapabilitiesRequested } from "../app/store/thunks/source-media-thunks";
 import { DEFAULT_TOOL_DEFAULTS } from "../app/tool-settings";
@@ -2433,7 +2434,7 @@ describe("App", () => {
     });
 
     expect(screen.queryByRole("heading", { name: "holiday.mp4" })).not.toBeInTheDocument();
-    expect(store.getState().session.source).toBeNull();
+    expect(selectHasSource(store.getState())).toBe(false);
     expect(screen.getAllByRole("alert")).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ textContent: expect.stringContaining("This file type") }),

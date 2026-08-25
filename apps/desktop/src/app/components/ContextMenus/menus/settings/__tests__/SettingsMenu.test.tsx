@@ -6,7 +6,8 @@ import { Provider } from "react-redux";
 import { SettingsMenu } from "../SettingsMenu";
 import { createAppStore } from "@/app/store/store";
 import { DEFAULT_TOOL_DEFAULTS } from "@/app/tool-settings";
-import { sourceSelected } from "@/app/store/slices/session-slice";
+import { sourceSelected } from "@/app/store/actions/source-actions";
+import { selectMergeAudio } from "@/app/store/slices/audio-slice";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 const navigation = {
@@ -67,6 +68,6 @@ describe("SettingsMenu Redux integration", () => {
     );
     await user.click(mergeSwitch);
 
-    expect(store.getState().session.source?.mergeAudio).toBe(true);
+    expect(selectMergeAudio(store.getState())).toBe(true);
   });
 });

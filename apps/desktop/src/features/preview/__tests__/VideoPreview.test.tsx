@@ -1,8 +1,10 @@
 import { createRef, type ReactElement, type ReactNode } from "react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { Provider } from "react-redux";
 
-import type { PreviewState } from "@/app/store/slices/session-slice";
+import { createAppStore } from "@/app/store/store";
+import type { PreviewState } from "@/app/store/slices/preview-slice";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { VideoPreview } from "../VideoPreview";
 
@@ -25,7 +27,11 @@ function readyPreview(url: string): PreviewState {
 }
 
 function TooltipTestProvider({ children }: { children: ReactNode }) {
-  return <TooltipProvider delayDuration={0}>{children}</TooltipProvider>;
+  return (
+    <Provider store={createAppStore()}>
+      <TooltipProvider delayDuration={0}>{children}</TooltipProvider>
+    </Provider>
+  );
 }
 
 function renderPreview(element: ReactElement) {

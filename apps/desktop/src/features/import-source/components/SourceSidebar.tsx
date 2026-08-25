@@ -1,9 +1,10 @@
 import { useAppSelector } from "@/app/store/hooks";
 import {
-  selectActiveSource,
-  selectSessionError,
-  selectSessionStatus,
-} from "@/app/store/slices/session-slice";
+  selectSourceError,
+  selectSourceMedia,
+  selectSourceSelection,
+  selectSourceStatus,
+} from "@/app/store/slices/source-slice";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { ExportQueue, type ExportToast } from "@/features/export";
@@ -18,11 +19,12 @@ interface SourceSidebarProps {
 
 export function SourceSidebar({ queue }: SourceSidebarProps) {
   const { t } = useTranslation();
-  const source = useAppSelector(selectActiveSource);
-  const status = useAppSelector(selectSessionStatus);
-  const lastError = useAppSelector(selectSessionError);
+  const sourceSelection = useAppSelector(selectSourceSelection);
+  const media = useAppSelector(selectSourceMedia);
+  const status = useAppSelector(selectSourceStatus);
+  const lastError = useAppSelector(selectSourceError);
 
-  const sourceName = source?.selection.displayName ?? t("import.source.noSource");
+  const sourceName = sourceSelection?.displayName ?? t("import.source.noSource");
 
   return (
     <aside
@@ -50,7 +52,7 @@ export function SourceSidebar({ queue }: SourceSidebarProps) {
         </div>
 
         {lastError ? <SourceError error={lastError} /> : null}
-        <MediaDetails media={source?.media ?? null} />
+        <MediaDetails media={media} />
       </div>
       <Separator className="mx-4" />
       <ScrollArea className="min-h-0" data-slot="export-queue-scroll">

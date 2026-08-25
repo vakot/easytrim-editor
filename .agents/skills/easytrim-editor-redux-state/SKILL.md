@@ -62,6 +62,15 @@ into Redux” refactor.
 When removing prop drilling, connect the nearest application/feature component to
 selectors and dispatch. Do not make every leaf UI primitive store-aware.
 
+Independent domains may respond to the same semantic application event through
+`extraReducers` when they share a lifecycle boundary. Do not merge domains merely
+because they reset together, and do not coordinate shared resets through sequential
+UI dispatches. Slice boundaries follow responsibility and ownership, not one field per
+slice and not shared reset lifetime.
+
+Shared semantic events handled by multiple reducers should centralize common event
+validation in a pure helper, while each slice keeps its own state transition.
+
 Redux migration should remove state wiring, not merely relocate it. Application-specific
 components that consume or mutate Redux-owned state should normally select and dispatch
 directly at the closest actual consumer. Do not mirror a Redux slice through large
@@ -76,7 +85,7 @@ application infrastructure.
 
 ## Selectors and actions
 
-Prefer narrow selectors such as `selectActiveSource`, `selectTrim`,
+Prefer narrow selectors such as `selectSourceSelection`, `selectTrim`,
 `selectAudioTracks`, `selectCanExport`, and `selectHasQueuedExports` when those
 represent real domain concepts. Keep derived capability and button-availability logic
 in selectors rather than duplicated state.

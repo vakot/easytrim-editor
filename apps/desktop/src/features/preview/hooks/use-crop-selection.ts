@@ -6,15 +6,12 @@ import {
   type RefObject,
 } from "react";
 
-import {
-  FULL_CROP,
-  moveCrop,
-  resizeCrop,
-  type CropHandle,
-  type CropRect,
-} from "../utils/crop-geometry";
+import { moveCrop, resizeCrop, type CropHandle, type CropRect } from "../utils/crop-geometry";
 import type { CropFrame } from "../utils/crop-frame";
 import { snapCropToGuides } from "../utils/crop-snapping";
+import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
+import { cropChanged, selectCrop } from "@/app/store/slices/crop-slice";
+import { selectSourceId } from "@/app/store/slices/source-slice";
 
 const SNAP_REACH_PX = 12;
 
@@ -30,11 +27,10 @@ interface CropSelectionBounds {
   height: number;
 }
 
-export function useCropSelection(
-  previewRef: RefObject<HTMLDivElement | null>,
-  onCropChange?: (crop: CropRect) => void,
-) {
-  const [crop, setCrop] = useState<CropRect>(FULL_CROP);
+export function useCropSelection(previewRef: RefObject<HTMLDivElement | null>) {
+  const dispatch = useAppDispatch();
+  const sourceId = useAppSelector(selectSourceId);
+  const crop = useAppSelector(selectCrop);
   const [isOpen, setIsOpen] = useState(false);
   const [drag, setDrag] = useState<DragState | null>(null);
   const [enterFrom, setEnterFrom] = useState<CropFrame | null>(null);
@@ -50,10 +46,6 @@ export function useCropSelection(
     setIsOpen(false);
     setEnterFrom(null);
   }
-
-  useEffect(() => {
-    onCropChange?.(crop);
-  }, [crop, onCropChange]);
 
   useEffect(() => {
     if (!isOpen || !enterFrom) return;
@@ -103,18 +95,17 @@ export function useCropSelection(
     if (!drag || viewport.width <= 0 || viewport.height <= 0) return;
     const deltaX = (event.clientX - drag.startX) / viewport.width;
     const deltaY = (event.clientY - drag.startY) / viewport.height;
-    const nextCrop =
+    const movedCrop =
       drag.handle === "move"
         ? moveCrop(drag.crop, deltaX, deltaY)
         : resizeCrop(drag.crop, drag.handle, deltaX, deltaY);
-    setCrop(
-      event.shiftKey
-        ? snapCropToGuides(nextCrop, drag.handle, {
-            x: SNAP_REACH_PX / viewport.width,
-            y: SNAP_REACH_PX / viewport.height,
-          })
-        : nextCrop,
-    );
+    const nextCrop = event.shiftKey
+      ? snapCropToGuides(movedCrop, drag.handle, {
+          x: SNAP_REACH_PX / viewport.width,
+          y: SNAP_REACH_PX / viewport.height,
+        })
+      : movedCrop;
+    if (sourceId) dispatch(cropChanged({ sourceId, crop: nextCrop }));
   }
 
   function finishDrag() {

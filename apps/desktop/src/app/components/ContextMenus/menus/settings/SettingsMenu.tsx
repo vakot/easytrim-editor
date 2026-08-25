@@ -8,7 +8,8 @@ import {
   toolDefaultsReset,
 } from "@/app/store/slices/preferences-slice";
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
-import { audioMergeChanged, selectSourceSelection } from "@/app/store/slices/session-slice";
+import { audioMergeChanged } from "@/app/store/slices/audio-slice";
+import { selectSourceSelection } from "@/app/store/slices/source-slice";
 import { DEFAULT_TOOL_DEFAULTS, type ToolDefaultKey } from "@/app/tool-settings";
 import { ContextMenu, type ContextMenuOption } from "@/components/ui/context-menu";
 import { Switch } from "@/components/ui/switch";

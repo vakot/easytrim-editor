@@ -93,7 +93,12 @@ describe("Redux Persist store integration", () => {
     expect(persistConfig.whitelist).toEqual(["preferences"]);
     expect(persistConfig.whitelist).not.toContain("editorTools");
     expect(persistConfig.whitelist).not.toContain("editorLayout");
-    expect(persistConfig.whitelist).not.toContain("session");
+    expect(persistConfig.whitelist).not.toContain("importWorkflow");
+    expect(persistConfig.whitelist).not.toContain("source");
+    expect(persistConfig.whitelist).not.toContain("trim");
+    expect(persistConfig.whitelist).not.toContain("crop");
+    expect(persistConfig.whitelist).not.toContain("audio");
+    expect(persistConfig.whitelist).not.toContain("preview");
   });
 
   it("rehydrates Preferences through redux-persist", async () => {

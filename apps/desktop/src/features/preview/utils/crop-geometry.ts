@@ -1,9 +1,6 @@
-export interface CropRect {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
+import { FULL_CROP, type CropRect } from "@/domain/crop";
+
+export type { CropRect } from "@/domain/crop";
 
 export type CropHandle =
   | "move"
@@ -16,7 +13,7 @@ export type CropHandle =
   | "bottom-left"
   | "left";
 
-export const FULL_CROP: CropRect = { x: 0, y: 0, width: 1, height: 1 };
+export { FULL_CROP };
 export const MIN_CROP_SIZE = 0.1;
 
 export function moveCrop(crop: CropRect, deltaX: number, deltaY: number): CropRect {
