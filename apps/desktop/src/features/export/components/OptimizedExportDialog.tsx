@@ -27,7 +27,6 @@ import {
   selectOptimizedExportDialogOpen,
 } from "@/app/store/slices/export-slice";
 import { selectSourceMedia } from "@/app/store/slices/source-slice";
-import { selectCropResolution } from "@/app/store/slices/crop-slice";
 import { selectExportArguments } from "@/app/store/slices/export-presets-slice";
 import {
   openOptimizedExportDialog,
@@ -49,32 +48,17 @@ export function OptimizedExportDialog() {
   const open = useAppSelector(selectOptimizedExportDialogOpen);
   const source = useAppSelector(selectSourceMedia);
   const settings = useAppSelector(selectExportSettings);
-  const cropResolution = useAppSelector(selectCropResolution);
   const argumentsText = useAppSelector(selectExportArguments);
   const commandPreview = useAppSelector(selectExportCommandPreview);
   const commandPreviewError = useAppSelector(selectExportCommandPreviewError);
   const launchError = useAppSelector(selectExportLaunchError);
   const [isAspectRatioLocked, setIsAspectRatioLocked] = useState(true);
-  const previousCropResolution = useRef(cropResolution);
+  const previousArgumentsText = useRef(argumentsText);
 
   useEffect(() => {
-    const cropChanged =
-      previousCropResolution.current.width !== cropResolution.width ||
-      previousCropResolution.current.height !== cropResolution.height;
-    previousCropResolution.current = cropResolution;
-    if (open && settings && cropChanged) {
-      void dispatch(
-        optimizedExportSettingsChangedRequested({
-          ...settings,
-          resolution: cropResolution,
-        }),
-      );
-    }
-  }, [cropResolution, dispatch, open, settings]);
-
-  useEffect(() => {
-    if (!open) return;
-    void dispatch(refreshOptimizedExportPlan());
+    if (previousArgumentsText.current === argumentsText) return;
+    previousArgumentsText.current = argumentsText;
+    if (open) void dispatch(refreshOptimizedExportPlan());
   }, [argumentsText, dispatch, open]);
 
   if (!source || !settings) return null;

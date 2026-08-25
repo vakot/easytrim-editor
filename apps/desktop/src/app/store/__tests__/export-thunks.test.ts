@@ -138,7 +138,7 @@ describe("export thunks and runtime queue", () => {
       expect(selectExportQueue(store.getState())[0]?.status).toBe("completed"),
     );
 
-    expect(mocks.planOptimizedExport).toHaveBeenCalled();
+    expect(mocks.planOptimizedExport).toHaveBeenCalledTimes(1);
     expect(mocks.renderOptimized).toHaveBeenCalledOnce();
   });
 
