@@ -1,11 +1,6 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
-import {
-  DEFAULT_TOOL_DEFAULTS,
-  loadToolDefaults,
-  type ToolDefaultKey,
-  type ToolDefaults,
-} from "@/app/tool-settings";
+import { DEFAULT_TOOL_DEFAULTS, type ToolDefaultKey, type ToolDefaults } from "@/app/tool-settings";
 import type { RootState } from "@/app/store";
 
 export interface PreferencesState {
@@ -13,7 +8,7 @@ export interface PreferencesState {
 }
 
 const createInitialState = (): PreferencesState => ({
-  toolDefaults: loadToolDefaults(),
+  toolDefaults: { ...DEFAULT_TOOL_DEFAULTS },
 });
 
 const preferencesSlice = createSlice({

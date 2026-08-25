@@ -124,8 +124,14 @@ For export, Redux may eventually own serializable queue entries and status while
 runtime queue keeps source reservations, child operations, callbacks, and cancellation
 handles. Avoid putting callback fields such as `onCancel` in canonical Redux state.
 
-Do not add persistence. Keep existing accepted tool-default, theme, and export-preset
-storage behavior behind its current adapter until a later reviewed phase changes it.
+Before migrating a domain, decide whether it must survive application restart. Redux
+state is runtime-only by default; if the answer is no, do not register that domain for
+persistence. If the answer is yes, register the domain at the store boundary with its
+storage key and adapter, hydrate it when the store is created, and keep reducers pure.
+Components must dispatch actions only; reject a component that dispatches and also
+writes the same Redux state to localStorage. Prefer store-creation hydration over
+hidden module-level storage reads in a slice. Do not add `redux-persist` or another
+persistence framework.
 
 ## Source replacement checklist
 

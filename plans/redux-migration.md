@@ -21,9 +21,10 @@ migrates Preferences as the first permanent Redux-owned domain.
   cleaner boundary.
 - Existing source replacement, operation cancellation, waveform job, export-source
   reservation, temporary artifact, and listener cleanup guarantees are preserved.
-- Active editing state, tool defaults, theme preferences, and export presets retain
-  their current lifetime/persistence behavior until a later reviewed phase explicitly
-  changes it. Redux persistence is not part of this migration.
+- Active editing state remains runtime-only. Redux persistence is opt-in per domain at
+  the store boundary; Preferences is the first explicitly registered persisted Redux
+  domain. Theme and export presets retain their existing reviewed adapters until their
+  own migration decisions.
 
 ## Current composition and ownership
 
@@ -32,11 +33,12 @@ The current composition in `apps/desktop/src/App.tsx` is:
 ```text
 AppUpdatesProvider                 updater service Context
   ThemeProvider                     theme/environment Context
-    EditorViewStateProvider         shared view/tools Context
-      EditorSessionProvider         session hook + crop local state Context
-        ExportPanelControllerProvider imperative panel-ref Context
-          EditorContractsProvider   playback/controller Context
-            EasyTrimEditorApp       root composition and prop wiring
+    ReduxProvider                   typed application store; Preferences persistence
+      EditorViewStateProvider       active tools/layout Context
+        EditorSessionProvider       session hook + crop local state Context
+          ExportPanelControllerProvider imperative panel-ref Context
+            EditorContractsProvider playback/controller Context
+              EasyTrimEditorApp     root composition and prop wiring
 ```
 
 `useEasyTrimEditorApp` currently owns a reducer-backed `SessionState` plus unrelated
@@ -51,16 +53,18 @@ inspection, preview/audio-preview/waveform artifacts, export-source reservations
 operation cancellation, and FFmpeg process execution. Rust `AppState` stores those
 runtime resources in memory; Redux must never replace that authority.
 
-There is no `Redux now` domain at the Phase 0 baseline because the store does not yet
-exist. All application domains listed as `Redux later` remain on their current owners
-until a reviewed implementation phase establishes the new source of truth.
+Redux now owns Preferences. The store registers Preferences as its first persisted
+domain and hydrates it at store creation; all unregistered Redux domains remain
+runtime-only by default. The remaining application domains listed as `Redux later`
+stay on their current owners until a reviewed implementation phase establishes a new
+source of truth.
 
 ## Ownership classification
 
 | Domain                             | Classification            | Current owner                                                                                | Target / phase                                                                                   |
 | ---------------------------------- | ------------------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
 | Source/session/media lifecycle     | Redux later               | `sessionReducer` inside `useEasyTrimEditorApp`, exposed through `EditorSessionContext`       | One coherent session/source slice in Phase 3; async extraction in Phase 4                        |
-| Preferences                        | Redux later               | `tool-settings.ts` defaults held by `EditorViewStateProvider`                                | Dedicated preferences domain; Phase 2A                                                           |
+| Preferences                        | Redux now                 | Redux `preferences` slice; existing `tool-settings.ts` storage adapter                       | Completed Phase 1 pilot; persisted by explicit store registration                                |
 | Editor tools                       | Redux later               | Active `toolViewState` in `EditorViewStateProvider`, exposed by `useTimelineTools`           | Dedicated editor-tools domain; Phase 2B                                                          |
 | Editor layout                      | Redux later               | Visibility/layout state in `EditorViewStateProvider` and resizable-panel callbacks           | Dedicated editor-layout domain; Phase 2C                                                         |
 | Crop selection and crop resolution | Redux later               | `EditorSessionProvider` source-bound state plus `useCropSelection` pointer state             | Canonical crop values in preview/editor state in Phase 6; pointer internals stay local           |
@@ -130,44 +134,39 @@ React hook instantiation disappear only after the slice and consumers are migrat
 The low-level `AudioTracks`, preview, timeline, and export presentational contracts may
 remain props where they are useful reusable APIs.
 
-### 2. Preferences — Redux later, Phase 2A
+### 2. Preferences — Redux now, completed Phase 1 pilot
 
-Current owner: `tool-settings.ts` defines `ToolDefaults`, loads them from the existing
-preferences storage adapter, and `EditorViewStateProvider` stores them inside
-`toolViewState`. Current examples are the default values for safe trim following,
-loop playback, segment playback, and merge audio. A future preference such as
-`autoStartExport` belongs to this domain, but it has no current owner or writer.
+Canonical owner: the Redux `preferences` slice in
+`apps/desktop/src/app/preferences-slice.ts`. It owns the four tool defaults for safe
+trim following, loop playback, segment playback, and merge audio. The slice starts
+from deterministic product defaults; it does not read storage while the module is
+initialized.
 
-Readers include `EditorViewStateProvider` when active tools are initialized,
-`EditorSessionProvider` for the merge-audio initialization policy, Settings menu
-controls, and future command policy such as export queue startup. Writers are the
-Settings menu's explicit default-edit/reset actions and, in the future, an explicit
-auto-start preference control. The wiring problem is that defaults and active values
-currently share one `toolViewState` object and one Context, so changing a default can
-also update current active tools and the preference is passed indirectly into session
-initialization.
+Readers include `SettingsMenu` through focused selectors, `EditorViewStateProvider`
+when active tools are initialized or reset, and `EditorSessionProvider` for the
+merge-audio initialization policy. Writers are the Settings actions
+`toolDefaultChanged` and `toolDefaultsReset`; future preference writers must use
+domain actions as well. Active editor tools remain separate runtime state and must not
+mutate Preferences.
 
-Target source of truth: a dedicated preferences domain. Likely selectors include
-`selectToolDefaults` and, when implemented, `selectAutoStartExport`. Likely actions
-include `toolDefaultChanged`, `toolDefaultsReset`, and `autoStartExportChanged`.
-Changing active editor tools must not mutate preferences; only an action whose meaning
-is explicitly “change default” may do so. Preference values feed feature/session
-initialization or command policy and are not themselves active tool or queue state.
+Persistence is opt-in and registered at the application store boundary. Preferences
+is currently the only registered persisted Redux domain: the store hydrates it at
+creation and observes its slice reference after every dispatch. The existing
+`tool-settings.ts` functions remain the storage serialization/compatibility adapter,
+including preservation of unrelated fields in `easytrim.preferences.v1`. Reducers
+remain pure, and Settings has no storage responsibility. Unregistered runtime-only
+domains are neither hydrated nor persisted.
 
-Side-effect/persistence owner: `tool-settings.ts` and its existing storage adapter
-remain outside reducers. Preserve the current persistence policy and do not add Redux
-persistence. The future auto-start policy should be read by the export domain when a
-new item is queued; it must not be duplicated as active queue execution state.
+Lifetime: defaults survive source replacement and application restart through the
+registered Preferences adapter. Reset restores the declared product defaults.
+Changing a preference does not retroactively rewrite active tools, except for the
+existing explicit merge-audio bridge that applies the Settings action to the active
+session source; that value remains session-owned until the session migration.
 
-Reset/lifetime: defaults load at application initialization, survive source replacement,
-and persist according to the existing accepted policy. Reset restores the declared
-preference defaults. Changing a preference does not retroactively rewrite active tools
-unless a separate, explicit product action requests that behavior.
-
-Expected obsolete code: preference fields inside the combined `toolViewState`, the
-preference portion of `EditorViewStateContext`, and the `toolDefaults` transport from
-`EditorSessionProvider` once consumers read focused selectors. The storage adapter and
-explicit Settings UI contract remain.
+Completed Phase 2A work: preference fields were removed from the combined
+`toolViewState`, the preference portion of `EditorViewStateContext` was removed, and
+the old `toolDefaults` transport from `EditorSessionProvider` was replaced by Redux
+selectors. The storage adapter and explicit merge-audio Settings bridge remain.
 
 ### 3. Editor tools — Redux later, Phase 2B
 
@@ -402,9 +401,14 @@ not install Redux or change product code.
 After Phase 0 review/merge, add Redux Toolkit and `react-redux`, configure one typed
 store/provider, and migrate one deliberately small low-risk domain selected from this
 inventory. The pilot must prove provider wiring, typed hooks, selectors, dispatch,
-focused tests, and one source of truth without beginning session migration. Preferences
-was originally planned as Phase 2A and is complete early as Phase 1's permanent Redux
-pilot; the remaining Phase 2 domains are editor tools and editor layout.
+focused tests, and one source of truth without beginning session migration. The store
+also provides a small opt-in persistence mechanism: registered domains supply a key,
+load adapter, state selector, and save adapter; registered domains hydrate at store
+creation and persist only when their selected reference changes. Redux remains
+runtime-only by default, reducers remain pure, and UI components only dispatch.
+Preferences was originally planned as Phase 2A and is complete early as Phase 1's
+permanent Redux pilot; it is the first and currently only explicitly registered
+persisted domain. The remaining Phase 2 domains are editor tools and editor layout.
 
 ### Phase 2 — editor tools and editor layout
 

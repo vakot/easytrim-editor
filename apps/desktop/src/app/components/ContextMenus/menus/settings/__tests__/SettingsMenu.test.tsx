@@ -46,7 +46,7 @@ function renderSettings() {
 }
 
 describe("SettingsMenu Redux integration", () => {
-  it("reads and writes tool defaults through Redux and persists the change", async () => {
+  it("dispatches tool-default changes through Redux and persists the change", async () => {
     const user = userEvent.setup();
     const store = renderSettings();
 
@@ -59,7 +59,7 @@ describe("SettingsMenu Redux integration", () => {
     });
   });
 
-  it("persists reset while keeping the active-session value outside Redux", async () => {
+  it("dispatches reset while keeping the active-session value outside Redux", async () => {
     const user = userEvent.setup();
     const store = renderSettings();
 

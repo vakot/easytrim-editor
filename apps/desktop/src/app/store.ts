@@ -1,7 +1,14 @@
-import { configureStore, combineReducers } from "@reduxjs/toolkit";
+import { combineReducers, configureStore } from "@reduxjs/toolkit";
 import { useDispatch, useSelector } from "react-redux";
 
-import { preferencesReducer } from "@/app/preferences-slice";
+import { preferencesReducer, type PreferencesState } from "@/app/preferences-slice";
+import {
+  definePersistedDomain,
+  hydratePersistedDomains,
+  observePersistedDomains,
+  type PersistedDomain,
+} from "@/app/store-persistence";
+import { loadToolDefaults, persistToolDefaults } from "@/app/tool-settings";
 
 const rootReducer = combineReducers({
   preferences: preferencesReducer,
@@ -9,11 +16,26 @@ const rootReducer = combineReducers({
 
 export type RootState = ReturnType<typeof rootReducer>;
 
+export const persistedDomains: readonly PersistedDomain<RootState>[] = [
+  definePersistedDomain<RootState, PreferencesState>({
+    key: "preferences",
+    load: () => ({ toolDefaults: loadToolDefaults() }),
+    select: (state) => state.preferences,
+    save: (state) => persistToolDefaults(state.toolDefaults),
+  }),
+];
+
 export function createAppStore(preloadedState?: Partial<RootState>) {
-  return configureStore({
+  const appStore = configureStore({
     reducer: rootReducer,
-    preloadedState,
+    preloadedState: {
+      ...hydratePersistedDomains(persistedDomains),
+      ...preloadedState,
+    },
   });
+
+  observePersistedDomains(appStore, persistedDomains);
+  return appStore;
 }
 
 export const store = createAppStore();

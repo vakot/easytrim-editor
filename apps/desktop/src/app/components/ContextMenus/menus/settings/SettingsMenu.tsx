@@ -5,11 +5,7 @@ import { useTranslation } from "react-i18next";
 import { useEditorSession } from "@/app/hooks/useEditorSession";
 import { selectToolDefaults, toolDefaultChanged, toolDefaultsReset } from "@/app/preferences-slice";
 import { useAppDispatch, useAppSelector } from "@/app/store";
-import {
-  DEFAULT_TOOL_DEFAULTS,
-  persistToolDefaults,
-  type ToolDefaultKey,
-} from "@/app/tool-settings";
+import { DEFAULT_TOOL_DEFAULTS, type ToolDefaultKey } from "@/app/tool-settings";
 import { ContextMenu, type ContextMenuOption } from "@/components/ui/context-menu";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -27,7 +23,6 @@ export function SettingsMenu({ navigation }: { navigation: MenuNavigation }) {
 
   const updateToolDefault = (key: ToolDefaultKey, enabled: boolean) => {
     dispatch(toolDefaultChanged({ key, enabled }));
-    persistToolDefaults({ ...toolDefaults, [key]: enabled });
     if (key === "mergeAudioEnabled" && app.session.source) {
       // NOTE: Transitional bridge: merge-audio Settings has always applied to the active source.
       // The source value remains session-owned until the session migration phase.
@@ -37,7 +32,6 @@ export function SettingsMenu({ navigation }: { navigation: MenuNavigation }) {
 
   const resetDefaults = () => {
     dispatch(toolDefaultsReset());
-    persistToolDefaults(DEFAULT_TOOL_DEFAULTS);
     if (app.session.source) {
       // NOTE: Keep the same explicit merge-audio compatibility behavior on reset.
       app.handleSetAudioMerge(

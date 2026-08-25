@@ -61,10 +61,17 @@ descriptors when the UI needs to observe them.
   the repository dependency direction.
 - Keep the store serializable by default. Configure middleware deliberately and do
   not disable serializability checks globally to hide warnings.
-- Redux does not change the repository's persistence policy. Do not add Redux
-  persistence or a persistence library. Existing explicitly accepted preferences and
-  presets may keep their current persistence adapter until a reviewed phase changes
-  that contract.
+- Redux state is runtime-only by default. Persistence is explicit and opt-in per
+  domain: persisted domains are registered at the store boundary, hydrated when a
+  store is created, and observed there for reference-changing updates. Unregistered
+  domains must not hydrate or persist automatically.
+- Components and UI handlers must only dispatch Redux actions; they must not manually
+  synchronize Redux state to storage. Reducers remain pure, and persistence adapters
+  stay outside reducers and the slice modules. Do not persist transient, session,
+  native, or other runtime-owned state.
+- Do not add `redux-persist` or another persistence framework. Existing accepted
+  preferences, theme, and preset storage adapters remain valid when their domain is
+  explicitly registered or otherwise owns its reviewed persistence boundary.
 
 ## Slice contracts
 
