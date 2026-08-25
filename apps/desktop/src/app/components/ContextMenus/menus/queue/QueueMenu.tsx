@@ -92,7 +92,7 @@ export function QueueMenu({ navigation }: { navigation: MenuNavigation }) {
           {
             id: "queue-finish",
             children: t("app.queue.onFinish"),
-            suffix: queueFinishIcons[queueFinishAction],
+            icon: queueFinishIcons[queueFinishAction],
             shouldCloseOnClick: false,
             options: queueFinishOptions,
           },
