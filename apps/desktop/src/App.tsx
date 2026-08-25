@@ -147,15 +147,15 @@ function EasyTrimEditorApp() {
 function App() {
   return (
     <AppUpdatesProvider>
-      <ThemeProvider>
-        <ReduxProvider store={store}>
-          <PersistGate loading={null} persistor={persistor}>
+      <ReduxProvider store={store}>
+        <PersistGate loading={null} persistor={persistor}>
+          <ThemeProvider>
             <EditorContractsProvider>
               <EasyTrimEditorApp />
             </EditorContractsProvider>
-          </PersistGate>
-        </ReduxProvider>
-      </ThemeProvider>
+          </ThemeProvider>
+        </PersistGate>
+      </ReduxProvider>
     </AppUpdatesProvider>
   );
 }

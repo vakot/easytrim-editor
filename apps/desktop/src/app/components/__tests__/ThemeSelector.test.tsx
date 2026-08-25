@@ -1,17 +1,22 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { Provider } from "react-redux";
 import { describe, expect, it } from "vitest";
 
+import { createAppStore } from "@/app/store/store";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import { ThemeSelector } from "../ThemeSelector";
 
 describe("ThemeSelector", () => {
   it("switches between runtime themes and can return to the system preference", async () => {
     const user = userEvent.setup();
+    const store = createAppStore();
     render(
-      <ThemeProvider>
-        <ThemeSelector />
-      </ThemeProvider>,
+      <Provider store={store}>
+        <ThemeProvider>
+          <ThemeSelector />
+        </ThemeProvider>
+      </Provider>,
     );
 
     const root = document.documentElement;
@@ -29,7 +34,7 @@ describe("ThemeSelector", () => {
 
     await chooseTheme(user, "Theme: Dark", "System");
     expect(root).not.toHaveClass("light", "dark");
-    expect(localStorage.getItem("theme")).toBeNull();
+    expect(store.getState().theme.preference).toBe("system");
   });
 });
 

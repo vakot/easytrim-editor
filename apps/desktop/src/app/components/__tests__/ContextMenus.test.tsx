@@ -1,6 +1,12 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import {
+  fireEvent,
+  render as renderWithTestingLibrary,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactElement } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { DEFAULT_TOOL_DEFAULTS, type ToolDefaults } from "@/app/tool-settings";
@@ -8,7 +14,6 @@ import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import { AppUpdatesContext } from "@/app/contexts/app-updates-context";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { openExternalUrl } from "@/lib/open-external-url";
-import { STORAGE_KEYS } from "@/lib/storage";
 import { ContextMenus as AppContextMenus } from "../ContextMenus";
 import type { QueueFinishAction } from "@/lib/tauri/queue";
 import packageJson from "../../../../../../package.json";
@@ -45,13 +50,33 @@ const menuState = vi.hoisted(() => ({
     resetToolDefaults: vi.fn(),
     dispatch: vi.fn(),
   },
+  theme: {
+    preference: "system" as "system" | "light" | "dark",
+    primaryColor: "amber" as string,
+    customPrimaryColor: "#efbf04" as `#${string}`,
+  },
 }));
+
+const defaultAppUpdates = {
+  status: "idle" as const,
+  availableVersion: null,
+  isInstalling: false,
+  checkForUpdates: vi.fn(async () => undefined),
+  installUpdate: vi.fn(async () => undefined),
+};
+
+function render(ui: ReactElement) {
+  return renderWithTestingLibrary(
+    <AppUpdatesContext.Provider value={defaultAppUpdates}>{ui}</AppUpdatesContext.Provider>,
+  );
+}
 
 vi.mock("@/app/store/hooks", () => ({
   useAppDispatch: () => menuState.viewState.dispatch,
   useAppSelector: (selector: (state: unknown) => unknown) =>
     selector({
       preferences: { toolDefaults: menuState.viewState.toolDefaults },
+      theme: menuState.theme,
       importWorkflow: {
         isChoosingSource: menuState.app.isChoosingSource,
         isNativeDialogOpen: false,
@@ -123,6 +148,9 @@ describe("ContextMenus", () => {
     toolDefaults?: ToolDefaults;
     onToolDefaultChange?: (key: keyof ToolDefaults, enabled: boolean) => void;
     onResetToolDefaults?: () => void;
+    themePreference?: "system" | "light" | "dark";
+    primaryColor?: string;
+    customPrimaryColor?: `#${string}`;
   };
 
   function configureMenuState(overrides: MenuTestOverrides = {}, notify: () => void = () => {}) {
@@ -147,6 +175,9 @@ describe("ContextMenus", () => {
     menuState.app.cancelQueue = vi.fn(overrides.onCancelQueue);
     menuState.app.setQueueFinishAction = vi.fn(overrides.onQueueFinishActionChange);
     menuState.viewState.toolDefaults = overrides.toolDefaults ?? { ...DEFAULT_TOOL_DEFAULTS };
+    menuState.theme.preference = overrides.themePreference ?? "system";
+    menuState.theme.primaryColor = overrides.primaryColor ?? "amber";
+    menuState.theme.customPrimaryColor = overrides.customPrimaryColor ?? "#efbf04";
     const setToolDefault =
       overrides.onToolDefaultChange ??
       ((key: keyof ToolDefaults, enabled: boolean) => {
@@ -165,17 +196,35 @@ describe("ContextMenus", () => {
       resetToolDefaults();
       notify();
     });
-    menuState.viewState.dispatch = vi.fn(
-      (action: { type: string; payload?: { key: keyof ToolDefaults; enabled: boolean } }) => {
-        if (action.type === "preferences/toolDefaultChanged" && action.payload) {
-          setToolDefault(action.payload.key, action.payload.enabled);
+    menuState.viewState.dispatch = vi.fn((action: { type: string; payload?: unknown }) => {
+      if (
+        action.type === "preferences/toolDefaultChanged" &&
+        typeof action.payload === "object" &&
+        action.payload !== null &&
+        "key" in action.payload &&
+        "enabled" in action.payload
+      ) {
+        const payload = action.payload as { key: keyof ToolDefaults; enabled: boolean };
+        setToolDefault(payload.key, payload.enabled);
+      }
+      if (action.type === "preferences/toolDefaultsReset") {
+        resetToolDefaults();
+      }
+      if (action.type === "theme/themePreferenceChanged") {
+        menuState.theme.preference = action.payload as "system" | "light" | "dark";
+      }
+      if (action.type === "theme/primaryColorChanged") {
+        menuState.theme.primaryColor = action.payload as string;
+        if ((action.payload as string).startsWith("#")) {
+          menuState.theme.customPrimaryColor = action.payload as `#${string}`;
         }
-        if (action.type === "preferences/toolDefaultsReset") {
-          resetToolDefaults();
-        }
-        notify();
-      },
-    );
+      }
+      if (action.type === "theme/customPrimaryColorChanged") {
+        menuState.theme.primaryColor = action.payload as string;
+        menuState.theme.customPrimaryColor = action.payload as `#${string}`;
+      }
+      notify();
+    });
     menuState.sourceDetails.isReady = overrides.canExport ?? true;
     menuState.sourceDetails.crop =
       overrides.canSave === false
@@ -190,15 +239,27 @@ describe("ContextMenus", () => {
       configureMenuState(overrides, () => forceUpdate((value) => value + 1));
       initialized.current = true;
     }
-    return <AppContextMenus />;
+    return (
+      <ThemeProvider>
+        <AppContextMenus />
+      </ThemeProvider>
+    );
   }
 
   function renderMenus(overrides: MenuTestOverrides = {}) {
     return render(
       <TooltipProvider>
-        <ThemeProvider>
+        <AppUpdatesContext.Provider
+          value={{
+            status: "idle",
+            availableVersion: null,
+            isInstalling: false,
+            checkForUpdates: vi.fn(),
+            installUpdate: vi.fn(),
+          }}
+        >
           <ContextMenus {...overrides} />
-        </ThemeProvider>
+        </AppUpdatesContext.Provider>
       </TooltipProvider>,
     );
   }
@@ -630,10 +691,6 @@ describe("ContextMenus", () => {
 
   it("shows hex values and accepts custom input as soon as it is valid", async () => {
     const user = userEvent.setup();
-    localStorage.setItem(
-      STORAGE_KEYS.preferences,
-      JSON.stringify({ primaryColor: "blue", customPrimaryColor: "#123456" }),
-    );
     render(
       <TooltipProvider>
         <ThemeProvider>
@@ -641,6 +698,8 @@ describe("ContextMenus", () => {
             isChoosingSource={false}
             canSave
             canExport
+            primaryColor="blue"
+            customPrimaryColor="#123456"
             onSave={vi.fn()}
             onExport={vi.fn()}
           />
@@ -671,7 +730,7 @@ describe("ContextMenus", () => {
     await user.click(screen.getByRole("menuitem", { name: /Amber/ }));
     expect(screen.getByRole("menuitem", { name: /Amber/ })).toBeInTheDocument();
 
-    await user.click(customItem);
+    await user.click(screen.getByRole("menuitem", { name: /Custom/ }));
     expect(document.documentElement).toHaveAttribute("data-primary-color", "#123456");
 
     const spectrum = await screen.findByRole("button", { name: /Theme color spectrum/ });

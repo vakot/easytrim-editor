@@ -25,6 +25,7 @@ import {
 import { preferencesReducer } from "@/app/store/slices/preferences-slice";
 import { previewReducer } from "@/app/store/slices/preview-slice";
 import { sourceReducer } from "@/app/store/slices/source-slice";
+import { themeReducer } from "@/app/store/slices/theme-slice";
 import { trimReducer } from "@/app/store/slices/trim-slice";
 import { persistExportPresetState } from "@/features/export/export-presets";
 
@@ -39,6 +40,7 @@ const rootReducer = combineReducers({
   preferences: preferencesReducer,
   preview: previewReducer,
   source: sourceReducer,
+  theme: themeReducer,
   trim: trimReducer,
 });
 

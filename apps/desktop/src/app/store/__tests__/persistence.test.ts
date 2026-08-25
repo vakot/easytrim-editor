@@ -7,6 +7,11 @@ import {
   playbackSpeedChanged,
 } from "@/app/store/slices/editor-tools-slice";
 import { toolDefaultChanged, toolDefaultsReset } from "@/app/store/slices/preferences-slice";
+import {
+  customPrimaryColorChanged,
+  primaryColorChanged,
+  themePreferenceChanged,
+} from "@/app/store/slices/theme-slice";
 import { optimizedExportDialogOpened, queueEntryAdded } from "@/app/store/slices/export-slice";
 import { createAppPersistor, createAppStore, type AppStore } from "@/app/store/store";
 import { persistConfig, resolveReduxPersistStorage } from "@/app/store/persistence";
@@ -87,11 +92,16 @@ describe("Redux Persist store integration", () => {
     const store = createAppStore(storage);
 
     expect(store.getState().preferences.toolDefaults).toEqual(DEFAULT_TOOL_DEFAULTS);
+    expect(store.getState().theme).toEqual({
+      preference: "system",
+      primaryColor: "amber",
+      customPrimaryColor: "#efbf04",
+    });
     expect(storage.values).toEqual(new Map());
   });
 
-  it("configures only Preferences for persistence", () => {
-    expect(persistConfig.whitelist).toEqual(["preferences"]);
+  it("configures only canonical preference domains for persistence", () => {
+    expect(persistConfig.whitelist).toEqual(["preferences", "theme"]);
     expect(persistConfig.whitelist).not.toContain("editorTools");
     expect(persistConfig.whitelist).not.toContain("editorLayout");
     expect(persistConfig.whitelist).not.toContain("importWorkflow");
@@ -110,6 +120,11 @@ describe("Redux Persist store integration", () => {
         preferences: JSON.stringify({
           toolDefaults: { ...DEFAULT_TOOL_DEFAULTS, loopPlaybackEnabled: false },
         }),
+        theme: JSON.stringify({
+          preference: "dark",
+          primaryColor: "#123456",
+          customPrimaryColor: "#123456",
+        }),
         _persist: JSON.stringify({ version: -1, rehydrated: true }),
       }),
     });
@@ -121,6 +136,11 @@ describe("Redux Persist store integration", () => {
     });
     expect(store.getState().editorTools.loopPlaybackEnabled).toBe(false);
     expect(store.getState().editorTools.playbackSpeed).toBe(1);
+    expect(store.getState().theme).toEqual({
+      preference: "dark",
+      primaryColor: "#123456",
+      customPrimaryColor: "#123456",
+    });
   });
 
   it("does not rewrite active tools when a Preference changes", async () => {
@@ -208,6 +228,11 @@ describe("Redux Persist store integration", () => {
     const { store } = await createPersistedTestStore(storage);
 
     expect(store.getState().preferences.toolDefaults).toEqual(DEFAULT_TOOL_DEFAULTS);
+    expect(store.getState().theme).toEqual({
+      preference: "system",
+      primaryColor: "amber",
+      customPrimaryColor: "#efbf04",
+    });
   });
 
   it("persists a dispatched preference action without UI storage calls", async () => {
@@ -234,6 +259,25 @@ describe("Redux Persist store integration", () => {
     expect(JSON.parse(String(persistedRoot.preferences))).toEqual({
       toolDefaults: DEFAULT_TOOL_DEFAULTS,
     });
+  });
+
+  it("persists theme actions without runtime or derived values", async () => {
+    const { store, persistor, storage } = await createPersistedTestStore();
+
+    store.dispatch(themePreferenceChanged("dark"));
+    store.dispatch(primaryColorChanged("blue"));
+    store.dispatch(customPrimaryColorChanged("#123456"));
+    await persistor.flush();
+
+    const persistedRoot = await readPersistedRoot(storage);
+    expect(JSON.parse(String(persistedRoot.theme))).toEqual({
+      preference: "dark",
+      primaryColor: "#123456",
+      customPrimaryColor: "#123456",
+    });
+    expect(persistedRoot).not.toHaveProperty("resolvedTheme");
+    expect(JSON.parse(String(persistedRoot.theme))).not.toHaveProperty("primaryColorKey");
+    expect(JSON.parse(String(persistedRoot.theme))).not.toHaveProperty("systemPrefersDark");
   });
 
   it("keeps independently created stores and persistors isolated", async () => {

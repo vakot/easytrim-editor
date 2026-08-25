@@ -1,7 +1,11 @@
 import { useContext } from "react";
 
-import { AppUpdatesContext } from "@/app/contexts/app-updates-context";
+import { AppUpdatesContext, type AppUpdates } from "@/app/contexts/app-updates-context";
 
-export function useAppUpdates() {
-  return useContext(AppUpdatesContext);
+export function useAppUpdates(): AppUpdates {
+  const value = useContext(AppUpdatesContext);
+  if (!value) {
+    throw new Error("useAppUpdates must be used within AppUpdatesProvider.");
+  }
+  return value;
 }

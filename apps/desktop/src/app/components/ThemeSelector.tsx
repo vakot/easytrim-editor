@@ -1,6 +1,8 @@
 import { Monitor, Moon, Sun } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
+import { selectThemePreference, themePreferenceChanged } from "@/app/store/slices/theme-slice";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { useTheme } from "@/app/theme/use-theme";
 import type { ThemePreference } from "@/app/theme/theme";
@@ -14,7 +16,9 @@ const themeOptions = [
 
 export function ThemeSelector({ className }: { className?: string }) {
   const { t } = useTranslation();
-  const { preference, resolvedTheme, setPreference } = useTheme();
+  const { resolvedTheme } = useTheme();
+  const dispatch = useAppDispatch();
+  const preference = useAppSelector(selectThemePreference);
   const currentThemeLabel =
     preference === "system"
       ? t("theme.systemSelection", { resolved: t(`theme.${resolvedTheme}`) })
@@ -22,7 +26,10 @@ export function ThemeSelector({ className }: { className?: string }) {
   const CurrentIcon = themeOptions.find((option) => option.value === preference)?.Icon ?? Monitor;
 
   return (
-    <Select value={preference} onValueChange={(theme) => setPreference(theme as ThemePreference)}>
+    <Select
+      value={preference}
+      onValueChange={(theme) => dispatch(themePreferenceChanged(theme as ThemePreference))}
+    >
       <SelectTrigger
         variant="solid"
         className={cn("w-16 px-3", className)}
