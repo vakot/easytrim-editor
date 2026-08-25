@@ -2,7 +2,13 @@ import { afterEach, describe, expect, it } from "vitest";
 import type { Persistor, Storage as PersistStorage } from "redux-persist";
 
 import { toolDefaultChanged, toolDefaultsReset } from "@/app/preferences-slice";
-import { createAppPersistor, createAppStore, persistConfig, type AppStore } from "@/app/store";
+import {
+  createAppPersistor,
+  createAppStore,
+  persistConfig,
+  resolveReduxPersistStorage,
+  type AppStore,
+} from "@/app/store";
 import { DEFAULT_TOOL_DEFAULTS } from "@/app/tool-settings";
 
 interface TestStorage extends PersistStorage {
@@ -64,6 +70,17 @@ async function readPersistedRoot(storage: TestStorage): Promise<Record<string, u
 }
 
 describe("Redux Persist store integration", () => {
+  it("normalizes the Vite CommonJS interop shape to a WebStorage adapter", () => {
+    const storage = createTestStorage();
+
+    expect(resolveReduxPersistStorage(storage)).toBe(storage);
+    expect(resolveReduxPersistStorage({ default: storage })).toBe(storage);
+    expect(() => resolveReduxPersistStorage({ default: {} })).toThrow(TypeError);
+    expect(typeof persistConfig.storage.getItem).toBe("function");
+    expect(typeof persistConfig.storage.setItem).toBe("function");
+    expect(typeof persistConfig.storage.removeItem).toBe("function");
+  });
+
   it("keeps Preferences defaults deterministic before rehydration", () => {
     const storage = createTestStorage();
     const store = createAppStore(storage);
