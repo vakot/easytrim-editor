@@ -11,6 +11,9 @@ import {
   initialExportState,
   optimizedExportDialogClosed,
   optimizedExportDialogOpened,
+  optimizedExportPlanFailed,
+  optimizedExportPlanReceived,
+  optimizedExportPlanRequested,
   optimizedExportSettingsChanged,
   queueEntryAdded,
   queueFinishActionChanged,
@@ -118,5 +121,47 @@ describe("export slice", () => {
     expect(
       exportReducer(initialExportState, queueFinishActionChanged("systemSleep")),
     ).toMatchObject({ queueFinishAction: "systemSleep" });
+  });
+
+  it("accepts only the latest optimized plan request result", () => {
+    let state = exportReducer(
+      initialExportState,
+      optimizedExportPlanRequested({ requestId: 1 }),
+    );
+    state = exportReducer(state, optimizedExportPlanRequested({ requestId: 2 }));
+    state = exportReducer(
+      state,
+      optimizedExportPlanReceived({ requestId: 2, commandPreview: "new plan" }),
+    );
+    state = exportReducer(
+      state,
+      optimizedExportPlanReceived({ requestId: 1, commandPreview: "stale plan" }),
+    );
+    expect(state.commandPreview).toBe("new plan");
+
+    state = exportReducer(
+      state,
+      optimizedExportPlanFailed({
+        requestId: 1,
+        error: { code: "internal", message: "stale failure" },
+      }),
+    );
+    expect(state.commandPreviewError).toBeNull();
+
+    state = exportReducer(
+      state,
+      optimizedExportPlanFailed({
+        requestId: 2,
+        error: { code: "internal", message: "latest failure" },
+      }),
+    );
+    expect(state.commandPreviewError?.message).toBe("latest failure");
+
+    state = exportReducer(state, optimizedExportPlanRequested({ requestId: 3 }));
+    state = exportReducer(
+      state,
+      optimizedExportPlanReceived({ requestId: 3, commandPreview: "latest plan" }),
+    );
+    expect(state.commandPreview).toBe("latest plan");
   });
 });

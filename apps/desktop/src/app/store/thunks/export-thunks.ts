@@ -44,6 +44,7 @@ import {
 import { outputDefaults } from "@/features/export/utils/export-options";
 
 let exportSequence = 0;
+let optimizedPlanRequestSequence = 0;
 
 export const loadQueueFinishActions = (): AppThunk => async (dispatch) => {
   try {
@@ -97,15 +98,16 @@ export const refreshOptimizedExportPlan = (): AppThunk => async (dispatch, getSt
   const request = getOptimizedRequest(getState());
   if (!request) return;
   const sourceId = request.sourceId;
-  dispatch(optimizedExportPlanRequested());
+  const requestId = ++optimizedPlanRequestSequence;
+  dispatch(optimizedExportPlanRequested({ requestId }));
   try {
     const plan = await planOptimizedExport(request);
     if (getState().source.sourceId === sourceId) {
-      dispatch(optimizedExportPlanReceived(plan.commandPreview));
+      dispatch(optimizedExportPlanReceived({ requestId, commandPreview: plan.commandPreview }));
     }
   } catch (error: unknown) {
     if (getState().source.sourceId === sourceId) {
-      dispatch(optimizedExportPlanFailed(normalizeAppError(error)));
+      dispatch(optimizedExportPlanFailed({ requestId, error: normalizeAppError(error) }));
     }
   }
 };

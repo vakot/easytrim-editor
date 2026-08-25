@@ -51,6 +51,7 @@ export interface ExportState {
   availableQueueFinishActions: QueueFinishAction[];
   optimizedDialogOpen: boolean;
   optimizedSettings: ExportSettings | null;
+  optimizedPlanRequestId: number | null;
   commandPreview: string;
   commandPreviewError: AppError | null;
   launchError: AppError | null;
@@ -63,6 +64,7 @@ export const initialExportState: ExportState = {
   availableQueueFinishActions: ["exit", "nothing"],
   optimizedDialogOpen: false,
   optimizedSettings: null,
+  optimizedPlanRequestId: null,
   commandPreview: "",
   commandPreviewError: null,
   launchError: null,
@@ -83,15 +85,24 @@ const exportSlice = createSlice({
     optimizedExportSettingsChanged: (state, action: PayloadAction<ExportSettings>) => {
       state.optimizedSettings = action.payload;
     },
-    optimizedExportPlanRequested: (state) => {
+    optimizedExportPlanRequested: (state, action: PayloadAction<{ requestId: number }>) => {
+      state.optimizedPlanRequestId = action.payload.requestId;
       state.commandPreviewError = null;
     },
-    optimizedExportPlanReceived: (state, action: PayloadAction<string>) => {
-      state.commandPreview = action.payload;
+    optimizedExportPlanReceived: (
+      state,
+      action: PayloadAction<{ requestId: number; commandPreview: string }>,
+    ) => {
+      if (action.payload.requestId !== state.optimizedPlanRequestId) return;
+      state.commandPreview = action.payload.commandPreview;
       state.commandPreviewError = null;
     },
-    optimizedExportPlanFailed: (state, action: PayloadAction<AppError>) => {
-      state.commandPreviewError = action.payload;
+    optimizedExportPlanFailed: (
+      state,
+      action: PayloadAction<{ requestId: number; error: AppError }>,
+    ) => {
+      if (action.payload.requestId !== state.optimizedPlanRequestId) return;
+      state.commandPreviewError = action.payload.error;
     },
     exportLaunchFailed: (state, action: PayloadAction<AppError>) => {
       state.launchError = action.payload;
@@ -187,6 +198,7 @@ const exportSlice = createSlice({
     builder.addCase(sourceSelected, (state) => {
       state.optimizedDialogOpen = false;
       state.optimizedSettings = null;
+      state.optimizedPlanRequestId = null;
       state.commandPreview = "";
       state.commandPreviewError = null;
       state.launchError = null;
@@ -194,6 +206,7 @@ const exportSlice = createSlice({
     builder.addCase(sourceCleared, (state) => {
       state.optimizedDialogOpen = false;
       state.optimizedSettings = null;
+      state.optimizedPlanRequestId = null;
       state.commandPreview = "";
       state.commandPreviewError = null;
       state.launchError = null;
