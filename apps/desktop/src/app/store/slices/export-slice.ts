@@ -1,6 +1,7 @@
 import { createSelector, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 import { sourceCleared, sourceSelected } from "@/app/store/actions/source-actions";
+import { cropChanged } from "@/app/store/slices/crop-slice";
 import type {
   AppError,
   ExportProgress,
@@ -210,6 +211,11 @@ const exportSlice = createSlice({
       state.commandPreview = "";
       state.commandPreviewError = null;
       state.launchError = null;
+    });
+    builder.addCase(cropChanged, (state, action) => {
+      if (state.optimizedSettings) {
+        state.optimizedSettings.resolution = action.payload.resolution;
+      }
     });
   },
 });

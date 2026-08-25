@@ -19,6 +19,8 @@ import {
   queueFinishActionChanged,
   queueStarted,
 } from "../export-slice";
+import { cropChanged } from "../crop-slice";
+import { sourceSelected } from "@/app/store/actions/source-actions";
 
 const settings = { resolution: { width: 1920, height: 1080 }, frameRate: undefined };
 const item = {
@@ -163,5 +165,37 @@ describe("export slice", () => {
       optimizedExportPlanReceived({ requestId: 3, commandPreview: "latest plan" }),
     );
     expect(state.commandPreview).toBe("latest plan");
+  });
+
+  it("keeps optimized resolution synchronized with crop changes while closed", () => {
+    let state = exportReducer(initialExportState, optimizedExportDialogOpened(settings));
+    state = exportReducer(state, optimizedExportDialogClosed());
+    state = exportReducer(
+      state,
+      cropChanged({
+        sourceId: "source-1",
+        crop: { x: 0.1, y: 0, width: 0.8, height: 1 },
+        resolution: { width: 1536, height: 1080 },
+      }),
+    );
+    state = exportReducer(state, optimizedExportDialogOpened(settings));
+
+    expect(state.optimizedSettings?.resolution).toEqual({ width: 1536, height: 1080 });
+
+    state = exportReducer(
+      state,
+      optimizedExportSettingsChanged({
+        ...settings,
+        resolution: { width: 1280, height: 720 },
+      }),
+    );
+    expect(state.optimizedSettings?.resolution).toEqual({ width: 1280, height: 720 });
+
+    state = exportReducer(
+      state,
+      sourceSelected({ source: { sourceId: "source-2", displayName: "replacement.mp4" } }),
+    );
+    expect(state.optimizedDialogOpen).toBe(false);
+    expect(state.optimizedSettings).toBeNull();
   });
 });

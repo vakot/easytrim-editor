@@ -29,6 +29,7 @@ describe("source-bound lifecycle", () => {
       cropChanged({
         sourceId: firstSource.sourceId,
         crop: { x: 0.1, y: 0, width: 0.8, height: 1 },
+        resolution: { width: 1536, height: 1080 },
       }),
     );
     store.dispatch(audioMergeChanged({ sourceId: firstSource.sourceId, enabled: true }));
