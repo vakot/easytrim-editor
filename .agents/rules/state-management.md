@@ -53,6 +53,10 @@ descriptors when the UI needs to observe them.
 
 - Use Redux Toolkit and one application store composed from focused reducers/slices. Keep the
   application store, typed hooks, and Redux Persist integration in `app/store/`.
+- Keep `store.ts` composition-only. Custom Redux middleware belongs under
+  `app/store/middleware/`, and cross-domain RTK listener reactions belong under
+  `app/store/middleware/listeners/`. Use one shared listener middleware instance unless
+  separate instances are justified by distinct lifecycle or isolation requirements.
 - Do not create a monolithic `appSlice`, a catch-all slice, or slices based only on
   React component boundaries.
 - Choose boundaries from product/domain ownership and invariants. A coherent session
