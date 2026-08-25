@@ -12,7 +12,12 @@ import {
 
 import type { Dispatch, SetStateAction } from "react";
 import type { ExportToast } from "../types";
-import { estimateExportSize, estimateExportTime, parseFfmpegNumber } from "./export-metrics";
+import {
+  estimateExportSize,
+  estimateExportTime,
+  parseFfmpegBitrate,
+  parseFfmpegNumber,
+} from "./export-metrics";
 
 type ExportRoute = "fast" | "optimized";
 type ExportRequest = FastExportRequest | OptimizedExportRequest;
@@ -123,7 +128,7 @@ async function renderJob(job: ExportJob) {
       progressPercent,
       currentFrame: progress.frame,
       fps: parseFfmpegNumber(progress.fps) ?? undefined,
-      bitrate: progress.bitrate,
+      bitrate: parseFfmpegBitrate(progress.bitrate) === null ? undefined : progress.bitrate,
       fileSizeBytes: progress.totalSize,
       estimatedFileSizeBytes: estimatedSize?.totalBytes,
       estimatedElapsedTimeMs: estimatedTime?.elapsedMs,

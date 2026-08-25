@@ -71,6 +71,20 @@ describe("StatusBar", () => {
     expect(screen.getByText("4f / 8f")).toBeInTheDocument();
   });
 
+  it("renders placeholders for metrics that are not available yet", () => {
+    render(
+      <TooltipProvider>
+        <StatusBar queue={[exportToast({})]} />
+      </TooltipProvider>,
+    );
+
+    expect(screen.getByText("0f / 0f")).toBeInTheDocument();
+    expect(screen.getByText("0 FPS")).toBeInTheDocument();
+    expect(screen.getByText("0 kbits/s")).toBeInTheDocument();
+    expect(screen.getByText("0 MB / 0 MB")).toBeInTheDocument();
+    expect(screen.getByText("0:00 / 0:00")).toBeInTheDocument();
+  });
+
   it.each(["failed", "canceled"] as const)(
     "shows %s exports with their last progress and destructive styling",
     (status) => {

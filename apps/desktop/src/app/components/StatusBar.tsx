@@ -14,7 +14,6 @@ export function StatusBar({ queue }: { queue: ExportToast[] }) {
   const { t } = useTranslation();
   const activeExport = selectStatusBarExport(queue);
   const activeExportPath = activeExport ? splitFilePath(activeExport.path) : null;
-  const activeExportFps = activeExport?.fps;
   const progressPercent = activeExport
     ? activeExport.status === "completed"
       ? 100
@@ -62,50 +61,38 @@ export function StatusBar({ queue }: { queue: ExportToast[] }) {
               </div>
               <span className="w-10 text-right tabular-nums">{progressPercent}%</span>
             </div>
-            {activeExport.totalFrames !== undefined && activeExport.currentFrame !== undefined ? (
-              <>
-                <Separator orientation="vertical" className="h-4 self-center" />
-                <StatusMetricTooltip label={t("statusBar.frames")}>
-                  {activeExport.currentFrame}f / {activeExport.totalFrames}f
-                </StatusMetricTooltip>
-              </>
-            ) : null}
-            {activeExportFps !== undefined ? (
-              <>
-                <Separator orientation="vertical" className="h-4 self-center" />
-                <StatusMetricTooltip label={t("statusBar.fps")}>
-                  {Math.round(activeExportFps)} FPS
-                </StatusMetricTooltip>
-              </>
-            ) : null}
-            {activeExport.bitrate ? (
-              <>
-                <Separator orientation="vertical" className="h-4 self-center" />
-                <StatusMetricTooltip label={t("statusBar.bitrate")}>
-                  {activeExport.bitrate}
-                </StatusMetricTooltip>
-              </>
-            ) : null}
-            {activeExport.fileSizeBytes !== undefined ? (
-              <>
-                <Separator orientation="vertical" className="h-4 self-center" />
-                <StatusMetricTooltip label={t("statusBar.estimateSize")}>
-                  {activeExport.estimatedFileSizeBytes !== undefined
-                    ? `${formatExportFileSize(activeExport.fileSizeBytes)} / ${formatExportFileSize(activeExport.estimatedFileSizeBytes)}`
-                    : formatExportFileSize(activeExport.fileSizeBytes)}
-                </StatusMetricTooltip>
-              </>
-            ) : null}
-            {activeExport.estimatedElapsedTimeMs !== undefined &&
-            activeExport.estimatedTotalTimeMs !== undefined ? (
-              <>
-                <Separator orientation="vertical" className="h-4 self-center" />
-                <StatusMetricTooltip label={t("statusBar.estimateTime")}>
-                  {formatExportDuration(activeExport.estimatedElapsedTimeMs)} /{" "}
-                  {formatExportDuration(activeExport.estimatedTotalTimeMs)}
-                </StatusMetricTooltip>
-              </>
-            ) : null}
+            <>
+              <Separator orientation="vertical" className="h-4 self-center" />
+              <StatusMetricTooltip label={t("statusBar.frames")}>
+                {activeExport.currentFrame ?? 0}f / {activeExport.totalFrames ?? 0}f
+              </StatusMetricTooltip>
+            </>
+            <>
+              <Separator orientation="vertical" className="h-4 self-center" />
+              <StatusMetricTooltip label={t("statusBar.fps")}>
+                {Math.round(activeExport.fps ?? 0)} FPS
+              </StatusMetricTooltip>
+            </>
+            <>
+              <Separator orientation="vertical" className="h-4 self-center" />
+              <StatusMetricTooltip label={t("statusBar.bitrate")}>
+                {activeExport.bitrate ?? "0 kbits/s"}
+              </StatusMetricTooltip>
+            </>
+            <>
+              <Separator orientation="vertical" className="h-4 self-center" />
+              <StatusMetricTooltip label={t("statusBar.estimateSize")}>
+                {formatStatusFileSize(activeExport.fileSizeBytes)} /{" "}
+                {formatStatusFileSize(activeExport.estimatedFileSizeBytes)}
+              </StatusMetricTooltip>
+            </>
+            <>
+              <Separator orientation="vertical" className="h-4 self-center" />
+              <StatusMetricTooltip label={t("statusBar.estimateTime")}>
+                {formatExportDuration(activeExport.estimatedElapsedTimeMs ?? 0)} /{" "}
+                {formatExportDuration(activeExport.estimatedTotalTimeMs ?? 0)}
+              </StatusMetricTooltip>
+            </>
           </div>
         ) : null}
       </footer>
@@ -124,6 +111,10 @@ function StatusMetricTooltip({ label, children }: { label: string; children: Rea
       </TooltipContent>
     </Tooltip>
   );
+}
+
+function formatStatusFileSize(bytes: number | undefined) {
+  return bytes === undefined || bytes === 0 ? "0 MB" : formatExportFileSize(bytes);
 }
 
 function StatusBarUpdateButton() {
