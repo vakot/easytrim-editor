@@ -233,10 +233,6 @@ A pull request does not authorize a merge.
 
 History rewriting, force-pushing, branch deletion, tagging, releasing, and merging require explicit authorization unless a repository-specific workflow explicitly states otherwise.
 
-## Guiding Rule
-
-Understand the existing repository, make the smallest correct change, preserve user work, verify the result, and perform only the Git and remote operations authorized by the user.
-
 ## Repository-Specific Rules
 
 In addition to the generic repository rules above, EasyTrim Editor maintains project-specific architectural and runtime rules.
@@ -271,3 +267,7 @@ For cross-boundary changes, keep contracts synchronized across all affected laye
 - frontend code must use narrow typed native boundaries rather than acquiring arbitrary filesystem or process authority;
 - FFmpeg/FFprobe execution and media stream semantics remain native/media concerns rather than frontend concerns;
 - shared serializable application state follows the Redux ownership rules, while non-serializable runtime resources remain with their appropriate runtime owner.
+
+## Guiding Rule
+
+Understand the existing repository, make the smallest correct change, preserve user work, verify the result, and perform only the Git and remote operations authorized by the user.
