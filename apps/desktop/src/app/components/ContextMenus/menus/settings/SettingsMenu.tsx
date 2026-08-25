@@ -28,8 +28,6 @@ export function SettingsMenu({ navigation }: { navigation: MenuNavigation }) {
   const updateToolDefault = (key: ToolDefaultKey, enabled: boolean) => {
     dispatch(toolDefaultChanged({ key, enabled }));
     if (key === "mergeAudioEnabled" && sourceSelection) {
-      // NOTE: Transitional bridge: merge-audio Settings has always applied to the active source.
-      // The source value remains session-owned until the session migration phase.
       dispatch(audioMergeChanged({ sourceId: sourceSelection.sourceId, enabled }));
     }
   };
@@ -37,7 +35,6 @@ export function SettingsMenu({ navigation }: { navigation: MenuNavigation }) {
   const resetDefaults = () => {
     dispatch(toolDefaultsReset());
     if (sourceSelection) {
-      // NOTE: Keep the same explicit merge-audio compatibility behavior on reset.
       dispatch(
         audioMergeChanged({
           sourceId: sourceSelection.sourceId,
