@@ -1,7 +1,179 @@
 import { describe, expect, it } from "vitest";
 
-import type { MediaInfo, SourceSelection } from "../../lib/tauri/media";
-import { initialSessionState, sessionReducer } from "../session-state";
+import type {
+  AppError,
+  MediaCapabilities,
+  MediaInfo,
+  PreviewDescriptor,
+  PreviewKind,
+  SourceSelection,
+  WaveformResult,
+} from "../../lib/tauri/media";
+import type { TrimRange } from "../../domain/trim";
+import { createAppStore } from "../store/store";
+import {
+  audioMergeChanged,
+  audioMergeToggled,
+  audioTrackToggled,
+  audioTrackVolumeChanged,
+  audioTracksSetEnabled,
+  capabilitiesFailed,
+  capabilitiesReady,
+  initialSessionState,
+  masterAudioToggled,
+  masterVolumeChanged,
+  previewFailed,
+  previewLoading,
+  previewReady,
+  sessionReducer as reduxSessionReducer,
+  sourceFailed,
+  sourceReady,
+  sourceSelected,
+  selectAudioTracks,
+  selectHasSource,
+  selectMasterAudio,
+  selectPreview,
+  selectSourceMedia,
+  selectSourceReady,
+  selectSourceSelection,
+  selectTrim,
+  selectWaveforms,
+  trimChanged,
+  waveformDisplayFailed,
+  waveformReady,
+  waveformsFailed,
+  waveformsLoading,
+  type SessionState,
+} from "../store/slices/session-slice";
+
+type LegacyAction = {
+  type: string;
+  capabilities?: MediaCapabilities;
+  source?: SourceSelection;
+  mergeAudio?: boolean;
+  sourceId?: string;
+  media?: MediaInfo;
+  error?: AppError;
+  kind?: PreviewKind;
+  preview?: PreviewDescriptor;
+  trim?: TrimRange;
+  streamIndex?: number;
+  enabled?: boolean;
+  volumePercent?: number;
+  jobId?: string;
+  width?: number;
+  streamIndexes?: number[];
+  result?: WaveformResult;
+};
+
+function sessionReducer(state: SessionState, action: LegacyAction): SessionState {
+  switch (action.type) {
+    case "capabilities-ready":
+      return reduxSessionReducer(state, capabilitiesReady(action.capabilities!));
+    case "capabilities-failed":
+      return reduxSessionReducer(state, capabilitiesFailed(action.error!));
+    case "source-cleared":
+      return reduxSessionReducer(state, { type: "session/sourceCleared" });
+    case "source-selected":
+      return reduxSessionReducer(
+        state,
+        sourceSelected({ source: action.source!, mergeAudio: action.mergeAudio }),
+      );
+    case "source-ready":
+      return reduxSessionReducer(
+        state,
+        sourceReady({ sourceId: action.sourceId!, media: action.media! }),
+      );
+    case "source-failed":
+      return reduxSessionReducer(
+        state,
+        sourceFailed({ sourceId: action.sourceId, error: action.error! }),
+      );
+    case "preview-loading":
+      return reduxSessionReducer(
+        state,
+        previewLoading({ sourceId: action.sourceId!, kind: action.kind! }),
+      );
+    case "preview-ready":
+      return reduxSessionReducer(
+        state,
+        previewReady({ sourceId: action.sourceId!, preview: action.preview! }),
+      );
+    case "preview-failed":
+      return reduxSessionReducer(
+        state,
+        previewFailed({ sourceId: action.sourceId!, error: action.error! }),
+      );
+    case "trim-changed":
+      return reduxSessionReducer(
+        state,
+        trimChanged({ sourceId: action.sourceId!, trim: action.trim! }),
+      );
+    case "audio-track-toggled":
+      return reduxSessionReducer(
+        state,
+        audioTrackToggled({ sourceId: action.sourceId!, streamIndex: action.streamIndex! }),
+      );
+    case "audio-tracks-set-enabled":
+      return reduxSessionReducer(
+        state,
+        audioTracksSetEnabled({ sourceId: action.sourceId!, enabled: action.enabled! }),
+      );
+    case "audio-master-toggled":
+      return reduxSessionReducer(state, masterAudioToggled({ sourceId: action.sourceId! }));
+    case "audio-master-volume-changed":
+      return reduxSessionReducer(
+        state,
+        masterVolumeChanged({ sourceId: action.sourceId!, volumePercent: action.volumePercent! }),
+      );
+    case "audio-track-volume-changed":
+      return reduxSessionReducer(
+        state,
+        audioTrackVolumeChanged({
+          sourceId: action.sourceId!,
+          streamIndex: action.streamIndex!,
+          volumePercent: action.volumePercent!,
+        }),
+      );
+    case "audio-merge-toggled":
+      return reduxSessionReducer(state, audioMergeToggled({ sourceId: action.sourceId! }));
+    case "audio-merge-set":
+      return reduxSessionReducer(
+        state,
+        audioMergeChanged({ sourceId: action.sourceId!, enabled: action.enabled! }),
+      );
+    case "waveforms-loading":
+      return reduxSessionReducer(
+        state,
+        waveformsLoading({
+          sourceId: action.sourceId!,
+          jobId: action.jobId!,
+          width: action.width!,
+          streamIndexes: action.streamIndexes!,
+        }),
+      );
+    case "waveform-result":
+      return reduxSessionReducer(state, waveformReady(action.result!));
+    case "waveform-display-failed":
+      return reduxSessionReducer(
+        state,
+        waveformDisplayFailed({ sourceId: action.sourceId!, streamIndex: action.streamIndex! }),
+      );
+    case "waveforms-failed":
+      return reduxSessionReducer(
+        state,
+        waveformsFailed({
+          sourceId: action.sourceId!,
+          jobId: action.jobId!,
+          width: action.width!,
+          streamIndexes: action.streamIndexes!,
+          error: action.error!,
+        }),
+      );
+    default:
+      return state;
+  }
+}
 
 const firstSource: SourceSelection = {
   sourceId: "source-1",
@@ -60,7 +232,7 @@ function mediaWithAudio(sourceId: string): MediaInfo {
   };
 }
 
-describe("sessionReducer", () => {
+describe("session slice", () => {
   it("applies the saved merge default to a newly selected source", () => {
     const loading = sessionReducer(initialSessionState, {
       type: "source-selected",
@@ -417,5 +589,37 @@ describe("sessionReducer", () => {
         },
       },
     });
+  });
+
+  it("exposes stable focused selectors for session consumers", () => {
+    const store = createAppStore();
+    const idleState = store.getState();
+
+    expect(selectHasSource(idleState)).toBe(false);
+    expect(selectSourceSelection(idleState)).toBeNull();
+    expect(selectSourceMedia(idleState)).toBeNull();
+    expect(selectSourceReady(idleState)).toBe(false);
+    expect(selectPreview(idleState)).toEqual({ status: "idle" });
+    expect(selectAudioTracks(idleState)).toBe(selectAudioTracks(idleState));
+    expect(selectWaveforms(idleState)).toBe(selectWaveforms(idleState));
+    expect(selectMasterAudio(idleState)).toBe(selectMasterAudio(idleState));
+
+    store.dispatch(sourceSelected({ source: firstSource }));
+    store.dispatch(
+      sourceReady({ sourceId: firstSource.sourceId, media: mediaWithAudio(firstSource.sourceId) }),
+    );
+    const readyState = store.getState();
+
+    expect(selectHasSource(readyState)).toBe(true);
+    expect(selectSourceSelection(readyState)).toEqual(firstSource);
+    expect(selectSourceMedia(readyState)).toEqual(mediaWithAudio(firstSource.sourceId));
+    expect(selectSourceReady(readyState)).toBe(true);
+    expect(selectTrim(readyState)).toEqual({
+      startMicros: 0,
+      endMicros: 5_000_000,
+      sourceDurationMicros: 5_000_000,
+    });
+    expect(selectAudioTracks(readyState)).toHaveLength(2);
+    expect(selectWaveforms(readyState)).toEqual([{ status: "idle" }, { status: "idle" }]);
   });
 });

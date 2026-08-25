@@ -2,7 +2,8 @@ import { useTranslation } from "react-i18next";
 
 import { useEditorSession } from "@/app/hooks/useEditorSession";
 import { useExportPanelController } from "@/app/hooks/useExportPanelController";
-import { useSourceDetails } from "@/app/hooks/useSourceDetails";
+import { useAppSelector } from "@/app/store/hooks";
+import { selectHasSource, selectSourceReady } from "@/app/store/slices/session-slice";
 import { ContextMenu } from "@/components/ui/context-menu";
 
 import type { MenuNavigation } from "../../types";
@@ -10,14 +11,11 @@ import type { MenuNavigation } from "../../types";
 export function FileMenu({ navigation }: { navigation: MenuNavigation }) {
   const { t } = useTranslation();
   const app = useEditorSession();
-  const sourceDetails = useSourceDetails();
   const exportPanel = useExportPanelController();
-  const canExport = sourceDetails.isReady;
+  const canExport = useAppSelector(selectSourceReady);
+  const hasSource = useAppSelector(selectHasSource);
   const cropApplied =
-    sourceDetails.crop.x !== 0 ||
-    sourceDetails.crop.y !== 0 ||
-    sourceDetails.crop.width !== 1 ||
-    sourceDetails.crop.height !== 1;
+    app.crop.x !== 0 || app.crop.y !== 0 || app.crop.width !== 1 || app.crop.height !== 1;
   const canSave = canExport && !cropApplied;
 
   return (
@@ -35,7 +33,7 @@ export function FileMenu({ navigation }: { navigation: MenuNavigation }) {
           id: "close-file",
           children: t("app.topBarMenus.closeFile"),
           suffix: "Ctrl+Q",
-          disabled: !app.hasSource,
+          disabled: !hasSource,
           onSelect: app.handleCloseFile,
         },
         { id: "file-divider", separator: true },

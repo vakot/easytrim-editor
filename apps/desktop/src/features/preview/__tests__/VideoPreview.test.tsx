@@ -2,7 +2,7 @@ import { createRef, type ReactElement, type ReactNode } from "react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
-import type { PreviewState } from "@/app/session-state";
+import type { PreviewState } from "@/app/store/slices/session-slice";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { VideoPreview } from "../VideoPreview";
 

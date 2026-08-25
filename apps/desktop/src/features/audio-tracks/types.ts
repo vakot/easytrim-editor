@@ -1,6 +1,6 @@
 import type { RefObject } from "react";
 
-import type { AudioTrackState } from "@/app/session-state";
+import type { AudioTrackState } from "@/app/store/slices/session-slice";
 import type { TrimRange } from "@/domain/trim";
 import type { AudioStream } from "@/lib/tauri/media";
 

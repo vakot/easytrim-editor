@@ -1,7 +1,7 @@
 import { LoaderCircle } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 
-import type { PreviewState } from "@/app/session-state";
+import type { PreviewState } from "@/app/store/slices/session-slice";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";

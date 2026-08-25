@@ -93,6 +93,7 @@ describe("Redux Persist store integration", () => {
     expect(persistConfig.whitelist).toEqual(["preferences"]);
     expect(persistConfig.whitelist).not.toContain("editorTools");
     expect(persistConfig.whitelist).not.toContain("editorLayout");
+    expect(persistConfig.whitelist).not.toContain("session");
   });
 
   it("rehydrates Preferences through redux-persist", async () => {

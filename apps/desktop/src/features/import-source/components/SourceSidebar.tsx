@@ -1,4 +1,9 @@
-import type { SessionState } from "@/app/session-state";
+import { useAppSelector } from "@/app/store/hooks";
+import {
+  selectActiveSource,
+  selectSessionError,
+  selectSessionStatus,
+} from "@/app/store/slices/session-slice";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { ExportQueue, type ExportToast } from "@/features/export";
@@ -8,14 +13,16 @@ import { useTranslation } from "react-i18next";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface SourceSidebarProps {
-  session: SessionState;
   queue: ExportToast[];
 }
 
-export function SourceSidebar({ session, queue }: SourceSidebarProps) {
+export function SourceSidebar({ queue }: SourceSidebarProps) {
   const { t } = useTranslation();
+  const source = useAppSelector(selectActiveSource);
+  const status = useAppSelector(selectSessionStatus);
+  const lastError = useAppSelector(selectSessionError);
 
-  const sourceName = session.source?.selection.displayName ?? t("import.source.noSource");
+  const sourceName = source?.selection.displayName ?? t("import.source.noSource");
 
   return (
     <aside
@@ -35,15 +42,15 @@ export function SourceSidebar({ session, queue }: SourceSidebarProps) {
             </TooltipTrigger>
             <TooltipContent>{sourceName}</TooltipContent>
           </Tooltip>
-          {session.status === "loading-source" ? (
+          {status === "loading-source" ? (
             <span className="text-xs text-muted-foreground" role="status">
               {t("import.source.inspecting")}
             </span>
           ) : null}
         </div>
 
-        {session.lastError ? <SourceError error={session.lastError} /> : null}
-        <MediaDetails media={session.source?.media ?? null} />
+        {lastError ? <SourceError error={lastError} /> : null}
+        <MediaDetails media={source?.media ?? null} />
       </div>
       <Separator className="mx-4" />
       <ScrollArea className="min-h-0" data-slot="export-queue-scroll">

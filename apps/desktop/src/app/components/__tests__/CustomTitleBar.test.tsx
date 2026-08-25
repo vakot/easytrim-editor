@@ -22,7 +22,7 @@ const menuState = vi.hoisted(() => ({
   app: {
     isChoosingSource: false,
     hasSource: false,
-    session: { source: null },
+    crop: { x: 0, y: 0, width: 1, height: 1 },
     exportQueue: [],
     queueStarted: false,
     queueFinishAction: "nothing",
@@ -60,10 +60,6 @@ const menuState = vi.hoisted(() => ({
 
 vi.mock("@/app/hooks/useEditorSession", () => ({
   useEditorSession: () => menuState.app,
-}));
-
-vi.mock("@/app/hooks/useSourceDetails", () => ({
-  useSourceDetails: () => menuState.sourceDetails,
 }));
 
 vi.mock("@/app/hooks/useExportPanelController", () => ({

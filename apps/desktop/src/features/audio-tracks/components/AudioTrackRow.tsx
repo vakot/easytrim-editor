@@ -1,4 +1,4 @@
-import type { AudioTrackState } from "@/app/session-state";
+import type { AudioTrackState } from "@/app/store/slices/session-slice";
 import { Card } from "@/components/ui/card";
 import type { AudioStream } from "@/lib/tauri/media";
 import { memo, useState } from "react";

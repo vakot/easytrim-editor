@@ -5,13 +5,30 @@ import { LoaderCircle } from "lucide-react";
 
 import { PanelSeparator } from "@/components/PanelSeparator";
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
+import { useEditorSession } from "@/app/hooks/useEditorSession";
 import {
   editorStageLayoutChanged,
   panelVisibilityChanged,
   selectEditorStageLayout,
   selectPanelVisibility,
 } from "@/app/store/slices/editor-layout-slice";
-import { usePlayback, useSourceDetails, useTimeline } from "@/app/hooks/useEditorContracts";
+import {
+  audioMergeToggled,
+  audioTrackToggled,
+  audioTrackVolumeChanged,
+  masterAudioToggled,
+  masterVolumeChanged,
+  selectActiveSource,
+  selectAudioTracks,
+  selectMergeAudio,
+  selectPreview,
+  selectSourceMedia,
+  selectSourceReady,
+  selectSourceSelection,
+  selectTrim,
+  waveformDisplayFailed,
+} from "@/app/store/slices/session-slice";
+import { usePlayback, useTimeline } from "@/app/hooks/useEditorContracts";
 import { AudioTracks } from "@/features/audio-tracks";
 import {
   PlaybackControls,
@@ -32,21 +49,30 @@ const EMPTY_TIMELINE_RANGE = {
 
 export function EditorStage() {
   const { t } = useTranslation();
-  const source = useSourceDetails();
+  const app = useEditorSession();
+  const sourceSelection = useAppSelector(selectSourceSelection);
+  const media = useAppSelector(selectSourceMedia);
+  const preview = useAppSelector(selectPreview);
+  const trim = useAppSelector(selectTrim);
+  const audioTracks = useAppSelector(selectAudioTracks);
+  const mergeAudio = useAppSelector(selectMergeAudio);
+  const isSourceReady = useAppSelector(selectSourceReady);
+  const activeSource = useAppSelector(selectActiveSource);
   const playback = usePlayback();
   const timeline = useTimeline();
   const dispatch = useAppDispatch();
   const editorStageLayout = useAppSelector(selectEditorStageLayout);
   const isBottomPanelVisible = useAppSelector((state) => selectPanelVisibility(state, "bottom"));
   const previousEditorStageLayout = useRef(editorStageLayout);
-  const timelineRange = source.trim ?? EMPTY_TIMELINE_RANGE;
-  const controlsDisabled = !source.isReady || !playback.isReady;
+  const sourceId = sourceSelection?.sourceId ?? null;
+  const timelineRange = trim ?? EMPTY_TIMELINE_RANGE;
+  const controlsDisabled = !isSourceReady || !playback.isReady;
   const showLoadingOverlay =
-    source.hasSource && source.preview.status !== "failed" && !playback.isReady;
+    sourceSelection !== null && preview.status !== "failed" && !playback.isReady;
 
   const timelinePanelSizing = useTimelinePanelSizing(
-    source.sourceId,
-    source.media?.audioStreams.length ?? null,
+    sourceId,
+    media?.audioStreams.length ?? null,
     isBottomPanelVisible,
   );
 
@@ -71,8 +97,8 @@ export function EditorStage() {
       <Panel id="preview-panel" minSize="14rem" className="min-h-0 min-w-0">
         <PanelContent className="bg-preview-surface">
           <VideoPreview
-            sourceId={source.sourceId}
-            preview={source.preview}
+            sourceId={sourceId}
+            preview={preview}
             playbackRate={playback.playbackRate}
             nativeLoopEnabled={playback.nativeLoopEnabled}
             muted={playback.videoMuted}
@@ -85,9 +111,11 @@ export function EditorStage() {
             onPause={playback.onPause}
             onTimeUpdate={playback.onTimeUpdate}
             onEnded={playback.onEnded}
-            sourceDimensions={source.sourceDimensions ?? undefined}
-            onCropResolutionChange={source.onCropResolutionChange}
-            onCropChange={source.onCropChange}
+            sourceDimensions={
+              media ? { width: media.video.width, height: media.video.height } : undefined
+            }
+            onCropResolutionChange={app.setCropResolution}
+            onCropChange={app.setCrop}
             onCropToolOpenChange={playback.onCropToolOpenChange}
           />
         </PanelContent>
@@ -126,7 +154,7 @@ export function EditorStage() {
                 disabled={controlsDisabled}
                 playheadMicros={timeline.playheadMicros}
                 playheadRef={timeline.playheadRef}
-                frameRate={source.frameRate}
+                frameRate={media?.video.averageFrameRate ?? media?.video.realFrameRate}
                 playbackControls={
                   <PlaybackControls
                     isPlaying={playback.isPlaying}
@@ -145,7 +173,7 @@ export function EditorStage() {
                     sourceDurationMicros={
                       controlsDisabled ? null : timelineRange.sourceDurationMicros
                     }
-                    frameRate={source.frameRate}
+                    frameRate={media?.video.averageFrameRate ?? media?.video.realFrameRate}
                   />
                 }
                 videoToolbar={<TimelineTools />}
@@ -162,24 +190,35 @@ export function EditorStage() {
               />
             }
             audioTracks={
-              isBottomPanelVisible && source.audioStreams.length > 0 ? (
+              isBottomPanelVisible && (media?.audioStreams.length ?? 0) > 0 ? (
                 <AudioTracks
-                  streams={source.audioStreams}
-                  tracks={source.audioTracks}
-                  masterEnabled={source.masterEnabled}
-                  masterVolumePercent={source.masterVolumePercent}
+                  streams={media?.audioStreams ?? []}
+                  tracks={audioTracks}
+                  masterEnabled={activeSource?.masterEnabled ?? true}
+                  masterVolumePercent={activeSource?.masterVolumePercent ?? 50}
                   range={timelineRange}
                   playheadMicros={timeline.playheadMicros}
                   playheadRef={playback.audioPlayheadRef}
-                  mergeAudio={source.mergeAudio}
+                  mergeAudio={mergeAudio}
                   waveformPreparationEnabled={playback.isReady}
-                  onToggleTrack={source.onToggleAudioTrack}
-                  onTrackVolumeChange={source.onAudioTrackVolumeChange}
-                  onToggleMaster={source.onToggleAudioMaster}
-                  onMasterVolumeChange={source.onMasterVolumeChange}
-                  onToggleMerge={source.onToggleAudioMerge}
-                  onPrepareWaveforms={source.onPrepareWaveforms}
-                  onWaveformImageError={source.onWaveformImageError}
+                  onToggleTrack={(streamIndex) =>
+                    sourceId && dispatch(audioTrackToggled({ sourceId, streamIndex }))
+                  }
+                  onTrackVolumeChange={(streamIndex, volumePercent) =>
+                    sourceId &&
+                    dispatch(audioTrackVolumeChanged({ sourceId, streamIndex, volumePercent }))
+                  }
+                  onToggleMaster={() => sourceId && dispatch(masterAudioToggled({ sourceId }))}
+                  onMasterVolumeChange={(volumePercent) =>
+                    sourceId && dispatch(masterVolumeChanged({ sourceId, volumePercent }))
+                  }
+                  onToggleMerge={() => sourceId && dispatch(audioMergeToggled({ sourceId }))}
+                  onPrepareWaveforms={(streamIndexes, width) =>
+                    sourceId && app.handlePrepareWaveforms(sourceId, streamIndexes, width)
+                  }
+                  onWaveformImageError={(streamIndex) =>
+                    sourceId && dispatch(waveformDisplayFailed({ sourceId, streamIndex }))
+                  }
                 />
               ) : null
             }
@@ -196,7 +235,7 @@ export function EditorStage() {
           <div className="grid place-items-center gap-2 text-center text-sm text-muted-foreground">
             <LoaderCircle className="size-7 animate-spin text-primary" aria-hidden="true" />
             <strong className="text-foreground">
-              {source.preview.status === "loading" && source.preview.kind === "proxy"
+              {preview.status === "loading" && preview.kind === "proxy"
                 ? t("preview.preparing")
                 : t("preview.opening")}
             </strong>
