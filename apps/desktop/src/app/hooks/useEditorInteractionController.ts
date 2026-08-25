@@ -235,10 +235,10 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     videoRef.current?.pause();
     cancelPlaybackFrame(playbackFrameRef);
     cleanupAudioRuntime();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setReadyPreviewKey(null);
     setAudioReadiness({ sourceId: null, streamIndexes: new Set() });
     // Source replacement is an explicit transport reset, not persisted editor state.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsPlaying(false);
     setTransportError(null);
     setPlayheadMicros(0);
