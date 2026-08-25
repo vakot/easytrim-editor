@@ -16,9 +16,7 @@ import {
   selectPreferences,
 } from "@/app/store/slices/preferences-slice";
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
-import { audioMergeChanged } from "@/app/store/slices/audio-slice";
-import { selectSourceSelection } from "@/app/store/slices/source-slice";
-import { DEFAULT_PREFERENCES, type PreferenceKey } from "@/app/preferences";
+import { type PreferenceKey } from "@/app/preferences";
 import { ContextMenu, type ContextMenuOption } from "@/components/ui/context-menu";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -29,28 +27,16 @@ import type { MenuNavigation } from "../../types";
 export function SettingsMenu({ navigation }: { navigation: MenuNavigation }) {
   const { t, i18n } = useTranslation();
   const dispatch = useAppDispatch();
-  const sourceSelection = useAppSelector(selectSourceSelection);
   const preferences = useAppSelector(selectPreferences);
   const switchInteractionRef = useRef(false);
   const currentLanguage = isSupportedLanguage(i18n.resolvedLanguage) ? i18n.resolvedLanguage : "en";
 
   const updatePreference = (key: PreferenceKey, enabled: boolean) => {
     dispatch(preferenceChanged({ key, enabled }));
-    if (key === "mergeAudioEnabledDefault" && sourceSelection) {
-      dispatch(audioMergeChanged({ sourceId: sourceSelection.sourceId, enabled }));
-    }
   };
 
   const resetPreferences = () => {
     dispatch(preferencesReset());
-    if (sourceSelection) {
-      dispatch(
-        audioMergeChanged({
-          sourceId: sourceSelection.sourceId,
-          enabled: DEFAULT_PREFERENCES.mergeAudioEnabledDefault,
-        }),
-      );
-    }
   };
 
   const settingsPreferenceOption = (

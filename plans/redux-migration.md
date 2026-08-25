@@ -173,15 +173,15 @@ partial-field persistence.
 
 Lifetime: defaults survive source replacement and application restart through Redux
 Persist. Reset restores the declared product defaults.
-Changing a preference does not retroactively rewrite active tools, except for the
-existing explicit merge-audio bridge that applies the Settings action to the active
-session source; that value remains session-owned until the session migration.
+Changing a preference does not retroactively rewrite active tools. The merge-audio
+preference is used when importing a source, while the active merge setting remains
+session-owned until it is changed through the audio controls.
 
 Completed Phase 2A work: preference fields were removed from the combined
 `toolViewState`, the preference portion of `EditorViewStateContext` was removed, and
 the old preference transport from `EditorSessionProvider` was replaced by Redux
-selectors. The explicit merge-audio Settings bridge remains; the old Preferences
-storage helpers were removed because Redux Persist now owns this domain.
+selectors. The old Preferences storage helpers were removed because Redux Persist
+now owns this domain.
 
 ### 3. Editor tools — Redux now, completed Phase 2B
 

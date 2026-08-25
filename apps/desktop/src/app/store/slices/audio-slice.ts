@@ -148,10 +148,6 @@ const audioSlice = createSlice({
       if (state.sourceId !== action.payload.sourceId) return;
       state.mergeAudio = !state.mergeAudio;
     },
-    audioMergeChanged: (state, action: PayloadAction<{ sourceId: string; enabled: boolean }>) => {
-      if (state.sourceId !== action.payload.sourceId) return;
-      state.mergeAudio = action.payload.enabled;
-    },
     waveformsLoading: (
       state,
       action: PayloadAction<{
@@ -302,7 +298,6 @@ export const {
   masterAudioToggled,
   masterVolumeChanged,
   audioMergeToggled,
-  audioMergeChanged,
   waveformsLoading,
   waveformReady,
   waveformDisplayFailed,

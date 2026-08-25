@@ -54,7 +54,7 @@ describe("SettingsMenu Redux integration", () => {
     expect(store.getState().preferences.autoStartQueueEnabled).toBe(false);
   });
 
-  it("resets Preferences without rewriting active editor tools", async () => {
+  it("resets preferences without rewriting active editor tools", async () => {
     const user = userEvent.setup();
     const store = renderSettings();
 
@@ -62,26 +62,35 @@ describe("SettingsMenu Redux integration", () => {
     await user.click(loopSwitch);
     expect(store.getState().preferences.loopPlaybackEnabledDefault).toBe(false);
     expect(store.getState().editorTools.loopPlaybackEnabled).toBe(true);
-    const mergeSwitch = within(screen.getByRole("menuitem", { name: "Merge audio" })).getByRole(
-      "switch",
-    );
-    await user.click(mergeSwitch);
     await user.click(screen.getByRole("menuitem", { name: "Reset to default" }));
 
     expect(store.getState().preferences).toEqual(DEFAULT_PREFERENCES);
     expect(store.getState().editorTools.loopPlaybackEnabled).toBe(true);
   });
 
-  it("keeps the merge-audio compatibility bridge explicit at the Settings boundary", async () => {
+  it("does not rewrite active audio tools when the merge default changes", async () => {
     const user = userEvent.setup();
     const store = renderSettings();
-    store.dispatch(sourceSelected({ source: { sourceId: "source-1", displayName: "source.mp4" } }));
+    store.dispatch(
+      sourceSelected({
+        source: { sourceId: "source-1", displayName: "source.mp4" },
+        mergeAudio: true,
+      }),
+    );
+
+    expect(selectMergeAudio(store.getState())).toBe(true);
 
     const mergeSwitch = within(screen.getByRole("menuitem", { name: "Merge audio" })).getByRole(
       "switch",
     );
     await user.click(mergeSwitch);
 
+    expect(store.getState().preferences.mergeAudioEnabledDefault).toBe(true);
+    expect(selectMergeAudio(store.getState())).toBe(true);
+
+    await user.click(screen.getByRole("menuitem", { name: "Reset to default" }));
+
+    expect(store.getState().preferences).toEqual(DEFAULT_PREFERENCES);
     expect(selectMergeAudio(store.getState())).toBe(true);
   });
 });
