@@ -771,6 +771,36 @@ describe("ContextMenus", () => {
     expect(screen.queryByRole("menuitem", { name: /Check for Updates/ })).not.toBeInTheDocument();
   });
 
+  it("does not focus the previous trigger while switching menus with the pointer", async () => {
+    const user = userEvent.setup();
+    renderMenus();
+
+    const fileButton = screen.getByRole("button", { name: "File" });
+    const viewButton = screen.getByRole("button", { name: "View" });
+    const queueButton = screen.getByRole("button", { name: "Queue" });
+
+    await user.click(fileButton);
+    await user.hover(viewButton);
+    expect(fileButton).not.toHaveFocus();
+
+    await user.hover(queueButton);
+    expect(viewButton).not.toHaveFocus();
+  });
+
+  it("restores focus to the trigger after closing a keyboard-opened menu", async () => {
+    const user = userEvent.setup();
+    renderMenus();
+
+    const fileButton = screen.getByRole("button", { name: "File" });
+    fileButton.focus();
+    await user.keyboard("{Enter}");
+    expect(screen.getByRole("menuitem", { name: /Open File/ })).toBeInTheDocument();
+
+    await user.keyboard("{Escape}");
+
+    expect(fileButton).toHaveFocus();
+  });
+
   it("switches between submenus immediately on hover", async () => {
     const user = userEvent.setup();
     render(
