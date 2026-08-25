@@ -111,6 +111,13 @@ export function SettingsMenu({ navigation }: { navigation: MenuNavigation }) {
       {...navigation}
       options={[
         settingsToolOption(
+          "setting-auto-start-queue",
+          t("app.settings.autoStartQueue"),
+          <Play className="size-3" aria-hidden="true" />,
+          "autoStartQueue",
+        ),
+        { id: "settings-playback-divider", separator: true },
+        settingsToolOption(
           "setting-snap-playback",
           t("app.settings.snap"),
           <Magnet className="size-3" aria-hidden="true" />,
@@ -127,12 +134,6 @@ export function SettingsMenu({ navigation }: { navigation: MenuNavigation }) {
           t("app.settings.followSegment"),
           <BetweenVerticalStart className="size-3" aria-hidden="true" />,
           "segmentPlaybackEnabled",
-        ),
-        settingsToolOption(
-          "setting-auto-start-queue",
-          t("app.settings.autoStartQueue"),
-          <Play className="size-3" aria-hidden="true" />,
-          "autoStartQueue",
         ),
         { id: "settings-audio-divider", separator: true },
         settingsToolOption(
