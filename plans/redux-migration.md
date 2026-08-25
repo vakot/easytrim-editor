@@ -628,8 +628,8 @@ preview-replacement, media-sync, audio-sync, and App playback integration covera
 updated or retained; typecheck passed during implementation.
 
 Deferred to Phase 7: the broader audit of updater, theme, and remaining interaction
-Context boundaries. Deferred to Phase 8: unrelated application-state prop transport and
-broad-selector cleanup outside playback-specific wiring.
+Context boundaries. The unrelated application-state prop transport and broad-selector
+cleanup outside playback-specific wiring was completed in Phase 8.
 
 ### Phase 7 — remaining Context audit, completed
 
@@ -674,9 +674,8 @@ includes the explicit `preferences` and `theme` Redux domains. The legacy
 theme/color compatibility migration is performed, and no runtime Context state is
 persisted.
 
-Phase 8 remains responsible for the broader aggregate-selector and application prop/
-callback transport audit. Phase 7 does not reopen playback architecture or move runtime
-resources into Redux.
+Phase 8 completed the broader aggregate-selector and application prop/callback transport
+audit. Phase 7 did not reopen playback architecture or move runtime resources into Redux.
 
 ### Phase 8 — wiring cleanup
 
@@ -691,14 +690,52 @@ keep an aggregate selector where the consumer genuinely owns or uses the aggrega
 Do not rebuild broad Context-style dependency surfaces through Redux selectors. Verify
 that broad selectors are not causing unrelated rerenders or recreating state coupling;
 Keep an aggregate selector only when a consumer genuinely owns or uses that aggregate.
-Stop for review.
+Phase 8 is complete; stop for human review.
+
+Phase 8 is complete. The final wiring audit narrowed the playback runtime hook to focused
+tool selectors, replaced the preset UI's whole-slice subscription with focused selectors,
+replaced the remaining raw export action string with its domain action creator, removed
+unused aggregate selectors, and reduced the ContextMenus fixture to focused domain state.
+The audit found no major Redux-owned prop or callback chain requiring a component-boundary
+rewrite. Timeline, preview, audio, and trim props remain meaningful APIs for reusable
+presentational components, while `EditorInteractionContext` remains the runtime playback
+and timeline boundary.
+
+#### Final architecture summary
+
+- Final Redux slices: `preferences`, `theme`, `editorTools`, `editorLayout`,
+  `importWorkflow`, `source`, `trim`, `crop`, `audio`, `preview`, `export`, and
+  `exportPresets`.
+- Redux Persist slices: `preferences` and `theme`, selected through the explicit root
+  allow-list. `exportPresets` remains persisted by its reviewed feature adapter; all other
+  Redux domains are runtime-only.
+- Runtime-only slices: `editorTools`, `editorLayout`, `importWorkflow`, `source`, `trim`,
+  `crop`, `audio`, `preview`, and `export`. Export runtime handles, reservations,
+  cancellation, and processes remain outside Redux.
+- Remaining Contexts: `EditorInteractionContext` owns playback/timeline runtime
+  capabilities; `AppUpdatesContext` owns updater service status and commands; `ThemeContext`
+  owns resolved theme, system-theme subscription, DOM effects, and transient color preview.
+- Major runtime hooks/services: `useEditorInteractionController` with the
+  `usePlayback`/`useTimeline` runtime projections, `source-media-runtime`, source/media
+  thunks, waveform preparation, the export runtime queue, `ThemeProvider`, and
+  `AppUpdatesProvider`.
+- Application-specific consumers select and dispatch at the closest semantic boundary.
+  Reusable presentational components retain meaningful props and callbacks.
+- Broad selectors are retained only for legitimate aggregate consumers such as reducer/store
+  tests or coherent domain composition. UI consumers prefer focused selectors, and derived
+  values are not synchronized as duplicate state.
+- Persistence is opt-in: Redux Persist owns the reviewed canonical preferences/theme
+  domains, while the explicit preset adapter remains with the export-preset feature.
+
+The Redux migration is structurally complete. Future work is ordinary maintenance or
+feature development, not another migration phase. Stop for human review and do not merge
+`redux-migration` into `master`.
 
 ### Phase 9 — consolidation
 
-Remove obsolete providers/hooks/reducers/adapters, audit selectors and serializability,
-verify dependency direction, persistence behavior, source replacement, cancellation,
-queue execution, listener cleanup, and full frontend/native quality gates. Produce the
-final migration summary. Do not merge `redux-migration` into `master`.
+The former consolidation checklist was completed incrementally by Phases 5–8 and is
+superseded by the final architecture summary above. Future maintenance should be handled
+as ordinary focused work, not as another Redux migration phase.
 
 ## Phase acceptance checklist
 
