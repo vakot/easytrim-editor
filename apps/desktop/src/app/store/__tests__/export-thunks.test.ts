@@ -33,6 +33,7 @@ vi.mock("@/lib/tauri/queue", () => ({
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
 import {
   queueEntryAdded,
+  queueFinishActionChanged,
   selectActiveExport,
   selectExportQueue,
   selectOptimizedExportDialogOpen,
@@ -42,6 +43,8 @@ import {
 import { preferenceChanged } from "@/app/store/slices/preferences-slice";
 import {
   cancelActiveExportRequested,
+  cancelAllExportsRequested,
+  cancelExportRequested,
   openOptimizedExportDialog,
   startExportQueue,
   startFastCutRequested,
@@ -111,6 +114,7 @@ beforeEach(() => {
   mocks.cancelOperation.mockResolvedValue(undefined);
   mocks.planOptimizedExport.mockResolvedValue({ commandPreview: "ffmpeg -i <source> <output>" });
   mocks.availableQueueFinishActions.mockResolvedValue(["exit", "nothing"]);
+  mocks.performQueueFinishAction.mockResolvedValue(undefined);
 });
 
 describe("export thunks and runtime queue", () => {
@@ -152,6 +156,7 @@ describe("export thunks and runtime queue", () => {
       };
     });
     const store = createReadyStore();
+    store.dispatch(queueFinishActionChanged("exit"));
 
     store.dispatch(startFastCutRequested());
     await vi.waitFor(() => expect(selectExportQueue(store.getState())).toHaveLength(1));
@@ -164,9 +169,11 @@ describe("export thunks and runtime queue", () => {
       expect(selectExportQueue(store.getState())[0]?.status).toBe("completed"),
     );
 
+    expect(selectQueueStarted(store.getState())).toBe(false);
     expect(mocks.reserveExportSource).toHaveBeenCalledWith("source-1");
     expect(mocks.renderFast).toHaveBeenCalledOnce();
     expect(selectExportQueue(store.getState())[0]?.progressPercent).toBe(100);
+    await vi.waitFor(() => expect(mocks.performQueueFinishAction).toHaveBeenCalledWith("exit"));
   });
 
   it("opens, plans, configures, and starts optimized export without a controller ref", async () => {
@@ -216,7 +223,53 @@ describe("export thunks and runtime queue", () => {
       "completed",
       "failed",
     ]);
+    expect(selectQueueStarted(store.getState())).toBe(false);
     expect(mocks.renderFast).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps the queue running while another processable item remains", async () => {
+    let finishFirst!: (value: unknown) => void;
+    let finishSecond!: (value: unknown) => void;
+    mocks.renderFast
+      .mockImplementationOnce(
+        (_request, _outputId, onProgress) =>
+          new Promise((resolve) => {
+            finishFirst = resolve;
+            onProgress({ operationId: "operation-1", elapsedMicros: 1, phase: "running" });
+          }),
+      )
+      .mockImplementationOnce(
+        (_request, _outputId, onProgress) =>
+          new Promise((resolve) => {
+            finishSecond = resolve;
+            onProgress({ operationId: "operation-2", elapsedMicros: 1, phase: "running" });
+          }),
+      );
+    const store = createReadyStore();
+    store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
+
+    store.dispatch(startFastCutRequested());
+    store.dispatch(startFastCutRequested());
+    await vi.waitFor(() => expect(selectExportQueue(store.getState())).toHaveLength(2));
+    store.dispatch(startExportQueue());
+    await vi.waitFor(() => expect(selectActiveExport(store.getState())).toBeDefined());
+
+    finishFirst({
+      operationId: "operation-1",
+      displayName: output.displayName,
+      displayPath: output.displayPath,
+    });
+    await vi.waitFor(() =>
+      expect(selectExportQueue(store.getState())[1]?.status).toBe("rendering"),
+    );
+
+    expect(selectQueueStarted(store.getState())).toBe(true);
+    finishSecond({
+      operationId: "operation-2",
+      displayName: output.displayName,
+      displayPath: output.displayPath,
+    });
+    await vi.waitFor(() => expect(selectQueueStarted(store.getState())).toBe(false));
   });
 
   it("keeps cancellation synchronized with the native operation", async () => {
@@ -242,5 +295,106 @@ describe("export thunks and runtime queue", () => {
       displayName: "clip.mkv",
       displayPath: output.displayPath,
     });
+    await vi.waitFor(() => expect(selectQueueStarted(store.getState())).toBe(false));
+  });
+
+  it("cancels all entries without running the configured finish action", async () => {
+    let finishRender!: (value: unknown) => void;
+    mocks.renderFast.mockImplementation(
+      (_request, _outputId, onProgress) =>
+        new Promise((resolve) => {
+          finishRender = resolve;
+          onProgress({ operationId: "operation-cancel-all", elapsedMicros: 1, phase: "running" });
+        }),
+    );
+    const store = createReadyStore();
+    store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
+    store.dispatch(queueFinishActionChanged("exit"));
+
+    store.dispatch(startFastCutRequested());
+    store.dispatch(startFastCutRequested());
+    await vi.waitFor(() => expect(selectExportQueue(store.getState())).toHaveLength(2));
+    store.dispatch(startExportQueue());
+    await vi.waitFor(() => expect(selectActiveExport(store.getState())).toBeDefined());
+
+    store.dispatch(cancelAllExportsRequested());
+    await vi.waitFor(() =>
+      expect(selectExportQueue(store.getState()).every((item) => item.status === "canceled")).toBe(
+        true,
+      ),
+    );
+    expect(selectQueueStarted(store.getState())).toBe(false);
+
+    finishRender({
+      operationId: "operation-cancel-all",
+      displayName: output.displayName,
+      displayPath: output.displayPath,
+    });
+    await vi.waitFor(() => expect(selectActiveExport(store.getState())).toBeUndefined());
+    expect(mocks.performQueueFinishAction).not.toHaveBeenCalled();
+  });
+
+  it("cancels a queued item while paused and leaves no work to render", async () => {
+    const store = createReadyStore();
+    store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
+
+    store.dispatch(startFastCutRequested());
+    await vi.waitFor(() => expect(selectExportQueue(store.getState())).toHaveLength(1));
+    const queuedId = selectExportQueue(store.getState())[0]?.id;
+    expect(queuedId).toBeDefined();
+
+    store.dispatch(cancelExportRequested(queuedId!));
+    await vi.waitFor(() => expect(selectExportQueue(store.getState())[0]?.status).toBe("canceled"));
+
+    expect(selectQueueStarted(store.getState())).toBe(false);
+    expect(mocks.renderFast).not.toHaveBeenCalled();
+    expect(mocks.releaseExportSource).toHaveBeenCalledWith("source-1");
+  });
+
+  it("requires a new start signal after the queue becomes idle", async () => {
+    mocks.renderFast.mockResolvedValue({
+      operationId: "operation-auto",
+      displayName: output.displayName,
+      displayPath: output.displayPath,
+    });
+    const store = createReadyStore();
+
+    store.dispatch(startFastCutRequested());
+    await vi.waitFor(() =>
+      expect(selectExportQueue(store.getState())[0]?.status).toBe("completed"),
+    );
+    expect(selectQueueStarted(store.getState())).toBe(false);
+
+    store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
+    store.dispatch(startFastCutRequested());
+    await vi.waitFor(() => expect(selectExportQueue(store.getState())).toHaveLength(2));
+    await Promise.resolve();
+
+    expect(selectExportQueue(store.getState())[1]?.status).toBe("queued");
+    expect(selectQueueStarted(store.getState())).toBe(false);
+    expect(mocks.renderFast).toHaveBeenCalledOnce();
+  });
+
+  it("starts a new execution session when auto-start is enabled after idle", async () => {
+    mocks.renderFast.mockResolvedValue({
+      operationId: "operation-auto",
+      displayName: output.displayName,
+      displayPath: output.displayPath,
+    });
+    const store = createReadyStore();
+
+    store.dispatch(startFastCutRequested());
+    await vi.waitFor(() =>
+      expect(selectExportQueue(store.getState())[0]?.status).toBe("completed"),
+    );
+    expect(selectQueueStarted(store.getState())).toBe(false);
+
+    store.dispatch(startFastCutRequested());
+    await vi.waitFor(() =>
+      expect(selectExportQueue(store.getState())[1]?.status).toBe("completed"),
+    );
+
+    expect(mocks.renderFast).toHaveBeenCalledTimes(2);
+    expect(selectQueueStarted(store.getState())).toBe(false);
   });
 });
