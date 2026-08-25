@@ -44,7 +44,7 @@ export const persistConfig: PersistConfig<unknown> = {
   key: "easytrim-redux",
   storage: reduxStorage,
   // NOTE: Root allow-listing keeps future reducers runtime-only until explicitly opted in.
-  whitelist: ["preferences"],
+  whitelist: ["preferences", "theme"],
 };
 
 export function createPersistedReducer<RootState>(
