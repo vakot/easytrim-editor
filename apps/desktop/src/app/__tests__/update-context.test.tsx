@@ -2,8 +2,8 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { AppUpdatesProvider } from "@/app/AppUpdatesProvider";
-import { useAppUpdates } from "@/app/update-context";
+import { AppUpdatesProvider } from "@/app/components/Providers/AppUpdatesProvider";
+import { useAppUpdates } from "@/app/hooks/useAppUpdates";
 
 const availableVersion = "next-version";
 

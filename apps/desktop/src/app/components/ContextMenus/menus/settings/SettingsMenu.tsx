@@ -3,8 +3,12 @@ import { useRef, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useEditorSession } from "@/app/hooks/useEditorSession";
-import { selectToolDefaults, toolDefaultChanged, toolDefaultsReset } from "@/app/preferences-slice";
-import { useAppDispatch, useAppSelector } from "@/app/store";
+import {
+  selectToolDefaults,
+  toolDefaultChanged,
+  toolDefaultsReset,
+} from "@/app/store/slices/preferences-slice";
+import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import { DEFAULT_TOOL_DEFAULTS, type ToolDefaultKey } from "@/app/tool-settings";
 import { ContextMenu, type ContextMenuOption } from "@/components/ui/context-menu";
 import { Switch } from "@/components/ui/switch";

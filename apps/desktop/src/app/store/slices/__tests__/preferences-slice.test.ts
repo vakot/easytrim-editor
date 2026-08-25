@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { DEFAULT_TOOL_DEFAULTS, type ToolDefaults } from "@/app/tool-settings";
-import type { RootState } from "@/app/store";
+import type { RootState } from "@/app/store/store";
 import {
   preferencesReducer,
   selectLoopPlaybackDefault,
@@ -11,7 +11,7 @@ import {
   selectToolDefaults,
   toolDefaultChanged,
   toolDefaultsReset,
-} from "@/app/preferences-slice";
+} from "@/app/store/slices/preferences-slice";
 
 describe("preferences Redux domain", () => {
   it("starts from deterministic product defaults without persistence access", () => {

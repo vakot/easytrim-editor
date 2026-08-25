@@ -33,8 +33,10 @@ choosing Redux.
 
 - Make one application store at the appropriate React composition boundary.
 - Use Redux Toolkit with strict serializability checks and typed application hooks.
-- Keep the store and slices under `apps/desktop/src/app/` or the owning feature,
-  following the repository dependency direction.
+- Keep application Redux infrastructure under `apps/desktop/src/app/store/`:
+  `store.ts`, `hooks.ts`, `persistence.ts`, and application-owned slices under
+  `slices/`. A feature-owned Redux domain may remain with its owning feature, following
+  the repository dependency direction.
 - Define domain actions and transitions first; avoid a generic `setFoo` API for a
   workflow with meaningful states.
 - Colocate selectors with the slice and test reducers/selectors at the lowest useful
@@ -132,6 +134,9 @@ only selected fields should persist. Components must dispatch actions only; reje
 component that dispatches and also writes the same Redux state to storage. Keep
 reducers independent from persistence and let the root persistence gate account for
 rehydration lifecycle.
+
+Redux Persist configuration, storage-adapter normalization, and persisted-reducer helpers belong
+in `app/store/persistence.ts`, not in arbitrary components or generic utility modules.
 
 ## Source replacement checklist
 

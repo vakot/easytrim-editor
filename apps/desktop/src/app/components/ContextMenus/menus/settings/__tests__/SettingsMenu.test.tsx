@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { Provider } from "react-redux";
 
 import { SettingsMenu } from "../SettingsMenu";
-import { createAppStore } from "@/app/store";
+import { createAppStore } from "@/app/store/store";
 import { DEFAULT_TOOL_DEFAULTS } from "@/app/tool-settings";
 import { TooltipProvider } from "@/components/ui/tooltip";
 

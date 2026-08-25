@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CustomTitleBar } from "../CustomTitleBar";
 import { ContextMenus } from "../ContextMenus";
-import { store } from "@/app/store";
+import { store } from "@/app/store/store";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 
 const windowActions = vi.hoisted(() => ({

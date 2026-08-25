@@ -30,6 +30,9 @@ Use `easytrim-editor-tauri-rust` for IPC/native changes and `easytrim-editor-ffm
   `easytrim-editor-redux-state`. Keep local component state for ephemeral visual and
   interaction concerns; do not introduce another state library or ad-hoc application
   context.
+- Keep app-level Context declarations under `app/contexts/` and their Provider
+  implementations under `app/components/Providers/`; feature-owned Contexts and the
+  theme subsystem remain with their owning feature/subsystem.
 - Keep Tauri calls behind the typed adapter defined by the structure rule.
 - Keep FFmpeg strings, path validation, and process details out of components.
 - Load no analytics, remote assets, fonts, or network resources.

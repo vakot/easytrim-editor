@@ -2,9 +2,9 @@ import { useEffect, useState, type ReactNode } from "react";
 
 import { FULL_CROP, type CropRect } from "@/features/preview/utils/crop-geometry";
 import { useEasyTrimEditorApp } from "@/app/hooks/useEasyTrimEditorApp";
-import { EditorSessionContext } from "@/app/editor-session-context-value";
-import { selectMergeAudioDefault } from "@/app/preferences-slice";
-import { useAppSelector } from "@/app/store";
+import { EditorSessionContext } from "@/app/contexts/editor-session-context";
+import { selectMergeAudioDefault } from "@/app/store/slices/preferences-slice";
+import { useAppSelector } from "@/app/store/hooks";
 
 export function EditorSessionProvider({ children }: { children: ReactNode }) {
   const defaultMergeAudio = useAppSelector(selectMergeAudioDefault);
