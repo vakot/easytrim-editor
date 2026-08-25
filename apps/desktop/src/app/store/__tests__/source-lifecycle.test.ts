@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { sourceCleared, sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
 import { createAppStore } from "@/app/store/store";
-import { audioMergeChanged } from "@/app/store/slices/audio-slice";
+import { audioMergeToggled } from "@/app/store/slices/audio-slice";
 import { cropChanged } from "@/app/store/slices/crop-slice";
 import { trimChanged } from "@/app/store/slices/trim-slice";
 import { previewReady } from "@/app/store/slices/preview-slice";
@@ -32,7 +32,7 @@ describe("source-bound lifecycle", () => {
         resolution: { width: 1536, height: 1080 },
       }),
     );
-    store.dispatch(audioMergeChanged({ sourceId: firstSource.sourceId, enabled: true }));
+    store.dispatch(audioMergeToggled({ sourceId: firstSource.sourceId }));
     store.dispatch(
       previewReady({
         sourceId: firstSource.sourceId,
