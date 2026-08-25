@@ -8,7 +8,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import {
@@ -44,11 +43,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Link2, Unlink2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-interface OptimizedExportDialogProps {
-  showTrigger?: boolean;
-}
-
-export function OptimizedExportDialog({ showTrigger = true }: OptimizedExportDialogProps) {
+export function OptimizedExportDialog() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const open = useAppSelector(selectOptimizedExportDialogOpen);
@@ -61,6 +56,7 @@ export function OptimizedExportDialog({ showTrigger = true }: OptimizedExportDia
   const launchError = useAppSelector(selectExportLaunchError);
   const [isAspectRatioLocked, setIsAspectRatioLocked] = useState(true);
   const previousCropResolution = useRef(cropResolution);
+
   useEffect(() => {
     const cropChanged =
       previousCropResolution.current.width !== cropResolution.width ||
@@ -75,11 +71,14 @@ export function OptimizedExportDialog({ showTrigger = true }: OptimizedExportDia
       );
     }
   }, [cropResolution, dispatch, open, settings]);
+
   useEffect(() => {
     if (!open) return;
     void dispatch(refreshOptimizedExportPlan());
   }, [argumentsText, dispatch, open]);
+
   if (!source || !settings) return null;
+
   const onOpenChange = (nextOpen: boolean) => {
     if (nextOpen) {
       void dispatch(openOptimizedExportDialog());
@@ -87,6 +86,7 @@ export function OptimizedExportDialog({ showTrigger = true }: OptimizedExportDia
       dispatch(optimizedExportDialogClosed());
     }
   };
+
   const resolutionValue = `${settings.resolution.width}x${settings.resolution.height}`;
   const resolutionPresets = resolutionOptions(source, t);
   const hasMatchingResolutionPreset = resolutionPresets.some(
@@ -100,16 +100,6 @@ export function OptimizedExportDialog({ showTrigger = true }: OptimizedExportDia
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        {showTrigger ? (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <DialogTrigger asChild>
-                <Button aria-keyshortcuts="Control+E">{t("export.export")}</Button>
-              </DialogTrigger>
-            </TooltipTrigger>
-            <TooltipContent>{t("export.exportTooltip")}</TooltipContent>
-          </Tooltip>
-        ) : null}
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>{t("export.export")}</DialogTitle>

@@ -14,12 +14,9 @@ import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import {
   selectCapabilities,
   selectHasSource,
-  selectSourceMedia,
   selectSourceReady,
-  selectSourceSelection,
 } from "@/app/store/slices/source-slice";
 import { selectCropApplied } from "@/app/store/slices/crop-slice";
-import { selectTrim } from "@/app/store/slices/trim-slice";
 import {
   selectDropListenerError,
   selectIsChoosingSource,
@@ -45,9 +42,6 @@ import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
 
 function EasyTrimEditorApp() {
   const dispatch = useAppDispatch();
-  const sourceSelection = useAppSelector(selectSourceSelection);
-  const media = useAppSelector(selectSourceMedia);
-  const trim = useAppSelector(selectTrim);
   const capabilities = useAppSelector(selectCapabilities);
   const canExport = useAppSelector(selectSourceReady);
   const cropApplied = useAppSelector(selectCropApplied);
@@ -128,9 +122,7 @@ function EasyTrimEditorApp() {
           panelControls={<PanelVisibilityControls />}
         />
 
-        {canExport && sourceSelection && media && trim ? (
-          <OptimizedExportDialog showTrigger={false} />
-        ) : null}
+        <OptimizedExportDialog />
 
         {isNativeDialogOpen ? <NativeDialogOverlay /> : null}
 
