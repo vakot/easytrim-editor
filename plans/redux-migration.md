@@ -20,6 +20,10 @@ the application infrastructure structure before the next functional migration.
 - Every state value has one canonical owner. Redux is for serializable application or
   feature state; Context and local/runtime owners remain valid where they are the
   cleaner boundary.
+- Redux migration removes Context and Redux-backed prop transport, not only the state
+  owner. Prefer direct focused selector/dispatch access at the actual application
+  consumer; do not recreate large Redux-shaped prop contracts. Reusable presentational
+  components may retain meaningful props.
 - Existing source replacement, operation cancellation, waveform job, export-source
   reservation, temporary artifact, and listener cleanup guarantees are preserved.
 - Active editing state remains runtime-only. Redux persistence is opt-in per domain at
@@ -462,6 +466,12 @@ Preserve the resizable-panel integration boundary and keep pointer/drag internal
 local. Keep normalization and constraint calculations pure and tested. Migrate
 consumers and remove layout-specific Context/setter wiring, validate hidden/shown and
 resize transitions, and stop for review.
+
+This migration must remove Context/prop state transport as well as change the canonical
+owner: layout consumers should use focused selectors and dispatch at their actual
+application boundaries instead of a parent selecting the layout domain and rebuilding
+the existing large prop/callback contract. Reusable layout primitives may retain
+meaningful presentational props.
 
 The exact ordering may be refined when Phase 2 starts if dependencies suggest a better
 sequence, but the domains must remain separate even while the current provider still

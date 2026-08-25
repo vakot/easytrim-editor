@@ -102,6 +102,11 @@ storage, timers, or other effects.
 - Do not pass a Redux-backed value and callback through intermediate components solely
   for transport. Props remain correct for presentation, composition, parent-owned
   state, and generic reusable components.
+- Redux migration should remove state wiring, not merely relocate it. Application-specific
+  consumers should select and dispatch at the closest actual consumer, using focused
+  selectors rather than selecting a whole domain in a parent and redistributing fields.
+  Keep props for genuinely presentational/reusable components or meaningful parent-owned
+  composition.
 - Do not import the store singleton throughout arbitrary modules. Direct
   `store.getState()` or `store.dispatch()` outside the React integration boundary
   requires a concrete architectural reason and must not bypass typed adapters.

@@ -62,6 +62,18 @@ into Redux” refactor.
 When removing prop drilling, connect the nearest application/feature component to
 selectors and dispatch. Do not make every leaf UI primitive store-aware.
 
+Redux migration should remove state wiring, not merely relocate it. Application-specific
+components that consume or mutate Redux-owned state should normally select and dispatch
+directly at the closest actual consumer. Do not mirror a Redux slice through large
+value/handler prop contracts or continue prop-drilling Redux state through intermediate
+components.
+
+Prefer focused selectors at the leaf/actual-consumer level over selecting an entire
+domain in a parent and redistributing its fields. Keep props for genuinely reusable
+presentational components, generic UI primitives, naturally parent-owned values,
+composition, meaningful callbacks, and components intentionally independent from
+application infrastructure.
+
 ## Selectors and actions
 
 Prefer narrow selectors such as `selectActiveSource`, `selectTrim`,
