@@ -18,7 +18,7 @@ import { sourceCleared } from "../app/store/actions/source-actions";
 import { selectHasSource } from "../app/store/slices/source-slice";
 import { startSourceMediaRuntime } from "../app/store/source-media-runtime";
 import { checkMediaCapabilitiesRequested } from "../app/store/thunks/source-media-thunks";
-import { DEFAULT_TOOL_DEFAULTS } from "../app/tool-settings";
+import { DEFAULT_PREFERENCES } from "../app/preferences";
 
 const mocks = vi.hoisted(() => ({
   checkMediaCapabilities: vi.fn(),
@@ -148,7 +148,7 @@ beforeEach(() => {
   store.dispatch(editorLayoutReset());
   store.dispatch(sourceCleared());
   store.dispatch(
-    editorToolsInitialized(createEditorToolsStateFromPreferences(DEFAULT_TOOL_DEFAULTS)),
+    editorToolsInitialized(createEditorToolsStateFromPreferences(DEFAULT_PREFERENCES)),
   );
   sourceDropListener = undefined;
   mocks.checkMediaCapabilities.mockResolvedValue(capabilities);

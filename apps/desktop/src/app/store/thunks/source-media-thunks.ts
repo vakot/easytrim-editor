@@ -66,7 +66,7 @@ export const checkMediaCapabilitiesRequested = (): AppThunk => async (dispatch) 
 export const importSource =
   (source: SourceSelection, mergeAudio?: boolean): AppThunk =>
   async (dispatch, getState) => {
-    const selectedMergeAudio = mergeAudio ?? getState().preferences.toolDefaults.mergeAudioEnabled;
+    const selectedMergeAudio = mergeAudio ?? getState().preferences.mergeAudioEnabledDefault;
     dispatch(dropListenerErrorCleared());
     dispatch(sourceSelected({ source, mergeAudio: selectedMergeAudio }));
 

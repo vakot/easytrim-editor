@@ -1,74 +1,68 @@
 import { describe, expect, it } from "vitest";
 
-import { DEFAULT_TOOL_DEFAULTS, type ToolDefaults } from "@/app/tool-settings";
+import { DEFAULT_PREFERENCES, type Preferences } from "@/app/preferences";
 import type { RootState } from "@/app/store/store";
 import {
   preferencesReducer,
-  selectLoopPlaybackDefault,
-  selectMergeAudioDefault,
-  selectSnapPlaybackDefault,
-  selectSegmentPlaybackDefault,
-  selectToolDefaults,
-  toolDefaultChanged,
-  toolDefaultsReset,
+  preferenceChanged,
+  preferencesReset,
+  selectLoopPlaybackEnabledDefault,
+  selectMergeAudioEnabledDefault,
+  selectPreferences,
+  selectSnapPlaybackEnabledDefault,
+  selectSegmentPlaybackEnabledDefault,
 } from "@/app/store/slices/preferences-slice";
 
 describe("preferences Redux domain", () => {
   it("starts from deterministic product defaults without persistence access", () => {
     expect(preferencesReducer(undefined, { type: "preferences/initialize" })).toEqual({
-      toolDefaults: DEFAULT_TOOL_DEFAULTS,
+      ...DEFAULT_PREFERENCES,
     });
   });
 
   it("changes one preference without changing unrelated values", () => {
     const initialState = {
-      toolDefaults: { ...DEFAULT_TOOL_DEFAULTS },
+      ...DEFAULT_PREFERENCES,
     };
     const nextState = preferencesReducer(
       initialState,
-      toolDefaultChanged({ key: "snapPlaybackEnabled", enabled: false }),
+      preferenceChanged({ key: "snapPlaybackEnabledDefault", enabled: false }),
     );
 
-    expect(nextState.toolDefaults.snapPlaybackEnabled).toBe(false);
-    expect(nextState.toolDefaults.loopPlaybackEnabled).toBe(
-      initialState.toolDefaults.loopPlaybackEnabled,
-    );
-    expect(nextState.toolDefaults.mergeAudioEnabled).toBe(
-      initialState.toolDefaults.mergeAudioEnabled,
-    );
+    expect(nextState.snapPlaybackEnabledDefault).toBe(false);
+    expect(nextState.loopPlaybackEnabledDefault).toBe(initialState.loopPlaybackEnabledDefault);
+    expect(nextState.mergeAudioEnabledDefault).toBe(initialState.mergeAudioEnabledDefault);
   });
 
   it("resets all preferences to product defaults", () => {
     const state = preferencesReducer(
       {
-        toolDefaults: {
-          snapPlaybackEnabled: false,
-          loopPlaybackEnabled: false,
-          segmentPlaybackEnabled: false,
-          autoStartQueueEnabled: false,
-          mergeAudioEnabled: true,
-        },
+        snapPlaybackEnabledDefault: false,
+        loopPlaybackEnabledDefault: false,
+        segmentPlaybackEnabledDefault: false,
+        autoStartQueueEnabled: false,
+        mergeAudioEnabledDefault: true,
       },
-      toolDefaultsReset(),
+      preferencesReset(),
     );
 
-    expect(state.toolDefaults).toEqual(DEFAULT_TOOL_DEFAULTS);
+    expect(state).toEqual(DEFAULT_PREFERENCES);
   });
 
   it("selects focused preference values", () => {
-    const toolDefaults: ToolDefaults = {
-      snapPlaybackEnabled: false,
-      loopPlaybackEnabled: true,
-      segmentPlaybackEnabled: false,
+    const preferences: Preferences = {
+      snapPlaybackEnabledDefault: false,
+      loopPlaybackEnabledDefault: true,
+      segmentPlaybackEnabledDefault: false,
       autoStartQueueEnabled: true,
-      mergeAudioEnabled: true,
+      mergeAudioEnabledDefault: true,
     };
-    const state = { preferences: { toolDefaults } } as RootState;
+    const state = { preferences } as RootState;
 
-    expect(selectToolDefaults(state)).toEqual(toolDefaults);
-    expect(selectSnapPlaybackDefault(state)).toBe(false);
-    expect(selectLoopPlaybackDefault(state)).toBe(true);
-    expect(selectSegmentPlaybackDefault(state)).toBe(false);
-    expect(selectMergeAudioDefault(state)).toBe(true);
+    expect(selectPreferences(state)).toEqual(preferences);
+    expect(selectSnapPlaybackEnabledDefault(state)).toBe(false);
+    expect(selectLoopPlaybackEnabledDefault(state)).toBe(true);
+    expect(selectSegmentPlaybackEnabledDefault(state)).toBe(false);
+    expect(selectMergeAudioEnabledDefault(state)).toBe(true);
   });
 });

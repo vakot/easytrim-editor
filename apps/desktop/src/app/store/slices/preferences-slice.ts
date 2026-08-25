@@ -1,44 +1,38 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 import { type RootState } from "../store";
-import { DEFAULT_TOOL_DEFAULTS, type ToolDefaultKey, type ToolDefaults } from "@/app/tool-settings";
+import { DEFAULT_PREFERENCES, type PreferenceKey, type Preferences } from "@/app/preferences";
 
-export interface PreferencesState {
-  toolDefaults: ToolDefaults;
-}
+export type PreferencesState = Preferences;
 
 const createInitialState = (): PreferencesState => ({
-  toolDefaults: { ...DEFAULT_TOOL_DEFAULTS },
+  ...DEFAULT_PREFERENCES,
 });
 
 const preferencesSlice = createSlice({
   name: "preferences",
   initialState: createInitialState,
   reducers: {
-    toolDefaultChanged: (
-      state,
-      action: PayloadAction<{ key: ToolDefaultKey; enabled: boolean }>,
-    ) => {
-      state.toolDefaults[action.payload.key] = action.payload.enabled;
+    preferenceChanged: (state, action: PayloadAction<{ key: PreferenceKey; enabled: boolean }>) => {
+      state[action.payload.key] = action.payload.enabled;
     },
-    toolDefaultsReset: (state) => {
-      state.toolDefaults = { ...DEFAULT_TOOL_DEFAULTS };
+    preferencesReset: (state) => {
+      Object.assign(state, DEFAULT_PREFERENCES);
     },
   },
 });
 
-export const { toolDefaultChanged, toolDefaultsReset } = preferencesSlice.actions;
+export const { preferenceChanged, preferencesReset } = preferencesSlice.actions;
 export const preferencesReducer = preferencesSlice.reducer;
 
-export const selectToolDefaults = (state: RootState): ToolDefaults =>
-  state.preferences.toolDefaults;
-export const selectSnapPlaybackDefault = (state: RootState): boolean =>
-  selectToolDefaults(state).snapPlaybackEnabled;
-export const selectLoopPlaybackDefault = (state: RootState): boolean =>
-  selectToolDefaults(state).loopPlaybackEnabled;
-export const selectSegmentPlaybackDefault = (state: RootState): boolean =>
-  selectToolDefaults(state).segmentPlaybackEnabled;
-export const selectMergeAudioDefault = (state: RootState): boolean =>
-  selectToolDefaults(state).mergeAudioEnabled;
+export const selectPreferences = (state: RootState): Preferences => state.preferences;
+export const selectSnapPlaybackEnabledDefault = (state: RootState): boolean =>
+  selectPreferences(state).snapPlaybackEnabledDefault;
+export const selectLoopPlaybackEnabledDefault = (state: RootState): boolean =>
+  selectPreferences(state).loopPlaybackEnabledDefault;
+export const selectSegmentPlaybackEnabledDefault = (state: RootState): boolean =>
+  selectPreferences(state).segmentPlaybackEnabledDefault;
+export const selectMergeAudioEnabledDefault = (state: RootState): boolean =>
+  selectPreferences(state).mergeAudioEnabledDefault;
 export const selectAutoStartQueueEnabled = (state: RootState): boolean =>
-  selectToolDefaults(state).autoStartQueueEnabled;
+  selectPreferences(state).autoStartQueueEnabled;
