@@ -184,9 +184,9 @@ export const sk = {
     setEndShortcut: "Nastaviť koniec segmentu na aktuálnu pozíciu (O)",
     setEndUnavailable: "Koniec segmentu nastavíte presunutím za začiatok zdroja",
     currentTime: "Aktuálny čas prehrávania",
-    safeTrim: {
-      label: "Bezpečné sledovanie strihu",
-      enabled: "Prehrávacia hlava po zachytení sleduje hranicu strihu",
+    snapPlayback: {
+      label: "Prichytávanie prehrávania",
+      enabled: "Prehrávacia hlava po prichytení sleduje hranicu strihu",
       disabled: "Prehrávacia hlava zostáva na mieste",
     },
     loopPlayback: {

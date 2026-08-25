@@ -43,7 +43,7 @@ const menuState = vi.hoisted(() => ({
   },
   viewState: {
     toolDefaults: {
-      safeTrimFollowingEnabled: true,
+      snapPlaybackEnabled: true,
       loopPlaybackEnabled: true,
       segmentPlaybackEnabled: true,
       mergeAudioEnabled: false,

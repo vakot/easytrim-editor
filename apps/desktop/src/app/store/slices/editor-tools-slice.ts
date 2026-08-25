@@ -6,7 +6,7 @@ import { DEFAULT_PLAYBACK_SPEED, type PlaybackSpeed } from "@/domain/playback-sp
 
 export type EditorToolsState = Pick<
   ToolDefaults,
-  "safeTrimFollowingEnabled" | "loopPlaybackEnabled" | "segmentPlaybackEnabled"
+  "snapPlaybackEnabled" | "loopPlaybackEnabled" | "segmentPlaybackEnabled"
 > & {
   playbackSpeed: PlaybackSpeed;
 };
@@ -16,7 +16,7 @@ const createInitialState = (): EditorToolsState =>
 
 export function createEditorToolsStateFromPreferences(defaults: ToolDefaults): EditorToolsState {
   return {
-    safeTrimFollowingEnabled: defaults.safeTrimFollowingEnabled,
+    snapPlaybackEnabled: defaults.snapPlaybackEnabled,
     loopPlaybackEnabled: defaults.loopPlaybackEnabled,
     segmentPlaybackEnabled: defaults.segmentPlaybackEnabled,
     playbackSpeed: DEFAULT_PLAYBACK_SPEED,
@@ -29,11 +29,11 @@ const editorToolsSlice = createSlice({
   reducers: {
     editorToolsInitialized: (_state, action: PayloadAction<EditorToolsState>) => action.payload,
     editorToolsReset: (_state, action: PayloadAction<EditorToolsState>) => action.payload,
-    safeTrimFollowingToggled: (state) => {
-      state.safeTrimFollowingEnabled = !state.safeTrimFollowingEnabled;
+    snapPlaybackToggled: (state) => {
+      state.snapPlaybackEnabled = !state.snapPlaybackEnabled;
     },
-    safeTrimFollowingChanged: (state, action: PayloadAction<boolean>) => {
-      state.safeTrimFollowingEnabled = action.payload;
+    snapPlaybackChanged: (state, action: PayloadAction<boolean>) => {
+      state.snapPlaybackEnabled = action.payload;
     },
     loopPlaybackToggled: (state) => {
       state.loopPlaybackEnabled = !state.loopPlaybackEnabled;
@@ -56,8 +56,8 @@ const editorToolsSlice = createSlice({
 export const {
   editorToolsInitialized,
   editorToolsReset,
-  safeTrimFollowingToggled,
-  safeTrimFollowingChanged,
+  snapPlaybackToggled,
+  snapPlaybackChanged,
   loopPlaybackToggled,
   loopPlaybackChanged,
   segmentPlaybackToggled,
@@ -67,8 +67,8 @@ export const {
 export const editorToolsReducer = editorToolsSlice.reducer;
 
 export const selectEditorTools = (state: RootState): EditorToolsState => state.editorTools;
-export const selectSafeTrimFollowingEnabled = (state: RootState): boolean =>
-  selectEditorTools(state).safeTrimFollowingEnabled;
+export const selectSnapPlaybackEnabled = (state: RootState): boolean =>
+  selectEditorTools(state).snapPlaybackEnabled;
 export const selectLoopPlaybackEnabled = (state: RootState): boolean =>
   selectEditorTools(state).loopPlaybackEnabled;
 export const selectSegmentPlaybackEnabled = (state: RootState): boolean =>

@@ -103,10 +103,10 @@ export function SettingsMenu({ navigation }: { navigation: MenuNavigation }) {
       {...navigation}
       options={[
         settingsToolOption(
-          "setting-safe-trim",
+          "setting-snap-playback",
           t("app.settings.snap"),
           <Magnet className="size-3" aria-hidden="true" />,
-          "safeTrimFollowingEnabled",
+          "snapPlaybackEnabled",
         ),
         settingsToolOption(
           "setting-loop",

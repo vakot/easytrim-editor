@@ -572,7 +572,7 @@ export function useEditorInteractionController(): EditorInteractionValue {
   const handleTrimBoundaryChange = useCallback(
     (boundary: TrimBoundary, nextTrim: TrimRange) => {
       const currentMicros = currentPlayheadMicrosRef.current;
-      const follow = tools.safeTrimFollowingEnabled
+      const follow = tools.snapPlaybackEnabled
         ? playheadFollowAfterTrimBoundaryMove(trimRef.current, nextTrim, boundary, currentMicros)
         : { playheadMicros: currentMicros, boundary: null };
       trimRef.current = nextTrim;
@@ -580,13 +580,13 @@ export function useEditorInteractionController(): EditorInteractionValue {
       if (follow.playheadMicros !== currentMicros) queueScrubSeek(follow.playheadMicros);
       return follow.boundary;
     },
-    [queueScrubSeek, queueTrimCommit, tools.safeTrimFollowingEnabled],
+    [queueScrubSeek, queueTrimCommit, tools.snapPlaybackEnabled],
   );
   const handleSegmentMove = useCallback(
     (nextTrim: TrimRange) => {
       const currentMicros = currentPlayheadMicrosRef.current;
       const follow =
-        tools.safeTrimFollowingEnabled && segmentDragActiveRef.current
+        tools.snapPlaybackEnabled && segmentDragActiveRef.current
           ? playheadAfterSegmentMove(
               trimRef.current,
               nextTrim,
@@ -600,7 +600,7 @@ export function useEditorInteractionController(): EditorInteractionValue {
       if (follow.playheadMicros !== currentMicros) queueScrubSeek(follow.playheadMicros);
       return follow.boundary;
     },
-    [queueScrubSeek, queueTrimCommit, tools.safeTrimFollowingEnabled],
+    [queueScrubSeek, queueTrimCommit, tools.snapPlaybackEnabled],
   );
   const handleSegmentDragStart = useCallback(() => {
     segmentDragActiveRef.current = true;

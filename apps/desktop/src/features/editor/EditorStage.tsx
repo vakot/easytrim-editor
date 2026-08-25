@@ -10,7 +10,7 @@ import {
   createEditorToolsStateFromPreferences,
   editorToolsReset,
   playbackSpeedChanged,
-  safeTrimFollowingToggled,
+  snapPlaybackToggled,
   loopPlaybackToggled,
   segmentPlaybackToggled,
   selectEditorTools,
@@ -148,11 +148,11 @@ export function EditorStage() {
                 }
                 videoToolbar={
                   <TimelineTools
-                    safeTrimFollowingEnabled={tools.safeTrimFollowingEnabled}
+                    snapPlaybackEnabled={tools.snapPlaybackEnabled}
                     loopPlaybackEnabled={tools.loopPlaybackEnabled}
                     segmentPlaybackEnabled={tools.segmentPlaybackEnabled}
                     playbackSpeed={tools.playbackSpeed}
-                    onToggleSafeTrimFollowing={() => dispatch(safeTrimFollowingToggled())}
+                    onToggleSnapPlayback={() => dispatch(snapPlaybackToggled())}
                     onToggleLoopPlayback={() => dispatch(loopPlaybackToggled())}
                     onToggleSegmentPlayback={() => dispatch(segmentPlaybackToggled())}
                     onPlaybackSpeedChange={(speed) => dispatch(playbackSpeedChanged(speed))}

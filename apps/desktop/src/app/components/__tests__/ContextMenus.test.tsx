@@ -41,7 +41,7 @@ const menuState = vi.hoisted(() => ({
   },
   viewState: {
     toolDefaults: {
-      safeTrimFollowingEnabled: true,
+      snapPlaybackEnabled: true,
       loopPlaybackEnabled: true,
       segmentPlaybackEnabled: true,
       mergeAudioEnabled: false,
@@ -452,7 +452,7 @@ describe("ContextMenus", () => {
             onSave={vi.fn()}
             onExport={vi.fn()}
             toolDefaults={{
-              safeTrimFollowingEnabled: false,
+              snapPlaybackEnabled: false,
               loopPlaybackEnabled: false,
               segmentPlaybackEnabled: false,
               mergeAudioEnabled: false,

@@ -9,13 +9,13 @@ import {
   editorToolsReset,
   loopPlaybackToggled,
   playbackSpeedChanged,
-  safeTrimFollowingToggled,
+  snapPlaybackToggled,
   selectEditorTools,
   selectLoopPlaybackEnabled,
   selectPlaybackSpeed,
-  selectSafeTrimFollowingEnabled,
+  selectSnapPlaybackEnabled,
   selectSegmentPlaybackEnabled,
-  safeTrimFollowingChanged,
+  snapPlaybackChanged,
   segmentPlaybackToggled,
 } from "@/app/store/slices/editor-tools-slice";
 import { DEFAULT_PLAYBACK_SPEED, type PlaybackSpeed } from "@/domain/playback-speed";
@@ -28,7 +28,7 @@ describe("editor tools Redux domain", () => {
     };
 
     expect(createEditorToolsStateFromPreferences(defaults)).toEqual({
-      safeTrimFollowingEnabled: true,
+      snapPlaybackEnabled: true,
       loopPlaybackEnabled: false,
       segmentPlaybackEnabled: true,
       playbackSpeed: DEFAULT_PLAYBACK_SPEED,
@@ -41,9 +41,9 @@ describe("editor tools Redux domain", () => {
       editorToolsInitialized(createEditorToolsStateFromPreferences(DEFAULT_TOOL_DEFAULTS)),
     );
 
-    const nextState = editorToolsReducer(initialState, safeTrimFollowingToggled());
+    const nextState = editorToolsReducer(initialState, snapPlaybackToggled());
 
-    expect(nextState.safeTrimFollowingEnabled).toBe(false);
+    expect(nextState.snapPlaybackEnabled).toBe(false);
     expect(nextState.loopPlaybackEnabled).toBe(initialState.loopPlaybackEnabled);
     expect(nextState.segmentPlaybackEnabled).toBe(initialState.segmentPlaybackEnabled);
     expect(nextState.playbackSpeed).toBe(initialState.playbackSpeed);
@@ -60,15 +60,15 @@ describe("editor tools Redux domain", () => {
     );
   });
 
-  it("supports explicitly changing safe trim following", () => {
+  it("supports explicitly changing snap playback", () => {
     const initialState = editorToolsReducer(
       undefined,
       editorToolsInitialized(createEditorToolsStateFromPreferences(DEFAULT_TOOL_DEFAULTS)),
     );
 
-    const nextState = editorToolsReducer(initialState, safeTrimFollowingChanged(false));
+    const nextState = editorToolsReducer(initialState, snapPlaybackChanged(false));
 
-    expect(nextState.safeTrimFollowingEnabled).toBe(false);
+    expect(nextState.snapPlaybackEnabled).toBe(false);
     expect(nextState.loopPlaybackEnabled).toBe(initialState.loopPlaybackEnabled);
     expect(nextState.segmentPlaybackEnabled).toBe(initialState.segmentPlaybackEnabled);
     expect(nextState.playbackSpeed).toBe(initialState.playbackSpeed);
@@ -96,11 +96,11 @@ describe("editor tools Redux domain", () => {
         undefined,
         editorToolsInitialized(createEditorToolsStateFromPreferences(DEFAULT_TOOL_DEFAULTS)),
       ),
-      safeTrimFollowingToggled(),
+      snapPlaybackToggled(),
     );
     const currentDefaults: ToolDefaults = {
       ...DEFAULT_TOOL_DEFAULTS,
-      safeTrimFollowingEnabled: false,
+      snapPlaybackEnabled: false,
       loopPlaybackEnabled: false,
     };
 
@@ -114,7 +114,7 @@ describe("editor tools Redux domain", () => {
 
   it("exposes focused selectors", () => {
     const editorTools = {
-      safeTrimFollowingEnabled: false,
+      snapPlaybackEnabled: false,
       loopPlaybackEnabled: true,
       segmentPlaybackEnabled: false,
       playbackSpeed: 1.5 as PlaybackSpeed,
@@ -122,7 +122,7 @@ describe("editor tools Redux domain", () => {
     const state = { editorTools } as RootState;
 
     expect(selectEditorTools(state)).toBe(editorTools);
-    expect(selectSafeTrimFollowingEnabled(state)).toBe(false);
+    expect(selectSnapPlaybackEnabled(state)).toBe(false);
     expect(selectLoopPlaybackEnabled(state)).toBe(true);
     expect(selectSegmentPlaybackEnabled(state)).toBe(false);
     expect(selectPlaybackSpeed(state)).toBe(1.5);

@@ -184,11 +184,11 @@ export function PlaybackTimecode({
 }
 
 interface TimelineToolsProps {
-  safeTrimFollowingEnabled: boolean;
+  snapPlaybackEnabled: boolean;
   loopPlaybackEnabled: boolean;
   segmentPlaybackEnabled: boolean;
   playbackSpeed: PlaybackSpeed;
-  onToggleSafeTrimFollowing: () => void;
+  onToggleSnapPlayback: () => void;
   onToggleLoopPlayback: () => void;
   onToggleSegmentPlayback: () => void;
   onPlaybackSpeedChange: (speed: PlaybackSpeed) => void;
@@ -196,11 +196,11 @@ interface TimelineToolsProps {
 }
 
 export function TimelineTools({
-  safeTrimFollowingEnabled,
+  snapPlaybackEnabled,
   loopPlaybackEnabled,
   segmentPlaybackEnabled,
   playbackSpeed,
-  onToggleSafeTrimFollowing,
+  onToggleSnapPlayback,
   onToggleLoopPlayback,
   onToggleSegmentPlayback,
   onPlaybackSpeedChange,
@@ -212,12 +212,12 @@ export function TimelineTools({
     <>
       <div className="grid grid-flow-col auto-cols-[1.75rem] grid-rows-[repeat(2,1.75rem)] gap-1">
         <TimelineToolButton
-          enabled={safeTrimFollowingEnabled}
-          label={t("preview.safeTrim.label")}
+          enabled={snapPlaybackEnabled}
+          label={t("preview.snapPlayback.label")}
           title={t(
-            safeTrimFollowingEnabled ? "preview.safeTrim.enabled" : "preview.safeTrim.disabled",
+            snapPlaybackEnabled ? "preview.snapPlayback.enabled" : "preview.snapPlayback.disabled",
           )}
-          onClick={onToggleSafeTrimFollowing}
+          onClick={onToggleSnapPlayback}
         >
           <Magnet />
         </TimelineToolButton>

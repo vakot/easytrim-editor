@@ -175,7 +175,7 @@ storage helpers were removed because Redux Persist now owns this domain.
 
 Canonical owner: `app/store/slices/editor-tools-slice.ts`, registered as the
 `editorTools` reducer in `app/store/store.ts`. The runtime-only state contains only
-safe trim following, loop playback, segment playback, and the allowed `PlaybackSpeed`
+snap playback, loop playback, segment playback, and the allowed `PlaybackSpeed`
 value. It is excluded from the Redux Persist allow-list.
 
 `EditorStage` connects the presentational `TimelineTools` component to focused Redux
@@ -193,10 +193,10 @@ values. Active tools survive source replacement for the lifetime of the applicat
 but do not survive restart through persistence.
 
 Actions are `editorToolsInitialized`, `editorToolsReset`,
-`safeTrimFollowingToggled`, `safeTrimFollowingChanged`, `loopPlaybackToggled`,
+`snapPlaybackToggled`, `snapPlaybackChanged`, `loopPlaybackToggled`,
 `loopPlaybackChanged`,
 `segmentPlaybackToggled`, `segmentPlaybackChanged`, and `playbackSpeedChanged`.
-Focused selectors are `selectEditorTools`, `selectSafeTrimFollowingEnabled`,
+Focused selectors are `selectEditorTools`, `selectSnapPlaybackEnabled`,
 `selectLoopPlaybackEnabled`, `selectSegmentPlaybackEnabled`, and `selectPlaybackSpeed`.
 
 The active-tool fields were removed from `EditorViewStateContext` and
@@ -446,7 +446,7 @@ the source used to initialize active tools or command policy without owning acti
 
 #### Phase 2B — editor tools
 
-Completed. Current active tool behavior—safe trim following, loop playback, segment
+Completed. Current active tool behavior—snap playback, loop playback, segment
 playback, and playback speed—now lives in the runtime-only `editorTools` Redux domain.
 Preferences supplies one-time initialization and explicit reset defaults without
 becoming active state. Consumers and writers use Redux at their semantic boundaries;

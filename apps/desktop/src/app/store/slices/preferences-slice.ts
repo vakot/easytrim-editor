@@ -33,8 +33,8 @@ export const preferencesReducer = preferencesSlice.reducer;
 export const selectPreferences = (state: RootState): PreferencesState => state.preferences;
 export const selectToolDefaults = (state: RootState): ToolDefaults =>
   selectPreferences(state).toolDefaults;
-export const selectSafeTrimFollowingDefault = (state: RootState): boolean =>
-  selectToolDefaults(state).safeTrimFollowingEnabled;
+export const selectSnapPlaybackDefault = (state: RootState): boolean =>
+  selectToolDefaults(state).snapPlaybackEnabled;
 export const selectLoopPlaybackDefault = (state: RootState): boolean =>
   selectToolDefaults(state).loopPlaybackEnabled;
 export const selectSegmentPlaybackDefault = (state: RootState): boolean =>
