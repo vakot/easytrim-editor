@@ -699,7 +699,8 @@ describe("App", () => {
 
     await openSourcePicker(user);
     await screen.findByRole("heading", { name: "holiday.mp4" });
-    await user.click(screen.getByRole("button", { name: "Layout controls" }));
+    screen.getByRole("button", { name: "Layout controls" }).focus();
+    await user.keyboard("{Enter}");
     const leftPanelRow = screen.getByRole("menuitem", { name: /Left panel/ });
     const bottomPanelRow = screen.getByRole("menuitem", { name: /Bottom panel/ });
     expect(leftPanelRow).toHaveAttribute("data-selected", "false");

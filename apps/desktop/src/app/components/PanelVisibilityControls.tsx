@@ -6,7 +6,7 @@ import {
   PanelLeftDashed,
   RotateCcw,
 } from "lucide-react";
-import { useRef, useState, type ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,6 @@ import {
 
 export function PanelVisibilityControls() {
   const { t } = useTranslation();
-  const [layoutMenuOpen, setLayoutMenuOpen] = useState(false);
   const switchInteractionRef = useRef(false);
   const dispatch = useAppDispatch();
   const isLeftPanelVisible = useAppSelector((state) => selectPanelVisibility(state, "left"));
@@ -103,12 +102,7 @@ export function PanelVisibilityControls() {
 
   return (
     <div className="flex items-center gap-0.5" role="group" aria-label={t("app.panels.group")}>
-      <ContextMenu
-        options={layoutOptions}
-        className="size-7 p-0"
-        open={layoutMenuOpen}
-        onOpenChange={setLayoutMenuOpen}
-      >
+      <ContextMenu options={layoutOptions} className="size-7 p-0">
         <>
           <LayoutPanelLeft className="size-4" aria-hidden="true" />
           <span className="sr-only">{t("app.panels.layoutMenu")}</span>
