@@ -57,13 +57,12 @@ function EasyTrimEditorApp() {
   }, [dispatch]);
 
   useKeyboardShortcut(
-    (event) =>
-      event.key.toLowerCase() === "o" && event.ctrlKey && !isChoosingSource && !isNativeDialogOpen,
+    (event) => event.code === "KeyO" && event.ctrlKey && !isChoosingSource && !isNativeDialogOpen,
     () => void dispatch(chooseSourceRequested()),
   );
   useKeyboardShortcut(
     (event) =>
-      event.key.toLowerCase() === "q" &&
+      event.code === "KeyQ" &&
       event.ctrlKey &&
       hasSource &&
       !isChoosingSource &&
@@ -71,11 +70,11 @@ function EasyTrimEditorApp() {
     () => void dispatch(closeSourceRequested()),
   );
   useKeyboardShortcut(
-    (event) => event.key.toLowerCase() === "s" && event.ctrlKey && canExport && !cropApplied,
+    (event) => event.code === "KeyS" && event.ctrlKey && canExport && !cropApplied,
     () => void dispatch(startFastCutRequested()),
   );
   useKeyboardShortcut(
-    (event) => event.key.toLowerCase() === "e" && event.ctrlKey && canExport,
+    (event) => event.code === "KeyE" && event.ctrlKey && canExport,
     () => void dispatch(openOptimizedExportDialog()),
   );
   useKeyboardShortcut(

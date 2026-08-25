@@ -303,10 +303,10 @@ describe("App", () => {
       expect(screen.getByRole("button", { name: "Play" })).toBeDisabled();
       video.currentTime = 10;
       fireEvent.timeUpdate(video);
-      fireEvent.keyDown(window, { key: " " });
-      fireEvent.keyDown(window, { key: "ArrowRight" });
-      fireEvent.keyDown(window, { key: "i" });
-      fireEvent.keyDown(window, { key: "o" });
+      fireEvent.keyDown(window, { key: " ", code: "Space" });
+      fireEvent.keyDown(window, { key: "ArrowRight", code: "ArrowRight" });
+      fireEvent.keyDown(window, { key: "i", code: "KeyI" });
+      fireEvent.keyDown(window, { key: "o", code: "KeyO" });
       expect(play).not.toHaveBeenCalled();
       expect(video.currentTime).toBe(10);
       expect(trimStart).toHaveAttribute("aria-valuenow", "0");
@@ -319,7 +319,7 @@ describe("App", () => {
         expect(screen.queryByTestId("editor-loading-overlay")).not.toBeInTheDocument(),
       );
       expect(screen.getByRole("button", { name: "Play" })).not.toBeDisabled();
-      fireEvent.keyDown(window, { key: " " });
+      fireEvent.keyDown(window, { key: " ", code: "Space" });
       expect(play).toHaveBeenCalledOnce();
     } finally {
       readyState.mockRestore();
@@ -426,7 +426,7 @@ describe("App", () => {
   it("opens the source picker with Ctrl+O", () => {
     render(<App />);
 
-    fireEvent.keyDown(window, { key: "o", ctrlKey: true });
+    fireEvent.keyDown(window, { key: "щ", code: "KeyO", ctrlKey: true });
 
     expect(mocks.chooseSource).toHaveBeenCalledTimes(1);
   });
@@ -444,7 +444,7 @@ describe("App", () => {
     expect(screen.getByRole("menuitem", { name: /Close File/ })).toHaveTextContent("Ctrl+Q");
     await user.keyboard("{Escape}");
 
-    fireEvent.keyDown(window, { key: "q", ctrlKey: true });
+    fireEvent.keyDown(window, { key: "й", code: "KeyQ", ctrlKey: true });
 
     expect(await screen.findByRole("heading", { name: "No source" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "holiday.mp4" })).not.toBeInTheDocument();
@@ -1212,10 +1212,10 @@ describe("App", () => {
 
     video.currentTime = 10;
     fireEvent.timeUpdate(video);
-    fireEvent.keyDown(window, { key: "i" });
+    fireEvent.keyDown(window, { key: "i", code: "KeyI" });
     video.currentTime = 20;
     fireEvent.timeUpdate(video);
-    fireEvent.keyDown(window, { key: "o" });
+    fireEvent.keyDown(window, { key: "o", code: "KeyO" });
 
     const segmentToggle = screen.getByRole("button", { name: "Segment playback" });
     const loopToggle = screen.getByRole("button", { name: "Loop playback" });
@@ -1289,23 +1289,23 @@ describe("App", () => {
     const play = vi.spyOn(video, "play").mockResolvedValue();
     const pause = vi.spyOn(video, "pause").mockImplementation(() => undefined);
 
-    fireEvent.keyDown(window, { key: "ArrowRight" });
+    fireEvent.keyDown(window, { key: "ArrowRight", code: "ArrowRight" });
     expect(screen.getByRole("slider", { name: "Playback position" })).toHaveAttribute(
       "aria-valuenow",
       "16683",
     );
 
-    fireEvent.keyDown(window, { key: "ArrowLeft" });
+    fireEvent.keyDown(window, { key: "ArrowLeft", code: "ArrowLeft" });
     expect(screen.getByRole("slider", { name: "Playback position" })).toHaveAttribute(
       "aria-valuenow",
       "0",
     );
 
-    fireEvent.keyDown(window, { key: " " });
+    fireEvent.keyDown(window, { key: " ", code: "Space" });
     expect(play).toHaveBeenCalledOnce();
     fireEvent.play(video);
     pause.mockClear();
-    fireEvent.keyDown(window, { key: " " });
+    fireEvent.keyDown(window, { key: " ", code: "Space" });
     expect(pause).toHaveBeenCalledOnce();
     fireEvent.pause(video);
 
@@ -1314,8 +1314,8 @@ describe("App", () => {
     input.focus();
     play.mockClear();
     pause.mockClear();
-    fireEvent.keyDown(input, { key: " " });
-    fireEvent.keyDown(input, { key: "ArrowRight" });
+    fireEvent.keyDown(input, { key: " ", code: "Space" });
+    fireEvent.keyDown(input, { key: "ArrowRight", code: "ArrowRight" });
     expect(play).toHaveBeenCalledOnce();
     expect(pause).not.toHaveBeenCalled();
     expect(screen.getByRole("slider", { name: "Playback position" })).toHaveAttribute(
@@ -1359,12 +1359,12 @@ describe("App", () => {
 
     video.currentTime = 10;
     fireEvent.timeUpdate(video);
-    fireEvent.keyDown(window, { key: "i" });
+    fireEvent.keyDown(window, { key: "i", code: "KeyI" });
     expect(startHandle).toHaveAttribute("aria-valuenow", "10000000");
 
     video.currentTime = 5;
     fireEvent.timeUpdate(video);
-    fireEvent.keyDown(window, { key: "o" });
+    fireEvent.keyDown(window, { key: "o", code: "KeyO" });
     expect(startHandle).toHaveAttribute("aria-valuenow", "0");
     expect(endHandle).toHaveAttribute("aria-valuenow", "5000000");
 
@@ -1485,10 +1485,10 @@ describe("App", () => {
 
     video.currentTime = 10;
     fireEvent.timeUpdate(video);
-    fireEvent.keyDown(window, { key: "i" });
+    fireEvent.keyDown(window, { key: "i", code: "KeyI" });
     video.currentTime = 50;
     fireEvent.timeUpdate(video);
-    fireEvent.keyDown(window, { key: "o" });
+    fireEvent.keyDown(window, { key: "o", code: "KeyO" });
     video.currentTime = 30;
     fireEvent.timeUpdate(video);
 
@@ -1546,10 +1546,10 @@ describe("App", () => {
 
     video.currentTime = 10;
     fireEvent.timeUpdate(video);
-    fireEvent.keyDown(window, { key: "i" });
+    fireEvent.keyDown(window, { key: "i", code: "KeyI" });
     video.currentTime = 20;
     fireEvent.timeUpdate(video);
-    fireEvent.keyDown(window, { key: "o" });
+    fireEvent.keyDown(window, { key: "o", code: "KeyO" });
     video.currentTime = 30;
     fireEvent.timeUpdate(video);
 
@@ -1647,10 +1647,10 @@ describe("App", () => {
 
     video.currentTime = 10;
     fireEvent.timeUpdate(video);
-    fireEvent.keyDown(window, { key: "i" });
+    fireEvent.keyDown(window, { key: "i", code: "KeyI" });
     video.currentTime = 20;
     fireEvent.timeUpdate(video);
-    fireEvent.keyDown(window, { key: "o" });
+    fireEvent.keyDown(window, { key: "o", code: "KeyO" });
     video.currentTime = 30;
     fireEvent.timeUpdate(video);
 
@@ -1827,10 +1827,10 @@ describe("App", () => {
 
     video.currentTime = 10;
     fireEvent.timeUpdate(video);
-    fireEvent.keyDown(window, { key: "i" });
+    fireEvent.keyDown(window, { key: "i", code: "KeyI" });
     video.currentTime = 20;
     fireEvent.timeUpdate(video);
-    fireEvent.keyDown(window, { key: "o" });
+    fireEvent.keyDown(window, { key: "o", code: "KeyO" });
     video.currentTime = 30;
     fireEvent.timeUpdate(video);
 
@@ -1919,10 +1919,10 @@ describe("App", () => {
 
     video.currentTime = 10;
     fireEvent.timeUpdate(video);
-    fireEvent.keyDown(window, { key: "i" });
+    fireEvent.keyDown(window, { key: "i", code: "KeyI" });
     video.currentTime = 20;
     fireEvent.timeUpdate(video);
-    fireEvent.keyDown(window, { key: "o" });
+    fireEvent.keyDown(window, { key: "o", code: "KeyO" });
     video.currentTime = 30;
     fireEvent.timeUpdate(video);
 
@@ -2218,10 +2218,10 @@ describe("App", () => {
 
     video.currentTime = 10;
     fireEvent.timeUpdate(video);
-    fireEvent.keyDown(window, { key: "i" });
+    fireEvent.keyDown(window, { key: "i", code: "KeyI" });
     video.currentTime = 50;
     fireEvent.timeUpdate(video);
-    fireEvent.keyDown(window, { key: "o" });
+    fireEvent.keyDown(window, { key: "o", code: "KeyO" });
 
     video.currentTime = 5;
     fireEvent.timeUpdate(video);
@@ -2391,14 +2391,14 @@ describe("App", () => {
     const initialPosition = playhead.getAttribute("aria-valuenow");
 
     fireEvent.pointerDown(playhead, { clientX: 100, pointerId: 21 });
-    fireEvent.keyDown(window, { key: "ArrowRight" });
-    fireEvent.keyDown(window, { key: " " });
+    fireEvent.keyDown(window, { key: "ArrowRight", code: "ArrowRight" });
+    fireEvent.keyDown(window, { key: " ", code: "Space" });
 
     expect(play).not.toHaveBeenCalled();
     expect(playhead).toHaveAttribute("aria-valuenow", initialPosition);
 
     fireEvent.pointerUp(playhead, { pointerId: 21 });
-    fireEvent.keyDown(window, { key: " " });
+    fireEvent.keyDown(window, { key: " ", code: "Space" });
     expect(play).toHaveBeenCalledOnce();
   });
 

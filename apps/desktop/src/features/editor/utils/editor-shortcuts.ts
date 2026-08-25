@@ -3,16 +3,16 @@ export type EditorShortcut =
 
 export function editorShortcutFromEvent(event: globalThis.KeyboardEvent): EditorShortcut | null {
   if (event.altKey || event.ctrlKey || event.metaKey) return null;
-  switch (event.key.toLowerCase()) {
-    case " ":
+  switch (event.code) {
+    case "Space":
       return "toggle-playback";
-    case "arrowleft":
+    case "ArrowLeft":
       return "previous-frame";
-    case "arrowright":
+    case "ArrowRight":
       return "next-frame";
-    case "i":
+    case "KeyI":
       return "set-segment-start";
-    case "o":
+    case "KeyO":
       return "set-segment-end";
     default:
       return null;
