@@ -242,7 +242,6 @@ export const {
 } = exportSlice.actions;
 export const exportReducer = exportSlice.reducer;
 
-export const selectExportState = (state: RootState): ExportState => state.export;
 export const selectExportQueue = (state: RootState): ExportQueueItem[] => state.export.queue;
 export const selectExportQueueItems = selectExportQueue;
 export const selectActiveExport = createSelector([selectExportQueue], (queue) =>

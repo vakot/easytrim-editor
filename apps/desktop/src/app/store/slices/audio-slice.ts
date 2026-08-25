@@ -314,10 +314,9 @@ export const audioReducer = audioSlice.reducer;
 const EMPTY_AUDIO_TRACKS: AudioTrackState[] = [];
 const EMPTY_WAVEFORMS: WaveformState[] = [];
 
-export const selectAudioState = (state: RootState): AudioState => state.audio;
 export const selectAudioTracks = (state: RootState): AudioTrackState[] =>
   state.audio.tracks.length > 0 ? state.audio.tracks : EMPTY_AUDIO_TRACKS;
-export const selectMasterAudio = createSelector([selectAudioState], (audio) => ({
+export const selectMasterAudio = createSelector([(state: RootState) => state.audio], (audio) => ({
   enabled: audio.masterEnabled,
   volumePercent: audio.masterVolumePercent,
 }));

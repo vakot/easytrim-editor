@@ -47,14 +47,13 @@ export const { themePreferenceChanged, primaryColorChanged, customPrimaryColorCh
   themeSlice.actions;
 export const themeReducer = themeSlice.reducer;
 
-export const selectTheme = (state: RootState): ThemeState => state.theme;
 export const selectThemePreference = (state: RootState): ThemePreference =>
-  selectTheme(state).preference;
+  state.theme.preference;
 export const selectPrimaryColor = (state: RootState): PrimaryColor =>
-  selectTheme(state).primaryColor;
+  state.theme.primaryColor;
 export const selectPrimaryColorKey = (state: RootState): PrimaryColorKey => {
   const primaryColor = selectPrimaryColor(state);
   return isCustomPrimaryColor(primaryColor) ? "custom" : primaryColor;
 };
 export const selectCustomPrimaryColor = (state: RootState): CustomPrimaryColor =>
-  selectTheme(state).customPrimaryColor;
+  state.theme.customPrimaryColor;
