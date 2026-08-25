@@ -1,6 +1,12 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import {
+  fireEvent,
+  render as renderWithTestingLibrary,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactElement } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { DEFAULT_TOOL_DEFAULTS, type ToolDefaults } from "@/app/tool-settings";
@@ -46,6 +52,20 @@ const menuState = vi.hoisted(() => ({
     dispatch: vi.fn(),
   },
 }));
+
+const defaultAppUpdates = {
+  status: "idle" as const,
+  availableVersion: null,
+  isInstalling: false,
+  checkForUpdates: vi.fn(async () => undefined),
+  installUpdate: vi.fn(async () => undefined),
+};
+
+function render(ui: ReactElement) {
+  return renderWithTestingLibrary(
+    <AppUpdatesContext.Provider value={defaultAppUpdates}>{ui}</AppUpdatesContext.Provider>,
+  );
+}
 
 vi.mock("@/app/store/hooks", () => ({
   useAppDispatch: () => menuState.viewState.dispatch,
@@ -197,7 +217,17 @@ describe("ContextMenus", () => {
     return render(
       <TooltipProvider>
         <ThemeProvider>
-          <ContextMenus {...overrides} />
+          <AppUpdatesContext.Provider
+            value={{
+              status: "idle",
+              availableVersion: null,
+              isInstalling: false,
+              checkForUpdates: vi.fn(),
+              installUpdate: vi.fn(),
+            }}
+          >
+            <ContextMenus {...overrides} />
+          </AppUpdatesContext.Provider>
         </ThemeProvider>
       </TooltipProvider>,
     );

@@ -7,6 +7,7 @@ import { CustomTitleBar } from "../CustomTitleBar";
 import { ContextMenus } from "../ContextMenus";
 import { store } from "@/app/store/store";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
+import { AppUpdatesContext } from "@/app/contexts/app-updates-context";
 
 const windowActions = vi.hoisted(() => ({
   closeWindow: vi.fn(() => Promise.resolve()),
@@ -24,7 +25,17 @@ describe("CustomTitleBar", () => {
     render(
       <Provider store={store}>
         <ThemeProvider>
-          <CustomTitleBar menuControls={<ContextMenus />} />
+          <AppUpdatesContext.Provider
+            value={{
+              status: "idle",
+              availableVersion: null,
+              isInstalling: false,
+              checkForUpdates: vi.fn(),
+              installUpdate: vi.fn(),
+            }}
+          >
+            <CustomTitleBar menuControls={<ContextMenus />} />
+          </AppUpdatesContext.Provider>
         </ThemeProvider>
       </Provider>,
     );
@@ -39,7 +50,17 @@ describe("CustomTitleBar", () => {
     const menuRender = render(
       <Provider store={store}>
         <ThemeProvider>
-          <CustomTitleBar menuControls={<ContextMenus />} />
+          <AppUpdatesContext.Provider
+            value={{
+              status: "idle",
+              availableVersion: null,
+              isInstalling: false,
+              checkForUpdates: vi.fn(),
+              installUpdate: vi.fn(),
+            }}
+          >
+            <CustomTitleBar menuControls={<ContextMenus />} />
+          </AppUpdatesContext.Provider>
         </ThemeProvider>
       </Provider>,
     );
@@ -52,7 +73,17 @@ describe("CustomTitleBar", () => {
     render(
       <Provider store={store}>
         <ThemeProvider>
-          <CustomTitleBar menuControls={<ContextMenus />} />
+          <AppUpdatesContext.Provider
+            value={{
+              status: "idle",
+              availableVersion: null,
+              isInstalling: false,
+              checkForUpdates: vi.fn(),
+              installUpdate: vi.fn(),
+            }}
+          >
+            <CustomTitleBar menuControls={<ContextMenus />} />
+          </AppUpdatesContext.Provider>
         </ThemeProvider>
       </Provider>,
     );
