@@ -8,12 +8,24 @@ import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import packageJson from "../../../../../package.json";
 import { formatExportDuration, formatExportFileSize, type ExportToast } from "@/features/export";
+import { selectStatusBarExport } from "./status-bar-utils";
 
 export function StatusBar({ queue }: { queue: ExportToast[] }) {
   const { t } = useTranslation();
-  const activeExport = queue.find((item) => item.status === "rendering");
+  const activeExport = selectStatusBarExport(queue);
   const activeExportPath = activeExport ? splitFilePath(activeExport.path) : null;
   const activeExportFps = activeExport?.fps;
+  const progressPercent = activeExport
+    ? activeExport.status === "completed"
+      ? 100
+      : Math.round(activeExport.progressPercent ?? 0)
+    : 0;
+  const progressFillClass =
+    activeExport?.status === "completed"
+      ? "bg-emerald-400"
+      : activeExport?.status === "failed" || activeExport?.status === "canceled"
+        ? "bg-destructive"
+        : "bg-primary";
 
   return (
     <div className="bg-card/30">
@@ -41,16 +53,14 @@ export function StatusBar({ queue }: { queue: ExportToast[] }) {
                 aria-label={t("statusBar.exportProgress")}
                 aria-valuemin={0}
                 aria-valuemax={100}
-                aria-valuenow={Math.round(activeExport.progressPercent ?? 0)}
+                aria-valuenow={progressPercent}
               >
                 <div
-                  className="h-full rounded-full bg-primary transition-[width] duration-150"
-                  style={{ width: `${activeExport.progressPercent ?? 0}%` }}
+                  className={`h-full rounded-full transition-[width] duration-150 ${progressFillClass}`}
+                  style={{ width: `${progressPercent}%` }}
                 />
               </div>
-              <span className="w-10 text-right tabular-nums">
-                {Math.round(activeExport.progressPercent ?? 0)}%
-              </span>
+              <span className="w-10 text-right tabular-nums">{progressPercent}%</span>
             </div>
             {activeExport.totalFrames !== undefined && activeExport.currentFrame !== undefined ? (
               <>
