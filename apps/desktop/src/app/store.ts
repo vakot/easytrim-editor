@@ -1,14 +1,21 @@
 import { combineReducers, configureStore } from "@reduxjs/toolkit";
 import { useDispatch, useSelector } from "react-redux";
-
-import { preferencesReducer, type PreferencesState } from "@/app/preferences-slice";
 import {
-  definePersistedDomain,
-  hydratePersistedDomains,
-  observePersistedDomains,
-  type PersistedDomain,
-} from "@/app/store-persistence";
-import { loadToolDefaults, persistToolDefaults } from "@/app/tool-settings";
+  FLUSH,
+  PAUSE,
+  PERSIST,
+  persistReducer,
+  persistStore,
+  PURGE,
+  REGISTER,
+  REHYDRATE,
+  type PersistConfig,
+  type Persistor,
+  type Storage as PersistStorage,
+} from "redux-persist";
+import reduxStorage from "redux-persist/lib/storage";
+
+import { preferencesReducer } from "@/app/preferences-slice";
 
 const rootReducer = combineReducers({
   preferences: preferencesReducer,
@@ -16,31 +23,41 @@ const rootReducer = combineReducers({
 
 export type RootState = ReturnType<typeof rootReducer>;
 
-export const persistedDomains: readonly PersistedDomain<RootState>[] = [
-  definePersistedDomain<RootState, PreferencesState>({
-    key: "preferences",
-    load: () => ({ toolDefaults: loadToolDefaults() }),
-    select: (state) => state.preferences,
-    save: (state) => persistToolDefaults(state.toolDefaults),
-  }),
-];
+export const persistConfig: PersistConfig<RootState> = {
+  key: "easytrim-redux",
+  storage: reduxStorage,
+  // NOTE: Root allow-listing keeps future reducers runtime-only until explicitly opted in.
+  whitelist: ["preferences"],
+};
 
-export function createAppStore(preloadedState?: Partial<RootState>) {
-  const appStore = configureStore({
-    reducer: rootReducer,
-    preloadedState: {
-      ...hydratePersistedDomains(persistedDomains),
-      ...preloadedState,
-    },
+export const persistedReducer = persistReducer(persistConfig, rootReducer);
+
+export function createAppStore(storage: PersistStorage = reduxStorage) {
+  const reducer =
+    storage === reduxStorage
+      ? persistedReducer
+      : persistReducer({ ...persistConfig, storage }, rootReducer);
+
+  return configureStore({
+    reducer,
+    middleware: (getDefaultMiddleware) =>
+      getDefaultMiddleware({
+        serializableCheck: {
+          ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
+        },
+      }),
   });
+}
 
-  observePersistedDomains(appStore, persistedDomains);
-  return appStore;
+export type AppStore = ReturnType<typeof createAppStore>;
+export type AppDispatch = AppStore["dispatch"];
+
+export function createAppPersistor(appStore: AppStore): Persistor {
+  return persistStore(appStore);
 }
 
 export const store = createAppStore();
-export type AppStore = typeof store;
-export type AppDispatch = AppStore["dispatch"];
+export const persistor = createAppPersistor(store);
 
 export const useAppDispatch = useDispatch.withTypes<AppDispatch>();
 export const useAppSelector = useSelector.withTypes<RootState>();

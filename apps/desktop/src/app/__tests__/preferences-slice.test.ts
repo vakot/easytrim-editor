@@ -1,7 +1,7 @@
-import { describe, expect, it, afterEach } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import { DEFAULT_TOOL_DEFAULTS, type ToolDefaults } from "@/app/tool-settings";
-import { createAppStore, type RootState } from "@/app/store";
+import type { RootState } from "@/app/store";
 import {
   preferencesReducer,
   selectLoopPlaybackDefault,
@@ -12,22 +12,11 @@ import {
   toolDefaultChanged,
   toolDefaultsReset,
 } from "@/app/preferences-slice";
-import { STORAGE_KEYS } from "@/lib/storage";
-
-afterEach(() => localStorage.clear());
 
 describe("preferences Redux domain", () => {
-  it("initializes from persisted tool defaults and registers in the store", () => {
-    localStorage.setItem(
-      STORAGE_KEYS.preferences,
-      JSON.stringify({ toolDefaults: { loopPlaybackEnabled: false } }),
-    );
-
-    const store = createAppStore();
-
-    expect(store.getState().preferences.toolDefaults).toEqual({
-      ...DEFAULT_TOOL_DEFAULTS,
-      loopPlaybackEnabled: false,
+  it("starts from deterministic product defaults without persistence access", () => {
+    expect(preferencesReducer(undefined, { type: "preferences/initialize" })).toEqual({
+      toolDefaults: DEFAULT_TOOL_DEFAULTS,
     });
   });
 

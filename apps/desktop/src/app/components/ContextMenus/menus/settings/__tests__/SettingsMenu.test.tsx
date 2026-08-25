@@ -6,7 +6,6 @@ import { Provider } from "react-redux";
 import { SettingsMenu } from "../SettingsMenu";
 import { createAppStore } from "@/app/store";
 import { DEFAULT_TOOL_DEFAULTS } from "@/app/tool-settings";
-import { STORAGE_KEYS } from "@/lib/storage";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 const sessionMock = vi.hoisted(() => ({
@@ -28,7 +27,6 @@ const navigation = {
 };
 
 afterEach(() => {
-  localStorage.clear();
   sessionMock.source = null;
   sessionMock.handleSetAudioMerge.mockReset();
 });
@@ -46,7 +44,7 @@ function renderSettings() {
 }
 
 describe("SettingsMenu Redux integration", () => {
-  it("dispatches tool-default changes through Redux and persists the change", async () => {
+  it("dispatches tool-default changes through Redux", async () => {
     const user = userEvent.setup();
     const store = renderSettings();
 
@@ -54,9 +52,6 @@ describe("SettingsMenu Redux integration", () => {
     await user.click(within(loopRow).getByRole("switch"));
 
     expect(store.getState().preferences.toolDefaults.loopPlaybackEnabled).toBe(false);
-    expect(JSON.parse(localStorage.getItem(STORAGE_KEYS.preferences) ?? "{}")).toEqual({
-      toolDefaults: { ...DEFAULT_TOOL_DEFAULTS, loopPlaybackEnabled: false },
-    });
   });
 
   it("dispatches reset while keeping the active-session value outside Redux", async () => {
@@ -70,9 +65,6 @@ describe("SettingsMenu Redux integration", () => {
     await user.click(screen.getByRole("menuitem", { name: "Reset to default" }));
 
     expect(store.getState().preferences.toolDefaults).toEqual(DEFAULT_TOOL_DEFAULTS);
-    expect(JSON.parse(localStorage.getItem(STORAGE_KEYS.preferences) ?? "{}")).toEqual({
-      toolDefaults: DEFAULT_TOOL_DEFAULTS,
-    });
   });
 
   it("keeps the merge-audio compatibility bridge explicit at the Settings boundary", async () => {

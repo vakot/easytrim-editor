@@ -1,32 +1,93 @@
-import { combineReducers, configureStore, createSlice } from "@reduxjs/toolkit";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
+import type { Persistor, Storage as PersistStorage } from "redux-persist";
 
-import { DEFAULT_TOOL_DEFAULTS } from "@/app/tool-settings";
-import { createAppStore } from "@/app/store";
 import { toolDefaultChanged, toolDefaultsReset } from "@/app/preferences-slice";
-import { observePersistedDomains } from "@/app/store-persistence";
-import { STORAGE_KEYS } from "@/lib/storage";
+import { createAppPersistor, createAppStore, persistConfig, type AppStore } from "@/app/store";
+import { DEFAULT_TOOL_DEFAULTS } from "@/app/tool-settings";
+
+interface TestStorage extends PersistStorage {
+  values: Map<string, string>;
+}
+
+const activePersistors: Persistor[] = [];
 
 afterEach(() => {
-  localStorage.clear();
-  vi.restoreAllMocks();
+  for (const persistor of activePersistors) {
+    persistor.pause();
+  }
+  activePersistors.length = 0;
 });
 
-describe("Redux store persistence", () => {
-  it("uses product defaults without creating persisted data", () => {
-    const store = createAppStore();
+function createTestStorage(initialValues: Record<string, string> = {}): TestStorage {
+  const values = new Map(Object.entries(initialValues));
+
+  return {
+    values,
+    getItem: async (key) => values.get(key) ?? null,
+    setItem: async (key, value) => {
+      values.set(key, value);
+    },
+    removeItem: async (key) => {
+      values.delete(key);
+    },
+  };
+}
+
+async function waitForRehydration(persistor: Persistor): Promise<void> {
+  if (persistor.getState().bootstrapped) {
+    return;
+  }
+
+  await new Promise<void>((resolve) => {
+    const unsubscribe = persistor.subscribe(() => {
+      if (persistor.getState().bootstrapped) {
+        unsubscribe();
+        resolve();
+      }
+    });
+  });
+}
+
+async function createPersistedTestStore(
+  storage = createTestStorage(),
+): Promise<{ store: AppStore; persistor: Persistor; storage: TestStorage }> {
+  const store = createAppStore(storage);
+  const persistor = createAppPersistor(store);
+  activePersistors.push(persistor);
+  await waitForRehydration(persistor);
+  return { store, persistor, storage };
+}
+
+async function readPersistedRoot(storage: TestStorage): Promise<Record<string, unknown>> {
+  const raw = storage.values.get(`persist:${persistConfig.key}`);
+  return raw ? JSON.parse(raw) : {};
+}
+
+describe("Redux Persist store integration", () => {
+  it("keeps Preferences defaults deterministic before rehydration", () => {
+    const storage = createTestStorage();
+    const store = createAppStore(storage);
 
     expect(store.getState().preferences.toolDefaults).toEqual(DEFAULT_TOOL_DEFAULTS);
-    expect(localStorage.getItem(STORAGE_KEYS.preferences)).toBeNull();
+    expect(storage.values).toEqual(new Map());
   });
 
-  it("hydrates Preferences from the compatible stored schema", () => {
-    localStorage.setItem(
-      STORAGE_KEYS.preferences,
-      JSON.stringify({ theme: "dark", toolDefaults: { loopPlaybackEnabled: false } }),
-    );
+  it("configures only Preferences for persistence", () => {
+    expect(persistConfig.whitelist).toEqual(["preferences"]);
+    expect(persistConfig.whitelist).not.toContain("editorTools");
+    expect(persistConfig.whitelist).not.toContain("editorLayout");
+  });
 
-    const store = createAppStore();
+  it("rehydrates Preferences through redux-persist", async () => {
+    const storage = createTestStorage({
+      [`persist:${persistConfig.key}`]: JSON.stringify({
+        preferences: JSON.stringify({
+          toolDefaults: { ...DEFAULT_TOOL_DEFAULTS, loopPlaybackEnabled: false },
+        }),
+        _persist: JSON.stringify({ version: -1, rehydrated: true }),
+      }),
+    });
+    const { store } = await createPersistedTestStore(storage);
 
     expect(store.getState().preferences.toolDefaults).toEqual({
       ...DEFAULT_TOOL_DEFAULTS,
@@ -34,69 +95,53 @@ describe("Redux store persistence", () => {
     });
   });
 
-  it("persists a dispatched preference change without UI storage calls", () => {
-    const store = createAppStore();
+  it("does not read the legacy Preferences storage key", async () => {
+    const storage = createTestStorage({
+      "easytrim.preferences.v1": JSON.stringify({
+        toolDefaults: { loopPlaybackEnabled: false },
+      }),
+    });
+    const { store } = await createPersistedTestStore(storage);
+
+    expect(store.getState().preferences.toolDefaults).toEqual(DEFAULT_TOOL_DEFAULTS);
+  });
+
+  it("persists a dispatched preference action without UI storage calls", async () => {
+    const { store, persistor, storage } = await createPersistedTestStore();
 
     store.dispatch(toolDefaultChanged({ key: "loopPlaybackEnabled", enabled: false }));
+    await persistor.flush();
 
-    expect(JSON.parse(localStorage.getItem(STORAGE_KEYS.preferences) ?? "{}")).toEqual({
+    const persistedRoot = await readPersistedRoot(storage);
+    expect(JSON.parse(String(persistedRoot.preferences))).toEqual({
       toolDefaults: { ...DEFAULT_TOOL_DEFAULTS, loopPlaybackEnabled: false },
     });
   });
 
-  it("persists a dispatched reset and preserves unrelated stored fields", () => {
-    localStorage.setItem(
-      STORAGE_KEYS.preferences,
-      JSON.stringify({ theme: "dark", toolDefaults: { loopPlaybackEnabled: false } }),
-    );
-    const store = createAppStore();
+  it("persists reset state", async () => {
+    const { store, persistor, storage } = await createPersistedTestStore();
 
+    store.dispatch(toolDefaultChanged({ key: "loopPlaybackEnabled", enabled: false }));
+    await persistor.flush();
     store.dispatch(toolDefaultsReset());
+    await persistor.flush();
 
-    expect(JSON.parse(localStorage.getItem(STORAGE_KEYS.preferences) ?? "{}")).toEqual({
-      theme: "dark",
+    const persistedRoot = await readPersistedRoot(storage);
+    expect(JSON.parse(String(persistedRoot.preferences))).toEqual({
       toolDefaults: DEFAULT_TOOL_DEFAULTS,
     });
   });
 
-  it("does not write Preferences for an unrelated action", () => {
-    const setItem = vi.spyOn(Storage.prototype, "setItem");
-    const store = createAppStore();
-    setItem.mockClear();
+  it("keeps independently created stores and persistors isolated", async () => {
+    const firstStorage = createTestStorage();
+    const secondStorage = createTestStorage();
+    const first = await createPersistedTestStore(firstStorage);
+    const second = await createPersistedTestStore(secondStorage);
 
-    store.dispatch({ type: "runtime-only/action" });
+    first.store.dispatch(toolDefaultChanged({ key: "loopPlaybackEnabled", enabled: false }));
+    await first.persistor.flush();
 
-    expect(setItem).not.toHaveBeenCalled();
-  });
-
-  it("does not implicitly persist an unregistered runtime-only domain", () => {
-    const runtimeSlice = createSlice({
-      name: "runtime",
-      initialState: { count: 0 },
-      reducers: {
-        increment: (state) => {
-          state.count += 1;
-        },
-      },
-    });
-    const rootReducer = combineReducers({ runtime: runtimeSlice.reducer });
-    const setItem = vi.spyOn(Storage.prototype, "setItem");
-    const store = configureStore({ reducer: rootReducer });
-
-    observePersistedDomains(store, []);
-    store.dispatch(runtimeSlice.actions.increment());
-
-    expect(store.getState().runtime.count).toBe(1);
-    expect(setItem).not.toHaveBeenCalled();
-  });
-
-  it("keeps independently created stores isolated", () => {
-    const first = createAppStore({
-      preferences: { toolDefaults: { ...DEFAULT_TOOL_DEFAULTS, loopPlaybackEnabled: false } },
-    });
-    const second = createAppStore();
-
-    expect(first.getState().preferences.toolDefaults.loopPlaybackEnabled).toBe(false);
-    expect(second.getState().preferences.toolDefaults).toEqual(DEFAULT_TOOL_DEFAULTS);
+    expect(second.store.getState().preferences.toolDefaults).toEqual(DEFAULT_TOOL_DEFAULTS);
+    expect(secondStorage.values).toEqual(new Map());
   });
 });
