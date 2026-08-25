@@ -7,12 +7,12 @@ import { useAppUpdates } from "@/app/hooks/useAppUpdates";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import packageJson from "../../../../../package.json";
+import packageJson from "../../../../../../package.json";
 import { formatExportDuration, formatExportFileSize } from "@/features/export";
 import { useAppSelector } from "@/app/store/hooks";
 import { selectExportQueue } from "@/app/store/slices/export-slice";
 import type { ExportQueueItem } from "@/app/store/slices/export-slice";
-import { selectStatusBarExport } from "./status-bar-utils";
+import { selectStatusBarExport } from "./utils";
 
 export function StatusBar() {
   const { t } = useTranslation();

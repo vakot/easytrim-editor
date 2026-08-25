@@ -22,8 +22,8 @@ vi.mock("@/app/store/hooks", () => ({
   useAppSelector: () => mocks.queue,
 }));
 
-import { StatusBar } from "../StatusBar";
-import { selectStatusBarExport } from "../status-bar-utils";
+import { StatusBar } from "..";
+import { selectStatusBarExport } from "../utils";
 
 function exportToast(overrides: Partial<ExportQueueItem>): ExportQueueItem {
   return {
