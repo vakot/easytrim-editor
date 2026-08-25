@@ -5,7 +5,6 @@ import { LoaderCircle } from "lucide-react";
 
 import { PanelSeparator } from "@/components/PanelSeparator";
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
-import { useEditorSession } from "@/app/hooks/useEditorSession";
 import {
   editorStageLayoutChanged,
   panelVisibilityChanged,
@@ -18,16 +17,18 @@ import {
   audioTrackVolumeChanged,
   masterAudioToggled,
   masterVolumeChanged,
-  selectActiveSource,
   selectAudioTracks,
+  selectMasterAudio,
   selectMergeAudio,
-  selectPreview,
+  waveformDisplayFailed,
+} from "@/app/store/slices/audio-slice";
+import { selectPreview } from "@/app/store/slices/preview-slice";
+import {
   selectSourceMedia,
   selectSourceReady,
   selectSourceSelection,
-  selectTrim,
-  waveformDisplayFailed,
-} from "@/app/store/slices/session-slice";
+} from "@/app/store/slices/source-slice";
+import { selectTrim } from "@/app/store/slices/trim-slice";
 import { prepareSourceWaveforms } from "@/app/store/thunks/source-media-thunks";
 import { usePlayback, useTimeline } from "@/app/hooks/useEditorContracts";
 import { AudioTracks } from "@/features/audio-tracks";
@@ -50,7 +51,6 @@ const EMPTY_TIMELINE_RANGE = {
 
 export function EditorStage() {
   const { t } = useTranslation();
-  const app = useEditorSession();
   const sourceSelection = useAppSelector(selectSourceSelection);
   const media = useAppSelector(selectSourceMedia);
   const preview = useAppSelector(selectPreview);
@@ -58,7 +58,7 @@ export function EditorStage() {
   const audioTracks = useAppSelector(selectAudioTracks);
   const mergeAudio = useAppSelector(selectMergeAudio);
   const isSourceReady = useAppSelector(selectSourceReady);
-  const activeSource = useAppSelector(selectActiveSource);
+  const masterAudio = useAppSelector(selectMasterAudio);
   const playback = usePlayback();
   const timeline = useTimeline();
   const dispatch = useAppDispatch();
@@ -112,11 +112,6 @@ export function EditorStage() {
             onPause={playback.onPause}
             onTimeUpdate={playback.onTimeUpdate}
             onEnded={playback.onEnded}
-            sourceDimensions={
-              media ? { width: media.video.width, height: media.video.height } : undefined
-            }
-            onCropResolutionChange={app.setCropResolution}
-            onCropChange={app.setCrop}
             onCropToolOpenChange={playback.onCropToolOpenChange}
           />
         </PanelContent>
@@ -195,8 +190,8 @@ export function EditorStage() {
                 <AudioTracks
                   streams={media?.audioStreams ?? []}
                   tracks={audioTracks}
-                  masterEnabled={activeSource?.masterEnabled ?? true}
-                  masterVolumePercent={activeSource?.masterVolumePercent ?? 50}
+                  masterEnabled={masterAudio.enabled}
+                  masterVolumePercent={masterAudio.volumePercent}
                   range={timelineRange}
                   playheadMicros={timeline.playheadMicros}
                   playheadRef={playback.audioPlayheadRef}

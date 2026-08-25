@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 
-import type { AudioTrackState } from "@/app/store/slices/session-slice";
+import type { AudioTrackState } from "@/app/store/slices/audio-slice";
 
 export const WAVEFORM_RENDER_WIDTH = 4096;
 

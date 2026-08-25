@@ -12,6 +12,8 @@ import {
 
 import { createPersistedReducer, reduxStorage, type PersistStorage } from "@/app/store/persistence";
 import { editorLayoutReducer } from "@/app/store/slices/editor-layout-slice";
+import { audioReducer } from "@/app/store/slices/audio-slice";
+import { cropReducer } from "@/app/store/slices/crop-slice";
 import { importWorkflowReducer } from "@/app/store/slices/import-workflow-slice";
 import {
   createEditorToolsStateFromPreferences,
@@ -19,14 +21,20 @@ import {
   editorToolsReducer,
 } from "@/app/store/slices/editor-tools-slice";
 import { preferencesReducer } from "@/app/store/slices/preferences-slice";
-import { sessionReducer } from "@/app/store/slices/session-slice";
+import { previewReducer } from "@/app/store/slices/preview-slice";
+import { sourceReducer } from "@/app/store/slices/source-slice";
+import { trimReducer } from "@/app/store/slices/trim-slice";
 
 const rootReducer = combineReducers({
+  audio: audioReducer,
+  crop: cropReducer,
   editorLayout: editorLayoutReducer,
   editorTools: editorToolsReducer,
   importWorkflow: importWorkflowReducer,
   preferences: preferencesReducer,
-  session: sessionReducer,
+  preview: previewReducer,
+  source: sourceReducer,
+  trim: trimReducer,
 });
 
 export type RootState = ReturnType<typeof rootReducer>;

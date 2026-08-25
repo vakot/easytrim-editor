@@ -2,7 +2,7 @@ import { useContext } from "react";
 
 import { EditorInteractionContext } from "@/app/contexts/editor-contracts-context";
 import { useAppSelector } from "@/app/store/hooks";
-import { selectTrim } from "@/app/store/slices/session-slice";
+import { selectTrim } from "@/app/store/slices/trim-slice";
 
 function useEditorInteraction() {
   const value = useContext(EditorInteractionContext);

@@ -1,4 +1,4 @@
-import type { AudioTrackState } from "@/app/store/slices/session-slice";
+import type { AudioTrackState } from "@/app/store/slices/audio-slice";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useTranslation } from "react-i18next";

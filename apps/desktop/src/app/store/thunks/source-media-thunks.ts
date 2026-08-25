@@ -1,21 +1,24 @@
 import {
   capabilitiesFailed,
   capabilitiesReady,
-  audioPreviewsLoading,
-  audioPreviewsReady,
-  audioPreviewsUnavailable,
-  previewFailed,
-  previewLoading,
-  previewReady,
-  selectActiveSource,
+  selectHasSource,
+  selectSourceSelection,
+} from "@/app/store/slices/source-slice";
+import {
   sourceCleared,
   sourceFailed,
   sourceReady,
   sourceSelected,
+} from "@/app/store/actions/source-actions";
+import {
+  audioPreviewsLoading,
+  audioPreviewsReady,
+  audioPreviewsUnavailable,
   waveformReady,
   waveformsFailed,
   waveformsLoading,
-} from "@/app/store/slices/session-slice";
+} from "@/app/store/slices/audio-slice";
+import { previewFailed, previewLoading, previewReady } from "@/app/store/slices/preview-slice";
 import {
   dropListenerErrorCleared,
   nativeDialogStateChanged,
@@ -45,7 +48,7 @@ export type AppThunk<ReturnValue = Promise<void>> = (
 let waveformJobSequence = 0;
 
 function isCurrentSource(state: RootState, sourceId: string): boolean {
-  return selectActiveSource(state)?.selection.sourceId === sourceId;
+  return selectSourceSelection(state)?.sourceId === sourceId;
 }
 
 function isSourceInspectionError(error: AppError): boolean {
@@ -159,7 +162,7 @@ export const chooseSourceRequested = (): AppThunk => async (dispatch, getState) 
 };
 
 export const closeSourceRequested = (): AppThunk<void> => (dispatch, getState) => {
-  if (!selectActiveSource(getState())) return;
+  if (!selectHasSource(getState())) return;
   dispatch(sourceCleared());
   dispatch(nativeDialogStateChanged(false));
 };

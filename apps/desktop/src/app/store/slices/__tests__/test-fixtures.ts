@@ -1,0 +1,51 @@
+import type { MediaInfo, SourceSelection } from "@/lib/tauri/media";
+
+export const firstSource: SourceSelection = { sourceId: "source-1", displayName: "first.mp4" };
+export const secondSource: SourceSelection = {
+  sourceId: "source-2",
+  displayName: "second.mkv",
+};
+
+export function media(sourceId: string): MediaInfo {
+  return {
+    sourceId,
+    formatName: "matroska,webm",
+    formatLongName: "Matroska / WebM",
+    durationMicros: 5_000_000,
+    sizeBytes: 1_000,
+    bitrate: 8_000,
+    video: {
+      streamIndex: 0,
+      codecName: "h264",
+      width: 1920,
+      height: 1080,
+      averageFrameRate: { numerator: 30_000, denominator: 1_001, displayValue: 29.97 },
+    },
+    audioStreams: [],
+    chapters: [],
+  };
+}
+
+export function mediaWithAudio(sourceId: string): MediaInfo {
+  return {
+    ...media(sourceId),
+    audioStreams: [
+      {
+        streamIndex: 2,
+        codecName: "aac",
+        channels: 2,
+        channelLayout: "stereo",
+        language: "eng",
+        isDefault: true,
+      },
+      {
+        streamIndex: 4,
+        codecName: "ac3",
+        channels: 6,
+        channelLayout: "5.1",
+        title: "Surround",
+        isDefault: false,
+      },
+    ],
+  };
+}

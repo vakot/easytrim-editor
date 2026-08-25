@@ -2,11 +2,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { MediaInfo, SourceSelection, WaveformResult } from "@/lib/tauri/media";
 import { createAppStore } from "@/app/store/store";
+import { selectAudioPreviews, selectAudioTracks } from "@/app/store/slices/audio-slice";
+import { selectPreview } from "@/app/store/slices/preview-slice";
 import {
-  selectAudioPreviews,
-  selectActiveSource,
-  selectSessionStatus,
-} from "@/app/store/slices/session-slice";
+  selectHasSource,
+  selectSourceError,
+  selectSourceMedia,
+  selectSourceSelection,
+  selectSourceStatus,
+  selectCapabilities,
+} from "@/app/store/slices/source-slice";
 import {
   selectIsChoosingSource,
   selectIsNativeDialogOpen,
@@ -125,8 +130,8 @@ describe("source/media orchestration thunks", () => {
     await appStore.dispatch(importSource(firstSource));
 
     const state = appStore.getState();
-    expect(selectActiveSource(state)?.media?.sourceId).toBe(firstSource.sourceId);
-    expect(selectActiveSource(state)?.preview).toMatchObject({ status: "ready" });
+    expect(selectSourceMedia(state)?.sourceId).toBe(firstSource.sourceId);
+    expect(selectPreview(state)).toMatchObject({ status: "ready" });
     expect(selectAudioPreviews(state)).toMatchObject({
       status: "ready",
       previews: [audioPreview(firstSource.sourceId, 1), audioPreview(firstSource.sourceId, 2)],
@@ -150,12 +155,12 @@ describe("source/media orchestration thunks", () => {
       expect(selectIsChoosingSource(appStore.getState())).toBe(false);
       expect(selectIsNativeDialogOpen(appStore.getState())).toBe(false);
     });
-    expect(selectSessionStatus(appStore.getState())).toBe("loading-source");
+    expect(selectSourceStatus(appStore.getState())).toBe("loading-source");
     expect(mocks.inspectMedia).toHaveBeenCalledWith(firstSource.sourceId);
 
     inspection.resolve(createMedia(firstSource.sourceId, 1));
     await chooserRequest;
-    expect(selectSessionStatus(appStore.getState())).toBe("ready");
+    expect(selectSourceStatus(appStore.getState())).toBe("ready");
     expect(selectIsNativeDialogOpen(appStore.getState())).toBe(false);
   });
 
@@ -171,7 +176,7 @@ describe("source/media orchestration thunks", () => {
 
     expect(selectIsChoosingSource(appStore.getState())).toBe(false);
     expect(selectIsNativeDialogOpen(appStore.getState())).toBe(false);
-    expect(selectActiveSource(appStore.getState())).toBeNull();
+    expect(selectHasSource(appStore.getState())).toBe(false);
     expect(mocks.inspectMedia).not.toHaveBeenCalled();
   });
 
@@ -186,9 +191,9 @@ describe("source/media orchestration thunks", () => {
 
     expect(selectIsChoosingSource(appStore.getState())).toBe(false);
     expect(selectIsNativeDialogOpen(appStore.getState())).toBe(false);
-    expect(appStore.getState().session).toMatchObject({
-      status: "failed",
-      lastError: { code: "dialog_failed", message: "The source picker failed." },
+    expect(selectSourceError(appStore.getState())).toEqual({
+      code: "dialog_failed",
+      message: "The source picker failed.",
     });
     expect(mocks.inspectMedia).not.toHaveBeenCalled();
   });
@@ -221,7 +226,7 @@ describe("source/media orchestration thunks", () => {
     firstInspection.resolve(createMedia(firstSource.sourceId, 2));
     await firstImport;
 
-    expect(selectActiveSource(appStore.getState())?.selection).toEqual(secondSource);
+    expect(selectSourceSelection(appStore.getState())).toEqual(secondSource);
     expect(mocks.prepareSourcePreview).toHaveBeenCalledTimes(1);
     expect(mocks.prepareSourcePreview).toHaveBeenCalledWith(secondSource.sourceId);
   });
@@ -231,14 +236,14 @@ describe("source/media orchestration thunks", () => {
     mocks.inspectMedia.mockRejectedValue({ code: "unsupported_media", message: "Not a video" });
 
     await appStore.dispatch(importSource(firstSource));
-    expect(appStore.getState().session).toMatchObject({
-      status: "failed",
-      lastError: { code: "unsupported_media", message: "Not a video" },
+    expect(selectSourceError(appStore.getState())).toEqual({
+      code: "unsupported_media",
+      message: "Not a video",
     });
 
     mocks.checkMediaCapabilities.mockRejectedValue(new Error("ffmpeg missing"));
     await appStore.dispatch(checkMediaCapabilitiesRequested());
-    expect(appStore.getState().session.capabilities).toMatchObject({
+    expect(selectCapabilities(appStore.getState())).toMatchObject({
       status: "failed",
       error: { code: "internal", message: "ffmpeg missing" },
     });
@@ -252,7 +257,7 @@ describe("source/media orchestration thunks", () => {
     await appStore.dispatch(handlePreviewPlaybackError(firstSource.sourceId, "source"));
 
     expect(mocks.prepareProxyPreview).toHaveBeenCalledWith(firstSource.sourceId);
-    expect(selectActiveSource(appStore.getState())?.preview).toMatchObject({
+    expect(selectPreview(appStore.getState())).toMatchObject({
       status: "ready",
       value: sourcePreview(firstSource.sourceId, "proxy"),
     });
@@ -270,7 +275,7 @@ describe("source/media orchestration thunks", () => {
     await appStore.dispatch(handlePreviewPlaybackError(firstSource.sourceId, "source"));
     await appStore.dispatch(handlePreviewPlaybackError(firstSource.sourceId, "proxy"));
 
-    expect(selectActiveSource(appStore.getState())?.preview).toMatchObject({
+    expect(selectPreview(appStore.getState())).toMatchObject({
       status: "failed",
       error: { code: "preview_playback_failed" },
     });
@@ -334,7 +339,7 @@ describe("source/media orchestration thunks", () => {
     ]);
     await Promise.all([firstJob, secondJob]);
 
-    const track = selectActiveSource(appStore.getState())?.audioTracks.find(
+    const track = selectAudioTracks(appStore.getState()).find(
       (candidate) => candidate.streamIndex === 1,
     );
     expect(track?.waveform).toMatchObject({
@@ -355,14 +360,14 @@ describe("source/media orchestration thunks", () => {
     });
 
     await appStore.dispatch(prepareSourceWaveforms(firstSource.sourceId, [1], 800));
-    const waveform = selectActiveSource(appStore.getState())?.audioTracks[0]?.waveform;
+    const waveform = selectAudioTracks(appStore.getState())[0]?.waveform;
     expect(waveform).toMatchObject({
       status: "failed",
       error: { code: "waveform_failed", message: "Waveform generation failed" },
     });
 
     appStore.dispatch(closeSourceRequested());
-    expect(selectActiveSource(appStore.getState())).toBeNull();
+    expect(selectHasSource(appStore.getState())).toBe(false);
     expect(selectAudioPreviews(appStore.getState())).toBeNull();
   });
 });

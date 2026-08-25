@@ -18,15 +18,13 @@ import {
   selectEditorTools,
 } from "@/app/store/slices/editor-tools-slice";
 import {
-  selectActiveSource,
   selectAudioPreviews,
   selectAudioTracks,
-  selectPreview,
-  selectSourceMedia,
-  selectSourceSelection,
-  selectTrim,
-  trimChanged,
-} from "@/app/store/slices/session-slice";
+  selectMasterAudio,
+} from "@/app/store/slices/audio-slice";
+import { selectPreview } from "@/app/store/slices/preview-slice";
+import { selectSourceMedia, selectSourceSelection } from "@/app/store/slices/source-slice";
+import { selectTrim, trimChanged } from "@/app/store/slices/trim-slice";
 import { handlePreviewPlaybackError as handlePreviewPlaybackErrorRequested } from "@/app/store/thunks/source-media-thunks";
 import { usePlaybackModes } from "@/features/editor/hooks/usePlaybackModes";
 import { synchronizeAudioPosition } from "@/features/editor/utils/audio-sync";
@@ -94,11 +92,11 @@ export function useEditorInteractionController(): EditorInteractionValue {
   const tools = useAppSelector(selectEditorTools);
   const sourceSelection = useAppSelector(selectSourceSelection);
   const media = useAppSelector(selectSourceMedia);
-  const activeSource = useAppSelector(selectActiveSource);
   const trim = useAppSelector(selectTrim) ?? EMPTY_TRIM;
   const preview = useAppSelector(selectPreview);
   const frameRate = media?.video.averageFrameRate ?? media?.video.realFrameRate;
   const audioTracks = useAppSelector(selectAudioTracks);
+  const masterAudio = useAppSelector(selectMasterAudio);
   const audioPreviewState = useAppSelector(selectAudioPreviews);
   const audioPreviewUrls = useMemo(
     () =>
@@ -304,9 +302,7 @@ export function useEditorInteractionController(): EditorInteractionValue {
   useEffect(() => {
     const masterGain = masterGainRef.current;
     if (masterGain)
-      masterGain.gain.value = activeSource?.masterEnabled
-        ? activeSource.masterVolumePercent / 50
-        : 0;
+      masterGain.gain.value = masterAudio.enabled ? masterAudio.volumePercent / 50 : 0;
     for (const track of audioTracks) {
       const node = audioNodesRef.current.get(track.streamIndex);
       if (node) node.gain.gain.value = track.enabled ? track.volumePercent / 50 : 0;
@@ -317,7 +313,7 @@ export function useEditorInteractionController(): EditorInteractionValue {
         : 0;
     } else if (videoRef.current && nativeAudioTrack) {
       const combinedGain =
-        (activeSource?.masterEnabled ? activeSource.masterVolumePercent / 50 : 0) *
+        (masterAudio.enabled ? masterAudio.volumePercent / 50 : 0) *
         (nativeAudioTrack.enabled ? nativeAudioTrack.volumePercent / 50 : 0);
       videoRef.current.volume = Math.min(1, combinedGain);
     }
@@ -326,8 +322,8 @@ export function useEditorInteractionController(): EditorInteractionValue {
     audioTracks,
     nativeAudioTrack,
     readyPreviewKey,
-    activeSource?.masterEnabled,
-    activeSource?.masterVolumePercent,
+    masterAudio.enabled,
+    masterAudio.volumePercent,
   ]);
 
   useEffect(() => {

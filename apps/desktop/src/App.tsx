@@ -14,11 +14,19 @@ import { EditorSessionProvider } from "@/app/components/Providers/EditorSessionP
 import { useEditorSession } from "@/app/hooks/useEditorSession";
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import {
-  selectActiveSource,
   selectCapabilities,
-  selectMergeAudio,
+  selectHasSource,
+  selectSourceMedia,
   selectSourceReady,
-} from "@/app/store/slices/session-slice";
+  selectSourceSelection,
+} from "@/app/store/slices/source-slice";
+import { selectCrop, selectCropResolution } from "@/app/store/slices/crop-slice";
+import {
+  selectAudioTracks,
+  selectMasterAudio,
+  selectMergeAudio,
+} from "@/app/store/slices/audio-slice";
+import { selectTrim } from "@/app/store/slices/trim-slice";
 import {
   selectDropListenerError,
   selectIsChoosingSource,
@@ -41,11 +49,17 @@ import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
 function EasyTrimEditorApp() {
   const app = useEditorSession();
   const dispatch = useAppDispatch();
-  const source = useAppSelector(selectActiveSource);
+  const sourceSelection = useAppSelector(selectSourceSelection);
+  const media = useAppSelector(selectSourceMedia);
+  const trim = useAppSelector(selectTrim);
+  const audioTracks = useAppSelector(selectAudioTracks);
+  const masterAudio = useAppSelector(selectMasterAudio);
+  const crop = useAppSelector(selectCrop);
+  const cropResolution = useAppSelector(selectCropResolution);
   const capabilities = useAppSelector(selectCapabilities);
   const canExport = useAppSelector(selectSourceReady);
   const mergeAudio = useAppSelector(selectMergeAudio);
-  const hasSource = useAppSelector((state) => selectActiveSource(state) !== null);
+  const hasSource = useAppSelector(selectHasSource);
   const isChoosingSource = useAppSelector(selectIsChoosingSource);
   const isNativeDialogOpen = useAppSelector(selectIsNativeDialogOpen);
   const dropListenerError = useAppSelector(selectDropListenerError);
@@ -102,23 +116,23 @@ function EasyTrimEditorApp() {
           panelControls={<PanelVisibilityControls />}
         />
 
-        {canExport && source?.media && source.trim ? (
+        {canExport && sourceSelection && media && trim ? (
           <ExportPanel
-            key={`export-${source.selection.sourceId}`}
+            key={`export-${sourceSelection.sourceId}`}
             ref={exportPanelRef}
-            source={source.media}
-            sourceName={source.selection.displayName}
-            trim={source.trim}
-            audioTracks={source.audioTracks}
-            masterEnabled={source.masterEnabled}
-            masterVolumePercent={source.masterVolumePercent}
+            source={media}
+            sourceName={sourceSelection.displayName}
+            trim={trim}
+            audioTracks={audioTracks}
+            masterEnabled={masterAudio.enabled}
+            masterVolumePercent={masterAudio.volumePercent}
             mergeAudio={mergeAudio}
             setQueue={app.setExportQueue}
             presetState={app.exportPresets}
             onPresetAction={app.dispatchExportPreset}
             onNativeDialogStateChange={(open) => dispatch(nativeDialogStateChanged(open))}
-            cropResolution={app.cropResolution}
-            crop={app.crop}
+            cropResolution={cropResolution}
+            crop={crop}
             showActions={false}
           />
         ) : null}

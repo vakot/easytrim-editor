@@ -1,6 +1,6 @@
 import type { Dispatch, SetStateAction } from "react";
 
-import type { AudioTrackState } from "@/app/store/slices/session-slice";
+import type { AudioTrackState } from "@/app/store/slices/audio-slice";
 import type { ExportPresetAction, ExportPresetState } from "./export-presets";
 import type { TrimRange } from "@/domain/trim";
 import type { FrameRate, MediaInfo } from "@/lib/tauri/media";

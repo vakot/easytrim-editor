@@ -14,7 +14,7 @@ import {
   workspaceLayoutChanged,
 } from "@/app/store/slices/editor-layout-slice";
 import { useEditorSession } from "@/app/hooks/useEditorSession";
-import { selectSourceSelection } from "@/app/store/slices/session-slice";
+import { selectSourceSelection } from "@/app/store/slices/source-slice";
 import { selectIsSourceDragActive } from "@/app/store/slices/import-workflow-slice";
 import { PanelContent } from "@/components/PanelContent";
 
