@@ -1,6 +1,6 @@
 # EasyTrim Editor Redux migration plan
 
-Status: Phase 3 — Session/source Redux migration complete; Phase 4 is next
+Status: Phase 4 — Source/media orchestration complete; stopped for human review
 
 This is the maintained plan for the controlled Redux Toolkit migration. It is based
 on the frontend and native architecture at the `master` baseline used to create the
@@ -40,17 +40,19 @@ AppUpdatesProvider                 updater service Context
   ThemeProvider                     theme/environment Context
     ReduxProvider                   typed application store
       PersistGate                    redux-persist rehydration boundary
-        EditorSessionProvider       crop + runtime command Context
+    EditorSessionProvider       crop + deferred export runtime Context
             ExportPanelControllerProvider imperative panel-ref Context
               EditorContractsProvider playback/controller Context
                 EasyTrimEditorApp   root composition and prop wiring
 ```
 
-`useEasyTrimEditorApp` owns queue, import workflow, audio-preview, and preset runtime
-state while orchestrating the session/source Redux domain. `EditorSessionContext` now
-retains only runtime commands and crop state; source/session readers use focused Redux
-selectors at their actual consumers. `useEditorContracts` remains the playback/runtime
-boundary and no longer reshapes session state.
+`useEasyTrimEditorApp` now owns only the deferred export queue/preset runtime. Source
+and media orchestration lives in focused application thunks, while the one-time
+application runtime initializer owns capability startup and the native source-drop
+subscription. `EditorSessionContext` retains only export runtime state and crop values;
+source/session readers and commands use focused Redux selectors and dispatch at their
+actual consumers. `useEditorContracts` remains the playback/runtime boundary and no
+longer reshapes session state.
 
 The native side remains authoritative for source paths, source generations, media
 inspection, preview/audio-preview/waveform artifacts, export-source reservations,
@@ -66,22 +68,22 @@ of truth.
 
 ## Ownership classification
 
-| Domain                             | Classification            | Current owner                                                                                | Target / phase                                                                                   |
-| ---------------------------------- | ------------------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| Source/session/media lifecycle     | Redux now                 | `app/store/slices/session-slice.ts`; runtime orchestration remains in `useEasyTrimEditorApp` | Completed Phase 3; async extraction in Phase 4                                                   |
-| Preferences                        | Redux now                 | Redux `preferences` slice; root `redux-persist` allow-list                                   | Completed Phase 1 pilot; persisted by explicit Redux Persist configuration                       |
-| Editor tools                       | Redux now                 | `editorTools` Redux slice; initialized and reset from Preferences defaults                   | Completed Phase 2B; runtime-only active state                                                    |
-| Editor layout                      | Redux now                 | `editorLayout` Redux slice; resizable-panel callbacks and local panel refs                   | Completed Phase 2C; runtime-only canonical layout state                                          |
-| Crop selection and crop resolution | Redux later               | `EditorSessionProvider` source-bound state plus `useCropSelection` pointer state             | Canonical crop values in preview/editor state in Phase 6; pointer internals stay local           |
-| Playback transport and media graph | Keep runtime/native-owned | `useEditorInteractionController`, `EditorContractsProvider`, DOM/media refs, Web Audio nodes | Keep local/runtime; audit in Phase 6                                                             |
-| Export queue status                | Redux later               | React queue state in `useEasyTrimEditorApp` plus module-level runtime queue                  | Serializable export slice in Phase 5; job handles and queue engine remain runtime-owned          |
-| Export presets                     | Redux later               | `exportPresetReducer` in `useEasyTrimEditorApp`, persisted by `export-presets.ts`            | Export/preset slice in Phase 5; persistence remains an explicit adapter                          |
-| Import/drop workflow status        | Redux later               | `useEasyTrimEditorApp` local state and native drag-drop listener                             | Source/import workflow actions in Phase 4, boundary to be finalized with orchestration           |
-| Updater status                     | Keep Context              | `AppUpdatesProvider`; native `AvailableUpdate` object in a ref                               | Keep service Context; audit serializable status in Phase 7                                       |
-| Theme and style environment        | Keep Context              | `ThemeProvider`, `ThemeContext`, `localStorage` adapter                                      | Keep environment Context; no Redux persistence                                                   |
-| Imperative export-panel controller | Keep runtime/native-owned | `ExportPanelControllerContext` and `ExportPanelHandle` ref                                   | Keep Context; remove only accidental transport during Phase 8 if possible                        |
-| Editor interaction contracts       | Keep runtime/native-owned | `EditorInteractionContext` and `useEditorInteractionController`                              | Keep Context for refs/callbacks/media lifecycle; reduce only if a later boundary makes that safe |
-| Component and pointer UI state     | Keep local                | Feature/component hooks and local state                                                      | Remains local throughout the migration                                                           |
+| Domain                             | Classification            | Current owner                                                                                                  | Target / phase                                                                                   |
+| ---------------------------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Source/session/media lifecycle     | Redux now                 | `session` slice plus `store/thunks/source-media-thunks.ts`; startup/drop lifetime in `source-media-runtime.ts` | Completed Phase 4; runtime-only session state                                                    |
+| Preferences                        | Redux now                 | Redux `preferences` slice; root `redux-persist` allow-list                                                     | Completed Phase 1 pilot; persisted by explicit Redux Persist configuration                       |
+| Editor tools                       | Redux now                 | `editorTools` Redux slice; initialized and reset from Preferences defaults                                     | Completed Phase 2B; runtime-only active state                                                    |
+| Editor layout                      | Redux now                 | `editorLayout` Redux slice; resizable-panel callbacks and local panel refs                                     | Completed Phase 2C; runtime-only canonical layout state                                          |
+| Crop selection and crop resolution | Redux later               | `EditorSessionProvider` source-bound state plus `useCropSelection` pointer state                               | Canonical crop values in preview/editor state in Phase 6; pointer internals stay local           |
+| Playback transport and media graph | Keep runtime/native-owned | `useEditorInteractionController`, `EditorContractsProvider`, DOM/media refs, Web Audio nodes                   | Keep local/runtime; audit in Phase 6                                                             |
+| Export queue status                | Redux later               | React queue state in `useEasyTrimEditorApp` plus module-level runtime queue                                    | Serializable export slice in Phase 5; job handles and queue engine remain runtime-owned          |
+| Export presets                     | Redux later               | `exportPresetReducer` in `useEasyTrimEditorApp`, persisted by `export-presets.ts`                              | Export/preset slice in Phase 5; persistence remains an explicit adapter                          |
+| Import/drop workflow status        | Redux now                 | `import-workflow` slice; application-lifetime source-media runtime                                             | Completed Phase 4; runtime-only workflow state                                                   |
+| Updater status                     | Keep Context              | `AppUpdatesProvider`; native `AvailableUpdate` object in a ref                                                 | Keep service Context; audit serializable status in Phase 7                                       |
+| Theme and style environment        | Keep Context              | `ThemeProvider`, `ThemeContext`, `localStorage` adapter                                                        | Keep environment Context; no Redux persistence                                                   |
+| Imperative export-panel controller | Keep runtime/native-owned | `ExportPanelControllerContext` and `ExportPanelHandle` ref                                                     | Keep Context; remove only accidental transport during Phase 8 if possible                        |
+| Editor interaction contracts       | Keep runtime/native-owned | `EditorInteractionContext` and `useEditorInteractionController`                                                | Keep Context for refs/callbacks/media lifecycle; reduce only if a later boundary makes that safe |
+| Component and pointer UI state     | Keep local                | Feature/component hooks and local state                                                                        | Remains local throughout the migration                                                           |
 
 ## Detailed domain inventory
 
@@ -89,7 +91,8 @@ of truth.
 
 Canonical owner: `apps/desktop/src/app/store/slices/session-slice.ts`, registered as
 the runtime-only `session` reducer in `apps/desktop/src/app/store/store.ts`.
-`useEasyTrimEditorApp` remains the side-effect/orchestration owner until Phase 4.
+Phase 4 moved side effects into focused application thunks and the application-lifetime
+source-media runtime; the hook is now export-only.
 
 Current state includes:
 
@@ -100,6 +103,7 @@ Current state includes:
 - trim range;
 - audio-track enablement, per-track volume, master volume/enablement, and merge flag;
 - waveform status by stream, width, job ID, URL, and error;
+- source-bound audio-preview descriptors and preparation status;
 - last source/application error.
 
 Readers include `App.tsx`, `SourceWorkspace`, `SourceSidebar`, capability/source
@@ -120,15 +124,18 @@ The slice keeps source invariants together and exposes focused selectors includi
 `trimChanged`, audio track/master/merge transitions, and waveform loading/result/failure
 transitions.
 
-Side-effect owner: Phase 3 keeps the existing hook/service orchestration while the
-slice becomes the only state owner. Phase 4 moves choosing/importing, inspection,
-preview preparation, proxy fallback, audio previews, waveforms, capabilities, and
-drop events into explicit thunks/listeners or a narrow orchestration adapter. Typed
-functions in `apps/desktop/src/lib/tauri/media.ts` remain the native boundary.
+Side-effect owner: `app/store/thunks/source-media-thunks.ts` owns explicit commands for
+capability checks, source import/inspection, source close, preview/proxy fallback, and
+waveform preparation. `app/store/source-media-runtime.ts` starts capability probing and
+registers the native drop listener once from `main.tsx`; its unlisten function remains
+runtime-only. Both chooser and drop-selected sources converge on `importSource`.
+Typed functions in `apps/desktop/src/lib/tauri/media.ts` remain the native boundary.
 
 Reset/lifetime: selecting a source establishes a new source ID and resets media,
-preview, trim, audio tracks, and waveform records. Crop and audio-preview descriptors
-remain in their existing runtime owners for their later phases.
+preview, trim, audio tracks, waveform records, and audio-preview descriptors. Crop
+remains in its provider for Phase 6. Audio-preview descriptors are serializable session
+state, while HTML audio elements and Web Audio resources remain in the playback runtime.
+A module-local waveform job counter is runtime-only and is never persisted.
 Stale source IDs and waveform job IDs reject old completions. Failed replacement stays
 the current failed import rather than restoring the previous source. Accepted tool
 defaults and presets survive source replacement. Native Rust `AppState` continues to
@@ -348,25 +355,24 @@ Expected obsolete code: the reducer instance and `onPresetAction` root forwardin
 The preset domain module and persistence adapter remain, potentially relocated under
 the owning feature.
 
-### 9. Import/drop workflow and native dialog status — Redux later, Phase 4
+### 9. Import/drop workflow and native dialog status — Redux now, completed Phase 4
 
-Current owner: `useEasyTrimEditorApp` local state for `isChoosingSource`,
-`isNativeDialogOpen`, `isSourceDragActive`, `dropListenerError`, and source selection
-callbacks. Readers are App overlays, CustomTitleBar/FileMenu, SourceWorkspace/DropOverlay,
-and keyboard shortcut paths. Writers are native picker/drop events and export output
-dialog callbacks.
+Current owner: the runtime-only `importWorkflow` slice for `isChoosingSource`,
+`isNativeDialogOpen`, `isSourceDragActive`, and `dropListenerError`. Readers are App
+overlays, FileMenu, SourceWorkspace/DropOverlay, and keyboard shortcut paths. Native
+dialog callbacks remain explicit application actions because Export still owns its
+separate Phase 5 runtime workflow.
 
-Target source of truth: finalize during Phase 4 as either a small source-import slice
-or part of the session/source slice; do not create a generic app slice. Candidate
-selectors are `selectIsChoosingSource`, `selectIsNativeDialogOpen`,
-`selectIsSourceDragActive`, and `selectDropListenerError`. Candidate actions are
-`sourceChoiceStarted`, `sourceChoiceFinished`, `sourceDragChanged`, and
-`dropListenerFailed`.
+The focused `app/store/slices/import-workflow-slice.ts` is deliberately separate from
+the media session slice. It exposes `selectIsChoosingSource`,
+`selectIsNativeDialogOpen`, `selectIsSourceDragActive`, and `selectDropListenerError`.
+The source/media thunks own chooser/close commands, and the application runtime owns
+drop subscription setup and cleanup.
 
-Side-effect owner: a thunk/listener or narrow integration hook calls the typed media
-adapter and owns drag-drop subscription cleanup. The native dialog itself remains
-native-owned. Reset drag/error status on a new event; source import failure remains an
-observable failed transition.
+Side-effect owner: `source-media-runtime.ts` calls the typed media adapter once at
+startup and converges selected drops on `importSource`. The native dialog itself
+remains native-owned. Drag/error status is serializable and runtime-only; source import
+failure remains an observable failed transition.
 
 ### 10. Updater — keep Context, Phase 7 audit
 
@@ -495,10 +501,35 @@ human review before Phase 4.
 
 ### Phase 4 — source/media orchestration
 
-Reduce `useEasyTrimEditorApp` by moving choosing/importing, inspection, preview/proxy,
-audio-preview, waveform, capability, and drop workflows into the approved thunk/listener
-convention. Keep typed Tauri adapters and Rust-owned paths/processes. Verify stale
-results, cancellation, listener cleanup, and source replacement. Stop for review.
+Completed. The Phase 4 workflow inventory covered capability checking, native chooser,
+inspection, source replacement/close, drag/drop subscription and import, preview and
+proxy fallback, audio-preview preparation, waveform preparation, stale source guards,
+waveform job identity, listener lifetime, and native cancellation ownership.
+
+Final ownership is:
+
+- `source-media-thunks.ts` contains explicit typed commands for capability checks,
+  chooser/import inspection, source close, preview fallback, and waveforms. No listener
+  middleware was needed because these are deliberate workflows rather than reactions to
+  unrelated state changes.
+- `source-media-runtime.ts`, started once from `main.tsx`, probes capabilities and owns
+  the native drop listener. The unlisten callback remains outside Redux and cleanup is
+  idempotent. Strict Mode cannot duplicate this application-lifetime setup.
+- Chosen and dropped `SourceSelection` values converge on `importSource`; Redux source
+  IDs reject stale completions before dependent preview/audio work starts. Native Rust
+  remains authoritative for source generations, temporary artifacts, and cancellation.
+- Serializable audio-preview descriptors/status now live in `session`; audio elements
+  and Web Audio resources remain in the playback runtime. Waveform job IDs use a
+  runtime-only module counter and retain the Session job guards.
+- `useEasyTrimEditorApp` is export queue/preset runtime only. `EditorSessionContext`
+  retains export runtime state and crop state; source/media command wrappers and
+  source-specific refs were removed. FileMenu, App, SourceWorkspace, EditorStage, and
+  the playback controller dispatch focused commands/selectors directly.
+
+Validation includes focused thunk/runtime tests for success and failure paths, source
+replacement races, preview fallback, audio previews, waveform supersession, source
+close, drag/drop events, and listener cleanup, plus updated App and menu integration
+tests. Phase 5 remains intentionally deferred: Export state, queue, and presets.
 
 ### Phase 5 — export state and queue
 

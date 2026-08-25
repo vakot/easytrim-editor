@@ -28,6 +28,7 @@ import {
   selectTrim,
   waveformDisplayFailed,
 } from "@/app/store/slices/session-slice";
+import { prepareSourceWaveforms } from "@/app/store/thunks/source-media-thunks";
 import { usePlayback, useTimeline } from "@/app/hooks/useEditorContracts";
 import { AudioTracks } from "@/features/audio-tracks";
 import {
@@ -214,7 +215,8 @@ export function EditorStage() {
                   }
                   onToggleMerge={() => sourceId && dispatch(audioMergeToggled({ sourceId }))}
                   onPrepareWaveforms={(streamIndexes, width) =>
-                    sourceId && app.handlePrepareWaveforms(sourceId, streamIndexes, width)
+                    sourceId &&
+                    void dispatch(prepareSourceWaveforms(sourceId, streamIndexes, width))
                   }
                   onWaveformImageError={(streamIndex) =>
                     sourceId && dispatch(waveformDisplayFailed({ sourceId, streamIndex }))

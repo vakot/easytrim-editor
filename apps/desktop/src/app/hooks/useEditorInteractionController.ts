@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { clampPlaybackMicros, frameDurationMicros } from "@/domain/playback";
@@ -12,7 +12,6 @@ import {
 } from "@/domain/trim";
 import { isApplicationDialogOpen } from "@/lib/hotkeys";
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
-import { useEditorSession } from "@/app/hooks/useEditorSession";
 import {
   loopPlaybackChanged,
   segmentPlaybackChanged,
@@ -20,6 +19,7 @@ import {
 } from "@/app/store/slices/editor-tools-slice";
 import {
   selectActiveSource,
+  selectAudioPreviews,
   selectAudioTracks,
   selectPreview,
   selectSourceMedia,
@@ -27,6 +27,7 @@ import {
   selectTrim,
   trimChanged,
 } from "@/app/store/slices/session-slice";
+import { handlePreviewPlaybackError as handlePreviewPlaybackErrorRequested } from "@/app/store/thunks/source-media-thunks";
 import { usePlaybackModes } from "@/features/editor/hooks/usePlaybackModes";
 import { synchronizeAudioPosition } from "@/features/editor/utils/audio-sync";
 import {
@@ -89,7 +90,6 @@ export interface EditorInteractionValue {
 
 export function useEditorInteractionController(): EditorInteractionValue {
   const { t } = useTranslation();
-  const app = useEditorSession();
   const dispatch = useAppDispatch();
   const tools = useAppSelector(selectEditorTools);
   const sourceSelection = useAppSelector(selectSourceSelection);
@@ -99,12 +99,18 @@ export function useEditorInteractionController(): EditorInteractionValue {
   const preview = useAppSelector(selectPreview);
   const frameRate = media?.video.averageFrameRate ?? media?.video.realFrameRate;
   const audioTracks = useAppSelector(selectAudioTracks);
-  const audioPreviewUrls = app.audioPreviewUrls;
+  const audioPreviewState = useAppSelector(selectAudioPreviews);
+  const audioPreviewUrls = useMemo(
+    () =>
+      Object.fromEntries(
+        (audioPreviewState?.previews ?? []).map((preview) => [preview.streamIndex, preview.url]),
+      ),
+    [audioPreviewState?.previews],
+  );
   const sourceId = sourceSelection?.sourceId ?? null;
   const sourceAudioStreams = media?.audioStreams ?? [];
   const externalAudioStreamCount = Object.keys(audioPreviewUrls).length;
-  const usesExternalAudio =
-    app.audioPreviewPreparation.status === "ready" && externalAudioStreamCount > 0;
+  const usesExternalAudio = audioPreviewState?.status === "ready" && externalAudioStreamCount > 0;
   const nativeAudioTrack = usesExternalAudio
     ? undefined
     : (audioTracks.find(
@@ -156,7 +162,7 @@ export function useEditorInteractionController(): EditorInteractionValue {
   const isPlaybackReady =
     previewKey !== null &&
     readyPreviewKey === previewKey &&
-    app.audioPreviewPreparation.status !== "loading" &&
+    audioPreviewState?.status !== "loading" &&
     (!usesExternalAudio ||
       (audioReadiness.sourceId === sourceId &&
         audioReadiness.streamIndexes.size === externalAudioStreamCount));
@@ -695,9 +701,9 @@ export function useEditorInteractionController(): EditorInteractionValue {
       pauseAudioPlayback();
       setIsPlaying(false);
       stopPlayheadAnimation();
-      if (sourceId) app.handlePreviewPlaybackError(sourceId, previewKind);
+      if (sourceId) void dispatch(handlePreviewPlaybackErrorRequested(sourceId, previewKind));
     },
-    [app, pauseAudioPlayback, sourceId, stopPlayheadAnimation],
+    [dispatch, pauseAudioPlayback, sourceId, stopPlayheadAnimation],
   );
 
   useEffect(() => {

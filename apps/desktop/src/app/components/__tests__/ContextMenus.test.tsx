@@ -22,8 +22,6 @@ const menuState = vi.hoisted(() => ({
     queueStarted: false,
     queueFinishAction: "nothing" as QueueFinishAction,
     availableQueueFinishActions: ["exit", "nothing"] as QueueFinishAction[],
-    handleChooseSource: vi.fn(),
-    handleCloseFile: vi.fn(),
     setQueueStarted: vi.fn(),
     cancelActiveExport: vi.fn(),
     cancelQueue: vi.fn(),
@@ -62,6 +60,12 @@ vi.mock("@/app/store/hooks", () => ({
   useAppSelector: (selector: (state: unknown) => unknown) =>
     selector({
       preferences: { toolDefaults: menuState.viewState.toolDefaults },
+      importWorkflow: {
+        isChoosingSource: menuState.app.isChoosingSource,
+        isNativeDialogOpen: false,
+        isSourceDragActive: false,
+        dropListenerError: null,
+      },
       session: {
         status: menuState.app.hasSource && menuState.sourceDetails.isReady ? "ready" : "idle",
         source: menuState.app.hasSource
@@ -93,8 +97,6 @@ describe("ContextMenus", () => {
     hasSource?: boolean;
     canSave?: boolean;
     canExport?: boolean;
-    onChooseSource?: () => void;
-    onCloseFile?: () => void;
     onSave?: () => void;
     onExport?: () => void;
     queueStarted?: boolean;
@@ -128,8 +130,6 @@ describe("ContextMenus", () => {
       "exit",
       "nothing",
     ];
-    menuState.app.handleChooseSource = vi.fn(overrides.onChooseSource);
-    menuState.app.handleCloseFile = vi.fn(overrides.onCloseFile);
     menuState.app.setQueueStarted = vi.fn(overrides.onQueueStartedChange);
     menuState.app.cancelActiveExport = vi.fn(overrides.onCancelActive);
     menuState.app.cancelQueue = vi.fn(overrides.onCancelQueue);
@@ -260,7 +260,6 @@ describe("ContextMenus", () => {
             isChoosingSource={false}
             canSave
             canExport
-            onChooseSource={vi.fn()}
             onSave={vi.fn()}
             onExport={vi.fn()}
           />
@@ -339,7 +338,6 @@ describe("ContextMenus", () => {
               isChoosingSource={false}
               canSave
               canExport
-              onChooseSource={vi.fn()}
               onSave={vi.fn()}
               onExport={vi.fn()}
             />
@@ -363,7 +361,6 @@ describe("ContextMenus", () => {
             isChoosingSource={false}
             canSave
             canExport
-            onChooseSource={vi.fn()}
             onSave={vi.fn()}
             onExport={vi.fn()}
           />
@@ -401,7 +398,6 @@ describe("ContextMenus", () => {
             isChoosingSource={false}
             canSave
             canExport
-            onChooseSource={vi.fn()}
             onSave={vi.fn()}
             onExport={vi.fn()}
           />
@@ -429,7 +425,6 @@ describe("ContextMenus", () => {
             isChoosingSource={false}
             canSave
             canExport
-            onChooseSource={vi.fn()}
             onSave={vi.fn()}
             onExport={vi.fn()}
           />
@@ -457,7 +452,6 @@ describe("ContextMenus", () => {
             isChoosingSource={false}
             canSave
             canExport
-            onChooseSource={vi.fn()}
             onSave={vi.fn()}
             onExport={vi.fn()}
             toolDefaults={{
@@ -502,7 +496,6 @@ describe("ContextMenus", () => {
               isChoosingSource={false}
               canSave
               canExport
-              onChooseSource={vi.fn()}
               onSave={vi.fn()}
               onExport={vi.fn()}
             />
@@ -519,7 +512,6 @@ describe("ContextMenus", () => {
 
   it("opens the File menu with its action and hotkey hint", async () => {
     const user = userEvent.setup();
-    const onCloseFile = vi.fn();
     render(
       <TooltipProvider>
         <ThemeProvider>
@@ -528,8 +520,6 @@ describe("ContextMenus", () => {
             hasSource
             canSave
             canExport
-            onChooseSource={vi.fn()}
-            onCloseFile={onCloseFile}
             onSave={vi.fn()}
             onExport={vi.fn()}
           />
@@ -555,7 +545,7 @@ describe("ContextMenus", () => {
     const closeFileItem = screen.getByRole("menuitem", { name: /Close File/ });
     expect(closeFileItem).toHaveTextContent("Ctrl+Q");
     await user.click(closeFileItem);
-    expect(onCloseFile).toHaveBeenCalledOnce();
+    expect(menuState.viewState.dispatch).toHaveBeenCalledTimes(2);
   });
 
   it("keeps Theme and Language metadata visible for every submenu option", async () => {
@@ -567,7 +557,6 @@ describe("ContextMenus", () => {
             isChoosingSource={false}
             canSave
             canExport
-            onChooseSource={vi.fn()}
             onSave={vi.fn()}
             onExport={vi.fn()}
           />
@@ -640,7 +629,6 @@ describe("ContextMenus", () => {
             isChoosingSource={false}
             canSave
             canExport
-            onChooseSource={vi.fn()}
             onSave={vi.fn()}
             onExport={vi.fn()}
           />
@@ -731,7 +719,6 @@ describe("ContextMenus", () => {
             isChoosingSource={false}
             canSave
             canExport
-            onChooseSource={vi.fn()}
             onSave={vi.fn()}
             onExport={vi.fn()}
           />
@@ -815,7 +802,6 @@ describe("ContextMenus", () => {
             isChoosingSource={false}
             canSave
             canExport
-            onChooseSource={vi.fn()}
             onSave={vi.fn()}
             onExport={vi.fn()}
           />

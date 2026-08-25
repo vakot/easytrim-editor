@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type {
   MediaCapabilities,
@@ -15,6 +15,8 @@ import {
 } from "../app/store/slices/editor-tools-slice";
 import { editorLayoutReset } from "../app/store/slices/editor-layout-slice";
 import { sourceCleared } from "../app/store/slices/session-slice";
+import { startSourceMediaRuntime } from "../app/store/source-media-runtime";
+import { checkMediaCapabilitiesRequested } from "../app/store/thunks/source-media-thunks";
 import { DEFAULT_TOOL_DEFAULTS } from "../app/tool-settings";
 
 const mocks = vi.hoisted(() => ({
@@ -93,6 +95,7 @@ const media: MediaInfo = {
 };
 
 let sourceDropListener: ((event: SourceDropEvent) => void) | undefined;
+let stopSourceMediaRuntime: (() => void) | undefined;
 
 async function openSourcePicker(user: ReturnType<typeof userEvent.setup>) {
   screen.getByRole("button", { name: "File" }).focus();
@@ -184,6 +187,12 @@ beforeEach(() => {
       return mocks.unlistenDrops;
     },
   );
+  stopSourceMediaRuntime = startSourceMediaRuntime(store.dispatch);
+});
+
+afterEach(() => {
+  stopSourceMediaRuntime?.();
+  stopSourceMediaRuntime = undefined;
 });
 
 describe("App", () => {
@@ -2399,6 +2408,7 @@ describe("App", () => {
       ffmpeg: { available: false, error: "ffmpeg is not installed or available on PATH." },
       ffprobe: { available: false, error: "ffprobe is not installed or available on PATH." },
     });
+    await store.dispatch(checkMediaCapabilitiesRequested());
     render(<App />);
 
     expect(await screen.findByText("Media tools unavailable")).toBeInTheDocument();
@@ -2423,7 +2433,12 @@ describe("App", () => {
     });
 
     expect(screen.queryByRole("heading", { name: "holiday.mp4" })).not.toBeInTheDocument();
-    expect(screen.getByRole("alert")).toHaveTextContent("This file type is not supported yet.");
+    expect(store.getState().session.source).toBeNull();
+    expect(screen.getAllByRole("alert")).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ textContent: expect.stringContaining("This file type") }),
+      ]),
+    );
   });
 
   it("inspects a source selected by the native drop listener", async () => {
@@ -2453,11 +2468,11 @@ describe("App", () => {
     expect(screen.queryByRole("status", { name: "Drop video to open" })).not.toBeInTheDocument();
   });
 
-  it("cleans up the native source-drop listener on unmount", async () => {
-    const view = render(<App />);
+  it("cleans up the native source-drop listener when the app runtime stops", async () => {
+    render(<App />);
     await waitFor(() => expect(sourceDropListener).toBeDefined());
 
-    view.unmount();
+    stopSourceMediaRuntime?.();
 
     expect(mocks.unlistenDrops).toHaveBeenCalledOnce();
   });
