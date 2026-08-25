@@ -8,9 +8,9 @@ Every logically independent change or addition should have its own commit.
 
 Create a separate commit when:
 
-* the change represents an independently understandable unit of work;
-* the change could reasonably be reviewed or reverted independently;
-* the user explicitly requests a separate commit.
+- the change represents an independently understandable unit of work;
+- the change could reasonably be reviewed or reverted independently;
+- the user explicitly requests a separate commit.
 
 Do not combine unrelated changes into one commit.
 
@@ -101,11 +101,11 @@ Keep the context concise.
 
 The commit title must:
 
-* be concise;
-* describe the resulting change;
-* use imperative phrasing;
-* begin with lowercase where natural;
-* have no trailing period.
+- be concise;
+- describe the resulting change;
+- use imperative phrasing;
+- begin with lowercase where natural;
+- have no trailing period.
 
 Preferred:
 
@@ -206,12 +206,12 @@ If another correction is required, create a new logical commit.
 
 Do not automatically:
 
-* amend;
-* squash;
-* reorder;
-* reword;
-* rebase;
-* reset existing commits.
+- amend;
+- squash;
+- reorder;
+- reword;
+- rebase;
+- reset existing commits.
 
 History cleanup is performed only on explicit user request.
 

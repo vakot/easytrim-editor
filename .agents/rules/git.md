@@ -21,8 +21,8 @@ Every logically independent feature or unit of work must use a separate branch.
 
 Create a new branch when:
 
-* starting a logically independent feature, fix, refactor, or other unit of work;
-* the user explicitly requests a separate branch.
+- starting a logically independent feature, fix, refactor, or other unit of work;
+- the user explicitly requests a separate branch.
 
 Do not create another branch for follow-up work that belongs to the same logical task.
 
@@ -89,13 +89,13 @@ Do not perform destructive or history-rewriting Git operations unless explicitly
 
 This includes operations that:
 
-* discard working-tree changes;
-* reset existing commits;
-* amend existing commits;
-* squash, reorder, or drop commits;
-* rebase existing history;
-* force-push;
-* delete branches or tags.
+- discard working-tree changes;
+- reset existing commits;
+- amend existing commits;
+- squash, reorder, or drop commits;
+- rebase existing history;
+- force-push;
+- delete branches or tags.
 
 If committed work requires a correction, create a new commit unless the user explicitly requests history cleanup.
 
@@ -149,11 +149,11 @@ git status
 
 Confirm that:
 
-* the current branch is correct;
-* unrelated user changes remain intact;
-* staged and unstaged changes are intentional;
-* no unauthorized push occurred;
-* no history was rewritten without explicit instruction.
+- the current branch is correct;
+- unrelated user changes remain intact;
+- staged and unstaged changes are intentional;
+- no unauthorized push occurred;
+- no history was rewritten without explicit instruction.
 
 ## Guiding Rule
 

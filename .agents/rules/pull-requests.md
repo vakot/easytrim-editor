@@ -64,6 +64,7 @@ The expected repository template is:
 ### 🛠️ Testing Steps
 
 <--START: testing section-->
+
 #### Prerequisites (optional)
 
 - list of prerequisites (optional)
@@ -72,7 +73,7 @@ The expected repository template is:
 
 - [ ] Testing step 1
 - [ ] Testing step 2
-<--END: testing section-->
+      <--END: testing section-->
 ```
 
 Always read the actual repository template before creating a PR in case it has changed.
@@ -96,9 +97,9 @@ Do not invent links, tickets, or related work.
 
 The description should explain:
 
-* what changed;
-* why the change was needed;
-* important architectural decisions when they materially help review.
+- what changed;
+- why the change was needed;
+- important architectural decisions when they materially help review.
 
 Do not reproduce the complete commit history.
 
@@ -180,12 +181,12 @@ A pull request should represent one logical unit of work.
 
 Do not combine unrelated:
 
-* features;
-* fixes;
-* refactors;
-* cleanup;
-* dependency updates;
-* formatting changes
+- features;
+- fixes;
+- refactors;
+- cleanup;
+- dependency updates;
+- formatting changes
 
 into the same PR.
 
@@ -233,16 +234,16 @@ Creating a PR does not authorize additional PR management.
 
 Do not automatically:
 
-* merge the PR;
-* enable auto-merge;
-* close the PR;
-* change draft/ready state;
-* request reviewers;
-* add or remove labels;
-* modify milestones;
-* modify projects;
-* rewrite the PR title or body after creation;
-* delete the remote branch.
+- merge the PR;
+- enable auto-merge;
+- close the PR;
+- change draft/ready state;
+- request reviewers;
+- add or remove labels;
+- modify milestones;
+- modify projects;
+- rewrite the PR title or body after creation;
+- delete the remote branch.
 
 Perform these actions only when explicitly requested or required by repository-specific instructions.
 
@@ -254,11 +255,11 @@ This includes pushing the required task branch when necessary.
 
 It does not authorize:
 
-* unrelated pushes;
-* force-pushes;
-* history rewriting;
-* merging;
-* remote branch cleanup.
+- unrelated pushes;
+- force-pushes;
+- history rewriting;
+- merging;
+- remote branch cleanup.
 
 Follow `.agents/git.md` for all Git operations.
 
