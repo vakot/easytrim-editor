@@ -12,6 +12,7 @@ import {
 
 import type { Dispatch, SetStateAction } from "react";
 import type { ExportToast } from "../types";
+import { estimateExportSize, estimateExportTime, parseFfmpegNumber } from "./export-metrics";
 
 type ExportRoute = "fast" | "optimized";
 type ExportRequest = FastExportRequest | OptimizedExportRequest;
@@ -26,22 +27,18 @@ interface ExportJob {
   canceled: boolean;
   operationId: string | null;
   startedAt: number | null;
-  estimatedFps: number | null;
 }
 
 const pendingJobs: ExportJob[] = [];
 const jobsById = new Map<string, ExportJob>();
 let isDraining = false;
 
-export function enqueueExport(
-  job: Omit<ExportJob, "canceled" | "operationId" | "startedAt" | "estimatedFps">,
-) {
+export function enqueueExport(job: Omit<ExportJob, "canceled" | "operationId" | "startedAt">) {
   const queuedJob: ExportJob = {
     ...job,
     canceled: false,
     operationId: null,
     startedAt: null,
-    estimatedFps: null,
   };
   pendingJobs.push(queuedJob);
   jobsById.set(queuedJob.id, queuedJob);
@@ -108,20 +105,29 @@ async function renderJob(job: ExportJob) {
       durationMicros > 0
         ? Math.min(100, Math.max(0, (progress.elapsedMicros / durationMicros) * 100))
         : 0;
-    const reportedFps = parseMetric(progress.fps);
-    if (reportedFps !== null) {
-      job.estimatedFps =
-        job.estimatedFps === null ? reportedFps : job.estimatedFps * 0.75 + reportedFps * 0.25;
-    }
+    const estimatedTime = estimateExportTime(
+      progress.elapsedMicros,
+      durationMicros,
+      progress.speed,
+    );
+    const estimatedSize = estimateExportSize(
+      progress.totalSize,
+      progress.bitrate,
+      progress.elapsedMicros,
+      durationMicros,
+    );
     updateToast(job, (toast) => ({
       ...toast,
       operationId: progress.operationId,
       durationMs: elapsedTime(job),
       progressPercent,
       currentFrame: progress.frame,
-      estimatedFps: job.estimatedFps ?? undefined,
+      fps: parseFfmpegNumber(progress.fps) ?? undefined,
       bitrate: progress.bitrate,
       fileSizeBytes: progress.totalSize,
+      estimatedFileSizeBytes: estimatedSize?.totalBytes,
+      estimatedElapsedTimeMs: estimatedTime?.elapsedMs,
+      estimatedTotalTimeMs: estimatedTime?.totalMs,
     }));
   };
 
@@ -158,12 +164,6 @@ async function renderJob(job: ExportJob) {
   } finally {
     jobsById.delete(job.id);
   }
-}
-
-function parseMetric(value: string | undefined) {
-  if (!value) return null;
-  const multiplier = Number.parseFloat(value);
-  return Number.isFinite(multiplier) && multiplier >= 0 ? multiplier : null;
 }
 
 function elapsedTime(job: ExportJob) {

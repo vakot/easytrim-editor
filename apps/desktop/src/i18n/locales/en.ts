@@ -8,6 +8,8 @@ export const en = {
   },
   statusBar: {
     exportProgress: "Export progress",
+    estimateTime: "Estimate time",
+    estimateSize: "Estimate size",
     update: "Update",
     error: "Error",
     loading: "Loading",

@@ -6,13 +6,13 @@ import { useAppUpdates, type UpdateStatus } from "@/app/update-context";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import packageJson from "../../../../../package.json";
-import type { ExportToast } from "@/features/export";
+import { formatExportDuration, formatExportFileSize, type ExportToast } from "@/features/export";
 
 export function StatusBar({ queue }: { queue: ExportToast[] }) {
   const { t } = useTranslation();
   const activeExport = queue.find((item) => item.status === "rendering");
   const activeExportPath = activeExport ? splitFilePath(activeExport.path) : null;
-  const activeExportFps = activeExport?.estimatedFps;
+  const activeExportFps = activeExport?.fps;
 
   return (
     <div className="bg-card/30">
@@ -74,8 +74,28 @@ export function StatusBar({ queue }: { queue: ExportToast[] }) {
             {activeExport.fileSizeBytes !== undefined ? (
               <>
                 <Separator orientation="vertical" className="h-4 self-center" />
-                <span className="shrink-0 tabular-nums">
-                  {formatFileSize(activeExport.fileSizeBytes)}
+                <span
+                  className="shrink-0 tabular-nums"
+                  title={t("statusBar.estimateSize")}
+                  aria-label={`${t("statusBar.estimateSize")}: ${formatExportFileSize(activeExport.fileSizeBytes)}${activeExport.estimatedFileSizeBytes !== undefined ? ` / ${formatExportFileSize(activeExport.estimatedFileSizeBytes)}` : ""}`}
+                >
+                  {activeExport.estimatedFileSizeBytes !== undefined
+                    ? `${formatExportFileSize(activeExport.fileSizeBytes)} / ${formatExportFileSize(activeExport.estimatedFileSizeBytes)}`
+                    : formatExportFileSize(activeExport.fileSizeBytes)}
+                </span>
+              </>
+            ) : null}
+            {activeExport.estimatedElapsedTimeMs !== undefined &&
+            activeExport.estimatedTotalTimeMs !== undefined ? (
+              <>
+                <Separator orientation="vertical" className="h-4 self-center" />
+                <span
+                  className="shrink-0 tabular-nums"
+                  title={t("statusBar.estimateTime")}
+                  aria-label={`${t("statusBar.estimateTime")}: ${formatExportDuration(activeExport.estimatedElapsedTimeMs)} / ${formatExportDuration(activeExport.estimatedTotalTimeMs)}`}
+                >
+                  {formatExportDuration(activeExport.estimatedElapsedTimeMs)} /{" "}
+                  {formatExportDuration(activeExport.estimatedTotalTimeMs)}
                 </span>
               </>
             ) : null}
@@ -183,16 +203,4 @@ function splitFilePath(path: string) {
     directory: path.slice(0, separatorIndex + 1),
     filename: path.slice(separatorIndex + 1),
   };
-}
-
-function formatFileSize(bytes: number) {
-  if (bytes < 1024) return `${bytes} B`;
-  const units = ["KB", "MB", "GB", "TB"];
-  let value = bytes;
-  let unitIndex = -1;
-  while (value >= 1024 && unitIndex < units.length - 1) {
-    value /= 1024;
-    unitIndex += 1;
-  }
-  return `${value.toFixed(value >= 10 ? 0 : 1)} ${units[unitIndex]}`;
 }
