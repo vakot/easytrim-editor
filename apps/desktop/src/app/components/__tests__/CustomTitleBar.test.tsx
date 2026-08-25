@@ -1,9 +1,11 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { Provider } from "react-redux";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CustomTitleBar } from "../CustomTitleBar";
 import { ContextMenus } from "../ContextMenus";
+import { store } from "@/app/store";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 
 const windowActions = vi.hoisted(() => ({
@@ -76,9 +78,11 @@ describe("CustomTitleBar", () => {
   it("keeps menu controls interactive inside the title bar", async () => {
     const user = userEvent.setup();
     render(
-      <ThemeProvider>
-        <CustomTitleBar menuControls={<ContextMenus />} />
-      </ThemeProvider>,
+      <Provider store={store}>
+        <ThemeProvider>
+          <CustomTitleBar menuControls={<ContextMenus />} />
+        </ThemeProvider>
+      </Provider>,
     );
 
     await user.click(screen.getByRole("button", { name: "File" }));
@@ -89,9 +93,11 @@ describe("CustomTitleBar", () => {
   it("does not toggle maximize when a menu or submenu item is double-clicked", async () => {
     const user = userEvent.setup();
     const menuRender = render(
-      <ThemeProvider>
-        <CustomTitleBar menuControls={<ContextMenus />} />
-      </ThemeProvider>,
+      <Provider store={store}>
+        <ThemeProvider>
+          <CustomTitleBar menuControls={<ContextMenus />} />
+        </ThemeProvider>
+      </Provider>,
     );
 
     await user.click(screen.getByRole("button", { name: "File" }));
@@ -100,9 +106,11 @@ describe("CustomTitleBar", () => {
     menuRender.unmount();
 
     render(
-      <ThemeProvider>
-        <CustomTitleBar menuControls={<ContextMenus />} />
-      </ThemeProvider>,
+      <Provider store={store}>
+        <ThemeProvider>
+          <CustomTitleBar menuControls={<ContextMenus />} />
+        </ThemeProvider>
+      </Provider>,
     );
     await user.click(screen.getByRole("button", { name: "View" }));
     const themeItem = screen.getByText("Theme").closest<HTMLElement>('[role="menuitem"]');

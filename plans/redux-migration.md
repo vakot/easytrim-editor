@@ -1,11 +1,11 @@
 # EasyTrim Editor Redux migration plan
 
-Status: Phase 0 — architecture and rules only
+Status: Phase 1 — Redux foundation and Preferences pilot
 
 This is the maintained plan for the controlled Redux Toolkit migration. It is based
 on the frontend and native architecture at the `master` baseline used to create the
-`redux-migration` integration branch. No Redux dependency or runtime implementation is
-introduced by Phase 0.
+`redux-migration` integration branch. Phase 1 introduces the Redux foundation and
+migrates Preferences as the first permanent Redux-owned domain.
 
 ## Migration contract
 
@@ -402,21 +402,16 @@ not install Redux or change product code.
 After Phase 0 review/merge, add Redux Toolkit and `react-redux`, configure one typed
 store/provider, and migrate one deliberately small low-risk domain selected from this
 inventory. The pilot must prove provider wiring, typed hooks, selectors, dispatch,
-focused tests, and one source of truth without beginning session migration.
+focused tests, and one source of truth without beginning session migration. Preferences
+was originally planned as Phase 2A and is complete early as Phase 1's permanent Redux
+pilot; the remaining Phase 2 domains are editor tools and editor layout.
 
-### Phase 2 — preferences, editor tools, and editor layout
+### Phase 2 — editor tools and editor layout
 
-Do not implement one broad editor/view/tools slice. Treat the three domains as
-independent migration targets because they have different responsibilities, lifetimes,
-and transition rules:
-
-#### Phase 2A — preferences
-
-Migrate persistent/default behavior such as tool defaults. Establish preferences as
-the source used to initialize active tools or command policy, without making a
-preference the active feature state. Preserve the existing `tool-settings.ts` adapter
-and persistence policy. Migrate readers/writers, remove only preference-specific
-Context/prop wiring, validate, and stop for review.
+Do not implement one broad editor/view/tools slice. Treat editor tools and editor layout
+as independent migration targets because they have different responsibilities, lifetimes,
+and transition rules. Preferences is already migrated as the Phase 1 pilot and remains
+the source used to initialize active tools or command policy without owning active state.
 
 #### Phase 2B — editor tools
 

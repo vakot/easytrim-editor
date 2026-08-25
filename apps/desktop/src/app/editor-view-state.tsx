@@ -1,81 +1,35 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import type { Layout } from "react-resizable-panels";
 
 import { EditorViewStateContext, type EditorToolState } from "@/app/editor-view-state-context";
-import {
-  DEFAULT_TOOL_DEFAULTS,
-  loadToolDefaults,
-  persistToolDefaults,
-  type ToolDefaultKey,
-  type ToolDefaults,
-} from "@/app/tool-settings";
+import { selectToolDefaults } from "@/app/preferences-slice";
+import { useAppSelector } from "@/app/store";
 
-interface ToolViewState {
-  defaults: ToolDefaults;
-  active: EditorToolState;
-}
-
-function createToolViewState(): ToolViewState {
-  const defaults = loadToolDefaults();
+function createActiveToolState(defaults: ReturnType<typeof selectToolDefaults>): EditorToolState {
   return {
-    defaults,
-    active: {
-      safeTrimFollowingEnabled: defaults.safeTrimFollowingEnabled,
-      loopPlaybackEnabled: defaults.loopPlaybackEnabled,
-      segmentPlaybackEnabled: defaults.segmentPlaybackEnabled,
-      playbackSpeed: 1,
-    },
+    safeTrimFollowingEnabled: defaults.safeTrimFollowingEnabled,
+    loopPlaybackEnabled: defaults.loopPlaybackEnabled,
+    segmentPlaybackEnabled: defaults.segmentPlaybackEnabled,
+    playbackSpeed: 1,
   };
 }
 
 export function EditorViewStateProvider({ children }: { children: ReactNode }) {
-  const [toolViewState, setToolViewState] = useState(createToolViewState);
+  const toolDefaults = useAppSelector(selectToolDefaults);
+  const [tools, setTools] = useState(() => createActiveToolState(toolDefaults));
   const [showSourceDetails, setShowSourceDetails] = useState(true);
   const [showTimeline, setShowTimeline] = useState(true);
   const [workspaceLayout, setWorkspaceLayout] = useState<Layout>();
   const [editorStageLayout, setEditorStageLayout] = useState<Layout>();
 
-  useEffect(() => {
-    persistToolDefaults(toolViewState.defaults);
-  }, [toolViewState.defaults]);
-
-  const setTools = (active: EditorToolState) =>
-    setToolViewState((current) => ({ ...current, active }));
-  const resetTools = () =>
-    setToolViewState((current) => ({
-      ...current,
-      active: {
-        safeTrimFollowingEnabled: current.defaults.safeTrimFollowingEnabled,
-        loopPlaybackEnabled: current.defaults.loopPlaybackEnabled,
-        segmentPlaybackEnabled: current.defaults.segmentPlaybackEnabled,
-        playbackSpeed: 1,
-      },
-    }));
-  const setToolDefault = (key: ToolDefaultKey, enabled: boolean) =>
-    setToolViewState((current) => ({
-      defaults: { ...current.defaults, [key]: enabled },
-      active: key === "mergeAudioEnabled" ? current.active : { ...current.active, [key]: enabled },
-    }));
-  const resetToolDefaults = () =>
-    setToolViewState({
-      defaults: DEFAULT_TOOL_DEFAULTS,
-      active: {
-        safeTrimFollowingEnabled: DEFAULT_TOOL_DEFAULTS.safeTrimFollowingEnabled,
-        loopPlaybackEnabled: DEFAULT_TOOL_DEFAULTS.loopPlaybackEnabled,
-        segmentPlaybackEnabled: DEFAULT_TOOL_DEFAULTS.segmentPlaybackEnabled,
-        playbackSpeed: 1,
-      },
-    });
+  const resetTools = () => setTools(createActiveToolState(toolDefaults));
 
   return (
     <EditorViewStateContext.Provider
       value={{
-        tools: toolViewState.active,
+        tools,
         setTools,
         resetTools,
-        toolDefaults: toolViewState.defaults,
-        setToolDefault,
-        resetToolDefaults,
         showSourceDetails,
         setShowSourceDetails,
         showTimeline,

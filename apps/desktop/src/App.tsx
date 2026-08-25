@@ -17,6 +17,8 @@ import { useSourceDetails } from "@/app/hooks/useSourceDetails";
 import { AppUpdatesProvider } from "@/app/AppUpdatesProvider";
 import { ExportPanelControllerProvider } from "@/app/ExportPanelControllerProvider";
 import { useExportPanelController } from "@/app/hooks/useExportPanelController";
+import { store } from "@/app/store";
+import { Provider as ReduxProvider } from "react-redux";
 
 function EasyTrimEditorApp() {
   const app = useEditorSession();
@@ -80,15 +82,17 @@ function App() {
   return (
     <AppUpdatesProvider>
       <ThemeProvider>
-        <EditorViewStateProvider>
-          <EditorSessionProvider>
-            <ExportPanelControllerProvider>
-              <EditorContractsProvider>
-                <EasyTrimEditorApp />
-              </EditorContractsProvider>
-            </ExportPanelControllerProvider>
-          </EditorSessionProvider>
-        </EditorViewStateProvider>
+        <ReduxProvider store={store}>
+          <EditorViewStateProvider>
+            <EditorSessionProvider>
+              <ExportPanelControllerProvider>
+                <EditorContractsProvider>
+                  <EasyTrimEditorApp />
+                </EditorContractsProvider>
+              </ExportPanelControllerProvider>
+            </EditorSessionProvider>
+          </EditorViewStateProvider>
+        </ReduxProvider>
       </ThemeProvider>
     </AppUpdatesProvider>
   );
