@@ -29,6 +29,12 @@ import {
   isShortcutBlockedTarget,
 } from "@/features/editor/utils/editor-shortcuts";
 import {
+  connectNativeAudioBinding,
+  disconnectNativeAudioBinding,
+  getOrCreateNativeAudioBinding,
+  type NativeAudioBinding,
+} from "@/features/editor/utils/native-audio-runtime";
+import {
   cancelFrame,
   cancelPlaybackFrame,
   requestPlaybackFrame,
@@ -129,10 +135,10 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
   const audioNodesRef = useRef(
     new Map<number, { source: MediaElementAudioSourceNode; gain: GainNode }>(),
   );
-  const nativeAudioNodeRef = useRef<{
+  const nativeAudioBindingsRef = useRef(new Map<HTMLVideoElement, NativeAudioBinding>());
+  const nativeAudioBindingRef = useRef<{
     element: HTMLVideoElement;
-    source: MediaElementAudioSourceNode;
-    gain: GainNode;
+    binding: NativeAudioBinding;
   } | null>(null);
   const masterGainRef = useRef<GainNode | null>(null);
   const playheadRef = useRef<HTMLButtonElement>(null);
@@ -198,14 +204,38 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     audioNodesRef.current.delete(streamIndex);
   }, []);
 
+  const disconnectCurrentNativeAudioRoute = useCallback(() => {
+    const currentBinding = nativeAudioBindingRef.current;
+    if (!currentBinding) return;
+    disconnectNativeAudioBinding(currentBinding.binding);
+    nativeAudioBindingRef.current = null;
+  }, []);
+
+  const cleanupStaleNativeAudioBindings = useCallback((currentVideo: HTMLVideoElement | null) => {
+    for (const [element, binding] of nativeAudioBindingsRef.current) {
+      if (element === currentVideo) continue;
+      disconnectNativeAudioBinding(binding);
+      nativeAudioBindingsRef.current.delete(element);
+    }
+    if (nativeAudioBindingRef.current?.element !== currentVideo) {
+      nativeAudioBindingRef.current = null;
+    }
+  }, []);
+
+  const cleanupAllNativeAudioBindings = useCallback(() => {
+    for (const binding of nativeAudioBindingsRef.current.values()) {
+      disconnectNativeAudioBinding(binding);
+    }
+    nativeAudioBindingsRef.current.clear();
+    nativeAudioBindingRef.current = null;
+  }, []);
+
   const cleanupAudioRuntime = useCallback(() => {
     for (const streamIndex of audioElementsRef.current.keys()) removeAudioRuntime(streamIndex);
-    nativeAudioNodeRef.current?.source.disconnect();
-    nativeAudioNodeRef.current?.gain.disconnect();
-    nativeAudioNodeRef.current = null;
+    disconnectCurrentNativeAudioRoute();
     masterGainRef.current?.disconnect();
     masterGainRef.current = null;
-  }, [removeAudioRuntime]);
+  }, [disconnectCurrentNativeAudioRoute, removeAudioRuntime]);
 
   useEffect(() => {
     trimRef.current = trim;
@@ -253,6 +283,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
   useEffect(() => {
     if (!sourceId || audioTracks.length === 0 || typeof AudioContext === "undefined") {
       cleanupAudioRuntime();
+      cleanupStaleNativeAudioBindings(videoRef.current);
       return;
     }
     const context = audioContextRef.current ?? new AudioContext();
@@ -310,23 +341,20 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     }
 
     const video = videoRef.current;
-    const nativeNode = nativeAudioNodeRef.current;
+    cleanupStaleNativeAudioBindings(video);
     if (usesExternalAudio || !video) {
-      nativeNode?.source.disconnect();
-      nativeNode?.gain.disconnect();
-      nativeAudioNodeRef.current = null;
-    } else if (nativeNode?.element !== video) {
-      nativeNode?.source.disconnect();
-      nativeNode?.gain.disconnect();
-      const mediaSource = context.createMediaElementSource(video);
-      const gain = context.createGain();
-      mediaSource.connect(gain).connect(masterGain);
-      nativeAudioNodeRef.current = { element: video, source: mediaSource, gain };
+      disconnectCurrentNativeAudioRoute();
+    } else {
+      const binding = getOrCreateNativeAudioBinding(nativeAudioBindingsRef.current, context, video);
+      connectNativeAudioBinding(binding, masterGain);
+      nativeAudioBindingRef.current = { element: video, binding };
     }
   }, [
     audioPreviewUrls,
     audioTracks,
     cleanupAudioRuntime,
+    cleanupStaleNativeAudioBindings,
+    disconnectCurrentNativeAudioRoute,
     readyPreviewKey,
     removeAudioRuntime,
     sourceId,
@@ -342,8 +370,8 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
       const node = audioNodesRef.current.get(track.streamIndex);
       if (node) node.gain.gain.value = track.enabled ? track.volumePercent / 50 : 0;
     }
-    if (nativeAudioNodeRef.current) {
-      nativeAudioNodeRef.current.gain.gain.value = nativeAudioTrack?.enabled
+    if (nativeAudioBindingRef.current) {
+      nativeAudioBindingRef.current.binding.gain.gain.value = nativeAudioTrack?.enabled
         ? nativeAudioTrack.volumePercent / 50
         : 0;
     } else if (videoRef.current && nativeAudioTrack) {
@@ -498,9 +526,10 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
       cancelFrame(scrubFrameRef);
       cancelFrame(trimCommitFrameRef);
       cleanupAudioRuntime();
+      cleanupAllNativeAudioBindings();
       void audioContextRef.current?.close();
     },
-    [cleanupAudioRuntime],
+    [cleanupAllNativeAudioBindings, cleanupAudioRuntime],
   );
 
   const flushTrimCommit = useCallback(() => {
