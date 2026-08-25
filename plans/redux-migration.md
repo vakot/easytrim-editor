@@ -577,11 +577,54 @@ Queue/runtime/dialog state, active settings, and queue snapshots are not persist
 Preferences persistence is unchanged. Presets remain intentionally persisted only by
 their existing explicit feature adapter. Stop for human review.
 
-### Phase 6 — playback cleanup
+### Phase 6 — playback cleanup, completed
 
-Evaluate any genuinely shared playback status. Keep pointer, media-element, audio-graph,
-and per-frame values local/runtime-owned. Do not dispatch per-frame updates. Stop for
-review.
+Phase 6 confirmed that no playback Redux slice is justified. Playback has no
+disconnected application-level consumer that needs canonical `isPlaying`, readiness, or
+transport-error state; those values remain runtime/controller-owned. Redux continues to
+own source/media descriptors, trim, editor tools, audio configuration, and preview
+descriptors/status. The controller consumes those domains through focused selectors.
+
+The pre-Phase-6 controller inventory classified the following as runtime-owned:
+
+- video/audio elements, refs, `AudioContext`, media-source/gain nodes, listeners, and
+  animation handles;
+- native media readiness versus preview preparation readiness;
+- current media time, rendered playhead position, requested seeks, scrubbing state, and
+  playback interpolation;
+- play/pause/seek execution, keyboard commands, transport errors, and cleanup.
+
+`EditorInteractionContext` remains a narrow runtime contract for media refs, rendered
+playhead/ref access, runtime readiness/status, media event callbacks, transport commands,
+trim interaction commands, crop pause/resume coordination, preview playback failure
+handling, and segment-boundary availability. It no longer exposes the raw per-frame
+playhead value or Redux-owned playback speed. `usePlaybackModes` remains because its
+boundary/range refs are meaningful runtime state, but its obsolete Redux-dispatch
+callbacks and unused mode-value facade were removed. The unused `usePlaybackSpeed`
+setter facade was deleted; playback controls select and dispatch tool speed directly.
+
+The playhead model remains intentionally split by semantics: the video element is the
+media clock, refs and direct DOM updates provide smooth rendering, React state is sampled
+at a low rate for accessible/UI output, and scrubbing seeks are coalesced locally with
+`requestAnimationFrame`. No per-frame Redux dispatching was introduced.
+
+Source and preview identity changes now stop transport, cancel animation, reset runtime
+readiness/playhead state, disconnect source-bound audio nodes, remove external audio
+elements and readiness listeners, and rebind the new media identity. External audio
+runtime is created only for enabled tracks and is recreated when a prepared URL changes;
+volume changes update existing gain nodes without rebuilding the graph. The AudioContext
+itself remains runtime-owned and reusable until controller unmount, when it is closed.
+Preview video unmount also pauses the outgoing element, covering source-preview to proxy
+replacement.
+
+The existing keyboard effect remains one controller-lifetime listener with ref-backed
+commands, and cleanup is idempotent under React Strict Mode. Focused playback-mode,
+preview-replacement, media-sync, audio-sync, and App playback integration coverage was
+updated or retained; typecheck passed during implementation.
+
+Deferred to Phase 7: the broader audit of updater, theme, and remaining interaction
+Context boundaries. Deferred to Phase 8: unrelated application-state prop transport and
+broad-selector cleanup outside playback-specific wiring.
 
 ### Phase 7 — remaining Context audit
 
