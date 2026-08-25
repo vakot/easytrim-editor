@@ -68,6 +68,9 @@ because they reset together, and do not coordinate shared resets through sequent
 UI dispatches. Slice boundaries follow responsibility and ownership, not one field per
 slice and not shared reset lifetime.
 
+Shared semantic events handled by multiple reducers should centralize common event
+validation in a pure helper, while each slice keeps its own state transition.
+
 Redux migration should remove state wiring, not merely relocate it. Application-specific
 components that consume or mutate Redux-owned state should normally select and dispatch
 directly at the closest actual consumer. Do not mirror a Redux slice through large

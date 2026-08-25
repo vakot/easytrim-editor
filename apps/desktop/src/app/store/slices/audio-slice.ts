@@ -1,6 +1,7 @@
 import { createSelector, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 import {
+  isValidSourceReadyPayload,
   sourceCleared,
   sourceFailed,
   sourceReady,
@@ -236,7 +237,7 @@ const audioSlice = createSlice({
         state.previews = null;
       })
       .addCase(sourceReady, (state, action) => {
-        if (state.sourceId !== action.payload.sourceId) return;
+        if (!isValidSourceReadyPayload(state.sourceId, action.payload)) return;
         state.tracks = createAudioTracks(action.payload.media);
       })
       .addCase(sourceFailed, (state, action) => {

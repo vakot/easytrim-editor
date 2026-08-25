@@ -1,6 +1,7 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 import {
+  isValidSourceReadyPayload,
   sourceCleared,
   sourceFailed,
   sourceReady,
@@ -62,8 +63,7 @@ const sourceSlice = createSlice({
         state.error = null;
       })
       .addCase(sourceReady, (state, action) => {
-        if (state.sourceId !== action.payload.sourceId) return;
-        if (action.payload.media.sourceId !== action.payload.sourceId) return;
+        if (!isValidSourceReadyPayload(state.sourceId, action.payload)) return;
         state.status = "ready";
         state.media = action.payload.media;
         state.error = null;

@@ -63,4 +63,18 @@ describe("source-bound lifecycle", () => {
     expect(store.getState().audio.previews).toBeNull();
     expect(store.getState().preview.value).toEqual({ status: "idle" });
   });
+
+  it("rejects sourceReady metadata from another source across domains", () => {
+    const store = createAppStore();
+    store.dispatch(sourceSelected({ source: firstSource }));
+    store.dispatch(
+      sourceReady({ sourceId: firstSource.sourceId, media: media(secondSource.sourceId) }),
+    );
+
+    const state = store.getState();
+    expect(state.source.status).toBe("loading-source");
+    expect(state.source.media).toBeNull();
+    expect(state.trim.value).toBeNull();
+    expect(state.audio.tracks).toEqual([]);
+  });
 });

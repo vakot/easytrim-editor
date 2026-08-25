@@ -2,6 +2,7 @@ import { createFullTrimRange, isValidTrimRange, type TrimRange } from "@/domain/
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 import {
+  isValidSourceReadyPayload,
   sourceCleared,
   sourceFailed,
   sourceReady,
@@ -43,7 +44,7 @@ const trimSlice = createSlice({
         state.value = null;
       })
       .addCase(sourceReady, (state, action) => {
-        if (state.sourceId !== action.payload.sourceId) return;
+        if (!isValidSourceReadyPayload(state.sourceId, action.payload)) return;
         state.value = createFullTrimRange(action.payload.media.durationMicros);
       });
   },

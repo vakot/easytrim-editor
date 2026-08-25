@@ -13,3 +13,10 @@ export const sourceCleared = createAction("source/cleared");
 export const sourceReady = createAction<{ sourceId: string; media: MediaInfo }>("source/ready");
 
 export const sourceFailed = createAction<{ sourceId?: string; error: AppError }>("source/failed");
+
+export function isValidSourceReadyPayload(
+  currentSourceId: string | null,
+  payload: { sourceId: string; media: { sourceId: string } },
+): boolean {
+  return currentSourceId === payload.sourceId && payload.media.sourceId === payload.sourceId;
+}
