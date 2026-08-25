@@ -32,10 +32,14 @@ vi.mock("@/lib/tauri/queue", () => ({
 
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
 import {
+  queueEntryAdded,
   selectActiveExport,
   selectExportQueue,
   selectOptimizedExportDialogOpen,
+  selectQueueStarted,
+  type ExportQueueItem,
 } from "@/app/store/slices/export-slice";
+import { preferenceChanged } from "@/app/store/slices/preferences-slice";
 import {
   cancelActiveExportRequested,
   openOptimizedExportDialog,
@@ -68,6 +72,25 @@ const output = {
   displayPath: "C:/Exports/clip.mkv",
 };
 
+const queuedItem: ExportQueueItem = {
+  id: "export-queued",
+  route: "fast",
+  request: {
+    sourceId: "source-1",
+    trim: { startMicros: 0, endMicros: 1_000_000 },
+    audioTracks: [],
+    mergeAudio: false,
+  },
+  outputId: output.outputId,
+  filename: output.displayName,
+  path: output.displayPath,
+  status: "queued",
+  operationId: null,
+  startedAt: null,
+  durationMs: null,
+  progressPercent: 0,
+};
+
 function createReadyStore() {
   const store = createAppStore({
     getItem: async () => null,
@@ -91,6 +114,34 @@ beforeEach(() => {
 });
 
 describe("export thunks and runtime queue", () => {
+  it("starts the queue when an entry is added with auto-start enabled", async () => {
+    const store = createReadyStore();
+
+    store.dispatch(queueEntryAdded(queuedItem));
+    await vi.waitFor(() => expect(selectQueueStarted(store.getState())).toBe(true));
+
+    expect(selectExportQueue(store.getState())[0]?.status).toBe("queued");
+  });
+
+  it("leaves an entry queued when auto-start is disabled", async () => {
+    const store = createReadyStore();
+    store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
+
+    store.dispatch(queueEntryAdded(queuedItem));
+    await Promise.resolve();
+
+    expect(selectQueueStarted(store.getState())).toBe(false);
+    expect(selectExportQueue(store.getState())[0]?.status).toBe("queued");
+  });
+
+  it("keeps startExportQueue guarded when no queued entries exist", () => {
+    const store = createReadyStore();
+
+    store.dispatch(startExportQueue());
+
+    expect(selectQueueStarted(store.getState())).toBe(false);
+  });
+
   it("runs Fast Cut through the typed adapter and publishes lifecycle state", async () => {
     mocks.renderFast.mockImplementation(async (_request, _outputId, onProgress) => {
       onProgress({ operationId: "operation-1", elapsedMicros: 500_000, phase: "running" });
