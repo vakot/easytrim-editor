@@ -28,7 +28,6 @@ import {
 import type { QueueFinishAction } from "@/lib/tauri/queue";
 
 import type { MenuNavigation } from "../../types";
-import { selectAutoStartQueueEnabled } from "@/app/store/slices/preferences-slice";
 
 export function QueueMenu({ navigation }: { navigation: MenuNavigation }) {
   const { t } = useTranslation();
@@ -38,7 +37,6 @@ export function QueueMenu({ navigation }: { navigation: MenuNavigation }) {
   const queueStarted = useAppSelector(selectQueueStarted);
   const queueFinishAction = useAppSelector(selectQueueFinishAction);
   const availableQueueFinishActions = useAppSelector(selectAvailableQueueFinishActions);
-  const autoStartQueueEnabled = useAppSelector(selectAutoStartQueueEnabled);
   const hasQueuedItems = queue.some((toast) => toast.status === "queued");
   const hasActiveItem = queue.some((toast) => toast.status === "rendering");
   const queueFinishLabels: Record<QueueFinishAction, string> = {
@@ -64,24 +62,20 @@ export function QueueMenu({ navigation }: { navigation: MenuNavigation }) {
     onSelect: () => dispatch(queueFinishActionChanged(action)),
   }));
 
-  const autoStartQueueOptions: ContextMenuOption[] = [
-    {
-      id: "start-queue",
-      children: t("app.queue.start"),
-      ariaKeyShortcuts: "Enter",
-      suffix: "Enter",
-      disabled: !hasQueuedItems || queueStarted,
-      onSelect: () => void dispatch(startExportQueue()),
-    },
-    { id: "queue-start-divider", separator: true },
-  ];
-
   return (
     <>
       <ContextMenu
         {...navigation}
         options={[
-          ...(!autoStartQueueEnabled ? autoStartQueueOptions : []),
+          {
+            id: "start-queue",
+            children: t("app.queue.start"),
+            ariaKeyShortcuts: "Enter",
+            suffix: "Enter",
+            disabled: !hasQueuedItems || queueStarted,
+            onSelect: () => void dispatch(startExportQueue()),
+          },
+          { id: "queue-start-divider", separator: true },
           {
             id: "cancel-active-queue-item",
             children: t("app.queue.skip"),

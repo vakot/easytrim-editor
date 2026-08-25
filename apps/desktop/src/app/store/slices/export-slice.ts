@@ -255,6 +255,8 @@ export const selectHasQueuedExports = (state: RootState): boolean =>
   state.export.queue.some((item) => item.status === "queued");
 export const selectHasActiveExport = (state: RootState): boolean =>
   state.export.queue.some((item) => item.status === "rendering");
+export const selectHasProcessableExports = (state: RootState): boolean =>
+  state.export.queue.some((item) => item.status === "queued" || item.status === "rendering");
 export const selectCanStartQueue = (state: RootState): boolean =>
   !state.export.queueStarted && selectHasQueuedExports(state);
 export const selectQueueStarted = (state: RootState): boolean => state.export.queueStarted;

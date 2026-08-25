@@ -37,6 +37,10 @@ choosing Redux.
   `store.ts`, `hooks.ts`, `persistence.ts`, and application-owned slices under
   `slices/`. A feature-owned Redux domain may remain with its owning feature, following
   the repository dependency direction.
+- Keep `store.ts` composition-only. Put custom Redux middleware under
+  `app/store/middleware/`, and put cross-domain RTK listener reactions under
+  `app/store/middleware/listeners/`. Use one shared listener middleware instance unless
+  separate instances are justified by distinct lifecycle or isolation requirements.
 - Define domain actions and transitions first; avoid a generic `setFoo` API for a
   workflow with meaningful states.
 - Colocate selectors with the slice and test reducers/selectors at the lowest useful
