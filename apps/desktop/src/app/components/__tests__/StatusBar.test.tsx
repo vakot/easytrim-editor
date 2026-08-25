@@ -111,9 +111,7 @@ describe("StatusBar", () => {
   });
 
   it("shows completed exports as a green full progress indicator", () => {
-    renderQueue([
-      exportToast({ status: "completed", currentFrame: 4, totalFrames: 8 }),
-    ]);
+    renderQueue([exportToast({ status: "completed", currentFrame: 4, totalFrames: 8 })]);
     const progress = screen.getByRole("progressbar");
     expect(progress).toHaveAttribute("aria-valuenow", "100");
     expect(progress.firstElementChild).toHaveClass("bg-emerald-400");
@@ -125,10 +123,13 @@ describe("StatusBar", () => {
     expect(screen.getByText("0 FPS")).toBeInTheDocument();
   });
 
-  it.each(["failed", "canceled"] as const)("shows %s exports with destructive styling", (status) => {
-    renderQueue([exportToast({ status, progressPercent: 37 })]);
-    const progress = screen.getByRole("progressbar");
-    expect(progress).toHaveAttribute("aria-valuenow", "37");
-    expect(progress.firstElementChild).toHaveClass("bg-destructive");
-  });
+  it.each(["failed", "canceled"] as const)(
+    "shows %s exports with destructive styling",
+    (status) => {
+      renderQueue([exportToast({ status, progressPercent: 37 })]);
+      const progress = screen.getByRole("progressbar");
+      expect(progress).toHaveAttribute("aria-valuenow", "37");
+      expect(progress.firstElementChild).toHaveClass("bg-destructive");
+    },
+  );
 });

@@ -27,10 +27,7 @@ describe("export presets", () => {
       argumentsText: "-c:v libx264 -crf 20",
     });
 
-    const selected = exportPresetsReducer(
-      created,
-      exportPresetSelected("runtime-preset-1"),
-    );
+    const selected = exportPresetsReducer(created, exportPresetSelected("runtime-preset-1"));
     const updated = exportPresetsReducer(
       exportPresetsReducer(selected, exportArgumentsChanged("-c:v libx264 -crf 18")),
       exportPresetUpdated({ name: "High quality CPU" }),

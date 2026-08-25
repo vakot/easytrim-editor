@@ -18,10 +18,7 @@ import { Separator } from "@/components/ui/separator";
 import { selectTriggerVariants } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
-import {
-  presetNameError,
-  type ExportPreset,
-} from "../export-presets";
+import { presetNameError, type ExportPreset } from "../export-presets";
 import {
   exportArgumentsChanged,
   exportPresetCreated,

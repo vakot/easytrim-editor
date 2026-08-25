@@ -8,6 +8,10 @@ on the frontend and native architecture at the `master` baseline used to create 
 migrated Preferences as the first permanent Redux-owned domain. Phase 1.5 establishes
 the application infrastructure structure before the next functional migration.
 
+Phase 5 is implemented on this topic branch and is complete pending human review.
+The Phase 5 architecture section below supersedes the earlier deferred-export
+inventory entries.
+
 ## Migration contract
 
 - `redux-migration` is the long-lived integration base. Each phase is implemented on
@@ -40,16 +44,15 @@ AppUpdatesProvider                 updater service Context
   ThemeProvider                     theme/environment Context
     ReduxProvider                   typed application store
       PersistGate                    redux-persist rehydration boundary
-    EditorSessionProvider       deferred export runtime Context
-            ExportPanelControllerProvider imperative panel-ref Context
-              EditorContractsProvider playback/controller Context
-                EasyTrimEditorApp   root composition and prop wiring
+    EditorContractsProvider      playback/controller Context
+      EasyTrimEditorApp          root composition and Redux consumers
+        OptimizedExportDialog    mounted feature dialog
 ```
 
-`useEasyTrimEditorApp` now owns only the deferred export queue/preset runtime. Source
-and media orchestration lives in focused application thunks, while the one-time
+Source and media orchestration lives in focused application thunks, while the one-time
 application runtime initializer owns capability startup and the native source-drop
-subscription. `EditorSessionContext` retains only export runtime state. Source, trim,
+subscription. There is no `EditorSessionContext` or `useEasyTrimEditorApp` remaining.
+Source, trim,
 crop, audio, and preview readers and commands use focused Redux selectors and dispatch at their
 actual consumers. `useEditorContracts` remains the playback/runtime boundary and no
 longer reshapes session state.
@@ -59,31 +62,32 @@ inspection, preview/audio-preview/waveform artifacts, export-source reservations
 operation cancellation, and FFmpeg process execution. Rust `AppState` stores those
 runtime resources in memory; Redux must never replace that authority.
 
-Redux owns Preferences, active Editor tools, and Editor layout. The store registers
-only Preferences for persistence and hydrates it before downstream editor
-initialization; Editor tools and Editor layout are runtime-only. The remaining
+Redux owns Preferences, active Editor tools, Editor layout, Export, and Export presets.
+The store registers only Preferences for persistence and hydrates it before downstream
+editor initialization; Editor tools, Editor layout, Export, and Export presets are
+runtime-only in Redux (presets retain an explicit feature adapter). The remaining
 application domains listed as `Redux later` stay on
 their current owners until a reviewed implementation phase establishes a new source
 of truth.
 
 ## Ownership classification
 
-| Domain                             | Classification            | Current owner                                                                                      | Target / phase                                                                                   |
-| ---------------------------------- | ------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| Source/session/media lifecycle     | Redux now                 | `source`, `trim`, `crop`, `audio`, and `preview` slices plus `store/thunks/source-media-thunks.ts` | Completed Phase 4.5; runtime-only source-bound state                                             |
-| Preferences                        | Redux now                 | Redux `preferences` slice; root `redux-persist` allow-list                                         | Completed Phase 1 pilot; persisted by explicit Redux Persist configuration                       |
-| Editor tools                       | Redux now                 | `editorTools` Redux slice; initialized and reset from Preferences defaults                         | Completed Phase 2B; runtime-only active state                                                    |
-| Editor layout                      | Redux now                 | `editorLayout` Redux slice; resizable-panel callbacks and local panel refs                         | Completed Phase 2C; runtime-only canonical layout state                                          |
-| Crop selection and crop resolution | Redux now                 | `crop` slice; `useCropSelection` retains pointer/viewport internals                                | Completed Phase 4.5; resolution derived from source media; pointer internals stay local          |
-| Playback transport and media graph | Keep runtime/native-owned | `useEditorInteractionController`, `EditorContractsProvider`, DOM/media refs, Web Audio nodes       | Keep local/runtime; audit in Phase 6                                                             |
-| Export queue status                | Redux later               | React queue state in `useEasyTrimEditorApp` plus module-level runtime queue                        | Serializable export slice in Phase 5; job handles and queue engine remain runtime-owned          |
-| Export presets                     | Redux later               | `exportPresetReducer` in `useEasyTrimEditorApp`, persisted by `export-presets.ts`                  | Export/preset slice in Phase 5; persistence remains an explicit adapter                          |
-| Import/drop workflow status        | Redux now                 | `import-workflow` slice; application-lifetime source-media runtime                                 | Completed Phase 4; runtime-only workflow state                                                   |
-| Updater status                     | Keep Context              | `AppUpdatesProvider`; native `AvailableUpdate` object in a ref                                     | Keep service Context; audit serializable status in Phase 7                                       |
-| Theme and style environment        | Keep Context              | `ThemeProvider`, `ThemeContext`, `localStorage` adapter                                            | Keep environment Context; no Redux persistence                                                   |
-| Imperative export-panel controller | Keep runtime/native-owned | `ExportPanelControllerContext` and `ExportPanelHandle` ref                                         | Keep Context; remove only accidental transport during Phase 8 if possible                        |
-| Editor interaction contracts       | Keep runtime/native-owned | `EditorInteractionContext` and `useEditorInteractionController`                                    | Keep Context for refs/callbacks/media lifecycle; reduce only if a later boundary makes that safe |
-| Component and pointer UI state     | Keep local                | Feature/component hooks and local state                                                            | Remains local throughout the migration                                                           |
+| Domain                             | Classification            | Current owner                                                                                      | Target / phase                                                                                                    |
+| ---------------------------------- | ------------------------- | -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Source/session/media lifecycle     | Redux now                 | `source`, `trim`, `crop`, `audio`, and `preview` slices plus `store/thunks/source-media-thunks.ts` | Completed Phase 4.5; runtime-only source-bound state                                                              |
+| Preferences                        | Redux now                 | Redux `preferences` slice; root `redux-persist` allow-list                                         | Completed Phase 1 pilot; persisted by explicit Redux Persist configuration                                        |
+| Editor tools                       | Redux now                 | `editorTools` Redux slice; initialized and reset from Preferences defaults                         | Completed Phase 2B; runtime-only active state                                                                     |
+| Editor layout                      | Redux now                 | `editorLayout` Redux slice; resizable-panel callbacks and local panel refs                         | Completed Phase 2C; runtime-only canonical layout state                                                           |
+| Crop selection and crop resolution | Redux now                 | `crop` slice; `useCropSelection` retains pointer/viewport internals                                | Completed Phase 4.5; resolution derived from source media; pointer internals stay local                           |
+| Playback transport and media graph | Keep runtime/native-owned | `useEditorInteractionController`, `EditorContractsProvider`, DOM/media refs, Web Audio nodes       | Keep local/runtime; audit in Phase 6                                                                              |
+| Export queue and workflow          | Redux now                 | `export` slice; runtime queue retains pending jobs, operation IDs, cancellation, and native calls  | Completed Phase 5; queue entries are serializable snapshots and remain runtime-only                               |
+| Export presets and settings        | Redux now                 | `exportPresets` slice; explicit `export-presets.ts` storage adapter                                | Completed Phase 5; reusable presets retain reviewed feature persistence, active export settings stay runtime-only |
+| Import/drop workflow status        | Redux now                 | `import-workflow` slice; application-lifetime source-media runtime                                 | Completed Phase 4; runtime-only workflow state                                                                    |
+| Updater status                     | Keep Context              | `AppUpdatesProvider`; native `AvailableUpdate` object in a ref                                     | Keep service Context; audit serializable status in Phase 7                                                        |
+| Theme and style environment        | Keep Context              | `ThemeProvider`, `ThemeContext`, `localStorage` adapter                                            | Keep environment Context; no Redux persistence                                                                    |
+| Imperative export-panel controller | Removed                   | `ExportPanel`, controller Context/provider, refs, and `useExportController`                        | Completed Phase 5; direct Redux actions and a mounted dialog replace the legacy chain                             |
+| Editor interaction contracts       | Keep runtime/native-owned | `EditorInteractionContext` and `useEditorInteractionController`                                    | Keep Context for refs/callbacks/media lifecycle; reduce only if a later boundary makes that safe                  |
+| Component and pointer UI state     | Keep local                | Feature/component hooks and local state                                                            | Remains local throughout the migration                                                                            |
 
 ## Detailed domain inventory
 
@@ -112,7 +116,7 @@ and Tauri drop listener, inspection/preview/proxy/audio-preview/waveform complet
 trim and audio controls, and image-error callbacks. The current propagation problem is
 that source state previously crossed the aggregate Context and `useSourceDetails`; Phase 3
 replaced that path with direct focused selectors and kept only meaningful reusable props
-at the `ExportPanel` boundary.
+at the Export feature boundary.
 
 Focused selectors are colocated with their domains for source status/selection/media/
 capabilities, trim, crop and derived crop resolution, audio tracks/master/merge/
@@ -138,9 +142,9 @@ defaults and presets survive source replacement. Native Rust `AppState` continue
 cancel source-bound helpers and retain explicitly reserved export sources.
 
 Phase 4.5 removed the aggregate session transport and all obsolete Session selectors,
-actions, reducer files, and Crop Context transport. `EditorSessionContext` remains only
-for export runtime responsibilities; reusable presentational contracts may retain
-meaningful props.
+actions, reducer files, and Crop Context transport. Phase 5 removed the remaining
+Export-only session transport; reusable presentational contracts may retain meaningful
+props.
 The low-level `AudioTracks`, preview, timeline, and export presentational contracts may
 remain props where they are useful reusable APIs.
 
@@ -152,8 +156,7 @@ trim following, loop playback, segment playback, and merge audio. The slice star
 from deterministic product defaults; it does not read storage while the module is
 initialized.
 
-Readers include `SettingsMenu` through focused selectors and `EditorSessionProvider`
-for the merge-audio initialization policy. Writers are the Settings actions
+Readers include `SettingsMenu` through focused selectors. Writers are the Settings actions
 `toolDefaultChanged` and `toolDefaultsReset`; future preference writers must use
 domain actions as well. Active editor tools remain separate runtime state and must not
 mutate Preferences.
@@ -267,8 +270,7 @@ crop resolution state remains. Selectors/actions are `selectCrop`,
 
 Side-effect owner: none for the pure values; export request construction continues in
 the export feature and native adapter. Reset to `FULL_CROP` on source replacement and
-source clear. The crop portion of `EditorSessionContext` and `EditorSessionProvider`
-state transport was removed.
+source clear. The crop portion of the former session state transport was removed.
 
 ### 6. Playback and transport — keep local/runtime-owned, Phase 6 audit
 
@@ -290,20 +292,19 @@ listener cleanup and source-keyed readiness behavior.
 
 ### 7. Export queue and execution — Redux later, Phase 5
 
-Current owner: `exportQueue`, `queueStarted`, `queueFinishAction`, and available finish
-actions are React state in `useEasyTrimEditorApp`. `export-queue.ts` separately owns
-module-level `pendingJobs`, `jobsById`, execution gating, source reservations,
-cancellation, FFmpeg progress, and callbacks that update `ExportToast` state.
+Canonical owner: the runtime-only `export` Redux slice owns queue entries,
+queue-start state, finish policy, optimized dialog state, settings, command-preview
+status, progress, and terminal lifecycle values. The feature runtime queue in
+`features/export/utils/export-queue.ts` owns pending jobs, source reservations,
+operation IDs, cancellation calls, progress channels, and native execution.
 
 Readers include `StatusBar`, `SourceSidebar`/`ExportQueue`, QueueMenu, App-level start
-and dialog wiring, and export controls. Writers are `useExportController`, queue
-keyboard/menu actions, native progress, cancellation, completion/failure, and queue
-finish effects. The propagation problem is `setQueue` and queue callbacks crossing
-`App.tsx` and feature props while the actual execution state lives in a module-level
-controller.
+and dialog wiring, and export controls. Writers are export thunks, queue runtime
+transitions, and native progress, cancellation, and terminal results. The former
+propagation problem was `setQueue` and queue callbacks crossing `App.tsx` and feature
+props while execution lived in a module-level controller.
 
-Target source of truth: a serializable export slice for queue entries and queue
-workflow status. Candidate selectors are `selectExportQueue`,
+Target source of truth: completed in Phase 5. Focused selectors are `selectExportQueue`,
 `selectHasQueuedExports`, `selectHasActiveExport`, `selectCanStartQueue`, and
 `selectQueueFinishAction`. Candidate actions include `queueEntryAdded`,
 `queueStarted`, `queuePaused`, `exportProgressReceived`, `exportCompleted`,
@@ -320,20 +321,19 @@ allow queued work to outlive source replacement; cancellation and release remain
 idempotent. Queue completion still triggers the selected native finish action only
 after actual queued work has completed.
 
-Expected obsolete code: `setQueue` prop plumbing and queue state in the root hook. The
-module-level runtime job map is not obsolete unless a replacement service preserves
-its ownership guarantees.
+Queue items capture the source ID, trim, audio selections, crop, output settings,
+route, and output selection at queue time. Queued work therefore remains stable after
+source replacement; Rust retains the reserved source until the native operation ends
+or queued work is cancelled. There is no `setQueue` prop transport or React queue hook.
 
 ### 8. Export presets — Redux later, Phase 5
 
-Current owner: `exportPresetReducer` and `ExportPresetState` in
-`features/export/export-presets.ts`, instantiated in `useEasyTrimEditorApp` and
-persisted through `localStorage` on every state change. Readers are `ExportPanel`,
-`PresetManager`, optimized export settings, and Settings menu paths. Writers are
-preset selection, argument editing, create/update/delete actions passed through
-`onPresetAction`.
+Canonical owner: the `exportPresets` Redux slice owns reusable preset records,
+selection, and arguments. `PresetManager` is a direct Redux consumer with only local
+draft-dialog state. The existing explicit feature storage adapter is invoked by Redux
+middleware after preset actions, preserving the accepted preset persistence behavior.
 
-Target source of truth: an export-preset slice with the existing domain actions
+The export-preset slice uses domain actions with the existing meanings:
 (`argumentsChanged`, `presetSelected`, `presetNewStarted`, `presetCreated`,
 `presetUpdated`, `presetDeleted`) and selectors for the selected preset, arguments,
 and available presets. Preserve validation and stable preset IDs; do not replace this
@@ -344,9 +344,8 @@ current accepted persistence behavior is preserved until a later reviewed decisi
 Presets outlive source replacement and are runtime preferences, not project/session
 state.
 
-Expected obsolete code: the reducer instance and `onPresetAction` root forwarding.
-The preset domain module and persistence adapter remain, potentially relocated under
-the owning feature.
+There is no root reducer instance, `onPresetAction` forwarding, or ExportPanel preset
+prop contract. Active dialog settings are in the `export` slice and are not persisted.
 
 ### 9. Import/drop workflow and native dialog status — Redux now, completed Phase 4
 
@@ -388,9 +387,8 @@ replace this Context or add a persistence layer.
 
 ### 12. Imperative controller and local UI state — keep
 
-`ExportPanelControllerContext` owns an `ExportPanelHandle` ref and imperative actions;
-it is non-serializable controller state and remains Context. `EditorInteractionContext`
-has the same status for playback refs/callbacks.
+The former `ExportPanelControllerContext` and `ExportPanelHandle` were deleted in Phase 5. `EditorInteractionContext` remains a valid runtime boundary for playback refs,
+callbacks, and media lifecycle.
 
 Keep component-local state for context-menu navigation/confirmation, custom-color
 drafts, title-bar maximize/error state, status-bar remembered export, audio-row control
@@ -509,15 +507,13 @@ Final ownership is:
 - Serializable audio-preview descriptors/status now live in `audio`; audio elements
   and Web Audio resources remain in the playback runtime. Waveform job IDs use a
   runtime-only module counter and retain the Session job guards.
-- `useEasyTrimEditorApp` is export queue/preset runtime only. `EditorSessionContext`
-  retains export runtime state; source/media command wrappers and
-  source-specific refs were removed. FileMenu, App, SourceWorkspace, EditorStage, and
-  the playback controller dispatch focused commands/selectors directly.
+- FileMenu, App, SourceWorkspace, EditorStage, and the playback controller dispatch
+  focused commands/selectors directly. Export runtime state no longer crosses a Context.
 
 Validation includes focused thunk/runtime tests for success and failure paths, source
 replacement races, preview fallback, audio previews, waveform supersession, source
 close, drag/drop events, and listener cleanup, plus updated App and menu integration
-tests. Phase 5 remains intentionally deferred: Export state, queue, and presets.
+tests. Phase 5 then completed the Export state, queue, presets, and dialog migration.
 
 ### Phase 4.5 — Source domain decomposition, completed
 
@@ -549,16 +545,37 @@ rejection; Audio additionally keeps waveform job IDs. Waveform orchestration rem
 in Phase 4 source/media thunks, and runtime audio resources remain outside Redux.
 
 Phase 4 orchestration was adapted only at its action and selector imports; its
-responsibility and sequencing are unchanged. `EditorSessionContext` now contains only
-the remaining Export runtime responsibilities. The previous future Crop phase was
-absorbed into this phase; Phase 5 remains Export state, queue, and presets.
+responsibility and sequencing are unchanged. The previous future Crop phase was
+absorbed into this phase; Phase 5 removed the final Export-only session boundary.
 
 ### Phase 5 — export state and queue
 
-Migrate serializable export queue/preset state and root wiring. Keep runtime queue jobs,
-source reservations, output IDs, progress channels, cancellation, and native finish
-actions outside reducers. Preserve accepted preset persistence and queue behavior. Stop
-for review.
+Export state is owned by the runtime-only `export` Redux slice. It exposes focused
+selectors and domain actions for queue entries, queued/running/completed/failed/
+cancelled lifecycle, progress, queue execution, finish policy, optimized dialog
+open/close, settings, command-preview status, and launch errors. The `exportPresets`
+slice owns reusable preset records and arguments; it retains the explicit reviewed
+feature storage adapter rather than entering the Redux Persist allow-list.
+
+Queue entries are immutable job snapshots at queue time: source identity/reservation,
+trim, crop, audio selection, route, optimized settings, and output selection are
+captured in the serializable entry. Source replacement does not change queued jobs.
+The runtime queue retains pending jobs and all non-serializable execution details,
+while Rust remains authoritative for paths, temporary media, FFmpeg processes,
+cancellation, and source reservations. Native progress and terminal results dispatch
+focused Redux lifecycle actions.
+
+`OptimizedExportDialog` is mounted directly by the application feature boundary and
+selects its own state. File menu, keyboard shortcuts, and dialog actions dispatch
+semantic commands directly. Fast Cut and optimized export use the same thunk-to-
+typed-adapter-to-runtime-queue path. `ExportPanel`, `ExportPanelHandle`,
+`ExportPanelControllerContext`, `ExportPanelControllerProvider`,
+`useExportPanelController`, `useExportController`, and the Export-only session
+Context/provider/hook were deleted.
+
+Queue/runtime/dialog state, active settings, and queue snapshots are not persisted.
+Preferences persistence is unchanged. Presets remain intentionally persisted only by
+their existing explicit feature adapter. Stop for human review.
 
 ### Phase 6 — playback cleanup
 

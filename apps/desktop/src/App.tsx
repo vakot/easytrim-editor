@@ -31,10 +31,7 @@ import {
 } from "@/app/store/thunks/source-media-thunks";
 import { EditorContractsProvider } from "@/app/components/Providers/EditorContractsProvider";
 import { AppUpdatesProvider } from "@/app/components/Providers/AppUpdatesProvider";
-import {
-  selectHasQueuedExports,
-  selectQueueStarted,
-} from "@/app/store/slices/export-slice";
+import { selectHasQueuedExports, selectQueueStarted } from "@/app/store/slices/export-slice";
 import {
   loadQueueFinishActions,
   openOptimizedExportDialog,

@@ -9,10 +9,7 @@ import {
   chooseSourceRequested,
   closeSourceRequested,
 } from "@/app/store/thunks/source-media-thunks";
-import {
-  openOptimizedExportDialog,
-  startFastCutRequested,
-} from "@/app/store/thunks/export-thunks";
+import { openOptimizedExportDialog, startFastCutRequested } from "@/app/store/thunks/export-thunks";
 import { ContextMenu } from "@/components/ui/context-menu";
 
 import type { MenuNavigation } from "../../types";

@@ -49,7 +49,11 @@ export function setExportQueueExecutionEnabled(
   if (enabled) void drainQueue(dispatch, getState);
 }
 
-export function enqueueExport(item: ExportQueueItem, dispatch: AppDispatch, getState: () => RootState) {
+export function enqueueExport(
+  item: ExportQueueItem,
+  dispatch: AppDispatch,
+  getState: () => RootState,
+) {
   const job: RuntimeExportJob = {
     item,
     canceled: false,
@@ -125,7 +129,11 @@ async function renderJob(job: RuntimeExportJob) {
       durationMicros > 0
         ? Math.min(100, Math.max(0, (progress.elapsedMicros / durationMicros) * 100))
         : 0;
-    const estimatedTime = estimateExportTime(progress.elapsedMicros, durationMicros, progress.speed);
+    const estimatedTime = estimateExportTime(
+      progress.elapsedMicros,
+      durationMicros,
+      progress.speed,
+    );
     const estimatedSize = estimateExportSize(
       progress.totalSize,
       progress.bitrate,

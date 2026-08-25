@@ -45,14 +45,6 @@ const menuState = vi.hoisted(() => ({
     resetToolDefaults: vi.fn(),
     dispatch: vi.fn(),
   },
-  exportPanel: {
-    startFastCut: vi.fn(),
-    openOptimizedDialog: vi.fn(),
-  },
-}));
-
-vi.mock("@/app/hooks/useEditorSession", () => ({
-  useEditorSession: () => menuState.app,
 }));
 
 vi.mock("@/app/store/hooks", () => ({
@@ -103,10 +95,6 @@ vi.mock("@/app/store/hooks", () => ({
         launchError: null,
       },
     }),
-}));
-
-vi.mock("@/app/hooks/useExportPanelController", () => ({
-  useExportPanelController: () => menuState.exportPanel,
 }));
 
 vi.mock("@/lib/open-external-url", () => ({
@@ -193,8 +181,6 @@ describe("ContextMenus", () => {
       overrides.canSave === false
         ? { x: 0.1, y: 0, width: 0.9, height: 1 }
         : { x: 0, y: 0, width: 1, height: 1 };
-    menuState.exportPanel.startFastCut = vi.fn(overrides.onSave);
-    menuState.exportPanel.openOptimizedDialog = vi.fn(overrides.onExport);
   }
 
   function ContextMenus(overrides: MenuTestOverrides = {}) {

@@ -32,10 +32,7 @@ import {
   type FastExportRequest,
   type OptimizedExportRequest,
 } from "@/lib/tauri/media";
-import {
-  availableQueueFinishActions,
-  type QueueFinishAction,
-} from "@/lib/tauri/queue";
+import { availableQueueFinishActions, type QueueFinishAction } from "@/lib/tauri/queue";
 import { nativeDialogStateChanged } from "@/app/store/slices/import-workflow-slice";
 import {
   cancelActiveExport,
@@ -76,9 +73,11 @@ export const cancelAllExportsRequested = (): AppThunk => () => {
   cancelAllQueuedExports();
 };
 
-export const cancelExportRequested = (id: string): AppThunk => () => {
-  cancelQueuedExport(id);
-};
+export const cancelExportRequested =
+  (id: string): AppThunk =>
+  () => {
+    cancelQueuedExport(id);
+  };
 
 export const openOptimizedExportDialog = (): AppThunk => async (dispatch, getState) => {
   const settings = getInitialSettings(getState());
@@ -87,12 +86,12 @@ export const openOptimizedExportDialog = (): AppThunk => async (dispatch, getSta
   await dispatch(refreshOptimizedExportPlan());
 };
 
-export const optimizedExportSettingsChangedRequested = (settings: ExportSettings): AppThunk => async (
-  dispatch,
-) => {
-  dispatch(optimizedExportSettingsChanged(settings));
-  await dispatch(refreshOptimizedExportPlan());
-};
+export const optimizedExportSettingsChangedRequested =
+  (settings: ExportSettings): AppThunk =>
+  async (dispatch) => {
+    dispatch(optimizedExportSettingsChanged(settings));
+    await dispatch(refreshOptimizedExportPlan());
+  };
 
 export const refreshOptimizedExportPlan = (): AppThunk => async (dispatch, getState) => {
   const request = getOptimizedRequest(getState());
@@ -219,7 +218,10 @@ function selectedAudioTracks(state: ReturnType<Parameters<AppThunk>[1]>) {
 
 function getTotalFrames(
   request: FastExportRequest | OptimizedExportRequest,
-  video: { averageFrameRate?: { numerator: number; denominator: number }; realFrameRate?: { numerator: number; denominator: number } },
+  video: {
+    averageFrameRate?: { numerator: number; denominator: number };
+    realFrameRate?: { numerator: number; denominator: number };
+  },
 ) {
   const frameRate =
     "frameRate" in request && request.frameRate

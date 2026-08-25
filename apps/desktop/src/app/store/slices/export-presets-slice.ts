@@ -8,14 +8,6 @@ import {
 } from "@/features/export/export-presets";
 import type { RootState } from "../store";
 
-export type ExportPresetAction =
-  | { type: "arguments-changed"; argumentsText: string }
-  | { type: "preset-selected"; presetId: string }
-  | { type: "preset-new-started" }
-  | { type: "preset-created"; name: string }
-  | { type: "preset-updated"; name: string }
-  | { type: "preset-deleted" };
-
 const exportPresetsSlice = createSlice({
   name: "exportPresets",
   initialState: loadExportPresetState(),
@@ -46,7 +38,10 @@ const exportPresetsSlice = createSlice({
     },
     exportPresetUpdated: (state, action: PayloadAction<{ name: string }>) => {
       const selectedPresetId = state.selectedPresetId;
-      if (!selectedPresetId || presetNameError(state.presets, action.payload.name, selectedPresetId)) {
+      if (
+        !selectedPresetId ||
+        presetNameError(state.presets, action.payload.name, selectedPresetId)
+      ) {
         return;
       }
       const preset = state.presets.find((candidate) => candidate.id === selectedPresetId);
@@ -79,24 +74,6 @@ export const selectExportPresets = (state: RootState): ExportPresetState => stat
 export const selectExportPresetList = (state: RootState): ExportPreset[] =>
   state.exportPresets.presets;
 export const selectSelectedExportPreset = (state: RootState): ExportPreset | undefined =>
-  state.exportPresets.presets.find(
-    (preset) => preset.id === state.exportPresets.selectedPresetId,
-  );
-export const selectExportArguments = (state: RootState): string => state.exportPresets.argumentsText;
-
-export function exportPresetActionToRedux(action: ExportPresetAction) {
-  switch (action.type) {
-    case "arguments-changed":
-      return exportArgumentsChanged(action.argumentsText);
-    case "preset-selected":
-      return exportPresetSelected(action.presetId);
-    case "preset-new-started":
-      return exportPresetNewStarted();
-    case "preset-created":
-      return exportPresetCreated({ name: action.name });
-    case "preset-updated":
-      return exportPresetUpdated({ name: action.name });
-    case "preset-deleted":
-      return exportPresetDeleted();
-  }
-}
+  state.exportPresets.presets.find((preset) => preset.id === state.exportPresets.selectedPresetId);
+export const selectExportArguments = (state: RootState): string =>
+  state.exportPresets.argumentsText;

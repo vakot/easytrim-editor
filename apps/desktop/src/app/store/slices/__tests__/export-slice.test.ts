@@ -55,8 +55,13 @@ describe("export slice", () => {
     expect(opened.optimizedSettings).toEqual(settings);
     expect(exportReducer(opened, optimizedExportDialogClosed()).optimizedDialogOpen).toBe(false);
     expect(
-      exportReducer(opened, optimizedExportSettingsChanged({ ...settings, frameRate: { numerator: 30, denominator: 1 } }))
-        .optimizedSettings?.frameRate,
+      exportReducer(
+        opened,
+        optimizedExportSettingsChanged({
+          ...settings,
+          frameRate: { numerator: 30, denominator: 1 },
+        }),
+      ).optimizedSettings?.frameRate,
     ).toEqual({ numerator: 30, denominator: 1 });
   });
 
@@ -88,7 +93,11 @@ describe("export slice", () => {
       state,
       exportCompleted({
         id: completed.id,
-        result: { operationId: "operation-2", displayName: "clip.mp4", displayPath: completed.path },
+        result: {
+          operationId: "operation-2",
+          displayName: "clip.mp4",
+          displayPath: completed.path,
+        },
       }),
     );
     const canceled = { ...item, id: "export-3" };
@@ -100,7 +109,8 @@ describe("export slice", () => {
   });
 
   it("keeps the selected queue finish policy serializable", () => {
-    expect(exportReducer(initialExportState, queueFinishActionChanged("systemSleep")))
-      .toMatchObject({ queueFinishAction: "systemSleep" });
+    expect(
+      exportReducer(initialExportState, queueFinishActionChanged("systemSleep")),
+    ).toMatchObject({ queueFinishAction: "systemSleep" });
   });
 });

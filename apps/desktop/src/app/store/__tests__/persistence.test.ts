@@ -166,28 +166,32 @@ describe("Redux Persist store integration", () => {
 
   it("never persists export runtime state, queue entries, or dialog state", async () => {
     const { store, persistor, storage } = await createPersistedTestStore();
-    store.dispatch(optimizedExportDialogOpened({
-      resolution: { width: 1920, height: 1080 },
-      frameRate: undefined,
-    }));
-    store.dispatch(queueEntryAdded({
-      id: "export-1",
-      route: "fast",
-      request: {
-        sourceId: "source-1",
-        trim: { startMicros: 0, endMicros: 1_000_000 },
-        audioTracks: [],
-        mergeAudio: false,
-      },
-      outputId: "output-1",
-      filename: "clip.mkv",
-      path: "C:/Exports/clip.mkv",
-      status: "queued",
-      operationId: null,
-      startedAt: null,
-      durationMs: null,
-      progressPercent: 0,
-    }));
+    store.dispatch(
+      optimizedExportDialogOpened({
+        resolution: { width: 1920, height: 1080 },
+        frameRate: undefined,
+      }),
+    );
+    store.dispatch(
+      queueEntryAdded({
+        id: "export-1",
+        route: "fast",
+        request: {
+          sourceId: "source-1",
+          trim: { startMicros: 0, endMicros: 1_000_000 },
+          audioTracks: [],
+          mergeAudio: false,
+        },
+        outputId: "output-1",
+        filename: "clip.mkv",
+        path: "C:/Exports/clip.mkv",
+        status: "queued",
+        operationId: null,
+        startedAt: null,
+        durationMs: null,
+        progressPercent: 0,
+      }),
+    );
     await persistor.flush();
 
     const persistedRoot = await readPersistedRoot(storage);

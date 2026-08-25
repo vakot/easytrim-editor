@@ -171,7 +171,8 @@ const exportSlice = createSlice({
     },
     finishedExportsCleared: (state) => {
       state.queue = state.queue.filter(
-        (item) => item.status !== "completed" && item.status !== "failed" && item.status !== "canceled",
+        (item) =>
+          item.status !== "completed" && item.status !== "failed" && item.status !== "canceled",
       );
     },
   },
@@ -243,4 +244,5 @@ export const selectExportSettings = (state: RootState): ExportSettings | null =>
 export const selectExportCommandPreview = (state: RootState): string => state.export.commandPreview;
 export const selectExportCommandPreviewError = (state: RootState): AppError | null =>
   state.export.commandPreviewError;
-export const selectExportLaunchError = (state: RootState): AppError | null => state.export.launchError;
+export const selectExportLaunchError = (state: RootState): AppError | null =>
+  state.export.launchError;
