@@ -12,11 +12,7 @@ import {
 } from "@/domain/trim";
 import { isApplicationDialogOpen } from "@/lib/hotkeys";
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
-import {
-  loopPlaybackChanged,
-  segmentPlaybackChanged,
-  selectEditorTools,
-} from "@/app/store/slices/editor-tools-slice";
+import { selectEditorTools } from "@/app/store/slices/editor-tools-slice";
 import {
   selectAudioPreviews,
   selectAudioTracks,
@@ -32,6 +28,12 @@ import {
   editorShortcutFromEvent,
   isShortcutBlockedTarget,
 } from "@/features/editor/utils/editor-shortcuts";
+import {
+  connectNativeAudioBinding,
+  disconnectNativeAudioBinding,
+  getOrCreateNativeAudioBinding,
+  type NativeAudioBinding,
+} from "@/features/editor/utils/native-audio-runtime";
 import {
   cancelFrame,
   cancelPlaybackFrame,
@@ -49,16 +51,14 @@ const EMPTY_TRIM: TrimRange = {
 };
 const AUDIO_SYNC_INTERVAL_MS = 100;
 
-export interface EditorInteractionValue {
+export interface EditorInteractionRuntime {
   videoRef: React.RefObject<HTMLVideoElement | null>;
   playheadRef: React.RefObject<HTMLButtonElement | null>;
   audioPlayheadRef: React.RefObject<HTMLDivElement | null>;
-  playheadMicros: number;
   displayedPlayheadMicros: number;
   isPlaying: boolean;
   isPlaybackReady: boolean;
   transportError: string | null;
-  playbackRate: number;
   nativeLoopEnabled: boolean;
   videoMuted: boolean;
   onLoadedMetadata: () => void;
@@ -86,7 +86,7 @@ export interface EditorInteractionValue {
   canSetSegmentEnd: boolean;
 }
 
-export function useEditorInteractionController(): EditorInteractionValue {
+export function useEditorInteractionController(): EditorInteractionRuntime {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const tools = useAppSelector(selectEditorTools);
@@ -108,6 +108,9 @@ export function useEditorInteractionController(): EditorInteractionValue {
   const sourceId = sourceSelection?.sourceId ?? null;
   const sourceAudioStreams = media?.audioStreams ?? [];
   const externalAudioStreamCount = Object.keys(audioPreviewUrls).length;
+  const activeExternalAudioStreamCount = audioTracks.filter(
+    (track) => track.enabled && audioPreviewUrls[track.streamIndex] !== undefined,
+  ).length;
   const usesExternalAudio = audioPreviewState?.status === "ready" && externalAudioStreamCount > 0;
   const nativeAudioTrack = usesExternalAudio
     ? undefined
@@ -127,14 +130,15 @@ export function useEditorInteractionController(): EditorInteractionValue {
   }>(() => ({ sourceId: null, streamIndexes: new Set() }));
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioElementsRef = useRef(new Map<number, HTMLAudioElement>());
+  const audioReadyListenersRef = useRef(new Map<number, () => void>());
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioNodesRef = useRef(
     new Map<number, { source: MediaElementAudioSourceNode; gain: GainNode }>(),
   );
-  const nativeAudioNodeRef = useRef<{
+  const nativeAudioBindingsRef = useRef(new Map<HTMLVideoElement, NativeAudioBinding>());
+  const nativeAudioBindingRef = useRef<{
     element: HTMLVideoElement;
-    source: MediaElementAudioSourceNode;
-    gain: GainNode;
+    binding: NativeAudioBinding;
   } | null>(null);
   const masterGainRef = useRef<GainNode | null>(null);
   const playheadRef = useRef<HTMLButtonElement>(null);
@@ -161,9 +165,9 @@ export function useEditorInteractionController(): EditorInteractionValue {
     previewKey !== null &&
     readyPreviewKey === previewKey &&
     audioPreviewState?.status !== "loading" &&
-    (!usesExternalAudio ||
+    (activeExternalAudioStreamCount === 0 ||
       (audioReadiness.sourceId === sourceId &&
-        audioReadiness.streamIndexes.size === externalAudioStreamCount));
+        audioReadiness.streamIndexes.size === activeExternalAudioStreamCount));
   const isPlaybackReadyRef = useRef(isPlaybackReady);
   const nativeLoopEnabled =
     isPlaybackReady &&
@@ -177,6 +181,61 @@ export function useEditorInteractionController(): EditorInteractionValue {
     stepFrame: (direction: -1 | 1) => void;
     setSegmentBoundary: (boundary: TrimBoundary) => void;
   } | null>(null);
+
+  const removeAudioRuntime = useCallback((streamIndex: number) => {
+    const element = audioElementsRef.current.get(streamIndex);
+    if (element) {
+      element.pause();
+      const readyListener = audioReadyListenersRef.current.get(streamIndex);
+      if (readyListener) element.removeEventListener("canplay", readyListener);
+      element.remove();
+    }
+    audioElementsRef.current.delete(streamIndex);
+    audioReadyListenersRef.current.delete(streamIndex);
+    setAudioReadiness((current) => {
+      if (!current.streamIndexes.has(streamIndex)) return current;
+      const streamIndexes = new Set(current.streamIndexes);
+      streamIndexes.delete(streamIndex);
+      return { ...current, streamIndexes };
+    });
+    const node = audioNodesRef.current.get(streamIndex);
+    node?.source.disconnect();
+    node?.gain.disconnect();
+    audioNodesRef.current.delete(streamIndex);
+  }, []);
+
+  const disconnectCurrentNativeAudioRoute = useCallback(() => {
+    const currentBinding = nativeAudioBindingRef.current;
+    if (!currentBinding) return;
+    disconnectNativeAudioBinding(currentBinding.binding);
+    nativeAudioBindingRef.current = null;
+  }, []);
+
+  const cleanupStaleNativeAudioBindings = useCallback((currentVideo: HTMLVideoElement | null) => {
+    for (const [element, binding] of nativeAudioBindingsRef.current) {
+      if (element === currentVideo) continue;
+      disconnectNativeAudioBinding(binding);
+      nativeAudioBindingsRef.current.delete(element);
+    }
+    if (nativeAudioBindingRef.current?.element !== currentVideo) {
+      nativeAudioBindingRef.current = null;
+    }
+  }, []);
+
+  const cleanupAllNativeAudioBindings = useCallback(() => {
+    for (const binding of nativeAudioBindingsRef.current.values()) {
+      disconnectNativeAudioBinding(binding);
+    }
+    nativeAudioBindingsRef.current.clear();
+    nativeAudioBindingRef.current = null;
+  }, []);
+
+  const cleanupAudioRuntime = useCallback(() => {
+    for (const streamIndex of audioElementsRef.current.keys()) removeAudioRuntime(streamIndex);
+    disconnectCurrentNativeAudioRoute();
+    masterGainRef.current?.disconnect();
+    masterGainRef.current = null;
+  }, [disconnectCurrentNativeAudioRoute, removeAudioRuntime]);
 
   useEffect(() => {
     trimRef.current = trim;
@@ -195,8 +254,6 @@ export function useEditorInteractionController(): EditorInteractionValue {
   const playbackModes = usePlaybackModes({
     loopEnabled: tools.loopPlaybackEnabled,
     segmentEnabled: tools.segmentPlaybackEnabled,
-    onLoopEnabledChange: (enabled) => dispatch(loopPlaybackChanged(enabled)),
-    onSegmentEnabledChange: (enabled) => dispatch(segmentPlaybackChanged(enabled)),
   });
   const displayedPlayheadMicros = clampPlaybackMicros(playheadMicros, trim.sourceDurationMicros);
 
@@ -206,14 +263,16 @@ export function useEditorInteractionController(): EditorInteractionValue {
     isPlayingRef.current = false;
     currentPlayheadMicrosRef.current = 0;
     videoRef.current?.pause();
-    for (const audio of audioElementsRef.current.values()) audio.pause();
     cancelPlaybackFrame(playbackFrameRef);
-    // Source replacement is an explicit transport reset, not persisted editor state.
+    cleanupAudioRuntime();
     // eslint-disable-next-line react-hooks/set-state-in-effect
+    setReadyPreviewKey(null);
+    setAudioReadiness({ sourceId: null, streamIndexes: new Set() });
+    // Source replacement is an explicit transport reset, not persisted editor state.
     setIsPlaying(false);
     setTransportError(null);
     setPlayheadMicros(0);
-  }, [sourceId]);
+  }, [cleanupAudioRuntime, previewKey, sourceId]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -222,8 +281,11 @@ export function useEditorInteractionController(): EditorInteractionValue {
   }, [audioPreviewUrls, tools.playbackSpeed]);
 
   useEffect(() => {
-    if (!sourceId || audioTracks.length === 0) return;
-    if (typeof AudioContext === "undefined") return;
+    if (!sourceId || audioTracks.length === 0 || typeof AudioContext === "undefined") {
+      cleanupAudioRuntime();
+      cleanupStaleNativeAudioBindings(videoRef.current);
+      return;
+    }
     const context = audioContextRef.current ?? new AudioContext();
     audioContextRef.current = context;
     let masterGain = masterGainRef.current;
@@ -233,23 +295,24 @@ export function useEditorInteractionController(): EditorInteractionValue {
       masterGain.connect(context.destination);
     }
 
-    const activeStreamIndexes = new Set(
-      usesExternalAudio ? Object.keys(audioPreviewUrls).map(Number) : [],
-    );
-    for (const [streamIndex, element] of audioElementsRef.current) {
-      if (activeStreamIndexes.has(streamIndex)) continue;
-      element.pause();
-      element.remove();
-      audioElementsRef.current.delete(streamIndex);
-      audioNodesRef.current.get(streamIndex)?.source.disconnect();
-      audioNodesRef.current.get(streamIndex)?.gain.disconnect();
-      audioNodesRef.current.delete(streamIndex);
+    const activeExternalAudioUrls = usesExternalAudio
+      ? Object.fromEntries(
+          Object.entries(audioPreviewUrls).filter(([streamIndexText]) =>
+            audioTracks.some(
+              (track) => track.streamIndex === Number(streamIndexText) && track.enabled,
+            ),
+          ),
+        )
+      : {};
+    const activeStreamIndexes = new Set(Object.keys(activeExternalAudioUrls).map(Number));
+    for (const streamIndex of audioElementsRef.current.keys()) {
+      if (!activeStreamIndexes.has(streamIndex)) removeAudioRuntime(streamIndex);
     }
-    for (const [streamIndexText, url] of usesExternalAudio
-      ? Object.entries(audioPreviewUrls)
-      : []) {
+    for (const [streamIndexText, url] of Object.entries(activeExternalAudioUrls)) {
       const streamIndex = Number(streamIndexText);
-      if (audioElementsRef.current.has(streamIndex)) continue;
+      const existingElement = audioElementsRef.current.get(streamIndex);
+      if (existingElement?.src === url) continue;
+      if (existingElement) removeAudioRuntime(streamIndex);
       const element = new Audio();
       element.crossOrigin = "anonymous";
       element.src = url;
@@ -267,6 +330,7 @@ export function useEditorInteractionController(): EditorInteractionValue {
         });
       };
       element.addEventListener("canplay", markReady, { once: true });
+      audioReadyListenersRef.current.set(streamIndex, markReady);
       document.body.appendChild(element);
       const audioSource = context.createMediaElementSource(element);
       const gain = context.createGain();
@@ -277,23 +341,22 @@ export function useEditorInteractionController(): EditorInteractionValue {
     }
 
     const video = videoRef.current;
-    const nativeNode = nativeAudioNodeRef.current;
+    cleanupStaleNativeAudioBindings(video);
     if (usesExternalAudio || !video) {
-      nativeNode?.source.disconnect();
-      nativeNode?.gain.disconnect();
-      nativeAudioNodeRef.current = null;
-    } else if (nativeNode?.element !== video) {
-      nativeNode?.source.disconnect();
-      nativeNode?.gain.disconnect();
-      const mediaSource = context.createMediaElementSource(video);
-      const gain = context.createGain();
-      mediaSource.connect(gain).connect(masterGain);
-      nativeAudioNodeRef.current = { element: video, source: mediaSource, gain };
+      disconnectCurrentNativeAudioRoute();
+    } else {
+      const binding = getOrCreateNativeAudioBinding(nativeAudioBindingsRef.current, context, video);
+      connectNativeAudioBinding(binding, masterGain);
+      nativeAudioBindingRef.current = { element: video, binding };
     }
   }, [
     audioPreviewUrls,
-    audioTracks.length,
+    audioTracks,
+    cleanupAudioRuntime,
+    cleanupStaleNativeAudioBindings,
+    disconnectCurrentNativeAudioRoute,
     readyPreviewKey,
+    removeAudioRuntime,
     sourceId,
     tools.playbackSpeed,
     usesExternalAudio,
@@ -307,8 +370,8 @@ export function useEditorInteractionController(): EditorInteractionValue {
       const node = audioNodesRef.current.get(track.streamIndex);
       if (node) node.gain.gain.value = track.enabled ? track.volumePercent / 50 : 0;
     }
-    if (nativeAudioNodeRef.current) {
-      nativeAudioNodeRef.current.gain.gain.value = nativeAudioTrack?.enabled
+    if (nativeAudioBindingRef.current) {
+      nativeAudioBindingRef.current.binding.gain.gain.value = nativeAudioTrack?.enabled
         ? nativeAudioTrack.volumePercent / 50
         : 0;
     } else if (videoRef.current && nativeAudioTrack) {
@@ -462,19 +525,11 @@ export function useEditorInteractionController(): EditorInteractionValue {
       cancelPlaybackFrame(playbackFrameRef);
       cancelFrame(scrubFrameRef);
       cancelFrame(trimCommitFrameRef);
-      for (const element of audioElementsRef.current.values()) {
-        element.pause();
-        element.remove();
-      }
-      for (const node of audioNodesRef.current.values()) {
-        node.source.disconnect();
-        node.gain.disconnect();
-      }
-      nativeAudioNodeRef.current?.source.disconnect();
-      nativeAudioNodeRef.current?.gain.disconnect();
+      cleanupAudioRuntime();
+      cleanupAllNativeAudioBindings();
       void audioContextRef.current?.close();
     },
-    [],
+    [cleanupAllNativeAudioBindings, cleanupAudioRuntime],
   );
 
   const flushTrimCommit = useCallback(() => {
@@ -715,12 +770,10 @@ export function useEditorInteractionController(): EditorInteractionValue {
     videoRef,
     playheadRef,
     audioPlayheadRef,
-    playheadMicros,
     displayedPlayheadMicros,
     isPlaying,
     isPlaybackReady,
     transportError,
-    playbackRate: tools.playbackSpeed,
     nativeLoopEnabled,
     videoMuted: usesExternalAudio || !nativeAudioTrack,
     onLoadedMetadata: () => commitSeek(displayedPlayheadMicros),

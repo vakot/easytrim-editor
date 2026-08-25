@@ -17,12 +17,10 @@ export function usePlayback() {
   return {
     videoRef: interaction.videoRef,
     audioPlayheadRef: interaction.audioPlayheadRef,
-    playheadMicros: interaction.playheadMicros,
     displayedPlayheadMicros: interaction.displayedPlayheadMicros,
     isPlaying: interaction.isPlaying,
     isReady: interaction.isPlaybackReady,
     transportError: interaction.transportError,
-    playbackRate: interaction.playbackRate,
     nativeLoopEnabled: interaction.nativeLoopEnabled,
     videoMuted: interaction.videoMuted,
     onLoadedMetadata: interaction.onLoadedMetadata,

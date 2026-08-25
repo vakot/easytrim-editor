@@ -1143,6 +1143,56 @@ describe("App", () => {
     );
   });
 
+  it("rebuilds source-bound audio runtime when a proxy preview replaces the source preview", async () => {
+    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.inspectMedia.mockResolvedValue({
+      ...media,
+      audioStreams: [
+        ...media.audioStreams,
+        {
+          streamIndex: 2,
+          codecName: "aac",
+          channels: 2,
+          channelLayout: "stereo",
+          sampleRateHz: 48_000,
+          language: "commentary",
+          isDefault: false,
+        },
+      ],
+    });
+    mocks.prepareAudioPreviews.mockResolvedValue([
+      {
+        sourceId: selection.sourceId,
+        streamIndex: 1,
+        url: "http://easytrim-media.localhost/source-1?variant=audio&stream=1",
+      },
+      {
+        sourceId: selection.sourceId,
+        streamIndex: 2,
+        url: "http://easytrim-media.localhost/source-1?variant=audio&stream=2",
+      },
+    ]);
+    const { audioConstructor, audioElements } = installAudioMocks();
+    const user = userEvent.setup();
+
+    try {
+      render(<App />);
+      await openSourcePicker(user);
+      await screen.findByLabelText("Source video preview");
+      await waitFor(() => expect(audioConstructor).toHaveBeenCalledTimes(2));
+
+      fireEvent.error(screen.getByLabelText("Source video preview"));
+      await screen.findByText("Compatible preview");
+      await waitFor(() => expect(audioConstructor).toHaveBeenCalledTimes(4));
+
+      expect(audioElements.slice(0, 2).every((element) => !document.body.contains(element))).toBe(
+        true,
+      );
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("stops or loops at the selected segment boundary", async () => {
     mocks.chooseSource.mockResolvedValue(selection);
     const user = userEvent.setup();

@@ -1,6 +1,6 @@
 import { createContext } from "react";
 
-import type { useEditorInteractionController } from "@/app/hooks/useEditorInteractionController";
+import type { EditorInteractionRuntime } from "@/app/hooks/useEditorInteractionController";
 
-export type EditorInteraction = ReturnType<typeof useEditorInteractionController>;
+export type EditorInteraction = EditorInteractionRuntime;
 export const EditorInteractionContext = createContext<EditorInteraction | null>(null);

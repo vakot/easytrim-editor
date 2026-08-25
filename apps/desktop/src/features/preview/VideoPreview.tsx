@@ -2,6 +2,8 @@ import { LoaderCircle } from "lucide-react";
 import { useEffect, useRef, useState, type RefObject } from "react";
 
 import type { PreviewState } from "@/app/store/slices/preview-slice";
+import { useAppSelector } from "@/app/store/hooks";
+import { selectPlaybackSpeed } from "@/app/store/slices/editor-tools-slice";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -12,7 +14,6 @@ import { VideoPreviewEmpty } from "@/features/preview/VideoPreviewEmpty";
 interface VideoPreviewProps {
   sourceId: string | null;
   preview: PreviewState;
-  playbackRate: number;
   nativeLoopEnabled?: boolean;
   muted: boolean;
   videoRef: RefObject<HTMLVideoElement | null>;
@@ -47,7 +48,6 @@ export function VideoPreview(props: VideoPreviewProps) {
 function VideoPreviewContent({
   sourceId,
   preview,
-  playbackRate,
   nativeLoopEnabled = false,
   muted,
   videoRef,
@@ -62,6 +62,7 @@ function VideoPreviewContent({
   onCropToolOpenChange,
 }: VideoPreviewContentProps) {
   const { t } = useTranslation();
+  const playbackRate = useAppSelector(selectPlaybackSpeed);
   const reportedUrl = useRef<string | null>(null);
   const [cropToolOpen, setCropToolOpen] = useState(false);
   const readyUrl = preview.status === "ready" ? preview.value.url : null;

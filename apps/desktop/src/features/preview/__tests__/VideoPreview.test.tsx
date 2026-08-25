@@ -53,7 +53,6 @@ describe("VideoPreview", () => {
       <VideoPreview
         sourceId="source-1"
         preview={readyPreview("easytrim-media://preview-1")}
-        playbackRate={1}
         muted
         videoRef={videoRef}
         {...callbacks}
@@ -75,7 +74,6 @@ describe("VideoPreview", () => {
       <VideoPreview
         sourceId={null}
         preview={{ status: "idle" }}
-        playbackRate={1}
         muted
         videoRef={videoRef}
         {...callbacks}
@@ -97,7 +95,6 @@ describe("VideoPreview", () => {
         <VideoPreview
           sourceId="source-1"
           preview={readyPreview("easytrim-media://preview-1")}
-          playbackRate={1}
           muted
           videoRef={videoRef}
           {...callbacks}
@@ -128,7 +125,6 @@ describe("VideoPreview", () => {
       <VideoPreview
         sourceId="source-1"
         preview={readyPreview("easytrim-media://preview-1")}
-        playbackRate={1}
         muted
         videoRef={videoRef}
         {...callbacks}
@@ -183,7 +179,6 @@ describe("VideoPreview", () => {
       <VideoPreview
         sourceId="source-1"
         preview={readyPreview("easytrim-media://preview-1")}
-        playbackRate={1}
         muted
         videoRef={videoRef}
         {...callbacks}
@@ -209,7 +204,6 @@ describe("VideoPreview", () => {
       <VideoPreview
         sourceId="source-1"
         preview={readyPreview("easytrim-media://preview-1")}
-        playbackRate={1}
         muted
         videoRef={videoRef}
         {...callbacks}
@@ -233,7 +227,6 @@ describe("VideoPreview", () => {
       <VideoPreview
         sourceId="source-1"
         preview={readyPreview("easytrim-media://preview-1")}
-        playbackRate={1}
         muted
         videoRef={videoRef}
         {...callbacks}
@@ -261,13 +254,13 @@ describe("VideoPreview", () => {
       <VideoPreview
         sourceId="source-1"
         preview={readyPreview("easytrim-media://preview-1")}
-        playbackRate={1}
         muted
         videoRef={videoRef}
         {...callbacks}
       />,
     );
     const firstVideo = container.querySelector("video");
+    const firstVideoPause = vi.spyOn(firstVideo!, "pause").mockImplementation(() => undefined);
     expect(firstVideo).toHaveProperty("muted", true);
     expect(firstVideo).toHaveAttribute("crossorigin", "anonymous");
 
@@ -275,7 +268,6 @@ describe("VideoPreview", () => {
       <VideoPreview
         sourceId="source-1"
         preview={readyPreview("easytrim-media://preview-2")}
-        playbackRate={1}
         muted
         videoRef={videoRef}
         {...callbacks}
@@ -283,6 +275,7 @@ describe("VideoPreview", () => {
     );
     const replacementVideo = container.querySelector("video");
     expect(replacementVideo).not.toBe(firstVideo);
+    expect(firstVideoPause).toHaveBeenCalled();
     expect(replacementVideo).toHaveProperty("muted", true);
     expect(replacementVideo).toHaveAttribute("crossorigin", "anonymous");
   });
