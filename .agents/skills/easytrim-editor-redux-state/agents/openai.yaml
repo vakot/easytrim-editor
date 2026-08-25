@@ -1,0 +1,4 @@
+interface:
+  display_name: "EasyTrim Editor Redux State"
+  short_description: "Migrate EasyTrim application state with Redux Toolkit"
+  default_prompt: "Use $easytrim-editor-redux-state to implement or review Redux Toolkit state architecture for EasyTrim Editor."

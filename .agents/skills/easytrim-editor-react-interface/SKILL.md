@@ -26,7 +26,10 @@ Use `easytrim-editor-tauri-rust` for IPC/native changes and `easytrim-editor-ffm
 - Reuse `components/ui` for buttons, dialogs, fields, tooltips, popovers, sliders, checkboxes, cards, and alerts. Add a shadcn primitive before hand-building an equivalent control.
 - Keep generated primitives generic. Put product-specific composition in the owning feature.
 - Use Tailwind utilities first. Reserve colocated CSS modules for precise pseudo-elements, keyframes, or browser-native styling that would be obscure as utilities.
-- Avoid a router, global state library, canvas framework, or form library until concrete complexity justifies it.
+- Use Redux Toolkit for approved application/domain state according to
+  `easytrim-editor-redux-state`. Keep local component state for ephemeral visual and
+  interaction concerns; do not introduce another state library or ad-hoc application
+  context.
 - Keep Tauri calls behind the typed adapter defined by the structure rule.
 - Keep FFmpeg strings, path validation, and process details out of components.
 - Load no analytics, remote assets, fonts, or network resources.
@@ -34,7 +37,9 @@ Use `easytrim-editor-tauri-rust` for IPC/native changes and `easytrim-editor-ffm
 
 ## Model editor state explicitly
 
-Use a reducer for session-level state and a discriminated operation status:
+Model session-level state with the owning Redux Toolkit slice once that domain is
+migrated. Until then, preserve the existing reducer's domain semantics and its single
+source of truth. Use a discriminated operation status:
 
 ```text
 idle
@@ -48,6 +53,9 @@ failed
 ```
 
 - Keep canonical source metadata, trim, audio enablement, optimized settings, and operation status in one predictable flow.
+- Route Redux-heavy state ownership, slice, selector, and orchestration decisions to
+  `easytrim-editor-redux-state`; this skill owns the React component and interaction
+  consequences of that architecture.
 - Derive labels, selected duration, scale options, filenames, and button availability.
 - Use source/operation/job IDs to ignore stale asynchronous completions.
 - On source replacement, reset all source-bound state but retain runtime presets/current preset.
