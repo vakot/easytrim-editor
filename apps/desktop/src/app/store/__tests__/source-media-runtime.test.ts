@@ -70,6 +70,7 @@ describe("source/media application runtime", () => {
     expect(mocks.listenForSourceDrops).toHaveBeenCalledOnce();
     sourceDropListener?.({ status: "drag", active: true });
     expect(selectIsSourceDragActive(appStore.getState())).toBe(true);
+    expect(appStore.getState().importWorkflow.isNativeDialogOpen).toBe(false);
 
     sourceDropListener?.({ status: "selected", source });
     await vi.waitFor(() =>

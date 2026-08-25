@@ -2,9 +2,18 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { MediaInfo, SourceSelection, WaveformResult } from "@/lib/tauri/media";
 import { createAppStore } from "@/app/store/store";
-import { selectAudioPreviews, selectActiveSource } from "@/app/store/slices/session-slice";
+import {
+  selectAudioPreviews,
+  selectActiveSource,
+  selectSessionStatus,
+} from "@/app/store/slices/session-slice";
+import {
+  selectIsChoosingSource,
+  selectIsNativeDialogOpen,
+} from "@/app/store/slices/import-workflow-slice";
 import {
   checkMediaCapabilitiesRequested,
+  chooseSourceRequested,
   closeSourceRequested,
   handlePreviewPlaybackError,
   importSource,
@@ -13,6 +22,7 @@ import {
 
 const mocks = vi.hoisted(() => ({
   checkMediaCapabilities: vi.fn(),
+  chooseSource: vi.fn(),
   inspectMedia: vi.fn(),
   prepareAudioPreviews: vi.fn(),
   prepareProxyPreview: vi.fn(),
@@ -25,6 +35,7 @@ vi.mock("@/lib/tauri/media", async (importOriginal) => {
   return {
     ...original,
     checkMediaCapabilities: mocks.checkMediaCapabilities,
+    chooseSource: mocks.chooseSource,
     inspectMedia: mocks.inspectMedia,
     prepareAudioPreviews: mocks.prepareAudioPreviews,
     prepareProxyPreview: mocks.prepareProxyPreview,
@@ -80,6 +91,7 @@ function audioPreview(sourceId: string, streamIndex: number) {
 describe("source/media orchestration thunks", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.chooseSource.mockResolvedValue(null);
     mocks.checkMediaCapabilities.mockResolvedValue({
       ffmpeg: { available: true, version: "ffmpeg" },
       ffprobe: { available: true, version: "ffprobe" },
@@ -120,6 +132,65 @@ describe("source/media orchestration thunks", () => {
       previews: [audioPreview(firstSource.sourceId, 1), audioPreview(firstSource.sourceId, 2)],
     });
     expect(mocks.prepareAudioPreviews).toHaveBeenCalledWith(firstSource.sourceId, [1, 2]);
+  });
+
+  it("clears native chooser state before a selected source finishes importing", async () => {
+    const appStore = createAppStore();
+    const picker = createDeferred<SourceSelection | null>();
+    const inspection = createDeferred<MediaInfo>();
+    mocks.chooseSource.mockReturnValue(picker.promise);
+    mocks.inspectMedia.mockReturnValue(inspection.promise);
+
+    const chooserRequest = appStore.dispatch(chooseSourceRequested());
+    expect(selectIsChoosingSource(appStore.getState())).toBe(true);
+    expect(selectIsNativeDialogOpen(appStore.getState())).toBe(true);
+
+    picker.resolve(firstSource);
+    await vi.waitFor(() => {
+      expect(selectIsChoosingSource(appStore.getState())).toBe(false);
+      expect(selectIsNativeDialogOpen(appStore.getState())).toBe(false);
+    });
+    expect(selectSessionStatus(appStore.getState())).toBe("loading-source");
+    expect(mocks.inspectMedia).toHaveBeenCalledWith(firstSource.sourceId);
+
+    inspection.resolve(createMedia(firstSource.sourceId, 1));
+    await chooserRequest;
+    expect(selectSessionStatus(appStore.getState())).toBe("ready");
+    expect(selectIsNativeDialogOpen(appStore.getState())).toBe(false);
+  });
+
+  it("clears native chooser state when the picker is cancelled", async () => {
+    const appStore = createAppStore();
+    const picker = createDeferred<SourceSelection | null>();
+    mocks.chooseSource.mockReturnValue(picker.promise);
+
+    const chooserRequest = appStore.dispatch(chooseSourceRequested());
+    expect(selectIsNativeDialogOpen(appStore.getState())).toBe(true);
+    picker.resolve(null);
+    await chooserRequest;
+
+    expect(selectIsChoosingSource(appStore.getState())).toBe(false);
+    expect(selectIsNativeDialogOpen(appStore.getState())).toBe(false);
+    expect(selectActiveSource(appStore.getState())).toBeNull();
+    expect(mocks.inspectMedia).not.toHaveBeenCalled();
+  });
+
+  it("clears native chooser state and preserves normalized picker errors", async () => {
+    const appStore = createAppStore();
+    const picker = createDeferred<SourceSelection | null>();
+    mocks.chooseSource.mockReturnValue(picker.promise);
+
+    const chooserRequest = appStore.dispatch(chooseSourceRequested());
+    picker.reject({ code: "dialog_failed", message: "The source picker failed." });
+    await chooserRequest;
+
+    expect(selectIsChoosingSource(appStore.getState())).toBe(false);
+    expect(selectIsNativeDialogOpen(appStore.getState())).toBe(false);
+    expect(appStore.getState().session).toMatchObject({
+      status: "failed",
+      lastError: { code: "dialog_failed", message: "The source picker failed." },
+    });
+    expect(mocks.inspectMedia).not.toHaveBeenCalled();
   });
 
   it("marks single-stream audio preparation ready without invoking a native job", async () => {

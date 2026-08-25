@@ -135,15 +135,26 @@ export const chooseSourceRequested = (): AppThunk => async (dispatch, getState) 
   }
 
   dispatch(sourceChoiceStarted());
+  let source: SourceSelection | null = null;
+  let pickerError: AppError | null = null;
+
   try {
-    const source = await chooseSourceDialog();
-    if (source) {
-      await dispatch(importSource(source));
-    }
+    source = await chooseSourceDialog();
   } catch (error: unknown) {
-    dispatch(sourceFailed({ error: normalizeAppError(error) }));
+    pickerError = normalizeAppError(error);
   } finally {
+    // The native picker has resolved here. Import inspection and dependent media
+    // preparation must not extend the native-dialog workflow state.
     dispatch(sourceChoiceFinished());
+  }
+
+  if (pickerError) {
+    dispatch(sourceFailed({ error: pickerError }));
+    return;
+  }
+
+  if (source) {
+    await dispatch(importSource(source));
   }
 };
 
