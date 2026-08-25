@@ -106,9 +106,7 @@ function StatusMetricTooltip({ label, children }: { label: string; children: Rea
       <TooltipTrigger asChild>
         <span className="shrink-0 tabular-nums py-1">{children}</span>
       </TooltipTrigger>
-      <TooltipContent side="top">
-        {label}
-      </TooltipContent>
+      <TooltipContent side="top">{label}</TooltipContent>
     </Tooltip>
   );
 }
