@@ -126,8 +126,7 @@ describe("ContextMenus", () => {
     menuState.importWorkflow.isChoosingSource = overrides.isChoosingSource ?? false;
     menuState.source.selection = overrides.hasSource ? { sourceId: "source-id" } : null;
     menuState.source.isReady = overrides.canExport ?? true;
-    menuState.source.media =
-      menuState.source.selection && menuState.source.isReady ? {} : null;
+    menuState.source.media = menuState.source.selection && menuState.source.isReady ? {} : null;
     menuState.crop.value =
       overrides.canSave === false
         ? { x: 0.1, y: 0, width: 0.9, height: 1 }
@@ -279,11 +278,7 @@ describe("ContextMenus", () => {
     render(
       <TooltipProvider>
         <ThemeProvider>
-          <ContextMenus
-            isChoosingSource={false}
-            canSave
-            canExport
-          />
+          <ContextMenus isChoosingSource={false} canSave canExport />
         </ThemeProvider>
       </TooltipProvider>,
     );
@@ -355,11 +350,7 @@ describe("ContextMenus", () => {
               installUpdate: vi.fn(),
             }}
           >
-            <ContextMenus
-              isChoosingSource={false}
-              canSave
-              canExport
-            />
+            <ContextMenus isChoosingSource={false} canSave canExport />
           </AppUpdatesContext.Provider>
         </ThemeProvider>
       </TooltipProvider>,
@@ -376,11 +367,7 @@ describe("ContextMenus", () => {
     render(
       <TooltipProvider>
         <ThemeProvider>
-          <ContextMenus
-            isChoosingSource={false}
-            canSave
-            canExport
-          />
+          <ContextMenus isChoosingSource={false} canSave canExport />
         </ThemeProvider>
       </TooltipProvider>,
     );
@@ -411,11 +398,7 @@ describe("ContextMenus", () => {
     render(
       <TooltipProvider>
         <ThemeProvider>
-          <ContextMenus
-            isChoosingSource={false}
-            canSave
-            canExport
-          />
+          <ContextMenus isChoosingSource={false} canSave canExport />
         </ThemeProvider>
       </TooltipProvider>,
     );
@@ -436,11 +419,7 @@ describe("ContextMenus", () => {
     render(
       <TooltipProvider>
         <ThemeProvider>
-          <ContextMenus
-            isChoosingSource={false}
-            canSave
-            canExport
-          />
+          <ContextMenus isChoosingSource={false} canSave canExport />
         </ThemeProvider>
       </TooltipProvider>,
     );
@@ -503,11 +482,7 @@ describe("ContextMenus", () => {
               installUpdate: vi.fn(),
             }}
           >
-            <ContextMenus
-              isChoosingSource={false}
-              canSave
-              canExport
-            />
+            <ContextMenus isChoosingSource={false} canSave canExport />
           </AppUpdatesContext.Provider>
         </ThemeProvider>
       </TooltipProvider>,
@@ -524,12 +499,7 @@ describe("ContextMenus", () => {
     render(
       <TooltipProvider>
         <ThemeProvider>
-          <ContextMenus
-            isChoosingSource={false}
-            hasSource
-            canSave
-            canExport
-          />
+          <ContextMenus isChoosingSource={false} hasSource canSave canExport />
         </ThemeProvider>
       </TooltipProvider>,
     );
@@ -560,11 +530,7 @@ describe("ContextMenus", () => {
     render(
       <TooltipProvider>
         <ThemeProvider>
-          <ContextMenus
-            isChoosingSource={false}
-            canSave
-            canExport
-          />
+          <ContextMenus isChoosingSource={false} canSave canExport />
         </ThemeProvider>
       </TooltipProvider>,
     );
@@ -716,11 +682,7 @@ describe("ContextMenus", () => {
     render(
       <TooltipProvider>
         <ThemeProvider>
-          <ContextMenus
-            isChoosingSource={false}
-            canSave
-            canExport
-          />
+          <ContextMenus isChoosingSource={false} canSave canExport />
         </ThemeProvider>
       </TooltipProvider>,
     );
@@ -797,11 +759,7 @@ describe("ContextMenus", () => {
     render(
       <TooltipProvider>
         <ThemeProvider>
-          <ContextMenus
-            isChoosingSource={false}
-            canSave
-            canExport
-          />
+          <ContextMenus isChoosingSource={false} canSave canExport />
         </ThemeProvider>
       </TooltipProvider>,
     );

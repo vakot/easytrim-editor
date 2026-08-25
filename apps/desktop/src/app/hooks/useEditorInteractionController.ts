@@ -178,10 +178,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
         audioReadiness.streamIndexes.size === activeExternalAudioStreamCount));
   const isPlaybackReadyRef = useRef(isPlaybackReady);
   const nativeLoopEnabled =
-    isPlaybackReady &&
-    loopPlaybackEnabled &&
-    !segmentPlaybackEnabled &&
-    !usesExternalAudio;
+    isPlaybackReady && loopPlaybackEnabled && !segmentPlaybackEnabled && !usesExternalAudio;
   const nativeLoopEnabledRef = useRef(nativeLoopEnabled);
   const shortcutActionsRef = useRef<{
     enabled: boolean;
