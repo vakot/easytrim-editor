@@ -47,7 +47,7 @@ export function StatusBar({ queue }: { queue: ExportToast[] }) {
                 {activeExportPath?.filename ?? activeExport.filename}
               </span>
             </span>
-            <Separator orientation="vertical" className="h-4 self-center" />
+            <Separator orientation="vertical" className="h-4 mt-1 self-center" />
             <div className="flex shrink-0 items-center gap-2">
               <div
                 className="h-1.5 w-28 overflow-hidden rounded-full bg-muted"
@@ -64,38 +64,28 @@ export function StatusBar({ queue }: { queue: ExportToast[] }) {
               </div>
               <span className="w-10 text-right tabular-nums">{progressPercent}%</span>
             </div>
-            <>
-              <Separator orientation="vertical" className="h-4 self-center" />
-              <StatusMetricTooltip label={t("statusBar.frames")}>
-                {activeExport.currentFrame ?? 0}f / {activeExport.totalFrames ?? 0}f
-              </StatusMetricTooltip>
-            </>
-            <>
-              <Separator orientation="vertical" className="h-4 self-center" />
-              <StatusMetricTooltip label={t("statusBar.fps")}>
-                {Math.round(activeExport.fps ?? 0)} FPS
-              </StatusMetricTooltip>
-            </>
-            <>
-              <Separator orientation="vertical" className="h-4 self-center" />
-              <StatusMetricTooltip label={t("statusBar.bitrate")}>
-                {activeExport.bitrate ?? "0 kbits/s"}
-              </StatusMetricTooltip>
-            </>
-            <>
-              <Separator orientation="vertical" className="h-4 self-center" />
-              <StatusMetricTooltip label={t("statusBar.estimateSize")}>
-                {formatStatusFileSize(activeExport.fileSizeBytes)} /{" "}
-                {formatStatusFileSize(activeExport.estimatedFileSizeBytes)}
-              </StatusMetricTooltip>
-            </>
-            <>
-              <Separator orientation="vertical" className="h-4 self-center" />
-              <StatusMetricTooltip label={t("statusBar.estimateTime")}>
-                {formatExportDuration(activeExport.estimatedElapsedTimeMs ?? 0)} /{" "}
-                {formatExportDuration(activeExport.estimatedTotalTimeMs ?? 0)}
-              </StatusMetricTooltip>
-            </>
+            <Separator orientation="vertical" className="h-4 mt-1 self-center" />
+            <StatusMetricTooltip label={t("statusBar.frames")}>
+              {activeExport.currentFrame ?? 0}f / {activeExport.totalFrames ?? 0}f
+            </StatusMetricTooltip>
+            <Separator orientation="vertical" className="h-4 mt-1 self-center" />
+            <StatusMetricTooltip label={t("statusBar.fps")}>
+              {Math.round(activeExport.fps ?? 0)} FPS
+            </StatusMetricTooltip>
+            <Separator orientation="vertical" className="h-4 mt-1 self-center" />
+            <StatusMetricTooltip label={t("statusBar.bitrate")}>
+              {activeExport.bitrate ?? "0 kbits/s"}
+            </StatusMetricTooltip>
+            <Separator orientation="vertical" className="h-4 mt-1 self-center" />
+            <StatusMetricTooltip label={t("statusBar.estimateSize")}>
+              {formatStatusFileSize(activeExport.fileSizeBytes)} /{" "}
+              {formatStatusFileSize(activeExport.estimatedFileSizeBytes)}
+            </StatusMetricTooltip>
+            <Separator orientation="vertical" className="h-4 mt-1 self-center" />
+            <StatusMetricTooltip label={t("statusBar.estimateTime")}>
+              {formatExportDuration(activeExport.estimatedElapsedTimeMs ?? 0)} /{" "}
+              {formatExportDuration(activeExport.estimatedTotalTimeMs ?? 0)}
+            </StatusMetricTooltip>
           </div>
         ) : null}
       </footer>
@@ -107,9 +97,9 @@ function StatusMetricTooltip({ label, children }: { label: string; children: Rea
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <span className="shrink-0 tabular-nums">{children}</span>
+        <span className="shrink-0 tabular-nums py-1">{children}</span>
       </TooltipTrigger>
-      <TooltipContent side="top" sideOffset={4}>
+      <TooltipContent side="top">
         {label}
       </TooltipContent>
     </Tooltip>
