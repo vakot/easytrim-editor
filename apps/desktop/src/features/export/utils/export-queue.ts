@@ -73,7 +73,7 @@ export function cancelQueuedExport(id: string) {
   if (!job || job.canceled) return;
 
   job.canceled = true;
-  job.dispatch(exportCanceled({ id }));
+  job.dispatch(exportCanceled({ id, durationMs: elapsedTime(job) }));
   if (job.operationId) {
     void cancelOperation(job.operationId).catch(() => undefined);
   } else {
@@ -145,6 +145,7 @@ async function renderJob(job: RuntimeExportJob) {
       exportProgressReceived({
         id: job.item.id,
         progress,
+        durationMs: elapsedTime(job),
         progressPercent,
         fps: parseFfmpegNumber(progress.fps) ?? undefined,
         bitrate: parseFfmpegBitrate(progress.bitrate) === null ? undefined : progress.bitrate,
@@ -166,15 +167,25 @@ async function renderJob(job: RuntimeExportJob) {
           );
 
     if (!job.canceled) {
-      job.dispatch(exportCompleted({ id: job.item.id, result }));
+      job.dispatch(exportCompleted({ id: job.item.id, result, durationMs: elapsedTime(job) }));
     }
   } catch (error: unknown) {
     if (!job.canceled) {
-      job.dispatch(exportFailed({ id: job.item.id, error: normalizeAppError(error) }));
+      job.dispatch(
+        exportFailed({
+          id: job.item.id,
+          error: normalizeAppError(error),
+          durationMs: elapsedTime(job),
+        }),
+      );
     }
   } finally {
     jobsById.delete(job.item.id);
   }
+}
+
+function elapsedTime(job: RuntimeExportJob) {
+  return job.startedAt ? Date.now() - job.startedAt : null;
 }
 
 function maybePerformQueueFinishAction(dispatch: AppDispatch, getState: () => RootState) {

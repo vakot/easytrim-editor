@@ -127,6 +127,7 @@ const exportSlice = createSlice({
       action: PayloadAction<{
         id: string;
         progress: ExportProgress;
+        durationMs: number | null;
         progressPercent: number;
         estimatedFileSizeBytes?: number;
         estimatedElapsedTimeMs?: number;
@@ -137,37 +138,43 @@ const exportSlice = createSlice({
     ) => {
       const item = state.queue.find((candidate) => candidate.id === action.payload.id);
       if (!item || item.status !== "rendering") return;
-      const { progress, ...metrics } = action.payload;
+      const { progress, durationMs, ...metrics } = action.payload;
       Object.assign(item, {
         operationId: progress.operationId,
-        durationMs: item.startedAt ? Date.now() - item.startedAt : null,
+        durationMs,
         currentFrame: progress.frame,
         fileSizeBytes: progress.totalSize,
         ...metrics,
       });
     },
-    exportCompleted: (state, action: PayloadAction<{ id: string; result: ExportResult }>) => {
+    exportCompleted: (
+      state,
+      action: PayloadAction<{ id: string; result: ExportResult; durationMs: number | null }>,
+    ) => {
       const item = state.queue.find((candidate) => candidate.id === action.payload.id);
       if (!item || item.status === "canceled") return;
       item.operationId = action.payload.result.operationId;
       item.path = action.payload.result.displayPath;
       item.status = "completed";
       item.progressPercent = 100;
-      item.durationMs = item.startedAt ? Date.now() - item.startedAt : null;
+      item.durationMs = action.payload.durationMs;
     },
-    exportFailed: (state, action: PayloadAction<{ id: string; error: AppError }>) => {
+    exportFailed: (
+      state,
+      action: PayloadAction<{ id: string; error: AppError; durationMs: number | null }>,
+    ) => {
       const item = state.queue.find((candidate) => candidate.id === action.payload.id);
       if (!item || item.status === "canceled") return;
       item.status = "failed";
       item.error = action.payload.error.message;
-      item.durationMs = item.startedAt ? Date.now() - item.startedAt : null;
+      item.durationMs = action.payload.durationMs;
     },
-    exportCanceled: (state, action: PayloadAction<{ id: string }>) => {
+    exportCanceled: (state, action: PayloadAction<{ id: string; durationMs: number | null }>) => {
       const item = state.queue.find((candidate) => candidate.id === action.payload.id);
       if (!item || item.status === "completed" || item.status === "failed") return;
       item.status = "canceled";
       item.error = undefined;
-      item.durationMs = item.startedAt ? Date.now() - item.startedAt : null;
+      item.durationMs = action.payload.durationMs;
     },
     finishedExportsCleared: (state) => {
       state.queue = state.queue.filter(

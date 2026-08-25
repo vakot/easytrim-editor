@@ -76,13 +76,18 @@ describe("export slice", () => {
       exportProgressReceived({
         id: item.id,
         progress: { operationId: "operation-1", elapsedMicros: 500_000, phase: "running" },
+        durationMs: 500,
         progressPercent: 50,
       }),
     );
     expect(state.queue[0]?.progressPercent).toBe(50);
     state = exportReducer(
       state,
-      exportFailed({ id: item.id, error: { code: "io_failed", message: "render failed" } }),
+      exportFailed({
+        id: item.id,
+        error: { code: "io_failed", message: "render failed" },
+        durationMs: 700,
+      }),
     );
     expect(state.queue[0]?.status).toBe("failed");
 
@@ -98,11 +103,12 @@ describe("export slice", () => {
           displayName: "clip.mp4",
           displayPath: completed.path,
         },
+        durationMs: 800,
       }),
     );
     const canceled = { ...item, id: "export-3" };
     state = exportReducer(state, queueEntryAdded(canceled));
-    state = exportReducer(state, exportCanceled({ id: canceled.id }));
+    state = exportReducer(state, exportCanceled({ id: canceled.id, durationMs: null }));
     expect(state.queue.map((entry) => entry.status)).toEqual(["failed", "completed", "canceled"]);
     state = exportReducer(state, finishedExportsCleared());
     expect(state.queue).toEqual([]);
