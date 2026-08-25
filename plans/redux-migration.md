@@ -151,13 +151,13 @@ remain props where they are useful reusable APIs.
 ### 2. Preferences — Redux now, completed Phase 1 pilot
 
 Canonical owner: the Redux `preferences` slice in
-`apps/desktop/src/app/store/slices/preferences-slice.ts`. It owns the four tool defaults for safe
+`apps/desktop/src/app/store/slices/preferences-slice.ts`. It owns the playback and audio preferences for safe
 trim following, loop playback, segment playback, and merge audio. The slice starts
 from deterministic product defaults; it does not read storage while the module is
 initialized.
 
 Readers include `SettingsMenu` through focused selectors. Writers are the Settings actions
-`toolDefaultChanged` and `toolDefaultsReset`; future preference writers must use
+`preferenceChanged` and `preferencesReset`; future preference writers must use
 domain actions as well. Active editor tools remain separate runtime state and must not
 mutate Preferences.
 
@@ -179,7 +179,7 @@ session source; that value remains session-owned until the session migration.
 
 Completed Phase 2A work: preference fields were removed from the combined
 `toolViewState`, the preference portion of `EditorViewStateContext` was removed, and
-the old `toolDefaults` transport from `EditorSessionProvider` was replaced by Redux
+the old preference transport from `EditorSessionProvider` was replaced by Redux
 selectors. The explicit merge-audio Settings bridge remains; the old Preferences
 storage helpers were removed because Redux Persist now owns this domain.
 

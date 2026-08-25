@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { RootState } from "@/app/store/store";
-import { DEFAULT_TOOL_DEFAULTS, type ToolDefaults } from "@/app/tool-settings";
+import { DEFAULT_PREFERENCES, type Preferences } from "@/app/preferences";
 import {
   createEditorToolsStateFromPreferences,
   editorToolsInitialized,
@@ -22,9 +22,9 @@ import { DEFAULT_PLAYBACK_SPEED, type PlaybackSpeed } from "@/domain/playback-sp
 
 describe("editor tools Redux domain", () => {
   it("initializes active tools from supplied Preferences defaults", () => {
-    const defaults: ToolDefaults = {
-      ...DEFAULT_TOOL_DEFAULTS,
-      loopPlaybackEnabled: false,
+    const defaults: Preferences = {
+      ...DEFAULT_PREFERENCES,
+      loopPlaybackEnabledDefault: false,
     };
 
     expect(createEditorToolsStateFromPreferences(defaults)).toEqual({
@@ -38,7 +38,7 @@ describe("editor tools Redux domain", () => {
   it("changes one active tool without changing unrelated tools", () => {
     const initialState = editorToolsReducer(
       undefined,
-      editorToolsInitialized(createEditorToolsStateFromPreferences(DEFAULT_TOOL_DEFAULTS)),
+      editorToolsInitialized(createEditorToolsStateFromPreferences(DEFAULT_PREFERENCES)),
     );
 
     const nextState = editorToolsReducer(initialState, snapPlaybackToggled());
@@ -52,10 +52,10 @@ describe("editor tools Redux domain", () => {
   it("keeps active tools independent from Preference actions", () => {
     const initialState = editorToolsReducer(
       undefined,
-      editorToolsInitialized(createEditorToolsStateFromPreferences(DEFAULT_TOOL_DEFAULTS)),
+      editorToolsInitialized(createEditorToolsStateFromPreferences(DEFAULT_PREFERENCES)),
     );
 
-    expect(editorToolsReducer(initialState, { type: "preferences/toolDefaultChanged" })).toEqual(
+    expect(editorToolsReducer(initialState, { type: "preferences/preferenceChanged" })).toEqual(
       initialState,
     );
   });
@@ -63,7 +63,7 @@ describe("editor tools Redux domain", () => {
   it("supports explicitly changing snap playback", () => {
     const initialState = editorToolsReducer(
       undefined,
-      editorToolsInitialized(createEditorToolsStateFromPreferences(DEFAULT_TOOL_DEFAULTS)),
+      editorToolsInitialized(createEditorToolsStateFromPreferences(DEFAULT_PREFERENCES)),
     );
 
     const nextState = editorToolsReducer(initialState, snapPlaybackChanged(false));
@@ -77,7 +77,7 @@ describe("editor tools Redux domain", () => {
   it("supports mode toggles and the allowed playback-speed values", () => {
     const initialState = editorToolsReducer(
       undefined,
-      editorToolsInitialized(createEditorToolsStateFromPreferences(DEFAULT_TOOL_DEFAULTS)),
+      editorToolsInitialized(createEditorToolsStateFromPreferences(DEFAULT_PREFERENCES)),
     );
     const modeState = editorToolsReducer(
       editorToolsReducer(initialState, loopPlaybackToggled()),
@@ -94,14 +94,14 @@ describe("editor tools Redux domain", () => {
     const activeState = editorToolsReducer(
       editorToolsReducer(
         undefined,
-        editorToolsInitialized(createEditorToolsStateFromPreferences(DEFAULT_TOOL_DEFAULTS)),
+        editorToolsInitialized(createEditorToolsStateFromPreferences(DEFAULT_PREFERENCES)),
       ),
       snapPlaybackToggled(),
     );
-    const currentDefaults: ToolDefaults = {
-      ...DEFAULT_TOOL_DEFAULTS,
-      snapPlaybackEnabled: false,
-      loopPlaybackEnabled: false,
+    const currentDefaults: Preferences = {
+      ...DEFAULT_PREFERENCES,
+      snapPlaybackEnabledDefault: false,
+      loopPlaybackEnabledDefault: false,
     };
 
     expect(

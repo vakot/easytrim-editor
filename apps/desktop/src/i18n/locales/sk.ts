@@ -75,9 +75,12 @@ export const sk = {
       resetToDefault: "Obnoviť predvolené",
       enabledByDefault: "Predvolene zapnuté",
       disabledByDefault: "Predvolene vypnuté",
+      enabled: "Zapnuté",
+      disabled: "Vypnuté",
       snap: "Prichytenie",
       loop: "Opakovanie",
       followSegment: "Sledovať segment",
+      autoStartQueue: "Automatické spustenie frontu",
       mergeAudio: "Zlúčiť zvuk",
     },
     queue: {

@@ -89,7 +89,7 @@ export function createAppPersistor(appStore: AppStore): Persistor {
     // one-time initialization keeps active tools independent from later preference edits.
     appStore.dispatch(
       editorToolsInitialized(
-        createEditorToolsStateFromPreferences(appStore.getState().preferences.toolDefaults),
+        createEditorToolsStateFromPreferences(appStore.getState().preferences),
       ),
     );
   });

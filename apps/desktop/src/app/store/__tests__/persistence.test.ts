@@ -6,7 +6,7 @@ import {
   editorToolsReset,
   playbackSpeedChanged,
 } from "@/app/store/slices/editor-tools-slice";
-import { toolDefaultChanged, toolDefaultsReset } from "@/app/store/slices/preferences-slice";
+import { preferenceChanged, preferencesReset } from "@/app/store/slices/preferences-slice";
 import {
   customPrimaryColorChanged,
   primaryColorChanged,
@@ -15,7 +15,7 @@ import {
 import { optimizedExportDialogOpened, queueEntryAdded } from "@/app/store/slices/export-slice";
 import { createAppPersistor, createAppStore, type AppStore } from "@/app/store/store";
 import { persistConfig, resolveReduxPersistStorage } from "@/app/store/persistence";
-import { DEFAULT_TOOL_DEFAULTS } from "@/app/tool-settings";
+import { DEFAULT_PREFERENCES } from "@/app/preferences";
 
 interface TestStorage extends PersistStorage {
   values: Map<string, string>;
@@ -91,7 +91,7 @@ describe("Redux Persist store integration", () => {
     const storage = createTestStorage();
     const store = createAppStore(storage);
 
-    expect(store.getState().preferences.toolDefaults).toEqual(DEFAULT_TOOL_DEFAULTS);
+    expect(store.getState().preferences).toEqual(DEFAULT_PREFERENCES);
     expect(store.getState().theme).toEqual({
       preference: "system",
       primaryColor: "amber",
@@ -118,7 +118,8 @@ describe("Redux Persist store integration", () => {
     const storage = createTestStorage({
       [`persist:${persistConfig.key}`]: JSON.stringify({
         preferences: JSON.stringify({
-          toolDefaults: { ...DEFAULT_TOOL_DEFAULTS, loopPlaybackEnabled: false },
+          ...DEFAULT_PREFERENCES,
+          loopPlaybackEnabledDefault: false,
         }),
         theme: JSON.stringify({
           preference: "dark",
@@ -130,9 +131,9 @@ describe("Redux Persist store integration", () => {
     });
     const { store } = await createPersistedTestStore(storage);
 
-    expect(store.getState().preferences.toolDefaults).toEqual({
-      ...DEFAULT_TOOL_DEFAULTS,
-      loopPlaybackEnabled: false,
+    expect(store.getState().preferences).toEqual({
+      ...DEFAULT_PREFERENCES,
+      loopPlaybackEnabledDefault: false,
     });
     expect(store.getState().editorTools.loopPlaybackEnabled).toBe(false);
     expect(store.getState().editorTools.playbackSpeed).toBe(1);
@@ -146,27 +147,25 @@ describe("Redux Persist store integration", () => {
   it("does not rewrite active tools when a Preference changes", async () => {
     const { store } = await createPersistedTestStore();
 
-    store.dispatch(toolDefaultChanged({ key: "loopPlaybackEnabled", enabled: false }));
+    store.dispatch(preferenceChanged({ key: "loopPlaybackEnabledDefault", enabled: false }));
 
-    expect(store.getState().preferences.toolDefaults.loopPlaybackEnabled).toBe(false);
+    expect(store.getState().preferences.loopPlaybackEnabledDefault).toBe(false);
     expect(store.getState().editorTools.loopPlaybackEnabled).toBe(true);
   });
 
   it("resets active tools from current Preferences defaults", async () => {
     const { store } = await createPersistedTestStore();
 
-    store.dispatch(toolDefaultChanged({ key: "loopPlaybackEnabled", enabled: false }));
+    store.dispatch(preferenceChanged({ key: "loopPlaybackEnabledDefault", enabled: false }));
     store.dispatch(playbackSpeedChanged(3));
     store.dispatch(
-      editorToolsReset(
-        createEditorToolsStateFromPreferences(store.getState().preferences.toolDefaults),
-      ),
+      editorToolsReset(createEditorToolsStateFromPreferences(store.getState().preferences)),
     );
 
     expect(store.getState().editorTools).toEqual({
       ...createEditorToolsStateFromPreferences({
-        ...DEFAULT_TOOL_DEFAULTS,
-        loopPlaybackEnabled: false,
+        ...DEFAULT_PREFERENCES,
+        loopPlaybackEnabledDefault: false,
       }),
     });
   });
@@ -180,7 +179,7 @@ describe("Redux Persist store integration", () => {
     const persistedRoot = await readPersistedRoot(storage);
     expect(persistedRoot).not.toHaveProperty("editorTools");
     expect(JSON.parse(String(persistedRoot.preferences))).toEqual({
-      toolDefaults: DEFAULT_TOOL_DEFAULTS,
+      ...DEFAULT_PREFERENCES,
     });
   });
 
@@ -222,12 +221,12 @@ describe("Redux Persist store integration", () => {
   it("does not read the legacy Preferences storage key", async () => {
     const storage = createTestStorage({
       "easytrim.preferences.v1": JSON.stringify({
-        toolDefaults: { loopPlaybackEnabled: false },
+        loopPlaybackEnabledDefault: false,
       }),
     });
     const { store } = await createPersistedTestStore(storage);
 
-    expect(store.getState().preferences.toolDefaults).toEqual(DEFAULT_TOOL_DEFAULTS);
+    expect(store.getState().preferences).toEqual(DEFAULT_PREFERENCES);
     expect(store.getState().theme).toEqual({
       preference: "system",
       primaryColor: "amber",
@@ -238,26 +237,27 @@ describe("Redux Persist store integration", () => {
   it("persists a dispatched preference action without UI storage calls", async () => {
     const { store, persistor, storage } = await createPersistedTestStore();
 
-    store.dispatch(toolDefaultChanged({ key: "loopPlaybackEnabled", enabled: false }));
+    store.dispatch(preferenceChanged({ key: "loopPlaybackEnabledDefault", enabled: false }));
     await persistor.flush();
 
     const persistedRoot = await readPersistedRoot(storage);
     expect(JSON.parse(String(persistedRoot.preferences))).toEqual({
-      toolDefaults: { ...DEFAULT_TOOL_DEFAULTS, loopPlaybackEnabled: false },
+      ...DEFAULT_PREFERENCES,
+      loopPlaybackEnabledDefault: false,
     });
   });
 
   it("persists reset state", async () => {
     const { store, persistor, storage } = await createPersistedTestStore();
 
-    store.dispatch(toolDefaultChanged({ key: "loopPlaybackEnabled", enabled: false }));
+    store.dispatch(preferenceChanged({ key: "loopPlaybackEnabledDefault", enabled: false }));
     await persistor.flush();
-    store.dispatch(toolDefaultsReset());
+    store.dispatch(preferencesReset());
     await persistor.flush();
 
     const persistedRoot = await readPersistedRoot(storage);
     expect(JSON.parse(String(persistedRoot.preferences))).toEqual({
-      toolDefaults: DEFAULT_TOOL_DEFAULTS,
+      ...DEFAULT_PREFERENCES,
     });
   });
 
@@ -286,10 +286,10 @@ describe("Redux Persist store integration", () => {
     const first = await createPersistedTestStore(firstStorage);
     const second = await createPersistedTestStore(secondStorage);
 
-    first.store.dispatch(toolDefaultChanged({ key: "loopPlaybackEnabled", enabled: false }));
+    first.store.dispatch(preferenceChanged({ key: "loopPlaybackEnabledDefault", enabled: false }));
     await first.persistor.flush();
 
-    expect(second.store.getState().preferences.toolDefaults).toEqual(DEFAULT_TOOL_DEFAULTS);
+    expect(second.store.getState().preferences).toEqual(DEFAULT_PREFERENCES);
     expect(secondStorage.values).toEqual(new Map());
   });
 });

@@ -31,7 +31,7 @@ import {
   selectSegmentPlaybackEnabled,
   snapPlaybackToggled,
 } from "@/app/store/slices/editor-tools-slice";
-import { selectToolDefaults } from "@/app/store/slices/preferences-slice";
+import { selectPreferences } from "@/app/store/slices/preferences-slice";
 import { formatPlaybackTime } from "@/domain/playback";
 import {
   DEFAULT_PLAYBACK_SPEED,
@@ -323,7 +323,7 @@ function PlaybackSpeedTool() {
 
 function ResetToolsTool() {
   const { t } = useTranslation();
-  const toolDefaults = useAppSelector(selectToolDefaults);
+  const preferences = useAppSelector(selectPreferences);
   const dispatch = useAppDispatch();
 
   return (
@@ -331,9 +331,7 @@ function ResetToolsTool() {
       enabled={false}
       label={t("preview.resetTools")}
       title={t("preview.resetTools")}
-      onClick={() =>
-        dispatch(editorToolsReset(createEditorToolsStateFromPreferences(toolDefaults)))
-      }
+      onClick={() => dispatch(editorToolsReset(createEditorToolsStateFromPreferences(preferences)))}
     >
       <RotateCcw />
     </TimelineToolButton>

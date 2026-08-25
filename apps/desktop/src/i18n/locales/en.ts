@@ -70,9 +70,12 @@ export const en = {
       resetToDefault: "Reset to default",
       enabledByDefault: "Enabled by default",
       disabledByDefault: "Disabled by default",
+      enabled: "Enabled",
+      disabled: "Disabled",
       snap: "Snap",
       loop: "Loop",
       followSegment: "Follow segment",
+      autoStartQueue: "Auto-start Queue",
       mergeAudio: "Merge audio",
     },
     queue: {

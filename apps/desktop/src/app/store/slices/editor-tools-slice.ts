@@ -1,24 +1,24 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 import type { RootState } from "@/app/store/store";
-import { DEFAULT_TOOL_DEFAULTS, type ToolDefaults } from "@/app/tool-settings";
+import { DEFAULT_PREFERENCES, type Preferences } from "@/app/preferences";
 import { DEFAULT_PLAYBACK_SPEED, type PlaybackSpeed } from "@/domain/playback-speed";
 
-export type EditorToolsState = Pick<
-  ToolDefaults,
-  "snapPlaybackEnabled" | "loopPlaybackEnabled" | "segmentPlaybackEnabled"
-> & {
+export type EditorToolsState = {
+  snapPlaybackEnabled: boolean;
+  loopPlaybackEnabled: boolean;
+  segmentPlaybackEnabled: boolean;
   playbackSpeed: PlaybackSpeed;
 };
 
 const createInitialState = (): EditorToolsState =>
-  createEditorToolsStateFromPreferences(DEFAULT_TOOL_DEFAULTS);
+  createEditorToolsStateFromPreferences(DEFAULT_PREFERENCES);
 
-export function createEditorToolsStateFromPreferences(defaults: ToolDefaults): EditorToolsState {
+export function createEditorToolsStateFromPreferences(defaults: Preferences): EditorToolsState {
   return {
-    snapPlaybackEnabled: defaults.snapPlaybackEnabled,
-    loopPlaybackEnabled: defaults.loopPlaybackEnabled,
-    segmentPlaybackEnabled: defaults.segmentPlaybackEnabled,
+    snapPlaybackEnabled: defaults.snapPlaybackEnabledDefault,
+    loopPlaybackEnabled: defaults.loopPlaybackEnabledDefault,
+    segmentPlaybackEnabled: defaults.segmentPlaybackEnabledDefault,
     playbackSpeed: DEFAULT_PLAYBACK_SPEED,
   };
 }

@@ -9,7 +9,7 @@ import userEvent from "@testing-library/user-event";
 import { useRef, useState, type ReactElement } from "react";
 import { describe, expect, it, vi } from "vitest";
 
-import { DEFAULT_TOOL_DEFAULTS, type ToolDefaults } from "@/app/tool-settings";
+import { DEFAULT_PREFERENCES, type Preferences } from "@/app/preferences";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import { AppUpdatesContext } from "@/app/contexts/app-updates-context";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -38,13 +38,12 @@ const menuState = vi.hoisted(() => ({
     availableQueueFinishActions: ["exit", "nothing"] as QueueFinishAction[],
   },
   preferences: {
-    toolDefaults: {
-      snapPlaybackEnabled: true,
-      loopPlaybackEnabled: true,
-      segmentPlaybackEnabled: true,
-      mergeAudioEnabled: false,
-    } as ToolDefaults,
-  },
+    snapPlaybackEnabledDefault: true,
+    loopPlaybackEnabledDefault: true,
+    segmentPlaybackEnabledDefault: true,
+    autoStartQueueEnabled: true,
+    mergeAudioEnabledDefault: false,
+  } as Preferences,
   theme: {
     preference: "system" as "system" | "light" | "dark",
     primaryColor: "amber" as string,
@@ -114,9 +113,9 @@ describe("ContextMenus", () => {
     hasActiveItem?: boolean;
     queueFinishAction?: QueueFinishAction;
     availableQueueFinishActions?: QueueFinishAction[];
-    toolDefaults?: ToolDefaults;
-    onToolDefaultChange?: (key: keyof ToolDefaults, enabled: boolean) => void;
-    onResetToolDefaults?: () => void;
+    preferences?: Preferences;
+    onPreferenceChange?: (key: keyof Preferences, enabled: boolean) => void;
+    onPreferencesReset?: () => void;
     themePreference?: "system" | "light" | "dark";
     primaryColor?: string;
     customPrimaryColor?: `#${string}`;
@@ -141,33 +140,33 @@ describe("ContextMenus", () => {
       "exit",
       "nothing",
     ];
-    menuState.preferences.toolDefaults = overrides.toolDefaults ?? { ...DEFAULT_TOOL_DEFAULTS };
+    menuState.preferences = overrides.preferences ?? { ...DEFAULT_PREFERENCES };
     menuState.theme.preference = overrides.themePreference ?? "system";
     menuState.theme.primaryColor = overrides.primaryColor ?? "amber";
     menuState.theme.customPrimaryColor = overrides.customPrimaryColor ?? "#efbf04";
-    const setToolDefault =
-      overrides.onToolDefaultChange ??
-      ((key: keyof ToolDefaults, enabled: boolean) => {
-        menuState.preferences.toolDefaults[key] = enabled;
+    const setPreference =
+      overrides.onPreferenceChange ??
+      ((key: keyof Preferences, enabled: boolean) => {
+        menuState.preferences[key] = enabled;
       });
-    const resetToolDefaults =
-      overrides.onResetToolDefaults ??
+    const resetPreferences =
+      overrides.onPreferencesReset ??
       (() => {
-        menuState.preferences.toolDefaults = { ...DEFAULT_TOOL_DEFAULTS };
+        menuState.preferences = { ...DEFAULT_PREFERENCES };
       });
     menuState.dispatch = vi.fn((action: { type: string; payload?: unknown }) => {
       if (
-        action.type === "preferences/toolDefaultChanged" &&
+        action.type === "preferences/preferenceChanged" &&
         typeof action.payload === "object" &&
         action.payload !== null &&
         "key" in action.payload &&
         "enabled" in action.payload
       ) {
-        const payload = action.payload as { key: keyof ToolDefaults; enabled: boolean };
-        setToolDefault(payload.key, payload.enabled);
+        const payload = action.payload as { key: keyof Preferences; enabled: boolean };
+        setPreference(payload.key, payload.enabled);
       }
-      if (action.type === "preferences/toolDefaultsReset") {
-        resetToolDefaults();
+      if (action.type === "preferences/preferencesReset") {
+        resetPreferences();
       }
       if (action.type === "theme/themePreferenceChanged") {
         menuState.theme.preference = action.payload as "system" | "light" | "dark";
@@ -229,11 +228,13 @@ describe("ContextMenus", () => {
 
   it("shows the opt-in queue start control only when queued work is waiting", async () => {
     const user = userEvent.setup();
-    renderMenus({ hasQueuedItems: true });
+    renderMenus({
+      hasQueuedItems: true,
+      preferences: { ...DEFAULT_PREFERENCES, autoStartQueueEnabled: false },
+    });
 
     await user.click(screen.getByRole("button", { name: "Queue" }));
     const startItem = screen.getByRole("menuitem", { name: /Start queue/ });
-    expect(within(startItem).getByRole("switch")).toBeInTheDocument();
     expect(startItem).toHaveAttribute("aria-keyshortcuts", "Enter");
     expect(screen.getAllByRole("separator")).toHaveLength(2);
 
@@ -362,7 +363,7 @@ describe("ContextMenus", () => {
     expect(updateItem.querySelector("svg")).not.toBeNull();
   });
 
-  it("shows a switch row for every configurable tool", async () => {
+  it("shows a switch row for every configurable preference", async () => {
     const user = userEvent.setup();
     render(
       <TooltipProvider>
@@ -373,13 +374,13 @@ describe("ContextMenus", () => {
     );
 
     await user.click(screen.getByRole("button", { name: "Settings" }));
-    for (const label of ["Snap", "Loop", "Follow segment", "Merge audio"]) {
+    for (const label of ["Snap", "Loop", "Follow segment", "Auto-start Queue", "Merge audio"]) {
       const row = screen.getByRole("menuitem", { name: label });
       expect(within(row).getByRole("switch")).toBeInTheDocument();
     }
     const settingsMenu = screen.getAllByRole("menu").at(-1);
     expect(settingsMenu).toBeDefined();
-    expect(within(settingsMenu!).getAllByRole("separator")).toHaveLength(3);
+    expect(within(settingsMenu!).getAllByRole("separator")).toHaveLength(4);
     expect(screen.queryByText("Timeline tools", { exact: true })).not.toBeInTheDocument();
     expect(screen.queryByText("Audio tools", { exact: true })).not.toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: "Snap" })).toContainElement(
@@ -391,9 +392,12 @@ describe("ContextMenus", () => {
     expect(screen.getByRole("menuitem", { name: "Follow segment" })).toContainElement(
       settingsMenu!.querySelector(".lucide-between-vertical-start"),
     );
+    expect(screen.getByRole("menuitem", { name: "Auto-start Queue" })).toContainElement(
+      settingsMenu!.querySelector(".lucide-play"),
+    );
   });
 
-  it("resets tools defaults", async () => {
+  it("resets preference defaults", async () => {
     const user = userEvent.setup();
     render(
       <TooltipProvider>
@@ -414,7 +418,7 @@ describe("ContextMenus", () => {
     expect(screen.getByRole("menuitem", { name: "Reset to default" })).toBeInTheDocument();
   });
 
-  it("shows the default state in tool switch tooltips", async () => {
+  it("shows the default state in preference switch tooltips", async () => {
     const user = userEvent.setup();
     render(
       <TooltipProvider>
@@ -435,7 +439,7 @@ describe("ContextMenus", () => {
     });
   });
 
-  it("shows disabled by default for disabled tool switches", async () => {
+  it("shows disabled by default for disabled preference switches", async () => {
     const user = userEvent.setup();
     render(
       <TooltipProvider>
@@ -444,13 +448,14 @@ describe("ContextMenus", () => {
             isChoosingSource={false}
             canSave
             canExport
-            toolDefaults={{
-              snapPlaybackEnabled: false,
-              loopPlaybackEnabled: false,
-              segmentPlaybackEnabled: false,
-              mergeAudioEnabled: false,
+            preferences={{
+              snapPlaybackEnabledDefault: false,
+              loopPlaybackEnabledDefault: false,
+              segmentPlaybackEnabledDefault: false,
+              autoStartQueueEnabled: false,
+              mergeAudioEnabledDefault: false,
             }}
-            onToolDefaultChange={vi.fn()}
+            onPreferenceChange={vi.fn()}
           />
         </ThemeProvider>
       </TooltipProvider>,
