@@ -37,6 +37,21 @@ interface ExportJob {
 const pendingJobs: ExportJob[] = [];
 const jobsById = new Map<string, ExportJob>();
 let isDraining = false;
+let executionEnabled = false;
+
+export function setExportQueueExecutionEnabled(enabled: boolean) {
+  executionEnabled = enabled;
+  if (enabled) void drainQueue();
+}
+
+export function cancelActiveExport() {
+  const activeJob = [...jobsById.values()].find((job) => job.startedAt !== null);
+  if (activeJob) cancelQueuedExport(activeJob.id);
+}
+
+export function cancelAllQueuedExports() {
+  [...jobsById.keys()].forEach((id) => cancelQueuedExport(id));
+}
 
 export function enqueueExport(job: Omit<ExportJob, "canceled" | "operationId" | "startedAt">) {
   const queuedJob: ExportJob = {
@@ -71,11 +86,11 @@ export function cancelQueuedExport(id: string) {
 }
 
 async function drainQueue() {
-  if (isDraining) return;
+  if (isDraining || !executionEnabled) return;
   isDraining = true;
 
   try {
-    while (pendingJobs.length > 0) {
+    while (executionEnabled && pendingJobs.length > 0) {
       const job = pendingJobs.shift();
       if (!job) continue;
       if (job.canceled) {
@@ -94,6 +109,7 @@ async function drainQueue() {
     }
   } finally {
     isDraining = false;
+    if (executionEnabled && pendingJobs.length > 0) void drainQueue();
   }
 }
 

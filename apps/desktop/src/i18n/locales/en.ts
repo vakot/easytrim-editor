@@ -48,6 +48,7 @@ export const en = {
       label: "Application menus",
       file: "File",
       view: "View",
+      queue: "Queue",
       settings: "Settings",
       openFile: "Open File",
       closeFile: "Close File",
@@ -73,6 +74,21 @@ export const en = {
       loop: "Loop",
       followSegment: "Follow segment",
       mergeAudio: "Merge audio",
+    },
+    queue: {
+      start: "Start queue",
+      skip: "Skip",
+      cancel: "Cancel",
+      cancelQueueTitle: "Cancel export queue?",
+      cancelQueueDescription:
+        "The active export and all remaining queued exports will be canceled.",
+      onFinish: "On queue finished",
+      finish: {
+        exit: "Exit",
+        systemSleep: "System sleep",
+        systemShutdown: "System shutdown",
+        nothing: "Nothing",
+      },
     },
     panels: {
       group: "Editor panels",

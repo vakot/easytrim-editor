@@ -4,16 +4,20 @@ import {
   CircleAlert,
   Download,
   ExternalLink,
+  LogOut,
   LoaderCircle,
   Magnet,
   Merge,
   Monitor,
   Moon,
+  Power,
+  Play,
   Repeat,
   RefreshCw,
   RotateCcw,
   Sun,
   Languages,
+  CircleStop,
 } from "lucide-react";
 import { useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
@@ -30,11 +34,21 @@ import { useAppUpdates } from "@/app/update-context";
 import { BrandIcon } from "@/components/BrandIcon";
 import { githubBrandIcon, kofiBrandIcon } from "@/components/brand-icons";
 import { ContextMenu, type ContextMenuOption } from "@/components/ui/context-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { isSupportedLanguage, type SupportedLanguage } from "@/i18n/resources";
 import { openExternalUrl } from "@/lib/open-external-url";
+import type { QueueFinishAction } from "@/lib/tauri/queue";
 import {
   DEFAULT_TOOL_DEFAULTS,
   loadToolDefaults,
@@ -53,13 +67,22 @@ interface ContextMenusProps {
   onCloseFile?: () => void;
   onSave: () => void;
   onExport: () => void;
+  queueStarted?: boolean;
+  hasQueuedItems?: boolean;
+  hasActiveItem?: boolean;
+  onQueueStartedChange?: (enabled: boolean) => void;
+  onCancelActive?: () => void;
+  onCancelQueue?: () => void;
+  queueFinishAction?: QueueFinishAction;
+  availableQueueFinishActions?: QueueFinishAction[];
+  onQueueFinishActionChange?: (action: QueueFinishAction) => void;
   toolDefaults?: ToolDefaults;
   onToolDefaultChange?: (key: ToolDefaultKey, enabled: boolean) => void;
   onResetToolDefaults?: () => void;
 }
 
 const themeIcons = { system: Monitor, light: Sun, dark: Moon } as const;
-type ContextMenuId = "file" | "view" | "settings" | "help";
+type ContextMenuId = "file" | "view" | "queue" | "settings" | "help";
 
 const CHANGELOG_URL = "https://github.com/vakot/easytrim-editor/releases";
 const PROJECT_PAGE_URL = "https://github.com/vakot/easytrim-editor";
@@ -83,6 +106,15 @@ export function ContextMenus({
   onCloseFile = () => undefined,
   onSave,
   onExport,
+  queueStarted = false,
+  hasQueuedItems = false,
+  hasActiveItem = false,
+  onQueueStartedChange = () => undefined,
+  onCancelActive = () => undefined,
+  onCancelQueue = () => undefined,
+  queueFinishAction = "nothing",
+  availableQueueFinishActions = ["exit", "nothing"],
+  onQueueFinishActionChange = () => undefined,
   toolDefaults: controlledToolDefaults,
   onToolDefaultChange: controlledToolDefaultChange,
   onResetToolDefaults: controlledResetToolDefaults,
@@ -107,8 +139,10 @@ export function ContextMenus({
   const [openMenu, setOpenMenu] = useState<ContextMenuId | null>(null);
   const [switchingMenu, setSwitchingMenu] = useState<ContextMenuId | null>(null);
   const [previewColor, setPreviewColor] = useState<PrimaryColor | null>(null);
+  const [isCancelQueueConfirmOpen, setIsCancelQueueConfirmOpen] = useState(false);
   const [fallbackToolDefaults, setFallbackToolDefaults] = useState<ToolDefaults>(loadToolDefaults);
   const switchInteractionRef = useRef(false);
+  const queueSwitchInteractionRef = useRef(false);
   const toolDefaults = controlledToolDefaults ?? fallbackToolDefaults;
   const setToolDefault = (key: ToolDefaultKey, enabled: boolean) => {
     if (controlledToolDefaultChange) {
@@ -226,6 +260,65 @@ export function ContextMenus({
     selected: language === currentLanguage,
     onSelect: () => void i18n.changeLanguage(language as SupportedLanguage),
   }));
+
+  const queueFinishLabels: Record<QueueFinishAction, string> = {
+    exit: t("app.queue.finish.exit"),
+    systemSleep: t("app.queue.finish.systemSleep"),
+    systemShutdown: t("app.queue.finish.systemShutdown"),
+    nothing: t("app.queue.finish.nothing"),
+  };
+  const queueFinishIcons: Record<QueueFinishAction, ReactNode> = {
+    exit: <LogOut className="size-3" aria-hidden="true" />,
+    systemSleep: <Moon className="size-3" aria-hidden="true" />,
+    systemShutdown: <Power className="size-3" aria-hidden="true" />,
+    nothing: <CircleStop className="size-3" aria-hidden="true" />,
+  };
+  const queueStartAvailable = hasQueuedItems && !queueStarted;
+  const queueFinishOptions: ContextMenuOption[] = availableQueueFinishActions.map((action) => ({
+    id: `queue-finish-${action}`,
+    children: queueFinishLabels[action],
+    icon: queueFinishIcons[action],
+    selected: action === queueFinishAction,
+    shouldCloseOnClick: false,
+    onSelect: () => onQueueFinishActionChange(action),
+  }));
+  const startQueueOptions: ContextMenuOption[] = queueStartAvailable
+    ? [
+        {
+          id: "start-queue",
+          children: t("app.queue.start"),
+          ariaKeyShortcuts: "Enter",
+          suffix: (
+            <span className="flex items-center gap-2">
+              <span>Enter</span>
+              <Switch
+                size="sm"
+                checked={queueStarted}
+                aria-label={t("app.queue.start")}
+                onCheckedChange={(enabled) => onQueueStartedChange(enabled)}
+                onClick={(event) => event.stopPropagation()}
+                onKeyDown={() => {
+                  queueSwitchInteractionRef.current = true;
+                }}
+                onPointerDown={(event) => {
+                  queueSwitchInteractionRef.current = true;
+                  event.stopPropagation();
+                }}
+              />
+            </span>
+          ),
+          shouldCloseOnClick: false,
+          onSelect: () => {
+            if (queueSwitchInteractionRef.current) {
+              queueSwitchInteractionRef.current = false;
+              return;
+            }
+            onQueueStartedChange(true);
+          },
+        },
+        { id: "queue-start-divider", separator: true },
+      ]
+    : [];
 
   const settingsToolOption = (
     id: string,
@@ -354,6 +447,37 @@ export function ContextMenus({
         {t("app.topBarMenus.view")}
       </ContextMenu>
       <ContextMenu
+        {...menuProps("queue")}
+        options={[
+          ...startQueueOptions,
+          {
+            id: "cancel-active-queue-item",
+            children: t("app.queue.skip"),
+            icon: <CircleStop className="size-3" aria-hidden="true" />,
+            disabled: !hasActiveItem,
+            onSelect: onCancelActive,
+          },
+          {
+            id: "cancel-queue",
+            children: t("app.queue.cancel"),
+            icon: <Power className="size-3" aria-hidden="true" />,
+            disabled: !hasQueuedItems && !hasActiveItem,
+            onSelect: () => setIsCancelQueueConfirmOpen(true),
+          },
+          { id: "queue-finish-divider", separator: true },
+          {
+            id: "queue-finish",
+            children: t("app.queue.onFinish"),
+            icon: <Play className="size-3" aria-hidden="true" />,
+            suffix: queueFinishLabels[queueFinishAction],
+            shouldCloseOnClick: false,
+            options: queueFinishOptions,
+          },
+        ]}
+      >
+        {t("app.topBarMenus.queue")}
+      </ContextMenu>
+      <ContextMenu
         {...menuProps("settings")}
         options={[
           settingsToolOption(
@@ -444,6 +568,28 @@ export function ContextMenus({
       >
         Help
       </ContextMenu>
+      <Dialog open={isCancelQueueConfirmOpen} onOpenChange={setIsCancelQueueConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("app.queue.cancelQueueTitle")}</DialogTitle>
+            <DialogDescription>{t("app.queue.cancelQueueDescription")}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCancelQueueConfirmOpen(false)}>
+              {t("common.cancel")}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                setIsCancelQueueConfirmOpen(false);
+                onCancelQueue();
+              }}
+            >
+              {t("app.queue.cancel")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </nav>
   );
 }

@@ -60,6 +60,15 @@ function EasyTrimEditorApp() {
               onCloseFile={app.handleCloseFile}
               onSave={() => exportPanelRef.current?.startFastCut()}
               onExport={() => exportPanelRef.current?.openOptimizedDialog()}
+              queueStarted={app.queueStarted}
+              hasQueuedItems={app.exportQueue.some((toast) => toast.status === "queued")}
+              hasActiveItem={app.exportQueue.some((toast) => toast.status === "rendering")}
+              onQueueStartedChange={app.setQueueStarted}
+              onCancelActive={app.cancelActiveExport}
+              onCancelQueue={app.cancelQueue}
+              queueFinishAction={app.queueFinishAction}
+              availableQueueFinishActions={app.availableQueueFinishActions}
+              onQueueFinishActionChange={app.setQueueFinishAction}
               toolDefaults={toolDefaults}
               onToolDefaultChange={handleToolDefaultChange}
               onResetToolDefaults={handleResetToolDefaults}

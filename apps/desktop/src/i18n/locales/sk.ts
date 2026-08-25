@@ -53,6 +53,7 @@ export const sk = {
       label: "Ponuky aplikácie",
       file: "Súbor",
       view: "Zobraziť",
+      queue: "Front",
       settings: "Nastavenia",
       openFile: "Otvoriť súbor",
       closeFile: "Zavrieť súbor",
@@ -78,6 +79,20 @@ export const sk = {
       loop: "Opakovanie",
       followSegment: "Sledovať segment",
       mergeAudio: "Zlúčiť zvuk",
+    },
+    queue: {
+      start: "Spustiť front",
+      skip: "Preskočiť",
+      cancel: "Zrušiť",
+      cancelQueueTitle: "Zrušiť front exportov?",
+      cancelQueueDescription: "Aktívny export a všetky zostávajúce exporty vo fronte sa zrušia.",
+      onFinish: "Po dokončení frontu",
+      finish: {
+        exit: "Ukončiť",
+        systemSleep: "Uspať systém",
+        systemShutdown: "Vypnúť systém",
+        nothing: "Nič",
+      },
     },
     dragUnavailable: "Presunutie súboru nie je dostupné: {{message}}",
     panels: {
