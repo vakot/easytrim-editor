@@ -1,9 +1,4 @@
-import {
-  combineReducers,
-  configureStore,
-  createListenerMiddleware,
-  type Middleware,
-} from "@reduxjs/toolkit";
+import { combineReducers, configureStore } from "@reduxjs/toolkit";
 import {
   FLUSH,
   PAUSE,
@@ -16,16 +11,14 @@ import {
 } from "redux-persist";
 
 import { createPersistedReducer, reduxStorage, type PersistStorage } from "@/app/store/persistence";
+import { appMiddleware } from "@/app/store/middleware";
 import { editorLayoutReducer } from "@/app/store/slices/editor-layout-slice";
 import { audioReducer } from "@/app/store/slices/audio-slice";
 import { cropReducer } from "@/app/store/slices/crop-slice";
 import { exportPresetsReducer } from "@/app/store/slices/export-presets-slice";
-import { exportReducer, queueEntryAdded } from "@/app/store/slices/export-slice";
+import { exportReducer } from "@/app/store/slices/export-slice";
 import { importWorkflowReducer } from "@/app/store/slices/import-workflow-slice";
-import {
-  preferencesReducer,
-  selectAutoStartQueueEnabled,
-} from "@/app/store/slices/preferences-slice";
+import { preferencesReducer } from "@/app/store/slices/preferences-slice";
 import {
   createEditorToolsStateFromPreferences,
   editorToolsInitialized,
@@ -35,8 +28,6 @@ import { previewReducer } from "@/app/store/slices/preview-slice";
 import { sourceReducer } from "@/app/store/slices/source-slice";
 import { themeReducer } from "@/app/store/slices/theme-slice";
 import { trimReducer } from "@/app/store/slices/trim-slice";
-import { startExportQueue } from "@/app/store/thunks/export-thunks";
-import { persistExportPresetState } from "@/features/export/export-presets";
 
 const rootReducer = combineReducers({
   audio: audioReducer,
@@ -55,35 +46,6 @@ const rootReducer = combineReducers({
 
 export type RootState = ReturnType<typeof rootReducer>;
 
-const exportQueueListenerMiddleware = createListenerMiddleware<RootState>();
-
-exportQueueListenerMiddleware.startListening({
-  actionCreator: queueEntryAdded,
-  effect: (_, listenerApi) => {
-    if (selectAutoStartQueueEnabled(listenerApi.getState())) {
-      const dispatch = listenerApi.dispatch as unknown as AppDispatch;
-      dispatch(startExportQueue());
-    }
-  },
-});
-
-const exportPresetPersistenceMiddleware: Middleware<unknown, RootState> =
-  ({ getState }) =>
-  (next) =>
-  (action) => {
-    const result = next(action);
-    if (
-      typeof action === "object" &&
-      action !== null &&
-      "type" in action &&
-      typeof action.type === "string" &&
-      action.type.startsWith("exportPresets/")
-    ) {
-      persistExportPresetState(getState().exportPresets);
-    }
-    return result;
-  };
-
 export const persistedReducer = createPersistedReducer(rootReducer);
 
 export function createAppStore(storage: PersistStorage = reduxStorage) {
@@ -98,8 +60,8 @@ export function createAppStore(storage: PersistStorage = reduxStorage) {
           ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
         },
       })
-        .prepend(exportQueueListenerMiddleware.middleware)
-        .concat(exportPresetPersistenceMiddleware),
+        .prepend(...appMiddleware.prepend)
+        .concat(...appMiddleware.append),
   });
 }
 
