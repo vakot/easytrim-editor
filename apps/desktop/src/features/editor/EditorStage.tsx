@@ -5,17 +5,6 @@ import { LoaderCircle } from "lucide-react";
 import { PanelSeparator } from "@/components/PanelSeparator";
 import { useEditorViewState } from "@/app/hooks/useEditorViewState";
 import { usePlayback, useSourceDetails, useTimeline } from "@/app/hooks/useEditorContracts";
-import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
-import {
-  createEditorToolsStateFromPreferences,
-  editorToolsReset,
-  playbackSpeedChanged,
-  snapPlaybackToggled,
-  loopPlaybackToggled,
-  segmentPlaybackToggled,
-  selectEditorTools,
-} from "@/app/store/slices/editor-tools-slice";
-import { selectToolDefaults } from "@/app/store/slices/preferences-slice";
 import { AudioTracks } from "@/features/audio-tracks";
 import {
   PlaybackControls,
@@ -39,9 +28,6 @@ export function EditorStage() {
   const source = useSourceDetails();
   const playback = usePlayback();
   const timeline = useTimeline();
-  const dispatch = useAppDispatch();
-  const tools = useAppSelector(selectEditorTools);
-  const toolDefaults = useAppSelector(selectToolDefaults);
   const { editorStageLayout, setEditorStageLayout, showTimeline, setShowTimeline } =
     useEditorViewState();
   const timelineRange = source.trim ?? EMPTY_TIMELINE_RANGE;
@@ -146,23 +132,7 @@ export function EditorStage() {
                     frameRate={source.frameRate}
                   />
                 }
-                videoToolbar={
-                  <TimelineTools
-                    snapPlaybackEnabled={tools.snapPlaybackEnabled}
-                    loopPlaybackEnabled={tools.loopPlaybackEnabled}
-                    segmentPlaybackEnabled={tools.segmentPlaybackEnabled}
-                    playbackSpeed={tools.playbackSpeed}
-                    onToggleSnapPlayback={() => dispatch(snapPlaybackToggled())}
-                    onToggleLoopPlayback={() => dispatch(loopPlaybackToggled())}
-                    onToggleSegmentPlayback={() => dispatch(segmentPlaybackToggled())}
-                    onPlaybackSpeedChange={(speed) => dispatch(playbackSpeedChanged(speed))}
-                    onReset={() =>
-                      dispatch(
-                        editorToolsReset(createEditorToolsStateFromPreferences(toolDefaults)),
-                      )
-                    }
-                  />
-                }
+                videoToolbar={<TimelineTools />}
                 onChange={timeline.onChange}
                 onMoveSegment={timeline.onMoveSegment}
                 onTrimDragStart={timeline.onTrimDragStart}
