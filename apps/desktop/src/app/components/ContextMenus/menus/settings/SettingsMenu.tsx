@@ -112,9 +112,9 @@ export function SettingsMenu({ navigation }: { navigation: MenuNavigation }) {
       options={[
         settingsToolOption(
           "setting-auto-start-queue",
-          t("app.settings.autoStartQueue"),
+          t("app.settings.autoStartQueueEnabled"),
           <Play className="size-3" aria-hidden="true" />,
-          "autoStartQueue",
+          "autoStartQueueEnabled",
         ),
         { id: "settings-playback-divider", separator: true },
         settingsToolOption(

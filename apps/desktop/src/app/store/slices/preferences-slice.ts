@@ -40,3 +40,5 @@ export const selectSegmentPlaybackDefault = (state: RootState): boolean =>
   selectToolDefaults(state).segmentPlaybackEnabled;
 export const selectMergeAudioDefault = (state: RootState): boolean =>
   selectToolDefaults(state).mergeAudioEnabled;
+export const selectAutoStartQueueEnabled = (state: RootState): boolean =>
+  selectToolDefaults(state).autoStartQueueEnabled;

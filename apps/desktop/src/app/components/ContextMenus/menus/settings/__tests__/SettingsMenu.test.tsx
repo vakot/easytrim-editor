@@ -51,7 +51,7 @@ describe("SettingsMenu Redux integration", () => {
 
     await user.click(autoStartQueueSwitch);
 
-    expect(store.getState().preferences.toolDefaults.autoStartQueue).toBe(false);
+    expect(store.getState().preferences.toolDefaults.autoStartQueueEnabled).toBe(false);
   });
 
   it("resets Preferences without rewriting active editor tools", async () => {

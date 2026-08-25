@@ -42,7 +42,7 @@ const menuState = vi.hoisted(() => ({
       snapPlaybackEnabled: true,
       loopPlaybackEnabled: true,
       segmentPlaybackEnabled: true,
-      autoStartQueue: true,
+      autoStartQueueEnabled: true,
       mergeAudioEnabled: false,
     } as ToolDefaults,
   },
@@ -452,7 +452,7 @@ describe("ContextMenus", () => {
               snapPlaybackEnabled: false,
               loopPlaybackEnabled: false,
               segmentPlaybackEnabled: false,
-              autoStartQueue: false,
+              autoStartQueueEnabled: false,
               mergeAudioEnabled: false,
             }}
             onToolDefaultChange={vi.fn()}

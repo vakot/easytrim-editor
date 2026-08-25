@@ -73,7 +73,7 @@ export const en = {
       snap: "Snap",
       loop: "Loop",
       followSegment: "Follow segment",
-      autoStartQueue: "Auto-start Queue",
+      autoStartQueueEnabled: "Auto-start Queue",
       mergeAudio: "Merge audio",
     },
     queue: {

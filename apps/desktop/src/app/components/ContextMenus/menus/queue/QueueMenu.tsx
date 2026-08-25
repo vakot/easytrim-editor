@@ -1,5 +1,5 @@
-import { CircleStop, LogOut, Moon, Play, Power } from "lucide-react";
-import { useRef, useState, type ReactNode } from "react";
+import { CircleStop, LogOut, Moon, Power } from "lucide-react";
+import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
@@ -25,20 +25,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Switch } from "@/components/ui/switch";
 import type { QueueFinishAction } from "@/lib/tauri/queue";
 
 import type { MenuNavigation } from "../../types";
+import { selectAutoStartQueueEnabled } from "@/app/store/slices/preferences-slice";
 
 export function QueueMenu({ navigation }: { navigation: MenuNavigation }) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const [isCancelQueueConfirmOpen, setIsCancelQueueConfirmOpen] = useState(false);
-  const queueSwitchInteractionRef = useRef(false);
   const queue = useAppSelector(selectExportQueue);
   const queueStarted = useAppSelector(selectQueueStarted);
   const queueFinishAction = useAppSelector(selectQueueFinishAction);
   const availableQueueFinishActions = useAppSelector(selectAvailableQueueFinishActions);
+  const autoStartQueueEnabled = useAppSelector(selectAutoStartQueueEnabled);
   const hasQueuedItems = queue.some((toast) => toast.status === "queued");
   const hasActiveItem = queue.some((toast) => toast.status === "rendering");
   const queueFinishLabels: Record<QueueFinishAction, string> = {
@@ -47,12 +47,14 @@ export function QueueMenu({ navigation }: { navigation: MenuNavigation }) {
     systemShutdown: t("app.queue.finish.systemShutdown"),
     nothing: t("app.queue.finish.nothing"),
   };
+
   const queueFinishIcons: Record<QueueFinishAction, ReactNode> = {
     exit: <LogOut className="size-3" aria-hidden="true" />,
     systemSleep: <Moon className="size-3" aria-hidden="true" />,
     systemShutdown: <Power className="size-3" aria-hidden="true" />,
     nothing: <CircleStop className="size-3" aria-hidden="true" />,
   };
+
   const queueFinishOptions: ContextMenuOption[] = availableQueueFinishActions.map((action) => ({
     id: `queue-finish-${action}`,
     children: queueFinishLabels[action],
@@ -61,64 +63,34 @@ export function QueueMenu({ navigation }: { navigation: MenuNavigation }) {
     shouldCloseOnClick: false,
     onSelect: () => dispatch(queueFinishActionChanged(action)),
   }));
-  const startQueueOptions: ContextMenuOption[] =
-    hasQueuedItems && !queueStarted
-      ? [
-          {
-            id: "start-queue",
-            children: t("app.queue.start"),
-            ariaKeyShortcuts: "Enter",
-            suffix: (
-              <span className="flex items-center gap-2">
-                <span>Enter</span>
-                <Switch
-                  size="sm"
-                  checked={queueStarted}
-                  aria-label={t("app.queue.start")}
-                  onCheckedChange={(enabled) => {
-                    if (enabled) void dispatch(startExportQueue());
-                  }}
-                  onClick={(event) => event.stopPropagation()}
-                  onKeyDown={() => {
-                    queueSwitchInteractionRef.current = true;
-                  }}
-                  onPointerDown={(event) => {
-                    queueSwitchInteractionRef.current = true;
-                    event.stopPropagation();
-                  }}
-                />
-              </span>
-            ),
-            shouldCloseOnClick: false,
-            onSelect: () => {
-              if (queueSwitchInteractionRef.current) {
-                queueSwitchInteractionRef.current = false;
-                return;
-              }
-              void dispatch(startExportQueue());
-            },
-          },
-          { id: "queue-start-divider", separator: true },
-        ]
-      : [];
+
+  const autoStartQueueOptions: ContextMenuOption[] = [
+    {
+      id: "start-queue",
+      children: t("app.queue.start"),
+      ariaKeyShortcuts: "Enter",
+      suffix: "Enter",
+      disabled: !hasQueuedItems || queueStarted,
+      onSelect: () => void dispatch(startExportQueue()),
+    },
+    { id: "queue-start-divider", separator: true },
+  ];
 
   return (
     <>
       <ContextMenu
         {...navigation}
         options={[
-          ...startQueueOptions,
+          ...(!autoStartQueueEnabled ? autoStartQueueOptions : []),
           {
             id: "cancel-active-queue-item",
             children: t("app.queue.skip"),
-            icon: <CircleStop className="size-3" aria-hidden="true" />,
             disabled: !hasActiveItem,
             onSelect: () => void dispatch(cancelActiveExportRequested()),
           },
           {
             id: "cancel-queue",
             children: t("app.queue.cancel"),
-            icon: <Power className="size-3" aria-hidden="true" />,
             disabled: !hasQueuedItems && !hasActiveItem,
             onSelect: () => setIsCancelQueueConfirmOpen(true),
           },
@@ -126,8 +98,7 @@ export function QueueMenu({ navigation }: { navigation: MenuNavigation }) {
           {
             id: "queue-finish",
             children: t("app.queue.onFinish"),
-            icon: <Play className="size-3" aria-hidden="true" />,
-            suffix: queueFinishLabels[queueFinishAction],
+            suffix: queueFinishIcons[queueFinishAction],
             shouldCloseOnClick: false,
             options: queueFinishOptions,
           },
