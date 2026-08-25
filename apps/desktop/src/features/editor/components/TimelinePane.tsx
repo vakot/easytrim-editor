@@ -4,6 +4,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import type { TrimRange } from "@/domain/trim";
 import { timelineGeometryStyle } from "@/features/timeline/utils/timeline-geometry";
+import { cn } from "@/lib/utils";
 
 interface TimelinePaneProps {
   range: TrimRange;
@@ -18,11 +19,10 @@ export function TimelinePane({ range, timeline, audioTracks }: TimelinePaneProps
     <div
       data-slot="timeline-pane"
       style={timelineGeometryStyle(range)}
-      className={
-        hasAudioTracks
-          ? "grid size-full min-h-0 min-w-0 grid-rows-[auto_auto_minmax(0,1fr)] overflow-hidden bg-background"
-          : "size-full min-h-0 min-w-0 overflow-hidden bg-background"
-      }
+      className={cn(
+        "size-full min-h-0 min-w-0 overflow-hidden",
+        hasAudioTracks && "grid grid-rows-[auto_auto_minmax(0,1fr)]",
+      )}
     >
       <div className="min-w-0 px-5 py-4" data-testid="timeline-fixed-content">
         {timeline}

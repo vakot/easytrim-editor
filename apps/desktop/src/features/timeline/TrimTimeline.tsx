@@ -67,7 +67,7 @@ export function TrimTimeline({
   const playheadPercent = timelinePercent(playheadValue, range.sourceDurationMicros);
 
   return (
-    <section className="min-w-0 select-none bg-background" aria-labelledby="timeline-title">
+    <section className="min-w-0 select-none" aria-labelledby="timeline-title">
       <TimelineHeader
         range={range}
         frameRate={frameRate}
