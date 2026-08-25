@@ -753,6 +753,24 @@ describe("ContextMenus", () => {
     });
   });
 
+  it("closes the active menu on the first outside click after hovering to another menu", async () => {
+    const user = userEvent.setup();
+    renderMenus();
+
+    await user.click(screen.getByRole("button", { name: "File" }));
+    for (const menuName of ["View", "Queue", "Settings", "Help"]) {
+      await user.hover(screen.getByRole("button", { name: menuName }));
+    }
+
+    await waitFor(() => {
+      expect(screen.getByRole("menuitem", { name: /Check for Updates/ })).toBeInTheDocument();
+    });
+
+    await user.click(document.body);
+
+    expect(screen.queryByRole("menuitem", { name: /Check for Updates/ })).not.toBeInTheDocument();
+  });
+
   it("switches between submenus immediately on hover", async () => {
     const user = userEvent.setup();
     render(

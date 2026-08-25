@@ -46,6 +46,7 @@ interface ContextMenuProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   onTriggerPointerEnter?: () => void;
+  onTriggerPointerLeave?: () => void;
 }
 
 export function ContextMenu({
@@ -55,6 +56,7 @@ export function ContextMenu({
   open,
   onOpenChange,
   onTriggerPointerEnter,
+  onTriggerPointerLeave,
 }: ContextMenuProps) {
   return (
     <DropdownMenuPrimitive.Root modal={false} open={open} onOpenChange={onOpenChange}>
@@ -64,6 +66,7 @@ export function ContextMenu({
           variant="ghost"
           size="xs"
           onPointerEnter={onTriggerPointerEnter}
+          onPointerLeave={onTriggerPointerLeave}
           className={cn(
             "text-foreground/80 data-[state=open]:bg-accent data-[state=open]:text-foreground",
             className,
