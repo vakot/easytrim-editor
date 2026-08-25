@@ -17,6 +17,9 @@ import { useSourceDetails } from "@/app/hooks/useSourceDetails";
 import { AppUpdatesProvider } from "@/app/AppUpdatesProvider";
 import { ExportPanelControllerProvider } from "@/app/ExportPanelControllerProvider";
 import { useExportPanelController } from "@/app/hooks/useExportPanelController";
+import { persistor, store } from "@/app/store";
+import { Provider as ReduxProvider } from "react-redux";
+import { PersistGate } from "redux-persist/integration/react";
 
 function EasyTrimEditorApp() {
   const app = useEditorSession();
@@ -80,15 +83,19 @@ function App() {
   return (
     <AppUpdatesProvider>
       <ThemeProvider>
-        <EditorViewStateProvider>
-          <EditorSessionProvider>
-            <ExportPanelControllerProvider>
-              <EditorContractsProvider>
-                <EasyTrimEditorApp />
-              </EditorContractsProvider>
-            </ExportPanelControllerProvider>
-          </EditorSessionProvider>
-        </EditorViewStateProvider>
+        <ReduxProvider store={store}>
+          <PersistGate loading={null} persistor={persistor}>
+            <EditorViewStateProvider>
+              <EditorSessionProvider>
+                <ExportPanelControllerProvider>
+                  <EditorContractsProvider>
+                    <EasyTrimEditorApp />
+                  </EditorContractsProvider>
+                </ExportPanelControllerProvider>
+              </EditorSessionProvider>
+            </EditorViewStateProvider>
+          </PersistGate>
+        </ReduxProvider>
       </ThemeProvider>
     </AppUpdatesProvider>
   );

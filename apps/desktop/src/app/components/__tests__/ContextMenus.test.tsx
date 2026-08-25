@@ -48,6 +48,7 @@ const menuState = vi.hoisted(() => ({
     } as ToolDefaults,
     setToolDefault: vi.fn(),
     resetToolDefaults: vi.fn(),
+    dispatch: vi.fn(),
   },
   exportPanel: {
     startFastCut: vi.fn(),
@@ -65,6 +66,11 @@ vi.mock("@/app/hooks/useSourceDetails", () => ({
 
 vi.mock("@/app/hooks/useEditorViewState", () => ({
   useEditorViewState: () => menuState.viewState,
+}));
+
+vi.mock("@/app/store", () => ({
+  useAppDispatch: () => menuState.viewState.dispatch,
+  useAppSelector: () => menuState.viewState.toolDefaults,
 }));
 
 vi.mock("@/app/hooks/useExportPanelController", () => ({
@@ -142,6 +148,17 @@ describe("ContextMenus", () => {
       resetToolDefaults();
       notify();
     });
+    menuState.viewState.dispatch = vi.fn(
+      (action: { type: string; payload?: { key: keyof ToolDefaults; enabled: boolean } }) => {
+        if (action.type === "preferences/toolDefaultChanged" && action.payload) {
+          setToolDefault(action.payload.key, action.payload.enabled);
+        }
+        if (action.type === "preferences/toolDefaultsReset") {
+          resetToolDefaults();
+        }
+        notify();
+      },
+    );
     menuState.sourceDetails.isReady = overrides.canExport ?? true;
     menuState.sourceDetails.crop =
       overrides.canSave === false

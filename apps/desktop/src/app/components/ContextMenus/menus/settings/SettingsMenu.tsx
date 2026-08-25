@@ -2,9 +2,10 @@ import { BetweenVerticalStart, Languages, Magnet, Merge, Repeat, RotateCcw } fro
 import { useRef, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
-import { DEFAULT_TOOL_DEFAULTS, type ToolDefaultKey } from "@/app/tool-settings";
 import { useEditorSession } from "@/app/hooks/useEditorSession";
-import { useEditorViewState } from "@/app/hooks/useEditorViewState";
+import { selectToolDefaults, toolDefaultChanged, toolDefaultsReset } from "@/app/preferences-slice";
+import { useAppDispatch, useAppSelector } from "@/app/store";
+import { DEFAULT_TOOL_DEFAULTS, type ToolDefaultKey } from "@/app/tool-settings";
 import { ContextMenu, type ContextMenuOption } from "@/components/ui/context-menu";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -15,20 +16,24 @@ import type { MenuNavigation } from "../../types";
 export function SettingsMenu({ navigation }: { navigation: MenuNavigation }) {
   const { t, i18n } = useTranslation();
   const app = useEditorSession();
-  const { toolDefaults, setToolDefault, resetToolDefaults } = useEditorViewState();
+  const dispatch = useAppDispatch();
+  const toolDefaults = useAppSelector(selectToolDefaults);
   const switchInteractionRef = useRef(false);
   const currentLanguage = isSupportedLanguage(i18n.resolvedLanguage) ? i18n.resolvedLanguage : "en";
 
   const updateToolDefault = (key: ToolDefaultKey, enabled: boolean) => {
-    setToolDefault(key, enabled);
+    dispatch(toolDefaultChanged({ key, enabled }));
     if (key === "mergeAudioEnabled" && app.session.source) {
+      // NOTE: Transitional bridge: merge-audio Settings has always applied to the active source.
+      // The source value remains session-owned until the session migration phase.
       app.handleSetAudioMerge(app.session.source.selection.sourceId, enabled);
     }
   };
 
   const resetDefaults = () => {
-    resetToolDefaults();
+    dispatch(toolDefaultsReset());
     if (app.session.source) {
+      // NOTE: Keep the same explicit merge-audio compatibility behavior on reset.
       app.handleSetAudioMerge(
         app.session.source.selection.sourceId,
         DEFAULT_TOOL_DEFAULTS.mergeAudioEnabled,
