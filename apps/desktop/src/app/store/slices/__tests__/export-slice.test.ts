@@ -126,10 +126,7 @@ describe("export slice", () => {
   });
 
   it("accepts only the latest optimized plan request result", () => {
-    let state = exportReducer(
-      initialExportState,
-      optimizedExportPlanRequested({ requestId: 1 }),
-    );
+    let state = exportReducer(initialExportState, optimizedExportPlanRequested({ requestId: 1 }));
     state = exportReducer(state, optimizedExportPlanRequested({ requestId: 2 }));
     state = exportReducer(
       state,
