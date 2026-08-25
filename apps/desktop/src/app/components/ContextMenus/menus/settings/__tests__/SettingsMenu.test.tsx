@@ -1,24 +1,13 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { Provider } from "react-redux";
 
 import { SettingsMenu } from "../SettingsMenu";
 import { createAppStore } from "@/app/store/store";
 import { DEFAULT_TOOL_DEFAULTS } from "@/app/tool-settings";
+import { sourceSelected } from "@/app/store/slices/session-slice";
 import { TooltipProvider } from "@/components/ui/tooltip";
-
-const sessionMock = vi.hoisted(() => ({
-  source: null as { selection: { sourceId: string } } | null,
-  handleSetAudioMerge: vi.fn(),
-}));
-
-vi.mock("@/app/hooks/useEditorSession", () => ({
-  useEditorSession: () => ({
-    session: { source: sessionMock.source },
-    handleSetAudioMerge: sessionMock.handleSetAudioMerge,
-  }),
-}));
 
 const navigation = {
   open: true,
@@ -26,11 +15,6 @@ const navigation = {
   onTriggerPointerEnter: vi.fn(),
   onTriggerPointerLeave: vi.fn(),
 };
-
-afterEach(() => {
-  sessionMock.source = null;
-  sessionMock.handleSetAudioMerge.mockReset();
-});
 
 function renderSettings() {
   const store = createAppStore();
@@ -75,14 +59,14 @@ describe("SettingsMenu Redux integration", () => {
 
   it("keeps the merge-audio compatibility bridge explicit at the Settings boundary", async () => {
     const user = userEvent.setup();
-    sessionMock.source = { selection: { sourceId: "source-1" } };
-    renderSettings();
+    const store = renderSettings();
+    store.dispatch(sourceSelected({ source: { sourceId: "source-1", displayName: "source.mp4" } }));
 
     const mergeSwitch = within(screen.getByRole("menuitem", { name: "Merge audio" })).getByRole(
       "switch",
     );
     await user.click(mergeSwitch);
 
-    expect(sessionMock.handleSetAudioMerge).toHaveBeenCalledWith("source-1", true);
+    expect(store.getState().session.source?.mergeAudio).toBe(true);
   });
 });

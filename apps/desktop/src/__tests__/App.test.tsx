@@ -14,6 +14,7 @@ import {
   editorToolsInitialized,
 } from "../app/store/slices/editor-tools-slice";
 import { editorLayoutReset } from "../app/store/slices/editor-layout-slice";
+import { sourceCleared } from "../app/store/slices/session-slice";
 import { DEFAULT_TOOL_DEFAULTS } from "../app/tool-settings";
 
 const mocks = vi.hoisted(() => ({
@@ -141,6 +142,7 @@ function installAudioMocks(initiallyReady = true) {
 beforeEach(() => {
   vi.clearAllMocks();
   store.dispatch(editorLayoutReset());
+  store.dispatch(sourceCleared());
   store.dispatch(
     editorToolsInitialized(createEditorToolsStateFromPreferences(DEFAULT_TOOL_DEFAULTS)),
   );

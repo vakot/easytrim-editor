@@ -1,7 +1,21 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 
-import { initialSessionState, sessionReducer } from "@/app/session-state";
-import type { TrimRange } from "@/domain/trim";
+import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
+import {
+  capabilitiesFailed,
+  capabilitiesReady,
+  previewFailed,
+  previewLoading,
+  previewReady,
+  selectHasSource,
+  sourceCleared,
+  sourceFailed,
+  sourceReady,
+  sourceSelected,
+  waveformsFailed,
+  waveformReady,
+  waveformsLoading,
+} from "@/app/store/slices/session-slice";
 import type { ExportToast } from "@/features/export";
 import {
   exportPresetReducer,
@@ -34,7 +48,8 @@ import {
 import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
 
 export function useEasyTrimEditorApp(defaultMergeAudio = false) {
-  const [session, dispatch] = useReducer(sessionReducer, initialSessionState);
+  const dispatch = useAppDispatch();
+  const hasSource = useAppSelector(selectHasSource);
   const [isChoosingSource, setIsChoosingSource] = useState(false);
   const [isNativeDialogOpen, setIsNativeDialogOpen] = useState(false);
   const [isSourceDragActive, setIsSourceDragActive] = useState(false);
@@ -57,7 +72,6 @@ export function useEasyTrimEditorApp(defaultMergeAudio = false) {
   }>({ sourceId: null, status: "idle" });
   const activeSourceIdRef = useRef<string | null>(null);
   const waveformJobSequence = useRef(0);
-  const hasSource = session.source !== null;
   const queueHadWorkRef = useRef(false);
   const suppressQueueFinishActionRef = useRef(false);
 
@@ -113,11 +127,11 @@ export function useEasyTrimEditorApp(defaultMergeAudio = false) {
       activeSourceIdRef.current = source.sourceId;
       setAudioPreviewUrls({});
       setAudioPreviewPreparation({ sourceId: source.sourceId, status: "idle" });
-      dispatch({ type: "source-selected", source, mergeAudio: defaultMergeAudio });
+      dispatch(sourceSelected({ source, mergeAudio: defaultMergeAudio }));
       void inspectMedia(source.sourceId)
         .then((media) => {
           if (activeSourceIdRef.current !== source.sourceId) return undefined;
-          dispatch({ type: "source-ready", sourceId: source.sourceId, media });
+          dispatch(sourceReady({ sourceId: source.sourceId, media }));
           const audioStreamIndexes = media.audioStreams.map((stream) => stream.streamIndex);
           if (audioStreamIndexes.length <= 1) {
             setAudioPreviewPreparation({ sourceId: source.sourceId, status: "ready" });
@@ -140,12 +154,12 @@ export function useEasyTrimEditorApp(defaultMergeAudio = false) {
                 }
               });
           }
-          dispatch({ type: "preview-loading", sourceId: source.sourceId, kind: "source" });
+          dispatch(previewLoading({ sourceId: source.sourceId, kind: "source" }));
           return prepareSourcePreview(source.sourceId);
         })
         .then((preview) => {
           if (!preview) return;
-          dispatch({ type: "preview-ready", sourceId: source.sourceId, preview });
+          dispatch(previewReady({ sourceId: source.sourceId, preview }));
         })
         .catch((error: unknown) => {
           const normalized = normalizeAppError(error);
@@ -153,52 +167,40 @@ export function useEasyTrimEditorApp(defaultMergeAudio = false) {
             normalized.code === "probe_failed" ||
               normalized.code === "unsupported_media" ||
               normalized.code === "io_failed"
-              ? {
-                  type: "source-failed",
-                  sourceId: source.sourceId,
-                  error: normalized,
-                }
-              : {
-                  type: "preview-failed",
-                  sourceId: source.sourceId,
-                  error: normalized,
-                },
+              ? sourceFailed({ sourceId: source.sourceId, error: normalized })
+              : previewFailed({ sourceId: source.sourceId, error: normalized }),
           );
         });
     },
-    [defaultMergeAudio],
+    [defaultMergeAudio, dispatch],
   );
 
-  const handlePreviewPlaybackError = useCallback((sourceId: string, previewKind: PreviewKind) => {
-    if (previewKind === "proxy") {
-      dispatch({
-        type: "preview-failed",
-        sourceId,
-        error: {
-          code: "preview_playback_failed",
-          message: "The compatible preview could not be played.",
-        },
-      });
-      return;
-    }
+  const handlePreviewPlaybackError = useCallback(
+    (sourceId: string, previewKind: PreviewKind) => {
+      if (previewKind === "proxy") {
+        dispatch(
+          previewFailed({
+            sourceId,
+            error: {
+              code: "preview_playback_failed",
+              message: "The compatible preview could not be played.",
+            },
+          }),
+        );
+        return;
+      }
 
-    dispatch({ type: "preview-loading", sourceId, kind: "proxy" });
-    void prepareProxyPreview(sourceId)
-      .then((preview) => {
-        dispatch({ type: "preview-ready", sourceId, preview });
-      })
-      .catch((error: unknown) => {
-        dispatch({
-          type: "preview-failed",
-          sourceId,
-          error: normalizeAppError(error),
+      dispatch(previewLoading({ sourceId, kind: "proxy" }));
+      void prepareProxyPreview(sourceId)
+        .then((preview) => {
+          dispatch(previewReady({ sourceId, preview }));
+        })
+        .catch((error: unknown) => {
+          dispatch(previewFailed({ sourceId, error: normalizeAppError(error) }));
         });
-      });
-  }, []);
-
-  const handleTrimChange = useCallback((sourceId: string, trim: TrimRange) => {
-    dispatch({ type: "trim-changed", sourceId, trim });
-  }, []);
+    },
+    [dispatch],
+  );
 
   const handlePrepareWaveforms = useCallback(
     (sourceId: string, streamIndexes: number[], width: number) => {
@@ -206,55 +208,25 @@ export function useEasyTrimEditorApp(defaultMergeAudio = false) {
         return;
       }
       const jobId = `waveform-${++waveformJobSequence.current}`;
-      dispatch({ type: "waveforms-loading", sourceId, jobId, width, streamIndexes });
+      dispatch(waveformsLoading({ sourceId, jobId, width, streamIndexes }));
       void prepareWaveforms(sourceId, jobId, streamIndexes, width)
         .then((results) => {
-          results.forEach((result) => dispatch({ type: "waveform-result", result }));
+          results.forEach((result) => dispatch(waveformReady(result)));
         })
         .catch((error: unknown) => {
-          dispatch({
-            type: "waveforms-failed",
-            sourceId,
-            jobId,
-            width,
-            streamIndexes,
-            error: normalizeAppError(error),
-          });
+          dispatch(
+            waveformsFailed({
+              sourceId,
+              jobId,
+              width,
+              streamIndexes,
+              error: normalizeAppError(error),
+            }),
+          );
         });
     },
-    [],
+    [dispatch],
   );
-
-  const handleToggleAudioTrack = useCallback((sourceId: string, streamIndex: number) => {
-    dispatch({ type: "audio-track-toggled", sourceId, streamIndex });
-  }, []);
-
-  const handleAudioTrackVolumeChange = useCallback(
-    (sourceId: string, streamIndex: number, volumePercent: number) => {
-      dispatch({ type: "audio-track-volume-changed", sourceId, streamIndex, volumePercent });
-    },
-    [],
-  );
-
-  const handleToggleAudioMaster = useCallback((sourceId: string) => {
-    dispatch({ type: "audio-master-toggled", sourceId });
-  }, []);
-
-  const handleMasterVolumeChange = useCallback((sourceId: string, volumePercent: number) => {
-    dispatch({ type: "audio-master-volume-changed", sourceId, volumePercent });
-  }, []);
-
-  const handleToggleAudioMerge = useCallback((sourceId: string) => {
-    dispatch({ type: "audio-merge-toggled", sourceId });
-  }, []);
-
-  const handleSetAudioMerge = useCallback((sourceId: string, enabled: boolean) => {
-    dispatch({ type: "audio-merge-set", sourceId, enabled });
-  }, []);
-
-  const handleWaveformImageError = useCallback((sourceId: string, streamIndex: number) => {
-    dispatch({ type: "waveform-display-failed", sourceId, streamIndex });
-  }, []);
 
   useEffect(() => {
     let disposed = false;
@@ -262,22 +234,19 @@ export function useEasyTrimEditorApp(defaultMergeAudio = false) {
     void checkMediaCapabilities()
       .then((capabilities) => {
         if (!disposed) {
-          dispatch({ type: "capabilities-ready", capabilities });
+          dispatch(capabilitiesReady(capabilities));
         }
       })
       .catch((error: unknown) => {
         if (!disposed) {
-          dispatch({
-            type: "capabilities-failed",
-            error: normalizeAppError(error),
-          });
+          dispatch(capabilitiesFailed(normalizeAppError(error)));
         }
       });
 
     return () => {
       disposed = true;
     };
-  }, []);
+  }, [dispatch]);
 
   useEffect(() => {
     let disposed = false;
@@ -294,7 +263,7 @@ export function useEasyTrimEditorApp(defaultMergeAudio = false) {
 
       setDropListenerError(null);
       if (event.status === "failed") {
-        dispatch({ type: "source-failed", error: event.error });
+        dispatch(sourceFailed({ error: event.error }));
         return;
       }
       inspectSource(event.source);
@@ -316,7 +285,7 @@ export function useEasyTrimEditorApp(defaultMergeAudio = false) {
       disposed = true;
       unlisten?.();
     };
-  }, [inspectSource]);
+  }, [dispatch, inspectSource]);
 
   const handleChooseSource = useCallback(async () => {
     if (isChoosingSource) {
@@ -331,12 +300,12 @@ export function useEasyTrimEditorApp(defaultMergeAudio = false) {
         inspectSource(source);
       }
     } catch (error: unknown) {
-      dispatch({ type: "source-failed", error: normalizeAppError(error) });
+      dispatch(sourceFailed({ error: normalizeAppError(error) }));
     } finally {
       setIsChoosingSource(false);
       setIsNativeDialogOpen(false);
     }
-  }, [inspectSource, isChoosingSource]);
+  }, [dispatch, inspectSource, isChoosingSource]);
 
   useKeyboardShortcut(
     (event) =>
@@ -348,8 +317,8 @@ export function useEasyTrimEditorApp(defaultMergeAudio = false) {
     activeSourceIdRef.current = null;
     setAudioPreviewUrls({});
     setAudioPreviewPreparation({ sourceId: null, status: "idle" });
-    dispatch({ type: "source-cleared" });
-  }, []);
+    dispatch(sourceCleared());
+  }, [dispatch]);
 
   const handleCloseFile = useCallback(() => {
     if (!hasSource) {
@@ -422,8 +391,6 @@ export function useEasyTrimEditorApp(defaultMergeAudio = false) {
   }, [hasSource, isNativeDialogOpen]);
 
   return {
-    session,
-    hasSource,
     isChoosingSource,
     isNativeDialogOpen,
     isSourceDragActive,
@@ -445,14 +412,6 @@ export function useEasyTrimEditorApp(defaultMergeAudio = false) {
     handleChooseSource,
     handleCloseFile,
     handlePreviewPlaybackError,
-    handleTrimChange,
     handlePrepareWaveforms,
-    handleToggleAudioTrack,
-    handleAudioTrackVolumeChange,
-    handleToggleAudioMaster,
-    handleMasterVolumeChange,
-    handleToggleAudioMerge,
-    handleSetAudioMerge,
-    handleWaveformImageError,
   };
 }

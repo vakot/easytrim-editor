@@ -14,6 +14,7 @@ import {
   workspaceLayoutChanged,
 } from "@/app/store/slices/editor-layout-slice";
 import { useEditorSession } from "@/app/hooks/useEditorSession";
+import { selectSourceSelection } from "@/app/store/slices/session-slice";
 import { PanelContent } from "@/components/PanelContent";
 
 export { CapabilityStatus } from "./components/CapabilityStatus";
@@ -21,7 +22,8 @@ export { CapabilityStatus } from "./components/CapabilityStatus";
 export function SourceWorkspace() {
   const { t } = useTranslation();
   const app = useEditorSession();
-  const { session, isSourceDragActive, exportQueue } = app;
+  const { isSourceDragActive, exportQueue } = app;
+  const sourceSelection = useAppSelector(selectSourceSelection);
   const dispatch = useAppDispatch();
   const isLeftPanelVisible = useAppSelector((state) => selectPanelVisibility(state, "left"));
   const workspaceLayout = useAppSelector(selectWorkspaceLayout);
@@ -72,7 +74,7 @@ export function SourceWorkspace() {
       >
         <div className="h-full pl-1 pb-1">
           <PanelContent>
-            <SourceSidebar session={session} queue={exportQueue} />
+            <SourceSidebar queue={exportQueue} />
           </PanelContent>
         </div>
       </Panel>
@@ -87,7 +89,7 @@ export function SourceWorkspace() {
 
       <Panel id="editor-content-panel" minSize="44rem" className="pr-1">
         <div className="relative h-full w-full" aria-label={t("import.source.previewArea")}>
-          <EditorStage key={session.source?.selection.sourceId ?? "no-source"} />
+          <EditorStage key={sourceSelection?.sourceId ?? "no-source"} />
           {isSourceDragActive ? <DropOverlay /> : null}
         </div>
       </Panel>

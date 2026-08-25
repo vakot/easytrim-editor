@@ -1,7 +1,8 @@
 import { useContext } from "react";
 
 import { EditorInteractionContext } from "@/app/contexts/editor-contracts-context";
-import { useSourceDetails } from "@/app/hooks/useSourceDetails";
+import { useAppSelector } from "@/app/store/hooks";
+import { selectTrim } from "@/app/store/slices/session-slice";
 
 function useEditorInteraction() {
   const value = useContext(EditorInteractionContext);
@@ -42,10 +43,10 @@ export function usePlayback() {
 }
 
 export function useTimeline() {
-  const source = useSourceDetails();
   const interaction = useEditorInteraction();
+  const trim = useAppSelector(selectTrim);
   return {
-    trim: source.trim,
+    trim,
     playheadMicros: interaction.displayedPlayheadMicros,
     playheadRef: interaction.playheadRef,
     audioPlayheadRef: interaction.audioPlayheadRef,
@@ -63,5 +64,3 @@ export function useTimeline() {
     onScrubEnd: interaction.onScrubEnd,
   };
 }
-
-export { useSourceDetails };

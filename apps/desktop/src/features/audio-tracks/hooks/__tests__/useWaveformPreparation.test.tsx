@@ -2,7 +2,7 @@ import { renderHook } from "@testing-library/react";
 import { StrictMode, type PropsWithChildren } from "react";
 import { describe, expect, it, vi } from "vitest";
 
-import type { AudioTrackState } from "@/app/session-state";
+import type { AudioTrackState } from "@/app/store/slices/session-slice";
 
 import { WAVEFORM_RENDER_WIDTH, useWaveformPreparation } from "../useWaveformPreparation";
 

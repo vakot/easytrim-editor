@@ -18,11 +18,13 @@ import {
   editorToolsReducer,
 } from "@/app/store/slices/editor-tools-slice";
 import { preferencesReducer } from "@/app/store/slices/preferences-slice";
+import { sessionReducer } from "@/app/store/slices/session-slice";
 
 const rootReducer = combineReducers({
   editorLayout: editorLayoutReducer,
   editorTools: editorToolsReducer,
   preferences: preferencesReducer,
+  session: sessionReducer,
 });
 
 export type RootState = ReturnType<typeof rootReducer>;

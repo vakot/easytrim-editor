@@ -17,10 +17,7 @@ const menuState = vi.hoisted(() => ({
   app: {
     isChoosingSource: false,
     hasSource: false,
-    session: {
-      status: "ready" as const,
-      source: null as { selection: { sourceId: string } } | null,
-    },
+    crop: { x: 0, y: 0, width: 1, height: 1 },
     exportQueue: [] as Array<{ status: "queued" | "rendering" }>,
     queueStarted: false,
     queueFinishAction: "nothing" as QueueFinishAction,
@@ -60,13 +57,24 @@ vi.mock("@/app/hooks/useEditorSession", () => ({
   useEditorSession: () => menuState.app,
 }));
 
-vi.mock("@/app/hooks/useSourceDetails", () => ({
-  useSourceDetails: () => menuState.sourceDetails,
-}));
-
 vi.mock("@/app/store/hooks", () => ({
   useAppDispatch: () => menuState.viewState.dispatch,
-  useAppSelector: () => menuState.viewState.toolDefaults,
+  useAppSelector: (selector: (state: unknown) => unknown) =>
+    selector({
+      preferences: { toolDefaults: menuState.viewState.toolDefaults },
+      session: {
+        status: menuState.app.hasSource && menuState.sourceDetails.isReady ? "ready" : "idle",
+        source: menuState.app.hasSource
+          ? {
+              selection: { sourceId: "source-id" },
+              media: menuState.sourceDetails.isReady ? {} : null,
+              trim: menuState.sourceDetails.isReady ? {} : null,
+            }
+          : null,
+        capabilities: { status: "checking" },
+        lastError: null,
+      },
+    }),
 }));
 
 vi.mock("@/app/hooks/useExportPanelController", () => ({
@@ -106,9 +114,10 @@ describe("ContextMenus", () => {
   function configureMenuState(overrides: MenuTestOverrides = {}, notify: () => void = () => {}) {
     menuState.app.isChoosingSource = overrides.isChoosingSource ?? false;
     menuState.app.hasSource = overrides.hasSource ?? false;
-    menuState.app.session.source = overrides.hasSource
-      ? { selection: { sourceId: "source-id" } }
-      : null;
+    menuState.app.crop =
+      overrides.canSave === false
+        ? { x: 0.1, y: 0, width: 0.9, height: 1 }
+        : { x: 0, y: 0, width: 1, height: 1 };
     menuState.app.exportQueue = [
       ...(overrides.hasQueuedItems ? [{ status: "queued" as const }] : []),
       ...(overrides.hasActiveItem ? [{ status: "rendering" as const }] : []),

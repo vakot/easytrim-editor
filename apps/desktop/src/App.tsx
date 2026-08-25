@@ -11,8 +11,14 @@ import { ContextMenus } from "@/app/components/ContextMenus";
 import { ExportPanel } from "@/features/export";
 import { EditorSessionProvider } from "@/app/components/Providers/EditorSessionProvider";
 import { useEditorSession } from "@/app/hooks/useEditorSession";
+import { useAppSelector } from "@/app/store/hooks";
+import {
+  selectActiveSource,
+  selectCapabilities,
+  selectMergeAudio,
+  selectSourceReady,
+} from "@/app/store/slices/session-slice";
 import { EditorContractsProvider } from "@/app/components/Providers/EditorContractsProvider";
-import { useSourceDetails } from "@/app/hooks/useSourceDetails";
 import { AppUpdatesProvider } from "@/app/components/Providers/AppUpdatesProvider";
 import { ExportPanelControllerProvider } from "@/app/components/Providers/ExportPanelControllerProvider";
 import { useExportPanelController } from "@/app/hooks/useExportPanelController";
@@ -22,18 +28,19 @@ import { PersistGate } from "redux-persist/integration/react";
 
 function EasyTrimEditorApp() {
   const app = useEditorSession();
-  const sourceDetails = useSourceDetails();
+  const source = useAppSelector(selectActiveSource);
+  const capabilities = useAppSelector(selectCapabilities);
+  const canExport = useAppSelector(selectSourceReady);
+  const mergeAudio = useAppSelector(selectMergeAudio);
   const { t } = useTranslation();
-  const source = sourceDetails.source;
   const { panelRef: exportPanelRef } = useExportPanelController();
-  const canExport = app.session.status === "ready" && Boolean(source?.media && source.trim);
 
   return (
     <TooltipProvider>
       <main className="fixed inset-0 grid h-dvh w-screen min-w-80 overflow-hidden bg-background grid-rows-[2.25rem_minmax(0,1fr)_auto]">
         <CustomTitleBar
           menuControls={<ContextMenus />}
-          statusContent={<CapabilityStatus capabilities={app.session.capabilities} />}
+          statusContent={<CapabilityStatus capabilities={capabilities} />}
           panelControls={<PanelVisibilityControls />}
         />
 
@@ -47,13 +54,13 @@ function EasyTrimEditorApp() {
             audioTracks={source.audioTracks}
             masterEnabled={source.masterEnabled}
             masterVolumePercent={source.masterVolumePercent}
-            mergeAudio={source.mergeAudio}
+            mergeAudio={mergeAudio}
             setQueue={app.setExportQueue}
             presetState={app.exportPresets}
             onPresetAction={app.dispatchExportPreset}
             onNativeDialogStateChange={app.setIsNativeDialogOpen}
-            cropResolution={sourceDetails.cropResolution}
-            crop={sourceDetails.crop}
+            cropResolution={app.cropResolution}
+            crop={app.crop}
             showActions={false}
           />
         ) : null}
