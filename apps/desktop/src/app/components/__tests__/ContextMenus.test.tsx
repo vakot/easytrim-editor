@@ -74,7 +74,7 @@ describe("ContextMenus", () => {
     expect(onCancelQueue).not.toHaveBeenCalled();
 
     const cancelButtons = screen.getAllByRole("button", { name: "Cancel" });
-    await user.click(cancelButtons[1]);
+    await user.click(cancelButtons[1]!);
     expect(onCancelQueue).toHaveBeenCalledOnce();
   });
 
