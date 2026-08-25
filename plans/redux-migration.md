@@ -523,7 +523,16 @@ zero Context.
 
 Search for application-state values/callbacks forwarded through components without
 semantic ownership. Remove root and intermediate transport props while preserving
-presentational APIs and explicit composition contracts. Stop for review.
+presentational APIs and explicit composition contracts.
+
+Audit broad Redux selectors such as `selectActiveSource` and whole-domain selectors
+alongside the prop/callback wiring review. Consumers should use the narrowest meaningful
+selector: replace aggregate selection where a component reads only a small subset, but
+keep an aggregate selector where the consumer genuinely owns or uses the aggregate.
+Do not rebuild broad Context-style dependency surfaces through Redux selectors. Verify
+that broad selectors are not causing unrelated rerenders or recreating state coupling;
+`selectActiveSource` is not forbidden and must not be removed unconditionally. Stop for
+review.
 
 ### Phase 9 — consolidation
 
