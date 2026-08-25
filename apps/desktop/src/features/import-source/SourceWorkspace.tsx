@@ -8,9 +8,9 @@ import { SourceSidebar } from "./components/SourceSidebar";
 import { useTranslation } from "react-i18next";
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import {
-  selectShowSourceDetails,
+  selectPanelVisibility,
   selectWorkspaceLayout,
-  sourceDetailsVisibilityChanged,
+  panelVisibilityChanged,
   workspaceLayoutChanged,
 } from "@/app/store/slices/editor-layout-slice";
 import { useEditorSession } from "@/app/hooks/useEditorSession";
@@ -23,7 +23,7 @@ export function SourceWorkspace() {
   const app = useEditorSession();
   const { session, isSourceDragActive, exportQueue } = app;
   const dispatch = useAppDispatch();
-  const showSourceDetails = useAppSelector(selectShowSourceDetails);
+  const isLeftPanelVisible = useAppSelector((state) => selectPanelVisibility(state, "left"));
   const workspaceLayout = useAppSelector(selectWorkspaceLayout);
   const sourceDetailsPanelRef = usePanelRef();
   const previousWorkspaceLayout = useRef(workspaceLayout);
@@ -32,12 +32,12 @@ export function SourceWorkspace() {
     const panel = sourceDetailsPanelRef.current;
     if (!panel) return;
 
-    if (showSourceDetails) {
+    if (isLeftPanelVisible) {
       panel.expand();
     } else {
       panel.collapse();
     }
-  }, [showSourceDetails, sourceDetailsPanelRef]);
+  }, [isLeftPanelVisible, sourceDetailsPanelRef]);
 
   useEffect(() => {
     if (workspaceLayout === undefined && previousWorkspaceLayout.current !== undefined) {
@@ -65,7 +65,7 @@ export function SourceWorkspace() {
         maxSize="30rem"
         onResize={(size) => {
           const isCollapsed = sourceDetailsPanelRef.current?.isCollapsed() ?? size.inPixels <= 0;
-          dispatch(sourceDetailsVisibilityChanged(!isCollapsed));
+          dispatch(panelVisibilityChanged({ panelId: "left", visible: !isCollapsed }));
         }}
         groupResizeBehavior="preserve-pixel-size"
         className="min-h-0 min-w-0 overflow-hidden"
@@ -81,7 +81,7 @@ export function SourceWorkspace() {
         id="source-details-resize-handle"
         label={t("import.source.resizeDetails")}
         orientation="vertical"
-        collapsed={!showSourceDetails}
+        collapsed={!isLeftPanelVisible}
         className="mb-1"
       />
 

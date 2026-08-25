@@ -7,9 +7,9 @@ import { PanelSeparator } from "@/components/PanelSeparator";
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import {
   editorStageLayoutChanged,
+  panelVisibilityChanged,
   selectEditorStageLayout,
-  selectShowTimeline,
-  timelineVisibilityChanged,
+  selectPanelVisibility,
 } from "@/app/store/slices/editor-layout-slice";
 import { usePlayback, useSourceDetails, useTimeline } from "@/app/hooks/useEditorContracts";
 import { AudioTracks } from "@/features/audio-tracks";
@@ -37,7 +37,7 @@ export function EditorStage() {
   const timeline = useTimeline();
   const dispatch = useAppDispatch();
   const editorStageLayout = useAppSelector(selectEditorStageLayout);
-  const showTimeline = useAppSelector(selectShowTimeline);
+  const isBottomPanelVisible = useAppSelector((state) => selectPanelVisibility(state, "bottom"));
   const previousEditorStageLayout = useRef(editorStageLayout);
   const timelineRange = source.trim ?? EMPTY_TIMELINE_RANGE;
   const controlsDisabled = !source.isReady || !playback.isReady;
@@ -47,7 +47,7 @@ export function EditorStage() {
   const timelinePanelSizing = useTimelinePanelSizing(
     source.sourceId,
     source.media?.audioStreams.length ?? null,
-    showTimeline,
+    isBottomPanelVisible,
   );
 
   useEffect(() => {
@@ -97,7 +97,7 @@ export function EditorStage() {
         id="preview-timeline-resize-handle"
         label={t("preview.resize")}
         orientation="horizontal"
-        collapsed={!showTimeline}
+        collapsed={!isBottomPanelVisible}
         onDoubleClick={timelinePanelSizing.resetToDefault}
       />
 
@@ -112,7 +112,7 @@ export function EditorStage() {
         onResize={(size) => {
           const isCollapsed =
             timelinePanelSizing.panelRef.current?.isCollapsed() ?? size.inPixels <= 0;
-          dispatch(timelineVisibilityChanged(!isCollapsed));
+          dispatch(panelVisibilityChanged({ panelId: "bottom", visible: !isCollapsed }));
         }}
         groupResizeBehavior="preserve-pixel-size"
         className="min-h-0 min-w-0 pb-1"
@@ -162,7 +162,7 @@ export function EditorStage() {
               />
             }
             audioTracks={
-              showTimeline && source.audioStreams.length > 0 ? (
+              isBottomPanelVisible && source.audioStreams.length > 0 ? (
                 <AudioTracks
                   streams={source.audioStreams}
                   tracks={source.audioTracks}

@@ -95,10 +95,8 @@ export const en = {
       layoutMenu: "Layout controls",
       leftPanel: "Left panel",
       bottomPanel: "Bottom panel",
-      hideLeftPane: "Hide left pane",
-      showLeftPane: "Show left pane",
-      hideBottomPane: "Hide bottom pane",
-      showBottomPane: "Show bottom pane",
+      hidePanel: "Hide {{panel}}",
+      showPanel: "Show {{panel}}",
       resetLayout: "Reset editor layout",
     },
     windowControls: {

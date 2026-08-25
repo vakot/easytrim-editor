@@ -8,11 +8,10 @@ import {
   editorStageLayoutChanged,
   selectEditorLayout,
   selectEditorStageLayout,
-  selectShowSourceDetails,
-  selectShowTimeline,
+  selectPanelVisibility,
   selectWorkspaceLayout,
-  sourceDetailsVisibilityChanged,
-  timelineVisibilityChanged,
+  panelToggled,
+  panelVisibilityChanged,
   workspaceLayoutChanged,
 } from "@/app/store/slices/editor-layout-slice";
 
@@ -26,14 +25,25 @@ describe("editor layout Redux domain", () => {
   it("changes visibility independently", () => {
     const initialState = editorLayoutReducer(undefined, { type: "unknown" });
     const nextState = editorLayoutReducer(
-      editorLayoutReducer(initialState, sourceDetailsVisibilityChanged(false)),
-      timelineVisibilityChanged(false),
+      editorLayoutReducer(
+        initialState,
+        panelVisibilityChanged({ panelId: "left", visible: false }),
+      ),
+      panelVisibilityChanged({ panelId: "bottom", visible: false }),
     );
 
-    expect(nextState.showSourceDetails).toBe(false);
-    expect(nextState.showTimeline).toBe(false);
+    expect(nextState.panelVisibility).toEqual({ left: false, bottom: false });
     expect(nextState.workspaceLayout).toBeUndefined();
     expect(nextState.editorStageLayout).toBeUndefined();
+  });
+
+  it("toggles a panel by its generic identifier", () => {
+    const initialState = editorLayoutReducer(undefined, { type: "unknown" });
+
+    expect(editorLayoutReducer(initialState, panelToggled("left")).panelVisibility).toEqual({
+      left: false,
+      bottom: true,
+    });
   });
 
   it("stores workspace and editor-stage layouts independently", () => {
@@ -46,14 +56,13 @@ describe("editor layout Redux domain", () => {
 
     expect(state.workspaceLayout).toBe(workspaceLayout);
     expect(state.editorStageLayout).toBe(editorStageLayout);
-    expect(state.showSourceDetails).toBe(true);
-    expect(state.showTimeline).toBe(true);
+    expect(state.panelVisibility).toEqual({ left: true, bottom: true });
   });
 
   it("resets the whole layout domain in one operation", () => {
     const changedState = editorLayoutReducer(
       editorLayoutReducer(
-        editorLayoutReducer(undefined, sourceDetailsVisibilityChanged(false)),
+        editorLayoutReducer(undefined, panelVisibilityChanged({ panelId: "left", visible: false })),
         workspaceLayoutChanged({ "source-details-panel": 40, "editor-content-panel": 60 }),
       ),
       editorStageLayoutChanged({ "preview-panel": 60, "timeline-panel": 40 }),
@@ -66,16 +75,15 @@ describe("editor layout Redux domain", () => {
 
   it("exposes focused selectors and serializable layout actions", () => {
     const editorLayout = {
-      showSourceDetails: false,
-      showTimeline: true,
+      panelVisibility: { left: false, bottom: true },
       workspaceLayout: { "source-details-panel": 20, "editor-content-panel": 80 },
       editorStageLayout: { "preview-panel": 75, "timeline-panel": 25 },
     };
     const state = { editorLayout } as unknown as RootState;
 
     expect(selectEditorLayout(state)).toBe(editorLayout);
-    expect(selectShowSourceDetails(state)).toBe(false);
-    expect(selectShowTimeline(state)).toBe(true);
+    expect(selectPanelVisibility(state, "left")).toBe(false);
+    expect(selectPanelVisibility(state, "bottom")).toBe(true);
     expect(selectWorkspaceLayout(state)).toBe(editorLayout.workspaceLayout);
     expect(selectEditorStageLayout(state)).toBe(editorLayout.editorStageLayout);
     expect(

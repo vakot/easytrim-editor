@@ -45,6 +45,7 @@ interface ContextMenuProps {
   className?: string;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  onTriggerClick?: () => void;
   onTriggerPointerEnter?: () => void;
   onTriggerPointerLeave?: () => void;
 }
@@ -55,6 +56,7 @@ export function ContextMenu({
   className,
   open,
   onOpenChange,
+  onTriggerClick,
   onTriggerPointerEnter,
   onTriggerPointerLeave,
 }: ContextMenuProps) {
@@ -67,6 +69,7 @@ export function ContextMenu({
           type="button"
           variant="ghost"
           size="xs"
+          onClick={onTriggerClick}
           onKeyDown={() => {
             triggerInteractionRef.current = "keyboard";
           }}

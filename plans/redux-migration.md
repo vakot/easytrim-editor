@@ -210,10 +210,10 @@ presentational `TimelineTools` props remain a useful feature boundary.
 ### 4. Editor layout — Redux now, completed Phase 2C
 
 Canonical owner: `app/store/slices/editor-layout-slice.ts`, registered as the
-`editorLayout` reducer in `app/store/store.ts`. It stores `showSourceDetails`,
-`showTimeline`, `workspaceLayout`, and `editorStageLayout` as serializable runtime
-state. Layout maps remain optional until `react-resizable-panels` has initialized
-the corresponding group.
+`editorLayout` reducer in `app/store/store.ts`. It stores generic `panelVisibility`
+values keyed by stable panel IDs (`left` and `bottom`), alongside `workspaceLayout`
+and `editorStageLayout` as serializable runtime state. Layout maps remain optional
+until `react-resizable-panels` has initialized the corresponding group.
 
 Readers include `PanelVisibilityControls`, `SourceWorkspace`, `EditorStage`, panel
 separators, and the panel-sizing hook. Writers are the top-bar visibility controls,
@@ -228,10 +228,10 @@ directly. `react-resizable-panels` remains the runtime boundary: group layouts a
 captured by `onLayoutChanged`, panel refs perform collapse/expand and reset sizing, and
 refs, DOM measurements, pointer/drag state, and panel APIs never enter Redux.
 
-Actions are `sourceDetailsVisibilityChanged`, `timelineVisibilityChanged`,
-`workspaceLayoutChanged`, `editorStageLayoutChanged`, and `editorLayoutReset`.
-Selectors are `selectEditorLayout`, `selectShowSourceDetails`, `selectShowTimeline`,
-`selectWorkspaceLayout`, and `selectEditorStageLayout`.
+Actions are `panelVisibilityChanged`, `panelToggled`, `workspaceLayoutChanged`,
+`editorStageLayoutChanged`, and `editorLayoutReset`. Selectors are
+`selectEditorLayout`, `selectPanelVisibility`, `selectWorkspaceLayout`, and
+`selectEditorStageLayout`.
 
 The invariant inventory found no separate layout normalization helper beyond the
 panel library's validated layout output. Timeline constraints remain in the pure

@@ -15,11 +15,9 @@ import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import {
-  selectShowSourceDetails,
-  selectShowTimeline,
   editorLayoutReset,
-  sourceDetailsVisibilityChanged,
-  timelineVisibilityChanged,
+  selectPanelVisibility,
+  panelVisibilityChanged,
 } from "@/app/store/slices/editor-layout-slice";
 
 export function PanelVisibilityControls() {
@@ -27,8 +25,8 @@ export function PanelVisibilityControls() {
   const [layoutMenuOpen, setLayoutMenuOpen] = useState(false);
   const switchInteractionRef = useRef(false);
   const dispatch = useAppDispatch();
-  const showSourceDetails = useAppSelector(selectShowSourceDetails);
-  const showTimeline = useAppSelector(selectShowTimeline);
+  const isLeftPanelVisible = useAppSelector((state) => selectPanelVisibility(state, "left"));
+  const isBottomPanelVisible = useAppSelector((state) => selectPanelVisibility(state, "bottom"));
 
   const layoutPanelOption = (
     id: string,
@@ -78,17 +76,21 @@ export function PanelVisibilityControls() {
       "layout-toggle-left-panel",
       t("app.panels.leftPanel"),
       <PanelLeft className="size-3" aria-hidden="true" />,
-      showSourceDetails,
-      (checked) => dispatch(sourceDetailsVisibilityChanged(checked)),
-      showSourceDetails ? t("app.panels.hideLeftPane") : t("app.panels.showLeftPane"),
+      isLeftPanelVisible,
+      (checked) => dispatch(panelVisibilityChanged({ panelId: "left", visible: checked })),
+      isLeftPanelVisible
+        ? t("app.panels.hidePanel", { panel: t("app.panels.leftPanel") })
+        : t("app.panels.showPanel", { panel: t("app.panels.leftPanel") }),
     ),
     layoutPanelOption(
       "layout-toggle-bottom-panel",
       t("app.panels.bottomPanel"),
       <PanelBottom className="size-3" aria-hidden="true" />,
-      showTimeline,
-      (checked) => dispatch(timelineVisibilityChanged(checked)),
-      showTimeline ? t("app.panels.hideBottomPane") : t("app.panels.showBottomPane"),
+      isBottomPanelVisible,
+      (checked) => dispatch(panelVisibilityChanged({ panelId: "bottom", visible: checked })),
+      isBottomPanelVisible
+        ? t("app.panels.hidePanel", { panel: t("app.panels.bottomPanel") })
+        : t("app.panels.showPanel", { panel: t("app.panels.bottomPanel") }),
     ),
     { id: "layout-divider", separator: true },
     {
@@ -106,6 +108,7 @@ export function PanelVisibilityControls() {
         className="size-7 p-0"
         open={layoutMenuOpen}
         onOpenChange={setLayoutMenuOpen}
+        onTriggerClick={() => setLayoutMenuOpen((open) => !open)}
       >
         <>
           <LayoutPanelLeft className="size-4" aria-hidden="true" />
@@ -120,14 +123,18 @@ export function PanelVisibilityControls() {
             variant="ghost"
             size="icon-sm"
             aria-label={
-              showSourceDetails ? t("app.panels.hideLeftPane") : t("app.panels.showLeftPane")
+              isLeftPanelVisible
+                ? t("app.panels.hidePanel", { panel: t("app.panels.leftPanel") })
+                : t("app.panels.showPanel", { panel: t("app.panels.leftPanel") })
             }
-            aria-pressed={showSourceDetails}
-            data-state={showSourceDetails ? "on" : "off"}
-            className={showSourceDetails ? "text-primary" : undefined}
-            onClick={() => dispatch(sourceDetailsVisibilityChanged(!showSourceDetails))}
+            aria-pressed={isLeftPanelVisible}
+            data-state={isLeftPanelVisible ? "on" : "off"}
+            className={isLeftPanelVisible ? "text-primary" : undefined}
+            onClick={() =>
+              dispatch(panelVisibilityChanged({ panelId: "left", visible: !isLeftPanelVisible }))
+            }
           >
-            {showSourceDetails ? (
+            {isLeftPanelVisible ? (
               <PanelLeft className="size-4" aria-hidden="true" />
             ) : (
               <PanelLeftDashed className="size-4" aria-hidden="true" />
@@ -135,7 +142,9 @@ export function PanelVisibilityControls() {
           </Button>
         </TooltipTrigger>
         <TooltipContent>
-          {showSourceDetails ? t("app.panels.hideLeftPane") : t("app.panels.showLeftPane")}
+          {isLeftPanelVisible
+            ? t("app.panels.hidePanel", { panel: t("app.panels.leftPanel") })
+            : t("app.panels.showPanel", { panel: t("app.panels.leftPanel") })}
         </TooltipContent>
       </Tooltip>
 
@@ -146,14 +155,20 @@ export function PanelVisibilityControls() {
             variant="ghost"
             size="icon-sm"
             aria-label={
-              showTimeline ? t("app.panels.hideBottomPane") : t("app.panels.showBottomPane")
+              isBottomPanelVisible
+                ? t("app.panels.hidePanel", { panel: t("app.panels.bottomPanel") })
+                : t("app.panels.showPanel", { panel: t("app.panels.bottomPanel") })
             }
-            aria-pressed={showTimeline}
-            data-state={showTimeline ? "on" : "off"}
-            className={showTimeline ? "text-primary" : undefined}
-            onClick={() => dispatch(timelineVisibilityChanged(!showTimeline))}
+            aria-pressed={isBottomPanelVisible}
+            data-state={isBottomPanelVisible ? "on" : "off"}
+            className={isBottomPanelVisible ? "text-primary" : undefined}
+            onClick={() =>
+              dispatch(
+                panelVisibilityChanged({ panelId: "bottom", visible: !isBottomPanelVisible }),
+              )
+            }
           >
-            {showTimeline ? (
+            {isBottomPanelVisible ? (
               <PanelBottom className="size-4" aria-hidden="true" />
             ) : (
               <PanelBottomDashed className="size-4" aria-hidden="true" />
@@ -161,7 +176,9 @@ export function PanelVisibilityControls() {
           </Button>
         </TooltipTrigger>
         <TooltipContent>
-          {showTimeline ? t("app.panels.hideBottomPane") : t("app.panels.showBottomPane")}
+          {isBottomPanelVisible
+            ? t("app.panels.hidePanel", { panel: t("app.panels.bottomPanel") })
+            : t("app.panels.showPanel", { panel: t("app.panels.bottomPanel") })}
         </TooltipContent>
       </Tooltip>
     </div>

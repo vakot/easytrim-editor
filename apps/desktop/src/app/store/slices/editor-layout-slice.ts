@@ -3,18 +3,20 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { RootState } from "@/app/store/store";
 
 export type EditorLayoutMap = Record<string, number>;
+export type EditorPanelId = "left" | "bottom";
 
 export interface EditorLayoutState {
-  showSourceDetails: boolean;
-  showTimeline: boolean;
+  panelVisibility: Record<EditorPanelId, boolean>;
   workspaceLayout: EditorLayoutMap | undefined;
   editorStageLayout: EditorLayoutMap | undefined;
 }
 
 export function createInitialEditorLayoutState(): EditorLayoutState {
   return {
-    showSourceDetails: true,
-    showTimeline: true,
+    panelVisibility: {
+      left: true,
+      bottom: true,
+    },
     workspaceLayout: undefined,
     editorStageLayout: undefined,
   };
@@ -24,11 +26,14 @@ const editorLayoutSlice = createSlice({
   name: "editorLayout",
   initialState: createInitialEditorLayoutState,
   reducers: {
-    sourceDetailsVisibilityChanged: (state, action: PayloadAction<boolean>) => {
-      state.showSourceDetails = action.payload;
+    panelVisibilityChanged: (
+      state,
+      action: PayloadAction<{ panelId: EditorPanelId; visible: boolean }>,
+    ) => {
+      state.panelVisibility[action.payload.panelId] = action.payload.visible;
     },
-    timelineVisibilityChanged: (state, action: PayloadAction<boolean>) => {
-      state.showTimeline = action.payload;
+    panelToggled: (state, action: PayloadAction<EditorPanelId>) => {
+      state.panelVisibility[action.payload] = !state.panelVisibility[action.payload];
     },
     workspaceLayoutChanged: (state, action: PayloadAction<EditorLayoutMap>) => {
       state.workspaceLayout = action.payload;
@@ -41,8 +46,8 @@ const editorLayoutSlice = createSlice({
 });
 
 export const {
-  sourceDetailsVisibilityChanged,
-  timelineVisibilityChanged,
+  panelVisibilityChanged,
+  panelToggled,
   workspaceLayoutChanged,
   editorStageLayoutChanged,
   editorLayoutReset,
@@ -50,10 +55,8 @@ export const {
 export const editorLayoutReducer = editorLayoutSlice.reducer;
 
 export const selectEditorLayout = (state: RootState): EditorLayoutState => state.editorLayout;
-export const selectShowSourceDetails = (state: RootState): boolean =>
-  selectEditorLayout(state).showSourceDetails;
-export const selectShowTimeline = (state: RootState): boolean =>
-  selectEditorLayout(state).showTimeline;
+export const selectPanelVisibility = (state: RootState, panelId: EditorPanelId): boolean =>
+  selectEditorLayout(state).panelVisibility[panelId];
 export const selectWorkspaceLayout = (state: RootState): EditorLayoutMap | undefined =>
   selectEditorLayout(state).workspaceLayout;
 export const selectEditorStageLayout = (state: RootState): EditorLayoutMap | undefined =>
