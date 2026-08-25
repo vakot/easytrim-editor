@@ -29,7 +29,7 @@ export function SettingsMenu({ navigation }: { navigation: MenuNavigation }) {
     dispatch(toolDefaultChanged({ key, enabled }));
     persistToolDefaults({ ...toolDefaults, [key]: enabled });
     if (key === "mergeAudioEnabled" && app.session.source) {
-      // Transitional bridge: merge-audio Settings has always applied to the active source.
+      // NOTE: Transitional bridge: merge-audio Settings has always applied to the active source.
       // The source value remains session-owned until the session migration phase.
       app.handleSetAudioMerge(app.session.source.selection.sourceId, enabled);
     }
@@ -39,7 +39,7 @@ export function SettingsMenu({ navigation }: { navigation: MenuNavigation }) {
     dispatch(toolDefaultsReset());
     persistToolDefaults(DEFAULT_TOOL_DEFAULTS);
     if (app.session.source) {
-      // Keep the same explicit merge-audio compatibility behavior on reset.
+      // NOTE: Keep the same explicit merge-audio compatibility behavior on reset.
       app.handleSetAudioMerge(
         app.session.source.selection.sourceId,
         DEFAULT_TOOL_DEFAULTS.mergeAudioEnabled,
