@@ -626,11 +626,50 @@ Deferred to Phase 7: the broader audit of updater, theme, and remaining interact
 Context boundaries. Deferred to Phase 8: unrelated application-state prop transport and
 broad-selector cleanup outside playback-specific wiring.
 
-### Phase 7 — remaining Context audit
+### Phase 7 — remaining Context audit, completed
 
-Explicitly decide keep/reduce/move/remove for updater, theme, interaction, and
-controller contexts. The objective is no accidental application-state Context, not
-zero Context.
+The Phase 7 inventory found three project-owned Contexts and no remaining Context that
+transports canonical Redux application state:
+
+| Context | Responsibility | Why Redux is inappropriate | Provider |
+| --- | --- | --- | --- |
+| `EditorInteractionContext` | Playback and timeline runtime capabilities: media refs, Web Audio coordination, readiness, playhead rendering, scrubbing, transport commands, and trim interaction callbacks | It owns DOM/media refs, Web Audio objects, animation handles, and imperative callbacks that must not be serialized or dispatched per frame | `app/components/Providers/EditorContractsProvider.tsx` |
+| `AppUpdatesContext` | Shared updater status and check/install commands for `StatusBar` and `HelpMenu` | The available updater object and installation operation are non-serializable runtime resources; the Context is a narrow service boundary | `app/components/Providers/AppUpdatesProvider.tsx` |
+| `ThemeContext` | Theme resolution, system-theme subscription, DOM CSS variables, color scrubbing, and accepted theme/color persistence | It is an environment/style boundary with system and DOM lifecycles, local drafts, and CSS side effects rather than editor state | `app/theme/ThemeProvider.tsx` |
+
+The updater Context now has a `null` default and `useAppUpdates` throws when consumed
+outside its required provider; fake no-op commands are not retained. The runtime
+interaction and theme boundaries remain intentionally narrow. `usePlayback` and
+`useTimeline` remain runtime consumer projections, not Redux selector/action facades;
+`useTheme` remains the guarded theme environment hook.
+
+No project-owned Contexts, Providers, or Redux facade hooks were removed in Phase 7:
+the earlier `EditorViewStateContext`, `EditorSessionContext`, export controller
+Context/provider/hooks, and application controller hooks were already deleted in prior
+phases. No provider-only initialization wrapper or obsolete compatibility alias remains.
+
+The final application composition is intentionally:
+
+```text
+AppUpdatesProvider
+  ThemeProvider
+    Redux Provider
+      PersistGate
+        EditorContractsProvider (EditorInteractionContext runtime boundary)
+          EasyTrimEditorApp
+            TooltipProvider (third-party UI provider)
+```
+
+Redux remains the owner of editor/application state, while typed Tauri adapters,
+`source-media-runtime`, and the export runtime retain native handles, subscriptions,
+process/cancellation resources, and other non-serializable orchestration. Persistence
+is unchanged: Redux Persist allow-lists only `preferences`; theme/i18n continue using
+their accepted `easytrim.preferences.v1` environment storage, and no runtime Context
+state is persisted.
+
+Phase 8 remains responsible for the broader aggregate-selector and application prop/
+callback transport audit. Phase 7 does not reopen playback architecture or move runtime
+resources into Redux.
 
 ### Phase 8 — wiring cleanup
 
