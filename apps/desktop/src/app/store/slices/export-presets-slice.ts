@@ -4,7 +4,6 @@ import {
   loadExportPresetState,
   presetNameError,
   type ExportPreset,
-  type ExportPresetState,
 } from "@/features/export/export-presets";
 import type { RootState } from "../store";
 
@@ -70,7 +69,6 @@ export const {
 } = exportPresetsSlice.actions;
 export const exportPresetsReducer = exportPresetsSlice.reducer;
 
-export const selectExportPresets = (state: RootState): ExportPresetState => state.exportPresets;
 export const selectExportPresetList = (state: RootState): ExportPreset[] =>
   state.exportPresets.presets;
 export const selectSelectedExportPreset = (state: RootState): ExportPreset | undefined =>

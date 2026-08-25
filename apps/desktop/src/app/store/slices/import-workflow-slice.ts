@@ -57,12 +57,11 @@ export const {
 
 export const importWorkflowReducer = importWorkflowSlice.reducer;
 
-export const selectImportWorkflow = (state: RootState): ImportWorkflowState => state.importWorkflow;
 export const selectIsChoosingSource = (state: RootState): boolean =>
-  selectImportWorkflow(state).isChoosingSource;
+  state.importWorkflow.isChoosingSource;
 export const selectIsNativeDialogOpen = (state: RootState): boolean =>
-  selectImportWorkflow(state).isNativeDialogOpen;
+  state.importWorkflow.isNativeDialogOpen;
 export const selectIsSourceDragActive = (state: RootState): boolean =>
-  selectImportWorkflow(state).isSourceDragActive;
+  state.importWorkflow.isSourceDragActive;
 export const selectDropListenerError = (state: RootState): AppError | null =>
-  selectImportWorkflow(state).dropListenerError;
+  state.importWorkflow.dropListenerError;

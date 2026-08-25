@@ -25,7 +25,8 @@ import {
   exportPresetDeleted,
   exportPresetSelected,
   exportPresetUpdated,
-  selectExportPresets,
+  selectExportArguments,
+  selectExportPresetList,
   selectSelectedExportPreset,
 } from "@/app/store/slices/export-presets-slice";
 
@@ -34,7 +35,8 @@ type PresetDialogMode = "create" | "edit";
 export function PresetManager() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const state = useAppSelector(selectExportPresets);
+  const presets = useAppSelector(selectExportPresetList);
+  const argumentsText = useAppSelector(selectExportArguments);
   const selectedPreset = useAppSelector(selectSelectedExportPreset);
   const [dialogMode, setDialogMode] = useState<PresetDialogMode | null>(null);
   const [editingPresetId, setEditingPresetId] = useState<string | null>(null);
@@ -46,7 +48,7 @@ export function PresetManager() {
   function openCreateDialog() {
     setEditingPresetId(null);
     setDraftName("");
-    setDraftArguments(state.argumentsText);
+    setDraftArguments(argumentsText);
     setPresetError(null);
     setDialogMode("create");
   }
@@ -60,7 +62,7 @@ export function PresetManager() {
   }
 
   function savePreset() {
-    const error = presetNameError(state.presets, draftName, editingPresetId ?? undefined);
+    const error = presetNameError(presets, draftName, editingPresetId ?? undefined);
     if (error) {
       setPresetError(error);
       return;
@@ -100,7 +102,7 @@ export function PresetManager() {
               sideOffset={6}
               className="z-50 min-w-56 rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
             >
-              {state.presets.map((preset) => (
+              {presets.map((preset) => (
                 <div key={preset.id} className="flex items-center gap-1">
                   <DropdownMenuPrimitive.Item
                     className="min-w-0 flex-1 cursor-pointer rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent"

@@ -30,9 +30,8 @@ const preferencesSlice = createSlice({
 export const { toolDefaultChanged, toolDefaultsReset } = preferencesSlice.actions;
 export const preferencesReducer = preferencesSlice.reducer;
 
-export const selectPreferences = (state: RootState): PreferencesState => state.preferences;
 export const selectToolDefaults = (state: RootState): ToolDefaults =>
-  selectPreferences(state).toolDefaults;
+  state.preferences.toolDefaults;
 export const selectSnapPlaybackDefault = (state: RootState): boolean =>
   selectToolDefaults(state).snapPlaybackEnabled;
 export const selectLoopPlaybackDefault = (state: RootState): boolean =>
