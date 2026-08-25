@@ -49,6 +49,52 @@ describe("StatusBar", () => {
     expect(selectStatusBarExport([completed, queued])).toBe(completed);
   });
 
+  it("keeps the last export visible through an empty selection transition", () => {
+    const completed = exportToast({
+      status: "completed",
+      filename: "finished.mp4",
+      path: "C:/Exports/finished.mp4",
+      currentFrame: 8,
+      totalFrames: 8,
+    });
+    const { rerender } = render(
+      <TooltipProvider>
+        <StatusBar queue={[completed]} />
+      </TooltipProvider>,
+    );
+
+    rerender(
+      <TooltipProvider>
+        <StatusBar queue={[exportToast({ status: "queued", startedAt: null })]} />
+      </TooltipProvider>,
+    );
+
+    expect(screen.getByText("finished.mp4")).toBeInTheDocument();
+    expect(screen.getByText("8f / 8f")).toBeInTheDocument();
+
+    rerender(
+      <TooltipProvider>
+        <StatusBar
+          queue={[
+            exportToast({
+              id: "export-2",
+              operationId: "operation-2",
+              filename: "next.mp4",
+              path: "C:/Exports/next.mp4",
+              status: "rendering",
+              startedAt: 2_000,
+              currentFrame: 2,
+              totalFrames: 10,
+            }),
+          ]}
+        />
+      </TooltipProvider>,
+    );
+
+    expect(screen.getByText("next.mp4")).toBeInTheDocument();
+    expect(screen.getByText("2f / 10f")).toBeInTheDocument();
+  });
+
   it("shows completed exports as a green full progress indicator and keeps metrics", () => {
     render(
       <TooltipProvider>

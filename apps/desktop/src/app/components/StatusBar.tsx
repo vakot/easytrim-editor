@@ -1,6 +1,6 @@
 import { CircleAlert, Download, LoaderCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import type { ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 
 import { useAppUpdates, type UpdateStatus } from "@/app/update-context";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,10 @@ import { selectStatusBarExport } from "./status-bar-utils";
 
 export function StatusBar({ queue }: { queue: ExportToast[] }) {
   const { t } = useTranslation();
-  const activeExport = selectStatusBarExport(queue);
+  const lastExportRef = useRef<ExportToast | null>(null);
+  const selectedExport = selectStatusBarExport(queue);
+  if (selectedExport) lastExportRef.current = selectedExport;
+  const activeExport = selectedExport ?? lastExportRef.current;
   const activeExportPath = activeExport ? splitFilePath(activeExport.path) : null;
   const progressPercent = activeExport
     ? activeExport.status === "completed"
