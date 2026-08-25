@@ -1,11 +1,12 @@
 # EasyTrim Editor Redux migration plan
 
-Status: Phase 1 — Redux foundation and Preferences pilot
+Status: Phase 1.5 — Application state infrastructure structure
 
 This is the maintained plan for the controlled Redux Toolkit migration. It is based
 on the frontend and native architecture at the `master` baseline used to create the
-`redux-migration` integration branch. Phase 1 introduces the Redux foundation and
-migrates Preferences as the first permanent Redux-owned domain.
+`redux-migration` integration branch. Phase 1 introduced the Redux foundation and
+migrated Preferences as the first permanent Redux-owned domain. Phase 1.5 establishes
+the application infrastructure structure before the next functional migration.
 
 ## Migration contract
 
@@ -138,7 +139,7 @@ remain props where they are useful reusable APIs.
 ### 2. Preferences — Redux now, completed Phase 1 pilot
 
 Canonical owner: the Redux `preferences` slice in
-`apps/desktop/src/app/preferences-slice.ts`. It owns the four tool defaults for safe
+`apps/desktop/src/app/store/slices/preferences-slice.ts`. It owns the four tool defaults for safe
 trim following, loop playback, segment playback, and merge audio. The slice starts
 from deterministic product defaults; it does not read storage while the module is
 initialized.
@@ -414,6 +415,28 @@ Preferences was originally planned as Phase 2A and is complete early as Phase 1'
 permanent Redux pilot; it is the first and currently only explicitly configured
 persisted domain. Legacy Preferences storage migration is intentionally unsupported.
 The remaining Phase 2 domains are editor tools and editor layout.
+
+### Phase 1.5 — Application state infrastructure structure
+
+Completed as a behavior-neutral structural refactor after Phase 1. This phase
+establishes the canonical application infrastructure locations:
+
+```text
+app/store/*
+app/store/slices/*
+app/store/persistence.ts
+app/contexts/*
+app/components/Providers/*
+```
+
+Redux store assembly, typed hooks, Preferences slice ownership, and Redux Persist
+storage normalization are separated by responsibility. App-level Context declarations
+are separated from Provider implementations. The transitional `EditorViewState`
+infrastructure and the existing theme subsystem remain in place intentionally. This
+phase changes no state ownership or runtime behavior.
+
+Preferences → Redux, completed in Phase 1. Editor tools and Editor layout remain the
+next functional migrations.
 
 ### Phase 2 — editor tools and editor layout
 

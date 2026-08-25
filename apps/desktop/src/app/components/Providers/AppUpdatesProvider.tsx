@@ -6,7 +6,7 @@ import {
   isTauriRuntime,
   type AvailableUpdate,
 } from "@/lib/tauri/updates";
-import { AppUpdatesContext, type UpdateStatus } from "@/app/update-context";
+import { AppUpdatesContext, type UpdateStatus } from "@/app/contexts/app-updates-context";
 
 export function AppUpdatesProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<UpdateStatus>("idle");

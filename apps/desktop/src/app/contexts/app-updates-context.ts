@@ -1,4 +1,4 @@
-import { createContext, useContext } from "react";
+import { createContext } from "react";
 
 export type UpdateStatus = "idle" | "checking" | "up-to-date" | "available" | "error";
 
@@ -19,7 +19,3 @@ const defaultAppUpdates: AppUpdates = {
 };
 
 export const AppUpdatesContext = createContext<AppUpdates>(defaultAppUpdates);
-
-export function useAppUpdates(): AppUpdates {
-  return useContext(AppUpdatesContext);
-}

@@ -61,6 +61,30 @@ dependencies and the coupled React/Tauri application. Add a package under `packa
 at least two workspace consumers need a stable shared contract; do not split code merely to make
 the repository appear modular.
 
+### Frontend application infrastructure
+
+```text
+app/
+├── store/
+│   ├── store.ts
+│   ├── hooks.ts
+│   ├── persistence.ts
+│   └── slices/
+├── contexts/
+└── components/
+    └── Providers/
+```
+
+- `app/store/` contains application Redux composition, typed hooks, persistence integration, and
+  application-owned slices. A feature-owned Redux domain may remain under its feature when a
+  deliberate feature API composes it into the root store.
+- `app/store/persistence.ts` owns Redux Persist configuration and storage-adapter normalization;
+  persistence-specific helpers do not belong in generic utility modules or components.
+- `app/contexts/` contains app-level Context contracts and declarations only. Context files use
+  kebab-case and do not contain Provider runtime effects or initialization.
+- `app/components/Providers/` contains app-level Provider implementations and runtime
+  initialization. Provider component files use PascalCase `.tsx`.
+
 ## Dependency direction
 
 Frontend:

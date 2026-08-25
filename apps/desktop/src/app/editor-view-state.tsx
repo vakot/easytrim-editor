@@ -2,8 +2,8 @@ import { useState, type ReactNode } from "react";
 import type { Layout } from "react-resizable-panels";
 
 import { EditorViewStateContext, type EditorToolState } from "@/app/editor-view-state-context";
-import { selectToolDefaults } from "@/app/preferences-slice";
-import { useAppSelector } from "@/app/store";
+import { selectToolDefaults } from "@/app/store/slices/preferences-slice";
+import { useAppSelector } from "@/app/store/hooks";
 
 function createActiveToolState(defaults: ReturnType<typeof selectToolDefaults>): EditorToolState {
   return {

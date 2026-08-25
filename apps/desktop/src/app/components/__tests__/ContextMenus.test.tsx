@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { DEFAULT_TOOL_DEFAULTS, type ToolDefaults } from "@/app/tool-settings";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
-import { AppUpdatesContext } from "@/app/update-context";
+import { AppUpdatesContext } from "@/app/contexts/app-updates-context";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { openExternalUrl } from "@/lib/open-external-url";
 import { STORAGE_KEYS } from "@/lib/storage";
@@ -68,7 +68,7 @@ vi.mock("@/app/hooks/useEditorViewState", () => ({
   useEditorViewState: () => menuState.viewState,
 }));
 
-vi.mock("@/app/store", () => ({
+vi.mock("@/app/store/hooks", () => ({
   useAppDispatch: () => menuState.viewState.dispatch,
   useAppSelector: () => menuState.viewState.toolDefaults,
 }));
