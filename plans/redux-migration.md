@@ -60,14 +60,16 @@ until a reviewed implementation phase establishes the new source of truth.
 | Domain                             | Classification            | Current owner                                                                                | Target / phase                                                                                   |
 | ---------------------------------- | ------------------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
 | Source/session/media lifecycle     | Redux later               | `sessionReducer` inside `useEasyTrimEditorApp`, exposed through `EditorSessionContext`       | One coherent session/source slice in Phase 3; async extraction in Phase 4                        |
-| Shared editor tools and view       | Redux later               | `EditorViewStateContext` and `tool-settings.ts`                                              | Feature-owned editor view slice in Phase 2                                                       |
+| Preferences                        | Redux later               | `tool-settings.ts` defaults held by `EditorViewStateProvider`                                | Dedicated preferences domain; Phase 2A                                                           |
+| Editor tools                       | Redux later               | Active `toolViewState` in `EditorViewStateProvider`, exposed by `useTimelineTools`           | Dedicated editor-tools domain; Phase 2B                                                          |
+| Editor layout                      | Redux later               | Visibility/layout state in `EditorViewStateProvider` and resizable-panel callbacks           | Dedicated editor-layout domain; Phase 2C                                                         |
 | Crop selection and crop resolution | Redux later               | `EditorSessionProvider` source-bound state plus `useCropSelection` pointer state             | Canonical crop values in preview/editor state in Phase 6; pointer internals stay local           |
 | Playback transport and media graph | Keep runtime/native-owned | `useEditorInteractionController`, `EditorContractsProvider`, DOM/media refs, Web Audio nodes | Keep local/runtime; audit in Phase 6                                                             |
 | Export queue status                | Redux later               | React queue state in `useEasyTrimEditorApp` plus module-level runtime queue                  | Serializable export slice in Phase 5; job handles and queue engine remain runtime-owned          |
 | Export presets                     | Redux later               | `exportPresetReducer` in `useEasyTrimEditorApp`, persisted by `export-presets.ts`            | Export/preset slice in Phase 5; persistence remains an explicit adapter                          |
 | Import/drop workflow status        | Redux later               | `useEasyTrimEditorApp` local state and native drag-drop listener                             | Source/import workflow actions in Phase 4, boundary to be finalized with orchestration           |
 | Updater status                     | Keep Context              | `AppUpdatesProvider`; native `AvailableUpdate` object in a ref                               | Keep service Context; audit serializable status in Phase 7                                       |
-| Theme and accepted preferences     | Keep Context              | `ThemeProvider`, `ThemeContext`, `localStorage` adapter                                      | Keep environment Context; no Redux persistence                                                   |
+| Theme and style environment        | Keep Context              | `ThemeProvider`, `ThemeContext`, `localStorage` adapter                                      | Keep environment Context; no Redux persistence                                                   |
 | Imperative export-panel controller | Keep runtime/native-owned | `ExportPanelControllerContext` and `ExportPanelHandle` ref                                   | Keep Context; remove only accidental transport during Phase 8 if possible                        |
 | Editor interaction contracts       | Keep runtime/native-owned | `EditorInteractionContext` and `useEditorInteractionController`                              | Keep Context for refs/callbacks/media lifecycle; reduce only if a later boundary makes that safe |
 | Component and pointer UI state     | Keep local                | Feature/component hooks and local state                                                      | Remains local throughout the migration                                                           |
@@ -128,43 +130,118 @@ React hook instantiation disappear only after the slice and consumers are migrat
 The low-level `AudioTracks`, preview, timeline, and export presentational contracts may
 remain props where they are useful reusable APIs.
 
-### 2. Shared editor view/tools — Redux later, Phase 2
+### 2. Preferences — Redux later, Phase 2A
 
-Current owner: `EditorViewStateProvider` in
-`apps/desktop/src/app/editor-view-state.tsx`, backed by `useState`. It owns active
-tools (`safeTrimFollowingEnabled`, loop, segment, playback speed), persisted tool
-defaults, source-details/timeline visibility, and workspace/editor-stage panel
-layouts.
+Current owner: `tool-settings.ts` defines `ToolDefaults`, loads them from the existing
+preferences storage adapter, and `EditorViewStateProvider` stores them inside
+`toolViewState`. Current examples are the default values for safe trim following,
+loop playback, segment playback, and merge audio. A future preference such as
+`autoStartExport` belongs to this domain, but it has no current owner or writer.
 
-Readers include `PanelVisibilityControls`, `SourceWorkspace`, `EditorStage`,
-`useTimelineTools`, `useEditorInteractionController`, Settings/View menus, and
-`EditorSessionProvider` for the merge default. Writers are toolbar/menu controls and
-resizable-panel callbacks. The propagation problem is a broad Context plus a
-`toolDefaults.mergeAudioEnabled` value passed into `useEasyTrimEditorApp` through the
-session provider.
+Readers include `EditorViewStateProvider` when active tools are initialized,
+`EditorSessionProvider` for the merge-audio initialization policy, Settings menu
+controls, and future command policy such as export queue startup. Writers are the
+Settings menu's explicit default-edit/reset actions and, in the future, an explicit
+auto-start preference control. The wiring problem is that defaults and active values
+currently share one `toolViewState` object and one Context, so changing a default can
+also update current active tools and the preference is passed indirectly into session
+initialization.
 
-Target source of truth: an editor-owned view/tools slice, likely with selectors such as
-`selectEditorTools`, `selectToolDefaults`, `selectShowSourceDetails`,
-`selectShowTimeline`, `selectWorkspaceLayout`, and `selectEditorStageLayout`.
-Domain actions should include `toolChanged`, `toolReset`, `toolDefaultChanged`,
-`toolDefaultsReset`, `sourceDetailsVisibilityChanged`, `timelineVisibilityChanged`,
-and layout changes. `mergeAudioEnabled` is a default preference, not source-bound
-audio state.
+Target source of truth: a dedicated preferences domain. Likely selectors include
+`selectToolDefaults` and, when implemented, `selectAutoStartExport`. Likely actions
+include `toolDefaultChanged`, `toolDefaultsReset`, and `autoStartExportChanged`.
+Changing active editor tools must not mutate preferences; only an action whose meaning
+is explicitly “change default” may do so. Preference values feed feature/session
+initialization or command policy and are not themselves active tool or queue state.
 
-Side-effect owner: the existing `tool-settings.ts` storage adapter remains outside the
-reducer. A later reviewed implementation may use a narrowly scoped listener or
-explicit adapter call for persistence; it must not introduce Redux persistence.
+Side-effect/persistence owner: `tool-settings.ts` and its existing storage adapter
+remain outside reducers. Preserve the current persistence policy and do not add Redux
+persistence. The future auto-start policy should be read by the export domain when a
+new item is queued; it must not be duplicated as active queue execution state.
 
-Reset/lifetime: view layout/visibility and active tool state retain current process
-lifetime. Source replacement must not silently reset them. Existing tool defaults keep
-their accepted preference behavior.
+Reset/lifetime: defaults load at application initialization, survive source replacement,
+and persist according to the existing accepted policy. Reset restores the declared
+preference defaults. Changing a preference does not retroactively rewrite active tools
+unless a separate, explicit product action requests that behavior.
 
-Expected obsolete code: `EditorViewStateContext`, `EditorViewStateProvider`,
-`useEditorViewState`, and `useTimelineTools` transport wrappers once all consumers use
-focused selectors/actions. `EditorStage` and `SourceWorkspace` should connect near
-their state needs without making presentational controls store-aware.
+Expected obsolete code: preference fields inside the combined `toolViewState`, the
+preference portion of `EditorViewStateContext`, and the `toolDefaults` transport from
+`EditorSessionProvider` once consumers read focused selectors. The storage adapter and
+explicit Settings UI contract remain.
 
-### 3. Crop and preview editing values — Redux later, Phase 6
+### 3. Editor tools — Redux later, Phase 2B
+
+Current owner: the active `toolViewState.active` object in
+`EditorViewStateProvider`, exposed through `useEditorViewState` and reshaped by
+`useTimelineTools`. It currently contains safe trim following, loop playback, segment
+playback, and playback speed.
+
+Readers include `EditorStage`/`TimelineTools`, `useEditorInteractionController`, and
+`usePlaybackModes`. Writers are timeline toolbar controls, keyboard/menu paths that
+toggle playback modes, and playback-speed controls. The wiring problem is that active
+runtime behavior is bundled with persistent defaults and is accessed through a broad
+Context rather than a focused active-tools contract.
+
+Target source of truth: a dedicated editor-tools domain with selectors such as
+`selectEditorTools`, `selectSafeTrimFollowingEnabled`, `selectLoopPlaybackEnabled`,
+`selectSegmentPlaybackEnabled`, and `selectPlaybackSpeed`. Likely actions include
+`safeTrimFollowingChanged`, `loopPlaybackToggled`, `segmentPlaybackToggled`,
+`playbackSpeedChanged`, and `editorToolsReset`.
+
+Side-effect owner: active tool reducers remain pure and have no persistence side
+effect. Initial active values are created from the preferences domain; playback and
+media effects remain in `useEditorInteractionController` and `usePlaybackModes`.
+
+Reset/lifetime: active tools are runtime application state, initialized from preferences
+at store/application startup and retained across source replacement under the current
+provider lifetime. An explicit reset returns them to the current preference defaults;
+an active toggle or speed change does not update those defaults.
+
+Expected obsolete code: active tool fields in the combined `toolViewState`, the active
+tool portion of `EditorViewStateContext`, and `useTimelineTools` as a Context transport
+wrapper. Presentational `TimelineTools` props may remain if that keeps the control
+reusable.
+
+### 4. Editor layout — Redux later, Phase 2C
+
+Current owner: `EditorViewStateProvider` stores `showSourceDetails`, `showTimeline`,
+`workspaceLayout`, and `editorStageLayout`. `SourceWorkspace`, `EditorStage`, and
+`PanelVisibilityControls` apply those values to `react-resizable-panels`; resize
+callbacks write back through generic Context setters. `useTimelinePanelSizing` and
+`timeline-pane-sizing.ts` contain related panel constraints and sizing calculations.
+
+Readers include `PanelVisibilityControls`, `SourceWorkspace`, `EditorStage`, panel
+separators, and the panel-sizing hook. Writers are the top-bar visibility controls,
+workspace/editor-stage resize callbacks, panel collapse/expand effects, and future
+restore/reset commands. The wiring problem is that non-trivial visibility, dimensions,
+valid panel combinations, and resize-derived behavior are modeled as unrelated generic
+setters beside tool state.
+
+Target source of truth: a dedicated editor-layout domain owning canonical serializable
+visibility and layout state. Likely selectors include `selectPanelVisibility`,
+`selectShowSourceDetails`, `selectShowTimeline`, `selectWorkspaceLayout`,
+`selectEditorStageLayout`, and `selectNormalizedLayout`. Likely actions include
+`panelVisibilityChanged`, `workspaceLayoutChanged`, `editorStageLayoutChanged`,
+`layoutRestored`, and `layoutReset`.
+
+Side-effect owner: React-resizable-panels remains the imperative UI integration boundary.
+Pure layout normalization, constraint, and valid-combination calculations remain
+adjacent pure functions with focused tests. Reducers/actions coordinate canonical
+serializable layout transitions; they do not own panel refs or pointer/drag internals.
+
+Reset/lifetime: layout is runtime application state and retains its current process
+lifetime across source replacement. Showing/hiding a panel must preserve or normalize
+valid dimensions according to layout constraints. Restore applies a validated layout;
+reset returns the documented defaults. Component-local pointer/drag state remains
+local/runtime-owned.
+
+Expected obsolete code: layout fields and generic setters in
+`EditorViewStateContext`, the layout portion of `EditorViewStateProvider`, and layout
+forwarding through `useEditorViewState`. `SourceWorkspace` and `EditorStage` should
+connect to layout selectors/actions near their semantic ownership while presentational
+panel primitives remain reusable.
+
+### 5. Crop and preview editing values — Redux later, Phase 6
 
 Current owner: `EditorSessionProvider` keeps `cropResolution` and canonical `crop` in
 local state and exposes them through `EditorSessionContext`. `useCropSelection` owns
@@ -183,7 +260,7 @@ the export feature and native adapter. Reset to full crop and source dimensions 
 source replacement. Expected obsolete code is the crop portion of
 `EditorSessionContext`, not the crop interaction hook itself.
 
-### 4. Playback and transport — keep local/runtime-owned, Phase 6 audit
+### 6. Playback and transport — keep local/runtime-owned, Phase 6 audit
 
 Current owner: `useEditorInteractionController` and `usePlaybackModes` manage
 playhead, playing/ready flags, transport errors, preview readiness, audio readiness,
@@ -201,7 +278,7 @@ The interaction Context is therefore a genuine runtime/controller boundary. Do n
 remove it merely to reach zero Contexts. Any future migration must preserve media
 listener cleanup and source-keyed readiness behavior.
 
-### 5. Export queue and execution — Redux later, Phase 5
+### 7. Export queue and execution — Redux later, Phase 5
 
 Current owner: `exportQueue`, `queueStarted`, `queueFinishAction`, and available finish
 actions are React state in `useEasyTrimEditorApp`. `export-queue.ts` separately owns
@@ -237,7 +314,7 @@ Expected obsolete code: `setQueue` prop plumbing and queue state in the root hoo
 module-level runtime job map is not obsolete unless a replacement service preserves
 its ownership guarantees.
 
-### 6. Export presets — Redux later, Phase 5
+### 8. Export presets — Redux later, Phase 5
 
 Current owner: `exportPresetReducer` and `ExportPresetState` in
 `features/export/export-presets.ts`, instantiated in `useEasyTrimEditorApp` and
@@ -261,7 +338,7 @@ Expected obsolete code: the reducer instance and `onPresetAction` root forwardin
 The preset domain module and persistence adapter remain, potentially relocated under
 the owning feature.
 
-### 7. Import/drop workflow and native dialog status — Redux later, Phase 4
+### 9. Import/drop workflow and native dialog status — Redux later, Phase 4
 
 Current owner: `useEasyTrimEditorApp` local state for `isChoosingSource`,
 `isNativeDialogOpen`, `isSourceDragActive`, `dropListenerError`, and source selection
@@ -281,7 +358,7 @@ adapter and owns drag-drop subscription cleanup. The native dialog itself remain
 native-owned. Reset drag/error status on a new event; source import failure remains an
 observable failed transition.
 
-### 8. Updater — keep Context, Phase 7 audit
+### 10. Updater — keep Context, Phase 7 audit
 
 Current owner: `AppUpdatesProvider` and `AppUpdatesContext`. Serializable values are
 status, available version, and installing state. The actual `AvailableUpdate` object,
@@ -292,7 +369,7 @@ Keep the service Context unless a later inventory finds enough disconnected cons
 to justify a small updater-status slice. Even then, only serializable status belongs in
 Redux; the native updater object and install operation remain in the provider/service.
 
-### 9. Theme and preferences — keep Context
+### 11. Theme and style environment — keep Context
 
 Current owner: `ThemeProvider` and `ThemeContext`. It manages theme resolution against
 the system preference, primary-color scrubbing, DOM CSS variables, and accepted
@@ -300,7 +377,7 @@ preference persistence through `lib/storage.ts`. Keep it as an environment/style
 boundary. Color wheel drafts and pointer state remain local. Redux is not a reason to
 replace this Context or add a persistence layer.
 
-### 10. Imperative controller and local UI state — keep
+### 12. Imperative controller and local UI state — keep
 
 `ExportPanelControllerContext` owns an `ExportPanelHandle` ref and imperative actions;
 it is non-serializable controller state and remains Context. `EditorInteractionContext`
@@ -327,11 +404,43 @@ store/provider, and migrate one deliberately small low-risk domain selected from
 inventory. The pilot must prove provider wiring, typed hooks, selectors, dispatch,
 focused tests, and one source of truth without beginning session migration.
 
-### Phase 2 — editor/view/tool state
+### Phase 2 — preferences, editor tools, and editor layout
 
-Migrate active tools, defaults, visibility, and layouts where shared ownership is
-confirmed. Preserve the existing preference adapter. Remove `EditorViewStateContext`
-only when no legitimate Context responsibility remains. Stop for review.
+Do not implement one broad editor/view/tools slice. Treat the three domains as
+independent migration targets because they have different responsibilities, lifetimes,
+and transition rules:
+
+#### Phase 2A — preferences
+
+Migrate persistent/default behavior such as tool defaults. Establish preferences as
+the source used to initialize active tools or command policy, without making a
+preference the active feature state. Preserve the existing `tool-settings.ts` adapter
+and persistence policy. Migrate readers/writers, remove only preference-specific
+Context/prop wiring, validate, and stop for review.
+
+#### Phase 2B — editor tools
+
+Migrate current active tool behavior—safe trim following, loop playback, segment
+playback, and playback speed—into its own runtime application domain. Initialize from
+preferences, but do not persist active changes or mutate defaults from ordinary tool
+interactions. Preserve playback/controller runtime ownership. Migrate consumers,
+remove active-tool wiring, validate reducer/selector/action behavior, and stop for
+review.
+
+#### Phase 2C — editor layout
+
+Migrate panel visibility, workspace layout, editor-stage layout, resize-derived state,
+normalization, valid constraints, restore, and reset into its own layout domain.
+Preserve the resizable-panel integration boundary and keep pointer/drag internals
+local. Keep normalization and constraint calculations pure and tested. Migrate
+consumers and remove layout-specific Context/setter wiring, validate hidden/shown and
+resize transitions, and stop for review.
+
+The exact ordering may be refined when Phase 2 starts if dependencies suggest a better
+sequence, but the domains must remain separate even while the current provider still
+exists as an implementation artifact. Each sub-phase follows the normal sequence:
+identify owner/readers/writers, establish one Redux owner, migrate consumers, remove
+obsolete wiring, validate, and stop for human review before the next boundary.
 
 ### Phase 3 — session/source reducer
 
