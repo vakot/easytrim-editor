@@ -14,6 +14,11 @@ export const sk = {
   },
   statusBar: {
     exportProgress: "Priebeh exportu",
+    frames: "Snímky",
+    fps: "FPS",
+    bitrate: "Dátový tok",
+    estimateTime: "Odhad času",
+    estimateSize: "Odhad veľkosti",
     update: "Aktualizovať",
     error: "Chyba",
     loading: "Načítava sa",

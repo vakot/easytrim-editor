@@ -1,18 +1,40 @@
 import { CircleAlert, Download, LoaderCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { useAppUpdates, type UpdateStatus } from "@/app/update-context";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import packageJson from "../../../../../package.json";
-import type { ExportToast } from "@/features/export";
+import { formatExportDuration, formatExportFileSize, type ExportToast } from "@/features/export";
+import { selectStatusBarExport } from "./status-bar-utils";
 
 export function StatusBar({ queue }: { queue: ExportToast[] }) {
   const { t } = useTranslation();
-  const activeExport = queue.find((item) => item.status === "rendering");
+  const selectedExport = selectStatusBarExport(queue);
+  const [rememberedExport, setRememberedExport] = useState<ExportToast | null>(
+    selectedExport ?? null,
+  );
+  useEffect(() => {
+    if (!selectedExport) return;
+    // Keep the latest eligible export available if the queue has a transient gap.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setRememberedExport(selectedExport);
+  }, [selectedExport]);
+  const activeExport = selectedExport ?? rememberedExport;
   const activeExportPath = activeExport ? splitFilePath(activeExport.path) : null;
-  const activeExportFps = activeExport?.estimatedFps;
+  const progressPercent = activeExport
+    ? activeExport.status === "completed"
+      ? 100
+      : Math.round(activeExport.progressPercent ?? 0)
+    : 0;
+  const progressFillClass =
+    activeExport?.status === "completed"
+      ? "bg-emerald-400"
+      : activeExport?.status === "failed" || activeExport?.status === "canceled"
+        ? "bg-destructive"
+        : "bg-primary";
 
   return (
     <div className="bg-card/30">
@@ -26,13 +48,13 @@ export function StatusBar({ queue }: { queue: ExportToast[] }) {
         </span>
         {activeExport ? (
           <div className="ml-auto flex min-w-0 items-center gap-3 pl-4 text-muted-foreground">
-            <span className="max-w-md truncate text-xs" title={activeExport.path}>
+            <span className="max-w-md truncate text-xs">
               <span>{activeExportPath?.directory}</span>
               <span className="font-medium text-foreground">
                 {activeExportPath?.filename ?? activeExport.filename}
               </span>
             </span>
-            <Separator orientation="vertical" className="h-4 self-center" />
+            <Separator orientation="vertical" className="h-4 mt-1 self-center" />
             <div className="flex shrink-0 items-center gap-2">
               <div
                 className="h-1.5 w-28 overflow-hidden rounded-full bg-muted"
@@ -40,50 +62,59 @@ export function StatusBar({ queue }: { queue: ExportToast[] }) {
                 aria-label={t("statusBar.exportProgress")}
                 aria-valuemin={0}
                 aria-valuemax={100}
-                aria-valuenow={Math.round(activeExport.progressPercent ?? 0)}
+                aria-valuenow={progressPercent}
               >
                 <div
-                  className="h-full rounded-full bg-primary transition-[width] duration-150"
-                  style={{ width: `${activeExport.progressPercent ?? 0}%` }}
+                  className={`h-full rounded-full transition-[width] duration-150 ${progressFillClass}`}
+                  style={{ width: `${progressPercent}%` }}
                 />
               </div>
-              <span className="w-10 text-right tabular-nums">
-                {Math.round(activeExport.progressPercent ?? 0)}%
-              </span>
+              <span className="w-10 text-right tabular-nums">{progressPercent}%</span>
             </div>
-            {activeExport.totalFrames !== undefined && activeExport.currentFrame !== undefined ? (
-              <>
-                <Separator orientation="vertical" className="h-4 self-center" />
-                <span className="shrink-0 tabular-nums">
-                  {activeExport.currentFrame}f / {activeExport.totalFrames}f
-                </span>
-              </>
-            ) : null}
-            {activeExportFps !== undefined ? (
-              <>
-                <Separator orientation="vertical" className="h-4 self-center" />
-                <span className="shrink-0 tabular-nums">{Math.round(activeExportFps)} FPS</span>
-              </>
-            ) : null}
-            {activeExport.bitrate ? (
-              <>
-                <Separator orientation="vertical" className="h-4 self-center" />
-                <span className="shrink-0 tabular-nums">{activeExport.bitrate}</span>
-              </>
-            ) : null}
-            {activeExport.fileSizeBytes !== undefined ? (
-              <>
-                <Separator orientation="vertical" className="h-4 self-center" />
-                <span className="shrink-0 tabular-nums">
-                  {formatFileSize(activeExport.fileSizeBytes)}
-                </span>
-              </>
-            ) : null}
+            <Separator orientation="vertical" className="h-4 mt-1 self-center" />
+            <StatusMetricTooltip label={t("statusBar.frames")}>
+              {activeExport.currentFrame ?? 0}f / {activeExport.totalFrames ?? 0}f
+            </StatusMetricTooltip>
+            <Separator orientation="vertical" className="h-4 mt-1 self-center" />
+            <StatusMetricTooltip label={t("statusBar.fps")}>
+              {Math.round(activeExport.fps ?? 0)} FPS
+            </StatusMetricTooltip>
+            <Separator orientation="vertical" className="h-4 mt-1 self-center" />
+            <StatusMetricTooltip label={t("statusBar.bitrate")}>
+              {activeExport.bitrate ?? "0 kbits/s"}
+            </StatusMetricTooltip>
+            <Separator orientation="vertical" className="h-4 mt-1 self-center" />
+            <StatusMetricTooltip label={t("statusBar.estimateSize")}>
+              {formatStatusFileSize(activeExport.fileSizeBytes)} /{" "}
+              {formatStatusFileSize(activeExport.estimatedFileSizeBytes)}
+            </StatusMetricTooltip>
+            <Separator orientation="vertical" className="h-4 mt-1 self-center" />
+            <StatusMetricTooltip label={t("statusBar.estimateTime")}>
+              {formatExportDuration(activeExport.estimatedElapsedTimeMs ?? 0)} /{" "}
+              {formatExportDuration(activeExport.estimatedTotalTimeMs ?? 0)}
+            </StatusMetricTooltip>
           </div>
         ) : null}
       </footer>
     </div>
   );
+}
+
+function StatusMetricTooltip({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className="shrink-0 tabular-nums py-1">{children}</span>
+      </TooltipTrigger>
+      <TooltipContent side="top">
+        {label}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+function formatStatusFileSize(bytes: number | undefined) {
+  return bytes === undefined || bytes === 0 ? "0 MB" : formatExportFileSize(bytes);
 }
 
 function StatusBarUpdateButton() {
@@ -183,16 +214,4 @@ function splitFilePath(path: string) {
     directory: path.slice(0, separatorIndex + 1),
     filename: path.slice(separatorIndex + 1),
   };
-}
-
-function formatFileSize(bytes: number) {
-  if (bytes < 1024) return `${bytes} B`;
-  const units = ["KB", "MB", "GB", "TB"];
-  let value = bytes;
-  let unitIndex = -1;
-  while (value >= 1024 && unitIndex < units.length - 1) {
-    value /= 1024;
-    unitIndex += 1;
-  }
-  return `${value.toFixed(value >= 10 ? 0 : 1)} ${units[unitIndex]}`;
 }

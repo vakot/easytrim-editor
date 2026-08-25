@@ -8,6 +8,11 @@ export const en = {
   },
   statusBar: {
     exportProgress: "Export progress",
+    frames: "Frames",
+    fps: "FPS",
+    bitrate: "Bitrate",
+    estimateTime: "Estimate time",
+    estimateSize: "Estimate size",
     update: "Update",
     error: "Error",
     loading: "Loading",

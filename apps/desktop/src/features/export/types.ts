@@ -18,9 +18,12 @@ export interface ExportToast {
   progressPercent?: number;
   currentFrame?: number;
   totalFrames?: number;
-  estimatedFps?: number;
+  fps?: number;
   bitrate?: string;
   fileSizeBytes?: number;
+  estimatedFileSizeBytes?: number;
+  estimatedElapsedTimeMs?: number;
+  estimatedTotalTimeMs?: number;
   error?: string;
   onCancel?: () => void;
 }
