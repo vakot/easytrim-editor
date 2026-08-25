@@ -72,6 +72,11 @@ export function CropViewport({
     if (video && video.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) onCanPlay();
   }, [onCanPlay, sourceUrl, videoRef]);
 
+  useEffect(() => {
+    const video = videoRef.current;
+    return () => video?.pause();
+  }, [sourceUrl, videoRef]);
+
   useLayoutEffect(() => {
     const container = containerRef.current;
     if (!container) return;

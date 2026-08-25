@@ -100,7 +100,6 @@ export function EditorStage() {
           <VideoPreview
             sourceId={sourceId}
             preview={preview}
-            playbackRate={playback.playbackRate}
             nativeLoopEnabled={playback.nativeLoopEnabled}
             muted={playback.videoMuted}
             videoRef={playback.videoRef}
