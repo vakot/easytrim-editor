@@ -16,6 +16,7 @@ interface ContextMenuItemOption extends ContextMenuItem {
   suffix?: ReactNode;
   selected?: boolean;
   disabled?: boolean;
+  ariaKeyShortcuts?: string;
   onSelect?: (event: Event) => void;
   shouldCloseOnClick?: boolean;
 }
@@ -147,6 +148,7 @@ function ContextMenuOptionItem({
   return (
     <DropdownMenuPrimitive.Item
       disabled={option.disabled}
+      aria-keyshortcuts={option.ariaKeyShortcuts}
       onPointerMove={option.disabled ? undefined : onPointerMove}
       onSelect={(event) => {
         option.onSelect?.(event);

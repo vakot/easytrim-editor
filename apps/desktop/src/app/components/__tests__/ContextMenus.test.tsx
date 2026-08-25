@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { ComponentProps } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
@@ -16,6 +17,78 @@ vi.mock("@/lib/open-external-url", () => ({
 
 describe("ContextMenus", () => {
   const versionMenuLabel = `Version ${packageJson.version}`;
+
+  function renderMenus(overrides: Partial<ComponentProps<typeof ContextMenus>> = {}) {
+    return render(
+      <TooltipProvider>
+        <ThemeProvider>
+          <ContextMenus
+            isChoosingSource={false}
+            canSave
+            canExport
+            onChooseSource={vi.fn()}
+            onSave={vi.fn()}
+            onExport={vi.fn()}
+            {...overrides}
+          />
+        </ThemeProvider>
+      </TooltipProvider>,
+    );
+  }
+
+  it("places Queue before Settings", () => {
+    renderMenus();
+    const menuButtons = screen
+      .getByRole("navigation", { name: "Application menus" })
+      .querySelectorAll("button");
+    const labels = [...menuButtons].map((button) => button.textContent);
+    expect(labels.indexOf("Queue")).toBeLessThan(labels.indexOf("Settings"));
+  });
+
+  it("shows the opt-in queue start control only when queued work is waiting", async () => {
+    const user = userEvent.setup();
+    const onQueueStartedChange = vi.fn();
+    renderMenus({ hasQueuedItems: true, onQueueStartedChange });
+
+    await user.click(screen.getByRole("button", { name: "Queue" }));
+    const startItem = screen.getByRole("menuitem", { name: /Start queue/ });
+    expect(within(startItem).getByRole("switch")).toBeInTheDocument();
+    expect(startItem).toHaveAttribute("aria-keyshortcuts", "Enter");
+    expect(screen.getAllByRole("separator")).toHaveLength(2);
+
+    await user.click(startItem);
+    expect(onQueueStartedChange).toHaveBeenCalledWith(true);
+  });
+
+  it("requires confirmation before canceling the queue", async () => {
+    const user = userEvent.setup();
+    const onCancelQueue = vi.fn();
+    renderMenus({ hasQueuedItems: true, onCancelQueue });
+
+    await user.click(screen.getByRole("button", { name: "Queue" }));
+    await user.click(screen.getByRole("menuitem", { name: "Cancel queue" }));
+    expect(screen.getByRole("heading", { name: "Cancel export queue?" })).toBeInTheDocument();
+    expect(onCancelQueue).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("button", { name: "Cancel queue" }));
+    expect(onCancelQueue).toHaveBeenCalledOnce();
+  });
+
+  it("selects an available queue finish action", async () => {
+    const user = userEvent.setup();
+    const onQueueFinishActionChange = vi.fn();
+    renderMenus({
+      availableQueueFinishActions: ["exit", "nothing"],
+      onQueueFinishActionChange,
+    });
+
+    await user.click(screen.getByRole("button", { name: "Queue" }));
+    const finishItem = screen.getByRole("menuitem", { name: /On queue finished/ });
+    finishItem.focus();
+    await user.keyboard("{ArrowRight}");
+    await user.click(screen.getByRole("menuitem", { name: "Exit" }));
+    expect(onQueueFinishActionChange).toHaveBeenCalledWith("exit");
+  });
 
   it("opens Help links with the current release version", async () => {
     const user = userEvent.setup();
