@@ -64,10 +64,6 @@ vi.mock("@/app/hooks/useSourceDetails", () => ({
   useSourceDetails: () => menuState.sourceDetails,
 }));
 
-vi.mock("@/app/hooks/useEditorViewState", () => ({
-  useEditorViewState: () => menuState.viewState,
-}));
-
 vi.mock("@/app/store/hooks", () => ({
   useAppDispatch: () => menuState.viewState.dispatch,
   useAppSelector: () => menuState.viewState.toolDefaults,

@@ -1,6 +1,6 @@
 # EasyTrim Editor Redux migration plan
 
-Status: Phase 1.5 — Application state infrastructure structure
+Status: Phase 2B — Editor tools Redux migration complete; Phase 2C is next
 
 This is the maintained plan for the controlled Redux Toolkit migration. It is based
 on the frontend and native architecture at the `master` baseline used to create the
@@ -36,7 +36,7 @@ AppUpdatesProvider                 updater service Context
   ThemeProvider                     theme/environment Context
     ReduxProvider                   typed application store
       PersistGate                    redux-persist rehydration boundary
-        EditorViewStateProvider     active tools/layout Context
+        EditorViewStateProvider     editor layout Context only
           EditorSessionProvider     session hook + crop local state Context
             ExportPanelControllerProvider imperative panel-ref Context
               EditorContractsProvider playback/controller Context
@@ -55,11 +55,11 @@ inspection, preview/audio-preview/waveform artifacts, export-source reservations
 operation cancellation, and FFmpeg process execution. Rust `AppState` stores those
 runtime resources in memory; Redux must never replace that authority.
 
-Redux now owns Preferences. The store registers Preferences as its first persisted
-domain and hydrates it at store creation; all unregistered Redux domains remain
-runtime-only by default. The remaining application domains listed as `Redux later`
-stay on their current owners until a reviewed implementation phase establishes a new
-source of truth.
+Redux owns Preferences and active Editor tools. The store registers only Preferences
+for persistence and hydrates it before downstream editor initialization; Editor tools
+are runtime-only. The remaining application domains listed as `Redux later` stay on
+their current owners until a reviewed implementation phase establishes a new source
+of truth.
 
 ## Ownership classification
 
@@ -67,7 +67,7 @@ source of truth.
 | ---------------------------------- | ------------------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
 | Source/session/media lifecycle     | Redux later               | `sessionReducer` inside `useEasyTrimEditorApp`, exposed through `EditorSessionContext`       | One coherent session/source slice in Phase 3; async extraction in Phase 4                        |
 | Preferences                        | Redux now                 | Redux `preferences` slice; root `redux-persist` allow-list                                   | Completed Phase 1 pilot; persisted by explicit Redux Persist configuration                       |
-| Editor tools                       | Redux later               | Active `toolViewState` in `EditorViewStateProvider`, exposed by `useTimelineTools`           | Dedicated editor-tools domain; Phase 2B                                                          |
+| Editor tools                       | Redux now                 | `editorTools` Redux slice; initialized and reset from Preferences defaults                   | Completed Phase 2B; runtime-only active state                                                    |
 | Editor layout                      | Redux later               | Visibility/layout state in `EditorViewStateProvider` and resizable-panel callbacks           | Dedicated editor-layout domain; Phase 2C                                                         |
 | Crop selection and crop resolution | Redux later               | `EditorSessionProvider` source-bound state plus `useCropSelection` pointer state             | Canonical crop values in preview/editor state in Phase 6; pointer internals stay local           |
 | Playback transport and media graph | Keep runtime/native-owned | `useEditorInteractionController`, `EditorContractsProvider`, DOM/media refs, Web Audio nodes | Keep local/runtime; audit in Phase 6                                                             |
@@ -144,9 +144,8 @@ trim following, loop playback, segment playback, and merge audio. The slice star
 from deterministic product defaults; it does not read storage while the module is
 initialized.
 
-Readers include `SettingsMenu` through focused selectors, `EditorViewStateProvider`
-when active tools are initialized or reset, and `EditorSessionProvider` for the
-merge-audio initialization policy. Writers are the Settings actions
+Readers include `SettingsMenu` through focused selectors and `EditorSessionProvider`
+for the merge-audio initialization policy. Writers are the Settings actions
 `toolDefaultChanged` and `toolDefaultsReset`; future preference writers must use
 domain actions as well. Active editor tools remain separate runtime state and must not
 mutate Preferences.
@@ -172,38 +171,37 @@ the old `toolDefaults` transport from `EditorSessionProvider` was replaced by Re
 selectors. The explicit merge-audio Settings bridge remains; the old Preferences
 storage helpers were removed because Redux Persist now owns this domain.
 
-### 3. Editor tools — Redux later, Phase 2B
+### 3. Editor tools — Redux now, completed Phase 2B
 
-Current owner: the active `toolViewState.active` object in
-`EditorViewStateProvider`, exposed through `useEditorViewState` and reshaped by
-`useTimelineTools`. It currently contains safe trim following, loop playback, segment
-playback, and playback speed.
+Canonical owner: `app/store/slices/editor-tools-slice.ts`, registered as the
+`editorTools` reducer in `app/store/store.ts`. The runtime-only state contains only
+safe trim following, loop playback, segment playback, and the allowed `PlaybackSpeed`
+value. It is excluded from the Redux Persist allow-list.
 
-Readers include `EditorStage`/`TimelineTools`, `useEditorInteractionController`, and
-`usePlaybackModes`. Writers are timeline toolbar controls, keyboard/menu paths that
-toggle playback modes, and playback-speed controls. The wiring problem is that active
-runtime behavior is bundled with persistent defaults and is accessed through a broad
-Context rather than a focused active-tools contract.
+`EditorStage` connects the presentational `TimelineTools` component to focused Redux
+selectors and domain actions. `useEditorInteractionController` reads the active tools
+from Redux and dispatches explicit loop/segment transitions when the runtime playback
+boundary controller requests them. The playback controller continues to own media
+elements, refs, AudioContext nodes, animation frames, playhead synchronization, and
+readiness events.
 
-Target source of truth: a dedicated editor-tools domain with selectors such as
-`selectEditorTools`, `selectSafeTrimFollowingEnabled`, `selectLoopPlaybackEnabled`,
-`selectSegmentPlaybackEnabled`, and `selectPlaybackSpeed`. Likely actions include
-`safeTrimFollowingChanged`, `loopPlaybackToggled`, `segmentPlaybackToggled`,
-`playbackSpeedChanged`, and `editorToolsReset`.
+The store-boundary PersistGate callback initializes active tools from the rehydrated
+Preferences defaults and the default playback speed. This is a one-time initialization;
+ordinary Preference changes do not rewrite active tools. The toolbar reset action is
+constructed from the current Preferences selector, so reset does not use stale startup
+values. Active tools survive source replacement for the lifetime of the application,
+but do not survive restart through persistence.
 
-Side-effect owner: active tool reducers remain pure and have no persistence side
-effect. Initial active values are created from the preferences domain; playback and
-media effects remain in `useEditorInteractionController` and `usePlaybackModes`.
+Actions are `editorToolsInitialized`, `editorToolsReset`,
+`safeTrimFollowingToggled`, `loopPlaybackToggled`, `loopPlaybackChanged`,
+`segmentPlaybackToggled`, `segmentPlaybackChanged`, and `playbackSpeedChanged`.
+Focused selectors are `selectEditorTools`, `selectSafeTrimFollowingEnabled`,
+`selectLoopPlaybackEnabled`, `selectSegmentPlaybackEnabled`, and `selectPlaybackSpeed`.
 
-Reset/lifetime: active tools are runtime application state, initialized from preferences
-at store/application startup and retained across source replacement under the current
-provider lifetime. An explicit reset returns them to the current preference defaults;
-an active toggle or speed change does not update those defaults.
-
-Expected obsolete code: active tool fields in the combined `toolViewState`, the active
-tool portion of `EditorViewStateContext`, and `useTimelineTools` as a Context transport
-wrapper. Presentational `TimelineTools` props may remain if that keeps the control
-reusable.
+The active-tool fields were removed from `EditorViewStateContext` and
+`EditorViewStateProvider`; `useTimelineTools` was removed because it only reshaped
+that Context state. The transitional provider now owns editor layout only. The
+presentational `TimelineTools` props remain a useful feature boundary.
 
 ### 4. Editor layout — Redux later, Phase 2C
 
@@ -435,8 +433,8 @@ are separated from Provider implementations. The transitional `EditorViewState`
 infrastructure and the existing theme subsystem remain in place intentionally. This
 phase changes no state ownership or runtime behavior.
 
-Preferences → Redux, completed in Phase 1. Editor tools and Editor layout remain the
-next functional migrations.
+Preferences → Redux, completed in Phase 1. Editor tools → Redux, completed in Phase
+2B. Editor layout remains the next functional migration.
 
 ### Phase 2 — editor tools and editor layout
 
@@ -447,12 +445,13 @@ the source used to initialize active tools or command policy without owning acti
 
 #### Phase 2B — editor tools
 
-Migrate current active tool behavior—safe trim following, loop playback, segment
-playback, and playback speed—into its own runtime application domain. Initialize from
-preferences, but do not persist active changes or mutate defaults from ordinary tool
-interactions. Preserve playback/controller runtime ownership. Migrate consumers,
-remove active-tool wiring, validate reducer/selector/action behavior, and stop for
-review.
+Completed. Current active tool behavior—safe trim following, loop playback, segment
+playback, and playback speed—now lives in the runtime-only `editorTools` Redux domain.
+Preferences supplies one-time initialization and explicit reset defaults without
+becoming active state. Consumers and writers use Redux at their semantic boundaries;
+the presentational toolbar and runtime playback/controller boundaries remain intact.
+Reducer, selector, persistence-exclusion, Preference-independence, reset, and UI
+integration coverage was added. Stop for human review before beginning Phase 2C.
 
 #### Phase 2C — editor layout
 

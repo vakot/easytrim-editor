@@ -8,6 +8,12 @@ import type {
   SourceDropEvent,
   SourceSelection,
 } from "../lib/tauri/media";
+import { store } from "../app/store/store";
+import {
+  createEditorToolsStateFromPreferences,
+  editorToolsInitialized,
+} from "../app/store/slices/editor-tools-slice";
+import { DEFAULT_TOOL_DEFAULTS } from "../app/tool-settings";
 
 const mocks = vi.hoisted(() => ({
   checkMediaCapabilities: vi.fn(),
@@ -133,6 +139,9 @@ function installAudioMocks(initiallyReady = true) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  store.dispatch(
+    editorToolsInitialized(createEditorToolsStateFromPreferences(DEFAULT_TOOL_DEFAULTS)),
+  );
   sourceDropListener = undefined;
   mocks.checkMediaCapabilities.mockResolvedValue(capabilities);
   mocks.chooseSource.mockResolvedValue(null);

@@ -55,10 +55,14 @@ describe("SettingsMenu Redux integration", () => {
     expect(store.getState().preferences.toolDefaults.loopPlaybackEnabled).toBe(false);
   });
 
-  it("dispatches reset while keeping the active-session value outside Redux", async () => {
+  it("resets Preferences without rewriting active editor tools", async () => {
     const user = userEvent.setup();
     const store = renderSettings();
 
+    const loopSwitch = within(screen.getByRole("menuitem", { name: "Loop" })).getByRole("switch");
+    await user.click(loopSwitch);
+    expect(store.getState().preferences.toolDefaults.loopPlaybackEnabled).toBe(false);
+    expect(store.getState().editorTools.loopPlaybackEnabled).toBe(true);
     const mergeSwitch = within(screen.getByRole("menuitem", { name: "Merge audio" })).getByRole(
       "switch",
     );
@@ -66,6 +70,7 @@ describe("SettingsMenu Redux integration", () => {
     await user.click(screen.getByRole("menuitem", { name: "Reset to default" }));
 
     expect(store.getState().preferences.toolDefaults).toEqual(DEFAULT_TOOL_DEFAULTS);
+    expect(store.getState().editorTools.loopPlaybackEnabled).toBe(true);
   });
 
   it("keeps the merge-audio compatibility bridge explicit at the Settings boundary", async () => {

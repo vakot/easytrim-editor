@@ -4,12 +4,18 @@ import { LoaderCircle } from "lucide-react";
 
 import { PanelSeparator } from "@/components/PanelSeparator";
 import { useEditorViewState } from "@/app/hooks/useEditorViewState";
+import { usePlayback, useSourceDetails, useTimeline } from "@/app/hooks/useEditorContracts";
+import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import {
-  usePlayback,
-  useSourceDetails,
-  useTimeline,
-  useTimelineTools,
-} from "@/app/hooks/useEditorContracts";
+  createEditorToolsStateFromPreferences,
+  editorToolsReset,
+  playbackSpeedChanged,
+  safeTrimFollowingToggled,
+  loopPlaybackToggled,
+  segmentPlaybackToggled,
+  selectEditorTools,
+} from "@/app/store/slices/editor-tools-slice";
+import { selectToolDefaults } from "@/app/store/slices/preferences-slice";
 import { AudioTracks } from "@/features/audio-tracks";
 import {
   PlaybackControls,
@@ -33,7 +39,9 @@ export function EditorStage() {
   const source = useSourceDetails();
   const playback = usePlayback();
   const timeline = useTimeline();
-  const tools = useTimelineTools();
+  const dispatch = useAppDispatch();
+  const tools = useAppSelector(selectEditorTools);
+  const toolDefaults = useAppSelector(selectToolDefaults);
   const { editorStageLayout, setEditorStageLayout, showTimeline, setShowTimeline } =
     useEditorViewState();
   const timelineRange = source.trim ?? EMPTY_TIMELINE_RANGE;
@@ -144,11 +152,15 @@ export function EditorStage() {
                     loopPlaybackEnabled={tools.loopPlaybackEnabled}
                     segmentPlaybackEnabled={tools.segmentPlaybackEnabled}
                     playbackSpeed={tools.playbackSpeed}
-                    onToggleSafeTrimFollowing={tools.toggleSafeTrimFollowing}
-                    onToggleLoopPlayback={tools.toggleLoopPlayback}
-                    onToggleSegmentPlayback={tools.toggleSegmentPlayback}
-                    onPlaybackSpeedChange={tools.setPlaybackSpeed}
-                    onReset={tools.reset}
+                    onToggleSafeTrimFollowing={() => dispatch(safeTrimFollowingToggled())}
+                    onToggleLoopPlayback={() => dispatch(loopPlaybackToggled())}
+                    onToggleSegmentPlayback={() => dispatch(segmentPlaybackToggled())}
+                    onPlaybackSpeedChange={(speed) => dispatch(playbackSpeedChanged(speed))}
+                    onReset={() =>
+                      dispatch(
+                        editorToolsReset(createEditorToolsStateFromPreferences(toolDefaults)),
+                      )
+                    }
                   />
                 }
                 onChange={timeline.onChange}

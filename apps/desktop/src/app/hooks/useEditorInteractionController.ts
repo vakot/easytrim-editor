@@ -11,7 +11,12 @@ import {
   type TrimRange,
 } from "@/domain/trim";
 import { isApplicationDialogOpen } from "@/lib/hotkeys";
-import { useTimelineTools } from "@/app/hooks/useTimelineTools";
+import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
+import {
+  loopPlaybackChanged,
+  segmentPlaybackChanged,
+  selectEditorTools,
+} from "@/app/store/slices/editor-tools-slice";
 import { useSourceDetails } from "@/app/hooks/useSourceDetails";
 import { usePlaybackModes } from "@/features/editor/hooks/usePlaybackModes";
 import { synchronizeAudioPosition } from "@/features/editor/utils/audio-sync";
@@ -76,7 +81,8 @@ export interface EditorInteractionValue {
 export function useEditorInteractionController(): EditorInteractionValue {
   const { t } = useTranslation();
   const source = useSourceDetails();
-  const tools = useTimelineTools();
+  const dispatch = useAppDispatch();
+  const tools = useAppSelector(selectEditorTools);
   const trim = source.trim ?? EMPTY_TRIM;
   const preview = source.preview;
   const frameRate = source.frameRate;
@@ -173,8 +179,8 @@ export function useEditorInteractionController(): EditorInteractionValue {
   const playbackModes = usePlaybackModes({
     loopEnabled: tools.loopPlaybackEnabled,
     segmentEnabled: tools.segmentPlaybackEnabled,
-    onLoopEnabledChange: () => tools.toggleLoopPlayback(),
-    onSegmentEnabledChange: () => tools.toggleSegmentPlayback(),
+    onLoopEnabledChange: (enabled) => dispatch(loopPlaybackChanged(enabled)),
+    onSegmentEnabledChange: (enabled) => dispatch(segmentPlaybackChanged(enabled)),
   });
   const displayedPlayheadMicros = clampPlaybackMicros(playheadMicros, trim.sourceDurationMicros);
 

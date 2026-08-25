@@ -66,10 +66,6 @@ vi.mock("@/app/hooks/useSourceDetails", () => ({
   useSourceDetails: () => menuState.sourceDetails,
 }));
 
-vi.mock("@/app/hooks/useEditorViewState", () => ({
-  useEditorViewState: () => menuState.viewState,
-}));
-
 vi.mock("@/app/hooks/useExportPanelController", () => ({
   useExportPanelController: () => menuState.exportPanel,
 }));

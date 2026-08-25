@@ -1,6 +1,11 @@
 import { afterEach, describe, expect, it } from "vitest";
 import type { Persistor, Storage as PersistStorage } from "redux-persist";
 
+import {
+  createEditorToolsStateFromPreferences,
+  editorToolsReset,
+  playbackSpeedChanged,
+} from "@/app/store/slices/editor-tools-slice";
 import { toolDefaultChanged, toolDefaultsReset } from "@/app/store/slices/preferences-slice";
 import { createAppPersistor, createAppStore, type AppStore } from "@/app/store/store";
 import { persistConfig, resolveReduxPersistStorage } from "@/app/store/persistence";
@@ -104,6 +109,49 @@ describe("Redux Persist store integration", () => {
     expect(store.getState().preferences.toolDefaults).toEqual({
       ...DEFAULT_TOOL_DEFAULTS,
       loopPlaybackEnabled: false,
+    });
+    expect(store.getState().editorTools.loopPlaybackEnabled).toBe(false);
+    expect(store.getState().editorTools.playbackSpeed).toBe(1);
+  });
+
+  it("does not rewrite active tools when a Preference changes", async () => {
+    const { store } = await createPersistedTestStore();
+
+    store.dispatch(toolDefaultChanged({ key: "loopPlaybackEnabled", enabled: false }));
+
+    expect(store.getState().preferences.toolDefaults.loopPlaybackEnabled).toBe(false);
+    expect(store.getState().editorTools.loopPlaybackEnabled).toBe(true);
+  });
+
+  it("resets active tools from current Preferences defaults", async () => {
+    const { store } = await createPersistedTestStore();
+
+    store.dispatch(toolDefaultChanged({ key: "loopPlaybackEnabled", enabled: false }));
+    store.dispatch(playbackSpeedChanged(3));
+    store.dispatch(
+      editorToolsReset(
+        createEditorToolsStateFromPreferences(store.getState().preferences.toolDefaults),
+      ),
+    );
+
+    expect(store.getState().editorTools).toEqual({
+      ...createEditorToolsStateFromPreferences({
+        ...DEFAULT_TOOL_DEFAULTS,
+        loopPlaybackEnabled: false,
+      }),
+    });
+  });
+
+  it("never persists active editor tools", async () => {
+    const { store, persistor, storage } = await createPersistedTestStore();
+
+    store.dispatch(playbackSpeedChanged(3));
+    await persistor.flush();
+
+    const persistedRoot = await readPersistedRoot(storage);
+    expect(persistedRoot).not.toHaveProperty("editorTools");
+    expect(JSON.parse(String(persistedRoot.preferences))).toEqual({
+      toolDefaults: DEFAULT_TOOL_DEFAULTS,
     });
   });
 

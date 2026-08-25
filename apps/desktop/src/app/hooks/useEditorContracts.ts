@@ -2,7 +2,6 @@ import { useContext } from "react";
 
 import { EditorInteractionContext } from "@/app/contexts/editor-contracts-context";
 import { useSourceDetails } from "@/app/hooks/useSourceDetails";
-import { useTimelineTools } from "@/app/hooks/useTimelineTools";
 
 function useEditorInteraction() {
   const value = useContext(EditorInteractionContext);
@@ -65,4 +64,4 @@ export function useTimeline() {
   };
 }
 
-export { useSourceDetails, useTimelineTools };
+export { useSourceDetails };
