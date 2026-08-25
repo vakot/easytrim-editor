@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { useAppUpdates, type UpdateStatus } from "@/app/update-context";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import packageJson from "../../../../../package.json";
 import { formatExportDuration, formatExportFileSize, type ExportToast } from "@/features/export";
 
@@ -26,7 +27,7 @@ export function StatusBar({ queue }: { queue: ExportToast[] }) {
         </span>
         {activeExport ? (
           <div className="ml-auto flex min-w-0 items-center gap-3 pl-4 text-muted-foreground">
-            <span className="max-w-md truncate text-xs" title={activeExport.path}>
+            <span className="max-w-md truncate text-xs">
               <span>{activeExportPath?.directory}</span>
               <span className="font-medium text-foreground">
                 {activeExportPath?.filename ?? activeExport.filename}
@@ -54,55 +55,64 @@ export function StatusBar({ queue }: { queue: ExportToast[] }) {
             {activeExport.totalFrames !== undefined && activeExport.currentFrame !== undefined ? (
               <>
                 <Separator orientation="vertical" className="h-4 self-center" />
-                <span className="shrink-0 tabular-nums">
+                <StatusMetricTooltip label={t("statusBar.frames")}>
                   {activeExport.currentFrame}f / {activeExport.totalFrames}f
-                </span>
+                </StatusMetricTooltip>
               </>
             ) : null}
             {activeExportFps !== undefined ? (
               <>
                 <Separator orientation="vertical" className="h-4 self-center" />
-                <span className="shrink-0 tabular-nums">{Math.round(activeExportFps)} FPS</span>
+                <StatusMetricTooltip label={t("statusBar.fps")}>
+                  {Math.round(activeExportFps)} FPS
+                </StatusMetricTooltip>
               </>
             ) : null}
             {activeExport.bitrate ? (
               <>
                 <Separator orientation="vertical" className="h-4 self-center" />
-                <span className="shrink-0 tabular-nums">{activeExport.bitrate}</span>
+                <StatusMetricTooltip label={t("statusBar.bitrate")}>
+                  {activeExport.bitrate}
+                </StatusMetricTooltip>
               </>
             ) : null}
             {activeExport.fileSizeBytes !== undefined ? (
               <>
                 <Separator orientation="vertical" className="h-4 self-center" />
-                <span
-                  className="shrink-0 tabular-nums"
-                  title={t("statusBar.estimateSize")}
-                  aria-label={`${t("statusBar.estimateSize")}: ${formatExportFileSize(activeExport.fileSizeBytes)}${activeExport.estimatedFileSizeBytes !== undefined ? ` / ${formatExportFileSize(activeExport.estimatedFileSizeBytes)}` : ""}`}
-                >
+                <StatusMetricTooltip label={t("statusBar.estimateSize")}>
                   {activeExport.estimatedFileSizeBytes !== undefined
                     ? `${formatExportFileSize(activeExport.fileSizeBytes)} / ${formatExportFileSize(activeExport.estimatedFileSizeBytes)}`
                     : formatExportFileSize(activeExport.fileSizeBytes)}
-                </span>
+                </StatusMetricTooltip>
               </>
             ) : null}
             {activeExport.estimatedElapsedTimeMs !== undefined &&
             activeExport.estimatedTotalTimeMs !== undefined ? (
               <>
                 <Separator orientation="vertical" className="h-4 self-center" />
-                <span
-                  className="shrink-0 tabular-nums"
-                  title={t("statusBar.estimateTime")}
-                  aria-label={`${t("statusBar.estimateTime")}: ${formatExportDuration(activeExport.estimatedElapsedTimeMs)} / ${formatExportDuration(activeExport.estimatedTotalTimeMs)}`}
-                >
+                <StatusMetricTooltip label={t("statusBar.estimateTime")}>
                   {formatExportDuration(activeExport.estimatedElapsedTimeMs)} /{" "}
                   {formatExportDuration(activeExport.estimatedTotalTimeMs)}
-                </span>
+                </StatusMetricTooltip>
               </>
             ) : null}
           </div>
         ) : null}
       </footer>
     </div>
+  );
+}
+
+function StatusMetricTooltip({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className="shrink-0 tabular-nums">{children}</span>
+      </TooltipTrigger>
+      <TooltipContent side="top" sideOffset={4}>
+        {label}
+      </TooltipContent>
+    </Tooltip>
   );
 }
 
