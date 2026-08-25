@@ -57,6 +57,12 @@ describe("AppUpdatesProvider", () => {
     expect(screen.getByTestId("version")).toHaveTextContent("");
   });
 
+  it("requires the AppUpdatesProvider boundary", () => {
+    expect(() => render(<UpdateProbe />)).toThrowError(
+      "useAppUpdates must be used within AppUpdatesProvider.",
+    );
+  });
+
   it("keeps the up-to-date state after a successful check with no update", async () => {
     nativeUpdates.checkForUpdates.mockResolvedValue(null);
 
