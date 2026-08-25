@@ -452,14 +452,14 @@ export function ContextMenus({
           ...startQueueOptions,
           {
             id: "cancel-active-queue-item",
-            children: t("app.queue.cancel"),
+            children: t("app.queue.skip"),
             icon: <CircleStop className="size-3" aria-hidden="true" />,
             disabled: !hasActiveItem,
             onSelect: onCancelActive,
           },
           {
             id: "cancel-queue",
-            children: t("app.queue.cancelQueue"),
+            children: t("app.queue.cancel"),
             icon: <Power className="size-3" aria-hidden="true" />,
             disabled: !hasQueuedItems && !hasActiveItem,
             onSelect: () => setIsCancelQueueConfirmOpen(true),
@@ -585,7 +585,7 @@ export function ContextMenus({
                 onCancelQueue();
               }}
             >
-              {t("app.queue.cancelQueue")}
+              {t("app.queue.cancel")}
             </Button>
           </DialogFooter>
         </DialogContent>

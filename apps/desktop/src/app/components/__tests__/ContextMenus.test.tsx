@@ -63,14 +63,18 @@ describe("ContextMenus", () => {
   it("requires confirmation before canceling the queue", async () => {
     const user = userEvent.setup();
     const onCancelQueue = vi.fn();
-    renderMenus({ hasQueuedItems: true, onCancelQueue });
+    renderMenus({ hasQueuedItems: true, hasActiveItem: true, onCancelQueue });
 
     await user.click(screen.getByRole("button", { name: "Queue" }));
-    await user.click(screen.getByRole("menuitem", { name: "Cancel queue" }));
+    expect(screen.getByRole("menuitem", { name: "Skip" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Cancel" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("menuitem", { name: "Cancel" }));
     expect(screen.getByRole("heading", { name: "Cancel export queue?" })).toBeInTheDocument();
     expect(onCancelQueue).not.toHaveBeenCalled();
 
-    await user.click(screen.getByRole("button", { name: "Cancel queue" }));
+    const cancelButtons = screen.getAllByRole("button", { name: "Cancel" });
+    await user.click(cancelButtons[1]);
     expect(onCancelQueue).toHaveBeenCalledOnce();
   });
 

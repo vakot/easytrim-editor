@@ -77,8 +77,8 @@ export const en = {
     },
     queue: {
       start: "Start queue",
+      skip: "Skip",
       cancel: "Cancel",
-      cancelQueue: "Cancel queue",
       cancelQueueTitle: "Cancel export queue?",
       cancelQueueDescription:
         "The active export and all remaining queued exports will be canceled.",

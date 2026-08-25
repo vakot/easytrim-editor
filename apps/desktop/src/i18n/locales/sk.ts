@@ -82,8 +82,8 @@ export const sk = {
     },
     queue: {
       start: "Spustiť front",
+      skip: "Preskočiť",
       cancel: "Zrušiť",
-      cancelQueue: "Zrušiť front",
       cancelQueueTitle: "Zrušiť front exportov?",
       cancelQueueDescription: "Aktívny export a všetky zostávajúce exporty vo fronte sa zrušia.",
       onFinish: "Po dokončení frontu",
