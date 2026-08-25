@@ -6,11 +6,12 @@ import {
   PanelLeftDashed,
   RotateCcw,
 } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { ContextMenu, type ContextMenuOption } from "@/components/ui/context-menu";
+import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import {
@@ -24,34 +25,71 @@ import {
 export function PanelVisibilityControls() {
   const { t } = useTranslation();
   const [layoutMenuOpen, setLayoutMenuOpen] = useState(false);
+  const switchInteractionRef = useRef(false);
   const dispatch = useAppDispatch();
   const showSourceDetails = useAppSelector(selectShowSourceDetails);
   const showTimeline = useAppSelector(selectShowTimeline);
+
+  const layoutPanelOption = (
+    id: string,
+    label: string,
+    icon: ReactNode,
+    checked: boolean,
+    onCheckedChange: (checked: boolean) => void,
+    tooltip: string,
+  ): ContextMenuOption => ({
+    id,
+    children: label,
+    icon,
+    suffix: (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="inline-flex">
+            <Switch
+              size="sm"
+              checked={checked}
+              onCheckedChange={onCheckedChange}
+              onClick={(event) => event.stopPropagation()}
+              onKeyDown={() => {
+                switchInteractionRef.current = true;
+              }}
+              onPointerDown={(event) => {
+                switchInteractionRef.current = true;
+                event.stopPropagation();
+              }}
+            />
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="right">{tooltip}</TooltipContent>
+      </Tooltip>
+    ),
+    shouldCloseOnClick: false,
+    onSelect: () => {
+      if (switchInteractionRef.current) {
+        switchInteractionRef.current = false;
+        return;
+      }
+      onCheckedChange(!checked);
+    },
+  });
+
   const layoutOptions: ContextMenuOption[] = [
-    {
-      id: "layout-toggle-left-panel",
-      children: showSourceDetails ? t("app.panels.hideLeftPane") : t("app.panels.showLeftPane"),
-      icon: showSourceDetails ? (
-        <PanelLeft className="size-3" aria-hidden="true" />
-      ) : (
-        <PanelLeftDashed className="size-3" aria-hidden="true" />
-      ),
-      selected: showSourceDetails,
-      shouldCloseOnClick: false,
-      onSelect: () => dispatch(sourceDetailsVisibilityChanged(!showSourceDetails)),
-    },
-    {
-      id: "layout-toggle-bottom-panel",
-      children: showTimeline ? t("app.panels.hideBottomPane") : t("app.panels.showBottomPane"),
-      icon: showTimeline ? (
-        <PanelBottom className="size-3" aria-hidden="true" />
-      ) : (
-        <PanelBottomDashed className="size-3" aria-hidden="true" />
-      ),
-      selected: showTimeline,
-      shouldCloseOnClick: false,
-      onSelect: () => dispatch(timelineVisibilityChanged(!showTimeline)),
-    },
+    layoutPanelOption(
+      "layout-toggle-left-panel",
+      t("app.panels.leftPanel"),
+      <PanelLeft className="size-3" aria-hidden="true" />,
+      showSourceDetails,
+      (checked) => dispatch(sourceDetailsVisibilityChanged(checked)),
+      showSourceDetails ? t("app.panels.hideLeftPane") : t("app.panels.showLeftPane"),
+    ),
+    layoutPanelOption(
+      "layout-toggle-bottom-panel",
+      t("app.panels.bottomPanel"),
+      <PanelBottom className="size-3" aria-hidden="true" />,
+      showTimeline,
+      (checked) => dispatch(timelineVisibilityChanged(checked)),
+      showTimeline ? t("app.panels.hideBottomPane") : t("app.panels.showBottomPane"),
+    ),
     { id: "layout-divider", separator: true },
     {
       id: "layout-reset",

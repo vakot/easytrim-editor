@@ -700,10 +700,14 @@ describe("App", () => {
     await openSourcePicker(user);
     await screen.findByRole("heading", { name: "holiday.mp4" });
     await user.click(screen.getByRole("button", { name: "Layout controls" }));
-    expect(screen.getByRole("menuitem", { name: "Hide left pane" })).toBeInTheDocument();
-    expect(screen.getByRole("menuitem", { name: "Hide bottom pane" })).toBeInTheDocument();
-    await user.click(screen.getByRole("menuitem", { name: "Hide left pane" }));
-    await user.click(screen.getByRole("menuitem", { name: "Hide bottom pane" }));
+    const leftPanelRow = screen.getByRole("menuitem", { name: "Left panel" });
+    const bottomPanelRow = screen.getByRole("menuitem", { name: "Bottom panel" });
+    expect(leftPanelRow).toHaveAttribute("data-selected", "false");
+    expect(bottomPanelRow).toHaveAttribute("data-selected", "false");
+    expect(within(leftPanelRow).getByRole("switch")).toBeChecked();
+    expect(within(bottomPanelRow).getByRole("switch")).toBeChecked();
+    await user.click(within(leftPanelRow).getByRole("switch"));
+    await user.click(within(bottomPanelRow).getByRole("switch"));
     await user.click(screen.getByRole("menuitem", { name: "Reset editor layout" }));
 
     expect(screen.getByRole("button", { name: "Hide left pane" })).toHaveAttribute(
