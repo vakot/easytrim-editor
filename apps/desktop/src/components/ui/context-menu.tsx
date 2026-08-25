@@ -45,6 +45,7 @@ interface ContextMenuProps {
   className?: string;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  onTriggerClick?: () => void;
   onTriggerPointerEnter?: () => void;
   onTriggerPointerLeave?: () => void;
 }
@@ -55,6 +56,7 @@ export function ContextMenu({
   className,
   open,
   onOpenChange,
+  onTriggerClick,
   onTriggerPointerEnter,
   onTriggerPointerLeave,
 }: ContextMenuProps) {
@@ -81,6 +83,7 @@ export function ContextMenu({
             triggerInteractionRef.current = "pointer";
             onTriggerPointerLeave?.();
           }}
+          onClick={onTriggerClick}
           className={cn(
             "text-foreground/80 data-[state=open]:bg-accent data-[state=open]:text-foreground",
             className,

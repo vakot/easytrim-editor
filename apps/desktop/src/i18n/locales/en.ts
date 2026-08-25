@@ -92,6 +92,7 @@ export const en = {
     },
     panels: {
       group: "Editor panels",
+      layoutMenu: "Layout controls",
       hideLeftPane: "Hide left pane",
       showLeftPane: "Show left pane",
       hideBottomPane: "Hide bottom pane",

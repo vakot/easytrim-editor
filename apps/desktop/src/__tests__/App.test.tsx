@@ -699,10 +699,12 @@ describe("App", () => {
 
     await openSourcePicker(user);
     await screen.findByRole("heading", { name: "holiday.mp4" });
-    await user.click(screen.getByRole("button", { name: "Hide left pane" }));
-    await user.click(screen.getByRole("button", { name: "Hide bottom pane" }));
-
-    await user.click(screen.getByRole("button", { name: "Reset editor layout" }));
+    await user.click(screen.getByRole("button", { name: "Layout controls" }));
+    expect(screen.getByRole("menuitem", { name: "Hide left pane" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Hide bottom pane" })).toBeInTheDocument();
+    await user.click(screen.getByRole("menuitem", { name: "Hide left pane" }));
+    await user.click(screen.getByRole("menuitem", { name: "Hide bottom pane" }));
+    await user.click(screen.getByRole("menuitem", { name: "Reset editor layout" }));
 
     expect(screen.getByRole("button", { name: "Hide left pane" })).toHaveAttribute(
       "aria-pressed",

@@ -97,6 +97,7 @@ export const sk = {
     dragUnavailable: "Presunutie súboru nie je dostupné: {{message}}",
     panels: {
       group: "Panely editora",
+      layoutMenu: "Ovládanie rozloženia",
       hideLeftPane: "Skryť ľavý panel",
       showLeftPane: "Zobraziť ľavý panel",
       hideBottomPane: "Skryť spodný panel",
