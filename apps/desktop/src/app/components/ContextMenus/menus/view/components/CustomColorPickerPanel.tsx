@@ -2,6 +2,11 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { SpectrumWheel } from "@/app/components/PrimaryColorSelector";
+import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
+import {
+  customPrimaryColorChanged,
+  selectCustomPrimaryColor,
+} from "@/app/store/slices/theme-slice";
 import { isCustomPrimaryColor, resolvePrimaryColor, type PrimaryColor } from "@/app/theme/theme";
 import { useTheme } from "@/app/theme/use-theme";
 import { Input } from "@/components/ui/input";
@@ -18,7 +23,10 @@ export function CustomColorPickerPanel({
   onClose,
 }: CustomColorPickerPanelProps) {
   const { t } = useTranslation();
-  const { customPrimaryColor, previewPrimaryColor, setPrimaryColor } = useTheme();
+  const { previewPrimaryColor } = useTheme();
+  const dispatch = useAppDispatch();
+  const customPrimaryColor = useAppSelector(selectCustomPrimaryColor);
+
   const [hexValue, setHexValue] = useState<string>(customPrimaryColor.slice(1));
   const selectedColor = resolvePrimaryColor(previewColor ?? customPrimaryColor);
 
@@ -30,7 +38,7 @@ export function CustomColorPickerPanel({
   const commit = (color: PrimaryColor) => {
     onPreviewChange(null);
     setHexValue(resolvePrimaryColor(color).slice(1));
-    setPrimaryColor(color);
+    if (isCustomPrimaryColor(color)) dispatch(customPrimaryColorChanged(color));
   };
   const cancel = () => {
     onPreviewChange(null);

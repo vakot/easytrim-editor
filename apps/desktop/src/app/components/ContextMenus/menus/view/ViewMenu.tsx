@@ -2,6 +2,15 @@ import { Monitor, Moon, Sun } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
+import {
+  primaryColorChanged,
+  selectCustomPrimaryColor,
+  selectPrimaryColor,
+  selectPrimaryColorKey,
+  selectThemePreference,
+  themePreferenceChanged,
+} from "@/app/store/slices/theme-slice";
 import {
   CUSTOM_PRIMARY_COLOR,
   PRIMARY_COLORS,
@@ -23,15 +32,12 @@ interface ViewMenuProps {
 
 export function ViewMenu({ navigation }: ViewMenuProps) {
   const { t } = useTranslation();
-  const {
-    preference,
-    primaryColor,
-    primaryColorKey,
-    customPrimaryColor,
-    previewPrimaryColor,
-    setPreference,
-    setPrimaryColor,
-  } = useTheme();
+  const { previewPrimaryColor } = useTheme();
+  const dispatch = useAppDispatch();
+  const preference = useAppSelector(selectThemePreference);
+  const primaryColor = useAppSelector(selectPrimaryColor);
+  const primaryColorKey = useAppSelector(selectPrimaryColorKey);
+  const customPrimaryColor = useAppSelector(selectCustomPrimaryColor);
   const [previewColor, setPreviewColor] = useState<PrimaryColor | null>(null);
   const CurrentThemeIcon = themeIcons[preference];
   const displayedPrimaryColor = previewColor ?? primaryColor;
@@ -55,7 +61,7 @@ export function ViewMenu({ navigation }: ViewMenuProps) {
       icon: <Icon className="size-3" aria-hidden="true" />,
       selected: value === preference,
       shouldCloseOnClick: false,
-      onSelect: () => setPreference(value),
+      onSelect: () => dispatch(themePreferenceChanged(value)),
     };
   });
 
@@ -67,7 +73,7 @@ export function ViewMenu({ navigation }: ViewMenuProps) {
       suffix: <span className="font-mono">{resolvePrimaryColor(color).toUpperCase()}</span>,
       selected: color === primaryColorKey,
       shouldCloseOnClick: false,
-      onSelect: () => setPrimaryColor(color),
+      onSelect: () => dispatch(primaryColorChanged(color)),
     })),
     {
       id: "color-custom",
@@ -83,7 +89,7 @@ export function ViewMenu({ navigation }: ViewMenuProps) {
       shouldCloseOnClick: false,
       onSelect: () => {
         setPreviewColor(null);
-        setPrimaryColor(customPrimaryColor);
+        dispatch(primaryColorChanged(customPrimaryColor));
       },
       options: [
         {

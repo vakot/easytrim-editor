@@ -1,21 +1,9 @@
 import { createContext } from "react";
 
-import type {
-  CustomPrimaryColor,
-  PrimaryColor,
-  PrimaryColorKey,
-  ResolvedTheme,
-  ThemePreference,
-} from "./theme";
+import type { PrimaryColor, ResolvedTheme } from "./theme";
 
 export interface ThemeContextValue {
-  preference: ThemePreference;
   resolvedTheme: ResolvedTheme;
-  primaryColor: PrimaryColor;
-  primaryColorKey: PrimaryColorKey;
-  customPrimaryColor: CustomPrimaryColor;
-  setPreference: (preference: ThemePreference) => void;
-  setPrimaryColor: (primaryColor: PrimaryColor) => void;
   previewPrimaryColor: (primaryColor: PrimaryColor | null) => void;
 }
 
