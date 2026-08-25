@@ -11,6 +11,7 @@ import {
 } from "redux-persist";
 
 import { createPersistedReducer, reduxStorage, type PersistStorage } from "@/app/store/persistence";
+import { editorLayoutReducer } from "@/app/store/slices/editor-layout-slice";
 import {
   createEditorToolsStateFromPreferences,
   editorToolsInitialized,
@@ -19,6 +20,7 @@ import {
 import { preferencesReducer } from "@/app/store/slices/preferences-slice";
 
 const rootReducer = combineReducers({
+  editorLayout: editorLayoutReducer,
   editorTools: editorToolsReducer,
   preferences: preferencesReducer,
 });

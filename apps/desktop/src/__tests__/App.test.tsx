@@ -13,6 +13,7 @@ import {
   createEditorToolsStateFromPreferences,
   editorToolsInitialized,
 } from "../app/store/slices/editor-tools-slice";
+import { editorLayoutReset } from "../app/store/slices/editor-layout-slice";
 import { DEFAULT_TOOL_DEFAULTS } from "../app/tool-settings";
 
 const mocks = vi.hoisted(() => ({
@@ -139,6 +140,7 @@ function installAudioMocks(initiallyReady = true) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  store.dispatch(editorLayoutReset());
   store.dispatch(
     editorToolsInitialized(createEditorToolsStateFromPreferences(DEFAULT_TOOL_DEFAULTS)),
   );
@@ -258,7 +260,7 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "Play" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Previous frame" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Next frame" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Hide bottom pane" })).not.toBeDisabled();
+    expect(screen.getByRole("button", { name: "Hide Bottom panel" })).not.toBeDisabled();
     expect(screen.getByRole("slider", { name: "Move selected segment" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Snap playback" })).not.toBeDisabled();
     expect(screen.getByRole("button", { name: "Loop playback" })).not.toBeDisabled();
@@ -655,10 +657,10 @@ describe("App", () => {
     expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
 
     const sourceDetailsToggle = screen.getByRole("button", {
-      name: "Hide left pane",
+      name: "Hide Left panel",
     });
     const audioTracksToggle = screen.getByRole("button", {
-      name: "Hide bottom pane",
+      name: "Hide Bottom panel",
     });
     expect(sourceDetailsToggle).toHaveAttribute("aria-pressed", "true");
     expect(audioTracksToggle).toHaveAttribute("aria-pressed", "true");
@@ -671,7 +673,7 @@ describe("App", () => {
       "false",
     );
 
-    await user.click(screen.getByRole("button", { name: "Show left pane" }));
+    await user.click(screen.getByRole("button", { name: "Show Left panel" }));
     expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
 
     await user.click(audioTracksToggle);
@@ -682,11 +684,40 @@ describe("App", () => {
       "false",
     );
 
-    await user.click(screen.getByRole("button", { name: "Show bottom pane" }));
+    await user.click(screen.getByRole("button", { name: "Show Bottom panel" }));
     expect(screen.getByTestId("audio-tracks-scroll")).toBeInTheDocument();
     expect(document.getElementById("preview-timeline-resize-handle")).toHaveAttribute(
       "aria-hidden",
       "false",
+    );
+  });
+
+  it("resets editor panel visibility from the panel controls", async () => {
+    mocks.chooseSource.mockResolvedValue(selection);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await openSourcePicker(user);
+    await screen.findByRole("heading", { name: "holiday.mp4" });
+    screen.getByRole("button", { name: "Layout controls" }).focus();
+    await user.keyboard("{Enter}");
+    const leftPanelRow = screen.getByRole("menuitem", { name: /Left panel/ });
+    const bottomPanelRow = screen.getByRole("menuitem", { name: /Bottom panel/ });
+    expect(leftPanelRow).toHaveAttribute("data-selected", "false");
+    expect(bottomPanelRow).toHaveAttribute("data-selected", "false");
+    expect(within(leftPanelRow).getByRole("switch")).toBeChecked();
+    expect(within(bottomPanelRow).getByRole("switch")).toBeChecked();
+    await user.click(within(leftPanelRow).getByRole("switch"));
+    await user.click(within(bottomPanelRow).getByRole("switch"));
+    await user.click(screen.getByRole("menuitem", { name: "Reset editor layout" }));
+
+    expect(screen.getByRole("button", { name: "Hide Left panel" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByRole("button", { name: "Hide Bottom panel" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
     );
   });
 

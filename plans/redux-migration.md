@@ -1,6 +1,6 @@
 # EasyTrim Editor Redux migration plan
 
-Status: Phase 2B — Editor tools Redux migration complete; Phase 2C is next
+Status: Phase 2C — Editor layout Redux migration complete; Phase 3 is next
 
 This is the maintained plan for the controlled Redux Toolkit migration. It is based
 on the frontend and native architecture at the `master` baseline used to create the
@@ -40,8 +40,7 @@ AppUpdatesProvider                 updater service Context
   ThemeProvider                     theme/environment Context
     ReduxProvider                   typed application store
       PersistGate                    redux-persist rehydration boundary
-        EditorViewStateProvider     editor layout Context only
-          EditorSessionProvider     session hook + crop local state Context
+        EditorSessionProvider       session hook + crop local state Context
             ExportPanelControllerProvider imperative panel-ref Context
               EditorContractsProvider playback/controller Context
                 EasyTrimEditorApp   root composition and prop wiring
@@ -59,9 +58,10 @@ inspection, preview/audio-preview/waveform artifacts, export-source reservations
 operation cancellation, and FFmpeg process execution. Rust `AppState` stores those
 runtime resources in memory; Redux must never replace that authority.
 
-Redux owns Preferences and active Editor tools. The store registers only Preferences
-for persistence and hydrates it before downstream editor initialization; Editor tools
-are runtime-only. The remaining application domains listed as `Redux later` stay on
+Redux owns Preferences, active Editor tools, and Editor layout. The store registers
+only Preferences for persistence and hydrates it before downstream editor
+initialization; Editor tools and Editor layout are runtime-only. The remaining
+application domains listed as `Redux later` stay on
 their current owners until a reviewed implementation phase establishes a new source
 of truth.
 
@@ -72,7 +72,7 @@ of truth.
 | Source/session/media lifecycle     | Redux later               | `sessionReducer` inside `useEasyTrimEditorApp`, exposed through `EditorSessionContext`       | One coherent session/source slice in Phase 3; async extraction in Phase 4                        |
 | Preferences                        | Redux now                 | Redux `preferences` slice; root `redux-persist` allow-list                                   | Completed Phase 1 pilot; persisted by explicit Redux Persist configuration                       |
 | Editor tools                       | Redux now                 | `editorTools` Redux slice; initialized and reset from Preferences defaults                   | Completed Phase 2B; runtime-only active state                                                    |
-| Editor layout                      | Redux later               | Visibility/layout state in `EditorViewStateProvider` and resizable-panel callbacks           | Dedicated editor-layout domain; Phase 2C                                                         |
+| Editor layout                      | Redux now                 | `editorLayout` Redux slice; resizable-panel callbacks and local panel refs                   | Completed Phase 2C; runtime-only canonical layout state                                          |
 | Crop selection and crop resolution | Redux later               | `EditorSessionProvider` source-bound state plus `useCropSelection` pointer state             | Canonical crop values in preview/editor state in Phase 6; pointer internals stay local           |
 | Playback transport and media graph | Keep runtime/native-owned | `useEditorInteractionController`, `EditorContractsProvider`, DOM/media refs, Web Audio nodes | Keep local/runtime; audit in Phase 6                                                             |
 | Export queue status                | Redux later               | React queue state in `useEasyTrimEditorApp` plus module-level runtime queue                  | Serializable export slice in Phase 5; job handles and queue engine remain runtime-owned          |
@@ -203,18 +203,17 @@ Actions are `editorToolsInitialized`, `editorToolsReset`,
 Focused selectors are `selectEditorTools`, `selectSnapPlaybackEnabled`,
 `selectLoopPlaybackEnabled`, `selectSegmentPlaybackEnabled`, and `selectPlaybackSpeed`.
 
-The active-tool fields were removed from `EditorViewStateContext` and
-`EditorViewStateProvider`; `useTimelineTools` was removed because it only reshaped
-that Context state. The transitional provider now owns editor layout only. The
+The active-tool fields were removed from the former `EditorViewState` infrastructure;
+`useTimelineTools` was removed because it only reshaped that Context state. The
 presentational `TimelineTools` props remain a useful feature boundary.
 
-### 4. Editor layout — Redux later, Phase 2C
+### 4. Editor layout — Redux now, completed Phase 2C
 
-Current owner: `EditorViewStateProvider` stores `showSourceDetails`, `showTimeline`,
-`workspaceLayout`, and `editorStageLayout`. `SourceWorkspace`, `EditorStage`, and
-`PanelVisibilityControls` apply those values to `react-resizable-panels`; resize
-callbacks write back through generic Context setters. `useTimelinePanelSizing` and
-`timeline-pane-sizing.ts` contain related panel constraints and sizing calculations.
+Canonical owner: `app/store/slices/editor-layout-slice.ts`, registered as the
+`editorLayout` reducer in `app/store/store.ts`. It stores generic `panelVisibility`
+values keyed by stable panel IDs (`left` and `bottom`), alongside `workspaceLayout`
+and `editorStageLayout` as serializable runtime state. Layout maps remain optional
+until `react-resizable-panels` has initialized the corresponding group.
 
 Readers include `PanelVisibilityControls`, `SourceWorkspace`, `EditorStage`, panel
 separators, and the panel-sizing hook. Writers are the top-bar visibility controls,
@@ -223,29 +222,33 @@ restore/reset commands. The wiring problem is that non-trivial visibility, dimen
 valid panel combinations, and resize-derived behavior are modeled as unrelated generic
 setters beside tool state.
 
-Target source of truth: a dedicated editor-layout domain owning canonical serializable
-visibility and layout state. Likely selectors include `selectPanelVisibility`,
-`selectShowSourceDetails`, `selectShowTimeline`, `selectWorkspaceLayout`,
-`selectEditorStageLayout`, and `selectNormalizedLayout`. Likely actions include
-`panelVisibilityChanged`, `workspaceLayoutChanged`, `editorStageLayoutChanged`,
-`layoutRestored`, and `layoutReset`.
+The actual consumers are `SourceWorkspace`, `EditorStage`, and
+`PanelVisibilityControls`, each using focused selectors and dispatching domain actions
+directly. `react-resizable-panels` remains the runtime boundary: group layouts are
+captured by `onLayoutChanged`, panel refs perform collapse/expand and reset sizing, and
+refs, DOM measurements, pointer/drag state, and panel APIs never enter Redux.
 
-Side-effect owner: React-resizable-panels remains the imperative UI integration boundary.
-Pure layout normalization, constraint, and valid-combination calculations remain
-adjacent pure functions with focused tests. Reducers/actions coordinate canonical
-serializable layout transitions; they do not own panel refs or pointer/drag internals.
+Actions are `panelVisibilityChanged`, `panelToggled`, `workspaceLayoutChanged`,
+`editorStageLayoutChanged`, and `editorLayoutReset`. Selectors are
+`selectEditorLayout`, `selectPanelVisibility`, `selectWorkspaceLayout`, and
+`selectEditorStageLayout`.
 
-Reset/lifetime: layout is runtime application state and retains its current process
-lifetime across source replacement. Showing/hiding a panel must preserve or normalize
-valid dimensions according to layout constraints. Restore applies a validated layout;
-reset returns the documented defaults. Component-local pointer/drag state remains
-local/runtime-owned.
+The invariant inventory found no separate layout normalization helper beyond the
+panel library's validated layout output. Timeline constraints remain in the pure
+`timeline-pane-sizing.ts` helper and its existing tests; `useTimelinePanelSizing`
+clamps runtime resize targets to those constraints. Visibility transitions continue
+to call the panel imperative API, and panel resize callbacks keep logical visibility
+in sync with collapse state. Workspace and editor-stage layouts are independent.
 
-Expected obsolete code: layout fields and generic setters in
-`EditorViewStateContext`, the layout portion of `EditorViewStateProvider`, and layout
-forwarding through `useEditorViewState`. `SourceWorkspace` and `EditorStage` should
-connect to layout selectors/actions near their semantic ownership while presentational
-panel primitives remain reusable.
+Reset dispatches one domain action, restores both panels visible, clears stored group
+layouts, and lets each actual group consumer restore its runtime default through its
+local panel ref. The layout domain is not in the Redux Persist allow-list, so it
+resets on application restart and survives source replacement only for the current
+process. No old layout prop/callback transport remains.
+
+The former `EditorViewStateContext`, `EditorViewStateProvider`, and
+`useEditorViewState` compatibility infrastructure were removed. Context remains for
+runtime/controller boundaries that are not application layout state.
 
 ### 5. Crop and preview editing values — Redux later, Phase 6
 
@@ -434,12 +437,11 @@ app/components/Providers/*
 
 Redux store assembly, typed hooks, Preferences slice ownership, and Redux Persist
 storage normalization are separated by responsibility. App-level Context declarations
-are separated from Provider implementations. The transitional `EditorViewState`
-infrastructure and the existing theme subsystem remain in place intentionally. This
-phase changes no state ownership or runtime behavior.
+are separated from Provider implementations. The existing theme subsystem remains in
+place intentionally. This phase changes no state ownership or runtime behavior.
 
 Preferences → Redux, completed in Phase 1. Editor tools → Redux, completed in Phase
-2B. Editor layout remains the next functional migration.
+2B. Editor layout → Redux, completed in Phase 2C.
 
 ### Phase 2 — editor tools and editor layout
 
@@ -458,14 +460,14 @@ the presentational toolbar and runtime playback/controller boundaries remain int
 Reducer, selector, persistence-exclusion, Preference-independence, reset, and UI
 integration coverage was added. Stop for human review before beginning Phase 2C.
 
-#### Phase 2C — editor layout
+#### Phase 2C — editor layout, completed
 
-Migrate panel visibility, workspace layout, editor-stage layout, resize-derived state,
-normalization, valid constraints, restore, and reset into its own layout domain.
-Preserve the resizable-panel integration boundary and keep pointer/drag internals
-local. Keep normalization and constraint calculations pure and tested. Migrate
-consumers and remove layout-specific Context/setter wiring, validate hidden/shown and
-resize transitions, and stop for review.
+Migrated panel visibility, workspace layout, editor-stage layout, resize-derived state,
+constraints, and reset into the `editorLayout` Redux domain. Preserved the resizable-
+panel integration boundary and kept pointer/drag internals local. Consumers now use
+focused selectors/actions directly; layout-specific Context/setter wiring and the
+transitional `EditorViewState` files were removed. Layout is runtime-only and is not
+added to the Redux Persist allow-list.
 
 This migration must remove Context/prop state transport as well as change the canonical
 owner: layout consumers should use focused selectors and dispatch at their actual
