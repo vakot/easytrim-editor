@@ -17,6 +17,7 @@ import { openExternalUrl } from "@/lib/open-external-url";
 import { ContextMenus as AppContextMenus } from "../ContextMenus";
 import type { QueueFinishAction } from "@/lib/tauri/queue";
 import packageJson from "../../../../../../package.json";
+import type { SourceRef } from "@/domain/source";
 
 const menuState = vi.hoisted(() => ({
   dispatch: vi.fn(),
@@ -25,7 +26,7 @@ const menuState = vi.hoisted(() => ({
   },
   source: {
     isReady: true,
-    selection: null as { sourceId: string } | null,
+    selection: null as SourceRef | null,
     media: null as Record<string, never> | null,
   },
   crop: {
@@ -74,8 +75,7 @@ vi.mock("@/app/store/hooks", () => ({
       importWorkflow: menuState.importWorkflow,
       source: {
         status: menuState.source.selection && menuState.source.isReady ? "ready" : "idle",
-        sourceId: menuState.source.selection?.sourceId ?? null,
-        selection: menuState.source.selection,
+        source: menuState.source.selection,
         media: menuState.source.media,
         error: null,
         capabilities: { status: "checking" },
@@ -123,7 +123,9 @@ describe("ContextMenus", () => {
 
   function configureMenuState(overrides: MenuTestOverrides = {}, notify: () => void = () => {}) {
     menuState.importWorkflow.isChoosingSource = overrides.isChoosingSource ?? false;
-    menuState.source.selection = overrides.hasSource ? { sourceId: "source-id" } : null;
+    menuState.source.selection = overrides.hasSource
+      ? { displayName: "source.mp4", sourcePath: "C:/Media/source.mp4" }
+      : null;
     menuState.source.isReady = overrides.canExport ?? true;
     menuState.source.media = menuState.source.selection && menuState.source.isReady ? {} : null;
     menuState.crop.value =

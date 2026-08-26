@@ -42,13 +42,11 @@ beforeEach(() => {
 describe("media IPC adapter", () => {
   it("accepts a source selection with its physical path", async () => {
     mocks.invoke.mockResolvedValue({
-      sourceId: "source-3",
       displayName: "clip.mp4",
       sourcePath: "C:/Media/clip.mp4",
     });
 
     await expect(chooseSource()).resolves.toEqual({
-      sourceId: "source-3",
       displayName: "clip.mp4",
       sourcePath: "C:/Media/clip.mp4",
     });
@@ -56,13 +54,11 @@ describe("media IPC adapter", () => {
 
   it("imports a source by its physical path", async () => {
     mocks.invoke.mockResolvedValue({
-      sourceId: "source-4",
       displayName: "clip.mp4",
       sourcePath: "C:/Media/clip.mp4",
     });
 
     await expect(importSourcePath("C:/Media/clip.mp4")).resolves.toEqual({
-      sourceId: "source-4",
       displayName: "clip.mp4",
       sourcePath: "C:/Media/clip.mp4",
     });
@@ -73,12 +69,11 @@ describe("media IPC adapter", () => {
 
   it("rejects malformed native metadata at the IPC boundary", async () => {
     mocks.invoke.mockResolvedValue({
-      sourceId: "source-3",
       formatName: "matroska",
       durationMicros: "not-an-integer",
     });
 
-    await expect(inspectMedia("source-3")).rejects.toEqual({
+    await expect(inspectMedia("C:/Media/clip.mp4")).rejects.toEqual({
       code: "internal",
       message: "The native application returned an invalid duration.",
     });
@@ -106,34 +101,38 @@ describe("media IPC adapter", () => {
   it("parses direct and proxy preview descriptors through narrow commands", async () => {
     mocks.invoke
       .mockResolvedValueOnce({
-        sourceId: "source-3",
+        mediaToken: 3,
         url: "http://easytrim-media.localhost/source-3?variant=source",
         kind: "source",
       })
       .mockResolvedValueOnce({
-        sourceId: "source-3",
+        mediaToken: 3,
         url: "http://easytrim-media.localhost/source-3?variant=proxy",
         kind: "proxy",
       });
 
-    await expect(prepareSourcePreview("source-3")).resolves.toMatchObject({ kind: "source" });
-    await expect(prepareProxyPreview("source-3")).resolves.toMatchObject({ kind: "proxy" });
+    await expect(prepareSourcePreview("C:/Media/clip.mp4")).resolves.toMatchObject({
+      kind: "source",
+    });
+    await expect(prepareProxyPreview("C:/Media/clip.mp4")).resolves.toMatchObject({
+      kind: "proxy",
+    });
     expect(mocks.invoke).toHaveBeenNthCalledWith(1, "prepare_source_preview", {
-      sourceId: "source-3",
+      sourcePath: "C:/Media/clip.mp4",
     });
     expect(mocks.invoke).toHaveBeenNthCalledWith(2, "prepare_proxy_preview", {
-      sourceId: "source-3",
+      sourcePath: "C:/Media/clip.mp4",
     });
   });
 
   it("rejects an unknown preview kind at the IPC boundary", async () => {
     mocks.invoke.mockResolvedValue({
-      sourceId: "source-3",
+      mediaToken: 3,
       url: "http://easytrim-media.localhost/source-3",
       kind: "filesystem",
     });
 
-    await expect(prepareSourcePreview("source-3")).rejects.toEqual({
+    await expect(prepareSourcePreview("C:/Media/clip.mp4")).rejects.toEqual({
       code: "internal",
       message: "The native application returned an invalid preview kind.",
     });
@@ -143,7 +142,6 @@ describe("media IPC adapter", () => {
     mocks.invoke.mockResolvedValue([
       {
         status: "ready",
-        sourceId: "source-3",
         jobId: "waveform-7",
         streamIndex: 2,
         width: 1280,
@@ -152,7 +150,6 @@ describe("media IPC adapter", () => {
       },
       {
         status: "failed",
-        sourceId: "source-3",
         jobId: "waveform-7",
         streamIndex: 4,
         width: 1280,
@@ -163,7 +160,9 @@ describe("media IPC adapter", () => {
       },
     ]);
 
-    await expect(prepareWaveforms("source-3", "waveform-7", [2, 4], 1280)).resolves.toEqual([
+    await expect(
+      prepareWaveforms("C:/Media/clip.mp4", "waveform-7", [2, 4], 1280),
+    ).resolves.toEqual([
       expect.objectContaining({ status: "ready", streamIndex: 2, hasSignal: false }),
       expect.objectContaining({
         status: "failed",
@@ -172,7 +171,7 @@ describe("media IPC adapter", () => {
       }),
     ]);
     expect(mocks.invoke).toHaveBeenCalledWith("prepare_waveforms", {
-      sourceId: "source-3",
+      sourcePath: "C:/Media/clip.mp4",
       jobId: "waveform-7",
       streamIndexes: [2, 4],
       width: 1280,
@@ -183,7 +182,6 @@ describe("media IPC adapter", () => {
     mocks.invoke.mockResolvedValue([
       {
         status: "ready",
-        sourceId: "source-3",
         jobId: "waveform-7",
         streamIndex: 2,
         width: 0,
@@ -191,7 +189,7 @@ describe("media IPC adapter", () => {
       },
     ]);
 
-    await expect(prepareWaveforms("source-3", "waveform-7", [2], 1280)).rejects.toEqual({
+    await expect(prepareWaveforms("C:/Media/clip.mp4", "waveform-7", [2], 1280)).rejects.toEqual({
       code: "internal",
       message: "The native application returned an invalid waveform width.",
       diagnostics: undefined,
@@ -211,7 +209,6 @@ describe("media IPC adapter", () => {
 
   it("imports a dropped path through Rust and preserves its physical identity", async () => {
     mocks.invoke.mockResolvedValue({
-      sourceId: "source-4",
       displayName: "video.mkv",
       sourcePath: "C:\\private\\video.mkv",
     });
@@ -227,7 +224,6 @@ describe("media IPC adapter", () => {
       expect(onEvent).toHaveBeenLastCalledWith({
         status: "selected",
         source: {
-          sourceId: "source-4",
           displayName: "video.mkv",
           sourcePath: "C:\\private\\video.mkv",
         },

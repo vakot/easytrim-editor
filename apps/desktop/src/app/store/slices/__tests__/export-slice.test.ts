@@ -26,7 +26,7 @@ const settings = { resolution: { width: 1920, height: 1080 }, frameRate: undefin
 const item = {
   id: "export-1",
   snapshot: {
-    sourcePath: "C:/Media/first.mp4",
+    source: { displayName: "first.mp4", sourcePath: "C:/Media/first.mp4" },
     trim: { startMicros: 0, endMicros: 1_000_000 },
     crop: null,
     audio: { master: { enabled: true, volumePercent: 50 }, tracks: [], mergeAudio: false },
@@ -176,7 +176,6 @@ describe("export slice", () => {
     state = exportReducer(
       state,
       cropChanged({
-        sourceId: "source-1",
         crop: { x: 0.1, y: 0, width: 0.8, height: 1 },
         resolution: { width: 1536, height: 1080 },
       }),
@@ -198,7 +197,6 @@ describe("export slice", () => {
       state,
       sourceSelected({
         source: {
-          sourceId: "source-2",
           displayName: "replacement.mp4",
           sourcePath: "C:/Media/replacement.mp4",
         },

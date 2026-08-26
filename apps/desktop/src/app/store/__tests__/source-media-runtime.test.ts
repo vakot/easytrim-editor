@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { MediaInfo, SourceDropEvent, SourceSelection } from "@/lib/tauri/media";
+import type { MediaInfo, SourceDropEvent } from "@/lib/tauri/media";
+import type { SourceRef } from "@/domain/source";
 import { createAppStore } from "@/app/store/store";
 import { selectIsSourceDragActive } from "@/app/store/slices/import-workflow-slice";
 import { selectSourceMedia, selectSourceError } from "@/app/store/slices/source-slice";
@@ -27,13 +28,11 @@ vi.mock("@/lib/tauri/media", async (importOriginal) => {
   };
 });
 
-const source: SourceSelection = {
-  sourceId: "runtime-source",
+const source: SourceRef = {
   displayName: "runtime.mp4",
   sourcePath: "C:/Media/runtime.mp4",
 };
 const media: MediaInfo = {
-  sourceId: source.sourceId,
   formatName: "mp4",
   durationMicros: 1_000_000,
   video: { streamIndex: 0, codecName: "h264", width: 1280, height: 720 },
@@ -53,7 +52,7 @@ describe("source/media application runtime", () => {
     });
     mocks.inspectMedia.mockResolvedValue(media);
     mocks.prepareSourcePreview.mockResolvedValue({
-      sourceId: source.sourceId,
+      mediaToken: 1,
       kind: "source",
       url: "media://runtime/source",
     });
@@ -77,10 +76,8 @@ describe("source/media application runtime", () => {
     expect(appStore.getState().importWorkflow.isNativeDialogOpen).toBe(false);
 
     sourceDropListener?.({ status: "selected", source });
-    await vi.waitFor(() =>
-      expect(selectSourceMedia(appStore.getState())?.sourceId).toBe(source.sourceId),
-    );
-    expect(mocks.inspectMedia).toHaveBeenCalledWith(source.sourceId);
+    await vi.waitFor(() => expect(selectSourceMedia(appStore.getState())).toEqual(media));
+    expect(mocks.inspectMedia).toHaveBeenCalledWith(source.sourcePath);
 
     stop();
     stop();

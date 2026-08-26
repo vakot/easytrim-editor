@@ -29,7 +29,7 @@ function exportToast(overrides: Partial<ExportQueueItem>): ExportQueueItem {
   return {
     id: "export-1",
     snapshot: {
-      sourcePath: "C:/Media/source.mp4",
+      source: { displayName: "source.mp4", sourcePath: "C:/Media/source.mp4" },
       trim: { startMicros: 0, endMicros: 1_000_000 },
       crop: null,
       audio: { master: { enabled: true, volumePercent: 50 }, tracks: [], mergeAudio: false },

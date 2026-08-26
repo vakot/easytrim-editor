@@ -74,7 +74,6 @@ describe("SettingsMenu Redux integration", () => {
     store.dispatch(
       sourceSelected({
         source: {
-          sourceId: "source-1",
           displayName: "source.mp4",
           sourcePath: "C:/Media/source.mp4",
         },

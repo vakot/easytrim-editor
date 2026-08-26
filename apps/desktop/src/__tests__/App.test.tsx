@@ -2,12 +2,8 @@ import { act, fireEvent, render, screen, waitFor, within } from "@testing-librar
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type {
-  MediaCapabilities,
-  MediaInfo,
-  SourceDropEvent,
-  SourceSelection,
-} from "../lib/tauri/media";
+import type { MediaCapabilities, MediaInfo, SourceDropEvent } from "../lib/tauri/media";
+import type { SourceRef } from "../domain/source";
 import { store } from "../app/store/store";
 import {
   createEditorToolsStateFromPreferences,
@@ -54,19 +50,16 @@ const capabilities: MediaCapabilities = {
   ffprobe: { available: true, version: "ffprobe version 7.1" },
 };
 
-const selection: SourceSelection = {
-  sourceId: "source-1",
+const selection: SourceRef = {
   displayName: "holiday.mp4",
   sourcePath: "C:/Media/holiday.mp4",
 };
-const replacementSelection: SourceSelection = {
-  sourceId: "source-2",
+const replacementSelection: SourceRef = {
   displayName: "replacement.mp4",
   sourcePath: "C:/Media/replacement.mp4",
 };
 
 const media: MediaInfo = {
-  sourceId: selection.sourceId,
   formatName: "mov,mp4,m4a,3gp,3g2,mj2",
   formatLongName: "QuickTime / MOV",
   durationMicros: 65_000_000,
@@ -158,30 +151,29 @@ beforeEach(() => {
   mocks.inspectMedia.mockResolvedValue(media);
   mocks.prepareAudioPreviews.mockResolvedValue([
     {
-      sourceId: selection.sourceId,
+      mediaToken: 1,
       streamIndex: 1,
       url: "http://easytrim-media.localhost/source-1?variant=audio&stream=1",
     },
   ]);
   mocks.prepareSourcePreview.mockResolvedValue({
-    sourceId: selection.sourceId,
+    mediaToken: 1,
     url: "http://easytrim-media.localhost/source-1?variant=source",
     kind: "source",
   });
   mocks.prepareProxyPreview.mockResolvedValue({
-    sourceId: selection.sourceId,
+    mediaToken: 1,
     url: "http://easytrim-media.localhost/source-1?variant=proxy",
     kind: "proxy",
   });
   mocks.prepareWaveforms.mockImplementation(
-    async (sourceId: string, jobId: string, streamIndexes: number[], width: number) =>
+    async (_sourcePath: string, jobId: string, streamIndexes: number[], width: number) =>
       streamIndexes.map((streamIndex) => ({
         status: "ready" as const,
-        sourceId,
         jobId,
         streamIndex,
         width,
-        url: `http://easytrim-media.localhost/${sourceId}?variant=waveform&stream=${streamIndex}&width=${width}`,
+        url: `http://easytrim-media.localhost/source?variant=waveform&stream=${streamIndex}&width=${width}`,
       })),
   );
   mocks.listenForSourceDrops.mockImplementation(
@@ -201,10 +193,10 @@ afterEach(() => {
 describe("App", () => {
   it("preserves editor tools across source replacement", async () => {
     mocks.chooseSource.mockResolvedValueOnce(selection).mockResolvedValueOnce(replacementSelection);
-    mocks.inspectMedia.mockImplementation(async (sourceId: string) => ({ ...media, sourceId }));
-    mocks.prepareSourcePreview.mockImplementation(async (sourceId: string) => ({
-      sourceId,
-      url: `http://easytrim-media.localhost/${sourceId}?variant=source`,
+    mocks.inspectMedia.mockImplementation(async () => media);
+    mocks.prepareSourcePreview.mockImplementation(async () => ({
+      mediaToken: 1,
+      url: "http://easytrim-media.localhost/1?variant=source",
       kind: "source" as const,
     }));
     const user = userEvent.setup();
@@ -330,7 +322,7 @@ describe("App", () => {
 
   it("starts waveforms only after multi-track playback is ready without waiting for them", async () => {
     let resolveAudioPreviews!: (
-      previews: Array<{ sourceId: string; streamIndex: number; url: string }>,
+      previews: Array<{ mediaToken: number; streamIndex: number; url: string }>,
     ) => void;
     mocks.chooseSource.mockResolvedValue(selection);
     mocks.inspectMedia.mockResolvedValue({
@@ -370,12 +362,12 @@ describe("App", () => {
       await act(async () => {
         resolveAudioPreviews([
           {
-            sourceId: selection.sourceId,
+            mediaToken: 1,
             streamIndex: 1,
             url: "http://easytrim-media.localhost/source-1?variant=audio&stream=1",
           },
           {
-            sourceId: selection.sourceId,
+            mediaToken: 1,
             streamIndex: 2,
             url: "http://easytrim-media.localhost/source-1?variant=audio&stream=2",
           },
@@ -393,7 +385,7 @@ describe("App", () => {
       expect(screen.getByRole("button", { name: "Play" })).not.toBeDisabled();
       await waitFor(() =>
         expect(mocks.prepareWaveforms).toHaveBeenCalledWith(
-          selection.sourceId,
+          selection.sourcePath,
           expect.stringMatching(/^waveform-/),
           [1, 2],
           4_096,
@@ -797,15 +789,14 @@ describe("App", () => {
   it("mutes a track with no meaningful signal and restores it at 0 dB", async () => {
     mocks.chooseSource.mockResolvedValue(selection);
     mocks.prepareWaveforms.mockImplementationOnce(
-      async (sourceId: string, jobId: string, streamIndexes: number[], width: number) =>
+      async (_sourcePath: string, jobId: string, streamIndexes: number[], width: number) =>
         streamIndexes.map((streamIndex) => ({
           status: "ready" as const,
-          sourceId,
           jobId,
           streamIndex,
           width,
           hasSignal: false,
-          url: `http://easytrim-media.localhost/${sourceId}?variant=waveform&stream=${streamIndex}&width=${width}`,
+          url: `http://easytrim-media.localhost/1?variant=waveform&stream=${streamIndex}&width=${width}`,
         })),
     );
     const user = userEvent.setup();
@@ -854,12 +845,12 @@ describe("App", () => {
     });
     mocks.prepareAudioPreviews.mockResolvedValue([
       {
-        sourceId: selection.sourceId,
+        mediaToken: 1,
         streamIndex: 1,
         url: "http://easytrim-media.localhost/source-1?variant=audio&stream=1",
       },
       {
-        sourceId: selection.sourceId,
+        mediaToken: 1,
         streamIndex: 2,
         url: "http://easytrim-media.localhost/source-1?variant=audio&stream=2",
       },
@@ -905,7 +896,7 @@ describe("App", () => {
       );
       await waitFor(() =>
         expect(mocks.prepareWaveforms).toHaveBeenCalledWith(
-          selection.sourceId,
+          selection.sourcePath,
           expect.stringMatching(/^waveform-/),
           [1, 2],
           4_096,
@@ -974,10 +965,9 @@ describe("App", () => {
     mocks.chooseSource.mockResolvedValue(selection);
     mocks.prepareWaveforms
       .mockImplementationOnce(
-        async (sourceId: string, jobId: string, streamIndexes: number[], width: number) =>
+        async (_sourcePath: string, jobId: string, streamIndexes: number[], width: number) =>
           streamIndexes.map((streamIndex) => ({
             status: "failed" as const,
-            sourceId,
             jobId,
             streamIndex,
             width,
@@ -985,14 +975,13 @@ describe("App", () => {
           })),
       )
       .mockImplementationOnce(
-        async (sourceId: string, jobId: string, streamIndexes: number[], width: number) =>
+        async (_sourcePath: string, jobId: string, streamIndexes: number[], width: number) =>
           streamIndexes.map((streamIndex) => ({
             status: "ready" as const,
-            sourceId,
             jobId,
             streamIndex,
             width,
-            url: `http://easytrim-media.localhost/${sourceId}?variant=waveform&stream=${streamIndex}&width=${width}`,
+            url: `http://easytrim-media.localhost/1?variant=waveform&stream=${streamIndex}&width=${width}`,
           })),
       );
     const user = userEvent.setup();
@@ -1164,12 +1153,12 @@ describe("App", () => {
     });
     mocks.prepareAudioPreviews.mockResolvedValue([
       {
-        sourceId: selection.sourceId,
+        mediaToken: 1,
         streamIndex: 1,
         url: "http://easytrim-media.localhost/source-1?variant=audio&stream=1",
       },
       {
-        sourceId: selection.sourceId,
+        mediaToken: 1,
         streamIndex: 2,
         url: "http://easytrim-media.localhost/source-1?variant=audio&stream=2",
       },
@@ -1400,7 +1389,7 @@ describe("App", () => {
     fireEvent.error(directPreview);
 
     await waitFor(() => {
-      expect(mocks.prepareProxyPreview).toHaveBeenCalledWith(selection.sourceId);
+      expect(mocks.prepareProxyPreview).toHaveBeenCalledWith(selection.sourcePath);
     });
     expect(await screen.findByText("Compatible preview")).toBeInTheDocument();
     expect(screen.getByLabelText("Source video preview")).toHaveAttribute(
@@ -2502,7 +2491,7 @@ describe("App", () => {
     });
 
     expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
-    expect(mocks.inspectMedia).toHaveBeenCalledWith(selection.sourceId);
+    expect(mocks.inspectMedia).toHaveBeenCalledWith(selection.sourcePath);
     expect(await screen.findByText("3840 × 2160")).toBeInTheDocument();
   });
 

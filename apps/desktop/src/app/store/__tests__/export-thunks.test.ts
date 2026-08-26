@@ -64,7 +64,6 @@ import { resetExportQueueRuntimeForTests } from "@/features/export/utils/export-
 import type { MediaInfo } from "@/lib/tauri/media";
 
 const media: MediaInfo = {
-  sourceId: "source-1",
   formatName: "matroska",
   durationMicros: 1_000_000,
   video: {
@@ -87,7 +86,7 @@ const output = {
 const queuedItem: ExportQueueItem = {
   id: "export-queued",
   snapshot: {
-    sourcePath: "C:/Media/source.mp4",
+    source: { displayName: "source.mp4", sourcePath: "C:/Media/source.mp4" },
     trim: { startMicros: 0, endMicros: 1_000_000 },
     crop: null,
     audio: { master: { enabled: true, volumePercent: 50 }, tracks: [], mergeAudio: false },
@@ -118,13 +117,12 @@ function createReadyStore() {
   store.dispatch(
     sourceSelected({
       source: {
-        sourceId: "source-1",
         displayName: "source.mp4",
         sourcePath: "C:/Media/source.mp4",
       },
     }),
   );
-  store.dispatch(sourceReady({ sourceId: "source-1", media }));
+  store.dispatch(sourceReady({ loadToken: 1, media }));
   return store;
 }
 
@@ -190,7 +188,7 @@ describe("export thunks and runtime queue", () => {
       endMicros: 1_000_000,
     });
     expect(selectExportQueue(store.getState())[0]?.snapshot).toEqual({
-      sourcePath: "C:/Media/source.mp4",
+      source: { displayName: "source.mp4", sourcePath: "C:/Media/source.mp4" },
       trim: { startMicros: 0, endMicros: 1_000_000 },
       crop: null,
       audio: {
@@ -213,16 +211,15 @@ describe("export thunks and runtime queue", () => {
 
   it("restores a queued snapshot after importing its source", async () => {
     const source = {
-      sourceId: "source-2",
       displayName: "other.mp4",
       sourcePath: "C:/Media/other.mp4",
     };
-    const restoredMedia = { ...media, sourceId: source.sourceId, durationMicros: 2_000_000 };
+    const restoredMedia = { ...media, durationMicros: 2_000_000 };
     mocks.importSourcePath.mockResolvedValue(source);
     mocks.importSource.mockImplementation(
       (selectedSource: typeof source, mergeAudio: boolean) => (dispatch: AppDispatch) => {
-        dispatch(sourceSelected({ source: selectedSource, mergeAudio }));
-        dispatch(sourceReady({ sourceId: selectedSource.sourceId, media: restoredMedia }));
+        dispatch(sourceSelected({ source: selectedSource, mergeAudio, loadToken: 2 }));
+        dispatch(sourceReady({ loadToken: 2, media: restoredMedia }));
       },
     );
     const store = createReadyStore();
@@ -232,7 +229,7 @@ describe("export thunks and runtime queue", () => {
         ...queuedItem,
         snapshot: {
           ...queuedItem.snapshot,
-          sourcePath: source.sourcePath,
+          source: { ...source },
           trim: { startMicros: 250_000, endMicros: 1_750_000 },
         },
       }),
@@ -243,7 +240,7 @@ describe("export thunks and runtime queue", () => {
     );
 
     expect(mocks.importSourcePath).toHaveBeenCalledWith(source.sourcePath);
-    expect(store.getState().source.sourceId).toBe(source.sourceId);
+    expect(store.getState().source.source).toEqual(source);
     expect(selectTrim(store.getState())).toMatchObject({
       startMicros: 250_000,
       endMicros: 1_750_000,

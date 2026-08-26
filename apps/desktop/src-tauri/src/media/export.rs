@@ -491,7 +491,6 @@ mod tests {
 
     fn media() -> MediaInfo {
         MediaInfo {
-            source_id: "source-1".to_owned(),
             format_name: "matroska".to_owned(),
             format_long_name: None,
             duration_micros: 10_000_000,

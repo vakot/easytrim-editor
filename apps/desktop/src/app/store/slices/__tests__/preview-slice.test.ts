@@ -4,28 +4,19 @@ import { sourceSelected } from "@/app/store/actions/source-actions";
 import {
   initialPreviewState,
   previewFailed,
-  previewReady,
   previewReducer,
   selectPreview,
 } from "../preview-slice";
 import { firstSource, secondSource } from "./test-fixtures";
 
 describe("preview slice", () => {
-  it("rejects a preview completed for a replaced source", () => {
+  it("resets the preview when the source changes", () => {
     const loadingFirst = previewReducer(
       initialPreviewState,
       sourceSelected({ source: firstSource }),
     );
     const loadingSecond = previewReducer(loadingFirst, sourceSelected({ source: secondSource }));
-    const stale = previewReducer(
-      loadingSecond,
-      previewReady({
-        sourceId: firstSource.sourceId,
-        preview: { sourceId: firstSource.sourceId, kind: "source", url: "media://first" },
-      }),
-    );
-
-    expect(stale).toBe(loadingSecond);
+    expect(loadingSecond).toEqual({ value: { status: "idle" } });
   });
 
   it("records proxy failure without changing source ownership", () => {
@@ -33,7 +24,6 @@ describe("preview slice", () => {
     const failed = previewReducer(
       selected,
       previewFailed({
-        sourceId: firstSource.sourceId,
         error: { code: "preview_failed", message: "Preview failed." },
       }),
     );
