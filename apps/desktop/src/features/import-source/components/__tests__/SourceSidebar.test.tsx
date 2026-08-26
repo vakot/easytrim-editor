@@ -43,6 +43,10 @@ describe("SourceSidebar", () => {
       expect(separator).toHaveAttribute("aria-orientation", "horizontal");
       expect(separator).toHaveAttribute("tabindex", "0");
       expect(separator).not.toHaveAttribute("aria-hidden");
+      expect(separator.querySelector('[data-slot="separator"]')).toHaveClass(
+        "top-1/2",
+        "-translate-y-1/2",
+      );
     }
 
     for (const id of ["media-details", "imported-queue", "export-queue"]) {

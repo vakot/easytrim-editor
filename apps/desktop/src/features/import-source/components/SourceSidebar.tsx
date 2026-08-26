@@ -68,7 +68,7 @@ export function SourceSidebar() {
         </ResizableSection>
 
         <PanelSeparator id="media-details-separator" orientation="horizontal">
-          <Separator className="mx-2" />
+          <Separator className="absolute inset-x-2 top-1/2 -translate-y-1/2" />
         </PanelSeparator>
 
         <ResizableSection
@@ -87,7 +87,7 @@ export function SourceSidebar() {
         </ResizableSection>
 
         <PanelSeparator id="imported-queue-separator" orientation="horizontal">
-          <Separator className="mx-2" />
+          <Separator className="absolute inset-x-2 top-1/2 -translate-y-1/2" />
         </PanelSeparator>
 
         <ResizableSection
