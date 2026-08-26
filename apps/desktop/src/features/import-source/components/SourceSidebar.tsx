@@ -28,7 +28,7 @@ export function SourceSidebar() {
   // const sourceName = sourceSelection?.displayName ?? t("import.source.noSource");
 
   return (
-    <aside className="flex h-full min-h-0 min-w-0 flex-col" aria-labelledby="source-title">
+    <aside className="h-full min-h-0 min-w-0 flex-col py-2" aria-labelledby="source-title">
       {/* <div className="grid content-start gap-5 p-5" data-slot="source-details">
         <div className="min-w-0">
           <p className="mb-1 text-xs font-bold tracking-[0.14em] text-primary uppercase">
@@ -56,7 +56,7 @@ export function SourceSidebar() {
           id="media-details"
           defaultSize="15rem"
           minSize="10rem"
-          groupResizeBehavior="preserve-pixel-size"
+          groupResizeBehavior="preserve-relative-size"
           className="px-1"
         >
           <ResizableSectionTrigger className="px-2">
@@ -94,7 +94,7 @@ export function SourceSidebar() {
           id="export-queue"
           defaultSize="16rem"
           minSize="8rem"
-          groupResizeBehavior="preserve-relative-size"
+          groupResizeBehavior="preserve-pixel-size"
           className="px-1"
         >
           <ResizableSectionTrigger className="px-2">
