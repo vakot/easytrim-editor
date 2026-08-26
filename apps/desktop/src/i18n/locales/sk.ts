@@ -148,6 +148,12 @@ export const sk = {
       details: "Detaily zdroja",
       noSource: "Žiadny zdroj",
       inspecting: "Analyzuje sa…",
+      sections: {
+        mediaDetails: "Detaily médií",
+        importedQueue: "Front importov",
+        exportQueue: "Front exportov",
+      },
+      resizeSection: "Zmeniť veľkosť: {{section}}",
       loadError: "Video sa nepodarilo načítať",
       technicalDetails: "Technické podrobnosti",
       metadataLabel: "Metadáta videa",

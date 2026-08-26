@@ -142,6 +142,12 @@ export const en = {
       details: "Source details",
       noSource: "No source",
       inspecting: "Inspecting…",
+      sections: {
+        mediaDetails: "Media details",
+        importedQueue: "Imported queue",
+        exportQueue: "Export queue",
+      },
+      resizeSection: "Resize {{section}}",
       loadError: "Could not load this video",
       technicalDetails: "Technical details",
       metadataLabel: "Video metadata",

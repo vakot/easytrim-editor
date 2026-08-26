@@ -590,26 +590,24 @@ describe("App", () => {
     const sourceDetails = screen
       .getByTestId("source-details-panel")
       .querySelector<HTMLElement>('[data-slot="source-details"]');
-    const exportQueueScroll = screen
-      .getByTestId("source-details-panel")
-      .querySelector<HTMLElement>('[data-slot="export-queue-scroll"]');
+    const exportSection = screen.getByTestId("export-queue");
+    const exportSectionContent = exportSection.querySelector<HTMLElement>(
+      '[data-slot="resizable-section-content"]',
+    );
     expect(sourceDetails).toContainElement(screen.getByRole("heading", { name: "holiday.mp4" }));
     expect(sourceDetails).not.toHaveTextContent("Video stream");
     expect(sourceDetails).not.toHaveTextContent("Audio tracks");
     expect(sourceDetails).not.toContainElement(
       screen.getByRole("heading", { name: "Export queue" }),
     );
-    expect(exportQueueScroll).toContainElement(
+    expect(exportSection).toContainElement(screen.getByRole("heading", { name: "Export queue" }));
+    expect(exportSectionContent).toContainElement(
       screen.getByRole("heading", { name: "Export queue" }),
     );
-    const sidebarDivider =
-      (Array.from(sourceDetails?.parentElement?.children ?? []).find(
-        (child) => child.getAttribute("data-slot") === "separator",
-      ) as HTMLElement | undefined) ?? null;
-    expect(sidebarDivider).not.toBeNull();
-    expect(sidebarDivider?.parentElement).toBe(sourceDetails?.parentElement);
-    expect(sourceDetails).not.toContainElement(sidebarDivider);
-    expect(exportQueueScroll).not.toContainElement(sidebarDivider);
+    expect(exportSectionContent).toHaveAttribute("data-slot", "resizable-section-content");
+    expect(
+      screen.getByTestId("source-details-panel").querySelector('[data-slot="export-queue-scroll"]'),
+    ).toBeNull();
     expect(screen.getByTestId("preview-panel")).toContainElement(
       screen.getByLabelText("Source video preview"),
     );
@@ -626,7 +624,7 @@ describe("App", () => {
     expect(timelineResizeHandle).toHaveAttribute("aria-orientation", "horizontal");
     expect(timelineResizeHandle).toHaveAttribute("tabindex", "0");
     expect(timelineResizeHandle).toHaveClass("h-1");
-    expect(screen.getAllByRole("separator")).toHaveLength(2);
+    expect(screen.getAllByRole("separator")).toHaveLength(4);
     const fixedTimeline = screen.getByTestId("timeline-fixed-content");
     const audioTracksScroll = screen.getByTestId("audio-tracks-scroll");
     expect(screen.getByTestId("timeline-panel")).toContainElement(fixedTimeline);
