@@ -239,7 +239,9 @@ describe("source/media orchestration thunks", () => {
     appStore.dispatch(activeQueueItemChanged(fork.id));
     mocks.inspectMedia.mockResolvedValue(createMedia(secondSource.sourcePath, 1));
 
-    await expect(appStore.dispatch(switchImportedQueueItemRequested(target.id))).resolves.toBe(true);
+    await expect(appStore.dispatch(switchImportedQueueItemRequested(target.id))).resolves.toBe(
+      true,
+    );
 
     expect(selectImportedQueueItems(appStore.getState())).toEqual([target]);
     expect(selectActiveItemId(appStore.getState())).toBe(target.id);

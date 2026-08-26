@@ -395,13 +395,14 @@ describe("export thunks and runtime queue", () => {
         selectedSource: typeof source,
         mergeAudio: boolean,
         options: { activeItemId?: string | null } = {},
-      ) => (dispatch: AppDispatch) => {
-        dispatch(sourceSelected({ source: selectedSource, mergeAudio, loadToken: 2 }));
-        dispatch(sourceReady({ loadToken: 2, media: restoredMedia }));
-        if (options.activeItemId !== undefined) {
-          dispatch(activeQueueItemChanged(options.activeItemId));
-        }
-      },
+      ) =>
+        (dispatch: AppDispatch) => {
+          dispatch(sourceSelected({ source: selectedSource, mergeAudio, loadToken: 2 }));
+          dispatch(sourceReady({ loadToken: 2, media: restoredMedia }));
+          if (options.activeItemId !== undefined) {
+            dispatch(activeQueueItemChanged(options.activeItemId));
+          }
+        },
     );
     const store = createReadyStore(false);
     store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
@@ -453,20 +454,21 @@ describe("export thunks and runtime queue", () => {
         selectedSource: typeof source,
         mergeAudio: boolean,
         options: { activeItemId?: string | null } = {},
-      ) => (dispatch: AppDispatch) => {
-        dispatch(sourceSelected({ source: selectedSource, mergeAudio, loadToken: 2 }));
-        dispatch(sourceReady({ loadToken: 2, media }));
-        if (options.activeItemId !== undefined) {
-          dispatch(activeQueueItemChanged(options.activeItemId));
-        }
-      },
+      ) =>
+        (dispatch: AppDispatch) => {
+          dispatch(sourceSelected({ source: selectedSource, mergeAudio, loadToken: 2 }));
+          dispatch(sourceReady({ loadToken: 2, media }));
+          if (options.activeItemId !== undefined) {
+            dispatch(activeQueueItemChanged(options.activeItemId));
+          }
+        },
     );
     const store = createReadyStore(false);
     store.dispatch(queueEntryAdded(historicalItem));
 
-    await expect(
-      store.dispatch(restoreExportQueueItemRequested(historicalItem.id)),
-    ).resolves.toBe(true);
+    await expect(store.dispatch(restoreExportQueueItemRequested(historicalItem.id))).resolves.toBe(
+      true,
+    );
     const firstFork = selectImportedQueueItems(store.getState())[0];
     store.dispatch(queueEntryAdded(secondHistoryItem));
 
