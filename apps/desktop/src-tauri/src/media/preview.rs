@@ -21,12 +21,7 @@ pub fn respond<R: Runtime>(app: &AppHandle<R>, request: Request<Vec<u8>>) -> Res
         return empty_response(StatusCode::METHOD_NOT_ALLOWED);
     }
 
-    let media_token = request
-        .uri()
-        .path()
-        .trim_matches('/')
-        .parse::<u64>()
-        .ok();
+    let media_token = request.uri().path().trim_matches('/').parse::<u64>().ok();
     let Some(media_token) = media_token else {
         return empty_response(StatusCode::NOT_FOUND);
     };

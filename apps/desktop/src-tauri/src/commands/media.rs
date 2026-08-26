@@ -271,11 +271,12 @@ pub async fn prepare_proxy_preview(
     let media_token = source.load_token;
     if !state.preview_is_ready(media_token)? {
         let preview_source = source.clone();
-        let preview = tauri::async_runtime::spawn_blocking(move || generate_preview(&preview_source))
-            .await
-            .map_err(|_| {
-                AppError::internal("Compatible preview preparation stopped unexpectedly.")
-            })??;
+        let preview =
+            tauri::async_runtime::spawn_blocking(move || generate_preview(&preview_source))
+                .await
+                .map_err(|_| {
+                    AppError::internal("Compatible preview preparation stopped unexpectedly.")
+                })??;
         state.install_preview(media_token, preview)?;
     }
 

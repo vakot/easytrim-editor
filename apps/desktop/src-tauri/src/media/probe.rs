@@ -512,10 +512,8 @@ mod tests {
 
     #[test]
     fn rejects_metadata_without_a_video_stream() {
-        let error = parse_probe_output(
-            br#"{"streams": [], "format": {"duration": "1.0"}}"#,
-        )
-        .expect_err("video is required");
+        let error = parse_probe_output(br#"{"streams": [], "format": {"duration": "1.0"}}"#)
+            .expect_err("video is required");
 
         assert_eq!(error.code, "unsupported_media");
     }
