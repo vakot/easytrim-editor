@@ -4,4 +4,8 @@ export type {
   ExportRoute,
   ExportSettings,
   ExportStatus,
+  ImportedQueueItem,
+  QueueItem,
+  QueueItemBase,
+  QueueItemStatus,
 } from "@/app/store/slices/export-slice";

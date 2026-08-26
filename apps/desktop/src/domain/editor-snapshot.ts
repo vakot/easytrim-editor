@@ -11,3 +11,23 @@ export interface EditorSnapshot {
     mergeAudio: boolean;
   };
 }
+
+export function createEditorSnapshot(input: {
+  source: SourceRef;
+  trim: EditorSnapshot["trim"];
+  crop: CropRect | null;
+  masterAudio: EditorSnapshot["audio"]["master"];
+  audioTracks: EditorSnapshot["audio"]["tracks"];
+  mergeAudio: boolean;
+}): EditorSnapshot {
+  return {
+    source: { ...input.source },
+    trim: { ...input.trim },
+    crop: input.crop ? { ...input.crop } : null,
+    audio: {
+      master: { ...input.masterAudio },
+      tracks: input.audioTracks.map((track) => ({ ...track })),
+      mergeAudio: input.mergeAudio,
+    },
+  };
+}
