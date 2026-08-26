@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 
 interface PanelSeparatorProps {
   id: string;
-  label: string;
+  label?: string;
   orientation: "horizontal" | "vertical";
   onDoubleClick?: MouseEventHandler<HTMLDivElement>;
   disabled?: boolean;

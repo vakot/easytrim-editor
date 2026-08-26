@@ -1,27 +1,16 @@
 import { ChevronDown } from "lucide-react";
+import type { ComponentPropsWithoutRef, ReactNode } from "react";
+import { Children, createContext, isValidElement, useCallback, useContext, useState } from "react";
 import {
   Group,
   Panel,
+  usePanelRef,
   type GroupProps,
   type PanelProps,
-  usePanelRef,
 } from "react-resizable-panels";
-import {
-  Children,
-  createContext,
-  isValidElement,
-  useCallback,
-  useContext,
-  useEffect,
-  useId,
-  useState,
-} from "react";
-import type { ComponentPropsWithoutRef, ReactElement, ReactNode } from "react";
 
-import { PanelSeparator } from "@/components/layout/PanelSeparator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { Separator } from "@/components/ui/separator";
 
 type SectionContextValue = {
   contentId: string;
@@ -37,11 +26,6 @@ export interface ResizableSectionsProps extends Omit<GroupProps, "orientation"> 
 }
 
 export function ResizableSections({ children, className, ...props }: ResizableSectionsProps) {
-  const sections = Children.toArray(children).filter(
-    (child): child is ReactElement<ResizableSectionProps> =>
-      isValidElement(child) && child.type === ResizableSection,
-  );
-
   return (
     <Group
       {...props}
@@ -49,30 +33,16 @@ export function ResizableSections({ children, className, ...props }: ResizableSe
       orientation="vertical"
       data-slot="resizable-sections"
     >
-      {sections.map((section, index) => (
-        <ResizableSection
-          key={section.key ?? section.props.id}
-          {...section.props}
-          isLast={index === sections.length - 1}
-        />
-      ))}
+      {children}
     </Group>
   );
 }
 
-export interface ResizableSectionProps {
-  children: ReactNode;
+type PanelPropsToPick =
+  "children" | "defaultSize" | "groupResizeBehavior" | "minSize" | "className" | "id";
+
+export interface ResizableSectionProps extends Pick<PanelProps, PanelPropsToPick> {
   defaultOpen?: boolean;
-  defaultSize?: PanelProps["defaultSize"];
-  groupResizeBehavior?: PanelProps["groupResizeBehavior"];
-  id: string;
-  maxSize?: PanelProps["maxSize"];
-  minSize?: PanelProps["minSize"];
-  onOpenChange?: (open: boolean) => void;
-  open?: boolean;
-  panelClassName?: string;
-  separatorLabel?: string;
-  isLast?: boolean;
 }
 
 export function ResizableSection({
@@ -81,20 +51,13 @@ export function ResizableSection({
   defaultSize,
   groupResizeBehavior,
   id,
-  maxSize,
   minSize,
-  onOpenChange,
-  open,
-  panelClassName,
-  separatorLabel = "Resize section",
-  isLast = false,
+  className,
 }: ResizableSectionProps) {
-  const [internalOpen, setInternalOpen] = useState(defaultOpen);
+  const [open, setOpen] = useState(defaultOpen);
   const panelRef = usePanelRef();
-  const reactId = useId();
   const triggerId = `${id}-trigger`;
   const contentId = `${id}-content`;
-  const isOpen = open ?? internalOpen;
   const childElements = Children.toArray(children).filter(isValidElement);
   const trigger = childElements.find((child) => child.type === ResizableSectionTrigger);
   const content = childElements.find((child) => child.type === ResizableSectionContent);
@@ -103,42 +66,31 @@ export function ResizableSection({
 
   const setSectionOpen = useCallback(
     (nextOpen: boolean) => {
-      if (open === undefined) setInternalOpen(nextOpen);
-      onOpenChange?.(nextOpen);
+      setOpen(nextOpen);
       if (nextOpen) {
         panelRef.current?.expand();
       } else {
         panelRef.current?.collapse();
       }
     },
-    [onOpenChange, open, panelRef],
+    [panelRef],
   );
 
-  const toggle = useCallback(() => setSectionOpen(!isOpen), [isOpen, setSectionOpen]);
-
-  useEffect(() => {
-    if (isOpen) {
-      panelRef.current?.expand();
-    } else {
-      panelRef.current?.collapse();
-    }
-  }, [isOpen, panelRef]);
+  const toggle = useCallback(() => setSectionOpen(!open), [open, setSectionOpen]);
 
   const handleResize = useCallback(
-    (size: { asPercentage: number }) => {
-      const nextOpen = size.asPercentage > 0;
-      if (nextOpen === isOpen) return;
-      if (open === undefined) setInternalOpen(nextOpen);
-      onOpenChange?.(nextOpen);
+    (size: { inPixels: number }) => {
+      const isCollapsed = panelRef.current?.isCollapsed() ?? size.inPixels <= 0;
+      setSectionOpen(!isCollapsed);
     },
-    [isOpen, onOpenChange, open],
+    [panelRef, setSectionOpen],
   );
 
   const contextValue = {
-    contentId: `${contentId}-${reactId}`,
-    open: isOpen,
+    contentId,
+    open,
     toggle,
-    triggerId: `${triggerId}-${reactId}`,
+    triggerId,
   };
 
   return (
@@ -147,31 +99,19 @@ export function ResizableSection({
         id={id}
         panelRef={panelRef}
         collapsible
-        collapsedSize={36}
+        collapsedSize={24}
         defaultSize={defaultSize}
         minSize={minSize}
-        maxSize={maxSize}
         groupResizeBehavior={groupResizeBehavior}
         onResize={handleResize}
-        className={cn("min-h-0 min-w-0 overflow-hidden", panelClassName)}
+        className={className}
         data-slot="resizable-section-panel"
       >
-        <div className="min-h-9 shrink-0" data-slot="resizable-section-trigger-row">
+        <div className="flex flex-col overflow-hidden">
           {trigger ? <ResizableSectionTrigger {...triggerProps} /> : null}
+          {content ? <ResizableSectionContent {...contentProps} /> : null}
         </div>
-        {content ? <ResizableSectionContent {...contentProps} /> : null}
       </Panel>
-      {!isLast ? (
-        <PanelSeparator
-          id={`${id}-separator`}
-          label={separatorLabel}
-          orientation="horizontal"
-          disabled={!isOpen}
-          collapsed={!isOpen}
-        >
-          <Separator />
-        </PanelSeparator>
-      ) : null}
     </SectionContext.Provider>
   );
 }
@@ -193,10 +133,8 @@ export function ResizableSectionTrigger({
       aria-controls={context.contentId}
       aria-expanded={context.open}
       data-state={context.open ? "open" : "closed"}
-      className={cn(
-        "flex h-9 w-full items-center gap-2 text-left text-xs font-bold tracking-[0.14em] text-primary uppercase transition-colors hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:outline-none",
-        className,
-      )}
+      data-slot="resizable-section-trigger-row"
+      className={cn("flex h-6 w-full items-center gap-2", className)}
       onClick={(event) => {
         props.onClick?.(event);
         if (!event.defaultPrevented) context.toggle();
@@ -204,7 +142,7 @@ export function ResizableSectionTrigger({
     >
       <ChevronDown
         aria-hidden="true"
-        className={cn("size-3.5 shrink-0 transition-transform", !context.open && "-rotate-90")}
+        className={cn("size-3 shrink-0 transition-transform", !context.open && "-rotate-90")}
       />
       <span className="truncate">{children}</span>
     </button>
@@ -227,7 +165,7 @@ export function ResizableSectionContent({ children, className }: ResizableSectio
       aria-labelledby={context.triggerId}
       hidden={!context.open}
       data-slot="resizable-section-content"
-      className={cn("h-full min-h-0 min-w-0 overflow-hidden", className)}
+      className={cn("flex-1", className)}
     >
       {children}
     </ScrollArea>
