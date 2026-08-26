@@ -12,12 +12,12 @@ import { CropViewport } from "./CropViewport";
 import { VideoPreviewEmpty } from "@/features/preview/VideoPreviewEmpty";
 
 interface VideoPreviewProps {
-  sourceId: string | null;
+  hasSource: boolean;
   preview: PreviewState;
   nativeLoopEnabled?: boolean;
   muted: boolean;
   videoRef: RefObject<HTMLVideoElement | null>;
-  onPlaybackError: (sourceId: string, previewKind: "source" | "proxy") => void;
+  onPlaybackError: (previewKind: "source" | "proxy") => void;
   onLoadedMetadata: () => void;
   onCanPlay: () => void;
   onTogglePlayback: () => void;
@@ -28,25 +28,19 @@ interface VideoPreviewProps {
   onCropToolOpenChange?: (isOpen: boolean) => void;
 }
 
-type VideoPreviewContentProps = Omit<VideoPreviewProps, "sourceId"> & {
-  sourceId: string;
-};
-
 export function VideoPreview(props: VideoPreviewProps) {
-  const { sourceId } = props;
-  if (!sourceId) {
+  if (!props.hasSource) {
     return <VideoPreviewEmpty />;
   }
 
   return (
     <section className="grid size-full min-h-0 place-items-center bg-preview-surface p-4">
-      <VideoPreviewContent {...props} sourceId={sourceId} />
+      <VideoPreviewContent {...props} />
     </section>
   );
 }
 
 function VideoPreviewContent({
-  sourceId,
   preview,
   nativeLoopEnabled = false,
   muted,
@@ -60,7 +54,7 @@ function VideoPreviewContent({
   onTimeUpdate,
   onEnded,
   onCropToolOpenChange,
-}: VideoPreviewContentProps) {
+}: VideoPreviewProps) {
   const { t } = useTranslation();
   const playbackRate = useAppSelector(selectPlaybackSpeed);
   const reportedUrl = useRef<string | null>(null);
@@ -139,7 +133,7 @@ function VideoPreviewContent({
         onError={() => {
           if (reportedUrl.current === value.url) return;
           reportedUrl.current = value.url;
-          onPlaybackError(sourceId, value.kind);
+          onPlaybackError(value.kind);
         }}
         onCropToolOpenChange={setCropToolOpen}
       />

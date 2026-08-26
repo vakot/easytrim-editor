@@ -159,7 +159,7 @@ async function startQueuedExport(
     await reserveExportSource(request.sourcePath);
 
     const snapshot: EditorSnapshot = {
-      sourcePath: source.sourcePath,
+      source: { ...source },
       trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
       crop: selectCropApplied(state) ? selectCrop(state) : null,
       audio: {
@@ -287,19 +287,18 @@ export const restoreExportQueueItemRequested =
     const restorationId = ++restoreSequence;
 
     try {
-      const source = await importSourcePath(item.snapshot.sourcePath);
+      const source = await importSourcePath(item.snapshot.source.sourcePath);
       if (restorationId !== restoreSequence) return false;
       await dispatch(importSource(source, item.snapshot.audio.mergeAudio));
       const state = getState();
       if (
         restorationId !== restoreSequence ||
-        state.source.sourceId !== source.sourceId ||
-        currentSourcePath(state) !== item.snapshot.sourcePath ||
+        currentSourcePath(state) !== item.snapshot.source.sourcePath ||
         !state.source.media
       ) {
         return false;
       }
-      applyEditorSnapshot(dispatch, getState, source.sourceId, item.snapshot);
+      applyEditorSnapshot(dispatch, getState, item.snapshot);
       return true;
     } catch (error: unknown) {
       if (restorationId === restoreSequence) {
@@ -312,35 +311,31 @@ export const restoreExportQueueItemRequested =
 function applyEditorSnapshot(
   dispatch: Parameters<AppThunk>[0],
   getState: Parameters<AppThunk>[1],
-  sourceId: string,
   snapshot: EditorSnapshot,
 ) {
   const media = selectSourceMedia(getState());
   if (!media) return;
   dispatch(
     trimChanged({
-      sourceId,
       trim: { ...snapshot.trim, sourceDurationMicros: media.durationMicros },
     }),
   );
   const crop = snapshot.crop ?? FULL_CROP;
   dispatch(
     cropChanged({
-      sourceId,
       crop,
       resolution: { width: media.video.width, height: media.video.height },
     }),
   );
 
   const master = selectMasterAudio(getState());
-  dispatch(masterVolumeChanged({ sourceId, volumePercent: snapshot.audio.master.volumePercent }));
+  dispatch(masterVolumeChanged({ volumePercent: snapshot.audio.master.volumePercent }));
   if (master.enabled !== snapshot.audio.master.enabled) {
-    dispatch(masterAudioToggled({ sourceId }));
+    dispatch(masterAudioToggled());
   }
   for (const track of snapshot.audio.tracks) {
     dispatch(
       audioTrackVolumeChanged({
-        sourceId,
         streamIndex: track.streamIndex,
         volumePercent: track.volumePercent,
       }),
@@ -349,10 +344,10 @@ function applyEditorSnapshot(
       (candidate) => candidate.streamIndex === track.streamIndex,
     );
     if (current && current.enabled !== track.enabled) {
-      dispatch(audioTrackToggled({ sourceId, streamIndex: track.streamIndex }));
+      dispatch(audioTrackToggled({ streamIndex: track.streamIndex }));
     }
   }
   if (selectMergeAudio(getState()) !== snapshot.audio.mergeAudio) {
-    dispatch(audioMergeToggled({ sourceId }));
+    dispatch(audioMergeToggled());
   }
 }

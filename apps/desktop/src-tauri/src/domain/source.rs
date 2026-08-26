@@ -18,8 +18,7 @@ pub struct ValidatedSource {
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct SourceSelection {
-    pub source_id: String,
+pub struct SourceRef {
     pub display_name: String,
     pub source_path: String,
 }

@@ -85,7 +85,6 @@ pub struct ChapterInfo {
 #[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MediaInfo {
-    pub source_id: String,
     pub format_name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub format_long_name: Option<String>,
@@ -102,7 +101,6 @@ pub struct MediaInfo {
 }
 
 pub fn inspect_media_cancellable(
-    source_id: String,
     path: &Path,
     is_cancelled: impl FnMut() -> bool,
 ) -> Result<MediaInfo, AppError> {
@@ -141,10 +139,10 @@ pub fn inspect_media_cancellable(
         ));
     }
 
-    parse_probe_output(source_id, &output.stdout)
+    parse_probe_output(&output.stdout)
 }
 
-fn parse_probe_output(source_id: String, output: &[u8]) -> Result<MediaInfo, AppError> {
+fn parse_probe_output(output: &[u8]) -> Result<MediaInfo, AppError> {
     let probe: ProbeDocument = serde_json::from_slice(output).map_err(|error| {
         AppError::probe_failed(
             "FFprobe returned unreadable metadata.",
@@ -253,7 +251,6 @@ fn parse_probe_output(source_id: String, output: &[u8]) -> Result<MediaInfo, App
         .collect();
 
     Ok(MediaInfo {
-        source_id,
         format_name: format
             .format_name
             .clone()
@@ -485,10 +482,8 @@ mod tests {
 
     #[test]
     fn parses_canonical_metadata_and_global_stream_indexes() {
-        let info =
-            parse_probe_output("source-7".to_owned(), PROBE_JSON).expect("metadata is valid");
+        let info = parse_probe_output(PROBE_JSON).expect("metadata is valid");
 
-        assert_eq!(info.source_id, "source-7");
         assert_eq!(info.duration_micros, 12_345_678);
         assert_eq!(info.video.stream_index, 0);
         assert_eq!(info.video.rotation_degrees, Some(90));
@@ -518,7 +513,6 @@ mod tests {
     #[test]
     fn rejects_metadata_without_a_video_stream() {
         let error = parse_probe_output(
-            "source-1".to_owned(),
             br#"{"streams": [], "format": {"duration": "1.0"}}"#,
         )
         .expect_err("video is required");

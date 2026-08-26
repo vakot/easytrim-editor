@@ -113,7 +113,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
       ),
     [audioPreviewState?.previews],
   );
-  const sourceId = sourceSelection?.sourceId ?? null;
+  const sourcePath = sourceSelection?.sourcePath ?? null;
   const sourceAudioStreams = media?.audioStreams ?? [];
   const externalAudioStreamCount = Object.keys(audioPreviewUrls).length;
   const activeExternalAudioStreamCount = audioTracks.filter(
@@ -127,15 +127,15 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
           sourceAudioStreams.find((stream) => stream.streamIndex === track.streamIndex)?.isDefault,
       ) ?? audioTracks[0]);
   const previewKey =
-    sourceId && preview.status === "ready" ? `${sourceId}:${preview.value.url}` : null;
+    sourcePath && preview.status === "ready" ? `${sourcePath}:${preview.value.url}` : null;
   const [playheadMicros, setPlayheadMicros] = useState(trim.startMicros);
   const [isPlaying, setIsPlaying] = useState(false);
   const [transportError, setTransportError] = useState<string | null>(null);
   const [readyPreviewKey, setReadyPreviewKey] = useState<string | null>(null);
   const [audioReadiness, setAudioReadiness] = useState<{
-    sourceId: string | null;
+    sourcePath: string | null;
     streamIndexes: Set<number>;
-  }>(() => ({ sourceId: null, streamIndexes: new Set() }));
+  }>(() => ({ sourcePath: null, streamIndexes: new Set() }));
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioElementsRef = useRef(new Map<number, HTMLAudioElement>());
   const audioReadyListenersRef = useRef(new Map<number, () => void>());
@@ -174,7 +174,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     readyPreviewKey === previewKey &&
     audioPreviewState?.status !== "loading" &&
     (activeExternalAudioStreamCount === 0 ||
-      (audioReadiness.sourceId === sourceId &&
+      (audioReadiness.sourcePath === sourcePath &&
         audioReadiness.streamIndexes.size === activeExternalAudioStreamCount));
   const isPlaybackReadyRef = useRef(isPlaybackReady);
   const nativeLoopEnabled =
@@ -272,12 +272,12 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     cleanupAudioRuntime();
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setReadyPreviewKey(null);
-    setAudioReadiness({ sourceId: null, streamIndexes: new Set() });
+    setAudioReadiness({ sourcePath: null, streamIndexes: new Set() });
     // Source replacement is an explicit transport reset, not persisted editor state.
     setIsPlaying(false);
     setTransportError(null);
     setPlayheadMicros(0);
-  }, [cleanupAudioRuntime, previewKey, sourceId]);
+  }, [cleanupAudioRuntime, previewKey, sourcePath]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -286,7 +286,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
   }, [audioPreviewUrls, playbackSpeed]);
 
   useEffect(() => {
-    if (!sourceId || audioTracks.length === 0 || typeof AudioContext === "undefined") {
+    if (!sourcePath || audioTracks.length === 0 || typeof AudioContext === "undefined") {
       cleanupAudioRuntime();
       cleanupStaleNativeAudioBindings(videoRef.current);
       return;
@@ -328,10 +328,10 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
       const markReady = () => {
         setAudioReadiness((current) => {
           const indexes =
-            current.sourceId === sourceId ? new Set(current.streamIndexes) : new Set<number>();
+            current.sourcePath === sourcePath ? new Set(current.streamIndexes) : new Set<number>();
           if (indexes.has(streamIndex)) return current;
           indexes.add(streamIndex);
-          return { sourceId, streamIndexes: indexes };
+          return { sourcePath, streamIndexes: indexes };
         });
       };
       element.addEventListener("canplay", markReady, { once: true });
@@ -362,7 +362,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     disconnectCurrentNativeAudioRoute,
     readyPreviewKey,
     removeAudioRuntime,
-    sourceId,
+    sourcePath,
     playbackSpeed,
     usesExternalAudio,
   ]);
@@ -541,8 +541,8 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     cancelFrame(trimCommitFrameRef);
     const pendingTrim = pendingTrimCommitRef.current;
     pendingTrimCommitRef.current = null;
-    if (pendingTrim && sourceId) dispatch(trimChanged({ sourceId, trim: pendingTrim }));
-  }, [dispatch, sourceId]);
+    if (pendingTrim && sourcePath) dispatch(trimChanged({ trim: pendingTrim }));
+  }, [dispatch, sourcePath]);
   const queueTrimCommit = useCallback(
     (nextTrim: TrimRange) => {
       pendingTrimCommitRef.current = nextTrim;
@@ -551,10 +551,10 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
         trimCommitFrameRef.current = null;
         const pendingTrim = pendingTrimCommitRef.current;
         pendingTrimCommitRef.current = null;
-        if (pendingTrim && sourceId) dispatch(trimChanged({ sourceId, trim: pendingTrim }));
+        if (pendingTrim && sourcePath) dispatch(trimChanged({ trim: pendingTrim }));
       });
     },
-    [dispatch, sourceId],
+    [dispatch, sourcePath],
   );
   const queueScrubSeek = useCallback(
     (micros: number) => {
@@ -633,15 +633,15 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
   );
   const handleSetSegmentBoundary = useCallback(
     (boundary: TrimBoundary) => {
-      if (!sourceId) return;
+      if (!sourcePath) return;
       const currentMicros = currentPlayheadMicrosRef.current;
       if (!canSetTrimBoundaryAtPlayhead(trimRef.current, boundary, currentMicros)) return;
       const nextTrim = setTrimBoundaryAtPlayhead(trimRef.current, boundary, currentMicros);
       trimRef.current = nextTrim;
       flushTrimCommit();
-      dispatch(trimChanged({ sourceId, trim: nextTrim }));
+      dispatch(trimChanged({ trim: nextTrim }));
     },
-    [dispatch, flushTrimCommit, sourceId],
+    [dispatch, flushTrimCommit, sourcePath],
   );
   const handleTrimBoundaryChange = useCallback(
     (boundary: TrimBoundary, nextTrim: TrimRange) => {
@@ -757,9 +757,9 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
       pauseAudioPlayback();
       setIsPlaying(false);
       stopPlayheadAnimation();
-      if (sourceId) void dispatch(handlePreviewPlaybackErrorRequested(sourceId, previewKind));
+      if (sourcePath) void dispatch(handlePreviewPlaybackErrorRequested(sourcePath, previewKind));
     },
-    [dispatch, pauseAudioPlayback, sourceId, stopPlayheadAnimation],
+    [dispatch, pauseAudioPlayback, sourcePath, stopPlayheadAnimation],
   );
 
   useEffect(() => {

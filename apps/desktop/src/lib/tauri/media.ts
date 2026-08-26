@@ -1,17 +1,12 @@
 import { Channel, invoke } from "@tauri-apps/api/core";
 import type { UnlistenFn } from "@tauri-apps/api/event";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
+import type { SourceRef } from "@/domain/source";
 
 export interface AppError {
   code: string;
   message: string;
   diagnostics?: string;
-}
-
-export interface SourceSelection {
-  sourceId: string;
-  displayName: string;
-  sourcePath: string;
 }
 
 export interface TrimSelection {
@@ -119,7 +114,6 @@ export interface ChapterInfo {
 }
 
 export interface MediaInfo {
-  sourceId: string;
   formatName: string;
   formatLongName?: string;
   durationMicros: number;
@@ -134,13 +128,13 @@ export interface MediaInfo {
 export type PreviewKind = "source" | "proxy";
 
 export interface PreviewDescriptor {
-  sourceId: string;
+  mediaToken: number;
   url: string;
   kind: PreviewKind;
 }
 
 export interface AudioPreviewDescriptor {
-  sourceId: string;
+  mediaToken: number;
   streamIndex: number;
   url: string;
 }
@@ -148,7 +142,6 @@ export interface AudioPreviewDescriptor {
 export type WaveformResult =
   | {
       status: "ready";
-      sourceId: string;
       jobId: string;
       streamIndex: number;
       width: number;
@@ -157,7 +150,6 @@ export type WaveformResult =
     }
   | {
       status: "failed";
-      sourceId: string;
       jobId: string;
       streamIndex: number;
       width: number;
@@ -165,14 +157,14 @@ export type WaveformResult =
     };
 
 export type SourceImportEvent =
-  { status: "selected"; source: SourceSelection } | { status: "failed"; error: AppError };
+  { status: "selected"; source: SourceRef } | { status: "failed"; error: AppError };
 
 export type SourceDropEvent = { status: "drag"; active: boolean } | SourceImportEvent;
 
-export async function chooseSource(): Promise<SourceSelection | null> {
+export async function chooseSource(): Promise<SourceRef | null> {
   try {
     const value = await invoke<unknown>("choose_source");
-    return value === null ? null : parseSourceSelection(value);
+    return value === null ? null : parseSourceRef(value);
   } catch (error: unknown) {
     throw normalizeAppError(error);
   }
@@ -186,17 +178,17 @@ export async function checkMediaCapabilities(): Promise<MediaCapabilities> {
   }
 }
 
-export async function inspectMedia(sourceId: string): Promise<MediaInfo> {
+export async function inspectMedia(sourcePath: string): Promise<MediaInfo> {
   try {
-    return parseMediaInfo(await invoke<unknown>("inspect_media", { sourceId }));
+    return parseMediaInfo(await invoke<unknown>("inspect_media", { sourcePath }));
   } catch (error: unknown) {
     throw normalizeAppError(error);
   }
 }
 
-export async function importSourcePath(sourcePath: string): Promise<SourceSelection> {
+export async function importSourcePath(sourcePath: string): Promise<SourceRef> {
   try {
-    return parseSourceSelection(await invoke<unknown>("import_source_path", { sourcePath }));
+    return parseSourceRef(await invoke<unknown>("import_source_path", { sourcePath }));
   } catch (error: unknown) {
     throw normalizeAppError(error);
   }
@@ -285,11 +277,11 @@ async function render(
   }
 }
 
-export async function prepareSourcePreview(sourceId: string): Promise<PreviewDescriptor> {
+export async function prepareSourcePreview(sourcePath: string): Promise<PreviewDescriptor> {
   try {
     return parsePreviewDescriptor(
       await invoke<unknown>("prepare_source_preview", {
-        sourceId,
+        sourcePath,
       }),
     );
   } catch (error: unknown) {
@@ -298,12 +290,12 @@ export async function prepareSourcePreview(sourceId: string): Promise<PreviewDes
 }
 
 export async function prepareAudioPreviews(
-  sourceId: string,
+  sourcePath: string,
   streamIndexes: number[],
 ): Promise<AudioPreviewDescriptor[]> {
   try {
     return requireArray(
-      await invoke<unknown>("prepare_audio_previews", { sourceId, streamIndexes }),
+      await invoke<unknown>("prepare_audio_previews", { sourcePath, streamIndexes }),
       "audio preview descriptors",
     ).map(parseAudioPreviewDescriptor);
   } catch (error: unknown) {
@@ -311,11 +303,11 @@ export async function prepareAudioPreviews(
   }
 }
 
-export async function prepareProxyPreview(sourceId: string): Promise<PreviewDescriptor> {
+export async function prepareProxyPreview(sourcePath: string): Promise<PreviewDescriptor> {
   try {
     return parsePreviewDescriptor(
       await invoke<unknown>("prepare_proxy_preview", {
-        sourceId,
+        sourcePath,
       }),
     );
   } catch (error: unknown) {
@@ -324,7 +316,7 @@ export async function prepareProxyPreview(sourceId: string): Promise<PreviewDesc
 }
 
 export async function prepareWaveforms(
-  sourceId: string,
+  sourcePath: string,
   jobId: string,
   streamIndexes: number[],
   width: number,
@@ -332,7 +324,7 @@ export async function prepareWaveforms(
   try {
     return requireArray(
       await invoke<unknown>("prepare_waveforms", {
-        sourceId,
+        sourcePath,
         jobId,
         streamIndexes,
         width,
@@ -380,9 +372,9 @@ export async function listenForSourceDrops(
   });
 }
 
-async function importDroppedSource(path: string): Promise<SourceSelection> {
+async function importDroppedSource(path: string): Promise<SourceRef> {
   try {
-    return parseSourceSelection(
+    return parseSourceRef(
       await invoke<unknown>("import_dropped_source", {
         path,
       }),
@@ -410,10 +402,9 @@ export function normalizeAppError(error: unknown): AppError {
   return { code: "internal", message: "An unexpected application error occurred." };
 }
 
-function parseSourceSelection(value: unknown): SourceSelection {
-  const source = requireRecord(value, "source selection");
+function parseSourceRef(value: unknown): SourceRef {
+  const source = requireRecord(value, "source reference");
   return {
-    sourceId: requireString(source.sourceId, "source ID"),
     displayName: requireString(source.displayName, "display name"),
     sourcePath: requireString(source.sourcePath, "source path"),
   };
@@ -485,7 +476,6 @@ function parseBinaryCapability(value: unknown): BinaryCapability {
 function parseMediaInfo(value: unknown): MediaInfo {
   const media = requireRecord(value, "media metadata");
   return {
-    sourceId: requireString(media.sourceId, "source ID"),
     formatName: requireString(media.formatName, "format name"),
     formatLongName: optionalString(media.formatLongName),
     durationMicros: requireInteger(media.durationMicros, "duration"),
@@ -505,7 +495,7 @@ function parsePreviewDescriptor(value: unknown): PreviewDescriptor {
     throw invalidResponse("preview kind");
   }
   return {
-    sourceId: requireString(preview.sourceId, "source ID"),
+    mediaToken: requirePositiveInteger(preview.mediaToken, "preview media token"),
     url: requireString(preview.url, "preview URL"),
     kind,
   };
@@ -514,7 +504,7 @@ function parsePreviewDescriptor(value: unknown): PreviewDescriptor {
 function parseAudioPreviewDescriptor(value: unknown): AudioPreviewDescriptor {
   const preview = requireRecord(value, "audio preview descriptor");
   return {
-    sourceId: requireString(preview.sourceId, "audio preview source ID"),
+    mediaToken: requirePositiveInteger(preview.mediaToken, "audio preview media token"),
     streamIndex: requireInteger(preview.streamIndex, "audio preview stream index"),
     url: requireString(preview.url, "audio preview URL"),
   };
@@ -523,7 +513,6 @@ function parseAudioPreviewDescriptor(value: unknown): AudioPreviewDescriptor {
 function parseWaveformResult(value: unknown): WaveformResult {
   const waveform = requireRecord(value, "waveform result");
   const common = {
-    sourceId: requireString(waveform.sourceId, "waveform source ID"),
     jobId: requireString(waveform.jobId, "waveform job ID"),
     streamIndex: requireInteger(waveform.streamIndex, "waveform stream index"),
     width: requirePositiveInteger(waveform.width, "waveform width"),

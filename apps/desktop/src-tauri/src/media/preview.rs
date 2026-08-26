@@ -21,10 +21,15 @@ pub fn respond<R: Runtime>(app: &AppHandle<R>, request: Request<Vec<u8>>) -> Res
         return empty_response(StatusCode::METHOD_NOT_ALLOWED);
     }
 
-    let source_id = request.uri().path().trim_matches('/');
-    if source_id.is_empty() || source_id.contains('/') {
+    let media_token = request
+        .uri()
+        .path()
+        .trim_matches('/')
+        .parse::<u64>()
+        .ok();
+    let Some(media_token) = media_token else {
         return empty_response(StatusCode::NOT_FOUND);
-    }
+    };
 
     let state = app.state::<AppState>();
     let path = if query_parameter(request.uri().query(), "variant") == Some("waveform") {
@@ -33,16 +38,16 @@ pub fn respond<R: Runtime>(app: &AppHandle<R>, request: Request<Vec<u8>>) -> Res
         else {
             return empty_response(StatusCode::NOT_FOUND);
         };
-        state.resolve_waveform_path(source_id, stream_index)
+        state.resolve_waveform_path(media_token, stream_index)
     } else if query_parameter(request.uri().query(), "variant") == Some("audio") {
         let Some(stream_index) = query_parameter(request.uri().query(), "stream")
             .and_then(|value| value.parse::<u32>().ok())
         else {
             return empty_response(StatusCode::NOT_FOUND);
         };
-        state.resolve_audio_preview_path(source_id, stream_index)
+        state.resolve_audio_preview_path(media_token, stream_index)
     } else {
-        state.resolve_preview_path(source_id)
+        state.resolve_preview_path(media_token)
     };
     let Ok(path) = path else {
         return empty_response(StatusCode::NOT_FOUND);

@@ -5,7 +5,7 @@ use tauri_plugin_dialog::DialogExt;
 
 use crate::{
     application::import_source::import_source,
-    domain::source::{SUPPORTED_VIDEO_EXTENSIONS, SourceSelection},
+    domain::source::{SUPPORTED_VIDEO_EXTENSIONS, SourceRef},
     error::AppError,
     state::AppState,
 };
@@ -14,7 +14,7 @@ use crate::{
 pub async fn choose_source(
     app: AppHandle,
     state: State<'_, AppState>,
-) -> Result<Option<SourceSelection>, AppError> {
+) -> Result<Option<SourceRef>, AppError> {
     let selected = app
         .dialog()
         .file()
@@ -37,7 +37,7 @@ pub fn import_dropped_source(
     window: WebviewWindow,
     state: State<'_, AppState>,
     path: PathBuf,
-) -> Result<SourceSelection, AppError> {
+) -> Result<SourceRef, AppError> {
     // Windows can keep Explorer in front after it provides a drop. Regain focus
     // for the receiving editor, without making a valid import depend on this UX step.
     let _ = window.set_focus();
@@ -48,6 +48,6 @@ pub fn import_dropped_source(
 pub fn import_source_path(
     state: State<'_, AppState>,
     source_path: PathBuf,
-) -> Result<SourceSelection, AppError> {
+) -> Result<SourceRef, AppError> {
     import_source(&state, source_path)
 }

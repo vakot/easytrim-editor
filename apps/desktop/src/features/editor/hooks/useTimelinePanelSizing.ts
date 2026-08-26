@@ -21,19 +21,19 @@ export function timelinePanelTargetSize(
 }
 
 export function useTimelinePanelSizing(
-  sourceId: string | null,
+  hasSource: boolean,
   audioTrackCount: number | null,
   isVisible: boolean,
 ) {
   const panelRef = usePanelRef();
   const constraints = useMemo(
     () =>
-      sourceId === null
+      !hasSource
         ? EMPTY_TIMELINE_CONSTRAINTS
         : audioTrackCount === null
           ? PENDING_SOURCE_CONSTRAINTS
           : timelinePanelSizeConstraints(audioTrackCount),
-    [audioTrackCount, sourceId],
+    [audioTrackCount, hasSource],
   );
 
   const resetToDefault = useCallback(
@@ -47,7 +47,7 @@ export function useTimelinePanelSizing(
       return;
     }
 
-    if (sourceId === null) {
+    if (!hasSource) {
       if (!panel.isCollapsed()) {
         const currentSize = panel.getSize().inPixels;
         if (Math.abs(currentSize - EMPTY_TIMELINE_CONSTRAINTS.defaultSize) >= 1) {
@@ -72,7 +72,7 @@ export function useTimelinePanelSizing(
     if (Math.abs(currentSize - targetSize) >= 1) {
       panel.resize(targetSize);
     }
-  }, [audioTrackCount, panelRef, sourceId]);
+  }, [audioTrackCount, hasSource, panelRef]);
 
   useEffect(() => {
     const panel = panelRef.current;

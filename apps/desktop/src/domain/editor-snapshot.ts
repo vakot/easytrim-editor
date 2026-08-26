@@ -1,7 +1,8 @@
 import type { CropRect } from "./crop";
+import type { SourceRef } from "./source";
 
 export interface EditorSnapshot {
-  sourcePath: string;
+  source: SourceRef;
   trim: { startMicros: number; endMicros: number };
   crop: CropRect | null;
   audio: {

@@ -65,14 +65,14 @@ export function EditorStage() {
   const editorStageLayout = useAppSelector(selectEditorStageLayout);
   const isBottomPanelVisible = useAppSelector((state) => selectPanelVisibility(state, "bottom"));
   const previousEditorStageLayout = useRef(editorStageLayout);
-  const sourceId = sourceSelection?.sourceId ?? null;
+  const sourcePath = sourceSelection?.sourcePath ?? null;
   const timelineRange = trim ?? EMPTY_TIMELINE_RANGE;
   const controlsDisabled = !isSourceReady || !playback.isReady;
   const showLoadingOverlay =
     sourceSelection !== null && preview.status !== "failed" && !playback.isReady;
 
   const timelinePanelSizing = useTimelinePanelSizing(
-    sourceId,
+    sourceSelection !== null,
     media?.audioStreams.length ?? null,
     isBottomPanelVisible,
   );
@@ -98,12 +98,12 @@ export function EditorStage() {
       <Panel id="preview-panel" minSize="14rem" className="min-h-0 min-w-0">
         <PanelContent className="bg-preview-surface">
           <VideoPreview
-            sourceId={sourceId}
+            hasSource={sourceSelection !== null}
             preview={preview}
             nativeLoopEnabled={playback.nativeLoopEnabled}
             muted={playback.videoMuted}
             videoRef={playback.videoRef}
-            onPlaybackError={(_, previewKind) => playback.onPreviewPlaybackError(previewKind)}
+            onPlaybackError={(previewKind) => playback.onPreviewPlaybackError(previewKind)}
             onLoadedMetadata={playback.onLoadedMetadata}
             onCanPlay={playback.onCanPlay}
             onTogglePlayback={playback.toggle}
@@ -196,24 +196,21 @@ export function EditorStage() {
                   playheadRef={playback.audioPlayheadRef}
                   mergeAudio={mergeAudio}
                   waveformPreparationEnabled={playback.isReady}
-                  onToggleTrack={(streamIndex) =>
-                    sourceId && dispatch(audioTrackToggled({ sourceId, streamIndex }))
-                  }
+                  onToggleTrack={(streamIndex) => dispatch(audioTrackToggled({ streamIndex }))}
                   onTrackVolumeChange={(streamIndex, volumePercent) =>
-                    sourceId &&
-                    dispatch(audioTrackVolumeChanged({ sourceId, streamIndex, volumePercent }))
+                    dispatch(audioTrackVolumeChanged({ streamIndex, volumePercent }))
                   }
-                  onToggleMaster={() => sourceId && dispatch(masterAudioToggled({ sourceId }))}
+                  onToggleMaster={() => dispatch(masterAudioToggled())}
                   onMasterVolumeChange={(volumePercent) =>
-                    sourceId && dispatch(masterVolumeChanged({ sourceId, volumePercent }))
+                    dispatch(masterVolumeChanged({ volumePercent }))
                   }
-                  onToggleMerge={() => sourceId && dispatch(audioMergeToggled({ sourceId }))}
+                  onToggleMerge={() => dispatch(audioMergeToggled())}
                   onPrepareWaveforms={(streamIndexes, width) =>
-                    sourceId &&
-                    void dispatch(prepareSourceWaveforms(sourceId, streamIndexes, width))
+                    sourcePath &&
+                    void dispatch(prepareSourceWaveforms(sourcePath, streamIndexes, width))
                   }
                   onWaveformImageError={(streamIndex) =>
-                    sourceId && dispatch(waveformDisplayFailed({ sourceId, streamIndex }))
+                    dispatch(waveformDisplayFailed({ streamIndex }))
                   }
                 />
               ) : null

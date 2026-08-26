@@ -43,7 +43,7 @@ pub fn cleanup_stale_media_artifacts() {
 
 #[derive(Clone, Debug)]
 pub struct ActiveSource {
-    pub source_id: String,
+    pub load_token: u64,
     pub path: PathBuf,
     pub cancellation: Arc<AtomicBool>,
     pub media: Option<MediaInfo>,
@@ -110,7 +110,7 @@ struct WaveformJobRecord {
 
 #[derive(Debug)]
 struct ActiveSourceRecord {
-    source_id: String,
+    load_token: u64,
     path: PathBuf,
     cancellation: Arc<AtomicBool>,
     media: Option<MediaInfo>,
@@ -219,15 +219,14 @@ impl AppState {
         &self,
         generation: u64,
         source: ValidatedSource,
-    ) -> Result<String, AppError> {
+    ) -> Result<u64, AppError> {
         let mut session = self.lock_session()?;
         if session.latest_generation != generation {
             return Err(AppError::source_replaced());
         }
 
-        let source_id = format!("source-{generation}");
         session.active_source = Some(ActiveSourceRecord {
-            source_id: source_id.clone(),
+            load_token: generation,
             path: source.path,
             cancellation: Arc::new(AtomicBool::new(false)),
             media: None,
@@ -239,17 +238,17 @@ impl AppState {
             waveforms: HashMap::new(),
         });
 
-        Ok(source_id)
+        Ok(generation)
     }
 
-    pub fn resolve_source(&self, source_id: &str) -> Result<ActiveSource, AppError> {
+    pub fn resolve_source_by_load_token(&self, load_token: u64) -> Result<ActiveSource, AppError> {
         let session = self.lock_session()?;
         session
             .active_source
             .as_ref()
-            .filter(|source| source.source_id == source_id)
+            .filter(|source| source.load_token == load_token)
             .map(|source| ActiveSource {
-                source_id: source.source_id.clone(),
+                load_token: source.load_token,
                 path: source.path.clone(),
                 cancellation: Arc::clone(&source.cancellation),
                 media: source.media.clone(),
@@ -311,7 +310,7 @@ impl AppState {
             .as_ref()
             .filter(|source| source.path == Path::new(source_path))
             .map(|source| ActiveSource {
-                source_id: source.source_id.clone(),
+                load_token: source.load_token,
                 path: source.path.clone(),
                 cancellation: Arc::clone(&source.cancellation),
                 media: source.media.clone(),
@@ -323,13 +322,13 @@ impl AppState {
 
     pub fn remember_inspected_streams(
         &self,
-        source_id: &str,
+        load_token: u64,
         media: MediaInfo,
         preview_streams: PreviewStreamSelection,
         audio_stream_indexes: Vec<u32>,
     ) -> Result<(), AppError> {
         let mut session = self.lock_session()?;
-        let source = active_source_mut(&mut session, source_id)?;
+        let source = active_source_mut(&mut session, load_token)?;
         source.media = Some(media);
         source.preview_streams = Some(preview_streams);
         source.audio_stream_indexes = audio_stream_indexes;
@@ -338,7 +337,7 @@ impl AppState {
 
     pub fn begin_waveform_job(
         &self,
-        source_id: &str,
+        source_path: &str,
         job_id: String,
     ) -> Result<WaveformSource, AppError> {
         if job_id.is_empty()
@@ -351,7 +350,7 @@ impl AppState {
         }
 
         let mut session = self.lock_session()?;
-        let source = active_source_mut(&mut session, source_id)?;
+        let source = active_source_mut_by_path(&mut session, source_path)?;
         if let Some(previous_job) = source.waveform_job.take() {
             previous_job.cancellation.store(true, Ordering::Release);
         }
@@ -364,7 +363,7 @@ impl AppState {
 
         Ok(WaveformSource {
             source: ActiveSource {
-                source_id: source.source_id.clone(),
+                load_token: source.load_token,
                 path: source.path.clone(),
                 cancellation: Arc::clone(&source.cancellation),
                 media: source.media.clone(),
@@ -377,7 +376,7 @@ impl AppState {
 
     pub fn install_waveform(
         &self,
-        source_id: &str,
+        load_token: u64,
         job_id: &str,
         stream_index: u32,
         width: u32,
@@ -386,7 +385,7 @@ impl AppState {
     ) -> Result<(), AppError> {
         let previous_waveform = {
             let mut session = self.lock_session()?;
-            let source = active_source_mut(&mut session, source_id)?;
+            let source = active_source_mut(&mut session, load_token)?;
             let job_is_active = source.waveform_job.as_ref().is_some_and(|job| {
                 job.job_id == job_id && !job.cancellation.load(Ordering::Acquire)
             });
@@ -408,12 +407,12 @@ impl AppState {
 
     pub fn waveform_activity_if_ready(
         &self,
-        source_id: &str,
+        load_token: u64,
         stream_index: u32,
         width: u32,
     ) -> Result<Option<Option<bool>>, AppError> {
         let session = self.lock_session()?;
-        let source = active_source(&session, source_id)?;
+        let source = active_source(&session, load_token)?;
         Ok(source
             .waveforms
             .get(&stream_index)
@@ -423,11 +422,11 @@ impl AppState {
 
     pub fn resolve_waveform_path(
         &self,
-        source_id: &str,
+        load_token: u64,
         stream_index: u32,
     ) -> Result<PathBuf, AppError> {
         let session = self.lock_session()?;
-        let source = active_source(&session, source_id)?;
+        let source = active_source(&session, load_token)?;
         source
             .waveforms
             .get(&stream_index)
@@ -437,12 +436,12 @@ impl AppState {
 
     pub fn install_preview(
         &self,
-        source_id: &str,
+        load_token: u64,
         preview: PreviewArtifact,
     ) -> Result<(), AppError> {
         let previous_preview = {
             let mut session = self.lock_session()?;
-            let source = active_source_mut(&mut session, source_id)?;
+            let source = active_source_mut(&mut session, load_token)?;
             if source.cancellation.load(Ordering::Acquire) {
                 return Err(AppError::source_replaced());
             }
@@ -454,13 +453,13 @@ impl AppState {
 
     pub fn install_audio_preview(
         &self,
-        source_id: &str,
+        load_token: u64,
         stream_index: u32,
         preview: AudioPreviewArtifact,
     ) -> Result<(), AppError> {
         let previous_preview = {
             let mut session = self.lock_session()?;
-            let source = active_source_mut(&mut session, source_id)?;
+            let source = active_source_mut(&mut session, load_token)?;
             if source.cancellation.load(Ordering::Acquire) {
                 return Err(AppError::source_replaced());
             }
@@ -472,14 +471,14 @@ impl AppState {
 
     pub fn resolve_audio_preview_path(
         &self,
-        source_id: &str,
+        load_token: u64,
         stream_index: u32,
     ) -> Result<PathBuf, AppError> {
         let session = self.lock_session()?;
         let source = session
             .active_source
             .as_ref()
-            .filter(|source| source.source_id == source_id)
+            .filter(|source| source.load_token == load_token)
             .ok_or_else(AppError::source_replaced)?;
         source
             .audio_previews
@@ -488,12 +487,12 @@ impl AppState {
             .ok_or_else(|| AppError::invalid_request("The audio preview is not available."))
     }
 
-    pub fn resolve_preview_path(&self, source_id: &str) -> Result<PathBuf, AppError> {
+    pub fn resolve_preview_path(&self, load_token: u64) -> Result<PathBuf, AppError> {
         let session = self.lock_session()?;
         let source = session
             .active_source
             .as_ref()
-            .filter(|source| source.source_id == source_id)
+            .filter(|source| source.load_token == load_token)
             .ok_or_else(AppError::source_replaced)?;
         Ok(source
             .preview
@@ -501,12 +500,12 @@ impl AppState {
             .map_or_else(|| source.path.clone(), |preview| preview.path().to_owned()))
     }
 
-    pub fn preview_is_ready(&self, source_id: &str) -> Result<bool, AppError> {
+    pub fn preview_is_ready(&self, load_token: u64) -> Result<bool, AppError> {
         let session = self.lock_session()?;
         let source = session
             .active_source
             .as_ref()
-            .filter(|source| source.source_id == source_id)
+            .filter(|source| source.load_token == load_token)
             .ok_or_else(AppError::source_replaced)?;
         Ok(source.preview.is_some())
     }
@@ -520,23 +519,34 @@ impl AppState {
 
 fn active_source<'a>(
     session: &'a SessionState,
-    source_id: &str,
+    load_token: u64,
 ) -> Result<&'a ActiveSourceRecord, AppError> {
     session
         .active_source
         .as_ref()
-        .filter(|source| source.source_id == source_id)
+        .filter(|source| source.load_token == load_token)
         .ok_or_else(AppError::source_replaced)
 }
 
 fn active_source_mut<'a>(
     session: &'a mut SessionState,
-    source_id: &str,
+    load_token: u64,
 ) -> Result<&'a mut ActiveSourceRecord, AppError> {
     session
         .active_source
         .as_mut()
-        .filter(|source| source.source_id == source_id)
+        .filter(|source| source.load_token == load_token)
+        .ok_or_else(AppError::source_replaced)
+}
+
+fn active_source_mut_by_path<'a>(
+    session: &'a mut SessionState,
+    source_path: &str,
+) -> Result<&'a mut ActiveSourceRecord, AppError> {
+    session
+        .active_source
+        .as_mut()
+        .filter(|source| source.path == Path::new(source_path))
         .ok_or_else(AppError::source_replaced)
 }
 
@@ -569,10 +579,10 @@ mod tests {
             .expect_err("stale import must fail");
         assert_eq!(error.code, "source_replaced");
 
-        let source_id = state
+        let load_token = state
             .complete_source_replacement(second, source("second.mp4"))
             .expect("latest import completes");
-        assert!(state.resolve_source(&source_id).is_ok());
+        assert!(state.resolve_source_by_load_token(load_token).is_ok());
     }
 
     #[test]
@@ -581,7 +591,7 @@ mod tests {
         let first = state
             .begin_source_replacement()
             .expect("first import starts");
-        let source_id = state
+        let load_token = state
             .complete_source_replacement(first, source("first.mp4"))
             .expect("first import completes");
 
@@ -589,18 +599,18 @@ mod tests {
             .begin_source_replacement()
             .expect("replacement import starts");
 
-        assert!(state.resolve_source(&source_id).is_err());
+        assert!(state.resolve_source_by_load_token(load_token).is_err());
     }
 
     #[test]
     fn starting_replacement_cancels_work_for_the_previous_source() {
         let state = AppState::default();
         let generation = state.begin_source_replacement().expect("import starts");
-        let source_id = state
+        let load_token = state
             .complete_source_replacement(generation, source("first.mp4"))
             .expect("import completes");
         let cancellation = state
-            .resolve_source(&source_id)
+            .resolve_source_by_load_token(load_token)
             .expect("source is active")
             .cancellation;
 
@@ -615,16 +625,18 @@ mod tests {
     fn newer_waveform_job_cancels_the_previous_job() {
         let state = AppState::default();
         let generation = state.begin_source_replacement().expect("import starts");
-        let source_id = state
+        let load_token = state
             .complete_source_replacement(generation, source("first.mp4"))
             .expect("import completes");
         let first_job = state
-            .begin_waveform_job(&source_id, "waveform-1".to_owned())
+            .begin_waveform_job("first.mp4", "waveform-1".to_owned())
             .expect("first waveform job starts");
 
         state
-            .begin_waveform_job(&source_id, "waveform-2".to_owned())
+            .begin_waveform_job("first.mp4", "waveform-2".to_owned())
             .expect("replacement waveform job starts");
+
+        assert!(state.resolve_source_by_load_token(load_token).is_ok());
 
         assert!(first_job.cancellation.load(Ordering::Acquire));
     }

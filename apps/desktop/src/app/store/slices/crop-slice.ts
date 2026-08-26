@@ -6,7 +6,6 @@ import { FULL_CROP, type CropRect } from "@/domain/crop";
 import type { RootState } from "../store";
 
 export interface CropState {
-  sourceId: string | null;
   value: CropRect;
 }
 
@@ -15,33 +14,25 @@ export interface CropResolution {
   height: number;
 }
 
-export const initialCropState: CropState = { sourceId: null, value: FULL_CROP };
+export const initialCropState: CropState = { value: FULL_CROP };
 
 const cropSlice = createSlice({
   name: "crop",
   initialState: initialCropState,
   reducers: {
-    cropChanged: (
-      state,
-      action: PayloadAction<{ sourceId: string; crop: CropRect; resolution: CropResolution }>,
-    ) => {
-      if (state.sourceId !== action.payload.sourceId) return;
+    cropChanged: (state, action: PayloadAction<{ crop: CropRect; resolution: CropResolution }>) => {
       state.value = action.payload.crop;
     },
   },
   extraReducers: (builder) => {
     builder
-      .addCase(sourceSelected, (state, action) => {
-        state.sourceId = action.payload.source.sourceId;
+      .addCase(sourceSelected, (state) => {
         state.value = FULL_CROP;
       })
       .addCase(sourceCleared, (state) => {
-        state.sourceId = null;
         state.value = FULL_CROP;
       })
-      .addCase(sourceFailed, (state, action) => {
-        if (action.payload.sourceId) return;
-        state.sourceId = null;
+      .addCase(sourceFailed, (state) => {
         state.value = FULL_CROP;
       });
   },
