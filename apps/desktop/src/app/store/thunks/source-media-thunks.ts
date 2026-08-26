@@ -37,6 +37,7 @@ import {
   checkMediaCapabilities,
   chooseSource as chooseSourceDialog,
   inspectMedia,
+  importSourcePath,
   normalizeAppError,
   prepareAudioPreviews,
   prepareProxyPreview,
@@ -248,14 +249,23 @@ export const switchImportedQueueItemRequested =
     const restorationId = ++queueRestoreSequence;
 
     dispatch(leaveActiveImportedItem());
-    await dispatch(
-      importSource(item.snapshot.source, item.snapshot.audio.mergeAudio, {
-        registerQueueItem: false,
-        activeItemId: id,
-        captureCurrentDraft: false,
-        leaveActiveItem: false,
-      }),
-    );
+    let source: SourceRef;
+    try {
+      source = await importSourcePath(item.snapshot.source.sourcePath);
+      await dispatch(
+        importSource(source, item.snapshot.audio.mergeAudio, {
+          registerQueueItem: false,
+          activeItemId: id,
+          captureCurrentDraft: false,
+          leaveActiveItem: false,
+        }),
+      );
+    } catch (error: unknown) {
+      if (restorationId === queueRestoreSequence) {
+        dispatch(sourceFailed({ error: normalizeAppError(error) }));
+      }
+      return false;
+    }
     const state = getState();
     if (
       restorationId !== queueRestoreSequence ||

@@ -3,13 +3,23 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { MediaInfo, WaveformResult } from "@/lib/tauri/media";
 import type { SourceRef } from "@/domain/source";
 import { createAppStore } from "@/app/store/store";
-import { selectAudioPreviews, selectAudioTracks } from "@/app/store/slices/audio-slice";
+import {
+  audioMergeToggled,
+  audioTrackToggled,
+  audioTrackVolumeChanged,
+  masterVolumeChanged,
+  selectAudioPreviews,
+  selectAudioTracks,
+  selectMasterAudio,
+  selectMergeAudio,
+} from "@/app/store/slices/audio-slice";
 import {
   activeQueueItemChanged,
   importedQueueItemAdded,
   selectActiveItemId,
   selectImportedQueueItems,
 } from "@/app/store/slices/export-slice";
+import { cropChanged, selectCrop } from "@/app/store/slices/crop-slice";
 import { selectPreview } from "@/app/store/slices/preview-slice";
 import {
   selectHasSource,
@@ -39,6 +49,7 @@ const mocks = vi.hoisted(() => ({
   checkMediaCapabilities: vi.fn(),
   chooseSource: vi.fn(),
   inspectMedia: vi.fn(),
+  importSourcePath: vi.fn(),
   prepareAudioPreviews: vi.fn(),
   prepareProxyPreview: vi.fn(),
   prepareSourcePreview: vi.fn(),
@@ -52,6 +63,7 @@ vi.mock("@/lib/tauri/media", async (importOriginal) => {
     checkMediaCapabilities: mocks.checkMediaCapabilities,
     chooseSource: mocks.chooseSource,
     inspectMedia: mocks.inspectMedia,
+    importSourcePath: mocks.importSourcePath,
     prepareAudioPreviews: mocks.prepareAudioPreviews,
     prepareProxyPreview: mocks.prepareProxyPreview,
     prepareSourcePreview: mocks.prepareSourcePreview,
@@ -66,6 +78,10 @@ const firstSource: SourceRef = {
 const secondSource: SourceRef = {
   displayName: "second.mp4",
   sourcePath: "C:/Media/second.mp4",
+};
+const thirdSource: SourceRef = {
+  displayName: "third.mp4",
+  sourcePath: "C:/Media/third.mp4",
 };
 
 function createMedia(_sourcePath: string, audioCount = 2): MediaInfo {
@@ -115,6 +131,12 @@ describe("source/media orchestration thunks", () => {
     mocks.checkMediaCapabilities.mockResolvedValue({
       ffmpeg: { available: true, version: "ffmpeg" },
       ffprobe: { available: true, version: "ffprobe" },
+    });
+    mocks.importSourcePath.mockImplementation(async (sourcePath: string) => {
+      const source = [firstSource, secondSource, thirdSource].find(
+        (candidate) => candidate.sourcePath === sourcePath,
+      );
+      return source ?? { displayName: sourcePath, sourcePath };
     });
     mocks.prepareSourcePreview.mockImplementation(async (sourcePath: string) =>
       sourcePreview(sourcePath),
@@ -190,6 +212,97 @@ describe("source/media orchestration thunks", () => {
       startMicros: 500_000,
       endMicros: 4_000_000,
     });
+  });
+
+  it("reactivates persisted sources while navigating without creating queue items", async () => {
+    const appStore = createAppStore();
+    let registeredSourcePath: string | null = null;
+    const sourceForPath = (sourcePath: string) => {
+      const source = [firstSource, secondSource, thirdSource].find(
+        (candidate) => candidate.sourcePath === sourcePath,
+      );
+      return source ?? { displayName: sourcePath, sourcePath };
+    };
+    mocks.importSourcePath.mockImplementation(async (sourcePath: string) => {
+      registeredSourcePath = sourcePath;
+      return sourceForPath(sourcePath);
+    });
+    mocks.inspectMedia.mockImplementation(async (sourcePath: string) => {
+      if (registeredSourcePath !== null && registeredSourcePath !== sourcePath) {
+        throw { code: "source_replaced", message: "The source is no longer active." };
+      }
+      registeredSourcePath = sourcePath;
+      return createMedia(sourcePath, 2);
+    });
+    const savedCrop = { x: 0.1, y: 0.2, width: 0.7, height: 0.6 };
+
+    await appStore.dispatch(importSource(firstSource));
+    appStore.dispatch(
+      trimChanged({
+        trim: { startMicros: 500_000, endMicros: 4_000_000, sourceDurationMicros: 5_000_000 },
+      }),
+    );
+    appStore.dispatch(cropChanged({ crop: savedCrop, resolution: { width: 1920, height: 1080 } }));
+    appStore.dispatch(masterVolumeChanged({ volumePercent: 25 }));
+    appStore.dispatch(audioTrackVolumeChanged({ streamIndex: 1, volumePercent: 30 }));
+    appStore.dispatch(audioTrackToggled({ streamIndex: 2 }));
+    appStore.dispatch(audioMergeToggled());
+
+    registeredSourcePath = secondSource.sourcePath;
+    await appStore.dispatch(importSource(secondSource));
+    const afterSecondImport = selectImportedQueueItems(appStore.getState());
+    const [firstItem, secondItem] = afterSecondImport;
+    const idsAfterSecondImport = afterSecondImport.map((item) => item.id);
+
+    await expect(appStore.dispatch(switchImportedQueueItemRequested(firstItem!.id))).resolves.toBe(
+      true,
+    );
+
+    expect(mocks.importSourcePath).toHaveBeenCalledWith(firstSource.sourcePath);
+    expect(selectSourceError(appStore.getState())).toBeNull();
+    expect(selectActiveItemId(appStore.getState())).toBe(firstItem!.id);
+    expect(selectImportedQueueItems(appStore.getState()).map((item) => item.id)).toEqual(
+      idsAfterSecondImport,
+    );
+    expect(appStore.getState().trim.value).toMatchObject({
+      startMicros: 500_000,
+      endMicros: 4_000_000,
+    });
+    expect(selectCrop(appStore.getState())).toEqual(savedCrop);
+    expect(selectMasterAudio(appStore.getState())).toEqual({ enabled: true, volumePercent: 25 });
+    expect(selectAudioTracks(appStore.getState())).toMatchObject([
+      expect.objectContaining({ streamIndex: 1, enabled: true, volumePercent: 30 }),
+      expect.objectContaining({ streamIndex: 2, enabled: false, volumePercent: 50 }),
+    ]);
+    expect(selectMergeAudio(appStore.getState())).toBe(true);
+
+    await expect(appStore.dispatch(switchImportedQueueItemRequested(secondItem!.id))).resolves.toBe(
+      true,
+    );
+    expect(mocks.importSourcePath).toHaveBeenCalledWith(secondSource.sourcePath);
+    expect(selectActiveItemId(appStore.getState())).toBe(secondItem!.id);
+    expect(selectImportedQueueItems(appStore.getState()).map((item) => item.id)).toEqual(
+      idsAfterSecondImport,
+    );
+
+    registeredSourcePath = thirdSource.sourcePath;
+    await appStore.dispatch(importSource(thirdSource));
+    const afterThirdImport = selectImportedQueueItems(appStore.getState());
+    const idsAfterThirdImport = afterThirdImport.map((item) => item.id);
+    const thirdItem = afterThirdImport[2];
+
+    await expect(appStore.dispatch(switchImportedQueueItemRequested(secondItem!.id))).resolves.toBe(
+      true,
+    );
+    await expect(appStore.dispatch(switchImportedQueueItemRequested(firstItem!.id))).resolves.toBe(
+      true,
+    );
+
+    expect(selectActiveItemId(appStore.getState())).toBe(firstItem!.id);
+    expect(selectImportedQueueItems(appStore.getState()).map((item) => item.id)).toEqual(
+      idsAfterThirdImport,
+    );
+    expect(thirdItem?.id).toBe(idsAfterThirdImport[2]);
   });
 
   it("captures source-import drafts and preserves them when leaving the active item", async () => {
@@ -295,9 +408,9 @@ describe("source/media orchestration thunks", () => {
     };
     appStore.dispatch(importedQueueItemAdded(target));
     appStore.dispatch(activeQueueItemChanged(sourceItem!.id));
-    mocks.inspectMedia.mockRejectedValueOnce({
-      code: "unsupported_media",
-      message: "The target source is not supported.",
+    mocks.importSourcePath.mockRejectedValueOnce({
+      code: "io_failed",
+      message: "The target source could not be reopened.",
     });
 
     await expect(appStore.dispatch(switchImportedQueueItemRequested(target.id))).resolves.toBe(
@@ -309,6 +422,10 @@ describe("source/media orchestration thunks", () => {
       target,
     ]);
     expect(selectActiveItemId(appStore.getState())).toBe(sourceItem?.id);
+    expect(selectSourceError(appStore.getState())).toEqual({
+      code: "io_failed",
+      message: "The target source could not be reopened.",
+    });
   });
 
   it("discards a history fork when a new source is imported", async () => {
