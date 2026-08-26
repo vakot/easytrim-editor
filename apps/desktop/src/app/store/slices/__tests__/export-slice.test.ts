@@ -25,9 +25,15 @@ import { sourceSelected } from "@/app/store/actions/source-actions";
 const settings = { resolution: { width: 1920, height: 1080 }, frameRate: undefined };
 const item = {
   id: "export-1",
+  snapshot: {
+    sourcePath: "C:/Media/first.mp4",
+    trim: { startMicros: 0, endMicros: 1_000_000 },
+    crop: null,
+    audio: { master: { enabled: true, volumePercent: 50 }, tracks: [], mergeAudio: false },
+  },
   route: "optimized" as const,
   request: {
-    sourceId: "source-1",
+    sourcePath: "C:/Media/first.mp4",
     trim: { startMicros: 0, endMicros: 1_000_000 },
     audioTracks: [],
     mergeAudio: false,
@@ -190,7 +196,13 @@ describe("export slice", () => {
 
     state = exportReducer(
       state,
-      sourceSelected({ source: { sourceId: "source-2", displayName: "replacement.mp4" } }),
+      sourceSelected({
+        source: {
+          sourceId: "source-2",
+          displayName: "replacement.mp4",
+          sourcePath: "C:/Media/replacement.mp4",
+        },
+      }),
     );
     expect(state.optimizedDialogOpen).toBe(false);
     expect(state.optimizedSettings).toBeNull();

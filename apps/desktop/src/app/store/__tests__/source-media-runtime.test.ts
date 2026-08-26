@@ -27,7 +27,11 @@ vi.mock("@/lib/tauri/media", async (importOriginal) => {
   };
 });
 
-const source: SourceSelection = { sourceId: "runtime-source", displayName: "runtime.mp4" };
+const source: SourceSelection = {
+  sourceId: "runtime-source",
+  displayName: "runtime.mp4",
+  sourcePath: "C:/Media/runtime.mp4",
+};
 const media: MediaInfo = {
   sourceId: source.sourceId,
   formatName: "mp4",

@@ -80,7 +80,7 @@ export function cancelQueuedExport(id: string) {
   if (job.operationId) {
     void cancelOperation(job.operationId).catch(() => undefined);
   } else {
-    void releaseExportSource(job.item.request.sourceId).catch(() => undefined);
+    void releaseExportSource(job.item.request.sourcePath).catch(() => undefined);
   }
   void drainQueue(job.dispatch, job.getState);
 }

@@ -73,7 +73,11 @@ describe("SettingsMenu Redux integration", () => {
     const store = renderSettings();
     store.dispatch(
       sourceSelected({
-        source: { sourceId: "source-1", displayName: "source.mp4" },
+        source: {
+          sourceId: "source-1",
+          displayName: "source.mp4",
+          sourcePath: "C:/Media/source.mp4",
+        },
         mergeAudio: true,
       }),
     );

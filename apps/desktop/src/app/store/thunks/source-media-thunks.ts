@@ -40,7 +40,7 @@ import {
 } from "@/lib/tauri/media";
 import type { AppDispatch, RootState } from "@/app/store/store";
 
-export type AppThunk<ReturnValue = void | Promise<void>> = (
+export type AppThunk<ReturnValue = void | Promise<unknown>> = (
   dispatch: AppDispatch,
   getState: () => RootState,
 ) => ReturnValue;

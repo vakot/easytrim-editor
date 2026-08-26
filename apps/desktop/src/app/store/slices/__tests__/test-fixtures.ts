@@ -1,9 +1,14 @@
 import type { MediaInfo, SourceSelection } from "@/lib/tauri/media";
 
-export const firstSource: SourceSelection = { sourceId: "source-1", displayName: "first.mp4" };
+export const firstSource: SourceSelection = {
+  sourceId: "source-1",
+  displayName: "first.mp4",
+  sourcePath: "C:/Media/first.mp4",
+};
 export const secondSource: SourceSelection = {
   sourceId: "source-2",
   displayName: "second.mkv",
+  sourcePath: "C:/Media/second.mkv",
 };
 
 export function media(sourceId: string): MediaInfo {

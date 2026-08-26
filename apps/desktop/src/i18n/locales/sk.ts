@@ -287,6 +287,8 @@ export const sk = {
     },
     cancelItem: "Zrušiť {{filename}}",
     statusLabel: "Export: {{status}}",
+    restoreItem: "Obnoviť {{filename}}",
+    openLocation: "Otvoriť umiestnenie {{filename}}",
     dialog: {
       description: "Pred výberom súboru nastavte optimalizované vykreslenie.",
       resolution: "Rozlíšenie",

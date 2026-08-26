@@ -11,6 +11,7 @@ export interface AppError {
 export interface SourceSelection {
   sourceId: string;
   displayName: string;
+  sourcePath: string;
 }
 
 export interface TrimSelection {
@@ -42,7 +43,7 @@ export interface ExportResult {
 }
 
 export interface FastExportRequest {
-  sourceId: string;
+  sourcePath: string;
   trim: TrimSelection;
   audioTracks: AudioTrackSelection[];
   mergeAudio: boolean;
@@ -193,6 +194,14 @@ export async function inspectMedia(sourceId: string): Promise<MediaInfo> {
   }
 }
 
+export async function importSourcePath(sourcePath: string): Promise<SourceSelection> {
+  try {
+    return parseSourceSelection(await invoke<unknown>("import_source_path", { sourcePath }));
+  } catch (error: unknown) {
+    throw normalizeAppError(error);
+  }
+}
+
 export async function chooseOutputPath(defaultName: string): Promise<OutputSelection | null> {
   try {
     const value = await invoke<unknown>("choose_output_path", { defaultName });
@@ -236,17 +245,17 @@ export async function cancelOperation(operationId: string): Promise<void> {
   }
 }
 
-export async function reserveExportSource(sourceId: string): Promise<void> {
+export async function reserveExportSource(sourcePath: string): Promise<void> {
   try {
-    await invoke("reserve_export_source", { sourceId });
+    await invoke("reserve_export_source", { sourcePath });
   } catch (error: unknown) {
     throw normalizeAppError(error);
   }
 }
 
-export async function releaseExportSource(sourceId: string): Promise<void> {
+export async function releaseExportSource(sourcePath: string): Promise<void> {
   try {
-    await invoke("release_export_source", { sourceId });
+    await invoke("release_export_source", { sourcePath });
   } catch (error: unknown) {
     throw normalizeAppError(error);
   }
@@ -406,6 +415,7 @@ function parseSourceSelection(value: unknown): SourceSelection {
   return {
     sourceId: requireString(source.sourceId, "source ID"),
     displayName: requireString(source.displayName, "display name"),
+    sourcePath: requireString(source.sourcePath, "source path"),
   };
 }
 

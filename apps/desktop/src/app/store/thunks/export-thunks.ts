@@ -44,9 +44,24 @@ import {
   setExportQueueExecutionEnabled,
 } from "@/features/export/utils/export-queue";
 import { outputDefaults } from "@/features/export/utils/export-options";
+import { FULL_CROP } from "@/domain/crop";
+import type { EditorSnapshot } from "@/domain/editor-snapshot";
+import {
+  audioMergeToggled,
+  audioTrackToggled,
+  audioTrackVolumeChanged,
+  masterAudioToggled,
+  masterVolumeChanged,
+} from "@/app/store/slices/audio-slice";
+import { cropChanged } from "@/app/store/slices/crop-slice";
+import { trimChanged } from "@/app/store/slices/trim-slice";
+import { importSourcePath } from "@/lib/tauri/media";
+import { importSource } from "@/app/store/thunks/source-media-thunks";
+import { sourceFailed } from "@/app/store/actions/source-actions";
 
 let exportSequence = 0;
 let optimizedPlanRequestSequence = 0;
+let restoreSequence = 0;
 
 export const loadQueueFinishActions = (): AppThunk => async (dispatch) => {
   try {
@@ -99,16 +114,16 @@ export const optimizedExportSettingsChangedRequested =
 export const refreshOptimizedExportPlan = (): AppThunk => async (dispatch, getState) => {
   const request = getOptimizedRequest(getState());
   if (!request) return;
-  const sourceId = request.sourceId;
+  const sourcePath = request.sourcePath;
   const requestId = ++optimizedPlanRequestSequence;
   dispatch(optimizedExportPlanRequested({ requestId }));
   try {
     const plan = await planOptimizedExport(request);
-    if (getState().source.sourceId === sourceId) {
+    if (currentSourcePath(getState()) === sourcePath) {
       dispatch(optimizedExportPlanReceived({ requestId, commandPreview: plan.commandPreview }));
     }
   } catch (error: unknown) {
-    if (getState().source.sourceId === sourceId) {
+    if (currentSourcePath(getState()) === sourcePath) {
       dispatch(optimizedExportPlanFailed({ requestId, error: normalizeAppError(error) }));
     }
   }
@@ -141,10 +156,25 @@ async function startQueuedExport(
     const defaults = outputDefaults(source.displayName);
     const output = await chooseOutputPath(defaults[route]);
     if (!output) return;
-    await reserveExportSource(request.sourceId);
+    await reserveExportSource(request.sourcePath);
 
+    const snapshot: EditorSnapshot = {
+      sourcePath: source.sourcePath,
+      trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
+      crop: selectCropApplied(state) ? selectCrop(state) : null,
+      audio: {
+        master: selectMasterAudio(state),
+        tracks: selectAudioTracks(state).map(({ streamIndex, enabled, volumePercent }) => ({
+          streamIndex,
+          enabled,
+          volumePercent,
+        })),
+        mergeAudio: selectMergeAudio(state),
+      },
+    };
     const item: ExportQueueItem = {
-      id: `export-${source.sourceId}-${++exportSequence}`,
+      id: `export-${++exportSequence}`,
+      snapshot,
       route,
       request,
       outputId: output.outputId,
@@ -173,12 +203,17 @@ function getInitialSettings(state: ReturnType<Parameters<AppThunk>[1]>): ExportS
   return { resolution, frameRate: undefined };
 }
 
+function currentSourcePath(state: ReturnType<Parameters<AppThunk>[1]>): string | undefined {
+  const source = selectSourceSelection(state);
+  return source?.sourcePath;
+}
+
 function getFastRequest(state: ReturnType<Parameters<AppThunk>[1]>): FastExportRequest | null {
   const source = selectSourceSelection(state);
   const trim = selectTrim(state);
   if (!source || !trim) return null;
   return {
-    sourceId: source.sourceId,
+    sourcePath: source.sourcePath,
     trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
     audioTracks: selectedAudioTracks(state),
     mergeAudio: selectMergeAudio(state),
@@ -195,7 +230,7 @@ function getOptimizedRequest(
   if (!source || !trim || !settings || !media) return null;
   const argumentsText = state.exportPresets.argumentsText;
   return {
-    sourceId: source.sourceId,
+    sourcePath: source.sourcePath,
     trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
     audioTracks: selectedAudioTracks(state),
     mergeAudio: selectMergeAudio(state),
@@ -243,3 +278,81 @@ function getTotalFrames(
 }
 
 export type { QueueFinishAction };
+
+export const restoreExportQueueItemRequested =
+  (id: string): AppThunk<Promise<boolean>> =>
+  async (dispatch, getState) => {
+    const item = getState().export.queue.find((candidate) => candidate.id === id);
+    if (!item) return false;
+    const restorationId = ++restoreSequence;
+
+    try {
+      const source = await importSourcePath(item.snapshot.sourcePath);
+      if (restorationId !== restoreSequence) return false;
+      await dispatch(importSource(source, item.snapshot.audio.mergeAudio));
+      const state = getState();
+      if (
+        restorationId !== restoreSequence ||
+        state.source.sourceId !== source.sourceId ||
+        currentSourcePath(state) !== item.snapshot.sourcePath ||
+        !state.source.media
+      ) {
+        return false;
+      }
+      applyEditorSnapshot(dispatch, getState, source.sourceId, item.snapshot);
+      return true;
+    } catch (error: unknown) {
+      if (restorationId === restoreSequence) {
+        dispatch(sourceFailed({ error: normalizeAppError(error) }));
+      }
+      return false;
+    }
+  };
+
+function applyEditorSnapshot(
+  dispatch: Parameters<AppThunk>[0],
+  getState: Parameters<AppThunk>[1],
+  sourceId: string,
+  snapshot: EditorSnapshot,
+) {
+  const media = selectSourceMedia(getState());
+  if (!media) return;
+  dispatch(
+    trimChanged({
+      sourceId,
+      trim: { ...snapshot.trim, sourceDurationMicros: media.durationMicros },
+    }),
+  );
+  const crop = snapshot.crop ?? FULL_CROP;
+  dispatch(
+    cropChanged({
+      sourceId,
+      crop,
+      resolution: { width: media.video.width, height: media.video.height },
+    }),
+  );
+
+  const master = selectMasterAudio(getState());
+  dispatch(masterVolumeChanged({ sourceId, volumePercent: snapshot.audio.master.volumePercent }));
+  if (master.enabled !== snapshot.audio.master.enabled) {
+    dispatch(masterAudioToggled({ sourceId }));
+  }
+  for (const track of snapshot.audio.tracks) {
+    dispatch(
+      audioTrackVolumeChanged({
+        sourceId,
+        streamIndex: track.streamIndex,
+        volumePercent: track.volumePercent,
+      }),
+    );
+    const current = selectAudioTracks(getState()).find(
+      (candidate) => candidate.streamIndex === track.streamIndex,
+    );
+    if (current && current.enabled !== track.enabled) {
+      dispatch(audioTrackToggled({ sourceId, streamIndex: track.streamIndex }));
+    }
+  }
+  if (selectMergeAudio(getState()) !== snapshot.audio.mergeAudio) {
+    dispatch(audioMergeToggled({ sourceId }));
+  }
+}

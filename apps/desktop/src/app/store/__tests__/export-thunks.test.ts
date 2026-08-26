@@ -6,6 +6,8 @@ const mocks = vi.hoisted(() => ({
   releaseExportSource: vi.fn(),
   cancelOperation: vi.fn(),
   planOptimizedExport: vi.fn(),
+  importSourcePath: vi.fn(),
+  importSource: vi.fn(),
   renderFast: vi.fn(),
   renderOptimized: vi.fn(),
   availableQueueFinishActions: vi.fn(),
@@ -18,6 +20,7 @@ vi.mock("@/lib/tauri/media", () => ({
   releaseExportSource: mocks.releaseExportSource,
   cancelOperation: mocks.cancelOperation,
   planOptimizedExport: mocks.planOptimizedExport,
+  importSourcePath: mocks.importSourcePath,
   renderFast: mocks.renderFast,
   renderOptimized: mocks.renderOptimized,
   normalizeAppError: (error: unknown) =>
@@ -28,6 +31,9 @@ vi.mock("@/lib/tauri/media", () => ({
 vi.mock("@/lib/tauri/queue", () => ({
   availableQueueFinishActions: mocks.availableQueueFinishActions,
   performQueueFinishAction: mocks.performQueueFinishAction,
+}));
+vi.mock("@/app/store/thunks/source-media-thunks", () => ({
+  importSource: mocks.importSource,
 }));
 
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
@@ -41,6 +47,7 @@ import {
   type ExportQueueItem,
 } from "@/app/store/slices/export-slice";
 import { preferenceChanged } from "@/app/store/slices/preferences-slice";
+import { selectTrim } from "@/app/store/slices/trim-slice";
 import {
   cancelActiveExportRequested,
   cancelAllExportsRequested,
@@ -49,8 +56,10 @@ import {
   startExportQueue,
   startFastCutRequested,
   startOptimizedExportRequested,
+  restoreExportQueueItemRequested,
 } from "@/app/store/thunks/export-thunks";
 import { createAppStore } from "@/app/store/store";
+import type { AppDispatch } from "@/app/store/store";
 import { resetExportQueueRuntimeForTests } from "@/features/export/utils/export-queue";
 import type { MediaInfo } from "@/lib/tauri/media";
 
@@ -77,9 +86,15 @@ const output = {
 
 const queuedItem: ExportQueueItem = {
   id: "export-queued",
+  snapshot: {
+    sourcePath: "C:/Media/source.mp4",
+    trim: { startMicros: 0, endMicros: 1_000_000 },
+    crop: null,
+    audio: { master: { enabled: true, volumePercent: 50 }, tracks: [], mergeAudio: false },
+  },
   route: "fast",
   request: {
-    sourceId: "source-1",
+    sourcePath: "C:/Media/source.mp4",
     trim: { startMicros: 0, endMicros: 1_000_000 },
     audioTracks: [],
     mergeAudio: false,
@@ -100,7 +115,15 @@ function createReadyStore() {
     setItem: async () => undefined,
     removeItem: async () => undefined,
   });
-  store.dispatch(sourceSelected({ source: { sourceId: "source-1", displayName: "source.mp4" } }));
+  store.dispatch(
+    sourceSelected({
+      source: {
+        sourceId: "source-1",
+        displayName: "source.mp4",
+        sourcePath: "C:/Media/source.mp4",
+      },
+    }),
+  );
   store.dispatch(sourceReady({ sourceId: "source-1", media }));
   return store;
 }
@@ -113,6 +136,8 @@ beforeEach(() => {
   mocks.releaseExportSource.mockResolvedValue(undefined);
   mocks.cancelOperation.mockResolvedValue(undefined);
   mocks.planOptimizedExport.mockResolvedValue({ commandPreview: "ffmpeg -i <source> <output>" });
+  mocks.importSourcePath.mockReset();
+  mocks.importSource.mockReset();
   mocks.availableQueueFinishActions.mockResolvedValue(["exit", "nothing"]);
   mocks.performQueueFinishAction.mockResolvedValue(undefined);
 });
@@ -164,16 +189,66 @@ describe("export thunks and runtime queue", () => {
       startMicros: 0,
       endMicros: 1_000_000,
     });
+    expect(selectExportQueue(store.getState())[0]?.snapshot).toEqual({
+      sourcePath: "C:/Media/source.mp4",
+      trim: { startMicros: 0, endMicros: 1_000_000 },
+      crop: null,
+      audio: {
+        master: { enabled: true, volumePercent: 50 },
+        tracks: [],
+        mergeAudio: false,
+      },
+    });
     store.dispatch(startExportQueue());
     await vi.waitFor(() =>
       expect(selectExportQueue(store.getState())[0]?.status).toBe("completed"),
     );
 
     expect(selectQueueStarted(store.getState())).toBe(false);
-    expect(mocks.reserveExportSource).toHaveBeenCalledWith("source-1");
+    expect(mocks.reserveExportSource).toHaveBeenCalledWith("C:/Media/source.mp4");
     expect(mocks.renderFast).toHaveBeenCalledOnce();
     expect(selectExportQueue(store.getState())[0]?.progressPercent).toBe(100);
     await vi.waitFor(() => expect(mocks.performQueueFinishAction).toHaveBeenCalledWith("exit"));
+  });
+
+  it("restores a queued snapshot after importing its source", async () => {
+    const source = {
+      sourceId: "source-2",
+      displayName: "other.mp4",
+      sourcePath: "C:/Media/other.mp4",
+    };
+    const restoredMedia = { ...media, sourceId: source.sourceId, durationMicros: 2_000_000 };
+    mocks.importSourcePath.mockResolvedValue(source);
+    mocks.importSource.mockImplementation(
+      (selectedSource: typeof source, mergeAudio: boolean) => (dispatch: AppDispatch) => {
+        dispatch(sourceSelected({ source: selectedSource, mergeAudio }));
+        dispatch(sourceReady({ sourceId: selectedSource.sourceId, media: restoredMedia }));
+      },
+    );
+    const store = createReadyStore();
+    store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
+    store.dispatch(
+      queueEntryAdded({
+        ...queuedItem,
+        snapshot: {
+          ...queuedItem.snapshot,
+          sourcePath: source.sourcePath,
+          trim: { startMicros: 250_000, endMicros: 1_750_000 },
+        },
+      }),
+    );
+
+    await expect(store.dispatch(restoreExportQueueItemRequested(queuedItem.id))).resolves.toBe(
+      true,
+    );
+
+    expect(mocks.importSourcePath).toHaveBeenCalledWith(source.sourcePath);
+    expect(store.getState().source.sourceId).toBe(source.sourceId);
+    expect(selectTrim(store.getState())).toMatchObject({
+      startMicros: 250_000,
+      endMicros: 1_750_000,
+    });
+    expect(selectExportQueue(store.getState())).toHaveLength(1);
   });
 
   it("opens, plans, configures, and starts optimized export without a controller ref", async () => {
@@ -348,7 +423,7 @@ describe("export thunks and runtime queue", () => {
 
     expect(selectQueueStarted(store.getState())).toBe(false);
     expect(mocks.renderFast).not.toHaveBeenCalled();
-    expect(mocks.releaseExportSource).toHaveBeenCalledWith("source-1");
+    expect(mocks.releaseExportSource).toHaveBeenCalledWith("C:/Media/source.mp4");
   });
 
   it("requires a new start signal after the queue becomes idle", async () => {

@@ -49,8 +49,16 @@ vi.mock("@/lib/tauri/media", async (importOriginal) => {
   };
 });
 
-const firstSource: SourceSelection = { sourceId: "source-a", displayName: "first.mp4" };
-const secondSource: SourceSelection = { sourceId: "source-b", displayName: "second.mp4" };
+const firstSource: SourceSelection = {
+  sourceId: "source-a",
+  displayName: "first.mp4",
+  sourcePath: "C:/Media/first.mp4",
+};
+const secondSource: SourceSelection = {
+  sourceId: "source-b",
+  displayName: "second.mp4",
+  sourcePath: "C:/Media/second.mp4",
+};
 
 function createMedia(sourceId: string, audioCount = 2): MediaInfo {
   return {

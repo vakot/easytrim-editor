@@ -57,10 +57,12 @@ const capabilities: MediaCapabilities = {
 const selection: SourceSelection = {
   sourceId: "source-1",
   displayName: "holiday.mp4",
+  sourcePath: "C:/Media/holiday.mp4",
 };
 const replacementSelection: SourceSelection = {
   sourceId: "source-2",
   displayName: "replacement.mp4",
+  sourcePath: "C:/Media/replacement.mp4",
 };
 
 const media: MediaInfo = {

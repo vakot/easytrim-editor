@@ -12,6 +12,7 @@ vi.mock("@tauri-apps/api/webview", () => ({
 
 import {
   chooseSource,
+  importSourcePath,
   inspectMedia,
   listenForSourceDrops,
   planOptimizedExport,
@@ -39,15 +40,34 @@ beforeEach(() => {
 });
 
 describe("media IPC adapter", () => {
-  it("accepts an opaque source selection without exposing a path", async () => {
+  it("accepts a source selection with its physical path", async () => {
     mocks.invoke.mockResolvedValue({
       sourceId: "source-3",
       displayName: "clip.mp4",
+      sourcePath: "C:/Media/clip.mp4",
     });
 
     await expect(chooseSource()).resolves.toEqual({
       sourceId: "source-3",
       displayName: "clip.mp4",
+      sourcePath: "C:/Media/clip.mp4",
+    });
+  });
+
+  it("imports a source by its physical path", async () => {
+    mocks.invoke.mockResolvedValue({
+      sourceId: "source-4",
+      displayName: "clip.mp4",
+      sourcePath: "C:/Media/clip.mp4",
+    });
+
+    await expect(importSourcePath("C:/Media/clip.mp4")).resolves.toEqual({
+      sourceId: "source-4",
+      displayName: "clip.mp4",
+      sourcePath: "C:/Media/clip.mp4",
+    });
+    expect(mocks.invoke).toHaveBeenCalledWith("import_source_path", {
+      sourcePath: "C:/Media/clip.mp4",
     });
   });
 
@@ -69,7 +89,7 @@ describe("media IPC adapter", () => {
       commandPreview: "ffmpeg -i <source> -c:v hevc_nvenc <output>",
     });
     const request = {
-      sourceId: "source-3",
+      sourcePath: "C:/Media/clip.mp4",
       trim: { startMicros: 0, endMicros: 1_000_000 },
       audioTracks: [],
       mergeAudio: false,
@@ -189,10 +209,11 @@ describe("media IPC adapter", () => {
     expect(onEvent).toHaveBeenNthCalledWith(2, { status: "drag", active: false });
   });
 
-  it("imports a dropped path through Rust and emits only opaque source metadata", async () => {
+  it("imports a dropped path through Rust and preserves its physical identity", async () => {
     mocks.invoke.mockResolvedValue({
       sourceId: "source-4",
       displayName: "video.mkv",
+      sourcePath: "C:\\private\\video.mkv",
     });
     const onEvent = vi.fn();
     await listenForSourceDrops(onEvent);
@@ -205,10 +226,13 @@ describe("media IPC adapter", () => {
       });
       expect(onEvent).toHaveBeenLastCalledWith({
         status: "selected",
-        source: { sourceId: "source-4", displayName: "video.mkv" },
+        source: {
+          sourceId: "source-4",
+          displayName: "video.mkv",
+          sourcePath: "C:\\private\\video.mkv",
+        },
       });
     });
-    expect(JSON.stringify(onEvent.mock.calls)).not.toContain("C:\\private\\video.mkv");
   });
 
   it("normalizes a rejected dropped path into a structured failure", async () => {
