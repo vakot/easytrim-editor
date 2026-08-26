@@ -10,6 +10,7 @@ import {
   restoreExportQueueItemRequested,
 } from "@/app/store/thunks/export-thunks";
 import { useTimeline } from "@/app/hooks/useEditorContracts";
+import { editorSnapshotTrimStart } from "@/domain/editor-snapshot";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -79,7 +80,7 @@ function ExportQueueItem({ item, now }: { item: ExportQueueItem; now: number }) 
 
   async function restoreItem() {
     const restored = await dispatch(restoreExportQueueItemRequested(item.id));
-    if (restored) timeline.onSeek(item.snapshot.trim.startMicros);
+    if (restored) timeline.onSeek(editorSnapshotTrimStart(item.snapshot.trim));
   }
 
   return (

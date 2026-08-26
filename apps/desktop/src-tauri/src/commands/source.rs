@@ -4,50 +4,60 @@ use tauri::{AppHandle, State, WebviewWindow};
 use tauri_plugin_dialog::DialogExt;
 
 use crate::{
-    application::import_source::import_source,
+    application::source::{activate_source, create_source_ref},
     domain::source::{SUPPORTED_VIDEO_EXTENSIONS, SourceRef},
     error::AppError,
     state::AppState,
 };
 
 #[tauri::command]
-pub async fn choose_source(
-    app: AppHandle,
-    state: State<'_, AppState>,
-) -> Result<Option<SourceRef>, AppError> {
+pub async fn choose_source(app: AppHandle) -> Result<Vec<SourceRef>, AppError> {
     let selected = app
         .dialog()
         .file()
         .add_filter("Video", SUPPORTED_VIDEO_EXTENSIONS)
-        .blocking_pick_file();
+        .blocking_pick_files();
 
     let Some(selected) = selected else {
-        return Ok(None);
+        return Ok(Vec::new());
     };
 
-    let path = selected
-        .into_path()
-        .map_err(|_| AppError::invalid_request("The selected file location is not supported."))?;
-
-    import_source(&state, path).map(Some)
+    selected
+        .into_iter()
+        .map(|selected| {
+            let path = selected.into_path().map_err(|_| {
+                AppError::invalid_request("The selected file location is not supported.")
+            })?;
+            create_source_ref(path)
+        })
+        .collect()
 }
 
 #[tauri::command]
-pub fn import_dropped_source(
+pub fn import_dropped_sources(
     window: WebviewWindow,
-    state: State<'_, AppState>,
-    path: PathBuf,
-) -> Result<SourceRef, AppError> {
+    paths: Vec<PathBuf>,
+) -> Result<Vec<SourceRef>, AppError> {
     // Windows can keep Explorer in front after it provides a drop. Regain focus
     // for the receiving editor, without making a valid import depend on this UX step.
     let _ = window.set_focus();
-    import_source(&state, path)
+
+    let sources = paths
+        .into_iter()
+        .filter_map(|path| create_source_ref(path).ok())
+        .collect::<Vec<_>>();
+    if sources.is_empty() {
+        return Err(AppError::invalid_request(
+            "Drop a supported video file instead of an empty selection.",
+        ));
+    }
+    Ok(sources)
 }
 
 #[tauri::command]
-pub fn import_source_path(
+pub fn activate_source_path(
     state: State<'_, AppState>,
     source_path: PathBuf,
 ) -> Result<SourceRef, AppError> {
-    import_source(&state, source_path)
+    activate_source(&state, source_path)
 }

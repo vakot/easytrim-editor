@@ -1,9 +1,13 @@
 import type { CropRect } from "./crop";
+import { createFullTrimRange, type TrimRange } from "./trim";
 import type { SourceRef } from "./source";
+
+export type EditorSnapshotTrim =
+  { kind: "full-source" } | { startMicros: number; endMicros: number };
 
 export interface EditorSnapshot {
   source: SourceRef;
-  trim: { startMicros: number; endMicros: number };
+  trim: EditorSnapshotTrim;
   crop: CropRect | null;
   audio: {
     master: { enabled: boolean; volumePercent: number };
@@ -22,7 +26,7 @@ export function createEditorSnapshot(input: {
 }): EditorSnapshot {
   return {
     source: { ...input.source },
-    trim: { ...input.trim },
+    trim: "kind" in input.trim ? { kind: input.trim.kind } : { ...input.trim },
     crop: input.crop ? { ...input.crop } : null,
     audio: {
       master: { ...input.masterAudio },
@@ -30,6 +34,21 @@ export function createEditorSnapshot(input: {
       mergeAudio: input.mergeAudio,
     },
   };
+}
+
+export function resolveEditorSnapshotTrim(
+  trim: EditorSnapshotTrim,
+  sourceDurationMicros: number,
+): TrimRange {
+  if ("kind" in trim) {
+    return createFullTrimRange(sourceDurationMicros);
+  }
+
+  return { ...trim, sourceDurationMicros };
+}
+
+export function editorSnapshotTrimStart(trim: EditorSnapshotTrim): number {
+  return "kind" in trim ? 0 : trim.startMicros;
 }
 
 export function cloneEditorSnapshot(snapshot: EditorSnapshot): EditorSnapshot {

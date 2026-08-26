@@ -157,14 +157,14 @@ export type WaveformResult =
     };
 
 export type SourceImportEvent =
-  { status: "selected"; source: SourceRef } | { status: "failed"; error: AppError };
+  { status: "selected"; sources: SourceRef[] } | { status: "failed"; error: AppError };
 
 export type SourceDropEvent = { status: "drag"; active: boolean } | SourceImportEvent;
 
-export async function chooseSource(): Promise<SourceRef | null> {
+export async function chooseSource(): Promise<SourceRef[]> {
   try {
     const value = await invoke<unknown>("choose_source");
-    return value === null ? null : parseSourceRef(value);
+    return value === null ? [] : parseSourceRefs(value);
   } catch (error: unknown) {
     throw normalizeAppError(error);
   }
@@ -186,9 +186,9 @@ export async function inspectMedia(sourcePath: string): Promise<MediaInfo> {
   }
 }
 
-export async function importSourcePath(sourcePath: string): Promise<SourceRef> {
+export async function activateSourcePath(sourcePath: string): Promise<SourceRef> {
   try {
-    return parseSourceRef(await invoke<unknown>("import_source_path", { sourcePath }));
+    return parseSourceRef(await invoke<unknown>("activate_source_path", { sourcePath }));
   } catch (error: unknown) {
     throw normalizeAppError(error);
   }
@@ -349,8 +349,7 @@ export async function listenForSourceDrops(
         break;
       case "drop": {
         onEvent({ status: "drag", active: false });
-        const path = event.payload.paths[0];
-        if (!path) {
+        if (event.payload.paths.length === 0) {
           onEvent({
             status: "failed",
             error: {
@@ -360,8 +359,8 @@ export async function listenForSourceDrops(
           });
           break;
         }
-        void importDroppedSource(path).then(
-          (source) => onEvent({ status: "selected", source }),
+        void importDroppedSources(event.payload.paths).then(
+          (sources) => onEvent({ status: "selected", sources }),
           (error: unknown) => onEvent({ status: "failed", error: normalizeAppError(error) }),
         );
         break;
@@ -372,13 +371,9 @@ export async function listenForSourceDrops(
   });
 }
 
-async function importDroppedSource(path: string): Promise<SourceRef> {
+async function importDroppedSources(paths: string[]): Promise<SourceRef[]> {
   try {
-    return parseSourceRef(
-      await invoke<unknown>("import_dropped_source", {
-        path,
-      }),
-    );
+    return parseSourceRefs(await invoke<unknown>("import_dropped_sources", { paths }));
   } catch (error: unknown) {
     throw normalizeAppError(error);
   }
@@ -408,6 +403,10 @@ function parseSourceRef(value: unknown): SourceRef {
     displayName: requireString(source.displayName, "display name"),
     sourcePath: requireString(source.sourcePath, "source path"),
   };
+}
+
+function parseSourceRefs(value: unknown): SourceRef[] {
+  return requireArray(value, "source references").map(parseSourceRef);
 }
 
 function parseOutputSelection(value: unknown): OutputSelection {
