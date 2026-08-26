@@ -517,10 +517,7 @@ impl AppState {
     }
 }
 
-fn active_source<'a>(
-    session: &'a SessionState,
-    load_token: u64,
-) -> Result<&'a ActiveSourceRecord, AppError> {
+fn active_source(session: &SessionState, load_token: u64) -> Result<&ActiveSourceRecord, AppError> {
     session
         .active_source
         .as_ref()
@@ -528,10 +525,10 @@ fn active_source<'a>(
         .ok_or_else(AppError::source_replaced)
 }
 
-fn active_source_mut<'a>(
-    session: &'a mut SessionState,
+fn active_source_mut(
+    session: &mut SessionState,
     load_token: u64,
-) -> Result<&'a mut ActiveSourceRecord, AppError> {
+) -> Result<&mut ActiveSourceRecord, AppError> {
     session
         .active_source
         .as_mut()
