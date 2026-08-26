@@ -14,6 +14,7 @@ import {
   workspaceLayoutChanged,
 } from "@/app/store/slices/editor-layout-slice";
 import { selectSourceSelection } from "@/app/store/slices/source-slice";
+import { selectActiveItemId } from "@/app/store/slices/export-slice";
 import { selectIsSourceDragActive } from "@/app/store/slices/import-workflow-slice";
 import { PanelContent } from "@/components/PanelContent";
 
@@ -23,6 +24,7 @@ export function SourceWorkspace() {
   const { t } = useTranslation();
   const isSourceDragActive = useAppSelector(selectIsSourceDragActive);
   const sourceSelection = useAppSelector(selectSourceSelection);
+  const activeItemId = useAppSelector(selectActiveItemId);
   const dispatch = useAppDispatch();
   const isLeftPanelVisible = useAppSelector((state) => selectPanelVisibility(state, "left"));
   const workspaceLayout = useAppSelector(selectWorkspaceLayout);
@@ -88,7 +90,7 @@ export function SourceWorkspace() {
 
       <Panel id="editor-content-panel" minSize="44rem" className="pr-1">
         <div className="relative h-full w-full" aria-label={t("import.source.previewArea")}>
-          <EditorStage key={sourceSelection?.sourcePath ?? "no-source"} />
+          <EditorStage key={activeItemId ?? sourceSelection?.sourcePath ?? "no-source"} />
           {isSourceDragActive ? <DropOverlay /> : null}
         </div>
       </Panel>

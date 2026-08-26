@@ -4,6 +4,7 @@ import type { MediaInfo, WaveformResult } from "@/lib/tauri/media";
 import type { SourceRef } from "@/domain/source";
 import { createAppStore } from "@/app/store/store";
 import { selectAudioPreviews, selectAudioTracks } from "@/app/store/slices/audio-slice";
+import { selectActiveItemId, selectImportedQueueItems } from "@/app/store/slices/export-slice";
 import { selectPreview } from "@/app/store/slices/preview-slice";
 import {
   selectHasSource,
@@ -24,7 +25,9 @@ import {
   handlePreviewPlaybackError,
   importSource,
   prepareSourceWaveforms,
+  switchImportedQueueItemRequested,
 } from "@/app/store/thunks/source-media-thunks";
+import { trimChanged } from "@/app/store/slices/trim-slice";
 
 const mocks = vi.hoisted(() => ({
   checkMediaCapabilities: vi.fn(),
@@ -144,6 +147,41 @@ describe("source/media orchestration thunks", () => {
       previews: [audioPreview(firstSource.sourcePath, 1), audioPreview(firstSource.sourcePath, 2)],
     });
     expect(mocks.prepareAudioPreviews).toHaveBeenCalledWith(firstSource.sourcePath, [1, 2]);
+    expect(selectImportedQueueItems(appStore.getState())).toHaveLength(1);
+    expect(selectActiveItemId(appStore.getState())).toBe(
+      selectImportedQueueItems(appStore.getState())[0]?.id,
+    );
+  });
+
+  it("keeps distinct imported queue items for repeated paths and restores drafts by id", async () => {
+    const appStore = createAppStore();
+    mocks.inspectMedia.mockResolvedValue(createMedia(firstSource.sourcePath, 1));
+
+    await appStore.dispatch(importSource(firstSource));
+    const firstItem = selectImportedQueueItems(appStore.getState())[0];
+    expect(firstItem).toBeDefined();
+    appStore.dispatch(
+      trimChanged({
+        trim: { startMicros: 500_000, endMicros: 4_000_000, sourceDurationMicros: 5_000_000 },
+      }),
+    );
+
+    await appStore.dispatch(importSource(firstSource));
+    const importedItems = selectImportedQueueItems(appStore.getState());
+    expect(importedItems).toHaveLength(2);
+    expect(new Set(importedItems.map((item) => item.id)).size).toBe(2);
+    expect(importedItems[0]?.snapshot.trim).toEqual({ startMicros: 500_000, endMicros: 4_000_000 });
+    expect(importedItems[0]?.snapshot.source.sourcePath).toBe(firstSource.sourcePath);
+    expect(selectActiveItemId(appStore.getState())).toBe(importedItems[1]?.id);
+
+    await expect(appStore.dispatch(switchImportedQueueItemRequested(firstItem!.id))).resolves.toBe(
+      true,
+    );
+    expect(selectActiveItemId(appStore.getState())).toBe(firstItem!.id);
+    expect(appStore.getState().trim.value).toMatchObject({
+      startMicros: 500_000,
+      endMicros: 4_000_000,
+    });
   });
 
   it("clears native chooser state before a selected source finishes importing", async () => {

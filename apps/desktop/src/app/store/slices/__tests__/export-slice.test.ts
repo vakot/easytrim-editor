@@ -21,6 +21,8 @@ import {
 } from "../export-slice";
 import { cropChanged } from "../crop-slice";
 import { sourceSelected } from "@/app/store/actions/source-actions";
+import { selectExportQueue } from "../export-slice";
+import type { RootState } from "@/app/store/store";
 
 const settings = { resolution: { width: 1920, height: 1080 }, frameRate: undefined };
 const item = {
@@ -91,7 +93,7 @@ describe("export slice", () => {
         progressPercent: 50,
       }),
     );
-    expect(state.queue[0]?.progressPercent).toBe(50);
+    expect(selectExportQueue({ export: state } as RootState)[0]?.progressPercent).toBe(50);
     state = exportReducer(
       state,
       exportFailed({

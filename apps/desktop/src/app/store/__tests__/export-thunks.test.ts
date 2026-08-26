@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   planOptimizedExport: vi.fn(),
   importSourcePath: vi.fn(),
   importSource: vi.fn(),
+  switchImportedQueueItemRequested: vi.fn(),
   renderFast: vi.fn(),
   renderOptimized: vi.fn(),
   availableQueueFinishActions: vi.fn(),
@@ -34,17 +35,23 @@ vi.mock("@/lib/tauri/queue", () => ({
 }));
 vi.mock("@/app/store/thunks/source-media-thunks", () => ({
   importSource: mocks.importSource,
+  switchImportedQueueItemRequested: mocks.switchImportedQueueItemRequested,
 }));
 
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
 import {
   queueEntryAdded,
+  importedQueueItemAdded,
+  activeQueueItemChanged,
+  selectActiveItemId,
+  selectImportedQueueItems,
   queueFinishActionChanged,
   selectActiveExport,
   selectExportQueue,
   selectOptimizedExportDialogOpen,
   selectQueueStarted,
   type ExportQueueItem,
+  type ImportedQueueItem,
 } from "@/app/store/slices/export-slice";
 import { preferenceChanged } from "@/app/store/slices/preferences-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
@@ -108,6 +115,12 @@ const queuedItem: ExportQueueItem = {
   progressPercent: 0,
 };
 
+const importedItem: ImportedQueueItem = {
+  id: "import-1",
+  status: "imported",
+  snapshot: queuedItem.snapshot,
+};
+
 function createReadyStore() {
   const store = createAppStore({
     getItem: async () => null,
@@ -136,11 +149,95 @@ beforeEach(() => {
   mocks.planOptimizedExport.mockResolvedValue({ commandPreview: "ffmpeg -i <source> <output>" });
   mocks.importSourcePath.mockReset();
   mocks.importSource.mockReset();
+  mocks.switchImportedQueueItemRequested.mockReset();
   mocks.availableQueueFinishActions.mockResolvedValue(["exit", "nothing"]);
   mocks.performQueueFinishAction.mockResolvedValue(undefined);
 });
 
 describe("export thunks and runtime queue", () => {
+  it("promotes an imported item in place and leaves canceled output selection imported", async () => {
+    const store = createReadyStore();
+    store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
+    store.dispatch(importedQueueItemAdded(importedItem));
+    mocks.chooseOutputPath.mockResolvedValueOnce(null);
+
+    store.dispatch(startFastCutRequested());
+    await Promise.resolve();
+    expect(selectImportedQueueItems(store.getState())).toEqual([importedItem]);
+    expect(selectActiveItemId(store.getState())).toBe(importedItem.id);
+
+    mocks.chooseOutputPath.mockResolvedValue(output);
+    mocks.renderFast.mockResolvedValue({
+      operationId: "operation-promoted",
+      displayName: output.displayName,
+      displayPath: output.displayPath,
+    });
+    store.dispatch(startFastCutRequested());
+    await vi.waitFor(() => expect(selectExportQueue(store.getState())).toHaveLength(1));
+
+    const promoted = selectExportQueue(store.getState())[0];
+    expect(promoted?.id).toBe(importedItem.id);
+    expect(promoted?.status).toBe("queued");
+    expect(selectImportedQueueItems(store.getState())).toHaveLength(0);
+  });
+
+  it("promotes optimized export using the same queue item id", async () => {
+    const store = createReadyStore();
+    store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
+    store.dispatch(importedQueueItemAdded(importedItem));
+    mocks.renderOptimized.mockResolvedValue({
+      operationId: "operation-optimized-promoted",
+      displayName: output.displayName,
+      displayPath: output.displayPath,
+    });
+
+    store.dispatch(startOptimizedExportRequested());
+    await vi.waitFor(() => expect(selectExportQueue(store.getState())).toHaveLength(1));
+
+    expect(selectExportQueue(store.getState())[0]).toMatchObject({
+      id: importedItem.id,
+      status: "queued",
+      route: "optimized",
+    });
+    expect(selectImportedQueueItems(store.getState())).toHaveLength(0);
+  });
+
+  it("selects the next imported item after promotion", async () => {
+    const store = createReadyStore();
+    store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
+    const nextItem: ImportedQueueItem = {
+      ...importedItem,
+      id: "import-2",
+      snapshot: {
+        ...importedItem.snapshot,
+        source: { displayName: "next.mp4", sourcePath: "C:/Media/next.mp4" },
+      },
+    };
+    store.dispatch(importedQueueItemAdded(importedItem));
+    store.dispatch(importedQueueItemAdded(nextItem));
+    store.dispatch(activeQueueItemChanged(importedItem.id));
+    mocks.switchImportedQueueItemRequested.mockReturnValue((dispatch: AppDispatch) => {
+      dispatch(activeQueueItemChanged(nextItem.id));
+      return Promise.resolve(true);
+    });
+
+    store.dispatch(startFastCutRequested());
+    await vi.waitFor(() => expect(selectExportQueue(store.getState())).toHaveLength(1));
+
+    expect(mocks.switchImportedQueueItemRequested).toHaveBeenCalledWith(nextItem.id);
+    expect(selectActiveItemId(store.getState())).toBe(nextItem.id);
+  });
+
+  it("does not execute imported-only items as exports", () => {
+    const store = createReadyStore();
+    store.dispatch(importedQueueItemAdded(importedItem));
+
+    store.dispatch(startExportQueue());
+
+    expect(selectQueueStarted(store.getState())).toBe(false);
+    expect(mocks.renderFast).not.toHaveBeenCalled();
+  });
+
   it("starts the queue when an entry is added with auto-start enabled", async () => {
     const store = createReadyStore();
 
