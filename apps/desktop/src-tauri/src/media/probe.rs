@@ -8,7 +8,7 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
-use crate::{error::AppError, process::run_bounded};
+use crate::{error::AppError, process::run_bounded_cancellable};
 
 const PROBE_TIMEOUT: Duration = Duration::from_secs(20);
 const PROBE_STDOUT_LIMIT: usize = 2 * 1024 * 1024;
@@ -101,7 +101,11 @@ pub struct MediaInfo {
     pub chapters: Vec<ChapterInfo>,
 }
 
-pub fn inspect_media(source_id: String, path: &Path) -> Result<MediaInfo, AppError> {
+pub fn inspect_media_cancellable(
+    source_id: String,
+    path: &Path,
+    is_cancelled: impl FnMut() -> bool,
+) -> Result<MediaInfo, AppError> {
     let arguments = [
         OsString::from("-v"),
         OsString::from("error"),
@@ -113,12 +117,13 @@ pub fn inspect_media(source_id: String, path: &Path) -> Result<MediaInfo, AppErr
         path.as_os_str().to_owned(),
     ];
 
-    let output = run_bounded(
+    let output = run_bounded_cancellable(
         OsStr::new("ffprobe"),
         &arguments,
         PROBE_TIMEOUT,
         PROBE_STDOUT_LIMIT,
         PROBE_STDERR_LIMIT,
+        is_cancelled,
     )
     .map_err(|error| map_probe_io_error(error, path))?;
 
@@ -322,6 +327,7 @@ fn rotation(stream: &ProbeStream) -> Option<i32> {
 
 fn map_probe_io_error(error: io::Error, path: &Path) -> AppError {
     match error.kind() {
+        io::ErrorKind::Interrupted => AppError::source_replaced(),
         io::ErrorKind::NotFound => AppError::probe_failed(
             "FFprobe is required to inspect video files.",
             Some("Install FFmpeg and make ffprobe available on PATH."),

@@ -2,7 +2,7 @@ use crate::{
     error::AppError,
     media::{
         audio::generate_audio_previews,
-        probe::{MediaInfo, inspect_media as probe_media},
+        probe::{MediaInfo, inspect_media_cancellable as probe_media},
         proxy::generate_preview,
         waveform::{generate_waveforms, validate_waveform_request},
     },
@@ -64,8 +64,11 @@ pub async fn inspect_media(
 ) -> Result<MediaInfo, AppError> {
     let active_source = state.resolve_source(&source_id)?;
     let inspected_source_id = active_source.source_id.clone();
+    let cancellation = active_source.cancellation.clone();
     let result = tauri::async_runtime::spawn_blocking(move || {
-        probe_media(inspected_source_id, &active_source.path)
+        probe_media(inspected_source_id, &active_source.path, move || {
+            cancellation.load(std::sync::atomic::Ordering::Acquire)
+        })
     })
     .await
     .map_err(|_| AppError::internal("Video inspection stopped unexpectedly."))??;
