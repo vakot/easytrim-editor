@@ -4,7 +4,7 @@ import { dropListenerFailed, sourceDragChanged } from "@/app/store/slices/import
 import { sourceFailed } from "@/app/store/actions/source-actions";
 import {
   checkMediaCapabilitiesRequested,
-  importSource,
+  ingestSources,
 } from "@/app/store/thunks/source-media-thunks";
 import { listenForSourceDrops, normalizeAppError } from "@/lib/tauri/media";
 import type { AppDispatch } from "@/app/store/store";
@@ -34,7 +34,7 @@ export function startSourceMediaRuntime(dispatch: AppDispatch): () => void {
       return;
     }
 
-    void dispatch(importSource(event.source));
+    void dispatch(ingestSources(event.sources));
   }).then(
     (stopListening) => {
       if (stopped) {

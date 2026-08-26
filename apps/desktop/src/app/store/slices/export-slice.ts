@@ -143,6 +143,9 @@ const exportSlice = createSlice({
       state.queue.push(action.payload);
       state.activeItemId = action.payload.id;
     },
+    importedQueueItemsAdded: (state, action: PayloadAction<ImportedQueueItem[]>) => {
+      state.queue.push(...action.payload);
+    },
     importedQueueItemRemoved: (state, action: PayloadAction<string>) => {
       state.queue = state.queue.filter((item) => item.id !== action.payload);
       if (state.activeItemId === action.payload) state.activeItemId = null;
@@ -296,6 +299,7 @@ export const {
   exportLaunchFailed,
   queueEntryAdded,
   importedQueueItemAdded,
+  importedQueueItemsAdded,
   importedQueueItemRemoved,
   activeQueueItemChanged,
   queueItemSnapshotUpdated,

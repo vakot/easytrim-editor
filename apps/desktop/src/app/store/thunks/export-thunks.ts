@@ -53,9 +53,9 @@ import {
 import { outputDefaults } from "@/features/export/utils/export-options";
 import { cloneEditorSnapshot, createEditorSnapshot } from "@/domain/editor-snapshot";
 import { applyEditorSnapshot } from "@/app/store/editor-snapshot";
-import { importSourcePath } from "@/lib/tauri/media";
+import { activateSourcePath } from "@/lib/tauri/media";
 import {
-  importSource,
+  activateSource,
   leaveActiveImportedItem,
   navigateToImportedItem,
 } from "@/app/store/thunks/source-media-thunks";
@@ -317,7 +317,7 @@ export const restoreExportQueueItemRequested =
 
     try {
       dispatch(leaveActiveImportedItem());
-      const source = await importSourcePath(item.snapshot.source.sourcePath);
+      const source = await activateSourcePath(item.snapshot.source.sourcePath);
       if (restorationId !== restoreSequence) return false;
 
       const fork: ImportedQueueItem = {
@@ -327,14 +327,7 @@ export const restoreExportQueueItemRequested =
         snapshot: cloneEditorSnapshot(item.snapshot),
       };
       dispatch(importedQueueItemAdded(fork));
-      await dispatch(
-        importSource(source, fork.snapshot.audio.mergeAudio, {
-          registerQueueItem: false,
-          activeItemId: fork.id,
-          captureCurrentDraft: false,
-          leaveActiveItem: false,
-        }),
-      );
+      await dispatch(activateSource(source, fork.snapshot.audio.mergeAudio));
       if (restorationId !== restoreSequence) return false;
       const state = getState();
       if (

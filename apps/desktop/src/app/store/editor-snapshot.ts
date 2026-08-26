@@ -11,9 +11,32 @@ import {
 import { cropChanged } from "@/app/store/slices/crop-slice";
 import { trimChanged } from "@/app/store/slices/trim-slice";
 import { FULL_CROP } from "@/domain/crop";
-import type { EditorSnapshot } from "@/domain/editor-snapshot";
+import {
+  createEditorSnapshot,
+  resolveEditorSnapshotTrim,
+  type EditorSnapshot,
+} from "@/domain/editor-snapshot";
+import type { SourceRef } from "@/domain/source";
 import { selectSourceMedia } from "@/app/store/slices/source-slice";
 import type { AppDispatch, RootState } from "@/app/store/store";
+import { initialAudioState } from "@/app/store/slices/audio-slice";
+
+export function createDefaultEditorSnapshot(
+  source: SourceRef,
+  mergeAudio: boolean,
+): EditorSnapshot {
+  return createEditorSnapshot({
+    source,
+    trim: { kind: "full-source" },
+    crop: null,
+    masterAudio: {
+      enabled: initialAudioState.masterEnabled,
+      volumePercent: initialAudioState.masterVolumePercent,
+    },
+    audioTracks: [],
+    mergeAudio,
+  });
+}
 
 export function applyEditorSnapshot(
   dispatch: AppDispatch,
@@ -24,7 +47,7 @@ export function applyEditorSnapshot(
   if (!media) return;
   dispatch(
     trimChanged({
-      trim: { ...snapshot.trim, sourceDurationMicros: media.durationMicros },
+      trim: resolveEditorSnapshotTrim(snapshot.trim, media.durationMicros),
     }),
   );
   dispatch(

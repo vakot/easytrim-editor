@@ -10,6 +10,7 @@ import { startSourceMediaRuntime } from "@/app/store/source-media-runtime";
 
 const mocks = vi.hoisted(() => ({
   checkMediaCapabilities: vi.fn(),
+  activateSourcePath: vi.fn(),
   inspectMedia: vi.fn(),
   listenForSourceDrops: vi.fn(),
   prepareAudioPreviews: vi.fn(),
@@ -22,6 +23,7 @@ vi.mock("@/lib/tauri/media", async (importOriginal) => {
   return {
     ...original,
     checkMediaCapabilities: mocks.checkMediaCapabilities,
+    activateSourcePath: mocks.activateSourcePath,
     inspectMedia: mocks.inspectMedia,
     listenForSourceDrops: mocks.listenForSourceDrops,
     prepareAudioPreviews: mocks.prepareAudioPreviews,
@@ -32,6 +34,10 @@ vi.mock("@/lib/tauri/media", async (importOriginal) => {
 const source: SourceRef = {
   displayName: "runtime.mp4",
   sourcePath: "C:/Media/runtime.mp4",
+};
+const secondSource: SourceRef = {
+  displayName: "second.mp4",
+  sourcePath: "C:/Media/second.mp4",
 };
 const media: MediaInfo = {
   formatName: "mp4",
@@ -51,6 +57,7 @@ describe("source/media application runtime", () => {
       ffmpeg: { available: true, version: "ffmpeg" },
       ffprobe: { available: true, version: "ffprobe" },
     });
+    mocks.activateSourcePath.mockResolvedValue(source);
     mocks.inspectMedia.mockResolvedValue(media);
     mocks.prepareSourcePreview.mockResolvedValue({
       mediaToken: 1,
@@ -76,9 +83,11 @@ describe("source/media application runtime", () => {
     expect(selectIsSourceDragActive(appStore.getState())).toBe(true);
     expect(appStore.getState().importWorkflow.isNativeDialogOpen).toBe(false);
 
-    sourceDropListener?.({ status: "selected", source });
+    sourceDropListener?.({ status: "selected", sources: [source, secondSource] });
     await vi.waitFor(() => expect(selectSourceMedia(appStore.getState())).toEqual(media));
     expect(mocks.inspectMedia).toHaveBeenCalledWith(source.sourcePath);
+    expect(mocks.inspectMedia).toHaveBeenCalledOnce();
+    expect(selectImportedQueueItems(appStore.getState())).toHaveLength(2);
     expect(selectImportedQueueItems(appStore.getState())[0]?.origin).toBe("source-import");
 
     stop();
@@ -105,7 +114,7 @@ describe("source/media application runtime", () => {
     });
 
     stop();
-    sourceDropListener?.({ status: "selected", source });
+    sourceDropListener?.({ status: "selected", sources: [source] });
     expect(mocks.inspectMedia).not.toHaveBeenCalled();
   });
 });

@@ -29,7 +29,7 @@ import {
 } from "@/app/store/slices/import-workflow-slice";
 import {
   activeQueueItemChanged,
-  importedQueueItemAdded,
+  importedQueueItemsAdded,
   importedQueueItemRemoved,
   queueItemSnapshotUpdated,
   selectActiveQueueItem,
@@ -40,8 +40,8 @@ import { getReplacementImportedItem } from "@/features/import-source/utils/impor
 import {
   checkMediaCapabilities,
   chooseSource as chooseSourceDialog,
+  activateSourcePath,
   inspectMedia,
-  importSourcePath,
   normalizeAppError,
   prepareAudioPreviews,
   prepareProxyPreview,
@@ -57,10 +57,11 @@ import {
   selectMasterAudio,
   selectMergeAudio,
 } from "@/app/store/slices/audio-slice";
+import { selectMergeAudioEnabledDefault } from "@/app/store/slices/preferences-slice";
 import { selectCrop } from "@/app/store/slices/crop-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
 import type { AppDispatch, RootState } from "@/app/store/store";
-import { applyEditorSnapshot } from "@/app/store/editor-snapshot";
+import { applyEditorSnapshot, createDefaultEditorSnapshot } from "@/app/store/editor-snapshot";
 
 export type AppThunk<ReturnValue = void | Promise<unknown>> = (
   dispatch: AppDispatch,
@@ -71,13 +72,6 @@ let waveformJobSequence = 0;
 let sourceLoadSequence = 0;
 let importedItemSequence = 0;
 let queueRestoreSequence = 0;
-
-export interface ImportSourceOptions {
-  registerQueueItem?: boolean;
-  activeItemId?: string | null;
-  captureCurrentDraft?: boolean;
-  leaveActiveItem?: boolean;
-}
 
 function isCurrentSource(state: RootState, sourcePath: string, loadToken: number): boolean {
   return (
@@ -97,19 +91,29 @@ export const checkMediaCapabilitiesRequested = (): AppThunk => async (dispatch) 
   }
 };
 
-export const importSource =
-  (source: SourceRef, mergeAudio?: boolean, options: ImportSourceOptions = {}): AppThunk =>
-  async (dispatch, getState) => {
-    const registerQueueItem = options.registerQueueItem ?? true;
-    const captureCurrentDraft = options.captureCurrentDraft ?? registerQueueItem;
-    const leaveActiveItem =
-      options.leaveActiveItem ?? (registerQueueItem && options.activeItemId === undefined);
-    if (leaveActiveItem) dispatch(leaveActiveImportedItem());
-    else if (captureCurrentDraft) captureActiveQueueItemDraft(dispatch, getState);
+export const ingestSources =
+  (sources: SourceRef[]): AppThunk =>
+  (dispatch, getState) => {
+    if (sources.length === 0) return;
 
+    const mergeAudio = selectMergeAudioEnabledDefault(getState());
+    const items: ImportedQueueItem[] = sources.map((source) => ({
+      id: `import-${++importedItemSequence}`,
+      status: "imported",
+      origin: "source-import",
+      snapshot: createDefaultEditorSnapshot(source, mergeAudio),
+    }));
+
+    dispatch(dropListenerErrorCleared());
+    dispatch(importedQueueItemsAdded(items));
+    dispatch(navigateToImportedItem(items[0]!.id));
+  };
+
+export const activateSource =
+  (source: SourceRef, mergeAudio?: boolean): AppThunk<Promise<boolean>> =>
+  async (dispatch, getState) => {
     const selectedMergeAudio = mergeAudio ?? getState().preferences.mergeAudioEnabledDefault;
     const loadToken = ++sourceLoadSequence;
-    dispatch(dropListenerErrorCleared());
     dispatch(sourceSelected({ source, mergeAudio: selectedMergeAudio, loadToken }));
 
     let media;
@@ -120,41 +124,11 @@ export const importSource =
       if (isCurrentSource(getState(), source.sourcePath, loadToken)) {
         dispatch(sourceFailed({ loadToken, error: normalized }));
       }
-      return;
+      return false;
     }
 
-    if (!isCurrentSource(getState(), source.sourcePath, loadToken)) return;
+    if (!isCurrentSource(getState(), source.sourcePath, loadToken)) return false;
     dispatch(sourceReady({ loadToken, media }));
-    if (options.activeItemId !== undefined) {
-      dispatch(activeQueueItemChanged(options.activeItemId));
-    }
-
-    if (registerQueueItem) {
-      const state = getState();
-      const trim = selectTrim(state);
-      if (trim) {
-        const item: ImportedQueueItem = {
-          id: `import-${++importedItemSequence}`,
-          status: "imported",
-          origin: "source-import",
-          snapshot: createEditorSnapshot({
-            source,
-            trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
-            crop: selectCrop(state),
-            masterAudio: selectMasterAudio(state),
-            audioTracks: selectAudioTracks(state).map(
-              ({ streamIndex, enabled, volumePercent }) => ({
-                streamIndex,
-                enabled,
-                volumePercent,
-              }),
-            ),
-            mergeAudio: selectMergeAudio(state),
-          }),
-        };
-        dispatch(importedQueueItemAdded(item));
-      }
-    }
 
     const audioStreamIndexes = media.audioStreams.map((stream) => stream.streamIndex);
     const audioPreparation =
@@ -201,6 +175,7 @@ export const importSource =
     })();
 
     await Promise.all([audioPreparation, previewPreparation]);
+    return true;
   };
 
 function captureActiveQueueItemDraft(
@@ -255,7 +230,7 @@ export const restoreActiveImportedItemRequested =
     const restorationId = queueRestoreSequence;
     let source: SourceRef;
     try {
-      source = await importSourcePath(item.snapshot.source.sourcePath);
+      source = await activateSourcePath(item.snapshot.source.sourcePath);
     } catch (error: unknown) {
       if (restorationId !== queueRestoreSequence || getState().export.activeItemId !== id) {
         return false;
@@ -268,13 +243,7 @@ export const restoreActiveImportedItemRequested =
       return false;
     }
 
-    await dispatch(
-      importSource(source, item.snapshot.audio.mergeAudio, {
-        registerQueueItem: false,
-        captureCurrentDraft: false,
-        leaveActiveItem: false,
-      }),
-    );
+    await dispatch(activateSource(source, item.snapshot.audio.mergeAudio));
     if (restorationId !== queueRestoreSequence || getState().export.activeItemId !== id) {
       return false;
     }
@@ -327,11 +296,11 @@ export const chooseSourceRequested = (): AppThunk => async (dispatch, getState) 
   }
 
   dispatch(sourceChoiceStarted());
-  let source: SourceRef | null = null;
+  let sources: SourceRef[] = [];
   let pickerError: AppError | null = null;
 
   try {
-    source = await chooseSourceDialog();
+    sources = await chooseSourceDialog();
   } catch (error: unknown) {
     pickerError = normalizeAppError(error);
   } finally {
@@ -345,12 +314,13 @@ export const chooseSourceRequested = (): AppThunk => async (dispatch, getState) 
     return;
   }
 
-  if (source) {
-    await dispatch(importSource(source));
+  if (sources.length > 0) {
+    dispatch(ingestSources(sources));
   }
 };
 
 export const closeActiveImportedItemRequested = (): AppThunk => (dispatch, getState) => {
+  queueRestoreSequence += 1;
   const state = getState();
   const activeItem = selectActiveQueueItem(state);
 

@@ -11,6 +11,10 @@ import {
 } from "../app/store/slices/editor-tools-slice";
 import { editorLayoutReset } from "../app/store/slices/editor-layout-slice";
 import { sourceCleared } from "../app/store/actions/source-actions";
+import {
+  importedQueueItemRemoved,
+  selectImportedQueueItems,
+} from "../app/store/slices/export-slice";
 import { selectHasSource } from "../app/store/slices/source-slice";
 import { startSourceMediaRuntime } from "../app/store/source-media-runtime";
 import { checkMediaCapabilitiesRequested } from "../app/store/thunks/source-media-thunks";
@@ -19,6 +23,7 @@ import { DEFAULT_PREFERENCES } from "../app/preferences";
 const mocks = vi.hoisted(() => ({
   checkMediaCapabilities: vi.fn(),
   chooseSource: vi.fn(),
+  activateSourcePath: vi.fn(),
   inspectMedia: vi.fn(),
   listenForSourceDrops: vi.fn(),
   prepareAudioPreviews: vi.fn(),
@@ -34,6 +39,7 @@ vi.mock("../lib/tauri/media", async (importOriginal) => {
     ...original,
     checkMediaCapabilities: mocks.checkMediaCapabilities,
     chooseSource: mocks.chooseSource,
+    activateSourcePath: mocks.activateSourcePath,
     inspectMedia: mocks.inspectMedia,
     listenForSourceDrops: mocks.listenForSourceDrops,
     prepareAudioPreviews: mocks.prepareAudioPreviews,
@@ -142,12 +148,18 @@ beforeEach(() => {
   vi.clearAllMocks();
   store.dispatch(editorLayoutReset());
   store.dispatch(sourceCleared());
+  for (const item of selectImportedQueueItems(store.getState())) {
+    store.dispatch(importedQueueItemRemoved(item.id));
+  }
   store.dispatch(
     editorToolsInitialized(createEditorToolsStateFromPreferences(DEFAULT_PREFERENCES)),
   );
   sourceDropListener = undefined;
   mocks.checkMediaCapabilities.mockResolvedValue(capabilities);
-  mocks.chooseSource.mockResolvedValue(null);
+  mocks.chooseSource.mockResolvedValue([]);
+  mocks.activateSourcePath.mockImplementation(async (sourcePath: string) =>
+    sourcePath === replacementSelection.sourcePath ? replacementSelection : selection,
+  );
   mocks.inspectMedia.mockResolvedValue(media);
   mocks.prepareAudioPreviews.mockResolvedValue([
     {
@@ -192,7 +204,9 @@ afterEach(() => {
 
 describe("App", () => {
   it("preserves editor tools across source replacement", async () => {
-    mocks.chooseSource.mockResolvedValueOnce(selection).mockResolvedValueOnce(replacementSelection);
+    mocks.chooseSource
+      .mockResolvedValueOnce([selection])
+      .mockResolvedValueOnce([replacementSelection]);
     mocks.inspectMedia.mockImplementation(async () => media);
     mocks.prepareSourcePreview.mockImplementation(async () => ({
       mediaToken: 1,
@@ -282,7 +296,7 @@ describe("App", () => {
     const readyState = vi
       .spyOn(HTMLMediaElement.prototype, "readyState", "get")
       .mockReturnValue(HTMLMediaElement.HAVE_METADATA);
-    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
 
     try {
@@ -324,7 +338,7 @@ describe("App", () => {
     let resolveAudioPreviews!: (
       previews: Array<{ mediaToken: number; streamIndex: number; url: string }>,
     ) => void;
-    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.chooseSource.mockResolvedValue([selection]);
     mocks.inspectMedia.mockResolvedValue({
       ...media,
       audioStreams: [
@@ -405,7 +419,7 @@ describe("App", () => {
   });
 
   it("uses the video element audio clock for a single-track source", async () => {
-    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
     render(<App />);
 
@@ -426,7 +440,7 @@ describe("App", () => {
   });
 
   it("closes the active source with the File menu and Ctrl+Q", async () => {
-    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
     render(<App />);
 
@@ -451,7 +465,7 @@ describe("App", () => {
   });
 
   it("imports a selected video and renders source metadata", async () => {
-    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
     render(<App />);
 
@@ -641,7 +655,7 @@ describe("App", () => {
   });
 
   it("renders only the timeline when the source has no audio tracks", async () => {
-    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.chooseSource.mockResolvedValue([selection]);
     mocks.inspectMedia.mockResolvedValue({ ...media, audioStreams: [] });
     const user = userEvent.setup();
     render(<App />);
@@ -655,7 +669,7 @@ describe("App", () => {
   });
 
   it("toggles source details and audio panels while keeping the timeline visible", async () => {
-    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
     render(<App />);
 
@@ -699,7 +713,7 @@ describe("App", () => {
   });
 
   it("resets editor panel visibility from the panel controls", async () => {
-    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
     render(<App />);
 
@@ -728,7 +742,7 @@ describe("App", () => {
   });
 
   it("uses Escape to clear focus without closing the source", async () => {
-    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
     render(<App />);
 
@@ -748,7 +762,7 @@ describe("App", () => {
   });
 
   it("closes an open export dialog on Escape", async () => {
-    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
     render(<App />);
 
@@ -765,7 +779,7 @@ describe("App", () => {
   });
 
   it("keeps a track volume control open while its volume button is hovered", async () => {
-    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
     render(<App />);
 
@@ -787,7 +801,7 @@ describe("App", () => {
   });
 
   it("mutes a track with no meaningful signal and restores it at 0 dB", async () => {
-    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.chooseSource.mockResolvedValue([selection]);
     mocks.prepareWaveforms.mockImplementationOnce(
       async (_sourcePath: string, jobId: string, streamIndexes: number[], width: number) =>
         streamIndexes.map((streamIndex) => ({
@@ -827,7 +841,7 @@ describe("App", () => {
       y: 0,
       toJSON: () => ({}),
     });
-    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.chooseSource.mockResolvedValue([selection]);
     mocks.inspectMedia.mockResolvedValue({
       ...media,
       audioStreams: [
@@ -962,7 +976,7 @@ describe("App", () => {
       y: 0,
       toJSON: () => ({}),
     });
-    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.chooseSource.mockResolvedValue([selection]);
     mocks.prepareWaveforms
       .mockImplementationOnce(
         async (_sourcePath: string, jobId: string, streamIndexes: number[], width: number) =>
@@ -1004,7 +1018,7 @@ describe("App", () => {
   });
 
   it("plays, pauses, and steps by the source fractional frame rate", async () => {
-    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
     render(<App />);
 
@@ -1037,7 +1051,7 @@ describe("App", () => {
   });
 
   it("stops all media and remains restartable when independent audio cannot play", async () => {
-    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.chooseSource.mockResolvedValue([selection]);
     mocks.inspectMedia.mockResolvedValue({
       ...media,
       audioStreams: [
@@ -1115,7 +1129,7 @@ describe("App", () => {
   });
 
   it("stops preview playback when the preview errors", async () => {
-    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
 
     render(<App />);
@@ -1135,7 +1149,7 @@ describe("App", () => {
   });
 
   it("rebuilds source-bound audio runtime when a proxy preview replaces the source preview", async () => {
-    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.chooseSource.mockResolvedValue([selection]);
     mocks.inspectMedia.mockResolvedValue({
       ...media,
       audioStreams: [
@@ -1185,7 +1199,7 @@ describe("App", () => {
   });
 
   it("stops or loops at the selected segment boundary", async () => {
-    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
     render(<App />);
 
@@ -1244,7 +1258,7 @@ describe("App", () => {
   });
 
   it("restarts the complete timeline after the video ends when looping is enabled", async () => {
-    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
     render(<App />);
 
@@ -1271,7 +1285,7 @@ describe("App", () => {
   });
 
   it("prioritizes playback while keeping other shortcuts locked during text entry", async () => {
-    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
     render(<App />);
 
@@ -1317,7 +1331,7 @@ describe("App", () => {
   });
 
   it("removes the editor shortcut listener when the preview unmounts", async () => {
-    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.chooseSource.mockResolvedValue([selection]);
     const removeEventListener = vi.spyOn(window, "removeEventListener");
     const user = userEvent.setup();
     const view = render(<App />);
@@ -1331,7 +1345,7 @@ describe("App", () => {
   });
 
   it("sets segment boundaries at the playhead with crossing and edge safeguards", async () => {
-    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
     render(<App />);
 
@@ -1380,7 +1394,7 @@ describe("App", () => {
   });
 
   it("falls back to a compatible proxy when direct playback fails", async () => {
-    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
     render(<App />);
 
@@ -1399,7 +1413,7 @@ describe("App", () => {
   });
 
   it("exposes keyboard-accessible trim handles and updates the source range", async () => {
-    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
     render(<App />);
 
@@ -1418,7 +1432,7 @@ describe("App", () => {
   });
 
   it("maps pointer movement on a trim handle to source time", async () => {
-    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
     render(<App />);
 
@@ -1464,7 +1478,7 @@ describe("App", () => {
   });
 
   it("resets either trim boundary to its source edge on double-click", async () => {
-    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
     render(<App />);
 
@@ -1496,7 +1510,7 @@ describe("App", () => {
   });
 
   it("resumes playback after both pointer cycles of a trim-handle double-click", async () => {
-    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
     render(<App />);
 
@@ -1515,7 +1529,7 @@ describe("App", () => {
   });
 
   it("drags the complete segment without resizing it or moving the playhead", async () => {
-    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
     render(<App />);
 
@@ -1616,7 +1630,7 @@ describe("App", () => {
   });
 
   it("snaps all dragged segment points regardless of the snap-playback state", async () => {
-    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
     render(<App />);
 
@@ -1796,7 +1810,7 @@ describe("App", () => {
   });
 
   it("holds a safely followed segment border through the snap radius before releasing it", async () => {
-    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
     render(<App />);
 
@@ -1888,7 +1902,7 @@ describe("App", () => {
   });
 
   it("catches and follows the playhead while safely dragging the segment", async () => {
-    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
     render(<App />);
 
@@ -2001,7 +2015,7 @@ describe("App", () => {
   });
 
   it("moves the playhead only when a shrinking trim handle crosses it", async () => {
-    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
     render(<App />);
 
@@ -2058,7 +2072,7 @@ describe("App", () => {
   });
 
   it("lets the snap-playback toggle disable and restore playhead following", async () => {
-    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
     render(<App />);
 
@@ -2108,7 +2122,7 @@ describe("App", () => {
   });
 
   it("holds a safely followed trim border through the snap radius before releasing it", async () => {
-    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
     render(<App />);
 
@@ -2186,7 +2200,7 @@ describe("App", () => {
   });
 
   it("uses Shift to snap playhead and trim-handle drags to each other", async () => {
-    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
     render(<App />);
 
@@ -2315,7 +2329,7 @@ describe("App", () => {
   });
 
   it("resumes playback immediately while the browser settles a scrub seek", async () => {
-    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
     render(<App />);
 
@@ -2370,7 +2384,7 @@ describe("App", () => {
   });
 
   it("blocks timeline shortcuts while a timeline control is being scrubbed", async () => {
-    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
     render(<App />);
 
@@ -2394,7 +2408,7 @@ describe("App", () => {
   });
 
   it("synchronizes the timeline playhead with video playback", async () => {
-    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
     render(<App />);
 
@@ -2413,7 +2427,7 @@ describe("App", () => {
   });
 
   it("reports a compatible preview playback failure without dropping metadata", async () => {
-    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
     render(<App />);
 
@@ -2430,7 +2444,7 @@ describe("App", () => {
   });
 
   it("keeps the current source when the picker is cancelled", async () => {
-    mocks.chooseSource.mockResolvedValueOnce(selection).mockResolvedValueOnce(null);
+    mocks.chooseSource.mockResolvedValueOnce([selection]).mockResolvedValueOnce([]);
     const user = userEvent.setup();
     render(<App />);
 
@@ -2460,7 +2474,7 @@ describe("App", () => {
   });
 
   it("replaces the current source with a failed dropped import", async () => {
-    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
     render(<App />);
 
@@ -2487,7 +2501,7 @@ describe("App", () => {
     render(<App />);
 
     act(() => {
-      sourceDropListener?.({ status: "selected", source: selection });
+      sourceDropListener?.({ status: "selected", sources: [selection] });
     });
 
     expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
@@ -2496,7 +2510,7 @@ describe("App", () => {
   });
 
   it("shows the native drag overlay over the editor stage", async () => {
-    mocks.chooseSource.mockResolvedValue(selection);
+    mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
     render(<App />);
 
