@@ -17,13 +17,13 @@ describe("source slice", () => {
     const failed = sourceReducer(
       replacement,
       sourceFailed({
-        sourceId: secondSource.sourceId,
+        loadToken: 2,
         error: { code: "probe_failed", message: "Inspection failed." },
       }),
     );
 
     expect(failed.status).toBe("failed");
-    expect(failed.selection).toEqual(secondSource);
+    expect(failed.source).toEqual(secondSource);
     expect(failed.media).toBeNull();
   });
 
@@ -32,7 +32,7 @@ describe("source slice", () => {
     const loadingSecond = sourceReducer(loadingFirst, sourceSelected({ source: secondSource }));
     const staleCompletion = sourceReducer(
       loadingSecond,
-      sourceReady({ sourceId: firstSource.sourceId, media: media(firstSource.sourceId) }),
+      sourceReady({ loadToken: 1, media: media(firstSource.sourcePath) }),
     );
 
     expect(staleCompletion).toBe(loadingSecond);
@@ -42,7 +42,7 @@ describe("source slice", () => {
     const loading = sourceReducer(initialSourceState, sourceSelected({ source: firstSource }));
     const ready = sourceReducer(
       loading,
-      sourceReady({ sourceId: firstSource.sourceId, media: media(firstSource.sourceId) }),
+      sourceReady({ loadToken: 1, media: media(firstSource.sourcePath) }),
     );
     const state = { source: ready } as never;
 

@@ -2,7 +2,6 @@ import { createFullTrimRange, isValidTrimRange, type TrimRange } from "@/domain/
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 import {
-  isValidSourceReadyPayload,
   sourceCleared,
   sourceFailed,
   sourceReady,
@@ -11,18 +10,16 @@ import {
 import type { RootState } from "../store";
 
 export interface TrimState {
-  sourceId: string | null;
   value: TrimRange | null;
 }
 
-export const initialTrimState: TrimState = { sourceId: null, value: null };
+export const initialTrimState: TrimState = { value: null };
 
 const trimSlice = createSlice({
   name: "trim",
   initialState: initialTrimState,
   reducers: {
-    trimChanged: (state, action: PayloadAction<{ sourceId: string; trim: TrimRange }>) => {
-      if (state.sourceId !== action.payload.sourceId) return;
+    trimChanged: (state, action: PayloadAction<{ trim: TrimRange }>) => {
       if (!isValidTrimRange(action.payload.trim)) return;
       if (state.value?.sourceDurationMicros !== action.payload.trim.sourceDurationMicros) return;
       state.value = action.payload.trim;
@@ -30,21 +27,16 @@ const trimSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(sourceSelected, (state, action) => {
-        state.sourceId = action.payload.source.sourceId;
+      .addCase(sourceSelected, (state) => {
         state.value = null;
       })
       .addCase(sourceCleared, (state) => {
-        state.sourceId = null;
         state.value = null;
       })
-      .addCase(sourceFailed, (state, action) => {
-        if (action.payload.sourceId) return;
-        state.sourceId = null;
+      .addCase(sourceFailed, (state) => {
         state.value = null;
       })
       .addCase(sourceReady, (state, action) => {
-        if (!isValidSourceReadyPayload(state.sourceId, action.payload)) return;
         state.value = createFullTrimRange(action.payload.media.durationMicros);
       });
   },

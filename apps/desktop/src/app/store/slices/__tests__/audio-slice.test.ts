@@ -18,7 +18,7 @@ function readyAudio() {
   const loading = audioReducer(initialAudioState, sourceSelected({ source: firstSource }));
   return audioReducer(
     loading,
-    sourceReady({ sourceId: firstSource.sourceId, media: mediaWithAudio(firstSource.sourceId) }),
+    sourceReady({ loadToken: 1, media: mediaWithAudio(firstSource.sourcePath) }),
   );
 }
 
@@ -27,17 +27,11 @@ describe("audio slice", () => {
     const ready = readyAudio();
     const muted = audioReducer(
       ready,
-      audioTrackVolumeChanged({ sourceId: firstSource.sourceId, streamIndex: 2, volumePercent: 0 }),
+      audioTrackVolumeChanged({ streamIndex: 2, volumePercent: 0 }),
     );
-    const unmuted = audioReducer(
-      muted,
-      audioTrackToggled({ sourceId: firstSource.sourceId, streamIndex: 2 }),
-    );
-    const merged = audioReducer(unmuted, audioMergeToggled({ sourceId: firstSource.sourceId }));
-    const masterMuted = audioReducer(
-      merged,
-      masterAudioToggled({ sourceId: firstSource.sourceId }),
-    );
+    const unmuted = audioReducer(muted, audioTrackToggled({ streamIndex: 2 }));
+    const merged = audioReducer(unmuted, audioMergeToggled());
+    const masterMuted = audioReducer(merged, masterAudioToggled());
 
     expect(selectAudioTracks({ audio: ready } as never)).toHaveLength(2);
     expect(unmuted.tracks[0]).toMatchObject({ enabled: true, volumePercent: 50 });
@@ -50,7 +44,6 @@ describe("audio slice", () => {
     const loading = audioReducer(
       ready,
       waveformsLoading({
-        sourceId: firstSource.sourceId,
         jobId: "waveform-2",
         width: 1200,
         streamIndexes: [2, 4],
@@ -60,7 +53,6 @@ describe("audio slice", () => {
       loading,
       waveformReady({
         status: "ready",
-        sourceId: firstSource.sourceId,
         jobId: "waveform-1",
         streamIndex: 2,
         width: 800,
@@ -71,7 +63,6 @@ describe("audio slice", () => {
       stale,
       waveformReady({
         status: "ready",
-        sourceId: firstSource.sourceId,
         jobId: "waveform-2",
         streamIndex: 2,
         width: 1200,

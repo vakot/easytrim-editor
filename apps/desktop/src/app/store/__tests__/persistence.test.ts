@@ -194,9 +194,15 @@ describe("Redux Persist store integration", () => {
     store.dispatch(
       queueEntryAdded({
         id: "export-1",
+        snapshot: {
+          source: { displayName: "source.mp4", sourcePath: "C:/Media/source.mp4" },
+          trim: { startMicros: 0, endMicros: 1_000_000 },
+          crop: null,
+          audio: { master: { enabled: true, volumePercent: 50 }, tracks: [], mergeAudio: false },
+        },
         route: "fast",
         request: {
-          sourceId: "source-1",
+          sourcePath: "C:/Media/source.mp4",
           trim: { startMicros: 0, endMicros: 1_000_000 },
           audioTracks: [],
           mergeAudio: false,

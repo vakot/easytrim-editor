@@ -11,12 +11,10 @@ export type PreviewState =
   | { status: "failed"; error: AppError };
 
 export interface PreviewSliceState {
-  sourceId: string | null;
   value: PreviewState;
 }
 
 export const initialPreviewState: PreviewSliceState = {
-  sourceId: null,
   value: { status: "idle" },
 };
 
@@ -24,39 +22,25 @@ const previewSlice = createSlice({
   name: "preview",
   initialState: initialPreviewState,
   reducers: {
-    previewLoading: (state, action: PayloadAction<{ sourceId: string; kind: PreviewKind }>) => {
-      if (state.sourceId !== action.payload.sourceId) return;
+    previewLoading: (state, action: PayloadAction<{ kind: PreviewKind }>) => {
       state.value = { status: "loading", kind: action.payload.kind };
     },
-    previewReady: (
-      state,
-      action: PayloadAction<{ sourceId: string; preview: PreviewDescriptor }>,
-    ) => {
-      if (
-        state.sourceId !== action.payload.sourceId ||
-        action.payload.preview.sourceId !== action.payload.sourceId
-      )
-        return;
+    previewReady: (state, action: PayloadAction<{ preview: PreviewDescriptor }>) => {
       state.value = { status: "ready", value: action.payload.preview };
     },
-    previewFailed: (state, action: PayloadAction<{ sourceId: string; error: AppError }>) => {
-      if (state.sourceId !== action.payload.sourceId) return;
+    previewFailed: (state, action: PayloadAction<{ error: AppError }>) => {
       state.value = { status: "failed", error: action.payload.error };
     },
   },
   extraReducers: (builder) => {
     builder
-      .addCase(sourceSelected, (state, action) => {
-        state.sourceId = action.payload.source.sourceId;
+      .addCase(sourceSelected, (state) => {
         state.value = { status: "idle" };
       })
       .addCase(sourceCleared, (state) => {
-        state.sourceId = null;
         state.value = { status: "idle" };
       })
-      .addCase(sourceFailed, (state, action) => {
-        if (action.payload.sourceId) return;
-        state.sourceId = null;
+      .addCase(sourceFailed, (state) => {
         state.value = { status: "idle" };
       });
   },

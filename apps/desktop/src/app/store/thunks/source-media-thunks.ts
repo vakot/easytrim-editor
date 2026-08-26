@@ -36,19 +36,22 @@ import {
   prepareWaveforms,
   type AppError,
   type PreviewKind,
-  type SourceSelection,
 } from "@/lib/tauri/media";
+import type { SourceRef } from "@/domain/source";
 import type { AppDispatch, RootState } from "@/app/store/store";
 
-export type AppThunk<ReturnValue = void | Promise<void>> = (
+export type AppThunk<ReturnValue = void | Promise<unknown>> = (
   dispatch: AppDispatch,
   getState: () => RootState,
 ) => ReturnValue;
 
 let waveformJobSequence = 0;
+let sourceLoadSequence = 0;
 
-function isCurrentSource(state: RootState, sourceId: string): boolean {
-  return selectSourceSelection(state)?.sourceId === sourceId;
+function isCurrentSource(state: RootState, sourcePath: string, loadToken: number): boolean {
+  return (
+    selectSourceSelection(state)?.sourcePath === sourcePath && state.source.loadToken === loadToken
+  );
 }
 
 function isSourceInspectionError(error: AppError): boolean {
@@ -64,46 +67,46 @@ export const checkMediaCapabilitiesRequested = (): AppThunk => async (dispatch) 
 };
 
 export const importSource =
-  (source: SourceSelection, mergeAudio?: boolean): AppThunk =>
+  (source: SourceRef, mergeAudio?: boolean): AppThunk =>
   async (dispatch, getState) => {
     const selectedMergeAudio = mergeAudio ?? getState().preferences.mergeAudioEnabledDefault;
+    const loadToken = ++sourceLoadSequence;
     dispatch(dropListenerErrorCleared());
-    dispatch(sourceSelected({ source, mergeAudio: selectedMergeAudio }));
+    dispatch(sourceSelected({ source, mergeAudio: selectedMergeAudio, loadToken }));
 
     let media;
     try {
-      media = await inspectMedia(source.sourceId);
+      media = await inspectMedia(source.sourcePath);
     } catch (error: unknown) {
       const normalized = normalizeAppError(error);
-      if (isCurrentSource(getState(), source.sourceId)) {
-        dispatch(sourceFailed({ sourceId: source.sourceId, error: normalized }));
+      if (isCurrentSource(getState(), source.sourcePath, loadToken)) {
+        dispatch(sourceFailed({ loadToken, error: normalized }));
       }
       return;
     }
 
-    if (!isCurrentSource(getState(), source.sourceId)) return;
-    dispatch(sourceReady({ sourceId: source.sourceId, media }));
+    if (!isCurrentSource(getState(), source.sourcePath, loadToken)) return;
+    dispatch(sourceReady({ loadToken, media }));
 
     const audioStreamIndexes = media.audioStreams.map((stream) => stream.streamIndex);
     const audioPreparation =
       audioStreamIndexes.length <= 1
         ? Promise.resolve().then(() => {
-            if (isCurrentSource(getState(), source.sourceId)) {
-              dispatch(audioPreviewsReady({ sourceId: source.sourceId, previews: [] }));
+            if (isCurrentSource(getState(), source.sourcePath, loadToken)) {
+              dispatch(audioPreviewsReady({ previews: [] }));
             }
           })
         : (async () => {
-            dispatch(audioPreviewsLoading({ sourceId: source.sourceId }));
+            dispatch(audioPreviewsLoading());
             try {
-              const previews = await prepareAudioPreviews(source.sourceId, audioStreamIndexes);
-              if (isCurrentSource(getState(), source.sourceId)) {
-                dispatch(audioPreviewsReady({ sourceId: source.sourceId, previews }));
+              const previews = await prepareAudioPreviews(source.sourcePath, audioStreamIndexes);
+              if (isCurrentSource(getState(), source.sourcePath, loadToken)) {
+                dispatch(audioPreviewsReady({ previews }));
               }
             } catch (error: unknown) {
-              if (isCurrentSource(getState(), source.sourceId)) {
+              if (isCurrentSource(getState(), source.sourcePath, loadToken)) {
                 dispatch(
                   audioPreviewsUnavailable({
-                    sourceId: source.sourceId,
                     error: normalizeAppError(error),
                   }),
                 );
@@ -111,20 +114,20 @@ export const importSource =
             }
           })();
 
-    dispatch(previewLoading({ sourceId: source.sourceId, kind: "source" }));
+    dispatch(previewLoading({ kind: "source" }));
     const previewPreparation = (async () => {
       try {
-        const preview = await prepareSourcePreview(source.sourceId);
-        if (isCurrentSource(getState(), source.sourceId)) {
-          dispatch(previewReady({ sourceId: source.sourceId, preview }));
+        const preview = await prepareSourcePreview(source.sourcePath);
+        if (isCurrentSource(getState(), source.sourcePath, loadToken)) {
+          dispatch(previewReady({ preview }));
         }
       } catch (error: unknown) {
         const normalized = normalizeAppError(error);
-        if (!isCurrentSource(getState(), source.sourceId)) return;
+        if (!isCurrentSource(getState(), source.sourcePath, loadToken)) return;
         dispatch(
           isSourceInspectionError(normalized)
-            ? sourceFailed({ sourceId: source.sourceId, error: normalized })
-            : previewFailed({ sourceId: source.sourceId, error: normalized }),
+            ? sourceFailed({ loadToken, error: normalized })
+            : previewFailed({ error: normalized }),
         );
       }
     })();
@@ -138,7 +141,7 @@ export const chooseSourceRequested = (): AppThunk => async (dispatch, getState) 
   }
 
   dispatch(sourceChoiceStarted());
-  let source: SourceSelection | null = null;
+  let source: SourceRef | null = null;
   let pickerError: AppError | null = null;
 
   try {
@@ -168,13 +171,13 @@ export const closeSourceRequested = (): AppThunk<void> => (dispatch, getState) =
 };
 
 export const handlePreviewPlaybackError =
-  (sourceId: string, previewKind: PreviewKind): AppThunk =>
+  (sourcePath: string, previewKind: PreviewKind): AppThunk =>
   async (dispatch, getState) => {
-    if (!isCurrentSource(getState(), sourceId)) return;
+    const loadToken = getState().source.loadToken;
+    if (!isCurrentSource(getState(), sourcePath, loadToken)) return;
     if (previewKind === "proxy") {
       dispatch(
         previewFailed({
-          sourceId,
           error: {
             code: "preview_playback_failed",
             message: "The compatible preview could not be played.",
@@ -184,36 +187,37 @@ export const handlePreviewPlaybackError =
       return;
     }
 
-    dispatch(previewLoading({ sourceId, kind: "proxy" }));
+    dispatch(previewLoading({ kind: "proxy" }));
     try {
-      const preview = await prepareProxyPreview(sourceId);
-      if (isCurrentSource(getState(), sourceId)) {
-        dispatch(previewReady({ sourceId, preview }));
+      const preview = await prepareProxyPreview(sourcePath);
+      if (isCurrentSource(getState(), sourcePath, loadToken)) {
+        dispatch(previewReady({ preview }));
       }
     } catch (error: unknown) {
-      if (isCurrentSource(getState(), sourceId)) {
-        dispatch(previewFailed({ sourceId, error: normalizeAppError(error) }));
+      if (isCurrentSource(getState(), sourcePath, loadToken)) {
+        dispatch(previewFailed({ error: normalizeAppError(error) }));
       }
     }
   };
 
 export const prepareSourceWaveforms =
-  (sourceId: string, streamIndexes: number[], width: number): AppThunk<Promise<string | null>> =>
+  (sourcePath: string, streamIndexes: number[], width: number): AppThunk<Promise<string | null>> =>
   async (dispatch, getState) => {
-    if (streamIndexes.length === 0 || !isCurrentSource(getState(), sourceId)) return null;
+    const loadToken = getState().source.loadToken;
+    if (streamIndexes.length === 0 || !isCurrentSource(getState(), sourcePath, loadToken))
+      return null;
 
     const jobId = `waveform-${++waveformJobSequence}`;
-    dispatch(waveformsLoading({ sourceId, jobId, width, streamIndexes }));
+    dispatch(waveformsLoading({ jobId, width, streamIndexes }));
     try {
-      const results = await prepareWaveforms(sourceId, jobId, streamIndexes, width);
-      if (isCurrentSource(getState(), sourceId)) {
+      const results = await prepareWaveforms(sourcePath, jobId, streamIndexes, width);
+      if (isCurrentSource(getState(), sourcePath, loadToken)) {
         results.forEach((result) => dispatch(waveformReady(result)));
       }
     } catch (error: unknown) {
-      if (isCurrentSource(getState(), sourceId)) {
+      if (isCurrentSource(getState(), sourcePath, loadToken)) {
         dispatch(
           waveformsFailed({
-            sourceId,
             jobId,
             width,
             streamIndexes,

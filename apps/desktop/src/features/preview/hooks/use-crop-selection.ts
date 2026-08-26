@@ -11,7 +11,7 @@ import type { CropFrame } from "../utils/crop-frame";
 import { snapCropToGuides } from "../utils/crop-snapping";
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import { cropChanged, cropResolutionFor, selectCrop } from "@/app/store/slices/crop-slice";
-import { selectSourceId, selectSourceMedia } from "@/app/store/slices/source-slice";
+import { selectSourceMedia } from "@/app/store/slices/source-slice";
 
 const SNAP_REACH_PX = 12;
 
@@ -29,7 +29,6 @@ interface CropSelectionBounds {
 
 export function useCropSelection(previewRef: RefObject<HTMLDivElement | null>) {
   const dispatch = useAppDispatch();
-  const sourceId = useAppSelector(selectSourceId);
   const sourceMedia = useAppSelector(selectSourceMedia);
   const crop = useAppSelector(selectCrop);
   const [isOpen, setIsOpen] = useState(false);
@@ -106,10 +105,9 @@ export function useCropSelection(previewRef: RefObject<HTMLDivElement | null>) {
           y: SNAP_REACH_PX / viewport.height,
         })
       : movedCrop;
-    if (sourceId) {
+    if (sourceMedia) {
       dispatch(
         cropChanged({
-          sourceId,
           crop: nextCrop,
           resolution: cropResolutionFor(sourceMedia?.video ?? null, nextCrop),
         }),

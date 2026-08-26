@@ -9,20 +9,12 @@ describe("trim slice", () => {
     const loading = trimReducer(initialTrimState, sourceSelected({ source: firstSource }));
     const ready = trimReducer(
       loading,
-      sourceReady({ sourceId: firstSource.sourceId, media: media(firstSource.sourceId) }),
+      sourceReady({ loadToken: 1, media: media(firstSource.sourcePath) }),
     );
     const invalid = trimReducer(
       ready,
       trimChanged({
-        sourceId: firstSource.sourceId,
         trim: { startMicros: 2_000_000, endMicros: 2_000_000, sourceDurationMicros: 5_000_000 },
-      }),
-    );
-    const stale = trimReducer(
-      ready,
-      trimChanged({
-        sourceId: "other-source",
-        trim: { startMicros: 0, endMicros: 1_000_000, sourceDurationMicros: 5_000_000 },
       }),
     );
 
@@ -32,6 +24,5 @@ describe("trim slice", () => {
       sourceDurationMicros: 5_000_000,
     });
     expect(invalid).toBe(ready);
-    expect(stale).toBe(ready);
   });
 });

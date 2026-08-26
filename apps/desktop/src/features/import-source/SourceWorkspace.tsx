@@ -88,7 +88,7 @@ export function SourceWorkspace() {
 
       <Panel id="editor-content-panel" minSize="44rem" className="pr-1">
         <div className="relative h-full w-full" aria-label={t("import.source.previewArea")}>
-          <EditorStage key={sourceSelection?.sourceId ?? "no-source"} />
+          <EditorStage key={sourceSelection?.sourcePath ?? "no-source"} />
           {isSourceDragActive ? <DropOverlay /> : null}
         </div>
       </Panel>

@@ -39,7 +39,7 @@ pub struct CropSelection {
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct FastExportRequest {
-    pub source_id: String,
+    pub source_path: String,
     pub trim: TrimSelection,
     pub audio_tracks: Vec<AudioTrackSelection>,
     pub merge_audio: bool,
@@ -55,7 +55,7 @@ pub struct AudioTrackSelection {
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct OptimizedExportRequest {
-    pub source_id: String,
+    pub source_path: String,
     pub trim: TrimSelection,
     pub audio_tracks: Vec<AudioTrackSelection>,
     pub merge_audio: bool,
@@ -71,12 +71,7 @@ pub fn build_fast_arguments(
     source_path: &Path,
     output_path: &Path,
 ) -> Result<Vec<OsString>, AppError> {
-    validate_common_request(
-        source,
-        &request.source_id,
-        &request.trim,
-        &request.audio_tracks,
-    )?;
+    validate_common_request(source, &request.trim, &request.audio_tracks)?;
 
     let mut arguments = common_input_arguments(source_path, &request.trim);
     arguments.extend([
@@ -151,12 +146,7 @@ pub fn build_optimized_arguments(
     source_path: &Path,
     output_path: &Path,
 ) -> Result<Vec<OsString>, AppError> {
-    validate_common_request(
-        source,
-        &request.source_id,
-        &request.trim,
-        &request.audio_tracks,
-    )?;
+    validate_common_request(source, &request.trim, &request.audio_tracks)?;
     validate_resolution(&request.resolution)?;
     validate_crop(request.crop.as_ref())?;
     if let Some(frame_rate) = &request.frame_rate
@@ -280,13 +270,9 @@ fn common_input_arguments(source_path: &Path, trim: &TrimSelection) -> Vec<OsStr
 
 fn validate_common_request(
     source: &MediaInfo,
-    source_id: &str,
     trim: &TrimSelection,
     audio_tracks: &[AudioTrackSelection],
 ) -> Result<(), AppError> {
-    if source.source_id != source_id {
-        return Err(AppError::source_replaced());
-    }
     if trim.start_micros < 0
         || trim.end_micros <= trim.start_micros
         || trim.end_micros > source.duration_micros
@@ -505,7 +491,6 @@ mod tests {
 
     fn media() -> MediaInfo {
         MediaInfo {
-            source_id: "source-1".to_owned(),
             format_name: "matroska".to_owned(),
             format_long_name: None,
             duration_micros: 10_000_000,
@@ -557,7 +542,7 @@ mod tests {
 
     fn optimized_request(arguments: &str) -> OptimizedExportRequest {
         OptimizedExportRequest {
-            source_id: "source-1".to_owned(),
+            source_path: "source.mkv".to_owned(),
             trim: TrimSelection {
                 start_micros: 0,
                 end_micros: 2_000_000,
@@ -582,7 +567,7 @@ mod tests {
         let args = build_fast_arguments(
             &media(),
             &FastExportRequest {
-                source_id: "source-1".to_owned(),
+                source_path: "source.mkv".to_owned(),
                 trim: TrimSelection {
                     start_micros: 1_000_000,
                     end_micros: 4_000_000,
@@ -612,7 +597,7 @@ mod tests {
         let args = build_fast_arguments(
             &media(),
             &FastExportRequest {
-                source_id: "source-1".to_owned(),
+                source_path: "source.mkv".to_owned(),
                 trim: TrimSelection {
                     start_micros: 1_000_000,
                     end_micros: 4_000_000,
@@ -637,7 +622,7 @@ mod tests {
         let args = build_fast_arguments(
             &media(),
             &FastExportRequest {
-                source_id: "source-1".to_owned(),
+                source_path: "source.mkv".to_owned(),
                 trim: TrimSelection {
                     start_micros: 0,
                     end_micros: 2_000_000,
@@ -674,7 +659,7 @@ mod tests {
         let args = build_fast_arguments(
             &media(),
             &FastExportRequest {
-                source_id: "source-1".to_owned(),
+                source_path: "source.mkv".to_owned(),
                 trim: TrimSelection {
                     start_micros: 0,
                     end_micros: 2_000_000,
@@ -709,7 +694,7 @@ mod tests {
         let args = build_optimized_arguments(
             &media(),
             &OptimizedExportRequest {
-                source_id: "source-1".to_owned(),
+                source_path: "source.mkv".to_owned(),
                 trim: TrimSelection {
                     start_micros: 2_000_000,
                     end_micros: 7_000_000,

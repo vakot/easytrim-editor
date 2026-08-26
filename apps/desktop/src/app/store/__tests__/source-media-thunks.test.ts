@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { MediaInfo, SourceSelection, WaveformResult } from "@/lib/tauri/media";
+import type { MediaInfo, WaveformResult } from "@/lib/tauri/media";
+import type { SourceRef } from "@/domain/source";
 import { createAppStore } from "@/app/store/store";
 import { selectAudioPreviews, selectAudioTracks } from "@/app/store/slices/audio-slice";
 import { selectPreview } from "@/app/store/slices/preview-slice";
@@ -49,12 +50,17 @@ vi.mock("@/lib/tauri/media", async (importOriginal) => {
   };
 });
 
-const firstSource: SourceSelection = { sourceId: "source-a", displayName: "first.mp4" };
-const secondSource: SourceSelection = { sourceId: "source-b", displayName: "second.mp4" };
+const firstSource: SourceRef = {
+  displayName: "first.mp4",
+  sourcePath: "C:/Media/first.mp4",
+};
+const secondSource: SourceRef = {
+  displayName: "second.mp4",
+  sourcePath: "C:/Media/second.mp4",
+};
 
-function createMedia(sourceId: string, audioCount = 2): MediaInfo {
+function createMedia(_sourcePath: string, audioCount = 2): MediaInfo {
   return {
-    sourceId,
     formatName: "matroska,webm",
     durationMicros: 5_000_000,
     video: {
@@ -85,12 +91,12 @@ function createDeferred<T>() {
   return { promise, resolve, reject };
 }
 
-function sourcePreview(sourceId: string, kind: "source" | "proxy" = "source") {
-  return { sourceId, kind, url: `media://${sourceId}/${kind}` };
+function sourcePreview(_sourcePath: string, kind: "source" | "proxy" = "source") {
+  return { mediaToken: 1, kind, url: `media://source/${kind}` };
 }
 
-function audioPreview(sourceId: string, streamIndex: number) {
-  return { sourceId, streamIndex, url: `media://${sourceId}/audio/${streamIndex}` };
+function audioPreview(_sourcePath: string, streamIndex: number) {
+  return { mediaToken: 1, streamIndex, url: `media://source/audio/${streamIndex}` };
 }
 
 describe("source/media orchestration thunks", () => {
@@ -101,47 +107,48 @@ describe("source/media orchestration thunks", () => {
       ffmpeg: { available: true, version: "ffmpeg" },
       ffprobe: { available: true, version: "ffprobe" },
     });
-    mocks.prepareSourcePreview.mockImplementation(async (sourceId: string) =>
-      sourcePreview(sourceId),
+    mocks.prepareSourcePreview.mockImplementation(async (sourcePath: string) =>
+      sourcePreview(sourcePath),
     );
-    mocks.prepareProxyPreview.mockImplementation(async (sourceId: string) =>
-      sourcePreview(sourceId, "proxy"),
+    mocks.prepareProxyPreview.mockImplementation(async (sourcePath: string) =>
+      sourcePreview(sourcePath, "proxy"),
     );
-    mocks.prepareAudioPreviews.mockImplementation(async (sourceId: string, indexes: number[]) =>
-      indexes.map((streamIndex) => audioPreview(sourceId, streamIndex)),
+    mocks.prepareAudioPreviews.mockImplementation(async (sourcePath: string, indexes: number[]) =>
+      indexes.map((streamIndex) => audioPreview(sourcePath, streamIndex)),
     );
     mocks.prepareWaveforms.mockImplementation(
-      async (sourceId: string, jobId: string, indexes: number[], width: number) =>
+      async (_sourcePath: string, jobId: string, indexes: number[], width: number) =>
         indexes.map((streamIndex): WaveformResult => ({
           status: "ready",
-          sourceId,
           jobId,
           streamIndex,
           width,
-          url: `media://${sourceId}/waveform/${streamIndex}/${width}`,
+          url: `media://source/waveform/${streamIndex}/${width}`,
         })),
     );
   });
 
   it("coordinates inspect, source preview, and multiple audio previews", async () => {
     const appStore = createAppStore();
-    mocks.inspectMedia.mockResolvedValue(createMedia(firstSource.sourceId, 2));
+    mocks.inspectMedia.mockResolvedValue(createMedia(firstSource.sourcePath, 2));
 
     await appStore.dispatch(importSource(firstSource));
 
     const state = appStore.getState();
-    expect(selectSourceMedia(state)?.sourceId).toBe(firstSource.sourceId);
+    expect(selectSourceMedia(state)).toEqual(
+      expect.objectContaining({ formatName: "matroska,webm" }),
+    );
     expect(selectPreview(state)).toMatchObject({ status: "ready" });
     expect(selectAudioPreviews(state)).toMatchObject({
       status: "ready",
-      previews: [audioPreview(firstSource.sourceId, 1), audioPreview(firstSource.sourceId, 2)],
+      previews: [audioPreview(firstSource.sourcePath, 1), audioPreview(firstSource.sourcePath, 2)],
     });
-    expect(mocks.prepareAudioPreviews).toHaveBeenCalledWith(firstSource.sourceId, [1, 2]);
+    expect(mocks.prepareAudioPreviews).toHaveBeenCalledWith(firstSource.sourcePath, [1, 2]);
   });
 
   it("clears native chooser state before a selected source finishes importing", async () => {
     const appStore = createAppStore();
-    const picker = createDeferred<SourceSelection | null>();
+    const picker = createDeferred<SourceRef | null>();
     const inspection = createDeferred<MediaInfo>();
     mocks.chooseSource.mockReturnValue(picker.promise);
     mocks.inspectMedia.mockReturnValue(inspection.promise);
@@ -156,9 +163,9 @@ describe("source/media orchestration thunks", () => {
       expect(selectIsNativeDialogOpen(appStore.getState())).toBe(false);
     });
     expect(selectSourceStatus(appStore.getState())).toBe("loading-source");
-    expect(mocks.inspectMedia).toHaveBeenCalledWith(firstSource.sourceId);
+    expect(mocks.inspectMedia).toHaveBeenCalledWith(firstSource.sourcePath);
 
-    inspection.resolve(createMedia(firstSource.sourceId, 1));
+    inspection.resolve(createMedia(firstSource.sourcePath, 1));
     await chooserRequest;
     expect(selectSourceStatus(appStore.getState())).toBe("ready");
     expect(selectIsNativeDialogOpen(appStore.getState())).toBe(false);
@@ -166,7 +173,7 @@ describe("source/media orchestration thunks", () => {
 
   it("clears native chooser state when the picker is cancelled", async () => {
     const appStore = createAppStore();
-    const picker = createDeferred<SourceSelection | null>();
+    const picker = createDeferred<SourceRef | null>();
     mocks.chooseSource.mockReturnValue(picker.promise);
 
     const chooserRequest = appStore.dispatch(chooseSourceRequested());
@@ -182,7 +189,7 @@ describe("source/media orchestration thunks", () => {
 
   it("clears native chooser state and preserves normalized picker errors", async () => {
     const appStore = createAppStore();
-    const picker = createDeferred<SourceSelection | null>();
+    const picker = createDeferred<SourceRef | null>();
     mocks.chooseSource.mockReturnValue(picker.promise);
 
     const chooserRequest = appStore.dispatch(chooseSourceRequested());
@@ -200,7 +207,7 @@ describe("source/media orchestration thunks", () => {
 
   it("marks single-stream audio preparation ready without invoking a native job", async () => {
     const appStore = createAppStore();
-    mocks.inspectMedia.mockResolvedValue(createMedia(firstSource.sourceId, 1));
+    mocks.inspectMedia.mockResolvedValue(createMedia(firstSource.sourcePath, 1));
 
     await appStore.dispatch(importSource(firstSource));
 
@@ -215,20 +222,20 @@ describe("source/media orchestration thunks", () => {
     const appStore = createAppStore();
     const firstInspection = createDeferred<MediaInfo>();
     const secondInspection = createDeferred<MediaInfo>();
-    mocks.inspectMedia.mockImplementation((sourceId: string) =>
-      sourceId === firstSource.sourceId ? firstInspection.promise : secondInspection.promise,
+    mocks.inspectMedia.mockImplementation((sourcePath: string) =>
+      sourcePath === firstSource.sourcePath ? firstInspection.promise : secondInspection.promise,
     );
 
     const firstImport = appStore.dispatch(importSource(firstSource));
     const secondImport = appStore.dispatch(importSource(secondSource));
-    secondInspection.resolve(createMedia(secondSource.sourceId, 1));
+    secondInspection.resolve(createMedia(secondSource.sourcePath, 1));
     await secondImport;
-    firstInspection.resolve(createMedia(firstSource.sourceId, 2));
+    firstInspection.resolve(createMedia(firstSource.sourcePath, 2));
     await firstImport;
 
     expect(selectSourceSelection(appStore.getState())).toEqual(secondSource);
     expect(mocks.prepareSourcePreview).toHaveBeenCalledTimes(1);
-    expect(mocks.prepareSourcePreview).toHaveBeenCalledWith(secondSource.sourceId);
+    expect(mocks.prepareSourcePreview).toHaveBeenCalledWith(secondSource.sourcePath);
   });
 
   it("records inspection failures and capability failures as serializable app errors", async () => {
@@ -251,29 +258,29 @@ describe("source/media orchestration thunks", () => {
 
   it("falls back from source preview playback to a proxy preview", async () => {
     const appStore = createAppStore();
-    mocks.inspectMedia.mockResolvedValue(createMedia(firstSource.sourceId, 1));
+    mocks.inspectMedia.mockResolvedValue(createMedia(firstSource.sourcePath, 1));
     await appStore.dispatch(importSource(firstSource));
 
-    await appStore.dispatch(handlePreviewPlaybackError(firstSource.sourceId, "source"));
+    await appStore.dispatch(handlePreviewPlaybackError(firstSource.sourcePath, "source"));
 
-    expect(mocks.prepareProxyPreview).toHaveBeenCalledWith(firstSource.sourceId);
+    expect(mocks.prepareProxyPreview).toHaveBeenCalledWith(firstSource.sourcePath);
     expect(selectPreview(appStore.getState())).toMatchObject({
       status: "ready",
-      value: sourcePreview(firstSource.sourceId, "proxy"),
+      value: sourcePreview(firstSource.sourcePath, "proxy"),
     });
   });
 
   it("marks proxy playback failure as the final preview failure", async () => {
     const appStore = createAppStore();
-    mocks.inspectMedia.mockResolvedValue(createMedia(firstSource.sourceId, 1));
+    mocks.inspectMedia.mockResolvedValue(createMedia(firstSource.sourcePath, 1));
     await appStore.dispatch(importSource(firstSource));
     mocks.prepareProxyPreview.mockRejectedValue({
       code: "unsupported_media",
       message: "No compatible preview could be created",
     });
 
-    await appStore.dispatch(handlePreviewPlaybackError(firstSource.sourceId, "source"));
-    await appStore.dispatch(handlePreviewPlaybackError(firstSource.sourceId, "proxy"));
+    await appStore.dispatch(handlePreviewPlaybackError(firstSource.sourcePath, "source"));
+    await appStore.dispatch(handlePreviewPlaybackError(firstSource.sourcePath, "proxy"));
 
     expect(selectPreview(appStore.getState())).toMatchObject({
       status: "failed",
@@ -283,7 +290,7 @@ describe("source/media orchestration thunks", () => {
 
   it("keeps audio previews unavailable when preparation fails", async () => {
     const appStore = createAppStore();
-    mocks.inspectMedia.mockResolvedValue(createMedia(firstSource.sourceId, 2));
+    mocks.inspectMedia.mockResolvedValue(createMedia(firstSource.sourcePath, 2));
     mocks.prepareAudioPreviews.mockRejectedValue({
       code: "io_failed",
       message: "Audio preview failed",
@@ -299,28 +306,29 @@ describe("source/media orchestration thunks", () => {
 
   it("keeps only the newest waveform job result", async () => {
     const appStore = createAppStore();
-    const sourceMedia = createMedia(firstSource.sourceId, 2);
+    const sourceMedia = createMedia(firstSource.sourcePath, 2);
     mocks.inspectMedia.mockResolvedValue(sourceMedia);
     await appStore.dispatch(importSource(firstSource));
 
     const jobs = new Map<string, ReturnType<typeof createDeferred<WaveformResult[]>>>();
-    mocks.prepareWaveforms.mockImplementation((_sourceId: string, jobId: string) => {
+    mocks.prepareWaveforms.mockImplementation((_sourcePath: string, jobId: string) => {
       const deferred = createDeferred<WaveformResult[]>();
       jobs.set(jobId, deferred);
       return deferred.promise;
     });
 
-    const firstJob = appStore.dispatch(prepareSourceWaveforms(firstSource.sourceId, [1, 2], 800));
+    const firstJob = appStore.dispatch(prepareSourceWaveforms(firstSource.sourcePath, [1, 2], 800));
     await vi.waitFor(() => expect(jobs.size).toBe(1));
     const firstJobId = [...jobs.keys()][0] as string;
-    const secondJob = appStore.dispatch(prepareSourceWaveforms(firstSource.sourceId, [1, 2], 1200));
+    const secondJob = appStore.dispatch(
+      prepareSourceWaveforms(firstSource.sourcePath, [1, 2], 1200),
+    );
     await vi.waitFor(() => expect(jobs.size).toBe(2));
     const secondJobId = [...jobs.keys()][1] as string;
 
     jobs.get(secondJobId)?.resolve([
       {
         status: "ready",
-        sourceId: firstSource.sourceId,
         jobId: secondJobId,
         streamIndex: 1,
         width: 1200,
@@ -330,7 +338,6 @@ describe("source/media orchestration thunks", () => {
     jobs.get(firstJobId)?.resolve([
       {
         status: "ready",
-        sourceId: firstSource.sourceId,
         jobId: firstJobId,
         streamIndex: 1,
         width: 800,
@@ -352,14 +359,14 @@ describe("source/media orchestration thunks", () => {
 
   it("records waveform preparation failure and clears the source on close", async () => {
     const appStore = createAppStore();
-    mocks.inspectMedia.mockResolvedValue(createMedia(firstSource.sourceId, 1));
+    mocks.inspectMedia.mockResolvedValue(createMedia(firstSource.sourcePath, 1));
     await appStore.dispatch(importSource(firstSource));
     mocks.prepareWaveforms.mockRejectedValue({
       code: "waveform_failed",
       message: "Waveform generation failed",
     });
 
-    await appStore.dispatch(prepareSourceWaveforms(firstSource.sourceId, [1], 800));
+    await appStore.dispatch(prepareSourceWaveforms(firstSource.sourcePath, [1], 800));
     const waveform = selectAudioTracks(appStore.getState())[0]?.waveform;
     expect(waveform).toMatchObject({
       status: "failed",

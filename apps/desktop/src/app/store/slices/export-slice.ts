@@ -12,6 +12,7 @@ import type {
 } from "@/lib/tauri/media";
 import type { QueueFinishAction } from "@/lib/tauri/queue";
 import type { RootState } from "../store";
+import type { EditorSnapshot } from "@/domain/editor-snapshot";
 
 export type ExportStatus = "queued" | "rendering" | "completed" | "failed" | "canceled";
 export type ExportRoute = "fast" | "optimized";
@@ -24,6 +25,7 @@ export interface ExportSettings {
 
 export interface ExportQueueItem {
   id: string;
+  snapshot: EditorSnapshot;
   route: ExportRoute;
   request: ExportRequest;
   outputId: string;

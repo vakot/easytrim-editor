@@ -8,7 +8,7 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
-use crate::{error::AppError, process::run_bounded};
+use crate::{error::AppError, process::run_bounded_cancellable};
 
 const PROBE_TIMEOUT: Duration = Duration::from_secs(20);
 const PROBE_STDOUT_LIMIT: usize = 2 * 1024 * 1024;
@@ -85,7 +85,6 @@ pub struct ChapterInfo {
 #[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MediaInfo {
-    pub source_id: String,
     pub format_name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub format_long_name: Option<String>,
@@ -101,7 +100,10 @@ pub struct MediaInfo {
     pub chapters: Vec<ChapterInfo>,
 }
 
-pub fn inspect_media(source_id: String, path: &Path) -> Result<MediaInfo, AppError> {
+pub fn inspect_media_cancellable(
+    path: &Path,
+    is_cancelled: impl FnMut() -> bool,
+) -> Result<MediaInfo, AppError> {
     let arguments = [
         OsString::from("-v"),
         OsString::from("error"),
@@ -113,12 +115,13 @@ pub fn inspect_media(source_id: String, path: &Path) -> Result<MediaInfo, AppErr
         path.as_os_str().to_owned(),
     ];
 
-    let output = run_bounded(
+    let output = run_bounded_cancellable(
         OsStr::new("ffprobe"),
         &arguments,
         PROBE_TIMEOUT,
         PROBE_STDOUT_LIMIT,
         PROBE_STDERR_LIMIT,
+        is_cancelled,
     )
     .map_err(|error| map_probe_io_error(error, path))?;
 
@@ -136,10 +139,10 @@ pub fn inspect_media(source_id: String, path: &Path) -> Result<MediaInfo, AppErr
         ));
     }
 
-    parse_probe_output(source_id, &output.stdout)
+    parse_probe_output(&output.stdout)
 }
 
-fn parse_probe_output(source_id: String, output: &[u8]) -> Result<MediaInfo, AppError> {
+fn parse_probe_output(output: &[u8]) -> Result<MediaInfo, AppError> {
     let probe: ProbeDocument = serde_json::from_slice(output).map_err(|error| {
         AppError::probe_failed(
             "FFprobe returned unreadable metadata.",
@@ -248,7 +251,6 @@ fn parse_probe_output(source_id: String, output: &[u8]) -> Result<MediaInfo, App
         .collect();
 
     Ok(MediaInfo {
-        source_id,
         format_name: format
             .format_name
             .clone()
@@ -322,6 +324,7 @@ fn rotation(stream: &ProbeStream) -> Option<i32> {
 
 fn map_probe_io_error(error: io::Error, path: &Path) -> AppError {
     match error.kind() {
+        io::ErrorKind::Interrupted => AppError::source_replaced(),
         io::ErrorKind::NotFound => AppError::probe_failed(
             "FFprobe is required to inspect video files.",
             Some("Install FFmpeg and make ffprobe available on PATH."),
@@ -479,10 +482,8 @@ mod tests {
 
     #[test]
     fn parses_canonical_metadata_and_global_stream_indexes() {
-        let info =
-            parse_probe_output("source-7".to_owned(), PROBE_JSON).expect("metadata is valid");
+        let info = parse_probe_output(PROBE_JSON).expect("metadata is valid");
 
-        assert_eq!(info.source_id, "source-7");
         assert_eq!(info.duration_micros, 12_345_678);
         assert_eq!(info.video.stream_index, 0);
         assert_eq!(info.video.rotation_degrees, Some(90));
@@ -511,11 +512,8 @@ mod tests {
 
     #[test]
     fn rejects_metadata_without_a_video_stream() {
-        let error = parse_probe_output(
-            "source-1".to_owned(),
-            br#"{"streams": [], "format": {"duration": "1.0"}}"#,
-        )
-        .expect_err("video is required");
+        let error = parse_probe_output(br#"{"streams": [], "format": {"duration": "1.0"}}"#)
+            .expect_err("video is required");
 
         assert_eq!(error.code, "unsupported_media");
     }

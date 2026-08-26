@@ -26,8 +26,8 @@ pub fn generate_preview(source: &ActiveSource) -> Result<PreviewArtifact, AppErr
 
     if cfg!(target_os = "macos") && can_remux_preview(source) {
         media_debug(format_args!(
-            "preview: trying fast remux source_id={}",
-            source.source_id
+            "preview: trying fast remux load_token={}",
+            source.load_token
         ));
         match run_remux(source, streams, artifact.path()) {
             Ok(output) if output.status.success() => {
@@ -50,9 +50,9 @@ pub fn generate_preview(source: &ActiveSource) -> Result<PreviewArtifact, AppErr
         Encoder::Nvidia
     };
     media_debug(format_args!(
-        "preview: trying preferred encoder={} source_id={}",
+        "preview: trying preferred encoder={} load_token={}",
         hardware_encoder.name(),
-        source.source_id
+        source.load_token
     ));
     let hardware_result = run_encoder(source, streams, artifact.path(), hardware_encoder);
     match hardware_result {

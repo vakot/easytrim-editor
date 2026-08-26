@@ -1,22 +1,24 @@
 import { createAction } from "@reduxjs/toolkit";
 
-import type { MediaInfo, SourceSelection } from "@/lib/tauri/media";
+import type { MediaInfo } from "@/lib/tauri/media";
+import type { SourceRef } from "@/domain/source";
 import type { AppError } from "@/lib/tauri/media";
 
 export const sourceSelected = createAction<{
-  source: SourceSelection;
+  source: SourceRef;
   mergeAudio?: boolean;
+  loadToken?: number;
 }>("source/selected");
 
 export const sourceCleared = createAction("source/cleared");
 
-export const sourceReady = createAction<{ sourceId: string; media: MediaInfo }>("source/ready");
+export const sourceReady = createAction<{ loadToken: number; media: MediaInfo }>("source/ready");
 
-export const sourceFailed = createAction<{ sourceId?: string; error: AppError }>("source/failed");
+export const sourceFailed = createAction<{ loadToken?: number; error: AppError }>("source/failed");
 
 export function isValidSourceReadyPayload(
-  currentSourceId: string | null,
-  payload: { sourceId: string; media: { sourceId: string } },
+  currentLoadToken: number,
+  payload: { loadToken: number },
 ): boolean {
-  return currentSourceId === payload.sourceId && payload.media.sourceId === payload.sourceId;
+  return currentLoadToken === payload.loadToken;
 }

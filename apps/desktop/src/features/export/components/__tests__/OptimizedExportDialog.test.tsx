@@ -27,9 +27,7 @@ describe("OptimizedExportDialog", () => {
       removeItem: async () => undefined,
     });
     store.dispatch(sourceSelected({ source: firstSource }));
-    store.dispatch(
-      sourceReady({ sourceId: firstSource.sourceId, media: media(firstSource.sourceId) }),
-    );
+    store.dispatch(sourceReady({ loadToken: 1, media: media(firstSource.sourcePath) }));
 
     render(
       <Provider store={store}>

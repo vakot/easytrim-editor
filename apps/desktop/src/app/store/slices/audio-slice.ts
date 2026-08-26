@@ -1,7 +1,6 @@
 import { createSelector, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 import {
-  isValidSourceReadyPayload,
   sourceCleared,
   sourceFailed,
   sourceReady,
@@ -22,11 +21,10 @@ export type WaveformState =
   | { status: "failed"; jobId: string; width: number; error: AppError };
 
 export type AudioPreviewState =
-  | { sourceId: string; status: "idle"; previews: AudioPreviewDescriptor[] }
-  | { sourceId: string; status: "loading"; previews: AudioPreviewDescriptor[] }
-  | { sourceId: string; status: "ready"; previews: AudioPreviewDescriptor[] }
+  | { status: "idle"; previews: AudioPreviewDescriptor[] }
+  | { status: "loading"; previews: AudioPreviewDescriptor[] }
+  | { status: "ready"; previews: AudioPreviewDescriptor[] }
   | {
-      sourceId: string;
       status: "unavailable";
       previews: AudioPreviewDescriptor[];
       error: AppError;
@@ -40,7 +38,6 @@ export interface AudioTrackState {
 }
 
 export interface AudioState {
-  sourceId: string | null;
   tracks: AudioTrackState[];
   masterEnabled: boolean;
   masterVolumePercent: number;
@@ -51,7 +48,6 @@ export interface AudioState {
 const DEFAULT_UNMUTE_VOLUME_PERCENT = 50;
 
 export const initialAudioState: AudioState = {
-  sourceId: null,
   tracks: [],
   masterEnabled: true,
   masterVolumePercent: DEFAULT_UNMUTE_VOLUME_PERCENT,
@@ -63,42 +59,23 @@ const audioSlice = createSlice({
   name: "audio",
   initialState: initialAudioState,
   reducers: {
-    audioPreviewsLoading: (state, action: PayloadAction<{ sourceId: string }>) => {
-      if (state.sourceId !== action.payload.sourceId) return;
-      state.previews = { sourceId: action.payload.sourceId, status: "loading", previews: [] };
+    audioPreviewsLoading: (state) => {
+      state.previews = { status: "loading", previews: [] };
     },
-    audioPreviewsReady: (
-      state,
-      action: PayloadAction<{ sourceId: string; previews: AudioPreviewDescriptor[] }>,
-    ) => {
-      if (
-        state.sourceId !== action.payload.sourceId ||
-        action.payload.previews.some((preview) => preview.sourceId !== action.payload.sourceId)
-      )
-        return;
+    audioPreviewsReady: (state, action: PayloadAction<{ previews: AudioPreviewDescriptor[] }>) => {
       state.previews = {
-        sourceId: action.payload.sourceId,
         status: "ready",
         previews: action.payload.previews,
       };
     },
-    audioPreviewsUnavailable: (
-      state,
-      action: PayloadAction<{ sourceId: string; error: AppError }>,
-    ) => {
-      if (state.sourceId !== action.payload.sourceId) return;
+    audioPreviewsUnavailable: (state, action: PayloadAction<{ error: AppError }>) => {
       state.previews = {
-        sourceId: action.payload.sourceId,
         status: "unavailable",
         previews: [],
         error: action.payload.error,
       };
     },
-    audioTrackToggled: (
-      state,
-      action: PayloadAction<{ sourceId: string; streamIndex: number }>,
-    ) => {
-      if (state.sourceId !== action.payload.sourceId) return;
+    audioTrackToggled: (state, action: PayloadAction<{ streamIndex: number }>) => {
       const track = state.tracks.find(
         (candidate) => candidate.streamIndex === action.payload.streamIndex,
       );
@@ -107,11 +84,7 @@ const audioSlice = createSlice({
       if (track.enabled && track.volumePercent <= 0)
         track.volumePercent = DEFAULT_UNMUTE_VOLUME_PERCENT;
     },
-    audioTracksSetEnabled: (
-      state,
-      action: PayloadAction<{ sourceId: string; enabled: boolean }>,
-    ) => {
-      if (state.sourceId !== action.payload.sourceId) return;
+    audioTracksSetEnabled: (state, action: PayloadAction<{ enabled: boolean }>) => {
       for (const track of state.tracks) {
         track.enabled = action.payload.enabled;
         if (action.payload.enabled && track.volumePercent <= 0)
@@ -120,9 +93,8 @@ const audioSlice = createSlice({
     },
     audioTrackVolumeChanged: (
       state,
-      action: PayloadAction<{ sourceId: string; streamIndex: number; volumePercent: number }>,
+      action: PayloadAction<{ streamIndex: number; volumePercent: number }>,
     ) => {
-      if (state.sourceId !== action.payload.sourceId) return;
       const track = state.tracks.find(
         (candidate) => candidate.streamIndex === action.payload.streamIndex,
       );
@@ -130,34 +102,26 @@ const audioSlice = createSlice({
       track.enabled = action.payload.volumePercent > 0;
       track.volumePercent = action.payload.volumePercent;
     },
-    masterAudioToggled: (state, action: PayloadAction<{ sourceId: string }>) => {
-      if (state.sourceId !== action.payload.sourceId) return;
+    masterAudioToggled: (state) => {
       state.masterEnabled = !state.masterEnabled;
       if (state.masterEnabled && state.masterVolumePercent <= 0)
         state.masterVolumePercent = DEFAULT_UNMUTE_VOLUME_PERCENT;
     },
-    masterVolumeChanged: (
-      state,
-      action: PayloadAction<{ sourceId: string; volumePercent: number }>,
-    ) => {
-      if (state.sourceId !== action.payload.sourceId) return;
+    masterVolumeChanged: (state, action: PayloadAction<{ volumePercent: number }>) => {
       state.masterEnabled = action.payload.volumePercent > 0;
       state.masterVolumePercent = action.payload.volumePercent;
     },
-    audioMergeToggled: (state, action: PayloadAction<{ sourceId: string }>) => {
-      if (state.sourceId !== action.payload.sourceId) return;
+    audioMergeToggled: (state) => {
       state.mergeAudio = !state.mergeAudio;
     },
     waveformsLoading: (
       state,
       action: PayloadAction<{
-        sourceId: string;
         jobId: string;
         width: number;
         streamIndexes: number[];
       }>,
     ) => {
-      if (state.sourceId !== action.payload.sourceId) return;
       state.tracks = updateWaveformTracks(state.tracks, action.payload.streamIndexes, () => ({
         status: "loading",
         jobId: action.payload.jobId,
@@ -167,11 +131,7 @@ const audioSlice = createSlice({
     waveformReady: (state, action: PayloadAction<WaveformResult>) => {
       applyWaveformResult(state, action.payload);
     },
-    waveformDisplayFailed: (
-      state,
-      action: PayloadAction<{ sourceId: string; streamIndex: number }>,
-    ) => {
-      if (state.sourceId !== action.payload.sourceId) return;
+    waveformDisplayFailed: (state, action: PayloadAction<{ streamIndex: number }>) => {
       const track = state.tracks.find(
         (candidate) => candidate.streamIndex === action.payload.streamIndex,
       );
@@ -190,14 +150,12 @@ const audioSlice = createSlice({
     waveformsFailed: (
       state,
       action: PayloadAction<{
-        sourceId: string;
         jobId: string;
         width: number;
         streamIndexes: number[];
         error: AppError;
       }>,
     ) => {
-      if (state.sourceId !== action.payload.sourceId) return;
       state.tracks = updateWaveformTracks(state.tracks, action.payload.streamIndexes, (track) =>
         track.waveform.status === "loading" && track.waveform.jobId === action.payload.jobId
           ? {
@@ -213,19 +171,16 @@ const audioSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(sourceSelected, (state, action) => {
-        state.sourceId = action.payload.source.sourceId;
         state.tracks = [];
         state.masterEnabled = true;
         state.masterVolumePercent = DEFAULT_UNMUTE_VOLUME_PERCENT;
         state.mergeAudio = action.payload.mergeAudio ?? false;
         state.previews = {
-          sourceId: action.payload.source.sourceId,
           status: "idle",
           previews: [],
         };
       })
       .addCase(sourceCleared, (state) => {
-        state.sourceId = null;
         state.tracks = [];
         state.masterEnabled = true;
         state.masterVolumePercent = DEFAULT_UNMUTE_VOLUME_PERCENT;
@@ -233,12 +188,9 @@ const audioSlice = createSlice({
         state.previews = null;
       })
       .addCase(sourceReady, (state, action) => {
-        if (!isValidSourceReadyPayload(state.sourceId, action.payload)) return;
         state.tracks = createAudioTracks(action.payload.media);
       })
-      .addCase(sourceFailed, (state, action) => {
-        if (action.payload.sourceId) return;
-        state.sourceId = null;
+      .addCase(sourceFailed, (state) => {
         state.tracks = [];
         state.masterEnabled = true;
         state.masterVolumePercent = DEFAULT_UNMUTE_VOLUME_PERCENT;
@@ -258,7 +210,6 @@ function createAudioTracks(media: MediaInfo): AudioTrackState[] {
 }
 
 function applyWaveformResult(state: AudioState, result: WaveformResult) {
-  if (state.sourceId !== result.sourceId) return;
   const track = state.tracks.find((candidate) => candidate.streamIndex === result.streamIndex);
   if (!track || track.waveform.status !== "loading" || track.waveform.jobId !== result.jobId)
     return;

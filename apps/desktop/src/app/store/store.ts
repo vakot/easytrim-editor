@@ -1,4 +1,4 @@
-import { combineReducers, configureStore } from "@reduxjs/toolkit";
+import { combineReducers, configureStore, type UnknownAction } from "@reduxjs/toolkit";
 import {
   FLUSH,
   PAUSE,
@@ -28,8 +28,9 @@ import { previewReducer } from "@/app/store/slices/preview-slice";
 import { sourceReducer } from "@/app/store/slices/source-slice";
 import { themeReducer } from "@/app/store/slices/theme-slice";
 import { trimReducer } from "@/app/store/slices/trim-slice";
+import { sourceFailed, sourceReady } from "@/app/store/actions/source-actions";
 
-const rootReducer = combineReducers({
+const combinedReducer = combineReducers({
   audio: audioReducer,
   crop: cropReducer,
   editorLayout: editorLayoutReducer,
@@ -44,7 +45,22 @@ const rootReducer = combineReducers({
   trim: trimReducer,
 });
 
-export type RootState = ReturnType<typeof rootReducer>;
+export type RootState = ReturnType<typeof combinedReducer>;
+
+const rootReducer = (state: RootState | undefined, action: UnknownAction): RootState => {
+  if (state && sourceReady.match(action) && state.source.loadToken !== action.payload.loadToken) {
+    return state;
+  }
+  if (
+    state &&
+    sourceFailed.match(action) &&
+    action.payload.loadToken !== undefined &&
+    state.source.loadToken !== action.payload.loadToken
+  ) {
+    return state;
+  }
+  return combinedReducer(state, action);
+};
 
 export const persistedReducer = createPersistedReducer(rootReducer);
 

@@ -280,6 +280,8 @@ export const en = {
       canceled: "Canceled",
     },
     cancelItem: "Cancel {{filename}}",
+    restoreItem: "Restore {{filename}}",
+    openLocation: "Open {{filename}} location",
     statusLabel: "{{status}} export",
     dialog: {
       description: "Configure the optimized render before choosing its file.",

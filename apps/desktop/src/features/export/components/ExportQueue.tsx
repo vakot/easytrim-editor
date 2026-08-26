@@ -5,7 +5,11 @@ import { cn } from "@/lib/utils";
 import { openFileLocation } from "@/lib/tauri/media";
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import { selectExportQueue, type ExportQueueItem } from "@/app/store/slices/export-slice";
-import { cancelExportRequested } from "@/app/store/thunks/export-thunks";
+import {
+  cancelExportRequested,
+  restoreExportQueueItemRequested,
+} from "@/app/store/thunks/export-thunks";
+import { useTimeline } from "@/app/hooks/useEditorContracts";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -58,6 +62,7 @@ export function ExportQueue() {
 function ExportQueueItem({ item, now }: { item: ExportQueueItem; now: number }) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
+  const timeline = useTimeline();
   const isCompleted = item.status === "completed";
   const durationMs =
     item.status === "rendering" && item.startedAt ? now - item.startedAt : item.durationMs;
@@ -72,24 +77,25 @@ function ExportQueueItem({ item, now }: { item: ExportQueueItem; now: number }) 
     if (isCompleted) void openFileLocation(item.path).catch(() => undefined);
   }
 
+  async function restoreItem() {
+    const restored = await dispatch(restoreExportQueueItemRequested(item.id));
+    if (restored) timeline.onSeek(item.snapshot.trim.startMicros);
+  }
+
   return (
     <div
       className={cn(
         "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-xl border border-border border-l-4 bg-card p-3",
         statusStyles[item.status],
-        isCompleted && "cursor-pointer transition-colors hover:bg-muted/60",
+        "transition-colors hover:bg-muted/60",
       )}
-      role={isCompleted ? "button" : undefined}
-      tabIndex={isCompleted ? 0 : undefined}
-      onClick={openLocation}
-      onKeyDown={(event) => {
-        if (isCompleted && (event.key === "Enter" || event.key === " ")) {
-          event.preventDefault();
-          openLocation();
-        }
-      }}
     >
-      <div className="min-w-0">
+      <button
+        type="button"
+        className="min-w-0 cursor-pointer text-left"
+        aria-label={t("export.restoreItem", { filename: item.filename })}
+        onClick={() => void restoreItem()}
+      >
         <div className="flex min-w-0 items-baseline gap-1.5 text-sm">
           <strong className="truncate">{item.filename}</strong>
           <span
@@ -114,12 +120,11 @@ function ExportQueueItem({ item, now }: { item: ExportQueueItem; now: number }) 
         </div>
         <p className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
           <span className="truncate">{item.path}</span>
-          {isCompleted ? <ExternalLink className="size-3 shrink-0" aria-hidden="true" /> : null}
         </p>
         {item.error && item.status !== "canceled" ? (
           <p className="mt-1 text-xs text-destructive">{item.error}</p>
         ) : null}
-      </div>
+      </button>
       <div className="flex items-center gap-1">
         {item.status === "queued" || item.status === "rendering" ? (
           <Button
@@ -134,18 +139,49 @@ function ExportQueueItem({ item, now }: { item: ExportQueueItem; now: number }) 
             <X />
           </Button>
         ) : (
-          <span
-            className="grid size-7 place-items-center"
-            aria-label={t("export.statusLabel", { status: t(`export.status.${item.status}`) })}
-          >
+          <div className="flex items-center gap-1">
             {item.status === "completed" ? (
-              <Check className="size-4 text-emerald-400" />
+              <>
+                <span
+                  className="grid size-7 place-items-center"
+                  aria-label={t("export.statusLabel", {
+                    status: t(`export.status.${item.status}`),
+                  })}
+                >
+                  <Check className="size-4 text-emerald-400" />
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    openLocation();
+                  }}
+                  aria-label={t("export.openLocation", { filename: item.filename })}
+                >
+                  <ExternalLink />
+                </Button>
+              </>
             ) : item.status === "failed" ? (
-              <TriangleAlert className="size-4 text-destructive" />
+              <span
+                className="grid size-7 place-items-center"
+                aria-label={t("export.statusLabel", {
+                  status: t(`export.status.${item.status}`),
+                })}
+              >
+                <TriangleAlert className="size-4 text-destructive" />
+              </span>
             ) : (
-              <CircleX className="size-4 text-destructive" />
+              <span
+                className="grid size-7 place-items-center"
+                aria-label={t("export.statusLabel", {
+                  status: t(`export.status.${item.status}`),
+                })}
+              >
+                <CircleX className="size-4 text-destructive" />
+              </span>
             )}
-          </span>
+          </div>
         )}
       </div>
     </div>

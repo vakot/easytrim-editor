@@ -11,13 +11,11 @@ import { firstSource, media, secondSource } from "@/app/store/slices/__tests__/t
 describe("source-bound lifecycle", () => {
   it("atomically resets every source-bound domain through one source event", () => {
     const store = createAppStore();
-    store.dispatch(sourceSelected({ source: firstSource }));
-    store.dispatch(
-      sourceReady({ sourceId: firstSource.sourceId, media: media(firstSource.sourceId) }),
-    );
+    store.dispatch(sourceSelected({ source: firstSource, loadToken: 1 }));
+    store.dispatch(sourceSelected({ source: secondSource, loadToken: 2 }));
+    store.dispatch(sourceReady({ loadToken: 1, media: media(firstSource.sourcePath) }));
     store.dispatch(
       trimChanged({
-        sourceId: firstSource.sourceId,
         trim: {
           startMicros: 1_000_000,
           endMicros: 4_000_000,
@@ -27,39 +25,34 @@ describe("source-bound lifecycle", () => {
     );
     store.dispatch(
       cropChanged({
-        sourceId: firstSource.sourceId,
         crop: { x: 0.1, y: 0, width: 0.8, height: 1 },
         resolution: { width: 1536, height: 1080 },
       }),
     );
-    store.dispatch(audioMergeToggled({ sourceId: firstSource.sourceId }));
+    store.dispatch(audioMergeToggled());
     store.dispatch(
       previewReady({
-        sourceId: firstSource.sourceId,
-        preview: { sourceId: firstSource.sourceId, kind: "source", url: "media://first" },
+        preview: { mediaToken: 1, kind: "source", url: "media://first" },
       }),
     );
 
     store.dispatch(sourceSelected({ source: secondSource }));
     const state = store.getState();
 
-    expect(state.source.selection).toEqual(secondSource);
+    expect(state.source.source).toEqual(secondSource);
     expect(state.trim.value).toBeNull();
     expect(state.crop.value).toEqual({ x: 0, y: 0, width: 1, height: 1 });
     expect(state.audio).toMatchObject({ tracks: [], mergeAudio: false });
     expect(state.preview.value).toEqual({ status: "idle" });
-    expect(state.preview.sourceId).toBe(secondSource.sourceId);
   });
 
   it("clears all source-bound domains through sourceCleared", () => {
     const store = createAppStore();
-    store.dispatch(sourceSelected({ source: firstSource }));
-    store.dispatch(
-      sourceReady({ sourceId: firstSource.sourceId, media: media(firstSource.sourceId) }),
-    );
+    store.dispatch(sourceSelected({ source: firstSource, loadToken: 1 }));
+    store.dispatch(sourceReady({ loadToken: 1, media: media(firstSource.sourcePath) }));
     store.dispatch(sourceCleared());
 
-    expect(store.getState().source.selection).toBeNull();
+    expect(store.getState().source.source).toBeNull();
     expect(store.getState().trim.value).toBeNull();
     expect(store.getState().audio.previews).toBeNull();
     expect(store.getState().preview.value).toEqual({ status: "idle" });
@@ -67,10 +60,9 @@ describe("source-bound lifecycle", () => {
 
   it("rejects sourceReady metadata from another source across domains", () => {
     const store = createAppStore();
-    store.dispatch(sourceSelected({ source: firstSource }));
-    store.dispatch(
-      sourceReady({ sourceId: firstSource.sourceId, media: media(secondSource.sourceId) }),
-    );
+    store.dispatch(sourceSelected({ source: firstSource, loadToken: 1 }));
+    store.dispatch(sourceSelected({ source: secondSource, loadToken: 2 }));
+    store.dispatch(sourceReady({ loadToken: 1, media: media(secondSource.sourcePath) }));
 
     const state = store.getState();
     expect(state.source.status).toBe("loading-source");
