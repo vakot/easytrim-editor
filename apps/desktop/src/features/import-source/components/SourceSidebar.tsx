@@ -56,7 +56,7 @@ export function SourceSidebar() {
           id="media-details"
           defaultSize="15rem"
           minSize="10rem"
-          groupResizeBehavior="preserve-relative-size"
+          groupResizeBehavior="preserve-pixel-size"
           className="px-1"
         >
           <ResizableSectionTrigger className="px-2">
@@ -94,7 +94,7 @@ export function SourceSidebar() {
           id="export-queue"
           defaultSize="16rem"
           minSize="8rem"
-          groupResizeBehavior="preserve-pixel-size"
+          groupResizeBehavior="preserve-relative-size"
           className="px-1"
         >
           <ResizableSectionTrigger className="px-2">

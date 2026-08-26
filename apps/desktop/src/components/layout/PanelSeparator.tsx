@@ -31,7 +31,7 @@ export function PanelSeparator({
       onDoubleClick={onDoubleClick}
       id={id}
       aria-label={label}
-      aria-hidden={disabled}
+      aria-hidden={disabled ? true : undefined}
       className={cn(
         "group relative z-20 shrink-0 bg-transparent outline-none",
         disabled && "pointer-events-none hidden",

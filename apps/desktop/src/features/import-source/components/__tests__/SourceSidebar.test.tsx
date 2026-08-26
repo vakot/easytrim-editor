@@ -19,7 +19,7 @@ vi.mock("../MediaDetails", () => ({
 import { SourceSidebar } from "../SourceSidebar";
 
 describe("SourceSidebar", () => {
-  it("keeps source details above three independently scrollable sections", () => {
+  it("renders three independently scrollable sections with sibling separators", () => {
     render(
       <Provider store={createAppStore()}>
         <TooltipProvider>
@@ -28,7 +28,6 @@ describe("SourceSidebar", () => {
       </Provider>,
     );
 
-    expect(screen.getByRole("heading", { name: "No source" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Media details" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Imported queue" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Export queue" })).toBeInTheDocument();
@@ -37,6 +36,20 @@ describe("SourceSidebar", () => {
     expect(screen.getByTestId("media-details-content")).toBeInTheDocument();
     expect(screen.getByTestId("imported-queue-content")).toBeInTheDocument();
     expect(screen.getByTestId("export-queue-content")).toBeInTheDocument();
+
+    const separators = screen.getAllByRole("separator");
+    expect(separators).toHaveLength(2);
+    for (const separator of separators) {
+      expect(separator).toHaveAttribute("aria-orientation", "horizontal");
+      expect(separator).toHaveAttribute("tabindex", "0");
+      expect(separator).not.toHaveAttribute("aria-hidden");
+    }
+
+    for (const id of ["media-details", "imported-queue", "export-queue"]) {
+      const panel = screen.getByTestId(id);
+      expect(panel).not.toHaveClass("overflow-auto", "overflow-scroll");
+      expect(panel.querySelector('[data-slot="scroll-area-viewport"]')).toBeInTheDocument();
+    }
   });
 
   it("does not collapse other sections when one trigger is activated", async () => {

@@ -250,7 +250,6 @@ describe("App", () => {
 
     expect(screen.queryByText("Start a new clip")).not.toBeInTheDocument();
     expect(screen.getByLabelText("Video editor workspace")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "No source" })).toBeInTheDocument();
     expect(screen.getAllByText("No source").length).toBeGreaterThan(1);
     expect(screen.getByRole("list", { name: "Keyboard shortcuts" })).toHaveTextContent("Open File");
     expect(screen.getByRole("list", { name: "Keyboard shortcuts" })).toHaveTextContent(
@@ -445,7 +444,7 @@ describe("App", () => {
     render(<App />);
 
     await openSourcePicker(user);
-    expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
+    expect(await screen.findByText("3840 × 2160")).toBeInTheDocument();
 
     screen.getByRole("button", { name: "File" }).focus();
     await user.keyboard("{Enter}");
@@ -454,8 +453,8 @@ describe("App", () => {
 
     fireEvent.keyDown(window, { key: "й", code: "KeyQ", ctrlKey: true });
 
-    expect(await screen.findByRole("heading", { name: "No source" })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "holiday.mp4" })).not.toBeInTheDocument();
+    expect(selectHasSource(store.getState())).toBe(false);
+    expect(screen.queryByText("3840 × 2160")).not.toBeInTheDocument();
     screen.getByRole("button", { name: "File" }).focus();
     await user.keyboard("{Enter}");
     expect(screen.getByRole("menuitem", { name: /Close File/ })).toHaveAttribute(
@@ -471,7 +470,6 @@ describe("App", () => {
 
     await openSourcePicker(user);
 
-    expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
     expect(await screen.findByText("3840 × 2160")).toBeInTheDocument();
     expect(screen.getByText("59.94 fps")).toBeInTheDocument();
     const audioStreamMetadata = screen.getAllByText("Audio tracks")[0]!;
@@ -584,20 +582,14 @@ describe("App", () => {
     expect(playbackSpeedButton).toHaveAttribute("aria-pressed", "false");
     expect(playbackSpeedButton).not.toHaveClass("text-primary");
     expect(within(videoTimelineRow as HTMLElement).queryByText("Video")).not.toBeInTheDocument();
-    expect(screen.getByTestId("source-details-panel")).toContainElement(
-      screen.getByRole("heading", { name: "holiday.mp4" }),
-    );
-    const sourceDetails = screen
-      .getByTestId("source-details-panel")
-      .querySelector<HTMLElement>('[data-slot="source-details"]');
+    const mediaDetails = screen.getByTestId("media-details");
+    expect(screen.getByTestId("source-details-panel")).toContainElement(mediaDetails);
+    expect(mediaDetails).toContainElement(screen.getByText("3840 × 2160"));
     const exportSection = screen.getByTestId("export-queue");
     const exportSectionContent = exportSection.querySelector<HTMLElement>(
       '[data-slot="resizable-section-content"]',
     );
-    expect(sourceDetails).toContainElement(screen.getByRole("heading", { name: "holiday.mp4" }));
-    expect(sourceDetails).not.toHaveTextContent("Video stream");
-    expect(sourceDetails).not.toHaveTextContent("Audio tracks");
-    expect(sourceDetails).not.toContainElement(
+    expect(mediaDetails).not.toContainElement(
       screen.getByRole("heading", { name: "Export queue" }),
     );
     expect(exportSection).toContainElement(screen.getByRole("heading", { name: "Export queue" }));
@@ -672,7 +664,7 @@ describe("App", () => {
     render(<App />);
 
     await openSourcePicker(user);
-    expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
+    expect(await screen.findByText("3840 × 2160")).toBeInTheDocument();
 
     const sourceDetailsToggle = screen.getByRole("button", {
       name: "Hide Left panel",
@@ -684,15 +676,14 @@ describe("App", () => {
     expect(audioTracksToggle).toHaveAttribute("aria-pressed", "true");
 
     await user.click(sourceDetailsToggle);
-    expect(screen.getByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
+    expect(screen.getByText("3840 × 2160")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Export queue" })).toBeInTheDocument();
-    expect(document.getElementById("source-details-resize-handle")).toHaveAttribute(
+    expect(document.getElementById("source-details-resize-handle")).not.toHaveAttribute(
       "aria-hidden",
-      "false",
     );
 
     await user.click(screen.getByRole("button", { name: "Show Left panel" }));
-    expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
+    expect(await screen.findByText("3840 × 2160")).toBeInTheDocument();
 
     await user.click(audioTracksToggle);
     expect(screen.queryByTestId("audio-tracks-scroll")).not.toBeInTheDocument();
@@ -716,7 +707,7 @@ describe("App", () => {
     render(<App />);
 
     await openSourcePicker(user);
-    await screen.findByRole("heading", { name: "holiday.mp4" });
+    await screen.findByText("3840 × 2160");
     screen.getByRole("button", { name: "Layout controls" }).focus();
     await user.keyboard("{Enter}");
     const leftPanelRow = screen.getByRole("menuitem", { name: /Left panel/ });
@@ -745,7 +736,7 @@ describe("App", () => {
     render(<App />);
 
     await openSourcePicker(user);
-    await screen.findByRole("heading", { name: "holiday.mp4" });
+    await screen.findByText("3840 × 2160");
     const fileMenuButton = screen.getByRole("button", { name: "File" });
     fileMenuButton.focus();
     expect(document.activeElement).toBe(fileMenuButton);
@@ -756,7 +747,7 @@ describe("App", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 
     fireEvent.keyDown(window, { key: "Escape" });
-    expect(screen.getByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
+    expect(screen.getByText("3840 × 2160")).toBeInTheDocument();
   });
 
   it("closes an open export dialog on Escape", async () => {
@@ -765,7 +756,7 @@ describe("App", () => {
     render(<App />);
 
     await openSourcePicker(user);
-    await screen.findByRole("heading", { name: "holiday.mp4" });
+    await screen.findByText("3840 × 2160");
     screen.getByRole("button", { name: "File" }).focus();
     await user.keyboard("{Enter}");
     await user.click(screen.getByRole("menuitem", { name: /Optimize & Export/ }));
@@ -782,7 +773,7 @@ describe("App", () => {
     render(<App />);
 
     await openSourcePicker(user);
-    await screen.findByRole("heading", { name: "holiday.mp4" });
+    await screen.findByText("3840 × 2160");
     const volumeButton = screen.getByRole("button", { name: "Mute eng" });
     expect(volumeButton).not.toHaveAttribute("title");
 
@@ -2438,7 +2429,7 @@ describe("App", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "The compatible preview could not be played.",
     );
-    expect(screen.getByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
+    expect(screen.getByText("3840 × 2160")).toBeInTheDocument();
   });
 
   it("keeps the current source when the picker is cancelled", async () => {
@@ -2447,13 +2438,13 @@ describe("App", () => {
     render(<App />);
 
     await openSourcePicker(user);
-    expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
+    expect(await screen.findByText("3840 × 2160")).toBeInTheDocument();
 
     screen.getByRole("button", { name: "File" }).focus();
     await user.keyboard("{Enter}");
     await user.click(screen.getByRole("menuitem", { name: /Open File/ }));
 
-    expect(screen.getByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
+    expect(screen.getByText("3840 × 2160")).toBeInTheDocument();
     expect(mocks.inspectMedia).toHaveBeenCalledTimes(1);
   });
 
@@ -2477,7 +2468,7 @@ describe("App", () => {
     render(<App />);
 
     await openSourcePicker(user);
-    expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
+    expect(await screen.findByText("3840 × 2160")).toBeInTheDocument();
 
     act(() => {
       sourceDropListener?.({
@@ -2486,7 +2477,7 @@ describe("App", () => {
       });
     });
 
-    expect(screen.queryByRole("heading", { name: "holiday.mp4" })).not.toBeInTheDocument();
+    expect(screen.queryByText("3840 × 2160")).not.toBeInTheDocument();
     expect(selectHasSource(store.getState())).toBe(false);
     expect(screen.getAllByRole("alert")).toEqual(
       expect.arrayContaining([
@@ -2502,7 +2493,7 @@ describe("App", () => {
       sourceDropListener?.({ status: "selected", sources: [selection] });
     });
 
-    expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
+    expect(await screen.findByText("3840 × 2160")).toBeInTheDocument();
     expect(mocks.inspectMedia).toHaveBeenCalledWith(selection.sourcePath);
     expect(await screen.findByText("3840 × 2160")).toBeInTheDocument();
   });
@@ -2513,7 +2504,7 @@ describe("App", () => {
     render(<App />);
 
     await openSourcePicker(user);
-    expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
+    expect(await screen.findByText("3840 × 2160")).toBeInTheDocument();
 
     act(() => sourceDropListener?.({ status: "drag", active: true }));
     expect(screen.getByRole("status", { name: "Drop video to open" })).toBeInTheDocument();
