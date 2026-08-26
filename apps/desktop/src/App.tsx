@@ -23,7 +23,7 @@ import {
   selectIsNativeDialogOpen,
 } from "@/app/store/slices/import-workflow-slice";
 import {
-  closeSourceRequested,
+  closeActiveImportedItemRequested,
   chooseSourceRequested,
 } from "@/app/store/thunks/source-media-thunks";
 import { EditorContractsProvider } from "@/app/components/Providers/EditorContractsProvider";
@@ -67,7 +67,7 @@ function EasyTrimEditorApp() {
       hasSource &&
       !isChoosingSource &&
       !isNativeDialogOpen,
-    () => void dispatch(closeSourceRequested()),
+    () => void dispatch(closeActiveImportedItemRequested()),
   );
   useKeyboardShortcut(
     (event) => event.code === "KeyS" && event.ctrlKey && canExport && !cropApplied,

@@ -16,8 +16,11 @@ import {
 import {
   activeQueueItemChanged,
   importedQueueItemAdded,
+  queueEntryAdded,
   selectActiveItemId,
+  selectExportQueue,
   selectImportedQueueItems,
+  type ExportQueueItem,
 } from "@/app/store/slices/export-slice";
 import { cropChanged, selectCrop } from "@/app/store/slices/crop-slice";
 import { selectPreview } from "@/app/store/slices/preview-slice";
@@ -33,10 +36,11 @@ import {
   selectIsChoosingSource,
   selectIsNativeDialogOpen,
 } from "@/app/store/slices/import-workflow-slice";
+import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
 import {
   checkMediaCapabilitiesRequested,
   chooseSourceRequested,
-  closeSourceRequested,
+  closeActiveImportedItemRequested,
   handlePreviewPlaybackError,
   importSource,
   leaveActiveImportedItem,
@@ -44,6 +48,7 @@ import {
   switchImportedQueueItemRequested,
 } from "@/app/store/thunks/source-media-thunks";
 import { trimChanged } from "@/app/store/slices/trim-slice";
+import type { EditorSnapshot } from "@/domain/editor-snapshot";
 
 const mocks = vi.hoisted(() => ({
   checkMediaCapabilities: vi.fn(),
@@ -122,6 +127,28 @@ function sourcePreview(_sourcePath: string, kind: "source" | "proxy" = "source")
 
 function audioPreview(_sourcePath: string, streamIndex: number) {
   return { mediaToken: 1, streamIndex, url: `media://source/audio/${streamIndex}` };
+}
+
+function createHistoryItem(snapshot: EditorSnapshot, id = "history-1"): ExportQueueItem {
+  return {
+    id,
+    snapshot,
+    route: "fast",
+    request: {
+      sourcePath: snapshot.source.sourcePath,
+      trim: snapshot.trim,
+      audioTracks: [],
+      mergeAudio: false,
+    },
+    outputId: `output-${id}`,
+    filename: `${id}.mp4`,
+    path: `C:/Media/${id}.mp4`,
+    status: "completed",
+    operationId: `operation-${id}`,
+    startedAt: 1,
+    durationMs: 1,
+    progressPercent: 100,
+  };
 }
 
 describe("source/media orchestration thunks", () => {
@@ -454,6 +481,91 @@ describe("source/media orchestration thunks", () => {
     expect(selectActiveItemId(appStore.getState())).toBe(target.id);
   });
 
+  it("removes only the active imported item and restores the next item", async () => {
+    const appStore = createAppStore();
+    mocks.inspectMedia.mockImplementation(async (sourcePath: string) => createMedia(sourcePath, 1));
+
+    await appStore.dispatch(importSource(firstSource));
+    await appStore.dispatch(importSource(secondSource));
+    await appStore.dispatch(importSource(thirdSource));
+    const [firstItem, secondItem, thirdItem] = selectImportedQueueItems(appStore.getState());
+    await appStore.dispatch(switchImportedQueueItemRequested(secondItem!.id));
+
+    await appStore.dispatch(closeActiveImportedItemRequested());
+
+    expect(selectImportedQueueItems(appStore.getState()).map((item) => item.id)).toEqual([
+      firstItem!.id,
+      thirdItem!.id,
+    ]);
+    expect(selectActiveItemId(appStore.getState())).toBe(thirdItem!.id);
+    expect(selectSourceSelection(appStore.getState())).toEqual(thirdSource);
+  });
+
+  it("removes the last imported item and clears the editor", async () => {
+    const appStore = createAppStore();
+    mocks.inspectMedia.mockResolvedValue(createMedia(firstSource.sourcePath, 1));
+
+    await appStore.dispatch(importSource(firstSource));
+    await appStore.dispatch(closeActiveImportedItemRequested());
+
+    expect(selectImportedQueueItems(appStore.getState())).toEqual([]);
+    expect(selectActiveItemId(appStore.getState())).toBeNull();
+    expect(selectHasSource(appStore.getState())).toBe(false);
+  });
+
+  it("removes an imported item without changing export history", async () => {
+    const appStore = createAppStore();
+    const snapshot: EditorSnapshot = {
+      source: firstSource,
+      trim: { startMicros: 0, endMicros: 5_000_000 },
+      crop: null,
+      audio: { master: { enabled: true, volumePercent: 50 }, tracks: [], mergeAudio: false },
+    };
+    const importedItem = {
+      id: "import-1",
+      status: "imported" as const,
+      origin: "source-import" as const,
+      snapshot,
+    };
+    const historyItem = createHistoryItem(snapshot);
+    appStore.dispatch(sourceSelected({ source: firstSource }));
+    appStore.dispatch(sourceReady({ loadToken: 1, media: createMedia(firstSource.sourcePath, 1) }));
+    appStore.dispatch(queueEntryAdded(historyItem));
+    appStore.dispatch(importedQueueItemAdded(importedItem));
+
+    await appStore.dispatch(closeActiveImportedItemRequested());
+
+    expect(selectImportedQueueItems(appStore.getState())).toEqual([]);
+    expect(selectExportQueue(appStore.getState())).toEqual([historyItem]);
+  });
+
+  it("discards a history fork without changing its original export history", async () => {
+    const appStore = createAppStore();
+    const snapshot: EditorSnapshot = {
+      source: firstSource,
+      trim: { startMicros: 0, endMicros: 5_000_000 },
+      crop: null,
+      audio: { master: { enabled: true, volumePercent: 50 }, tracks: [], mergeAudio: false },
+    };
+    const historyItem = createHistoryItem(snapshot);
+    const fork = {
+      id: "fork-1",
+      status: "imported" as const,
+      origin: "history-fork" as const,
+      snapshot,
+    };
+    appStore.dispatch(sourceSelected({ source: firstSource }));
+    appStore.dispatch(sourceReady({ loadToken: 1, media: createMedia(firstSource.sourcePath, 1) }));
+    appStore.dispatch(queueEntryAdded(historyItem));
+    appStore.dispatch(importedQueueItemAdded(fork));
+
+    await appStore.dispatch(closeActiveImportedItemRequested());
+
+    expect(selectImportedQueueItems(appStore.getState())).toEqual([]);
+    expect(selectExportQueue(appStore.getState())).toEqual([historyItem]);
+    expect(selectHasSource(appStore.getState())).toBe(false);
+  });
+
   it("keeps the source item active when an existing item cannot be restored", async () => {
     const appStore = createAppStore();
     mocks.inspectMedia.mockResolvedValueOnce(createMedia(firstSource.sourcePath, 1));
@@ -748,7 +860,7 @@ describe("source/media orchestration thunks", () => {
       error: { code: "waveform_failed", message: "Waveform generation failed" },
     });
 
-    appStore.dispatch(closeSourceRequested());
+    appStore.dispatch(closeActiveImportedItemRequested());
     expect(selectHasSource(appStore.getState())).toBe(false);
     expect(selectAudioPreviews(appStore.getState())).toBeNull();
   });

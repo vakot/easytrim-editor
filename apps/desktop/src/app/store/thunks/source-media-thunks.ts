@@ -32,6 +32,7 @@ import {
   importedQueueItemRemoved,
   queueItemSnapshotUpdated,
   selectActiveQueueItem,
+  selectImportedQueueItems,
   type ImportedQueueItem,
 } from "@/app/store/slices/export-slice";
 import {
@@ -375,11 +376,41 @@ export const chooseSourceRequested = (): AppThunk => async (dispatch, getState) 
   }
 };
 
-export const closeSourceRequested = (): AppThunk<void> => (dispatch, getState) => {
-  if (!selectHasSource(getState())) return;
-  dispatch(sourceCleared());
-  dispatch(nativeDialogStateChanged(false));
-};
+export const closeActiveImportedItemRequested =
+  (): AppThunk<Promise<void>> => async (dispatch, getState) => {
+    const state = getState();
+    const activeItem = selectActiveQueueItem(state);
+
+    if (!activeItem || activeItem.status !== "imported") {
+      if (!selectHasSource(state)) return;
+      dispatch(sourceCleared());
+      dispatch(nativeDialogStateChanged(false));
+      return;
+    }
+
+    const importedItems = selectImportedQueueItems(state);
+    const activeIndex = importedItems.findIndex((item) => item.id === activeItem.id);
+    const replacementItem =
+      importedItems[activeIndex + 1] ?? importedItems[activeIndex - 1] ?? null;
+    const restorationId = ++queueRestoreSequence;
+
+    dispatch(importedQueueItemRemoved(activeItem.id));
+    if (!replacementItem) {
+      dispatch(sourceCleared());
+      dispatch(nativeDialogStateChanged(false));
+      return;
+    }
+
+    dispatch(sourceCleared());
+    const restoreResult = await restoreImportedQueueItem(
+      replacementItem,
+      dispatch,
+      getState,
+      restorationId,
+    );
+    if (restoreResult.status === "failed") dispatch(sourceErrorReported(restoreResult.error));
+    dispatch(nativeDialogStateChanged(false));
+  };
 
 export const handlePreviewPlaybackError =
   (sourcePath: string, previewKind: PreviewKind): AppThunk =>
