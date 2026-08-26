@@ -4,7 +4,12 @@ import type { MediaInfo, WaveformResult } from "@/lib/tauri/media";
 import type { SourceRef } from "@/domain/source";
 import { createAppStore } from "@/app/store/store";
 import { selectAudioPreviews, selectAudioTracks } from "@/app/store/slices/audio-slice";
-import { selectActiveItemId, selectImportedQueueItems } from "@/app/store/slices/export-slice";
+import {
+  activeQueueItemChanged,
+  importedQueueItemAdded,
+  selectActiveItemId,
+  selectImportedQueueItems,
+} from "@/app/store/slices/export-slice";
 import { selectPreview } from "@/app/store/slices/preview-slice";
 import {
   selectHasSource,
@@ -207,6 +212,63 @@ describe("source/media orchestration thunks", () => {
       startMicros: 750_000,
       endMicros: 3_500_000,
     });
+  });
+
+  it("discards a history fork when navigating to another imported item", async () => {
+    const appStore = createAppStore();
+    const snapshot = {
+      source: firstSource,
+      trim: { startMicros: 0, endMicros: 5_000_000 },
+      crop: null,
+      audio: { master: { enabled: true, volumePercent: 50 }, tracks: [], mergeAudio: false },
+    };
+    const fork = {
+      id: "fork-1",
+      status: "imported" as const,
+      origin: "history-fork" as const,
+      snapshot,
+    };
+    const target = {
+      id: "import-2",
+      status: "imported" as const,
+      origin: "source-import" as const,
+      snapshot: { ...snapshot, source: secondSource },
+    };
+    appStore.dispatch(importedQueueItemAdded(fork));
+    appStore.dispatch(importedQueueItemAdded(target));
+    appStore.dispatch(activeQueueItemChanged(fork.id));
+    mocks.inspectMedia.mockResolvedValue(createMedia(secondSource.sourcePath, 1));
+
+    await expect(appStore.dispatch(switchImportedQueueItemRequested(target.id))).resolves.toBe(true);
+
+    expect(selectImportedQueueItems(appStore.getState())).toEqual([target]);
+    expect(selectActiveItemId(appStore.getState())).toBe(target.id);
+  });
+
+  it("discards a history fork when a new source is imported", async () => {
+    const appStore = createAppStore();
+    const historyFork = {
+      id: "fork-1",
+      status: "imported" as const,
+      origin: "history-fork" as const,
+      snapshot: {
+        source: firstSource,
+        trim: { startMicros: 0, endMicros: 5_000_000 },
+        crop: null,
+        audio: { master: { enabled: true, volumePercent: 50 }, tracks: [], mergeAudio: false },
+      },
+    };
+    appStore.dispatch(importedQueueItemAdded(historyFork));
+    mocks.inspectMedia.mockResolvedValue(createMedia(secondSource.sourcePath, 1));
+
+    await appStore.dispatch(importSource(secondSource));
+
+    expect(
+      selectImportedQueueItems(appStore.getState()).every(
+        (item) => item.origin === "source-import",
+      ),
+    ).toBe(true);
+    expect(selectImportedQueueItems(appStore.getState())).not.toContainEqual(historyFork);
   });
 
   it("clears native chooser state before a selected source finishes importing", async () => {
