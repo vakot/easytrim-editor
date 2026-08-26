@@ -9,10 +9,24 @@ import {
   ResizableSectionTrigger,
 } from "@/components/layout/ResizableSections";
 
-function renderTestSections() {
+type SectionId = "media" | "imported" | "export";
+type SectionStates = Record<SectionId, boolean>;
+
+const allOpen: SectionStates = {
+  media: true,
+  imported: true,
+  export: true,
+};
+
+function renderTestSections(defaultOpen: SectionStates = allOpen) {
   return render(
     <ResizableSections style={{ height: "600px" }}>
-      <ResizableSection id="media" defaultSize="12rem" minSize="8rem">
+      <ResizableSection
+        id="media"
+        defaultOpen={defaultOpen.media}
+        defaultSize="12rem"
+        minSize="8rem"
+      >
         <ResizableSectionTrigger>Media details</ResizableSectionTrigger>
         <ResizableSectionContent>
           <button type="button" data-testid="media-action">
@@ -20,7 +34,12 @@ function renderTestSections() {
           </button>
         </ResizableSectionContent>
       </ResizableSection>
-      <ResizableSection id="imported" defaultSize="10rem" minSize="7rem">
+      <ResizableSection
+        id="imported"
+        defaultOpen={defaultOpen.imported}
+        defaultSize="10rem"
+        minSize="7rem"
+      >
         <ResizableSectionTrigger>Imported queue</ResizableSectionTrigger>
         <ResizableSectionContent>
           <button type="button" data-testid="imported-action">
@@ -28,7 +47,12 @@ function renderTestSections() {
           </button>
         </ResizableSectionContent>
       </ResizableSection>
-      <ResizableSection id="export" defaultSize="16rem" minSize="8rem">
+      <ResizableSection
+        id="export"
+        defaultOpen={defaultOpen.export}
+        defaultSize="16rem"
+        minSize="8rem"
+      >
         <ResizableSectionTrigger>Export queue</ResizableSectionTrigger>
         <ResizableSectionContent>
           <button type="button" data-testid="export-action">
@@ -37,6 +61,21 @@ function renderTestSections() {
         </ResizableSectionContent>
       </ResizableSection>
     </ResizableSections>,
+  );
+}
+
+function expectStates(states: SectionStates) {
+  expect(screen.getByRole("button", { name: "Media details" })).toHaveAttribute(
+    "aria-expanded",
+    String(states.media),
+  );
+  expect(screen.getByRole("button", { name: "Imported queue" })).toHaveAttribute(
+    "aria-expanded",
+    String(states.imported),
+  );
+  expect(screen.getByRole("button", { name: "Export queue" })).toHaveAttribute(
+    "aria-expanded",
+    String(states.export),
   );
 }
 
@@ -93,6 +132,60 @@ describe("ResizableSections", () => {
     ).toHaveAttribute("hidden");
   });
 
+  it("keeps every user section collapsed and activates the filler after the last close", async () => {
+    const user = userEvent.setup();
+    renderTestSections();
+
+    await user.click(screen.getByRole("button", { name: "Export queue" }));
+    await user.click(screen.getByRole("button", { name: "Imported queue" }));
+    await user.click(screen.getByRole("button", { name: "Media details" }));
+
+    expectStates({ media: false, imported: false, export: false });
+    const filler = document.querySelector('[data-slot="resizable-sections-filler"]');
+    expect(filler).toHaveAttribute("aria-hidden", "true");
+    expect(filler).not.toHaveAttribute("data-slot", "resizable-section-content");
+    expect(filler).not.toHaveTextContent(/.+/);
+    expect(Number((filler as HTMLElement).style.flexGrow)).toBeGreaterThan(0);
+  });
+
+  it.each(["media", "imported", "export"] as const)(
+    "opens only %s when all sections start collapsed",
+    async (section) => {
+      const user = userEvent.setup();
+      renderTestSections({ media: false, imported: false, export: false });
+
+      const labels = {
+        media: "Media details",
+        imported: "Imported queue",
+        export: "Export queue",
+      } as const;
+      await user.click(screen.getByRole("button", { name: labels[section] }));
+
+      expectStates({
+        media: section === "media",
+        imported: section === "imported",
+        export: section === "export",
+      });
+      expect(
+        Number(
+          (document.querySelector('[data-slot="resizable-sections-filler"]') as HTMLElement).style
+            .flexGrow,
+        ),
+      ).toBe(0);
+    },
+  );
+
+  it("keeps sibling state independent across close and reopen sequences", async () => {
+    const user = userEvent.setup();
+    renderTestSections();
+
+    await user.click(screen.getByRole("button", { name: "Imported queue" }));
+    await user.click(screen.getByRole("button", { name: "Media details" }));
+    await user.click(screen.getByRole("button", { name: "Imported queue" }));
+
+    expectStates({ media: false, imported: true, export: true });
+  });
+
   it("starts collapsed at the persistent trigger row when defaultOpen is false", () => {
     render(
       <ResizableSections style={{ height: "300px" }}>
@@ -138,6 +231,15 @@ describe("ResizableSections", () => {
     await user.keyboard("{Enter}");
     expect(trigger).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByText("Content")).toBeVisible();
+  });
+
+  it("keeps the filler outside the user-facing accessibility controls", () => {
+    renderTestSections();
+
+    const filler = document.querySelector('[data-slot="resizable-sections-filler"]');
+    expect(filler).toHaveAttribute("aria-hidden", "true");
+    expect(filler?.querySelector('[data-slot="resizable-section-content"]')).toBeNull();
+    expect(filler?.querySelector("button")).toBeNull();
   });
 
   it("restores a valid expanded panel size after collapsing and reopening", async () => {
