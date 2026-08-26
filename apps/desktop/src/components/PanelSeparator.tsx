@@ -9,6 +9,7 @@ interface PanelSeparatorProps {
   orientation: "horizontal" | "vertical";
   onDoubleClick?: MouseEventHandler<HTMLDivElement>;
   disabled?: boolean;
+  children?: React.ReactNode;
   collapsed?: boolean;
   className?: string;
 }
@@ -19,6 +20,7 @@ export function PanelSeparator({
   orientation,
   onDoubleClick,
   disabled = false,
+  children,
   collapsed = false,
   className,
 }: PanelSeparatorProps) {
@@ -38,18 +40,32 @@ export function PanelSeparator({
       )}
     >
       <div className="pointer-events-none absolute inset-0 z-10 rounded transition-colors group-hover:bg-primary/70 group-focus-visible:bg-primary group-data-[separator=active]:bg-primary group-data-[separator=drag]:bg-primary" />
-      {!collapsed ? (
-        <div
-          className={cn(
-            "absolute left-1/2 top-1/2 -translate-1/2 flex gap-0.5",
-            orientation === "vertical" ? "flex-col" : "flex-row",
-          )}
-        >
-          <div aria-hidden="true" className="size-0.5 rounded-full bg-secondary-foreground" />
-          <div aria-hidden="true" className="size-0.5 rounded-full bg-secondary-foreground" />
-          <div aria-hidden="true" className="size-0.5 rounded-full bg-secondary-foreground" />
-        </div>
-      ) : null}
+      <PanelSeparatorContent orientation={orientation} collapsed={collapsed}>
+        {children}
+      </PanelSeparatorContent>
     </ResizeSeparator>
+  );
+}
+
+type PanelSeparatorContentProps = Pick<
+  PanelSeparatorProps,
+  "children" | "orientation" | "collapsed"
+>;
+
+function PanelSeparatorContent({ children, orientation, collapsed }: PanelSeparatorContentProps) {
+  if (children) return children;
+  if (collapsed) return null;
+
+  return (
+    <div
+      className={cn(
+        "absolute left-1/2 top-1/2 -translate-1/2 flex gap-0.5",
+        orientation === "vertical" ? "flex-col" : "flex-row",
+      )}
+    >
+      <div aria-hidden="true" className="size-0.5 rounded-full bg-secondary-foreground" />
+      <div aria-hidden="true" className="size-0.5 rounded-full bg-secondary-foreground" />
+      <div aria-hidden="true" className="size-0.5 rounded-full bg-secondary-foreground" />
+    </div>
   );
 }
