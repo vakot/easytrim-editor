@@ -101,11 +101,6 @@ export const importSource =
       options.leaveActiveItem ?? (registerQueueItem && options.activeItemId === undefined);
     if (leaveActiveItem) dispatch(leaveActiveImportedItem());
     else if (captureCurrentDraft) captureActiveQueueItemDraft(dispatch, getState);
-    if (options.activeItemId !== undefined) {
-      dispatch(activeQueueItemChanged(options.activeItemId));
-    } else if (registerQueueItem) {
-      dispatch(activeQueueItemChanged(null));
-    }
 
     const selectedMergeAudio = mergeAudio ?? getState().preferences.mergeAudioEnabledDefault;
     const loadToken = ++sourceLoadSequence;
@@ -125,6 +120,9 @@ export const importSource =
 
     if (!isCurrentSource(getState(), source.sourcePath, loadToken)) return;
     dispatch(sourceReady({ loadToken, media }));
+    if (options.activeItemId !== undefined) {
+      dispatch(activeQueueItemChanged(options.activeItemId));
+    }
 
     if (registerQueueItem) {
       const state = getState();
@@ -235,7 +233,6 @@ export const leaveActiveImportedItem = (): AppThunk => (dispatch, getState) => {
 
   if (activeItem.origin === "source-import") {
     captureActiveQueueItemDraft(dispatch, getState);
-    dispatch(activeQueueItemChanged(null));
   } else {
     dispatch(importedQueueItemRemoved(activeItem.id));
   }

@@ -212,6 +212,36 @@ describe("source/media orchestration thunks", () => {
       startMicros: 750_000,
       endMicros: 3_500_000,
     });
+    expect(selectActiveItemId(appStore.getState())).toBe(importedItem?.id);
+  });
+
+  it("keeps a source-import active when a replacement source fails to load", async () => {
+    const appStore = createAppStore();
+    mocks.inspectMedia.mockResolvedValueOnce(createMedia(firstSource.sourcePath, 1));
+
+    await appStore.dispatch(importSource(firstSource));
+    const firstItem = selectImportedQueueItems(appStore.getState())[0];
+    appStore.dispatch(
+      trimChanged({
+        trim: { startMicros: 750_000, endMicros: 3_500_000, sourceDurationMicros: 5_000_000 },
+      }),
+    );
+    mocks.inspectMedia.mockRejectedValueOnce({
+      code: "unsupported_media",
+      message: "The replacement source is not supported.",
+    });
+
+    await appStore.dispatch(importSource(secondSource));
+
+    expect(selectImportedQueueItems(appStore.getState())).toEqual([
+      expect.objectContaining({
+        id: firstItem?.id,
+        snapshot: expect.objectContaining({
+          trim: { startMicros: 750_000, endMicros: 3_500_000 },
+        }),
+      }),
+    ]);
+    expect(selectActiveItemId(appStore.getState())).toBe(firstItem?.id);
   });
 
   it("discards a history fork when navigating to another imported item", async () => {
@@ -247,6 +277,40 @@ describe("source/media orchestration thunks", () => {
     expect(selectActiveItemId(appStore.getState())).toBe(target.id);
   });
 
+  it("keeps the source item active when an existing item cannot be restored", async () => {
+    const appStore = createAppStore();
+    mocks.inspectMedia.mockResolvedValueOnce(createMedia(firstSource.sourcePath, 1));
+    await appStore.dispatch(importSource(firstSource));
+    const sourceItem = selectImportedQueueItems(appStore.getState())[0];
+    const target = {
+      id: "import-2",
+      status: "imported" as const,
+      origin: "source-import" as const,
+      snapshot: {
+        source: secondSource,
+        trim: { startMicros: 0, endMicros: 5_000_000 },
+        crop: null,
+        audio: { master: { enabled: true, volumePercent: 50 }, tracks: [], mergeAudio: false },
+      },
+    };
+    appStore.dispatch(importedQueueItemAdded(target));
+    appStore.dispatch(activeQueueItemChanged(sourceItem!.id));
+    mocks.inspectMedia.mockRejectedValueOnce({
+      code: "unsupported_media",
+      message: "The target source is not supported.",
+    });
+
+    await expect(appStore.dispatch(switchImportedQueueItemRequested(target.id))).resolves.toBe(
+      false,
+    );
+
+    expect(selectImportedQueueItems(appStore.getState())).toEqual([
+      expect.objectContaining({ id: sourceItem?.id }),
+      target,
+    ]);
+    expect(selectActiveItemId(appStore.getState())).toBe(sourceItem?.id);
+  });
+
   it("discards a history fork when a new source is imported", async () => {
     const appStore = createAppStore();
     const historyFork = {
@@ -271,6 +335,9 @@ describe("source/media orchestration thunks", () => {
       ),
     ).toBe(true);
     expect(selectImportedQueueItems(appStore.getState())).not.toContainEqual(historyFork);
+    expect(selectActiveItemId(appStore.getState())).toBe(
+      selectImportedQueueItems(appStore.getState())[0]?.id,
+    );
   });
 
   it("clears native chooser state before a selected source finishes importing", async () => {
