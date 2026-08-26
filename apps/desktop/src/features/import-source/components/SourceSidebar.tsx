@@ -25,7 +25,7 @@ export function SourceSidebar() {
           collapsedSize={28}
           defaultSize="15rem"
           minSize="10rem"
-          groupResizeBehavior="preserve-pixel-size"
+          groupResizeBehavior="preserve-relative-size"
         >
           <ResizableSectionTrigger size="sm" variant="ghost" className="px-2">
             {t("import.source.sections.mediaDetails")}
@@ -44,7 +44,7 @@ export function SourceSidebar() {
           collapsedSize={28}
           defaultSize="10rem"
           minSize="7rem"
-          groupResizeBehavior="preserve-pixel-size"
+          groupResizeBehavior="preserve-relative-size"
         >
           <ResizableSectionTrigger size="sm" variant="ghost" className="px-2">
             {t("import.source.sections.importedQueue")}
