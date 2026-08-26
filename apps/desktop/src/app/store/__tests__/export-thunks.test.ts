@@ -126,6 +126,12 @@ const importedItem: ImportedQueueItem = {
   snapshot: queuedItem.snapshot,
 };
 
+const historyForkItem: ImportedQueueItem = {
+  ...importedItem,
+  id: "fork-1",
+  origin: "history-fork",
+};
+
 function createReadyStore(withImportedItem = true) {
   const store = createAppStore({
     getItem: async () => null,
@@ -217,6 +223,60 @@ describe("export thunks and runtime queue", () => {
       route: "optimized",
     });
     expect(selectImportedQueueItems(store.getState())).toHaveLength(0);
+  });
+
+  it("promotes a history fork through Fast Cut using the same id", async () => {
+    const store = createReadyStore(false);
+    store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
+    store.dispatch(importedQueueItemAdded(historyForkItem));
+
+    store.dispatch(startFastCutRequested());
+    await vi.waitFor(() => expect(selectExportQueue(store.getState())).toHaveLength(1));
+
+    const promoted = selectExportQueue(store.getState())[0];
+    expect(promoted?.id).toBe(historyForkItem.id);
+    expect(promoted).not.toHaveProperty("origin");
+    expect(selectImportedQueueItems(store.getState())).toHaveLength(0);
+  });
+
+  it("promotes a history fork through Optimized Export using the same id", async () => {
+    const store = createReadyStore(false);
+    store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
+    store.dispatch(importedQueueItemAdded(historyForkItem));
+
+    store.dispatch(startOptimizedExportRequested());
+    await vi.waitFor(() => expect(selectExportQueue(store.getState())).toHaveLength(1));
+
+    expect(selectExportQueue(store.getState())[0]).toMatchObject({
+      id: historyForkItem.id,
+      status: "queued",
+      route: "optimized",
+    });
+    expect(selectImportedQueueItems(store.getState())).toHaveLength(0);
+  });
+
+  it("keeps a history fork active when Fast Cut output selection is canceled", async () => {
+    const store = createReadyStore(false);
+    store.dispatch(importedQueueItemAdded(historyForkItem));
+    mocks.chooseOutputPath.mockResolvedValueOnce(null);
+
+    store.dispatch(startFastCutRequested());
+    await Promise.resolve();
+
+    expect(selectImportedQueueItems(store.getState())).toEqual([historyForkItem]);
+    expect(selectActiveItemId(store.getState())).toBe(historyForkItem.id);
+  });
+
+  it("keeps a history fork active when Optimized Export output selection is canceled", async () => {
+    const store = createReadyStore(false);
+    store.dispatch(importedQueueItemAdded(historyForkItem));
+    mocks.chooseOutputPath.mockResolvedValueOnce(null);
+
+    store.dispatch(startOptimizedExportRequested());
+    await Promise.resolve();
+
+    expect(selectImportedQueueItems(store.getState())).toEqual([historyForkItem]);
+    expect(selectActiveItemId(store.getState())).toBe(historyForkItem.id);
   });
 
   it("selects the next imported item after promotion", async () => {
