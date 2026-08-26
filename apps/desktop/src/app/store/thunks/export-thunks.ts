@@ -6,12 +6,18 @@ import {
   optimizedExportPlanReceived,
   optimizedExportPlanRequested,
   optimizedExportSettingsChanged,
-  queueEntryAdded,
+  importedQueueItemAdded,
   queueFinishActionsAvailable,
+  queueItemPromoted,
   queuePaused,
   queueStarted,
+  selectActiveItemId,
+  selectActiveQueueItem,
+  selectImportedQueueItems,
+  type QueueItemPromotion,
   type ExportQueueItem,
   type ExportSettings,
+  type ImportedQueueItem,
 } from "@/app/store/slices/export-slice";
 import {
   selectAudioTracks,
@@ -31,6 +37,7 @@ import {
   normalizeAppError,
   planOptimizedExport,
   reserveExportSource,
+  releaseExportSource,
   type FastExportRequest,
   type OptimizedExportRequest,
 } from "@/lib/tauri/media";
@@ -44,24 +51,19 @@ import {
   setExportQueueExecutionEnabled,
 } from "@/features/export/utils/export-queue";
 import { outputDefaults } from "@/features/export/utils/export-options";
-import { FULL_CROP } from "@/domain/crop";
-import type { EditorSnapshot } from "@/domain/editor-snapshot";
-import {
-  audioMergeToggled,
-  audioTrackToggled,
-  audioTrackVolumeChanged,
-  masterAudioToggled,
-  masterVolumeChanged,
-} from "@/app/store/slices/audio-slice";
-import { cropChanged } from "@/app/store/slices/crop-slice";
-import { trimChanged } from "@/app/store/slices/trim-slice";
+import { cloneEditorSnapshot, createEditorSnapshot } from "@/domain/editor-snapshot";
+import { applyEditorSnapshot } from "@/app/store/editor-snapshot";
 import { importSourcePath } from "@/lib/tauri/media";
-import { importSource } from "@/app/store/thunks/source-media-thunks";
+import {
+  importSource,
+  leaveActiveImportedItem,
+  switchImportedQueueItemRequested,
+} from "@/app/store/thunks/source-media-thunks";
 import { sourceFailed } from "@/app/store/actions/source-actions";
 
-let exportSequence = 0;
 let optimizedPlanRequestSequence = 0;
 let restoreSequence = 0;
+let historyForkSequence = 0;
 
 export const loadQueueFinishActions = (): AppThunk => async (dispatch) => {
   try {
@@ -151,49 +153,77 @@ async function startQueuedExport(
   const request = route === "fast" ? getFastRequest(state) : getOptimizedRequest(state);
   if (!source || !media || !trim || !request || !selectSourceReady(state)) return;
 
+  const activeItem = selectActiveQueueItem(state);
+  if (!activeItem || activeItem.status !== "imported") return;
+  const importedItemId = activeItem.id;
+  const importedItems = selectImportedQueueItems(state);
+  const importedIndex = importedItemId
+    ? importedItems.findIndex((item) => item.id === importedItemId)
+    : -1;
+  const nextImportedItemId =
+    importedIndex >= 0
+      ? (importedItems[importedIndex + 1]?.id ?? importedItems[importedIndex - 1]?.id ?? null)
+      : null;
+  const snapshot = createEditorSnapshot({
+    source,
+    trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
+    crop: selectCropApplied(state) ? selectCrop(state) : null,
+    masterAudio: selectMasterAudio(state),
+    audioTracks: selectAudioTracks(state).map(({ streamIndex, enabled, volumePercent }) => ({
+      streamIndex,
+      enabled,
+      volumePercent,
+    })),
+    mergeAudio: selectMergeAudio(state),
+  });
+
   dispatch(nativeDialogStateChanged(true));
   try {
     const defaults = outputDefaults(source.displayName);
     const output = await chooseOutputPath(defaults[route]);
     if (!output) return;
-    await reserveExportSource(request.sourcePath);
 
-    const snapshot: EditorSnapshot = {
-      source: { ...source },
-      trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
-      crop: selectCropApplied(state) ? selectCrop(state) : null,
-      audio: {
-        master: selectMasterAudio(state),
-        tracks: selectAudioTracks(state).map(({ streamIndex, enabled, volumePercent }) => ({
-          streamIndex,
-          enabled,
-          volumePercent,
-        })),
-        mergeAudio: selectMergeAudio(state),
-      },
-    };
-    const item: ExportQueueItem = {
-      id: `export-${++exportSequence}`,
+    if (!isCurrentExportContext(getState(), importedItemId, source.sourcePath)) return;
+    await reserveExportSource(request.sourcePath);
+    if (!isCurrentExportContext(getState(), importedItemId, source.sourcePath)) {
+      await releaseExportSource(request.sourcePath).catch(() => undefined);
+      return;
+    }
+
+    const promotion: QueueItemPromotion = {
+      id: importedItemId,
       snapshot,
       route,
       request,
       outputId: output.outputId,
       filename: output.displayName,
       path: output.displayPath,
-      status: "queued",
-      operationId: null,
-      startedAt: null,
-      durationMs: null,
-      progressPercent: 0,
       totalFrames: getTotalFrames(request, media.video),
     };
-    dispatch(queueEntryAdded(item));
-    enqueueExport(item, dispatch, getState);
+    dispatch(queueItemPromoted(promotion));
+    const promoted = getState().export.queue.find(
+      (item): item is ExportQueueItem => item.id === importedItemId && item.status !== "imported",
+    );
+    if (!promoted) return;
+    enqueueExport(promoted, dispatch, getState);
+    if (nextImportedItemId) void dispatch(switchImportedQueueItemRequested(nextImportedItemId));
   } catch (error: unknown) {
     dispatch(exportLaunchFailed(normalizeAppError(error)));
   } finally {
     dispatch(nativeDialogStateChanged(false));
   }
+}
+
+function isCurrentExportContext(
+  state: ReturnType<Parameters<AppThunk>[1]>,
+  activeItemId: string | null,
+  sourcePath: string,
+) {
+  return (
+    selectActiveItemId(state) === activeItemId &&
+    currentSourcePath(state) === sourcePath &&
+    selectSourceReady(state)
+  );
 }
 
 function getInitialSettings(state: ReturnType<Parameters<AppThunk>[1]>): ExportSettings | null {
@@ -283,22 +313,39 @@ export const restoreExportQueueItemRequested =
   (id: string): AppThunk<Promise<boolean>> =>
   async (dispatch, getState) => {
     const item = getState().export.queue.find((candidate) => candidate.id === id);
-    if (!item) return false;
+    if (!item || item.status === "imported") return false;
     const restorationId = ++restoreSequence;
 
     try {
+      dispatch(leaveActiveImportedItem());
       const source = await importSourcePath(item.snapshot.source.sourcePath);
       if (restorationId !== restoreSequence) return false;
-      await dispatch(importSource(source, item.snapshot.audio.mergeAudio));
+
+      const fork: ImportedQueueItem = {
+        id: `fork-${++historyForkSequence}`,
+        status: "imported",
+        origin: "history-fork",
+        snapshot: cloneEditorSnapshot(item.snapshot),
+      };
+      dispatch(importedQueueItemAdded(fork));
+      await dispatch(
+        importSource(source, fork.snapshot.audio.mergeAudio, {
+          registerQueueItem: false,
+          activeItemId: fork.id,
+          captureCurrentDraft: false,
+          leaveActiveItem: false,
+        }),
+      );
+      if (restorationId !== restoreSequence) return false;
       const state = getState();
       if (
-        restorationId !== restoreSequence ||
-        currentSourcePath(state) !== item.snapshot.source.sourcePath ||
+        selectActiveItemId(state) !== fork.id ||
+        currentSourcePath(state) !== fork.snapshot.source.sourcePath ||
         !state.source.media
       ) {
         return false;
       }
-      applyEditorSnapshot(dispatch, getState, item.snapshot);
+      applyEditorSnapshot(dispatch, getState, fork.snapshot);
       return true;
     } catch (error: unknown) {
       if (restorationId === restoreSequence) {
@@ -307,47 +354,3 @@ export const restoreExportQueueItemRequested =
       return false;
     }
   };
-
-function applyEditorSnapshot(
-  dispatch: Parameters<AppThunk>[0],
-  getState: Parameters<AppThunk>[1],
-  snapshot: EditorSnapshot,
-) {
-  const media = selectSourceMedia(getState());
-  if (!media) return;
-  dispatch(
-    trimChanged({
-      trim: { ...snapshot.trim, sourceDurationMicros: media.durationMicros },
-    }),
-  );
-  const crop = snapshot.crop ?? FULL_CROP;
-  dispatch(
-    cropChanged({
-      crop,
-      resolution: { width: media.video.width, height: media.video.height },
-    }),
-  );
-
-  const master = selectMasterAudio(getState());
-  dispatch(masterVolumeChanged({ volumePercent: snapshot.audio.master.volumePercent }));
-  if (master.enabled !== snapshot.audio.master.enabled) {
-    dispatch(masterAudioToggled());
-  }
-  for (const track of snapshot.audio.tracks) {
-    dispatch(
-      audioTrackVolumeChanged({
-        streamIndex: track.streamIndex,
-        volumePercent: track.volumePercent,
-      }),
-    );
-    const current = selectAudioTracks(getState()).find(
-      (candidate) => candidate.streamIndex === track.streamIndex,
-    );
-    if (current && current.enabled !== track.enabled) {
-      dispatch(audioTrackToggled({ streamIndex: track.streamIndex }));
-    }
-  }
-  if (selectMergeAudio(getState()) !== snapshot.audio.mergeAudio) {
-    dispatch(audioMergeToggled());
-  }
-}

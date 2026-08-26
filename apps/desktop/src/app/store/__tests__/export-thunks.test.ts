@@ -8,6 +8,8 @@ const mocks = vi.hoisted(() => ({
   planOptimizedExport: vi.fn(),
   importSourcePath: vi.fn(),
   importSource: vi.fn(),
+  leaveActiveImportedItem: vi.fn(),
+  switchImportedQueueItemRequested: vi.fn(),
   renderFast: vi.fn(),
   renderOptimized: vi.fn(),
   availableQueueFinishActions: vi.fn(),
@@ -34,17 +36,25 @@ vi.mock("@/lib/tauri/queue", () => ({
 }));
 vi.mock("@/app/store/thunks/source-media-thunks", () => ({
   importSource: mocks.importSource,
+  leaveActiveImportedItem: mocks.leaveActiveImportedItem,
+  switchImportedQueueItemRequested: mocks.switchImportedQueueItemRequested,
 }));
 
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
 import {
   queueEntryAdded,
+  importedQueueItemAdded,
+  importedQueueItemRemoved,
+  activeQueueItemChanged,
+  selectActiveItemId,
+  selectImportedQueueItems,
   queueFinishActionChanged,
   selectActiveExport,
   selectExportQueue,
   selectOptimizedExportDialogOpen,
   selectQueueStarted,
   type ExportQueueItem,
+  type ImportedQueueItem,
 } from "@/app/store/slices/export-slice";
 import { preferenceChanged } from "@/app/store/slices/preferences-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
@@ -60,6 +70,7 @@ import {
 } from "@/app/store/thunks/export-thunks";
 import { createAppStore } from "@/app/store/store";
 import type { AppDispatch } from "@/app/store/store";
+import type { RootState } from "@/app/store/store";
 import { resetExportQueueRuntimeForTests } from "@/features/export/utils/export-queue";
 import type { MediaInfo } from "@/lib/tauri/media";
 
@@ -108,7 +119,20 @@ const queuedItem: ExportQueueItem = {
   progressPercent: 0,
 };
 
-function createReadyStore() {
+const importedItem: ImportedQueueItem = {
+  id: "import-1",
+  status: "imported",
+  origin: "source-import",
+  snapshot: queuedItem.snapshot,
+};
+
+const historyForkItem: ImportedQueueItem = {
+  ...importedItem,
+  id: "fork-1",
+  origin: "history-fork",
+};
+
+function createReadyStore(withImportedItem = true) {
   const store = createAppStore({
     getItem: async () => null,
     setItem: async () => undefined,
@@ -123,6 +147,7 @@ function createReadyStore() {
     }),
   );
   store.dispatch(sourceReady({ loadToken: 1, media }));
+  if (withImportedItem) store.dispatch(importedQueueItemAdded(importedItem));
   return store;
 }
 
@@ -136,11 +161,160 @@ beforeEach(() => {
   mocks.planOptimizedExport.mockResolvedValue({ commandPreview: "ffmpeg -i <source> <output>" });
   mocks.importSourcePath.mockReset();
   mocks.importSource.mockReset();
+  mocks.leaveActiveImportedItem.mockReset();
+  mocks.leaveActiveImportedItem.mockImplementation(
+    () => (dispatch: AppDispatch, getState: () => RootState) => {
+      const active = getState().export.queue.find(
+        (item) => item.id === getState().export.activeItemId,
+      );
+      if (active?.status === "imported" && active.origin === "history-fork") {
+        dispatch(importedQueueItemRemoved(active.id));
+      }
+    },
+  );
+  mocks.switchImportedQueueItemRequested.mockReset();
   mocks.availableQueueFinishActions.mockResolvedValue(["exit", "nothing"]);
   mocks.performQueueFinishAction.mockResolvedValue(undefined);
 });
 
 describe("export thunks and runtime queue", () => {
+  it("promotes an imported item in place and leaves canceled output selection imported", async () => {
+    const store = createReadyStore(false);
+    store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
+    store.dispatch(importedQueueItemAdded(importedItem));
+    mocks.chooseOutputPath.mockResolvedValueOnce(null);
+
+    store.dispatch(startFastCutRequested());
+    await Promise.resolve();
+    expect(selectImportedQueueItems(store.getState())).toEqual([importedItem]);
+    expect(selectActiveItemId(store.getState())).toBe(importedItem.id);
+
+    mocks.chooseOutputPath.mockResolvedValue(output);
+    mocks.renderFast.mockResolvedValue({
+      operationId: "operation-promoted",
+      displayName: output.displayName,
+      displayPath: output.displayPath,
+    });
+    store.dispatch(startFastCutRequested());
+    await vi.waitFor(() => expect(selectExportQueue(store.getState())).toHaveLength(1));
+
+    const promoted = selectExportQueue(store.getState())[0];
+    expect(promoted?.id).toBe(importedItem.id);
+    expect(promoted?.status).toBe("queued");
+    expect(selectImportedQueueItems(store.getState())).toHaveLength(0);
+  });
+
+  it("promotes optimized export using the same queue item id", async () => {
+    const store = createReadyStore(false);
+    store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
+    store.dispatch(importedQueueItemAdded(importedItem));
+    mocks.renderOptimized.mockResolvedValue({
+      operationId: "operation-optimized-promoted",
+      displayName: output.displayName,
+      displayPath: output.displayPath,
+    });
+
+    store.dispatch(startOptimizedExportRequested());
+    await vi.waitFor(() => expect(selectExportQueue(store.getState())).toHaveLength(1));
+
+    expect(selectExportQueue(store.getState())[0]).toMatchObject({
+      id: importedItem.id,
+      status: "queued",
+      route: "optimized",
+    });
+    expect(selectImportedQueueItems(store.getState())).toHaveLength(0);
+  });
+
+  it("promotes a history fork through Fast Cut using the same id", async () => {
+    const store = createReadyStore(false);
+    store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
+    store.dispatch(importedQueueItemAdded(historyForkItem));
+
+    store.dispatch(startFastCutRequested());
+    await vi.waitFor(() => expect(selectExportQueue(store.getState())).toHaveLength(1));
+
+    const promoted = selectExportQueue(store.getState())[0];
+    expect(promoted?.id).toBe(historyForkItem.id);
+    expect(promoted).not.toHaveProperty("origin");
+    expect(selectImportedQueueItems(store.getState())).toHaveLength(0);
+  });
+
+  it("promotes a history fork through Optimized Export using the same id", async () => {
+    const store = createReadyStore(false);
+    store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
+    store.dispatch(importedQueueItemAdded(historyForkItem));
+
+    store.dispatch(startOptimizedExportRequested());
+    await vi.waitFor(() => expect(selectExportQueue(store.getState())).toHaveLength(1));
+
+    expect(selectExportQueue(store.getState())[0]).toMatchObject({
+      id: historyForkItem.id,
+      status: "queued",
+      route: "optimized",
+    });
+    expect(selectImportedQueueItems(store.getState())).toHaveLength(0);
+  });
+
+  it("keeps a history fork active when Fast Cut output selection is canceled", async () => {
+    const store = createReadyStore(false);
+    store.dispatch(importedQueueItemAdded(historyForkItem));
+    mocks.chooseOutputPath.mockResolvedValueOnce(null);
+
+    store.dispatch(startFastCutRequested());
+    await Promise.resolve();
+
+    expect(selectImportedQueueItems(store.getState())).toEqual([historyForkItem]);
+    expect(selectActiveItemId(store.getState())).toBe(historyForkItem.id);
+  });
+
+  it("keeps a history fork active when Optimized Export output selection is canceled", async () => {
+    const store = createReadyStore(false);
+    store.dispatch(importedQueueItemAdded(historyForkItem));
+    mocks.chooseOutputPath.mockResolvedValueOnce(null);
+
+    store.dispatch(startOptimizedExportRequested());
+    await Promise.resolve();
+
+    expect(selectImportedQueueItems(store.getState())).toEqual([historyForkItem]);
+    expect(selectActiveItemId(store.getState())).toBe(historyForkItem.id);
+  });
+
+  it("selects the next imported item after promotion", async () => {
+    const store = createReadyStore(false);
+    store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
+    const nextItem: ImportedQueueItem = {
+      ...importedItem,
+      id: "import-2",
+      snapshot: {
+        ...importedItem.snapshot,
+        source: { displayName: "next.mp4", sourcePath: "C:/Media/next.mp4" },
+      },
+    };
+    store.dispatch(importedQueueItemAdded(importedItem));
+    store.dispatch(importedQueueItemAdded(nextItem));
+    store.dispatch(activeQueueItemChanged(importedItem.id));
+    mocks.switchImportedQueueItemRequested.mockReturnValue((dispatch: AppDispatch) => {
+      dispatch(activeQueueItemChanged(nextItem.id));
+      return Promise.resolve(true);
+    });
+
+    store.dispatch(startFastCutRequested());
+    await vi.waitFor(() => expect(selectExportQueue(store.getState())).toHaveLength(1));
+
+    expect(mocks.switchImportedQueueItemRequested).toHaveBeenCalledWith(nextItem.id);
+    expect(selectActiveItemId(store.getState())).toBe(nextItem.id);
+  });
+
+  it("does not execute imported-only items as exports", () => {
+    const store = createReadyStore(false);
+    store.dispatch(importedQueueItemAdded(importedItem));
+
+    store.dispatch(startExportQueue());
+
+    expect(selectQueueStarted(store.getState())).toBe(false);
+    expect(mocks.renderFast).not.toHaveBeenCalled();
+  });
+
   it("starts the queue when an entry is added with auto-start enabled", async () => {
     const store = createReadyStore();
 
@@ -217,23 +391,30 @@ describe("export thunks and runtime queue", () => {
     const restoredMedia = { ...media, durationMicros: 2_000_000 };
     mocks.importSourcePath.mockResolvedValue(source);
     mocks.importSource.mockImplementation(
-      (selectedSource: typeof source, mergeAudio: boolean) => (dispatch: AppDispatch) => {
-        dispatch(sourceSelected({ source: selectedSource, mergeAudio, loadToken: 2 }));
-        dispatch(sourceReady({ loadToken: 2, media: restoredMedia }));
-      },
-    );
-    const store = createReadyStore();
-    store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
-    store.dispatch(
-      queueEntryAdded({
-        ...queuedItem,
-        snapshot: {
-          ...queuedItem.snapshot,
-          source: { ...source },
-          trim: { startMicros: 250_000, endMicros: 1_750_000 },
+      (
+        selectedSource: typeof source,
+        mergeAudio: boolean,
+        options: { activeItemId?: string | null } = {},
+      ) =>
+        (dispatch: AppDispatch) => {
+          dispatch(sourceSelected({ source: selectedSource, mergeAudio, loadToken: 2 }));
+          dispatch(sourceReady({ loadToken: 2, media: restoredMedia }));
+          if (options.activeItemId !== undefined) {
+            dispatch(activeQueueItemChanged(options.activeItemId));
+          }
         },
-      }),
     );
+    const store = createReadyStore(false);
+    store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
+    const historicalItem = {
+      ...queuedItem,
+      snapshot: {
+        ...queuedItem.snapshot,
+        source: { ...source },
+        trim: { startMicros: 250_000, endMicros: 1_750_000 },
+      },
+    };
+    store.dispatch(queueEntryAdded(historicalItem));
 
     await expect(store.dispatch(restoreExportQueueItemRequested(queuedItem.id))).resolves.toBe(
       true,
@@ -246,6 +427,60 @@ describe("export thunks and runtime queue", () => {
       endMicros: 1_750_000,
     });
     expect(selectExportQueue(store.getState())).toHaveLength(1);
+    expect(selectExportQueue(store.getState())[0]).toEqual(historicalItem);
+    const [fork] = selectImportedQueueItems(store.getState());
+    expect(fork).toMatchObject({
+      status: "imported",
+      origin: "history-fork",
+      snapshot: historicalItem.snapshot,
+    });
+    expect(fork?.id).not.toBe(historicalItem.id);
+    expect(selectActiveItemId(store.getState())).toBe(fork?.id);
+  });
+
+  it("creates a fresh fork for every repeated history open", async () => {
+    const source = {
+      displayName: "history.mp4",
+      sourcePath: "C:/Media/history.mp4",
+    };
+    const historicalItem = {
+      ...queuedItem,
+      snapshot: { ...queuedItem.snapshot, source },
+    };
+    const secondHistoryItem = { ...historicalItem, id: "export-second" };
+    mocks.importSourcePath.mockResolvedValue(source);
+    mocks.importSource.mockImplementation(
+      (
+        selectedSource: typeof source,
+        mergeAudio: boolean,
+        options: { activeItemId?: string | null } = {},
+      ) =>
+        (dispatch: AppDispatch) => {
+          dispatch(sourceSelected({ source: selectedSource, mergeAudio, loadToken: 2 }));
+          dispatch(sourceReady({ loadToken: 2, media }));
+          if (options.activeItemId !== undefined) {
+            dispatch(activeQueueItemChanged(options.activeItemId));
+          }
+        },
+    );
+    const store = createReadyStore(false);
+    store.dispatch(queueEntryAdded(historicalItem));
+
+    await expect(store.dispatch(restoreExportQueueItemRequested(historicalItem.id))).resolves.toBe(
+      true,
+    );
+    const firstFork = selectImportedQueueItems(store.getState())[0];
+    store.dispatch(queueEntryAdded(secondHistoryItem));
+
+    await expect(
+      store.dispatch(restoreExportQueueItemRequested(secondHistoryItem.id)),
+    ).resolves.toBe(true);
+
+    const importedItems = selectImportedQueueItems(store.getState());
+    expect(importedItems).toHaveLength(1);
+    expect(importedItems[0]?.origin).toBe("history-fork");
+    expect(importedItems[0]?.id).not.toBe(firstFork?.id);
+    expect(selectExportQueue(store.getState())).toEqual([historicalItem, secondHistoryItem]);
   });
 
   it("opens, plans, configures, and starts optimized export without a controller ref", async () => {
@@ -283,9 +518,13 @@ describe("export thunks and runtime queue", () => {
         displayPath: "one.mkv",
       })
       .mockRejectedValueOnce({ message: "native failure" });
-    const store = createReadyStore();
+    const store = createReadyStore(false);
+    store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
 
+    store.dispatch(importedQueueItemAdded(importedItem));
     store.dispatch(startFastCutRequested());
+    await vi.waitFor(() => expect(selectExportQueue(store.getState())).toHaveLength(1));
+    store.dispatch(importedQueueItemAdded({ ...importedItem, id: "import-2" }));
     store.dispatch(startFastCutRequested());
     await vi.waitFor(() => expect(selectExportQueue(store.getState())).toHaveLength(2));
     store.dispatch(startExportQueue());
@@ -321,6 +560,8 @@ describe("export thunks and runtime queue", () => {
     store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
 
     store.dispatch(startFastCutRequested());
+    await vi.waitFor(() => expect(selectExportQueue(store.getState())).toHaveLength(1));
+    store.dispatch(importedQueueItemAdded({ ...importedItem, id: "import-2" }));
     store.dispatch(startFastCutRequested());
     await vi.waitFor(() => expect(selectExportQueue(store.getState())).toHaveLength(2));
     store.dispatch(startExportQueue());
@@ -384,6 +625,8 @@ describe("export thunks and runtime queue", () => {
     store.dispatch(queueFinishActionChanged("exit"));
 
     store.dispatch(startFastCutRequested());
+    await vi.waitFor(() => expect(selectExportQueue(store.getState())).toHaveLength(1));
+    store.dispatch(importedQueueItemAdded({ ...importedItem, id: "import-2" }));
     store.dispatch(startFastCutRequested());
     await vi.waitFor(() => expect(selectExportQueue(store.getState())).toHaveLength(2));
     store.dispatch(startExportQueue());
@@ -438,6 +681,7 @@ describe("export thunks and runtime queue", () => {
     expect(selectQueueStarted(store.getState())).toBe(false);
 
     store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
+    store.dispatch(importedQueueItemAdded({ ...importedItem, id: "import-2" }));
     store.dispatch(startFastCutRequested());
     await vi.waitFor(() => expect(selectExportQueue(store.getState())).toHaveLength(2));
     await Promise.resolve();
@@ -461,6 +705,7 @@ describe("export thunks and runtime queue", () => {
     );
     expect(selectQueueStarted(store.getState())).toBe(false);
 
+    store.dispatch(importedQueueItemAdded({ ...importedItem, id: "import-2" }));
     store.dispatch(startFastCutRequested());
     await vi.waitFor(() =>
       expect(selectExportQueue(store.getState())[1]?.status).toBe("completed"),

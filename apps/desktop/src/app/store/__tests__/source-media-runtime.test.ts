@@ -5,6 +5,7 @@ import type { SourceRef } from "@/domain/source";
 import { createAppStore } from "@/app/store/store";
 import { selectIsSourceDragActive } from "@/app/store/slices/import-workflow-slice";
 import { selectSourceMedia, selectSourceError } from "@/app/store/slices/source-slice";
+import { selectImportedQueueItems } from "@/app/store/slices/export-slice";
 import { startSourceMediaRuntime } from "@/app/store/source-media-runtime";
 
 const mocks = vi.hoisted(() => ({
@@ -78,6 +79,7 @@ describe("source/media application runtime", () => {
     sourceDropListener?.({ status: "selected", source });
     await vi.waitFor(() => expect(selectSourceMedia(appStore.getState())).toEqual(media));
     expect(mocks.inspectMedia).toHaveBeenCalledWith(source.sourcePath);
+    expect(selectImportedQueueItems(appStore.getState())[0]?.origin).toBe("source-import");
 
     stop();
     stop();

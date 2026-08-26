@@ -15,17 +15,27 @@ import type { RootState } from "../store";
 import type { EditorSnapshot } from "@/domain/editor-snapshot";
 
 export type ExportStatus = "queued" | "rendering" | "completed" | "failed" | "canceled";
+export type QueueItemStatus = "imported" | ExportStatus;
+export type ImportedOrigin = "source-import" | "history-fork";
 export type ExportRoute = "fast" | "optimized";
 export type ExportRequest = FastExportRequest | OptimizedExportRequest;
+
+export interface QueueItemBase {
+  id: string;
+  snapshot: EditorSnapshot;
+}
+
+export interface ImportedQueueItem extends QueueItemBase {
+  status: "imported";
+  origin: ImportedOrigin;
+}
 
 export interface ExportSettings {
   resolution: { width: number; height: number };
   frameRate: FrameRate | undefined;
 }
 
-export interface ExportQueueItem {
-  id: string;
-  snapshot: EditorSnapshot;
+export interface ExportQueueItem extends QueueItemBase {
   route: ExportRoute;
   request: ExportRequest;
   outputId: string;
@@ -47,8 +57,22 @@ export interface ExportQueueItem {
   error?: string;
 }
 
+export type QueueItem = ImportedQueueItem | ExportQueueItem;
+
+export interface QueueItemPromotion {
+  id: string;
+  snapshot: EditorSnapshot;
+  route: ExportRoute;
+  request: ExportRequest;
+  outputId: string;
+  filename: string;
+  path: string;
+  totalFrames?: number;
+}
+
 export interface ExportState {
-  queue: ExportQueueItem[];
+  queue: QueueItem[];
+  activeItemId: string | null;
   queueStarted: boolean;
   queueFinishAction: QueueFinishAction;
   availableQueueFinishActions: QueueFinishAction[];
@@ -62,6 +86,7 @@ export interface ExportState {
 
 export const initialExportState: ExportState = {
   queue: [],
+  activeItemId: null,
   queueStarted: false,
   queueFinishAction: "nothing",
   availableQueueFinishActions: ["exit", "nothing"],
@@ -110,8 +135,40 @@ const exportSlice = createSlice({
     exportLaunchFailed: (state, action: PayloadAction<AppError>) => {
       state.launchError = action.payload;
     },
-    queueEntryAdded: (state, action: PayloadAction<ExportQueueItem>) => {
+    queueEntryAdded: (state, action: PayloadAction<QueueItem>) => {
       state.queue.push(action.payload);
+      if (action.payload.status === "imported") state.activeItemId = action.payload.id;
+    },
+    importedQueueItemAdded: (state, action: PayloadAction<ImportedQueueItem>) => {
+      state.queue.push(action.payload);
+      state.activeItemId = action.payload.id;
+    },
+    importedQueueItemRemoved: (state, action: PayloadAction<string>) => {
+      state.queue = state.queue.filter((item) => item.id !== action.payload);
+      if (state.activeItemId === action.payload) state.activeItemId = null;
+    },
+    activeQueueItemChanged: (state, action: PayloadAction<string | null>) => {
+      state.activeItemId = action.payload;
+    },
+    queueItemSnapshotUpdated: (
+      state,
+      action: PayloadAction<{ id: string; snapshot: EditorSnapshot }>,
+    ) => {
+      const item = state.queue.find((candidate) => candidate.id === action.payload.id);
+      if (item?.status === "imported") item.snapshot = action.payload.snapshot;
+    },
+    queueItemPromoted: (state, action: PayloadAction<QueueItemPromotion>) => {
+      const index = state.queue.findIndex((candidate) => candidate.id === action.payload.id);
+      const item = state.queue[index];
+      if (!item || item.status !== "imported") return;
+      state.queue[index] = {
+        ...action.payload,
+        status: "queued",
+        operationId: null,
+        startedAt: null,
+        durationMs: null,
+        progressPercent: 0,
+      };
     },
     queueStarted: (state) => {
       state.queueStarted = true;
@@ -166,7 +223,7 @@ const exportSlice = createSlice({
       action: PayloadAction<{ id: string; result: ExportResult; durationMs: number | null }>,
     ) => {
       const item = state.queue.find((candidate) => candidate.id === action.payload.id);
-      if (!item || item.status === "canceled") return;
+      if (!item || item.status === "imported" || item.status === "canceled") return;
       item.operationId = action.payload.result.operationId;
       item.path = action.payload.result.displayPath;
       item.status = "completed";
@@ -178,14 +235,20 @@ const exportSlice = createSlice({
       action: PayloadAction<{ id: string; error: AppError; durationMs: number | null }>,
     ) => {
       const item = state.queue.find((candidate) => candidate.id === action.payload.id);
-      if (!item || item.status === "canceled") return;
+      if (!item || item.status === "imported" || item.status === "canceled") return;
       item.status = "failed";
       item.error = action.payload.error.message;
       item.durationMs = action.payload.durationMs;
     },
     exportCanceled: (state, action: PayloadAction<{ id: string; durationMs: number | null }>) => {
       const item = state.queue.find((candidate) => candidate.id === action.payload.id);
-      if (!item || item.status === "completed" || item.status === "failed") return;
+      if (
+        !item ||
+        item.status === "imported" ||
+        item.status === "completed" ||
+        item.status === "failed"
+      )
+        return;
       item.status = "canceled";
       item.error = undefined;
       item.durationMs = action.payload.durationMs;
@@ -193,7 +256,7 @@ const exportSlice = createSlice({
     finishedExportsCleared: (state) => {
       state.queue = state.queue.filter(
         (item) =>
-          item.status !== "completed" && item.status !== "failed" && item.status !== "canceled",
+          item.status === "imported" || !["completed", "failed", "canceled"].includes(item.status),
       );
     },
   },
@@ -207,6 +270,7 @@ const exportSlice = createSlice({
       state.launchError = null;
     });
     builder.addCase(sourceCleared, (state) => {
+      state.activeItemId = null;
       state.optimizedDialogOpen = false;
       state.optimizedSettings = null;
       state.optimizedPlanRequestId = null;
@@ -231,6 +295,11 @@ export const {
   optimizedExportPlanFailed,
   exportLaunchFailed,
   queueEntryAdded,
+  importedQueueItemAdded,
+  importedQueueItemRemoved,
+  activeQueueItemChanged,
+  queueItemSnapshotUpdated,
+  queueItemPromoted,
   queueStarted,
   queuePaused,
   queueFinishActionChanged,
@@ -244,7 +313,20 @@ export const {
 } = exportSlice.actions;
 export const exportReducer = exportSlice.reducer;
 
-export const selectExportQueue = (state: RootState): ExportQueueItem[] => state.export.queue;
+export const selectQueueItems = (state: RootState): QueueItem[] => state.export.queue;
+export const selectActiveItemId = (state: RootState): string | null => state.export.activeItemId;
+export const selectActiveQueueItem = createSelector(
+  [selectQueueItems, selectActiveItemId],
+  (queue, activeItemId) => queue.find((item) => item.id === activeItemId),
+);
+export const selectImportedQueueItems = createSelector(
+  [selectQueueItems],
+  (queue): ImportedQueueItem[] =>
+    queue.filter((item): item is ImportedQueueItem => item.status === "imported"),
+);
+export const selectExportQueue = createSelector([selectQueueItems], (queue): ExportQueueItem[] =>
+  queue.filter((item): item is ExportQueueItem => item.status !== "imported"),
+);
 export const selectExportQueueItems = selectExportQueue;
 export const selectActiveExport = createSelector([selectExportQueue], (queue) =>
   queue.find((item) => item.status === "rendering"),

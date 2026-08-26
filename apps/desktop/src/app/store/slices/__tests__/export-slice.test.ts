@@ -15,12 +15,16 @@ import {
   optimizedExportPlanReceived,
   optimizedExportPlanRequested,
   optimizedExportSettingsChanged,
+  importedQueueItemAdded,
+  importedQueueItemRemoved,
   queueEntryAdded,
   queueFinishActionChanged,
   queueStarted,
 } from "../export-slice";
 import { cropChanged } from "../crop-slice";
 import { sourceSelected } from "@/app/store/actions/source-actions";
+import { selectExportQueue } from "../export-slice";
+import type { RootState } from "@/app/store/store";
 
 const settings = { resolution: { width: 1920, height: 1080 }, frameRate: undefined };
 const item = {
@@ -91,7 +95,7 @@ describe("export slice", () => {
         progressPercent: 50,
       }),
     );
-    expect(state.queue[0]?.progressPercent).toBe(50);
+    expect(selectExportQueue({ export: state } as RootState)[0]?.progressPercent).toBe(50);
     state = exportReducer(
       state,
       exportFailed({
@@ -129,6 +133,19 @@ describe("export slice", () => {
     expect(
       exportReducer(initialExportState, queueFinishActionChanged("systemSleep")),
     ).toMatchObject({ queueFinishAction: "systemSleep" });
+  });
+
+  it("removes an imported item and clears its active identity", () => {
+    const imported = {
+      id: "import-1",
+      status: "imported" as const,
+      origin: "history-fork" as const,
+      snapshot: item.snapshot,
+    };
+    let state = exportReducer(initialExportState, importedQueueItemAdded(imported));
+    state = exportReducer(state, importedQueueItemRemoved(imported.id));
+    expect(state.queue).toEqual([]);
+    expect(state.activeItemId).toBeNull();
   });
 
   it("accepts only the latest optimized plan request result", () => {

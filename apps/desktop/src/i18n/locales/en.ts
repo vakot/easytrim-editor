@@ -154,6 +154,12 @@ export const en = {
         bitrate: "Bitrate",
       },
     },
+    queue: {
+      title: "Imported files",
+      noActive: "No imported file is active",
+      previous: "Previous",
+      next: "Next",
+    },
   },
   preview: {
     emptyMock: {

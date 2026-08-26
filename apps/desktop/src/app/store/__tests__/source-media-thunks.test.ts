@@ -3,7 +3,23 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { MediaInfo, WaveformResult } from "@/lib/tauri/media";
 import type { SourceRef } from "@/domain/source";
 import { createAppStore } from "@/app/store/store";
-import { selectAudioPreviews, selectAudioTracks } from "@/app/store/slices/audio-slice";
+import {
+  audioMergeToggled,
+  audioTrackToggled,
+  audioTrackVolumeChanged,
+  masterVolumeChanged,
+  selectAudioPreviews,
+  selectAudioTracks,
+  selectMasterAudio,
+  selectMergeAudio,
+} from "@/app/store/slices/audio-slice";
+import {
+  activeQueueItemChanged,
+  importedQueueItemAdded,
+  selectActiveItemId,
+  selectImportedQueueItems,
+} from "@/app/store/slices/export-slice";
+import { cropChanged, selectCrop } from "@/app/store/slices/crop-slice";
 import { selectPreview } from "@/app/store/slices/preview-slice";
 import {
   selectHasSource,
@@ -23,13 +39,17 @@ import {
   closeSourceRequested,
   handlePreviewPlaybackError,
   importSource,
+  leaveActiveImportedItem,
   prepareSourceWaveforms,
+  switchImportedQueueItemRequested,
 } from "@/app/store/thunks/source-media-thunks";
+import { trimChanged } from "@/app/store/slices/trim-slice";
 
 const mocks = vi.hoisted(() => ({
   checkMediaCapabilities: vi.fn(),
   chooseSource: vi.fn(),
   inspectMedia: vi.fn(),
+  importSourcePath: vi.fn(),
   prepareAudioPreviews: vi.fn(),
   prepareProxyPreview: vi.fn(),
   prepareSourcePreview: vi.fn(),
@@ -43,6 +63,7 @@ vi.mock("@/lib/tauri/media", async (importOriginal) => {
     checkMediaCapabilities: mocks.checkMediaCapabilities,
     chooseSource: mocks.chooseSource,
     inspectMedia: mocks.inspectMedia,
+    importSourcePath: mocks.importSourcePath,
     prepareAudioPreviews: mocks.prepareAudioPreviews,
     prepareProxyPreview: mocks.prepareProxyPreview,
     prepareSourcePreview: mocks.prepareSourcePreview,
@@ -57,6 +78,10 @@ const firstSource: SourceRef = {
 const secondSource: SourceRef = {
   displayName: "second.mp4",
   sourcePath: "C:/Media/second.mp4",
+};
+const thirdSource: SourceRef = {
+  displayName: "third.mp4",
+  sourcePath: "C:/Media/third.mp4",
 };
 
 function createMedia(_sourcePath: string, audioCount = 2): MediaInfo {
@@ -107,6 +132,12 @@ describe("source/media orchestration thunks", () => {
       ffmpeg: { available: true, version: "ffmpeg" },
       ffprobe: { available: true, version: "ffprobe" },
     });
+    mocks.importSourcePath.mockImplementation(async (sourcePath: string) => {
+      const source = [firstSource, secondSource, thirdSource].find(
+        (candidate) => candidate.sourcePath === sourcePath,
+      );
+      return source ?? { displayName: sourcePath, sourcePath };
+    });
     mocks.prepareSourcePreview.mockImplementation(async (sourcePath: string) =>
       sourcePreview(sourcePath),
     );
@@ -144,6 +175,350 @@ describe("source/media orchestration thunks", () => {
       previews: [audioPreview(firstSource.sourcePath, 1), audioPreview(firstSource.sourcePath, 2)],
     });
     expect(mocks.prepareAudioPreviews).toHaveBeenCalledWith(firstSource.sourcePath, [1, 2]);
+    expect(selectImportedQueueItems(appStore.getState())).toHaveLength(1);
+    expect(selectImportedQueueItems(appStore.getState())[0]?.origin).toBe("source-import");
+    expect(selectActiveItemId(appStore.getState())).toBe(
+      selectImportedQueueItems(appStore.getState())[0]?.id,
+    );
+  });
+
+  it("keeps distinct imported queue items for repeated paths and restores drafts by id", async () => {
+    const appStore = createAppStore();
+    mocks.inspectMedia.mockResolvedValue(createMedia(firstSource.sourcePath, 1));
+
+    await appStore.dispatch(importSource(firstSource));
+    const firstItem = selectImportedQueueItems(appStore.getState())[0];
+    expect(firstItem).toBeDefined();
+    appStore.dispatch(
+      trimChanged({
+        trim: { startMicros: 500_000, endMicros: 4_000_000, sourceDurationMicros: 5_000_000 },
+      }),
+    );
+
+    await appStore.dispatch(importSource(firstSource));
+    const importedItems = selectImportedQueueItems(appStore.getState());
+    expect(importedItems).toHaveLength(2);
+    expect(new Set(importedItems.map((item) => item.id)).size).toBe(2);
+    expect(importedItems.every((item) => item.origin === "source-import")).toBe(true);
+    expect(importedItems[0]?.snapshot.trim).toEqual({ startMicros: 500_000, endMicros: 4_000_000 });
+    expect(importedItems[0]?.snapshot.source.sourcePath).toBe(firstSource.sourcePath);
+    expect(selectActiveItemId(appStore.getState())).toBe(importedItems[1]?.id);
+
+    await expect(appStore.dispatch(switchImportedQueueItemRequested(firstItem!.id))).resolves.toBe(
+      true,
+    );
+    expect(selectActiveItemId(appStore.getState())).toBe(firstItem!.id);
+    expect(appStore.getState().trim.value).toMatchObject({
+      startMicros: 500_000,
+      endMicros: 4_000_000,
+    });
+  });
+
+  it("reactivates persisted sources while navigating without creating queue items", async () => {
+    const appStore = createAppStore();
+    let registeredSourcePath: string | null = null;
+    const sourceForPath = (sourcePath: string) => {
+      const source = [firstSource, secondSource, thirdSource].find(
+        (candidate) => candidate.sourcePath === sourcePath,
+      );
+      return source ?? { displayName: sourcePath, sourcePath };
+    };
+    mocks.importSourcePath.mockImplementation(async (sourcePath: string) => {
+      registeredSourcePath = sourcePath;
+      return sourceForPath(sourcePath);
+    });
+    mocks.inspectMedia.mockImplementation(async (sourcePath: string) => {
+      if (registeredSourcePath !== null && registeredSourcePath !== sourcePath) {
+        throw { code: "source_replaced", message: "The source is no longer active." };
+      }
+      registeredSourcePath = sourcePath;
+      return createMedia(sourcePath, 2);
+    });
+    const savedCrop = { x: 0.1, y: 0.2, width: 0.7, height: 0.6 };
+
+    await appStore.dispatch(importSource(firstSource));
+    appStore.dispatch(
+      trimChanged({
+        trim: { startMicros: 500_000, endMicros: 4_000_000, sourceDurationMicros: 5_000_000 },
+      }),
+    );
+    appStore.dispatch(cropChanged({ crop: savedCrop, resolution: { width: 1920, height: 1080 } }));
+    appStore.dispatch(masterVolumeChanged({ volumePercent: 25 }));
+    appStore.dispatch(audioTrackVolumeChanged({ streamIndex: 1, volumePercent: 30 }));
+    appStore.dispatch(audioTrackToggled({ streamIndex: 2 }));
+    appStore.dispatch(audioMergeToggled());
+
+    registeredSourcePath = secondSource.sourcePath;
+    await appStore.dispatch(importSource(secondSource));
+    const afterSecondImport = selectImportedQueueItems(appStore.getState());
+    const [firstItem, secondItem] = afterSecondImport;
+    const idsAfterSecondImport = afterSecondImport.map((item) => item.id);
+
+    await expect(appStore.dispatch(switchImportedQueueItemRequested(firstItem!.id))).resolves.toBe(
+      true,
+    );
+
+    expect(mocks.importSourcePath).toHaveBeenCalledWith(firstSource.sourcePath);
+    expect(selectSourceError(appStore.getState())).toBeNull();
+    expect(selectActiveItemId(appStore.getState())).toBe(firstItem!.id);
+    expect(selectImportedQueueItems(appStore.getState()).map((item) => item.id)).toEqual(
+      idsAfterSecondImport,
+    );
+    expect(appStore.getState().trim.value).toMatchObject({
+      startMicros: 500_000,
+      endMicros: 4_000_000,
+    });
+    expect(selectCrop(appStore.getState())).toEqual(savedCrop);
+    expect(selectMasterAudio(appStore.getState())).toEqual({ enabled: true, volumePercent: 25 });
+    expect(selectAudioTracks(appStore.getState())).toMatchObject([
+      expect.objectContaining({ streamIndex: 1, enabled: true, volumePercent: 30 }),
+      expect.objectContaining({ streamIndex: 2, enabled: false, volumePercent: 50 }),
+    ]);
+    expect(selectMergeAudio(appStore.getState())).toBe(true);
+
+    await expect(appStore.dispatch(switchImportedQueueItemRequested(secondItem!.id))).resolves.toBe(
+      true,
+    );
+    expect(mocks.importSourcePath).toHaveBeenCalledWith(secondSource.sourcePath);
+    expect(selectActiveItemId(appStore.getState())).toBe(secondItem!.id);
+    expect(selectImportedQueueItems(appStore.getState()).map((item) => item.id)).toEqual(
+      idsAfterSecondImport,
+    );
+
+    registeredSourcePath = thirdSource.sourcePath;
+    await appStore.dispatch(importSource(thirdSource));
+    const afterThirdImport = selectImportedQueueItems(appStore.getState());
+    const idsAfterThirdImport = afterThirdImport.map((item) => item.id);
+    const thirdItem = afterThirdImport[2];
+
+    await expect(appStore.dispatch(switchImportedQueueItemRequested(secondItem!.id))).resolves.toBe(
+      true,
+    );
+    await expect(appStore.dispatch(switchImportedQueueItemRequested(firstItem!.id))).resolves.toBe(
+      true,
+    );
+
+    expect(selectActiveItemId(appStore.getState())).toBe(firstItem!.id);
+    expect(selectImportedQueueItems(appStore.getState()).map((item) => item.id)).toEqual(
+      idsAfterThirdImport,
+    );
+    expect(thirdItem?.id).toBe(idsAfterThirdImport[2]);
+  });
+
+  it("rolls back to the active source when a reactivated target fails inspection", async () => {
+    const appStore = createAppStore();
+    let failSecondInspection = false;
+    mocks.inspectMedia.mockImplementation(async (sourcePath: string) => {
+      if (failSecondInspection && sourcePath === secondSource.sourcePath) {
+        throw {
+          code: "unsupported_media",
+          message: "B could not be inspected.",
+        };
+      }
+      return createMedia(sourcePath, 2);
+    });
+    const savedCrop = { x: 0.1, y: 0.2, width: 0.7, height: 0.6 };
+
+    await appStore.dispatch(importSource(firstSource));
+    appStore.dispatch(
+      trimChanged({
+        trim: { startMicros: 500_000, endMicros: 4_000_000, sourceDurationMicros: 5_000_000 },
+      }),
+    );
+    appStore.dispatch(cropChanged({ crop: savedCrop, resolution: { width: 1920, height: 1080 } }));
+    appStore.dispatch(masterVolumeChanged({ volumePercent: 25 }));
+    appStore.dispatch(audioTrackVolumeChanged({ streamIndex: 1, volumePercent: 30 }));
+    appStore.dispatch(audioTrackToggled({ streamIndex: 2 }));
+    appStore.dispatch(audioMergeToggled());
+
+    await appStore.dispatch(importSource(secondSource));
+    const importedItems = selectImportedQueueItems(appStore.getState());
+    const [firstItem, secondItem] = importedItems;
+    const queueIds = importedItems.map((item) => item.id);
+    await expect(appStore.dispatch(switchImportedQueueItemRequested(firstItem!.id))).resolves.toBe(
+      true,
+    );
+
+    failSecondInspection = true;
+    await expect(appStore.dispatch(switchImportedQueueItemRequested(secondItem!.id))).resolves.toBe(
+      false,
+    );
+
+    expect(selectActiveItemId(appStore.getState())).toBe(firstItem!.id);
+    expect(selectSourceSelection(appStore.getState())).toEqual(firstSource);
+    expect(selectSourceMedia(appStore.getState())).toEqual(
+      expect.objectContaining({ durationMicros: 5_000_000 }),
+    );
+    expect(selectSourceError(appStore.getState())).toEqual({
+      code: "unsupported_media",
+      message: "B could not be inspected.",
+    });
+    expect(appStore.getState().trim.value).toMatchObject({
+      startMicros: 500_000,
+      endMicros: 4_000_000,
+    });
+    expect(selectCrop(appStore.getState())).toEqual(savedCrop);
+    expect(selectMasterAudio(appStore.getState())).toEqual({ enabled: true, volumePercent: 25 });
+    expect(selectAudioTracks(appStore.getState())).toMatchObject([
+      expect.objectContaining({ streamIndex: 1, enabled: true, volumePercent: 30 }),
+      expect.objectContaining({ streamIndex: 2, enabled: false, volumePercent: 50 }),
+    ]);
+    expect(selectMergeAudio(appStore.getState())).toBe(true);
+    expect(selectImportedQueueItems(appStore.getState()).map((item) => item.id)).toEqual(queueIds);
+    expect(mocks.importSourcePath).toHaveBeenCalledWith(secondSource.sourcePath);
+    expect(mocks.importSourcePath).toHaveBeenLastCalledWith(firstSource.sourcePath);
+  });
+
+  it("captures source-import drafts and preserves them when leaving the active item", async () => {
+    const appStore = createAppStore();
+    mocks.inspectMedia.mockResolvedValue(createMedia(firstSource.sourcePath, 1));
+
+    await appStore.dispatch(importSource(firstSource));
+    const importedItem = selectImportedQueueItems(appStore.getState())[0];
+    expect(importedItem?.origin).toBe("source-import");
+    appStore.dispatch(
+      trimChanged({
+        trim: { startMicros: 750_000, endMicros: 3_500_000, sourceDurationMicros: 5_000_000 },
+      }),
+    );
+
+    await appStore.dispatch(leaveActiveImportedItem());
+
+    expect(selectImportedQueueItems(appStore.getState())).toHaveLength(1);
+    expect(selectImportedQueueItems(appStore.getState())[0]?.snapshot.trim).toEqual({
+      startMicros: 750_000,
+      endMicros: 3_500_000,
+    });
+    expect(selectActiveItemId(appStore.getState())).toBe(importedItem?.id);
+  });
+
+  it("keeps a source-import active when a replacement source fails to load", async () => {
+    const appStore = createAppStore();
+    mocks.inspectMedia.mockResolvedValueOnce(createMedia(firstSource.sourcePath, 1));
+
+    await appStore.dispatch(importSource(firstSource));
+    const firstItem = selectImportedQueueItems(appStore.getState())[0];
+    appStore.dispatch(
+      trimChanged({
+        trim: { startMicros: 750_000, endMicros: 3_500_000, sourceDurationMicros: 5_000_000 },
+      }),
+    );
+    mocks.inspectMedia.mockRejectedValueOnce({
+      code: "unsupported_media",
+      message: "The replacement source is not supported.",
+    });
+
+    await appStore.dispatch(importSource(secondSource));
+
+    expect(selectImportedQueueItems(appStore.getState())).toEqual([
+      expect.objectContaining({
+        id: firstItem?.id,
+        snapshot: expect.objectContaining({
+          trim: { startMicros: 750_000, endMicros: 3_500_000 },
+        }),
+      }),
+    ]);
+    expect(selectActiveItemId(appStore.getState())).toBe(firstItem?.id);
+  });
+
+  it("discards a history fork when navigating to another imported item", async () => {
+    const appStore = createAppStore();
+    const snapshot = {
+      source: firstSource,
+      trim: { startMicros: 0, endMicros: 5_000_000 },
+      crop: null,
+      audio: { master: { enabled: true, volumePercent: 50 }, tracks: [], mergeAudio: false },
+    };
+    const fork = {
+      id: "fork-1",
+      status: "imported" as const,
+      origin: "history-fork" as const,
+      snapshot,
+    };
+    const target = {
+      id: "import-2",
+      status: "imported" as const,
+      origin: "source-import" as const,
+      snapshot: { ...snapshot, source: secondSource },
+    };
+    appStore.dispatch(importedQueueItemAdded(fork));
+    appStore.dispatch(importedQueueItemAdded(target));
+    appStore.dispatch(activeQueueItemChanged(fork.id));
+    mocks.inspectMedia.mockResolvedValue(createMedia(secondSource.sourcePath, 1));
+
+    await expect(appStore.dispatch(switchImportedQueueItemRequested(target.id))).resolves.toBe(
+      true,
+    );
+
+    expect(selectImportedQueueItems(appStore.getState())).toEqual([target]);
+    expect(selectActiveItemId(appStore.getState())).toBe(target.id);
+  });
+
+  it("keeps the source item active when an existing item cannot be restored", async () => {
+    const appStore = createAppStore();
+    mocks.inspectMedia.mockResolvedValueOnce(createMedia(firstSource.sourcePath, 1));
+    await appStore.dispatch(importSource(firstSource));
+    const sourceItem = selectImportedQueueItems(appStore.getState())[0];
+    const target = {
+      id: "import-2",
+      status: "imported" as const,
+      origin: "source-import" as const,
+      snapshot: {
+        source: secondSource,
+        trim: { startMicros: 0, endMicros: 5_000_000 },
+        crop: null,
+        audio: { master: { enabled: true, volumePercent: 50 }, tracks: [], mergeAudio: false },
+      },
+    };
+    appStore.dispatch(importedQueueItemAdded(target));
+    appStore.dispatch(activeQueueItemChanged(sourceItem!.id));
+    mocks.importSourcePath.mockRejectedValueOnce({
+      code: "io_failed",
+      message: "The target source could not be reopened.",
+    });
+
+    await expect(appStore.dispatch(switchImportedQueueItemRequested(target.id))).resolves.toBe(
+      false,
+    );
+
+    expect(selectImportedQueueItems(appStore.getState())).toEqual([
+      expect.objectContaining({ id: sourceItem?.id }),
+      target,
+    ]);
+    expect(selectActiveItemId(appStore.getState())).toBe(sourceItem?.id);
+    expect(selectSourceError(appStore.getState())).toEqual({
+      code: "io_failed",
+      message: "The target source could not be reopened.",
+    });
+  });
+
+  it("discards a history fork when a new source is imported", async () => {
+    const appStore = createAppStore();
+    const historyFork = {
+      id: "fork-1",
+      status: "imported" as const,
+      origin: "history-fork" as const,
+      snapshot: {
+        source: firstSource,
+        trim: { startMicros: 0, endMicros: 5_000_000 },
+        crop: null,
+        audio: { master: { enabled: true, volumePercent: 50 }, tracks: [], mergeAudio: false },
+      },
+    };
+    appStore.dispatch(importedQueueItemAdded(historyFork));
+    mocks.inspectMedia.mockResolvedValue(createMedia(secondSource.sourcePath, 1));
+
+    await appStore.dispatch(importSource(secondSource));
+
+    expect(
+      selectImportedQueueItems(appStore.getState()).every(
+        (item) => item.origin === "source-import",
+      ),
+    ).toBe(true);
+    expect(selectImportedQueueItems(appStore.getState())).not.toContainEqual(historyFork);
+    expect(selectActiveItemId(appStore.getState())).toBe(
+      selectImportedQueueItems(appStore.getState())[0]?.id,
+    );
   });
 
   it("clears native chooser state before a selected source finishes importing", async () => {

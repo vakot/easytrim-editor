@@ -5,6 +5,7 @@ import {
   exportCompleted,
   exportFailed,
   queueEntryAdded,
+  queueItemPromoted,
   selectHasProcessableExports,
 } from "@/app/store/slices/export-slice";
 import { selectAutoStartQueueEnabled } from "@/app/store/slices/preferences-slice";
@@ -15,6 +16,17 @@ import { listenerMiddleware } from "../listener-middleware";
 
 listenerMiddleware.startListening({
   actionCreator: queueEntryAdded,
+  effect: (action, listenerApi) => {
+    if (action.payload.status === "imported") return;
+    if (selectAutoStartQueueEnabled(listenerApi.getState())) {
+      const dispatch = listenerApi.dispatch as unknown as AppDispatch;
+      dispatch(startExportQueue());
+    }
+  },
+});
+
+listenerMiddleware.startListening({
+  actionCreator: queueItemPromoted,
   effect: (_, listenerApi) => {
     if (selectAutoStartQueueEnabled(listenerApi.getState())) {
       const dispatch = listenerApi.dispatch as unknown as AppDispatch;

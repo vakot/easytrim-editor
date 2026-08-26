@@ -12,6 +12,7 @@ import { MediaDetails } from "./MediaDetails";
 import { SourceError } from "./SourceError";
 import { useTranslation } from "react-i18next";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { ImportedQueue } from "./ImportedQueue";
 
 export function SourceSidebar() {
   const { t } = useTranslation();
@@ -49,6 +50,7 @@ export function SourceSidebar() {
 
         {lastError ? <SourceError error={lastError} /> : null}
         <MediaDetails media={media} />
+        <ImportedQueue />
       </div>
       <Separator className="mx-4" />
       <ScrollArea className="min-h-0" data-slot="export-queue-scroll">

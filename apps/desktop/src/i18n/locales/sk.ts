@@ -160,6 +160,12 @@ export const sk = {
         bitrate: "Dátový tok",
       },
     },
+    queue: {
+      title: "Importované súbory",
+      noActive: "Nie je aktívny žiadny importovaný súbor",
+      previous: "Predchádzajúci",
+      next: "Nasledujúci",
+    },
   },
   preview: {
     emptyMock: {
