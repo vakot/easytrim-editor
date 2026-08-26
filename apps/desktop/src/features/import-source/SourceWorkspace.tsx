@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Group, Panel, usePanelRef } from "react-resizable-panels";
 
-import { PanelSeparator } from "@/components/PanelSeparator";
+import { PanelSeparator } from "@/components/layout/PanelSeparator";
 import { EditorStage } from "@/features/editor";
 import { DropOverlay } from "./components/DropOverlay";
 import { SourceSidebar } from "./components/SourceSidebar";
@@ -16,7 +16,7 @@ import {
 import { selectSourceSelection } from "@/app/store/slices/source-slice";
 import { selectActiveItemId } from "@/app/store/slices/export-slice";
 import { selectIsSourceDragActive } from "@/app/store/slices/import-workflow-slice";
-import { PanelContent } from "@/components/PanelContent";
+import { PanelContent } from "@/components/layout/PanelContent";
 
 export { CapabilityStatus } from "./components/CapabilityStatus";
 

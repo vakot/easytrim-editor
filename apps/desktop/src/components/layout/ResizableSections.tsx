@@ -18,9 +18,10 @@ import {
 } from "react";
 import type { ComponentPropsWithoutRef, ReactElement, ReactNode } from "react";
 
-import { PanelSeparator } from "@/components/PanelSeparator";
+import { PanelSeparator } from "@/components/layout/PanelSeparator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { Separator } from "@/components/ui/separator";
 
 type SectionContextValue = {
   contentId: string;
@@ -142,17 +143,11 @@ export function ResizableSection({
 
   return (
     <SectionContext.Provider value={contextValue}>
-      <div
-        className="min-h-9 shrink-0 border-b border-border/60"
-        data-slot="resizable-section-trigger-row"
-      >
-        {trigger ? <ResizableSectionTrigger {...triggerProps} /> : null}
-      </div>
       <Panel
         id={id}
         panelRef={panelRef}
         collapsible
-        collapsedSize={0}
+        collapsedSize={36}
         defaultSize={defaultSize}
         minSize={minSize}
         maxSize={maxSize}
@@ -161,6 +156,9 @@ export function ResizableSection({
         className={cn("min-h-0 min-w-0 overflow-hidden", panelClassName)}
         data-slot="resizable-section-panel"
       >
+        <div className="min-h-9 shrink-0" data-slot="resizable-section-trigger-row">
+          {trigger ? <ResizableSectionTrigger {...triggerProps} /> : null}
+        </div>
         {content ? <ResizableSectionContent {...contentProps} /> : null}
       </Panel>
       {!isLast ? (
@@ -170,7 +168,9 @@ export function ResizableSection({
           orientation="horizontal"
           disabled={!isOpen}
           collapsed={!isOpen}
-        />
+        >
+          <Separator />
+        </PanelSeparator>
       ) : null}
     </SectionContext.Provider>
   );
@@ -194,7 +194,7 @@ export function ResizableSectionTrigger({
       aria-expanded={context.open}
       data-state={context.open ? "open" : "closed"}
       className={cn(
-        "flex h-9 w-full items-center gap-2 px-5 text-left text-xs font-bold tracking-[0.14em] text-primary uppercase transition-colors hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:outline-none",
+        "flex h-9 w-full items-center gap-2 text-left text-xs font-bold tracking-[0.14em] text-primary uppercase transition-colors hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:outline-none",
         className,
       )}
       onClick={(event) => {

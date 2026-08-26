@@ -10,7 +10,7 @@ import {
   ResizableSectionContent,
   ResizableSections,
   ResizableSectionTrigger,
-} from "@/components/ResizableSections";
+} from "@/components/layout/ResizableSections";
 import { ExportQueue } from "@/features/export";
 import { MediaDetails } from "./MediaDetails";
 import { SourceError } from "./SourceError";

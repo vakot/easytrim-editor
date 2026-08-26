@@ -7,7 +7,7 @@ import {
   ResizableSectionContent,
   ResizableSections,
   ResizableSectionTrigger,
-} from "@/components/ResizableSections";
+} from "@/components/layout/ResizableSections";
 
 function renderTestSections() {
   return render(

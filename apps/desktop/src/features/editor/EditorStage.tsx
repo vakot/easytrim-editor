@@ -3,7 +3,7 @@ import { Group, Panel } from "react-resizable-panels";
 import { useTranslation } from "react-i18next";
 import { LoaderCircle } from "lucide-react";
 
-import { PanelSeparator } from "@/components/PanelSeparator";
+import { PanelSeparator } from "@/components/layout/PanelSeparator";
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import {
   editorStageLayoutChanged,
@@ -41,7 +41,7 @@ import { VideoPreview } from "@/features/preview/VideoPreview";
 import { TrimTimeline } from "@/features/timeline";
 import { TimelinePane } from "./components/TimelinePane";
 import { useTimelinePanelSizing } from "./hooks/useTimelinePanelSizing";
-import { PanelContent } from "@/components/PanelContent";
+import { PanelContent } from "@/components/layout/PanelContent";
 
 const EMPTY_TIMELINE_RANGE = {
   startMicros: 0,
