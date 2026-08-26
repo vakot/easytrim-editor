@@ -688,16 +688,14 @@ describe("App", () => {
     await user.click(audioTracksToggle);
     expect(screen.queryByTestId("audio-tracks-scroll")).not.toBeInTheDocument();
     expect(screen.getByTestId("timeline-fixed-content")).toBeInTheDocument();
-    expect(document.getElementById("preview-timeline-resize-handle")).toHaveAttribute(
+    expect(document.getElementById("preview-timeline-resize-handle")).not.toHaveAttribute(
       "aria-hidden",
-      "false",
     );
 
     await user.click(screen.getByRole("button", { name: "Show Bottom panel" }));
     expect(screen.getByTestId("audio-tracks-scroll")).toBeInTheDocument();
-    expect(document.getElementById("preview-timeline-resize-handle")).toHaveAttribute(
+    expect(document.getElementById("preview-timeline-resize-handle")).not.toHaveAttribute(
       "aria-hidden",
-      "false",
     );
   });
 
