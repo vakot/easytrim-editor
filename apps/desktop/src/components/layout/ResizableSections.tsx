@@ -1,25 +1,11 @@
 import { ChevronDown } from "lucide-react";
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
-import {
-  Children,
-  createContext,
-  isValidElement,
-  useCallback,
-  useContext,
-  useEffect,
-  useId,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { Children, createContext, isValidElement, useCallback, useContext, useState } from "react";
 import {
   Group,
   Panel,
   usePanelRef,
   type GroupProps,
-  type Layout,
-  type LayoutChangedMeta,
-  type PanelImperativeHandle,
   type PanelProps,
 } from "react-resizable-panels";
 
@@ -36,132 +22,20 @@ type SectionContextValue = {
 
 const SectionContext = createContext<SectionContextValue | null>(null);
 
-type SectionRegistration = {
-  open: boolean;
-  panelRef: React.RefObject<PanelImperativeHandle | null>;
-};
-
-type SectionsContextValue = {
-  sectionStates: Record<string, boolean>;
-  registerSection: (id: string | number | undefined, registration: SectionRegistration) => void;
-  setSectionState: (id: string | number | undefined, open: boolean) => void;
-  unregisterSection: (id: string | number | undefined) => void;
-};
-
-const SectionsContext = createContext<SectionsContextValue | null>(null);
-
 export interface ResizableSectionsProps extends Omit<GroupProps, "orientation"> {
   children?: ReactNode;
 }
 
-export function ResizableSections({
-  children,
-  className,
-  onLayoutChanged,
-  ...props
-}: ResizableSectionsProps) {
-  const [sectionStates, setSectionStates] = useState<Record<string, boolean>>({});
-  const sectionRegistrations = useRef(new Map<string, SectionRegistration>());
-  const fillerRef = usePanelRef();
-  const fillerId = `${useId()}-filler`;
-  const sectionCount = Object.keys(sectionStates).length;
-  const hasOpenUserSection = Object.values(sectionStates).some(Boolean);
-
-  const registerSection = useCallback(
-    (id: string | number | undefined, registration: SectionRegistration) => {
-      const key = String(id);
-      sectionRegistrations.current.set(key, registration);
-      setSectionStates((current) =>
-        key in current ? current : { ...current, [key]: registration.open },
-      );
-    },
-    [],
-  );
-
-  const setSectionState = useCallback((id: string | number | undefined, open: boolean) => {
-    const key = String(id);
-    setSectionStates((current) => (current[key] === open ? current : { ...current, [key]: open }));
-  }, []);
-
-  const unregisterSection = useCallback((id: string | number | undefined) => {
-    const key = String(id);
-    sectionRegistrations.current.delete(key);
-    setSectionStates((current) => {
-      if (!(key in current)) return current;
-      const next = { ...current };
-      delete next[key];
-      return next;
-    });
-  }, []);
-
-  const syncSectionStatesFromLayout = useCallback((_layout: Layout, meta: LayoutChangedMeta) => {
-    if (!meta.isUserInteraction) return;
-
-    setSectionStates((current) => {
-      let next = current;
-
-      for (const [id, { panelRef }] of sectionRegistrations.current) {
-        const isCollapsed = panelRef.current?.isCollapsed();
-        if (isCollapsed === undefined) continue;
-
-        const open = !isCollapsed;
-        if (next[id] !== open) {
-          if (next === current) next = { ...current };
-          next[id] = open;
-        }
-      }
-
-      return next;
-    });
-  }, []);
-
-  const handleLayoutChanged = useCallback(
-    (layout: Layout, meta: LayoutChangedMeta) => {
-      onLayoutChanged?.(layout, meta);
-      syncSectionStatesFromLayout(layout, meta);
-    },
-    [onLayoutChanged, syncSectionStatesFromLayout],
-  );
-
-  useEffect(() => {
-    if (sectionCount === 0) return;
-
-    const filler = fillerRef.current;
-    if (!filler) return;
-
-    if (hasOpenUserSection) {
-      filler.collapse();
-    } else {
-      filler.expand();
-    }
-  }, [fillerRef, hasOpenUserSection, sectionCount]);
-
-  const sectionsContextValue = useMemo(
-    () => ({ registerSection, sectionStates, setSectionState, unregisterSection }),
-    [registerSection, sectionStates, setSectionState, unregisterSection],
-  );
-
+export function ResizableSections({ children, className, ...props }: ResizableSectionsProps) {
   return (
-    <SectionsContext.Provider value={sectionsContextValue}>
-      <Group
-        {...props}
-        className={cn("min-h-0", className)}
-        onLayoutChanged={handleLayoutChanged}
-        orientation="vertical"
-        data-slot="resizable-sections"
-      >
-        {children}
-        <Panel
-          id={fillerId}
-          panelRef={fillerRef}
-          collapsible
-          collapsedSize="0%"
-          defaultSize="100%"
-          aria-hidden="true"
-          data-slot="resizable-sections-filler"
-        />
-      </Group>
-    </SectionsContext.Provider>
+    <Group
+      {...props}
+      className={cn("min-h-0", className)}
+      orientation="vertical"
+      data-slot="resizable-sections"
+    >
+      {children}
+    </Group>
   );
 }
 
@@ -188,11 +62,7 @@ export function ResizableSection({
   minSize,
   className,
 }: ResizableSectionProps) {
-  const initialOpen = useRef(defaultOpen);
-  const sectionsContext = useSectionsContext();
-  const { registerSection, sectionStates, setSectionState, unregisterSection } = sectionsContext;
-  const sectionKey = String(id);
-  const open = sectionStates[sectionKey] ?? defaultOpen;
+  const [open, setOpen] = useState(defaultOpen);
   const panelRef = usePanelRef();
   const triggerId = `${id}-trigger`;
   const contentId = `${id}-content`;
@@ -202,23 +72,27 @@ export function ResizableSection({
   const triggerProps = trigger?.props as ResizableSectionTriggerProps | undefined;
   const contentProps = content?.props as ResizableSectionContentProps | undefined;
 
+  const syncOpenState = useCallback((nextOpen: boolean) => {
+    setOpen((currentOpen) => (currentOpen === nextOpen ? currentOpen : nextOpen));
+  }, []);
+
   const toggle = useCallback(() => {
     const panel = panelRef.current;
     if (!panel) return;
 
-    if (open) {
-      setSectionState(id, false);
-      panel.collapse();
-    } else {
-      setSectionState(id, true);
+    if (panel.isCollapsed()) {
       panel.expand();
+      syncOpenState(true);
+    } else {
+      panel.collapse();
+      syncOpenState(false);
     }
-  }, [id, open, panelRef, setSectionState]);
+  }, [panelRef, syncOpenState]);
 
-  useEffect(() => {
-    registerSection(id, { open: initialOpen.current, panelRef });
-    return () => unregisterSection(id);
-  }, [id, panelRef, registerSection, unregisterSection]);
+  const handleResize = useCallback(() => {
+    const isCollapsed = panelRef.current?.isCollapsed();
+    if (isCollapsed !== undefined) syncOpenState(!isCollapsed);
+  }, [panelRef, syncOpenState]);
 
   const contextValue = {
     contentId,
@@ -237,8 +111,8 @@ export function ResizableSection({
         defaultSize={defaultOpen ? defaultSize : collapsedSize}
         minSize={minSize}
         groupResizeBehavior={groupResizeBehavior}
+        onResize={handleResize}
         className={className}
-        style={{ overflow: "hidden" }}
         data-slot="resizable-section-panel"
       >
         <div className="flex h-full min-h-0 flex-col overflow-hidden">
@@ -311,14 +185,6 @@ function useSectionContext() {
     throw new Error(
       "ResizableSectionTrigger and ResizableSectionContent must be used inside ResizableSection",
     );
-  }
-  return context;
-}
-
-function useSectionsContext() {
-  const context = useContext(SectionsContext);
-  if (!context) {
-    throw new Error("ResizableSection must be used inside ResizableSections");
   }
   return context;
 }
