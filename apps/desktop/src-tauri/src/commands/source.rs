@@ -43,3 +43,11 @@ pub fn import_dropped_source(
     let _ = window.set_focus();
     import_source(&state, path)
 }
+
+#[tauri::command]
+pub fn import_source_path(
+    state: State<'_, AppState>,
+    source_path: PathBuf,
+) -> Result<SourceSelection, AppError> {
+    import_source(&state, source_path)
+}

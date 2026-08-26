@@ -21,6 +21,7 @@ pub struct ValidatedSource {
 pub struct SourceSelection {
     pub source_id: String,
     pub display_name: String,
+    pub source_path: String,
 }
 
 pub fn validate_source(path: &Path) -> Result<ValidatedSource, AppError> {

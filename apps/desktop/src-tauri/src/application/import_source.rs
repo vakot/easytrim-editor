@@ -20,5 +20,6 @@ pub fn import_source(state: &AppState, path: PathBuf) -> Result<SourceSelection,
     Ok(SourceSelection {
         source_id: active_source.source_id,
         display_name,
+        source_path: active_source.path.display().to_string(),
     })
 }

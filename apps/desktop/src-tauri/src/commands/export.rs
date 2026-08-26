@@ -113,7 +113,7 @@ pub async fn render_fast(
     state: State<'_, AppState>,
 ) -> Result<ExportResult, AppError> {
     let result = async {
-        let source = state.resolve_export_source(&request.source_id)?;
+        let source = state.resolve_export_source(&request.source_path)?;
         let media = source
             .media
             .clone()
@@ -131,7 +131,7 @@ pub async fn render_fast(
         .await
     }
     .await;
-    state.release_export_source(&request.source_id)?;
+    state.release_export_source(&request.source_path)?;
     result
 }
 
@@ -143,7 +143,7 @@ pub async fn render_optimized(
     state: State<'_, AppState>,
 ) -> Result<ExportResult, AppError> {
     let result = async {
-        let source = state.resolve_export_source(&request.source_id)?;
+        let source = state.resolve_export_source(&request.source_path)?;
         let media = source
             .media
             .clone()
@@ -161,7 +161,7 @@ pub async fn render_optimized(
         .await
     }
     .await;
-    state.release_export_source(&request.source_id)?;
+    state.release_export_source(&request.source_path)?;
     result
 }
 
@@ -170,7 +170,7 @@ pub fn plan_optimized_export(
     request: OptimizedExportRequest,
     state: State<'_, AppState>,
 ) -> Result<OptimizedExportPlan, AppError> {
-    let source = state.resolve_source(&request.source_id)?;
+    let source = state.resolve_source_by_path(&request.source_path)?;
     let media = source
         .media
         .as_ref()
@@ -187,18 +187,18 @@ pub fn cancel_operation(operation_id: String, state: State<'_, AppState>) -> Res
 
 #[tauri::command]
 pub fn reserve_export_source(
-    source_id: String,
+    source_path: String,
     state: State<'_, AppState>,
 ) -> Result<(), AppError> {
-    state.reserve_export_source(&source_id)
+    state.reserve_export_source(&source_path)
 }
 
 #[tauri::command]
 pub fn release_export_source(
-    source_id: String,
+    source_path: String,
     state: State<'_, AppState>,
 ) -> Result<(), AppError> {
-    state.release_export_source(&source_id)
+    state.release_export_source(&source_path)
 }
 
 #[tauri::command]

@@ -136,7 +136,7 @@ pub struct AppState {
     session: Mutex<SessionState>,
     outputs: Mutex<HashMap<String, PathBuf>>,
     operations: Mutex<HashMap<String, Arc<AtomicBool>>>,
-    export_sources: Mutex<HashMap<String, RetainedExportSource>>,
+    export_sources: Mutex<HashMap<PathBuf, RetainedExportSource>>,
 }
 
 #[derive(Clone, Debug)]
@@ -259,14 +259,14 @@ impl AppState {
             .ok_or_else(AppError::source_replaced)
     }
 
-    pub fn reserve_export_source(&self, source_id: &str) -> Result<(), AppError> {
-        let source = self.resolve_source(source_id)?;
+    pub fn reserve_export_source(&self, source_path: &str) -> Result<(), AppError> {
+        let source = self.resolve_source_by_path(source_path)?;
         let mut export_sources = self
             .export_sources
             .lock()
             .map_err(|_| AppError::internal("The queued export source registry is unavailable."))?;
         let record = export_sources
-            .entry(source_id.to_owned())
+            .entry(source.path.clone())
             .or_insert(RetainedExportSource {
                 source,
                 reservations: 0,
@@ -275,31 +275,50 @@ impl AppState {
         Ok(())
     }
 
-    pub fn resolve_export_source(&self, source_id: &str) -> Result<ActiveSource, AppError> {
-        self.resolve_source(source_id).or_else(|_| {
-            self.export_sources
-                .lock()
-                .map_err(|_| {
-                    AppError::internal("The queued export source registry is unavailable.")
-                })?
-                .get(source_id)
-                .map(|record| record.source.clone())
-                .ok_or_else(AppError::source_replaced)
-        })
+    pub fn resolve_export_source(&self, source_path: &str) -> Result<ActiveSource, AppError> {
+        if let Some(source) = self
+            .export_sources
+            .lock()
+            .map_err(|_| AppError::internal("The queued export source registry is unavailable."))?
+            .get(Path::new(source_path))
+            .map(|record| record.source.clone())
+        {
+            return Ok(source);
+        }
+
+        self.resolve_source_by_path(source_path)
     }
 
-    pub fn release_export_source(&self, source_id: &str) -> Result<(), AppError> {
+    pub fn release_export_source(&self, source_path: &str) -> Result<(), AppError> {
         let mut export_sources = self
             .export_sources
             .lock()
             .map_err(|_| AppError::internal("The queued export source registry is unavailable."))?;
-        if let Some(record) = export_sources.get_mut(source_id) {
+        let source_path = Path::new(source_path);
+        if let Some(record) = export_sources.get_mut(source_path) {
             record.reservations = record.reservations.saturating_sub(1);
             if record.reservations == 0 {
-                export_sources.remove(source_id);
+                export_sources.remove(source_path);
             }
         }
         Ok(())
+    }
+
+    pub fn resolve_source_by_path(&self, source_path: &str) -> Result<ActiveSource, AppError> {
+        let session = self.lock_session()?;
+        session
+            .active_source
+            .as_ref()
+            .filter(|source| source.path == Path::new(source_path))
+            .map(|source| ActiveSource {
+                source_id: source.source_id.clone(),
+                path: source.path.clone(),
+                cancellation: Arc::clone(&source.cancellation),
+                media: source.media.clone(),
+                preview_streams: source.preview_streams,
+                audio_stream_indexes: source.audio_stream_indexes.clone(),
+            })
+            .ok_or_else(AppError::source_replaced)
     }
 
     pub fn remember_inspected_streams(
@@ -646,21 +665,21 @@ mod tests {
         let generation = state
             .begin_source_replacement()
             .expect("source replacement starts");
-        let source_id = state
+        state
             .complete_source_replacement(generation, source("queued.mp4"))
             .expect("source installs");
         state
-            .reserve_export_source(&source_id)
+            .reserve_export_source("queued.mp4")
             .expect("queue reserves the source");
 
         state
             .begin_source_replacement()
             .expect("next source replacement starts");
 
-        assert!(state.resolve_export_source(&source_id).is_ok());
+        assert!(state.resolve_export_source("queued.mp4").is_ok());
         state
-            .release_export_source(&source_id)
+            .release_export_source("queued.mp4")
             .expect("queue releases the source");
-        assert!(state.resolve_export_source(&source_id).is_err());
+        assert!(state.resolve_export_source("queued.mp4").is_err());
     }
 }
