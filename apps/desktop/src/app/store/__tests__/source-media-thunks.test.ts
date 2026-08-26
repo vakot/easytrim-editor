@@ -55,7 +55,7 @@ const mocks = vi.hoisted(() => ({
   checkMediaCapabilities: vi.fn(),
   chooseSource: vi.fn(),
   inspectMedia: vi.fn(),
-  importSourcePath: vi.fn(),
+  activateSourcePath: vi.fn(),
   prepareAudioPreviews: vi.fn(),
   prepareProxyPreview: vi.fn(),
   prepareSourcePreview: vi.fn(),
@@ -69,7 +69,7 @@ vi.mock("@/lib/tauri/media", async (importOriginal) => {
     checkMediaCapabilities: mocks.checkMediaCapabilities,
     chooseSource: mocks.chooseSource,
     inspectMedia: mocks.inspectMedia,
-    activateSourcePath: mocks.importSourcePath,
+    activateSourcePath: mocks.activateSourcePath,
     prepareAudioPreviews: mocks.prepareAudioPreviews,
     prepareProxyPreview: mocks.prepareProxyPreview,
     prepareSourcePreview: mocks.prepareSourcePreview,
@@ -122,7 +122,7 @@ function createDeferred<T>() {
   return { promise, resolve, reject };
 }
 
-const importSource =
+const ingestAndActivateSource =
   (source: SourceRef) => async (dispatch: AppDispatch, getState: () => RootState) => {
     dispatch(ingestSources([source]));
     const itemId = selectImportedQueueItems(getState()).at(-1)?.id;
@@ -165,12 +165,12 @@ function createHistoryItem(snapshot: EditorSnapshot, id = "history-1"): ExportQu
 describe("source/media orchestration thunks", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.chooseSource.mockResolvedValue(null);
+    mocks.chooseSource.mockResolvedValue([]);
     mocks.checkMediaCapabilities.mockResolvedValue({
       ffmpeg: { available: true, version: "ffmpeg" },
       ffprobe: { available: true, version: "ffprobe" },
     });
-    mocks.importSourcePath.mockImplementation(async (sourcePath: string) => {
+    mocks.activateSourcePath.mockImplementation(async (sourcePath: string) => {
       const source = [firstSource, secondSource, thirdSource].find(
         (candidate) => candidate.sourcePath === sourcePath,
       );
@@ -201,7 +201,7 @@ describe("source/media orchestration thunks", () => {
     const appStore = createAppStore();
     mocks.inspectMedia.mockResolvedValue(createMedia(firstSource.sourcePath, 2));
 
-    await appStore.dispatch(importSource(firstSource));
+    await appStore.dispatch(ingestAndActivateSource(firstSource));
 
     const state = appStore.getState();
     expect(selectSourceMedia(state)).toEqual(
@@ -224,7 +224,7 @@ describe("source/media orchestration thunks", () => {
     const appStore = createAppStore();
     mocks.inspectMedia.mockResolvedValue(createMedia(firstSource.sourcePath, 1));
 
-    await appStore.dispatch(importSource(firstSource));
+    await appStore.dispatch(ingestAndActivateSource(firstSource));
     const firstItem = selectImportedQueueItems(appStore.getState())[0];
     expect(firstItem).toBeDefined();
     appStore.dispatch(
@@ -233,7 +233,7 @@ describe("source/media orchestration thunks", () => {
       }),
     );
 
-    await appStore.dispatch(importSource(firstSource));
+    await appStore.dispatch(ingestAndActivateSource(firstSource));
     const importedItems = selectImportedQueueItems(appStore.getState());
     expect(importedItems).toHaveLength(2);
     expect(new Set(importedItems.map((item) => item.id)).size).toBe(2);
@@ -265,7 +265,7 @@ describe("source/media orchestration thunks", () => {
       );
       return source ?? { displayName: sourcePath, sourcePath };
     };
-    mocks.importSourcePath.mockImplementation(async (sourcePath: string) => {
+    mocks.activateSourcePath.mockImplementation(async (sourcePath: string) => {
       registeredSourcePath = sourcePath;
       return sourceForPath(sourcePath);
     });
@@ -278,7 +278,7 @@ describe("source/media orchestration thunks", () => {
     });
     const savedCrop = { x: 0.1, y: 0.2, width: 0.7, height: 0.6 };
 
-    await appStore.dispatch(importSource(firstSource));
+    await appStore.dispatch(ingestAndActivateSource(firstSource));
     appStore.dispatch(
       trimChanged({
         trim: { startMicros: 500_000, endMicros: 4_000_000, sourceDurationMicros: 5_000_000 },
@@ -291,7 +291,7 @@ describe("source/media orchestration thunks", () => {
     appStore.dispatch(audioMergeToggled());
 
     registeredSourcePath = secondSource.sourcePath;
-    await appStore.dispatch(importSource(secondSource));
+    await appStore.dispatch(ingestAndActivateSource(secondSource));
     const afterSecondImport = selectImportedQueueItems(appStore.getState());
     const [firstItem, secondItem] = afterSecondImport;
     const idsAfterSecondImport = afterSecondImport.map((item) => item.id);
@@ -299,7 +299,7 @@ describe("source/media orchestration thunks", () => {
     expect(appStore.dispatch(navigateToImportedItem(firstItem!.id))).toBe(true);
     await vi.waitFor(() => expect(selectSourceSelection(appStore.getState())).toEqual(firstSource));
 
-    expect(mocks.importSourcePath).toHaveBeenCalledWith(firstSource.sourcePath);
+    expect(mocks.activateSourcePath).toHaveBeenCalledWith(firstSource.sourcePath);
     expect(selectSourceError(appStore.getState())).toBeNull();
     expect(selectActiveItemId(appStore.getState())).toBe(firstItem!.id);
     expect(selectImportedQueueItems(appStore.getState()).map((item) => item.id)).toEqual(
@@ -321,14 +321,14 @@ describe("source/media orchestration thunks", () => {
     await vi.waitFor(() =>
       expect(selectSourceSelection(appStore.getState())).toEqual(secondSource),
     );
-    expect(mocks.importSourcePath).toHaveBeenCalledWith(secondSource.sourcePath);
+    expect(mocks.activateSourcePath).toHaveBeenCalledWith(secondSource.sourcePath);
     expect(selectActiveItemId(appStore.getState())).toBe(secondItem!.id);
     expect(selectImportedQueueItems(appStore.getState()).map((item) => item.id)).toEqual(
       idsAfterSecondImport,
     );
 
     registeredSourcePath = thirdSource.sourcePath;
-    await appStore.dispatch(importSource(thirdSource));
+    await appStore.dispatch(ingestAndActivateSource(thirdSource));
     const afterThirdImport = selectImportedQueueItems(appStore.getState());
     const idsAfterThirdImport = afterThirdImport.map((item) => item.id);
     const thirdItem = afterThirdImport[2];
@@ -358,7 +358,7 @@ describe("source/media orchestration thunks", () => {
     });
     const savedCrop = { x: 0.1, y: 0.2, width: 0.7, height: 0.6 };
 
-    await appStore.dispatch(importSource(firstSource));
+    await appStore.dispatch(ingestAndActivateSource(firstSource));
     appStore.dispatch(
       trimChanged({
         trim: { startMicros: 500_000, endMicros: 4_000_000, sourceDurationMicros: 5_000_000 },
@@ -370,7 +370,7 @@ describe("source/media orchestration thunks", () => {
     appStore.dispatch(audioTrackToggled({ streamIndex: 2 }));
     appStore.dispatch(audioMergeToggled());
 
-    await appStore.dispatch(importSource(secondSource));
+    await appStore.dispatch(ingestAndActivateSource(secondSource));
     const importedItems = selectImportedQueueItems(appStore.getState());
     const [firstItem, secondItem] = importedItems;
     const queueIds = importedItems.map((item) => item.id);
@@ -399,15 +399,15 @@ describe("source/media orchestration thunks", () => {
     expect(selectAudioTracks(appStore.getState())).toEqual([]);
     expect(selectMergeAudio(appStore.getState())).toBe(false);
     expect(selectImportedQueueItems(appStore.getState()).map((item) => item.id)).toEqual(queueIds);
-    expect(mocks.importSourcePath).toHaveBeenCalledWith(secondSource.sourcePath);
-    expect(mocks.importSourcePath).not.toHaveBeenLastCalledWith(firstSource.sourcePath);
+    expect(mocks.activateSourcePath).toHaveBeenCalledWith(secondSource.sourcePath);
+    expect(mocks.activateSourcePath).not.toHaveBeenLastCalledWith(firstSource.sourcePath);
   });
 
   it("captures source-import drafts and preserves them when leaving the active item", async () => {
     const appStore = createAppStore();
     mocks.inspectMedia.mockResolvedValue(createMedia(firstSource.sourcePath, 1));
 
-    await appStore.dispatch(importSource(firstSource));
+    await appStore.dispatch(ingestAndActivateSource(firstSource));
     const importedItem = selectImportedQueueItems(appStore.getState())[0];
     expect(importedItem?.origin).toBe("source-import");
     appStore.dispatch(
@@ -430,7 +430,7 @@ describe("source/media orchestration thunks", () => {
     const appStore = createAppStore();
     mocks.inspectMedia.mockResolvedValueOnce(createMedia(firstSource.sourcePath, 1));
 
-    await appStore.dispatch(importSource(firstSource));
+    await appStore.dispatch(ingestAndActivateSource(firstSource));
     const firstItem = selectImportedQueueItems(appStore.getState())[0];
     appStore.dispatch(
       trimChanged({
@@ -442,7 +442,7 @@ describe("source/media orchestration thunks", () => {
       message: "The replacement source is not supported.",
     });
 
-    await appStore.dispatch(importSource(secondSource));
+    await appStore.dispatch(ingestAndActivateSource(secondSource));
 
     expect(selectImportedQueueItems(appStore.getState())).toEqual([
       expect.objectContaining({
@@ -496,9 +496,9 @@ describe("source/media orchestration thunks", () => {
     const appStore = createAppStore();
     mocks.inspectMedia.mockImplementation(async (sourcePath: string) => createMedia(sourcePath, 1));
 
-    await appStore.dispatch(importSource(firstSource));
-    await appStore.dispatch(importSource(secondSource));
-    await appStore.dispatch(importSource(thirdSource));
+    await appStore.dispatch(ingestAndActivateSource(firstSource));
+    await appStore.dispatch(ingestAndActivateSource(secondSource));
+    await appStore.dispatch(ingestAndActivateSource(thirdSource));
     const [firstItem, secondItem, thirdItem] = selectImportedQueueItems(appStore.getState());
     expect(appStore.dispatch(navigateToImportedItem(secondItem!.id))).toBe(true);
     await vi.waitFor(() =>
@@ -519,8 +519,8 @@ describe("source/media orchestration thunks", () => {
     const appStore = createAppStore();
     mocks.inspectMedia.mockImplementation(async (sourcePath: string) => createMedia(sourcePath, 1));
 
-    await appStore.dispatch(importSource(firstSource));
-    await appStore.dispatch(importSource(secondSource));
+    await appStore.dispatch(ingestAndActivateSource(firstSource));
+    await appStore.dispatch(ingestAndActivateSource(secondSource));
     const [firstItem, secondItem] = selectImportedQueueItems(appStore.getState());
     expect(selectActiveItemId(appStore.getState())).toBe(secondItem!.id);
 
@@ -537,7 +537,7 @@ describe("source/media orchestration thunks", () => {
     const appStore = createAppStore();
     mocks.inspectMedia.mockResolvedValue(createMedia(firstSource.sourcePath, 1));
 
-    await appStore.dispatch(importSource(firstSource));
+    await appStore.dispatch(ingestAndActivateSource(firstSource));
     await appStore.dispatch(closeActiveImportedItemRequested());
 
     expect(selectImportedQueueItems(appStore.getState())).toEqual([]);
@@ -601,7 +601,7 @@ describe("source/media orchestration thunks", () => {
   it("keeps a failed target active and allows navigation afterward", async () => {
     const appStore = createAppStore();
     mocks.inspectMedia.mockResolvedValueOnce(createMedia(firstSource.sourcePath, 1));
-    await appStore.dispatch(importSource(firstSource));
+    await appStore.dispatch(ingestAndActivateSource(firstSource));
     const sourceItem = selectImportedQueueItems(appStore.getState())[0];
     const target = {
       id: "import-2",
@@ -616,7 +616,7 @@ describe("source/media orchestration thunks", () => {
     };
     appStore.dispatch(importedQueueItemAdded(target));
     appStore.dispatch(activeQueueItemChanged(sourceItem!.id));
-    mocks.importSourcePath.mockRejectedValueOnce({
+    mocks.activateSourcePath.mockRejectedValueOnce({
       code: "io_failed",
       message: "The target source could not be reopened.",
     });
@@ -648,16 +648,16 @@ describe("source/media orchestration thunks", () => {
     const appStore = createAppStore();
     mocks.inspectMedia.mockImplementation(async (sourcePath: string) => createMedia(sourcePath, 1));
 
-    await appStore.dispatch(importSource(firstSource));
-    await appStore.dispatch(importSource(secondSource));
-    await appStore.dispatch(importSource(thirdSource));
+    await appStore.dispatch(ingestAndActivateSource(firstSource));
+    await appStore.dispatch(ingestAndActivateSource(secondSource));
+    await appStore.dispatch(ingestAndActivateSource(thirdSource));
     const [firstItem, secondItem, thirdItem] = selectImportedQueueItems(appStore.getState());
     expect(appStore.dispatch(navigateToImportedItem(secondItem!.id))).toBe(true);
     await vi.waitFor(() =>
       expect(selectSourceSelection(appStore.getState())).toEqual(secondSource),
     );
 
-    mocks.importSourcePath.mockRejectedValueOnce({
+    mocks.activateSourcePath.mockRejectedValueOnce({
       code: "io_failed",
       message: "The next source is missing.",
     });
@@ -693,7 +693,7 @@ describe("source/media orchestration thunks", () => {
     appStore.dispatch(importedQueueItemAdded(historyFork));
     mocks.inspectMedia.mockResolvedValue(createMedia(secondSource.sourcePath, 1));
 
-    await appStore.dispatch(importSource(secondSource));
+    await appStore.dispatch(ingestAndActivateSource(secondSource));
 
     expect(
       selectImportedQueueItems(appStore.getState()).every(
@@ -708,7 +708,7 @@ describe("source/media orchestration thunks", () => {
 
   it("clears native chooser state before a selected source finishes importing", async () => {
     const appStore = createAppStore();
-    const picker = createDeferred<SourceRef | null>();
+    const picker = createDeferred<SourceRef[]>();
     const inspection = createDeferred<MediaInfo>();
     mocks.chooseSource.mockReturnValue(picker.promise);
     mocks.inspectMedia.mockReturnValue(inspection.promise);
@@ -717,7 +717,7 @@ describe("source/media orchestration thunks", () => {
     expect(selectIsChoosingSource(appStore.getState())).toBe(true);
     expect(selectIsNativeDialogOpen(appStore.getState())).toBe(true);
 
-    picker.resolve(firstSource);
+    picker.resolve([firstSource]);
     await vi.waitFor(() => {
       expect(selectIsChoosingSource(appStore.getState())).toBe(false);
       expect(selectIsNativeDialogOpen(appStore.getState())).toBe(false);
@@ -733,12 +733,12 @@ describe("source/media orchestration thunks", () => {
 
   it("clears native chooser state when the picker is cancelled", async () => {
     const appStore = createAppStore();
-    const picker = createDeferred<SourceRef | null>();
+    const picker = createDeferred<SourceRef[]>();
     mocks.chooseSource.mockReturnValue(picker.promise);
 
     const chooserRequest = appStore.dispatch(chooseSourceRequested());
     expect(selectIsNativeDialogOpen(appStore.getState())).toBe(true);
-    picker.resolve(null);
+    picker.resolve([]);
     await chooserRequest;
 
     expect(selectIsChoosingSource(appStore.getState())).toBe(false);
@@ -749,7 +749,7 @@ describe("source/media orchestration thunks", () => {
 
   it("clears native chooser state and preserves normalized picker errors", async () => {
     const appStore = createAppStore();
-    const picker = createDeferred<SourceRef | null>();
+    const picker = createDeferred<SourceRef[]>();
     mocks.chooseSource.mockReturnValue(picker.promise);
 
     const chooserRequest = appStore.dispatch(chooseSourceRequested());
@@ -769,7 +769,7 @@ describe("source/media orchestration thunks", () => {
     const appStore = createAppStore();
     mocks.inspectMedia.mockResolvedValue(createMedia(firstSource.sourcePath, 1));
 
-    await appStore.dispatch(importSource(firstSource));
+    await appStore.dispatch(ingestAndActivateSource(firstSource));
 
     expect(selectAudioPreviews(appStore.getState())).toMatchObject({
       status: "ready",
@@ -786,8 +786,8 @@ describe("source/media orchestration thunks", () => {
       sourcePath === firstSource.sourcePath ? firstInspection.promise : secondInspection.promise,
     );
 
-    const firstImport = appStore.dispatch(importSource(firstSource));
-    const secondImport = appStore.dispatch(importSource(secondSource));
+    const firstImport = appStore.dispatch(ingestAndActivateSource(firstSource));
+    const secondImport = appStore.dispatch(ingestAndActivateSource(secondSource));
     secondInspection.resolve(createMedia(secondSource.sourcePath, 1));
     await secondImport;
     firstInspection.resolve(createMedia(firstSource.sourcePath, 2));
@@ -802,7 +802,7 @@ describe("source/media orchestration thunks", () => {
     const appStore = createAppStore();
     mocks.inspectMedia.mockRejectedValue({ code: "unsupported_media", message: "Not a video" });
 
-    await appStore.dispatch(importSource(firstSource));
+    await appStore.dispatch(ingestAndActivateSource(firstSource));
     expect(selectSourceError(appStore.getState())).toEqual({
       code: "unsupported_media",
       message: "Not a video",
@@ -819,7 +819,7 @@ describe("source/media orchestration thunks", () => {
   it("falls back from source preview playback to a proxy preview", async () => {
     const appStore = createAppStore();
     mocks.inspectMedia.mockResolvedValue(createMedia(firstSource.sourcePath, 1));
-    await appStore.dispatch(importSource(firstSource));
+    await appStore.dispatch(ingestAndActivateSource(firstSource));
 
     await appStore.dispatch(handlePreviewPlaybackError(firstSource.sourcePath, "source"));
 
@@ -833,7 +833,7 @@ describe("source/media orchestration thunks", () => {
   it("marks proxy playback failure as the final preview failure", async () => {
     const appStore = createAppStore();
     mocks.inspectMedia.mockResolvedValue(createMedia(firstSource.sourcePath, 1));
-    await appStore.dispatch(importSource(firstSource));
+    await appStore.dispatch(ingestAndActivateSource(firstSource));
     mocks.prepareProxyPreview.mockRejectedValue({
       code: "unsupported_media",
       message: "No compatible preview could be created",
@@ -856,7 +856,7 @@ describe("source/media orchestration thunks", () => {
       message: "Audio preview failed",
     });
 
-    await appStore.dispatch(importSource(firstSource));
+    await appStore.dispatch(ingestAndActivateSource(firstSource));
 
     expect(selectAudioPreviews(appStore.getState())).toMatchObject({
       status: "unavailable",
@@ -868,7 +868,7 @@ describe("source/media orchestration thunks", () => {
     const appStore = createAppStore();
     const sourceMedia = createMedia(firstSource.sourcePath, 2);
     mocks.inspectMedia.mockResolvedValue(sourceMedia);
-    await appStore.dispatch(importSource(firstSource));
+    await appStore.dispatch(ingestAndActivateSource(firstSource));
 
     const jobs = new Map<string, ReturnType<typeof createDeferred<WaveformResult[]>>>();
     mocks.prepareWaveforms.mockImplementation((_sourcePath: string, jobId: string) => {
@@ -920,7 +920,7 @@ describe("source/media orchestration thunks", () => {
   it("records waveform preparation failure and clears the source on close", async () => {
     const appStore = createAppStore();
     mocks.inspectMedia.mockResolvedValue(createMedia(firstSource.sourcePath, 1));
-    await appStore.dispatch(importSource(firstSource));
+    await appStore.dispatch(ingestAndActivateSource(firstSource));
     mocks.prepareWaveforms.mockRejectedValue({
       code: "waveform_failed",
       message: "Waveform generation failed",

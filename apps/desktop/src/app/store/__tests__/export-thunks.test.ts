@@ -6,8 +6,8 @@ const mocks = vi.hoisted(() => ({
   releaseExportSource: vi.fn(),
   cancelOperation: vi.fn(),
   planOptimizedExport: vi.fn(),
-  importSourcePath: vi.fn(),
-  importSource: vi.fn(),
+  activateSourcePath: vi.fn(),
+  activateSource: vi.fn(),
   leaveActiveImportedItem: vi.fn(),
   navigateToImportedItem: vi.fn(),
   restoreActiveImportedItemRequested: vi.fn(),
@@ -23,7 +23,7 @@ vi.mock("@/lib/tauri/media", () => ({
   releaseExportSource: mocks.releaseExportSource,
   cancelOperation: mocks.cancelOperation,
   planOptimizedExport: mocks.planOptimizedExport,
-  activateSourcePath: mocks.importSourcePath,
+  activateSourcePath: mocks.activateSourcePath,
   renderFast: mocks.renderFast,
   renderOptimized: mocks.renderOptimized,
   normalizeAppError: (error: unknown) =>
@@ -36,7 +36,7 @@ vi.mock("@/lib/tauri/queue", () => ({
   performQueueFinishAction: mocks.performQueueFinishAction,
 }));
 vi.mock("@/app/store/thunks/source-media-thunks", () => ({
-  activateSource: mocks.importSource,
+  activateSource: mocks.activateSource,
   leaveActiveImportedItem: mocks.leaveActiveImportedItem,
   navigateToImportedItem: mocks.navigateToImportedItem,
   restoreActiveImportedItemRequested: mocks.restoreActiveImportedItemRequested,
@@ -161,8 +161,8 @@ beforeEach(() => {
   mocks.releaseExportSource.mockResolvedValue(undefined);
   mocks.cancelOperation.mockResolvedValue(undefined);
   mocks.planOptimizedExport.mockResolvedValue({ commandPreview: "ffmpeg -i <source> <output>" });
-  mocks.importSourcePath.mockReset();
-  mocks.importSource.mockReset();
+  mocks.activateSourcePath.mockReset();
+  mocks.activateSource.mockReset();
   mocks.leaveActiveImportedItem.mockReset();
   mocks.leaveActiveImportedItem.mockImplementation(
     () => (dispatch: AppDispatch, getState: () => RootState) => {
@@ -415,8 +415,8 @@ describe("export thunks and runtime queue", () => {
       sourcePath: "C:/Media/other.mp4",
     };
     const restoredMedia = { ...media, durationMicros: 2_000_000 };
-    mocks.importSourcePath.mockResolvedValue(source);
-    mocks.importSource.mockImplementation(
+    mocks.activateSourcePath.mockResolvedValue(source);
+    mocks.activateSource.mockImplementation(
       (
         selectedSource: typeof source,
         mergeAudio: boolean,
@@ -446,7 +446,7 @@ describe("export thunks and runtime queue", () => {
       true,
     );
 
-    expect(mocks.importSourcePath).toHaveBeenCalledWith(source.sourcePath);
+    expect(mocks.activateSourcePath).toHaveBeenCalledWith(source.sourcePath);
     expect(store.getState().source.source).toEqual(source);
     expect(selectTrim(store.getState())).toMatchObject({
       startMicros: 250_000,
@@ -474,8 +474,8 @@ describe("export thunks and runtime queue", () => {
       snapshot: { ...queuedItem.snapshot, source },
     };
     const secondHistoryItem = { ...historicalItem, id: "export-second" };
-    mocks.importSourcePath.mockResolvedValue(source);
-    mocks.importSource.mockImplementation(
+    mocks.activateSourcePath.mockResolvedValue(source);
+    mocks.activateSource.mockImplementation(
       (
         selectedSource: typeof source,
         mergeAudio: boolean,

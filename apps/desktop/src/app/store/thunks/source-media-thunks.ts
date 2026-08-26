@@ -300,12 +300,7 @@ export const chooseSourceRequested = (): AppThunk => async (dispatch, getState) 
   let pickerError: AppError | null = null;
 
   try {
-    const selectedSources = (await chooseSourceDialog()) as SourceRef[] | SourceRef | null;
-    sources = Array.isArray(selectedSources)
-      ? selectedSources
-      : selectedSources
-        ? [selectedSources]
-        : [];
+    sources = await chooseSourceDialog();
   } catch (error: unknown) {
     pickerError = normalizeAppError(error);
   } finally {
