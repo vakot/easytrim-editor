@@ -62,6 +62,7 @@ const sourceSlice = createSlice({
         state.source = null;
         state.media = null;
         state.error = null;
+        state.loadToken += 1;
       })
       .addCase(sourceReady, (state, action) => {
         if (!isValidSourceReadyPayload(state.loadToken, action.payload)) return;
