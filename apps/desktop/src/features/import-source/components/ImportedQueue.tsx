@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import { selectActiveItemId, selectImportedQueueItems } from "@/app/store/slices/export-slice";
-import { switchImportedQueueItemRequested } from "@/app/store/thunks/source-media-thunks";
+import { navigateToImportedItem } from "@/app/store/thunks/source-media-thunks";
 import { Button } from "@/components/ui/button";
 
 export function ImportedQueue() {
@@ -40,7 +40,7 @@ export function ImportedQueue() {
           disabled={activeIndex <= 0}
           onClick={() => {
             const previous = items[activeIndex - 1];
-            if (previous) void dispatch(switchImportedQueueItemRequested(previous.id));
+            if (previous) dispatch(navigateToImportedItem(previous.id));
           }}
         >
           <ChevronLeft aria-hidden="true" />
@@ -52,7 +52,7 @@ export function ImportedQueue() {
           disabled={activeIndex < 0 || activeIndex >= items.length - 1}
           onClick={() => {
             const next = items[activeIndex + 1];
-            if (next) void dispatch(switchImportedQueueItemRequested(next.id));
+            if (next) dispatch(navigateToImportedItem(next.id));
           }}
         >
           {t("import.queue.next")}

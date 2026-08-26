@@ -9,7 +9,8 @@ const mocks = vi.hoisted(() => ({
   importSourcePath: vi.fn(),
   importSource: vi.fn(),
   leaveActiveImportedItem: vi.fn(),
-  switchImportedQueueItemRequested: vi.fn(),
+  navigateToImportedItem: vi.fn(),
+  restoreActiveImportedItemRequested: vi.fn(),
   renderFast: vi.fn(),
   renderOptimized: vi.fn(),
   availableQueueFinishActions: vi.fn(),
@@ -37,7 +38,8 @@ vi.mock("@/lib/tauri/queue", () => ({
 vi.mock("@/app/store/thunks/source-media-thunks", () => ({
   importSource: mocks.importSource,
   leaveActiveImportedItem: mocks.leaveActiveImportedItem,
-  switchImportedQueueItemRequested: mocks.switchImportedQueueItemRequested,
+  navigateToImportedItem: mocks.navigateToImportedItem,
+  restoreActiveImportedItemRequested: mocks.restoreActiveImportedItemRequested,
 }));
 
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
@@ -172,7 +174,13 @@ beforeEach(() => {
       }
     },
   );
-  mocks.switchImportedQueueItemRequested.mockReset();
+  mocks.navigateToImportedItem.mockReset();
+  mocks.navigateToImportedItem.mockImplementation((id: string | null) => {
+    return (dispatch: AppDispatch) => {
+      dispatch(activeQueueItemChanged(id));
+      return true;
+    };
+  });
   mocks.availableQueueFinishActions.mockResolvedValue(["exit", "nothing"]);
   mocks.performQueueFinishAction.mockResolvedValue(undefined);
 });
@@ -202,6 +210,7 @@ describe("export thunks and runtime queue", () => {
     expect(promoted?.id).toBe(importedItem.id);
     expect(promoted?.status).toBe("queued");
     expect(selectImportedQueueItems(store.getState())).toHaveLength(0);
+    expect(selectActiveItemId(store.getState())).toBeNull();
   });
 
   it("promotes optimized export using the same queue item id", async () => {
@@ -223,6 +232,7 @@ describe("export thunks and runtime queue", () => {
       route: "optimized",
     });
     expect(selectImportedQueueItems(store.getState())).toHaveLength(0);
+    expect(selectActiveItemId(store.getState())).toBeNull();
   });
 
   it("promotes a history fork through Fast Cut using the same id", async () => {
@@ -293,16 +303,32 @@ describe("export thunks and runtime queue", () => {
     store.dispatch(importedQueueItemAdded(importedItem));
     store.dispatch(importedQueueItemAdded(nextItem));
     store.dispatch(activeQueueItemChanged(importedItem.id));
-    mocks.switchImportedQueueItemRequested.mockReturnValue((dispatch: AppDispatch) => {
-      dispatch(activeQueueItemChanged(nextItem.id));
-      return Promise.resolve(true);
-    });
-
     store.dispatch(startFastCutRequested());
     await vi.waitFor(() => expect(selectExportQueue(store.getState())).toHaveLength(1));
 
-    expect(mocks.switchImportedQueueItemRequested).toHaveBeenCalledWith(nextItem.id);
+    expect(mocks.navigateToImportedItem).toHaveBeenCalledWith(nextItem.id);
     expect(selectActiveItemId(store.getState())).toBe(nextItem.id);
+  });
+
+  it("uses the shared replacement rule after optimized promotion", async () => {
+    const store = createReadyStore(false);
+    store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
+    const middleItem = { ...importedItem, id: "import-middle" };
+    const nextItem = { ...importedItem, id: "import-next" };
+    store.dispatch(importedQueueItemAdded(importedItem));
+    store.dispatch(importedQueueItemAdded(middleItem));
+    store.dispatch(importedQueueItemAdded(nextItem));
+    store.dispatch(activeQueueItemChanged(middleItem.id));
+
+    store.dispatch(startOptimizedExportRequested());
+    await vi.waitFor(() => expect(selectExportQueue(store.getState())).toHaveLength(1));
+
+    expect(mocks.navigateToImportedItem).toHaveBeenCalledWith(nextItem.id);
+    expect(selectActiveItemId(store.getState())).toBe(nextItem.id);
+    expect(selectImportedQueueItems(store.getState()).map((item) => item.id)).toEqual([
+      importedItem.id,
+      nextItem.id,
+    ]);
   });
 
   it("does not execute imported-only items as exports", () => {

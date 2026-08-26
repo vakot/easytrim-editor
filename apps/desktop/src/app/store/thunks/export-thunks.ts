@@ -57,9 +57,10 @@ import { importSourcePath } from "@/lib/tauri/media";
 import {
   importSource,
   leaveActiveImportedItem,
-  switchImportedQueueItemRequested,
+  navigateToImportedItem,
 } from "@/app/store/thunks/source-media-thunks";
 import { sourceFailed } from "@/app/store/actions/source-actions";
+import { getReplacementImportedItem } from "@/features/import-source/utils/imported-queue";
 
 let optimizedPlanRequestSequence = 0;
 let restoreSequence = 0;
@@ -156,14 +157,6 @@ async function startQueuedExport(
   const activeItem = selectActiveQueueItem(state);
   if (!activeItem || activeItem.status !== "imported") return;
   const importedItemId = activeItem.id;
-  const importedItems = selectImportedQueueItems(state);
-  const importedIndex = importedItemId
-    ? importedItems.findIndex((item) => item.id === importedItemId)
-    : -1;
-  const nextImportedItemId =
-    importedIndex >= 0
-      ? (importedItems[importedIndex + 1]?.id ?? importedItems[importedIndex - 1]?.id ?? null)
-      : null;
   const snapshot = createEditorSnapshot({
     source,
     trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
@@ -190,6 +183,12 @@ async function startQueuedExport(
       return;
     }
 
+    const currentImportedItems = selectImportedQueueItems(getState());
+    const replacementItem = getReplacementImportedItem(
+      currentImportedItems,
+      currentImportedItems.findIndex((item) => item.id === importedItemId),
+    );
+
     const promotion: QueueItemPromotion = {
       id: importedItemId,
       snapshot,
@@ -206,7 +205,7 @@ async function startQueuedExport(
     );
     if (!promoted) return;
     enqueueExport(promoted, dispatch, getState);
-    if (nextImportedItemId) void dispatch(switchImportedQueueItemRequested(nextImportedItemId));
+    dispatch(navigateToImportedItem(replacementItem?.id ?? null));
   } catch (error: unknown) {
     dispatch(exportLaunchFailed(normalizeAppError(error)));
   } finally {
