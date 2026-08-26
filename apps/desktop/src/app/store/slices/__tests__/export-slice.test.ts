@@ -15,6 +15,8 @@ import {
   optimizedExportPlanReceived,
   optimizedExportPlanRequested,
   optimizedExportSettingsChanged,
+  importedQueueItemAdded,
+  importedQueueItemRemoved,
   queueEntryAdded,
   queueFinishActionChanged,
   queueStarted,
@@ -131,6 +133,19 @@ describe("export slice", () => {
     expect(
       exportReducer(initialExportState, queueFinishActionChanged("systemSleep")),
     ).toMatchObject({ queueFinishAction: "systemSleep" });
+  });
+
+  it("removes an imported item and clears its active identity", () => {
+    const imported = {
+      id: "import-1",
+      status: "imported" as const,
+      origin: "history-fork" as const,
+      snapshot: item.snapshot,
+    };
+    let state = exportReducer(initialExportState, importedQueueItemAdded(imported));
+    state = exportReducer(state, importedQueueItemRemoved(imported.id));
+    expect(state.queue).toEqual([]);
+    expect(state.activeItemId).toBeNull();
   });
 
   it("accepts only the latest optimized plan request result", () => {

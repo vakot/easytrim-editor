@@ -4,6 +4,7 @@ export type {
   ExportRoute,
   ExportSettings,
   ExportStatus,
+  ImportedOrigin,
   ImportedQueueItem,
   QueueItem,
   QueueItemBase,

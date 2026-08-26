@@ -118,6 +118,7 @@ const queuedItem: ExportQueueItem = {
 const importedItem: ImportedQueueItem = {
   id: "import-1",
   status: "imported",
+  origin: "source-import",
   snapshot: queuedItem.snapshot,
 };
 

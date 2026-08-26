@@ -16,6 +16,7 @@ import type { EditorSnapshot } from "@/domain/editor-snapshot";
 
 export type ExportStatus = "queued" | "rendering" | "completed" | "failed" | "canceled";
 export type QueueItemStatus = "imported" | ExportStatus;
+export type ImportedOrigin = "source-import" | "history-fork";
 export type ExportRoute = "fast" | "optimized";
 export type ExportRequest = FastExportRequest | OptimizedExportRequest;
 
@@ -26,6 +27,7 @@ export interface QueueItemBase {
 
 export interface ImportedQueueItem extends QueueItemBase {
   status: "imported";
+  origin: ImportedOrigin;
 }
 
 export interface ExportSettings {
@@ -140,6 +142,10 @@ const exportSlice = createSlice({
     importedQueueItemAdded: (state, action: PayloadAction<ImportedQueueItem>) => {
       state.queue.push(action.payload);
       state.activeItemId = action.payload.id;
+    },
+    importedQueueItemRemoved: (state, action: PayloadAction<string>) => {
+      state.queue = state.queue.filter((item) => item.id !== action.payload);
+      if (state.activeItemId === action.payload) state.activeItemId = null;
     },
     activeQueueItemChanged: (state, action: PayloadAction<string | null>) => {
       state.activeItemId = action.payload;
@@ -290,6 +296,7 @@ export const {
   exportLaunchFailed,
   queueEntryAdded,
   importedQueueItemAdded,
+  importedQueueItemRemoved,
   activeQueueItemChanged,
   queueItemSnapshotUpdated,
   queueItemPromoted,

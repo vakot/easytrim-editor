@@ -28,6 +28,7 @@ import {
 import {
   activeQueueItemChanged,
   importedQueueItemAdded,
+  importedQueueItemRemoved,
   queueItemSnapshotUpdated,
   selectActiveQueueItem,
   type ImportedQueueItem,
@@ -70,6 +71,7 @@ export interface ImportSourceOptions {
   registerQueueItem?: boolean;
   activeItemId?: string | null;
   captureCurrentDraft?: boolean;
+  leaveActiveItem?: boolean;
 }
 
 function isCurrentSource(state: RootState, sourcePath: string, loadToken: number): boolean {
@@ -95,7 +97,10 @@ export const importSource =
   async (dispatch, getState) => {
     const registerQueueItem = options.registerQueueItem ?? true;
     const captureCurrentDraft = options.captureCurrentDraft ?? registerQueueItem;
-    if (captureCurrentDraft) captureActiveQueueItemDraft(dispatch, getState);
+    const leaveActiveItem =
+      options.leaveActiveItem ?? (registerQueueItem && options.activeItemId === undefined);
+    if (leaveActiveItem) dispatch(leaveActiveImportedItem());
+    else if (captureCurrentDraft) captureActiveQueueItemDraft(dispatch, getState);
     if (options.activeItemId !== undefined) {
       dispatch(activeQueueItemChanged(options.activeItemId));
     } else if (registerQueueItem) {
@@ -128,6 +133,7 @@ export const importSource =
         const item: ImportedQueueItem = {
           id: `import-${++importedItemSequence}`,
           status: "imported",
+          origin: "source-import",
           snapshot: createEditorSnapshot({
             source,
             trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
@@ -223,6 +229,18 @@ function captureActiveQueueItemDraft(
   );
 }
 
+export const leaveActiveImportedItem = (): AppThunk => (dispatch, getState) => {
+  const activeItem = selectActiveQueueItem(getState());
+  if (!activeItem || activeItem.status !== "imported") return;
+
+  if (activeItem.origin === "source-import") {
+    captureActiveQueueItemDraft(dispatch, getState);
+    dispatch(activeQueueItemChanged(null));
+  } else {
+    dispatch(importedQueueItemRemoved(activeItem.id));
+  }
+};
+
 export const switchImportedQueueItemRequested =
   (id: string): AppThunk<Promise<boolean>> =>
   async (dispatch, getState) => {
@@ -232,11 +250,13 @@ export const switchImportedQueueItemRequested =
     if (!item || getState().export.activeItemId === id) return false;
     const restorationId = ++queueRestoreSequence;
 
+    dispatch(leaveActiveImportedItem());
     await dispatch(
       importSource(item.snapshot.source, item.snapshot.audio.mergeAudio, {
         registerQueueItem: false,
         activeItemId: id,
-        captureCurrentDraft: true,
+        captureCurrentDraft: false,
+        leaveActiveItem: false,
       }),
     );
     const state = getState();

@@ -24,6 +24,7 @@ import {
   closeSourceRequested,
   handlePreviewPlaybackError,
   importSource,
+  leaveActiveImportedItem,
   prepareSourceWaveforms,
   switchImportedQueueItemRequested,
 } from "@/app/store/thunks/source-media-thunks";
@@ -148,6 +149,7 @@ describe("source/media orchestration thunks", () => {
     });
     expect(mocks.prepareAudioPreviews).toHaveBeenCalledWith(firstSource.sourcePath, [1, 2]);
     expect(selectImportedQueueItems(appStore.getState())).toHaveLength(1);
+    expect(selectImportedQueueItems(appStore.getState())[0]?.origin).toBe("source-import");
     expect(selectActiveItemId(appStore.getState())).toBe(
       selectImportedQueueItems(appStore.getState())[0]?.id,
     );
@@ -170,6 +172,7 @@ describe("source/media orchestration thunks", () => {
     const importedItems = selectImportedQueueItems(appStore.getState());
     expect(importedItems).toHaveLength(2);
     expect(new Set(importedItems.map((item) => item.id)).size).toBe(2);
+    expect(importedItems.every((item) => item.origin === "source-import")).toBe(true);
     expect(importedItems[0]?.snapshot.trim).toEqual({ startMicros: 500_000, endMicros: 4_000_000 });
     expect(importedItems[0]?.snapshot.source.sourcePath).toBe(firstSource.sourcePath);
     expect(selectActiveItemId(appStore.getState())).toBe(importedItems[1]?.id);
@@ -181,6 +184,28 @@ describe("source/media orchestration thunks", () => {
     expect(appStore.getState().trim.value).toMatchObject({
       startMicros: 500_000,
       endMicros: 4_000_000,
+    });
+  });
+
+  it("captures source-import drafts and preserves them when leaving the active item", async () => {
+    const appStore = createAppStore();
+    mocks.inspectMedia.mockResolvedValue(createMedia(firstSource.sourcePath, 1));
+
+    await appStore.dispatch(importSource(firstSource));
+    const importedItem = selectImportedQueueItems(appStore.getState())[0];
+    expect(importedItem?.origin).toBe("source-import");
+    appStore.dispatch(
+      trimChanged({
+        trim: { startMicros: 750_000, endMicros: 3_500_000, sourceDurationMicros: 5_000_000 },
+      }),
+    );
+
+    await appStore.dispatch(leaveActiveImportedItem());
+
+    expect(selectImportedQueueItems(appStore.getState())).toHaveLength(1);
+    expect(selectImportedQueueItems(appStore.getState())[0]?.snapshot.trim).toEqual({
+      startMicros: 750_000,
+      endMicros: 3_500_000,
     });
   });
 

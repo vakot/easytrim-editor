@@ -31,3 +31,14 @@ export function createEditorSnapshot(input: {
     },
   };
 }
+
+export function cloneEditorSnapshot(snapshot: EditorSnapshot): EditorSnapshot {
+  return createEditorSnapshot({
+    source: snapshot.source,
+    trim: snapshot.trim,
+    crop: snapshot.crop,
+    masterAudio: snapshot.audio.master,
+    audioTracks: snapshot.audio.tracks,
+    mergeAudio: snapshot.audio.mergeAudio,
+  });
+}
