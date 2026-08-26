@@ -108,7 +108,7 @@ export function QueueMenu({ navigation }: { navigation: MenuNavigation }) {
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCancelQueueConfirmOpen(false)}>
-              {t("common.cancel")}
+              {t("common.back")}
             </Button>
             <Button
               variant="destructive"
@@ -117,7 +117,7 @@ export function QueueMenu({ navigation }: { navigation: MenuNavigation }) {
                 void dispatch(cancelAllExportsRequested());
               }}
             >
-              {t("app.queue.cancel")}
+              {t("common.cancel")}
             </Button>
           </DialogFooter>
         </DialogContent>

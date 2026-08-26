@@ -7,7 +7,7 @@ import { selectHasSource, selectSourceReady } from "@/app/store/slices/source-sl
 import { selectIsChoosingSource } from "@/app/store/slices/import-workflow-slice";
 import {
   chooseSourceRequested,
-  closeSourceRequested,
+  closeActiveImportedItemRequested,
 } from "@/app/store/thunks/source-media-thunks";
 import { openOptimizedExportDialog, startFastCutRequested } from "@/app/store/thunks/export-thunks";
 import { ContextMenu } from "@/components/ui/context-menu";
@@ -39,7 +39,7 @@ export function FileMenu({ navigation }: { navigation: MenuNavigation }) {
           children: t("app.topBarMenus.closeFile"),
           suffix: "Ctrl+Q",
           disabled: !hasSource,
-          onSelect: () => void dispatch(closeSourceRequested()),
+          onSelect: () => void dispatch(closeActiveImportedItemRequested()),
         },
         { id: "file-divider", separator: true },
         {
