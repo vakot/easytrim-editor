@@ -64,27 +64,27 @@ export function ResizableSection({
   const triggerProps = trigger?.props as ResizableSectionTriggerProps | undefined;
   const contentProps = content?.props as ResizableSectionContentProps | undefined;
 
-  const setSectionOpen = useCallback(
-    (nextOpen: boolean) => {
-      setOpen(nextOpen);
-      if (nextOpen) {
-        panelRef.current?.expand();
-      } else {
-        panelRef.current?.collapse();
-      }
-    },
-    [panelRef],
-  );
+  const syncOpenState = useCallback((nextOpen: boolean) => {
+    setOpen((currentOpen) => (currentOpen === nextOpen ? currentOpen : nextOpen));
+  }, []);
 
-  const toggle = useCallback(() => setSectionOpen(!open), [open, setSectionOpen]);
+  const toggle = useCallback(() => {
+    const panel = panelRef.current;
+    if (!panel) return;
 
-  const handleResize = useCallback(
-    (size: { inPixels: number }) => {
-      const isCollapsed = panelRef.current?.isCollapsed() ?? size.inPixels <= 0;
-      setSectionOpen(!isCollapsed);
-    },
-    [panelRef, setSectionOpen],
-  );
+    if (panel.isCollapsed()) {
+      panel.expand();
+      syncOpenState(true);
+    } else {
+      panel.collapse();
+      syncOpenState(false);
+    }
+  }, [panelRef, syncOpenState]);
+
+  const handleResize = useCallback(() => {
+    const isCollapsed = panelRef.current?.isCollapsed();
+    if (isCollapsed !== undefined) syncOpenState(!isCollapsed);
+  }, [panelRef, syncOpenState]);
 
   const contextValue = {
     contentId,
@@ -100,14 +100,15 @@ export function ResizableSection({
         panelRef={panelRef}
         collapsible
         collapsedSize={24}
-        defaultSize={defaultSize}
+        defaultSize={defaultOpen ? defaultSize : 24}
         minSize={minSize}
         groupResizeBehavior={groupResizeBehavior}
         onResize={handleResize}
         className={className}
+        style={{ overflow: "hidden" }}
         data-slot="resizable-section-panel"
       >
-        <div className="flex flex-col overflow-hidden">
+        <div className="flex h-full min-h-0 flex-col overflow-hidden">
           {trigger ? <ResizableSectionTrigger {...triggerProps} /> : null}
           {content ? <ResizableSectionContent {...contentProps} /> : null}
         </div>
@@ -134,7 +135,10 @@ export function ResizableSectionTrigger({
       aria-expanded={context.open}
       data-state={context.open ? "open" : "closed"}
       data-slot="resizable-section-trigger-row"
-      className={cn("flex h-6 w-full items-center gap-2", className)}
+      className={cn(
+        "flex h-6 w-full items-center gap-2 transition-colors hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:outline-none",
+        className,
+      )}
       onClick={(event) => {
         props.onClick?.(event);
         if (!event.defaultPrevented) context.toggle();
@@ -161,11 +165,10 @@ export function ResizableSectionContent({ children, className }: ResizableSectio
     <ScrollArea
       id={context.contentId}
       role="region"
-      aria-hidden={!context.open}
       aria-labelledby={context.triggerId}
       hidden={!context.open}
       data-slot="resizable-section-content"
-      className={cn("flex-1", className)}
+      className={cn("min-h-0 flex-1", className)}
     >
       {children}
     </ScrollArea>
