@@ -12,7 +12,7 @@ vi.mock("@tauri-apps/api/webview", () => ({
 
 import {
   chooseSource,
-  importSourcePath,
+  activateSourcePath,
   inspectMedia,
   listenForSourceDrops,
   planOptimizedExport,
@@ -41,15 +41,17 @@ beforeEach(() => {
 
 describe("media IPC adapter", () => {
   it("accepts a source selection with its physical path", async () => {
-    mocks.invoke.mockResolvedValue({
-      displayName: "clip.mp4",
-      sourcePath: "C:/Media/clip.mp4",
-    });
+    mocks.invoke.mockResolvedValue([
+      { displayName: "clip.mp4", sourcePath: "C:/Media/clip.mp4" },
+      { displayName: "second.mp4", sourcePath: "C:/Media/second.mp4" },
+      { displayName: "third.mp4", sourcePath: "C:/Media/third.mp4" },
+    ]);
 
-    await expect(chooseSource()).resolves.toEqual({
-      displayName: "clip.mp4",
-      sourcePath: "C:/Media/clip.mp4",
-    });
+    await expect(chooseSource()).resolves.toEqual([
+      { displayName: "clip.mp4", sourcePath: "C:/Media/clip.mp4" },
+      { displayName: "second.mp4", sourcePath: "C:/Media/second.mp4" },
+      { displayName: "third.mp4", sourcePath: "C:/Media/third.mp4" },
+    ]);
   });
 
   it("imports a source by its physical path", async () => {
@@ -58,11 +60,11 @@ describe("media IPC adapter", () => {
       sourcePath: "C:/Media/clip.mp4",
     });
 
-    await expect(importSourcePath("C:/Media/clip.mp4")).resolves.toEqual({
+    await expect(activateSourcePath("C:/Media/clip.mp4")).resolves.toEqual({
       displayName: "clip.mp4",
       sourcePath: "C:/Media/clip.mp4",
     });
-    expect(mocks.invoke).toHaveBeenCalledWith("import_source_path", {
+    expect(mocks.invoke).toHaveBeenCalledWith("activate_source_path", {
       sourcePath: "C:/Media/clip.mp4",
     });
   });
@@ -208,25 +210,21 @@ describe("media IPC adapter", () => {
   });
 
   it("imports a dropped path through Rust and preserves its physical identity", async () => {
-    mocks.invoke.mockResolvedValue({
-      displayName: "video.mkv",
-      sourcePath: "C:\\private\\video.mkv",
-    });
+    mocks.invoke.mockResolvedValue([
+      { displayName: "video.mkv", sourcePath: "C:\\private\\video.mkv" },
+    ]);
     const onEvent = vi.fn();
     await listenForSourceDrops(onEvent);
 
     nativeDropListener?.({ payload: { type: "drop", paths: ["C:\\private\\video.mkv"] } });
 
     await vi.waitFor(() => {
-      expect(mocks.invoke).toHaveBeenCalledWith("import_dropped_source", {
-        path: "C:\\private\\video.mkv",
+      expect(mocks.invoke).toHaveBeenCalledWith("import_dropped_sources", {
+        paths: ["C:\\private\\video.mkv"],
       });
       expect(onEvent).toHaveBeenLastCalledWith({
         status: "selected",
-        source: {
-          displayName: "video.mkv",
-          sourcePath: "C:\\private\\video.mkv",
-        },
+        sources: [{ displayName: "video.mkv", sourcePath: "C:\\private\\video.mkv" }],
       });
     });
   });
@@ -249,6 +247,34 @@ describe("media IPC adapter", () => {
           message: "This file type is not supported yet.",
           diagnostics: undefined,
         },
+      });
+    });
+  });
+
+  it("imports every dropped path in platform order", async () => {
+    mocks.invoke.mockResolvedValue([
+      { displayName: "a.mp4", sourcePath: "C:/Media/a.mp4" },
+      { displayName: "b.mp4", sourcePath: "C:/Media/b.mp4" },
+      { displayName: "c.mp4", sourcePath: "C:/Media/c.mp4" },
+    ]);
+    const onEvent = vi.fn();
+    await listenForSourceDrops(onEvent);
+
+    nativeDropListener?.({
+      payload: { type: "drop", paths: ["C:/Media/a.mp4", "C:/Media/b.mp4", "C:/Media/c.mp4"] },
+    });
+
+    await vi.waitFor(() => {
+      expect(mocks.invoke).toHaveBeenCalledWith("import_dropped_sources", {
+        paths: ["C:/Media/a.mp4", "C:/Media/b.mp4", "C:/Media/c.mp4"],
+      });
+      expect(onEvent).toHaveBeenLastCalledWith({
+        status: "selected",
+        sources: [
+          { displayName: "a.mp4", sourcePath: "C:/Media/a.mp4" },
+          { displayName: "b.mp4", sourcePath: "C:/Media/b.mp4" },
+          { displayName: "c.mp4", sourcePath: "C:/Media/c.mp4" },
+        ],
       });
     });
   });

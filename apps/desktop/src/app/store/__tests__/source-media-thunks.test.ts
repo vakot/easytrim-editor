@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { MediaInfo, WaveformResult } from "@/lib/tauri/media";
 import type { SourceRef } from "@/domain/source";
 import { createAppStore } from "@/app/store/store";
+import type { AppDispatch, RootState } from "@/app/store/store";
 import {
   audioMergeToggled,
   audioTrackToggled,
@@ -42,7 +43,7 @@ import {
   chooseSourceRequested,
   closeActiveImportedItemRequested,
   handlePreviewPlaybackError,
-  importSource,
+  ingestSources,
   leaveActiveImportedItem,
   prepareSourceWaveforms,
   navigateToImportedItem,
@@ -68,7 +69,7 @@ vi.mock("@/lib/tauri/media", async (importOriginal) => {
     checkMediaCapabilities: mocks.checkMediaCapabilities,
     chooseSource: mocks.chooseSource,
     inspectMedia: mocks.inspectMedia,
-    importSourcePath: mocks.importSourcePath,
+    activateSourcePath: mocks.importSourcePath,
     prepareAudioPreviews: mocks.prepareAudioPreviews,
     prepareProxyPreview: mocks.prepareProxyPreview,
     prepareSourcePreview: mocks.prepareSourcePreview,
@@ -121,6 +122,16 @@ function createDeferred<T>() {
   return { promise, resolve, reject };
 }
 
+const importSource =
+  (source: SourceRef) => async (dispatch: AppDispatch, getState: () => RootState) => {
+    dispatch(ingestSources([source]));
+    const itemId = selectImportedQueueItems(getState()).at(-1)?.id;
+    await vi.waitFor(() => {
+      if (selectActiveItemId(getState()) !== itemId) return;
+      expect(["ready", "failed"]).toContain(selectSourceStatus(getState()));
+    });
+  };
+
 function sourcePreview(_sourcePath: string, kind: "source" | "proxy" = "source") {
   return { mediaToken: 1, kind, url: `media://source/${kind}` };
 }
@@ -136,7 +147,7 @@ function createHistoryItem(snapshot: EditorSnapshot, id = "history-1"): ExportQu
     route: "fast",
     request: {
       sourcePath: snapshot.source.sourcePath,
-      trim: snapshot.trim,
+      trim: "kind" in snapshot.trim ? { startMicros: 0, endMicros: 1_000_000 } : snapshot.trim,
       audioTracks: [],
       mergeAudio: false,
     },
@@ -440,8 +451,11 @@ describe("source/media orchestration thunks", () => {
           trim: { startMicros: 750_000, endMicros: 3_500_000 },
         }),
       }),
+      expect.objectContaining({
+        snapshot: expect.objectContaining({ source: secondSource }),
+      }),
     ]);
-    expect(selectActiveItemId(appStore.getState())).toBe(firstItem?.id);
+    expect(selectActiveItemId(appStore.getState())).not.toBe(firstItem?.id);
   });
 
   it("discards a history fork when navigating to another imported item", async () => {

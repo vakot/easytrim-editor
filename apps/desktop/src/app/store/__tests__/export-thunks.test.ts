@@ -23,7 +23,7 @@ vi.mock("@/lib/tauri/media", () => ({
   releaseExportSource: mocks.releaseExportSource,
   cancelOperation: mocks.cancelOperation,
   planOptimizedExport: mocks.planOptimizedExport,
-  importSourcePath: mocks.importSourcePath,
+  activateSourcePath: mocks.importSourcePath,
   renderFast: mocks.renderFast,
   renderOptimized: mocks.renderOptimized,
   normalizeAppError: (error: unknown) =>
@@ -36,7 +36,7 @@ vi.mock("@/lib/tauri/queue", () => ({
   performQueueFinishAction: mocks.performQueueFinishAction,
 }));
 vi.mock("@/app/store/thunks/source-media-thunks", () => ({
-  importSource: mocks.importSource,
+  activateSource: mocks.importSource,
   leaveActiveImportedItem: mocks.leaveActiveImportedItem,
   navigateToImportedItem: mocks.navigateToImportedItem,
   restoreActiveImportedItemRequested: mocks.restoreActiveImportedItemRequested,

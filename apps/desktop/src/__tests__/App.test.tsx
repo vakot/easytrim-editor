@@ -11,6 +11,10 @@ import {
 } from "../app/store/slices/editor-tools-slice";
 import { editorLayoutReset } from "../app/store/slices/editor-layout-slice";
 import { sourceCleared } from "../app/store/actions/source-actions";
+import {
+  importedQueueItemRemoved,
+  selectImportedQueueItems,
+} from "../app/store/slices/export-slice";
 import { selectHasSource } from "../app/store/slices/source-slice";
 import { startSourceMediaRuntime } from "../app/store/source-media-runtime";
 import { checkMediaCapabilitiesRequested } from "../app/store/thunks/source-media-thunks";
@@ -19,6 +23,7 @@ import { DEFAULT_PREFERENCES } from "../app/preferences";
 const mocks = vi.hoisted(() => ({
   checkMediaCapabilities: vi.fn(),
   chooseSource: vi.fn(),
+  activateSourcePath: vi.fn(),
   inspectMedia: vi.fn(),
   listenForSourceDrops: vi.fn(),
   prepareAudioPreviews: vi.fn(),
@@ -34,6 +39,7 @@ vi.mock("../lib/tauri/media", async (importOriginal) => {
     ...original,
     checkMediaCapabilities: mocks.checkMediaCapabilities,
     chooseSource: mocks.chooseSource,
+    activateSourcePath: mocks.activateSourcePath,
     inspectMedia: mocks.inspectMedia,
     listenForSourceDrops: mocks.listenForSourceDrops,
     prepareAudioPreviews: mocks.prepareAudioPreviews,
@@ -142,12 +148,18 @@ beforeEach(() => {
   vi.clearAllMocks();
   store.dispatch(editorLayoutReset());
   store.dispatch(sourceCleared());
+  for (const item of selectImportedQueueItems(store.getState())) {
+    store.dispatch(importedQueueItemRemoved(item.id));
+  }
   store.dispatch(
     editorToolsInitialized(createEditorToolsStateFromPreferences(DEFAULT_PREFERENCES)),
   );
   sourceDropListener = undefined;
   mocks.checkMediaCapabilities.mockResolvedValue(capabilities);
   mocks.chooseSource.mockResolvedValue(null);
+  mocks.activateSourcePath.mockImplementation(async (sourcePath: string) =>
+    sourcePath === replacementSelection.sourcePath ? replacementSelection : selection,
+  );
   mocks.inspectMedia.mockResolvedValue(media);
   mocks.prepareAudioPreviews.mockResolvedValue([
     {
@@ -2487,7 +2499,7 @@ describe("App", () => {
     render(<App />);
 
     act(() => {
-      sourceDropListener?.({ status: "selected", source: selection });
+      sourceDropListener?.({ status: "selected", sources: [selection] });
     });
 
     expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
