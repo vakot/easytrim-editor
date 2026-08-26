@@ -305,6 +305,70 @@ describe("source/media orchestration thunks", () => {
     expect(thirdItem?.id).toBe(idsAfterThirdImport[2]);
   });
 
+  it("rolls back to the active source when a reactivated target fails inspection", async () => {
+    const appStore = createAppStore();
+    let failSecondInspection = false;
+    mocks.inspectMedia.mockImplementation(async (sourcePath: string) => {
+      if (failSecondInspection && sourcePath === secondSource.sourcePath) {
+        throw {
+          code: "unsupported_media",
+          message: "B could not be inspected.",
+        };
+      }
+      return createMedia(sourcePath, 2);
+    });
+    const savedCrop = { x: 0.1, y: 0.2, width: 0.7, height: 0.6 };
+
+    await appStore.dispatch(importSource(firstSource));
+    appStore.dispatch(
+      trimChanged({
+        trim: { startMicros: 500_000, endMicros: 4_000_000, sourceDurationMicros: 5_000_000 },
+      }),
+    );
+    appStore.dispatch(cropChanged({ crop: savedCrop, resolution: { width: 1920, height: 1080 } }));
+    appStore.dispatch(masterVolumeChanged({ volumePercent: 25 }));
+    appStore.dispatch(audioTrackVolumeChanged({ streamIndex: 1, volumePercent: 30 }));
+    appStore.dispatch(audioTrackToggled({ streamIndex: 2 }));
+    appStore.dispatch(audioMergeToggled());
+
+    await appStore.dispatch(importSource(secondSource));
+    const importedItems = selectImportedQueueItems(appStore.getState());
+    const [firstItem, secondItem] = importedItems;
+    const queueIds = importedItems.map((item) => item.id);
+    await expect(appStore.dispatch(switchImportedQueueItemRequested(firstItem!.id))).resolves.toBe(
+      true,
+    );
+
+    failSecondInspection = true;
+    await expect(appStore.dispatch(switchImportedQueueItemRequested(secondItem!.id))).resolves.toBe(
+      false,
+    );
+
+    expect(selectActiveItemId(appStore.getState())).toBe(firstItem!.id);
+    expect(selectSourceSelection(appStore.getState())).toEqual(firstSource);
+    expect(selectSourceMedia(appStore.getState())).toEqual(
+      expect.objectContaining({ durationMicros: 5_000_000 }),
+    );
+    expect(selectSourceError(appStore.getState())).toEqual({
+      code: "unsupported_media",
+      message: "B could not be inspected.",
+    });
+    expect(appStore.getState().trim.value).toMatchObject({
+      startMicros: 500_000,
+      endMicros: 4_000_000,
+    });
+    expect(selectCrop(appStore.getState())).toEqual(savedCrop);
+    expect(selectMasterAudio(appStore.getState())).toEqual({ enabled: true, volumePercent: 25 });
+    expect(selectAudioTracks(appStore.getState())).toMatchObject([
+      expect.objectContaining({ streamIndex: 1, enabled: true, volumePercent: 30 }),
+      expect.objectContaining({ streamIndex: 2, enabled: false, volumePercent: 50 }),
+    ]);
+    expect(selectMergeAudio(appStore.getState())).toBe(true);
+    expect(selectImportedQueueItems(appStore.getState()).map((item) => item.id)).toEqual(queueIds);
+    expect(mocks.importSourcePath).toHaveBeenCalledWith(secondSource.sourcePath);
+    expect(mocks.importSourcePath).toHaveBeenLastCalledWith(firstSource.sourcePath);
+  });
+
   it("captures source-import drafts and preserves them when leaving the active item", async () => {
     const appStore = createAppStore();
     mocks.inspectMedia.mockResolvedValue(createMedia(firstSource.sourcePath, 1));

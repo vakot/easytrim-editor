@@ -16,6 +16,8 @@ export const sourceReady = createAction<{ loadToken: number; media: MediaInfo }>
 
 export const sourceFailed = createAction<{ loadToken?: number; error: AppError }>("source/failed");
 
+export const sourceErrorReported = createAction<AppError>("source/error-reported");
+
 export function isValidSourceReadyPayload(
   currentLoadToken: number,
   payload: { loadToken: number },

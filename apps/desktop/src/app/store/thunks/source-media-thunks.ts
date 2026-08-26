@@ -6,6 +6,7 @@ import {
 } from "@/app/store/slices/source-slice";
 import {
   sourceCleared,
+  sourceErrorReported,
   sourceFailed,
   sourceReady,
   sourceSelected,
@@ -67,6 +68,9 @@ let waveformJobSequence = 0;
 let sourceLoadSequence = 0;
 let importedItemSequence = 0;
 let queueRestoreSequence = 0;
+
+type ImportedItemRestoreResult =
+  { status: "succeeded" } | { status: "failed"; error: AppError } | { status: "stale" };
 
 export interface ImportSourceOptions {
   registerQueueItem?: boolean;
@@ -239,44 +243,107 @@ export const leaveActiveImportedItem = (): AppThunk => (dispatch, getState) => {
   }
 };
 
+async function restoreImportedQueueItem(
+  item: ImportedQueueItem,
+  dispatch: Parameters<AppThunk>[0],
+  getState: Parameters<AppThunk>[1],
+  restorationId: number,
+): Promise<ImportedItemRestoreResult> {
+  let source: SourceRef;
+  try {
+    source = await importSourcePath(item.snapshot.source.sourcePath);
+  } catch (error: unknown) {
+    return restorationId === queueRestoreSequence
+      ? { status: "failed", error: normalizeAppError(error) }
+      : { status: "stale" };
+  }
+
+  if (restorationId !== queueRestoreSequence) return { status: "stale" };
+
+  await dispatch(
+    importSource(source, item.snapshot.audio.mergeAudio, {
+      registerQueueItem: false,
+      captureCurrentDraft: false,
+      leaveActiveItem: false,
+    }),
+  );
+  if (restorationId !== queueRestoreSequence) return { status: "stale" };
+
+  const state = getState();
+  if (
+    state.source.status !== "ready" ||
+    state.source.source?.sourcePath !== item.snapshot.source.sourcePath ||
+    !state.source.media
+  ) {
+    return {
+      status: "failed",
+      error:
+        state.source.error ??
+        ({
+          code: "source_restore_failed",
+          message: "The selected source could not be restored.",
+        } satisfies AppError),
+    };
+  }
+
+  applyEditorSnapshot(dispatch, getState, item.snapshot);
+  dispatch(activeQueueItemChanged(item.id));
+  return { status: "succeeded" };
+}
+
 export const switchImportedQueueItemRequested =
   (id: string): AppThunk<Promise<boolean>> =>
   async (dispatch, getState) => {
     const item = getState().export.queue.find(
-      (candidate) => candidate.id === id && candidate.status === "imported",
+      (candidate): candidate is ImportedQueueItem =>
+        candidate.id === id && candidate.status === "imported",
     );
     if (!item || getState().export.activeItemId === id) return false;
     const restorationId = ++queueRestoreSequence;
+    const previousActiveItem = selectActiveQueueItem(getState());
+    const rollbackItemId =
+      previousActiveItem?.status === "imported" && previousActiveItem.origin === "source-import"
+        ? previousActiveItem.id
+        : null;
 
     dispatch(leaveActiveImportedItem());
-    let source: SourceRef;
-    try {
-      source = await importSourcePath(item.snapshot.source.sourcePath);
-      await dispatch(
-        importSource(source, item.snapshot.audio.mergeAudio, {
-          registerQueueItem: false,
-          activeItemId: id,
-          captureCurrentDraft: false,
-          leaveActiveItem: false,
-        }),
+    const targetResult = await restoreImportedQueueItem(item, dispatch, getState, restorationId);
+    if (targetResult.status === "succeeded") return true;
+    if (targetResult.status === "stale") return false;
+
+    const rollbackItem = rollbackItemId
+      ? getState().export.queue.find(
+          (candidate): candidate is ImportedQueueItem =>
+            candidate.id === rollbackItemId &&
+            candidate.status === "imported" &&
+            candidate.origin === "source-import",
+        )
+      : undefined;
+    if (rollbackItem) {
+      const rollbackResult = await restoreImportedQueueItem(
+        rollbackItem,
+        dispatch,
+        getState,
+        restorationId,
       );
-    } catch (error: unknown) {
-      if (restorationId === queueRestoreSequence) {
-        dispatch(sourceFailed({ error: normalizeAppError(error) }));
+      if (rollbackResult.status === "stale") return false;
+      if (rollbackResult.status === "failed") {
+        dispatch(
+          sourceErrorReported({
+            ...targetResult.error,
+            diagnostics: [
+              targetResult.error.diagnostics,
+              `Rollback failed (${rollbackResult.error.code}): ${rollbackResult.error.message}`,
+            ]
+              .filter(Boolean)
+              .join("\n"),
+          }),
+        );
+        return false;
       }
-      return false;
     }
-    const state = getState();
-    if (
-      restorationId !== queueRestoreSequence ||
-      state.export.activeItemId !== id ||
-      state.source.source?.sourcePath !== item.snapshot.source.sourcePath ||
-      !state.source.media
-    ) {
-      return false;
-    }
-    applyEditorSnapshot(dispatch, getState, item.snapshot);
-    return true;
+    dispatch(sourceErrorReported(targetResult.error));
+    return false;
   };
 
 export const chooseSourceRequested = (): AppThunk => async (dispatch, getState) => {

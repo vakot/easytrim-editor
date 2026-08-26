@@ -3,6 +3,7 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import {
   isValidSourceReadyPayload,
   sourceCleared,
+  sourceErrorReported,
   sourceFailed,
   sourceReady,
   sourceSelected,
@@ -77,6 +78,9 @@ const sourceSlice = createSlice({
           state.source = null;
           state.media = null;
         }
+      })
+      .addCase(sourceErrorReported, (state, action) => {
+        state.error = action.payload;
       });
   },
 });
