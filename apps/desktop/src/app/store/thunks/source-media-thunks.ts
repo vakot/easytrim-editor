@@ -321,9 +321,6 @@ export const navigateToImportedItem =
     return true;
   };
 
-/** Kept as a compatibility name for existing callers; navigation no longer restores sources. */
-export const switchImportedQueueItemRequested = navigateToImportedItem;
-
 export const chooseSourceRequested = (): AppThunk => async (dispatch, getState) => {
   if (getState().importWorkflow.isChoosingSource || getState().importWorkflow.isNativeDialogOpen) {
     return;
