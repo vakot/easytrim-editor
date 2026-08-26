@@ -9,6 +9,7 @@ import {
   type PanelProps,
 } from "react-resizable-panels";
 
+import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
@@ -39,7 +40,13 @@ export function ResizableSections({ children, className, ...props }: ResizableSe
 }
 
 type PanelPropsToPick =
-  "children" | "defaultSize" | "groupResizeBehavior" | "minSize" | "className" | "id";
+  | "children"
+  | "defaultSize"
+  | "groupResizeBehavior"
+  | "minSize"
+  | "collapsedSize"
+  | "className"
+  | "id";
 
 export interface ResizableSectionProps extends Pick<PanelProps, PanelPropsToPick> {
   defaultOpen?: boolean;
@@ -48,6 +55,7 @@ export interface ResizableSectionProps extends Pick<PanelProps, PanelPropsToPick
 export function ResizableSection({
   children,
   defaultOpen = true,
+  collapsedSize = 24, // h-6
   defaultSize,
   groupResizeBehavior,
   id,
@@ -99,13 +107,12 @@ export function ResizableSection({
         id={id}
         panelRef={panelRef}
         collapsible
-        collapsedSize={24}
-        defaultSize={defaultOpen ? defaultSize : 24}
+        collapsedSize={collapsedSize}
+        defaultSize={defaultOpen ? defaultSize : collapsedSize}
         minSize={minSize}
         groupResizeBehavior={groupResizeBehavior}
         onResize={handleResize}
         className={className}
-        style={{ overflow: "hidden" }}
         data-slot="resizable-section-panel"
       >
         <div className="flex h-full min-h-0 flex-col overflow-hidden">
@@ -117,7 +124,7 @@ export function ResizableSection({
   );
 }
 
-export type ResizableSectionTriggerProps = ComponentPropsWithoutRef<"button">;
+export type ResizableSectionTriggerProps = ComponentPropsWithoutRef<typeof Button>;
 
 export function ResizableSectionTrigger({
   className,
@@ -127,7 +134,7 @@ export function ResizableSectionTrigger({
   const context = useSectionContext();
 
   return (
-    <button
+    <Button
       {...props}
       type="button"
       id={context.triggerId}
@@ -135,10 +142,7 @@ export function ResizableSectionTrigger({
       aria-expanded={context.open}
       data-state={context.open ? "open" : "closed"}
       data-slot="resizable-section-trigger-row"
-      className={cn(
-        "flex h-6 w-full items-center gap-2 transition-colors hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:outline-none",
-        className,
-      )}
+      className={cn("justify-baseline text-foreground/80", className)}
       onClick={(event) => {
         props.onClick?.(event);
         if (!event.defaultPrevented) context.toggle();
@@ -149,7 +153,7 @@ export function ResizableSectionTrigger({
         className={cn("size-3 shrink-0 transition-transform", !context.open && "-rotate-90")}
       />
       <span className="truncate">{children}</span>
-    </button>
+    </Button>
   );
 }
 
