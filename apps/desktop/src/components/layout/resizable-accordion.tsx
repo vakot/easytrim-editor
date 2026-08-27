@@ -15,7 +15,7 @@ import {
 } from "react";
 import { Group, Panel } from "react-resizable-panels";
 
-import { PanelSeparator } from "@/components/PanelSeparator";
+import { PanelSeparator } from "@/components/layout/panel-separator";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";

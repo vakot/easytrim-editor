@@ -3,7 +3,7 @@ import {
   ResizableAccordionContent,
   ResizableAccordionItem,
   ResizableAccordionTrigger,
-} from "@/components/ui/resizable-accordion";
+} from "@/components/layout/resizable-accordion";
 
 const PLACEHOLDER_ROWS = Array.from({ length: 20 }, (_, index) => index + 1);
 

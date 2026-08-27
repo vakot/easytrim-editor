@@ -9,7 +9,7 @@ import {
 import { useTranslation } from "react-i18next";
 
 import { useAppUpdates } from "@/app/hooks/useAppUpdates";
-import { BrandIcon } from "@/components/BrandIcon";
+import { BrandIcon } from "@/components/brand-icon";
 import { githubBrandIcon, kofiBrandIcon } from "@/components/brand-icons";
 import { ContextMenu } from "@/components/ui/context-menu";
 import { openExternalUrl } from "@/lib/open-external-url";
