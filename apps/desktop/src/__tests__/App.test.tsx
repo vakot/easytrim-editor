@@ -306,7 +306,7 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "Play" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Previous frame" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Next frame" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Hide Bottom panel" })).not.toBeDisabled();
+    expect(screen.getByRole("button", { name: "Toggle Bottom panel" })).not.toBeDisabled();
     expect(screen.getByRole("slider", { name: "Move selected segment" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Snap playback" })).not.toBeDisabled();
     expect(screen.getByRole("button", { name: "Loop playback" })).not.toBeDisabled();
@@ -691,10 +691,10 @@ describe("App", () => {
     await waitForSourcePresence(true);
 
     const sourceDetailsToggle = screen.getByRole("button", {
-      name: "Hide Left panel",
+      name: "Toggle Left panel",
     });
     const audioTracksToggle = screen.getByRole("button", {
-      name: "Hide Bottom panel",
+      name: "Toggle Bottom panel",
     });
     expect(sourceDetailsToggle).toHaveAttribute("aria-pressed", "true");
     expect(audioTracksToggle).toHaveAttribute("aria-pressed", "true");
@@ -707,7 +707,7 @@ describe("App", () => {
     );
     expect(document.getElementById("source-details-resize-handle")).toBeEmptyDOMElement();
 
-    await user.click(screen.getByRole("button", { name: "Show Left panel" }));
+    await user.click(screen.getByRole("button", { name: "Toggle Left panel" }));
     expect(screen.getByRole("button", { name: "Media details" })).toBeInTheDocument();
 
     await user.click(audioTracksToggle);
@@ -718,7 +718,7 @@ describe("App", () => {
     );
     expect(document.getElementById("preview-timeline-resize-handle")).toBeEmptyDOMElement();
 
-    await user.click(screen.getByRole("button", { name: "Show Bottom panel" }));
+    await user.click(screen.getByRole("button", { name: "Toggle Bottom panel" }));
     expect(screen.getByTestId("audio-tracks-scroll")).toBeInTheDocument();
     expect(document.getElementById("preview-timeline-resize-handle")).not.toHaveAttribute(
       "aria-hidden",
@@ -759,11 +759,11 @@ describe("App", () => {
     await user.click(within(bottomPanelRow).getByRole("switch"));
     await user.click(screen.getByRole("menuitem", { name: "Reset editor layout" }));
 
-    expect(screen.getByRole("button", { name: "Hide Left panel" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "Toggle Left panel" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
-    expect(screen.getByRole("button", { name: "Hide Bottom panel" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "Toggle Bottom panel" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );

@@ -6,6 +6,7 @@ import {
   type ComponentProps,
   type ReactNode,
 } from "react";
+import { Slot } from "radix-ui";
 
 import { registerPanelSizeReset, resetPanelSizes } from "@/app/panel-layout-runtime";
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
@@ -17,14 +18,12 @@ import {
   type PanelState,
 } from "@/app/store/slices/panel-layout-slice";
 import { usePanelControl, type PanelToggleMode } from "@/components/layout/use-panel-control";
-import { Button } from "@/components/ui/button";
 import {
   PersistedResizablePanelGroup,
   ResizableHandle,
   ResizablePanel,
   usePanelRef,
 } from "@/components/ui/resizable";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 type PanelRef = ReturnType<typeof usePanelRef>;
@@ -173,54 +172,38 @@ function PersistedPanelGroup({ id, panels, ...props }: PersistedPanelGroupProps)
   return <PersistedResizablePanelGroup {...props} id={id} panelIds={panelIds} />;
 }
 
-interface PanelToggleProps extends Omit<
-  ComponentProps<typeof Button>,
-  "aria-label" | "aria-pressed" | "children" | "onClick"
-> {
-  activeIcon: ReactNode;
-  activeLabel: string;
-  inactiveIcon: ReactNode;
-  inactiveLabel: string;
-  mode: PanelToggleMode;
+interface PanelToggleProps extends ComponentProps<"button"> {
+  asChild?: boolean;
+  mode?: PanelToggleMode;
   panelId: PanelId;
-  tooltipSide?: ComponentProps<typeof TooltipContent>["side"];
 }
 
 function PanelToggle({
-  activeIcon,
-  activeLabel,
+  asChild = false,
+  "aria-pressed": ariaPressed,
   className,
-  inactiveIcon,
-  inactiveLabel,
-  mode,
+  mode = "visibility",
+  onClick,
   panelId,
-  size = "icon-sm",
-  tooltipSide,
-  variant = "ghost",
+  type,
   ...props
 }: PanelToggleProps) {
   const { active, toggle } = usePanelControl(panelId, mode);
-  const label = active ? activeLabel : inactiveLabel;
+  const Component = asChild ? Slot.Root : "button";
 
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          {...props}
-          type="button"
-          variant={variant}
-          size={size}
-          aria-label={label}
-          aria-pressed={active}
-          data-state={active ? "on" : "off"}
-          className={cn(active && "text-primary", className)}
-          onClick={toggle}
-        >
-          {active ? activeIcon : inactiveIcon}
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent side={tooltipSide}>{label}</TooltipContent>
-    </Tooltip>
+    <Component
+      {...props}
+      type={asChild ? undefined : (type ?? "button")}
+      aria-pressed={ariaPressed ?? (asChild ? undefined : active)}
+      data-panel-state={active ? "on" : "off"}
+      data-panel-toggle=""
+      className={cn("group/panel-toggle", className)}
+      onClick={(event) => {
+        onClick?.(event);
+        if (!event.defaultPrevented) toggle();
+      }}
+    />
   );
 }
 

@@ -101,6 +101,7 @@ export const en = {
       bottomPanel: "Bottom panel",
       hidePanel: "Hide {{panel}}",
       showPanel: "Show {{panel}}",
+      togglePanel: "Toggle {{panel}}",
       resetLayout: "Reset editor layout",
     },
     windowControls: {

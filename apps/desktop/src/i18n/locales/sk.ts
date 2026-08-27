@@ -106,6 +106,7 @@ export const sk = {
       bottomPanel: "Spodný panel",
       hidePanel: "Skryť {{panel}}",
       showPanel: "Zobraziť {{panel}}",
+      togglePanel: "Prepnúť {{panel}}",
       resetLayout: "Obnoviť rozloženie editora",
     },
     windowControls: {

@@ -18,6 +18,7 @@ import {
 } from "@/app/store/slices/panel-layout-slice";
 import { PanelToggle } from "@/components/layout/panel";
 import { usePanelControl } from "@/components/layout/use-panel-control";
+import { Button } from "@/components/ui/button";
 import { ContextMenu, type ContextMenuOption } from "@/components/ui/context-menu";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -132,23 +133,49 @@ export function PanelVisibilityControls() {
         </>
       </ContextMenu>
 
-      <PanelToggle
-        panelId={PANEL_IDS.sourceDetails}
-        mode="collapse"
-        activeLabel={t("app.panels.hidePanel", { panel: leftPanelLabel })}
-        inactiveLabel={t("app.panels.showPanel", { panel: leftPanelLabel })}
-        activeIcon={<PanelLeft className="size-4" aria-hidden="true" />}
-        inactiveIcon={<PanelLeftDashed className="size-4" aria-hidden="true" />}
-      />
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button asChild variant="ghost" size="icon-sm">
+            <PanelToggle
+              panelId={PANEL_IDS.sourceDetails}
+              mode="collapse"
+              aria-label={t("app.panels.togglePanel", { panel: leftPanelLabel })}
+            >
+              <PanelLeft
+                className="size-4 group-data-[panel-state=off]/panel-toggle:hidden"
+                aria-hidden="true"
+              />
+              <PanelLeftDashed
+                className="hidden size-4 group-data-[panel-state=off]/panel-toggle:block"
+                aria-hidden="true"
+              />
+            </PanelToggle>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{t("app.panels.togglePanel", { panel: leftPanelLabel })}</TooltipContent>
+      </Tooltip>
 
-      <PanelToggle
-        panelId={PANEL_IDS.timeline}
-        mode="collapse"
-        activeLabel={t("app.panels.hidePanel", { panel: bottomPanelLabel })}
-        inactiveLabel={t("app.panels.showPanel", { panel: bottomPanelLabel })}
-        activeIcon={<PanelBottom className="size-4" aria-hidden="true" />}
-        inactiveIcon={<PanelBottomDashed className="size-4" aria-hidden="true" />}
-      />
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button asChild variant="ghost" size="icon-sm">
+            <PanelToggle
+              panelId={PANEL_IDS.timeline}
+              mode="collapse"
+              aria-label={t("app.panels.togglePanel", { panel: bottomPanelLabel })}
+            >
+              <PanelBottom
+                className="size-4 group-data-[panel-state=off]/panel-toggle:hidden"
+                aria-hidden="true"
+              />
+              <PanelBottomDashed
+                className="hidden size-4 group-data-[panel-state=off]/panel-toggle:block"
+                aria-hidden="true"
+              />
+            </PanelToggle>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{t("app.panels.togglePanel", { panel: bottomPanelLabel })}</TooltipContent>
+      </Tooltip>
     </div>
   );
 }
