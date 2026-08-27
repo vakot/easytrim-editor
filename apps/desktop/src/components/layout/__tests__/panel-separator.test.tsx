@@ -52,7 +52,12 @@ describe("PanelSeparator", () => {
     );
 
     const separator = screen.getByRole("separator", { name: "Resize rows" });
-    expect(separator).toHaveClass("h-1", "w-full", "aria-[orientation=horizontal]:h-1");
+    expect(separator).toHaveClass(
+      "h-1",
+      "w-full",
+      "aria-[orientation=horizontal]:h-1",
+      "[&[aria-orientation=horizontal]>div]:rotate-0",
+    );
     expect(separator.querySelector('[data-slot="panel-separator-line"]')).toHaveClass(
       "h-px",
       "top-1/2",

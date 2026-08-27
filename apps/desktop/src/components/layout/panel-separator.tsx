@@ -31,7 +31,7 @@ export function PanelSeparator({
       aria-label={label}
       aria-hidden={disabled}
       className={cn(
-        "group relative z-20 shrink-0 bg-transparent outline-none after:hidden",
+        "group relative z-20 shrink-0 bg-transparent outline-none after:hidden [&[aria-orientation=horizontal]>div]:rotate-0",
         disabled && "pointer-events-none hidden",
         orientation === "vertical" ? "w-1" : "h-1 w-full aria-[orientation=horizontal]:h-1",
         className,
