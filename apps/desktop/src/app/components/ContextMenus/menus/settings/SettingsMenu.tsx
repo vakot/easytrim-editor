@@ -7,16 +7,16 @@ import {
   Repeat,
   RotateCcw,
 } from "lucide-react";
-import { useRef, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
+import { type PreferenceKey } from "@/app/preferences";
+import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import {
   preferenceChanged,
   preferencesReset,
   selectPreferences,
 } from "@/app/store/slices/preferences-slice";
-import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
-import { type PreferenceKey } from "@/app/preferences";
 import { Button } from "@/components/ui/button";
 import {
   Menu,
@@ -33,61 +33,58 @@ import { isSupportedLanguage, type SupportedLanguage } from "@/i18n/resources";
 
 import type { MenuNavigation } from "../../types";
 
-export function SettingsMenu({ navigation }: { navigation: MenuNavigation }) {
-  const { t, i18n } = useTranslation();
+const DEFAULT_PREFERENCE_KEYS = new Set<PreferenceKey>([
+  "snapPlaybackEnabledDefault",
+  "loopPlaybackEnabledDefault",
+  "segmentPlaybackEnabledDefault",
+  "mergeAudioEnabledDefault",
+]);
+
+interface PreferenceMenuItemProps {
+  preferenceKey: PreferenceKey;
+  icon: ReactNode;
+  children: ReactNode;
+}
+
+function PreferenceMenuItem({ preferenceKey, icon, children }: PreferenceMenuItemProps) {
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const preferences = useAppSelector(selectPreferences);
-  const switchInteractionRef = useRef(false);
-  const currentLanguage = isSupportedLanguage(i18n.resolvedLanguage) ? i18n.resolvedLanguage : "en";
+  const isEnabled = preferences[preferenceKey];
+  const isDefaultPreference = DEFAULT_PREFERENCE_KEYS.has(preferenceKey);
 
-  const updatePreference = (key: PreferenceKey, enabled: boolean) => {
-    dispatch(preferenceChanged({ key, enabled }));
-  };
-
-  const resetPreferences = () => {
-    dispatch(preferencesReset());
-  };
-
-  const settingsPreferenceItem = (children: ReactNode, icon: ReactNode, key: PreferenceKey) => (
+  return (
     <MenuItem
       icon={icon}
       tooltip={t(
-        key === "autoStartQueueEnabled"
-          ? preferences[key]
-            ? "app.settings.enabled"
-            : "app.settings.disabled"
-          : preferences[key]
+        isDefaultPreference
+          ? isEnabled
             ? "app.settings.enabledByDefault"
-            : "app.settings.disabledByDefault",
+            : "app.settings.disabledByDefault"
+          : isEnabled
+            ? "app.settings.enabled"
+            : "app.settings.disabled",
       )}
       tooltipProps={{ side: "right" }}
-      suffix={
-        <Switch
-          size="sm"
-          checked={preferences[key]}
-          onCheckedChange={(enabled) => updatePreference(key, enabled)}
-          onClick={(event) => event.stopPropagation()}
-          onKeyDown={() => {
-            switchInteractionRef.current = true;
-          }}
-          onPointerDown={(event) => {
-            switchInteractionRef.current = true;
-            event.stopPropagation();
-          }}
-        />
-      }
+      suffix={<Switch size="sm" checked={isEnabled} />}
       onSelect={(event) => {
         event.preventDefault();
-        if (switchInteractionRef.current) {
-          switchInteractionRef.current = false;
-          return;
-        }
-        updatePreference(key, !preferences[key]);
+        dispatch(preferenceChanged({ key: preferenceKey, enabled: !isEnabled }));
       }}
     >
       {children}
     </MenuItem>
   );
+}
+
+export function SettingsMenu({ navigation }: { navigation: MenuNavigation }) {
+  const { t, i18n } = useTranslation();
+  const dispatch = useAppDispatch();
+  const currentLanguage = isSupportedLanguage(i18n.resolvedLanguage) ? i18n.resolvedLanguage : "en";
+
+  const resetPreferences = () => {
+    dispatch(preferencesReset());
+  };
 
   return (
     <Menu modal={false} open={navigation.open} onOpenChange={navigation.onOpenChange}>
@@ -106,33 +103,38 @@ export function SettingsMenu({ navigation }: { navigation: MenuNavigation }) {
         </Button>
       </MenuTrigger>
       <MenuContent>
-        {settingsPreferenceItem(
-          t("app.settings.autoStartQueue"),
-          <Play className="size-3" aria-hidden="true" />,
-          "autoStartQueueEnabled",
-        )}
+        <PreferenceMenuItem
+          preferenceKey="autoStartQueueEnabled"
+          icon={<Play className="size-3" aria-hidden="true" />}
+        >
+          {t("app.settings.autoStartQueue")}
+        </PreferenceMenuItem>
         <MenuSeparator />
-        {settingsPreferenceItem(
-          t("app.settings.snap"),
-          <Magnet className="size-3" aria-hidden="true" />,
-          "snapPlaybackEnabledDefault",
-        )}
-        {settingsPreferenceItem(
-          t("app.settings.loop"),
-          <Repeat className="size-3" aria-hidden="true" />,
-          "loopPlaybackEnabledDefault",
-        )}
-        {settingsPreferenceItem(
-          t("app.settings.followSegment"),
-          <BetweenVerticalStart className="size-3" aria-hidden="true" />,
-          "segmentPlaybackEnabledDefault",
-        )}
+        <PreferenceMenuItem
+          preferenceKey="snapPlaybackEnabledDefault"
+          icon={<Magnet className="size-3" aria-hidden="true" />}
+        >
+          {t("app.settings.snap")}
+        </PreferenceMenuItem>
+        <PreferenceMenuItem
+          preferenceKey="loopPlaybackEnabledDefault"
+          icon={<Repeat className="size-3" aria-hidden="true" />}
+        >
+          {t("app.settings.loop")}
+        </PreferenceMenuItem>
+        <PreferenceMenuItem
+          preferenceKey="segmentPlaybackEnabledDefault"
+          icon={<BetweenVerticalStart className="size-3" aria-hidden="true" />}
+        >
+          {t("app.settings.followSegment")}
+        </PreferenceMenuItem>
         <MenuSeparator />
-        {settingsPreferenceItem(
-          t("app.settings.mergeAudio"),
-          <Merge className="size-3" aria-hidden="true" />,
-          "mergeAudioEnabledDefault",
-        )}
+        <PreferenceMenuItem
+          preferenceKey="mergeAudioEnabledDefault"
+          icon={<Merge className="size-3" aria-hidden="true" />}
+        >
+          {t("app.settings.mergeAudio")}
+        </PreferenceMenuItem>
         <MenuSeparator />
         <MenuItem
           icon={<RotateCcw className="size-3" aria-hidden="true" />}
