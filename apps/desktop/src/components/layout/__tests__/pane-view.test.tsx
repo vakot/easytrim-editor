@@ -55,7 +55,7 @@ vi.mock("react-resizable-panels", () => ({
   },
 }));
 
-import { PaneView, PaneViewContent, PaneViewItem, PaneViewTrigger } from "./resizable-accordion";
+import { PaneView, PaneViewContent, PaneViewItem, PaneViewTrigger } from "../pane-view";
 
 interface FixtureProps {
   value?: string[];
