@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo } from "react";
-import { usePanelRef } from "react-resizable-panels";
+
+import { usePanelRef } from "@/components/ui/resizable";
 
 import {
   timelinePanelSizeConstraints,

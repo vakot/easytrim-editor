@@ -1,7 +1,6 @@
 import { LoaderCircle } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Group, Panel } from "react-resizable-panels";
 
 import { usePlayback, useTimeline } from "@/app/hooks/useEditorContracts";
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
@@ -32,6 +31,7 @@ import { selectTrim } from "@/app/store/slices/trim-slice";
 import { prepareSourceWaveforms } from "@/app/store/thunks/source-media-thunks";
 import { PanelContent } from "@/components/layout/panel-content";
 import { PanelSeparator } from "@/components/layout/panel-separator";
+import { ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { AudioTracks } from "@/features/audio-tracks";
 import {
   PlaybackControls,
@@ -85,7 +85,7 @@ export function EditorStage() {
   }, [editorStageLayout, timelinePanelSizing]);
 
   return (
-    <Group
+    <ResizablePanelGroup
       id="editor-stage-panels"
       defaultLayout={editorStageLayout}
       onLayoutChanged={(layout) => dispatch(editorStageLayoutChanged(layout))}
@@ -95,7 +95,7 @@ export function EditorStage() {
       aria-label={t("preview.panes")}
       aria-busy={showLoadingOverlay}
     >
-      <Panel id="preview-panel" minSize="14rem" className="min-h-0 min-w-0">
+      <ResizablePanel id="preview-panel" minSize="14rem" className="min-h-0 min-w-0">
         <PanelContent className="bg-preview-surface">
           <VideoPreview
             hasSource={sourceSelection !== null}
@@ -114,7 +114,7 @@ export function EditorStage() {
             onCropToolOpenChange={playback.onCropToolOpenChange}
           />
         </PanelContent>
-      </Panel>
+      </ResizablePanel>
 
       <PanelSeparator
         id="preview-timeline-resize-handle"
@@ -124,7 +124,7 @@ export function EditorStage() {
         onDoubleClick={timelinePanelSizing.resetToDefault}
       />
 
-      <Panel
+      <ResizablePanel
         id="timeline-panel"
         panelRef={timelinePanelSizing.panelRef}
         defaultSize={timelinePanelSizing.initialDefaultSize}
@@ -217,7 +217,7 @@ export function EditorStage() {
             }
           />
         </PanelContent>
-      </Panel>
+      </ResizablePanel>
       {showLoadingOverlay ? (
         <div
           className="absolute inset-0 z-30 grid place-items-center bg-background/75 backdrop-blur-sm"
@@ -235,6 +235,6 @@ export function EditorStage() {
           </div>
         </div>
       ) : null}
-    </Group>
+    </ResizablePanelGroup>
   );
 }

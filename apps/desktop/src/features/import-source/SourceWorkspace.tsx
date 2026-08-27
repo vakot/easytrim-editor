@@ -1,5 +1,4 @@
 import { useEffect, useRef } from "react";
-import { Group, Panel, usePanelRef } from "react-resizable-panels";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import {
@@ -13,6 +12,7 @@ import { selectIsSourceDragActive } from "@/app/store/slices/import-workflow-sli
 import { selectSourceSelection } from "@/app/store/slices/source-slice";
 import { PanelContent } from "@/components/layout/panel-content";
 import { PanelSeparator } from "@/components/layout/panel-separator";
+import { ResizablePanel, ResizablePanelGroup, usePanelRef } from "@/components/ui/resizable";
 import { EditorStage } from "@/features/editor";
 import { useTranslation } from "react-i18next";
 import { DropOverlay } from "./components/DropOverlay";
@@ -50,7 +50,7 @@ export function SourceWorkspace() {
   }, [sourceDetailsPanelRef, workspaceLayout]);
 
   return (
-    <Group
+    <ResizablePanelGroup
       id="editor-workspace-panels"
       defaultLayout={workspaceLayout}
       onLayoutChanged={(layout) => dispatch(workspaceLayoutChanged(layout))}
@@ -58,7 +58,7 @@ export function SourceWorkspace() {
       resizeTargetMinimumSize={{ fine: 8, coarse: 24 }}
       aria-label={t("import.source.workspace")}
     >
-      <Panel
+      <ResizablePanel
         id="source-details-panel"
         panelRef={sourceDetailsPanelRef}
         collapsible
@@ -78,7 +78,7 @@ export function SourceWorkspace() {
             <SourceSidebar />
           </PanelContent>
         </div>
-      </Panel>
+      </ResizablePanel>
 
       <PanelSeparator
         id="source-details-resize-handle"
@@ -88,12 +88,12 @@ export function SourceWorkspace() {
         className="mb-1"
       />
 
-      <Panel id="editor-content-panel" minSize="44rem" className="pr-1">
+      <ResizablePanel id="editor-content-panel" minSize="44rem" className="pr-1">
         <div className="relative h-full w-full" aria-label={t("import.source.previewArea")}>
           <EditorStage key={activeItemId ?? sourceSelection?.sourcePath ?? "no-source"} />
           {isSourceDragActive ? <DropOverlay /> : null}
         </div>
-      </Panel>
-    </Group>
+      </ResizablePanel>
+    </ResizablePanelGroup>
   );
 }
