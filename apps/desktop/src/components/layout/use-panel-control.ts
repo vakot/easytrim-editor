@@ -8,7 +8,7 @@ import {
   type PanelId,
 } from "@/app/store/slices/panel-layout-slice";
 
-type PanelToggleMode = "collapse" | "visibility";
+type PanelControlMode = "collapse" | "visibility";
 
 interface UsePanelControlResult {
   active: boolean;
@@ -16,7 +16,7 @@ interface UsePanelControlResult {
   toggle: () => void;
 }
 
-function usePanelControl(panelId: PanelId, mode: PanelToggleMode): UsePanelControlResult {
+function usePanelControl(panelId: PanelId, mode: PanelControlMode): UsePanelControlResult {
   const dispatch = useAppDispatch();
   const panel = useAppSelector((state) => selectPanel(state, panelId));
   const active = mode === "visibility" ? panel.visible : panel.visible && !panel.collapsed;
@@ -45,4 +45,4 @@ function usePanelControl(panelId: PanelId, mode: PanelToggleMode): UsePanelContr
 }
 
 export { usePanelControl };
-export type { PanelToggleMode };
+export type { PanelControlMode };

@@ -1,12 +1,14 @@
+import { Slot } from "radix-ui";
 import {
+  createContext,
   useCallback,
+  useContext,
   useEffect,
   useMemo,
   useRef,
   type ComponentProps,
   type ReactNode,
 } from "react";
-import { Slot } from "radix-ui";
 
 import { registerPanelSizeReset, resetPanelSizes } from "@/app/panel-layout-runtime";
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
@@ -17,13 +19,14 @@ import {
   type PanelId,
   type PanelState,
 } from "@/app/store/slices/panel-layout-slice";
-import { usePanelControl, type PanelToggleMode } from "@/components/layout/use-panel-control";
+import { usePanelControl, type PanelControlMode } from "@/components/layout/use-panel-control";
 import {
   PersistedResizablePanelGroup,
   ResizableHandle,
   ResizablePanel,
   usePanelRef,
 } from "@/components/ui/resizable";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 type PanelRef = ReturnType<typeof usePanelRef>;
@@ -172,40 +175,94 @@ function PersistedPanelGroup({ id, panels, ...props }: PersistedPanelGroupProps)
   return <PersistedResizablePanelGroup {...props} id={id} panelIds={panelIds} />;
 }
 
-interface PanelToggleProps extends ComponentProps<"button"> {
-  asChild?: boolean;
-  mode?: PanelToggleMode;
-  panelId: PanelId;
+interface PanelControlContextValue {
+  hasTooltip: boolean;
+  mode?: PanelControlMode;
+  panelId?: PanelId;
 }
 
-function PanelToggle({
-  asChild = false,
+const PanelControlContext = createContext<PanelControlContextValue | null>(null);
+
+interface PanelControlProps {
+  children: ReactNode;
+  mode?: PanelControlMode;
+  panelId?: PanelId;
+  tooltip?: ReactNode;
+  tooltipSide?: ComponentProps<typeof TooltipContent>["side"];
+}
+
+function PanelControl({
+  children,
+  mode = "visibility",
+  panelId,
+  tooltip,
+  tooltipSide,
+}: PanelControlProps) {
+  const hasTooltip = tooltip !== undefined;
+  const context = useMemo<PanelControlContextValue>(
+    () => ({ hasTooltip, mode, panelId }),
+    [hasTooltip, mode, panelId],
+  );
+  const content = hasTooltip ? (
+    <Tooltip>
+      {children}
+      <TooltipContent side={tooltipSide}>{tooltip}</TooltipContent>
+    </Tooltip>
+  ) : (
+    children
+  );
+
+  return <PanelControlContext.Provider value={context}>{content}</PanelControlContext.Provider>;
+}
+
+interface PanelControlToggleProps extends ComponentProps<typeof Slot.Root> {
+  mode?: PanelControlMode;
+  panelId?: PanelId;
+}
+
+function PanelControlToggle({
   "aria-pressed": ariaPressed,
   className,
-  mode = "visibility",
+  mode: modeProp,
   onClick,
-  panelId,
-  type,
+  panelId: panelIdProp,
   ...props
-}: PanelToggleProps) {
+}: PanelControlToggleProps) {
+  const control = usePanelControlContext();
+  const panelId = panelIdProp ?? control.panelId;
+  const mode = modeProp ?? control.mode ?? "visibility";
+  assertPanelId(panelId);
   const { active, toggle } = usePanelControl(panelId, mode);
-  const Component = asChild ? Slot.Root : "button";
-
-  return (
-    <Component
+  const trigger = (
+    <Slot.Root
       {...props}
-      type={asChild ? undefined : (type ?? "button")}
-      aria-pressed={ariaPressed ?? (asChild ? undefined : active)}
+      aria-pressed={ariaPressed ?? active}
       data-panel-state={active ? "on" : "off"}
-      data-panel-toggle=""
-      className={cn("group/panel-toggle", className)}
+      data-panel-control-toggle=""
+      className={cn("group/panel-control-toggle", className)}
       onClick={(event) => {
         onClick?.(event);
         if (!event.defaultPrevented) toggle();
       }}
     />
   );
+
+  return control.hasTooltip ? <TooltipTrigger asChild>{trigger}</TooltipTrigger> : trigger;
 }
 
-export { Panel, PanelHandle, PanelToggle, PersistedPanelGroup };
-export type { PanelRegistration, PanelToggleMode };
+function usePanelControlContext() {
+  const context = useContext(PanelControlContext);
+  if (!context) {
+    throw new Error("PanelControlToggle must be used within PanelControl");
+  }
+  return context;
+}
+
+function assertPanelId(panelId: PanelId | undefined): asserts panelId is PanelId {
+  if (panelId === undefined) {
+    throw new Error("PanelControl or PanelControlToggle must provide a panelId");
+  }
+}
+
+export { Panel, PanelControl, PanelControlToggle, PanelHandle, PersistedPanelGroup };
+export type { PanelControlMode, PanelRegistration };
