@@ -139,6 +139,7 @@ export const en = {
       workspace: "Video editor workspace",
       resizeDetails: "Resize source details",
       previewArea: "Video preview and timeline area",
+      sidebarControls: "Choose visible source panels",
       details: "Source details",
       noSource: "No source",
       inspecting: "Inspecting…",

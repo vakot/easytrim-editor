@@ -145,6 +145,7 @@ export const sk = {
       workspace: "Pracovná plocha editora videa",
       resizeDetails: "Zmeniť veľkosť detailov zdroja",
       previewArea: "Oblasť náhľadu videa a časovej osi",
+      sidebarControls: "Vybrať viditeľné panely zdroja",
       details: "Detaily zdroja",
       noSource: "Žiadny zdroj",
       inspecting: "Analyzuje sa…",

@@ -43,6 +43,7 @@ interface ContextMenuProps {
   children: ReactNode;
   options: readonly ContextMenuOption[];
   className?: string;
+  "aria-label"?: string;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   onTriggerPointerEnter?: () => void;
@@ -53,6 +54,7 @@ export function ContextMenu({
   children,
   options,
   className,
+  "aria-label": ariaLabel,
   open,
   onOpenChange,
   onTriggerPointerEnter,
@@ -65,6 +67,7 @@ export function ContextMenu({
       <DropdownMenuPrimitive.Trigger asChild>
         <Button
           type="button"
+          aria-label={ariaLabel}
           variant="ghost"
           size="xs"
           onKeyDown={() => {

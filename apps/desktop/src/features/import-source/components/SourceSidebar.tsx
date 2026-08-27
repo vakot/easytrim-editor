@@ -1,5 +1,6 @@
 import { Ellipsis, Eye, EyeOff } from "lucide-react";
 import { useCallback, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 
 import { EDITOR_PANEL_GROUP_IDS, registerEditorLayoutReset } from "@/app/editor-layout-runtime";
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
@@ -18,6 +19,7 @@ import {
 } from "@/components/layout/pane-view";
 import { ContextMenu, type ContextMenuOption } from "@/components/ui/context-menu";
 import { useDefaultLayout, useGroupRef } from "@/components/ui/resizable";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const PLACEHOLDER_ROWS = Array.from({ length: 20 }, (_, index) => index + 1);
 const SIDEBAR_SPACER_ID = `${EDITOR_PANEL_GROUP_IDS.sourceSidebar}-spacer`;
@@ -41,6 +43,7 @@ const PANEL_OPTIONS = [
 }>;
 
 export function SourceSidebar() {
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const mediaPanel = useAppSelector((state) =>
     selectEditorPanel(state, EDITOR_PANEL_IDS.sidebarMedia),
@@ -101,12 +104,20 @@ export function SourceSidebar() {
     <aside className="flex h-full min-h-0 flex-col overflow-hidden p-1" aria-label="Source sidebar">
       <div className="flex h-7 shrink-0 items-center justify-between gap-1 px-2 text-xs font-medium">
         <span>Source</span>
-        <ContextMenu options={visibilityOptions} className="size-6 p-0">
-          <>
-            <Ellipsis className="size-4" aria-hidden="true" />
-            <span className="sr-only">Choose visible source panels</span>
-          </>
-        </ContextMenu>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="inline-flex">
+              <ContextMenu
+                options={visibilityOptions}
+                className="size-6 p-0"
+                aria-label={t("import.source.sidebarControls")}
+              >
+                <Ellipsis className="size-4" aria-hidden="true" />
+              </ContextMenu>
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>{t("import.source.sidebarControls")}</TooltipContent>
+        </Tooltip>
       </div>
       <PaneView
         id={EDITOR_PANEL_GROUP_IDS.sourceSidebar}
