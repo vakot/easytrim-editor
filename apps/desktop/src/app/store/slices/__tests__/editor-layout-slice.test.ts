@@ -2,70 +2,90 @@ import { describe, expect, it } from "vitest";
 
 import type { RootState } from "@/app/store/store";
 import {
+  EDITOR_PANEL_IDS,
   createInitialEditorLayoutState,
   editorLayoutReducer,
   editorLayoutReset,
-  editorStageLayoutChanged,
-  selectEditorLayout,
-  selectEditorStageLayout,
-  selectPanelVisibility,
-  selectWorkspaceLayout,
-  panelToggled,
+  panelCollapseToggled,
+  panelCollapsedChanged,
   panelVisibilityChanged,
-  workspaceLayoutChanged,
+  panelVisibilityToggled,
+  selectEditorLayout,
+  selectEditorPanel,
+  selectPanelCollapsed,
+  selectPanelExpanded,
+  selectPanelVisibility,
 } from "@/app/store/slices/editor-layout-slice";
 
 describe("editor layout Redux domain", () => {
-  it("starts with deterministic visible panels and uninitialized layouts", () => {
+  it("starts with every editor panel visible and expanded", () => {
     expect(editorLayoutReducer(undefined, { type: "unknown" })).toEqual(
       createInitialEditorLayoutState(),
     );
   });
 
-  it("changes visibility independently", () => {
-    const initialState = editorLayoutReducer(undefined, { type: "unknown" });
-    const nextState = editorLayoutReducer(
+  it("changes panel visibility independently", () => {
+    const state = editorLayoutReducer(
       editorLayoutReducer(
-        initialState,
-        panelVisibilityChanged({ panelId: "left", visible: false }),
+        undefined,
+        panelVisibilityChanged({ panelId: EDITOR_PANEL_IDS.sourceDetails, visible: false }),
       ),
-      panelVisibilityChanged({ panelId: "bottom", visible: false }),
+      panelVisibilityChanged({ panelId: EDITOR_PANEL_IDS.sidebarExportQueue, visible: false }),
     );
 
-    expect(nextState.panelVisibility).toEqual({ left: false, bottom: false });
-    expect(nextState.workspaceLayout).toBeUndefined();
-    expect(nextState.editorStageLayout).toBeUndefined();
-  });
-
-  it("toggles a panel by its generic identifier", () => {
-    const initialState = editorLayoutReducer(undefined, { type: "unknown" });
-
-    expect(editorLayoutReducer(initialState, panelToggled("left")).panelVisibility).toEqual({
-      left: false,
-      bottom: true,
+    expect(state.panels[EDITOR_PANEL_IDS.sourceDetails]).toEqual({
+      visible: false,
+      collapsed: false,
+    });
+    expect(state.panels[EDITOR_PANEL_IDS.sidebarExportQueue]).toEqual({
+      visible: false,
+      collapsed: false,
+    });
+    expect(state.panels[EDITOR_PANEL_IDS.timeline]).toEqual({
+      visible: true,
+      collapsed: false,
     });
   });
 
-  it("stores workspace and editor-stage layouts independently", () => {
-    const workspaceLayout = { "source-details-panel": 25, "editor-content-panel": 75 };
-    const editorStageLayout = { "preview-panel": 70, "timeline-panel": 30 };
+  it("toggles visibility with the generic panel identifier", () => {
     const state = editorLayoutReducer(
-      editorLayoutReducer(undefined, workspaceLayoutChanged(workspaceLayout)),
-      editorStageLayoutChanged(editorStageLayout),
+      undefined,
+      panelVisibilityToggled(EDITOR_PANEL_IDS.sidebarImportedQueue),
     );
 
-    expect(state.workspaceLayout).toBe(workspaceLayout);
-    expect(state.editorStageLayout).toBe(editorStageLayout);
-    expect(state.panelVisibility).toEqual({ left: true, bottom: true });
+    expect(state.panels[EDITOR_PANEL_IDS.sidebarImportedQueue]).toEqual({
+      visible: false,
+      collapsed: false,
+    });
+  });
+
+  it("uses collapsed as a distinct rendered panel state", () => {
+    const collapsedState = editorLayoutReducer(
+      undefined,
+      panelCollapsedChanged({ panelId: EDITOR_PANEL_IDS.timeline, collapsed: true }),
+    );
+    const expandedState = editorLayoutReducer(
+      collapsedState,
+      panelCollapseToggled(EDITOR_PANEL_IDS.timeline),
+    );
+
+    expect(collapsedState.panels[EDITOR_PANEL_IDS.timeline]).toEqual({
+      visible: true,
+      collapsed: true,
+    });
+    expect(expandedState.panels[EDITOR_PANEL_IDS.timeline]).toEqual({
+      visible: true,
+      collapsed: false,
+    });
   });
 
   it("resets the whole layout domain in one operation", () => {
     const changedState = editorLayoutReducer(
       editorLayoutReducer(
-        editorLayoutReducer(undefined, panelVisibilityChanged({ panelId: "left", visible: false })),
-        workspaceLayoutChanged({ "source-details-panel": 40, "editor-content-panel": 60 }),
+        undefined,
+        panelVisibilityChanged({ panelId: EDITOR_PANEL_IDS.sourceDetails, visible: false }),
       ),
-      editorStageLayoutChanged({ "preview-panel": 60, "timeline-panel": 40 }),
+      panelCollapsedChanged({ panelId: EDITOR_PANEL_IDS.sidebarMedia, collapsed: true }),
     );
 
     expect(editorLayoutReducer(changedState, editorLayoutReset())).toEqual(
@@ -73,24 +93,34 @@ describe("editor layout Redux domain", () => {
     );
   });
 
-  it("exposes focused selectors and serializable layout actions", () => {
-    const editorLayout = {
-      panelVisibility: { left: false, bottom: true },
-      workspaceLayout: { "source-details-panel": 20, "editor-content-panel": 80 },
-      editorStageLayout: { "preview-panel": 75, "timeline-panel": 25 },
+  it("exposes focused selectors and serializable panel actions", () => {
+    const editorLayout = createInitialEditorLayoutState();
+    editorLayout.panels[EDITOR_PANEL_IDS.sourceDetails] = {
+      visible: false,
+      collapsed: false,
+    };
+    editorLayout.panels[EDITOR_PANEL_IDS.timeline] = {
+      visible: true,
+      collapsed: true,
     };
     const state = { editorLayout } as unknown as RootState;
 
     expect(selectEditorLayout(state)).toBe(editorLayout);
-    expect(selectPanelVisibility(state, "left")).toBe(false);
-    expect(selectPanelVisibility(state, "bottom")).toBe(true);
-    expect(selectWorkspaceLayout(state)).toBe(editorLayout.workspaceLayout);
-    expect(selectEditorStageLayout(state)).toBe(editorLayout.editorStageLayout);
+    expect(selectEditorPanel(state, EDITOR_PANEL_IDS.timeline)).toBe(
+      editorLayout.panels[EDITOR_PANEL_IDS.timeline],
+    );
+    expect(selectPanelVisibility(state, EDITOR_PANEL_IDS.sourceDetails)).toBe(false);
+    expect(selectPanelCollapsed(state, EDITOR_PANEL_IDS.timeline)).toBe(true);
+    expect(selectPanelExpanded(state, EDITOR_PANEL_IDS.timeline)).toBe(false);
     expect(
-      JSON.parse(JSON.stringify(workspaceLayoutChanged(editorLayout.workspaceLayout))),
+      JSON.parse(
+        JSON.stringify(
+          panelCollapsedChanged({ panelId: EDITOR_PANEL_IDS.timeline, collapsed: true }),
+        ),
+      ),
     ).toEqual({
-      type: "editorLayout/workspaceLayoutChanged",
-      payload: editorLayout.workspaceLayout,
+      type: "editorLayout/panelCollapsedChanged",
+      payload: { panelId: EDITOR_PANEL_IDS.timeline, collapsed: true },
     });
   });
 });

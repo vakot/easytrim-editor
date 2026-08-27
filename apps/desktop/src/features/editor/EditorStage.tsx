@@ -1,7 +1,8 @@
 import { LoaderCircle } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { Fragment, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
+import { EDITOR_PANEL_GROUP_IDS, registerEditorLayoutReset } from "@/app/editor-layout-runtime";
 import { usePlayback, useTimeline } from "@/app/hooks/useEditorContracts";
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import {
@@ -16,10 +17,9 @@ import {
   waveformDisplayFailed,
 } from "@/app/store/slices/audio-slice";
 import {
-  editorStageLayoutChanged,
-  panelVisibilityChanged,
-  selectEditorStageLayout,
-  selectPanelVisibility,
+  EDITOR_PANEL_IDS,
+  panelCollapsedChanged,
+  selectEditorPanel,
 } from "@/app/store/slices/editor-layout-slice";
 import { selectPreview } from "@/app/store/slices/preview-slice";
 import {
@@ -30,7 +30,12 @@ import {
 import { selectTrim } from "@/app/store/slices/trim-slice";
 import { prepareSourceWaveforms } from "@/app/store/thunks/source-media-thunks";
 import { PanelContent } from "@/components/layout/panel-content";
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+  useDefaultLayout,
+} from "@/components/ui/resizable";
 import { AudioTracks } from "@/features/audio-tracks";
 import {
   PlaybackControls,
@@ -61,9 +66,9 @@ export function EditorStage() {
   const playback = usePlayback();
   const timeline = useTimeline();
   const dispatch = useAppDispatch();
-  const editorStageLayout = useAppSelector(selectEditorStageLayout);
-  const isBottomPanelVisible = useAppSelector((state) => selectPanelVisibility(state, "bottom"));
-  const previousEditorStageLayout = useRef(editorStageLayout);
+  const timelinePanel = useAppSelector((state) =>
+    selectEditorPanel(state, EDITOR_PANEL_IDS.timeline),
+  );
   const sourcePath = sourceSelection?.sourcePath ?? null;
   const timelineRange = trim ?? EMPTY_TIMELINE_RANGE;
   const controlsDisabled = !isSourceReady || !playback.isReady;
@@ -73,21 +78,28 @@ export function EditorStage() {
   const timelinePanelSizing = useTimelinePanelSizing(
     sourceSelection !== null,
     media?.audioStreams.length ?? null,
-    isBottomPanelVisible,
+    timelinePanel.visible && !timelinePanel.collapsed,
+    timelinePanel.visible,
   );
+  const panelIds = useMemo(
+    () => (timelinePanel.visible ? ["preview-panel", "timeline-panel"] : ["preview-panel"]),
+    [timelinePanel.visible],
+  );
+  const { defaultLayout, onLayoutChanged } = useDefaultLayout({
+    id: EDITOR_PANEL_GROUP_IDS.stage,
+    panelIds,
+    storage: localStorage,
+  });
 
   useEffect(() => {
-    if (editorStageLayout === undefined && previousEditorStageLayout.current !== undefined) {
-      timelinePanelSizing.resetToDefault();
-    }
-    previousEditorStageLayout.current = editorStageLayout;
-  }, [editorStageLayout, timelinePanelSizing]);
+    return registerEditorLayoutReset(timelinePanelSizing.resetToDefault);
+  }, [timelinePanelSizing.resetToDefault]);
 
   return (
     <ResizablePanelGroup
-      id="editor-stage-panels"
-      defaultLayout={editorStageLayout}
-      onLayoutChanged={(layout) => dispatch(editorStageLayoutChanged(layout))}
+      id={EDITOR_PANEL_GROUP_IDS.stage}
+      defaultLayout={defaultLayout}
+      onLayoutChanged={onLayoutChanged}
       orientation="vertical"
       className="relative min-h-0 min-w-0 bg-background"
       resizeTargetMinimumSize={{ fine: 8, coarse: 24 }}
@@ -115,108 +127,119 @@ export function EditorStage() {
         </PanelContent>
       </ResizablePanel>
 
-      <ResizableHandle
-        id="preview-timeline-resize-handle"
-        aria-label={t("preview.resize")}
-        onDoubleClick={timelinePanelSizing.resetToDefault}
-        className="my-0.5 bg-transparent"
-        withHandle={isBottomPanelVisible}
-      />
-
-      <ResizablePanel
-        id="timeline-panel"
-        panelRef={timelinePanelSizing.panelRef}
-        defaultSize={timelinePanelSizing.initialDefaultSize}
-        collapsible
-        collapsedSize={timelinePanelSizing.collapsedSize}
-        minSize={timelinePanelSizing.constraints.minSize}
-        maxSize={timelinePanelSizing.constraints.maxSize}
-        onResize={(size) => {
-          const isCollapsed =
-            timelinePanelSizing.panelRef.current?.isCollapsed() ?? size.inPixels <= 0;
-          dispatch(panelVisibilityChanged({ panelId: "bottom", visible: !isCollapsed }));
-        }}
-        groupResizeBehavior="preserve-pixel-size"
-        className="min-h-0 min-w-0 pb-1"
-      >
-        <PanelContent>
-          <TimelinePane
-            range={timelineRange}
-            timeline={
-              <TrimTimeline
-                range={timelineRange}
-                disabled={controlsDisabled}
-                playheadMicros={timeline.playheadMicros}
-                playheadRef={timeline.playheadRef}
-                frameRate={media?.video.averageFrameRate ?? media?.video.realFrameRate}
-                playbackControls={
-                  <PlaybackControls
-                    isPlaying={playback.isPlaying}
-                    error={playback.transportError}
-                    canSetSegmentStart={timeline.canSetSegmentStart}
-                    canSetSegmentEnd={timeline.canSetSegmentEnd}
-                    disabled={controlsDisabled}
-                    onTogglePlayback={playback.toggle}
-                    onStepFrame={playback.stepFrame}
-                    onSetSegmentBoundary={playback.setSegmentBoundary}
-                  />
-                }
-                playbackTimecode={
-                  <PlaybackTimecode
-                    currentMicros={controlsDisabled ? null : timeline.playheadMicros}
-                    sourceDurationMicros={
-                      controlsDisabled ? null : timelineRange.sourceDurationMicros
-                    }
-                    frameRate={media?.video.averageFrameRate ?? media?.video.realFrameRate}
-                  />
-                }
-                videoToolbar={<TimelineTools />}
-                onChange={timeline.onChange}
-                onMoveSegment={timeline.onMoveSegment}
-                onTrimDragStart={timeline.onTrimDragStart}
-                onTrimDragEnd={timeline.onTrimDragEnd}
-                onSegmentDragStart={timeline.onSegmentDragStart}
-                onSegmentDragEnd={timeline.onSegmentDragEnd}
-                onSeek={timeline.onSeek}
-                onScrubStart={timeline.onScrubStart}
-                onScrub={timeline.onScrub}
-                onScrubEnd={timeline.onScrubEnd}
-              />
-            }
-            audioTracks={
-              isBottomPanelVisible && (media?.audioStreams.length ?? 0) > 0 ? (
-                <AudioTracks
-                  streams={media?.audioStreams ?? []}
-                  tracks={audioTracks}
-                  masterEnabled={masterAudio.enabled}
-                  masterVolumePercent={masterAudio.volumePercent}
-                  range={timelineRange}
-                  playheadMicros={timeline.playheadMicros}
-                  playheadRef={playback.audioPlayheadRef}
-                  mergeAudio={mergeAudio}
-                  waveformPreparationEnabled={playback.isReady}
-                  onToggleTrack={(streamIndex) => dispatch(audioTrackToggled({ streamIndex }))}
-                  onTrackVolumeChange={(streamIndex, volumePercent) =>
-                    dispatch(audioTrackVolumeChanged({ streamIndex, volumePercent }))
-                  }
-                  onToggleMaster={() => dispatch(masterAudioToggled())}
-                  onMasterVolumeChange={(volumePercent) =>
-                    dispatch(masterVolumeChanged({ volumePercent }))
-                  }
-                  onToggleMerge={() => dispatch(audioMergeToggled())}
-                  onPrepareWaveforms={(streamIndexes, width) =>
-                    sourcePath &&
-                    void dispatch(prepareSourceWaveforms(sourcePath, streamIndexes, width))
-                  }
-                  onWaveformImageError={(streamIndex) =>
-                    dispatch(waveformDisplayFailed({ streamIndex }))
-                  }
-                />
-              ) : null
-            }
+      {timelinePanel.visible ? (
+        <Fragment>
+          <ResizableHandle
+            id="preview-timeline-resize-handle"
+            aria-label={t("preview.resize")}
+            onDoubleClick={timelinePanelSizing.resetToDefault}
+            className="my-0.5 bg-transparent"
+            withHandle={!timelinePanel.collapsed}
           />
-        </PanelContent>
-      </ResizablePanel>
+
+          <ResizablePanel
+            id="timeline-panel"
+            panelRef={timelinePanelSizing.panelRef}
+            defaultSize={timelinePanelSizing.initialDefaultSize}
+            collapsible
+            collapsedSize={timelinePanelSizing.collapsedSize}
+            minSize={timelinePanelSizing.constraints.minSize}
+            maxSize={timelinePanelSizing.constraints.maxSize}
+            onResize={(size) => {
+              const collapsed =
+                timelinePanelSizing.panelRef.current?.isCollapsed() ?? size.inPixels <= 0;
+              if (collapsed !== timelinePanel.collapsed) {
+                dispatch(
+                  panelCollapsedChanged({
+                    panelId: EDITOR_PANEL_IDS.timeline,
+                    collapsed,
+                  }),
+                );
+              }
+            }}
+            groupResizeBehavior="preserve-pixel-size"
+            className="min-h-0 min-w-0 pb-1"
+          >
+            <PanelContent>
+              <TimelinePane
+                range={timelineRange}
+                timeline={
+                  <TrimTimeline
+                    range={timelineRange}
+                    disabled={controlsDisabled}
+                    playheadMicros={timeline.playheadMicros}
+                    playheadRef={timeline.playheadRef}
+                    frameRate={media?.video.averageFrameRate ?? media?.video.realFrameRate}
+                    playbackControls={
+                      <PlaybackControls
+                        isPlaying={playback.isPlaying}
+                        error={playback.transportError}
+                        canSetSegmentStart={timeline.canSetSegmentStart}
+                        canSetSegmentEnd={timeline.canSetSegmentEnd}
+                        disabled={controlsDisabled}
+                        onTogglePlayback={playback.toggle}
+                        onStepFrame={playback.stepFrame}
+                        onSetSegmentBoundary={playback.setSegmentBoundary}
+                      />
+                    }
+                    playbackTimecode={
+                      <PlaybackTimecode
+                        currentMicros={controlsDisabled ? null : timeline.playheadMicros}
+                        sourceDurationMicros={
+                          controlsDisabled ? null : timelineRange.sourceDurationMicros
+                        }
+                        frameRate={media?.video.averageFrameRate ?? media?.video.realFrameRate}
+                      />
+                    }
+                    videoToolbar={<TimelineTools />}
+                    onChange={timeline.onChange}
+                    onMoveSegment={timeline.onMoveSegment}
+                    onTrimDragStart={timeline.onTrimDragStart}
+                    onTrimDragEnd={timeline.onTrimDragEnd}
+                    onSegmentDragStart={timeline.onSegmentDragStart}
+                    onSegmentDragEnd={timeline.onSegmentDragEnd}
+                    onSeek={timeline.onSeek}
+                    onScrubStart={timeline.onScrubStart}
+                    onScrub={timeline.onScrub}
+                    onScrubEnd={timeline.onScrubEnd}
+                  />
+                }
+                audioTracks={
+                  !timelinePanel.collapsed && (media?.audioStreams.length ?? 0) > 0 ? (
+                    <AudioTracks
+                      streams={media?.audioStreams ?? []}
+                      tracks={audioTracks}
+                      masterEnabled={masterAudio.enabled}
+                      masterVolumePercent={masterAudio.volumePercent}
+                      range={timelineRange}
+                      playheadMicros={timeline.playheadMicros}
+                      playheadRef={playback.audioPlayheadRef}
+                      mergeAudio={mergeAudio}
+                      waveformPreparationEnabled={playback.isReady}
+                      onToggleTrack={(streamIndex) => dispatch(audioTrackToggled({ streamIndex }))}
+                      onTrackVolumeChange={(streamIndex, volumePercent) =>
+                        dispatch(audioTrackVolumeChanged({ streamIndex, volumePercent }))
+                      }
+                      onToggleMaster={() => dispatch(masterAudioToggled())}
+                      onMasterVolumeChange={(volumePercent) =>
+                        dispatch(masterVolumeChanged({ volumePercent }))
+                      }
+                      onToggleMerge={() => dispatch(audioMergeToggled())}
+                      onPrepareWaveforms={(streamIndexes, width) =>
+                        sourcePath &&
+                        void dispatch(prepareSourceWaveforms(sourcePath, streamIndexes, width))
+                      }
+                      onWaveformImageError={(streamIndex) =>
+                        dispatch(waveformDisplayFailed({ streamIndex }))
+                      }
+                    />
+                  ) : null
+                }
+              />
+            </PanelContent>
+          </ResizablePanel>
+        </Fragment>
+      ) : null}
       {showLoadingOverlay ? (
         <div
           className="absolute inset-0 z-30 grid place-items-center bg-background/75 backdrop-blur-sm"

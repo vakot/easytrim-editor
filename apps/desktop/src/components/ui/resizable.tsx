@@ -44,5 +44,14 @@ function ResizableHandle({
 }
 
 const usePanelRef = ResizablePrimitive.usePanelRef;
+const useGroupRef = ResizablePrimitive.useGroupRef;
+const useDefaultLayout = ResizablePrimitive.useDefaultLayout;
 
-export { ResizableHandle, ResizablePanel, ResizablePanelGroup, usePanelRef };
+export {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+  useDefaultLayout,
+  useGroupRef,
+  usePanelRef,
+};

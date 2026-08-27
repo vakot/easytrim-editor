@@ -43,6 +43,9 @@ interface PaneViewProps {
   value?: string[];
   defaultValue?: string[];
   onValueChange?: (value: string[]) => void;
+  defaultLayout?: ComponentProps<typeof ResizablePanelGroup>["defaultLayout"];
+  groupRef?: ComponentProps<typeof ResizablePanelGroup>["groupRef"];
+  onLayoutChanged?: ComponentProps<typeof ResizablePanelGroup>["onLayoutChanged"];
   id?: string;
   className?: string;
   "aria-label"?: string;
@@ -53,6 +56,9 @@ function PaneView({
   value,
   defaultValue = [],
   onValueChange,
+  defaultLayout,
+  groupRef,
+  onLayoutChanged,
   id: idProp,
   className,
   "aria-label": ariaLabel,
@@ -84,6 +90,9 @@ function PaneView({
     <PaneViewContext.Provider value={context}>
       <ResizablePanelGroup
         id={groupId}
+        defaultLayout={defaultLayout}
+        groupRef={groupRef}
+        onLayoutChanged={onLayoutChanged}
         orientation="vertical"
         aria-label={ariaLabel}
         data-slot="pane-view"

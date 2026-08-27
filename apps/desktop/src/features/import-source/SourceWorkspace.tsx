@@ -1,11 +1,11 @@
-import { useEffect, useRef } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef } from "react";
 
+import { EDITOR_PANEL_GROUP_IDS, registerEditorLayoutReset } from "@/app/editor-layout-runtime";
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import {
-  panelVisibilityChanged,
-  selectPanelVisibility,
-  selectWorkspaceLayout,
-  workspaceLayoutChanged,
+  EDITOR_PANEL_IDS,
+  panelCollapsedChanged,
+  selectEditorPanel,
 } from "@/app/store/slices/editor-layout-slice";
 import { selectActiveItemId } from "@/app/store/slices/export-slice";
 import { selectIsSourceDragActive } from "@/app/store/slices/import-workflow-slice";
@@ -15,6 +15,7 @@ import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
+  useDefaultLayout,
   usePanelRef,
 } from "@/components/ui/resizable";
 import { EditorStage } from "@/features/editor";
@@ -30,66 +31,92 @@ export function SourceWorkspace() {
   const sourceSelection = useAppSelector(selectSourceSelection);
   const activeItemId = useAppSelector(selectActiveItemId);
   const dispatch = useAppDispatch();
-  const isLeftPanelVisible = useAppSelector((state) => selectPanelVisibility(state, "left"));
-  const workspaceLayout = useAppSelector(selectWorkspaceLayout);
+  const sourceDetailsPanel = useAppSelector((state) =>
+    selectEditorPanel(state, EDITOR_PANEL_IDS.sourceDetails),
+  );
   const sourceDetailsPanelRef = usePanelRef();
-  const previousWorkspaceLayout = useRef(workspaceLayout);
+  const wasSourceDetailsVisible = useRef(sourceDetailsPanel.visible);
+  const panelIds = useMemo(
+    () =>
+      sourceDetailsPanel.visible
+        ? ["source-details-panel", "editor-content-panel"]
+        : ["editor-content-panel"],
+    [sourceDetailsPanel.visible],
+  );
+  const { defaultLayout, onLayoutChanged } = useDefaultLayout({
+    id: EDITOR_PANEL_GROUP_IDS.workspace,
+    panelIds,
+    storage: localStorage,
+  });
+  const resetPanelSize = useCallback(() => {
+    if (sourceDetailsPanel.visible) sourceDetailsPanelRef.current?.resize("20rem");
+  }, [sourceDetailsPanel.visible, sourceDetailsPanelRef]);
 
   useEffect(() => {
+    const wasVisible = wasSourceDetailsVisible.current;
+    wasSourceDetailsVisible.current = sourceDetailsPanel.visible;
+    if (!sourceDetailsPanel.visible || !wasVisible) return;
+
     const panel = sourceDetailsPanelRef.current;
     if (!panel) return;
 
-    if (isLeftPanelVisible) {
-      panel.expand();
-    } else {
+    if (sourceDetailsPanel.collapsed) {
       panel.collapse();
+    } else {
+      panel.expand();
     }
-  }, [isLeftPanelVisible, sourceDetailsPanelRef]);
+  }, [sourceDetailsPanel.collapsed, sourceDetailsPanel.visible, sourceDetailsPanelRef]);
 
-  useEffect(() => {
-    if (workspaceLayout === undefined && previousWorkspaceLayout.current !== undefined) {
-      sourceDetailsPanelRef.current?.resize("20rem");
-    }
-    previousWorkspaceLayout.current = workspaceLayout;
-  }, [sourceDetailsPanelRef, workspaceLayout]);
+  useEffect(() => registerEditorLayoutReset(resetPanelSize), [resetPanelSize]);
 
   return (
     <ResizablePanelGroup
-      id="editor-workspace-panels"
-      defaultLayout={workspaceLayout}
-      onLayoutChanged={(layout) => dispatch(workspaceLayoutChanged(layout))}
+      id={EDITOR_PANEL_GROUP_IDS.workspace}
+      defaultLayout={defaultLayout}
+      onLayoutChanged={onLayoutChanged}
       orientation="horizontal"
       resizeTargetMinimumSize={{ fine: 8, coarse: 24 }}
       aria-label={t("import.source.workspace")}
     >
-      <ResizablePanel
-        id="source-details-panel"
-        panelRef={sourceDetailsPanelRef}
-        collapsible
-        collapsedSize={0}
-        defaultSize="20rem"
-        minSize="15rem"
-        maxSize="30rem"
-        onResize={(size) => {
-          const isCollapsed = sourceDetailsPanelRef.current?.isCollapsed() ?? size.inPixels <= 0;
-          dispatch(panelVisibilityChanged({ panelId: "left", visible: !isCollapsed }));
-        }}
-        groupResizeBehavior="preserve-pixel-size"
-        className="min-h-0 min-w-0 overflow-hidden"
-      >
-        <div className="h-full pl-1 pb-1">
-          <PanelContent>
-            <SourceSidebar />
-          </PanelContent>
-        </div>
-      </ResizablePanel>
+      {sourceDetailsPanel.visible ? (
+        <Fragment>
+          <ResizablePanel
+            id="source-details-panel"
+            panelRef={sourceDetailsPanelRef}
+            collapsible
+            collapsedSize={0}
+            defaultSize="20rem"
+            minSize="15rem"
+            maxSize="30rem"
+            onResize={(size) => {
+              const collapsed = sourceDetailsPanelRef.current?.isCollapsed() ?? size.inPixels <= 0;
+              if (collapsed !== sourceDetailsPanel.collapsed) {
+                dispatch(
+                  panelCollapsedChanged({
+                    panelId: EDITOR_PANEL_IDS.sourceDetails,
+                    collapsed,
+                  }),
+                );
+              }
+            }}
+            groupResizeBehavior="preserve-pixel-size"
+            className="min-h-0 min-w-0 overflow-hidden"
+          >
+            <div className="h-full pl-1 pb-1">
+              <PanelContent>
+                <SourceSidebar />
+              </PanelContent>
+            </div>
+          </ResizablePanel>
 
-      <ResizableHandle
-        id="source-details-resize-handle"
-        aria-label={t("import.source.resizeDetails")}
-        className="mb-1 mx-0.5 bg-transparent"
-        withHandle={isLeftPanelVisible}
-      />
+          <ResizableHandle
+            id="source-details-resize-handle"
+            aria-label={t("import.source.resizeDetails")}
+            className="mb-1 mx-0.5 bg-transparent"
+            withHandle={!sourceDetailsPanel.collapsed}
+          />
+        </Fragment>
+      ) : null}
 
       <ResizablePanel id="editor-content-panel" minSize="44rem" className="pr-1">
         <div className="relative h-full w-full" aria-label={t("import.source.previewArea")}>

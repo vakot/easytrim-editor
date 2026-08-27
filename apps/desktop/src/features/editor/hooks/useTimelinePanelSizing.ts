@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 
 import { usePanelRef } from "@/components/ui/resizable";
 
@@ -24,9 +24,11 @@ export function timelinePanelTargetSize(
 export function useTimelinePanelSizing(
   hasSource: boolean,
   audioTrackCount: number | null,
-  isVisible: boolean,
+  isExpanded: boolean,
+  isRendered = true,
 ) {
   const panelRef = usePanelRef();
+  const wasRendered = useRef(isRendered);
   const constraints = useMemo(
     () =>
       !hasSource
@@ -37,12 +39,13 @@ export function useTimelinePanelSizing(
     [audioTrackCount, hasSource],
   );
 
-  const resetToDefault = useCallback(
-    () => panelRef.current?.resize(constraints.defaultSize),
-    [constraints.defaultSize, panelRef],
-  );
+  const resetToDefault = useCallback(() => {
+    if (isRendered) panelRef.current?.resize(constraints.defaultSize);
+  }, [constraints.defaultSize, isRendered, panelRef]);
 
   useLayoutEffect(() => {
+    if (!isRendered || !wasRendered.current) return;
+
     const panel = panelRef.current;
     if (!panel) {
       return;
@@ -73,18 +76,22 @@ export function useTimelinePanelSizing(
     if (Math.abs(currentSize - targetSize) >= 1) {
       panel.resize(targetSize);
     }
-  }, [audioTrackCount, hasSource, panelRef]);
+  }, [audioTrackCount, hasSource, isRendered, panelRef]);
 
   useEffect(() => {
+    const previouslyRendered = wasRendered.current;
+    wasRendered.current = isRendered;
+    if (!isRendered || !previouslyRendered) return;
+
     const panel = panelRef.current;
     if (!panel) return;
 
-    if (isVisible) {
+    if (isExpanded) {
       panel.expand();
     } else {
       panel.collapse();
     }
-  }, [isVisible, panelRef]);
+  }, [isExpanded, isRendered, panelRef]);
 
   return {
     constraints,

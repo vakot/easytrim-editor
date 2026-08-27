@@ -100,10 +100,9 @@ describe("Redux Persist store integration", () => {
     expect(storage.values).toEqual(new Map());
   });
 
-  it("configures only canonical preference domains for persistence", () => {
-    expect(persistConfig.whitelist).toEqual(["preferences", "theme"]);
+  it("configures only canonical preference and layout domains for persistence", () => {
+    expect(persistConfig.whitelist).toEqual(["editorLayout", "preferences", "theme"]);
     expect(persistConfig.whitelist).not.toContain("editorTools");
-    expect(persistConfig.whitelist).not.toContain("editorLayout");
     expect(persistConfig.whitelist).not.toContain("importWorkflow");
     expect(persistConfig.whitelist).not.toContain("source");
     expect(persistConfig.whitelist).not.toContain("trim");

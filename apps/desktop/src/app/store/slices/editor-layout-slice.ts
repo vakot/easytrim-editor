@@ -2,23 +2,39 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 import type { RootState } from "@/app/store/store";
 
-export type EditorLayoutMap = Record<string, number>;
-export type EditorPanelId = "left" | "bottom";
+export const EDITOR_PANEL_IDS = {
+  sourceDetails: "source-details",
+  timeline: "timeline",
+  sidebarMedia: "sidebar.media",
+  sidebarImportedQueue: "sidebar.imported-queue",
+  sidebarExportQueue: "sidebar.export-queue",
+} as const;
+
+export type EditorPanelId = (typeof EDITOR_PANEL_IDS)[keyof typeof EDITOR_PANEL_IDS];
+
+export interface EditorPanelState {
+  visible: boolean;
+  collapsed: boolean;
+}
 
 export interface EditorLayoutState {
-  panelVisibility: Record<EditorPanelId, boolean>;
-  workspaceLayout: EditorLayoutMap | undefined;
-  editorStageLayout: EditorLayoutMap | undefined;
+  panels: Record<EditorPanelId, EditorPanelState>;
 }
+
+const createExpandedPanelState = (): EditorPanelState => ({
+  visible: true,
+  collapsed: false,
+});
 
 export function createInitialEditorLayoutState(): EditorLayoutState {
   return {
-    panelVisibility: {
-      left: true,
-      bottom: true,
+    panels: {
+      [EDITOR_PANEL_IDS.sourceDetails]: createExpandedPanelState(),
+      [EDITOR_PANEL_IDS.timeline]: createExpandedPanelState(),
+      [EDITOR_PANEL_IDS.sidebarMedia]: createExpandedPanelState(),
+      [EDITOR_PANEL_IDS.sidebarImportedQueue]: createExpandedPanelState(),
+      [EDITOR_PANEL_IDS.sidebarExportQueue]: createExpandedPanelState(),
     },
-    workspaceLayout: undefined,
-    editorStageLayout: undefined,
   };
 }
 
@@ -30,16 +46,27 @@ const editorLayoutSlice = createSlice({
       state,
       action: PayloadAction<{ panelId: EditorPanelId; visible: boolean }>,
     ) => {
-      state.panelVisibility[action.payload.panelId] = action.payload.visible;
+      const panel = state.panels[action.payload.panelId];
+      panel.visible = action.payload.visible;
+      panel.collapsed = false;
     },
-    panelToggled: (state, action: PayloadAction<EditorPanelId>) => {
-      state.panelVisibility[action.payload] = !state.panelVisibility[action.payload];
+    panelVisibilityToggled: (state, action: PayloadAction<EditorPanelId>) => {
+      const panel = state.panels[action.payload];
+      panel.visible = !panel.visible;
+      panel.collapsed = false;
     },
-    workspaceLayoutChanged: (state, action: PayloadAction<EditorLayoutMap>) => {
-      state.workspaceLayout = action.payload;
+    panelCollapsedChanged: (
+      state,
+      action: PayloadAction<{ panelId: EditorPanelId; collapsed: boolean }>,
+    ) => {
+      const panel = state.panels[action.payload.panelId];
+      if (!panel.visible) return;
+      panel.collapsed = action.payload.collapsed;
     },
-    editorStageLayoutChanged: (state, action: PayloadAction<EditorLayoutMap>) => {
-      state.editorStageLayout = action.payload;
+    panelCollapseToggled: (state, action: PayloadAction<EditorPanelId>) => {
+      const panel = state.panels[action.payload];
+      if (!panel.visible) return;
+      panel.collapsed = !panel.collapsed;
     },
     editorLayoutReset: () => createInitialEditorLayoutState(),
   },
@@ -47,17 +74,21 @@ const editorLayoutSlice = createSlice({
 
 export const {
   panelVisibilityChanged,
-  panelToggled,
-  workspaceLayoutChanged,
-  editorStageLayoutChanged,
+  panelVisibilityToggled,
+  panelCollapsedChanged,
+  panelCollapseToggled,
   editorLayoutReset,
 } = editorLayoutSlice.actions;
 export const editorLayoutReducer = editorLayoutSlice.reducer;
 
 export const selectEditorLayout = (state: RootState): EditorLayoutState => state.editorLayout;
+export const selectEditorPanel = (state: RootState, panelId: EditorPanelId): EditorPanelState =>
+  selectEditorLayout(state).panels[panelId];
 export const selectPanelVisibility = (state: RootState, panelId: EditorPanelId): boolean =>
-  selectEditorLayout(state).panelVisibility[panelId];
-export const selectWorkspaceLayout = (state: RootState): EditorLayoutMap | undefined =>
-  selectEditorLayout(state).workspaceLayout;
-export const selectEditorStageLayout = (state: RootState): EditorLayoutMap | undefined =>
-  selectEditorLayout(state).editorStageLayout;
+  selectEditorPanel(state, panelId).visible;
+export const selectPanelCollapsed = (state: RootState, panelId: EditorPanelId): boolean =>
+  selectEditorPanel(state, panelId).collapsed;
+export const selectPanelExpanded = (state: RootState, panelId: EditorPanelId): boolean => {
+  const panel = selectEditorPanel(state, panelId);
+  return panel.visible && !panel.collapsed;
+};
