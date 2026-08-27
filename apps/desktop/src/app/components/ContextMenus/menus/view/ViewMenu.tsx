@@ -18,7 +18,16 @@ import {
   resolvePrimaryColor,
 } from "@/app/theme/theme";
 import { useTheme } from "@/app/theme/use-theme";
-import { ContextMenu, type ContextMenuOption } from "@/components/ui/context-menu";
+import { Button } from "@/components/ui/button";
+import {
+  Menu,
+  MenuContent,
+  MenuItem,
+  MenuSub,
+  MenuSubContent,
+  MenuSubTrigger,
+  MenuTrigger,
+} from "@/components/ui/menu";
 
 import { ColorSample } from "./components/ColorSample";
 import { CustomColorPickerPanel } from "./components/CustomColorPickerPanel";
@@ -53,86 +62,104 @@ export function ViewMenu({ navigation }: ViewMenuProps) {
     navigation.onOpenChange(false);
   };
 
-  const themeOptions: ContextMenuOption[] = (["system", "light", "dark"] as const).map((value) => {
-    const Icon = themeIcons[value];
-    return {
-      id: `theme-${value}`,
-      children: t(`theme.${value}`),
-      icon: <Icon className="size-3" aria-hidden="true" />,
-      selected: value === preference,
-      shouldCloseOnClick: false,
-      onSelect: () => dispatch(themePreferenceChanged(value)),
-    };
-  });
-
-  const colorOptions: ContextMenuOption[] = [
-    ...PRIMARY_COLORS.map((color) => ({
-      id: `color-${color}`,
-      icon: <ColorSample color={color} selected={color === primaryColorKey} />,
-      children: t(`themeColor.${color}`),
-      suffix: <span className="font-mono">{resolvePrimaryColor(color).toUpperCase()}</span>,
-      selected: color === primaryColorKey,
-      shouldCloseOnClick: false,
-      onSelect: () => dispatch(primaryColorChanged(color)),
-    })),
-    {
-      id: "color-custom",
-      icon: (
-        <ColorSample
-          color={displayedCustomColor}
-          selected={primaryColorKey === CUSTOM_PRIMARY_COLOR}
-        />
-      ),
-      children: t("themeColor.custom"),
-      suffix: <span className="font-mono">{displayedCustomColor.toUpperCase()}</span>,
-      selected: primaryColorKey === CUSTOM_PRIMARY_COLOR,
-      shouldCloseOnClick: false,
-      onSelect: () => {
-        setPreviewColor(null);
-        dispatch(primaryColorChanged(customPrimaryColor));
-      },
-      options: [
-        {
-          id: "custom-color-picker",
-          render: () => (
-            <CustomColorPickerPanel
-              previewColor={previewColor}
-              onPreviewChange={setPreviewColor}
-              onClose={closeMenu}
-            />
-          ),
-        },
-      ],
-    },
-  ];
-
   return (
-    <ContextMenu
+    <Menu
+      modal={false}
       open={navigation.open}
       onOpenChange={(isOpen) => {
         if (!isOpen) clearPreview();
         navigation.onOpenChange(isOpen);
       }}
-      onTriggerPointerEnter={navigation.onTriggerPointerEnter}
-      onTriggerPointerLeave={navigation.onTriggerPointerLeave}
-      options={[
-        {
-          id: "theme",
-          children: t("app.topBarMenus.theme"),
-          icon: <CurrentThemeIcon className="size-3" aria-label={t(`theme.${preference}`)} />,
-          shouldCloseOnClick: false,
-          options: themeOptions,
-        },
-        {
-          id: "color",
-          children: t("app.topBarMenus.color"),
-          icon: <ColorSample color={displayedPrimaryColor} />,
-          shouldCloseOnClick: false,
-          options: colorOptions,
-        },
-      ]}
     >
-      {t("app.topBarMenus.view")}
-    </ContextMenu>
+      <MenuTrigger
+        asChild
+        onPointerEnter={navigation.onTriggerPointerEnter}
+        onPointerLeave={navigation.onTriggerPointerLeave}
+      >
+        <Button
+          type="button"
+          variant="ghost"
+          size="xs"
+          className="text-foreground/80 data-[state=open]:bg-accent data-[state=open]:text-foreground"
+        >
+          {t("app.topBarMenus.view")}
+        </Button>
+      </MenuTrigger>
+      <MenuContent>
+        <MenuSub>
+          <MenuSubTrigger
+            icon={<CurrentThemeIcon className="size-3" aria-label={t(`theme.${preference}`)} />}
+          >
+            {t("app.topBarMenus.theme")}
+          </MenuSubTrigger>
+          <MenuSubContent>
+            {(["system", "light", "dark"] as const).map((value) => {
+              const Icon = themeIcons[value];
+              return (
+                <MenuItem
+                  key={value}
+                  icon={<Icon className="size-3" aria-hidden="true" />}
+                  selected={value === preference}
+                  onSelect={(event) => {
+                    event.preventDefault();
+                    dispatch(themePreferenceChanged(value));
+                  }}
+                >
+                  {t(`theme.${value}`)}
+                </MenuItem>
+              );
+            })}
+          </MenuSubContent>
+        </MenuSub>
+        <MenuSub>
+          <MenuSubTrigger icon={<ColorSample color={displayedPrimaryColor} />}>
+            {t("app.topBarMenus.color")}
+          </MenuSubTrigger>
+          <MenuSubContent>
+            {PRIMARY_COLORS.map((color) => (
+              <MenuItem
+                key={color}
+                icon={<ColorSample color={color} selected={color === primaryColorKey} />}
+                selected={color === primaryColorKey}
+                suffix={
+                  <span className="font-mono">{resolvePrimaryColor(color).toUpperCase()}</span>
+                }
+                onSelect={(event) => {
+                  event.preventDefault();
+                  dispatch(primaryColorChanged(color));
+                }}
+              >
+                {t(`themeColor.${color}`)}
+              </MenuItem>
+            ))}
+            <MenuSub>
+              <MenuSubTrigger
+                icon={
+                  <ColorSample
+                    color={displayedCustomColor}
+                    selected={primaryColorKey === CUSTOM_PRIMARY_COLOR}
+                  />
+                }
+                selected={primaryColorKey === CUSTOM_PRIMARY_COLOR}
+                suffix={<span className="font-mono">{displayedCustomColor.toUpperCase()}</span>}
+                onClick={() => {
+                  setPreviewColor(null);
+                  dispatch(primaryColorChanged(customPrimaryColor));
+                }}
+              >
+                {t("themeColor.custom")}
+              </MenuSubTrigger>
+              <MenuSubContent>
+                <CustomColorPickerPanel
+                  previewColor={previewColor}
+                  onPreviewChange={setPreviewColor}
+                  onClose={closeMenu}
+                />
+              </MenuSubContent>
+            </MenuSub>
+          </MenuSubContent>
+        </MenuSub>
+      </MenuContent>
+    </Menu>
   );
 }

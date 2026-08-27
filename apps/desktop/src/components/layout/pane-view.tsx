@@ -24,7 +24,7 @@ import {
   type PanelId,
 } from "@/app/store/slices/panel-layout-slice";
 import { Button } from "@/components/ui/button";
-import { ContextMenu, type ContextMenuOption } from "@/components/ui/context-menu";
+import { Menu, MenuContent, MenuItem, MenuTrigger } from "@/components/ui/menu";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -459,28 +459,45 @@ function PaneVisibilityMenu({
       })
       .join(""),
   );
-  const options: ContextMenuOption[] = panels.map((panel, index) => {
-    const visible = visibilityKey[index] === "1";
-    return {
-      id: `toggle-${panel.id}`,
-      children: panel.label,
-      icon: visible ? (
-        <Eye className="size-3" aria-hidden="true" />
-      ) : (
-        <EyeOff className="size-3" aria-hidden="true" />
-      ),
-      disabled: panel.fixedVisible,
-      shouldCloseOnClick: false,
-      onSelect: panel.fixedVisible
-        ? undefined
-        : () => dispatch(panelVisibilityToggled(panel.panelId)),
-    };
-  });
 
   return (
-    <ContextMenu options={options} className={className} aria-label={ariaLabel}>
-      {children}
-    </ContextMenu>
+    <Menu modal={false}>
+      <MenuTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="xs"
+          className={className}
+          aria-label={ariaLabel}
+        >
+          {children}
+        </Button>
+      </MenuTrigger>
+      <MenuContent>
+        {panels.map((panel, index) => {
+          const visible = visibilityKey[index] === "1";
+          return (
+            <MenuItem
+              key={panel.id}
+              disabled={panel.fixedVisible}
+              icon={
+                visible ? (
+                  <Eye className="size-3" aria-hidden="true" />
+                ) : (
+                  <EyeOff className="size-3" aria-hidden="true" />
+                )
+              }
+              onSelect={(event) => {
+                event.preventDefault();
+                if (!panel.fixedVisible) dispatch(panelVisibilityToggled(panel.panelId));
+              }}
+            >
+              {panel.label}
+            </MenuItem>
+          );
+        })}
+      </MenuContent>
+    </Menu>
   );
 }
 

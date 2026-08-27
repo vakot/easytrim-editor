@@ -6,7 +6,7 @@ import {
   PanelLeftDashed,
   RotateCcw,
 } from "lucide-react";
-import { useRef, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useAppDispatch } from "@/app/store/hooks";
@@ -19,9 +19,8 @@ import {
 import { PanelControl, PanelControlToggle } from "@/components/layout/panel";
 import { usePanelControl } from "@/components/layout/use-panel-control";
 import { Button } from "@/components/ui/button";
-import { ContextMenu, type ContextMenuOption } from "@/components/ui/context-menu";
+import { Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from "@/components/ui/menu";
 import { Switch } from "@/components/ui/switch";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const DEFAULT_PANEL_RESETS = [
   {
@@ -38,59 +37,35 @@ const DEFAULT_PANEL_RESETS = [
   },
 ] as const satisfies readonly PanelResetRequest[];
 
-function usePanelVisibilityOption({
+function PanelVisibilityMenuItem({
   icon,
-  id,
   label,
   panelId,
 }: {
   icon: ReactNode;
-  id: string;
   label: string;
   panelId: PanelId;
-}): ContextMenuOption {
+}) {
   const { t } = useTranslation();
-  const switchInteractionRef = useRef(false);
-  const { active, setActive, toggle } = usePanelControl(panelId, "visibility");
-  const tooltip = active
-    ? t("app.panels.hidePanel", { panel: label })
-    : t("app.panels.showPanel", { panel: label });
+  const { active } = usePanelControl(panelId, "visibility");
 
-  return {
-    id,
-    children: label,
-    icon,
-    suffix: (
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span className="inline-flex">
-            <Switch
-              size="sm"
-              checked={active}
-              onCheckedChange={setActive}
-              onClick={(event) => event.stopPropagation()}
-              onKeyDown={() => {
-                switchInteractionRef.current = true;
-              }}
-              onPointerDown={(event) => {
-                switchInteractionRef.current = true;
-                event.stopPropagation();
-              }}
-            />
-          </span>
-        </TooltipTrigger>
-        <TooltipContent side="right">{tooltip}</TooltipContent>
-      </Tooltip>
-    ),
-    shouldCloseOnClick: false,
-    onSelect: () => {
-      if (switchInteractionRef.current) {
-        switchInteractionRef.current = false;
-        return;
-      }
-      toggle();
-    },
-  };
+  return (
+    <PanelControlToggle panelId={panelId}>
+      <MenuItem
+        icon={icon}
+        tooltip={
+          active
+            ? t("app.panels.hidePanel", { panel: label })
+            : t("app.panels.showPanel", { panel: label })
+        }
+        tooltipProps={{ side: "right" }}
+        suffix={<Switch size="sm" checked={active} />}
+        onSelect={(event) => event.preventDefault()}
+      >
+        {label}
+      </MenuItem>
+    </PanelControlToggle>
+  );
 }
 
 export function PanelVisibilityControls() {
@@ -99,39 +74,45 @@ export function PanelVisibilityControls() {
 
   const leftPanelLabel = t("app.panels.leftPanel");
   const bottomPanelLabel = t("app.panels.bottomPanel");
-  const leftPanelOption = usePanelVisibilityOption({
-    id: "layout-toggle-left-panel",
-    label: leftPanelLabel,
-    icon: <PanelLeft className="size-3" aria-hidden="true" />,
-    panelId: PANEL_IDS.sourceDetails,
-  });
-  const bottomPanelOption = usePanelVisibilityOption({
-    id: "layout-toggle-bottom-panel",
-    label: bottomPanelLabel,
-    icon: <PanelBottom className="size-3" aria-hidden="true" />,
-    panelId: PANEL_IDS.timeline,
-  });
-
-  const layoutOptions: ContextMenuOption[] = [
-    leftPanelOption,
-    bottomPanelOption,
-    { id: "layout-divider", separator: true },
-    {
-      id: "layout-reset",
-      children: t("app.panels.resetLayout"),
-      icon: <RotateCcw className="size-3" aria-hidden="true" />,
-      onSelect: () => dispatch(panelsResetToDefault(DEFAULT_PANEL_RESETS)),
-    },
-  ];
 
   return (
     <div className="flex items-center gap-0.5" role="group" aria-label={t("app.panels.group")}>
-      <ContextMenu options={layoutOptions} className="size-7 p-0">
-        <>
-          <LayoutPanelLeft className="size-4" aria-hidden="true" />
-          <span className="sr-only">{t("app.panels.layoutMenu")}</span>
-        </>
-      </ContextMenu>
+      <Menu modal={false}>
+        <MenuTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label={t("app.panels.layoutMenu")}
+          >
+            <LayoutPanelLeft className="size-4" aria-hidden="true" />
+          </Button>
+        </MenuTrigger>
+        <MenuContent>
+          <PanelControl>
+            <PanelVisibilityMenuItem
+              label={leftPanelLabel}
+              icon={<PanelLeft className="size-3" aria-hidden="true" />}
+              panelId={PANEL_IDS.sourceDetails}
+            />
+            <PanelVisibilityMenuItem
+              label={bottomPanelLabel}
+              icon={<PanelBottom className="size-3" aria-hidden="true" />}
+              panelId={PANEL_IDS.timeline}
+            />
+          </PanelControl>
+          <MenuSeparator />
+          <MenuItem
+            icon={<RotateCcw className="size-3" aria-hidden="true" />}
+            onSelect={(event) => {
+              event.preventDefault();
+              dispatch(panelsResetToDefault(DEFAULT_PANEL_RESETS));
+            }}
+          >
+            {t("app.panels.resetLayout")}
+          </MenuItem>
+        </MenuContent>
+      </Menu>
 
       <PanelControl
         panelId={PANEL_IDS.sourceDetails}

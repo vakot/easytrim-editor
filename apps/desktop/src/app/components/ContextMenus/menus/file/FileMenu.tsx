@@ -10,7 +10,8 @@ import {
   closeActiveImportedItemRequested,
 } from "@/app/store/thunks/source-media-thunks";
 import { openOptimizedExportDialog, startFastCutRequested } from "@/app/store/thunks/export-thunks";
-import { ContextMenu } from "@/components/ui/context-menu";
+import { Button } from "@/components/ui/button";
+import { Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from "@/components/ui/menu";
 
 import type { MenuNavigation } from "../../types";
 
@@ -24,41 +25,52 @@ export function FileMenu({ navigation }: { navigation: MenuNavigation }) {
   const canSave = canExport && !cropApplied;
 
   return (
-    <ContextMenu
-      {...navigation}
-      options={[
-        {
-          id: "open-file",
-          children: t("app.topBarMenus.openFile"),
-          suffix: "Ctrl+O",
-          disabled: isChoosingSource,
-          onSelect: () => void dispatch(chooseSourceRequested()),
-        },
-        {
-          id: "close-file",
-          children: t("app.topBarMenus.closeFile"),
-          suffix: "Ctrl+Q",
-          disabled: !hasSource,
-          onSelect: () => void dispatch(closeActiveImportedItemRequested()),
-        },
-        { id: "file-divider", separator: true },
-        {
-          id: "save-lossless-cut",
-          children: t("app.topBarMenus.saveLosslessCut"),
-          suffix: "Ctrl+S",
-          disabled: !canSave,
-          onSelect: () => void dispatch(startFastCutRequested()),
-        },
-        {
-          id: "optimize-export",
-          children: t("app.topBarMenus.optimizeExport"),
-          suffix: "Ctrl+E",
-          disabled: !canExport,
-          onSelect: () => void dispatch(openOptimizedExportDialog()),
-        },
-      ]}
-    >
-      {t("app.topBarMenus.file")}
-    </ContextMenu>
+    <Menu modal={false} open={navigation.open} onOpenChange={navigation.onOpenChange}>
+      <MenuTrigger
+        asChild
+        onPointerEnter={navigation.onTriggerPointerEnter}
+        onPointerLeave={navigation.onTriggerPointerLeave}
+      >
+        <Button
+          type="button"
+          variant="ghost"
+          size="xs"
+          className="text-foreground/80 data-[state=open]:bg-accent data-[state=open]:text-foreground"
+        >
+          {t("app.topBarMenus.file")}
+        </Button>
+      </MenuTrigger>
+      <MenuContent>
+        <MenuItem
+          disabled={isChoosingSource}
+          suffix="Ctrl+O"
+          onSelect={() => void dispatch(chooseSourceRequested())}
+        >
+          {t("app.topBarMenus.openFile")}
+        </MenuItem>
+        <MenuItem
+          disabled={!hasSource}
+          suffix="Ctrl+Q"
+          onSelect={() => void dispatch(closeActiveImportedItemRequested())}
+        >
+          {t("app.topBarMenus.closeFile")}
+        </MenuItem>
+        <MenuSeparator />
+        <MenuItem
+          disabled={!canSave}
+          suffix="Ctrl+S"
+          onSelect={() => void dispatch(startFastCutRequested())}
+        >
+          {t("app.topBarMenus.saveLosslessCut")}
+        </MenuItem>
+        <MenuItem
+          disabled={!canExport}
+          suffix="Ctrl+E"
+          onSelect={() => void dispatch(openOptimizedExportDialog())}
+        >
+          {t("app.topBarMenus.optimizeExport")}
+        </MenuItem>
+      </MenuContent>
+    </Menu>
   );
 }
