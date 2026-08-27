@@ -188,7 +188,7 @@ interface PanelControlProps {
   mode?: PanelControlMode;
   panelId?: PanelId;
   tooltip?: ReactNode;
-  tooltipSide?: ComponentProps<typeof TooltipContent>["side"];
+  tooltipProps?: ComponentProps<typeof TooltipContent>;
 }
 
 function PanelControl({
@@ -196,7 +196,7 @@ function PanelControl({
   mode = "visibility",
   panelId,
   tooltip,
-  tooltipSide,
+  tooltipProps,
 }: PanelControlProps) {
   const hasTooltip = tooltip !== undefined;
   const context = useMemo<PanelControlContextValue>(
@@ -206,7 +206,7 @@ function PanelControl({
   const content = hasTooltip ? (
     <Tooltip>
       {children}
-      <TooltipContent side={tooltipSide}>{tooltip}</TooltipContent>
+      <TooltipContent {...tooltipProps}>{tooltip}</TooltipContent>
     </Tooltip>
   ) : (
     children
