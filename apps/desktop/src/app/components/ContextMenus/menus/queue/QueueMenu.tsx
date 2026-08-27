@@ -16,7 +16,6 @@ import {
   startExportQueue,
 } from "@/app/store/thunks/export-thunks";
 import { Button } from "@/components/ui/button";
-import { ContextMenu, type ContextMenuOption } from "@/components/ui/context-menu";
 import {
   Dialog,
   DialogContent,
@@ -25,6 +24,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Menu,
+  MenuContent,
+  MenuItem,
+  MenuItemIcon,
+  MenuItemLabel,
+  MenuItemSuffix,
+  MenuSeparator,
+  MenuSub,
+  MenuSubContent,
+  MenuSubTrigger,
+  MenuTrigger,
+} from "@/components/ui/menu";
 import type { QueueFinishAction } from "@/lib/tauri/queue";
 
 import type { MenuNavigation } from "../../types";
@@ -53,53 +65,72 @@ export function QueueMenu({ navigation }: { navigation: MenuNavigation }) {
     nothing: <CircleStop className="size-3" aria-hidden="true" />,
   };
 
-  const queueFinishOptions: ContextMenuOption[] = availableQueueFinishActions.map((action) => ({
-    id: `queue-finish-${action}`,
-    children: queueFinishLabels[action],
-    icon: queueFinishIcons[action],
-    selected: action === queueFinishAction,
-    shouldCloseOnClick: false,
-    onSelect: () => dispatch(queueFinishActionChanged(action)),
-  }));
-
   return (
     <>
-      <ContextMenu
-        {...navigation}
-        options={[
-          {
-            id: "start-queue",
-            children: t("app.queue.start"),
-            ariaKeyShortcuts: "Enter",
-            suffix: "Enter",
-            disabled: !hasQueuedItems || queueStarted,
-            onSelect: () => void dispatch(startExportQueue()),
-          },
-          { id: "queue-start-divider", separator: true },
-          {
-            id: "cancel-active-queue-item",
-            children: t("app.queue.skip"),
-            disabled: !hasActiveItem,
-            onSelect: () => void dispatch(cancelActiveExportRequested()),
-          },
-          {
-            id: "cancel-queue",
-            children: t("app.queue.cancel"),
-            disabled: !hasQueuedItems && !hasActiveItem,
-            onSelect: () => setIsCancelQueueConfirmOpen(true),
-          },
-          { id: "queue-finish-divider", separator: true },
-          {
-            id: "queue-finish",
-            children: t("app.queue.onFinish"),
-            icon: queueFinishIcons[queueFinishAction],
-            shouldCloseOnClick: false,
-            options: queueFinishOptions,
-          },
-        ]}
-      >
-        {t("app.topBarMenus.queue")}
-      </ContextMenu>
+      <Menu modal={false} open={navigation.open} onOpenChange={navigation.onOpenChange}>
+        <MenuTrigger
+          asChild
+          onPointerEnter={navigation.onTriggerPointerEnter}
+          onPointerLeave={navigation.onTriggerPointerLeave}
+        >
+          <Button
+            type="button"
+            variant="ghost"
+            size="xs"
+            className="text-foreground/80 data-[state=open]:bg-accent data-[state=open]:text-foreground"
+          >
+            {t("app.topBarMenus.queue")}
+          </Button>
+        </MenuTrigger>
+        <MenuContent>
+          <MenuItem
+            aria-keyshortcuts="Enter"
+            disabled={!hasQueuedItems || queueStarted}
+            onSelect={() => void dispatch(startExportQueue())}
+          >
+            <MenuItemIcon />
+            <MenuItemLabel>{t("app.queue.start")}</MenuItemLabel>
+            <MenuItemSuffix>Enter</MenuItemSuffix>
+          </MenuItem>
+          <MenuSeparator />
+          <MenuItem
+            disabled={!hasActiveItem}
+            onSelect={() => void dispatch(cancelActiveExportRequested())}
+          >
+            <MenuItemIcon />
+            <MenuItemLabel>{t("app.queue.skip")}</MenuItemLabel>
+          </MenuItem>
+          <MenuItem
+            disabled={!hasQueuedItems && !hasActiveItem}
+            onSelect={() => setIsCancelQueueConfirmOpen(true)}
+          >
+            <MenuItemIcon />
+            <MenuItemLabel>{t("app.queue.cancel")}</MenuItemLabel>
+          </MenuItem>
+          <MenuSeparator />
+          <MenuSub>
+            <MenuSubTrigger>
+              <MenuItemIcon>{queueFinishIcons[queueFinishAction]}</MenuItemIcon>
+              <MenuItemLabel>{t("app.queue.onFinish")}</MenuItemLabel>
+            </MenuSubTrigger>
+            <MenuSubContent>
+              {availableQueueFinishActions.map((action) => (
+                <MenuItem
+                  key={action}
+                  selected={action === queueFinishAction}
+                  onSelect={(event) => {
+                    event.preventDefault();
+                    dispatch(queueFinishActionChanged(action));
+                  }}
+                >
+                  <MenuItemIcon>{queueFinishIcons[action]}</MenuItemIcon>
+                  <MenuItemLabel>{queueFinishLabels[action]}</MenuItemLabel>
+                </MenuItem>
+              ))}
+            </MenuSubContent>
+          </MenuSub>
+        </MenuContent>
+      </Menu>
       <Dialog open={isCancelQueueConfirmOpen} onOpenChange={setIsCancelQueueConfirmOpen}>
         <DialogContent>
           <DialogHeader>

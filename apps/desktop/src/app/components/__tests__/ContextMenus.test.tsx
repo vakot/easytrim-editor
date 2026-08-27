@@ -516,7 +516,7 @@ describe("ContextMenus", () => {
     );
 
     const fileButton = screen.getByRole("button", { name: "File" });
-    expect(fileButton).toHaveAttribute("data-slot", "button");
+    expect(fileButton).toHaveAttribute("data-slot", "menu-trigger");
     expect(fileButton).toHaveAttribute("data-size", "xs");
     expect(fileButton).toHaveClass("h-6");
 
