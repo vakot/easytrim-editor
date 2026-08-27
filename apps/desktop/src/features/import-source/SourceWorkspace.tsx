@@ -20,7 +20,7 @@ import { SourceSidebar } from "./components/SourceSidebar";
 export { CapabilityStatus } from "./components/CapabilityStatus";
 
 const WORKSPACE_PANELS = [
-  { id: "source-details-panel", panelId: PANEL_IDS.sourceDetails },
+  { id: PANEL_IDS.sourceDetails, panelId: PANEL_IDS.sourceDetails },
   { id: "editor-content-panel" },
 ] as const satisfies readonly PanelRegistration[];
 
@@ -39,9 +39,8 @@ export function SourceWorkspace() {
       aria-label={t("import.source.workspace")}
     >
       <Panel
-        panelId={PANEL_IDS.sourceDetails}
+        id={PANEL_IDS.sourceDetails}
         resetSize="20rem"
-        id="source-details-panel"
         collapsible
         collapsedSize={0}
         defaultSize="20rem"

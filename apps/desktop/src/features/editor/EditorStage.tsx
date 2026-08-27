@@ -51,7 +51,7 @@ const EMPTY_TIMELINE_RANGE = {
 
 const STAGE_PANELS = [
   { id: "preview-panel" },
-  { id: "timeline-panel", panelId: PANEL_IDS.timeline },
+  { id: PANEL_IDS.timeline, panelId: PANEL_IDS.timeline },
 ] as const satisfies readonly PanelRegistration[];
 
 export function EditorStage() {
@@ -117,10 +117,9 @@ export function EditorStage() {
       />
 
       <Panel
-        panelId={PANEL_IDS.timeline}
+        id={PANEL_IDS.timeline}
         panelRef={timelinePanelSizing.panelRef}
         resetSize={timelinePanelSizing.constraints.defaultSize}
-        id="timeline-panel"
         defaultSize={timelinePanelSizing.initialDefaultSize}
         collapsible
         collapsedSize={timelinePanelSizing.collapsedSize}

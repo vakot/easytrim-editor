@@ -616,7 +616,7 @@ describe("App", () => {
     expect(playbackSpeedButton).toHaveAttribute("aria-pressed", "false");
     expect(playbackSpeedButton).not.toHaveClass("text-primary");
     expect(within(videoTimelineRow as HTMLElement).queryByText("Video")).not.toBeInTheDocument();
-    const sourceDetailsPanel = screen.getByTestId("source-details-panel");
+    const sourceDetailsPanel = screen.getByTestId(PANEL_IDS.sourceDetails);
     for (const sectionName of ["Media details", "Imported queue", "Export queue"]) {
       const trigger = within(sourceDetailsPanel).getByRole("button", { name: sectionName });
       const content = within(sourceDetailsPanel).getByRole("region", { name: sectionName });
@@ -627,7 +627,7 @@ describe("App", () => {
     expect(screen.getByTestId("preview-panel")).toContainElement(
       screen.getByLabelText("Source video preview"),
     );
-    expect(screen.getByTestId("timeline-panel")).toContainElement(
+    expect(screen.getByTestId(PANEL_IDS.timeline)).toContainElement(
       screen.getByRole("heading", { name: "Selected Segment" }),
     );
     const sourceResizeHandle = screen.getByRole("separator", { name: "Resize source details" });
@@ -643,8 +643,8 @@ describe("App", () => {
     expect(screen.getAllByRole("separator")).toHaveLength(4);
     const fixedTimeline = screen.getByTestId("timeline-fixed-content");
     const audioTracksScroll = screen.getByTestId("audio-tracks-scroll");
-    expect(screen.getByTestId("timeline-panel")).toContainElement(fixedTimeline);
-    expect(screen.getByTestId("timeline-panel")).toContainElement(audioTracksScroll);
+    expect(screen.getByTestId(PANEL_IDS.timeline)).toContainElement(fixedTimeline);
+    expect(screen.getByTestId(PANEL_IDS.timeline)).toContainElement(audioTracksScroll);
     expect(fixedTimeline).toContainElement(
       screen.getByRole("heading", { name: "Selected Segment" }),
     );

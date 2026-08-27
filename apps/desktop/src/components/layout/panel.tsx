@@ -31,9 +31,12 @@ import { cn } from "@/lib/utils";
 
 type PanelRef = ReturnType<typeof usePanelRef>;
 
-interface PanelProps extends Omit<ComponentProps<typeof ResizablePanel>, "children" | "panelRef"> {
+interface PanelProps extends Omit<
+  ComponentProps<typeof ResizablePanel>,
+  "children" | "id" | "panelRef"
+> {
   children?: ReactNode | ((panel: PanelState) => ReactNode);
-  panelId: PanelId;
+  id: PanelId;
   panelRef?: PanelRef;
   resetSize?: number | string;
 }
@@ -41,8 +44,8 @@ interface PanelProps extends Omit<ComponentProps<typeof ResizablePanel>, "childr
 function Panel({
   children,
   collapsible,
+  id,
   onResize,
-  panelId,
   panelRef: panelRefProp,
   resetSize,
   ...props
@@ -50,7 +53,7 @@ function Panel({
   const dispatch = useAppDispatch();
   const internalPanelRef = usePanelRef();
   const panelRef = panelRefProp ?? internalPanelRef;
-  const panel = useAppSelector((state) => selectPanel(state, panelId));
+  const panel = useAppSelector((state) => selectPanel(state, id));
   const sizeResetDepth = useRef(0);
   const resetToDefault = useCallback(() => {
     const imperativePanel = panelRef.current;
@@ -72,8 +75,8 @@ function Panel({
 
   useEffect(() => {
     if (resetSize === undefined) return;
-    return registerPanelSizeReset({ panelIds: [panelId], reset: resetToDefault });
-  }, [panelId, resetSize, resetToDefault]);
+    return registerPanelSizeReset({ panelIds: [id], reset: resetToDefault });
+  }, [id, resetSize, resetToDefault]);
 
   useEffect(() => {
     if (!collapsible || !panel.visible) return;
@@ -101,14 +104,15 @@ function Panel({
     <ResizablePanel
       {...props}
       collapsible={collapsible}
+      id={id}
       panelRef={panelRef}
-      onResize={(size, id, previousSize) => {
-        onResize?.(size, id, previousSize);
+      onResize={(size, resizablePanelId, previousSize) => {
+        onResize?.(size, resizablePanelId, previousSize);
         if (!collapsible || sizeResetDepth.current > 0) return;
 
         const collapsed = panelRef.current?.isCollapsed() ?? size.inPixels <= 0;
         if (collapsed !== panel.collapsed) {
-          dispatch(panelCollapsedChanged({ panelId, collapsed }));
+          dispatch(panelCollapsedChanged({ panelId: id, collapsed }));
         }
       }}
     >
