@@ -29,7 +29,6 @@ import {
   MenuTrigger,
 } from "@/components/ui/menu";
 import { Switch } from "@/components/ui/switch";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { isSupportedLanguage, type SupportedLanguage } from "@/i18n/resources";
 
 import type { MenuNavigation } from "../../types";
@@ -52,37 +51,30 @@ export function SettingsMenu({ navigation }: { navigation: MenuNavigation }) {
   const settingsPreferenceItem = (children: ReactNode, icon: ReactNode, key: PreferenceKey) => (
     <MenuItem
       icon={icon}
+      tooltip={t(
+        key === "autoStartQueueEnabled"
+          ? preferences[key]
+            ? "app.settings.enabled"
+            : "app.settings.disabled"
+          : preferences[key]
+            ? "app.settings.enabledByDefault"
+            : "app.settings.disabledByDefault",
+      )}
+      tooltipProps={{ side: "right" }}
       suffix={
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="inline-flex">
-              <Switch
-                size="sm"
-                checked={preferences[key]}
-                onCheckedChange={(enabled) => updatePreference(key, enabled)}
-                onClick={(event) => event.stopPropagation()}
-                onKeyDown={() => {
-                  switchInteractionRef.current = true;
-                }}
-                onPointerDown={(event) => {
-                  switchInteractionRef.current = true;
-                  event.stopPropagation();
-                }}
-              />
-            </span>
-          </TooltipTrigger>
-          <TooltipContent side="right">
-            {t(
-              key === "autoStartQueueEnabled"
-                ? preferences[key]
-                  ? "app.settings.enabled"
-                  : "app.settings.disabled"
-                : preferences[key]
-                  ? "app.settings.enabledByDefault"
-                  : "app.settings.disabledByDefault",
-            )}
-          </TooltipContent>
-        </Tooltip>
+        <Switch
+          size="sm"
+          checked={preferences[key]}
+          onCheckedChange={(enabled) => updatePreference(key, enabled)}
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={() => {
+            switchInteractionRef.current = true;
+          }}
+          onPointerDown={(event) => {
+            switchInteractionRef.current = true;
+            event.stopPropagation();
+          }}
+        />
       }
       onSelect={(event) => {
         event.preventDefault();

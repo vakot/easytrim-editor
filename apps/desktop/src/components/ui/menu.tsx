@@ -4,6 +4,7 @@ import { ChevronRight } from "lucide-react";
 import * as React from "react";
 import { DropdownMenu as MenuPrimitive } from "radix-ui";
 
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 type MenuInteraction = "keyboard" | "pointer" | null;
@@ -110,6 +111,8 @@ interface MenuItemProps extends React.ComponentProps<typeof MenuPrimitive.Item> 
   icon?: React.ReactNode;
   selected?: boolean;
   suffix?: React.ReactNode;
+  tooltip?: React.ReactNode;
+  tooltipProps?: React.ComponentProps<typeof TooltipContent>;
 }
 
 const menuItemClassName =
@@ -124,11 +127,12 @@ function MenuItem({
   onPointerMove,
   selected = false,
   suffix,
+  tooltip,
+  tooltipProps,
   ...props
 }: MenuItemProps) {
   const submenuCoordinator = React.useContext(MenuSubmenuCoordinatorContext);
-
-  return (
+  const item = (
     <MenuPrimitive.Item
       data-slot="menu-item"
       data-selected={selected}
@@ -145,6 +149,15 @@ function MenuItem({
         {children}
       </MenuItemLayout>
     </MenuPrimitive.Item>
+  );
+
+  if (tooltip === undefined) return item;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{item}</TooltipTrigger>
+      <TooltipContent {...tooltipProps}>{tooltip}</TooltipContent>
+    </Tooltip>
   );
 }
 

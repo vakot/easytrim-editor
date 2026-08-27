@@ -436,10 +436,7 @@ describe("ContextMenus", () => {
 
     await user.click(screen.getByRole("button", { name: "Settings" }));
     const loopRow = screen.getByRole("menuitem", { name: "Loop" });
-    const loopSwitch = within(loopRow).getByRole("switch");
-    const loopTrigger = loopSwitch.parentElement;
-    expect(loopTrigger).not.toBeNull();
-    await user.hover(loopTrigger!);
+    await user.hover(loopRow);
     await waitFor(() => {
       expect(screen.getByRole("tooltip")).toHaveTextContent("Enabled by default");
     });
@@ -468,12 +465,8 @@ describe("ContextMenus", () => {
     );
 
     await user.click(screen.getByRole("button", { name: "Settings" }));
-    const mergeSwitch = within(screen.getByRole("menuitem", { name: "Merge audio" })).getByRole(
-      "switch",
-    );
-    const mergeTrigger = mergeSwitch.parentElement;
-    expect(mergeTrigger).not.toBeNull();
-    await user.hover(mergeTrigger!);
+    const mergeRow = screen.getByRole("menuitem", { name: "Merge audio" });
+    await user.hover(mergeRow);
     await waitFor(() => {
       expect(screen.getByRole("tooltip")).toHaveTextContent("Disabled by default");
     });

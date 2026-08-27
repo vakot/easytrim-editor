@@ -21,7 +21,6 @@ import { usePanelControl } from "@/components/layout/use-panel-control";
 import { Button } from "@/components/ui/button";
 import { Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from "@/components/ui/menu";
 import { Switch } from "@/components/ui/switch";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const DEFAULT_PANEL_RESETS = [
   {
@@ -57,27 +56,22 @@ function PanelVisibilityMenuItem({
   return (
     <MenuItem
       icon={icon}
+      tooltip={tooltip}
+      tooltipProps={{ side: "right" }}
       suffix={
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="inline-flex">
-              <Switch
-                size="sm"
-                checked={active}
-                onCheckedChange={setActive}
-                onClick={(event) => event.stopPropagation()}
-                onKeyDown={() => {
-                  switchInteractionRef.current = true;
-                }}
-                onPointerDown={(event) => {
-                  switchInteractionRef.current = true;
-                  event.stopPropagation();
-                }}
-              />
-            </span>
-          </TooltipTrigger>
-          <TooltipContent side="right">{tooltip}</TooltipContent>
-        </Tooltip>
+        <Switch
+          size="sm"
+          checked={active}
+          onCheckedChange={setActive}
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={() => {
+            switchInteractionRef.current = true;
+          }}
+          onPointerDown={(event) => {
+            switchInteractionRef.current = true;
+            event.stopPropagation();
+          }}
+        />
       }
       onSelect={(event) => {
         event.preventDefault();
