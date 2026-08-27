@@ -12,12 +12,6 @@ import {
   SquareArrowRight,
 } from "lucide-react";
 
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Separator } from "@/components/ui/separator";
-import { Slider } from "@/components/ui/slider";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import {
   createEditorToolsStateFromPreferences,
@@ -27,11 +21,17 @@ import {
   segmentPlaybackToggled,
   selectLoopPlaybackEnabled,
   selectPlaybackSpeed,
-  selectSnapPlaybackEnabled,
   selectSegmentPlaybackEnabled,
+  selectSnapPlaybackEnabled,
   snapPlaybackToggled,
 } from "@/app/store/slices/editor-tools-slice";
 import { selectPreferences } from "@/app/store/slices/preferences-slice";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Separator } from "@/components/ui/separator";
+import { Slider } from "@/components/ui/slider";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatPlaybackTime } from "@/domain/playback";
 import {
   DEFAULT_PLAYBACK_SPEED,
@@ -352,7 +352,7 @@ function TimelineToolButton({
   children: React.ReactNode;
 }) {
   return (
-    <Tooltip>
+    <Tooltip closeOnTriggerClick={false}>
       <TooltipTrigger asChild>
         <Button
           variant="secondary"

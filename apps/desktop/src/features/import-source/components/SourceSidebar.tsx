@@ -49,17 +49,15 @@ export function SourceSidebar() {
       <div className="flex h-7 shrink-0 items-center justify-between gap-1 px-2 text-xs font-medium">
         <span>{t("import.source.sidebar")}</span>
         <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="inline-flex">
-              <PaneVisibilityMenu
-                panels={visibilityPanels}
-                className="size-6 p-0"
-                aria-label={t("import.source.sidebarControls")}
-              >
-                <Ellipsis className="size-4" aria-hidden="true" />
-              </PaneVisibilityMenu>
-            </span>
-          </TooltipTrigger>
+          <PaneVisibilityMenu
+            panels={visibilityPanels}
+            className="size-6 p-0"
+            aria-label={t("import.source.sidebarControls")}
+          >
+            <TooltipTrigger>
+              <Ellipsis className="size-4" aria-hidden="true" />
+            </TooltipTrigger>
+          </PaneVisibilityMenu>
           <TooltipContent side="bottom">{t("import.source.sidebarControls")}</TooltipContent>
         </Tooltip>
       </div>

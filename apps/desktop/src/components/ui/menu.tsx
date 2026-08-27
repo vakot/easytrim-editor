@@ -1,8 +1,8 @@
 "use client";
 
 import { ChevronRight } from "lucide-react";
-import * as React from "react";
 import { DropdownMenu as MenuPrimitive } from "radix-ui";
+import * as React from "react";
 
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -112,7 +112,7 @@ interface MenuItemProps extends React.ComponentProps<typeof MenuPrimitive.Item> 
   selected?: boolean;
   suffix?: React.ReactNode;
   tooltip?: React.ReactNode;
-  tooltipProps?: React.ComponentProps<typeof TooltipContent>;
+  tooltipProps?: React.ComponentProps<typeof TooltipContent> & { closeOnTriggerClick?: boolean };
 }
 
 const menuItemClassName =
@@ -128,7 +128,7 @@ function MenuItem({
   selected = false,
   suffix,
   tooltip,
-  tooltipProps,
+  tooltipProps: { closeOnTriggerClick, ...tooltipProps } = {},
   ...props
 }: MenuItemProps) {
   const submenuCoordinator = React.useContext(MenuSubmenuCoordinatorContext);
@@ -154,7 +154,7 @@ function MenuItem({
   if (tooltip === undefined) return item;
 
   return (
-    <Tooltip>
+    <Tooltip closeOnTriggerClick={closeOnTriggerClick}>
       <TooltipTrigger asChild>{item}</TooltipTrigger>
       <TooltipContent {...tooltipProps}>{tooltip}</TooltipContent>
     </Tooltip>
