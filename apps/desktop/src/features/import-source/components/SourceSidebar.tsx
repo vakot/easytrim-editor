@@ -128,7 +128,7 @@ export function SourceSidebar() {
               </ContextMenu>
             </span>
           </TooltipTrigger>
-          <TooltipContent>{t("import.source.sidebarControls")}</TooltipContent>
+          <TooltipContent side="bottom">{t("import.source.sidebarControls")}</TooltipContent>
         </Tooltip>
       </div>
       <PaneView
@@ -149,7 +149,13 @@ export function SourceSidebar() {
         className="flex-1"
       >
         <PaneViewItem id="media" defaultSize="33%" minSize={120} headerSize={24}>
-          <PaneViewTrigger size="xs">{t(PANEL_OPTIONS[0].labelKey)}</PaneViewTrigger>
+          {importedQueuePanel.visible || exportQueuePanel.visible ? (
+            <PaneViewTrigger size="xs">{t(PANEL_OPTIONS[0].labelKey)}</PaneViewTrigger>
+          ) : (
+            <span className="inline-flex shrink-0 items-center h-6 text-xs text-foreground/80 font-medium whitespace-nowrap mx-2">
+              {t(PANEL_OPTIONS[0].labelKey)}
+            </span>
+          )}
           <PaneViewContent>
             <PlaceholderRows label={t(PANEL_OPTIONS[0].labelKey)} />
           </PaneViewContent>
