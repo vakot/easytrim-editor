@@ -1,22 +1,22 @@
 import { useEffect, useRef } from "react";
 import { Group, Panel, usePanelRef } from "react-resizable-panels";
 
-import { PanelSeparator } from "@/components/PanelSeparator";
-import { EditorStage } from "@/features/editor";
-import { DropOverlay } from "./components/DropOverlay";
-import { SourceSidebar } from "./components/SourceSidebar";
-import { useTranslation } from "react-i18next";
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import {
+  panelVisibilityChanged,
   selectPanelVisibility,
   selectWorkspaceLayout,
-  panelVisibilityChanged,
   workspaceLayoutChanged,
 } from "@/app/store/slices/editor-layout-slice";
-import { selectSourceSelection } from "@/app/store/slices/source-slice";
 import { selectActiveItemId } from "@/app/store/slices/export-slice";
 import { selectIsSourceDragActive } from "@/app/store/slices/import-workflow-slice";
-import { PanelContent } from "@/components/PanelContent";
+import { selectSourceSelection } from "@/app/store/slices/source-slice";
+import { PanelContent } from "@/components/layout/panel-content";
+import { PanelSeparator } from "@/components/layout/panel-separator";
+import { EditorStage } from "@/features/editor";
+import { useTranslation } from "react-i18next";
+import { DropOverlay } from "./components/DropOverlay";
+import { SourceSidebar } from "./components/SourceSidebar";
 
 export { CapabilityStatus } from "./components/CapabilityStatus";
 

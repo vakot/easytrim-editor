@@ -1,63 +1,53 @@
-import { useAppSelector } from "@/app/store/hooks";
 import {
-  selectSourceError,
-  selectSourceMedia,
-  selectSourceSelection,
-  selectSourceStatus,
-} from "@/app/store/slices/source-slice";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { ExportQueue } from "@/features/export";
-import { MediaDetails } from "./MediaDetails";
-import { SourceError } from "./SourceError";
-import { useTranslation } from "react-i18next";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { ImportedQueue } from "./ImportedQueue";
+  PaneView,
+  PaneViewContent,
+  PaneViewItem,
+  PaneViewTrigger,
+} from "@/components/layout/pane-view";
+
+const PLACEHOLDER_ROWS = Array.from({ length: 20 }, (_, index) => index + 1);
 
 export function SourceSidebar() {
-  const { t } = useTranslation();
-  const sourceSelection = useAppSelector(selectSourceSelection);
-  const media = useAppSelector(selectSourceMedia);
-  const status = useAppSelector(selectSourceStatus);
-  const lastError = useAppSelector(selectSourceError);
-
-  const sourceName = sourceSelection?.displayName ?? t("import.source.noSource");
-
   return (
-    <aside
-      className="grid h-full min-h-0 grid-rows-[auto_auto_minmax(0,1fr)]"
-      aria-labelledby="source-title"
-    >
-      <div className="grid content-start gap-5 p-5" data-slot="source-details">
-        <div className="min-w-0">
-          <p className="mb-1 text-xs font-bold tracking-[0.14em] text-primary uppercase">
-            {t("import.source.details")}
-          </p>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <h1 id="source-title" className="truncate text-base font-black">
-                {sourceName}
-              </h1>
-            </TooltipTrigger>
-            <TooltipContent>{sourceName}</TooltipContent>
-          </Tooltip>
-          {status === "loading-source" ? (
-            <span className="text-xs text-muted-foreground" role="status">
-              {t("import.source.inspecting")}
-            </span>
-          ) : null}
-        </div>
+    <aside className="h-full min-h-0 overflow-hidden p-1" aria-label="Source sidebar">
+      <PaneView
+        id="source-sidebar-sections"
+        aria-label="Source sidebar sections"
+        defaultValue={["media", "imported", "export"]}
+      >
+        <PaneViewItem id="media" defaultSize="33%" minSize={120}>
+          <PaneViewTrigger>Media details</PaneViewTrigger>
+          <PaneViewContent>
+            <PlaceholderRows label="Media details" />
+          </PaneViewContent>
+        </PaneViewItem>
 
-        {lastError ? <SourceError error={lastError} /> : null}
-        <MediaDetails media={media} />
-        <ImportedQueue />
-      </div>
-      <Separator className="mx-4" />
-      <ScrollArea className="min-h-0" data-slot="export-queue-scroll">
-        <div className="p-5">
-          <ExportQueue />
-        </div>
-      </ScrollArea>
+        <PaneViewItem id="imported" defaultSize="33%" minSize={120}>
+          <PaneViewTrigger>Imported queue</PaneViewTrigger>
+          <PaneViewContent>
+            <PlaceholderRows label="Imported queue" />
+          </PaneViewContent>
+        </PaneViewItem>
+
+        <PaneViewItem id="export" defaultSize="33%" minSize={120}>
+          <PaneViewTrigger>Export queue</PaneViewTrigger>
+          <PaneViewContent>
+            <PlaceholderRows label="Export queue" />
+          </PaneViewContent>
+        </PaneViewItem>
+      </PaneView>
     </aside>
+  );
+}
+
+function PlaceholderRows({ label }: { label: string }) {
+  return (
+    <div className="space-y-1 p-2 text-xs text-muted-foreground">
+      {PLACEHOLDER_ROWS.map((row) => (
+        <p key={row}>
+          {label} placeholder {row}
+        </p>
+      ))}
+    </div>
   );
 }

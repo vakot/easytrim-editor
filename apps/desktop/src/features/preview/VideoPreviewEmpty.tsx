@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 
-import { BrandIcon } from "@/components/BrandIcon";
+import { BrandIcon } from "@/components/brand-icon";
 import { kofiBrandIcon } from "@/components/brand-icons";
 import { openExternalUrl } from "@/lib/open-external-url";
 import styles from "./VideoPreviewEmpty.module.css";

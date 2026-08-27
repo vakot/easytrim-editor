@@ -1,16 +1,10 @@
-import { useEffect, useRef } from "react";
-import { Group, Panel } from "react-resizable-panels";
-import { useTranslation } from "react-i18next";
 import { LoaderCircle } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
+import { Group, Panel } from "react-resizable-panels";
 
-import { PanelSeparator } from "@/components/PanelSeparator";
+import { usePlayback, useTimeline } from "@/app/hooks/useEditorContracts";
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
-import {
-  editorStageLayoutChanged,
-  panelVisibilityChanged,
-  selectEditorStageLayout,
-  selectPanelVisibility,
-} from "@/app/store/slices/editor-layout-slice";
 import {
   audioMergeToggled,
   audioTrackToggled,
@@ -22,6 +16,12 @@ import {
   selectMergeAudio,
   waveformDisplayFailed,
 } from "@/app/store/slices/audio-slice";
+import {
+  editorStageLayoutChanged,
+  panelVisibilityChanged,
+  selectEditorStageLayout,
+  selectPanelVisibility,
+} from "@/app/store/slices/editor-layout-slice";
 import { selectPreview } from "@/app/store/slices/preview-slice";
 import {
   selectSourceMedia,
@@ -30,7 +30,8 @@ import {
 } from "@/app/store/slices/source-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
 import { prepareSourceWaveforms } from "@/app/store/thunks/source-media-thunks";
-import { usePlayback, useTimeline } from "@/app/hooks/useEditorContracts";
+import { PanelContent } from "@/components/layout/panel-content";
+import { PanelSeparator } from "@/components/layout/panel-separator";
 import { AudioTracks } from "@/features/audio-tracks";
 import {
   PlaybackControls,
@@ -41,7 +42,6 @@ import { VideoPreview } from "@/features/preview/VideoPreview";
 import { TrimTimeline } from "@/features/timeline";
 import { TimelinePane } from "./components/TimelinePane";
 import { useTimelinePanelSizing } from "./hooks/useTimelinePanelSizing";
-import { PanelContent } from "@/components/PanelContent";
 
 const EMPTY_TIMELINE_RANGE = {
   startMicros: 0,

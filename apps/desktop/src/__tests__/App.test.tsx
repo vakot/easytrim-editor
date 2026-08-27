@@ -106,6 +106,10 @@ async function openSourcePicker(user: ReturnType<typeof userEvent.setup>) {
   (document.activeElement as HTMLElement | null)?.blur();
 }
 
+async function waitForSourcePresence(expected: boolean) {
+  await waitFor(() => expect(selectHasSource(store.getState())).toBe(expected));
+}
+
 function installAudioMocks(initiallyReady = true) {
   const audioElements: HTMLAudioElement[] = [];
   const audioConstructor = vi.fn(function AudioMock() {
@@ -250,8 +254,18 @@ describe("App", () => {
 
     expect(screen.queryByText("Start a new clip")).not.toBeInTheDocument();
     expect(screen.getByLabelText("Video editor workspace")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "No source" })).toBeInTheDocument();
-    expect(screen.getAllByText("No source").length).toBeGreaterThan(1);
+    expect(screen.getByRole("button", { name: "Media details" })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+    expect(screen.getByRole("button", { name: "Imported queue" })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+    expect(screen.getByRole("button", { name: "Export queue" })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
     expect(screen.getByRole("list", { name: "Keyboard shortcuts" })).toHaveTextContent("Open File");
     expect(screen.getByRole("list", { name: "Keyboard shortcuts" })).toHaveTextContent(
       "Save Lossless Cut",
@@ -445,7 +459,7 @@ describe("App", () => {
     render(<App />);
 
     await openSourcePicker(user);
-    expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
+    await waitForSourcePresence(true);
 
     screen.getByRole("button", { name: "File" }).focus();
     await user.keyboard("{Enter}");
@@ -454,8 +468,7 @@ describe("App", () => {
 
     fireEvent.keyDown(window, { key: "й", code: "KeyQ", ctrlKey: true });
 
-    expect(await screen.findByRole("heading", { name: "No source" })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "holiday.mp4" })).not.toBeInTheDocument();
+    await waitForSourcePresence(false);
     screen.getByRole("button", { name: "File" }).focus();
     await user.keyboard("{Enter}");
     expect(screen.getByRole("menuitem", { name: /Close File/ })).toHaveAttribute(
@@ -464,20 +477,27 @@ describe("App", () => {
     );
   });
 
-  it("imports a selected video and renders source metadata", async () => {
+  it("imports a selected video and renders the editor with sidebar placeholders", async () => {
     mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
     render(<App />);
 
     await openSourcePicker(user);
 
-    expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
-    expect(await screen.findByText("3840 × 2160")).toBeInTheDocument();
-    expect(screen.getByText("59.94 fps")).toBeInTheDocument();
-    const audioStreamMetadata = screen.getAllByText("Audio tracks")[0]!;
-    expect(audioStreamMetadata.nextElementSibling).toHaveTextContent("1");
-    expect(screen.getByRole("heading", { name: "Export queue" })).toBeInTheDocument();
-    expect(screen.getByText("No exports yet.")).toBeInTheDocument();
+    await waitForSourcePresence(true);
+    expect(screen.getByRole("button", { name: "Media details" })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+    expect(screen.getByRole("button", { name: "Imported queue" })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+    expect(screen.getByRole("button", { name: "Export queue" })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+    expect(screen.getByText("Media details placeholder 20")).toBeInTheDocument();
     expect(screen.getByLabelText("Source video preview")).toHaveAttribute(
       "src",
       "http://easytrim-media.localhost/source-1?variant=source",
@@ -584,32 +604,14 @@ describe("App", () => {
     expect(playbackSpeedButton).toHaveAttribute("aria-pressed", "false");
     expect(playbackSpeedButton).not.toHaveClass("text-primary");
     expect(within(videoTimelineRow as HTMLElement).queryByText("Video")).not.toBeInTheDocument();
-    expect(screen.getByTestId("source-details-panel")).toContainElement(
-      screen.getByRole("heading", { name: "holiday.mp4" }),
-    );
-    const sourceDetails = screen
-      .getByTestId("source-details-panel")
-      .querySelector<HTMLElement>('[data-slot="source-details"]');
-    const exportQueueScroll = screen
-      .getByTestId("source-details-panel")
-      .querySelector<HTMLElement>('[data-slot="export-queue-scroll"]');
-    expect(sourceDetails).toContainElement(screen.getByRole("heading", { name: "holiday.mp4" }));
-    expect(sourceDetails).not.toHaveTextContent("Video stream");
-    expect(sourceDetails).not.toHaveTextContent("Audio tracks");
-    expect(sourceDetails).not.toContainElement(
-      screen.getByRole("heading", { name: "Export queue" }),
-    );
-    expect(exportQueueScroll).toContainElement(
-      screen.getByRole("heading", { name: "Export queue" }),
-    );
-    const sidebarDivider =
-      (Array.from(sourceDetails?.parentElement?.children ?? []).find(
-        (child) => child.getAttribute("data-slot") === "separator",
-      ) as HTMLElement | undefined) ?? null;
-    expect(sidebarDivider).not.toBeNull();
-    expect(sidebarDivider?.parentElement).toBe(sourceDetails?.parentElement);
-    expect(sourceDetails).not.toContainElement(sidebarDivider);
-    expect(exportQueueScroll).not.toContainElement(sidebarDivider);
+    const sourceDetailsPanel = screen.getByTestId("source-details-panel");
+    for (const sectionName of ["Media details", "Imported queue", "Export queue"]) {
+      const trigger = within(sourceDetailsPanel).getByRole("button", { name: sectionName });
+      const content = within(sourceDetailsPanel).getByRole("region", { name: sectionName });
+      expect(trigger).toHaveAttribute("aria-expanded", "true");
+      expect(content.querySelector('[data-slot="scroll-area-viewport"]')).not.toBeNull();
+    }
+    expect(within(sourceDetailsPanel).getAllByRole("separator")).toHaveLength(2);
     expect(screen.getByTestId("preview-panel")).toContainElement(
       screen.getByLabelText("Source video preview"),
     );
@@ -626,7 +628,7 @@ describe("App", () => {
     expect(timelineResizeHandle).toHaveAttribute("aria-orientation", "horizontal");
     expect(timelineResizeHandle).toHaveAttribute("tabindex", "0");
     expect(timelineResizeHandle).toHaveClass("h-1");
-    expect(screen.getAllByRole("separator")).toHaveLength(2);
+    expect(screen.getAllByRole("separator")).toHaveLength(4);
     const fixedTimeline = screen.getByTestId("timeline-fixed-content");
     const audioTracksScroll = screen.getByTestId("audio-tracks-scroll");
     expect(screen.getByTestId("timeline-panel")).toContainElement(fixedTimeline);
@@ -674,7 +676,7 @@ describe("App", () => {
     render(<App />);
 
     await openSourcePicker(user);
-    expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
+    await waitForSourcePresence(true);
 
     const sourceDetailsToggle = screen.getByRole("button", {
       name: "Hide Left panel",
@@ -686,15 +688,15 @@ describe("App", () => {
     expect(audioTracksToggle).toHaveAttribute("aria-pressed", "true");
 
     await user.click(sourceDetailsToggle);
-    expect(screen.getByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Export queue" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Media details" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Export queue" })).toBeInTheDocument();
     expect(document.getElementById("source-details-resize-handle")).toHaveAttribute(
       "aria-hidden",
       "false",
     );
 
     await user.click(screen.getByRole("button", { name: "Show Left panel" }));
-    expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Media details" })).toBeInTheDocument();
 
     await user.click(audioTracksToggle);
     expect(screen.queryByTestId("audio-tracks-scroll")).not.toBeInTheDocument();
@@ -718,7 +720,7 @@ describe("App", () => {
     render(<App />);
 
     await openSourcePicker(user);
-    await screen.findByRole("heading", { name: "holiday.mp4" });
+    await waitForSourcePresence(true);
     screen.getByRole("button", { name: "Layout controls" }).focus();
     await user.keyboard("{Enter}");
     const leftPanelRow = screen.getByRole("menuitem", { name: /Left panel/ });
@@ -747,7 +749,7 @@ describe("App", () => {
     render(<App />);
 
     await openSourcePicker(user);
-    await screen.findByRole("heading", { name: "holiday.mp4" });
+    await waitForSourcePresence(true);
     const fileMenuButton = screen.getByRole("button", { name: "File" });
     fileMenuButton.focus();
     expect(document.activeElement).toBe(fileMenuButton);
@@ -758,7 +760,7 @@ describe("App", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 
     fireEvent.keyDown(window, { key: "Escape" });
-    expect(screen.getByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
+    expect(selectHasSource(store.getState())).toBe(true);
   });
 
   it("closes an open export dialog on Escape", async () => {
@@ -767,7 +769,7 @@ describe("App", () => {
     render(<App />);
 
     await openSourcePicker(user);
-    await screen.findByRole("heading", { name: "holiday.mp4" });
+    await waitForSourcePresence(true);
     screen.getByRole("button", { name: "File" }).focus();
     await user.keyboard("{Enter}");
     await user.click(screen.getByRole("menuitem", { name: /Optimize & Export/ }));
@@ -784,7 +786,7 @@ describe("App", () => {
     render(<App />);
 
     await openSourcePicker(user);
-    await screen.findByRole("heading", { name: "holiday.mp4" });
+    await waitForSourcePresence(true);
     const volumeButton = screen.getByRole("button", { name: "Mute eng" });
     expect(volumeButton).not.toHaveAttribute("title");
 
@@ -2440,7 +2442,7 @@ describe("App", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "The compatible preview could not be played.",
     );
-    expect(screen.getByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
+    expect(selectHasSource(store.getState())).toBe(true);
   });
 
   it("keeps the current source when the picker is cancelled", async () => {
@@ -2449,13 +2451,13 @@ describe("App", () => {
     render(<App />);
 
     await openSourcePicker(user);
-    expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
+    await waitForSourcePresence(true);
 
     screen.getByRole("button", { name: "File" }).focus();
     await user.keyboard("{Enter}");
     await user.click(screen.getByRole("menuitem", { name: /Open File/ }));
 
-    expect(screen.getByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
+    expect(selectHasSource(store.getState())).toBe(true);
     expect(mocks.inspectMedia).toHaveBeenCalledTimes(1);
   });
 
@@ -2479,7 +2481,7 @@ describe("App", () => {
     render(<App />);
 
     await openSourcePicker(user);
-    expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
+    await waitForSourcePresence(true);
 
     act(() => {
       sourceDropListener?.({
@@ -2488,7 +2490,6 @@ describe("App", () => {
       });
     });
 
-    expect(screen.queryByRole("heading", { name: "holiday.mp4" })).not.toBeInTheDocument();
     expect(selectHasSource(store.getState())).toBe(false);
     expect(screen.getAllByRole("alert")).toEqual(
       expect.arrayContaining([
@@ -2504,9 +2505,9 @@ describe("App", () => {
       sourceDropListener?.({ status: "selected", sources: [selection] });
     });
 
-    expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
+    await waitForSourcePresence(true);
     expect(mocks.inspectMedia).toHaveBeenCalledWith(selection.sourcePath);
-    expect(await screen.findByText("3840 × 2160")).toBeInTheDocument();
+    expect(await screen.findByLabelText("Source video preview")).toBeInTheDocument();
   });
 
   it("shows the native drag overlay over the editor stage", async () => {
@@ -2515,7 +2516,7 @@ describe("App", () => {
     render(<App />);
 
     await openSourcePicker(user);
-    expect(await screen.findByRole("heading", { name: "holiday.mp4" })).toBeInTheDocument();
+    await waitForSourcePresence(true);
 
     act(() => sourceDropListener?.({ status: "drag", active: true }));
     expect(screen.getByRole("status", { name: "Drop video to open" })).toBeInTheDocument();
