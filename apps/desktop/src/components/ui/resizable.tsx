@@ -14,6 +14,43 @@ function ResizablePanelGroup({ className, ...props }: ResizablePrimitive.GroupPr
   );
 }
 
+type PersistedResizablePanelGroupProps = Omit<
+  ResizablePrimitive.GroupProps,
+  "defaultLayout" | "id"
+> & {
+  id: string;
+  panelIds: readonly string[];
+  storage?: ResizablePrimitive.LayoutStorage;
+};
+
+type ResizableLayoutStorage = ResizablePrimitive.LayoutStorage;
+
+function PersistedResizablePanelGroup({
+  id,
+  panelIds,
+  storage,
+  onLayoutChanged,
+  ...props
+}: PersistedResizablePanelGroupProps) {
+  const persistedLayout = ResizablePrimitive.useDefaultLayout({
+    id,
+    panelIds: [...panelIds],
+    storage: storage ?? (typeof localStorage === "undefined" ? undefined : localStorage),
+  });
+
+  return (
+    <ResizablePanelGroup
+      {...props}
+      id={id}
+      defaultLayout={persistedLayout.defaultLayout}
+      onLayoutChanged={(layout, meta) => {
+        persistedLayout.onLayoutChanged(layout, meta);
+        onLayoutChanged?.(layout, meta);
+      }}
+    />
+  );
+}
+
 function ResizablePanel(props: ResizablePrimitive.PanelProps) {
   return <ResizablePrimitive.Panel data-slot="resizable-panel" {...props} />;
 }
@@ -44,5 +81,16 @@ function ResizableHandle({
 }
 
 const usePanelRef = ResizablePrimitive.usePanelRef;
+const useGroupRef = ResizablePrimitive.useGroupRef;
+const useDefaultLayout = ResizablePrimitive.useDefaultLayout;
 
-export { ResizableHandle, ResizablePanel, ResizablePanelGroup, usePanelRef };
+export {
+  PersistedResizablePanelGroup,
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+  useDefaultLayout,
+  useGroupRef,
+  usePanelRef,
+};
+export type { ResizableLayoutStorage };

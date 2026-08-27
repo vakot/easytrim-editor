@@ -6,10 +6,15 @@ import type { MediaCapabilities, MediaInfo, SourceDropEvent } from "../lib/tauri
 import type { SourceRef } from "../domain/source";
 import { store } from "../app/store/store";
 import {
+  PANEL_IDS,
+  panelsResetToDefault,
+  panelCollapsedChanged,
+  type PanelResetRequest,
+} from "../app/store/slices/panel-layout-slice";
+import {
   createEditorToolsStateFromPreferences,
   editorToolsInitialized,
 } from "../app/store/slices/editor-tools-slice";
-import { editorLayoutReset } from "../app/store/slices/editor-layout-slice";
 import { sourceCleared } from "../app/store/actions/source-actions";
 import {
   importedQueueItemRemoved,
@@ -99,6 +104,13 @@ const media: MediaInfo = {
 let sourceDropListener: ((event: SourceDropEvent) => void) | undefined;
 let stopSourceMediaRuntime: (() => void) | undefined;
 
+const RESET_ALL_PANELS = Object.values(PANEL_IDS).map((panelId) => ({
+  panelId,
+  resetCollapsed: true,
+  resetSize: true,
+  resetVisible: true,
+})) satisfies PanelResetRequest[];
+
 async function openSourcePicker(user: ReturnType<typeof userEvent.setup>) {
   screen.getByRole("button", { name: "File" }).focus();
   await user.keyboard("{Enter}");
@@ -150,7 +162,7 @@ function installAudioMocks(initiallyReady = true) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  store.dispatch(editorLayoutReset());
+  store.dispatch(panelsResetToDefault(RESET_ALL_PANELS));
   store.dispatch(sourceCleared());
   for (const item of selectImportedQueueItems(store.getState())) {
     store.dispatch(importedQueueItemRemoved(item.id));
@@ -294,7 +306,7 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "Play" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Previous frame" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Next frame" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Hide Bottom panel" })).not.toBeDisabled();
+    expect(screen.getByRole("button", { name: "Toggle Bottom panel" })).not.toBeDisabled();
     expect(screen.getByRole("slider", { name: "Move selected segment" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Snap playback" })).not.toBeDisabled();
     expect(screen.getByRole("button", { name: "Loop playback" })).not.toBeDisabled();
@@ -604,7 +616,7 @@ describe("App", () => {
     expect(playbackSpeedButton).toHaveAttribute("aria-pressed", "false");
     expect(playbackSpeedButton).not.toHaveClass("text-primary");
     expect(within(videoTimelineRow as HTMLElement).queryByText("Video")).not.toBeInTheDocument();
-    const sourceDetailsPanel = screen.getByTestId("source-details-panel");
+    const sourceDetailsPanel = screen.getByTestId(PANEL_IDS.sourceDetails);
     for (const sectionName of ["Media details", "Imported queue", "Export queue"]) {
       const trigger = within(sourceDetailsPanel).getByRole("button", { name: sectionName });
       const content = within(sourceDetailsPanel).getByRole("region", { name: sectionName });
@@ -615,7 +627,7 @@ describe("App", () => {
     expect(screen.getByTestId("preview-panel")).toContainElement(
       screen.getByLabelText("Source video preview"),
     );
-    expect(screen.getByTestId("timeline-panel")).toContainElement(
+    expect(screen.getByTestId(PANEL_IDS.timeline)).toContainElement(
       screen.getByRole("heading", { name: "Selected Segment" }),
     );
     const sourceResizeHandle = screen.getByRole("separator", { name: "Resize source details" });
@@ -631,8 +643,8 @@ describe("App", () => {
     expect(screen.getAllByRole("separator")).toHaveLength(4);
     const fixedTimeline = screen.getByTestId("timeline-fixed-content");
     const audioTracksScroll = screen.getByTestId("audio-tracks-scroll");
-    expect(screen.getByTestId("timeline-panel")).toContainElement(fixedTimeline);
-    expect(screen.getByTestId("timeline-panel")).toContainElement(audioTracksScroll);
+    expect(screen.getByTestId(PANEL_IDS.timeline)).toContainElement(fixedTimeline);
+    expect(screen.getByTestId(PANEL_IDS.timeline)).toContainElement(audioTracksScroll);
     expect(fixedTimeline).toContainElement(
       screen.getByRole("heading", { name: "Selected Segment" }),
     );
@@ -679,10 +691,10 @@ describe("App", () => {
     await waitForSourcePresence(true);
 
     const sourceDetailsToggle = screen.getByRole("button", {
-      name: "Hide Left panel",
+      name: "Toggle Left panel",
     });
     const audioTracksToggle = screen.getByRole("button", {
-      name: "Hide Bottom panel",
+      name: "Toggle Bottom panel",
     });
     expect(sourceDetailsToggle).toHaveAttribute("aria-pressed", "true");
     expect(audioTracksToggle).toHaveAttribute("aria-pressed", "true");
@@ -695,7 +707,7 @@ describe("App", () => {
     );
     expect(document.getElementById("source-details-resize-handle")).toBeEmptyDOMElement();
 
-    await user.click(screen.getByRole("button", { name: "Show Left panel" }));
+    await user.click(screen.getByRole("button", { name: "Toggle Left panel" }));
     expect(screen.getByRole("button", { name: "Media details" })).toBeInTheDocument();
 
     await user.click(audioTracksToggle);
@@ -706,7 +718,7 @@ describe("App", () => {
     );
     expect(document.getElementById("preview-timeline-resize-handle")).toBeEmptyDOMElement();
 
-    await user.click(screen.getByRole("button", { name: "Show Bottom panel" }));
+    await user.click(screen.getByRole("button", { name: "Toggle Bottom panel" }));
     expect(screen.getByTestId("audio-tracks-scroll")).toBeInTheDocument();
     expect(document.getElementById("preview-timeline-resize-handle")).not.toHaveAttribute(
       "aria-hidden",
@@ -716,13 +728,25 @@ describe("App", () => {
     );
   });
 
-  it("resets editor panel visibility from the panel controls", async () => {
+  it("resets panel visibility from the panel controls", async () => {
     mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
     render(<App />);
 
     await openSourcePicker(user);
     await waitForSourcePresence(true);
+    store.dispatch(
+      panelCollapsedChanged({
+        panelId: PANEL_IDS.sidebarImportedQueue,
+        collapsed: true,
+      }),
+    );
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Imported queue" })).toHaveAttribute(
+        "aria-expanded",
+        "false",
+      ),
+    );
     screen.getByRole("button", { name: "Layout controls" }).focus();
     await user.keyboard("{Enter}");
     const leftPanelRow = screen.getByRole("menuitem", { name: /Left panel/ });
@@ -735,13 +759,17 @@ describe("App", () => {
     await user.click(within(bottomPanelRow).getByRole("switch"));
     await user.click(screen.getByRole("menuitem", { name: "Reset editor layout" }));
 
-    expect(screen.getByRole("button", { name: "Hide Left panel" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "Toggle Left panel" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
-    expect(screen.getByRole("button", { name: "Hide Bottom panel" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "Toggle Bottom panel" })).toHaveAttribute(
       "aria-pressed",
       "true",
+    );
+    expect(screen.getByRole("button", { name: "Imported queue" })).toHaveAttribute(
+      "aria-expanded",
+      "false",
     );
   });
 

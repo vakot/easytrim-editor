@@ -12,7 +12,7 @@ import {
 
 import { createPersistedReducer, reduxStorage, type PersistStorage } from "@/app/store/persistence";
 import { appMiddleware } from "@/app/store/middleware";
-import { editorLayoutReducer } from "@/app/store/slices/editor-layout-slice";
+import { panelLayoutReducer } from "@/app/store/slices/panel-layout-slice";
 import { audioReducer } from "@/app/store/slices/audio-slice";
 import { cropReducer } from "@/app/store/slices/crop-slice";
 import { exportPresetsReducer } from "@/app/store/slices/export-presets-slice";
@@ -33,7 +33,7 @@ import { sourceFailed, sourceReady } from "@/app/store/actions/source-actions";
 const combinedReducer = combineReducers({
   audio: audioReducer,
   crop: cropReducer,
-  editorLayout: editorLayoutReducer,
+  panelLayout: panelLayoutReducer,
   editorTools: editorToolsReducer,
   export: exportReducer,
   exportPresets: exportPresetsReducer,

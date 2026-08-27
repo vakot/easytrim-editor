@@ -9,32 +9,54 @@ import {
 import { useRef, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
+import { useAppDispatch } from "@/app/store/hooks";
+import {
+  PANEL_IDS,
+  panelsResetToDefault,
+  type PanelId,
+  type PanelResetRequest,
+} from "@/app/store/slices/panel-layout-slice";
+import { PanelControl, PanelControlToggle } from "@/components/layout/panel";
+import { usePanelControl } from "@/components/layout/use-panel-control";
 import { Button } from "@/components/ui/button";
 import { ContextMenu, type ContextMenuOption } from "@/components/ui/context-menu";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
-import {
-  editorLayoutReset,
-  selectPanelVisibility,
-  panelVisibilityChanged,
-} from "@/app/store/slices/editor-layout-slice";
 
-export function PanelVisibilityControls() {
+const DEFAULT_PANEL_RESETS = [
+  {
+    panelId: PANEL_IDS.sourceDetails,
+    resetCollapsed: true,
+    resetSize: true,
+    resetVisible: true,
+  },
+  {
+    panelId: PANEL_IDS.timeline,
+    resetCollapsed: true,
+    resetSize: true,
+    resetVisible: true,
+  },
+] as const satisfies readonly PanelResetRequest[];
+
+function usePanelVisibilityOption({
+  icon,
+  id,
+  label,
+  panelId,
+}: {
+  icon: ReactNode;
+  id: string;
+  label: string;
+  panelId: PanelId;
+}): ContextMenuOption {
   const { t } = useTranslation();
   const switchInteractionRef = useRef(false);
-  const dispatch = useAppDispatch();
-  const isLeftPanelVisible = useAppSelector((state) => selectPanelVisibility(state, "left"));
-  const isBottomPanelVisible = useAppSelector((state) => selectPanelVisibility(state, "bottom"));
+  const { active, setActive, toggle } = usePanelControl(panelId, "visibility");
+  const tooltip = active
+    ? t("app.panels.hidePanel", { panel: label })
+    : t("app.panels.showPanel", { panel: label });
 
-  const layoutPanelOption = (
-    id: string,
-    label: string,
-    icon: ReactNode,
-    checked: boolean,
-    onCheckedChange: (checked: boolean) => void,
-    tooltip: string,
-  ): ContextMenuOption => ({
+  return {
     id,
     children: label,
     icon,
@@ -44,8 +66,8 @@ export function PanelVisibilityControls() {
           <span className="inline-flex">
             <Switch
               size="sm"
-              checked={checked}
-              onCheckedChange={onCheckedChange}
+              checked={active}
+              onCheckedChange={setActive}
               onClick={(event) => event.stopPropagation()}
               onKeyDown={() => {
                 switchInteractionRef.current = true;
@@ -66,37 +88,39 @@ export function PanelVisibilityControls() {
         switchInteractionRef.current = false;
         return;
       }
-      onCheckedChange(!checked);
+      toggle();
     },
+  };
+}
+
+export function PanelVisibilityControls() {
+  const { t } = useTranslation();
+  const dispatch = useAppDispatch();
+
+  const leftPanelLabel = t("app.panels.leftPanel");
+  const bottomPanelLabel = t("app.panels.bottomPanel");
+  const leftPanelOption = usePanelVisibilityOption({
+    id: "layout-toggle-left-panel",
+    label: leftPanelLabel,
+    icon: <PanelLeft className="size-3" aria-hidden="true" />,
+    panelId: PANEL_IDS.sourceDetails,
+  });
+  const bottomPanelOption = usePanelVisibilityOption({
+    id: "layout-toggle-bottom-panel",
+    label: bottomPanelLabel,
+    icon: <PanelBottom className="size-3" aria-hidden="true" />,
+    panelId: PANEL_IDS.timeline,
   });
 
   const layoutOptions: ContextMenuOption[] = [
-    layoutPanelOption(
-      "layout-toggle-left-panel",
-      t("app.panels.leftPanel"),
-      <PanelLeft className="size-3" aria-hidden="true" />,
-      isLeftPanelVisible,
-      (checked) => dispatch(panelVisibilityChanged({ panelId: "left", visible: checked })),
-      isLeftPanelVisible
-        ? t("app.panels.hidePanel", { panel: t("app.panels.leftPanel") })
-        : t("app.panels.showPanel", { panel: t("app.panels.leftPanel") }),
-    ),
-    layoutPanelOption(
-      "layout-toggle-bottom-panel",
-      t("app.panels.bottomPanel"),
-      <PanelBottom className="size-3" aria-hidden="true" />,
-      isBottomPanelVisible,
-      (checked) => dispatch(panelVisibilityChanged({ panelId: "bottom", visible: checked })),
-      isBottomPanelVisible
-        ? t("app.panels.hidePanel", { panel: t("app.panels.bottomPanel") })
-        : t("app.panels.showPanel", { panel: t("app.panels.bottomPanel") }),
-    ),
+    leftPanelOption,
+    bottomPanelOption,
     { id: "layout-divider", separator: true },
     {
       id: "layout-reset",
       children: t("app.panels.resetLayout"),
       icon: <RotateCcw className="size-3" aria-hidden="true" />,
-      onSelect: () => dispatch(editorLayoutReset()),
+      onSelect: () => dispatch(panelsResetToDefault(DEFAULT_PANEL_RESETS)),
     },
   ];
 
@@ -109,71 +133,51 @@ export function PanelVisibilityControls() {
         </>
       </ContextMenu>
 
-      <Tooltip>
-        <TooltipTrigger asChild>
+      <PanelControl
+        panelId={PANEL_IDS.sourceDetails}
+        mode="collapse"
+        tooltip={t("app.panels.togglePanel", { panel: leftPanelLabel })}
+      >
+        <PanelControlToggle>
           <Button
-            type="button"
             variant="ghost"
             size="icon-sm"
-            aria-label={
-              isLeftPanelVisible
-                ? t("app.panels.hidePanel", { panel: t("app.panels.leftPanel") })
-                : t("app.panels.showPanel", { panel: t("app.panels.leftPanel") })
-            }
-            aria-pressed={isLeftPanelVisible}
-            data-state={isLeftPanelVisible ? "on" : "off"}
-            className={isLeftPanelVisible ? "text-primary" : undefined}
-            onClick={() =>
-              dispatch(panelVisibilityChanged({ panelId: "left", visible: !isLeftPanelVisible }))
-            }
+            aria-label={t("app.panels.togglePanel", { panel: leftPanelLabel })}
           >
-            {isLeftPanelVisible ? (
-              <PanelLeft className="size-4" aria-hidden="true" />
-            ) : (
-              <PanelLeftDashed className="size-4" aria-hidden="true" />
-            )}
+            <PanelLeft
+              className="size-4 group-data-[panel-state=off]/panel-control-toggle:hidden"
+              aria-hidden="true"
+            />
+            <PanelLeftDashed
+              className="hidden size-4 group-data-[panel-state=off]/panel-control-toggle:block"
+              aria-hidden="true"
+            />
           </Button>
-        </TooltipTrigger>
-        <TooltipContent>
-          {isLeftPanelVisible
-            ? t("app.panels.hidePanel", { panel: t("app.panels.leftPanel") })
-            : t("app.panels.showPanel", { panel: t("app.panels.leftPanel") })}
-        </TooltipContent>
-      </Tooltip>
+        </PanelControlToggle>
+      </PanelControl>
 
-      <Tooltip>
-        <TooltipTrigger asChild>
+      <PanelControl
+        panelId={PANEL_IDS.timeline}
+        mode="collapse"
+        tooltip={t("app.panels.togglePanel", { panel: bottomPanelLabel })}
+      >
+        <PanelControlToggle>
           <Button
-            type="button"
             variant="ghost"
             size="icon-sm"
-            aria-label={
-              isBottomPanelVisible
-                ? t("app.panels.hidePanel", { panel: t("app.panels.bottomPanel") })
-                : t("app.panels.showPanel", { panel: t("app.panels.bottomPanel") })
-            }
-            aria-pressed={isBottomPanelVisible}
-            data-state={isBottomPanelVisible ? "on" : "off"}
-            className={isBottomPanelVisible ? "text-primary" : undefined}
-            onClick={() =>
-              dispatch(
-                panelVisibilityChanged({ panelId: "bottom", visible: !isBottomPanelVisible }),
-              )
-            }
+            aria-label={t("app.panels.togglePanel", { panel: bottomPanelLabel })}
           >
-            {isBottomPanelVisible ? (
-              <PanelBottom className="size-4" aria-hidden="true" />
-            ) : (
-              <PanelBottomDashed className="size-4" aria-hidden="true" />
-            )}
+            <PanelBottom
+              className="size-4 group-data-[panel-state=off]/panel-control-toggle:hidden"
+              aria-hidden="true"
+            />
+            <PanelBottomDashed
+              className="hidden size-4 group-data-[panel-state=off]/panel-control-toggle:block"
+              aria-hidden="true"
+            />
           </Button>
-        </TooltipTrigger>
-        <TooltipContent>
-          {isBottomPanelVisible
-            ? t("app.panels.hidePanel", { panel: t("app.panels.bottomPanel") })
-            : t("app.panels.showPanel", { panel: t("app.panels.bottomPanel") })}
-        </TooltipContent>
-      </Tooltip>
+        </PanelControlToggle>
+      </PanelControl>
     </div>
   );
 }

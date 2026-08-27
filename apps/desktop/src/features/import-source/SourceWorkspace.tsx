@@ -1,22 +1,17 @@
-import { useEffect, useRef } from "react";
-
-import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
-import {
-  panelVisibilityChanged,
-  selectPanelVisibility,
-  selectWorkspaceLayout,
-  workspaceLayoutChanged,
-} from "@/app/store/slices/editor-layout-slice";
+import { PANEL_GROUP_IDS } from "@/app/panel-layout-runtime";
+import { useAppSelector } from "@/app/store/hooks";
+import { PANEL_IDS } from "@/app/store/slices/panel-layout-slice";
 import { selectActiveItemId } from "@/app/store/slices/export-slice";
 import { selectIsSourceDragActive } from "@/app/store/slices/import-workflow-slice";
 import { selectSourceSelection } from "@/app/store/slices/source-slice";
 import { PanelContent } from "@/components/layout/panel-content";
 import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-  usePanelRef,
-} from "@/components/ui/resizable";
+  Panel,
+  PanelHandle,
+  PersistedPanelGroup,
+  type PanelRegistration,
+} from "@/components/layout/panel";
+import { ResizablePanel } from "@/components/ui/resizable";
 import { EditorStage } from "@/features/editor";
 import { useTranslation } from "react-i18next";
 import { DropOverlay } from "./components/DropOverlay";
@@ -24,56 +19,33 @@ import { SourceSidebar } from "./components/SourceSidebar";
 
 export { CapabilityStatus } from "./components/CapabilityStatus";
 
+const WORKSPACE_PANELS = [
+  { id: PANEL_IDS.sourceDetails, panelId: PANEL_IDS.sourceDetails },
+  { id: "editor-content-panel" },
+] as const satisfies readonly PanelRegistration[];
+
 export function SourceWorkspace() {
   const { t } = useTranslation();
   const isSourceDragActive = useAppSelector(selectIsSourceDragActive);
   const sourceSelection = useAppSelector(selectSourceSelection);
   const activeItemId = useAppSelector(selectActiveItemId);
-  const dispatch = useAppDispatch();
-  const isLeftPanelVisible = useAppSelector((state) => selectPanelVisibility(state, "left"));
-  const workspaceLayout = useAppSelector(selectWorkspaceLayout);
-  const sourceDetailsPanelRef = usePanelRef();
-  const previousWorkspaceLayout = useRef(workspaceLayout);
-
-  useEffect(() => {
-    const panel = sourceDetailsPanelRef.current;
-    if (!panel) return;
-
-    if (isLeftPanelVisible) {
-      panel.expand();
-    } else {
-      panel.collapse();
-    }
-  }, [isLeftPanelVisible, sourceDetailsPanelRef]);
-
-  useEffect(() => {
-    if (workspaceLayout === undefined && previousWorkspaceLayout.current !== undefined) {
-      sourceDetailsPanelRef.current?.resize("20rem");
-    }
-    previousWorkspaceLayout.current = workspaceLayout;
-  }, [sourceDetailsPanelRef, workspaceLayout]);
 
   return (
-    <ResizablePanelGroup
-      id="editor-workspace-panels"
-      defaultLayout={workspaceLayout}
-      onLayoutChanged={(layout) => dispatch(workspaceLayoutChanged(layout))}
+    <PersistedPanelGroup
+      id={PANEL_GROUP_IDS.workspace}
+      panels={WORKSPACE_PANELS}
       orientation="horizontal"
       resizeTargetMinimumSize={{ fine: 8, coarse: 24 }}
       aria-label={t("import.source.workspace")}
     >
-      <ResizablePanel
-        id="source-details-panel"
-        panelRef={sourceDetailsPanelRef}
+      <Panel
+        id={PANEL_IDS.sourceDetails}
+        resetSize="20rem"
         collapsible
         collapsedSize={0}
         defaultSize="20rem"
         minSize="15rem"
         maxSize="30rem"
-        onResize={(size) => {
-          const isCollapsed = sourceDetailsPanelRef.current?.isCollapsed() ?? size.inPixels <= 0;
-          dispatch(panelVisibilityChanged({ panelId: "left", visible: !isCollapsed }));
-        }}
         groupResizeBehavior="preserve-pixel-size"
         className="min-h-0 min-w-0 overflow-hidden"
       >
@@ -82,13 +54,13 @@ export function SourceWorkspace() {
             <SourceSidebar />
           </PanelContent>
         </div>
-      </ResizablePanel>
+      </Panel>
 
-      <ResizableHandle
+      <PanelHandle
+        panelId={PANEL_IDS.sourceDetails}
         id="source-details-resize-handle"
         aria-label={t("import.source.resizeDetails")}
         className="mb-1 mx-0.5 bg-transparent"
-        withHandle={isLeftPanelVisible}
       />
 
       <ResizablePanel id="editor-content-panel" minSize="44rem" className="pr-1">
@@ -97,6 +69,6 @@ export function SourceWorkspace() {
           {isSourceDragActive ? <DropOverlay /> : null}
         </div>
       </ResizablePanel>
-    </ResizablePanelGroup>
+    </PersistedPanelGroup>
   );
 }
