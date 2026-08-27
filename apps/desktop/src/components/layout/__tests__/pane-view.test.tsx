@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const resizeMocks = vi.hoisted(() => ({
@@ -16,11 +16,18 @@ const resizeMocks = vi.hoisted(() => ({
   separators: new Map<string, { disabled?: boolean }>(),
 }));
 
-vi.mock("react-resizable-panels", () => ({
-  Group: ({ children, id }: { children: ReactNode; id: string }) => (
-    <div data-testid={id}>{children}</div>
+vi.mock("@/components/ui/resizable", () => ({
+  ResizablePanelGroup: ({
+    children,
+    id,
+    orientation: _orientation,
+    ...props
+  }: ComponentProps<"div"> & { orientation?: string }) => (
+    <div {...props} data-testid={id}>
+      {children}
+    </div>
   ),
-  Panel: ({
+  ResizablePanel: ({
     children,
     id,
     defaultSize,
@@ -43,7 +50,7 @@ vi.mock("react-resizable-panels", () => ({
       </section>
     );
   },
-  Separator: ({ id, disabled }: { id: string; disabled?: boolean }) => {
+  ResizableHandle: ({ id, disabled }: { id: string; disabled?: boolean }) => {
     resizeMocks.separators.set(String(id), { disabled });
     return (
       <div
@@ -66,7 +73,7 @@ interface FixtureProps {
 function Fixture({ value, defaultValue, onValueChange }: FixtureProps) {
   return (
     <PaneView
-      id="test-accordion"
+      id="test-pane-view"
       aria-label="Test sections"
       value={value}
       defaultValue={defaultValue}
@@ -113,6 +120,13 @@ describe("PaneView", () => {
       "aria-expanded",
       "false",
     );
+    expect(screen.getByTestId("test-pane-view")).toHaveStyle({
+      "--pane-view-header-size": "32px",
+    });
+    expect(screen.getByRole("button", { name: "Media details" })).toHaveClass(
+      "h-[var(--pane-view-header-size)]",
+      "items-baseline",
+    );
     expect(resizeMocks.panels.get("media")).toEqual({
       defaultSize: "33%",
       disabled: false,
@@ -158,17 +172,17 @@ describe("PaneView", () => {
     const user = userEvent.setup();
     render(<Fixture defaultValue={[]} />);
 
-    expect(resizeMocks.panels.get("test-accordion-spacer")).toEqual({
+    expect(resizeMocks.panels.get("test-pane-view-spacer")).toEqual({
       defaultSize: 0,
       disabled: false,
       maxSize: undefined,
       minSize: 0,
     });
-    expect(screen.getByTestId("panel-test-accordion-spacer")).toHaveAttribute(
+    expect(screen.getByTestId("panel-test-pane-view-spacer")).toHaveAttribute(
       "aria-hidden",
       "true",
     );
-    expect(resizeMocks.separators.get("test-accordion-separator-1")).toEqual({
+    expect(resizeMocks.separators.get("test-pane-view-separator-1")).toEqual({
       disabled: true,
     });
 
@@ -179,7 +193,7 @@ describe("PaneView", () => {
       "true",
     );
     expect(resizeMocks.panels.get("imported")).toMatchObject({ disabled: false, minSize: 120 });
-    expect(resizeMocks.panels.get("test-accordion-spacer")).toEqual({
+    expect(resizeMocks.panels.get("test-pane-view-spacer")).toEqual({
       defaultSize: 0,
       disabled: true,
       maxSize: 0,
@@ -214,6 +228,11 @@ describe("PaneView", () => {
       "aria-expanded",
       "true",
     );
+    expect(resizeMocks.panels.get("export")).toMatchObject({
+      disabled: false,
+      maxSize: "70%",
+      minSize: 120,
+    });
     await user.click(screen.getByRole("button", { name: "Export queue" }));
     expect(onValueChange).toHaveBeenLastCalledWith([]);
   });
@@ -252,7 +271,7 @@ describe("PaneView", () => {
     expect(mediaContent.querySelector('[data-slot="scroll-area-viewport"]')).not.toBeNull();
 
     const importedContent = document.querySelector<HTMLElement>(
-      '[data-slot="resizable-accordion-content"][data-state="closed"]',
+      '[data-slot="pane-view-content"][data-state="closed"]',
     );
     expect(importedContent).toHaveAttribute("hidden");
     expect(screen.queryByRole("region", { name: "Imported queue" })).not.toBeInTheDocument();

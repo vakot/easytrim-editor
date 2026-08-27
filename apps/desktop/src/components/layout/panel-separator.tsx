@@ -1,6 +1,6 @@
-import { Separator as ResizeSeparator } from "react-resizable-panels";
 import type { MouseEventHandler } from "react";
 
+import { ResizableHandle } from "@/components/ui/resizable";
 import { cn } from "@/lib/utils";
 
 interface PanelSeparatorProps {
@@ -23,7 +23,7 @@ export function PanelSeparator({
   className,
 }: PanelSeparatorProps) {
   return (
-    <ResizeSeparator
+    <ResizableHandle
       disabled={disabled}
       disableDoubleClick={onDoubleClick !== undefined}
       onDoubleClick={onDoubleClick}
@@ -31,17 +31,30 @@ export function PanelSeparator({
       aria-label={label}
       aria-hidden={disabled}
       className={cn(
-        "group relative z-20 shrink-0 bg-transparent outline-none",
+        "group relative z-20 shrink-0 bg-transparent outline-none after:hidden",
         disabled && "pointer-events-none hidden",
-        orientation === "vertical" ? "w-1" : "h-1",
+        orientation === "vertical" ? "w-1" : "h-1 w-full aria-[orientation=horizontal]:h-1",
         className,
       )}
     >
-      <div className="pointer-events-none absolute inset-0 z-10 rounded transition-colors group-hover:bg-primary/70 group-focus-visible:bg-primary group-data-[separator=active]:bg-primary group-data-[separator=drag]:bg-primary" />
+      <div
+        data-slot="panel-separator-line"
+        className={cn(
+          "pointer-events-none absolute bg-border",
+          orientation === "vertical"
+            ? "inset-y-0 left-1/2 w-px -translate-x-1/2"
+            : "inset-x-0 top-1/2 h-px -translate-y-1/2",
+        )}
+      />
+      <div
+        data-slot="panel-separator-overlay"
+        className="pointer-events-none absolute inset-0 z-10 rounded transition-colors group-hover:bg-primary/70 group-focus-visible:bg-primary group-data-[separator=active]:bg-primary group-data-[separator=drag]:bg-primary"
+      />
       {!collapsed ? (
         <div
+          data-slot="panel-separator-marker"
           className={cn(
-            "absolute left-1/2 top-1/2 -translate-1/2 flex gap-0.5",
+            "pointer-events-none absolute left-1/2 top-1/2 flex -translate-1/2 gap-0.5",
             orientation === "vertical" ? "flex-col" : "flex-row",
           )}
         >
@@ -50,6 +63,6 @@ export function PanelSeparator({
           <div aria-hidden="true" className="size-0.5 rounded-full bg-secondary-foreground" />
         </div>
       ) : null}
-    </ResizeSeparator>
+    </ResizableHandle>
   );
 }
