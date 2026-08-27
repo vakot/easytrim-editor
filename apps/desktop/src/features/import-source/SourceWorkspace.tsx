@@ -1,16 +1,16 @@
 import { PANEL_GROUP_IDS } from "@/app/panel-layout-runtime";
 import { useAppSelector } from "@/app/store/hooks";
-import { PANEL_IDS } from "@/app/store/slices/panel-layout-slice";
 import { selectActiveItemId } from "@/app/store/slices/export-slice";
 import { selectIsSourceDragActive } from "@/app/store/slices/import-workflow-slice";
+import { PANEL_IDS } from "@/app/store/slices/panel-layout-slice";
 import { selectSourceSelection } from "@/app/store/slices/source-slice";
-import { PanelContent } from "@/components/layout/panel-content";
 import {
   Panel,
   PanelHandle,
   PersistedPanelGroup,
   type PanelRegistration,
 } from "@/components/layout/panel";
+import { PanelContent } from "@/components/layout/panel-content";
 import { ResizablePanel } from "@/components/ui/resizable";
 import { EditorStage } from "@/features/editor";
 import { useTranslation } from "react-i18next";
@@ -60,7 +60,8 @@ export function SourceWorkspace() {
         panelId={PANEL_IDS.sourceDetails}
         id="source-details-resize-handle"
         aria-label={t("import.source.resizeDetails")}
-        className="mb-1 mx-0.5 bg-transparent"
+        style={{ width: 4 }}
+        className="bg-transparent"
       />
 
       <ResizablePanel id="editor-content-panel" minSize="44rem" className="pr-1">

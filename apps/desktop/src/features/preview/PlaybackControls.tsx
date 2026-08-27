@@ -12,12 +12,6 @@ import {
   SquareArrowRight,
 } from "lucide-react";
 
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Separator } from "@/components/ui/separator";
-import { Slider } from "@/components/ui/slider";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import {
   createEditorToolsStateFromPreferences,
@@ -27,11 +21,17 @@ import {
   segmentPlaybackToggled,
   selectLoopPlaybackEnabled,
   selectPlaybackSpeed,
-  selectSnapPlaybackEnabled,
   selectSegmentPlaybackEnabled,
+  selectSnapPlaybackEnabled,
   snapPlaybackToggled,
 } from "@/app/store/slices/editor-tools-slice";
 import { selectPreferences } from "@/app/store/slices/preferences-slice";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Separator } from "@/components/ui/separator";
+import { Slider } from "@/components/ui/slider";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatPlaybackTime } from "@/domain/playback";
 import {
   DEFAULT_PLAYBACK_SPEED,
@@ -200,7 +200,7 @@ export function PlaybackTimecode({
 export function TimelineTools() {
   return (
     <>
-      <div className="grid grid-flow-col auto-cols-[1.75rem] grid-rows-[repeat(2,1.75rem)] gap-1">
+      <div className="grid grid-flow-col auto-cols-7 grid-rows-[repeat(2,1.75rem)] gap-1">
         <SnapPlaybackTool />
         <LoopPlaybackTool />
         <SegmentPlaybackTool />
@@ -298,7 +298,7 @@ function PlaybackSpeedTool() {
         <PopoverContent side="bottom" align="center" className="w-56 p-2.5">
           <div className="flex items-center gap-2">
             <Slider
-              className="mt-2 min-w-0 flex-1 [&_[data-slot=slider-track]]:h-1.5"
+              className="mt-2 min-w-0 flex-1 **:data-[slot=slider-track]:h-1.5"
               min={0}
               max={PLAYBACK_SPEED_STEPS.length - 1}
               step={1}
@@ -332,6 +332,7 @@ function ResetToolsTool() {
       label={t("preview.resetTools")}
       title={t("preview.resetTools")}
       onClick={() => dispatch(editorToolsReset(createEditorToolsStateFromPreferences(preferences)))}
+      preserveOnTrigger={false}
     >
       <RotateCcw />
     </TimelineToolButton>
@@ -344,15 +345,17 @@ function TimelineToolButton({
   title,
   onClick,
   children,
+  preserveOnTrigger = true,
 }: {
   enabled: boolean;
   label: string;
   title: string;
   onClick: () => void;
   children: React.ReactNode;
+  preserveOnTrigger?: boolean;
 }) {
   return (
-    <Tooltip>
+    <Tooltip preserveOnTrigger={preserveOnTrigger}>
       <TooltipTrigger asChild>
         <Button
           variant="secondary"

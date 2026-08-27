@@ -65,7 +65,7 @@ function PreferenceMenuItem({ preferenceKey, icon, children }: PreferenceMenuIte
             ? "app.settings.enabled"
             : "app.settings.disabled",
       )}
-      tooltipProps={{ side: "right" }}
+      tooltipProps={{ side: "right", preserveOnTrigger: true }}
       suffix={<Switch size="sm" checked={isEnabled} />}
       onSelect={(event) => {
         event.preventDefault();

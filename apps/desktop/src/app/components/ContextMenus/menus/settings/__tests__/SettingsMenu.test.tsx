@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { Provider } from "react-redux";
@@ -21,7 +21,7 @@ function renderSettings() {
   const store = createAppStore();
   render(
     <Provider store={store}>
-      <TooltipProvider>
+      <TooltipProvider delayDuration={0}>
         <SettingsMenu navigation={navigation} />
       </TooltipProvider>
     </Provider>,
@@ -52,6 +52,34 @@ describe("SettingsMenu Redux integration", () => {
     await user.click(autoStartQueueSwitch);
 
     expect(store.getState().preferences.autoStartQueueEnabled).toBe(false);
+  });
+
+  it("keeps an open preference tooltip visible and updates its label after toggling", async () => {
+    const user = userEvent.setup();
+    renderSettings();
+    const loopRow = screen.getByRole("menuitem", { name: "Loop" });
+
+    await user.hover(loopRow);
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("Enabled by default");
+
+    await user.click(within(loopRow).getByRole("switch"));
+
+    expect(screen.getByRole("tooltip")).toHaveTextContent("Disabled by default");
+  });
+
+  it("allows a preference tooltip to close after the trigger interaction finishes", async () => {
+    const user = userEvent.setup();
+    renderSettings();
+    const loopRow = screen.getByRole("menuitem", { name: "Loop" });
+    const loopSwitch = within(loopRow).getByRole("switch");
+
+    await user.hover(loopRow);
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("Enabled by default");
+
+    await user.click(loopSwitch);
+    fireEvent.blur(loopRow, { relatedTarget: loopSwitch });
+
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
   });
 
   it("resets preferences without rewriting active editor tools", async () => {

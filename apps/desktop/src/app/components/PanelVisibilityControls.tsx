@@ -46,19 +46,12 @@ function PanelVisibilityMenuItem({
   label: string;
   panelId: PanelId;
 }) {
-  const { t } = useTranslation();
   const { active } = usePanelControl(panelId, "visibility");
 
   return (
     <PanelControlToggle panelId={panelId}>
       <MenuItem
         icon={icon}
-        tooltip={
-          active
-            ? t("app.panels.hidePanel", { panel: label })
-            : t("app.panels.showPanel", { panel: label })
-        }
-        tooltipProps={{ side: "right" }}
         suffix={<Switch size="sm" checked={active} />}
         onSelect={(event) => event.preventDefault()}
       >

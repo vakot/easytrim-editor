@@ -1,9 +1,15 @@
-import * as React from "react";
 import { Tooltip as TooltipPrimitive } from "radix-ui";
+import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
 const DEFAULT_TOOLTIP_DELAY_MS = 500;
+
+type TooltipContextType = {
+  setPreservingTrigger: (preserving: boolean) => void;
+};
+
+const TooltipContext = React.createContext<TooltipContextType | null>(null);
 
 function TooltipProvider({
   delayDuration = DEFAULT_TOOLTIP_DELAY_MS,
@@ -18,12 +24,78 @@ function TooltipProvider({
   );
 }
 
-function Tooltip({ ...props }: React.ComponentProps<typeof TooltipPrimitive.Root>) {
-  return <TooltipPrimitive.Root data-slot="tooltip" {...props} />;
+function Tooltip({
+  defaultOpen = false,
+  open: controlledOpen,
+  onOpenChange,
+  preserveOnTrigger = false,
+  ...props
+}: React.ComponentProps<typeof TooltipPrimitive.Root> & {
+  preserveOnTrigger?: boolean;
+}) {
+  const [internalOpen, setInternalOpen] = React.useState(defaultOpen);
+  const preservingTriggerRef = React.useRef(false);
+
+  const open = controlledOpen ?? internalOpen;
+
+  const setOpen = (nextOpen: boolean) => {
+    if (!nextOpen && preservingTriggerRef.current) return;
+
+    if (controlledOpen === undefined) {
+      setInternalOpen(nextOpen);
+    }
+
+    onOpenChange?.(nextOpen);
+  };
+
+  const setPreservingTrigger = (preserving: boolean) => {
+    preservingTriggerRef.current = preserveOnTrigger && preserving;
+  };
+
+  return (
+    <TooltipContext.Provider value={{ setPreservingTrigger }}>
+      <TooltipPrimitive.Root data-slot="tooltip" open={open} onOpenChange={setOpen} {...props} />
+    </TooltipContext.Provider>
+  );
 }
 
-function TooltipTrigger({ ...props }: React.ComponentProps<typeof TooltipPrimitive.Trigger>) {
-  return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />;
+function TooltipTrigger({
+  onClick,
+  onPointerCancel,
+  onPointerDown,
+  onPointerLeave,
+  onPointerUp,
+  ...props
+}: React.ComponentProps<typeof TooltipPrimitive.Trigger>) {
+  const { setPreservingTrigger } = useTooltip();
+
+  return (
+    <TooltipPrimitive.Trigger
+      data-slot="tooltip-trigger"
+      onPointerDown={(event) => {
+        setPreservingTrigger(true);
+        onPointerDown?.(event);
+      }}
+      onPointerUp={(event) => {
+        setPreservingTrigger(false);
+        onPointerUp?.(event);
+      }}
+      onPointerCancel={(event) => {
+        setPreservingTrigger(false);
+        onPointerCancel?.(event);
+      }}
+      onPointerLeave={(event) => {
+        setPreservingTrigger(false);
+        onPointerLeave?.(event);
+      }}
+      onClick={(event) => {
+        setPreservingTrigger(true);
+        onClick?.(event);
+        queueMicrotask(() => setPreservingTrigger(false));
+      }}
+      {...props}
+    />
+  );
 }
 
 function TooltipContent({
@@ -44,10 +116,20 @@ function TooltipContent({
         {...props}
       >
         {children}
-        <TooltipPrimitive.Arrow className="z-50 size-2.5 translate-y-[calc(-50%_-_2px)] rotate-45 rounded-[2px] bg-foreground fill-foreground" />
+        <TooltipPrimitive.Arrow className="z-50 size-2.5 translate-y-[calc(-50%-2px)] rotate-45 rounded-xs bg-foreground fill-foreground" />
       </TooltipPrimitive.Content>
     </TooltipPrimitive.Portal>
   );
+}
+
+function useTooltip() {
+  const context = React.useContext(TooltipContext);
+
+  if (!context) {
+    throw new Error("TooltipTrigger must be used within Tooltip");
+  }
+
+  return context;
 }
 
 export { DEFAULT_TOOLTIP_DELAY_MS, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger };
