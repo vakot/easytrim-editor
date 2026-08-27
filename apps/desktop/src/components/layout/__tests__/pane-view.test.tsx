@@ -20,13 +20,16 @@ vi.mock("@/components/ui/resizable", () => ({
   ResizablePanelGroup: ({
     children,
     id,
-    orientation: _orientation,
+    orientation,
     ...props
-  }: ComponentProps<"div"> & { orientation?: string }) => (
-    <div {...props} data-testid={id}>
-      {children}
-    </div>
-  ),
+  }: ComponentProps<"div"> & { orientation?: string }) => {
+    void orientation;
+    return (
+      <div {...props} data-testid={id}>
+        {children}
+      </div>
+    );
+  },
   ResizablePanel: ({
     children,
     id,
