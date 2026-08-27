@@ -5,7 +5,7 @@ import {
   EDITOR_PANEL_IDS,
   createInitialEditorLayoutState,
   editorLayoutReducer,
-  editorLayoutReset,
+  editorPanelsResetToDefault,
   panelCollapseToggled,
   panelCollapsedChanged,
   panelVisibilityChanged,
@@ -79,18 +79,29 @@ describe("editor layout Redux domain", () => {
     });
   });
 
-  it("resets the whole layout domain in one operation", () => {
+  it("selectively resets any combination of panel values", () => {
     const changedState = editorLayoutReducer(
       editorLayoutReducer(
         undefined,
         panelVisibilityChanged({ panelId: EDITOR_PANEL_IDS.sourceDetails, visible: false }),
       ),
-      panelCollapsedChanged({ panelId: EDITOR_PANEL_IDS.sidebarMedia, collapsed: true }),
+      panelVisibilityChanged({ panelId: EDITOR_PANEL_IDS.sidebarExportQueue, visible: false }),
+    );
+    const collapsedState = editorLayoutReducer(
+      changedState,
+      panelCollapsedChanged({ panelId: EDITOR_PANEL_IDS.timeline, collapsed: true }),
+    );
+    const resetState = editorLayoutReducer(
+      collapsedState,
+      editorPanelsResetToDefault([
+        { panelId: EDITOR_PANEL_IDS.sourceDetails, resetVisible: true },
+        { panelId: EDITOR_PANEL_IDS.timeline, resetCollapsed: true, resetSize: true },
+      ]),
     );
 
-    expect(editorLayoutReducer(changedState, editorLayoutReset())).toEqual(
-      createInitialEditorLayoutState(),
-    );
+    expect(resetState.panels[EDITOR_PANEL_IDS.sourceDetails].visible).toBe(true);
+    expect(resetState.panels[EDITOR_PANEL_IDS.timeline].collapsed).toBe(false);
+    expect(resetState.panels[EDITOR_PANEL_IDS.sidebarExportQueue].visible).toBe(false);
   });
 
   it("exposes focused selectors and serializable panel actions", () => {

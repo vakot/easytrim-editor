@@ -1,3 +1,5 @@
+import { EDITOR_PANEL_IDS, type EditorPanelId } from "@/app/store/slices/editor-layout-slice";
+
 export const EDITOR_PANEL_GROUP_IDS = {
   workspace: "editor-workspace-panels",
   stage: "editor-stage-panels",
@@ -5,24 +7,53 @@ export const EDITOR_PANEL_GROUP_IDS = {
 } as const;
 
 const STORAGE_KEY_PREFIX = "react-resizable-panels:";
-const resetHandlers = new Set<() => void>();
+const PANEL_GROUP_IDS: Record<EditorPanelId, string> = {
+  [EDITOR_PANEL_IDS.sourceDetails]: EDITOR_PANEL_GROUP_IDS.workspace,
+  [EDITOR_PANEL_IDS.timeline]: EDITOR_PANEL_GROUP_IDS.stage,
+  [EDITOR_PANEL_IDS.sidebarMedia]: EDITOR_PANEL_GROUP_IDS.sourceSidebar,
+  [EDITOR_PANEL_IDS.sidebarImportedQueue]: EDITOR_PANEL_GROUP_IDS.sourceSidebar,
+  [EDITOR_PANEL_IDS.sidebarExportQueue]: EDITOR_PANEL_GROUP_IDS.sourceSidebar,
+};
 
-export function registerEditorLayoutReset(handler: () => void): () => void {
-  resetHandlers.add(handler);
-  return () => resetHandlers.delete(handler);
+interface EditorPanelSizeResetRegistration {
+  panelIds: readonly EditorPanelId[];
+  reset: () => void;
 }
 
-export function resetEditorLayoutRuntime(): void {
-  clearSavedEditorLayouts();
-  resetHandlers.forEach((handler) => handler());
+const sizeResetRegistrations = new Set<EditorPanelSizeResetRegistration>();
+
+export function registerEditorPanelSizeReset(
+  registration: EditorPanelSizeResetRegistration,
+): () => void {
+  sizeResetRegistrations.add(registration);
+  return () => sizeResetRegistrations.delete(registration);
 }
 
-function clearSavedEditorLayouts(): void {
+export function resetEditorPanelSizes(panelIds: readonly EditorPanelId[]): void {
+  const requestedPanelIds = new Set(panelIds);
+  const groupIds = new Set(panelIds.map((panelId) => PANEL_GROUP_IDS[panelId]));
+
+  clearSavedEditorLayouts(groupIds);
+
+  const resetRegisteredPanels = () => {
+    sizeResetRegistrations.forEach((registration) => {
+      if (registration.panelIds.some((panelId) => requestedPanelIds.has(panelId))) {
+        registration.reset();
+      }
+    });
+  };
+
+  if (typeof requestAnimationFrame === "undefined") {
+    resetRegisteredPanels();
+  } else {
+    requestAnimationFrame(resetRegisteredPanels);
+  }
+}
+
+function clearSavedEditorLayouts(groupIds: ReadonlySet<string>): void {
   if (typeof localStorage === "undefined") return;
 
-  const groupKeyPrefixes = Object.values(EDITOR_PANEL_GROUP_IDS).map(
-    (groupId) => `${STORAGE_KEY_PREFIX}${groupId}`,
-  );
+  const groupKeyPrefixes = [...groupIds].map((groupId) => `${STORAGE_KEY_PREFIX}${groupId}`);
 
   for (let index = localStorage.length - 1; index >= 0; index -= 1) {
     const key = localStorage.key(index);

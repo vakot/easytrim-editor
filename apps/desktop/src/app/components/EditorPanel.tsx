@@ -4,11 +4,13 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   type ComponentProps,
+  type RefObject,
   type ReactNode,
 } from "react";
 
-import { registerEditorLayoutReset } from "@/app/editor-layout-runtime";
+import { registerEditorPanelSizeReset } from "@/app/editor-layout-runtime";
 import {
   useEditorPanelControl,
   type EditorPanelToggleMode,
@@ -38,6 +40,7 @@ interface EditorPanelContextValue {
   panelId: EditorPanelId;
   panelRef: EditorPanelRef;
   resetToDefault: () => void;
+  sizeResetDepth: RefObject<number>;
 }
 
 const EditorPanelContext = createContext<EditorPanelContextValue | null>(null);
@@ -53,17 +56,35 @@ function EditorPanel({ children, panelId, panelRef: panelRefProp, resetSize }: E
   const internalPanelRef = usePanelRef();
   const panelRef = panelRefProp ?? internalPanelRef;
   const panel = useAppSelector((state) => selectEditorPanel(state, panelId));
+  const sizeResetDepth = useRef(0);
   const resetToDefault = useCallback(() => {
-    if (resetSize !== undefined) panelRef.current?.resize(resetSize);
-  }, [panelRef, resetSize]);
+    const imperativePanel = panelRef.current;
+    if (resetSize === undefined || !imperativePanel) return;
+
+    sizeResetDepth.current += 1;
+    try {
+      imperativePanel.resize(resetSize);
+      if (panel.collapsed) imperativePanel.collapse();
+    } finally {
+      const finishReset = () => {
+        sizeResetDepth.current = Math.max(0, sizeResetDepth.current - 1);
+      };
+
+      if (typeof requestAnimationFrame === "undefined") {
+        finishReset();
+      } else {
+        requestAnimationFrame(finishReset);
+      }
+    }
+  }, [panel.collapsed, panelRef, resetSize]);
 
   useEffect(() => {
     if (resetSize === undefined) return;
-    return registerEditorLayoutReset(resetToDefault);
-  }, [resetSize, resetToDefault]);
+    return registerEditorPanelSizeReset({ panelIds: [panelId], reset: resetToDefault });
+  }, [panelId, resetSize, resetToDefault]);
 
   const context = useMemo<EditorPanelContextValue>(
-    () => ({ panel, panelId, panelRef, resetToDefault }),
+    () => ({ panel, panelId, panelRef, resetToDefault, sizeResetDepth }),
     [panel, panelId, panelRef, resetToDefault],
   );
 
@@ -85,7 +106,7 @@ function EditorPanelContent({
   onResize,
   ...props
 }: EditorPanelContentProps) {
-  const { panel, panelId, panelRef } = useEditorPanelContext();
+  const { panel, panelId, panelRef, sizeResetDepth } = useEditorPanelContext();
   const dispatch = useAppDispatch();
 
   useEffect(() => {
@@ -112,7 +133,7 @@ function EditorPanelContent({
       panelRef={panelRef}
       onResize={(size, id, previousSize) => {
         onResize?.(size, id, previousSize);
-        if (!collapsible) return;
+        if (!collapsible || sizeResetDepth.current > 0) return;
 
         const collapsed = panelRef.current?.isCollapsed() ?? size.inPixels <= 0;
         if (collapsed !== panel.collapsed) {
@@ -224,9 +245,7 @@ function EditorPanelToggle({
 function useEditorPanelContext() {
   const context = useContext(EditorPanelContext);
   if (!context) {
-    throw new Error(
-      "EditorPanelContent, EditorPanelHandle, and EditorPanelWhenExpanded must be used within EditorPanel",
-    );
+    throw new Error("EditorPanelContent and EditorPanelHandle must be used within EditorPanel");
   }
   return context;
 }

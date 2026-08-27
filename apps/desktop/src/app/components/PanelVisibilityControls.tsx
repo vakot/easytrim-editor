@@ -14,12 +14,28 @@ import { useEditorPanelControl } from "@/app/hooks/useEditorPanelControl";
 import { useAppDispatch } from "@/app/store/hooks";
 import {
   EDITOR_PANEL_IDS,
-  editorLayoutReset,
+  editorPanelsResetToDefault,
   type EditorPanelId,
+  type EditorPanelResetRequest,
 } from "@/app/store/slices/editor-layout-slice";
 import { ContextMenu, type ContextMenuOption } from "@/components/ui/context-menu";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+
+const DEFAULT_EDITOR_PANEL_RESETS = [
+  {
+    panelId: EDITOR_PANEL_IDS.sourceDetails,
+    resetCollapsed: true,
+    resetSize: true,
+    resetVisible: true,
+  },
+  {
+    panelId: EDITOR_PANEL_IDS.timeline,
+    resetCollapsed: true,
+    resetSize: true,
+    resetVisible: true,
+  },
+] as const satisfies readonly EditorPanelResetRequest[];
 
 function usePanelVisibilityOption({
   icon,
@@ -103,7 +119,7 @@ export function PanelVisibilityControls() {
       id: "layout-reset",
       children: t("app.panels.resetLayout"),
       icon: <RotateCcw className="size-3" aria-hidden="true" />,
-      onSelect: () => dispatch(editorLayoutReset()),
+      onSelect: () => dispatch(editorPanelsResetToDefault(DEFAULT_EDITOR_PANEL_RESETS)),
     },
   ];
 

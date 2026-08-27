@@ -6,10 +6,15 @@ import type { MediaCapabilities, MediaInfo, SourceDropEvent } from "../lib/tauri
 import type { SourceRef } from "../domain/source";
 import { store } from "../app/store/store";
 import {
+  EDITOR_PANEL_IDS,
+  editorPanelsResetToDefault,
+  panelCollapsedChanged,
+  type EditorPanelResetRequest,
+} from "../app/store/slices/editor-layout-slice";
+import {
   createEditorToolsStateFromPreferences,
   editorToolsInitialized,
 } from "../app/store/slices/editor-tools-slice";
-import { editorLayoutReset } from "../app/store/slices/editor-layout-slice";
 import { sourceCleared } from "../app/store/actions/source-actions";
 import {
   importedQueueItemRemoved,
@@ -99,6 +104,13 @@ const media: MediaInfo = {
 let sourceDropListener: ((event: SourceDropEvent) => void) | undefined;
 let stopSourceMediaRuntime: (() => void) | undefined;
 
+const RESET_ALL_EDITOR_PANELS = Object.values(EDITOR_PANEL_IDS).map((panelId) => ({
+  panelId,
+  resetCollapsed: true,
+  resetSize: true,
+  resetVisible: true,
+})) satisfies EditorPanelResetRequest[];
+
 async function openSourcePicker(user: ReturnType<typeof userEvent.setup>) {
   screen.getByRole("button", { name: "File" }).focus();
   await user.keyboard("{Enter}");
@@ -150,7 +162,7 @@ function installAudioMocks(initiallyReady = true) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  store.dispatch(editorLayoutReset());
+  store.dispatch(editorPanelsResetToDefault(RESET_ALL_EDITOR_PANELS));
   store.dispatch(sourceCleared());
   for (const item of selectImportedQueueItems(store.getState())) {
     store.dispatch(importedQueueItemRemoved(item.id));
@@ -723,6 +735,18 @@ describe("App", () => {
 
     await openSourcePicker(user);
     await waitForSourcePresence(true);
+    store.dispatch(
+      panelCollapsedChanged({
+        panelId: EDITOR_PANEL_IDS.sidebarImportedQueue,
+        collapsed: true,
+      }),
+    );
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Imported queue" })).toHaveAttribute(
+        "aria-expanded",
+        "false",
+      ),
+    );
     screen.getByRole("button", { name: "Layout controls" }).focus();
     await user.keyboard("{Enter}");
     const leftPanelRow = screen.getByRole("menuitem", { name: /Left panel/ });
@@ -742,6 +766,10 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "Hide Bottom panel" })).toHaveAttribute(
       "aria-pressed",
       "true",
+    );
+    expect(screen.getByRole("button", { name: "Imported queue" })).toHaveAttribute(
+      "aria-expanded",
+      "false",
     );
   });
 

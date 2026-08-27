@@ -11,7 +11,7 @@ import {
   type ReactNode,
 } from "react";
 
-import { registerEditorLayoutReset } from "@/app/editor-layout-runtime";
+import { registerEditorPanelSizeReset } from "@/app/editor-layout-runtime";
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import {
   panelCollapsedChanged,
@@ -92,7 +92,14 @@ function EditorPaneView({ children, id, panels, ...props }: EditorPaneViewProps)
     );
   }, [groupRef, id, visiblePanels]);
 
-  useEffect(() => registerEditorLayoutReset(resetPanelSizes), [resetPanelSizes]);
+  useEffect(
+    () =>
+      registerEditorPanelSizeReset({
+        panelIds: panels.map((panel) => panel.panelId),
+        reset: resetPanelSizes,
+      }),
+    [panels, resetPanelSizes],
+  );
 
   const context = useMemo(
     () => ({ visiblePaneCount: visiblePanels.length }),

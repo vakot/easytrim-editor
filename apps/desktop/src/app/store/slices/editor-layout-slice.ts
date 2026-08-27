@@ -21,6 +21,13 @@ export interface EditorLayoutState {
   panels: Record<EditorPanelId, EditorPanelState>;
 }
 
+export interface EditorPanelResetRequest {
+  panelId: EditorPanelId;
+  resetCollapsed?: boolean;
+  resetSize?: boolean;
+  resetVisible?: boolean;
+}
+
 const createExpandedPanelState = (): EditorPanelState => ({
   visible: true,
   collapsed: false,
@@ -78,7 +85,20 @@ const editorLayoutSlice = createSlice({
       if (!panel.visible) return;
       panel.collapsed = !panel.collapsed;
     },
-    editorLayoutReset: () => createInitialEditorLayoutState(),
+    editorPanelsResetToDefault: (
+      state,
+      action: PayloadAction<readonly EditorPanelResetRequest[]>,
+    ) => {
+      const defaults = createInitialEditorLayoutState();
+
+      action.payload.forEach(({ panelId, resetCollapsed, resetVisible }) => {
+        const panel = state.panels[panelId];
+        const defaultPanel = defaults.panels[panelId];
+
+        if (resetVisible) panel.visible = defaultPanel.visible;
+        if (resetCollapsed) panel.collapsed = defaultPanel.collapsed;
+      });
+    },
   },
 });
 
@@ -87,7 +107,7 @@ export const {
   panelVisibilityToggled,
   panelCollapsedChanged,
   panelCollapseToggled,
-  editorLayoutReset,
+  editorPanelsResetToDefault,
 } = editorLayoutSlice.actions;
 export const editorLayoutReducer = editorLayoutSlice.reducer;
 
