@@ -1,43 +1,49 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import type { ReactNode } from "react";
+import type { MouseEventHandler } from "react";
 import { describe, expect, it, vi } from "vitest";
 
-const handleProps = vi.hoisted(() => ({
-  current: null as null | {
-    disabled?: boolean;
-    disableDoubleClick?: boolean;
-  },
-}));
-
-vi.mock("@/components/ui/resizable", () => ({
-  ResizableHandle: ({
-    children,
-    disabled,
-    disableDoubleClick,
-    ...props
-  }: {
-    children: ReactNode;
-    disabled?: boolean;
-    disableDoubleClick?: boolean;
-  }) => {
-    handleProps.current = { disabled, disableDoubleClick };
-    return (
-      <div role="separator" {...props}>
-        {children}
-      </div>
-    );
-  },
-}));
-
+import { ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { PanelSeparator } from "../panel-separator";
+
+interface SeparatorFixtureProps {
+  orientation: "horizontal" | "vertical";
+  disabled?: boolean;
+  collapsed?: boolean;
+  onDoubleClick?: MouseEventHandler<HTMLDivElement>;
+}
+
+function SeparatorFixture({
+  orientation,
+  disabled,
+  collapsed,
+  onDoubleClick,
+}: SeparatorFixtureProps) {
+  return (
+    <ResizablePanelGroup
+      id={`${orientation}-group`}
+      orientation={orientation === "vertical" ? "horizontal" : "vertical"}
+    >
+      <ResizablePanel id={`${orientation}-before`} defaultSize="50%" />
+      <PanelSeparator
+        id={`${orientation}-separator`}
+        label={`Resize ${orientation} panels`}
+        orientation={orientation}
+        disabled={disabled}
+        collapsed={collapsed}
+        onDoubleClick={onDoubleClick}
+      />
+      <ResizablePanel id={`${orientation}-after`} defaultSize="50%" />
+    </ResizablePanelGroup>
+  );
+}
 
 describe("PanelSeparator", () => {
   it("renders a four-pixel vertical hitbox around a centered one-pixel line", () => {
-    render(
-      <PanelSeparator id="vertical-separator" label="Resize columns" orientation="vertical" />,
-    );
+    render(<SeparatorFixture orientation="vertical" />);
 
-    const separator = screen.getByRole("separator", { name: "Resize columns" });
+    const separator = screen.getByRole("separator", { name: "Resize vertical panels" });
+    expect(separator).toHaveAttribute("aria-orientation", "vertical");
+    expect(separator).toHaveAttribute("data-separator", "inactive");
     expect(separator).toHaveClass("w-1", "bg-transparent", "after:hidden");
     expect(separator.querySelector('[data-slot="panel-separator-line"]')).toHaveClass(
       "w-px",
@@ -46,18 +52,18 @@ describe("PanelSeparator", () => {
     expect(separator.querySelector('[data-slot="panel-separator-marker"]')).toHaveClass("flex-col");
   });
 
-  it("renders a four-pixel horizontal hitbox and horizontal marker", () => {
-    render(
-      <PanelSeparator id="horizontal-separator" label="Resize rows" orientation="horizontal" />,
-    );
+  it("renders a four-pixel horizontal hitbox without rotating custom children", () => {
+    render(<SeparatorFixture orientation="horizontal" />);
 
-    const separator = screen.getByRole("separator", { name: "Resize rows" });
+    const separator = screen.getByRole("separator", { name: "Resize horizontal panels" });
+    expect(separator).toHaveAttribute("aria-orientation", "horizontal");
     expect(separator).toHaveClass(
       "h-1",
       "w-full",
       "aria-[orientation=horizontal]:h-1",
       "[&[aria-orientation=horizontal]>div]:rotate-0",
     );
+    expect(separator).not.toHaveClass("[&[aria-orientation=horizontal]>div]:rotate-90");
     expect(separator.querySelector('[data-slot="panel-separator-line"]')).toHaveClass(
       "h-px",
       "top-1/2",
@@ -66,11 +72,11 @@ describe("PanelSeparator", () => {
   });
 
   it("keeps the active overlay across the full hitbox", () => {
-    render(<PanelSeparator id="styled-separator" label="Resize panels" orientation="vertical" />);
+    render(<SeparatorFixture orientation="vertical" />);
 
     expect(
       screen
-        .getByRole("separator", { name: "Resize panels" })
+        .getByRole("separator", { name: "Resize vertical panels" })
         .querySelector('[data-slot="panel-separator-overlay"]'),
     ).toHaveClass(
       "absolute",
@@ -82,49 +88,30 @@ describe("PanelSeparator", () => {
     );
   });
 
-  it("forwards disabled and double-click behavior", () => {
+  it("supports disabled and custom double-click behavior", () => {
     const onDoubleClick = vi.fn();
     const { rerender } = render(
-      <PanelSeparator
-        id="interactive-separator"
-        label="Resize panels"
-        orientation="vertical"
-        onDoubleClick={onDoubleClick}
-      />,
+      <SeparatorFixture orientation="vertical" onDoubleClick={onDoubleClick} />,
     );
 
-    fireEvent.doubleClick(screen.getByRole("separator", { name: "Resize panels" }));
+    fireEvent.doubleClick(screen.getByRole("separator", { name: "Resize vertical panels" }));
     expect(onDoubleClick).toHaveBeenCalledOnce();
-    expect(handleProps.current).toEqual({ disabled: false, disableDoubleClick: true });
 
-    rerender(
-      <PanelSeparator
-        id="interactive-separator"
-        label="Resize panels"
-        orientation="vertical"
-        disabled
-      />,
-    );
+    rerender(<SeparatorFixture orientation="vertical" disabled />);
 
     const separator = screen.getByRole("separator", { hidden: true });
     expect(separator).toHaveAttribute("aria-hidden", "true");
+    expect(separator).toHaveAttribute("aria-disabled", "true");
+    expect(separator).not.toHaveAttribute("tabindex");
     expect(separator).toHaveClass("pointer-events-none", "hidden");
-    expect(handleProps.current).toEqual({ disabled: true, disableDoubleClick: false });
   });
 
   it("hides the optional marker when collapsed", () => {
-    render(
-      <PanelSeparator
-        id="collapsed-separator"
-        label="Resize panels"
-        orientation="vertical"
-        collapsed
-      />,
-    );
+    render(<SeparatorFixture orientation="vertical" collapsed />);
 
     expect(
       screen
-        .getByRole("separator", { name: "Resize panels" })
+        .getByRole("separator", { name: "Resize vertical panels" })
         .querySelector('[data-slot="panel-separator-marker"]'),
     ).toBeNull();
   });
