@@ -19,7 +19,7 @@ const panelMock = vi.hoisted(() => {
   return { model, panel, ref: { current: panel } };
 });
 
-vi.mock("react-resizable-panels", () => ({
+vi.mock("@/components/ui/resizable", () => ({
   usePanelRef: () => panelMock.ref,
 }));
 

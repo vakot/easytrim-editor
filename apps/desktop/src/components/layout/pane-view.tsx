@@ -9,18 +9,17 @@ import {
   useMemo,
   useState,
   type ComponentProps,
-  type CSSProperties,
   type ReactElement,
   type ReactNode,
 } from "react";
-import { Group, Panel } from "react-resizable-panels";
 
-import { PanelSeparator } from "@/components/layout/panel-separator";
 import { Button } from "@/components/ui/button";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 
-const HEADER_SIZE = 32;
+const DEFAULT_HEADER_SIZE = 28; // h-7 from <Button size="sm" />
 const DEFAULT_MIN_SIZE = 120;
 
 interface PaneViewContextValue {
@@ -59,7 +58,7 @@ function PaneView({
   "aria-label": ariaLabel,
 }: PaneViewProps) {
   const generatedId = useId();
-  const groupId = idProp ?? `resizable-accordion-${generatedId}`;
+  const groupId = idProp ?? `pane-view-${generatedId}`;
   const [uncontrolledValue, setUncontrolledValue] = useState(defaultValue);
   const openIds = value ?? uncontrolledValue;
   const openIdSet = new Set(openIds);
@@ -83,51 +82,41 @@ function PaneView({
 
   return (
     <PaneViewContext.Provider value={context}>
-      <Group
+      <ResizablePanelGroup
         id={groupId}
         orientation="vertical"
         aria-label={ariaLabel}
-        data-slot="resizable-accordion"
+        data-slot="pane-view"
         className={cn("h-full min-h-0", className)}
-        style={
-          {
-            "--resizable-accordion-header-size": `${HEADER_SIZE}px`,
-          } as CSSProperties
-        }
       >
         {items.map((item, index) => {
-          const previousItem = items[index - 1];
-          const bothAdjacentItemsCollapsed =
-            previousItem !== undefined &&
-            !openIdSet.has(previousItem.props.id) &&
-            !openIdSet.has(item.props.id);
-
           return (
             <Fragment key={item.key ?? item.props.id}>
               {index > 0 ? (
-                <PanelSeparator
+                <ResizableHandle
                   id={`${groupId}-separator-${index}`}
-                  label="Resize adjacent sections"
-                  orientation="horizontal"
-                  disabled={bothAdjacentItemsCollapsed}
-                />
+                  aria-label="Resize adjacent sections"
+                  className="h-1! bg-transparent px-2"
+                >
+                  <Separator />
+                </ResizableHandle>
               ) : null}
               {item}
             </Fragment>
           );
         })}
 
-        <Panel
+        <ResizablePanel
           id={`${groupId}-spacer`}
           aria-hidden="true"
-          data-slot="resizable-accordion-spacer"
+          data-slot="pane-view-spacer"
           defaultSize={0}
           minSize={0}
           maxSize={hasOpenItem ? 0 : undefined}
           disabled={hasOpenItem}
           className="min-h-0"
         />
-      </Group>
+      </ResizablePanelGroup>
     </PaneViewContext.Provider>
   );
 }
@@ -136,6 +125,7 @@ interface PaneViewItemProps {
   children: ReactNode;
   id: string;
   defaultSize?: number | string;
+  headerSize?: number | string;
   minSize?: number | string;
   maxSize?: number | string;
   className?: string;
@@ -145,40 +135,41 @@ function PaneViewItem({
   children,
   id,
   defaultSize,
+  headerSize = DEFAULT_HEADER_SIZE,
   minSize = DEFAULT_MIN_SIZE,
   maxSize,
   className,
 }: PaneViewItemProps) {
-  const accordion = usePaneViewContext();
+  const paneView = usePaneViewContext();
   const generatedId = useId();
-  const isOpen = accordion.openIds.includes(id);
-  const triggerId = `resizable-accordion-trigger-${generatedId}`;
-  const contentId = `resizable-accordion-content-${generatedId}`;
+  const isOpen = paneView.openIds.includes(id);
+  const triggerId = `pane-view-trigger-${generatedId}`;
+  const contentId = `pane-view-content-${generatedId}`;
   const context = useMemo<PaneViewItemContextValue>(
     () => ({
       contentId,
       isOpen,
       itemId: id,
       triggerId,
-      toggle: () => accordion.toggleItem(id),
+      toggle: () => paneView.toggleItem(id),
     }),
-    [accordion, contentId, id, isOpen, triggerId],
+    [contentId, id, isOpen, paneView, triggerId],
   );
 
   return (
     <PaneViewItemContext.Provider value={context}>
-      <Panel
+      <ResizablePanel
         id={id}
-        data-slot="resizable-accordion-item"
+        data-slot="pane-view-item"
         data-state={isOpen ? "open" : "closed"}
         defaultSize={defaultSize}
         disabled={!isOpen}
-        minSize={isOpen ? minSize : HEADER_SIZE}
-        maxSize={isOpen ? maxSize : HEADER_SIZE}
+        minSize={isOpen ? minSize : headerSize}
+        maxSize={isOpen ? maxSize : headerSize}
         className={cn("min-h-0", className)}
       >
         <div className="flex h-full min-h-0 flex-col overflow-hidden">{children}</div>
-      </Panel>
+      </ResizablePanel>
     </PaneViewItemContext.Provider>
   );
 }
@@ -204,14 +195,14 @@ function PaneViewTrigger({
       size={size}
       aria-controls={item.contentId}
       aria-expanded={item.isOpen}
-      data-slot="resizable-accordion-trigger"
+      data-slot="pane-view-trigger"
       data-state={item.isOpen ? "open" : "closed"}
       onClick={(event) => {
         onClick?.(event);
         if (!event.defaultPrevented) item.toggle();
       }}
       className={cn(
-        "h-[var(--resizable-accordion-header-size)] w-full shrink-0 justify-start px-2 text-foreground/80",
+        "w-full shrink-0 justify-start text-foreground/80 aria-expanded:bg-transparent aria-expanded:text-foreground/80 aria-expanded:hover:bg-muted aria-expanded:hover:text-foreground",
         className,
       )}
     >
@@ -239,7 +230,7 @@ function PaneViewContent({ className, children, ...props }: PaneViewContentProps
       role="region"
       aria-labelledby={item.triggerId}
       hidden={!item.isOpen}
-      data-slot="resizable-accordion-content"
+      data-slot="pane-view-content"
       data-state={item.isOpen ? "open" : "closed"}
       className={cn("min-h-0 flex-1", className)}
     >
