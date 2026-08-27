@@ -93,7 +93,6 @@ export function SourceSidebar() {
     ) : (
       <EyeOff className="size-3" aria-hidden="true" />
     ),
-    selected: panel.state.visible,
     shouldCloseOnClick: false,
     onSelect: () => dispatch(panelVisibilityToggled(panel.panelId)),
   }));
