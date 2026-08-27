@@ -1,8 +1,14 @@
 import { LoaderCircle } from "lucide-react";
-import { Fragment, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
-import { EDITOR_PANEL_GROUP_IDS, registerEditorLayoutReset } from "@/app/editor-layout-runtime";
+import {
+  EditorPanel,
+  EditorPanelContent,
+  EditorPanelHandle,
+  PersistedEditorPanelGroup,
+  type EditorPanelRegistration,
+} from "@/app/components/EditorPanel";
+import { EDITOR_PANEL_GROUP_IDS } from "@/app/editor-layout-runtime";
 import { usePlayback, useTimeline } from "@/app/hooks/useEditorContracts";
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import {
@@ -16,11 +22,7 @@ import {
   selectMergeAudio,
   waveformDisplayFailed,
 } from "@/app/store/slices/audio-slice";
-import {
-  EDITOR_PANEL_IDS,
-  panelCollapsedChanged,
-  selectEditorPanel,
-} from "@/app/store/slices/editor-layout-slice";
+import { EDITOR_PANEL_IDS } from "@/app/store/slices/editor-layout-slice";
 import { selectPreview } from "@/app/store/slices/preview-slice";
 import {
   selectSourceMedia,
@@ -30,12 +32,7 @@ import {
 import { selectTrim } from "@/app/store/slices/trim-slice";
 import { prepareSourceWaveforms } from "@/app/store/thunks/source-media-thunks";
 import { PanelContent } from "@/components/layout/panel-content";
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-  useDefaultLayout,
-} from "@/components/ui/resizable";
+import { ResizablePanel } from "@/components/ui/resizable";
 import { AudioTracks } from "@/features/audio-tracks";
 import {
   PlaybackControls,
@@ -53,6 +50,11 @@ const EMPTY_TIMELINE_RANGE = {
   sourceDurationMicros: 1_000_000,
 } as const;
 
+const STAGE_PANELS = [
+  { id: "preview-panel" },
+  { id: "timeline-panel", panelId: EDITOR_PANEL_IDS.timeline },
+] as const satisfies readonly EditorPanelRegistration[];
+
 export function EditorStage() {
   const { t } = useTranslation();
   const sourceSelection = useAppSelector(selectSourceSelection);
@@ -66,9 +68,6 @@ export function EditorStage() {
   const playback = usePlayback();
   const timeline = useTimeline();
   const dispatch = useAppDispatch();
-  const timelinePanel = useAppSelector((state) =>
-    selectEditorPanel(state, EDITOR_PANEL_IDS.timeline),
-  );
   const sourcePath = sourceSelection?.sourcePath ?? null;
   const timelineRange = trim ?? EMPTY_TIMELINE_RANGE;
   const controlsDisabled = !isSourceReady || !playback.isReady;
@@ -78,28 +77,12 @@ export function EditorStage() {
   const timelinePanelSizing = useTimelinePanelSizing(
     sourceSelection !== null,
     media?.audioStreams.length ?? null,
-    timelinePanel.visible && !timelinePanel.collapsed,
-    timelinePanel.visible,
   );
-  const panelIds = useMemo(
-    () => (timelinePanel.visible ? ["preview-panel", "timeline-panel"] : ["preview-panel"]),
-    [timelinePanel.visible],
-  );
-  const { defaultLayout, onLayoutChanged } = useDefaultLayout({
-    id: EDITOR_PANEL_GROUP_IDS.stage,
-    panelIds,
-    storage: localStorage,
-  });
-
-  useEffect(() => {
-    return registerEditorLayoutReset(timelinePanelSizing.resetToDefault);
-  }, [timelinePanelSizing.resetToDefault]);
 
   return (
-    <ResizablePanelGroup
+    <PersistedEditorPanelGroup
       id={EDITOR_PANEL_GROUP_IDS.stage}
-      defaultLayout={defaultLayout}
-      onLayoutChanged={onLayoutChanged}
+      panels={STAGE_PANELS}
       orientation="vertical"
       className="relative min-h-0 min-w-0 bg-background"
       resizeTargetMinimumSize={{ fine: 8, coarse: 24 }}
@@ -127,39 +110,28 @@ export function EditorStage() {
         </PanelContent>
       </ResizablePanel>
 
-      {timelinePanel.visible ? (
-        <Fragment>
-          <ResizableHandle
-            id="preview-timeline-resize-handle"
-            aria-label={t("preview.resize")}
-            onDoubleClick={timelinePanelSizing.resetToDefault}
-            className="my-0.5 bg-transparent"
-            withHandle={!timelinePanel.collapsed}
-          />
+      <EditorPanel
+        panelId={EDITOR_PANEL_IDS.timeline}
+        panelRef={timelinePanelSizing.panelRef}
+        resetSize={timelinePanelSizing.constraints.defaultSize}
+      >
+        <EditorPanelHandle
+          id="preview-timeline-resize-handle"
+          aria-label={t("preview.resize")}
+          className="my-0.5 bg-transparent"
+        />
 
-          <ResizablePanel
-            id="timeline-panel"
-            panelRef={timelinePanelSizing.panelRef}
-            defaultSize={timelinePanelSizing.initialDefaultSize}
-            collapsible
-            collapsedSize={timelinePanelSizing.collapsedSize}
-            minSize={timelinePanelSizing.constraints.minSize}
-            maxSize={timelinePanelSizing.constraints.maxSize}
-            onResize={(size) => {
-              const collapsed =
-                timelinePanelSizing.panelRef.current?.isCollapsed() ?? size.inPixels <= 0;
-              if (collapsed !== timelinePanel.collapsed) {
-                dispatch(
-                  panelCollapsedChanged({
-                    panelId: EDITOR_PANEL_IDS.timeline,
-                    collapsed,
-                  }),
-                );
-              }
-            }}
-            groupResizeBehavior="preserve-pixel-size"
-            className="min-h-0 min-w-0 pb-1"
-          >
+        <EditorPanelContent
+          id="timeline-panel"
+          defaultSize={timelinePanelSizing.initialDefaultSize}
+          collapsible
+          collapsedSize={timelinePanelSizing.collapsedSize}
+          minSize={timelinePanelSizing.constraints.minSize}
+          maxSize={timelinePanelSizing.constraints.maxSize}
+          groupResizeBehavior="preserve-pixel-size"
+          className="min-h-0 min-w-0 pb-1"
+        >
+          {(panel) => (
             <PanelContent>
               <TimelinePane
                 range={timelineRange}
@@ -205,7 +177,7 @@ export function EditorStage() {
                   />
                 }
                 audioTracks={
-                  !timelinePanel.collapsed && (media?.audioStreams.length ?? 0) > 0 ? (
+                  !panel.collapsed && (media?.audioStreams.length ?? 0) > 0 ? (
                     <AudioTracks
                       streams={media?.audioStreams ?? []}
                       tracks={audioTracks}
@@ -237,9 +209,9 @@ export function EditorStage() {
                 }
               />
             </PanelContent>
-          </ResizablePanel>
-        </Fragment>
-      ) : null}
+          )}
+        </EditorPanelContent>
+      </EditorPanel>
       {showLoadingOverlay ? (
         <div
           className="absolute inset-0 z-30 grid place-items-center bg-background/75 backdrop-blur-sm"
@@ -257,6 +229,6 @@ export function EditorStage() {
           </div>
         </div>
       ) : null}
-    </ResizablePanelGroup>
+    </PersistedEditorPanelGroup>
   );
 }

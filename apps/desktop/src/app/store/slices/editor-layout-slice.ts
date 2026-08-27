@@ -46,13 +46,19 @@ const editorLayoutSlice = createSlice({
       state,
       action: PayloadAction<{ panelId: EditorPanelId; visible: boolean }>,
     ) => {
-      if (action.payload.panelId === EDITOR_PANEL_IDS.sidebarMedia) return;
+      if (action.payload.panelId === EDITOR_PANEL_IDS.sidebarMedia) {
+        state.panels[EDITOR_PANEL_IDS.sidebarMedia].visible = true;
+        return;
+      }
       const panel = state.panels[action.payload.panelId];
       panel.visible = action.payload.visible;
       panel.collapsed = false;
     },
     panelVisibilityToggled: (state, action: PayloadAction<EditorPanelId>) => {
-      if (action.payload === EDITOR_PANEL_IDS.sidebarMedia) return;
+      if (action.payload === EDITOR_PANEL_IDS.sidebarMedia) {
+        state.panels[EDITOR_PANEL_IDS.sidebarMedia].visible = true;
+        return;
+      }
       const panel = state.panels[action.payload];
       panel.visible = !panel.visible;
       panel.collapsed = false;
@@ -62,11 +68,13 @@ const editorLayoutSlice = createSlice({
       action: PayloadAction<{ panelId: EditorPanelId; collapsed: boolean }>,
     ) => {
       const panel = state.panels[action.payload.panelId];
+      if (action.payload.panelId === EDITOR_PANEL_IDS.sidebarMedia) panel.visible = true;
       if (!panel.visible) return;
       panel.collapsed = action.payload.collapsed;
     },
     panelCollapseToggled: (state, action: PayloadAction<EditorPanelId>) => {
       const panel = state.panels[action.payload];
+      if (action.payload === EDITOR_PANEL_IDS.sidebarMedia) panel.visible = true;
       if (!panel.visible) return;
       panel.collapsed = !panel.collapsed;
     },

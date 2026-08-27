@@ -14,7 +14,13 @@ import {
 } from "react";
 
 import { Button } from "@/components/ui/button";
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+  useDefaultLayout,
+  type ResizableLayoutStorage,
+} from "@/components/ui/resizable";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
@@ -49,6 +55,27 @@ interface PaneViewProps {
   id?: string;
   className?: string;
   "aria-label"?: string;
+}
+
+interface PersistedPaneViewProps extends Omit<
+  PaneViewProps,
+  "defaultLayout" | "id" | "onLayoutChanged"
+> {
+  id: string;
+  panelIds: readonly string[];
+  storage?: ResizableLayoutStorage;
+}
+
+function PersistedPaneView({ id, panelIds, storage, ...props }: PersistedPaneViewProps) {
+  const { defaultLayout, onLayoutChanged } = useDefaultLayout({
+    id,
+    panelIds: [...panelIds],
+    storage: storage ?? (typeof localStorage === "undefined" ? undefined : localStorage),
+  });
+
+  return (
+    <PaneView {...props} id={id} defaultLayout={defaultLayout} onLayoutChanged={onLayoutChanged} />
+  );
 }
 
 function PaneView({
@@ -224,6 +251,18 @@ function PaneViewTrigger({
   );
 }
 
+type PaneViewLabelProps = ComponentProps<"span">;
+
+function PaneViewLabel({ children, ...props }: PaneViewLabelProps) {
+  const item = usePaneViewItemContext();
+
+  return (
+    <span {...props} id={item.triggerId}>
+      {children}
+    </span>
+  );
+}
+
 type PaneViewContentProps = Omit<
   ComponentProps<typeof ScrollArea>,
   "aria-labelledby" | "hidden" | "id" | "role"
@@ -268,4 +307,11 @@ function usePaneViewItemContext() {
   return context;
 }
 
-export { PaneView, PaneViewContent, PaneViewItem, PaneViewTrigger };
+export {
+  PaneView,
+  PaneViewContent,
+  PaneViewItem,
+  PaneViewLabel,
+  PaneViewTrigger,
+  PersistedPaneView,
+};

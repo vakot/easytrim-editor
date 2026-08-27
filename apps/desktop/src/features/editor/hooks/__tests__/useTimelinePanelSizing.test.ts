@@ -50,7 +50,7 @@ describe("timelinePanelTargetSize", () => {
 
 describe("useTimelinePanelSizing", () => {
   it("uses the fixed timeline-only size for the initial empty state", () => {
-    const { result } = renderHook(() => useTimelinePanelSizing(false, null, true));
+    const { result } = renderHook(() => useTimelinePanelSizing(false, null));
 
     expect(result.current.constraints).toEqual({ minSize: 170, defaultSize: 170, maxSize: 170 });
     expect(result.current.initialDefaultSize).toBe(170);
@@ -60,7 +60,7 @@ describe("useTimelinePanelSizing", () => {
 
   it("resets an explicitly cleared source and preserves that valid size for the next source", () => {
     const { rerender } = renderHook(
-      ({ hasSource, audioTrackCount }) => useTimelinePanelSizing(hasSource, audioTrackCount, true),
+      ({ hasSource, audioTrackCount }) => useTimelinePanelSizing(hasSource, audioTrackCount),
       {
         initialProps: {
           hasSource: true,
@@ -85,7 +85,7 @@ describe("useTimelinePanelSizing", () => {
 
   it("keeps an explicitly cleared timeline collapsed", () => {
     const { rerender, result } = renderHook(
-      ({ hasSource, audioTrackCount }) => useTimelinePanelSizing(hasSource, audioTrackCount, false),
+      ({ hasSource, audioTrackCount }) => useTimelinePanelSizing(hasSource, audioTrackCount),
       {
         initialProps: {
           hasSource: true,
@@ -93,6 +93,7 @@ describe("useTimelinePanelSizing", () => {
         },
       },
     );
+    panelMock.model.collapsed = true;
     panelMock.panel.resize.mockClear();
 
     rerender({ hasSource: false, audioTrackCount: null });
@@ -103,7 +104,7 @@ describe("useTimelinePanelSizing", () => {
 
   it("preserves the user size with permissive bounds while replacement metadata is pending", () => {
     const { rerender, result } = renderHook(
-      ({ hasSource, audioTrackCount }) => useTimelinePanelSizing(hasSource, audioTrackCount, true),
+      ({ hasSource, audioTrackCount }) => useTimelinePanelSizing(hasSource, audioTrackCount),
       { initialProps: { hasSource: true, audioTrackCount: 3 as number | null } },
     );
     panelMock.model.currentSize = 400;
@@ -123,7 +124,7 @@ describe("useTimelinePanelSizing", () => {
   });
 
   it("preserves a valid restored size when a loaded source mounts", () => {
-    renderHook(() => useTimelinePanelSizing(true, 3, true));
+    renderHook(() => useTimelinePanelSizing(true, 3));
 
     expect(panelMock.panel.resize).not.toHaveBeenCalled();
     expect(panelMock.model.currentSize).toBe(400);
@@ -132,7 +133,7 @@ describe("useTimelinePanelSizing", () => {
   it("clamps an oversized restored size when a loaded source mounts", () => {
     panelMock.model.currentSize = 900;
 
-    renderHook(() => useTimelinePanelSizing(true, 1, true));
+    renderHook(() => useTimelinePanelSizing(true, 1));
 
     expect(panelMock.panel.resize).toHaveBeenCalledOnce();
     expect(panelMock.panel.resize).toHaveBeenCalledWith(319);
@@ -140,7 +141,7 @@ describe("useTimelinePanelSizing", () => {
 
   it("clamps the preserved size when the confirmed source allows less height", () => {
     const { rerender } = renderHook(
-      ({ hasSource, audioTrackCount }) => useTimelinePanelSizing(hasSource, audioTrackCount, true),
+      ({ hasSource, audioTrackCount }) => useTimelinePanelSizing(hasSource, audioTrackCount),
       { initialProps: { hasSource: true, audioTrackCount: 3 as number | null } },
     );
     panelMock.model.currentSize = 400;
