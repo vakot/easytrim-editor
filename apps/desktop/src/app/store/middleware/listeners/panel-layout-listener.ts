@@ -1,12 +1,12 @@
-import { resetEditorPanelSizes } from "@/app/editor-layout-runtime";
-import { editorPanelsResetToDefault } from "@/app/store/slices/editor-layout-slice";
+import { resetPanelSizes } from "@/app/panel-layout-runtime";
+import { panelsResetToDefault } from "@/app/store/slices/panel-layout-slice";
 
 import { listenerMiddleware } from "../listener-middleware";
 
 listenerMiddleware.startListening({
-  actionCreator: editorPanelsResetToDefault,
+  actionCreator: panelsResetToDefault,
   effect: (action) =>
-    resetEditorPanelSizes(
+    resetPanelSizes(
       action.payload.filter((request) => request.resetSize).map((request) => request.panelId),
     ),
 });

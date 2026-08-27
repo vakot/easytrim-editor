@@ -6,11 +6,11 @@ import type { MediaCapabilities, MediaInfo, SourceDropEvent } from "../lib/tauri
 import type { SourceRef } from "../domain/source";
 import { store } from "../app/store/store";
 import {
-  EDITOR_PANEL_IDS,
-  editorPanelsResetToDefault,
+  PANEL_IDS,
+  panelsResetToDefault,
   panelCollapsedChanged,
-  type EditorPanelResetRequest,
-} from "../app/store/slices/editor-layout-slice";
+  type PanelResetRequest,
+} from "../app/store/slices/panel-layout-slice";
 import {
   createEditorToolsStateFromPreferences,
   editorToolsInitialized,
@@ -104,12 +104,12 @@ const media: MediaInfo = {
 let sourceDropListener: ((event: SourceDropEvent) => void) | undefined;
 let stopSourceMediaRuntime: (() => void) | undefined;
 
-const RESET_ALL_EDITOR_PANELS = Object.values(EDITOR_PANEL_IDS).map((panelId) => ({
+const RESET_ALL_PANELS = Object.values(PANEL_IDS).map((panelId) => ({
   panelId,
   resetCollapsed: true,
   resetSize: true,
   resetVisible: true,
-})) satisfies EditorPanelResetRequest[];
+})) satisfies PanelResetRequest[];
 
 async function openSourcePicker(user: ReturnType<typeof userEvent.setup>) {
   screen.getByRole("button", { name: "File" }).focus();
@@ -162,7 +162,7 @@ function installAudioMocks(initiallyReady = true) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  store.dispatch(editorPanelsResetToDefault(RESET_ALL_EDITOR_PANELS));
+  store.dispatch(panelsResetToDefault(RESET_ALL_PANELS));
   store.dispatch(sourceCleared());
   for (const item of selectImportedQueueItems(store.getState())) {
     store.dispatch(importedQueueItemRemoved(item.id));
@@ -728,7 +728,7 @@ describe("App", () => {
     );
   });
 
-  it("resets editor panel visibility from the panel controls", async () => {
+  it("resets panel visibility from the panel controls", async () => {
     mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
     render(<App />);
@@ -737,7 +737,7 @@ describe("App", () => {
     await waitForSourcePresence(true);
     store.dispatch(
       panelCollapsedChanged({
-        panelId: EDITOR_PANEL_IDS.sidebarImportedQueue,
+        panelId: PANEL_IDS.sidebarImportedQueue,
         collapsed: true,
       }),
     );

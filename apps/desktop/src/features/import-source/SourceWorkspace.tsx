@@ -1,17 +1,16 @@
-import { EDITOR_PANEL_GROUP_IDS } from "@/app/editor-layout-runtime";
-import {
-  EditorPanel,
-  EditorPanelContent,
-  EditorPanelHandle,
-  PersistedEditorPanelGroup,
-  type EditorPanelRegistration,
-} from "@/app/components/EditorPanel";
+import { PANEL_GROUP_IDS } from "@/app/panel-layout-runtime";
 import { useAppSelector } from "@/app/store/hooks";
-import { EDITOR_PANEL_IDS } from "@/app/store/slices/editor-layout-slice";
+import { PANEL_IDS } from "@/app/store/slices/panel-layout-slice";
 import { selectActiveItemId } from "@/app/store/slices/export-slice";
 import { selectIsSourceDragActive } from "@/app/store/slices/import-workflow-slice";
 import { selectSourceSelection } from "@/app/store/slices/source-slice";
 import { PanelContent } from "@/components/layout/panel-content";
+import {
+  Panel,
+  PanelHandle,
+  PersistedPanelGroup,
+  type PanelRegistration,
+} from "@/components/layout/panel";
 import { ResizablePanel } from "@/components/ui/resizable";
 import { EditorStage } from "@/features/editor";
 import { useTranslation } from "react-i18next";
@@ -21,9 +20,9 @@ import { SourceSidebar } from "./components/SourceSidebar";
 export { CapabilityStatus } from "./components/CapabilityStatus";
 
 const WORKSPACE_PANELS = [
-  { id: "source-details-panel", panelId: EDITOR_PANEL_IDS.sourceDetails },
+  { id: "source-details-panel", panelId: PANEL_IDS.sourceDetails },
   { id: "editor-content-panel" },
-] as const satisfies readonly EditorPanelRegistration[];
+] as const satisfies readonly PanelRegistration[];
 
 export function SourceWorkspace() {
   const { t } = useTranslation();
@@ -32,37 +31,38 @@ export function SourceWorkspace() {
   const activeItemId = useAppSelector(selectActiveItemId);
 
   return (
-    <PersistedEditorPanelGroup
-      id={EDITOR_PANEL_GROUP_IDS.workspace}
+    <PersistedPanelGroup
+      id={PANEL_GROUP_IDS.workspace}
       panels={WORKSPACE_PANELS}
       orientation="horizontal"
       resizeTargetMinimumSize={{ fine: 8, coarse: 24 }}
       aria-label={t("import.source.workspace")}
     >
-      <EditorPanel panelId={EDITOR_PANEL_IDS.sourceDetails} resetSize="20rem">
-        <EditorPanelContent
-          id="source-details-panel"
-          collapsible
-          collapsedSize={0}
-          defaultSize="20rem"
-          minSize="15rem"
-          maxSize="30rem"
-          groupResizeBehavior="preserve-pixel-size"
-          className="min-h-0 min-w-0 overflow-hidden"
-        >
-          <div className="h-full pl-1 pb-1">
-            <PanelContent>
-              <SourceSidebar />
-            </PanelContent>
-          </div>
-        </EditorPanelContent>
+      <Panel
+        panelId={PANEL_IDS.sourceDetails}
+        resetSize="20rem"
+        id="source-details-panel"
+        collapsible
+        collapsedSize={0}
+        defaultSize="20rem"
+        minSize="15rem"
+        maxSize="30rem"
+        groupResizeBehavior="preserve-pixel-size"
+        className="min-h-0 min-w-0 overflow-hidden"
+      >
+        <div className="h-full pl-1 pb-1">
+          <PanelContent>
+            <SourceSidebar />
+          </PanelContent>
+        </div>
+      </Panel>
 
-        <EditorPanelHandle
-          id="source-details-resize-handle"
-          aria-label={t("import.source.resizeDetails")}
-          className="mb-1 mx-0.5 bg-transparent"
-        />
-      </EditorPanel>
+      <PanelHandle
+        panelId={PANEL_IDS.sourceDetails}
+        id="source-details-resize-handle"
+        aria-label={t("import.source.resizeDetails")}
+        className="mb-1 mx-0.5 bg-transparent"
+      />
 
       <ResizablePanel id="editor-content-panel" minSize="44rem" className="pr-1">
         <div className="relative h-full w-full" aria-label={t("import.source.previewArea")}>
@@ -70,6 +70,6 @@ export function SourceWorkspace() {
           {isSourceDragActive ? <DropOverlay /> : null}
         </div>
       </ResizablePanel>
-    </PersistedEditorPanelGroup>
+    </PersistedPanelGroup>
   );
 }

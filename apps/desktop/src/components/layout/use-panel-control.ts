@@ -4,24 +4,21 @@ import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import {
   panelCollapseToggled,
   panelVisibilityChanged,
-  selectEditorPanel,
-  type EditorPanelId,
-} from "@/app/store/slices/editor-layout-slice";
+  selectPanel,
+  type PanelId,
+} from "@/app/store/slices/panel-layout-slice";
 
-type EditorPanelToggleMode = "collapse" | "visibility";
+type PanelToggleMode = "collapse" | "visibility";
 
-interface UseEditorPanelControlResult {
+interface UsePanelControlResult {
   active: boolean;
   setActive: (active: boolean) => void;
   toggle: () => void;
 }
 
-function useEditorPanelControl(
-  panelId: EditorPanelId,
-  mode: EditorPanelToggleMode,
-): UseEditorPanelControlResult {
+function usePanelControl(panelId: PanelId, mode: PanelToggleMode): UsePanelControlResult {
   const dispatch = useAppDispatch();
-  const panel = useAppSelector((state) => selectEditorPanel(state, panelId));
+  const panel = useAppSelector((state) => selectPanel(state, panelId));
   const active = mode === "visibility" ? panel.visible : panel.visible && !panel.collapsed;
   const setActive = useCallback(
     (nextActive: boolean) => {
@@ -47,5 +44,5 @@ function useEditorPanelControl(
   return { active, setActive, toggle };
 }
 
-export { useEditorPanelControl };
-export type { EditorPanelToggleMode };
+export { usePanelControl };
+export type { PanelToggleMode };

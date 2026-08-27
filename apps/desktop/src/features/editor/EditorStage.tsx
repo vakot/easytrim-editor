@@ -1,14 +1,7 @@
 import { LoaderCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import {
-  EditorPanel,
-  EditorPanelContent,
-  EditorPanelHandle,
-  PersistedEditorPanelGroup,
-  type EditorPanelRegistration,
-} from "@/app/components/EditorPanel";
-import { EDITOR_PANEL_GROUP_IDS } from "@/app/editor-layout-runtime";
+import { PANEL_GROUP_IDS } from "@/app/panel-layout-runtime";
 import { usePlayback, useTimeline } from "@/app/hooks/useEditorContracts";
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import {
@@ -22,7 +15,7 @@ import {
   selectMergeAudio,
   waveformDisplayFailed,
 } from "@/app/store/slices/audio-slice";
-import { EDITOR_PANEL_IDS } from "@/app/store/slices/editor-layout-slice";
+import { PANEL_IDS } from "@/app/store/slices/panel-layout-slice";
 import { selectPreview } from "@/app/store/slices/preview-slice";
 import {
   selectSourceMedia,
@@ -32,6 +25,12 @@ import {
 import { selectTrim } from "@/app/store/slices/trim-slice";
 import { prepareSourceWaveforms } from "@/app/store/thunks/source-media-thunks";
 import { PanelContent } from "@/components/layout/panel-content";
+import {
+  Panel,
+  PanelHandle,
+  PersistedPanelGroup,
+  type PanelRegistration,
+} from "@/components/layout/panel";
 import { ResizablePanel } from "@/components/ui/resizable";
 import { AudioTracks } from "@/features/audio-tracks";
 import {
@@ -52,8 +51,8 @@ const EMPTY_TIMELINE_RANGE = {
 
 const STAGE_PANELS = [
   { id: "preview-panel" },
-  { id: "timeline-panel", panelId: EDITOR_PANEL_IDS.timeline },
-] as const satisfies readonly EditorPanelRegistration[];
+  { id: "timeline-panel", panelId: PANEL_IDS.timeline },
+] as const satisfies readonly PanelRegistration[];
 
 export function EditorStage() {
   const { t } = useTranslation();
@@ -80,8 +79,8 @@ export function EditorStage() {
   );
 
   return (
-    <PersistedEditorPanelGroup
-      id={EDITOR_PANEL_GROUP_IDS.stage}
+    <PersistedPanelGroup
+      id={PANEL_GROUP_IDS.stage}
       panels={STAGE_PANELS}
       orientation="vertical"
       className="relative min-h-0 min-w-0 bg-background"
@@ -110,108 +109,106 @@ export function EditorStage() {
         </PanelContent>
       </ResizablePanel>
 
-      <EditorPanel
-        panelId={EDITOR_PANEL_IDS.timeline}
+      <PanelHandle
+        panelId={PANEL_IDS.timeline}
+        id="preview-timeline-resize-handle"
+        aria-label={t("preview.resize")}
+        className="my-0.5 bg-transparent"
+      />
+
+      <Panel
+        panelId={PANEL_IDS.timeline}
         panelRef={timelinePanelSizing.panelRef}
         resetSize={timelinePanelSizing.constraints.defaultSize}
+        id="timeline-panel"
+        defaultSize={timelinePanelSizing.initialDefaultSize}
+        collapsible
+        collapsedSize={timelinePanelSizing.collapsedSize}
+        minSize={timelinePanelSizing.constraints.minSize}
+        maxSize={timelinePanelSizing.constraints.maxSize}
+        groupResizeBehavior="preserve-pixel-size"
+        className="min-h-0 min-w-0 pb-1"
       >
-        <EditorPanelHandle
-          id="preview-timeline-resize-handle"
-          aria-label={t("preview.resize")}
-          className="my-0.5 bg-transparent"
-        />
-
-        <EditorPanelContent
-          id="timeline-panel"
-          defaultSize={timelinePanelSizing.initialDefaultSize}
-          collapsible
-          collapsedSize={timelinePanelSizing.collapsedSize}
-          minSize={timelinePanelSizing.constraints.minSize}
-          maxSize={timelinePanelSizing.constraints.maxSize}
-          groupResizeBehavior="preserve-pixel-size"
-          className="min-h-0 min-w-0 pb-1"
-        >
-          {(panel) => (
-            <PanelContent>
-              <TimelinePane
-                range={timelineRange}
-                timeline={
-                  <TrimTimeline
-                    range={timelineRange}
-                    disabled={controlsDisabled}
-                    playheadMicros={timeline.playheadMicros}
-                    playheadRef={timeline.playheadRef}
-                    frameRate={media?.video.averageFrameRate ?? media?.video.realFrameRate}
-                    playbackControls={
-                      <PlaybackControls
-                        isPlaying={playback.isPlaying}
-                        error={playback.transportError}
-                        canSetSegmentStart={timeline.canSetSegmentStart}
-                        canSetSegmentEnd={timeline.canSetSegmentEnd}
-                        disabled={controlsDisabled}
-                        onTogglePlayback={playback.toggle}
-                        onStepFrame={playback.stepFrame}
-                        onSetSegmentBoundary={playback.setSegmentBoundary}
-                      />
-                    }
-                    playbackTimecode={
-                      <PlaybackTimecode
-                        currentMicros={controlsDisabled ? null : timeline.playheadMicros}
-                        sourceDurationMicros={
-                          controlsDisabled ? null : timelineRange.sourceDurationMicros
-                        }
-                        frameRate={media?.video.averageFrameRate ?? media?.video.realFrameRate}
-                      />
-                    }
-                    videoToolbar={<TimelineTools />}
-                    onChange={timeline.onChange}
-                    onMoveSegment={timeline.onMoveSegment}
-                    onTrimDragStart={timeline.onTrimDragStart}
-                    onTrimDragEnd={timeline.onTrimDragEnd}
-                    onSegmentDragStart={timeline.onSegmentDragStart}
-                    onSegmentDragEnd={timeline.onSegmentDragEnd}
-                    onSeek={timeline.onSeek}
-                    onScrubStart={timeline.onScrubStart}
-                    onScrub={timeline.onScrub}
-                    onScrubEnd={timeline.onScrubEnd}
-                  />
-                }
-                audioTracks={
-                  !panel.collapsed && (media?.audioStreams.length ?? 0) > 0 ? (
-                    <AudioTracks
-                      streams={media?.audioStreams ?? []}
-                      tracks={audioTracks}
-                      masterEnabled={masterAudio.enabled}
-                      masterVolumePercent={masterAudio.volumePercent}
-                      range={timelineRange}
-                      playheadMicros={timeline.playheadMicros}
-                      playheadRef={playback.audioPlayheadRef}
-                      mergeAudio={mergeAudio}
-                      waveformPreparationEnabled={playback.isReady}
-                      onToggleTrack={(streamIndex) => dispatch(audioTrackToggled({ streamIndex }))}
-                      onTrackVolumeChange={(streamIndex, volumePercent) =>
-                        dispatch(audioTrackVolumeChanged({ streamIndex, volumePercent }))
-                      }
-                      onToggleMaster={() => dispatch(masterAudioToggled())}
-                      onMasterVolumeChange={(volumePercent) =>
-                        dispatch(masterVolumeChanged({ volumePercent }))
-                      }
-                      onToggleMerge={() => dispatch(audioMergeToggled())}
-                      onPrepareWaveforms={(streamIndexes, width) =>
-                        sourcePath &&
-                        void dispatch(prepareSourceWaveforms(sourcePath, streamIndexes, width))
-                      }
-                      onWaveformImageError={(streamIndex) =>
-                        dispatch(waveformDisplayFailed({ streamIndex }))
-                      }
+        {(panel) => (
+          <PanelContent>
+            <TimelinePane
+              range={timelineRange}
+              timeline={
+                <TrimTimeline
+                  range={timelineRange}
+                  disabled={controlsDisabled}
+                  playheadMicros={timeline.playheadMicros}
+                  playheadRef={timeline.playheadRef}
+                  frameRate={media?.video.averageFrameRate ?? media?.video.realFrameRate}
+                  playbackControls={
+                    <PlaybackControls
+                      isPlaying={playback.isPlaying}
+                      error={playback.transportError}
+                      canSetSegmentStart={timeline.canSetSegmentStart}
+                      canSetSegmentEnd={timeline.canSetSegmentEnd}
+                      disabled={controlsDisabled}
+                      onTogglePlayback={playback.toggle}
+                      onStepFrame={playback.stepFrame}
+                      onSetSegmentBoundary={playback.setSegmentBoundary}
                     />
-                  ) : null
-                }
-              />
-            </PanelContent>
-          )}
-        </EditorPanelContent>
-      </EditorPanel>
+                  }
+                  playbackTimecode={
+                    <PlaybackTimecode
+                      currentMicros={controlsDisabled ? null : timeline.playheadMicros}
+                      sourceDurationMicros={
+                        controlsDisabled ? null : timelineRange.sourceDurationMicros
+                      }
+                      frameRate={media?.video.averageFrameRate ?? media?.video.realFrameRate}
+                    />
+                  }
+                  videoToolbar={<TimelineTools />}
+                  onChange={timeline.onChange}
+                  onMoveSegment={timeline.onMoveSegment}
+                  onTrimDragStart={timeline.onTrimDragStart}
+                  onTrimDragEnd={timeline.onTrimDragEnd}
+                  onSegmentDragStart={timeline.onSegmentDragStart}
+                  onSegmentDragEnd={timeline.onSegmentDragEnd}
+                  onSeek={timeline.onSeek}
+                  onScrubStart={timeline.onScrubStart}
+                  onScrub={timeline.onScrub}
+                  onScrubEnd={timeline.onScrubEnd}
+                />
+              }
+              audioTracks={
+                !panel.collapsed && (media?.audioStreams.length ?? 0) > 0 ? (
+                  <AudioTracks
+                    streams={media?.audioStreams ?? []}
+                    tracks={audioTracks}
+                    masterEnabled={masterAudio.enabled}
+                    masterVolumePercent={masterAudio.volumePercent}
+                    range={timelineRange}
+                    playheadMicros={timeline.playheadMicros}
+                    playheadRef={playback.audioPlayheadRef}
+                    mergeAudio={mergeAudio}
+                    waveformPreparationEnabled={playback.isReady}
+                    onToggleTrack={(streamIndex) => dispatch(audioTrackToggled({ streamIndex }))}
+                    onTrackVolumeChange={(streamIndex, volumePercent) =>
+                      dispatch(audioTrackVolumeChanged({ streamIndex, volumePercent }))
+                    }
+                    onToggleMaster={() => dispatch(masterAudioToggled())}
+                    onMasterVolumeChange={(volumePercent) =>
+                      dispatch(masterVolumeChanged({ volumePercent }))
+                    }
+                    onToggleMerge={() => dispatch(audioMergeToggled())}
+                    onPrepareWaveforms={(streamIndexes, width) =>
+                      sourcePath &&
+                      void dispatch(prepareSourceWaveforms(sourcePath, streamIndexes, width))
+                    }
+                    onWaveformImageError={(streamIndex) =>
+                      dispatch(waveformDisplayFailed({ streamIndex }))
+                    }
+                  />
+                ) : null
+              }
+            />
+          </PanelContent>
+        )}
+      </Panel>
       {showLoadingOverlay ? (
         <div
           className="absolute inset-0 z-30 grid place-items-center bg-background/75 backdrop-blur-sm"
@@ -229,6 +226,6 @@ export function EditorStage() {
           </div>
         </div>
       ) : null}
-    </PersistedEditorPanelGroup>
+    </PersistedPanelGroup>
   );
 }

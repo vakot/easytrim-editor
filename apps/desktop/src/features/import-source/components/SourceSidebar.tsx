@@ -1,37 +1,38 @@
 import { Ellipsis } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import { PANEL_GROUP_IDS } from "@/app/panel-layout-runtime";
+import { PANEL_IDS } from "@/app/store/slices/panel-layout-slice";
 import {
-  EditorPaneView,
-  EditorPaneViewTrigger,
-  EditorPaneVisibilityMenu,
-  type EditorPaneRegistration,
-} from "@/app/components/EditorPaneView";
-import { EDITOR_PANEL_GROUP_IDS } from "@/app/editor-layout-runtime";
-import { EDITOR_PANEL_IDS } from "@/app/store/slices/editor-layout-slice";
-import { PaneViewContent, PaneViewItem } from "@/components/layout/pane-view";
+  PaneView,
+  PaneViewContent,
+  PaneViewItem,
+  PaneViewTrigger,
+  PaneVisibilityMenu,
+  type PaneRegistration,
+} from "@/components/layout/pane-view";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const PLACEHOLDER_ROWS = Array.from({ length: 20 }, (_, index) => index + 1);
 
 const PANEL_OPTIONS = [
   {
-    panelId: EDITOR_PANEL_IDS.sidebarMedia,
+    panelId: PANEL_IDS.sidebarMedia,
     id: "media",
     labelKey: "import.source.mediaDetails",
     fixedVisible: true,
   },
   {
-    panelId: EDITOR_PANEL_IDS.sidebarImportedQueue,
+    panelId: PANEL_IDS.sidebarImportedQueue,
     id: "imported",
     labelKey: "import.source.importedQueue",
   },
   {
-    panelId: EDITOR_PANEL_IDS.sidebarExportQueue,
+    panelId: PANEL_IDS.sidebarExportQueue,
     id: "export",
     labelKey: "import.source.exportQueue",
   },
-] as const satisfies readonly (EditorPaneRegistration & { labelKey: string })[];
+] as const satisfies readonly (PaneRegistration & { labelKey: string })[];
 
 export function SourceSidebar() {
   const { t } = useTranslation();
@@ -50,47 +51,47 @@ export function SourceSidebar() {
         <Tooltip>
           <TooltipTrigger asChild>
             <span className="inline-flex">
-              <EditorPaneVisibilityMenu
+              <PaneVisibilityMenu
                 panels={visibilityPanels}
                 className="size-6 p-0"
                 aria-label={t("import.source.sidebarControls")}
               >
                 <Ellipsis className="size-4" aria-hidden="true" />
-              </EditorPaneVisibilityMenu>
+              </PaneVisibilityMenu>
             </span>
           </TooltipTrigger>
           <TooltipContent side="bottom">{t("import.source.sidebarControls")}</TooltipContent>
         </Tooltip>
       </div>
-      <EditorPaneView
-        id={EDITOR_PANEL_GROUP_IDS.sourceSidebar}
+      <PaneView
+        id={PANEL_GROUP_IDS.sourceSidebar}
         panels={PANEL_OPTIONS}
         aria-label={t("import.source.sidebarSections")}
         className="flex-1"
       >
         <PaneViewItem id="media" defaultSize="33%" minSize={120} headerSize={24}>
-          <EditorPaneViewTrigger size="xs" fixedWhenAlone>
+          <PaneViewTrigger size="xs" fixedWhenAlone>
             {t(PANEL_OPTIONS[0].labelKey)}
-          </EditorPaneViewTrigger>
+          </PaneViewTrigger>
           <PaneViewContent>
             <PlaceholderRows label={t(PANEL_OPTIONS[0].labelKey)} />
           </PaneViewContent>
         </PaneViewItem>
 
         <PaneViewItem id="imported" defaultSize="33%" minSize={120} headerSize={24}>
-          <EditorPaneViewTrigger size="xs">{t(PANEL_OPTIONS[1].labelKey)}</EditorPaneViewTrigger>
+          <PaneViewTrigger size="xs">{t(PANEL_OPTIONS[1].labelKey)}</PaneViewTrigger>
           <PaneViewContent>
             <PlaceholderRows label={t(PANEL_OPTIONS[1].labelKey)} />
           </PaneViewContent>
         </PaneViewItem>
 
         <PaneViewItem id="export" defaultSize="33%" minSize={120} headerSize={24}>
-          <EditorPaneViewTrigger size="xs">{t(PANEL_OPTIONS[2].labelKey)}</EditorPaneViewTrigger>
+          <PaneViewTrigger size="xs">{t(PANEL_OPTIONS[2].labelKey)}</PaneViewTrigger>
           <PaneViewContent>
             <PlaceholderRows label={t(PANEL_OPTIONS[2].labelKey)} />
           </PaneViewContent>
         </PaneViewItem>
-      </EditorPaneView>
+      </PaneView>
     </aside>
   );
 }

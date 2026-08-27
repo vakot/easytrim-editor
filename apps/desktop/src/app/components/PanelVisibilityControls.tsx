@@ -9,33 +9,33 @@ import {
 import { useRef, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
-import { EditorPanelToggle } from "@/app/components/EditorPanel";
-import { useEditorPanelControl } from "@/app/hooks/useEditorPanelControl";
 import { useAppDispatch } from "@/app/store/hooks";
 import {
-  EDITOR_PANEL_IDS,
-  editorPanelsResetToDefault,
-  type EditorPanelId,
-  type EditorPanelResetRequest,
-} from "@/app/store/slices/editor-layout-slice";
+  PANEL_IDS,
+  panelsResetToDefault,
+  type PanelId,
+  type PanelResetRequest,
+} from "@/app/store/slices/panel-layout-slice";
+import { PanelToggle } from "@/components/layout/panel";
+import { usePanelControl } from "@/components/layout/use-panel-control";
 import { ContextMenu, type ContextMenuOption } from "@/components/ui/context-menu";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-const DEFAULT_EDITOR_PANEL_RESETS = [
+const DEFAULT_PANEL_RESETS = [
   {
-    panelId: EDITOR_PANEL_IDS.sourceDetails,
+    panelId: PANEL_IDS.sourceDetails,
     resetCollapsed: true,
     resetSize: true,
     resetVisible: true,
   },
   {
-    panelId: EDITOR_PANEL_IDS.timeline,
+    panelId: PANEL_IDS.timeline,
     resetCollapsed: true,
     resetSize: true,
     resetVisible: true,
   },
-] as const satisfies readonly EditorPanelResetRequest[];
+] as const satisfies readonly PanelResetRequest[];
 
 function usePanelVisibilityOption({
   icon,
@@ -46,11 +46,11 @@ function usePanelVisibilityOption({
   icon: ReactNode;
   id: string;
   label: string;
-  panelId: EditorPanelId;
+  panelId: PanelId;
 }): ContextMenuOption {
   const { t } = useTranslation();
   const switchInteractionRef = useRef(false);
-  const { active, setActive, toggle } = useEditorPanelControl(panelId, "visibility");
+  const { active, setActive, toggle } = usePanelControl(panelId, "visibility");
   const tooltip = active
     ? t("app.panels.hidePanel", { panel: label })
     : t("app.panels.showPanel", { panel: label });
@@ -102,13 +102,13 @@ export function PanelVisibilityControls() {
     id: "layout-toggle-left-panel",
     label: leftPanelLabel,
     icon: <PanelLeft className="size-3" aria-hidden="true" />,
-    panelId: EDITOR_PANEL_IDS.sourceDetails,
+    panelId: PANEL_IDS.sourceDetails,
   });
   const bottomPanelOption = usePanelVisibilityOption({
     id: "layout-toggle-bottom-panel",
     label: bottomPanelLabel,
     icon: <PanelBottom className="size-3" aria-hidden="true" />,
-    panelId: EDITOR_PANEL_IDS.timeline,
+    panelId: PANEL_IDS.timeline,
   });
 
   const layoutOptions: ContextMenuOption[] = [
@@ -119,7 +119,7 @@ export function PanelVisibilityControls() {
       id: "layout-reset",
       children: t("app.panels.resetLayout"),
       icon: <RotateCcw className="size-3" aria-hidden="true" />,
-      onSelect: () => dispatch(editorPanelsResetToDefault(DEFAULT_EDITOR_PANEL_RESETS)),
+      onSelect: () => dispatch(panelsResetToDefault(DEFAULT_PANEL_RESETS)),
     },
   ];
 
@@ -132,8 +132,8 @@ export function PanelVisibilityControls() {
         </>
       </ContextMenu>
 
-      <EditorPanelToggle
-        panelId={EDITOR_PANEL_IDS.sourceDetails}
+      <PanelToggle
+        panelId={PANEL_IDS.sourceDetails}
         mode="collapse"
         activeLabel={t("app.panels.hidePanel", { panel: leftPanelLabel })}
         inactiveLabel={t("app.panels.showPanel", { panel: leftPanelLabel })}
@@ -141,8 +141,8 @@ export function PanelVisibilityControls() {
         inactiveIcon={<PanelLeftDashed className="size-4" aria-hidden="true" />}
       />
 
-      <EditorPanelToggle
-        panelId={EDITOR_PANEL_IDS.timeline}
+      <PanelToggle
+        panelId={PANEL_IDS.timeline}
         mode="collapse"
         activeLabel={t("app.panels.hidePanel", { panel: bottomPanelLabel })}
         inactiveLabel={t("app.panels.showPanel", { panel: bottomPanelLabel })}

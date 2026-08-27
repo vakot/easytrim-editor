@@ -1,28 +1,22 @@
 import {
-  createContext,
   useCallback,
-  useContext,
   useEffect,
   useMemo,
   useRef,
   type ComponentProps,
-  type RefObject,
   type ReactNode,
 } from "react";
 
-import { registerEditorPanelSizeReset } from "@/app/editor-layout-runtime";
-import {
-  useEditorPanelControl,
-  type EditorPanelToggleMode,
-} from "@/app/hooks/useEditorPanelControl";
+import { registerPanelSizeReset, resetPanelSizes } from "@/app/panel-layout-runtime";
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import {
   panelCollapsedChanged,
-  selectEditorPanel,
+  selectPanel,
   selectPanelVisibility,
-  type EditorPanelId,
-  type EditorPanelState,
-} from "@/app/store/slices/editor-layout-slice";
+  type PanelId,
+  type PanelState,
+} from "@/app/store/slices/panel-layout-slice";
+import { usePanelControl, type PanelToggleMode } from "@/components/layout/use-panel-control";
 import { Button } from "@/components/ui/button";
 import {
   PersistedResizablePanelGroup,
@@ -33,29 +27,28 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
-type EditorPanelRef = ReturnType<typeof usePanelRef>;
+type PanelRef = ReturnType<typeof usePanelRef>;
 
-interface EditorPanelContextValue {
-  panel: EditorPanelState;
-  panelId: EditorPanelId;
-  panelRef: EditorPanelRef;
-  resetToDefault: () => void;
-  sizeResetDepth: RefObject<number>;
-}
-
-const EditorPanelContext = createContext<EditorPanelContextValue | null>(null);
-
-interface EditorPanelProps {
-  children: ReactNode;
-  panelId: EditorPanelId;
-  panelRef?: EditorPanelRef;
+interface PanelProps extends Omit<ComponentProps<typeof ResizablePanel>, "children" | "panelRef"> {
+  children?: ReactNode | ((panel: PanelState) => ReactNode);
+  panelId: PanelId;
+  panelRef?: PanelRef;
   resetSize?: number | string;
 }
 
-function EditorPanel({ children, panelId, panelRef: panelRefProp, resetSize }: EditorPanelProps) {
+function Panel({
+  children,
+  collapsible,
+  onResize,
+  panelId,
+  panelRef: panelRefProp,
+  resetSize,
+  ...props
+}: PanelProps) {
+  const dispatch = useAppDispatch();
   const internalPanelRef = usePanelRef();
   const panelRef = panelRefProp ?? internalPanelRef;
-  const panel = useAppSelector((state) => selectEditorPanel(state, panelId));
+  const panel = useAppSelector((state) => selectPanel(state, panelId));
   const sizeResetDepth = useRef(0);
   const resetToDefault = useCallback(() => {
     const imperativePanel = panelRef.current;
@@ -70,61 +63,37 @@ function EditorPanel({ children, panelId, panelRef: panelRefProp, resetSize }: E
         sizeResetDepth.current = Math.max(0, sizeResetDepth.current - 1);
       };
 
-      if (typeof requestAnimationFrame === "undefined") {
-        finishReset();
-      } else {
-        requestAnimationFrame(finishReset);
-      }
+      if (typeof requestAnimationFrame === "undefined") finishReset();
+      else requestAnimationFrame(finishReset);
     }
   }, [panel.collapsed, panelRef, resetSize]);
 
   useEffect(() => {
     if (resetSize === undefined) return;
-    return registerEditorPanelSizeReset({ panelIds: [panelId], reset: resetToDefault });
+    return registerPanelSizeReset({ panelIds: [panelId], reset: resetToDefault });
   }, [panelId, resetSize, resetToDefault]);
 
-  const context = useMemo<EditorPanelContextValue>(
-    () => ({ panel, panelId, panelRef, resetToDefault, sizeResetDepth }),
-    [panel, panelId, panelRef, resetToDefault],
-  );
-
-  if (!panel.visible) return null;
-
-  return <EditorPanelContext.Provider value={context}>{children}</EditorPanelContext.Provider>;
-}
-
-interface EditorPanelContentProps extends Omit<
-  ComponentProps<typeof ResizablePanel>,
-  "children" | "panelRef"
-> {
-  children?: ReactNode | ((panel: EditorPanelState) => ReactNode);
-}
-
-function EditorPanelContent({
-  children,
-  collapsible,
-  onResize,
-  ...props
-}: EditorPanelContentProps) {
-  const { panel, panelId, panelRef, sizeResetDepth } = useEditorPanelContext();
-  const dispatch = useAppDispatch();
-
   useEffect(() => {
-    if (!collapsible) return;
+    if (!collapsible || !panel.visible) return;
 
-    const animationFrame = requestAnimationFrame(() => {
+    const syncCollapsedState = () => {
       const imperativePanel = panelRef.current;
       if (!imperativePanel) return;
 
-      if (panel.collapsed && !imperativePanel.isCollapsed()) {
-        imperativePanel.collapse();
-      } else if (!panel.collapsed && imperativePanel.isCollapsed()) {
-        imperativePanel.expand();
-      }
-    });
+      if (panel.collapsed && !imperativePanel.isCollapsed()) imperativePanel.collapse();
+      else if (!panel.collapsed && imperativePanel.isCollapsed()) imperativePanel.expand();
+    };
 
+    if (typeof requestAnimationFrame === "undefined") {
+      syncCollapsedState();
+      return;
+    }
+
+    const animationFrame = requestAnimationFrame(syncCollapsedState);
     return () => cancelAnimationFrame(animationFrame);
-  }, [collapsible, panel.collapsed, panelRef]);
+  }, [collapsible, panel.collapsed, panel.visible, panelRef]);
+
+  if (!panel.visible) return null;
 
   return (
     <ResizablePanel
@@ -146,10 +115,14 @@ function EditorPanelContent({
   );
 }
 
-type EditorPanelHandleProps = ComponentProps<typeof ResizableHandle>;
+interface PanelHandleProps extends ComponentProps<typeof ResizableHandle> {
+  panelId: PanelId;
+}
 
-function EditorPanelHandle({ onDoubleClick, withHandle, ...props }: EditorPanelHandleProps) {
-  const { panel, resetToDefault } = useEditorPanelContext();
+function PanelHandle({ onDoubleClick, panelId, withHandle, ...props }: PanelHandleProps) {
+  const panel = useAppSelector((state) => selectPanel(state, panelId));
+
+  if (!panel.visible) return null;
 
   return (
     <ResizableHandle
@@ -157,25 +130,25 @@ function EditorPanelHandle({ onDoubleClick, withHandle, ...props }: EditorPanelH
       withHandle={withHandle ?? !panel.collapsed}
       onDoubleClick={(event) => {
         onDoubleClick?.(event);
-        if (!event.defaultPrevented) resetToDefault();
+        if (!event.defaultPrevented) resetPanelSizes([panelId]);
       }}
     />
   );
 }
 
-interface EditorPanelRegistration {
+interface PanelRegistration {
   id: string;
-  panelId?: EditorPanelId;
+  panelId?: PanelId;
 }
 
-interface PersistedEditorPanelGroupProps extends Omit<
+interface PersistedPanelGroupProps extends Omit<
   ComponentProps<typeof PersistedResizablePanelGroup>,
   "panelIds"
 > {
-  panels: readonly EditorPanelRegistration[];
+  panels: readonly PanelRegistration[];
 }
 
-function PersistedEditorPanelGroup({ panels, ...props }: PersistedEditorPanelGroupProps) {
+function PersistedPanelGroup({ id, panels, ...props }: PersistedPanelGroupProps) {
   const visibilityKey = useAppSelector((state) =>
     panels
       .map((panel) =>
@@ -187,11 +160,20 @@ function PersistedEditorPanelGroup({ panels, ...props }: PersistedEditorPanelGro
     () => panels.filter((_, index) => visibilityKey[index] === "1").map((panel) => panel.id),
     [panels, visibilityKey],
   );
+  const registeredPanelIds = useMemo(
+    () => panels.flatMap((panel) => (panel.panelId === undefined ? [] : [panel.panelId])),
+    [panels],
+  );
 
-  return <PersistedResizablePanelGroup {...props} panelIds={panelIds} />;
+  useEffect(
+    () => registerPanelSizeReset({ groupId: id, panelIds: registeredPanelIds }),
+    [id, registeredPanelIds],
+  );
+
+  return <PersistedResizablePanelGroup {...props} id={id} panelIds={panelIds} />;
 }
 
-interface EditorPanelToggleProps extends Omit<
+interface PanelToggleProps extends Omit<
   ComponentProps<typeof Button>,
   "aria-label" | "aria-pressed" | "children" | "onClick"
 > {
@@ -199,12 +181,12 @@ interface EditorPanelToggleProps extends Omit<
   activeLabel: string;
   inactiveIcon: ReactNode;
   inactiveLabel: string;
-  mode: EditorPanelToggleMode;
-  panelId: EditorPanelId;
+  mode: PanelToggleMode;
+  panelId: PanelId;
   tooltipSide?: ComponentProps<typeof TooltipContent>["side"];
 }
 
-function EditorPanelToggle({
+function PanelToggle({
   activeIcon,
   activeLabel,
   className,
@@ -216,8 +198,8 @@ function EditorPanelToggle({
   tooltipSide,
   variant = "ghost",
   ...props
-}: EditorPanelToggleProps) {
-  const { active, toggle } = useEditorPanelControl(panelId, mode);
+}: PanelToggleProps) {
+  const { active, toggle } = usePanelControl(panelId, mode);
   const label = active ? activeLabel : inactiveLabel;
 
   return (
@@ -242,19 +224,5 @@ function EditorPanelToggle({
   );
 }
 
-function useEditorPanelContext() {
-  const context = useContext(EditorPanelContext);
-  if (!context) {
-    throw new Error("EditorPanelContent and EditorPanelHandle must be used within EditorPanel");
-  }
-  return context;
-}
-
-export {
-  EditorPanel,
-  EditorPanelContent,
-  EditorPanelHandle,
-  EditorPanelToggle,
-  PersistedEditorPanelGroup,
-};
-export type { EditorPanelRegistration, EditorPanelToggleMode };
+export { Panel, PanelHandle, PanelToggle, PersistedPanelGroup };
+export type { PanelRegistration, PanelToggleMode };

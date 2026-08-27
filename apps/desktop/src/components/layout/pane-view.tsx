@@ -1,10 +1,12 @@
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Eye, EyeOff } from "lucide-react";
 import {
   Children,
   createContext,
   Fragment,
   isValidElement,
+  useCallback,
   useContext,
+  useEffect,
   useId,
   useMemo,
   useState,
@@ -13,19 +15,29 @@ import {
   type ReactNode,
 } from "react";
 
+import { registerPanelSizeReset } from "@/app/panel-layout-runtime";
+import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
+import {
+  panelCollapsedChanged,
+  panelVisibilityToggled,
+  selectPanel,
+  type PanelId,
+} from "@/app/store/slices/panel-layout-slice";
 import { Button } from "@/components/ui/button";
+import { ContextMenu, type ContextMenuOption } from "@/components/ui/context-menu";
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
   useDefaultLayout,
+  useGroupRef,
   type ResizableLayoutStorage,
 } from "@/components/ui/resizable";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 
-const DEFAULT_HEADER_SIZE = 28; // h-7 from <Button size="sm" />
+const DEFAULT_HEADER_SIZE = 28;
 const DEFAULT_MIN_SIZE = 120;
 
 interface PaneViewContextValue {
@@ -41,10 +53,15 @@ interface PaneViewItemContextValue {
   toggle: () => void;
 }
 
+interface ManagedPaneViewContextValue {
+  visiblePaneCount: number;
+}
+
 const PaneViewContext = createContext<PaneViewContextValue | null>(null);
 const PaneViewItemContext = createContext<PaneViewItemContextValue | null>(null);
+const ManagedPaneViewContext = createContext<ManagedPaneViewContextValue | null>(null);
 
-interface PaneViewProps {
+interface PaneViewPrimitiveProps {
   children: ReactNode;
   value?: string[];
   defaultValue?: string[];
@@ -57,8 +74,23 @@ interface PaneViewProps {
   "aria-label"?: string;
 }
 
+interface PaneRegistration {
+  fixedVisible?: boolean;
+  id: string;
+  panelId: PanelId;
+}
+
+interface PaneViewProps extends Omit<
+  PaneViewPrimitiveProps,
+  "defaultLayout" | "defaultValue" | "groupRef" | "onLayoutChanged" | "onValueChange" | "value"
+> {
+  id: string;
+  panels: readonly PaneRegistration[];
+  storage?: ResizableLayoutStorage;
+}
+
 interface PersistedPaneViewProps extends Omit<
-  PaneViewProps,
+  PaneViewPrimitiveProps,
   "defaultLayout" | "id" | "onLayoutChanged"
 > {
   id: string;
@@ -74,11 +106,109 @@ function PersistedPaneView({ id, panelIds, storage, ...props }: PersistedPaneVie
   });
 
   return (
-    <PaneView {...props} id={id} defaultLayout={defaultLayout} onLayoutChanged={onLayoutChanged} />
+    <PaneViewPrimitive
+      {...props}
+      id={id}
+      defaultLayout={defaultLayout}
+      onLayoutChanged={onLayoutChanged}
+    />
   );
 }
 
-function PaneView({
+function PaneView(props: PaneViewProps | PaneViewPrimitiveProps) {
+  if ("panels" in props) return <ManagedPaneView {...props} />;
+  return <PaneViewPrimitive {...props} />;
+}
+
+function ManagedPaneView({ children, id, panels, storage, ...props }: PaneViewProps) {
+  const dispatch = useAppDispatch();
+  const groupRef = useGroupRef();
+  const panelStateKey = useAppSelector((state) =>
+    panels
+      .map((registration) => {
+        const panel = selectPanel(state, registration.panelId);
+        return `${registration.fixedVisible || panel.visible ? "1" : "0"}${panel.collapsed ? "1" : "0"}`;
+      })
+      .join(""),
+  );
+  const panelStates = useMemo(
+    () =>
+      panels.map((panel, index) => ({
+        ...panel,
+        collapsed: panelStateKey[index * 2 + 1] === "1",
+        visible: panelStateKey[index * 2] === "1",
+      })),
+    [panelStateKey, panels],
+  );
+  const visiblePanels = useMemo(() => panelStates.filter((panel) => panel.visible), [panelStates]);
+  const openPaneIds = useMemo(
+    () => visiblePanels.filter((panel) => !panel.collapsed).map((panel) => panel.id),
+    [visiblePanels],
+  );
+  const persistedPanelIds = useMemo(
+    () => [...visiblePanels.map((panel) => panel.id), `${id}-spacer`],
+    [id, visiblePanels],
+  );
+  const visiblePaneIdSet = useMemo(
+    () => new Set(visiblePanels.map((panel) => panel.id)),
+    [visiblePanels],
+  );
+  const visibleChildren = Children.toArray(children).filter(
+    (child) =>
+      isValidElement<{ id?: unknown }>(child) &&
+      typeof child.props.id === "string" &&
+      visiblePaneIdSet.has(child.props.id),
+  );
+  const resetPaneSizes = useCallback(() => {
+    const size = visiblePanels.length > 0 ? 100 / visiblePanels.length : 0;
+    groupRef.current?.setLayout(
+      Object.fromEntries([
+        ...visiblePanels.map((panel) => [panel.id, size]),
+        [`${id}-spacer`, visiblePanels.length > 0 ? 0 : 100],
+      ]),
+    );
+  }, [groupRef, id, visiblePanels]);
+
+  useEffect(
+    () =>
+      registerPanelSizeReset({
+        groupId: id,
+        panelIds: panels.map((panel) => panel.panelId),
+        reset: resetPaneSizes,
+      }),
+    [id, panels, resetPaneSizes],
+  );
+
+  const context = useMemo(
+    () => ({ visiblePaneCount: visiblePanels.length }),
+    [visiblePanels.length],
+  );
+
+  return (
+    <ManagedPaneViewContext.Provider value={context}>
+      <PersistedPaneView
+        {...props}
+        id={id}
+        storage={storage}
+        panelIds={persistedPanelIds}
+        groupRef={groupRef}
+        value={openPaneIds}
+        onValueChange={(nextOpenPaneIds) => {
+          visiblePanels.forEach((panel) => {
+            const collapsed = !nextOpenPaneIds.includes(panel.id);
+            if (collapsed !== panel.collapsed) {
+              dispatch(panelCollapsedChanged({ panelId: panel.panelId, collapsed }));
+            }
+          });
+        }}
+      >
+        {visibleChildren}
+      </PersistedPaneView>
+    </ManagedPaneViewContext.Provider>
+  );
+}
+
+function PaneViewPrimitive({
   children,
   value,
   defaultValue = [],
@@ -89,7 +219,7 @@ function PaneView({
   id: idProp,
   className,
   "aria-label": ariaLabel,
-}: PaneViewProps) {
+}: PaneViewPrimitiveProps) {
   const generatedId = useId();
   const groupId = idProp ?? `pane-view-${generatedId}`;
   const [uncontrolledValue, setUncontrolledValue] = useState(defaultValue);
@@ -125,22 +255,20 @@ function PaneView({
         data-slot="pane-view"
         className={cn("h-full min-h-0", className)}
       >
-        {items.map((item, index) => {
-          return (
-            <Fragment key={item.key ?? item.props.id}>
-              {index > 0 ? (
-                <ResizableHandle
-                  id={`${groupId}-separator-${index}`}
-                  aria-label="Resize adjacent sections"
-                  className="h-1! bg-transparent px-2"
-                >
-                  <Separator />
-                </ResizableHandle>
-              ) : null}
-              {item}
-            </Fragment>
-          );
-        })}
+        {items.map((item, index) => (
+          <Fragment key={item.key ?? item.props.id}>
+            {index > 0 ? (
+              <ResizableHandle
+                id={`${groupId}-separator-${index}`}
+                aria-label="Resize adjacent sections"
+                className="h-1! bg-transparent px-2"
+              >
+                <Separator />
+              </ResizableHandle>
+            ) : null}
+            {item}
+          </Fragment>
+        ))}
 
         <ResizablePanel
           id={`${groupId}-spacer`}
@@ -210,17 +338,37 @@ function PaneViewItem({
   );
 }
 
-type PaneViewTriggerProps = Omit<ComponentProps<typeof Button>, "aria-controls" | "aria-expanded">;
+interface PaneViewTriggerProps extends Omit<
+  ComponentProps<typeof Button>,
+  "aria-controls" | "aria-expanded"
+> {
+  fixedWhenAlone?: boolean;
+}
 
 function PaneViewTrigger({
   children,
   className,
+  fixedWhenAlone = false,
   onClick,
   size = "sm",
   variant = "ghost",
   ...props
 }: PaneViewTriggerProps) {
   const item = usePaneViewItemContext();
+  const managedPaneView = useContext(ManagedPaneViewContext);
+
+  if (fixedWhenAlone && managedPaneView?.visiblePaneCount === 1) {
+    return (
+      <PaneViewLabel
+        className={cn(
+          "mx-2 inline-flex h-6 shrink-0 items-center text-xs font-medium whitespace-nowrap text-foreground/80",
+          className,
+        )}
+      >
+        {children}
+      </PaneViewLabel>
+    );
+  }
 
   return (
     <Button
@@ -255,7 +403,6 @@ type PaneViewLabelProps = ComponentProps<"span">;
 
 function PaneViewLabel({ children, ...props }: PaneViewLabelProps) {
   const item = usePaneViewItemContext();
-
   return (
     <span {...props} id={item.triggerId}>
       {children}
@@ -270,7 +417,6 @@ type PaneViewContentProps = Omit<
 
 function PaneViewContent({ className, children, ...props }: PaneViewContentProps) {
   const item = usePaneViewItemContext();
-
   return (
     <ScrollArea
       {...props}
@@ -287,15 +433,64 @@ function PaneViewContent({ className, children, ...props }: PaneViewContentProps
   );
 }
 
+interface PaneVisibilityMenuItem extends PaneRegistration {
+  label: ReactNode;
+}
+
+interface PaneVisibilityMenuProps {
+  "aria-label"?: string;
+  children: ReactNode;
+  className?: string;
+  panels: readonly PaneVisibilityMenuItem[];
+}
+
+function PaneVisibilityMenu({
+  children,
+  className,
+  panels,
+  "aria-label": ariaLabel,
+}: PaneVisibilityMenuProps) {
+  const dispatch = useAppDispatch();
+  const visibilityKey = useAppSelector((state) =>
+    panels
+      .map((registration) => {
+        const panel = selectPanel(state, registration.panelId);
+        return registration.fixedVisible || panel.visible ? "1" : "0";
+      })
+      .join(""),
+  );
+  const options: ContextMenuOption[] = panels.map((panel, index) => {
+    const visible = visibilityKey[index] === "1";
+    return {
+      id: `toggle-${panel.id}`,
+      children: panel.label,
+      icon: visible ? (
+        <Eye className="size-3" aria-hidden="true" />
+      ) : (
+        <EyeOff className="size-3" aria-hidden="true" />
+      ),
+      disabled: panel.fixedVisible,
+      shouldCloseOnClick: false,
+      onSelect: panel.fixedVisible
+        ? undefined
+        : () => dispatch(panelVisibilityToggled(panel.panelId)),
+    };
+  });
+
+  return (
+    <ContextMenu options={options} className={className} aria-label={ariaLabel}>
+      {children}
+    </ContextMenu>
+  );
+}
+
 function isPaneViewItem(child: ReactNode): child is ReactElement<PaneViewItemProps> {
   return isValidElement(child) && child.type === PaneViewItem;
 }
 
 function usePaneViewContext() {
   const context = useContext(PaneViewContext);
-  if (!context) {
-    throw new Error("PaneViewItem must be used within PaneView");
-  }
+  if (!context) throw new Error("PaneViewItem must be used within PaneView");
   return context;
 }
 
@@ -313,5 +508,7 @@ export {
   PaneViewItem,
   PaneViewLabel,
   PaneViewTrigger,
+  PaneVisibilityMenu,
   PersistedPaneView,
 };
+export type { PaneRegistration };
