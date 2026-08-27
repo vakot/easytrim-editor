@@ -23,9 +23,6 @@ import {
   Menu,
   MenuContent,
   MenuItem,
-  MenuItemIcon,
-  MenuItemLabel,
-  MenuItemSuffix,
   MenuSub,
   MenuSubContent,
   MenuSubTrigger,
@@ -90,11 +87,10 @@ export function ViewMenu({ navigation }: ViewMenuProps) {
       </MenuTrigger>
       <MenuContent>
         <MenuSub>
-          <MenuSubTrigger>
-            <MenuItemIcon>
-              <CurrentThemeIcon className="size-3" aria-label={t(`theme.${preference}`)} />
-            </MenuItemIcon>
-            <MenuItemLabel>{t("app.topBarMenus.theme")}</MenuItemLabel>
+          <MenuSubTrigger
+            icon={<CurrentThemeIcon className="size-3" aria-label={t(`theme.${preference}`)} />}
+          >
+            {t("app.topBarMenus.theme")}
           </MenuSubTrigger>
           <MenuSubContent>
             {(["system", "light", "dark"] as const).map((value) => {
@@ -102,65 +98,56 @@ export function ViewMenu({ navigation }: ViewMenuProps) {
               return (
                 <MenuItem
                   key={value}
+                  icon={<Icon className="size-3" aria-hidden="true" />}
                   selected={value === preference}
                   onSelect={(event) => {
                     event.preventDefault();
                     dispatch(themePreferenceChanged(value));
                   }}
                 >
-                  <MenuItemIcon>
-                    <Icon className="size-3" aria-hidden="true" />
-                  </MenuItemIcon>
-                  <MenuItemLabel>{t(`theme.${value}`)}</MenuItemLabel>
+                  {t(`theme.${value}`)}
                 </MenuItem>
               );
             })}
           </MenuSubContent>
         </MenuSub>
         <MenuSub>
-          <MenuSubTrigger>
-            <MenuItemIcon>
-              <ColorSample color={displayedPrimaryColor} />
-            </MenuItemIcon>
-            <MenuItemLabel>{t("app.topBarMenus.color")}</MenuItemLabel>
+          <MenuSubTrigger icon={<ColorSample color={displayedPrimaryColor} />}>
+            {t("app.topBarMenus.color")}
           </MenuSubTrigger>
           <MenuSubContent>
             {PRIMARY_COLORS.map((color) => (
               <MenuItem
                 key={color}
+                icon={<ColorSample color={color} selected={color === primaryColorKey} />}
                 selected={color === primaryColorKey}
+                suffix={
+                  <span className="font-mono">{resolvePrimaryColor(color).toUpperCase()}</span>
+                }
                 onSelect={(event) => {
                   event.preventDefault();
                   dispatch(primaryColorChanged(color));
                 }}
               >
-                <MenuItemIcon>
-                  <ColorSample color={color} selected={color === primaryColorKey} />
-                </MenuItemIcon>
-                <MenuItemLabel>{t(`themeColor.${color}`)}</MenuItemLabel>
-                <MenuItemSuffix className="font-mono">
-                  {resolvePrimaryColor(color).toUpperCase()}
-                </MenuItemSuffix>
+                {t(`themeColor.${color}`)}
               </MenuItem>
             ))}
             <MenuSub>
               <MenuSubTrigger
+                icon={
+                  <ColorSample
+                    color={displayedCustomColor}
+                    selected={primaryColorKey === CUSTOM_PRIMARY_COLOR}
+                  />
+                }
                 selected={primaryColorKey === CUSTOM_PRIMARY_COLOR}
+                suffix={<span className="font-mono">{displayedCustomColor.toUpperCase()}</span>}
                 onClick={() => {
                   setPreviewColor(null);
                   dispatch(primaryColorChanged(customPrimaryColor));
                 }}
               >
-                <MenuItemIcon>
-                  <ColorSample
-                    color={displayedCustomColor}
-                    selected={primaryColorKey === CUSTOM_PRIMARY_COLOR}
-                  />
-                </MenuItemIcon>
-                <MenuItemLabel>{t("themeColor.custom")}</MenuItemLabel>
-                <MenuItemSuffix className="font-mono">
-                  {displayedCustomColor.toUpperCase()}
-                </MenuItemSuffix>
+                {t("themeColor.custom")}
               </MenuSubTrigger>
               <MenuSubContent>
                 <CustomColorPickerPanel

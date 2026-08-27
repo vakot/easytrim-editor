@@ -12,15 +12,7 @@ import { useAppUpdates } from "@/app/hooks/useAppUpdates";
 import { BrandIcon } from "@/components/brand-icon";
 import { githubBrandIcon, kofiBrandIcon } from "@/components/brand-icons";
 import { Button } from "@/components/ui/button";
-import {
-  Menu,
-  MenuContent,
-  MenuItem,
-  MenuItemIcon,
-  MenuItemLabel,
-  MenuSeparator,
-  MenuTrigger,
-} from "@/components/ui/menu";
+import { Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from "@/components/ui/menu";
 import { openExternalUrl } from "@/lib/open-external-url";
 import packageJson from "../../../../../../../../package.json";
 
@@ -78,47 +70,43 @@ export function HelpMenu({ navigation }: { navigation: MenuNavigation }) {
         </Button>
       </MenuTrigger>
       <MenuContent>
-        <MenuItem onSelect={() => void openExternalUrl(CHANGELOG_URL)}>
-          <MenuItemIcon>
-            <ExternalLink className="size-3" aria-hidden="true" />
-          </MenuItemIcon>
-          <MenuItemLabel>{t("app.topBarMenus.changelog")}</MenuItemLabel>
+        <MenuItem
+          icon={<ExternalLink className="size-3" aria-hidden="true" />}
+          onSelect={() => void openExternalUrl(CHANGELOG_URL)}
+        >
+          {t("app.topBarMenus.changelog")}
         </MenuItem>
         <MenuItem
           disabled={updateStatus === "checking" || isInstalling}
+          icon={updateHint}
           onSelect={(event) => {
             event.preventDefault();
             void (updateStatus === "available" ? installUpdate() : checkForUpdates());
           }}
         >
-          <MenuItemIcon>{updateHint}</MenuItemIcon>
-          <MenuItemLabel>{updateLabel}</MenuItemLabel>
+          {updateLabel}
         </MenuItem>
-        <MenuItem onSelect={() => void openExternalUrl(PROJECT_PAGE_URL)}>
-          <MenuItemIcon>
-            <BrandIcon className="size-3" icon={githubBrandIcon} />
-          </MenuItemIcon>
-          <MenuItemLabel>{t("app.topBarMenus.projectPage")}</MenuItemLabel>
-        </MenuItem>
-        <MenuSeparator />
-        <MenuItem onSelect={() => void openExternalUrl(SUPPORT_PROJECT_URL)}>
-          <MenuItemIcon>
-            <BrandIcon className="size-3" icon={kofiBrandIcon} />
-          </MenuItemIcon>
-          <MenuItemLabel>{t("app.topBarMenus.supportProject")}</MenuItemLabel>
+        <MenuItem
+          icon={<BrandIcon className="size-3" icon={githubBrandIcon} />}
+          onSelect={() => void openExternalUrl(PROJECT_PAGE_URL)}
+        >
+          {t("app.topBarMenus.projectPage")}
         </MenuItem>
         <MenuSeparator />
         <MenuItem
+          icon={<BrandIcon className="size-3" icon={kofiBrandIcon} />}
+          onSelect={() => void openExternalUrl(SUPPORT_PROJECT_URL)}
+        >
+          {t("app.topBarMenus.supportProject")}
+        </MenuItem>
+        <MenuSeparator />
+        <MenuItem
+          icon={<ExternalLink className="size-3" aria-hidden="true" />}
           onSelect={() =>
             void openExternalUrl(`${PROJECT_PAGE_URL}/releases/tag/v${packageJson.version}`)
           }
         >
-          <MenuItemIcon>
-            <ExternalLink className="size-3" aria-hidden="true" />
-          </MenuItemIcon>
-          <MenuItemLabel>
-            {t("app.topBarMenus.version", { version: packageJson.version })}
-          </MenuItemLabel>
+          {t("app.topBarMenus.version", { version: packageJson.version })}
         </MenuItem>
       </MenuContent>
     </Menu>

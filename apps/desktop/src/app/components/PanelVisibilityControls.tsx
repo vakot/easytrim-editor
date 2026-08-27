@@ -19,16 +19,7 @@ import {
 import { PanelControl, PanelControlToggle } from "@/components/layout/panel";
 import { usePanelControl } from "@/components/layout/use-panel-control";
 import { Button } from "@/components/ui/button";
-import {
-  Menu,
-  MenuContent,
-  MenuItem,
-  MenuItemIcon,
-  MenuItemLabel,
-  MenuItemSuffix,
-  MenuSeparator,
-  MenuTrigger,
-} from "@/components/ui/menu";
+import { Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from "@/components/ui/menu";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -65,18 +56,8 @@ function PanelVisibilityMenuItem({
 
   return (
     <MenuItem
-      onSelect={(event) => {
-        event.preventDefault();
-        if (switchInteractionRef.current) {
-          switchInteractionRef.current = false;
-          return;
-        }
-        toggle();
-      }}
-    >
-      <MenuItemIcon>{icon}</MenuItemIcon>
-      <MenuItemLabel>{label}</MenuItemLabel>
-      <MenuItemSuffix>
+      icon={icon}
+      suffix={
         <Tooltip>
           <TooltipTrigger asChild>
             <span className="inline-flex">
@@ -97,7 +78,17 @@ function PanelVisibilityMenuItem({
           </TooltipTrigger>
           <TooltipContent side="right">{tooltip}</TooltipContent>
         </Tooltip>
-      </MenuItemSuffix>
+      }
+      onSelect={(event) => {
+        event.preventDefault();
+        if (switchInteractionRef.current) {
+          switchInteractionRef.current = false;
+          return;
+        }
+        toggle();
+      }}
+    >
+      {label}
     </MenuItem>
   );
 }
@@ -134,11 +125,11 @@ export function PanelVisibilityControls() {
             panelId={PANEL_IDS.timeline}
           />
           <MenuSeparator />
-          <MenuItem onSelect={() => dispatch(panelsResetToDefault(DEFAULT_PANEL_RESETS))}>
-            <MenuItemIcon>
-              <RotateCcw className="size-3" aria-hidden="true" />
-            </MenuItemIcon>
-            <MenuItemLabel>{t("app.panels.resetLayout")}</MenuItemLabel>
+          <MenuItem
+            icon={<RotateCcw className="size-3" aria-hidden="true" />}
+            onSelect={() => dispatch(panelsResetToDefault(DEFAULT_PANEL_RESETS))}
+          >
+            {t("app.panels.resetLayout")}
           </MenuItem>
         </MenuContent>
       </Menu>

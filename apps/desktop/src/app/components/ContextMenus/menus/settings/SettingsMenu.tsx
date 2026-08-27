@@ -22,9 +22,6 @@ import {
   Menu,
   MenuContent,
   MenuItem,
-  MenuItemIcon,
-  MenuItemLabel,
-  MenuItemSuffix,
   MenuSeparator,
   MenuSub,
   MenuSubContent,
@@ -54,18 +51,8 @@ export function SettingsMenu({ navigation }: { navigation: MenuNavigation }) {
 
   const settingsPreferenceItem = (children: ReactNode, icon: ReactNode, key: PreferenceKey) => (
     <MenuItem
-      onSelect={(event) => {
-        event.preventDefault();
-        if (switchInteractionRef.current) {
-          switchInteractionRef.current = false;
-          return;
-        }
-        updatePreference(key, !preferences[key]);
-      }}
-    >
-      <MenuItemIcon>{icon}</MenuItemIcon>
-      <MenuItemLabel>{children}</MenuItemLabel>
-      <MenuItemSuffix>
+      icon={icon}
+      suffix={
         <Tooltip>
           <TooltipTrigger asChild>
             <span className="inline-flex">
@@ -96,7 +83,17 @@ export function SettingsMenu({ navigation }: { navigation: MenuNavigation }) {
             )}
           </TooltipContent>
         </Tooltip>
-      </MenuItemSuffix>
+      }
+      onSelect={(event) => {
+        event.preventDefault();
+        if (switchInteractionRef.current) {
+          switchInteractionRef.current = false;
+          return;
+        }
+        updatePreference(key, !preferences[key]);
+      }}
+    >
+      {children}
     </MenuItem>
   );
 
@@ -146,37 +143,31 @@ export function SettingsMenu({ navigation }: { navigation: MenuNavigation }) {
         )}
         <MenuSeparator />
         <MenuItem
+          icon={<RotateCcw className="size-3" aria-hidden="true" />}
           onSelect={(event) => {
             event.preventDefault();
             resetPreferences();
           }}
         >
-          <MenuItemIcon>
-            <RotateCcw className="size-3" aria-hidden="true" />
-          </MenuItemIcon>
-          <MenuItemLabel>{t("app.settings.resetToDefault")}</MenuItemLabel>
+          {t("app.settings.resetToDefault")}
         </MenuItem>
         <MenuSeparator />
         <MenuSub>
-          <MenuSubTrigger>
-            <MenuItemIcon>
-              <Languages className="size-3" aria-hidden="true" />
-            </MenuItemIcon>
-            <MenuItemLabel>{t("app.topBarMenus.language")}</MenuItemLabel>
-            <MenuItemSuffix>{currentLanguage.toUpperCase()}</MenuItemSuffix>
+          <MenuSubTrigger
+            icon={<Languages className="size-3" aria-hidden="true" />}
+            suffix={currentLanguage.toUpperCase()}
+          >
+            {t("app.topBarMenus.language")}
           </MenuSubTrigger>
           <MenuSubContent>
             {(["en", "sk"] as const).map((language) => (
               <MenuItem
                 key={language}
                 selected={language === currentLanguage}
+                suffix={language.toUpperCase()}
                 onSelect={() => void i18n.changeLanguage(language as SupportedLanguage)}
               >
-                <MenuItemIcon />
-                <MenuItemLabel>
-                  {t(language === "en" ? "language.english" : "language.slovak")}
-                </MenuItemLabel>
-                <MenuItemSuffix>{language.toUpperCase()}</MenuItemSuffix>
+                {t(language === "en" ? "language.english" : "language.slovak")}
               </MenuItem>
             ))}
           </MenuSubContent>

@@ -107,7 +107,9 @@ function MenuGroup(props: React.ComponentProps<typeof MenuPrimitive.Group>) {
 }
 
 interface MenuItemProps extends React.ComponentProps<typeof MenuPrimitive.Item> {
+  icon?: React.ReactNode;
   selected?: boolean;
+  suffix?: React.ReactNode;
 }
 
 const menuItemClassName =
@@ -118,8 +120,10 @@ function MenuItem({
   children,
   className,
   disabled,
+  icon,
   onPointerMove,
   selected = false,
+  suffix,
   ...props
 }: MenuItemProps) {
   const submenuCoordinator = React.useContext(MenuSubmenuCoordinatorContext);
@@ -137,41 +141,44 @@ function MenuItem({
       className={cn(menuItemClassName, className)}
       {...props}
     >
-      {children}
-      <span className="flex size-3 shrink-0" data-slot="menu-chevron" />
+      <MenuItemLayout icon={icon} suffix={suffix}>
+        {children}
+      </MenuItemLayout>
     </MenuPrimitive.Item>
   );
 }
 
-function MenuItemIcon({ className, ...props }: React.ComponentProps<"span">) {
-  return (
-    <span
-      data-slot="menu-icon"
-      className={cn(
-        "flex size-3 shrink-0 items-center justify-center text-muted-foreground",
-        className,
-      )}
-      {...props}
-    />
-  );
+interface MenuItemLayoutProps {
+  children: React.ReactNode;
+  icon?: React.ReactNode;
+  submenu?: boolean;
+  suffix?: React.ReactNode;
 }
 
-function MenuItemLabel({ className, ...props }: React.ComponentProps<"span">) {
+function MenuItemLayout({ children, icon, submenu = false, suffix }: MenuItemLayoutProps) {
   return (
-    <span data-slot="menu-name" className={cn("min-w-0 flex-1 truncate", className)} {...props} />
-  );
-}
-
-function MenuItemSuffix({ className, ...props }: React.ComponentProps<"span">) {
-  return (
-    <span
-      data-slot="menu-suffix"
-      className={cn(
-        "flex shrink-0 items-center justify-end text-xs text-muted-foreground",
-        className,
-      )}
-      {...props}
-    />
+    <>
+      <span
+        className="flex size-3 shrink-0 items-center justify-center text-muted-foreground"
+        data-slot="menu-icon"
+      >
+        {icon}
+      </span>
+      <span className="min-w-0 flex-1 truncate" data-slot="menu-name">
+        {children}
+      </span>
+      {suffix !== undefined ? (
+        <span
+          className="flex shrink-0 items-center justify-end text-xs text-muted-foreground"
+          data-slot="menu-suffix"
+        >
+          {suffix}
+        </span>
+      ) : null}
+      <span className="flex size-3 shrink-0 items-center justify-center" data-slot="menu-chevron">
+        {submenu ? <ChevronRight className="size-3" aria-hidden="true" /> : null}
+      </span>
+    </>
   );
 }
 
@@ -229,7 +236,9 @@ function MenuSub({
 }
 
 interface MenuSubTriggerProps extends React.ComponentProps<typeof MenuPrimitive.SubTrigger> {
+  icon?: React.ReactNode;
   selected?: boolean;
+  suffix?: React.ReactNode;
 }
 
 function MenuSubTrigger({
@@ -237,8 +246,10 @@ function MenuSubTrigger({
   children,
   className,
   disabled,
+  icon,
   onPointerMove,
   selected = false,
+  suffix,
   ...props
 }: MenuSubTriggerProps) {
   const submenu = React.useContext(MenuSubContext);
@@ -257,10 +268,9 @@ function MenuSubTrigger({
       className={cn(menuItemClassName, className)}
       {...props}
     >
-      {children}
-      <span className="flex size-3 shrink-0 items-center justify-center" data-slot="menu-chevron">
-        <ChevronRight className="size-3" aria-hidden="true" />
-      </span>
+      <MenuItemLayout icon={icon} suffix={suffix} submenu>
+        {children}
+      </MenuItemLayout>
     </MenuPrimitive.SubTrigger>
   );
 }
@@ -325,9 +335,6 @@ export {
   MenuContent,
   MenuGroup,
   MenuItem,
-  MenuItemIcon,
-  MenuItemLabel,
-  MenuItemSuffix,
   MenuSeparator,
   MenuSub,
   MenuSubContent,

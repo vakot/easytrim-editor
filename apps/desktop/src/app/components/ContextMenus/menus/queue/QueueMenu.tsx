@@ -28,9 +28,6 @@ import {
   Menu,
   MenuContent,
   MenuItem,
-  MenuItemIcon,
-  MenuItemLabel,
-  MenuItemSuffix,
   MenuSeparator,
   MenuSub,
   MenuSubContent,
@@ -86,45 +83,41 @@ export function QueueMenu({ navigation }: { navigation: MenuNavigation }) {
           <MenuItem
             aria-keyshortcuts="Enter"
             disabled={!hasQueuedItems || queueStarted}
+            suffix="Enter"
             onSelect={() => void dispatch(startExportQueue())}
           >
-            <MenuItemIcon />
-            <MenuItemLabel>{t("app.queue.start")}</MenuItemLabel>
-            <MenuItemSuffix>Enter</MenuItemSuffix>
+            {t("app.queue.start")}
           </MenuItem>
           <MenuSeparator />
           <MenuItem
             disabled={!hasActiveItem}
             onSelect={() => void dispatch(cancelActiveExportRequested())}
           >
-            <MenuItemIcon />
-            <MenuItemLabel>{t("app.queue.skip")}</MenuItemLabel>
+            {t("app.queue.skip")}
           </MenuItem>
           <MenuItem
             disabled={!hasQueuedItems && !hasActiveItem}
             onSelect={() => setIsCancelQueueConfirmOpen(true)}
           >
-            <MenuItemIcon />
-            <MenuItemLabel>{t("app.queue.cancel")}</MenuItemLabel>
+            {t("app.queue.cancel")}
           </MenuItem>
           <MenuSeparator />
           <MenuSub>
-            <MenuSubTrigger>
-              <MenuItemIcon>{queueFinishIcons[queueFinishAction]}</MenuItemIcon>
-              <MenuItemLabel>{t("app.queue.onFinish")}</MenuItemLabel>
+            <MenuSubTrigger icon={queueFinishIcons[queueFinishAction]}>
+              {t("app.queue.onFinish")}
             </MenuSubTrigger>
             <MenuSubContent>
               {availableQueueFinishActions.map((action) => (
                 <MenuItem
                   key={action}
+                  icon={queueFinishIcons[action]}
                   selected={action === queueFinishAction}
                   onSelect={(event) => {
                     event.preventDefault();
                     dispatch(queueFinishActionChanged(action));
                   }}
                 >
-                  <MenuItemIcon>{queueFinishIcons[action]}</MenuItemIcon>
-                  <MenuItemLabel>{queueFinishLabels[action]}</MenuItemLabel>
+                  {queueFinishLabels[action]}
                 </MenuItem>
               ))}
             </MenuSubContent>

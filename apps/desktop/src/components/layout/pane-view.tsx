@@ -24,14 +24,7 @@ import {
   type PanelId,
 } from "@/app/store/slices/panel-layout-slice";
 import { Button } from "@/components/ui/button";
-import {
-  Menu,
-  MenuContent,
-  MenuItem,
-  MenuItemIcon,
-  MenuItemLabel,
-  MenuTrigger,
-} from "@/components/ui/menu";
+import { Menu, MenuContent, MenuItem, MenuTrigger } from "@/components/ui/menu";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -487,19 +480,19 @@ function PaneVisibilityMenu({
             <MenuItem
               key={panel.id}
               disabled={panel.fixedVisible}
+              icon={
+                visible ? (
+                  <Eye className="size-3" aria-hidden="true" />
+                ) : (
+                  <EyeOff className="size-3" aria-hidden="true" />
+                )
+              }
               onSelect={(event) => {
                 event.preventDefault();
                 if (!panel.fixedVisible) dispatch(panelVisibilityToggled(panel.panelId));
               }}
             >
-              <MenuItemIcon>
-                {visible ? (
-                  <Eye className="size-3" aria-hidden="true" />
-                ) : (
-                  <EyeOff className="size-3" aria-hidden="true" />
-                )}
-              </MenuItemIcon>
-              <MenuItemLabel>{panel.label}</MenuItemLabel>
+              {panel.label}
             </MenuItem>
           );
         })}

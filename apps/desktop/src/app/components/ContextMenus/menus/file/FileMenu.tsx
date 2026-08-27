@@ -11,16 +11,7 @@ import {
 } from "@/app/store/thunks/source-media-thunks";
 import { openOptimizedExportDialog, startFastCutRequested } from "@/app/store/thunks/export-thunks";
 import { Button } from "@/components/ui/button";
-import {
-  Menu,
-  MenuContent,
-  MenuItem,
-  MenuItemIcon,
-  MenuItemLabel,
-  MenuItemSuffix,
-  MenuSeparator,
-  MenuTrigger,
-} from "@/components/ui/menu";
+import { Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from "@/components/ui/menu";
 
 import type { MenuNavigation } from "../../types";
 
@@ -52,30 +43,32 @@ export function FileMenu({ navigation }: { navigation: MenuNavigation }) {
       <MenuContent>
         <MenuItem
           disabled={isChoosingSource}
+          suffix="Ctrl+O"
           onSelect={() => void dispatch(chooseSourceRequested())}
         >
-          <MenuItemIcon />
-          <MenuItemLabel>{t("app.topBarMenus.openFile")}</MenuItemLabel>
-          <MenuItemSuffix>Ctrl+O</MenuItemSuffix>
+          {t("app.topBarMenus.openFile")}
         </MenuItem>
         <MenuItem
           disabled={!hasSource}
+          suffix="Ctrl+Q"
           onSelect={() => void dispatch(closeActiveImportedItemRequested())}
         >
-          <MenuItemIcon />
-          <MenuItemLabel>{t("app.topBarMenus.closeFile")}</MenuItemLabel>
-          <MenuItemSuffix>Ctrl+Q</MenuItemSuffix>
+          {t("app.topBarMenus.closeFile")}
         </MenuItem>
         <MenuSeparator />
-        <MenuItem disabled={!canSave} onSelect={() => void dispatch(startFastCutRequested())}>
-          <MenuItemIcon />
-          <MenuItemLabel>{t("app.topBarMenus.saveLosslessCut")}</MenuItemLabel>
-          <MenuItemSuffix>Ctrl+S</MenuItemSuffix>
+        <MenuItem
+          disabled={!canSave}
+          suffix="Ctrl+S"
+          onSelect={() => void dispatch(startFastCutRequested())}
+        >
+          {t("app.topBarMenus.saveLosslessCut")}
         </MenuItem>
-        <MenuItem disabled={!canExport} onSelect={() => void dispatch(openOptimizedExportDialog())}>
-          <MenuItemIcon />
-          <MenuItemLabel>{t("app.topBarMenus.optimizeExport")}</MenuItemLabel>
-          <MenuItemSuffix>Ctrl+E</MenuItemSuffix>
+        <MenuItem
+          disabled={!canExport}
+          suffix="Ctrl+E"
+          onSelect={() => void dispatch(openOptimizedExportDialog())}
+        >
+          {t("app.topBarMenus.optimizeExport")}
         </MenuItem>
       </MenuContent>
     </Menu>
