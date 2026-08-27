@@ -11,6 +11,7 @@ import {
   SquareArrowLeft,
   SquareArrowRight,
 } from "lucide-react";
+import { useState } from "react";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import {
@@ -351,8 +352,15 @@ function TimelineToolButton({
   onClick: () => void;
   children: React.ReactNode;
 }) {
+  const [tooltipOpen, setTooltipOpen] = useState(false);
+
   return (
-    <Tooltip closeOnTriggerClick={false}>
+    <Tooltip
+      open={tooltipOpen}
+      onOpenChange={(open) => {
+        if (open) setTooltipOpen(true);
+      }}
+    >
       <TooltipTrigger asChild>
         <Button
           variant="secondary"
@@ -361,12 +369,14 @@ function TimelineToolButton({
           aria-label={label}
           aria-pressed={enabled}
           onClick={onClick}
+          onPointerLeave={() => setTooltipOpen(false)}
+          onBlur={() => setTooltipOpen(false)}
           className={enabled ? "text-primary" : undefined}
         >
           {children}
         </Button>
       </TooltipTrigger>
-      <TooltipContent>{title}</TooltipContent>
+      <TooltipContent onEscapeKeyDown={() => setTooltipOpen(false)}>{title}</TooltipContent>
     </Tooltip>
   );
 }

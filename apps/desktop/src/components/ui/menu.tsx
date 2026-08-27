@@ -112,7 +112,8 @@ interface MenuItemProps extends React.ComponentProps<typeof MenuPrimitive.Item> 
   selected?: boolean;
   suffix?: React.ReactNode;
   tooltip?: React.ReactNode;
-  tooltipProps?: React.ComponentProps<typeof TooltipContent> & { closeOnTriggerClick?: boolean };
+  tooltipProps?: React.ComponentProps<typeof TooltipContent>;
+  tooltipRootProps?: React.ComponentProps<typeof Tooltip>;
 }
 
 const menuItemClassName =
@@ -128,7 +129,8 @@ function MenuItem({
   selected = false,
   suffix,
   tooltip,
-  tooltipProps: { closeOnTriggerClick, ...tooltipProps } = {},
+  tooltipProps,
+  tooltipRootProps,
   ...props
 }: MenuItemProps) {
   const submenuCoordinator = React.useContext(MenuSubmenuCoordinatorContext);
@@ -154,7 +156,7 @@ function MenuItem({
   if (tooltip === undefined) return item;
 
   return (
-    <Tooltip closeOnTriggerClick={closeOnTriggerClick}>
+    <Tooltip {...tooltipRootProps}>
       <TooltipTrigger asChild>{item}</TooltipTrigger>
       <TooltipContent {...tooltipProps}>{tooltip}</TooltipContent>
     </Tooltip>

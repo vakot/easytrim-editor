@@ -1,8 +1,8 @@
 import { LoaderCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import { PANEL_GROUP_IDS } from "@/app/panel-layout-runtime";
 import { usePlayback, useTimeline } from "@/app/hooks/useEditorContracts";
+import { PANEL_GROUP_IDS } from "@/app/panel-layout-runtime";
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import {
   audioMergeToggled,
@@ -24,13 +24,13 @@ import {
 } from "@/app/store/slices/source-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
 import { prepareSourceWaveforms } from "@/app/store/thunks/source-media-thunks";
-import { PanelContent } from "@/components/layout/panel-content";
 import {
   Panel,
   PanelHandle,
   PersistedPanelGroup,
   type PanelRegistration,
 } from "@/components/layout/panel";
+import { PanelContent } from "@/components/layout/panel-content";
 import { ResizablePanel } from "@/components/ui/resizable";
 import { AudioTracks } from "@/features/audio-tracks";
 import {
@@ -113,7 +113,8 @@ export function EditorStage() {
         panelId={PANEL_IDS.timeline}
         id="preview-timeline-resize-handle"
         aria-label={t("preview.resize")}
-        className="my-0.5 bg-transparent"
+        style={{ height: 4 }}
+        className="bg-transparent"
       />
 
       <Panel

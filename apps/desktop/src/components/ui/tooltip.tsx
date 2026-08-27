@@ -5,16 +5,9 @@ import { cn } from "@/lib/utils";
 
 const DEFAULT_TOOLTIP_DELAY_MS = 500;
 
-interface TooltipInteractionContextValue {
-  endTriggerInteraction: () => void;
-  preserveTooltipDuringTriggerInteraction: () => void;
-}
+type TooltipContextType = { open: boolean; toggle: () => void; close: () => void };
 
-const TooltipInteractionContext = React.createContext<TooltipInteractionContextValue | null>(null);
-
-interface TooltipProps extends React.ComponentProps<typeof TooltipPrimitive.Root> {
-  closeOnTriggerClick?: boolean;
-}
+const TooltipContext = React.createContext<TooltipContextType | null>(null);
 
 function TooltipProvider({
   delayDuration = DEFAULT_TOOLTIP_DELAY_MS,
@@ -30,102 +23,36 @@ function TooltipProvider({
 }
 
 function Tooltip({
-  closeOnTriggerClick = true,
-  defaultOpen,
-  onOpenChange,
-  open: controlledOpen,
+  open: propsOpen,
+  preserveOnTrigger = false,
   ...props
-}: TooltipProps) {
-  const [uncontrolledOpen, setUncontrolledOpen] = React.useState(defaultOpen ?? false);
-  const open = controlledOpen ?? uncontrolledOpen;
-  const triggerInteractionRef = React.useRef(false);
-  const preserveTooltipDuringTriggerInteraction = React.useCallback(() => {
-    if (closeOnTriggerClick) return;
-    triggerInteractionRef.current = true;
-  }, [closeOnTriggerClick]);
-  const endTriggerInteraction = React.useCallback(() => {
-    triggerInteractionRef.current = false;
-  }, []);
-  const interactionContext = React.useMemo(
-    () => ({ endTriggerInteraction, preserveTooltipDuringTriggerInteraction }),
-    [endTriggerInteraction, preserveTooltipDuringTriggerInteraction],
-  );
+}: React.ComponentProps<typeof TooltipPrimitive.Root> & { preserveOnTrigger?: boolean }) {
+  const [internalOpen, setInternalOpen] = React.useState<boolean>(false);
+  const open = propsOpen ?? internalOpen;
 
-  React.useEffect(() => {
-    if (!open || closeOnTriggerClick) endTriggerInteraction();
-  }, [closeOnTriggerClick, endTriggerInteraction, open]);
-
-  const handleOpenChange = React.useCallback(
-    (nextOpen: boolean) => {
-      if (!nextOpen && !closeOnTriggerClick && triggerInteractionRef.current) return;
-      if (controlledOpen === undefined) setUncontrolledOpen(nextOpen);
-      onOpenChange?.(nextOpen);
-    },
-    [closeOnTriggerClick, controlledOpen, onOpenChange],
-  );
+  const toggle = () => preserveOnTrigger && setInternalOpen(!open);
+  const close = () => preserveOnTrigger && setInternalOpen(false);
 
   return (
-    <TooltipInteractionContext.Provider value={interactionContext}>
+    <TooltipContext.Provider value={{ open, toggle, close }}>
       <TooltipPrimitive.Root
         data-slot="tooltip"
         open={open}
-        onOpenChange={handleOpenChange}
+        onOpenChange={setInternalOpen}
         {...props}
       />
-    </TooltipInteractionContext.Provider>
+    </TooltipContext.Provider>
   );
 }
 
-function TooltipTrigger({
-  onBlur,
-  onClick,
-  onKeyDown,
-  onPointerCancel,
-  onPointerDown,
-  onPointerLeave,
-  onWheel,
-  ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Trigger>) {
-  const interactionContext = React.useContext(TooltipInteractionContext);
-
-  const preserveTooltip = () => {
-    interactionContext?.preserveTooltipDuringTriggerInteraction();
-  };
+function TooltipTrigger({ ...props }: React.ComponentProps<typeof TooltipPrimitive.Trigger>) {
+  const { close } = useTooltip();
 
   return (
     <TooltipPrimitive.Trigger
       data-slot="tooltip-trigger"
-      onPointerDown={(event) => {
-        preserveTooltip();
-        onPointerDown?.(event);
-      }}
-      onClick={(event) => {
-        preserveTooltip();
-        onClick?.(event);
-      }}
-      onPointerLeave={(event) => {
-        interactionContext?.endTriggerInteraction();
-        onPointerLeave?.(event);
-      }}
-      onPointerCancel={(event) => {
-        interactionContext?.endTriggerInteraction();
-        onPointerCancel?.(event);
-      }}
-      onBlur={(event) => {
-        const relatedTarget = event.relatedTarget;
-        const focusRemainsWithinTrigger =
-          relatedTarget instanceof Node && event.currentTarget.contains(relatedTarget);
-        if (!focusRemainsWithinTrigger) interactionContext?.endTriggerInteraction();
-        onBlur?.(event);
-      }}
-      onKeyDown={(event) => {
-        if (event.key === "Escape") interactionContext?.endTriggerInteraction();
-        onKeyDown?.(event);
-      }}
-      onWheel={(event) => {
-        interactionContext?.endTriggerInteraction();
-        onWheel?.(event);
-      }}
+      onPointerLeave={close}
+      onBlur={close}
       {...props}
     />
   );
@@ -135,10 +62,9 @@ function TooltipContent({
   className,
   sideOffset = 0,
   children,
-  onEscapeKeyDown,
   ...props
 }: React.ComponentProps<typeof TooltipPrimitive.Content>) {
-  const interactionContext = React.useContext(TooltipInteractionContext);
+  const { close } = useTooltip();
 
   return (
     <TooltipPrimitive.Portal>
@@ -149,10 +75,7 @@ function TooltipContent({
           "z-50 inline-flex w-fit max-w-xs origin-(--radix-tooltip-content-transform-origin) items-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-xs text-background has-data-[slot=kbd]:pr-1.5 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 **:data-[slot=kbd]:relative **:data-[slot=kbd]:isolate **:data-[slot=kbd]:z-50 **:data-[slot=kbd]:rounded-sm data-[state=delayed-open]:animate-in data-[state=delayed-open]:fade-in-0 data-[state=delayed-open]:zoom-in-95 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
           className,
         )}
-        onEscapeKeyDown={(event) => {
-          interactionContext?.endTriggerInteraction();
-          onEscapeKeyDown?.(event);
-        }}
+        onEscapeKeyDown={close}
         {...props}
       >
         {children}
@@ -160,6 +83,14 @@ function TooltipContent({
       </TooltipPrimitive.Content>
     </TooltipPrimitive.Portal>
   );
+}
+
+function useTooltip() {
+  const interactionRef = React.useContext(TooltipContext);
+  if (!interactionRef) {
+    throw new Error("TooltipTrigger and TooltipContent must be used within Tooltip");
+  }
+  return interactionRef;
 }
 
 export { DEFAULT_TOOLTIP_DELAY_MS, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger };

@@ -65,6 +65,9 @@ describe("SettingsMenu Redux integration", () => {
     await user.click(within(loopRow).getByRole("switch"));
 
     expect(screen.getByRole("tooltip")).toHaveTextContent("Disabled by default");
+
+    fireEvent.pointerLeave(loopRow);
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
   });
 
   it("keeps a preference tooltip open through a delayed focus transfer to its switch", async () => {
