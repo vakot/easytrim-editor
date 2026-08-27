@@ -1,7 +1,8 @@
+import { ChevronRight } from "lucide-react";
 import {
   Children,
-  Fragment,
   createContext,
+  Fragment,
   isValidElement,
   useContext,
   useId,
@@ -12,7 +13,6 @@ import {
   type ReactElement,
   type ReactNode,
 } from "react";
-import { ChevronRight } from "lucide-react";
 import { Group, Panel } from "react-resizable-panels";
 
 import { PanelSeparator } from "@/components/PanelSeparator";
@@ -187,13 +187,15 @@ function ResizableAccordionItem({
 
 type ResizableAccordionTriggerProps = Omit<
   ComponentProps<typeof Button>,
-  "aria-controls" | "aria-expanded" | "size" | "variant"
+  "aria-controls" | "aria-expanded"
 >;
 
 function ResizableAccordionTrigger({
   children,
   className,
   onClick,
+  size = "sm",
+  variant = "ghost",
   ...props
 }: ResizableAccordionTriggerProps) {
   const item = useResizableAccordionItemContext();
@@ -203,8 +205,8 @@ function ResizableAccordionTrigger({
       {...props}
       id={item.triggerId}
       type="button"
-      variant="ghost"
-      size="sm"
+      variant={variant}
+      size={size}
       aria-controls={item.contentId}
       aria-expanded={item.isOpen}
       data-slot="resizable-accordion-trigger"
@@ -214,7 +216,7 @@ function ResizableAccordionTrigger({
         if (!event.defaultPrevented) item.toggle();
       }}
       className={cn(
-        "h-[var(--resizable-accordion-header-size)] w-full shrink-0 items-baseline justify-start rounded-none px-2 text-foreground/80 aria-expanded:bg-transparent",
+        "h-[var(--resizable-accordion-header-size)] w-full shrink-0 justify-start px-2 text-foreground/80",
         className,
       )}
     >
