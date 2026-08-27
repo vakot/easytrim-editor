@@ -56,13 +56,13 @@ export function SourceSidebar() {
           aria-label={t("import.source.sidebarControls")}
         >
           <Tooltip>
-            <PaneVisibilityMenuTrigger asChild>
-              <TooltipTrigger asChild>
+            <TooltipTrigger asChild>
+              <PaneVisibilityMenuTrigger asChild>
                 <Button size="icon-xs" variant="ghost">
                   <Ellipsis className="size-4" aria-hidden="true" />
                 </Button>
-              </TooltipTrigger>
-            </PaneVisibilityMenuTrigger>
+              </PaneVisibilityMenuTrigger>
+            </TooltipTrigger>
             <TooltipContent side="bottom">{t("import.source.sidebarControls")}</TooltipContent>
           </Tooltip>
           <PaneVisibilityMenuContent />
