@@ -624,10 +624,10 @@ describe("App", () => {
     });
     expect(sourceResizeHandle).toHaveAttribute("aria-orientation", "vertical");
     expect(sourceResizeHandle).toHaveAttribute("tabindex", "0");
-    expect(sourceResizeHandle).toHaveClass("w-1");
+    expect(sourceResizeHandle).toHaveClass("w-px", "after:w-1");
     expect(timelineResizeHandle).toHaveAttribute("aria-orientation", "horizontal");
     expect(timelineResizeHandle).toHaveAttribute("tabindex", "0");
-    expect(timelineResizeHandle).toHaveClass("h-1");
+    expect(timelineResizeHandle).toHaveClass("aria-[orientation=horizontal]:h-px", "after:h-1");
     expect(screen.getAllByRole("separator")).toHaveLength(4);
     const fixedTimeline = screen.getByTestId("timeline-fixed-content");
     const audioTracksScroll = screen.getByTestId("audio-tracks-scroll");
@@ -690,10 +690,10 @@ describe("App", () => {
     await user.click(sourceDetailsToggle);
     expect(screen.getByRole("button", { name: "Media details" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Export queue" })).toBeInTheDocument();
-    expect(document.getElementById("source-details-resize-handle")).toHaveAttribute(
+    expect(document.getElementById("source-details-resize-handle")).not.toHaveAttribute(
       "aria-hidden",
-      "false",
     );
+    expect(document.getElementById("source-details-resize-handle")).toBeEmptyDOMElement();
 
     await user.click(screen.getByRole("button", { name: "Show Left panel" }));
     expect(screen.getByRole("button", { name: "Media details" })).toBeInTheDocument();
@@ -701,16 +701,18 @@ describe("App", () => {
     await user.click(audioTracksToggle);
     expect(screen.queryByTestId("audio-tracks-scroll")).not.toBeInTheDocument();
     expect(screen.getByTestId("timeline-fixed-content")).toBeInTheDocument();
-    expect(document.getElementById("preview-timeline-resize-handle")).toHaveAttribute(
+    expect(document.getElementById("preview-timeline-resize-handle")).not.toHaveAttribute(
       "aria-hidden",
-      "false",
     );
+    expect(document.getElementById("preview-timeline-resize-handle")).toBeEmptyDOMElement();
 
     await user.click(screen.getByRole("button", { name: "Show Bottom panel" }));
     expect(screen.getByTestId("audio-tracks-scroll")).toBeInTheDocument();
-    expect(document.getElementById("preview-timeline-resize-handle")).toHaveAttribute(
+    expect(document.getElementById("preview-timeline-resize-handle")).not.toHaveAttribute(
       "aria-hidden",
-      "false",
+    );
+    expect(document.getElementById("preview-timeline-resize-handle")?.firstElementChild).not.toBe(
+      null,
     );
   });
 

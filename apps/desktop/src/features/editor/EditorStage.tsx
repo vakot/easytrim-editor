@@ -30,8 +30,7 @@ import {
 import { selectTrim } from "@/app/store/slices/trim-slice";
 import { prepareSourceWaveforms } from "@/app/store/thunks/source-media-thunks";
 import { PanelContent } from "@/components/layout/panel-content";
-import { PanelSeparator } from "@/components/layout/panel-separator";
-import { ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { AudioTracks } from "@/features/audio-tracks";
 import {
   PlaybackControls,
@@ -116,12 +115,12 @@ export function EditorStage() {
         </PanelContent>
       </ResizablePanel>
 
-      <PanelSeparator
+      <ResizableHandle
         id="preview-timeline-resize-handle"
-        label={t("preview.resize")}
-        orientation="horizontal"
-        collapsed={!isBottomPanelVisible}
+        aria-label={t("preview.resize")}
         onDoubleClick={timelinePanelSizing.resetToDefault}
+        className="my-0.5 bg-transparent"
+        withHandle={isBottomPanelVisible}
       />
 
       <ResizablePanel

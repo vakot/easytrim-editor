@@ -123,13 +123,11 @@ describe("PaneView", () => {
       "aria-expanded",
       "false",
     );
-    expect(screen.getByTestId("test-pane-view")).toHaveStyle({
-      "--pane-view-header-size": "32px",
-    });
-    expect(screen.getByRole("button", { name: "Media details" })).toHaveClass(
-      "h-[var(--pane-view-header-size)]",
-      "items-baseline",
+    expect(screen.getByRole("button", { name: "Media details" })).toHaveAttribute(
+      "data-size",
+      "sm",
     );
+    expect(screen.getByRole("button", { name: "Media details" })).toHaveClass("h-7");
     expect(resizeMocks.panels.get("media")).toEqual({
       defaultSize: "33%",
       disabled: false,
@@ -139,8 +137,8 @@ describe("PaneView", () => {
     expect(resizeMocks.panels.get("export")).toEqual({
       defaultSize: "33%",
       disabled: true,
-      maxSize: 32,
-      minSize: 32,
+      maxSize: 28,
+      minSize: 28,
     });
   });
 
@@ -186,7 +184,7 @@ describe("PaneView", () => {
       "true",
     );
     expect(resizeMocks.separators.get("test-pane-view-separator-1")).toEqual({
-      disabled: true,
+      disabled: undefined,
     });
 
     await user.click(screen.getByRole("button", { name: "Imported queue" }));

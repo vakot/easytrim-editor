@@ -15,22 +15,22 @@ export function SourceSidebar() {
         aria-label="Source sidebar sections"
         defaultValue={["media", "imported", "export"]}
       >
-        <PaneViewItem id="media" defaultSize="33%" minSize={120}>
-          <PaneViewTrigger>Media details</PaneViewTrigger>
+        <PaneViewItem id="media" defaultSize="33%" minSize={120} headerSize={24}>
+          <PaneViewTrigger size="xs">Media details</PaneViewTrigger>
           <PaneViewContent>
             <PlaceholderRows label="Media details" />
           </PaneViewContent>
         </PaneViewItem>
 
-        <PaneViewItem id="imported" defaultSize="33%" minSize={120}>
-          <PaneViewTrigger>Imported queue</PaneViewTrigger>
+        <PaneViewItem id="imported" defaultSize="33%" minSize={120} headerSize={24}>
+          <PaneViewTrigger size="xs">Imported queue</PaneViewTrigger>
           <PaneViewContent>
             <PlaceholderRows label="Imported queue" />
           </PaneViewContent>
         </PaneViewItem>
 
-        <PaneViewItem id="export" defaultSize="33%" minSize={120}>
-          <PaneViewTrigger>Export queue</PaneViewTrigger>
+        <PaneViewItem id="export" defaultSize="33%" minSize={120} headerSize={24}>
+          <PaneViewTrigger size="xs">Export queue</PaneViewTrigger>
           <PaneViewContent>
             <PlaceholderRows label="Export queue" />
           </PaneViewContent>

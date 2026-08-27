@@ -9,18 +9,17 @@ import {
   useMemo,
   useState,
   type ComponentProps,
-  type CSSProperties,
   type ReactElement,
   type ReactNode,
 } from "react";
 
-import { PanelSeparator } from "@/components/layout/panel-separator";
 import { Button } from "@/components/ui/button";
-import { ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 
-const HEADER_SIZE = 32;
+const DEFAULT_HEADER_SIZE = 28; // h-7 from <Button size="sm" />
 const DEFAULT_MIN_SIZE = 120;
 
 interface PaneViewContextValue {
@@ -89,28 +88,18 @@ function PaneView({
         aria-label={ariaLabel}
         data-slot="pane-view"
         className={cn("h-full min-h-0", className)}
-        style={
-          {
-            "--pane-view-header-size": `${HEADER_SIZE}px`,
-          } as CSSProperties
-        }
       >
         {items.map((item, index) => {
-          const previousItem = items[index - 1];
-          const bothAdjacentItemsCollapsed =
-            previousItem !== undefined &&
-            !openIdSet.has(previousItem.props.id) &&
-            !openIdSet.has(item.props.id);
-
           return (
             <Fragment key={item.key ?? item.props.id}>
               {index > 0 ? (
-                <PanelSeparator
+                <ResizableHandle
                   id={`${groupId}-separator-${index}`}
-                  label="Resize adjacent sections"
-                  orientation="horizontal"
-                  disabled={bothAdjacentItemsCollapsed}
-                />
+                  aria-label="Resize adjacent sections"
+                  className="h-1! bg-transparent px-2"
+                >
+                  <Separator />
+                </ResizableHandle>
               ) : null}
               {item}
             </Fragment>
@@ -136,6 +125,7 @@ interface PaneViewItemProps {
   children: ReactNode;
   id: string;
   defaultSize?: number | string;
+  headerSize?: number | string;
   minSize?: number | string;
   maxSize?: number | string;
   className?: string;
@@ -145,6 +135,7 @@ function PaneViewItem({
   children,
   id,
   defaultSize,
+  headerSize = DEFAULT_HEADER_SIZE,
   minSize = DEFAULT_MIN_SIZE,
   maxSize,
   className,
@@ -173,8 +164,8 @@ function PaneViewItem({
         data-state={isOpen ? "open" : "closed"}
         defaultSize={defaultSize}
         disabled={!isOpen}
-        minSize={isOpen ? minSize : HEADER_SIZE}
-        maxSize={isOpen ? maxSize : HEADER_SIZE}
+        minSize={isOpen ? minSize : headerSize}
+        maxSize={isOpen ? maxSize : headerSize}
         className={cn("min-h-0", className)}
       >
         <div className="flex h-full min-h-0 flex-col overflow-hidden">{children}</div>
@@ -211,7 +202,7 @@ function PaneViewTrigger({
         if (!event.defaultPrevented) item.toggle();
       }}
       className={cn(
-        "h-[var(--pane-view-header-size)] w-full shrink-0 items-baseline justify-start px-2 text-foreground/80 aria-expanded:bg-transparent aria-expanded:text-foreground/80 aria-expanded:hover:bg-muted aria-expanded:hover:text-foreground",
+        "w-full shrink-0 justify-start text-foreground/80 aria-expanded:bg-transparent aria-expanded:text-foreground/80 aria-expanded:hover:bg-muted aria-expanded:hover:text-foreground",
         className,
       )}
     >

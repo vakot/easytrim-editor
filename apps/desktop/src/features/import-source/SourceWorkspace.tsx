@@ -11,8 +11,12 @@ import { selectActiveItemId } from "@/app/store/slices/export-slice";
 import { selectIsSourceDragActive } from "@/app/store/slices/import-workflow-slice";
 import { selectSourceSelection } from "@/app/store/slices/source-slice";
 import { PanelContent } from "@/components/layout/panel-content";
-import { PanelSeparator } from "@/components/layout/panel-separator";
-import { ResizablePanel, ResizablePanelGroup, usePanelRef } from "@/components/ui/resizable";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+  usePanelRef,
+} from "@/components/ui/resizable";
 import { EditorStage } from "@/features/editor";
 import { useTranslation } from "react-i18next";
 import { DropOverlay } from "./components/DropOverlay";
@@ -80,12 +84,11 @@ export function SourceWorkspace() {
         </div>
       </ResizablePanel>
 
-      <PanelSeparator
+      <ResizableHandle
         id="source-details-resize-handle"
-        label={t("import.source.resizeDetails")}
-        orientation="vertical"
-        collapsed={!isLeftPanelVisible}
-        className="mb-1"
+        aria-label={t("import.source.resizeDetails")}
+        className="mb-1 mx-0.5 bg-transparent"
+        withHandle={isLeftPanelVisible}
       />
 
       <ResizablePanel id="editor-content-panel" minSize="44rem" className="pr-1">
