@@ -25,6 +25,7 @@ function TooltipProvider({
 }
 
 function Tooltip({
+  defaultOpen = false,
   open: controlledOpen,
   onOpenChange,
   preserveOnTrigger = false,
@@ -32,7 +33,7 @@ function Tooltip({
 }: React.ComponentProps<typeof TooltipPrimitive.Root> & {
   preserveOnTrigger?: boolean;
 }) {
-  const [internalOpen, setInternalOpen] = React.useState(false);
+  const [internalOpen, setInternalOpen] = React.useState(defaultOpen);
   const preservingTriggerRef = React.useRef(false);
 
   const open = controlledOpen ?? internalOpen;
@@ -59,8 +60,11 @@ function Tooltip({
 }
 
 function TooltipTrigger({
-  onPointerDown,
   onClick,
+  onPointerCancel,
+  onPointerDown,
+  onPointerLeave,
+  onPointerUp,
   ...props
 }: React.ComponentProps<typeof TooltipPrimitive.Trigger>) {
   const { setPreservingTrigger } = useTooltip();
@@ -72,7 +76,20 @@ function TooltipTrigger({
         setPreservingTrigger(true);
         onPointerDown?.(event);
       }}
+      onPointerUp={(event) => {
+        setPreservingTrigger(false);
+        onPointerUp?.(event);
+      }}
+      onPointerCancel={(event) => {
+        setPreservingTrigger(false);
+        onPointerCancel?.(event);
+      }}
+      onPointerLeave={(event) => {
+        setPreservingTrigger(false);
+        onPointerLeave?.(event);
+      }}
       onClick={(event) => {
+        setPreservingTrigger(true);
         onClick?.(event);
         queueMicrotask(() => setPreservingTrigger(false));
       }}

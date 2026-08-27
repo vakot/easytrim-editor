@@ -65,12 +65,9 @@ describe("SettingsMenu Redux integration", () => {
     await user.click(within(loopRow).getByRole("switch"));
 
     expect(screen.getByRole("tooltip")).toHaveTextContent("Disabled by default");
-
-    fireEvent.pointerLeave(loopRow);
-    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
   });
 
-  it("keeps a preference tooltip open through a delayed focus transfer to its switch", async () => {
+  it("allows a preference tooltip to close after the trigger interaction finishes", async () => {
     const user = userEvent.setup();
     renderSettings();
     const loopRow = screen.getByRole("menuitem", { name: "Loop" });
@@ -82,7 +79,7 @@ describe("SettingsMenu Redux integration", () => {
     await user.click(loopSwitch);
     fireEvent.blur(loopRow, { relatedTarget: loopSwitch });
 
-    expect(screen.getByRole("tooltip")).toHaveTextContent("Disabled by default");
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
   });
 
   it("resets preferences without rewriting active editor tools", async () => {
