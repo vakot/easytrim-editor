@@ -112,8 +112,8 @@ interface MenuItemProps extends React.ComponentProps<typeof MenuPrimitive.Item> 
   selected?: boolean;
   suffix?: React.ReactNode;
   tooltip?: React.ReactNode;
-  tooltipProps?: React.ComponentProps<typeof TooltipContent>;
-  tooltipRootProps?: React.ComponentProps<typeof Tooltip>;
+  tooltipProps?: React.ComponentProps<typeof TooltipContent> &
+    Pick<React.ComponentProps<typeof Tooltip>, "preserveOnTrigger">;
 }
 
 const menuItemClassName =
@@ -129,8 +129,7 @@ function MenuItem({
   selected = false,
   suffix,
   tooltip,
-  tooltipProps,
-  tooltipRootProps,
+  tooltipProps: { preserveOnTrigger, ...tooltipProps } = {},
   ...props
 }: MenuItemProps) {
   const submenuCoordinator = React.useContext(MenuSubmenuCoordinatorContext);
@@ -156,7 +155,7 @@ function MenuItem({
   if (tooltip === undefined) return item;
 
   return (
-    <Tooltip {...tooltipRootProps}>
+    <Tooltip preserveOnTrigger={preserveOnTrigger}>
       <TooltipTrigger asChild>{item}</TooltipTrigger>
       <TooltipContent {...tooltipProps}>{tooltip}</TooltipContent>
     </Tooltip>

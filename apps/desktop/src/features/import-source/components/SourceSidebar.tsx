@@ -9,8 +9,11 @@ import {
   PaneViewItem,
   PaneViewTrigger,
   PaneVisibilityMenu,
+  PaneVisibilityMenuContent,
+  PaneVisibilityMenuTrigger,
   type PaneRegistration,
 } from "@/components/layout/pane-view";
+import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const PLACEHOLDER_ROWS = Array.from({ length: 20 }, (_, index) => index + 1);
@@ -48,18 +51,22 @@ export function SourceSidebar() {
     >
       <div className="flex h-7 shrink-0 items-center justify-between gap-1 px-2 text-xs font-medium">
         <span>{t("import.source.sidebar")}</span>
-        <Tooltip>
-          <PaneVisibilityMenu
-            panels={visibilityPanels}
-            className="size-6 p-0"
-            aria-label={t("import.source.sidebarControls")}
-          >
-            <TooltipTrigger>
-              <Ellipsis className="size-4" aria-hidden="true" />
-            </TooltipTrigger>
-          </PaneVisibilityMenu>
-          <TooltipContent side="bottom">{t("import.source.sidebarControls")}</TooltipContent>
-        </Tooltip>
+        <PaneVisibilityMenu
+          panels={visibilityPanels}
+          aria-label={t("import.source.sidebarControls")}
+        >
+          <Tooltip>
+            <PaneVisibilityMenuTrigger asChild>
+              <TooltipTrigger asChild>
+                <Button size="icon-xs" variant="ghost">
+                  <Ellipsis className="size-4" aria-hidden="true" />
+                </Button>
+              </TooltipTrigger>
+            </PaneVisibilityMenuTrigger>
+            <TooltipContent side="bottom">{t("import.source.sidebarControls")}</TooltipContent>
+          </Tooltip>
+          <PaneVisibilityMenuContent />
+        </PaneVisibilityMenu>
       </div>
       <PaneView
         id={PANEL_GROUP_IDS.sourceSidebar}

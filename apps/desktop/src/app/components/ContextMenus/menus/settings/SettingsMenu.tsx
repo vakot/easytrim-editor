@@ -7,7 +7,7 @@ import {
   Repeat,
   RotateCcw,
 } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { type PreferenceKey } from "@/app/preferences";
@@ -52,7 +52,6 @@ function PreferenceMenuItem({ preferenceKey, icon, children }: PreferenceMenuIte
   const preferences = useAppSelector(selectPreferences);
   const isEnabled = preferences[preferenceKey];
   const isDefaultPreference = DEFAULT_PREFERENCE_KEYS.has(preferenceKey);
-  const [tooltipOpen, setTooltipOpen] = useState(false);
 
   return (
     <MenuItem
@@ -66,24 +65,8 @@ function PreferenceMenuItem({ preferenceKey, icon, children }: PreferenceMenuIte
             ? "app.settings.enabled"
             : "app.settings.disabled",
       )}
-      tooltipProps={{
-        side: "right",
-        onEscapeKeyDown: () => setTooltipOpen(false),
-      }}
-      tooltipRootProps={{
-        open: tooltipOpen,
-        onOpenChange: (open) => {
-          if (open) setTooltipOpen(true);
-        },
-      }}
+      tooltipProps={{ side: "right", preserveOnTrigger: true }}
       suffix={<Switch size="sm" checked={isEnabled} />}
-      onPointerLeave={() => setTooltipOpen(false)}
-      onBlur={(event) => {
-        const relatedTarget = event.relatedTarget;
-        if (!(relatedTarget instanceof Node && event.currentTarget.contains(relatedTarget))) {
-          setTooltipOpen(false);
-        }
-      }}
       onSelect={(event) => {
         event.preventDefault();
         dispatch(preferenceChanged({ key: preferenceKey, enabled: !isEnabled }));

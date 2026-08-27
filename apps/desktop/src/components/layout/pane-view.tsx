@@ -433,24 +433,22 @@ function PaneViewContent({ className, children, ...props }: PaneViewContentProps
   );
 }
 
+type PaneVisibilityMenuContextType = {
+  visibilityKey: string;
+  panels: readonly PaneVisibilityMenuItem[];
+};
+
+const PaneVisibilityMenuContext = createContext<PaneVisibilityMenuContextType | null>(null);
+
 interface PaneVisibilityMenuItem extends PaneRegistration {
   label: ReactNode;
 }
 
-interface PaneVisibilityMenuProps {
-  "aria-label"?: string;
-  children: ReactNode;
-  className?: string;
+interface PaneVisibilityMenuProps extends React.ComponentProps<typeof Menu> {
   panels: readonly PaneVisibilityMenuItem[];
 }
 
-function PaneVisibilityMenu({
-  children,
-  className,
-  panels,
-  "aria-label": ariaLabel,
-}: PaneVisibilityMenuProps) {
-  const dispatch = useAppDispatch();
+function PaneVisibilityMenu({ panels, ...props }: PaneVisibilityMenuProps) {
   const visibilityKey = useAppSelector((state) =>
     panels
       .map((registration) => {
@@ -461,43 +459,45 @@ function PaneVisibilityMenu({
   );
 
   return (
-    <Menu modal={false}>
-      <MenuTrigger asChild>
-        <Button
-          type="button"
-          variant="ghost"
-          size="xs"
-          className={className}
-          aria-label={ariaLabel}
-        >
-          {children}
-        </Button>
-      </MenuTrigger>
-      <MenuContent>
-        {panels.map((panel, index) => {
-          const visible = visibilityKey[index] === "1";
-          return (
-            <MenuItem
-              key={panel.id}
-              disabled={panel.fixedVisible}
-              icon={
-                visible ? (
-                  <Eye className="size-3" aria-hidden="true" />
-                ) : (
-                  <EyeOff className="size-3" aria-hidden="true" />
-                )
-              }
-              onSelect={(event) => {
-                event.preventDefault();
-                if (!panel.fixedVisible) dispatch(panelVisibilityToggled(panel.panelId));
-              }}
-            >
-              {panel.label}
-            </MenuItem>
-          );
-        })}
-      </MenuContent>
-    </Menu>
+    <PaneVisibilityMenuContext.Provider value={{ visibilityKey, panels }}>
+      <Menu {...props} />
+    </PaneVisibilityMenuContext.Provider>
+  );
+}
+
+function PaneVisibilityMenuTrigger(props: React.ComponentProps<typeof MenuTrigger>) {
+  return <MenuTrigger {...props} />;
+}
+
+function PaneVisibilityMenuContent({ ...props }: React.ComponentProps<typeof MenuContent>) {
+  const dispatch = useAppDispatch();
+  const { panels, visibilityKey } = usePaneVisibilityMenuContext();
+
+  return (
+    <MenuContent {...props}>
+      {panels.map((panel, index) => {
+        const visible = visibilityKey[index] === "1";
+        return (
+          <MenuItem
+            key={panel.id}
+            disabled={panel.fixedVisible}
+            icon={
+              visible ? (
+                <Eye className="size-3" aria-hidden="true" />
+              ) : (
+                <EyeOff className="size-3" aria-hidden="true" />
+              )
+            }
+            onSelect={(event) => {
+              event.preventDefault();
+              if (!panel.fixedVisible) dispatch(panelVisibilityToggled(panel.panelId));
+            }}
+          >
+            {panel.label}
+          </MenuItem>
+        );
+      })}
+    </MenuContent>
   );
 }
 
@@ -519,6 +519,14 @@ function usePaneViewItemContext() {
   return context;
 }
 
+function usePaneVisibilityMenuContext() {
+  const context = useContext(PaneVisibilityMenuContext);
+  if (!context) {
+    throw new Error("PaneVisibilityMenuContent must be used within PaneVisibilityMenu");
+  }
+  return context;
+}
+
 export {
   PaneView,
   PaneViewContent,
@@ -526,6 +534,8 @@ export {
   PaneViewLabel,
   PaneViewTrigger,
   PaneVisibilityMenu,
+  PaneVisibilityMenuContent,
+  PaneVisibilityMenuTrigger,
   PersistedPaneView,
 };
 export type { PaneRegistration };

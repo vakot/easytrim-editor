@@ -11,7 +11,6 @@ import {
   SquareArrowLeft,
   SquareArrowRight,
 } from "lucide-react";
-import { useState } from "react";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import {
@@ -201,7 +200,7 @@ export function PlaybackTimecode({
 export function TimelineTools() {
   return (
     <>
-      <div className="grid grid-flow-col auto-cols-[1.75rem] grid-rows-[repeat(2,1.75rem)] gap-1">
+      <div className="grid grid-flow-col auto-cols-7 grid-rows-[repeat(2,1.75rem)] gap-1">
         <SnapPlaybackTool />
         <LoopPlaybackTool />
         <SegmentPlaybackTool />
@@ -299,7 +298,7 @@ function PlaybackSpeedTool() {
         <PopoverContent side="bottom" align="center" className="w-56 p-2.5">
           <div className="flex items-center gap-2">
             <Slider
-              className="mt-2 min-w-0 flex-1 [&_[data-slot=slider-track]]:h-1.5"
+              className="mt-2 min-w-0 flex-1 **:data-[slot=slider-track]:h-1.5"
               min={0}
               max={PLAYBACK_SPEED_STEPS.length - 1}
               step={1}
@@ -333,6 +332,7 @@ function ResetToolsTool() {
       label={t("preview.resetTools")}
       title={t("preview.resetTools")}
       onClick={() => dispatch(editorToolsReset(createEditorToolsStateFromPreferences(preferences)))}
+      preserveOnTrigger={false}
     >
       <RotateCcw />
     </TimelineToolButton>
@@ -345,22 +345,17 @@ function TimelineToolButton({
   title,
   onClick,
   children,
+  preserveOnTrigger = true,
 }: {
   enabled: boolean;
   label: string;
   title: string;
   onClick: () => void;
   children: React.ReactNode;
+  preserveOnTrigger?: boolean;
 }) {
-  const [tooltipOpen, setTooltipOpen] = useState(false);
-
   return (
-    <Tooltip
-      open={tooltipOpen}
-      onOpenChange={(open) => {
-        if (open) setTooltipOpen(true);
-      }}
-    >
+    <Tooltip preserveOnTrigger={preserveOnTrigger}>
       <TooltipTrigger asChild>
         <Button
           variant="secondary"
@@ -369,14 +364,12 @@ function TimelineToolButton({
           aria-label={label}
           aria-pressed={enabled}
           onClick={onClick}
-          onPointerLeave={() => setTooltipOpen(false)}
-          onBlur={() => setTooltipOpen(false)}
           className={enabled ? "text-primary" : undefined}
         >
           {children}
         </Button>
       </TooltipTrigger>
-      <TooltipContent onEscapeKeyDown={() => setTooltipOpen(false)}>{title}</TooltipContent>
+      <TooltipContent>{title}</TooltipContent>
     </Tooltip>
   );
 }
