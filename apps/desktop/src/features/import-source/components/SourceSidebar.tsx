@@ -25,21 +25,25 @@ const PLACEHOLDER_ROWS = Array.from({ length: 20 }, (_, index) => index + 1);
 const SIDEBAR_SPACER_ID = `${EDITOR_PANEL_GROUP_IDS.sourceSidebar}-spacer`;
 
 const PANEL_OPTIONS = [
-  { panelId: EDITOR_PANEL_IDS.sidebarMedia, paneId: "media", label: "Media details" },
+  {
+    panelId: EDITOR_PANEL_IDS.sidebarMedia,
+    paneId: "media",
+    labelKey: "import.source.mediaDetails",
+  },
   {
     panelId: EDITOR_PANEL_IDS.sidebarImportedQueue,
     paneId: "imported",
-    label: "Imported queue",
+    labelKey: "import.source.importedQueue",
   },
   {
     panelId: EDITOR_PANEL_IDS.sidebarExportQueue,
     paneId: "export",
-    label: "Export queue",
+    labelKey: "import.source.exportQueue",
   },
 ] as const satisfies ReadonlyArray<{
   panelId: EditorPanelId;
   paneId: string;
-  label: string;
+  labelKey: string;
 }>;
 
 export function SourceSidebar() {
@@ -90,7 +94,7 @@ export function SourceSidebar() {
 
   const visibilityOptions: ContextMenuOption[] = panels.map((panel) => ({
     id: `toggle-${panel.paneId}`,
-    children: panel.label,
+    children: t(panel.labelKey),
     icon: panel.state.visible ? (
       <Eye className="size-3" aria-hidden="true" />
     ) : (
@@ -101,9 +105,12 @@ export function SourceSidebar() {
   }));
 
   return (
-    <aside className="flex h-full min-h-0 flex-col overflow-hidden p-1" aria-label="Source sidebar">
+    <aside
+      className="flex h-full min-h-0 flex-col overflow-hidden p-1"
+      aria-label={t("import.source.sidebar")}
+    >
       <div className="flex h-7 shrink-0 items-center justify-between gap-1 px-2 text-xs font-medium">
-        <span>Source</span>
+        <span>{t("import.source.sidebar")}</span>
         <Tooltip>
           <TooltipTrigger asChild>
             <span className="inline-flex">
@@ -121,7 +128,7 @@ export function SourceSidebar() {
       </div>
       <PaneView
         id={EDITOR_PANEL_GROUP_IDS.sourceSidebar}
-        aria-label="Source sidebar sections"
+        aria-label={t("import.source.sidebarSections")}
         value={openPaneIds}
         onValueChange={(nextOpenPaneIds) => {
           visiblePanels.forEach((panel) => {
@@ -138,27 +145,27 @@ export function SourceSidebar() {
       >
         {mediaPanel.visible ? (
           <PaneViewItem id="media" defaultSize="33%" minSize={120} headerSize={24}>
-            <PaneViewTrigger size="xs">Media details</PaneViewTrigger>
+            <PaneViewTrigger size="xs">{t(PANEL_OPTIONS[0].labelKey)}</PaneViewTrigger>
             <PaneViewContent>
-              <PlaceholderRows label="Media details" />
+              <PlaceholderRows label={t(PANEL_OPTIONS[0].labelKey)} />
             </PaneViewContent>
           </PaneViewItem>
         ) : null}
 
         {importedQueuePanel.visible ? (
           <PaneViewItem id="imported" defaultSize="33%" minSize={120} headerSize={24}>
-            <PaneViewTrigger size="xs">Imported queue</PaneViewTrigger>
+            <PaneViewTrigger size="xs">{t(PANEL_OPTIONS[1].labelKey)}</PaneViewTrigger>
             <PaneViewContent>
-              <PlaceholderRows label="Imported queue" />
+              <PlaceholderRows label={t(PANEL_OPTIONS[1].labelKey)} />
             </PaneViewContent>
           </PaneViewItem>
         ) : null}
 
         {exportQueuePanel.visible ? (
           <PaneViewItem id="export" defaultSize="33%" minSize={120} headerSize={24}>
-            <PaneViewTrigger size="xs">Export queue</PaneViewTrigger>
+            <PaneViewTrigger size="xs">{t(PANEL_OPTIONS[2].labelKey)}</PaneViewTrigger>
             <PaneViewContent>
-              <PlaceholderRows label="Export queue" />
+              <PlaceholderRows label={t(PANEL_OPTIONS[2].labelKey)} />
             </PaneViewContent>
           </PaneViewItem>
         ) : null}
@@ -168,12 +175,12 @@ export function SourceSidebar() {
 }
 
 function PlaceholderRows({ label }: { label: string }) {
+  const { t } = useTranslation();
+
   return (
     <div className="space-y-1 p-2 text-xs text-muted-foreground">
       {PLACEHOLDER_ROWS.map((row) => (
-        <p key={row}>
-          {label} placeholder {row}
-        </p>
+        <p key={row}>{t("import.source.placeholder", { label, row })}</p>
       ))}
     </div>
   );
