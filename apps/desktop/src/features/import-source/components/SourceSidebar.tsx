@@ -60,7 +60,7 @@ export function SourceSidebar() {
   );
   const panels = useMemo(
     () => [
-      { ...PANEL_OPTIONS[0], state: mediaPanel },
+      { ...PANEL_OPTIONS[0], state: { ...mediaPanel, visible: true } },
       { ...PANEL_OPTIONS[1], state: importedQueuePanel },
       { ...PANEL_OPTIONS[2], state: exportQueuePanel },
     ],
@@ -92,17 +92,22 @@ export function SourceSidebar() {
 
   useEffect(() => registerEditorLayoutReset(resetPanelSizes), [resetPanelSizes]);
 
-  const visibilityOptions: ContextMenuOption[] = panels.map((panel) => ({
-    id: `toggle-${panel.paneId}`,
-    children: t(panel.labelKey),
-    icon: panel.state.visible ? (
-      <Eye className="size-3" aria-hidden="true" />
-    ) : (
-      <EyeOff className="size-3" aria-hidden="true" />
-    ),
-    shouldCloseOnClick: false,
-    onSelect: () => dispatch(panelVisibilityToggled(panel.panelId)),
-  }));
+  const visibilityOptions: ContextMenuOption[] = panels.map((panel) => {
+    const isMediaPanel = panel.panelId === EDITOR_PANEL_IDS.sidebarMedia;
+
+    return {
+      id: `toggle-${panel.paneId}`,
+      children: t(panel.labelKey),
+      icon: panel.state.visible ? (
+        <Eye className="size-3" aria-hidden="true" />
+      ) : (
+        <EyeOff className="size-3" aria-hidden="true" />
+      ),
+      disabled: isMediaPanel,
+      shouldCloseOnClick: false,
+      onSelect: isMediaPanel ? undefined : () => dispatch(panelVisibilityToggled(panel.panelId)),
+    };
+  });
 
   return (
     <aside
@@ -143,14 +148,12 @@ export function SourceSidebar() {
         onLayoutChanged={onLayoutChanged}
         className="flex-1"
       >
-        {mediaPanel.visible ? (
-          <PaneViewItem id="media" defaultSize="33%" minSize={120} headerSize={24}>
-            <PaneViewTrigger size="xs">{t(PANEL_OPTIONS[0].labelKey)}</PaneViewTrigger>
-            <PaneViewContent>
-              <PlaceholderRows label={t(PANEL_OPTIONS[0].labelKey)} />
-            </PaneViewContent>
-          </PaneViewItem>
-        ) : null}
+        <PaneViewItem id="media" defaultSize="33%" minSize={120} headerSize={24}>
+          <PaneViewTrigger size="xs">{t(PANEL_OPTIONS[0].labelKey)}</PaneViewTrigger>
+          <PaneViewContent>
+            <PlaceholderRows label={t(PANEL_OPTIONS[0].labelKey)} />
+          </PaneViewContent>
+        </PaneViewItem>
 
         {importedQueuePanel.visible ? (
           <PaneViewItem id="imported" defaultSize="33%" minSize={120} headerSize={24}>

@@ -46,11 +46,13 @@ const editorLayoutSlice = createSlice({
       state,
       action: PayloadAction<{ panelId: EditorPanelId; visible: boolean }>,
     ) => {
+      if (action.payload.panelId === EDITOR_PANEL_IDS.sidebarMedia) return;
       const panel = state.panels[action.payload.panelId];
       panel.visible = action.payload.visible;
       panel.collapsed = false;
     },
     panelVisibilityToggled: (state, action: PayloadAction<EditorPanelId>) => {
+      if (action.payload === EDITOR_PANEL_IDS.sidebarMedia) return;
       const panel = state.panels[action.payload];
       panel.visible = !panel.visible;
       panel.collapsed = false;
