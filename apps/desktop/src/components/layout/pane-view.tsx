@@ -23,12 +23,12 @@ import { cn } from "@/lib/utils";
 const HEADER_SIZE = 32;
 const DEFAULT_MIN_SIZE = 120;
 
-interface ResizableAccordionContextValue {
+interface PaneViewContextValue {
   openIds: readonly string[];
   toggleItem: (id: string) => void;
 }
 
-interface ResizableAccordionItemContextValue {
+interface PaneViewItemContextValue {
   contentId: string;
   isOpen: boolean;
   itemId: string;
@@ -36,12 +36,10 @@ interface ResizableAccordionItemContextValue {
   toggle: () => void;
 }
 
-const ResizableAccordionContext = createContext<ResizableAccordionContextValue | null>(null);
-const ResizableAccordionItemContext = createContext<ResizableAccordionItemContextValue | null>(
-  null,
-);
+const PaneViewContext = createContext<PaneViewContextValue | null>(null);
+const PaneViewItemContext = createContext<PaneViewItemContextValue | null>(null);
 
-interface ResizableAccordionProps {
+interface PaneViewProps {
   children: ReactNode;
   value?: string[];
   defaultValue?: string[];
@@ -51,7 +49,7 @@ interface ResizableAccordionProps {
   "aria-label"?: string;
 }
 
-function ResizableAccordion({
+function PaneView({
   children,
   value,
   defaultValue = [],
@@ -59,16 +57,16 @@ function ResizableAccordion({
   id: idProp,
   className,
   "aria-label": ariaLabel,
-}: ResizableAccordionProps) {
+}: PaneViewProps) {
   const generatedId = useId();
   const groupId = idProp ?? `resizable-accordion-${generatedId}`;
   const [uncontrolledValue, setUncontrolledValue] = useState(defaultValue);
   const openIds = value ?? uncontrolledValue;
   const openIdSet = new Set(openIds);
-  const items = Children.toArray(children).filter(isResizableAccordionItem);
+  const items = Children.toArray(children).filter(isPaneViewItem);
   const hasOpenItem = items.some((item) => openIdSet.has(item.props.id));
 
-  const context = useMemo<ResizableAccordionContextValue>(
+  const context = useMemo<PaneViewContextValue>(
     () => ({
       openIds,
       toggleItem: (itemId) => {
@@ -84,7 +82,7 @@ function ResizableAccordion({
   );
 
   return (
-    <ResizableAccordionContext.Provider value={context}>
+    <PaneViewContext.Provider value={context}>
       <Group
         id={groupId}
         orientation="vertical"
@@ -130,11 +128,11 @@ function ResizableAccordion({
           className="min-h-0"
         />
       </Group>
-    </ResizableAccordionContext.Provider>
+    </PaneViewContext.Provider>
   );
 }
 
-interface ResizableAccordionItemProps {
+interface PaneViewItemProps {
   children: ReactNode;
   id: string;
   defaultSize?: number | string;
@@ -143,20 +141,20 @@ interface ResizableAccordionItemProps {
   className?: string;
 }
 
-function ResizableAccordionItem({
+function PaneViewItem({
   children,
   id,
   defaultSize,
   minSize = DEFAULT_MIN_SIZE,
   maxSize,
   className,
-}: ResizableAccordionItemProps) {
-  const accordion = useResizableAccordionContext();
+}: PaneViewItemProps) {
+  const accordion = usePaneViewContext();
   const generatedId = useId();
   const isOpen = accordion.openIds.includes(id);
   const triggerId = `resizable-accordion-trigger-${generatedId}`;
   const contentId = `resizable-accordion-content-${generatedId}`;
-  const context = useMemo<ResizableAccordionItemContextValue>(
+  const context = useMemo<PaneViewItemContextValue>(
     () => ({
       contentId,
       isOpen,
@@ -168,7 +166,7 @@ function ResizableAccordionItem({
   );
 
   return (
-    <ResizableAccordionItemContext.Provider value={context}>
+    <PaneViewItemContext.Provider value={context}>
       <Panel
         id={id}
         data-slot="resizable-accordion-item"
@@ -181,24 +179,21 @@ function ResizableAccordionItem({
       >
         <div className="flex h-full min-h-0 flex-col overflow-hidden">{children}</div>
       </Panel>
-    </ResizableAccordionItemContext.Provider>
+    </PaneViewItemContext.Provider>
   );
 }
 
-type ResizableAccordionTriggerProps = Omit<
-  ComponentProps<typeof Button>,
-  "aria-controls" | "aria-expanded"
->;
+type PaneViewTriggerProps = Omit<ComponentProps<typeof Button>, "aria-controls" | "aria-expanded">;
 
-function ResizableAccordionTrigger({
+function PaneViewTrigger({
   children,
   className,
   onClick,
   size = "sm",
   variant = "ghost",
   ...props
-}: ResizableAccordionTriggerProps) {
-  const item = useResizableAccordionItemContext();
+}: PaneViewTriggerProps) {
+  const item = usePaneViewItemContext();
 
   return (
     <Button
@@ -229,17 +224,13 @@ function ResizableAccordionTrigger({
   );
 }
 
-type ResizableAccordionContentProps = Omit<
+type PaneViewContentProps = Omit<
   ComponentProps<typeof ScrollArea>,
   "aria-labelledby" | "hidden" | "id" | "role"
 >;
 
-function ResizableAccordionContent({
-  className,
-  children,
-  ...props
-}: ResizableAccordionContentProps) {
-  const item = useResizableAccordionItemContext();
+function PaneViewContent({ className, children, ...props }: PaneViewContentProps) {
+  const item = usePaneViewItemContext();
 
   return (
     <ScrollArea
@@ -257,33 +248,24 @@ function ResizableAccordionContent({
   );
 }
 
-function isResizableAccordionItem(
-  child: ReactNode,
-): child is ReactElement<ResizableAccordionItemProps> {
-  return isValidElement(child) && child.type === ResizableAccordionItem;
+function isPaneViewItem(child: ReactNode): child is ReactElement<PaneViewItemProps> {
+  return isValidElement(child) && child.type === PaneViewItem;
 }
 
-function useResizableAccordionContext() {
-  const context = useContext(ResizableAccordionContext);
+function usePaneViewContext() {
+  const context = useContext(PaneViewContext);
   if (!context) {
-    throw new Error("ResizableAccordionItem must be used within ResizableAccordion");
+    throw new Error("PaneViewItem must be used within PaneView");
   }
   return context;
 }
 
-function useResizableAccordionItemContext() {
-  const context = useContext(ResizableAccordionItemContext);
+function usePaneViewItemContext() {
+  const context = useContext(PaneViewItemContext);
   if (!context) {
-    throw new Error(
-      "ResizableAccordionTrigger and ResizableAccordionContent must be used within ResizableAccordionItem",
-    );
+    throw new Error("PaneViewTrigger and PaneViewContent must be used within PaneViewItem");
   }
   return context;
 }
 
-export {
-  ResizableAccordion,
-  ResizableAccordionContent,
-  ResizableAccordionItem,
-  ResizableAccordionTrigger,
-};
+export { PaneView, PaneViewContent, PaneViewItem, PaneViewTrigger };

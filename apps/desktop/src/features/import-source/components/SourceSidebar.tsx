@@ -1,41 +1,41 @@
 import {
-  ResizableAccordion,
-  ResizableAccordionContent,
-  ResizableAccordionItem,
-  ResizableAccordionTrigger,
-} from "@/components/layout/resizable-accordion";
+  PaneView,
+  PaneViewContent,
+  PaneViewItem,
+  PaneViewTrigger,
+} from "@/components/layout/pane-view";
 
 const PLACEHOLDER_ROWS = Array.from({ length: 20 }, (_, index) => index + 1);
 
 export function SourceSidebar() {
   return (
     <aside className="h-full min-h-0 overflow-hidden p-1" aria-label="Source sidebar">
-      <ResizableAccordion
+      <PaneView
         id="source-sidebar-sections"
         aria-label="Source sidebar sections"
         defaultValue={["media", "imported", "export"]}
       >
-        <ResizableAccordionItem id="media" defaultSize="33%" minSize={120}>
-          <ResizableAccordionTrigger>Media details</ResizableAccordionTrigger>
-          <ResizableAccordionContent>
+        <PaneViewItem id="media" defaultSize="33%" minSize={120}>
+          <PaneViewTrigger>Media details</PaneViewTrigger>
+          <PaneViewContent>
             <PlaceholderRows label="Media details" />
-          </ResizableAccordionContent>
-        </ResizableAccordionItem>
+          </PaneViewContent>
+        </PaneViewItem>
 
-        <ResizableAccordionItem id="imported" defaultSize="33%" minSize={120}>
-          <ResizableAccordionTrigger>Imported queue</ResizableAccordionTrigger>
-          <ResizableAccordionContent>
+        <PaneViewItem id="imported" defaultSize="33%" minSize={120}>
+          <PaneViewTrigger>Imported queue</PaneViewTrigger>
+          <PaneViewContent>
             <PlaceholderRows label="Imported queue" />
-          </ResizableAccordionContent>
-        </ResizableAccordionItem>
+          </PaneViewContent>
+        </PaneViewItem>
 
-        <ResizableAccordionItem id="export" defaultSize="33%" minSize={120}>
-          <ResizableAccordionTrigger>Export queue</ResizableAccordionTrigger>
-          <ResizableAccordionContent>
+        <PaneViewItem id="export" defaultSize="33%" minSize={120}>
+          <PaneViewTrigger>Export queue</PaneViewTrigger>
+          <PaneViewContent>
             <PlaceholderRows label="Export queue" />
-          </ResizableAccordionContent>
-        </ResizableAccordionItem>
-      </ResizableAccordion>
+          </PaneViewContent>
+        </PaneViewItem>
+      </PaneView>
     </aside>
   );
 }

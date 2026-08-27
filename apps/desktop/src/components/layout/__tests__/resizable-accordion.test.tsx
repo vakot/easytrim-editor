@@ -55,12 +55,7 @@ vi.mock("react-resizable-panels", () => ({
   },
 }));
 
-import {
-  ResizableAccordion,
-  ResizableAccordionContent,
-  ResizableAccordionItem,
-  ResizableAccordionTrigger,
-} from "./resizable-accordion";
+import { PaneView, PaneViewContent, PaneViewItem, PaneViewTrigger } from "./resizable-accordion";
 
 interface FixtureProps {
   value?: string[];
@@ -70,30 +65,30 @@ interface FixtureProps {
 
 function Fixture({ value, defaultValue, onValueChange }: FixtureProps) {
   return (
-    <ResizableAccordion
+    <PaneView
       id="test-accordion"
       aria-label="Test sections"
       value={value}
       defaultValue={defaultValue}
       onValueChange={onValueChange}
     >
-      <ResizableAccordionItem id="media" defaultSize="33%" minSize={140}>
-        <ResizableAccordionTrigger>Media details</ResizableAccordionTrigger>
-        <ResizableAccordionContent className="content-boundary">
+      <PaneViewItem id="media" defaultSize="33%" minSize={140}>
+        <PaneViewTrigger>Media details</PaneViewTrigger>
+        <PaneViewContent className="content-boundary">
           {Array.from({ length: 30 }, (_, index) => (
             <button key={index}>Media row {index + 1}</button>
           ))}
-        </ResizableAccordionContent>
-      </ResizableAccordionItem>
-      <ResizableAccordionItem id="imported" defaultSize="33%">
-        <ResizableAccordionTrigger>Imported queue</ResizableAccordionTrigger>
-        <ResizableAccordionContent>Imported content</ResizableAccordionContent>
-      </ResizableAccordionItem>
-      <ResizableAccordionItem id="export" defaultSize="33%" maxSize="70%">
-        <ResizableAccordionTrigger>Export queue</ResizableAccordionTrigger>
-        <ResizableAccordionContent>Export content</ResizableAccordionContent>
-      </ResizableAccordionItem>
-    </ResizableAccordion>
+        </PaneViewContent>
+      </PaneViewItem>
+      <PaneViewItem id="imported" defaultSize="33%">
+        <PaneViewTrigger>Imported queue</PaneViewTrigger>
+        <PaneViewContent>Imported content</PaneViewContent>
+      </PaneViewItem>
+      <PaneViewItem id="export" defaultSize="33%" maxSize="70%">
+        <PaneViewTrigger>Export queue</PaneViewTrigger>
+        <PaneViewContent>Export content</PaneViewContent>
+      </PaneViewItem>
+    </PaneView>
   );
 }
 
@@ -102,7 +97,7 @@ beforeEach(() => {
   resizeMocks.separators.clear();
 });
 
-describe("ResizableAccordion", () => {
+describe("PaneView", () => {
   it("uses its uncontrolled default value and configured open constraints", () => {
     render(<Fixture defaultValue={["media", "imported"]} />);
 
