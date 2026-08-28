@@ -15,10 +15,10 @@ import { AppUpdatesContext } from "@/app/contexts/app-updates-context";
 import { DEFAULT_PREFERENCES, type Preferences } from "@/app/preferences";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import type { SourceRef } from "@/domain/source";
+import { getCurrentVersion } from "@/lib/app-version";
 import { openExternalUrl } from "@/lib/open-external-url";
 import type { QueueFinishAction } from "@/lib/tauri/queue";
 
-import packageJson from "../../../../../../../package.json";
 import { ContextMenus as AppContextMenus } from "../ContextMenus";
 
 const menuState = vi.hoisted(() => ({
@@ -103,7 +103,8 @@ vi.mock("@/lib/open-external-url", () => ({
 }));
 
 describe("ContextMenus", () => {
-  const versionMenuLabel = `Version ${packageJson.version}`;
+  const currentVersion = getCurrentVersion();
+  const versionMenuLabel = `Version ${currentVersion}`;
 
   type MenuTestOverrides = {
     isChoosingSource?: boolean;
@@ -301,7 +302,7 @@ describe("ContextMenus", () => {
       "Support the Project",
     );
     expect(screen.getByRole("menuitem", { name: versionMenuLabel })).toHaveTextContent(
-      packageJson.version,
+      currentVersion,
     );
     expect(screen.getAllByRole("separator")).toHaveLength(2);
 
@@ -341,7 +342,7 @@ describe("ContextMenus", () => {
       ["https://github.com/vakot/easytrim-editor/releases"],
       ["https://github.com/vakot/easytrim-editor"],
       ["https://ko-fi.com/vakot"],
-      [`https://github.com/vakot/easytrim-editor/releases/tag/v${packageJson.version}`],
+      [`https://github.com/vakot/easytrim-editor/releases/tag/v${currentVersion}`],
     ]);
   });
 

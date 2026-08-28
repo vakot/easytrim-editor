@@ -11,8 +11,7 @@ import { useAppUpdates } from "@/app/hooks/useAppUpdates";
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectExportQueue } from "@/app/store/slices/export-slice";
 import { formatExportDuration, formatExportFileSize } from "@/domain/export-metrics";
-
-import packageJson from "../../../../../../package.json";
+import { getCurrentVersion } from "@/lib/app-version";
 
 import { selectStatusBarExport, splitFilePath } from "./status-bar-values";
 
@@ -30,7 +29,7 @@ export function StatusBar() {
         className="flex h-7 min-h-7 shrink-0 items-center px-4 pb-1 text-xs text-muted-foreground"
       >
         <span className="flex min-w-0 items-center gap-1.5">
-          <span>v{packageJson.version}</span>
+          <span>v{getCurrentVersion()}</span>
           <StatusBarUpdateButton />
         </span>
         {activeExport ? (

@@ -14,9 +14,9 @@ import { Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from "@/compo
 import { useAppUpdates } from "@/app/hooks/useAppUpdates";
 import { githubBrandIcon, kofiBrandIcon } from "@/components/brand-icons";
 import { BrandIcon } from "@/components/BrandIcon";
+import { getCurrentVersion } from "@/lib/app-version";
 import { openExternalUrl } from "@/lib/open-external-url";
 
-import packageJson from "../../../../../../../../package.json";
 import type { MenuNavigation } from "../../context-menu.types";
 
 const CHANGELOG_URL = "https://github.com/vakot/easytrim-editor/releases";
@@ -25,6 +25,7 @@ const SUPPORT_PROJECT_URL = "https://ko-fi.com/vakot";
 
 export function HelpMenu({ navigation }: { navigation: MenuNavigation }) {
   const { t } = useTranslation();
+  const currentVersion = getCurrentVersion();
   const {
     status: updateStatus,
     availableVersion,
@@ -104,10 +105,10 @@ export function HelpMenu({ navigation }: { navigation: MenuNavigation }) {
         <MenuItem
           icon={<ExternalLink className="size-3" aria-hidden="true" />}
           onSelect={() =>
-            void openExternalUrl(`${PROJECT_PAGE_URL}/releases/tag/v${packageJson.version}`)
+            void openExternalUrl(`${PROJECT_PAGE_URL}/releases/tag/v${currentVersion}`)
           }
         >
-          {t("app.topBarMenus.version", { version: packageJson.version })}
+          {t("app.topBarMenus.version", { version: currentVersion })}
         </MenuItem>
       </MenuContent>
     </Menu>
