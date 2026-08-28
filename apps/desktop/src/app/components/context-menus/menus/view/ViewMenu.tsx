@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { ColorSample } from "@/components/ui/color";
 import {
   Menu,
   MenuContent,
@@ -32,7 +33,6 @@ import { useTheme } from "@/app/theme/useTheme";
 
 import type { MenuNavigation } from "../../context-menu.types";
 
-import { ColorSample } from "./components/ColorSample";
 import { CustomColorPickerPanel } from "./components/CustomColorPickerPanel";
 
 const themeIcons = { system: Monitor, light: Sun, dark: Moon } as const;
@@ -114,14 +114,19 @@ export function ViewMenu({ navigation }: ViewMenuProps) {
           </MenuSubContent>
         </MenuSub>
         <MenuSub>
-          <MenuSubTrigger icon={<ColorSample color={displayedPrimaryColor} />}>
+          <MenuSubTrigger icon={<ColorSample color={resolvePrimaryColor(displayedPrimaryColor)} />}>
             {t("app.topBarMenus.color")}
           </MenuSubTrigger>
           <MenuSubContent>
             {PRIMARY_COLORS.map((color) => (
               <MenuItem
                 key={color}
-                icon={<ColorSample color={color} selected={color === primaryColorKey} />}
+                icon={
+                  <ColorSample
+                    color={resolvePrimaryColor(color)}
+                    selected={color === primaryColorKey}
+                  />
+                }
                 selected={color === primaryColorKey}
                 suffix={
                   <span className="font-mono">{resolvePrimaryColor(color).toUpperCase()}</span>
@@ -138,7 +143,7 @@ export function ViewMenu({ navigation }: ViewMenuProps) {
               <MenuSubTrigger
                 icon={
                   <ColorSample
-                    color={displayedCustomColor}
+                    color={resolvePrimaryColor(displayedCustomColor)}
                     selected={primaryColorKey === CUSTOM_PRIMARY_COLOR}
                   />
                 }
