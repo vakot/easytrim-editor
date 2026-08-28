@@ -10,9 +10,9 @@ import { timelinePercent } from "@/domain/trim";
 import { useWaveformPreparation } from "../hooks/useWaveformPreparation";
 import { audioOutputSummary } from "../lib/audio-level";
 
-import type { AudioTracksProps } from "./audio-contracts";
 import { AudioLevelControl } from "./AudioLevelControl";
 import { AudioTrackRow } from "./AudioTrackRow";
+import type { AudioTracksProps } from "./AudioTracks.types";
 import { VolumeButton } from "./VolumeButton";
 
 export function AudioTracks({

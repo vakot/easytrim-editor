@@ -37,7 +37,7 @@ import {
 } from "@/app/store/thunks/export-thunks";
 import type { QueueFinishAction } from "@/lib/tauri/queue";
 
-import type { MenuNavigation } from "../../context-menu-types";
+import type { MenuNavigation } from "../../context-menu.types";
 
 export function QueueMenu({ navigation }: { navigation: MenuNavigation }) {
   const { t } = useTranslation();

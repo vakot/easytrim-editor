@@ -30,7 +30,7 @@ import {
 } from "@/app/theme/theme";
 import { useTheme } from "@/app/theme/useTheme";
 
-import type { MenuNavigation } from "../../context-menu-types";
+import type { MenuNavigation } from "../../context-menu.types";
 
 import { ColorSample } from "./components/ColorSample";
 import { CustomColorPickerPanel } from "./components/CustomColorPickerPanel";

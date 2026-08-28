@@ -13,7 +13,7 @@ import {
   closeActiveImportedItemRequested,
 } from "@/app/store/thunks/source-media-thunks";
 
-import type { MenuNavigation } from "../../context-menu-types";
+import type { MenuNavigation } from "../../context-menu.types";
 
 export function FileMenu({ navigation }: { navigation: MenuNavigation }) {
   const { t } = useTranslation();

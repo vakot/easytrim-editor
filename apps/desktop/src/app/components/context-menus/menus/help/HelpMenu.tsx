@@ -17,7 +17,7 @@ import { BrandIcon } from "@/components/BrandIcon";
 import { openExternalUrl } from "@/lib/open-external-url";
 
 import packageJson from "../../../../../../../../package.json";
-import type { MenuNavigation } from "../../context-menu-types";
+import type { MenuNavigation } from "../../context-menu.types";
 
 const CHANGELOG_URL = "https://github.com/vakot/easytrim-editor/releases";
 const PROJECT_PAGE_URL = "https://github.com/vakot/easytrim-editor";

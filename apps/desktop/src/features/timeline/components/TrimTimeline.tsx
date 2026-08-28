@@ -4,11 +4,11 @@ import { clampPlaybackMicros, formatPlaybackTime } from "@/domain/playback";
 import { minimumSelectionMicros, timelinePercent } from "@/domain/trim";
 
 import { useTrimTimelineInteractions } from "../hooks/useTrimTimelineInteractions";
-import type { TrimTimelineProps } from "../timeline-contracts";
 
 import { Playhead, SegmentDragHandle, TrimHandle } from "./TimelineHandles";
 import { TimelineTimeValue } from "./TimelineTimeValue";
 import styles from "./TrimTimeline.module.css";
+import type { TrimTimelineProps } from "./TrimTimeline.types";
 
 export function TrimTimeline({
   range,

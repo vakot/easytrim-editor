@@ -280,6 +280,20 @@ names such as `source-actions.ts`, `timeline-geometry.ts`, and `panel-layout-lis
 vague catch-all names such as `utils.ts`, `helpers.ts`, `common.ts`, or `misc.ts` unless the module
 genuinely represents one cohesive established concept.
 
+Dedicated type-only modules use a `.types.ts` suffix. Use a semantic kebab-case base name for
+module-level contracts and a PascalCase base matching the owner for component-specific contracts:
+
+```text
+context-menu.types.ts
+source-import.types.ts
+AudioTracks.types.ts
+TrimTimeline.types.ts
+```
+
+Do not extract types from their owning implementation solely to create a `.types.ts` file. Ambient
+declaration files required by TypeScript or tooling retain the `.d.ts` convention, such as
+`vite-env.d.ts` and `i18next.d.ts`.
+
 ### Tests
 
 Unit tests mirror the complete source filename stem and are colocated with the unit:

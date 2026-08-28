@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 
-import type { ContextMenuId, MenuNavigation } from "../context-menu-types";
+import type { ContextMenuId, MenuNavigation } from "../context-menu.types";
 
 export function useContextMenuNavigation(): Record<ContextMenuId, MenuNavigation> {
   const [openMenu, setOpenMenu] = useState<ContextMenuId | null>(null);

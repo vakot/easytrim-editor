@@ -32,7 +32,7 @@ import {
 } from "@/app/store/slices/preferences-slice";
 import { isSupportedLanguage, type SupportedLanguage } from "@/i18n/resources";
 
-import type { MenuNavigation } from "../../context-menu-types";
+import type { MenuNavigation } from "../../context-menu.types";
 
 const DEFAULT_PREFERENCE_KEYS = new Set<PreferenceKey>([
   "snapPlaybackEnabledDefault",

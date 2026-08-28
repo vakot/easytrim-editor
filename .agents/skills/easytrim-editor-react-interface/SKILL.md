@@ -25,6 +25,9 @@ Use `easytrim-editor-tauri-rust` for IPC/native changes and `easytrim-editor-ffm
 - Use React, strict TypeScript, Vite, semantic HTML, Tailwind, and the repository's shadcn primitives.
 - Reuse `components/ui` for buttons, dialogs, fields, tooltips, popovers, sliders, checkboxes, cards, and alerts. Add a shadcn primitive before hand-building an equivalent control.
 - Keep generated primitives generic. Put product-specific composition in the owning feature.
+- Name dedicated type-only modules with `.types.ts`: use a semantic kebab-case base for
+  module-level contracts and a matching PascalCase component base for component-specific types.
+  Keep required ambient declarations as `.d.ts`, and do not extract inline types solely for naming.
 - Use Tailwind utilities first. Reserve colocated CSS modules for precise pseudo-elements, keyframes, or browser-native styling that would be obscure as utilities.
 - Use Redux Toolkit for approved application/domain state according to
   `easytrim-editor-redux-state`. Keep local component state for ephemeral visual and
