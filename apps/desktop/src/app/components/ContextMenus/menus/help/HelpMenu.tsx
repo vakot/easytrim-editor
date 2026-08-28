@@ -8,11 +8,12 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import { Button } from "@/components/ui/button";
+import { Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from "@/components/ui/menu";
+
 import { useAppUpdates } from "@/app/hooks/useAppUpdates";
 import { BrandIcon } from "@/components/brand-icon";
 import { githubBrandIcon, kofiBrandIcon } from "@/components/brand-icons";
-import { Button } from "@/components/ui/button";
-import { Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from "@/components/ui/menu";
 import { openExternalUrl } from "@/lib/open-external-url";
 
 import packageJson from "../../../../../../../../package.json";

@@ -2,12 +2,13 @@ import { LoaderCircle } from "lucide-react";
 import { type RefObject, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { useAppSelector } from "@/app/store/hooks";
-import { selectPlaybackSpeed } from "@/app/store/slices/editor-tools-slice";
-import type { PreviewState } from "@/app/store/slices/preview-slice";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+
+import { useAppSelector } from "@/app/store/hooks";
+import { selectPlaybackSpeed } from "@/app/store/slices/editor-tools-slice";
+import type { PreviewState } from "@/app/store/slices/preview-slice";
 import { VideoPreviewEmpty } from "@/features/preview/VideoPreviewEmpty";
 
 import { CropViewport } from "./CropViewport";

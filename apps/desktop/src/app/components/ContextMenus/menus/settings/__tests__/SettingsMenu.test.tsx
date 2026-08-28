@@ -3,11 +3,12 @@ import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
 import { describe, expect, it, vi } from "vitest";
 
+import { TooltipProvider } from "@/components/ui/tooltip";
+
 import { DEFAULT_PREFERENCES } from "@/app/preferences";
 import { sourceSelected } from "@/app/store/actions/source-actions";
 import { selectMergeAudio } from "@/app/store/slices/audio-slice";
 import { createAppStore } from "@/app/store/store";
-import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { SettingsMenu } from "../SettingsMenu";
 

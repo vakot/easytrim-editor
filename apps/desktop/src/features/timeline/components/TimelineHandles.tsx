@@ -2,6 +2,7 @@ import type { KeyboardEvent, PointerEvent, RefObject } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+
 import { formatPlaybackTime } from "@/domain/playback";
 import type { SegmentSnapPoint, TrimBoundary, TrimRange } from "@/domain/trim";
 import type { FrameRate } from "@/lib/tauri/media";

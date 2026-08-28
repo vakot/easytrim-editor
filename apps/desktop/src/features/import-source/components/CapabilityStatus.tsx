@@ -1,9 +1,10 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
-import type { CapabilityState } from "@/app/store/slices/source-slice";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+
+import type { CapabilityState } from "@/app/store/slices/source-slice";
 import { capabilityError } from "@/features/import-source/utils/media-formatters";
 
 import styles from "./CapabilityStatus.module.css";

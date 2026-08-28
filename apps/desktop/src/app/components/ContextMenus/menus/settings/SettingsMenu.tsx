@@ -10,13 +10,6 @@ import {
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
-import type { PreferenceKey } from "@/app/preferences";
-import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
-import {
-  preferenceChanged,
-  preferencesReset,
-  selectPreferences,
-} from "@/app/store/slices/preferences-slice";
 import { Button } from "@/components/ui/button";
 import {
   Menu,
@@ -29,6 +22,14 @@ import {
   MenuTrigger,
 } from "@/components/ui/menu";
 import { Switch } from "@/components/ui/switch";
+
+import type { PreferenceKey } from "@/app/preferences";
+import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
+import {
+  preferenceChanged,
+  preferencesReset,
+  selectPreferences,
+} from "@/app/store/slices/preferences-slice";
 import { isSupportedLanguage, type SupportedLanguage } from "@/i18n/resources";
 
 import type { MenuNavigation } from "../../types";

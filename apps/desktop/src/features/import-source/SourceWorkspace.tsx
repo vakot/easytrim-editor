@@ -1,8 +1,9 @@
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+
 import { useAppSelector } from "@/app/store/hooks";
 import { selectActiveItemId } from "@/app/store/slices/export-slice";
 import { selectIsSourceDragActive } from "@/app/store/slices/import-workflow-slice";
 import { selectSourceSelection } from "@/app/store/slices/source-slice";
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { EditorStage } from "@/features/editor";
 import { DropOverlay } from "@/features/import-source/components/DropOverlay";
 import { SourceSidebar } from "@/features/import-source/components/SourceSidebar";

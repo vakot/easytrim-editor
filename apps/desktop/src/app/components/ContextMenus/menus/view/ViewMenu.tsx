@@ -2,6 +2,17 @@ import { Monitor, Moon, Sun } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { Button } from "@/components/ui/button";
+import {
+  Menu,
+  MenuContent,
+  MenuItem,
+  MenuSub,
+  MenuSubContent,
+  MenuSubTrigger,
+  MenuTrigger,
+} from "@/components/ui/menu";
+
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import {
   primaryColorChanged,
@@ -18,16 +29,6 @@ import {
   resolvePrimaryColor,
 } from "@/app/theme/theme";
 import { useTheme } from "@/app/theme/use-theme";
-import { Button } from "@/components/ui/button";
-import {
-  Menu,
-  MenuContent,
-  MenuItem,
-  MenuSub,
-  MenuSubContent,
-  MenuSubTrigger,
-  MenuTrigger,
-} from "@/components/ui/menu";
 
 import type { MenuNavigation } from "../../types";
 

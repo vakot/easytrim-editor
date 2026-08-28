@@ -3,9 +3,10 @@ import { createRef, type ReactElement, type ReactNode } from "react";
 import { Provider } from "react-redux";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
+import { TooltipProvider } from "@/components/ui/tooltip";
+
 import type { PreviewState } from "@/app/store/slices/preview-slice";
 import { createAppStore } from "@/app/store/store";
-import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { VideoPreview } from "../VideoPreview";
 

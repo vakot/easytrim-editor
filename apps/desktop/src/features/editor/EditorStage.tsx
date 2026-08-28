@@ -1,6 +1,8 @@
 import { LoaderCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+
 import { usePlayback, useTimeline } from "@/app/hooks/useEditorContracts";
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import {
@@ -22,7 +24,6 @@ import {
 } from "@/app/store/slices/source-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
 import { prepareSourceWaveforms } from "@/app/store/thunks/source-media-thunks";
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { AudioTracks } from "@/features/audio-tracks";
 import { TimelinePane } from "@/features/editor/components/TimelinePane";
 import { useTimelinePanelSizing } from "@/features/editor/hooks/useTimelinePanelSizing";

@@ -1,6 +1,8 @@
 import { type KeyboardEvent, type PointerEvent, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { Input } from "@/components/ui/input";
+
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import {
   customPrimaryColorChanged,
@@ -13,7 +15,6 @@ import {
   resolvePrimaryColor,
 } from "@/app/theme/theme";
 import { useTheme } from "@/app/theme/use-theme";
-import { Input } from "@/components/ui/input";
 
 interface CustomColorPickerPanelProps {
   previewColor: PrimaryColor | null;

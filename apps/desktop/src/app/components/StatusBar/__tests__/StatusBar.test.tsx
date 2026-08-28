@@ -1,8 +1,9 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-import type { ExportQueueItem } from "@/app/store/slices/export-slice";
 import { TooltipProvider } from "@/components/ui/tooltip";
+
+import type { ExportQueueItem } from "@/app/store/slices/export-slice";
 
 const mocks = vi.hoisted(() => ({ queue: [] as ExportQueueItem[] }));
 

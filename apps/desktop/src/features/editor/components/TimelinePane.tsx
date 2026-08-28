@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+
 import type { TrimRange } from "@/domain/trim";
 import { timelineGeometryStyle } from "@/features/timeline/utils/timeline-geometry";
 import { cn } from "@/lib/utils";

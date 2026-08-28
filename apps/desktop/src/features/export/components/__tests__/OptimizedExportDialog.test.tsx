@@ -11,11 +11,12 @@ vi.mock("@/lib/tauri/media", () => ({
   reserveExportSource: vi.fn(),
 }));
 
+import { TooltipProvider } from "@/components/ui/tooltip";
+
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
 import { firstSource, media } from "@/app/store/slices/__tests__/test-fixtures";
 import { createAppStore } from "@/app/store/store";
 import { openOptimizedExportDialog } from "@/app/store/thunks/export-thunks";
-import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { OptimizedExportDialog } from "../OptimizedExportDialog";
 

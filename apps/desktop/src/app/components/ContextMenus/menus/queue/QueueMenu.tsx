@@ -2,19 +2,6 @@ import { CircleStop, LogOut, Moon, Power } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
-import {
-  queueFinishActionChanged,
-  selectAvailableQueueFinishActions,
-  selectExportQueue,
-  selectQueueFinishAction,
-  selectQueueStarted,
-} from "@/app/store/slices/export-slice";
-import {
-  cancelActiveExportRequested,
-  cancelAllExportsRequested,
-  startExportQueue,
-} from "@/app/store/thunks/export-thunks";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -34,6 +21,20 @@ import {
   MenuSubTrigger,
   MenuTrigger,
 } from "@/components/ui/menu";
+
+import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
+import {
+  queueFinishActionChanged,
+  selectAvailableQueueFinishActions,
+  selectExportQueue,
+  selectQueueFinishAction,
+  selectQueueStarted,
+} from "@/app/store/slices/export-slice";
+import {
+  cancelActiveExportRequested,
+  cancelAllExportsRequested,
+  startExportQueue,
+} from "@/app/store/thunks/export-thunks";
 import type { QueueFinishAction } from "@/lib/tauri/queue";
 
 import type { MenuNavigation } from "../../types";

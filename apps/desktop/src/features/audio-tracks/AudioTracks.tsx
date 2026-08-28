@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+
 import { timelinePercent } from "@/domain/trim";
 
 import { AudioLevelControl } from "./components/AudioLevelControl";
