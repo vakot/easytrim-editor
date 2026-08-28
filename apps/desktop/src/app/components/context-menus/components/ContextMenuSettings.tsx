@@ -32,7 +32,7 @@ import {
 } from "@/app/store/slices/preferences-slice";
 import { isSupportedLanguage, type SupportedLanguage } from "@/i18n/resources";
 
-import type { MenuNavigation } from "../../context-menu.types";
+import type { MenuNavigation } from "../types";
 
 const DEFAULT_PREFERENCE_KEYS = new Set<PreferenceKey>([
   "snapPlaybackEnabledDefault",
@@ -78,7 +78,7 @@ function PreferenceMenuItem({ preferenceKey, icon, children }: PreferenceMenuIte
   );
 }
 
-export function SettingsMenu({ navigation }: { navigation: MenuNavigation }) {
+export function ContextMenuSettings({ navigation }: { navigation: MenuNavigation }) {
   const { t, i18n } = useTranslation();
   const dispatch = useAppDispatch();
   const currentLanguage = isSupportedLanguage(i18n.resolvedLanguage) ? i18n.resolvedLanguage : "en";

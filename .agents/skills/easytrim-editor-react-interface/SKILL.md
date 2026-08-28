@@ -27,7 +27,9 @@ Use `easytrim-editor-tauri-rust` for IPC/native changes and `easytrim-editor-ffm
 - Keep generated primitives generic. Put product-specific composition in the owning feature.
 - Name dedicated type-only modules with `.types.ts`: use a semantic kebab-case base for
   module-level contracts and a matching PascalCase component base for component-specific types.
-  Keep required ambient declarations as `.d.ts`, and do not extract inline types solely for naming.
+  When one cohesive subsystem shares a type-only contract across internal folders or sibling
+  components, use `types.ts` at the subsystem root. Keep required ambient declarations as `.d.ts`,
+  and do not extract inline types solely for naming.
 - Apply the same owner-based dotted suffix convention to dedicated frontend primitives: use
   `.consts.ts` for grouped static values, `.utils.ts` for cohesive supporting helpers, and an
   accurate role such as `.fixtures.ts` for other self-contained primitive groups. Keep semantic
@@ -48,6 +50,8 @@ Use `easytrim-editor-tauri-rust` for IPC/native changes and `easytrim-editor-ffm
   logic and effects to feature `hooks/` when that creates a meaningful responsibility. Keep
   focused nested components presentational by default, and group semantic pure/internal modules
   under `lib/` only when enough related files justify it.
+- Keep sibling component variants flat under their owner's `components/` directory. Avoid
+  one-directory-per-variant wrappers and internal barrels that only re-export one file.
 
 ## Model editor state explicitly
 

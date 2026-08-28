@@ -1,11 +1,11 @@
 import { useTranslation } from "react-i18next";
 
+import { ContextMenuFile } from "./components/ContextMenuFile";
+import { ContextMenuHelp } from "./components/ContextMenuHelp";
+import { ContextMenuQueue } from "./components/ContextMenuQueue";
+import { ContextMenuSettings } from "./components/ContextMenuSettings";
+import { ContextMenuView } from "./components/ContextMenuView";
 import { useContextMenuNavigation } from "./hooks/useContextMenuNavigation";
-import { FileMenu } from "./menus/file";
-import { HelpMenu } from "./menus/help";
-import { QueueMenu } from "./menus/queue";
-import { SettingsMenu } from "./menus/settings";
-import { ViewMenu } from "./menus/view";
 
 export function ContextMenus() {
   const { t } = useTranslation();
@@ -13,11 +13,11 @@ export function ContextMenus() {
 
   return (
     <nav className="flex h-full items-center gap-0.5" aria-label={t("app.topBarMenus.label")}>
-      <FileMenu navigation={navigation.file} />
-      <ViewMenu navigation={navigation.view} />
-      <QueueMenu navigation={navigation.queue} />
-      <SettingsMenu navigation={navigation.settings} />
-      <HelpMenu navigation={navigation.help} />
+      <ContextMenuFile navigation={navigation.file} />
+      <ContextMenuView navigation={navigation.view} />
+      <ContextMenuQueue navigation={navigation.queue} />
+      <ContextMenuSettings navigation={navigation.settings} />
+      <ContextMenuHelp navigation={navigation.help} />
     </nav>
   );
 }

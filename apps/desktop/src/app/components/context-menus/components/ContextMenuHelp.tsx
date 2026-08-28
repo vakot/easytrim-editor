@@ -17,13 +17,13 @@ import { BrandIcon } from "@/components/BrandIcon";
 import { getCurrentVersion } from "@/lib/app-version.utils";
 import { openExternalUrl } from "@/lib/open-external-url.utils";
 
-import type { MenuNavigation } from "../../context-menu.types";
+import type { MenuNavigation } from "../types";
 
 const CHANGELOG_URL = "https://github.com/vakot/easytrim-editor/releases";
 const PROJECT_PAGE_URL = "https://github.com/vakot/easytrim-editor";
 const SUPPORT_PROJECT_URL = "https://ko-fi.com/vakot";
 
-export function HelpMenu({ navigation }: { navigation: MenuNavigation }) {
+export function ContextMenuHelp({ navigation }: { navigation: MenuNavigation }) {
   const { t } = useTranslation();
   const currentVersion = getCurrentVersion();
   const {

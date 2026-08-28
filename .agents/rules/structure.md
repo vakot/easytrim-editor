@@ -188,6 +188,25 @@ features/preview/
 `-- lib/                               # Semantic pure/internal modules when grouping helps
 ```
 
+A cohesive subsystem with several sibling component variants should keep those variants flat
+under one `components/` directory. Do not add one-directory-per-variant wrappers or one-line
+internal barrels when direct imports express the ownership clearly:
+
+```text
+app/components/context-menus/
+|-- __tests__/
+|-- components/
+|   |-- ContextMenuFile.tsx
+|   |-- ContextMenuHelp.tsx
+|   |-- ContextMenuQueue.tsx
+|   |-- ContextMenuSettings.tsx
+|   `-- ContextMenuView.tsx
+|-- hooks/
+|-- ContextMenus.tsx
+|-- types.ts
+`-- index.ts
+```
+
 - A feature may expose multiple orchestration components when it has multiple independent,
   meaningful application surfaces. Do not create public roots merely to reduce file size.
 - An orchestration component owns both capability-level state and logic orchestration and the
@@ -287,7 +306,6 @@ module-level primitives and a PascalCase base matching the owner for component-s
 primitives:
 
 ```text
-context-menu.types.ts
 source-import.types.ts
 AudioTracks.types.ts
 TrimTimeline.types.ts
@@ -304,7 +322,14 @@ shape to other dedicated primitive roles such as `.fixtures.ts`, `.mocks.ts`, or
 when they exist. The suffix must describe the complete module; do not label state, runtime,
 adapters, domain models, or configuration as utilities merely because they export functions.
 
+When a type-only contract is shared across multiple internal folders or sibling components of one
+cohesive subsystem, place it in `types.ts` at that subsystem's root. This is the deliberate shared
+subsystem exception to the owner-based suffix rule; for example, context-menu components and hooks
+consume `context-menus/types.ts`. Keep a component-only contract in `ComponentName.types.ts` and a
+module-only contract in `<module-name>.types.ts` instead of widening its ownership.
+
 Never use ownerless catch-all names such as `utils.ts`, `helpers.ts`, `common.ts`, or `misc.ts`.
+Aside from the scoped shared-subsystem `types.ts` exception above, role files retain their owner.
 Do not extract types, constants, or helpers from an otherwise cohesive implementation solely to
 create a suffixed file. Ambient declarations required by TypeScript or tooling retain `.d.ts`, such
 as `vite-env.d.ts` and `i18next.d.ts`.

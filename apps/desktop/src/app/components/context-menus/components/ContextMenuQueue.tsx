@@ -37,9 +37,9 @@ import {
 } from "@/app/store/thunks/export-thunks";
 import type { QueueFinishAction } from "@/lib/tauri/queue";
 
-import type { MenuNavigation } from "../../context-menu.types";
+import type { MenuNavigation } from "../types";
 
-export function QueueMenu({ navigation }: { navigation: MenuNavigation }) {
+export function ContextMenuQueue({ navigation }: { navigation: MenuNavigation }) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const [isCancelQueueConfirmOpen, setIsCancelQueueConfirmOpen] = useState(false);

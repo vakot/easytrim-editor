@@ -10,7 +10,7 @@ import { sourceSelected } from "@/app/store/actions/source-actions";
 import { selectMergeAudio } from "@/app/store/slices/audio-slice";
 import { createAppStore } from "@/app/store/store";
 
-import { SettingsMenu } from "../SettingsMenu";
+import { ContextMenuSettings } from "../components/ContextMenuSettings";
 
 const navigation = {
   open: true,
@@ -24,14 +24,14 @@ function renderSettings() {
   render(
     <Provider store={store}>
       <TooltipProvider delayDuration={0}>
-        <SettingsMenu navigation={navigation} />
+        <ContextMenuSettings navigation={navigation} />
       </TooltipProvider>
     </Provider>,
   );
   return store;
 }
 
-describe("SettingsMenu Redux integration", () => {
+describe("ContextMenuSettings Redux integration", () => {
   it("dispatches preference changes through Redux", async () => {
     const user = userEvent.setup();
     const store = renderSettings();

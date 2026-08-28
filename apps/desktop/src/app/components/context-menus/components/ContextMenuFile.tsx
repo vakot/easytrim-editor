@@ -13,9 +13,9 @@ import {
   closeActiveImportedItemRequested,
 } from "@/app/store/thunks/source-media-thunks";
 
-import type { MenuNavigation } from "../../context-menu.types";
+import type { MenuNavigation } from "../types";
 
-export function FileMenu({ navigation }: { navigation: MenuNavigation }) {
+export function ContextMenuFile({ navigation }: { navigation: MenuNavigation }) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const canExport = useAppSelector(selectSourceReady);
