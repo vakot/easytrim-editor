@@ -78,16 +78,18 @@ function ResizablePanelGroupBase({ className, ...props }: ResizablePrimitive.Gro
   );
 }
 
-interface ResizablePanelProps extends Omit<ResizablePrimitive.PanelProps, "id"> {
-  id: PanelId;
+interface ResizablePanelProps extends Omit<ResizablePrimitive.PanelProps, "panelRef"> {
+  panelRef?: PanelRef;
 }
 
-function ResizablePanel({ id, onResize, ...props }: ResizablePanelProps) {
+function ResizablePanel({ id, panelRef: propsPanelRef, onResize, ...props }: ResizablePanelProps) {
   const { registerPanel, unregisterPanel, updatePanelState } = useResizablePanelContext();
 
-  const panelRef = ResizablePrimitive.usePanelRef();
+  const internalPanelRef = ResizablePrimitive.usePanelRef();
+  const panelRef = propsPanelRef ?? internalPanelRef;
 
   React.useEffect(() => {
+    if (!id) return;
     registerPanel(id, panelRef);
     return () => unregisterPanel(id);
   }, [id, panelRef, registerPanel, unregisterPanel]);
@@ -98,16 +100,14 @@ function ResizablePanel({ id, onResize, ...props }: ResizablePanelProps) {
       id={id}
       panelRef={panelRef}
       onResize={(size, panelId, prevSize) => {
-        const isCollapsed = panelRef.current?.isCollapsed() ?? false;
+        if (id) {
+          const isCollapsed = panelRef.current?.isCollapsed() ?? false;
 
-        updatePanelState(id, (currentPanel) => {
-          if (currentPanel.isCollapsed === isCollapsed) return currentPanel;
-
-          return {
-            ...currentPanel,
-            isCollapsed,
-          };
-        });
+          updatePanelState(id, (currentPanel) => {
+            if (currentPanel.isCollapsed === isCollapsed) return currentPanel;
+            return { ...currentPanel, isCollapsed };
+          });
+        }
 
         onResize?.(size, panelId, prevSize);
       }}
@@ -142,9 +142,8 @@ function ResizableHandle({
 }
 
 interface ResizablePanelToggleProps {
-  mode?: "collapsed" | "visible";
   panelId: string;
-  children?: React.ReactNode | ((collapsed: boolean) => React.ReactNode);
+  children?: React.ReactNode | ((isCollapsed: boolean) => React.ReactNode);
 }
 
 function ResizablePanelToggle({ panelId, children }: ResizablePanelToggleProps) {
@@ -231,7 +230,9 @@ function getPanelIds(children: React.ReactNode): PanelId[] {
 
     const panel = child as React.ReactElement<React.ComponentProps<typeof ResizablePanel>>;
     if (!panel.props.id) {
-      throw new Error("ResizablePanel must have an id when used within PersistedResizablePanelGroup");
+      throw new Error(
+        "ResizablePanel must have an id when used within PersistedResizablePanelGroup",
+      );
     }
 
     panelIds.push(panel.props.id);

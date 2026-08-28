@@ -42,7 +42,7 @@ export function SourceSidebar() {
             <TooltipTrigger asChild>
               <MenuTrigger asChild>
                 <Button size="icon-xs" variant="ghost">
-                  <Ellipsis className="size-4" aria-hidden="true" />
+                  <Ellipsis aria-hidden="true" />
                 </Button>
               </MenuTrigger>
             </TooltipTrigger>
@@ -126,9 +126,9 @@ export function SourceSidebar() {
                 >
                   {!isSingle &&
                     (isCollapsed ? (
-                      <ChevronRight className="size-3" aria-hidden="true" />
+                      <ChevronRight aria-hidden="true" />
                     ) : (
-                      <ChevronDown className="size-3" aria-hidden="true" />
+                      <ChevronDown aria-hidden="true" />
                     ))}
                   {t("import.source.mediaDetails")}
                 </Button>
@@ -147,7 +147,6 @@ export function SourceSidebar() {
               minSize={120}
               collapsible
               collapsedSize={24}
-              defaultSize={0}
             >
               <ResizablePanelToggle panelId="workspace-sidebar-import-queue">
                 {(isCollapsed) => (
@@ -158,9 +157,9 @@ export function SourceSidebar() {
                   >
                     {!isSingle &&
                       (isCollapsed ? (
-                        <ChevronRight className="size-3" aria-hidden="true" />
+                        <ChevronRight aria-hidden="true" />
                       ) : (
-                        <ChevronDown className="size-3" aria-hidden="true" />
+                        <ChevronDown aria-hidden="true" />
                       ))}
                     {t("import.source.importQueue")}
                   </Button>
@@ -180,7 +179,6 @@ export function SourceSidebar() {
               minSize={120}
               collapsible
               collapsedSize={24}
-              defaultSize={0}
             >
               <ResizablePanelToggle panelId="workspace-sidebar-export-queue">
                 {(isCollapsed) => (
@@ -191,9 +189,9 @@ export function SourceSidebar() {
                   >
                     {!isSingle &&
                       (isCollapsed ? (
-                        <ChevronRight className="size-3" aria-hidden="true" />
+                        <ChevronRight aria-hidden="true" />
                       ) : (
-                        <ChevronDown className="size-3" aria-hidden="true" />
+                        <ChevronDown aria-hidden="true" />
                       ))}
                     {t("import.source.exportQueue")}
                   </Button>

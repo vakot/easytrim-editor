@@ -108,7 +108,7 @@ export const sk = {
       hidePanel: "Skryť {{panel}}",
       showPanel: "Zobraziť {{panel}}",
       togglePanel: "Prepnúť {{panel}}",
-      resetLayout: "Obnoviť rozloženie editora",
+      resetLayout: "Obnoviť rozloženie",
     },
     windowControls: {
       titleBar: "Titulkový panel okna",

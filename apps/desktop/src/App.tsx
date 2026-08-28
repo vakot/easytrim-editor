@@ -1,6 +1,7 @@
 import { ContextMenus } from "@/app/components/ContextMenus";
 import { CustomTitleBar } from "@/app/components/CustomTitleBar";
 import { NativeDialogOverlay } from "@/app/components/NativeDialogOverlay";
+import { PanelVisibilityControls } from "@/app/components/PanelVisibilityControls";
 import { AppUpdatesProvider } from "@/app/components/Providers/AppUpdatesProvider";
 import { EditorContractsProvider } from "@/app/components/Providers/EditorContractsProvider";
 import { StatusBar } from "@/app/components/StatusBar";
@@ -119,7 +120,7 @@ function EasyTrimEditorApp() {
         <CustomTitleBar
           menuControls={<ContextMenus />}
           statusContent={<CapabilityStatus capabilities={capabilities} />}
-          // panelControls={<PanelVisibilityControls />}
+          panelControls={<PanelVisibilityControls />}
         />
 
         <OptimizedExportDialog />

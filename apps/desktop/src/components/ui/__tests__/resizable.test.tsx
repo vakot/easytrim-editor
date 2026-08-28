@@ -37,12 +37,9 @@ function DynamicPanelGroup() {
 describe("ResizablePanelGroup", () => {
   it("loads persisted layouts for panels nested in fragments", () => {
     const storageKey = "react-resizable-panels:fragment-panels:first-panel:second-panel";
+    const savedLayout = { "first-panel": 35, "second-panel": 65 };
     const storage = {
-      getItem: vi.fn((key: string) =>
-        key === storageKey
-          ? JSON.stringify({ "first-panel": 35, "second-panel": 65 })
-          : null,
-      ),
+      getItem: vi.fn((key: string) => (key === storageKey ? JSON.stringify(savedLayout) : null)),
       setItem: vi.fn(),
     };
 
@@ -69,6 +66,7 @@ describe("ResizablePanelGroup", () => {
     expect(storage.getItem).not.toHaveBeenCalledWith(
       "react-resizable-panels:fragment-panels:first-panel",
     );
+    expect(storage.setItem).not.toHaveBeenCalled();
   });
 
   it("registers a panel added after the initial mount", () => {
