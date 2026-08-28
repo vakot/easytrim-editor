@@ -1,7 +1,7 @@
 import type { PointerEvent, RefObject } from "react";
 
-import type { CropFrame } from "../lib/crop-frame";
-import type { CropHandle } from "../lib/crop-geometry";
+import type { CropFrame } from "../lib/crop-frame.utils";
+import type { CropHandle } from "../lib/crop-geometry.utils";
 
 interface CropSelectionProps {
   frame: CropFrame;

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
-import { firstSource, mediaWithAudio } from "@/test/source-fixtures";
+import { firstSource, mediaWithAudio } from "@/test/source.fixtures";
 
 import {
   audioMergeToggled,

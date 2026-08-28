@@ -10,9 +10,9 @@ import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { cropChanged, cropResolutionFor, selectCrop } from "@/app/store/slices/crop-slice";
 import { selectSourceMedia } from "@/app/store/slices/source-slice";
 
-import type { CropFrame } from "../lib/crop-frame";
-import { type CropHandle, type CropRect, moveCrop, resizeCrop } from "../lib/crop-geometry";
-import { snapCropToGuides } from "../lib/crop-snapping";
+import type { CropFrame } from "../lib/crop-frame.utils";
+import { type CropHandle, type CropRect, moveCrop, resizeCrop } from "../lib/crop-geometry.utils";
+import { snapCropToGuides } from "../lib/crop-snapping.utils";
 
 const SNAP_REACH_PX = 12;
 

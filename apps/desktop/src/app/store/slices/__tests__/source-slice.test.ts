@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { sourceFailed, sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
-import { firstSource, media, secondSource } from "@/test/source-fixtures";
+import { firstSource, media, secondSource } from "@/test/source.fixtures";
 
 import {
   initialSourceState,

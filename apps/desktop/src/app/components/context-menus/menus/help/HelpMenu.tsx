@@ -12,10 +12,10 @@ import { Button } from "@/components/ui/button";
 import { Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from "@/components/ui/menu";
 
 import { useAppUpdates } from "@/app/hooks/useAppUpdates";
-import { githubBrandIcon, kofiBrandIcon } from "@/components/brand-icons";
+import { githubBrandIcon, kofiBrandIcon } from "@/components/brand-icons.consts";
 import { BrandIcon } from "@/components/BrandIcon";
-import { getCurrentVersion } from "@/lib/app-version";
-import { openExternalUrl } from "@/lib/open-external-url";
+import { getCurrentVersion } from "@/lib/app-version.utils";
+import { openExternalUrl } from "@/lib/open-external-url.utils";
 
 import type { MenuNavigation } from "../../context-menu.types";
 

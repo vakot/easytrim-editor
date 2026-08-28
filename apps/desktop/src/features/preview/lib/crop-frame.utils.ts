@@ -1,4 +1,4 @@
-import type { CropRect } from "./crop-geometry";
+import type { CropRect } from "./crop-geometry.utils";
 
 export interface Bounds {
   width: number;

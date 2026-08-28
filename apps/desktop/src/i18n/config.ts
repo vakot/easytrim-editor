@@ -1,7 +1,7 @@
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 
-import { readStoredJson, STORAGE_KEYS, writeStoredJson } from "@/lib/storage";
+import { readStoredJson, STORAGE_KEYS, writeStoredJson } from "@/lib/storage.utils";
 
 import {
   DEFAULT_LANGUAGE,

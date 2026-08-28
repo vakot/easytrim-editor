@@ -16,7 +16,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
 import { createAppStore } from "@/app/store/store";
 import { openOptimizedExportDialog } from "@/app/store/thunks/export-thunks";
-import { firstSource, media } from "@/test/source-fixtures";
+import { firstSource, media } from "@/test/source.fixtures";
 
 import { ExportDialog } from "../ExportDialog";
 

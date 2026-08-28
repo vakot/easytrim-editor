@@ -11,9 +11,9 @@ import { useAppUpdates } from "@/app/hooks/useAppUpdates";
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectExportQueue } from "@/app/store/slices/export-slice";
 import { formatExportDuration, formatExportFileSize } from "@/domain/export-metrics";
-import { getCurrentVersion } from "@/lib/app-version";
+import { getCurrentVersion } from "@/lib/app-version.utils";
 
-import { selectStatusBarExport, splitFilePath } from "./status-bar-values";
+import { selectStatusBarExport, splitFilePath } from "./StatusBar.utils";
 
 export function StatusBar() {
   const { t } = useTranslation();

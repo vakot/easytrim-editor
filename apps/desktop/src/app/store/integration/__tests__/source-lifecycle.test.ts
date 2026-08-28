@@ -6,7 +6,7 @@ import { cropChanged } from "@/app/store/slices/crop-slice";
 import { previewReady } from "@/app/store/slices/preview-slice";
 import { trimChanged } from "@/app/store/slices/trim-slice";
 import { createAppStore } from "@/app/store/store";
-import { firstSource, media, secondSource } from "@/test/source-fixtures";
+import { firstSource, media, secondSource } from "@/test/source.fixtures";
 
 describe("source-bound lifecycle", () => {
   it("atomically resets every source-bound domain through one source event", () => {

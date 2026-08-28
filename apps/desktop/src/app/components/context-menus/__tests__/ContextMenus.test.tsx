@@ -15,8 +15,8 @@ import { AppUpdatesContext } from "@/app/contexts/app-updates-context";
 import { DEFAULT_PREFERENCES, type Preferences } from "@/app/preferences";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import type { SourceRef } from "@/domain/source";
-import { getCurrentVersion } from "@/lib/app-version";
-import { openExternalUrl } from "@/lib/open-external-url";
+import { getCurrentVersion } from "@/lib/app-version.utils";
+import { openExternalUrl } from "@/lib/open-external-url.utils";
 import type { QueueFinishAction } from "@/lib/tauri/queue";
 
 import { ContextMenus as AppContextMenus } from "../ContextMenus";
@@ -98,7 +98,7 @@ vi.mock("@/app/store/redux-hooks", () => ({
     }),
 }));
 
-vi.mock("@/lib/open-external-url", () => ({
+vi.mock("@/lib/open-external-url.utils", () => ({
   openExternalUrl: vi.fn(),
 }));
 

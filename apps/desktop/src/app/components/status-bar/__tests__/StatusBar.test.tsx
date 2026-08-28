@@ -23,8 +23,8 @@ vi.mock("@/app/store/redux-hooks", () => ({
   useAppSelector: () => mocks.queue,
 }));
 
-import { selectStatusBarExport } from "../status-bar-values";
 import { StatusBar } from "../StatusBar";
+import { selectStatusBarExport } from "../StatusBar.utils";
 
 function exportToast(overrides: Partial<ExportQueueItem>): ExportQueueItem {
   return {

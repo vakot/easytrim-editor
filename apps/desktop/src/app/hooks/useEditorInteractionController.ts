@@ -47,7 +47,7 @@ import {
   type TrimBoundary,
   type TrimRange,
 } from "@/domain/trim";
-import { isApplicationDialogOpen } from "@/lib/hotkeys";
+import { isApplicationDialogOpen } from "@/lib/hotkeys.utils";
 
 const EMPTY_TRIM: TrimRange = {
   startMicros: 0,

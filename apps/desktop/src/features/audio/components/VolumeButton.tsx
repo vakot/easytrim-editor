@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-import { cn } from "@/lib/class-names";
+import { cn } from "@/lib/class-names.utils";
 
 type VolumeButtonProps = Omit<
   ComponentPropsWithoutRef<typeof Button>,

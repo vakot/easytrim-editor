@@ -1,6 +1,6 @@
 import { Slider } from "@/components/ui/slider";
 
-import { cn } from "@/lib/class-names";
+import { cn } from "@/lib/class-names.utils";
 
 import {
   decibelsToVolumePercent,
@@ -8,7 +8,7 @@ import {
   MAX_SLIDER_DECIBELS,
   MIN_SLIDER_DECIBELS,
   volumePercentToDecibels,
-} from "../lib/audio-level";
+} from "../lib/audio-level.utils";
 
 interface AudioLevelControlProps {
   label: string;

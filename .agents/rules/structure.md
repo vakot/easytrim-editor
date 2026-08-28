@@ -278,24 +278,36 @@ usePlaybackModes.ts
 useTimelineInteractions.ts
 ```
 
-The primary hook export matches the filename. Other TypeScript modules use semantic kebab-case
-names such as `source-actions.ts`, `timeline-geometry.ts`, and `panel-layout-listener.ts`. Avoid
-vague catch-all names such as `utils.ts`, `helpers.ts`, `common.ts`, or `misc.ts` unless the module
-genuinely represents one cohesive established concept.
+The primary hook export matches the filename. First-class TypeScript modules use semantic
+kebab-case names such as `source-actions.ts`, `source-media-runtime.ts`, and
+`panel-layout-listener.ts`.
 
-Dedicated type-only modules use a `.types.ts` suffix. Use a semantic kebab-case base name for
-module-level contracts and a PascalCase base matching the owner for component-specific contracts:
+Dedicated extracted primitive modules use a dotted role suffix. Use a semantic kebab-case base for
+module-level primitives and a PascalCase base matching the owner for component-specific
+primitives:
 
 ```text
 context-menu.types.ts
 source-import.types.ts
 AudioTracks.types.ts
 TrimTimeline.types.ts
+brand-icons.consts.ts
+StatusBar.consts.ts
+timeline-format.utils.ts
+StatusBar.utils.ts
+source.fixtures.ts
 ```
 
-Do not extract types from their owning implementation solely to create a `.types.ts` file. Ambient
-declaration files required by TypeScript or tooling retain the `.d.ts` convention, such as
-`vite-env.d.ts` and `i18next.d.ts`.
+Use `.types.ts` for type-only contracts, `.consts.ts` for grouped static values, and `.utils.ts` for
+small cohesive helper functions or supporting calculations. Apply the same `<owner>.<role>.ts`
+shape to other dedicated primitive roles such as `.fixtures.ts`, `.mocks.ts`, or `.schemas.ts`
+when they exist. The suffix must describe the complete module; do not label state, runtime,
+adapters, domain models, or configuration as utilities merely because they export functions.
+
+Never use ownerless catch-all names such as `utils.ts`, `helpers.ts`, `common.ts`, or `misc.ts`.
+Do not extract types, constants, or helpers from an otherwise cohesive implementation solely to
+create a suffixed file. Ambient declarations required by TypeScript or tooling retain `.d.ts`, such
+as `vite-env.d.ts` and `i18next.d.ts`.
 
 ### Tests
 

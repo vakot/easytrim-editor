@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { timelinePanelSizeConstraints } from "../timeline-pane-sizing";
+import { timelinePanelSizeConstraints } from "../timeline-pane-sizing.utils";
 
 describe("timelinePanelSizeConstraints", () => {
   it("uses the timeline as the minimum and one track as the default", () => {

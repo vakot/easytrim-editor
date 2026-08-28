@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { sourceSelected } from "@/app/store/actions/source-actions";
-import { firstSource, secondSource } from "@/test/source-fixtures";
+import { firstSource, secondSource } from "@/test/source.fixtures";
 
 import {
   initialPreviewState,

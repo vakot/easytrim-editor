@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { getCurrentVersion } from "../app-version";
+import { getCurrentVersion } from "../app-version.utils";
 
 describe("getCurrentVersion", () => {
   it("returns the current semantic version", () => {

@@ -8,7 +8,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { timelinePercent } from "@/domain/trim";
 
 import { useWaveformPreparation } from "../hooks/useWaveformPreparation";
-import { audioOutputSummary } from "../lib/audio-level";
+import { audioOutputSummary } from "../lib/audio-level.utils";
 
 import { AudioLevelControl } from "./AudioLevelControl";
 import { AudioTrackRow } from "./AudioTrackRow";

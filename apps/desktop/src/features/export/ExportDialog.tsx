@@ -43,7 +43,7 @@ import {
 
 import { CommandPreview } from "./components/CommandPreview";
 import { PresetManager } from "./components/PresetManager";
-import { FRAME_RATE_OPTIONS, rateFromValue, resolutionOptions } from "./lib/export-options";
+import { FRAME_RATE_OPTIONS, rateFromValue, resolutionOptions } from "./lib/export-options.utils";
 
 export function ExportDialog() {
   const { t } = useTranslation();

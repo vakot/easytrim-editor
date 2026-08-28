@@ -28,6 +28,10 @@ Use `easytrim-editor-tauri-rust` for IPC/native changes and `easytrim-editor-ffm
 - Name dedicated type-only modules with `.types.ts`: use a semantic kebab-case base for
   module-level contracts and a matching PascalCase component base for component-specific types.
   Keep required ambient declarations as `.d.ts`, and do not extract inline types solely for naming.
+- Apply the same owner-based dotted suffix convention to dedicated frontend primitives: use
+  `.consts.ts` for grouped static values, `.utils.ts` for cohesive supporting helpers, and an
+  accurate role such as `.fixtures.ts` for other self-contained primitive groups. Keep semantic
+  domain, state, runtime, adapter, and configuration module names unsuffixed.
 - Use Tailwind utilities first. Reserve colocated CSS modules for precise pseudo-elements, keyframes, or browser-native styling that would be obscure as utilities.
 - Use Redux Toolkit for approved application/domain state according to
   `easytrim-editor-redux-state`. Keep local component state for ephemeral visual and

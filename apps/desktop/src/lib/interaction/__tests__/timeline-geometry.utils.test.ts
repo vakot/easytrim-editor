@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { syncTimelineGeometry, timelineGeometryVariables } from "../timeline-geometry";
+import { syncTimelineGeometry, timelineGeometryVariables } from "../timeline-geometry.utils";
 
 const range = {
   startMicros: 10_000_000,

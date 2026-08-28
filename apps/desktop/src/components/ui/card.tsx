@@ -1,6 +1,6 @@
 import * as React from "react";
 
-import { cn } from "@/lib/class-names";
+import { cn } from "@/lib/class-names.utils";
 
 function Card({
   className,

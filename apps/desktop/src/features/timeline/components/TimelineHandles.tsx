@@ -5,10 +5,10 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 
 import { formatPlaybackTime } from "@/domain/playback";
 import type { SegmentSnapPoint, TrimBoundary, TrimRange } from "@/domain/trim";
-import { cn } from "@/lib/class-names";
+import { cn } from "@/lib/class-names.utils";
 import type { FrameRate } from "@/lib/tauri/media";
 
-import { formatAccessibleTime } from "../lib/timeline-format";
+import { formatAccessibleTime } from "../lib/timeline-format.utils";
 
 import styles from "./TrimTimeline.module.css";
 

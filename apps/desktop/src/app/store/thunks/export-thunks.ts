@@ -1,6 +1,6 @@
 import { sourceFailed } from "@/app/store/actions/source-actions";
 import { applyEditorSnapshot } from "@/app/store/editor-snapshot";
-import { outputDefaults } from "@/app/store/export-defaults";
+import { outputDefaults } from "@/app/store/export-defaults.utils";
 import {
   cancelActiveExport,
   cancelAllQueuedExports,

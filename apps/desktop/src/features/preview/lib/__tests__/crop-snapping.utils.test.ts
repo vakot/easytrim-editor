@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { snapCropToGuides } from "../crop-snapping";
+import { snapCropToGuides } from "../crop-snapping.utils";
 
 const threshold = { x: 0.03, y: 0.03 };
 

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 
-import { isApplicationDialogOpen, isEditableTarget } from "@/lib/hotkeys";
+import { isApplicationDialogOpen, isEditableTarget } from "@/lib/hotkeys.utils";
 
 type KeyboardPredicate = (event: KeyboardEvent) => boolean;
 type KeyboardHandler = (event: KeyboardEvent) => void | Promise<void>;

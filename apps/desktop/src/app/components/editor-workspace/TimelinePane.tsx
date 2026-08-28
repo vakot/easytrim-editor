@@ -4,8 +4,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 
 import type { TrimRange } from "@/domain/trim";
-import { cn } from "@/lib/class-names";
-import { timelineGeometryStyle } from "@/lib/interaction/timeline-geometry";
+import { cn } from "@/lib/class-names.utils";
+import { timelineGeometryStyle } from "@/lib/interaction/timeline-geometry.utils";
 
 interface TimelinePaneProps {
   range: TrimRange;

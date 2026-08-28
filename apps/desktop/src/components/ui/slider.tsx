@@ -1,7 +1,7 @@
 import { Slider as SliderPrimitive } from "radix-ui";
 import * as React from "react";
 
-import { cn } from "@/lib/class-names";
+import { cn } from "@/lib/class-names.utils";
 
 export interface SliderMarker {
   value: number;

@@ -7,7 +7,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectCapabilities } from "@/app/store/slices/source-slice";
 
-import { capabilityError } from "./lib/media-formatters";
+import { capabilityError } from "./lib/media-formatters.utils";
 import styles from "./SourceStatus.module.css";
 
 function StatusDot({ tone }: { tone: "success" | "error" | "neutral" }) {

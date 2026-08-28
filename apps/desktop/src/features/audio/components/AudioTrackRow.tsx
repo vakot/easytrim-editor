@@ -7,8 +7,8 @@ import type { AudioTrackState } from "@/app/store/slices/audio-slice";
 import type { AudioStream } from "@/lib/tauri/media";
 
 import { WAVEFORM_RENDER_WIDTH } from "../hooks/useWaveformPreparation";
-import { formatChannels } from "../lib/audio-level";
-import { waveformStateWidth } from "../lib/waveform";
+import { formatChannels } from "../lib/audio-level.utils";
+import { waveformStateWidth } from "../lib/waveform.utils";
 
 import { AudioLevelControl } from "./AudioLevelControl";
 import { VolumeButton } from "./VolumeButton";

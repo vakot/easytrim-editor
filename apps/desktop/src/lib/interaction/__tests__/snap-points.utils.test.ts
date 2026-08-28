@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { snapToNearestPoint } from "../snap-points";
+import { snapToNearestPoint } from "../snap-points.utils";
 
 describe("snapToNearestPoint", () => {
   it("returns the closest point within reach", () => {

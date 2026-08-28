@@ -9,7 +9,7 @@ import {
   useState,
 } from "react";
 
-import { cn } from "@/lib/class-names";
+import { cn } from "@/lib/class-names.utils";
 
 interface CursorTooltipProps extends ComponentProps<"div"> {
   tooltipContent: ReactNode;

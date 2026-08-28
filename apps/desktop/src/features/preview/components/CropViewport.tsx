@@ -10,8 +10,8 @@ import {
 import { CursorTooltip } from "@/components/ui/cursor-tooltip";
 
 import { useCropSelection } from "../hooks/useCropSelection";
-import { type Bounds, centerFrame, cropFrame } from "../lib/crop-frame";
-import { isFullCrop } from "../lib/crop-geometry";
+import { type Bounds, centerFrame, cropFrame } from "../lib/crop-frame.utils";
+import { isFullCrop } from "../lib/crop-geometry.utils";
 
 import { CropSelection } from "./CropSelection";
 import { CropSnapMarkers } from "./CropSnapMarkers";
