@@ -3,9 +3,9 @@ import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { describe, expect, it } from "vitest";
 
-import { Button } from "./button";
-import { Menu, MenuContent, MenuItem, MenuTrigger } from "./menu";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./tooltip";
+import { Button } from "../button";
+import { Menu, MenuContent, MenuItem, MenuTrigger } from "../menu";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../tooltip";
 
 function ToggleButtonTooltip({
   defaultOpen,

@@ -119,6 +119,7 @@ function EditorStageTimeline() {
   const { t } = useTranslation();
 
   const sourceSelection = useAppSelector(selectSourceSelection);
+  const media = useAppSelector(selectSourceMedia);
   const playback = usePlayback();
   const trim = useAppSelector(selectTrim);
   const timelineRange = trim ?? EMPTY_TIMELINE_RANGE;
@@ -128,7 +129,7 @@ function EditorStageTimeline() {
       <TimelinePane
         range={timelineRange}
         timeline={<EditorStageTrim />}
-        audioTracks={<EditorStageAudio />}
+        audioTracks={media?.audioStreams.length ? <EditorStageAudio /> : null}
       />
       <EditorStageLoading loading={sourceSelection !== null && !playback.isReady}>
         {t("common.loading")}
@@ -199,8 +200,6 @@ function EditorStageAudio() {
   const dispatch = useAppDispatch();
   const sourcePath = sourceSelection?.sourcePath ?? null;
   const timelineRange = trim ?? EMPTY_TIMELINE_RANGE;
-
-  if (!media?.audioStreams.length) return null;
 
   return (
     <AudioTracks
