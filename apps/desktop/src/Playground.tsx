@@ -1,9 +1,9 @@
 import { Button } from "@/components/ui/button";
 import {
-  PersistedResizablePanelGroup,
   ResizableHandle,
   ResizablePanel,
   ResizablePanelContextProvider,
+  ResizablePanelGroup,
   ResizablePanelToggle,
 } from "@/components/ui/resizable";
 import { cn } from "@/lib/utils";
@@ -13,7 +13,7 @@ function Playground() {
   return (
     <ResizablePanelContextProvider>
       <main>
-        <PersistedResizablePanelGroup id="workspace">
+        <ResizablePanelGroup id="workspace" persisted>
           <ResizablePanel
             id="workspace-panel-1"
             defaultSize="32.5"
@@ -21,8 +21,8 @@ function Playground() {
             maxSize="40"
             collapsible
           >
-            <PersistedResizablePanelGroup id="pane-view" orientation="vertical">
-              <ResizablePanel id="pane-view-1" collapsible collapsedSize={28} minSize={120}>
+            <ResizablePanelGroup id="pane-view" persisted orientation="vertical">
+              <ResizablePanel id="pane-view-1" collapsible collapsedSize={24} minSize={120}>
                 <ResizablePanelToggle panelId="pane-view-1">
                   {(isCollapsed) => (
                     <Button variant="ghost" size="xs" className="px-2 justify-baseline w-full">
@@ -35,7 +35,7 @@ function Playground() {
 
               <ResizableHandle />
 
-              <ResizablePanel id="pane-view-2" collapsible collapsedSize={28} minSize={120}>
+              <ResizablePanel id="pane-view-2" collapsible collapsedSize={24} minSize={120}>
                 <ResizablePanelToggle panelId="pane-view-2">
                   {(isCollapsed) => (
                     <Button variant="ghost" size="xs" className="px-2 justify-baseline w-full">
@@ -48,7 +48,7 @@ function Playground() {
 
               <ResizableHandle />
 
-              <ResizablePanel id="pane-view-3" collapsible collapsedSize={28} minSize={120}>
+              <ResizablePanel id="pane-view-3" collapsible collapsedSize={24} minSize={120}>
                 <ResizablePanelToggle panelId="pane-view-3">
                   {(isCollapsed) => (
                     <Button variant="ghost" size="xs" className="px-2 justify-baseline w-full">
@@ -58,13 +58,13 @@ function Playground() {
                   )}
                 </ResizablePanelToggle>
               </ResizablePanel>
-            </PersistedResizablePanelGroup>
+            </ResizablePanelGroup>
           </ResizablePanel>
 
           <ResizableHandle withHandle />
 
           <ResizablePanel id="workspace-panel-2">
-            <PersistedResizablePanelGroup id="preview" orientation="vertical">
+            <ResizablePanelGroup id="preview" persisted orientation="vertical">
               <ResizablePanel id="preview-panel-1">2</ResizablePanel>
 
               <ResizableHandle withHandle />
@@ -78,9 +78,9 @@ function Playground() {
               >
                 3
               </ResizablePanel>
-            </PersistedResizablePanelGroup>
+            </ResizablePanelGroup>
           </ResizablePanel>
-        </PersistedResizablePanelGroup>
+        </ResizablePanelGroup>
       </main>
     </ResizablePanelContextProvider>
   );

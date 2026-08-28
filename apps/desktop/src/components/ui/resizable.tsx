@@ -19,15 +19,16 @@ const ResizablePanelContext = React.createContext<{
   updatePanelState: (panelId: PanelId, update: (panel: PanelState) => PanelState) => void;
 } | null>(null);
 
-function ResizablePanelGroup({ className, ...props }: ResizablePrimitive.GroupProps) {
-  return (
-    <ResizablePrimitive.Group
-      data-slot="resizable-panel-group"
-      className={cn("flex h-full w-full aria-[orientation=vertical]:flex-col", className)}
-      {...props}
-    />
-  );
+type ResizablePanelGroupProps =
+  | ({ persisted: true } & PersistedResizablePanelGroupProps)
+  | ({ persisted?: false } & ResizablePrimitive.GroupProps);
+
+function ResizablePanelGroup({ persisted, ...props }: ResizablePanelGroupProps) {
+  if (!persisted) return <ResizablePrimitive.Group {...props} />;
+  return <ResizablePanelGroupPersisted {...(props as PersistedResizablePanelGroupProps)} />;
 }
+
+type ResizableLayoutStorage = ResizablePrimitive.LayoutStorage;
 
 interface PersistedResizablePanelGroupProps extends Omit<
   ResizablePrimitive.GroupProps,
@@ -37,9 +38,7 @@ interface PersistedResizablePanelGroupProps extends Omit<
   storage?: ResizablePrimitive.LayoutStorage;
 }
 
-type ResizableLayoutStorage = ResizablePrimitive.LayoutStorage;
-
-function PersistedResizablePanelGroup({
+function ResizablePanelGroupPersisted({
   id,
   storage,
   onLayoutChanged,
@@ -55,7 +54,7 @@ function PersistedResizablePanelGroup({
   });
 
   return (
-    <ResizablePanelGroup
+    <ResizablePanelGroupBase
       {...props}
       id={id}
       defaultLayout={persistedLayout.defaultLayout}
@@ -65,7 +64,17 @@ function PersistedResizablePanelGroup({
       }}
     >
       {children}
-    </ResizablePanelGroup>
+    </ResizablePanelGroupBase>
+  );
+}
+
+function ResizablePanelGroupBase({ className, ...props }: ResizablePrimitive.GroupProps) {
+  return (
+    <ResizablePrimitive.Group
+      data-slot="resizable-panel-group"
+      className={cn("flex h-full w-full aria-[orientation=vertical]:flex-col", className)}
+      {...props}
+    />
   );
 }
 
@@ -243,7 +252,6 @@ const useGroupRef = ResizablePrimitive.useGroupRef;
 const useDefaultLayout = ResizablePrimitive.useDefaultLayout;
 
 export {
-  PersistedResizablePanelGroup,
   ResizableHandle,
   ResizablePanel,
   ResizablePanelContextProvider,
