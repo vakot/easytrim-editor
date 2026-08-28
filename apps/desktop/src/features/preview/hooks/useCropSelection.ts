@@ -6,7 +6,7 @@ import {
   useState,
 } from "react";
 
-import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { cropChanged, cropResolutionFor, selectCrop } from "@/app/store/slices/crop-slice";
 import { selectSourceMedia } from "@/app/store/slices/source-slice";
 

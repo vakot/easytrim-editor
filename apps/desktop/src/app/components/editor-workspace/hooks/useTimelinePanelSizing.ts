@@ -5,7 +5,7 @@ import { usePanelRef } from "@/components/ui/resizable";
 import {
   type TimelinePanelSizeConstraints,
   timelinePanelSizeConstraints,
-} from "../utils/timeline-pane-sizing";
+} from "../lib/timeline-pane-sizing";
 
 const PENDING_SOURCE_CONSTRAINTS = {
   minSize: 170,

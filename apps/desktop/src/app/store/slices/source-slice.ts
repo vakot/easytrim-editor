@@ -13,7 +13,7 @@ import type { AppError, MediaCapabilities, MediaInfo } from "@/lib/tauri/media";
 
 import type { RootState } from "../store";
 
-export type CapabilityState =
+type CapabilityState =
   | { status: "checking" }
   | { status: "ready"; value: MediaCapabilities }
   | { status: "failed"; error: AppError };

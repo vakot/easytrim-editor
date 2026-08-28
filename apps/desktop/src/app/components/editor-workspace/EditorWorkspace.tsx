@@ -1,17 +1,13 @@
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 
-import { useAppSelector } from "@/app/store/hooks";
+import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectActiveItemId } from "@/app/store/slices/export-slice";
-import { selectIsSourceDragActive } from "@/app/store/slices/import-workflow-slice";
 import { selectSourceSelection } from "@/app/store/slices/source-slice";
-import { EditorStage } from "@/features/editor";
-import { DropOverlay } from "@/features/source/components/DropOverlay";
-import { SourceSidebar } from "@/features/source/components/SourceSidebar";
+import { SourceDropOverlay, SourcePanel } from "@/features/source";
 
-export { CapabilityStatus } from "./components/CapabilityStatus";
+import { EditorStage } from "./EditorStage";
 
-export function SourceWorkspace() {
-  const isSourceDragActive = useAppSelector(selectIsSourceDragActive);
+export function EditorWorkspace() {
   const sourceSelection = useAppSelector(selectSourceSelection);
   const activeItemId = useAppSelector(selectActiveItemId);
 
@@ -29,7 +25,7 @@ export function SourceWorkspace() {
       >
         <div className="h-full pl-1 pb-1">
           <div className="rounded-md border border-border h-full overflow-hidden bg-card/30">
-            <SourceSidebar />
+            <SourcePanel />
           </div>
         </div>
       </ResizablePanel>
@@ -39,7 +35,7 @@ export function SourceWorkspace() {
       <ResizablePanel id="workspace-content" minSize="44rem" className="overflow-hidden">
         <div className="relative h-full pr-1">
           <EditorStage key={activeItemId ?? sourceSelection?.sourcePath ?? "no-source"} />
-          {isSourceDragActive ? <DropOverlay /> : null}
+          <SourceDropOverlay />
         </div>
       </ResizablePanel>
     </ResizablePanelGroup>

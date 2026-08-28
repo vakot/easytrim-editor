@@ -24,7 +24,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 
 import type { PreferenceKey } from "@/app/preferences";
-import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
   preferenceChanged,
   preferencesReset,

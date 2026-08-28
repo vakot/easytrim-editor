@@ -16,9 +16,8 @@ import {
   type TrimRange,
 } from "@/domain/trim";
 import { snapToNearestPoint } from "@/lib/interaction/snap-points";
+import { syncTimelineGeometry } from "@/lib/interaction/timeline-geometry";
 import type { FrameRate } from "@/lib/tauri/media";
-
-import { syncTimelineGeometry } from "../lib/timeline-geometry";
 
 const TIMELINE_SNAP_REACH_PX = 12;
 

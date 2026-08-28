@@ -6,15 +6,13 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-import { useAppSelector } from "@/app/store/hooks";
+import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectPlaybackSpeed } from "@/app/store/slices/editor-tools-slice";
 import type { PreviewState } from "@/app/store/slices/preview-slice";
-import { VideoPreviewEmpty } from "@/features/preview/VideoPreviewEmpty";
 
 import { CropViewport } from "./CropViewport";
 
 interface VideoPreviewProps {
-  hasSource: boolean;
   preview: PreviewState;
   nativeLoopEnabled?: boolean;
   muted: boolean;
@@ -30,19 +28,7 @@ interface VideoPreviewProps {
   onCropToolOpenChange?: (isOpen: boolean) => void;
 }
 
-export function VideoPreview(props: VideoPreviewProps) {
-  if (!props.hasSource) {
-    return <VideoPreviewEmpty />;
-  }
-
-  return (
-    <section className="grid size-full min-h-0 place-items-center bg-preview-surface p-4">
-      <VideoPreviewContent {...props} />
-    </section>
-  );
-}
-
-function VideoPreviewContent({
+export function VideoPreview({
   preview,
   nativeLoopEnabled = false,
   muted,
@@ -111,51 +97,53 @@ function VideoPreviewContent({
 
   const { value } = preview;
   return (
-    <div
-      className={`relative size-full min-h-0 bg-preview-surface ${
-        cropToolOpen ? "overflow-visible" : "overflow-hidden"
-      }`}
-    >
-      <CropViewport
-        key={value.url}
-        sourceUrl={value.url}
-        previewKind={value.kind}
-        sourceLabel={t("preview.sourceLabel")}
-        playbackRate={playbackRate}
-        nativeLoopEnabled={nativeLoopEnabled}
-        muted={muted}
-        videoRef={videoRef}
-        onTogglePlayback={onTogglePlayback}
-        onLoadedMetadata={onLoadedMetadata}
-        onCanPlay={onCanPlay}
-        onPlay={onPlay}
-        onPause={onPause}
-        onTimeUpdate={onTimeUpdate}
-        onEnded={onEnded}
-        onError={() => {
-          if (reportedUrl.current === value.url) return;
-          reportedUrl.current = value.url;
-          onPlaybackError(value.kind);
-        }}
-        onCropToolOpenChange={setCropToolOpen}
-      />
-      {value.kind === "proxy" ? (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Badge
-              variant="secondary"
-              role="status"
-              tabIndex={0}
-              className="absolute top-3 right-3 cursor-help"
-            >
-              {t("preview.proxyBadge")}
-            </Badge>
-          </TooltipTrigger>
-          <TooltipContent sideOffset={6} className="max-w-[18rem] whitespace-normal text-center">
-            {t("preview.proxyBadgeDescription")}
-          </TooltipContent>
-        </Tooltip>
-      ) : null}
-    </div>
+    <section className="grid size-full min-h-0 place-items-center bg-preview-surface p-4">
+      <div
+        className={`relative size-full min-h-0 bg-preview-surface ${
+          cropToolOpen ? "overflow-visible" : "overflow-hidden"
+        }`}
+      >
+        <CropViewport
+          key={value.url}
+          sourceUrl={value.url}
+          previewKind={value.kind}
+          sourceLabel={t("preview.sourceLabel")}
+          playbackRate={playbackRate}
+          nativeLoopEnabled={nativeLoopEnabled}
+          muted={muted}
+          videoRef={videoRef}
+          onTogglePlayback={onTogglePlayback}
+          onLoadedMetadata={onLoadedMetadata}
+          onCanPlay={onCanPlay}
+          onPlay={onPlay}
+          onPause={onPause}
+          onTimeUpdate={onTimeUpdate}
+          onEnded={onEnded}
+          onError={() => {
+            if (reportedUrl.current === value.url) return;
+            reportedUrl.current = value.url;
+            onPlaybackError(value.kind);
+          }}
+          onCropToolOpenChange={setCropToolOpen}
+        />
+        {value.kind === "proxy" ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Badge
+                variant="secondary"
+                role="status"
+                tabIndex={0}
+                className="absolute top-3 right-3 cursor-help"
+              >
+                {t("preview.proxyBadge")}
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent sideOffset={6} className="max-w-[18rem] whitespace-normal text-center">
+              {t("preview.proxyBadgeDescription")}
+            </TooltipContent>
+          </Tooltip>
+        ) : null}
+      </div>
+    </section>
   );
 }

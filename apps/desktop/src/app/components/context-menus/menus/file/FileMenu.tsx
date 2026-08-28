@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from "@/components/ui/menu";
 
-import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectCropApplied } from "@/app/store/slices/crop-slice";
 import { selectIsChoosingSource } from "@/app/store/slices/import-workflow-slice";
 import { selectHasSource, selectSourceReady } from "@/app/store/slices/source-slice";

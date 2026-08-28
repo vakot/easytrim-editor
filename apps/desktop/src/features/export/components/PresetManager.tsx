@@ -18,7 +18,8 @@ import { selectTriggerVariants } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 
-import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
+import { type ExportPreset, presetNameError } from "@/app/store/export-presets";
+import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
   exportArgumentsChanged,
   exportPresetCreated,
@@ -29,8 +30,6 @@ import {
   selectExportPresetList,
   selectSelectedExportPreset,
 } from "@/app/store/slices/export-presets-slice";
-
-import { type ExportPreset, presetNameError } from "../export-presets";
 
 type PresetDialogMode = "create" | "edit";
 

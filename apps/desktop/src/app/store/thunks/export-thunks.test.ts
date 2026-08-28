@@ -43,6 +43,7 @@ vi.mock("@/app/store/thunks/source-media-thunks", () => ({
 }));
 
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
+import { resetExportQueueRuntimeForTests } from "@/app/store/export-queue-runtime";
 import {
   activeQueueItemChanged,
   type ExportQueueItem,
@@ -72,7 +73,6 @@ import {
   startFastCutRequested,
   startOptimizedExportRequested,
 } from "@/app/store/thunks/export-thunks";
-import { resetExportQueueRuntimeForTests } from "@/features/export/lib/export-queue";
 import type { MediaInfo } from "@/lib/tauri/media";
 
 const media: MediaInfo = {

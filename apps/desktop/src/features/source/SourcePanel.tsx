@@ -22,7 +22,7 @@ const DEFAULT_PANELS = {
   "workspace-sidebar-export-queue": true,
 };
 
-export function SourceSidebar() {
+export function SourcePanel() {
   const { t } = useTranslation();
 
   const [panels, setPanels] = useState<Record<string, boolean>>(DEFAULT_PANELS);

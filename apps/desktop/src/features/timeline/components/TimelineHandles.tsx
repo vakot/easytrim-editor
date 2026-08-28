@@ -10,7 +10,7 @@ import type { FrameRate } from "@/lib/tauri/media";
 
 import { formatAccessibleTime } from "../lib/timeline-format";
 
-import styles from "./styles.module.css";
+import styles from "./TrimTimeline.module.css";
 
 interface SegmentDragHandleProps {
   range: TrimRange;

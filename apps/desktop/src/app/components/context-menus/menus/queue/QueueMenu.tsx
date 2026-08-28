@@ -22,7 +22,7 @@ import {
   MenuTrigger,
 } from "@/components/ui/menu";
 
-import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
   queueFinishActionChanged,
   selectAvailableQueueFinishActions,

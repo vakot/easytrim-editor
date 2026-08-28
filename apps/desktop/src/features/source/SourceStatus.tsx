@@ -4,10 +4,11 @@ import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-import type { CapabilityState } from "@/app/store/slices/source-slice";
-import { capabilityError } from "@/features/source/lib/media-formatters";
+import { useAppSelector } from "@/app/store/redux-hooks";
+import { selectCapabilities } from "@/app/store/slices/source-slice";
 
-import styles from "./CapabilityStatus.module.css";
+import { capabilityError } from "./lib/media-formatters";
+import styles from "./SourceStatus.module.css";
 
 function StatusDot({ tone }: { tone: "success" | "error" | "neutral" }) {
   const color =
@@ -34,8 +35,9 @@ function CapabilityTooltip({ children, content }: { children: ReactNode; content
   );
 }
 
-export function CapabilityStatus({ capabilities }: { capabilities: CapabilityState }) {
+export function SourceStatus() {
   const { t } = useTranslation();
+  const capabilities = useAppSelector(selectCapabilities);
 
   if (capabilities.status === "checking") {
     return (

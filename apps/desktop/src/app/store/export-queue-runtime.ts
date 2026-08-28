@@ -8,6 +8,12 @@ import {
 } from "@/app/store/slices/export-slice";
 import type { AppDispatch, RootState } from "@/app/store/store";
 import {
+  estimateExportSize,
+  estimateExportTime,
+  parseFfmpegBitrate,
+  parseFfmpegNumber,
+} from "@/domain/export-metrics";
+import {
   cancelOperation,
   type ExportProgress,
   normalizeAppError,
@@ -16,13 +22,6 @@ import {
   renderOptimized,
 } from "@/lib/tauri/media";
 import { performQueueFinishAction } from "@/lib/tauri/queue";
-
-import {
-  estimateExportSize,
-  estimateExportTime,
-  parseFfmpegBitrate,
-  parseFfmpegNumber,
-} from "./export-metrics";
 
 interface RuntimeExportJob {
   item: ExportQueueItem;

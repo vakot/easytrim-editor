@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectExportArguments } from "@/app/store/slices/export-presets-slice";
 import {
   optimizedExportDialogClosed,
@@ -41,12 +41,11 @@ import {
   startOptimizedExportRequested,
 } from "@/app/store/thunks/export-thunks";
 
-import { FRAME_RATE_OPTIONS, rateFromValue, resolutionOptions } from "../lib/export-options";
+import { CommandPreview } from "./components/CommandPreview";
+import { PresetManager } from "./components/PresetManager";
+import { FRAME_RATE_OPTIONS, rateFromValue, resolutionOptions } from "./lib/export-options";
 
-import { CommandPreview } from "./CommandPreview";
-import { PresetManager } from "./PresetManager";
-
-export function OptimizedExportDialog() {
+export function ExportDialog() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const open = useAppSelector(selectOptimizedExportDialogOpen);

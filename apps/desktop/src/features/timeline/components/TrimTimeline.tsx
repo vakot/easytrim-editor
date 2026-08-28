@@ -3,11 +3,12 @@ import { useTranslation } from "react-i18next";
 import { clampPlaybackMicros, formatPlaybackTime } from "@/domain/playback";
 import { minimumSelectionMicros, timelinePercent } from "@/domain/trim";
 
-import styles from "./components/styles.module.css";
-import { Playhead, SegmentDragHandle, TrimHandle } from "./components/TimelineHandles";
-import { TimelineTimeValue } from "./components/TimelineTimeValue";
-import { useTrimTimelineInteractions } from "./hooks/useTrimTimelineInteractions";
-import type { TrimTimelineProps } from "./timeline-contracts";
+import { useTrimTimelineInteractions } from "../hooks/useTrimTimelineInteractions";
+import type { TrimTimelineProps } from "../timeline-contracts";
+
+import { Playhead, SegmentDragHandle, TrimHandle } from "./TimelineHandles";
+import { TimelineTimeValue } from "./TimelineTimeValue";
+import styles from "./TrimTimeline.module.css";
 
 export function TrimTimeline({
   range,

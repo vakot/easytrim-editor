@@ -4,11 +4,6 @@ import type { FrameRate, MediaInfo } from "@/lib/tauri/media";
 
 export const FRAME_RATE_OPTIONS = [24, 25, 30, 50, 60, 120] as const;
 
-export function outputDefaults(sourceName: string) {
-  const stem = sourceName.replace(/\.[^/.]+$/, "") || "clip";
-  return { fast: `${stem}-cut.mkv`, optimized: `${stem}-optimized.mp4` };
-}
-
 export function resolutionOptions(source: MediaInfo, t: TFunction) {
   const options: { label: string; value: string }[] = [
     {

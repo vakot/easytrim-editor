@@ -7,12 +7,13 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 
 import { timelinePercent } from "@/domain/trim";
 
-import { AudioLevelControl } from "./components/AudioLevelControl";
-import { AudioTrackRow } from "./components/AudioTrackRow";
-import { VolumeButton } from "./components/VolumeButton";
-import { useWaveformPreparation } from "./hooks/useWaveformPreparation";
-import { audioOutputSummary } from "./lib/audio-level";
+import { useWaveformPreparation } from "../hooks/useWaveformPreparation";
+import { audioOutputSummary } from "../lib/audio-level";
+
 import type { AudioTracksProps } from "./audio-contracts";
+import { AudioLevelControl } from "./AudioLevelControl";
+import { AudioTrackRow } from "./AudioTrackRow";
+import { VolumeButton } from "./VolumeButton";
 
 export function AudioTracks({
   streams,

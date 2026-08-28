@@ -9,6 +9,7 @@ import type { PreviewState } from "@/app/store/slices/preview-slice";
 import { createAppStore } from "@/app/store/store";
 
 import { VideoPreview } from "./VideoPreview";
+import { VideoPreviewEmpty } from "./VideoPreviewEmpty";
 
 const callbacks = {
   onPlaybackError: vi.fn(),
@@ -53,7 +54,6 @@ describe("VideoPreview", () => {
     const videoRef = createRef<HTMLVideoElement>();
     renderPreview(
       <VideoPreview
-        hasSource
         preview={readyPreview("easytrim-media://preview-1")}
         muted
         videoRef={videoRef}
@@ -71,16 +71,7 @@ describe("VideoPreview", () => {
   });
 
   it("renders the empty preview when no source is loaded", () => {
-    const videoRef = createRef<HTMLVideoElement>();
-    renderPreview(
-      <VideoPreview
-        hasSource={false}
-        preview={{ status: "idle" }}
-        muted
-        videoRef={videoRef}
-        {...callbacks}
-      />,
-    );
+    renderPreview(<VideoPreviewEmpty />);
 
     expect(screen.getByRole("region", { name: "Empty preview" })).toBeInTheDocument();
     expect(screen.getAllByRole("listitem")).toHaveLength(6);
@@ -95,7 +86,6 @@ describe("VideoPreview", () => {
       const videoRef = createRef<HTMLVideoElement>();
       const { container } = renderPreview(
         <VideoPreview
-          hasSource
           preview={readyPreview("easytrim-media://preview-1")}
           muted
           videoRef={videoRef}
@@ -125,7 +115,6 @@ describe("VideoPreview", () => {
     const videoRef = createRef<HTMLVideoElement>();
     const { container } = renderPreview(
       <VideoPreview
-        hasSource
         preview={readyPreview("easytrim-media://preview-1")}
         muted
         videoRef={videoRef}
@@ -179,7 +168,6 @@ describe("VideoPreview", () => {
     const videoRef = createRef<HTMLVideoElement>();
     const { container } = renderPreview(
       <VideoPreview
-        hasSource
         preview={readyPreview("easytrim-media://preview-1")}
         muted
         videoRef={videoRef}
@@ -204,7 +192,6 @@ describe("VideoPreview", () => {
     const videoRef = createRef<HTMLVideoElement>();
     const { container } = renderPreview(
       <VideoPreview
-        hasSource
         preview={readyPreview("easytrim-media://preview-1")}
         muted
         videoRef={videoRef}
@@ -227,7 +214,6 @@ describe("VideoPreview", () => {
     const videoRef = createRef<HTMLVideoElement>();
     const { container } = renderPreview(
       <VideoPreview
-        hasSource
         preview={readyPreview("easytrim-media://preview-1")}
         muted
         videoRef={videoRef}
@@ -254,7 +240,6 @@ describe("VideoPreview", () => {
     const videoRef = createRef<HTMLVideoElement>();
     const { container, rerender } = renderPreview(
       <VideoPreview
-        hasSource
         preview={readyPreview("easytrim-media://preview-1")}
         muted
         videoRef={videoRef}
@@ -268,7 +253,6 @@ describe("VideoPreview", () => {
 
     rerender(
       <VideoPreview
-        hasSource
         preview={readyPreview("easytrim-media://preview-2")}
         muted
         videoRef={videoRef}

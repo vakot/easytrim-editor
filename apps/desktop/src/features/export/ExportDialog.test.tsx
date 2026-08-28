@@ -18,9 +18,9 @@ import { createAppStore } from "@/app/store/store";
 import { openOptimizedExportDialog } from "@/app/store/thunks/export-thunks";
 import { firstSource, media } from "@/test/source-fixtures";
 
-import { OptimizedExportDialog } from "./OptimizedExportDialog";
+import { ExportDialog } from "./ExportDialog";
 
-describe("OptimizedExportDialog", () => {
+describe("ExportDialog", () => {
   it("requests one command preview when one dialog open is dispatched", async () => {
     planOptimizedExport.mockResolvedValue({ commandPreview: "ffmpeg preview" });
     const store = createAppStore({
@@ -34,7 +34,7 @@ describe("OptimizedExportDialog", () => {
     render(
       <Provider store={store}>
         <TooltipProvider>
-          <OptimizedExportDialog />
+          <ExportDialog />
         </TooltipProvider>
       </Provider>,
     );

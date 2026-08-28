@@ -7,6 +7,7 @@ import {
   sourceSelected,
 } from "@/app/store/actions/source-actions";
 import { applyEditorSnapshot, createDefaultEditorSnapshot } from "@/app/store/editor-snapshot";
+import { getReplacementImportedItem } from "@/app/store/imported-queue";
 import {
   audioPreviewsLoading,
   audioPreviewsReady,
@@ -46,7 +47,6 @@ import { selectTrim } from "@/app/store/slices/trim-slice";
 import type { AppDispatch, RootState } from "@/app/store/store";
 import { createEditorSnapshot } from "@/domain/editor-snapshot";
 import type { SourceRef } from "@/domain/source";
-import { getReplacementImportedItem } from "@/features/source/lib/imported-queue";
 import {
   activateSourcePath,
   type AppError,

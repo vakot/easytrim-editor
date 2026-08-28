@@ -8,9 +8,9 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 
 import type { UpdateStatus } from "@/app/contexts/app-updates-context";
 import { useAppUpdates } from "@/app/hooks/useAppUpdates";
-import { useAppSelector } from "@/app/store/hooks";
+import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectExportQueue } from "@/app/store/slices/export-slice";
-import { formatExportDuration, formatExportFileSize } from "@/features/export";
+import { formatExportDuration, formatExportFileSize } from "@/domain/export-metrics";
 
 import packageJson from "../../../../../../package.json";
 

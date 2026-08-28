@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { Input } from "@/components/ui/input";
 
-import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
   customPrimaryColorChanged,
   selectCustomPrimaryColor,

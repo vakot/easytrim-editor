@@ -1,1 +1,1 @@
-export { AudioTracks } from "./AudioTracks";
+export { AudioPanel } from "./AudioPanel";

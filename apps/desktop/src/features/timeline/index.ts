@@ -1,1 +1,1 @@
-export { TrimTimeline } from "./TrimTimeline";
+export { Timeline } from "./Timeline";

@@ -4,17 +4,17 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 
 import type { TrimRange } from "@/domain/trim";
-import { timelineGeometryStyle } from "@/features/timeline/lib/timeline-geometry";
 import { cn } from "@/lib/class-names";
+import { timelineGeometryStyle } from "@/lib/interaction/timeline-geometry";
 
 interface TimelinePaneProps {
   range: TrimRange;
   timeline: ReactNode;
-  audioTracks: ReactNode | null;
+  audio: ReactNode | null;
 }
 
-export function TimelinePane({ range, timeline, audioTracks }: TimelinePaneProps) {
-  const hasAudioTracks = audioTracks !== null;
+export function TimelinePane({ range, timeline, audio }: TimelinePaneProps) {
+  const hasAudio = audio !== null;
 
   return (
     <div
@@ -22,16 +22,16 @@ export function TimelinePane({ range, timeline, audioTracks }: TimelinePaneProps
       style={timelineGeometryStyle(range)}
       className={cn(
         "size-full min-h-0 min-w-0 overflow-hidden px-5",
-        hasAudioTracks && "grid grid-rows-[auto_auto_minmax(0,1fr)]",
+        hasAudio && "grid grid-rows-[auto_auto_minmax(0,1fr)]",
       )}
     >
       <div className="min-w-0 py-4" data-testid="timeline-fixed-content">
         {timeline}
       </div>
-      {hasAudioTracks ? <Separator /> : null}
-      {hasAudioTracks ? (
+      {hasAudio ? <Separator /> : null}
+      {hasAudio ? (
         <ScrollArea type="auto" className="min-h-0 min-w-0" data-testid="audio-tracks-scroll">
-          <div className="min-w-0 py-4">{audioTracks}</div>
+          <div className="min-w-0 py-4">{audio}</div>
         </ScrollArea>
       ) : null}
     </div>

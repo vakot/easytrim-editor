@@ -19,7 +19,7 @@ vi.mock("@/app/hooks/useAppUpdates", () => ({
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
-vi.mock("@/app/store/hooks", () => ({
+vi.mock("@/app/store/redux-hooks", () => ({
   useAppSelector: () => mocks.queue,
 }));
 

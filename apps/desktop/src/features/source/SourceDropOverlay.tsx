@@ -1,8 +1,14 @@
 import { FileVideo2, Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-export function DropOverlay() {
+import { useAppSelector } from "@/app/store/redux-hooks";
+import { selectIsSourceDragActive } from "@/app/store/slices/import-workflow-slice";
+
+export function SourceDropOverlay() {
   const { t } = useTranslation();
+  const isSourceDragActive = useAppSelector(selectIsSourceDragActive);
+
+  if (!isSourceDragActive) return null;
 
   return (
     <div

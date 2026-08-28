@@ -69,7 +69,7 @@ function render(ui: ReactElement) {
   );
 }
 
-vi.mock("@/app/store/hooks", () => ({
+vi.mock("@/app/store/redux-hooks", () => ({
   useAppDispatch: () => menuState.dispatch,
   useAppSelector: (selector: (state: unknown) => unknown) =>
     selector({

@@ -9,12 +9,13 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { ContextMenus } from "@/app/components/context-menus";
 import { CustomTitleBar } from "@/app/components/CustomTitleBar";
+import { EditorWorkspace } from "@/app/components/editor-workspace/EditorWorkspace";
 import { NativeDialogOverlay } from "@/app/components/NativeDialogOverlay";
 import { PanelVisibilityControls } from "@/app/components/PanelVisibilityControls";
 import { AppUpdatesProvider } from "@/app/components/providers/AppUpdatesProvider";
 import { EditorContractsProvider } from "@/app/components/providers/EditorContractsProvider";
 import { StatusBar } from "@/app/components/status-bar";
-import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectCropApplied } from "@/app/store/slices/crop-slice";
 import { selectHasQueuedExports, selectQueueStarted } from "@/app/store/slices/export-slice";
 import {
@@ -22,11 +23,7 @@ import {
   selectIsChoosingSource,
   selectIsNativeDialogOpen,
 } from "@/app/store/slices/import-workflow-slice";
-import {
-  selectCapabilities,
-  selectHasSource,
-  selectSourceReady,
-} from "@/app/store/slices/source-slice";
+import { selectHasSource, selectSourceReady } from "@/app/store/slices/source-slice";
 import { persistor, store } from "@/app/store/store";
 import {
   loadQueueFinishActions,
@@ -39,13 +36,12 @@ import {
   closeActiveImportedItemRequested,
 } from "@/app/store/thunks/source-media-thunks";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
-import { OptimizedExportDialog } from "@/features/export/components/OptimizedExportDialog";
-import { CapabilityStatus, SourceWorkspace } from "@/features/source/SourceWorkspace";
+import { ExportDialog } from "@/features/export";
+import { SourceStatus } from "@/features/source";
 import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
 
 function EasyTrimEditorApp() {
   const dispatch = useAppDispatch();
-  const capabilities = useAppSelector(selectCapabilities);
   const canExport = useAppSelector(selectSourceReady);
   const cropApplied = useAppSelector(selectCropApplied);
   const queueStarted = useAppSelector(selectQueueStarted);
@@ -121,11 +117,11 @@ function EasyTrimEditorApp() {
       <main className="fixed inset-0 grid h-dvh w-screen min-w-80 overflow-hidden bg-background grid-rows-[2.25rem_minmax(0,1fr)_auto]">
         <CustomTitleBar
           menuControls={<ContextMenus />}
-          statusContent={<CapabilityStatus capabilities={capabilities} />}
+          statusContent={<SourceStatus />}
           panelControls={<PanelVisibilityControls />}
         />
 
-        <OptimizedExportDialog />
+        <ExportDialog />
 
         {isNativeDialogOpen ? <NativeDialogOverlay /> : null}
 
@@ -140,7 +136,7 @@ function EasyTrimEditorApp() {
           </Alert>
         ) : null}
 
-        <SourceWorkspace />
+        <EditorWorkspace />
         <StatusBar />
       </main>
     </TooltipProvider>

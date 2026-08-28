@@ -4,7 +4,7 @@ import {
   type ExportPreset,
   loadExportPresetState,
   presetNameError,
-} from "@/features/export/export-presets";
+} from "@/app/store/export-presets";
 
 import type { RootState } from "../store";
 
