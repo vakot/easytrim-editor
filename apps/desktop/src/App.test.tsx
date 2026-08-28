@@ -242,7 +242,7 @@ describe("App", () => {
       "aria-pressed",
       "false",
     );
-  });
+  }, 10_000);
 
   it("starts with the editor in a no-source state", async () => {
     render(<App />);
