@@ -52,6 +52,7 @@ function EasyTrimEditorApp() {
   const isNativeDialogOpen = useAppSelector(selectIsNativeDialogOpen);
   const dropListenerError = useAppSelector(selectDropListenerError);
   const { t } = useTranslation();
+
   useEffect(() => {
     void dispatch(loadQueueFinishActions());
   }, [dispatch]);
@@ -136,7 +137,9 @@ function EasyTrimEditorApp() {
           </Alert>
         ) : null}
 
-        <SourceWorkspace />
+        {/* <SourceWorkspace /> */}
+
+        <Playground />
         <StatusBar />
       </main>
     </TooltipProvider>
