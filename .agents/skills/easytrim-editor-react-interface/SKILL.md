@@ -124,6 +124,9 @@ Keep these regions visible without navigation:
 
 In addition to the shared quality gate, cover:
 
+- place test suites in the owning module folder's `__tests__/` directory and preserve the source
+  filename stem before `.test.ts` or `.test.tsx`;
+
 - picker/drop import and immediate replacement;
 - reducer and timeline coordinate boundaries;
 - pointer and keyboard trim interaction;

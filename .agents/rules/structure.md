@@ -252,6 +252,9 @@ features -> components/ui, domain, lib, and local internals
 Use `kebab-case` for all frontend directories, including directories that contain React
 components: `context-menus/`, `status-bar/`, `audio/`, and `editor-workspace/`.
 
+The reserved test directory name `__tests__/` is an explicit exception. Use it only for test suites
+owned by the containing module folder.
+
 ### React components
 
 Application-owned React component files use `PascalCase.tsx`, and the primary component export
@@ -296,22 +299,30 @@ declaration files required by TypeScript or tooling retain the `.d.ts` conventio
 
 ### Tests
 
-Unit tests mirror the complete source filename stem and are colocated with the unit:
+Test files live under an owning module folder's `__tests__/` directory and mirror the complete
+source filename stem:
 
 ```text
-VideoPreview.tsx
-VideoPreview.test.tsx
+components/
+|-- __tests__/
+|   `-- VideoPreview.test.tsx
+`-- VideoPreview.tsx
 
-usePlaybackModes.ts
-usePlaybackModes.test.ts
+hooks/
+|-- __tests__/
+|   `-- usePlaybackModes.test.ts
+`-- usePlaybackModes.ts
 
-source-slice.ts
-source-slice.test.ts
+slices/
+|-- __tests__/
+|   `-- source-slice.test.ts
+`-- source-slice.ts
 ```
 
-Keep `src/test/` for global setup, shared factories, reusable mocks, and fixtures. Put tests that
-cover a broader application boundary in an explicitly named integration location when colocation
-would be misleading. Do not use generic frontend `__tests__/` directories for unit tests.
+Do not change application component, hook, or module casing in test filenames: the test filename
+matches its source owner plus `.test`. Keep `src/test/` for global setup, shared factories,
+reusable mocks, and fixtures rather than test suites. Tests covering a broader application boundary
+remain in an explicitly named owner such as `app/store/integration/__tests__/`.
 
 ### Module exports
 
