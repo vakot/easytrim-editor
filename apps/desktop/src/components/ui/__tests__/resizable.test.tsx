@@ -26,8 +26,11 @@ type CapturedPanelProps = {
 };
 
 type PanelController = {
+  appliedResizes: Array<number | string>;
   collapsed: boolean;
   disabledWhenResized: boolean[];
+  enabledRendersAfterDisabled: number;
+  enabledRendersWhenExpanded: number[];
   collapse: ReturnType<typeof vi.fn>;
   expand: ReturnType<typeof vi.fn>;
   getSize: ReturnType<typeof vi.fn>;
@@ -57,13 +60,19 @@ vi.mock("react-resizable-panels", async () => {
 
       if (!controller) {
         controller = {
+          appliedResizes: [],
           collapsed: false,
           disabledWhenResized: [],
+          enabledRendersAfterDisabled: 0,
+          enabledRendersWhenExpanded: [],
           collapse: vi.fn(() => {
             controller!.collapsed = true;
             reportResize(id, 0);
           }),
           expand: vi.fn(() => {
+            controller!.enabledRendersWhenExpanded.push(controller!.enabledRendersAfterDisabled);
+            if (controller!.enabledRendersAfterDisabled < 2) return;
+
             controller!.collapsed = false;
             reportResize(id, 50);
           }),
@@ -71,6 +80,9 @@ vi.mock("react-resizable-panels", async () => {
           isCollapsed: vi.fn(() => controller!.collapsed),
           resize: vi.fn((size: number | string) => {
             controller!.disabledWhenResized.push(primitive.props.get(id)?.disabled ?? false);
+            if (controller!.enabledRendersAfterDisabled < 2) return;
+
+            controller!.appliedResizes.push(size);
             controller!.collapsed = false;
             reportResize(id, Number.parseFloat(String(size)));
           }),
@@ -79,6 +91,9 @@ vi.mock("react-resizable-panels", async () => {
       }
 
       primitive.props.set(id, props);
+      controller.enabledRendersAfterDisabled = props.disabled
+        ? 0
+        : controller.enabledRendersAfterDisabled + 1;
       props.panelRef.current = controller;
 
       return <div data-testid={id}>{props.children}</div>;
@@ -182,6 +197,7 @@ describe("ResizablePanel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Open" }));
 
     await waitFor(() => expect(controller.resize).toHaveBeenCalledWith("42%"));
+    expect(controller.appliedResizes).toEqual(["42%"]);
     expect(controller.disabledWhenResized).toEqual([false]);
     expect(controller.expand).not.toHaveBeenCalled();
     expect(await screen.findByRole("button", { name: "Close" })).toBeInTheDocument();
@@ -198,6 +214,7 @@ describe("ResizablePanel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Open" }));
 
     await waitFor(() => expect(controller.expand).toHaveBeenCalledOnce());
+    expect(controller.enabledRendersWhenExpanded).toEqual([2]);
     expect(controller.resize).not.toHaveBeenCalled();
   });
 });

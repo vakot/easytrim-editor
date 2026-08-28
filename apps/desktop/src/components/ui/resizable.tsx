@@ -8,12 +8,13 @@ import { Slot } from "radix-ui";
 
 type PanelId = string;
 type PanelRef = React.RefObject<ResizablePrimitive.PanelImperativeHandle | null>;
+type PanelRestoreState = "idle" | "enable" | "resize";
 type PanelState = {
   ref: PanelRef;
   isCollapsed: boolean;
   isDisabled: boolean;
   previousSize?: number;
-  pendingRestore: boolean;
+  restoreState: PanelRestoreState;
 };
 
 type PanelRefsCollection = Record<PanelId, PanelState>;
@@ -24,6 +25,7 @@ const ResizablePanelContext = React.createContext<{
   unregisterPanel: (panelId: PanelId) => void;
   updatePanelState: (panelId: PanelId, update: (panel: PanelState) => PanelState) => void;
   requestPanelRestore: (panelId: PanelId) => void;
+  advancePanelRestore: (panelId: PanelId) => void;
   finishPanelRestore: (panelId: PanelId) => void;
 } | null>(null);
 
@@ -92,13 +94,20 @@ function ResizablePanel({
   disabled,
   ...props
 }: ResizablePanelProps) {
-  const { registerPanel, unregisterPanel, updatePanelState, finishPanelRestore } =
-    useResizablePanelContext();
+  const {
+    registerPanel,
+    unregisterPanel,
+    updatePanelState,
+    advancePanelRestore,
+    finishPanelRestore,
+  } = useResizablePanelContext();
 
   const panel = usePanelState(id);
   const panelRef = ResizablePrimitive.usePanelRef();
   const isForced = collapsibleMode === "forced";
   const isForcedDisabled = isForced && panel?.isDisabled;
+  const previousSize = panel?.previousSize;
+  const restoreState = panel?.restoreState;
   const lockedSize = collapsedSize ?? 0;
 
   React.useEffect(() => {
@@ -107,27 +116,35 @@ function ResizablePanel({
   }, [id, panelRef, registerPanel, unregisterPanel]);
 
   React.useEffect(() => {
-    if (!isForced || !panel?.pendingRestore || panel.isDisabled) return;
+    if (!isForced || isForcedDisabled || restoreState == null) return;
 
-    if (panel.previousSize == null) {
+    if (restoreState === "enable") {
+      advancePanelRestore(id);
+      return;
+    }
+
+    if (restoreState !== "resize") return;
+
+    if (previousSize == null) {
       panelRef.current?.expand();
     } else {
-      panelRef.current?.resize(`${panel.previousSize}%`);
+      panelRef.current?.resize(`${previousSize}%`);
     }
 
     finishPanelRestore(id);
   }, [
+    advancePanelRestore,
     finishPanelRestore,
     id,
     isForced,
-    panel?.isDisabled,
-    panel?.pendingRestore,
-    panel?.previousSize,
+    isForcedDisabled,
     panelRef,
+    previousSize,
+    restoreState,
   ]);
 
   React.useEffect(() => {
-    if (isForced && panel?.pendingRestore) return;
+    if (isForced && restoreState !== "idle") return;
 
     updatePanelState(id, (currentPanel) => {
       const isInitiallyCollapsed = panelRef.current?.isCollapsed() ?? false;
@@ -142,15 +159,15 @@ function ResizablePanel({
         };
       }
 
-      if (!currentPanel.isDisabled && !currentPanel.pendingRestore) return currentPanel;
+      if (!currentPanel.isDisabled && currentPanel.restoreState === "idle") return currentPanel;
 
       return {
         ...currentPanel,
         isDisabled: false,
-        pendingRestore: false,
+        restoreState: "idle",
       };
     });
-  }, [id, isForced, panel?.pendingRestore, panel?.ref, panelRef, updatePanelState]);
+  }, [id, isForced, panel?.ref, panelRef, restoreState, updatePanelState]);
 
   return (
     <ResizablePrimitive.Panel
@@ -167,10 +184,12 @@ function ResizablePanel({
         updatePanelState(id, (currentPanel) => {
           const isDisabled = isForced ? isCollapsed : currentPanel.isDisabled;
           const previousSize = isForced && !isCollapsed ? size.asPercentage : undefined;
+          const restoreState = isForced ? "idle" : currentPanel.restoreState;
 
           if (
             currentPanel.isCollapsed === isCollapsed &&
             currentPanel.isDisabled === isDisabled &&
+            currentPanel.restoreState === restoreState &&
             (previousSize == null || currentPanel.previousSize === previousSize)
           ) {
             return currentPanel;
@@ -180,6 +199,7 @@ function ResizablePanel({
             ...currentPanel,
             isCollapsed,
             isDisabled,
+            restoreState,
             ...(previousSize == null ? {} : { previousSize }),
           };
         });
@@ -255,7 +275,7 @@ function ResizablePanelContextProvider({ children }: React.PropsWithChildren) {
         ref: panelRef,
         isCollapsed: panelRef.current?.isCollapsed() ?? false,
         isDisabled: false,
-        pendingRestore: false,
+        restoreState: "idle",
       },
     }));
   }, []);
@@ -289,14 +309,29 @@ function ResizablePanelContextProvider({ children }: React.PropsWithChildren) {
   const requestPanelRestore = React.useCallback((panelId: PanelId) => {
     setPanels((panels) => {
       const panel = panels[panelId];
-      if (!panel || (!panel.isDisabled && panel.pendingRestore)) return panels;
+      if (!panel || panel.restoreState !== "idle") return panels;
 
       return {
         ...panels,
         [panelId]: {
           ...panel,
           isDisabled: false,
-          pendingRestore: true,
+          restoreState: "enable",
+        },
+      };
+    });
+  }, []);
+
+  const advancePanelRestore = React.useCallback((panelId: PanelId) => {
+    setPanels((panels) => {
+      const panel = panels[panelId];
+      if (!panel || panel.restoreState !== "enable") return panels;
+
+      return {
+        ...panels,
+        [panelId]: {
+          ...panel,
+          restoreState: "resize",
         },
       };
     });
@@ -305,13 +340,13 @@ function ResizablePanelContextProvider({ children }: React.PropsWithChildren) {
   const finishPanelRestore = React.useCallback((panelId: PanelId) => {
     setPanels((panels) => {
       const panel = panels[panelId];
-      if (!panel?.pendingRestore) return panels;
+      if (!panel || panel.restoreState === "idle") return panels;
 
       return {
         ...panels,
         [panelId]: {
           ...panel,
-          pendingRestore: false,
+          restoreState: "idle",
         },
       };
     });
@@ -325,6 +360,7 @@ function ResizablePanelContextProvider({ children }: React.PropsWithChildren) {
         unregisterPanel,
         updatePanelState,
         requestPanelRestore,
+        advancePanelRestore,
         finishPanelRestore,
       }}
     >
