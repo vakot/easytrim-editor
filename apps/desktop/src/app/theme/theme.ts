@@ -1,16 +1,13 @@
-export const SYSTEM_THEME_QUERY = "(prefers-color-scheme: dark)";
-export const THEME_PREFERENCES = ["system", "light", "dark"] as const;
-
-export type ThemePreference = (typeof THEME_PREFERENCES)[number];
+const SYSTEM_THEME_QUERY = "(prefers-color-scheme: dark)";
+export type ThemePreference = "system" | "light" | "dark";
 export type ResolvedTheme = Exclude<ThemePreference, "system">;
 
 export const PRIMARY_COLORS = ["amber", "rose", "violet", "blue", "emerald"] as const;
 export const CUSTOM_PRIMARY_COLOR = "custom" as const;
-export const PRIMARY_COLOR_KEYS = [...PRIMARY_COLORS, CUSTOM_PRIMARY_COLOR] as const;
 export const DEFAULT_PRIMARY_COLOR = "amber" as const;
 export const DEFAULT_CUSTOM_PRIMARY_COLOR = "#efbf04" as const;
 
-export type PrimaryColorKey = (typeof PRIMARY_COLOR_KEYS)[number];
+export type PrimaryColorKey = (typeof PRIMARY_COLORS)[number] | typeof CUSTOM_PRIMARY_COLOR;
 export type CustomPrimaryColor = `#${string}`;
 export type PrimaryColor = (typeof PRIMARY_COLORS)[number] | CustomPrimaryColor;
 
@@ -21,22 +18,6 @@ const primaryColorValues = {
   blue: "#4299e1",
   emerald: "#32a876",
 } as const;
-
-export function isThemePreference(value: unknown): value is ThemePreference {
-  return typeof value === "string" && THEME_PREFERENCES.includes(value as ThemePreference);
-}
-
-export function isPrimaryColor(value: unknown): value is PrimaryColor {
-  return (
-    typeof value === "string" &&
-    (PRIMARY_COLORS.includes(value as (typeof PRIMARY_COLORS)[number]) ||
-      isCustomPrimaryColor(value))
-  );
-}
-
-export function isPrimaryColorKey(value: unknown): value is PrimaryColorKey {
-  return typeof value === "string" && PRIMARY_COLOR_KEYS.includes(value as PrimaryColorKey);
-}
 
 export function isCustomPrimaryColor(value: unknown): value is CustomPrimaryColor {
   return typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value);
@@ -69,7 +50,7 @@ export function colorFromSpectrumPosition(x: number, y: number, size: number): `
   return hslToHex((hue + 360) % 360, distance * 100, 50);
 }
 
-export function hslToHex(hue: number, saturation: number, lightness: number): `#${string}` {
+function hslToHex(hue: number, saturation: number, lightness: number): `#${string}` {
   const chroma = (1 - Math.abs((2 * lightness) / 100 - 1)) * (saturation / 100);
   const segment = hue / 60;
   const secondary = chroma * (1 - Math.abs((segment % 2) - 1));

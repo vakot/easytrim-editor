@@ -10,7 +10,7 @@ import type { TrimRange } from "@/domain/trim";
 
 type ReachedBoundaryAction = Exclude<PlaybackBoundaryAction, { type: "continue" }>;
 
-export type PlaybackBoundaryResult =
+type PlaybackBoundaryResult =
   { reached: false } | { reached: true; action: ReachedBoundaryAction | null };
 
 export function usePlaybackModes({

@@ -6,11 +6,11 @@ import { type CropRect, FULL_CROP } from "@/domain/crop";
 
 import type { RootState } from "../store";
 
-export interface CropState {
+interface CropState {
   value: CropRect;
 }
 
-export interface CropResolution {
+interface CropResolution {
   width: number;
   height: number;
 }

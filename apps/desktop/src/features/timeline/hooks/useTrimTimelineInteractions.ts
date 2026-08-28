@@ -38,7 +38,7 @@ interface TrimTimelineInteractionOptions {
   onScrubEnd: () => void;
 }
 
-export interface TrimDragState {
+interface TrimDragState {
   boundary: TrimBoundary;
   snapActive: boolean;
 }

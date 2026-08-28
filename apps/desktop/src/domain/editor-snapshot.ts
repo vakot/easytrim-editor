@@ -2,8 +2,7 @@ import type { CropRect } from "./crop";
 import type { SourceRef } from "./source";
 import { createFullTrimRange, type TrimRange } from "./trim";
 
-export type EditorSnapshotTrim =
-  { kind: "full-source" } | { startMicros: number; endMicros: number };
+type EditorSnapshotTrim = { kind: "full-source" } | { startMicros: number; endMicros: number };
 
 export interface EditorSnapshot {
   source: SourceRef;
@@ -45,10 +44,6 @@ export function resolveEditorSnapshotTrim(
   }
 
   return { ...trim, sourceDurationMicros };
-}
-
-export function editorSnapshotTrimStart(trim: EditorSnapshotTrim): number {
-  return "kind" in trim ? 0 : trim.startMicros;
 }
 
 export function cloneEditorSnapshot(snapshot: EditorSnapshot): EditorSnapshot {

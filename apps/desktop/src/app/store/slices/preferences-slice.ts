@@ -4,7 +4,7 @@ import { DEFAULT_PREFERENCES, type PreferenceKey, type Preferences } from "@/app
 
 import type { RootState } from "../store";
 
-export type PreferencesState = Preferences;
+type PreferencesState = Preferences;
 
 const createInitialState = (): PreferencesState => ({
   ...DEFAULT_PREFERENCES,

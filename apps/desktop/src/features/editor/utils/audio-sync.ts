@@ -1,10 +1,10 @@
 import { seekMediaIfNeeded } from "./media-sync";
 
 export const PLAYING_AUDIO_HARD_RESYNC_THRESHOLD_SECONDS = 0.12;
-export const PLAYING_AUDIO_DRIFT_TOLERANCE_SECONDS = 0.025;
+const PLAYING_AUDIO_DRIFT_TOLERANCE_SECONDS = 0.025;
 const MAX_RATE_CORRECTION = 0.05;
 
-export type AudioSyncAction = "none" | "rate" | "seek";
+type AudioSyncAction = "none" | "rate" | "seek";
 
 export function synchronizeAudioPosition(
   audio: HTMLMediaElement,

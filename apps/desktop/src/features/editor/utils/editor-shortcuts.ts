@@ -1,4 +1,4 @@
-export type EditorShortcut =
+type EditorShortcut =
   "toggle-playback" | "previous-frame" | "next-frame" | "set-segment-start" | "set-segment-end";
 
 export function editorShortcutFromEvent(event: globalThis.KeyboardEvent): EditorShortcut | null {

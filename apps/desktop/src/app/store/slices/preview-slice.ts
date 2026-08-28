@@ -11,7 +11,7 @@ export type PreviewState =
   | { status: "ready"; value: PreviewDescriptor }
   | { status: "failed"; error: AppError };
 
-export interface PreviewSliceState {
+interface PreviewSliceState {
   value: PreviewState;
 }
 
@@ -51,5 +51,3 @@ export const { previewLoading, previewReady, previewFailed } = previewSlice.acti
 export const previewReducer = previewSlice.reducer;
 
 export const selectPreview = (state: RootState): PreviewState => state.preview.value;
-export const selectPreviewStatus = (state: RootState): PreviewState["status"] =>
-  state.preview.value.status;

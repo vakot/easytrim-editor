@@ -60,7 +60,7 @@ const rootReducer = (state: RootState | undefined, action: UnknownAction): RootS
   return combinedReducer(state, action);
 };
 
-export const persistedReducer = createPersistedReducer(rootReducer);
+const persistedReducer = createPersistedReducer(rootReducer);
 
 export function createAppStore(storage: PersistStorage = reduxStorage) {
   const reducer =

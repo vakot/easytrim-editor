@@ -15,13 +15,12 @@ import type { QueueFinishAction } from "@/lib/tauri/queue";
 
 import type { RootState } from "../store";
 
-export type ExportStatus = "queued" | "rendering" | "completed" | "failed" | "canceled";
-export type QueueItemStatus = "imported" | ExportStatus;
-export type ImportedOrigin = "source-import" | "history-fork";
-export type ExportRoute = "fast" | "optimized";
-export type ExportRequest = FastExportRequest | OptimizedExportRequest;
+type ExportStatus = "queued" | "rendering" | "completed" | "failed" | "canceled";
+type ImportedOrigin = "source-import" | "history-fork";
+type ExportRoute = "fast" | "optimized";
+type ExportRequest = FastExportRequest | OptimizedExportRequest;
 
-export interface QueueItemBase {
+interface QueueItemBase {
   id: string;
   snapshot: EditorSnapshot;
 }
@@ -58,7 +57,7 @@ export interface ExportQueueItem extends QueueItemBase {
   error?: string;
 }
 
-export type QueueItem = importQueueItem | ExportQueueItem;
+type QueueItem = importQueueItem | ExportQueueItem;
 
 export interface QueueItemPromotion {
   id: string;
@@ -71,7 +70,7 @@ export interface QueueItemPromotion {
   totalFrames?: number;
 }
 
-export interface ExportState {
+interface ExportState {
   queue: QueueItem[];
   activeItemId: string | null;
   queueStarted: boolean;
@@ -318,7 +317,7 @@ export const {
 } = exportSlice.actions;
 export const exportReducer = exportSlice.reducer;
 
-export const selectQueueItems = (state: RootState): QueueItem[] => state.export.queue;
+const selectQueueItems = (state: RootState): QueueItem[] => state.export.queue;
 export const selectActiveItemId = (state: RootState): string | null => state.export.activeItemId;
 export const selectActiveQueueItem = createSelector(
   [selectQueueItems, selectActiveItemId],
@@ -332,22 +331,13 @@ export const selectimportQueueItems = createSelector(
 export const selectExportQueue = createSelector([selectQueueItems], (queue): ExportQueueItem[] =>
   queue.filter((item): item is ExportQueueItem => item.status !== "imported"),
 );
-export const selectExportQueueItems = selectExportQueue;
 export const selectActiveExport = createSelector([selectExportQueue], (queue) =>
   queue.find((item) => item.status === "rendering"),
 );
-export const selectExportProgress = (state: RootState): number =>
-  selectActiveExport(state)?.progressPercent ?? 0;
-export const selectExportRunning = (state: RootState): boolean =>
-  selectActiveExport(state) !== undefined;
 export const selectHasQueuedExports = (state: RootState): boolean =>
   state.export.queue.some((item) => item.status === "queued");
-export const selectHasActiveExport = (state: RootState): boolean =>
-  state.export.queue.some((item) => item.status === "rendering");
 export const selectHasProcessableExports = (state: RootState): boolean =>
   state.export.queue.some((item) => item.status === "queued" || item.status === "rendering");
-export const selectCanStartQueue = (state: RootState): boolean =>
-  !state.export.queueStarted && selectHasQueuedExports(state);
 export const selectQueueStarted = (state: RootState): boolean => state.export.queueStarted;
 export const selectQueueFinishAction = (state: RootState): QueueFinishAction =>
   state.export.queueFinishAction;

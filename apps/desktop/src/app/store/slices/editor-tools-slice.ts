@@ -4,7 +4,7 @@ import { DEFAULT_PREFERENCES, type Preferences } from "@/app/preferences";
 import type { RootState } from "@/app/store/store";
 import { DEFAULT_PLAYBACK_SPEED, type PlaybackSpeed } from "@/domain/playback-speed";
 
-export type EditorToolsState = {
+type EditorToolsState = {
   snapPlaybackEnabled: boolean;
   loopPlaybackEnabled: boolean;
   segmentPlaybackEnabled: boolean;
@@ -38,14 +38,8 @@ const editorToolsSlice = createSlice({
     loopPlaybackToggled: (state) => {
       state.loopPlaybackEnabled = !state.loopPlaybackEnabled;
     },
-    loopPlaybackChanged: (state, action: PayloadAction<boolean>) => {
-      state.loopPlaybackEnabled = action.payload;
-    },
     segmentPlaybackToggled: (state) => {
       state.segmentPlaybackEnabled = !state.segmentPlaybackEnabled;
-    },
-    segmentPlaybackChanged: (state, action: PayloadAction<boolean>) => {
-      state.segmentPlaybackEnabled = action.payload;
     },
     playbackSpeedChanged: (state, action: PayloadAction<PlaybackSpeed>) => {
       state.playbackSpeed = action.payload;
@@ -59,9 +53,7 @@ export const {
   snapPlaybackToggled,
   snapPlaybackChanged,
   loopPlaybackToggled,
-  loopPlaybackChanged,
   segmentPlaybackToggled,
-  segmentPlaybackChanged,
   playbackSpeedChanged,
 } = editorToolsSlice.actions;
 export const editorToolsReducer = editorToolsSlice.reducer;

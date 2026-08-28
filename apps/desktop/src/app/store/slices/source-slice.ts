@@ -18,9 +18,9 @@ export type CapabilityState =
   | { status: "ready"; value: MediaCapabilities }
   | { status: "failed"; error: AppError };
 
-export type SourceStatus = "idle" | "loading-source" | "ready" | "failed";
+type SourceStatus = "idle" | "loading-source" | "ready" | "failed";
 
-export interface SourceState {
+interface SourceState {
   status: SourceStatus;
   source: SourceRef | null;
   loadToken: number;

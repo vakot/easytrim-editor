@@ -59,7 +59,7 @@ import {
   releaseExportSource,
   reserveExportSource,
 } from "@/lib/tauri/media";
-import { availableQueueFinishActions, type QueueFinishAction } from "@/lib/tauri/queue";
+import { availableQueueFinishActions } from "@/lib/tauri/queue";
 
 import type { AppThunk } from "./source-media-thunks";
 
@@ -306,8 +306,6 @@ function getTotalFrames(
     Math.round(((request.trim.endMicros - request.trim.startMicros) / 1_000_000) * frameRate),
   );
 }
-
-export type { QueueFinishAction };
 
 export const restoreExportQueueItemRequested =
   (id: string): AppThunk<Promise<boolean>> =>

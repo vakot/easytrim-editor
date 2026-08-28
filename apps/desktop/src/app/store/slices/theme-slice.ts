@@ -12,7 +12,7 @@ import {
 
 import type { RootState } from "../store";
 
-export interface ThemeState {
+interface ThemeState {
   preference: ThemePreference;
   primaryColor: PrimaryColor;
   customPrimaryColor: CustomPrimaryColor;

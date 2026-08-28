@@ -6,6 +6,13 @@ import simpleImportSort from "eslint-plugin-simple-import-sort";
 import globals from "globals";
 import tseslint from "typescript-eslint";
 
+import { createNoUnusedExportsPlugin } from "./scripts/eslint/no-unused-exports.mjs";
+
+const projectRules = createNoUnusedExportsPlugin({
+  ignoredDirectories: ["apps/desktop/src/components/ui"],
+  project: "apps/desktop/tsconfig.json",
+});
+
 export default tseslint.config(
   {
     ignores: ["**/dist/**", "**/target/**", "**/src-tauri/gen/**"],
@@ -68,6 +75,16 @@ export default tseslint.config(
       "@typescript-eslint/no-import-type-side-effects": "error",
       ...reactHooks.configs.flat.recommended.rules,
       ...reactRefresh.configs.vite.rules,
+    },
+  },
+  {
+    files: ["apps/desktop/src/**/*.{ts,tsx}"],
+    ignores: ["apps/desktop/src/components/ui/**"],
+    plugins: {
+      project: projectRules,
+    },
+    rules: {
+      "project/no-unused-exports": "error",
     },
   },
   {

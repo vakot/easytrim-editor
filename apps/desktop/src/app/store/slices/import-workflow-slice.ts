@@ -4,14 +4,14 @@ import type { AppError } from "@/lib/tauri/media";
 
 import type { RootState } from "../store";
 
-export interface ImportWorkflowState {
+interface ImportWorkflowState {
   isChoosingSource: boolean;
   isNativeDialogOpen: boolean;
   isSourceDragActive: boolean;
   dropListenerError: AppError | null;
 }
 
-export const initialImportWorkflowState: ImportWorkflowState = {
+const initialImportWorkflowState: ImportWorkflowState = {
   isChoosingSource: false,
   isNativeDialogOpen: false,
   isSourceDragActive: false,

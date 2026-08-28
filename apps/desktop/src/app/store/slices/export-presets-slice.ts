@@ -21,9 +21,6 @@ const exportPresetsSlice = createSlice({
       state.selectedPresetId = preset.id;
       state.argumentsText = preset.argumentsText;
     },
-    exportPresetNewStarted: (state) => {
-      state.selectedPresetId = null;
-    },
     exportPresetCreated: (state, action: PayloadAction<{ name: string }>) => {
       if (presetNameError(state.presets, action.payload.name)) return;
       const nextPresetSequence = state.nextPresetSequence + 1;
@@ -63,7 +60,6 @@ const exportPresetsSlice = createSlice({
 export const {
   exportArgumentsChanged,
   exportPresetSelected,
-  exportPresetNewStarted,
   exportPresetCreated,
   exportPresetUpdated,
   exportPresetDeleted,

@@ -1,4 +1,4 @@
-export interface PlaybackFrameRate {
+interface PlaybackFrameRate {
   numerator: number;
   denominator: number;
 }

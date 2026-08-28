@@ -15,13 +15,13 @@ import type {
 
 import type { RootState } from "../store";
 
-export type WaveformState =
+type WaveformState =
   | { status: "idle" }
   | { status: "loading"; jobId: string; width: number }
   | { status: "ready"; jobId: string; width: number; url: string }
   | { status: "failed"; jobId: string; width: number; error: AppError };
 
-export type AudioPreviewState =
+type AudioPreviewState =
   | { status: "idle"; previews: AudioPreviewDescriptor[] }
   | { status: "loading"; previews: AudioPreviewDescriptor[] }
   | { status: "ready"; previews: AudioPreviewDescriptor[] }
@@ -38,7 +38,7 @@ export interface AudioTrackState {
   waveform: WaveformState;
 }
 
-export interface AudioState {
+interface AudioState {
   tracks: AudioTrackState[];
   masterEnabled: boolean;
   masterVolumePercent: number;
@@ -84,13 +84,6 @@ const audioSlice = createSlice({
       track.enabled = !track.enabled;
       if (track.enabled && track.volumePercent <= 0)
         track.volumePercent = DEFAULT_UNMUTE_VOLUME_PERCENT;
-    },
-    audioTracksSetEnabled: (state, action: PayloadAction<{ enabled: boolean }>) => {
-      for (const track of state.tracks) {
-        track.enabled = action.payload.enabled;
-        if (action.payload.enabled && track.volumePercent <= 0)
-          track.volumePercent = DEFAULT_UNMUTE_VOLUME_PERCENT;
-      }
     },
     audioTrackVolumeChanged: (
       state,
@@ -245,7 +238,6 @@ export const {
   audioPreviewsReady,
   audioPreviewsUnavailable,
   audioTrackToggled,
-  audioTracksSetEnabled,
   audioTrackVolumeChanged,
   masterAudioToggled,
   masterVolumeChanged,
@@ -259,7 +251,6 @@ export const {
 export const audioReducer = audioSlice.reducer;
 
 const EMPTY_AUDIO_TRACKS: AudioTrackState[] = [];
-const EMPTY_WAVEFORMS: WaveformState[] = [];
 
 export const selectAudioTracks = (state: RootState): AudioTrackState[] =>
   state.audio.tracks.length > 0 ? state.audio.tracks : EMPTY_AUDIO_TRACKS;
@@ -270,6 +261,3 @@ export const selectMasterAudio = createSelector([(state: RootState) => state.aud
 export const selectMergeAudio = (state: RootState): boolean => state.audio.mergeAudio;
 export const selectAudioPreviews = (state: RootState): AudioPreviewState | null =>
   state.audio.previews;
-export const selectWaveforms = createSelector([selectAudioTracks], (tracks): WaveformState[] =>
-  tracks.length > 0 ? tracks.map((track) => track.waveform) : EMPTY_WAVEFORMS,
-);

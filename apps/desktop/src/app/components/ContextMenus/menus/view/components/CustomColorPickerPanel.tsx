@@ -99,7 +99,7 @@ export function CustomColorPickerPanel({
   );
 }
 
-export function SpectrumWheel({
+function SpectrumWheel({
   color,
   onPreview,
   onCommit,
