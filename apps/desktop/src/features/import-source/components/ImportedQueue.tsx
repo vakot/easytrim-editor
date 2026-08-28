@@ -2,14 +2,14 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
-import { selectActiveItemId, selectImportedQueueItems } from "@/app/store/slices/export-slice";
+import { selectActiveItemId, selectimportQueueItems } from "@/app/store/slices/export-slice";
 import { navigateToImportedItem } from "@/app/store/thunks/source-media-thunks";
 import { Button } from "@/components/ui/button";
 
-export function ImportedQueue() {
+export function importQueue() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const items = useAppSelector(selectImportedQueueItems);
+  const items = useAppSelector(selectimportQueueItems);
   const activeItemId = useAppSelector(selectActiveItemId);
   if (items.length === 0) return null;
 

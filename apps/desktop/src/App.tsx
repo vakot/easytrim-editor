@@ -1,44 +1,45 @@
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { useEffect } from "react";
-import { NativeDialogOverlay } from "@/app/components/NativeDialogOverlay";
-import { StatusBar } from "@/app/components/StatusBar";
-import { CapabilityStatus, SourceWorkspace } from "@/features/import-source/SourceWorkspace";
-import { useTranslation } from "react-i18next";
-import { ThemeProvider } from "@/app/theme/ThemeProvider";
-import { CustomTitleBar } from "@/app/components/CustomTitleBar";
-import { PanelVisibilityControls } from "@/app/components/PanelVisibilityControls";
 import { ContextMenus } from "@/app/components/ContextMenus";
-import { OptimizedExportDialog } from "@/features/export/components/OptimizedExportDialog";
+import { CustomTitleBar } from "@/app/components/CustomTitleBar";
+import { NativeDialogOverlay } from "@/app/components/NativeDialogOverlay";
+import { PanelVisibilityControls } from "@/app/components/PanelVisibilityControls";
+import { AppUpdatesProvider } from "@/app/components/Providers/AppUpdatesProvider";
+import { EditorContractsProvider } from "@/app/components/Providers/EditorContractsProvider";
+import { StatusBar } from "@/app/components/StatusBar";
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
-import {
-  selectCapabilities,
-  selectHasSource,
-  selectSourceReady,
-} from "@/app/store/slices/source-slice";
 import { selectCropApplied } from "@/app/store/slices/crop-slice";
+import { selectHasQueuedExports, selectQueueStarted } from "@/app/store/slices/export-slice";
 import {
   selectDropListenerError,
   selectIsChoosingSource,
   selectIsNativeDialogOpen,
 } from "@/app/store/slices/import-workflow-slice";
 import {
-  closeActiveImportedItemRequested,
-  chooseSourceRequested,
-} from "@/app/store/thunks/source-media-thunks";
-import { EditorContractsProvider } from "@/app/components/Providers/EditorContractsProvider";
-import { AppUpdatesProvider } from "@/app/components/Providers/AppUpdatesProvider";
-import { selectHasQueuedExports, selectQueueStarted } from "@/app/store/slices/export-slice";
+  selectCapabilities,
+  selectHasSource,
+  selectSourceReady,
+} from "@/app/store/slices/source-slice";
+import { persistor, store } from "@/app/store/store";
 import {
   loadQueueFinishActions,
   openOptimizedExportDialog,
   startExportQueue,
   startFastCutRequested,
 } from "@/app/store/thunks/export-thunks";
-import { persistor, store } from "@/app/store/store";
+import {
+  chooseSourceRequested,
+  closeActiveImportedItemRequested,
+} from "@/app/store/thunks/source-media-thunks";
+import { ThemeProvider } from "@/app/theme/ThemeProvider";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ResizablePanelContextProvider } from "@/components/ui/resizable";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { OptimizedExportDialog } from "@/features/export/components/OptimizedExportDialog";
+import { CapabilityStatus, SourceWorkspace } from "@/features/import-source/SourceWorkspace";
+import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
+import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Provider as ReduxProvider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
-import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
 
 function EasyTrimEditorApp() {
   const dispatch = useAppDispatch();
@@ -52,6 +53,7 @@ function EasyTrimEditorApp() {
   const isNativeDialogOpen = useAppSelector(selectIsNativeDialogOpen);
   const dropListenerError = useAppSelector(selectDropListenerError);
   const { t } = useTranslation();
+
   useEffect(() => {
     void dispatch(loadQueueFinishActions());
   }, [dispatch]);
@@ -150,7 +152,9 @@ function App() {
         <PersistGate loading={null} persistor={persistor}>
           <ThemeProvider>
             <EditorContractsProvider>
-              <EasyTrimEditorApp />
+              <ResizablePanelContextProvider>
+                <EasyTrimEditorApp />
+              </ResizablePanelContextProvider>
             </EditorContractsProvider>
           </ThemeProvider>
         </PersistGate>

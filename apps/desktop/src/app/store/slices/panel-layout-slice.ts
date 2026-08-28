@@ -6,7 +6,7 @@ export const PANEL_IDS = {
   sourceDetails: "source-details",
   timeline: "timeline",
   sidebarMedia: "sidebar.media",
-  sidebarImportedQueue: "sidebar.imported-queue",
+  sidebarimportQueue: "sidebar.imported-queue",
   sidebarExportQueue: "sidebar.export-queue",
 } as const;
 
@@ -39,7 +39,7 @@ export function createInitialPanelLayoutState(): PanelLayoutState {
       [PANEL_IDS.sourceDetails]: createExpandedPanelState(),
       [PANEL_IDS.timeline]: createExpandedPanelState(),
       [PANEL_IDS.sidebarMedia]: createExpandedPanelState(),
-      [PANEL_IDS.sidebarImportedQueue]: createExpandedPanelState(),
+      [PANEL_IDS.sidebarimportQueue]: createExpandedPanelState(),
       [PANEL_IDS.sidebarExportQueue]: createExpandedPanelState(),
     },
   };

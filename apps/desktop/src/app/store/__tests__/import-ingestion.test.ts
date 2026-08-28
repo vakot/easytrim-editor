@@ -1,17 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { MediaInfo } from "@/lib/tauri/media";
-import type { SourceRef } from "@/domain/source";
-import { createAppStore } from "@/app/store/store";
-import {
-  importedQueueItemAdded,
-  selectActiveItemId,
-  selectImportedQueueItems,
-} from "@/app/store/slices/export-slice";
 import { selectAudioPreviews } from "@/app/store/slices/audio-slice";
+import {
+  importQueueItemAdded,
+  selectActiveItemId,
+  selectimportQueueItems,
+} from "@/app/store/slices/export-slice";
 import { selectSourceError, selectSourceStatus } from "@/app/store/slices/source-slice";
 import { trimChanged } from "@/app/store/slices/trim-slice";
+import { createAppStore } from "@/app/store/store";
 import { ingestSources, navigateToImportedItem } from "@/app/store/thunks/source-media-thunks";
+import type { SourceRef } from "@/domain/source";
+import type { MediaInfo } from "@/lib/tauri/media";
 
 const mocks = vi.hoisted(() => ({
   activateSourcePath: vi.fn(),
@@ -74,7 +74,7 @@ describe("unified source ingestion", () => {
     const store = createAppStore();
 
     store.dispatch(ingestSources([sourceA, sourceB, sourceC]));
-    const items = selectImportedQueueItems(store.getState());
+    const items = selectimportQueueItems(store.getState());
 
     expect(items).toHaveLength(3);
     expect(items.map((item) => item.snapshot.source)).toEqual([sourceA, sourceB, sourceC]);
@@ -102,7 +102,7 @@ describe("unified source ingestion", () => {
 
     store.dispatch(ingestSources([sourceA, sourceA]));
 
-    const items = selectImportedQueueItems(store.getState());
+    const items = selectimportQueueItems(store.getState());
     expect(items).toHaveLength(2);
     expect(items[0]?.snapshot.source).toEqual(sourceA);
     expect(items[1]?.snapshot.source).toEqual(sourceA);
@@ -121,7 +121,7 @@ describe("unified source ingestion", () => {
     );
     store.dispatch(ingestSources([sourceC, sourceA]));
 
-    const items = selectImportedQueueItems(store.getState());
+    const items = selectimportQueueItems(store.getState());
     expect(items.map((item) => item.snapshot.source.sourcePath)).toEqual([
       sourceA.sourcePath,
       sourceB.sourcePath,
@@ -145,19 +145,17 @@ describe("unified source ingestion", () => {
         audio: { master: { enabled: true, volumePercent: 50 }, tracks: [], mergeAudio: false },
       },
     };
-    store.dispatch(importedQueueItemAdded(fork));
+    store.dispatch(importQueueItemAdded(fork));
     store.dispatch(ingestSources([sourceB]));
 
     await waitForSourceReady(store);
-    expect(selectImportedQueueItems(store.getState()).map((item) => item.id)).not.toContain(
-      "fork-1",
-    );
+    expect(selectimportQueueItems(store.getState()).map((item) => item.id)).not.toContain("fork-1");
   });
 
   it("keeps a failed later item active in the queue", async () => {
     const store = createAppStore();
     store.dispatch(ingestSources([sourceA, sourceB]));
-    const items = selectImportedQueueItems(store.getState());
+    const items = selectimportQueueItems(store.getState());
     await waitForSourceReady(store);
 
     mocks.activateSourcePath.mockRejectedValueOnce({
@@ -173,7 +171,7 @@ describe("unified source ingestion", () => {
       }),
     );
     expect(selectActiveItemId(store.getState())).toBe(items[1]?.id);
-    expect(selectImportedQueueItems(store.getState())).toHaveLength(2);
+    expect(selectimportQueueItems(store.getState())).toHaveLength(2);
     expect(selectAudioPreviews(store.getState())).toBeNull();
     expect(mocks.inspectMedia).toHaveBeenCalledTimes(1);
   });
@@ -183,7 +181,7 @@ describe("unified source ingestion", () => {
 
     store.dispatch(ingestSources([]));
 
-    expect(selectImportedQueueItems(store.getState())).toEqual([]);
+    expect(selectimportQueueItems(store.getState())).toEqual([]);
     expect(mocks.inspectMedia).not.toHaveBeenCalled();
   });
 });

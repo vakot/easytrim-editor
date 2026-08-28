@@ -44,35 +44,34 @@ vi.mock("@/app/store/thunks/source-media-thunks", () => ({
 
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
 import {
-  queueEntryAdded,
-  importedQueueItemAdded,
-  importedQueueItemRemoved,
   activeQueueItemChanged,
-  selectActiveItemId,
-  selectImportedQueueItems,
+  importQueueItemAdded,
+  importQueueItemRemoved,
+  queueEntryAdded,
   queueFinishActionChanged,
   selectActiveExport,
+  selectActiveItemId,
   selectExportQueue,
+  selectimportQueueItems,
   selectOptimizedExportDialogOpen,
   selectQueueStarted,
   type ExportQueueItem,
-  type ImportedQueueItem,
+  type importQueueItem,
 } from "@/app/store/slices/export-slice";
 import { preferenceChanged } from "@/app/store/slices/preferences-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
+import type { AppDispatch, RootState } from "@/app/store/store";
+import { createAppStore } from "@/app/store/store";
 import {
   cancelActiveExportRequested,
   cancelAllExportsRequested,
   cancelExportRequested,
   openOptimizedExportDialog,
+  restoreExportQueueItemRequested,
   startExportQueue,
   startFastCutRequested,
   startOptimizedExportRequested,
-  restoreExportQueueItemRequested,
 } from "@/app/store/thunks/export-thunks";
-import { createAppStore } from "@/app/store/store";
-import type { AppDispatch } from "@/app/store/store";
-import type { RootState } from "@/app/store/store";
 import { resetExportQueueRuntimeForTests } from "@/features/export/utils/export-queue";
 import type { MediaInfo } from "@/lib/tauri/media";
 
@@ -121,14 +120,14 @@ const queuedItem: ExportQueueItem = {
   progressPercent: 0,
 };
 
-const importedItem: ImportedQueueItem = {
+const importedItem: importQueueItem = {
   id: "import-1",
   status: "imported",
   origin: "source-import",
   snapshot: queuedItem.snapshot,
 };
 
-const historyForkItem: ImportedQueueItem = {
+const historyForkItem: importQueueItem = {
   ...importedItem,
   id: "fork-1",
   origin: "history-fork",
@@ -149,7 +148,7 @@ function createReadyStore(withImportedItem = true) {
     }),
   );
   store.dispatch(sourceReady({ loadToken: 1, media }));
-  if (withImportedItem) store.dispatch(importedQueueItemAdded(importedItem));
+  if (withImportedItem) store.dispatch(importQueueItemAdded(importedItem));
   return store;
 }
 
@@ -170,7 +169,7 @@ beforeEach(() => {
         (item) => item.id === getState().export.activeItemId,
       );
       if (active?.status === "imported" && active.origin === "history-fork") {
-        dispatch(importedQueueItemRemoved(active.id));
+        dispatch(importQueueItemRemoved(active.id));
       }
     },
   );
@@ -189,12 +188,12 @@ describe("export thunks and runtime queue", () => {
   it("promotes an imported item in place and leaves canceled output selection imported", async () => {
     const store = createReadyStore(false);
     store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
-    store.dispatch(importedQueueItemAdded(importedItem));
+    store.dispatch(importQueueItemAdded(importedItem));
     mocks.chooseOutputPath.mockResolvedValueOnce(null);
 
     store.dispatch(startFastCutRequested());
     await Promise.resolve();
-    expect(selectImportedQueueItems(store.getState())).toEqual([importedItem]);
+    expect(selectimportQueueItems(store.getState())).toEqual([importedItem]);
     expect(selectActiveItemId(store.getState())).toBe(importedItem.id);
 
     mocks.chooseOutputPath.mockResolvedValue(output);
@@ -209,14 +208,14 @@ describe("export thunks and runtime queue", () => {
     const promoted = selectExportQueue(store.getState())[0];
     expect(promoted?.id).toBe(importedItem.id);
     expect(promoted?.status).toBe("queued");
-    expect(selectImportedQueueItems(store.getState())).toHaveLength(0);
+    expect(selectimportQueueItems(store.getState())).toHaveLength(0);
     expect(selectActiveItemId(store.getState())).toBeNull();
   });
 
   it("promotes optimized export using the same queue item id", async () => {
     const store = createReadyStore(false);
     store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
-    store.dispatch(importedQueueItemAdded(importedItem));
+    store.dispatch(importQueueItemAdded(importedItem));
     mocks.renderOptimized.mockResolvedValue({
       operationId: "operation-optimized-promoted",
       displayName: output.displayName,
@@ -231,14 +230,14 @@ describe("export thunks and runtime queue", () => {
       status: "queued",
       route: "optimized",
     });
-    expect(selectImportedQueueItems(store.getState())).toHaveLength(0);
+    expect(selectimportQueueItems(store.getState())).toHaveLength(0);
     expect(selectActiveItemId(store.getState())).toBeNull();
   });
 
   it("promotes a history fork through Fast Cut using the same id", async () => {
     const store = createReadyStore(false);
     store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
-    store.dispatch(importedQueueItemAdded(historyForkItem));
+    store.dispatch(importQueueItemAdded(historyForkItem));
 
     store.dispatch(startFastCutRequested());
     await vi.waitFor(() => expect(selectExportQueue(store.getState())).toHaveLength(1));
@@ -246,13 +245,13 @@ describe("export thunks and runtime queue", () => {
     const promoted = selectExportQueue(store.getState())[0];
     expect(promoted?.id).toBe(historyForkItem.id);
     expect(promoted).not.toHaveProperty("origin");
-    expect(selectImportedQueueItems(store.getState())).toHaveLength(0);
+    expect(selectimportQueueItems(store.getState())).toHaveLength(0);
   });
 
   it("promotes a history fork through Optimized Export using the same id", async () => {
     const store = createReadyStore(false);
     store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
-    store.dispatch(importedQueueItemAdded(historyForkItem));
+    store.dispatch(importQueueItemAdded(historyForkItem));
 
     store.dispatch(startOptimizedExportRequested());
     await vi.waitFor(() => expect(selectExportQueue(store.getState())).toHaveLength(1));
@@ -262,37 +261,37 @@ describe("export thunks and runtime queue", () => {
       status: "queued",
       route: "optimized",
     });
-    expect(selectImportedQueueItems(store.getState())).toHaveLength(0);
+    expect(selectimportQueueItems(store.getState())).toHaveLength(0);
   });
 
   it("keeps a history fork active when Fast Cut output selection is canceled", async () => {
     const store = createReadyStore(false);
-    store.dispatch(importedQueueItemAdded(historyForkItem));
+    store.dispatch(importQueueItemAdded(historyForkItem));
     mocks.chooseOutputPath.mockResolvedValueOnce(null);
 
     store.dispatch(startFastCutRequested());
     await Promise.resolve();
 
-    expect(selectImportedQueueItems(store.getState())).toEqual([historyForkItem]);
+    expect(selectimportQueueItems(store.getState())).toEqual([historyForkItem]);
     expect(selectActiveItemId(store.getState())).toBe(historyForkItem.id);
   });
 
   it("keeps a history fork active when Optimized Export output selection is canceled", async () => {
     const store = createReadyStore(false);
-    store.dispatch(importedQueueItemAdded(historyForkItem));
+    store.dispatch(importQueueItemAdded(historyForkItem));
     mocks.chooseOutputPath.mockResolvedValueOnce(null);
 
     store.dispatch(startOptimizedExportRequested());
     await Promise.resolve();
 
-    expect(selectImportedQueueItems(store.getState())).toEqual([historyForkItem]);
+    expect(selectimportQueueItems(store.getState())).toEqual([historyForkItem]);
     expect(selectActiveItemId(store.getState())).toBe(historyForkItem.id);
   });
 
   it("selects the next imported item after promotion", async () => {
     const store = createReadyStore(false);
     store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
-    const nextItem: ImportedQueueItem = {
+    const nextItem: importQueueItem = {
       ...importedItem,
       id: "import-2",
       snapshot: {
@@ -300,8 +299,8 @@ describe("export thunks and runtime queue", () => {
         source: { displayName: "next.mp4", sourcePath: "C:/Media/next.mp4" },
       },
     };
-    store.dispatch(importedQueueItemAdded(importedItem));
-    store.dispatch(importedQueueItemAdded(nextItem));
+    store.dispatch(importQueueItemAdded(importedItem));
+    store.dispatch(importQueueItemAdded(nextItem));
     store.dispatch(activeQueueItemChanged(importedItem.id));
     store.dispatch(startFastCutRequested());
     await vi.waitFor(() => expect(selectExportQueue(store.getState())).toHaveLength(1));
@@ -315,9 +314,9 @@ describe("export thunks and runtime queue", () => {
     store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
     const middleItem = { ...importedItem, id: "import-middle" };
     const nextItem = { ...importedItem, id: "import-next" };
-    store.dispatch(importedQueueItemAdded(importedItem));
-    store.dispatch(importedQueueItemAdded(middleItem));
-    store.dispatch(importedQueueItemAdded(nextItem));
+    store.dispatch(importQueueItemAdded(importedItem));
+    store.dispatch(importQueueItemAdded(middleItem));
+    store.dispatch(importQueueItemAdded(nextItem));
     store.dispatch(activeQueueItemChanged(middleItem.id));
 
     store.dispatch(startOptimizedExportRequested());
@@ -325,7 +324,7 @@ describe("export thunks and runtime queue", () => {
 
     expect(mocks.navigateToImportedItem).toHaveBeenCalledWith(nextItem.id);
     expect(selectActiveItemId(store.getState())).toBe(nextItem.id);
-    expect(selectImportedQueueItems(store.getState()).map((item) => item.id)).toEqual([
+    expect(selectimportQueueItems(store.getState()).map((item) => item.id)).toEqual([
       importedItem.id,
       nextItem.id,
     ]);
@@ -333,7 +332,7 @@ describe("export thunks and runtime queue", () => {
 
   it("does not execute imported-only items as exports", () => {
     const store = createReadyStore(false);
-    store.dispatch(importedQueueItemAdded(importedItem));
+    store.dispatch(importQueueItemAdded(importedItem));
 
     store.dispatch(startExportQueue());
 
@@ -454,7 +453,7 @@ describe("export thunks and runtime queue", () => {
     });
     expect(selectExportQueue(store.getState())).toHaveLength(1);
     expect(selectExportQueue(store.getState())[0]).toEqual(historicalItem);
-    const [fork] = selectImportedQueueItems(store.getState());
+    const [fork] = selectimportQueueItems(store.getState());
     expect(fork).toMatchObject({
       status: "imported",
       origin: "history-fork",
@@ -495,14 +494,14 @@ describe("export thunks and runtime queue", () => {
     await expect(store.dispatch(restoreExportQueueItemRequested(historicalItem.id))).resolves.toBe(
       true,
     );
-    const firstFork = selectImportedQueueItems(store.getState())[0];
+    const firstFork = selectimportQueueItems(store.getState())[0];
     store.dispatch(queueEntryAdded(secondHistoryItem));
 
     await expect(
       store.dispatch(restoreExportQueueItemRequested(secondHistoryItem.id)),
     ).resolves.toBe(true);
 
-    const importedItems = selectImportedQueueItems(store.getState());
+    const importedItems = selectimportQueueItems(store.getState());
     expect(importedItems).toHaveLength(1);
     expect(importedItems[0]?.origin).toBe("history-fork");
     expect(importedItems[0]?.id).not.toBe(firstFork?.id);
@@ -547,10 +546,10 @@ describe("export thunks and runtime queue", () => {
     const store = createReadyStore(false);
     store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
 
-    store.dispatch(importedQueueItemAdded(importedItem));
+    store.dispatch(importQueueItemAdded(importedItem));
     store.dispatch(startFastCutRequested());
     await vi.waitFor(() => expect(selectExportQueue(store.getState())).toHaveLength(1));
-    store.dispatch(importedQueueItemAdded({ ...importedItem, id: "import-2" }));
+    store.dispatch(importQueueItemAdded({ ...importedItem, id: "import-2" }));
     store.dispatch(startFastCutRequested());
     await vi.waitFor(() => expect(selectExportQueue(store.getState())).toHaveLength(2));
     store.dispatch(startExportQueue());
@@ -587,7 +586,7 @@ describe("export thunks and runtime queue", () => {
 
     store.dispatch(startFastCutRequested());
     await vi.waitFor(() => expect(selectExportQueue(store.getState())).toHaveLength(1));
-    store.dispatch(importedQueueItemAdded({ ...importedItem, id: "import-2" }));
+    store.dispatch(importQueueItemAdded({ ...importedItem, id: "import-2" }));
     store.dispatch(startFastCutRequested());
     await vi.waitFor(() => expect(selectExportQueue(store.getState())).toHaveLength(2));
     store.dispatch(startExportQueue());
@@ -652,7 +651,7 @@ describe("export thunks and runtime queue", () => {
 
     store.dispatch(startFastCutRequested());
     await vi.waitFor(() => expect(selectExportQueue(store.getState())).toHaveLength(1));
-    store.dispatch(importedQueueItemAdded({ ...importedItem, id: "import-2" }));
+    store.dispatch(importQueueItemAdded({ ...importedItem, id: "import-2" }));
     store.dispatch(startFastCutRequested());
     await vi.waitFor(() => expect(selectExportQueue(store.getState())).toHaveLength(2));
     store.dispatch(startExportQueue());
@@ -707,7 +706,7 @@ describe("export thunks and runtime queue", () => {
     expect(selectQueueStarted(store.getState())).toBe(false);
 
     store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
-    store.dispatch(importedQueueItemAdded({ ...importedItem, id: "import-2" }));
+    store.dispatch(importQueueItemAdded({ ...importedItem, id: "import-2" }));
     store.dispatch(startFastCutRequested());
     await vi.waitFor(() => expect(selectExportQueue(store.getState())).toHaveLength(2));
     await Promise.resolve();
@@ -731,7 +730,7 @@ describe("export thunks and runtime queue", () => {
     );
     expect(selectQueueStarted(store.getState())).toBe(false);
 
-    store.dispatch(importedQueueItemAdded({ ...importedItem, id: "import-2" }));
+    store.dispatch(importQueueItemAdded({ ...importedItem, id: "import-2" }));
     store.dispatch(startFastCutRequested());
     await vi.waitFor(() =>
       expect(selectExportQueue(store.getState())[1]?.status).toBe("completed"),

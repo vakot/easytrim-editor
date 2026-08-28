@@ -2,28 +2,25 @@ import { act, fireEvent, render, screen, waitFor, within } from "@testing-librar
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { MediaCapabilities, MediaInfo, SourceDropEvent } from "../lib/tauri/media";
-import type { SourceRef } from "../domain/source";
-import { store } from "../app/store/store";
-import {
-  PANEL_IDS,
-  panelsResetToDefault,
-  panelCollapsedChanged,
-  type PanelResetRequest,
-} from "../app/store/slices/panel-layout-slice";
+import { DEFAULT_PREFERENCES } from "../app/preferences";
+import { sourceCleared } from "../app/store/actions/source-actions";
 import {
   createEditorToolsStateFromPreferences,
   editorToolsInitialized,
 } from "../app/store/slices/editor-tools-slice";
-import { sourceCleared } from "../app/store/actions/source-actions";
+import { importQueueItemRemoved, selectimportQueueItems } from "../app/store/slices/export-slice";
 import {
-  importedQueueItemRemoved,
-  selectImportedQueueItems,
-} from "../app/store/slices/export-slice";
+  PANEL_IDS,
+  panelCollapsedChanged,
+  panelsResetToDefault,
+  type PanelResetRequest,
+} from "../app/store/slices/panel-layout-slice";
 import { selectHasSource } from "../app/store/slices/source-slice";
 import { startSourceMediaRuntime } from "../app/store/source-media-runtime";
+import { store } from "../app/store/store";
 import { checkMediaCapabilitiesRequested } from "../app/store/thunks/source-media-thunks";
-import { DEFAULT_PREFERENCES } from "../app/preferences";
+import type { SourceRef } from "../domain/source";
+import type { MediaCapabilities, MediaInfo, SourceDropEvent } from "../lib/tauri/media";
 
 const mocks = vi.hoisted(() => ({
   checkMediaCapabilities: vi.fn(),
@@ -164,8 +161,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   store.dispatch(panelsResetToDefault(RESET_ALL_PANELS));
   store.dispatch(sourceCleared());
-  for (const item of selectImportedQueueItems(store.getState())) {
-    store.dispatch(importedQueueItemRemoved(item.id));
+  for (const item of selectimportQueueItems(store.getState())) {
+    store.dispatch(importQueueItemRemoved(item.id));
   }
   store.dispatch(
     editorToolsInitialized(createEditorToolsStateFromPreferences(DEFAULT_PREFERENCES)),
@@ -270,7 +267,7 @@ describe("App", () => {
       "aria-expanded",
       "true",
     );
-    expect(screen.getByRole("button", { name: "Imported queue" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "Import queue" })).toHaveAttribute(
       "aria-expanded",
       "true",
     );
@@ -501,7 +498,7 @@ describe("App", () => {
       "aria-expanded",
       "true",
     );
-    expect(screen.getByRole("button", { name: "Imported queue" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "Import queue" })).toHaveAttribute(
       "aria-expanded",
       "true",
     );
@@ -617,7 +614,7 @@ describe("App", () => {
     expect(playbackSpeedButton).not.toHaveClass("text-primary");
     expect(within(videoTimelineRow as HTMLElement).queryByText("Video")).not.toBeInTheDocument();
     const sourceDetailsPanel = screen.getByTestId(PANEL_IDS.sourceDetails);
-    for (const sectionName of ["Media details", "Imported queue", "Export queue"]) {
+    for (const sectionName of ["Media details", "Import queue", "Export queue"]) {
       const trigger = within(sourceDetailsPanel).getByRole("button", { name: sectionName });
       const content = within(sourceDetailsPanel).getByRole("region", { name: sectionName });
       expect(trigger).toHaveAttribute("aria-expanded", "true");
@@ -737,12 +734,12 @@ describe("App", () => {
     await waitForSourcePresence(true);
     store.dispatch(
       panelCollapsedChanged({
-        panelId: PANEL_IDS.sidebarImportedQueue,
+        panelId: PANEL_IDS.sidebarimportQueue,
         collapsed: true,
       }),
     );
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: "Imported queue" })).toHaveAttribute(
+      expect(screen.getByRole("button", { name: "Import queue" })).toHaveAttribute(
         "aria-expanded",
         "false",
       ),
@@ -767,7 +764,7 @@ describe("App", () => {
       "aria-pressed",
       "true",
     );
-    expect(screen.getByRole("button", { name: "Imported queue" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "Import queue" })).toHaveAttribute(
       "aria-expanded",
       "false",
     );

@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import type { ImportedQueueItem } from "@/app/store/slices/export-slice";
+import type { importQueueItem } from "@/app/store/slices/export-slice";
 import { getReplacementImportedItem } from "../imported-queue";
 
 const items = [
   { id: "a", status: "imported", origin: "source-import" },
   { id: "b", status: "imported", origin: "source-import" },
   { id: "c", status: "imported", origin: "source-import" },
-] as ImportedQueueItem[];
+] as importQueueItem[];
 
 describe("getReplacementImportedItem", () => {
   it("prefers the next item", () => {

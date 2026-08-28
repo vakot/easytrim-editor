@@ -5,7 +5,7 @@ export type {
   ExportSettings,
   ExportStatus,
   ImportedOrigin,
-  ImportedQueueItem,
+  importQueueItem,
   QueueItem,
   QueueItemBase,
   QueueItemStatus,
