@@ -12,7 +12,7 @@ Build a minimal React + TypeScript + Vite interface that the project owner can r
 Follow the auto-loaded `AGENTS.md`. Before frontend changes, read:
 
 - [repository structure](../../rules/structure.md);
-- [quality gates](../../rules/quality.md);
+- [quality gates](../../rules/verification.md);
 - [runtime and security](../../rules/security-runtime.md) when IPC, paths, state lifetime, or local assets are involved;
 - [UI contract](references/ui-contract.md).
 
@@ -31,12 +31,16 @@ Use `easytrim-editor-tauri-rust` for IPC/native changes and `easytrim-editor-ffm
   interaction concerns; do not introduce another state library or ad-hoc application
   context.
 - Keep app-level Context declarations under `app/contexts/` and their Provider
-  implementations under `app/components/Providers/`; feature-owned Contexts and the
+  implementations under `app/components/providers/`; feature-owned Contexts and the
   theme subsystem remain with their owning feature/subsystem.
 - Keep Tauri calls behind the typed adapter defined by the structure rule.
 - Keep FFmpeg strings, path validation, and process details out of components.
 - Load no analytics, remote assets, fonts, or network resources.
-- Keep feature components primarily presentational; move effects and stateful workflows to `hooks/` or the app composition layer and pure transformations to `utils/`.
+- Let feature orchestration roots own capability state/logic orchestration and feature layout;
+  they may select and dispatch Redux state intrinsic to the capability. Move cohesive interaction
+  logic and effects to feature `hooks/` when that creates a meaningful responsibility. Keep
+  focused nested components presentational by default, and group semantic pure/internal modules
+  under `lib/` only when enough related files justify it.
 
 ## Model editor state explicitly
 

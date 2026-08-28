@@ -12,7 +12,7 @@ Treat media behavior as correctness-sensitive. Preserve the selected interval an
 Follow the auto-loaded `AGENTS.md`. Before media changes, read:
 
 - [runtime and security](../../rules/security-runtime.md);
-- [quality gates](../../rules/quality.md);
+- [quality gates](../../rules/verification.md);
 - [media contracts](references/media-contracts.md).
 
 Inspect media DTOs, builders, capability detection, and fixtures, then probe representative inputs before assuming stream layout, timing, rotation, color metadata, or compatibility.
