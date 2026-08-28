@@ -10,30 +10,28 @@ import {
   type Persistor,
 } from "redux-persist";
 
-import { createPersistedReducer, reduxStorage, type PersistStorage } from "@/app/store/persistence";
+import { sourceFailed, sourceReady } from "@/app/store/actions/source-actions";
 import { appMiddleware } from "@/app/store/middleware";
-import { panelLayoutReducer } from "@/app/store/slices/panel-layout-slice";
+import { createPersistedReducer, reduxStorage, type PersistStorage } from "@/app/store/persistence";
 import { audioReducer } from "@/app/store/slices/audio-slice";
 import { cropReducer } from "@/app/store/slices/crop-slice";
-import { exportPresetsReducer } from "@/app/store/slices/export-presets-slice";
-import { exportReducer } from "@/app/store/slices/export-slice";
-import { importWorkflowReducer } from "@/app/store/slices/import-workflow-slice";
-import { preferencesReducer } from "@/app/store/slices/preferences-slice";
 import {
   createEditorToolsStateFromPreferences,
   editorToolsInitialized,
   editorToolsReducer,
 } from "@/app/store/slices/editor-tools-slice";
+import { exportPresetsReducer } from "@/app/store/slices/export-presets-slice";
+import { exportReducer } from "@/app/store/slices/export-slice";
+import { importWorkflowReducer } from "@/app/store/slices/import-workflow-slice";
+import { preferencesReducer } from "@/app/store/slices/preferences-slice";
 import { previewReducer } from "@/app/store/slices/preview-slice";
 import { sourceReducer } from "@/app/store/slices/source-slice";
 import { themeReducer } from "@/app/store/slices/theme-slice";
 import { trimReducer } from "@/app/store/slices/trim-slice";
-import { sourceFailed, sourceReady } from "@/app/store/actions/source-actions";
 
 const combinedReducer = combineReducers({
   audio: audioReducer,
   crop: cropReducer,
-  panelLayout: panelLayoutReducer,
   editorTools: editorToolsReducer,
   export: exportReducer,
   exportPresets: exportPresetsReducer,

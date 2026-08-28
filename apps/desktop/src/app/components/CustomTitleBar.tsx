@@ -1,7 +1,7 @@
 import { Copy, Minus, Square, X } from "lucide-react";
+import type { MouseEvent, PointerEvent, ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { MouseEvent, PointerEvent, ReactNode } from "react";
 
 import {
   closeWindow,
