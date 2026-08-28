@@ -34,7 +34,7 @@ choosing Redux.
 - Make one application store at the appropriate React composition boundary.
 - Use Redux Toolkit with strict serializability checks and typed application hooks.
 - Keep application Redux infrastructure under `apps/desktop/src/app/store/`:
-  `store.ts`, `hooks.ts`, `persistence.ts`, and application-owned slices under
+  `store.ts`, `redux-hooks.ts`, `persistence.ts`, and application-owned slices under
   `slices/`. A feature-owned Redux domain may remain with its owning feature, following
   the repository dependency direction.
 - Keep `store.ts` composition-only. Put custom Redux middleware under

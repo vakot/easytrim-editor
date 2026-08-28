@@ -95,10 +95,11 @@ app/
 |   |-- editor-workspace/               # Application layout composition
 |   `-- providers/                      # Provider implementations and global initialization
 |-- contexts/                           # App-level Context contracts only
+|-- editor-interaction/                 # Cross-feature playback and synchronization logic
 |-- hooks/                              # Application and cross-feature hooks
 `-- store/
     |-- store.ts
-    |-- hooks.ts
+    |-- redux-hooks.ts
     |-- persistence.ts
     |-- middleware/
     `-- slices/
