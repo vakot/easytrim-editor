@@ -8,7 +8,11 @@ import { Slot } from "radix-ui";
 
 type PanelId = string;
 type PanelRef = React.RefObject<ResizablePrimitive.PanelImperativeHandle | null>;
-type PanelState = { ref: PanelRef; isCollapsed: boolean };
+type PanelState = {
+  ref: PanelRef;
+  isCollapsed: boolean;
+  isDefaultCollapsed: boolean;
+};
 
 type PanelRefsCollection = Record<PanelId, PanelState>;
 
@@ -141,29 +145,73 @@ function ResizableHandle({
   );
 }
 
-interface ResizablePanelToggleProps {
-  panelId: string;
-  children?: React.ReactNode | ((isCollapsed: boolean) => React.ReactNode);
+interface ResizablePanelControlState {
+  isCollapsed: boolean;
+  isMixed: boolean;
+  isExpanded: boolean;
 }
 
-function ResizablePanelToggle({ panelId, children }: ResizablePanelToggleProps) {
-  const panelState = usePanelState(panelId);
+interface ResizablePanelControlProps {
+  panelId: PanelId | PanelId[];
+  mode?: "toggle" | "collapse" | "expand" | "reset";
+  children?: React.ReactNode | ((state: ResizablePanelControlState) => React.ReactNode);
+}
 
-  const toggle = () => {
-    const panel = panelState?.ref.current;
-    if (!panel) return;
+function ResizablePanelControl({ panelId, mode = "toggle", children }: ResizablePanelControlProps) {
+  const panelIds = Array.isArray(panelId) ? panelId : [panelId];
+  const panelStates = usePanelStates(panelIds);
 
-    if (panelState.isCollapsed) {
-      panel.expand();
-    } else {
-      panel.collapse();
-    }
+  const handleExpand = () => {
+    panelStates.forEach((panelState) => {
+      if (panelState.isCollapsed) panelState.ref.current?.expand();
+    });
   };
 
-  const child =
-    typeof children === "function" ? children(panelState?.isCollapsed ?? false) : children;
+  const handleCollapse = () => {
+    panelStates.forEach((panelState) => {
+      if (!panelState.isCollapsed) panelState.ref.current?.collapse();
+    });
+  };
 
-  return <Slot.Root onClick={toggle}>{child}</Slot.Root>;
+  const handleReset = () => {
+    panelStates.forEach((panelState) => {
+      if (panelState.isCollapsed === panelState.isDefaultCollapsed) return;
+
+      if (panelState.isDefaultCollapsed) {
+        panelState.ref.current?.collapse();
+      } else {
+        panelState.ref.current?.expand();
+      }
+    });
+  };
+
+  const handleToggle = () => {
+    panelStates.forEach((panelState) => {
+      if (panelState.isCollapsed) {
+        panelState.ref.current?.expand();
+      } else {
+        panelState.ref.current?.collapse();
+      }
+    });
+  };
+
+  const collapsedPanelCount = Array.from(panelStates.values()).filter(
+    (panelState) => panelState.isCollapsed,
+  ).length;
+  const isCollapsed = panelStates.size > 0 && collapsedPanelCount === panelStates.size;
+  const isMixed = collapsedPanelCount > 0 && collapsedPanelCount < panelStates.size;
+  const isExpanded = panelStates.size > 0 && collapsedPanelCount === 0;
+
+  const child =
+    typeof children === "function" ? children({ isCollapsed, isMixed, isExpanded }) : children;
+  const handleClick = {
+    collapse: handleCollapse,
+    expand: handleExpand,
+    reset: handleReset,
+    toggle: handleToggle,
+  }[mode];
+
+  return <Slot.Root onClick={handleClick}>{child}</Slot.Root>;
 }
 
 function ResizablePanelContextProvider({ children }: React.PropsWithChildren) {
@@ -175,8 +223,28 @@ function ResizablePanelContextProvider({ children }: React.PropsWithChildren) {
       [panelId]: {
         ref: panelRef,
         isCollapsed: false,
+        isDefaultCollapsed: false,
       },
     }));
+
+    queueMicrotask(() => {
+      const isDefaultCollapsed = panelRef.current?.isCollapsed();
+      if (isDefaultCollapsed === undefined) return;
+
+      setPanels((panels) => {
+        const panel = panels[panelId];
+        if (!panel || panel.ref !== panelRef) return panels;
+
+        return {
+          ...panels,
+          [panelId]: {
+            ...panel,
+            isCollapsed: isDefaultCollapsed,
+            isDefaultCollapsed,
+          },
+        };
+      });
+    });
   }, []);
 
   const unregisterPanel = React.useCallback((panelId: PanelId) => {
@@ -249,9 +317,16 @@ function useResizablePanelContext() {
   return context;
 }
 
-function usePanelState(panelId: PanelId) {
+function usePanelStates(panelIds: PanelId[]) {
   const { panels } = useResizablePanelContext();
-  return panels[panelId];
+  const panelStates = new Map<PanelId, PanelState>();
+
+  panelIds.forEach((panelId) => {
+    const panelState = panels[panelId];
+    if (panelState) panelStates.set(panelId, panelState);
+  });
+
+  return panelStates;
 }
 
 const usePanelRef = ResizablePrimitive.usePanelRef;
@@ -262,10 +337,10 @@ export {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelContextProvider,
+  ResizablePanelControl,
   ResizablePanelGroup,
-  ResizablePanelToggle,
   useDefaultLayout,
   useGroupRef,
   usePanelRef,
 };
-export type { ResizableLayoutStorage };
+export type { ResizableLayoutStorage, ResizablePanelControlState };

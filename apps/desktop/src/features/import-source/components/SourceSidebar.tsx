@@ -3,8 +3,8 @@ import { Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from "@/compo
 import {
   ResizableHandle,
   ResizablePanel,
+  ResizablePanelControl,
   ResizablePanelGroup,
-  ResizablePanelToggle,
 } from "@/components/ui/resizable";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ChevronDown, ChevronRight, Ellipsis, Eye, EyeOff, RotateCcw } from "lucide-react";
@@ -23,7 +23,8 @@ export function SourceSidebar() {
   const { t } = useTranslation();
 
   const [panels, setPanels] = useState<Record<string, boolean>>(DEFAULT_PANELS);
-  const isSingle = Object.values(panels).filter(Boolean).length === 1;
+  const enabledCount = Object.values(panels).filter(Boolean).length;
+  const isSingle = enabledCount === 1;
 
   const handlePanelToggle = (panelId: string) => {
     setPanels({ ...panels, [panelId]: !panels[panelId] });
@@ -97,6 +98,7 @@ export function SourceSidebar() {
             </MenuItem>
             <MenuSeparator />
             <MenuItem
+              disabled={enabledCount === 3}
               icon={<RotateCcw className="size-3" aria-hidden="true" />}
               onSelect={(event) => {
                 event.preventDefault();
@@ -117,8 +119,8 @@ export function SourceSidebar() {
             collapsible
             collapsedSize={24}
           >
-            <ResizablePanelToggle panelId="workspace-sidebar-source-details">
-              {(isCollapsed) => (
+            <ResizablePanelControl panelId="workspace-sidebar-source-details">
+              {({ isCollapsed }) => (
                 <Button
                   variant="ghost"
                   size="xs"
@@ -133,7 +135,7 @@ export function SourceSidebar() {
                   {t("import.source.mediaDetails")}
                 </Button>
               )}
-            </ResizablePanelToggle>
+            </ResizablePanelControl>
             <PlaceholderRows label="sidebar-source-details" />
           </ResizablePanel>
         )}
@@ -148,8 +150,8 @@ export function SourceSidebar() {
               collapsible
               collapsedSize={24}
             >
-              <ResizablePanelToggle panelId="workspace-sidebar-import-queue">
-                {(isCollapsed) => (
+              <ResizablePanelControl panelId="workspace-sidebar-import-queue">
+                {({ isCollapsed }) => (
                   <Button
                     variant="ghost"
                     size="xs"
@@ -164,7 +166,7 @@ export function SourceSidebar() {
                     {t("import.source.importQueue")}
                   </Button>
                 )}
-              </ResizablePanelToggle>
+              </ResizablePanelControl>
               <PlaceholderRows label="workspace-sidebar-import-queue" />
             </ResizablePanel>
           </>
@@ -180,8 +182,8 @@ export function SourceSidebar() {
               collapsible
               collapsedSize={24}
             >
-              <ResizablePanelToggle panelId="workspace-sidebar-export-queue">
-                {(isCollapsed) => (
+              <ResizablePanelControl panelId="workspace-sidebar-export-queue">
+                {({ isCollapsed }) => (
                   <Button
                     variant="ghost"
                     size="xs"
@@ -196,7 +198,7 @@ export function SourceSidebar() {
                     {t("import.source.exportQueue")}
                   </Button>
                 )}
-              </ResizablePanelToggle>
+              </ResizablePanelControl>
               <PlaceholderRows label="workspace-sidebar-export-queue" />
             </ResizablePanel>
           </>

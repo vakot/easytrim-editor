@@ -51,7 +51,7 @@ export function EditorStage() {
   return (
     <ResizablePanelGroup id="editor-stage" persisted orientation="vertical">
       <ResizablePanel id="editor-stage-preview" minSize="14rem">
-        <div className="rounded-md border border-border h-full overflow-hidden bg-preview-surface">
+        <div className="relative rounded-md border border-border h-full overflow-hidden bg-preview-surface">
           <EditorStagePreview />
         </div>
       </ResizablePanel>
@@ -67,7 +67,7 @@ export function EditorStage() {
         className="pb-1"
         groupResizeBehavior="preserve-pixel-size"
       >
-        <div className="rounded-md border border-border h-full overflow-hidden bg-card/30">
+        <div className="relative rounded-md border border-border h-full overflow-hidden bg-card/30">
           <EditorStageTimeline />
         </div>
       </ResizablePanel>
@@ -100,7 +100,11 @@ function EditorStagePreview() {
         onEnded={playback.onEnded}
         onCropToolOpenChange={playback.onCropToolOpenChange}
       />
-      <EditorStageLoading loading={sourceSelection !== null && preview.status !== "failed"}>
+      <EditorStageLoading
+        loading={
+          sourceSelection !== null && preview.status !== "failed" && preview.status === "loading"
+        }
+      >
         {preview.status === "loading" && preview.kind === "proxy"
           ? t("preview.preparing")
           : t("preview.opening")}

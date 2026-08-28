@@ -3,8 +3,8 @@ import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelContextProvider,
+  ResizablePanelControl,
   ResizablePanelGroup,
-  ResizablePanelToggle,
 } from "@/components/ui/resizable";
 import { cn } from "@/lib/utils";
 import { ChevronDown } from "lucide-react";
@@ -23,40 +23,40 @@ function Playground() {
           >
             <ResizablePanelGroup id="pane-view" persisted orientation="vertical">
               <ResizablePanel id="pane-view-1" collapsible collapsedSize={24} minSize={120}>
-                <ResizablePanelToggle panelId="pane-view-1">
-                  {(isCollapsed) => (
+                <ResizablePanelControl panelId="pane-view-1">
+                  {({ isCollapsed }) => (
                     <Button variant="ghost" size="xs" className="px-2 justify-baseline w-full">
                       <ChevronDown className={cn(isCollapsed && "-rotate-90")} />
                       Toggle 1
                     </Button>
                   )}
-                </ResizablePanelToggle>
+                </ResizablePanelControl>
               </ResizablePanel>
 
               <ResizableHandle />
 
               <ResizablePanel id="pane-view-2" collapsible collapsedSize={24} minSize={120}>
-                <ResizablePanelToggle panelId="pane-view-2">
-                  {(isCollapsed) => (
+                <ResizablePanelControl panelId="pane-view-2">
+                  {({ isCollapsed }) => (
                     <Button variant="ghost" size="xs" className="px-2 justify-baseline w-full">
                       <ChevronDown className={cn(isCollapsed && "-rotate-90")} />
                       Toggle 2
                     </Button>
                   )}
-                </ResizablePanelToggle>
+                </ResizablePanelControl>
               </ResizablePanel>
 
               <ResizableHandle />
 
               <ResizablePanel id="pane-view-3" collapsible collapsedSize={24} minSize={120}>
-                <ResizablePanelToggle panelId="pane-view-3">
-                  {(isCollapsed) => (
+                <ResizablePanelControl panelId="pane-view-3">
+                  {({ isCollapsed }) => (
                     <Button variant="ghost" size="xs" className="px-2 justify-baseline w-full">
                       <ChevronDown className={cn(isCollapsed && "-rotate-90")} />
                       Toggle 3
                     </Button>
                   )}
-                </ResizablePanelToggle>
+                </ResizablePanelControl>
               </ResizablePanel>
             </ResizablePanelGroup>
           </ResizablePanel>

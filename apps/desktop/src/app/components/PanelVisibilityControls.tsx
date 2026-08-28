@@ -4,12 +4,13 @@ import {
   PanelBottomDashed,
   PanelLeft,
   PanelLeftDashed,
+  RotateCcw,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from "@/components/ui/menu";
-import { ResizablePanelToggle } from "@/components/ui/resizable";
+import { ResizablePanelControl } from "@/components/ui/resizable";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export function PanelVisibilityControls() {
@@ -29,8 +30,8 @@ export function PanelVisibilityControls() {
           </Button>
         </MenuTrigger>
         <MenuContent>
-          <ResizablePanelToggle panelId="workspace-sidebar">
-            {(isCollapsed) => (
+          <ResizablePanelControl panelId="workspace-sidebar">
+            {({ isCollapsed }) => (
               <MenuItem
                 icon={
                   isCollapsed ? (
@@ -44,9 +45,9 @@ export function PanelVisibilityControls() {
                 {t("app.panels.leftPanel")}
               </MenuItem>
             )}
-          </ResizablePanelToggle>
-          <ResizablePanelToggle panelId="editor-stage-timeline">
-            {(isCollapsed) => (
+          </ResizablePanelControl>
+          <ResizablePanelControl panelId="editor-stage-timeline">
+            {({ isCollapsed }) => (
               <MenuItem
                 icon={
                   isCollapsed ? (
@@ -60,23 +61,28 @@ export function PanelVisibilityControls() {
                 {t("app.panels.bottomPanel")}
               </MenuItem>
             )}
-          </ResizablePanelToggle>
+          </ResizablePanelControl>
           <MenuSeparator />
-          {/* <MenuItem
-            icon={<RotateCcw className="size-3" aria-hidden="true" />}
-            onSelect={(event) => {
-              event.preventDefault();
-              dispatch(panelsResetToDefault(DEFAULT_PANEL_RESETS));
-            }}
+          <ResizablePanelControl
+            panelId={["workspace-sidebar", "editor-stage-timeline"]}
+            mode="reset"
           >
-            {t("app.panels.resetLayout")}
-          </MenuItem> */}
+            {({ isExpanded }) => (
+              <MenuItem
+                disabled={isExpanded}
+                icon={<RotateCcw className="size-3" aria-hidden="true" />}
+                onSelect={(event) => event.preventDefault()}
+              >
+                {t("app.panels.resetLayout")}
+              </MenuItem>
+            )}
+          </ResizablePanelControl>
         </MenuContent>
       </Menu>
       <Tooltip>
         <TooltipTrigger asChild>
-          <ResizablePanelToggle panelId="workspace-sidebar">
-            {(isCollapsed) => (
+          <ResizablePanelControl panelId="workspace-sidebar">
+            {({ isCollapsed }) => (
               <Button variant="ghost" size="icon-sm">
                 {isCollapsed ? (
                   <PanelLeftDashed aria-hidden="true" />
@@ -85,7 +91,7 @@ export function PanelVisibilityControls() {
                 )}
               </Button>
             )}
-          </ResizablePanelToggle>
+          </ResizablePanelControl>
         </TooltipTrigger>
         <TooltipContent>
           {t("app.panels.togglePanel", { panel: t("app.panels.leftPanel") })}
@@ -94,8 +100,8 @@ export function PanelVisibilityControls() {
 
       <Tooltip>
         <TooltipTrigger asChild>
-          <ResizablePanelToggle panelId="editor-stage-timeline">
-            {(isCollapsed) => (
+          <ResizablePanelControl panelId="editor-stage-timeline">
+            {({ isCollapsed }) => (
               <Button variant="ghost" size="icon-sm">
                 {isCollapsed ? (
                   <PanelBottomDashed aria-hidden="true" />
@@ -104,7 +110,7 @@ export function PanelVisibilityControls() {
                 )}
               </Button>
             )}
-          </ResizablePanelToggle>
+          </ResizablePanelControl>
         </TooltipTrigger>
         <TooltipContent>
           {t("app.panels.togglePanel", { panel: t("app.panels.bottomPanel") })}
