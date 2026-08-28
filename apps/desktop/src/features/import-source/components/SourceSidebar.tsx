@@ -6,6 +6,8 @@ import {
   ResizablePanelControl,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ChevronDown, ChevronRight, Ellipsis, Eye, EyeOff, RotateCcw } from "lucide-react";
 import { useState } from "react";
@@ -118,6 +120,7 @@ export function SourceSidebar() {
             minSize={120}
             collapsible
             collapsedSize={24}
+            className="flex min-h-0 flex-col overflow-hidden"
           >
             <ResizablePanelControl panelId="workspace-sidebar-source-details">
               {({ isCollapsed }) => (
@@ -142,13 +145,16 @@ export function SourceSidebar() {
 
         {panels["workspace-sidebar-import-queue"] && (
           <>
-            <ResizableHandle className="my-0.5" />
+            <ResizableHandle className="px-2 bg-transparent" style={{ height: 4 }}>
+              <Separator />
+            </ResizableHandle>
 
             <ResizablePanel
               id="workspace-sidebar-import-queue"
               minSize={120}
               collapsible
               collapsedSize={24}
+              className="flex min-h-0 flex-col overflow-hidden"
             >
               <ResizablePanelControl panelId="workspace-sidebar-import-queue">
                 {({ isCollapsed }) => (
@@ -174,13 +180,16 @@ export function SourceSidebar() {
 
         {panels["workspace-sidebar-export-queue"] && (
           <>
-            <ResizableHandle className="my-0.5" />
+            <ResizableHandle className="px-2 bg-transparent" style={{ height: 4 }}>
+              <Separator />
+            </ResizableHandle>
 
             <ResizablePanel
               id="workspace-sidebar-export-queue"
               minSize={120}
               collapsible
               collapsedSize={24}
+              className="flex min-h-0 flex-col overflow-hidden"
             >
               <ResizablePanelControl panelId="workspace-sidebar-export-queue">
                 {({ isCollapsed }) => (
@@ -212,10 +221,12 @@ function PlaceholderRows({ label }: { label: string }) {
   const { t } = useTranslation();
 
   return (
-    <div className="space-y-1 p-2 text-xs text-muted-foreground">
-      {PLACEHOLDER_ROWS.map((row) => (
-        <p key={row}>{t("import.source.placeholder", { label, row })}</p>
-      ))}
-    </div>
+    <ScrollArea type="auto" className="min-h-0 flex-1">
+      <div className="space-y-1 p-2 text-xs text-muted-foreground">
+        {PLACEHOLDER_ROWS.map((row) => (
+          <p key={row}>{t("import.source.placeholder", { label, row })}</p>
+        ))}
+      </div>
+    </ScrollArea>
   );
 }

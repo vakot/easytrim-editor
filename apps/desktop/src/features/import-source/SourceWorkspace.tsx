@@ -24,6 +24,7 @@ export function SourceWorkspace() {
         minSize="15rem"
         maxSize="30rem"
         groupResizeBehavior="preserve-pixel-size"
+        className="overflow-hidden"
       >
         <div className="h-full pl-1 pb-1">
           <div className="rounded-md border border-border h-full overflow-hidden bg-card/30">
@@ -34,7 +35,7 @@ export function SourceWorkspace() {
 
       <ResizableHandle withHandle style={{ width: 4 }} className="bg-transparent" />
 
-      <ResizablePanel id="workspace-content" minSize="44rem">
+      <ResizablePanel id="workspace-content" minSize="44rem" className="overflow-hidden">
         <div className="relative h-full pr-1">
           <EditorStage key={activeItemId ?? sourceSelection?.sourcePath ?? "no-source"} />
           {isSourceDragActive ? <DropOverlay /> : null}

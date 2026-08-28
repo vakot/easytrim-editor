@@ -20,17 +20,17 @@ export function TimelinePane({ range, timeline, audioTracks }: TimelinePaneProps
       data-slot="timeline-pane"
       style={timelineGeometryStyle(range)}
       className={cn(
-        "size-full min-h-0 min-w-0 overflow-hidden",
+        "size-full min-h-0 min-w-0 overflow-hidden px-5",
         hasAudioTracks && "grid grid-rows-[auto_auto_minmax(0,1fr)]",
       )}
     >
-      <div className="min-w-0 px-5 py-4" data-testid="timeline-fixed-content">
+      <div className="min-w-0 py-4" data-testid="timeline-fixed-content">
         {timeline}
       </div>
-      {hasAudioTracks ? <Separator className="mx-5" /> : null}
+      {hasAudioTracks ? <Separator /> : null}
       {hasAudioTracks ? (
         <ScrollArea type="auto" className="min-h-0 min-w-0" data-testid="audio-tracks-scroll">
-          <div className="min-w-0 px-5 py-4">{audioTracks}</div>
+          <div className="min-w-0 py-4">{audioTracks}</div>
         </ScrollArea>
       ) : null}
     </div>

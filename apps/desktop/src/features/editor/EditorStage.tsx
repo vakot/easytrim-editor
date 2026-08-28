@@ -50,7 +50,7 @@ export function EditorStage() {
 
   return (
     <ResizablePanelGroup id="editor-stage" persisted orientation="vertical">
-      <ResizablePanel id="editor-stage-preview" minSize="14rem">
+      <ResizablePanel id="editor-stage-preview" minSize="14rem" className="overflow-hidden">
         <div className="relative rounded-md border border-border h-full overflow-hidden bg-preview-surface">
           <EditorStagePreview />
         </div>
@@ -64,7 +64,7 @@ export function EditorStage() {
         collapsedSize={timelinePanelSizing.collapsedSize}
         minSize={timelinePanelSizing.constraints.minSize}
         maxSize={timelinePanelSizing.constraints.maxSize}
-        className="pb-1"
+        className="overflow-hidden pb-1"
         groupResizeBehavior="preserve-pixel-size"
       >
         <div className="relative rounded-md border border-border h-full overflow-hidden bg-card/30">
