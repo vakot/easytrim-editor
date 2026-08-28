@@ -1,8 +1,8 @@
-import type { ImportedQueueItem } from "@/app/store/slices/export-slice";
+import type { importQueueItem } from "@/app/store/slices/export-slice";
 
 export function getReplacementImportedItem(
-  items: ImportedQueueItem[],
+  items: importQueueItem[],
   currentIndex: number,
-): ImportedQueueItem | null {
+): importQueueItem | null {
   return items[currentIndex + 1] ?? items[currentIndex - 1] ?? null;
 }

@@ -12,6 +12,7 @@ export const sk = {
     close: "Zavrieť",
     retry: "Skúsiť znova",
     unknown: "Neznáme",
+    loading: "Načítava sa...",
   },
   statusBar: {
     exportProgress: "Priebeh exportu",
@@ -150,7 +151,7 @@ export const sk = {
       sidebarSections: "Sekcie bočného panela zdroja",
       sidebarControls: "Vybrať viditeľné panely zdroja",
       mediaDetails: "Detaily médií",
-      importedQueue: "Importovaný front",
+      importQueue: "Importu front",
       exportQueue: "Exportný front",
       placeholder: "{{label}} zástupný obsah {{row}}",
       details: "Detaily zdroja",

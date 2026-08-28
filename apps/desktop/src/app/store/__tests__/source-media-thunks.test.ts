@@ -1,9 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { MediaInfo, WaveformResult } from "@/lib/tauri/media";
-import type { SourceRef } from "@/domain/source";
-import { createAppStore } from "@/app/store/store";
-import type { AppDispatch, RootState } from "@/app/store/store";
+import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
 import {
   audioMergeToggled,
   audioTrackToggled,
@@ -14,30 +11,32 @@ import {
   selectMasterAudio,
   selectMergeAudio,
 } from "@/app/store/slices/audio-slice";
+import { cropChanged, selectCrop } from "@/app/store/slices/crop-slice";
 import {
   activeQueueItemChanged,
-  importedQueueItemAdded,
+  importQueueItemAdded,
   queueEntryAdded,
   selectActiveItemId,
   selectExportQueue,
-  selectImportedQueueItems,
+  selectimportQueueItems,
   type ExportQueueItem,
 } from "@/app/store/slices/export-slice";
-import { cropChanged, selectCrop } from "@/app/store/slices/crop-slice";
+import {
+  selectIsChoosingSource,
+  selectIsNativeDialogOpen,
+} from "@/app/store/slices/import-workflow-slice";
 import { selectPreview } from "@/app/store/slices/preview-slice";
 import {
+  selectCapabilities,
   selectHasSource,
   selectSourceError,
   selectSourceMedia,
   selectSourceSelection,
   selectSourceStatus,
-  selectCapabilities,
 } from "@/app/store/slices/source-slice";
-import {
-  selectIsChoosingSource,
-  selectIsNativeDialogOpen,
-} from "@/app/store/slices/import-workflow-slice";
-import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
+import { trimChanged } from "@/app/store/slices/trim-slice";
+import type { AppDispatch, RootState } from "@/app/store/store";
+import { createAppStore } from "@/app/store/store";
 import {
   checkMediaCapabilitiesRequested,
   chooseSourceRequested,
@@ -45,11 +44,12 @@ import {
   handlePreviewPlaybackError,
   ingestSources,
   leaveActiveImportedItem,
-  prepareSourceWaveforms,
   navigateToImportedItem,
+  prepareSourceWaveforms,
 } from "@/app/store/thunks/source-media-thunks";
-import { trimChanged } from "@/app/store/slices/trim-slice";
 import type { EditorSnapshot } from "@/domain/editor-snapshot";
+import type { SourceRef } from "@/domain/source";
+import type { MediaInfo, WaveformResult } from "@/lib/tauri/media";
 
 const mocks = vi.hoisted(() => ({
   checkMediaCapabilities: vi.fn(),
@@ -125,7 +125,7 @@ function createDeferred<T>() {
 const ingestAndActivateSource =
   (source: SourceRef) => async (dispatch: AppDispatch, getState: () => RootState) => {
     dispatch(ingestSources([source]));
-    const itemId = selectImportedQueueItems(getState()).at(-1)?.id;
+    const itemId = selectimportQueueItems(getState()).at(-1)?.id;
     await vi.waitFor(() => {
       if (selectActiveItemId(getState()) !== itemId) return;
       expect(["ready", "failed"]).toContain(selectSourceStatus(getState()));
@@ -213,19 +213,19 @@ describe("source/media orchestration thunks", () => {
       previews: [audioPreview(firstSource.sourcePath, 1), audioPreview(firstSource.sourcePath, 2)],
     });
     expect(mocks.prepareAudioPreviews).toHaveBeenCalledWith(firstSource.sourcePath, [1, 2]);
-    expect(selectImportedQueueItems(appStore.getState())).toHaveLength(1);
-    expect(selectImportedQueueItems(appStore.getState())[0]?.origin).toBe("source-import");
+    expect(selectimportQueueItems(appStore.getState())).toHaveLength(1);
+    expect(selectimportQueueItems(appStore.getState())[0]?.origin).toBe("source-import");
     expect(selectActiveItemId(appStore.getState())).toBe(
-      selectImportedQueueItems(appStore.getState())[0]?.id,
+      selectimportQueueItems(appStore.getState())[0]?.id,
     );
   });
 
-  it("keeps distinct imported queue items for repeated paths and restores drafts by id", async () => {
+  it("keeps distinct import queue items for repeated paths and restores drafts by id", async () => {
     const appStore = createAppStore();
     mocks.inspectMedia.mockResolvedValue(createMedia(firstSource.sourcePath, 1));
 
     await appStore.dispatch(ingestAndActivateSource(firstSource));
-    const firstItem = selectImportedQueueItems(appStore.getState())[0];
+    const firstItem = selectimportQueueItems(appStore.getState())[0];
     expect(firstItem).toBeDefined();
     appStore.dispatch(
       trimChanged({
@@ -234,7 +234,7 @@ describe("source/media orchestration thunks", () => {
     );
 
     await appStore.dispatch(ingestAndActivateSource(firstSource));
-    const importedItems = selectImportedQueueItems(appStore.getState());
+    const importedItems = selectimportQueueItems(appStore.getState());
     expect(importedItems).toHaveLength(2);
     expect(new Set(importedItems.map((item) => item.id)).size).toBe(2);
     expect(importedItems.every((item) => item.origin === "source-import")).toBe(true);
@@ -292,7 +292,7 @@ describe("source/media orchestration thunks", () => {
 
     registeredSourcePath = secondSource.sourcePath;
     await appStore.dispatch(ingestAndActivateSource(secondSource));
-    const afterSecondImport = selectImportedQueueItems(appStore.getState());
+    const afterSecondImport = selectimportQueueItems(appStore.getState());
     const [firstItem, secondItem] = afterSecondImport;
     const idsAfterSecondImport = afterSecondImport.map((item) => item.id);
 
@@ -302,7 +302,7 @@ describe("source/media orchestration thunks", () => {
     expect(mocks.activateSourcePath).toHaveBeenCalledWith(firstSource.sourcePath);
     expect(selectSourceError(appStore.getState())).toBeNull();
     expect(selectActiveItemId(appStore.getState())).toBe(firstItem!.id);
-    expect(selectImportedQueueItems(appStore.getState()).map((item) => item.id)).toEqual(
+    expect(selectimportQueueItems(appStore.getState()).map((item) => item.id)).toEqual(
       idsAfterSecondImport,
     );
     expect(appStore.getState().trim.value).toMatchObject({
@@ -323,13 +323,13 @@ describe("source/media orchestration thunks", () => {
     );
     expect(mocks.activateSourcePath).toHaveBeenCalledWith(secondSource.sourcePath);
     expect(selectActiveItemId(appStore.getState())).toBe(secondItem!.id);
-    expect(selectImportedQueueItems(appStore.getState()).map((item) => item.id)).toEqual(
+    expect(selectimportQueueItems(appStore.getState()).map((item) => item.id)).toEqual(
       idsAfterSecondImport,
     );
 
     registeredSourcePath = thirdSource.sourcePath;
     await appStore.dispatch(ingestAndActivateSource(thirdSource));
-    const afterThirdImport = selectImportedQueueItems(appStore.getState());
+    const afterThirdImport = selectimportQueueItems(appStore.getState());
     const idsAfterThirdImport = afterThirdImport.map((item) => item.id);
     const thirdItem = afterThirdImport[2];
 
@@ -338,7 +338,7 @@ describe("source/media orchestration thunks", () => {
     await vi.waitFor(() => expect(selectSourceSelection(appStore.getState())).toEqual(firstSource));
 
     expect(selectActiveItemId(appStore.getState())).toBe(firstItem!.id);
-    expect(selectImportedQueueItems(appStore.getState()).map((item) => item.id)).toEqual(
+    expect(selectimportQueueItems(appStore.getState()).map((item) => item.id)).toEqual(
       idsAfterThirdImport,
     );
     expect(thirdItem?.id).toBe(idsAfterThirdImport[2]);
@@ -371,7 +371,7 @@ describe("source/media orchestration thunks", () => {
     appStore.dispatch(audioMergeToggled());
 
     await appStore.dispatch(ingestAndActivateSource(secondSource));
-    const importedItems = selectImportedQueueItems(appStore.getState());
+    const importedItems = selectimportQueueItems(appStore.getState());
     const [firstItem, secondItem] = importedItems;
     const queueIds = importedItems.map((item) => item.id);
     expect(appStore.dispatch(navigateToImportedItem(firstItem!.id))).toBe(true);
@@ -398,7 +398,7 @@ describe("source/media orchestration thunks", () => {
     expect(selectMasterAudio(appStore.getState())).toEqual({ enabled: true, volumePercent: 50 });
     expect(selectAudioTracks(appStore.getState())).toEqual([]);
     expect(selectMergeAudio(appStore.getState())).toBe(false);
-    expect(selectImportedQueueItems(appStore.getState()).map((item) => item.id)).toEqual(queueIds);
+    expect(selectimportQueueItems(appStore.getState()).map((item) => item.id)).toEqual(queueIds);
     expect(mocks.activateSourcePath).toHaveBeenCalledWith(secondSource.sourcePath);
     expect(mocks.activateSourcePath).not.toHaveBeenLastCalledWith(firstSource.sourcePath);
   });
@@ -408,7 +408,7 @@ describe("source/media orchestration thunks", () => {
     mocks.inspectMedia.mockResolvedValue(createMedia(firstSource.sourcePath, 1));
 
     await appStore.dispatch(ingestAndActivateSource(firstSource));
-    const importedItem = selectImportedQueueItems(appStore.getState())[0];
+    const importedItem = selectimportQueueItems(appStore.getState())[0];
     expect(importedItem?.origin).toBe("source-import");
     appStore.dispatch(
       trimChanged({
@@ -418,8 +418,8 @@ describe("source/media orchestration thunks", () => {
 
     await appStore.dispatch(leaveActiveImportedItem());
 
-    expect(selectImportedQueueItems(appStore.getState())).toHaveLength(1);
-    expect(selectImportedQueueItems(appStore.getState())[0]?.snapshot.trim).toEqual({
+    expect(selectimportQueueItems(appStore.getState())).toHaveLength(1);
+    expect(selectimportQueueItems(appStore.getState())[0]?.snapshot.trim).toEqual({
       startMicros: 750_000,
       endMicros: 3_500_000,
     });
@@ -431,7 +431,7 @@ describe("source/media orchestration thunks", () => {
     mocks.inspectMedia.mockResolvedValueOnce(createMedia(firstSource.sourcePath, 1));
 
     await appStore.dispatch(ingestAndActivateSource(firstSource));
-    const firstItem = selectImportedQueueItems(appStore.getState())[0];
+    const firstItem = selectimportQueueItems(appStore.getState())[0];
     appStore.dispatch(
       trimChanged({
         trim: { startMicros: 750_000, endMicros: 3_500_000, sourceDurationMicros: 5_000_000 },
@@ -444,7 +444,7 @@ describe("source/media orchestration thunks", () => {
 
     await appStore.dispatch(ingestAndActivateSource(secondSource));
 
-    expect(selectImportedQueueItems(appStore.getState())).toEqual([
+    expect(selectimportQueueItems(appStore.getState())).toEqual([
       expect.objectContaining({
         id: firstItem?.id,
         snapshot: expect.objectContaining({
@@ -478,8 +478,8 @@ describe("source/media orchestration thunks", () => {
       origin: "source-import" as const,
       snapshot: { ...snapshot, source: secondSource },
     };
-    appStore.dispatch(importedQueueItemAdded(fork));
-    appStore.dispatch(importedQueueItemAdded(target));
+    appStore.dispatch(importQueueItemAdded(fork));
+    appStore.dispatch(importQueueItemAdded(target));
     appStore.dispatch(activeQueueItemChanged(fork.id));
     mocks.inspectMedia.mockResolvedValue(createMedia(secondSource.sourcePath, 1));
 
@@ -488,7 +488,7 @@ describe("source/media orchestration thunks", () => {
       expect(selectSourceSelection(appStore.getState())).toEqual(secondSource),
     );
 
-    expect(selectImportedQueueItems(appStore.getState())).toEqual([target]);
+    expect(selectimportQueueItems(appStore.getState())).toEqual([target]);
     expect(selectActiveItemId(appStore.getState())).toBe(target.id);
   });
 
@@ -499,7 +499,7 @@ describe("source/media orchestration thunks", () => {
     await appStore.dispatch(ingestAndActivateSource(firstSource));
     await appStore.dispatch(ingestAndActivateSource(secondSource));
     await appStore.dispatch(ingestAndActivateSource(thirdSource));
-    const [firstItem, secondItem, thirdItem] = selectImportedQueueItems(appStore.getState());
+    const [firstItem, secondItem, thirdItem] = selectimportQueueItems(appStore.getState());
     expect(appStore.dispatch(navigateToImportedItem(secondItem!.id))).toBe(true);
     await vi.waitFor(() =>
       expect(selectSourceSelection(appStore.getState())).toEqual(secondSource),
@@ -507,7 +507,7 @@ describe("source/media orchestration thunks", () => {
 
     await appStore.dispatch(closeActiveImportedItemRequested());
 
-    expect(selectImportedQueueItems(appStore.getState()).map((item) => item.id)).toEqual([
+    expect(selectimportQueueItems(appStore.getState()).map((item) => item.id)).toEqual([
       firstItem!.id,
       thirdItem!.id,
     ]);
@@ -521,13 +521,13 @@ describe("source/media orchestration thunks", () => {
 
     await appStore.dispatch(ingestAndActivateSource(firstSource));
     await appStore.dispatch(ingestAndActivateSource(secondSource));
-    const [firstItem, secondItem] = selectImportedQueueItems(appStore.getState());
+    const [firstItem, secondItem] = selectimportQueueItems(appStore.getState());
     expect(selectActiveItemId(appStore.getState())).toBe(secondItem!.id);
 
     await appStore.dispatch(closeActiveImportedItemRequested());
     await vi.waitFor(() => expect(selectSourceSelection(appStore.getState())).toEqual(firstSource));
 
-    expect(selectImportedQueueItems(appStore.getState()).map((item) => item.id)).toEqual([
+    expect(selectimportQueueItems(appStore.getState()).map((item) => item.id)).toEqual([
       firstItem!.id,
     ]);
     expect(selectActiveItemId(appStore.getState())).toBe(firstItem!.id);
@@ -540,7 +540,7 @@ describe("source/media orchestration thunks", () => {
     await appStore.dispatch(ingestAndActivateSource(firstSource));
     await appStore.dispatch(closeActiveImportedItemRequested());
 
-    expect(selectImportedQueueItems(appStore.getState())).toEqual([]);
+    expect(selectimportQueueItems(appStore.getState())).toEqual([]);
     expect(selectActiveItemId(appStore.getState())).toBeNull();
     expect(selectHasSource(appStore.getState())).toBe(false);
   });
@@ -563,11 +563,11 @@ describe("source/media orchestration thunks", () => {
     appStore.dispatch(sourceSelected({ source: firstSource }));
     appStore.dispatch(sourceReady({ loadToken: 1, media: createMedia(firstSource.sourcePath, 1) }));
     appStore.dispatch(queueEntryAdded(historyItem));
-    appStore.dispatch(importedQueueItemAdded(importedItem));
+    appStore.dispatch(importQueueItemAdded(importedItem));
 
     await appStore.dispatch(closeActiveImportedItemRequested());
 
-    expect(selectImportedQueueItems(appStore.getState())).toEqual([]);
+    expect(selectimportQueueItems(appStore.getState())).toEqual([]);
     expect(selectExportQueue(appStore.getState())).toEqual([historyItem]);
   });
 
@@ -589,11 +589,11 @@ describe("source/media orchestration thunks", () => {
     appStore.dispatch(sourceSelected({ source: firstSource }));
     appStore.dispatch(sourceReady({ loadToken: 1, media: createMedia(firstSource.sourcePath, 1) }));
     appStore.dispatch(queueEntryAdded(historyItem));
-    appStore.dispatch(importedQueueItemAdded(fork));
+    appStore.dispatch(importQueueItemAdded(fork));
 
     await appStore.dispatch(closeActiveImportedItemRequested());
 
-    expect(selectImportedQueueItems(appStore.getState())).toEqual([]);
+    expect(selectimportQueueItems(appStore.getState())).toEqual([]);
     expect(selectExportQueue(appStore.getState())).toEqual([historyItem]);
     expect(selectHasSource(appStore.getState())).toBe(false);
   });
@@ -602,7 +602,7 @@ describe("source/media orchestration thunks", () => {
     const appStore = createAppStore();
     mocks.inspectMedia.mockResolvedValueOnce(createMedia(firstSource.sourcePath, 1));
     await appStore.dispatch(ingestAndActivateSource(firstSource));
-    const sourceItem = selectImportedQueueItems(appStore.getState())[0];
+    const sourceItem = selectimportQueueItems(appStore.getState())[0];
     const target = {
       id: "import-2",
       status: "imported" as const,
@@ -614,7 +614,7 @@ describe("source/media orchestration thunks", () => {
         audio: { master: { enabled: true, volumePercent: 50 }, tracks: [], mergeAudio: false },
       },
     };
-    appStore.dispatch(importedQueueItemAdded(target));
+    appStore.dispatch(importQueueItemAdded(target));
     appStore.dispatch(activeQueueItemChanged(sourceItem!.id));
     mocks.activateSourcePath.mockRejectedValueOnce({
       code: "io_failed",
@@ -629,7 +629,7 @@ describe("source/media orchestration thunks", () => {
       }),
     );
 
-    expect(selectImportedQueueItems(appStore.getState())).toEqual([
+    expect(selectimportQueueItems(appStore.getState())).toEqual([
       expect.objectContaining({ id: sourceItem?.id }),
       target,
     ]);
@@ -651,7 +651,7 @@ describe("source/media orchestration thunks", () => {
     await appStore.dispatch(ingestAndActivateSource(firstSource));
     await appStore.dispatch(ingestAndActivateSource(secondSource));
     await appStore.dispatch(ingestAndActivateSource(thirdSource));
-    const [firstItem, secondItem, thirdItem] = selectImportedQueueItems(appStore.getState());
+    const [firstItem, secondItem, thirdItem] = selectimportQueueItems(appStore.getState());
     expect(appStore.dispatch(navigateToImportedItem(secondItem!.id))).toBe(true);
     await vi.waitFor(() =>
       expect(selectSourceSelection(appStore.getState())).toEqual(secondSource),
@@ -669,7 +669,7 @@ describe("source/media orchestration thunks", () => {
       }),
     );
 
-    expect(selectImportedQueueItems(appStore.getState()).map((item) => item.id)).toEqual([
+    expect(selectimportQueueItems(appStore.getState()).map((item) => item.id)).toEqual([
       firstItem!.id,
       thirdItem!.id,
     ]);
@@ -690,19 +690,17 @@ describe("source/media orchestration thunks", () => {
         audio: { master: { enabled: true, volumePercent: 50 }, tracks: [], mergeAudio: false },
       },
     };
-    appStore.dispatch(importedQueueItemAdded(historyFork));
+    appStore.dispatch(importQueueItemAdded(historyFork));
     mocks.inspectMedia.mockResolvedValue(createMedia(secondSource.sourcePath, 1));
 
     await appStore.dispatch(ingestAndActivateSource(secondSource));
 
     expect(
-      selectImportedQueueItems(appStore.getState()).every(
-        (item) => item.origin === "source-import",
-      ),
+      selectimportQueueItems(appStore.getState()).every((item) => item.origin === "source-import"),
     ).toBe(true);
-    expect(selectImportedQueueItems(appStore.getState())).not.toContainEqual(historyFork);
+    expect(selectimportQueueItems(appStore.getState())).not.toContainEqual(historyFork);
     expect(selectActiveItemId(appStore.getState())).toBe(
-      selectImportedQueueItems(appStore.getState())[0]?.id,
+      selectimportQueueItems(appStore.getState())[0]?.id,
     );
   });
 

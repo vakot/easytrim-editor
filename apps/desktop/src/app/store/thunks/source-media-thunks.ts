@@ -1,9 +1,4 @@
-import {
-  capabilitiesFailed,
-  capabilitiesReady,
-  selectHasSource,
-  selectSourceSelection,
-} from "@/app/store/slices/source-slice";
+import { importQueueItemActivationRequested } from "@/app/store/actions/imported-queue-actions";
 import {
   sourceCleared,
   sourceErrorReported,
@@ -11,36 +6,51 @@ import {
   sourceReady,
   sourceSelected,
 } from "@/app/store/actions/source-actions";
-import { importedQueueItemActivationRequested } from "@/app/store/actions/imported-queue-actions";
+import { applyEditorSnapshot, createDefaultEditorSnapshot } from "@/app/store/editor-snapshot";
 import {
   audioPreviewsLoading,
   audioPreviewsReady,
   audioPreviewsUnavailable,
+  selectAudioTracks,
+  selectMasterAudio,
+  selectMergeAudio,
   waveformReady,
   waveformsFailed,
   waveformsLoading,
 } from "@/app/store/slices/audio-slice";
-import { previewFailed, previewLoading, previewReady } from "@/app/store/slices/preview-slice";
+import { selectCrop } from "@/app/store/slices/crop-slice";
+import {
+  activeQueueItemChanged,
+  importQueueItemRemoved,
+  importQueueItemsAdded,
+  queueItemSnapshotUpdated,
+  selectActiveQueueItem,
+  selectimportQueueItems,
+  type importQueueItem,
+} from "@/app/store/slices/export-slice";
 import {
   dropListenerErrorCleared,
   nativeDialogStateChanged,
   sourceChoiceFinished,
   sourceChoiceStarted,
 } from "@/app/store/slices/import-workflow-slice";
+import { selectMergeAudioEnabledDefault } from "@/app/store/slices/preferences-slice";
+import { previewFailed, previewLoading, previewReady } from "@/app/store/slices/preview-slice";
 import {
-  activeQueueItemChanged,
-  importedQueueItemsAdded,
-  importedQueueItemRemoved,
-  queueItemSnapshotUpdated,
-  selectActiveQueueItem,
-  selectImportedQueueItems,
-  type ImportedQueueItem,
-} from "@/app/store/slices/export-slice";
+  capabilitiesFailed,
+  capabilitiesReady,
+  selectHasSource,
+  selectSourceSelection,
+} from "@/app/store/slices/source-slice";
+import { selectTrim } from "@/app/store/slices/trim-slice";
+import type { AppDispatch, RootState } from "@/app/store/store";
+import { createEditorSnapshot } from "@/domain/editor-snapshot";
+import type { SourceRef } from "@/domain/source";
 import { getReplacementImportedItem } from "@/features/import-source/utils/imported-queue";
 import {
+  activateSourcePath,
   checkMediaCapabilities,
   chooseSource as chooseSourceDialog,
-  activateSourcePath,
   inspectMedia,
   normalizeAppError,
   prepareAudioPreviews,
@@ -50,18 +60,6 @@ import {
   type AppError,
   type PreviewKind,
 } from "@/lib/tauri/media";
-import type { SourceRef } from "@/domain/source";
-import { createEditorSnapshot } from "@/domain/editor-snapshot";
-import {
-  selectAudioTracks,
-  selectMasterAudio,
-  selectMergeAudio,
-} from "@/app/store/slices/audio-slice";
-import { selectMergeAudioEnabledDefault } from "@/app/store/slices/preferences-slice";
-import { selectCrop } from "@/app/store/slices/crop-slice";
-import { selectTrim } from "@/app/store/slices/trim-slice";
-import type { AppDispatch, RootState } from "@/app/store/store";
-import { applyEditorSnapshot, createDefaultEditorSnapshot } from "@/app/store/editor-snapshot";
 
 export type AppThunk<ReturnValue = void | Promise<unknown>> = (
   dispatch: AppDispatch,
@@ -97,7 +95,7 @@ export const ingestSources =
     if (sources.length === 0) return;
 
     const mergeAudio = selectMergeAudioEnabledDefault(getState());
-    const items: ImportedQueueItem[] = sources.map((source) => ({
+    const items: importQueueItem[] = sources.map((source) => ({
       id: `import-${++importedItemSequence}`,
       status: "imported",
       origin: "source-import",
@@ -105,7 +103,7 @@ export const ingestSources =
     }));
 
     dispatch(dropListenerErrorCleared());
-    dispatch(importedQueueItemsAdded(items));
+    dispatch(importQueueItemsAdded(items));
     dispatch(navigateToImportedItem(items[0]!.id));
   };
 
@@ -214,7 +212,7 @@ export const leaveActiveImportedItem = (): AppThunk => (dispatch, getState) => {
   if (activeItem.origin === "source-import") {
     captureActiveQueueItemDraft(dispatch, getState);
   } else {
-    dispatch(importedQueueItemRemoved(activeItem.id));
+    dispatch(importQueueItemRemoved(activeItem.id));
   }
 };
 
@@ -222,7 +220,7 @@ export const restoreActiveImportedItemRequested =
   (id: string): AppThunk<Promise<boolean>> =>
   async (dispatch, getState) => {
     const item = getState().export.queue.find(
-      (candidate): candidate is ImportedQueueItem =>
+      (candidate): candidate is importQueueItem =>
         candidate.id === id && candidate.status === "imported",
     );
     if (!item || getState().export.activeItemId !== id) return false;
@@ -275,7 +273,7 @@ export const navigateToImportedItem =
     const state = getState();
     const target = id
       ? state.export.queue.find(
-          (candidate): candidate is ImportedQueueItem =>
+          (candidate): candidate is importQueueItem =>
             candidate.id === id && candidate.status === "imported",
         )
       : null;
@@ -286,7 +284,7 @@ export const navigateToImportedItem =
     dispatch(leaveActiveImportedItem());
     dispatch(sourceCleared());
     dispatch(activeQueueItemChanged(id));
-    if (id !== null) dispatch(importedQueueItemActivationRequested({ id }));
+    if (id !== null) dispatch(importQueueItemActivationRequested({ id }));
     return true;
   };
 
@@ -331,11 +329,11 @@ export const closeActiveImportedItemRequested = (): AppThunk => (dispatch, getSt
     return;
   }
 
-  const importedItems = selectImportedQueueItems(state);
+  const importedItems = selectimportQueueItems(state);
   const activeIndex = importedItems.findIndex((item) => item.id === activeItem.id);
   const replacementItem = getReplacementImportedItem(importedItems, activeIndex);
 
-  dispatch(importedQueueItemRemoved(activeItem.id));
+  dispatch(importQueueItemRemoved(activeItem.id));
   dispatch(navigateToImportedItem(replacementItem?.id ?? null));
   dispatch(nativeDialogStateChanged(false));
 };

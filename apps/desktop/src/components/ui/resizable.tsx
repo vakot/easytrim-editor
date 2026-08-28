@@ -40,7 +40,7 @@ interface PersistedResizablePanelGroupProps extends Omit<
 
 function ResizablePanelGroupPersisted({
   id,
-  storage,
+  storage = localStorage,
   onLayoutChanged,
   children,
   ...props
@@ -50,7 +50,7 @@ function ResizablePanelGroupPersisted({
   const persistedLayout = ResizablePrimitive.useDefaultLayout({
     id,
     panelIds: panelIds ?? [],
-    storage: storage ?? (typeof localStorage === "undefined" ? undefined : localStorage),
+    storage,
   });
 
   return (
@@ -175,9 +175,7 @@ function ResizablePanelContextProvider({ children }: React.PropsWithChildren) {
       ...panels,
       [panelId]: {
         ref: panelRef,
-        isCollapsed: panelRef.current?.isCollapsed() ?? false,
-        isDisabled: false,
-        restoreState: "idle",
+        isCollapsed: false,
       },
     }));
   }, []);
@@ -218,20 +216,28 @@ function ResizablePanelContextProvider({ children }: React.PropsWithChildren) {
 }
 
 function getPanelIds(children: React.ReactNode): PanelId[] {
-  return React.Children.toArray(children)
-    .filter(
-      (child): child is React.ReactElement<React.ComponentProps<typeof ResizablePanel>> =>
-        React.isValidElement(child) && child.type === ResizablePanel,
-    )
-    .map((panel) => {
-      if (!panel.props.id) {
-        throw new Error(
-          "ResizablePanel must have an id when used within PersistedResizablePanelGroup",
-        );
-      }
+  const panelIds: PanelId[] = [];
 
-      return panel.props.id;
-    });
+  React.Children.forEach(children, (child) => {
+    if (!React.isValidElement(child)) return;
+
+    if (child.type === React.Fragment) {
+      const fragment = child as React.ReactElement<{ children?: React.ReactNode }>;
+      panelIds.push(...getPanelIds(fragment.props.children));
+      return;
+    }
+
+    if (child.type !== ResizablePanel) return;
+
+    const panel = child as React.ReactElement<React.ComponentProps<typeof ResizablePanel>>;
+    if (!panel.props.id) {
+      throw new Error("ResizablePanel must have an id when used within PersistedResizablePanelGroup");
+    }
+
+    panelIds.push(panel.props.id);
+  });
+
+  return panelIds;
 }
 
 function useResizablePanelContext() {

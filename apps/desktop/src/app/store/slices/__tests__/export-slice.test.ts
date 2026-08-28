@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 
+import { sourceSelected } from "@/app/store/actions/source-actions";
+import type { RootState } from "@/app/store/store";
+import { cropChanged } from "../crop-slice";
 import {
   exportCanceled,
   exportCompleted,
@@ -8,6 +11,8 @@ import {
   exportReducer,
   exportStarted,
   finishedExportsCleared,
+  importQueueItemAdded,
+  importQueueItemRemoved,
   initialExportState,
   optimizedExportDialogClosed,
   optimizedExportDialogOpened,
@@ -15,16 +20,11 @@ import {
   optimizedExportPlanReceived,
   optimizedExportPlanRequested,
   optimizedExportSettingsChanged,
-  importedQueueItemAdded,
-  importedQueueItemRemoved,
   queueEntryAdded,
   queueFinishActionChanged,
   queueStarted,
+  selectExportQueue,
 } from "../export-slice";
-import { cropChanged } from "../crop-slice";
-import { sourceSelected } from "@/app/store/actions/source-actions";
-import { selectExportQueue } from "../export-slice";
-import type { RootState } from "@/app/store/store";
 
 const settings = { resolution: { width: 1920, height: 1080 }, frameRate: undefined };
 const item = {
@@ -142,8 +142,8 @@ describe("export slice", () => {
       origin: "history-fork" as const,
       snapshot: item.snapshot,
     };
-    let state = exportReducer(initialExportState, importedQueueItemAdded(imported));
-    state = exportReducer(state, importedQueueItemRemoved(imported.id));
+    let state = exportReducer(initialExportState, importQueueItemAdded(imported));
+    state = exportReducer(state, importQueueItemRemoved(imported.id));
     expect(state.queue).toEqual([]);
     expect(state.activeItemId).toBeNull();
   });

@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { MediaInfo, SourceDropEvent } from "@/lib/tauri/media";
-import type { SourceRef } from "@/domain/source";
-import { createAppStore } from "@/app/store/store";
+import { selectimportQueueItems } from "@/app/store/slices/export-slice";
 import { selectIsSourceDragActive } from "@/app/store/slices/import-workflow-slice";
-import { selectSourceMedia, selectSourceError } from "@/app/store/slices/source-slice";
-import { selectImportedQueueItems } from "@/app/store/slices/export-slice";
+import { selectSourceError, selectSourceMedia } from "@/app/store/slices/source-slice";
 import { startSourceMediaRuntime } from "@/app/store/source-media-runtime";
+import { createAppStore } from "@/app/store/store";
+import type { SourceRef } from "@/domain/source";
+import type { MediaInfo, SourceDropEvent } from "@/lib/tauri/media";
 
 const mocks = vi.hoisted(() => ({
   checkMediaCapabilities: vi.fn(),
@@ -87,8 +87,8 @@ describe("source/media application runtime", () => {
     await vi.waitFor(() => expect(selectSourceMedia(appStore.getState())).toEqual(media));
     expect(mocks.inspectMedia).toHaveBeenCalledWith(source.sourcePath);
     expect(mocks.inspectMedia).toHaveBeenCalledOnce();
-    expect(selectImportedQueueItems(appStore.getState())).toHaveLength(2);
-    expect(selectImportedQueueItems(appStore.getState())[0]?.origin).toBe("source-import");
+    expect(selectimportQueueItems(appStore.getState())).toHaveLength(2);
+    expect(selectimportQueueItems(appStore.getState())[0]?.origin).toBe("source-import");
 
     stop();
     stop();

@@ -1,24 +1,5 @@
-import {
-  exportLaunchFailed,
-  optimizedExportDialogClosed,
-  optimizedExportDialogOpened,
-  optimizedExportPlanFailed,
-  optimizedExportPlanReceived,
-  optimizedExportPlanRequested,
-  optimizedExportSettingsChanged,
-  importedQueueItemAdded,
-  queueFinishActionsAvailable,
-  queueItemPromoted,
-  queuePaused,
-  queueStarted,
-  selectActiveItemId,
-  selectActiveQueueItem,
-  selectImportedQueueItems,
-  type QueueItemPromotion,
-  type ExportQueueItem,
-  type ExportSettings,
-  type ImportedQueueItem,
-} from "@/app/store/slices/export-slice";
+import { sourceFailed } from "@/app/store/actions/source-actions";
+import { applyEditorSnapshot } from "@/app/store/editor-snapshot";
 import {
   selectAudioTracks,
   selectMasterAudio,
@@ -26,23 +7,40 @@ import {
 } from "@/app/store/slices/audio-slice";
 import { selectCrop, selectCropApplied, selectCropResolution } from "@/app/store/slices/crop-slice";
 import {
+  exportLaunchFailed,
+  importQueueItemAdded,
+  optimizedExportDialogClosed,
+  optimizedExportDialogOpened,
+  optimizedExportPlanFailed,
+  optimizedExportPlanReceived,
+  optimizedExportPlanRequested,
+  optimizedExportSettingsChanged,
+  queueFinishActionsAvailable,
+  queueItemPromoted,
+  queuePaused,
+  queueStarted,
+  selectActiveItemId,
+  selectActiveQueueItem,
+  selectimportQueueItems,
+  type ExportQueueItem,
+  type ExportSettings,
+  type importQueueItem,
+  type QueueItemPromotion,
+} from "@/app/store/slices/export-slice";
+import { nativeDialogStateChanged } from "@/app/store/slices/import-workflow-slice";
+import {
   selectSourceMedia,
   selectSourceReady,
   selectSourceSelection,
 } from "@/app/store/slices/source-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
-import type { AppThunk } from "./source-media-thunks";
 import {
-  chooseOutputPath,
-  normalizeAppError,
-  planOptimizedExport,
-  reserveExportSource,
-  releaseExportSource,
-  type FastExportRequest,
-  type OptimizedExportRequest,
-} from "@/lib/tauri/media";
-import { availableQueueFinishActions, type QueueFinishAction } from "@/lib/tauri/queue";
-import { nativeDialogStateChanged } from "@/app/store/slices/import-workflow-slice";
+  activateSource,
+  leaveActiveImportedItem,
+  navigateToImportedItem,
+} from "@/app/store/thunks/source-media-thunks";
+import { cloneEditorSnapshot, createEditorSnapshot } from "@/domain/editor-snapshot";
+import { outputDefaults } from "@/features/export/utils/export-options";
 import {
   cancelActiveExport,
   cancelAllQueuedExports,
@@ -50,17 +48,19 @@ import {
   enqueueExport,
   setExportQueueExecutionEnabled,
 } from "@/features/export/utils/export-queue";
-import { outputDefaults } from "@/features/export/utils/export-options";
-import { cloneEditorSnapshot, createEditorSnapshot } from "@/domain/editor-snapshot";
-import { applyEditorSnapshot } from "@/app/store/editor-snapshot";
-import { activateSourcePath } from "@/lib/tauri/media";
-import {
-  activateSource,
-  leaveActiveImportedItem,
-  navigateToImportedItem,
-} from "@/app/store/thunks/source-media-thunks";
-import { sourceFailed } from "@/app/store/actions/source-actions";
 import { getReplacementImportedItem } from "@/features/import-source/utils/imported-queue";
+import {
+  activateSourcePath,
+  chooseOutputPath,
+  normalizeAppError,
+  planOptimizedExport,
+  releaseExportSource,
+  reserveExportSource,
+  type FastExportRequest,
+  type OptimizedExportRequest,
+} from "@/lib/tauri/media";
+import { availableQueueFinishActions, type QueueFinishAction } from "@/lib/tauri/queue";
+import type { AppThunk } from "./source-media-thunks";
 
 let optimizedPlanRequestSequence = 0;
 let restoreSequence = 0;
@@ -183,7 +183,7 @@ async function startQueuedExport(
       return;
     }
 
-    const currentImportedItems = selectImportedQueueItems(getState());
+    const currentImportedItems = selectimportQueueItems(getState());
     const replacementItem = getReplacementImportedItem(
       currentImportedItems,
       currentImportedItems.findIndex((item) => item.id === importedItemId),
@@ -320,13 +320,13 @@ export const restoreExportQueueItemRequested =
       const source = await activateSourcePath(item.snapshot.source.sourcePath);
       if (restorationId !== restoreSequence) return false;
 
-      const fork: ImportedQueueItem = {
+      const fork: importQueueItem = {
         id: `fork-${++historyForkSequence}`,
         status: "imported",
         origin: "history-fork",
         snapshot: cloneEditorSnapshot(item.snapshot),
       };
-      dispatch(importedQueueItemAdded(fork));
+      dispatch(importQueueItemAdded(fork));
       await dispatch(activateSource(source, fork.snapshot.audio.mergeAudio));
       if (restorationId !== restoreSequence) return false;
       const state = getState();

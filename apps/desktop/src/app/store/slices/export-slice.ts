@@ -2,6 +2,7 @@ import { createSelector, createSlice, type PayloadAction } from "@reduxjs/toolki
 
 import { sourceCleared, sourceSelected } from "@/app/store/actions/source-actions";
 import { cropChanged } from "@/app/store/slices/crop-slice";
+import type { EditorSnapshot } from "@/domain/editor-snapshot";
 import type {
   AppError,
   ExportProgress,
@@ -12,7 +13,6 @@ import type {
 } from "@/lib/tauri/media";
 import type { QueueFinishAction } from "@/lib/tauri/queue";
 import type { RootState } from "../store";
-import type { EditorSnapshot } from "@/domain/editor-snapshot";
 
 export type ExportStatus = "queued" | "rendering" | "completed" | "failed" | "canceled";
 export type QueueItemStatus = "imported" | ExportStatus;
@@ -25,7 +25,7 @@ export interface QueueItemBase {
   snapshot: EditorSnapshot;
 }
 
-export interface ImportedQueueItem extends QueueItemBase {
+export interface importQueueItem extends QueueItemBase {
   status: "imported";
   origin: ImportedOrigin;
 }
@@ -57,7 +57,7 @@ export interface ExportQueueItem extends QueueItemBase {
   error?: string;
 }
 
-export type QueueItem = ImportedQueueItem | ExportQueueItem;
+export type QueueItem = importQueueItem | ExportQueueItem;
 
 export interface QueueItemPromotion {
   id: string;
@@ -139,14 +139,14 @@ const exportSlice = createSlice({
       state.queue.push(action.payload);
       if (action.payload.status === "imported") state.activeItemId = action.payload.id;
     },
-    importedQueueItemAdded: (state, action: PayloadAction<ImportedQueueItem>) => {
+    importQueueItemAdded: (state, action: PayloadAction<importQueueItem>) => {
       state.queue.push(action.payload);
       state.activeItemId = action.payload.id;
     },
-    importedQueueItemsAdded: (state, action: PayloadAction<ImportedQueueItem[]>) => {
+    importQueueItemsAdded: (state, action: PayloadAction<importQueueItem[]>) => {
       state.queue.push(...action.payload);
     },
-    importedQueueItemRemoved: (state, action: PayloadAction<string>) => {
+    importQueueItemRemoved: (state, action: PayloadAction<string>) => {
       state.queue = state.queue.filter((item) => item.id !== action.payload);
       if (state.activeItemId === action.payload) state.activeItemId = null;
     },
@@ -298,9 +298,9 @@ export const {
   optimizedExportPlanFailed,
   exportLaunchFailed,
   queueEntryAdded,
-  importedQueueItemAdded,
-  importedQueueItemsAdded,
-  importedQueueItemRemoved,
+  importQueueItemAdded,
+  importQueueItemsAdded,
+  importQueueItemRemoved,
   activeQueueItemChanged,
   queueItemSnapshotUpdated,
   queueItemPromoted,
@@ -323,10 +323,10 @@ export const selectActiveQueueItem = createSelector(
   [selectQueueItems, selectActiveItemId],
   (queue, activeItemId) => queue.find((item) => item.id === activeItemId),
 );
-export const selectImportedQueueItems = createSelector(
+export const selectimportQueueItems = createSelector(
   [selectQueueItems],
-  (queue): ImportedQueueItem[] =>
-    queue.filter((item): item is ImportedQueueItem => item.status === "imported"),
+  (queue): importQueueItem[] =>
+    queue.filter((item): item is importQueueItem => item.status === "imported"),
 );
 export const selectExportQueue = createSelector([selectQueueItems], (queue): ExportQueueItem[] =>
   queue.filter((item): item is ExportQueueItem => item.status !== "imported"),

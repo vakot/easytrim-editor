@@ -91,7 +91,7 @@ function Fixture({ value, defaultValue, onValueChange }: FixtureProps) {
         </PaneViewContent>
       </PaneViewItem>
       <PaneViewItem id="imported" defaultSize="33%">
-        <PaneViewTrigger>Imported queue</PaneViewTrigger>
+        <PaneViewTrigger>Import queue</PaneViewTrigger>
         <PaneViewContent>Imported content</PaneViewContent>
       </PaneViewItem>
       <PaneViewItem id="export" defaultSize="33%" maxSize="70%">
@@ -115,7 +115,7 @@ describe("PaneView", () => {
       "aria-expanded",
       "true",
     );
-    expect(screen.getByRole("button", { name: "Imported queue" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "Import queue" })).toHaveAttribute(
       "aria-expanded",
       "true",
     );
@@ -151,7 +151,7 @@ describe("PaneView", () => {
       "aria-expanded",
       "true",
     );
-    expect(screen.getByRole("button", { name: "Imported queue" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "Import queue" })).toHaveAttribute(
       "aria-expanded",
       "true",
     );
@@ -160,7 +160,7 @@ describe("PaneView", () => {
       "false",
     );
 
-    await user.click(screen.getByRole("button", { name: "Imported queue" }));
+    await user.click(screen.getByRole("button", { name: "Import queue" }));
     await user.click(screen.getByRole("button", { name: "Media details" }));
 
     for (const trigger of screen.getAllByRole("button")) {
@@ -187,9 +187,9 @@ describe("PaneView", () => {
       disabled: undefined,
     });
 
-    await user.click(screen.getByRole("button", { name: "Imported queue" }));
+    await user.click(screen.getByRole("button", { name: "Import queue" }));
 
-    expect(screen.getByRole("button", { name: "Imported queue" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "Import queue" })).toHaveAttribute(
       "aria-expanded",
       "true",
     );
@@ -251,7 +251,7 @@ describe("PaneView", () => {
       "aria-expanded",
       "true",
     );
-    expect(screen.getByRole("button", { name: "Imported queue" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "Import queue" })).toHaveAttribute(
       "aria-expanded",
       "true",
     );
@@ -275,7 +275,7 @@ describe("PaneView", () => {
       '[data-slot="pane-view-content"][data-state="closed"]',
     );
     expect(importedContent).toHaveAttribute("hidden");
-    expect(screen.queryByRole("region", { name: "Imported queue" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Import queue" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Media row 1" })).toBeInTheDocument();
   });
 });

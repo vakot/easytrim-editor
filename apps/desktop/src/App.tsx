@@ -1,7 +1,6 @@
 import { ContextMenus } from "@/app/components/ContextMenus";
 import { CustomTitleBar } from "@/app/components/CustomTitleBar";
 import { NativeDialogOverlay } from "@/app/components/NativeDialogOverlay";
-import { PanelVisibilityControls } from "@/app/components/PanelVisibilityControls";
 import { AppUpdatesProvider } from "@/app/components/Providers/AppUpdatesProvider";
 import { EditorContractsProvider } from "@/app/components/Providers/EditorContractsProvider";
 import { StatusBar } from "@/app/components/StatusBar";
@@ -31,11 +30,11 @@ import {
 } from "@/app/store/thunks/source-media-thunks";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ResizablePanelContextProvider } from "@/components/ui/resizable";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { OptimizedExportDialog } from "@/features/export/components/OptimizedExportDialog";
-import { CapabilityStatus } from "@/features/import-source/SourceWorkspace";
+import { CapabilityStatus, SourceWorkspace } from "@/features/import-source/SourceWorkspace";
 import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
-import { Playground } from "@/Playground";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Provider as ReduxProvider } from "react-redux";
@@ -120,7 +119,7 @@ function EasyTrimEditorApp() {
         <CustomTitleBar
           menuControls={<ContextMenus />}
           statusContent={<CapabilityStatus capabilities={capabilities} />}
-          panelControls={<PanelVisibilityControls />}
+          // panelControls={<PanelVisibilityControls />}
         />
 
         <OptimizedExportDialog />
@@ -138,7 +137,7 @@ function EasyTrimEditorApp() {
           </Alert>
         ) : null}
 
-        <Playground />
+        <SourceWorkspace />
         <StatusBar />
       </main>
     </TooltipProvider>
@@ -152,7 +151,9 @@ function App() {
         <PersistGate loading={null} persistor={persistor}>
           <ThemeProvider>
             <EditorContractsProvider>
-              <EasyTrimEditorApp />
+              <ResizablePanelContextProvider>
+                <EasyTrimEditorApp />
+              </ResizablePanelContextProvider>
             </EditorContractsProvider>
           </ThemeProvider>
         </PersistGate>

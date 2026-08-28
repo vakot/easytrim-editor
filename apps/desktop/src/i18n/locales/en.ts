@@ -6,6 +6,7 @@ export const en = {
     close: "Close",
     retry: "Retry",
     unknown: "Unknown",
+    loading: "Loading...",
   },
   statusBar: {
     exportProgress: "Export progress",
@@ -144,7 +145,7 @@ export const en = {
       sidebarSections: "Source sidebar sections",
       sidebarControls: "Choose visible source panels",
       mediaDetails: "Media details",
-      importedQueue: "Imported queue",
+      importQueue: "Import queue",
       exportQueue: "Export queue",
       placeholder: "{{label}} placeholder {{row}}",
       details: "Source details",

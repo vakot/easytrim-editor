@@ -1,21 +1,21 @@
 import { describe, expect, it } from "vitest";
 
-import type { RootState } from "@/app/store/store";
 import {
   PANEL_IDS,
   createInitialPanelLayoutState,
-  panelLayoutReducer,
-  panelsResetToDefault,
   panelCollapseToggled,
   panelCollapsedChanged,
+  panelLayoutReducer,
   panelVisibilityChanged,
   panelVisibilityToggled,
-  selectPanelLayout,
+  panelsResetToDefault,
   selectPanel,
   selectPanelCollapsed,
   selectPanelExpanded,
+  selectPanelLayout,
   selectPanelVisibility,
 } from "@/app/store/slices/panel-layout-slice";
+import type { RootState } from "@/app/store/store";
 
 describe("panel layout Redux domain", () => {
   it("starts with every panel visible and expanded", () => {
@@ -50,10 +50,10 @@ describe("panel layout Redux domain", () => {
   it("toggles visibility with the generic panel identifier", () => {
     const state = panelLayoutReducer(
       undefined,
-      panelVisibilityToggled(PANEL_IDS.sidebarImportedQueue),
+      panelVisibilityToggled(PANEL_IDS.sidebarimportQueue),
     );
 
-    expect(state.panels[PANEL_IDS.sidebarImportedQueue]).toEqual({
+    expect(state.panels[PANEL_IDS.sidebarimportQueue]).toEqual({
       visible: false,
       collapsed: false,
     });

@@ -1,5 +1,5 @@
 import { createAction } from "@reduxjs/toolkit";
 
-export const importedQueueItemActivationRequested = createAction<{ id: string }>(
-  "importedQueue/itemActivationRequested",
+export const importQueueItemActivationRequested = createAction<{ id: string }>(
+  "importQueue/itemActivationRequested",
 );
