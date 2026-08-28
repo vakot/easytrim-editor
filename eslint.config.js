@@ -1,17 +1,11 @@
 import eslint from "@eslint/js";
 import eslintConfigPrettier from "eslint-config-prettier/flat";
+import importPlugin from "eslint-plugin-import";
 import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
 import simpleImportSort from "eslint-plugin-simple-import-sort";
 import globals from "globals";
 import tseslint from "typescript-eslint";
-
-import { createNoUnusedExportsPlugin } from "./scripts/eslint/no-unused-exports.mjs";
-
-const projectRules = createNoUnusedExportsPlugin({
-  ignoredDirectories: ["apps/desktop/src/components/ui"],
-  project: "apps/desktop/tsconfig.json",
-});
 
 export default tseslint.config(
   {
@@ -80,12 +74,28 @@ export default tseslint.config(
   },
   {
     files: ["apps/desktop/src/**/*.{ts,tsx}"],
-    ignores: ["apps/desktop/src/components/ui/**"],
     plugins: {
-      project: projectRules,
+      import: importPlugin,
+    },
+    settings: {
+      "import/parsers": {
+        "@typescript-eslint/parser": [".ts", ".tsx"],
+      },
+      "import/resolver": {
+        typescript: { project: "./apps/desktop/tsconfig.json" },
+      },
     },
     rules: {
-      "project/no-unused-exports": "error",
+      // import/no-unused-modules still uses ESLint's legacy file enumeration API;
+      // the intentionally empty .eslintrc.json keeps that supported rule usable with flat config.
+      "import/no-unused-modules": [
+        "error",
+        {
+          ignoreExports: ["apps/desktop/src/components/ui/**"],
+          src: ["apps/desktop/src/**/*.{ts,tsx}"],
+          unusedExports: true,
+        },
+      ],
     },
   },
   {

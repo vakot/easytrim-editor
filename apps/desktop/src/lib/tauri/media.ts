@@ -10,7 +10,7 @@ export interface AppError {
   diagnostics?: string;
 }
 
-export interface TrimSelection {
+interface TrimSelection {
   startMicros: number;
   endMicros: number;
 }
@@ -26,7 +26,7 @@ export interface ExportProgress {
   phase: "running" | "completed";
 }
 
-export interface OutputSelection {
+interface OutputSelection {
   outputId: string;
   displayName: string;
   displayPath: string;
@@ -45,7 +45,7 @@ export interface FastExportRequest {
   mergeAudio: boolean;
 }
 
-export interface AudioTrackSelection {
+interface AudioTrackSelection {
   streamIndex: number;
   volumePercent: number;
 }
@@ -57,7 +57,7 @@ export interface OptimizedExportRequest extends FastExportRequest {
   arguments: string;
 }
 
-export interface OptimizedExportPlan {
+interface OptimizedExportPlan {
   commandPreview: string;
 }
 
@@ -78,7 +78,7 @@ export interface FrameRate {
   displayValue?: number;
 }
 
-export interface VideoStream {
+interface VideoStream {
   streamIndex: number;
   codecName: string;
   width: number;
@@ -107,7 +107,7 @@ export interface AudioStream {
   isDefault: boolean;
 }
 
-export interface ChapterInfo {
+interface ChapterInfo {
   id: number;
   startMicros: number;
   endMicros: number;
@@ -157,7 +157,7 @@ export type WaveformResult =
       error: AppError;
     };
 
-export type SourceImportEvent =
+type SourceImportEvent =
   { status: "selected"; sources: SourceRef[] } | { status: "failed"; error: AppError };
 
 export type SourceDropEvent = { status: "drag"; active: boolean } | SourceImportEvent;
@@ -249,14 +249,6 @@ export async function reserveExportSource(sourcePath: string): Promise<void> {
 export async function releaseExportSource(sourcePath: string): Promise<void> {
   try {
     await invoke("release_export_source", { sourcePath });
-  } catch (error: unknown) {
-    throw normalizeAppError(error);
-  }
-}
-
-export async function openFileLocation(path: string): Promise<void> {
-  try {
-    await invoke("open_file_location", { path });
   } catch (error: unknown) {
     throw normalizeAppError(error);
   }
