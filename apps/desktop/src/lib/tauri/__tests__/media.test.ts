@@ -11,8 +11,8 @@ vi.mock("@tauri-apps/api/webview", () => ({
 }));
 
 import {
-  chooseSource,
   activateSourcePath,
+  chooseSource,
   inspectMedia,
   listenForSourceDrops,
   planOptimizedExport,

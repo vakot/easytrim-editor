@@ -1,16 +1,17 @@
+import { Info } from "lucide-react";
+import { useTranslation } from "react-i18next";
+
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { timelinePercent } from "@/domain/trim";
-import { Info } from "lucide-react";
-import { useTranslation } from "react-i18next";
 
 import { AudioLevelControl } from "./components/AudioLevelControl";
 import { AudioTrackRow } from "./components/AudioTrackRow";
 import { VolumeButton } from "./components/VolumeButton";
 import { useWaveformPreparation } from "./hooks/useWaveformPreparation";
-import type { AudioTracksProps } from "./types";
 import { audioOutputSummary } from "./utils/audio-level";
+import type { AudioTracksProps } from "./types";
 
 export function AudioTracks({
   streams,

@@ -1,6 +1,6 @@
 import { useContext } from "react";
 
-import { AppUpdatesContext, type AppUpdates } from "@/app/contexts/app-updates-context";
+import { type AppUpdates, AppUpdatesContext } from "@/app/contexts/app-updates-context";
 
 export function useAppUpdates(): AppUpdates {
   const value = useContext(AppUpdatesContext);

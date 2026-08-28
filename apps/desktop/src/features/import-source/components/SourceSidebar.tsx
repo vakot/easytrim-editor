@@ -1,3 +1,7 @@
+import { ChevronDown, ChevronRight, Ellipsis, Eye, EyeOff, RotateCcw } from "lucide-react";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+
 import { Button } from "@/components/ui/button";
 import { Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from "@/components/ui/menu";
 import {
@@ -9,9 +13,6 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { ChevronDown, ChevronRight, Ellipsis, Eye, EyeOff, RotateCcw } from "lucide-react";
-import { useState } from "react";
-import { useTranslation } from "react-i18next";
 
 const PLACEHOLDER_ROWS = Array.from({ length: 20 }, (_, index) => index + 1);
 

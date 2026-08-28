@@ -1,3 +1,5 @@
+import { ChevronDown } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import {
   ResizableHandle,
@@ -7,7 +9,6 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import { cn } from "@/lib/utils";
-import { ChevronDown } from "lucide-react";
 
 function Playground() {
   return (

@@ -1,13 +1,14 @@
 import type { KeyboardEvent, PointerEvent, RefObject } from "react";
-
-import { cn } from "@/lib/utils";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useTranslation } from "react-i18next";
 
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatPlaybackTime } from "@/domain/playback";
-import { formatAccessibleTime } from "../utils/timeline-format";
 import type { SegmentSnapPoint, TrimBoundary, TrimRange } from "@/domain/trim";
 import type { FrameRate } from "@/lib/tauri/media";
+import { cn } from "@/lib/utils";
+
+import { formatAccessibleTime } from "../utils/timeline-format";
+
 import styles from "./styles.module.css";
 
 interface SegmentDragHandleProps {

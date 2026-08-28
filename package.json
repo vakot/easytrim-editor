@@ -16,6 +16,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --fix --max-warnings 0",
     "typecheck": "pnpm --filter @easytrim-editor/desktop typecheck",
     "test": "pnpm --filter @easytrim-editor/desktop test",
     "test:release": "node --test scripts/__tests__/*.test.mjs",
@@ -30,8 +31,10 @@
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "eslint": "10.8.0",
+    "eslint-config-prettier": "10.1.8",
     "eslint-plugin-react-hooks": "7.1.1",
     "eslint-plugin-react-refresh": "0.5.3",
+    "eslint-plugin-simple-import-sort": "14.0.0",
     "globals": "17.8.0",
     "prettier": "3.9.6",
     "typescript-eslint": "8.65.0"

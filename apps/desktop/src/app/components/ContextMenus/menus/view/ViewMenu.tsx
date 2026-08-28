@@ -29,9 +29,10 @@ import {
   MenuTrigger,
 } from "@/components/ui/menu";
 
+import type { MenuNavigation } from "../../types";
+
 import { ColorSample } from "./components/ColorSample";
 import { CustomColorPickerPanel } from "./components/CustomColorPickerPanel";
-import type { MenuNavigation } from "../../types";
 
 const themeIcons = { system: Monitor, light: Sun, dark: Moon } as const;
 

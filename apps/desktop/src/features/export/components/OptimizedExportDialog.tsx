@@ -1,23 +1,9 @@
-import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Input } from "@/components/ui/input";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Link2, Unlink2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
+import { selectExportArguments } from "@/app/store/slices/export-presets-slice";
 import {
   optimizedExportDialogClosed,
   selectExportCommandPreview,
@@ -27,20 +13,37 @@ import {
   selectOptimizedExportDialogOpen,
 } from "@/app/store/slices/export-slice";
 import { selectSourceMedia } from "@/app/store/slices/source-slice";
-import { selectExportArguments } from "@/app/store/slices/export-presets-slice";
 import {
   openOptimizedExportDialog,
   optimizedExportSettingsChangedRequested,
   refreshOptimizedExportPlan,
   startOptimizedExportRequested,
 } from "@/app/store/thunks/export-thunks";
-import { PresetManager } from "./PresetManager";
-import { CommandPreview } from "./CommandPreview";
-import { FRAME_RATE_OPTIONS, rateFromValue, resolutionOptions } from "../utils/export-options";
-import { useTranslation } from "react-i18next";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Link2, Unlink2 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+
+import { FRAME_RATE_OPTIONS, rateFromValue, resolutionOptions } from "../utils/export-options";
+
+import { CommandPreview } from "./CommandPreview";
+import { PresetManager } from "./PresetManager";
 
 export function OptimizedExportDialog() {
   const { t } = useTranslation();

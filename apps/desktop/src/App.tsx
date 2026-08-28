@@ -1,3 +1,8 @@
+import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import { Provider as ReduxProvider } from "react-redux";
+import { PersistGate } from "redux-persist/integration/react";
+
 import { ContextMenus } from "@/app/components/ContextMenus";
 import { CustomTitleBar } from "@/app/components/CustomTitleBar";
 import { NativeDialogOverlay } from "@/app/components/NativeDialogOverlay";
@@ -36,10 +41,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { OptimizedExportDialog } from "@/features/export/components/OptimizedExportDialog";
 import { CapabilityStatus, SourceWorkspace } from "@/features/import-source/SourceWorkspace";
 import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
-import { useEffect } from "react";
-import { useTranslation } from "react-i18next";
-import { Provider as ReduxProvider } from "react-redux";
-import { PersistGate } from "redux-persist/integration/react";
 
 function EasyTrimEditorApp() {
   const dispatch = useAppDispatch();

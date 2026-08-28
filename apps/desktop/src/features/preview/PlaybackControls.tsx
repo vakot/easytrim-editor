@@ -11,6 +11,7 @@ import {
   SquareArrowLeft,
   SquareArrowRight,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import {
@@ -40,7 +41,6 @@ import {
 } from "@/domain/playback-speed";
 import type { TrimBoundary } from "@/domain/trim";
 import type { FrameRate } from "@/lib/tauri/media";
-import { useTranslation } from "react-i18next";
 
 const PLAYBACK_SPEED_MARKERS = [0.5, 1, 1.5, 2, 3].map((speed) => ({
   value: PLAYBACK_SPEED_STEPS.indexOf(speed as PlaybackSpeed),

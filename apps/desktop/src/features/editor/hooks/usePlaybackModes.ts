@@ -1,10 +1,10 @@
 import { useEffect, useRef } from "react";
 
 import {
-  playbackBoundaryAction,
-  playbackRange,
   type PlaybackBoundaryAction,
+  playbackBoundaryAction,
   type PlaybackRange,
+  playbackRange,
 } from "@/domain/playback";
 import type { TrimRange } from "@/domain/trim";
 

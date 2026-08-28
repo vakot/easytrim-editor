@@ -1,6 +1,6 @@
+import { spawnSync } from "node:child_process";
 import { mkdir, readFile, stat } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { spawnSync } from "node:child_process";
 
 import { bundlesByPlatform, getReleaseArtifactName } from "./release-artifacts.mjs";
 

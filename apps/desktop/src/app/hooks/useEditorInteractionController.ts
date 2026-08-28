@@ -1,6 +1,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
+import {
+  selectAudioPreviews,
+  selectAudioTracks,
+  selectMasterAudio,
+} from "@/app/store/slices/audio-slice";
+import {
+  selectLoopPlaybackEnabled,
+  selectPlaybackSpeed,
+  selectSegmentPlaybackEnabled,
+  selectSnapPlaybackEnabled,
+} from "@/app/store/slices/editor-tools-slice";
+import { selectPreview } from "@/app/store/slices/preview-slice";
+import { selectSourceMedia, selectSourceSelection } from "@/app/store/slices/source-slice";
+import { selectTrim, trimChanged } from "@/app/store/slices/trim-slice";
+import { handlePreviewPlaybackError as handlePreviewPlaybackErrorRequested } from "@/app/store/thunks/source-media-thunks";
 import { clampPlaybackMicros, frameDurationMicros } from "@/domain/playback";
 import {
   canSetTrimBoundaryAtPlayhead,
@@ -10,23 +26,6 @@ import {
   type TrimBoundary,
   type TrimRange,
 } from "@/domain/trim";
-import { isApplicationDialogOpen } from "@/lib/hotkeys";
-import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
-import {
-  selectLoopPlaybackEnabled,
-  selectPlaybackSpeed,
-  selectSegmentPlaybackEnabled,
-  selectSnapPlaybackEnabled,
-} from "@/app/store/slices/editor-tools-slice";
-import {
-  selectAudioPreviews,
-  selectAudioTracks,
-  selectMasterAudio,
-} from "@/app/store/slices/audio-slice";
-import { selectPreview } from "@/app/store/slices/preview-slice";
-import { selectSourceMedia, selectSourceSelection } from "@/app/store/slices/source-slice";
-import { selectTrim, trimChanged } from "@/app/store/slices/trim-slice";
-import { handlePreviewPlaybackError as handlePreviewPlaybackErrorRequested } from "@/app/store/thunks/source-media-thunks";
 import { usePlaybackModes } from "@/features/editor/hooks/usePlaybackModes";
 import { synchronizeAudioPosition } from "@/features/editor/utils/audio-sync";
 import {
@@ -34,20 +33,21 @@ import {
   isShortcutBlockedTarget,
 } from "@/features/editor/utils/editor-shortcuts";
 import {
+  cancelFrame,
+  cancelPlaybackFrame,
+  type PlaybackFrameHandle,
+  requestPlaybackFrame,
+  seekMediaIfNeeded,
+  seekVideo,
+  syncPlayheadElements,
+} from "@/features/editor/utils/media-sync";
+import {
   connectNativeAudioBinding,
   disconnectNativeAudioBinding,
   getOrCreateNativeAudioBinding,
   type NativeAudioBinding,
 } from "@/features/editor/utils/native-audio-runtime";
-import {
-  cancelFrame,
-  cancelPlaybackFrame,
-  requestPlaybackFrame,
-  seekMediaIfNeeded,
-  seekVideo,
-  syncPlayheadElements,
-  type PlaybackFrameHandle,
-} from "@/features/editor/utils/media-sync";
+import { isApplicationDialogOpen } from "@/lib/hotkeys";
 
 const EMPTY_TRIM: TrimRange = {
   startMicros: 0,

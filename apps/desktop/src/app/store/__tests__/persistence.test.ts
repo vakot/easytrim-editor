@@ -1,21 +1,21 @@
-import { afterEach, describe, expect, it } from "vitest";
 import type { Persistor, Storage as PersistStorage } from "redux-persist";
+import { afterEach, describe, expect, it } from "vitest";
 
+import { DEFAULT_PREFERENCES } from "@/app/preferences";
+import { persistConfig, resolveReduxPersistStorage } from "@/app/store/persistence";
 import {
   createEditorToolsStateFromPreferences,
   editorToolsReset,
   playbackSpeedChanged,
 } from "@/app/store/slices/editor-tools-slice";
+import { optimizedExportDialogOpened, queueEntryAdded } from "@/app/store/slices/export-slice";
 import { preferenceChanged, preferencesReset } from "@/app/store/slices/preferences-slice";
 import {
   customPrimaryColorChanged,
   primaryColorChanged,
   themePreferenceChanged,
 } from "@/app/store/slices/theme-slice";
-import { optimizedExportDialogOpened, queueEntryAdded } from "@/app/store/slices/export-slice";
-import { createAppPersistor, createAppStore, type AppStore } from "@/app/store/store";
-import { persistConfig, resolveReduxPersistStorage } from "@/app/store/persistence";
-import { DEFAULT_PREFERENCES } from "@/app/preferences";
+import { type AppStore, createAppPersistor, createAppStore } from "@/app/store/store";
 
 interface TestStorage extends PersistStorage {
   values: Map<string, string>;

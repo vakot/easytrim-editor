@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import { sourceCleared, sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
-import { createAppStore } from "@/app/store/store";
+import { firstSource, media, secondSource } from "@/app/store/slices/__tests__/test-fixtures";
 import { audioMergeToggled } from "@/app/store/slices/audio-slice";
 import { cropChanged } from "@/app/store/slices/crop-slice";
-import { trimChanged } from "@/app/store/slices/trim-slice";
 import { previewReady } from "@/app/store/slices/preview-slice";
-import { firstSource, media, secondSource } from "@/app/store/slices/__tests__/test-fixtures";
+import { trimChanged } from "@/app/store/slices/trim-slice";
+import { createAppStore } from "@/app/store/store";
 
 describe("source-bound lifecycle", () => {
   it("atomically resets every source-bound domain through one source event", () => {

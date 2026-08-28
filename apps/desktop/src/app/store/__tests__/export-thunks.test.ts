@@ -45,6 +45,8 @@ vi.mock("@/app/store/thunks/source-media-thunks", () => ({
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
 import {
   activeQueueItemChanged,
+  type ExportQueueItem,
+  type importQueueItem,
   importQueueItemAdded,
   importQueueItemRemoved,
   queueEntryAdded,
@@ -55,8 +57,6 @@ import {
   selectimportQueueItems,
   selectOptimizedExportDialogOpen,
   selectQueueStarted,
-  type ExportQueueItem,
-  type importQueueItem,
 } from "@/app/store/slices/export-slice";
 import { preferenceChanged } from "@/app/store/slices/preferences-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";

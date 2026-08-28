@@ -1,5 +1,5 @@
 import { CircleStop, LogOut, Moon, Power } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";

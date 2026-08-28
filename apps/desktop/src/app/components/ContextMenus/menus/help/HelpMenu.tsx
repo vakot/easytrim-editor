@@ -14,8 +14,8 @@ import { githubBrandIcon, kofiBrandIcon } from "@/components/brand-icons";
 import { Button } from "@/components/ui/button";
 import { Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from "@/components/ui/menu";
 import { openExternalUrl } from "@/lib/open-external-url";
-import packageJson from "../../../../../../../../package.json";
 
+import packageJson from "../../../../../../../../package.json";
 import type { MenuNavigation } from "../../types";
 
 const CHANGELOG_URL = "https://github.com/vakot/easytrim-editor/releases";

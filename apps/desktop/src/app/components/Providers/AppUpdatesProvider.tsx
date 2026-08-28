@@ -1,12 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
+import { AppUpdatesContext, type UpdateStatus } from "@/app/contexts/app-updates-context";
 import {
+  type AvailableUpdate,
   checkForUpdates as checkForUpdatesNative,
   isTauriRuntime,
-  type AvailableUpdate,
 } from "@/lib/tauri/updates";
-import { AppUpdatesContext, type UpdateStatus } from "@/app/contexts/app-updates-context";
 
 export function AppUpdatesProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<UpdateStatus>("idle");

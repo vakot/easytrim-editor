@@ -3,8 +3,8 @@ import { useLayoutEffect, useMemo } from "react";
 import { usePanelRef } from "@/components/ui/resizable";
 
 import {
-  timelinePanelSizeConstraints,
   type TimelinePanelSizeConstraints,
+  timelinePanelSizeConstraints,
 } from "../utils/timeline-pane-sizing";
 
 const PENDING_SOURCE_CONSTRAINTS = {

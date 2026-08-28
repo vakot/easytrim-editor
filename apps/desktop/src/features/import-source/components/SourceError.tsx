@@ -1,6 +1,7 @@
-import type { AppError } from "@/lib/tauri/media";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useTranslation } from "react-i18next";
+
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import type { AppError } from "@/lib/tauri/media";
 
 export function SourceError({ error }: { error: AppError }) {
   const { t } = useTranslation();

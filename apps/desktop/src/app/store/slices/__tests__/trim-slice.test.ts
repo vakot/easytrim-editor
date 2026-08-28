@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
-import { trimChanged, trimReducer, initialTrimState, selectTrim } from "../trim-slice";
+
+import { initialTrimState, selectTrim, trimChanged, trimReducer } from "../trim-slice";
+
 import { firstSource, media } from "./test-fixtures";
 
 describe("trim slice", () => {

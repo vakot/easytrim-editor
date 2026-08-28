@@ -1,11 +1,11 @@
 import { useTranslation } from "react-i18next";
 
-import { HelpMenu } from "./menus/help";
+import { useContextMenuNavigation } from "./hooks/useContextMenuNavigation";
 import { FileMenu } from "./menus/file";
+import { HelpMenu } from "./menus/help";
 import { QueueMenu } from "./menus/queue";
 import { SettingsMenu } from "./menus/settings";
 import { ViewMenu } from "./menus/view";
-import { useContextMenuNavigation } from "./hooks/useContextMenuNavigation";
 
 export function ContextMenus() {
   const { t } = useTranslation();

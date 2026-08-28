@@ -1,10 +1,10 @@
 "use client";
 
+import { Slot } from "radix-ui";
 import * as React from "react";
 import * as ResizablePrimitive from "react-resizable-panels";
 
 import { cn } from "@/lib/utils";
-import { Slot } from "radix-ui";
 
 type PanelId = string;
 type PanelRef = React.RefObject<ResizablePrimitive.PanelImperativeHandle | null>;

@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { useState, type ReactNode, type RefObject } from "react";
+import { type ReactNode, type RefObject, useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {

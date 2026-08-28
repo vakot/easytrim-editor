@@ -1,14 +1,14 @@
 import { Fragment } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Separator } from "@/components/ui/separator";
-import type { MediaInfo } from "@/lib/tauri/media";
 import {
   formatBitrate,
   formatBytes,
   formatDuration,
   formatFrameRate,
 } from "@/features/import-source/utils/media-formatters";
-import { useTranslation } from "react-i18next";
+import type { MediaInfo } from "@/lib/tauri/media";
 
 export function MediaDetails({ media }: { media: MediaInfo | null }) {
   const { t } = useTranslation();

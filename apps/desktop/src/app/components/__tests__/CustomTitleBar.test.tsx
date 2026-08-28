@@ -3,11 +3,12 @@ import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { CustomTitleBar } from "../CustomTitleBar";
-import { ContextMenus } from "../ContextMenus";
+import { AppUpdatesContext } from "@/app/contexts/app-updates-context";
 import { store } from "@/app/store/store";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
-import { AppUpdatesContext } from "@/app/contexts/app-updates-context";
+
+import { ContextMenus } from "../ContextMenus";
+import { CustomTitleBar } from "../CustomTitleBar";
 
 const windowActions = vi.hoisted(() => ({
   closeWindow: vi.fn(() => Promise.resolve()),

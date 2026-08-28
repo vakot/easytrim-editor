@@ -1,7 +1,8 @@
+import { useTranslation } from "react-i18next";
+
 import type { AudioTrackState } from "@/app/store/slices/audio-slice";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useTranslation } from "react-i18next";
 
 interface WaveformContentProps {
   track: AudioTrackState;

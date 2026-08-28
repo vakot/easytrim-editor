@@ -1,4 +1,4 @@
-import { resolvePrimaryColor, type PrimaryColor } from "@/app/theme/theme";
+import { type PrimaryColor, resolvePrimaryColor } from "@/app/theme/theme";
 
 const colorClasses: Record<Exclude<PrimaryColor, `#${string}`>, string> = {
   amber: "bg-[#efbf04]",

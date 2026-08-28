@@ -2,6 +2,7 @@ import {
   audioMergeToggled,
   audioTrackToggled,
   audioTrackVolumeChanged,
+  initialAudioState,
   masterAudioToggled,
   masterVolumeChanged,
   selectAudioTracks,
@@ -9,17 +10,16 @@ import {
   selectMergeAudio,
 } from "@/app/store/slices/audio-slice";
 import { cropChanged } from "@/app/store/slices/crop-slice";
+import { selectSourceMedia } from "@/app/store/slices/source-slice";
 import { trimChanged } from "@/app/store/slices/trim-slice";
+import type { AppDispatch, RootState } from "@/app/store/store";
 import { FULL_CROP } from "@/domain/crop";
 import {
   createEditorSnapshot,
-  resolveEditorSnapshotTrim,
   type EditorSnapshot,
+  resolveEditorSnapshotTrim,
 } from "@/domain/editor-snapshot";
 import type { SourceRef } from "@/domain/source";
-import { selectSourceMedia } from "@/app/store/slices/source-slice";
-import type { AppDispatch, RootState } from "@/app/store/store";
-import { initialAudioState } from "@/app/store/slices/audio-slice";
 
 export function createDefaultEditorSnapshot(
   source: SourceRef,

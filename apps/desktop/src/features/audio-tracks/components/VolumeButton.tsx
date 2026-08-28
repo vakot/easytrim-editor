@@ -1,11 +1,11 @@
 import { Volume2, VolumeX } from "lucide-react";
-import { forwardRef } from "react";
 import type { ComponentPropsWithoutRef } from "react";
+import { forwardRef } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { useTranslation } from "react-i18next";
 
 type VolumeButtonProps = Omit<
   ComponentPropsWithoutRef<typeof Button>,

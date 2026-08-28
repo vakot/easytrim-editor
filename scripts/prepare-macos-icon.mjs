@@ -1,6 +1,6 @@
+import { spawnSync } from "node:child_process";
 import { mkdir, readdir, rm, stat } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
-import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 if (process.platform !== "darwin") {

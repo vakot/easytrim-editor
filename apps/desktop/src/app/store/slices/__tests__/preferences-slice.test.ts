@@ -1,17 +1,17 @@
 import { describe, expect, it } from "vitest";
 
 import { DEFAULT_PREFERENCES, type Preferences } from "@/app/preferences";
-import type { RootState } from "@/app/store/store";
 import {
-  preferencesReducer,
   preferenceChanged,
+  preferencesReducer,
   preferencesReset,
   selectLoopPlaybackEnabledDefault,
   selectMergeAudioEnabledDefault,
   selectPreferences,
-  selectSnapPlaybackEnabledDefault,
   selectSegmentPlaybackEnabledDefault,
+  selectSnapPlaybackEnabledDefault,
 } from "@/app/store/slices/preferences-slice";
+import type { RootState } from "@/app/store/store";
 
 describe("preferences Redux domain", () => {
   it("starts from deterministic product defaults without persistence access", () => {

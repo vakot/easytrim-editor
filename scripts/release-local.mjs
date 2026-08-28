@@ -1,16 +1,16 @@
+import { spawnSync } from "node:child_process";
 import {
   access,
   copyFile,
   mkdir,
   mkdtemp,
-  readFile,
   readdir,
+  readFile,
   rm,
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, join, relative, resolve } from "node:path";
-import { spawnSync } from "node:child_process";
 
 import {
   bundlesByPlatform,

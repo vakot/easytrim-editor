@@ -6,7 +6,7 @@ import { selectActiveItemId, selectimportQueueItems } from "@/app/store/slices/e
 import { navigateToImportedItem } from "@/app/store/thunks/source-media-thunks";
 import { Button } from "@/components/ui/button";
 
-export function importQueue() {
+export function ImportedQueue() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const items = useAppSelector(selectimportQueueItems);

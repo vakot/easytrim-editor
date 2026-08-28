@@ -7,10 +7,10 @@ import {
   Repeat,
   RotateCcw,
 } from "lucide-react";
-import { type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
-import { type PreferenceKey } from "@/app/preferences";
+import type { PreferenceKey } from "@/app/preferences";
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import {
   preferenceChanged,

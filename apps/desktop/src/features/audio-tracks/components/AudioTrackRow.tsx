@@ -1,12 +1,14 @@
+import { memo, useState } from "react";
+import { useTranslation } from "react-i18next";
+
 import type { AudioTrackState } from "@/app/store/slices/audio-slice";
 import { Card } from "@/components/ui/card";
 import type { AudioStream } from "@/lib/tauri/media";
-import { memo, useState } from "react";
-import { useTranslation } from "react-i18next";
 
 import { WAVEFORM_RENDER_WIDTH } from "../hooks/useWaveformPreparation";
 import { formatChannels } from "../utils/audio-level";
 import { waveformStateWidth } from "../utils/waveform";
+
 import { AudioLevelControl } from "./AudioLevelControl";
 import { VolumeButton } from "./VolumeButton";
 import { WaveformContent } from "./WaveformContent";

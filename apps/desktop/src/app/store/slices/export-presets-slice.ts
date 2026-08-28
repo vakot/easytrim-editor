@@ -1,10 +1,11 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 import {
+  type ExportPreset,
   loadExportPresetState,
   presetNameError,
-  type ExportPreset,
 } from "@/features/export/export-presets";
+
 import type { RootState } from "../store";
 
 const exportPresetsSlice = createSlice({

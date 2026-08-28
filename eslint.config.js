@@ -1,6 +1,8 @@
 import eslint from "@eslint/js";
+import eslintConfigPrettier from "eslint-config-prettier/flat";
 import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
+import simpleImportSort from "eslint-plugin-simple-import-sort";
 import globals from "globals";
 import tseslint from "typescript-eslint";
 
@@ -10,6 +12,32 @@ export default tseslint.config(
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
+  {
+    files: ["**/*.{js,cjs,mjs,ts,tsx}"],
+    plugins: {
+      "simple-import-sort": simpleImportSort,
+    },
+    rules: {
+      eqeqeq: ["error", "always", { null: "ignore" }],
+      "no-duplicate-imports": ["error", { allowSeparateTypeImports: true, includeExports: true }],
+      "object-shorthand": ["error", "always"],
+      "prefer-template": "error",
+      "simple-import-sort/exports": "error",
+      "simple-import-sort/imports": [
+        "error",
+        {
+          groups: [
+            ["^\\u0000"],
+            ["^node:"],
+            ["^@?\\w"],
+            ["^@/"],
+            ["^\\.\\.(?!/?$)", "^\\.\\./?$"],
+            ["^\\./(?=.*/)(?!/?$)", "^\\.(?!/?$)", "^\\./?$"],
+          ],
+        },
+      ],
+    },
+  },
   {
     files: ["scripts/**/*.mjs"],
     languageOptions: {
@@ -29,6 +57,15 @@ export default tseslint.config(
       "react-refresh": reactRefresh,
     },
     rules: {
+      "@typescript-eslint/consistent-type-imports": [
+        "error",
+        {
+          disallowTypeAnnotations: false,
+          fixStyle: "inline-type-imports",
+          prefer: "type-imports",
+        },
+      ],
+      "@typescript-eslint/no-import-type-side-effects": "error",
       ...reactHooks.configs.flat.recommended.rules,
       ...reactRefresh.configs.vite.rules,
     },
@@ -39,4 +76,5 @@ export default tseslint.config(
       "react-refresh/only-export-components": "off",
     },
   },
+  eslintConfigPrettier,
 );

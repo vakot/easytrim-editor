@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-import type { RootState } from "@/app/store/store";
 import { DEFAULT_PREFERENCES, type Preferences } from "@/app/preferences";
 import {
   createEditorToolsStateFromPreferences,
@@ -9,15 +8,16 @@ import {
   editorToolsReset,
   loopPlaybackToggled,
   playbackSpeedChanged,
-  snapPlaybackToggled,
+  segmentPlaybackToggled,
   selectEditorTools,
   selectLoopPlaybackEnabled,
   selectPlaybackSpeed,
-  selectSnapPlaybackEnabled,
   selectSegmentPlaybackEnabled,
+  selectSnapPlaybackEnabled,
   snapPlaybackChanged,
-  segmentPlaybackToggled,
+  snapPlaybackToggled,
 } from "@/app/store/slices/editor-tools-slice";
+import type { RootState } from "@/app/store/store";
 import { DEFAULT_PLAYBACK_SPEED, type PlaybackSpeed } from "@/domain/playback-speed";
 
 describe("editor tools Redux domain", () => {

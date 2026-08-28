@@ -1,4 +1,4 @@
-import { FULL_CROP, type CropRect } from "@/domain/crop";
+import { type CropRect, FULL_CROP } from "@/domain/crop";
 
 export type { CropRect } from "@/domain/crop";
 

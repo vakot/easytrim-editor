@@ -1,17 +1,18 @@
 import {
+  type PointerEvent as ReactPointerEvent,
+  type RefObject,
   useEffect,
   useRef,
   useState,
-  type PointerEvent as ReactPointerEvent,
-  type RefObject,
 } from "react";
 
-import { moveCrop, resizeCrop, type CropHandle, type CropRect } from "../utils/crop-geometry";
-import type { CropFrame } from "../utils/crop-frame";
-import { snapCropToGuides } from "../utils/crop-snapping";
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import { cropChanged, cropResolutionFor, selectCrop } from "@/app/store/slices/crop-slice";
 import { selectSourceMedia } from "@/app/store/slices/source-slice";
+
+import type { CropFrame } from "../utils/crop-frame";
+import { type CropHandle, type CropRect, moveCrop, resizeCrop } from "../utils/crop-geometry";
+import { snapCropToGuides } from "../utils/crop-snapping";
 
 const SNAP_REACH_PX = 12;
 

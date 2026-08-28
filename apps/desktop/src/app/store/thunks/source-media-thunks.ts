@@ -21,12 +21,12 @@ import {
 import { selectCrop } from "@/app/store/slices/crop-slice";
 import {
   activeQueueItemChanged,
+  type importQueueItem,
   importQueueItemRemoved,
   importQueueItemsAdded,
   queueItemSnapshotUpdated,
   selectActiveQueueItem,
   selectimportQueueItems,
-  type importQueueItem,
 } from "@/app/store/slices/export-slice";
 import {
   dropListenerErrorCleared,
@@ -49,6 +49,7 @@ import type { SourceRef } from "@/domain/source";
 import { getReplacementImportedItem } from "@/features/import-source/utils/imported-queue";
 import {
   activateSourcePath,
+  type AppError,
   checkMediaCapabilities,
   chooseSource as chooseSourceDialog,
   inspectMedia,
@@ -57,7 +58,6 @@ import {
   prepareProxyPreview,
   prepareSourcePreview,
   prepareWaveforms,
-  type AppError,
   type PreviewKind,
 } from "@/lib/tauri/media";
 

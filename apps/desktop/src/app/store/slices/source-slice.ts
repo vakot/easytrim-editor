@@ -8,8 +8,9 @@ import {
   sourceReady,
   sourceSelected,
 } from "@/app/store/actions/source-actions";
-import type { AppError, MediaCapabilities, MediaInfo } from "@/lib/tauri/media";
 import type { SourceRef } from "@/domain/source";
+import type { AppError, MediaCapabilities, MediaInfo } from "@/lib/tauri/media";
+
 import type { RootState } from "../store";
 
 export type CapabilityState =

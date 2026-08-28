@@ -6,18 +6,19 @@ import {
   within,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { useRef, useState, type ReactElement } from "react";
+import { type ReactElement, useRef, useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 
+import { AppUpdatesContext } from "@/app/contexts/app-updates-context";
 import { DEFAULT_PREFERENCES, type Preferences } from "@/app/preferences";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
-import { AppUpdatesContext } from "@/app/contexts/app-updates-context";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { openExternalUrl } from "@/lib/open-external-url";
-import { ContextMenus as AppContextMenus } from "../ContextMenus";
-import type { QueueFinishAction } from "@/lib/tauri/queue";
-import packageJson from "../../../../../../package.json";
 import type { SourceRef } from "@/domain/source";
+import { openExternalUrl } from "@/lib/open-external-url";
+import type { QueueFinishAction } from "@/lib/tauri/queue";
+
+import packageJson from "../../../../../../package.json";
+import { ContextMenus as AppContextMenus } from "../ContextMenus";
 
 const menuState = vi.hoisted(() => ({
   dispatch: vi.fn(),

@@ -1,5 +1,5 @@
-import { Provider } from "react-redux";
 import { render } from "@testing-library/react";
+import { Provider } from "react-redux";
 import { describe, expect, it, vi } from "vitest";
 
 const planOptimizedExport = vi.hoisted(() => vi.fn());
@@ -12,10 +12,11 @@ vi.mock("@/lib/tauri/media", () => ({
 }));
 
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
+import { firstSource, media } from "@/app/store/slices/__tests__/test-fixtures";
 import { createAppStore } from "@/app/store/store";
 import { openOptimizedExportDialog } from "@/app/store/thunks/export-thunks";
-import { firstSource, media } from "@/app/store/slices/__tests__/test-fixtures";
 import { TooltipProvider } from "@/components/ui/tooltip";
+
 import { OptimizedExportDialog } from "../OptimizedExportDialog";
 
 describe("OptimizedExportDialog", () => {

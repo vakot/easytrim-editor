@@ -1,5 +1,6 @@
-import type { FrameRate, MediaInfo } from "@/lib/tauri/media";
 import type { TFunction } from "i18next";
+
+import type { FrameRate, MediaInfo } from "@/lib/tauri/media";
 
 export const DEFAULT_ARGUMENTS =
   "-c:v hevc_nvenc -preset p5 -tune hq -rc vbr -cq 24 -b:v 0 -spatial_aq 1 -temporal_aq 1 -aq-strength 8 -pix_fmt yuv420p -c:a aac -b:a 160k";

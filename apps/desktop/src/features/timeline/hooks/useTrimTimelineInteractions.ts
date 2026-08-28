@@ -1,22 +1,23 @@
-import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { type KeyboardEvent, type PointerEvent, useEffect, useRef, useState } from "react";
 
 import { clampPlaybackMicros, frameDurationMicros } from "@/domain/playback";
-import { snapToNearestPoint } from "@/lib/interaction/snap-points";
 import {
   advanceDirectionalSnapLatch,
   clampToTrim,
   createDirectionalSnapLatch,
+  type DirectionalSnapLatch,
   microsFromTimelinePosition,
   moveTrimBoundary,
   moveTrimRange,
-  snapMovedTrimRangeToPlayhead,
-  settleDirectionalSnapLatch,
-  type DirectionalSnapLatch,
   type SegmentSnapPoint,
+  settleDirectionalSnapLatch,
+  snapMovedTrimRangeToPlayhead,
   type TrimBoundary,
   type TrimRange,
 } from "@/domain/trim";
+import { snapToNearestPoint } from "@/lib/interaction/snap-points";
 import type { FrameRate } from "@/lib/tauri/media";
+
 import { syncTimelineGeometry } from "../utils/timeline-geometry";
 
 const TIMELINE_SNAP_REACH_PX = 12;

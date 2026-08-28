@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
+
 import {
   audioMergeToggled,
   audioReducer,
@@ -12,6 +13,7 @@ import {
   waveformReady,
   waveformsLoading,
 } from "../audio-slice";
+
 import { firstSource, mediaWithAudio } from "./test-fixtures";
 
 function readyAudio() {

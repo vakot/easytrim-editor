@@ -1,7 +1,7 @@
 import type { Reducer } from "@reduxjs/toolkit";
 import {
-  persistReducer,
   type PersistConfig,
+  persistReducer,
   type PersistState,
   type Storage as PersistStorage,
 } from "redux-persist";

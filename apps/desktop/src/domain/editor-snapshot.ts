@@ -1,6 +1,6 @@
 import type { CropRect } from "./crop";
-import { createFullTrimRange, type TrimRange } from "./trim";
 import type { SourceRef } from "./source";
+import { createFullTrimRange, type TrimRange } from "./trim";
 
 export type EditorSnapshotTrim =
   { kind: "full-source" } | { startMicros: number; endMicros: number };

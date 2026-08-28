@@ -1,15 +1,16 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
-import { type RootState } from "../store";
 import {
+  type CustomPrimaryColor,
   DEFAULT_CUSTOM_PRIMARY_COLOR,
   DEFAULT_PRIMARY_COLOR,
   isCustomPrimaryColor,
-  type CustomPrimaryColor,
   type PrimaryColor,
   type PrimaryColorKey,
   type ThemePreference,
 } from "@/app/theme/theme";
+
+import type { RootState } from "../store";
 
 export interface ThemeState {
   preference: ThemePreference;

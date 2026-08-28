@@ -7,6 +7,7 @@ Object.defineProperty(HTMLMediaElement.prototype, "readyState", {
   get: () => HTMLMediaElement.HAVE_FUTURE_DATA,
 });
 import "@/i18n/config";
+
 import { cleanup } from "@testing-library/react";
 import { afterEach } from "vitest";
 

@@ -1,15 +1,16 @@
 import { LoaderCircle } from "lucide-react";
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { type RefObject, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 
-import type { PreviewState } from "@/app/store/slices/preview-slice";
 import { useAppSelector } from "@/app/store/hooks";
 import { selectPlaybackSpeed } from "@/app/store/slices/editor-tools-slice";
+import type { PreviewState } from "@/app/store/slices/preview-slice";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useTranslation } from "react-i18next";
-import { CropViewport } from "./CropViewport";
 import { VideoPreviewEmpty } from "@/features/preview/VideoPreviewEmpty";
+
+import { CropViewport } from "./CropViewport";
 
 interface VideoPreviewProps {
   hasSource: boolean;

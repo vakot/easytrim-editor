@@ -2,6 +2,7 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 import { sourceCleared, sourceFailed, sourceSelected } from "@/app/store/actions/source-actions";
 import type { AppError, PreviewDescriptor, PreviewKind } from "@/lib/tauri/media";
+
 import type { RootState } from "../store";
 
 export type PreviewState =

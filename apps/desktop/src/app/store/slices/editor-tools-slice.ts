@@ -1,7 +1,7 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
-import type { RootState } from "@/app/store/store";
 import { DEFAULT_PREFERENCES, type Preferences } from "@/app/preferences";
+import type { RootState } from "@/app/store/store";
 import { DEFAULT_PLAYBACK_SPEED, type PlaybackSpeed } from "@/domain/playback-speed";
 
 export type EditorToolsState = {

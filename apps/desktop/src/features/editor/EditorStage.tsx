@@ -1,3 +1,6 @@
+import { LoaderCircle } from "lucide-react";
+import { useTranslation } from "react-i18next";
+
 import { usePlayback, useTimeline } from "@/app/hooks/useEditorContracts";
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import {
@@ -30,8 +33,6 @@ import {
 } from "@/features/preview/PlaybackControls";
 import { VideoPreview } from "@/features/preview/VideoPreview";
 import { TrimTimeline } from "@/features/timeline";
-import { LoaderCircle } from "lucide-react";
-import { useTranslation } from "react-i18next";
 
 const EMPTY_TIMELINE_RANGE = {
   startMicros: 0,

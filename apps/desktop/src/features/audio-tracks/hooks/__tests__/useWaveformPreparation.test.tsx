@@ -1,10 +1,10 @@
 import { renderHook } from "@testing-library/react";
-import { StrictMode, type PropsWithChildren } from "react";
+import { type PropsWithChildren, StrictMode } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import type { AudioTrackState } from "@/app/store/slices/audio-slice";
 
-import { WAVEFORM_RENDER_WIDTH, useWaveformPreparation } from "../useWaveformPreparation";
+import { useWaveformPreparation, WAVEFORM_RENDER_WIDTH } from "../useWaveformPreparation";
 
 const tracks: AudioTrackState[] = [
   { streamIndex: 1, enabled: true, volumePercent: 50, waveform: { status: "idle" } },

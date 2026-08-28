@@ -1,15 +1,14 @@
 import { useTranslation } from "react-i18next";
 
-import { useAppSelector } from "@/app/store/hooks";
-import { useAppDispatch } from "@/app/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import { selectCropApplied } from "@/app/store/slices/crop-slice";
-import { selectHasSource, selectSourceReady } from "@/app/store/slices/source-slice";
 import { selectIsChoosingSource } from "@/app/store/slices/import-workflow-slice";
+import { selectHasSource, selectSourceReady } from "@/app/store/slices/source-slice";
+import { openOptimizedExportDialog, startFastCutRequested } from "@/app/store/thunks/export-thunks";
 import {
   chooseSourceRequested,
   closeActiveImportedItemRequested,
 } from "@/app/store/thunks/source-media-thunks";
-import { openOptimizedExportDialog, startFastCutRequested } from "@/app/store/thunks/export-thunks";
 import { Button } from "@/components/ui/button";
 import { Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from "@/components/ui/menu";
 

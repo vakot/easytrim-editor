@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { type KeyboardEvent, type PointerEvent, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
@@ -6,13 +6,14 @@ import {
   customPrimaryColorChanged,
   selectCustomPrimaryColor,
 } from "@/app/store/slices/theme-slice";
-import { isCustomPrimaryColor, resolvePrimaryColor, type PrimaryColor } from "@/app/theme/theme";
+import {
+  colorFromSpectrumPosition,
+  isCustomPrimaryColor,
+  type PrimaryColor,
+  resolvePrimaryColor,
+} from "@/app/theme/theme";
 import { useTheme } from "@/app/theme/use-theme";
 import { Input } from "@/components/ui/input";
-
-import { useRef, type KeyboardEvent, type PointerEvent } from "react";
-
-import { colorFromSpectrumPosition } from "@/app/theme/theme";
 
 interface CustomColorPickerPanelProps {
   previewColor: PrimaryColor | null;

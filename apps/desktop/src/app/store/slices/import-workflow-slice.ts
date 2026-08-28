@@ -1,6 +1,7 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 import type { AppError } from "@/lib/tauri/media";
+
 import type { RootState } from "../store";
 
 export interface ImportWorkflowState {

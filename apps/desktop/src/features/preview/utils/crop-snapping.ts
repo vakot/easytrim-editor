@@ -1,6 +1,6 @@
 import { QUARTER_SNAP_POINTS, snapToNearestPoint } from "@/lib/interaction/snap-points";
 
-import { MIN_CROP_SIZE, type CropHandle, type CropRect } from "./crop-geometry";
+import { type CropHandle, type CropRect, MIN_CROP_SIZE } from "./crop-geometry";
 
 interface SnapThresholds {
   x: number;

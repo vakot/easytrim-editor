@@ -3,16 +3,16 @@ import {
   FLUSH,
   PAUSE,
   PERSIST,
+  type Persistor,
   persistStore,
   PURGE,
   REGISTER,
   REHYDRATE,
-  type Persistor,
 } from "redux-persist";
 
 import { sourceFailed, sourceReady } from "@/app/store/actions/source-actions";
 import { appMiddleware } from "@/app/store/middleware";
-import { createPersistedReducer, reduxStorage, type PersistStorage } from "@/app/store/persistence";
+import { createPersistedReducer, type PersistStorage, reduxStorage } from "@/app/store/persistence";
 import { audioReducer } from "@/app/store/slices/audio-slice";
 import { cropReducer } from "@/app/store/slices/crop-slice";
 import {

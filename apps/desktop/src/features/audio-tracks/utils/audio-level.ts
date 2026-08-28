@@ -1,5 +1,6 @@
-import type { AudioStream } from "@/lib/tauri/media";
 import type { TFunction } from "i18next";
+
+import type { AudioStream } from "@/lib/tauri/media";
 
 export const MIN_SLIDER_DECIBELS = -24;
 export const MAX_SLIDER_DECIBELS = 6;

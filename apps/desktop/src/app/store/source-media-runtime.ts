@@ -1,13 +1,13 @@
 import type { UnlistenFn } from "@tauri-apps/api/event";
 
-import { dropListenerFailed, sourceDragChanged } from "@/app/store/slices/import-workflow-slice";
 import { sourceFailed } from "@/app/store/actions/source-actions";
+import { dropListenerFailed, sourceDragChanged } from "@/app/store/slices/import-workflow-slice";
+import type { AppDispatch } from "@/app/store/store";
 import {
   checkMediaCapabilitiesRequested,
   ingestSources,
 } from "@/app/store/thunks/source-media-thunks";
 import { listenForSourceDrops, normalizeAppError } from "@/lib/tauri/media";
-import type { AppDispatch } from "@/app/store/store";
 
 /**
  * Starts the application-lifetime source/media integration once, outside React

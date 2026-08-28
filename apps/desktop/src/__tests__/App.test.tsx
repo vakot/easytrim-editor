@@ -12,8 +12,8 @@ import { importQueueItemRemoved, selectimportQueueItems } from "../app/store/sli
 import {
   PANEL_IDS,
   panelCollapsedChanged,
-  panelsResetToDefault,
   type PanelResetRequest,
+  panelsResetToDefault,
 } from "../app/store/slices/panel-layout-slice";
 import { selectHasSource } from "../app/store/slices/source-slice";
 import { startSourceMediaRuntime } from "../app/store/source-media-runtime";

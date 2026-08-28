@@ -8,6 +8,9 @@ import {
 import { selectCrop, selectCropApplied, selectCropResolution } from "@/app/store/slices/crop-slice";
 import {
   exportLaunchFailed,
+  type ExportQueueItem,
+  type ExportSettings,
+  type importQueueItem,
   importQueueItemAdded,
   optimizedExportDialogClosed,
   optimizedExportDialogOpened,
@@ -17,15 +20,12 @@ import {
   optimizedExportSettingsChanged,
   queueFinishActionsAvailable,
   queueItemPromoted,
+  type QueueItemPromotion,
   queuePaused,
   queueStarted,
   selectActiveItemId,
   selectActiveQueueItem,
   selectimportQueueItems,
-  type ExportQueueItem,
-  type ExportSettings,
-  type importQueueItem,
-  type QueueItemPromotion,
 } from "@/app/store/slices/export-slice";
 import { nativeDialogStateChanged } from "@/app/store/slices/import-workflow-slice";
 import {
@@ -52,14 +52,15 @@ import { getReplacementImportedItem } from "@/features/import-source/utils/impor
 import {
   activateSourcePath,
   chooseOutputPath,
+  type FastExportRequest,
   normalizeAppError,
+  type OptimizedExportRequest,
   planOptimizedExport,
   releaseExportSource,
   reserveExportSource,
-  type FastExportRequest,
-  type OptimizedExportRequest,
 } from "@/lib/tauri/media";
 import { availableQueueFinishActions, type QueueFinishAction } from "@/lib/tauri/queue";
+
 import type { AppThunk } from "./source-media-thunks";
 
 let optimizedPlanRequestSequence = 0;

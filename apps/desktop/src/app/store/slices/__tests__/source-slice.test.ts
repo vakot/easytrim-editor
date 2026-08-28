@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { sourceFailed, sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
+
 import {
   initialSourceState,
   selectHasSource,
@@ -8,6 +9,7 @@ import {
   selectSourceSelection,
   sourceReducer,
 } from "../source-slice";
+
 import { firstSource, media, secondSource } from "./test-fixtures";
 
 describe("source slice", () => {

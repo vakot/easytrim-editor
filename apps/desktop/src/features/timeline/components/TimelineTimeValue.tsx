@@ -1,5 +1,5 @@
-import type { FrameRate } from "@/lib/tauri/media";
 import { formatPlaybackTime } from "@/domain/playback";
+import type { FrameRate } from "@/lib/tauri/media";
 
 export function TimelineTimeValue({
   label,

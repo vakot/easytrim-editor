@@ -12,6 +12,7 @@ import type {
   MediaInfo,
   WaveformResult,
 } from "@/lib/tauri/media";
+
 import type { RootState } from "../store";
 
 export type WaveformState =

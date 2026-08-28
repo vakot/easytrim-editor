@@ -12,9 +12,9 @@ import {
   moveTrimRange,
   playheadAfterSegmentMove,
   playheadAfterTrimBoundaryMove,
+  settleDirectionalSnapLatch,
   setTrimBoundaryAtPlayhead,
   snapMovedTrimRangeToPlayhead,
-  settleDirectionalSnapLatch,
   timelinePercent,
 } from "../trim";
 

@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import { sourceSelected } from "@/app/store/actions/source-actions";
+
 import {
   initialPreviewState,
   previewFailed,
   previewReducer,
   selectPreview,
 } from "../preview-slice";
+
 import { firstSource, secondSource } from "./test-fixtures";
 
 describe("preview slice", () => {
