@@ -18,7 +18,7 @@ import {
 import { snapToNearestPoint } from "@/lib/interaction/snap-points";
 import type { FrameRate } from "@/lib/tauri/media";
 
-import { syncTimelineGeometry } from "../utils/timeline-geometry";
+import { syncTimelineGeometry } from "../lib/timeline-geometry";
 
 const TIMELINE_SNAP_REACH_PX = 12;
 

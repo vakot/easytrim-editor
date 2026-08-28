@@ -41,7 +41,7 @@ import {
   startOptimizedExportRequested,
 } from "@/app/store/thunks/export-thunks";
 
-import { FRAME_RATE_OPTIONS, rateFromValue, resolutionOptions } from "../utils/export-options";
+import { FRAME_RATE_OPTIONS, rateFromValue, resolutionOptions } from "../lib/export-options";
 
 import { CommandPreview } from "./CommandPreview";
 import { PresetManager } from "./PresetManager";

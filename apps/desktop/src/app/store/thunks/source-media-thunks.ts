@@ -46,7 +46,7 @@ import { selectTrim } from "@/app/store/slices/trim-slice";
 import type { AppDispatch, RootState } from "@/app/store/store";
 import { createEditorSnapshot } from "@/domain/editor-snapshot";
 import type { SourceRef } from "@/domain/source";
-import { getReplacementImportedItem } from "@/features/import-source/utils/imported-queue";
+import { getReplacementImportedItem } from "@/features/source/lib/imported-queue";
 import {
   activateSourcePath,
   type AppError,

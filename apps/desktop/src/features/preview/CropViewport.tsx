@@ -11,9 +11,9 @@ import { CursorTooltip } from "@/components/ui/cursor-tooltip";
 
 import { CropSelection } from "./components/CropSelection";
 import { CropSnapMarkers } from "./components/CropSnapMarkers";
-import { useCropSelection } from "./hooks/use-crop-selection";
-import { type Bounds, centerFrame, cropFrame } from "./utils/crop-frame";
-import { isFullCrop } from "./utils/crop-geometry";
+import { useCropSelection } from "./hooks/useCropSelection";
+import { type Bounds, centerFrame, cropFrame } from "./lib/crop-frame";
+import { isFullCrop } from "./lib/crop-geometry";
 
 const CROP_TOOL_GUTTER_PX = 16;
 

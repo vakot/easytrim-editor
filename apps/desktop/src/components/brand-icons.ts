@@ -1,7 +1,7 @@
 import githubSvg from "simple-icons/icons/github.svg?raw";
 import kofiSvg from "simple-icons/icons/kofi.svg?raw";
 
-import type { BrandIconDefinition } from "./brand-icon";
+import type { BrandIconDefinition } from "./BrandIcon";
 
 function createBrandIcon(slug: string, svg: string): BrandIconDefinition {
   const path = svg.match(/<path\b[^>]*\bd="([^"]+)"/)?.[1];

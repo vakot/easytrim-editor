@@ -24,7 +24,7 @@ import {
 } from "@/app/store/slices/source-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
 import { prepareSourceWaveforms } from "@/app/store/thunks/source-media-thunks";
-import { AudioTracks } from "@/features/audio-tracks";
+import { AudioTracks } from "@/features/audio";
 import { TimelinePane } from "@/features/editor/components/TimelinePane";
 import { useTimelinePanelSizing } from "@/features/editor/hooks/useTimelinePanelSizing";
 import {

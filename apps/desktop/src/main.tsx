@@ -7,7 +7,7 @@ import ReactDOM from "react-dom/client";
 import { AppErrorBoundary } from "./app/components/AppErrorBoundary";
 import { startSourceMediaRuntime } from "./app/store/source-media-runtime";
 import { store } from "./app/store/store";
-import App from "./App";
+import { App } from "./App";
 
 const stopSourceMediaRuntime = startSourceMediaRuntime(store.dispatch);
 window.addEventListener("unload", stopSourceMediaRuntime, { once: true });

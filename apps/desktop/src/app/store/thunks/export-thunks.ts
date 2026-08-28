@@ -40,15 +40,15 @@ import {
   navigateToImportedItem,
 } from "@/app/store/thunks/source-media-thunks";
 import { cloneEditorSnapshot, createEditorSnapshot } from "@/domain/editor-snapshot";
-import { outputDefaults } from "@/features/export/utils/export-options";
+import { outputDefaults } from "@/features/export/lib/export-options";
 import {
   cancelActiveExport,
   cancelAllQueuedExports,
   cancelQueuedExport,
   enqueueExport,
   setExportQueueExecutionEnabled,
-} from "@/features/export/utils/export-queue";
-import { getReplacementImportedItem } from "@/features/import-source/utils/imported-queue";
+} from "@/features/export/lib/export-queue";
+import { getReplacementImportedItem } from "@/features/source/lib/imported-queue";
 import {
   activateSourcePath,
   chooseOutputPath,

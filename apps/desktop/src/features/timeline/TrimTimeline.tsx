@@ -7,7 +7,7 @@ import styles from "./components/styles.module.css";
 import { Playhead, SegmentDragHandle, TrimHandle } from "./components/TimelineHandles";
 import { TimelineTimeValue } from "./components/TimelineTimeValue";
 import { useTrimTimelineInteractions } from "./hooks/useTrimTimelineInteractions";
-import type { TrimTimelineProps } from "./types";
+import type { TrimTimelineProps } from "./timeline-contracts";
 
 export function TrimTimeline({
   range,

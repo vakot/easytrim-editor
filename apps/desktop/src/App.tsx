@@ -7,13 +7,13 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ResizablePanelContextProvider } from "@/components/ui/resizable";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
-import { ContextMenus } from "@/app/components/ContextMenus";
+import { ContextMenus } from "@/app/components/context-menus";
 import { CustomTitleBar } from "@/app/components/CustomTitleBar";
 import { NativeDialogOverlay } from "@/app/components/NativeDialogOverlay";
 import { PanelVisibilityControls } from "@/app/components/PanelVisibilityControls";
-import { AppUpdatesProvider } from "@/app/components/Providers/AppUpdatesProvider";
-import { EditorContractsProvider } from "@/app/components/Providers/EditorContractsProvider";
-import { StatusBar } from "@/app/components/StatusBar";
+import { AppUpdatesProvider } from "@/app/components/providers/AppUpdatesProvider";
+import { EditorContractsProvider } from "@/app/components/providers/EditorContractsProvider";
+import { StatusBar } from "@/app/components/status-bar";
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import { selectCropApplied } from "@/app/store/slices/crop-slice";
 import { selectHasQueuedExports, selectQueueStarted } from "@/app/store/slices/export-slice";
@@ -40,7 +40,7 @@ import {
 } from "@/app/store/thunks/source-media-thunks";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import { OptimizedExportDialog } from "@/features/export/components/OptimizedExportDialog";
-import { CapabilityStatus, SourceWorkspace } from "@/features/import-source/SourceWorkspace";
+import { CapabilityStatus, SourceWorkspace } from "@/features/source/SourceWorkspace";
 import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
 
 function EasyTrimEditorApp() {
@@ -147,7 +147,7 @@ function EasyTrimEditorApp() {
   );
 }
 
-function App() {
+export function App() {
   return (
     <AppUpdatesProvider>
       <ReduxProvider store={store}>
@@ -164,5 +164,3 @@ function App() {
     </AppUpdatesProvider>
   );
 }
-
-export default App;
