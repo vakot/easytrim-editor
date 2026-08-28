@@ -61,6 +61,7 @@ export function enqueueExport(
     dispatch,
     getState,
   };
+
   pendingJobs.push(job);
   jobsById.set(item.id, job);
   queueHadWork = true;
@@ -137,11 +138,13 @@ async function renderJob(job: RuntimeExportJob) {
       durationMicros > 0
         ? Math.min(100, Math.max(0, (progress.elapsedMicros / durationMicros) * 100))
         : 0;
+
     const estimatedTime = estimateExportTime(
       progress.elapsedMicros,
       durationMicros,
       progress.speed,
     );
+
     const estimatedSize = estimateExportSize(
       progress.totalSize,
       progress.bitrate,
@@ -206,6 +209,7 @@ function maybePerformQueueFinishAction(dispatch: AppDispatch, getState: () => Ro
   const hasTerminalWork = getState().export.queue.some(
     (item) => item.status === "completed" || item.status === "failed",
   );
+
   if (!hasTerminalWork) return;
   const action = getState().export.queueFinishAction;
   if (action !== "nothing") void performQueueFinishAction(action).catch(() => undefined);

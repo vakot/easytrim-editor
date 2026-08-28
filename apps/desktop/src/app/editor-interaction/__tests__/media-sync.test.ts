@@ -14,6 +14,7 @@ describe("playback frame scheduling", () => {
       cancelVideoFrameCallback,
       currentTime: 99,
     } as unknown as HTMLVideoElement;
+
     const update = vi.fn();
     const frameRef = { current: requestPlaybackFrame(video, update) };
 

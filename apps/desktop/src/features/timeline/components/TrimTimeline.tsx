@@ -63,6 +63,7 @@ export function TrimTimeline({
     onScrub,
     onScrubEnd,
   });
+
   const minimumDurationMicros = minimumSelectionMicros(range.sourceDurationMicros);
   const playheadValue = clampPlaybackMicros(playheadMicros, range.sourceDurationMicros);
   const playheadPercent = timelinePercent(playheadValue, range.sourceDurationMicros);

@@ -22,6 +22,7 @@ describe("crop slice", () => {
         resolution: { width: 1536, height: 1080 },
       }),
     );
+
     const cleared = cropReducer(changed, sourceCleared());
 
     expect(selectCropApplied({ crop: changed } as never)).toBe(true);

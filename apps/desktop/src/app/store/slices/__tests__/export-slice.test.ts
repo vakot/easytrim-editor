@@ -143,6 +143,7 @@ describe("export slice", () => {
       origin: "history-fork" as const,
       snapshot: item.snapshot,
     };
+
     let state = exportReducer(initialExportState, importQueueItemAdded(imported));
     state = exportReducer(state, importQueueItemRemoved(imported.id));
     expect(state.queue).toEqual([]);

@@ -145,6 +145,7 @@ describe("unified source ingestion", () => {
         audio: { master: { enabled: true, volumePercent: 50 }, tracks: [], mergeAudio: false },
       },
     };
+
     store.dispatch(importQueueItemAdded(fork));
     store.dispatch(ingestSources([sourceB]));
 

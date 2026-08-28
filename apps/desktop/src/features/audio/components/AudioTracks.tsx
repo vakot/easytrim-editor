@@ -89,6 +89,7 @@ export function AudioTracks({
           if (!track) return null;
           const title =
             stream.title ?? stream.language ?? t("audio.defaultTrack", { number: index + 1 });
+
           return (
             <AudioTrackRow
               key={stream.streamIndex}

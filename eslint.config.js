@@ -22,6 +22,14 @@ export default tseslint.config(
       eqeqeq: ["error", "always", { null: "ignore" }],
       "no-duplicate-imports": ["error", { allowSeparateTypeImports: true, includeExports: true }],
       "object-shorthand": ["error", "always"],
+      "padding-line-between-statements": [
+        "error",
+        {
+          blankLine: "always",
+          prev: ["multiline-const", "multiline-let", "multiline-var"],
+          next: "*",
+        },
+      ],
       "prefer-template": "error",
       "simple-import-sort/exports": "error",
       "simple-import-sort/imports": [

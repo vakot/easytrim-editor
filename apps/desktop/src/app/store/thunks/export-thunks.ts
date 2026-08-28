@@ -200,10 +200,12 @@ async function startQueuedExport(
       path: output.displayPath,
       totalFrames: getTotalFrames(request, media.video),
     };
+
     dispatch(queueItemPromoted(promotion));
     const promoted = getState().export.queue.find(
       (item): item is ExportQueueItem => item.id === importedItemId && item.status !== "imported",
     );
+
     if (!promoted) return;
     enqueueExport(promoted, dispatch, getState);
     dispatch(navigateToImportedItem(replacementItem?.id ?? null));
@@ -300,6 +302,7 @@ function getTotalFrames(
         : video.realFrameRate
           ? video.realFrameRate.numerator / video.realFrameRate.denominator
           : undefined;
+
   if (!frameRate || frameRate <= 0) return undefined;
   return Math.max(
     1,
@@ -325,6 +328,7 @@ export const restoreExportQueueItemRequested =
         origin: "history-fork",
         snapshot: cloneEditorSnapshot(item.snapshot),
       };
+
       dispatch(importQueueItemAdded(fork));
       await dispatch(activateSource(source, fork.snapshot.audio.mergeAudio));
       if (restorationId !== restoreSequence) return false;

@@ -92,6 +92,7 @@ describe("VideoPreview", () => {
           {...callbacks}
         />,
       );
+
       const viewport = container.querySelector("[data-preview-kind]")?.parentElement?.parentElement;
       expect(viewport).not.toBeNull();
       const affordance = container.querySelector("[data-crop-preview-affordance]");
@@ -174,6 +175,7 @@ describe("VideoPreview", () => {
         {...callbacks}
       />,
     );
+
     const viewport = container.querySelector("[data-preview-kind]")?.parentElement?.parentElement;
     const video = container.querySelector("video");
     expect(viewport).not.toBeNull();
@@ -198,6 +200,7 @@ describe("VideoPreview", () => {
         {...callbacks}
       />,
     );
+
     const viewport = container.querySelector("[aria-label='Video crop preview']");
     expect(viewport).not.toBeNull();
 
@@ -220,6 +223,7 @@ describe("VideoPreview", () => {
         {...callbacks}
       />,
     );
+
     const viewport = container.querySelector("[data-preview-kind]")?.parentElement?.parentElement;
     expect(viewport).not.toBeNull();
 
@@ -246,6 +250,7 @@ describe("VideoPreview", () => {
         {...callbacks}
       />,
     );
+
     const firstVideo = container.querySelector("video");
     const firstVideoPause = vi.spyOn(firstVideo!, "pause").mockImplementation(() => undefined);
     expect(firstVideo).toHaveProperty("muted", true);

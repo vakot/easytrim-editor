@@ -65,6 +65,7 @@ export function useTrimTimelineInteractions({
     lastPointerMicros: number;
     snapLatch: DirectionalSnapLatch;
   } | null>(null);
+
   const segmentDragRef = useRef<{
     pointerId: number;
     grabOffsetMicros: number;
@@ -72,6 +73,7 @@ export function useTrimTimelineInteractions({
     snapModifierActive: boolean;
     snapLatch: DirectionalSnapLatch;
   } | null>(null);
+
   const rangeRef = useRef(range);
   const [segmentDragging, setSegmentDragging] = useState(false);
   const [segmentSnapPoint, setSegmentSnapPoint] = useState<SegmentSnapPoint | null>(null);
@@ -116,6 +118,7 @@ export function useTrimTimelineInteractions({
     const clampedPlayhead = clampPlaybackMicros(playheadMicros, currentRange.sourceDurationMicros);
     const playheadX =
       bounds.left + (clampedPlayhead / currentRange.sourceDurationMicros) * bounds.width;
+
     return snapToNearestPoint(clientX, [playheadX], TIMELINE_SNAP_REACH_PX) !== null;
   }
 
@@ -133,15 +136,18 @@ export function useTrimTimelineInteractions({
       drag.snapLatch,
       pointer.micros - drag.lastPointerMicros,
     );
+
     drag.lastPointerMicros = pointer.micros;
     drag.snapLatch = snapState.latch;
     const snapActive =
       snapToPlayhead && !snapState.anchorIgnored && isNearPlayhead(clientX, pointer.bounds);
+
     const next = moveTrimBoundary(
       rangeRef.current,
       boundary,
       snapActive ? playheadMicros : pointer.micros,
     );
+
     syncRange(next);
     const followedBoundary = onChange(boundary, next);
     drag.snapLatch = settleDirectionalSnapLatch(
@@ -267,6 +273,7 @@ export function useTrimTimelineInteractions({
       snapToPlayhead && !snapState.anchorIgnored
         ? snapMovedTrimRangeToPlayhead(movedRange, playheadMicros, snapReachMicros)
         : { range: movedRange, point: null };
+
     syncRange(snapped.range);
     setSegmentSnapPoint(snapped.point);
     const followedBoundary = onMoveSegment(snapped.range);
@@ -285,6 +292,7 @@ export function useTrimTimelineInteractions({
     const currentRange = rangeRef.current;
     const segmentCenterMicros =
       currentRange.startMicros + (currentRange.endMicros - currentRange.startMicros) / 2;
+
     segmentDragRef.current = {
       pointerId: event.pointerId,
       grabOffsetMicros: pointer.pointerMicros - segmentCenterMicros,

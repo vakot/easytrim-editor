@@ -79,10 +79,12 @@ describe("editor tools Redux domain", () => {
       undefined,
       editorToolsInitialized(createEditorToolsStateFromPreferences(DEFAULT_PREFERENCES)),
     );
+
     const modeState = editorToolsReducer(
       editorToolsReducer(initialState, loopPlaybackToggled()),
       segmentPlaybackToggled(),
     );
+
     const speed: PlaybackSpeed = 2;
 
     expect(modeState.loopPlaybackEnabled).toBe(false);
@@ -98,6 +100,7 @@ describe("editor tools Redux domain", () => {
       ),
       snapPlaybackToggled(),
     );
+
     const currentDefaults: Preferences = {
       ...DEFAULT_PREFERENCES,
       snapPlaybackEnabledDefault: false,
@@ -119,6 +122,7 @@ describe("editor tools Redux domain", () => {
       segmentPlaybackEnabled: false,
       playbackSpeed: 1.5 as PlaybackSpeed,
     };
+
     const state = { editorTools } as RootState;
 
     expect(selectEditorTools(state)).toBe(editorTools);

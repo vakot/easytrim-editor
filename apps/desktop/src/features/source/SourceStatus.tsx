@@ -65,11 +65,13 @@ export function SourceStatus() {
     { label: "FFmpeg", capability: capabilities.value.ffmpeg },
     { label: "FFprobe", capability: capabilities.value.ffprobe },
   ];
+
   const missing = entries
     .map(({ label, capability }) =>
       capabilityError(label, capability, t("import.capabilities.missing")),
     )
     .filter((value): value is string => value !== null);
+
   const dependencyDetails = (
     <>
       <p>

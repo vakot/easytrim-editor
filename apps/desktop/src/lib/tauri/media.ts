@@ -509,6 +509,7 @@ function parseWaveformResult(value: unknown): WaveformResult {
     streamIndex: requireInteger(waveform.streamIndex, "waveform stream index"),
     width: requirePositiveInteger(waveform.width, "waveform width"),
   };
+
   if (waveform.status === "ready") {
     return {
       ...common,

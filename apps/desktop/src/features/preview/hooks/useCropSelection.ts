@@ -100,12 +100,14 @@ export function useCropSelection(previewRef: RefObject<HTMLDivElement | null>) {
       drag.handle === "move"
         ? moveCrop(drag.crop, deltaX, deltaY)
         : resizeCrop(drag.crop, drag.handle, deltaX, deltaY);
+
     const nextCrop = event.shiftKey
       ? snapCropToGuides(movedCrop, drag.handle, {
           x: SNAP_REACH_PX / viewport.width,
           y: SNAP_REACH_PX / viewport.height,
         })
       : movedCrop;
+
     if (sourceMedia) {
       dispatch(
         cropChanged({

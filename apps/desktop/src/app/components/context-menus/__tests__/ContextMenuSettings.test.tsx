@@ -116,6 +116,7 @@ describe("ContextMenuSettings Redux integration", () => {
     const mergeSwitch = within(screen.getByRole("menuitem", { name: "Merge audio" })).getByRole(
       "switch",
     );
+
     await user.click(mergeSwitch);
 
     expect(store.getState().preferences.mergeAudioEnabledDefault).toBe(true);

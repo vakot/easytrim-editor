@@ -81,10 +81,12 @@ const firstSource: SourceRef = {
   displayName: "first.mp4",
   sourcePath: "C:/Media/first.mp4",
 };
+
 const secondSource: SourceRef = {
   displayName: "second.mp4",
   sourcePath: "C:/Media/second.mp4",
 };
+
 const thirdSource: SourceRef = {
   displayName: "third.mp4",
   sourcePath: "C:/Media/third.mp4",
@@ -119,6 +121,7 @@ function createDeferred<T>() {
     resolve = promiseResolve;
     reject = promiseReject;
   });
+
   return { promise, resolve, reject };
 }
 
@@ -174,6 +177,7 @@ describe("source/media orchestration thunks", () => {
       const source = [firstSource, secondSource, thirdSource].find(
         (candidate) => candidate.sourcePath === sourcePath,
       );
+
       return source ?? { displayName: sourcePath, sourcePath };
     });
     mocks.prepareSourcePreview.mockImplementation(async (sourcePath: string) =>
@@ -263,8 +267,10 @@ describe("source/media orchestration thunks", () => {
       const source = [firstSource, secondSource, thirdSource].find(
         (candidate) => candidate.sourcePath === sourcePath,
       );
+
       return source ?? { displayName: sourcePath, sourcePath };
     };
+
     mocks.activateSourcePath.mockImplementation(async (sourcePath: string) => {
       registeredSourcePath = sourcePath;
       return sourceForPath(sourcePath);
@@ -466,18 +472,21 @@ describe("source/media orchestration thunks", () => {
       crop: null,
       audio: { master: { enabled: true, volumePercent: 50 }, tracks: [], mergeAudio: false },
     };
+
     const fork = {
       id: "fork-1",
       status: "imported" as const,
       origin: "history-fork" as const,
       snapshot,
     };
+
     const target = {
       id: "import-2",
       status: "imported" as const,
       origin: "source-import" as const,
       snapshot: { ...snapshot, source: secondSource },
     };
+
     appStore.dispatch(importQueueItemAdded(fork));
     appStore.dispatch(importQueueItemAdded(target));
     appStore.dispatch(activeQueueItemChanged(fork.id));
@@ -553,12 +562,14 @@ describe("source/media orchestration thunks", () => {
       crop: null,
       audio: { master: { enabled: true, volumePercent: 50 }, tracks: [], mergeAudio: false },
     };
+
     const importedItem = {
       id: "import-1",
       status: "imported" as const,
       origin: "source-import" as const,
       snapshot,
     };
+
     const historyItem = createHistoryItem(snapshot);
     appStore.dispatch(sourceSelected({ source: firstSource }));
     appStore.dispatch(sourceReady({ loadToken: 1, media: createMedia(firstSource.sourcePath, 1) }));
@@ -579,6 +590,7 @@ describe("source/media orchestration thunks", () => {
       crop: null,
       audio: { master: { enabled: true, volumePercent: 50 }, tracks: [], mergeAudio: false },
     };
+
     const historyItem = createHistoryItem(snapshot);
     const fork = {
       id: "fork-1",
@@ -586,6 +598,7 @@ describe("source/media orchestration thunks", () => {
       origin: "history-fork" as const,
       snapshot,
     };
+
     appStore.dispatch(sourceSelected({ source: firstSource }));
     appStore.dispatch(sourceReady({ loadToken: 1, media: createMedia(firstSource.sourcePath, 1) }));
     appStore.dispatch(queueEntryAdded(historyItem));
@@ -614,6 +627,7 @@ describe("source/media orchestration thunks", () => {
         audio: { master: { enabled: true, volumePercent: 50 }, tracks: [], mergeAudio: false },
       },
     };
+
     appStore.dispatch(importQueueItemAdded(target));
     appStore.dispatch(activeQueueItemChanged(sourceItem!.id));
     mocks.activateSourcePath.mockRejectedValueOnce({
@@ -690,6 +704,7 @@ describe("source/media orchestration thunks", () => {
         audio: { master: { enabled: true, volumePercent: 50 }, tracks: [], mergeAudio: false },
       },
     };
+
     appStore.dispatch(importQueueItemAdded(historyFork));
     mocks.inspectMedia.mockResolvedValue(createMedia(secondSource.sourcePath, 1));
 
@@ -881,6 +896,7 @@ describe("source/media orchestration thunks", () => {
     const secondJob = appStore.dispatch(
       prepareSourceWaveforms(firstSource.sourcePath, [1, 2], 1200),
     );
+
     await vi.waitFor(() => expect(jobs.size).toBe(2));
     const secondJobId = [...jobs.keys()][1] as string;
 
@@ -907,6 +923,7 @@ describe("source/media orchestration thunks", () => {
     const track = selectAudioTracks(appStore.getState()).find(
       (candidate) => candidate.streamIndex === 1,
     );
+
     expect(track?.waveform).toMatchObject({
       status: "ready",
       jobId: secondJobId,

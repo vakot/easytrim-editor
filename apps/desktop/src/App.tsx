@@ -95,6 +95,7 @@ function EasyTrimEditorApp() {
       const openDialog = document.querySelector<HTMLElement>(
         '[data-slot="dialog-content"][data-state="open"]',
       );
+
       if (openDialog) {
         openDialog.querySelector<HTMLElement>('[data-slot="dialog-close"]')?.click();
         return;

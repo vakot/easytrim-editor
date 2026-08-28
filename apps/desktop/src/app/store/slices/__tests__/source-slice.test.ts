@@ -45,6 +45,7 @@ describe("source slice", () => {
       loading,
       sourceReady({ loadToken: 1, media: media(firstSource.sourcePath) }),
     );
+
     const state = { source: ready } as never;
 
     expect(selectHasSource(state)).toBe(true);

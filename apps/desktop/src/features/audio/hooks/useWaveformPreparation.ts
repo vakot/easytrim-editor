@@ -17,6 +17,7 @@ export function useWaveformPreparation(
     const pending = tracks
       .filter((track) => track.waveform.status === "idle")
       .map((track) => track.streamIndex);
+
     if (pending.length === 0) {
       lastRequestRef.current = null;
       return;

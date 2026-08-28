@@ -154,11 +154,13 @@ describe("ContextMenus", () => {
       ((key: keyof Preferences, enabled: boolean) => {
         menuState.preferences[key] = enabled;
       });
+
     const resetPreferences =
       overrides.onPreferencesReset ??
       (() => {
         menuState.preferences = { ...DEFAULT_PREFERENCES };
       });
+
     menuState.dispatch = vi.fn((action: { type: string; payload?: unknown }) => {
       if (
         action.type === "preferences/preferenceChanged" &&
@@ -227,6 +229,7 @@ describe("ContextMenus", () => {
     const menuButtons = screen
       .getByRole("navigation", { name: "Application menus" })
       .querySelectorAll("button");
+
     const labels = [...menuButtons].map((button) => button.textContent);
     expect(labels.indexOf("Queue")).toBeLessThan(labels.indexOf("Settings"));
   });

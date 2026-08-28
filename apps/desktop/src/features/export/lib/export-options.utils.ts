@@ -14,6 +14,7 @@ export function resolutionOptions(source: MediaInfo, t: TFunction) {
       value: `${source.video.width}x${source.video.height}`,
     },
   ];
+
   for (const height of [2160, 1440, 1080]) {
     if (height < source.video.height) {
       const width = Math.round((source.video.width * height) / source.video.height / 2) * 2;

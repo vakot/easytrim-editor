@@ -50,6 +50,7 @@ function Slider({
       {markers.map((marker) => {
         const position =
           max === min ? 0 : (Math.min(max, Math.max(min, marker.value)) - min) / (max - min);
+
         return (
           <span
             className="pointer-events-none absolute top-1/2 h-3 w-px -translate-x-1/2 -translate-y-1/2 bg-muted-foreground/70"

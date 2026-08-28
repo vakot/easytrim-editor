@@ -33,6 +33,7 @@ export function ContextMenuHelp({ navigation }: { navigation: MenuNavigation }) 
     checkForUpdates,
     installUpdate,
   } = useAppUpdates();
+
   const updateLabel =
     updateStatus === "checking"
       ? t("app.topBarMenus.checkingForUpdates")

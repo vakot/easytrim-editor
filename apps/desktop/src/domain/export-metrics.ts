@@ -81,6 +81,7 @@ export function estimateExportSize(
         ? (totalSize * totalMicros) / elapsedMicros
         : null
       : (bitrateBitsPerSecond * (totalMicros / 1_000_000)) / 8;
+
   if (estimatedBytes === null || !Number.isFinite(estimatedBytes)) return null;
 
   return {

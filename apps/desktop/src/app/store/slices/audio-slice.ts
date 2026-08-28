@@ -80,6 +80,7 @@ const audioSlice = createSlice({
       const track = state.tracks.find(
         (candidate) => candidate.streamIndex === action.payload.streamIndex,
       );
+
       if (!track) return;
       track.enabled = !track.enabled;
       if (track.enabled && track.volumePercent <= 0)
@@ -92,6 +93,7 @@ const audioSlice = createSlice({
       const track = state.tracks.find(
         (candidate) => candidate.streamIndex === action.payload.streamIndex,
       );
+
       if (!track) return;
       track.enabled = action.payload.volumePercent > 0;
       track.volumePercent = action.payload.volumePercent;
@@ -129,6 +131,7 @@ const audioSlice = createSlice({
       const track = state.tracks.find(
         (candidate) => candidate.streamIndex === action.payload.streamIndex,
       );
+
       if (track?.waveform.status === "ready") {
         track.waveform = {
           status: "failed",

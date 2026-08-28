@@ -13,6 +13,7 @@ import {
 const storedPreferences = readStoredJson<{ language?: unknown }>(STORAGE_KEYS.preferences);
 const storedLanguage =
   typeof storedPreferences?.language === "string" ? storedPreferences.language : undefined;
+
 const initialLanguage = storedLanguage ? resolveInitialLanguage([storedLanguage]) : undefined;
 
 void i18n.use(initReactI18next).init({

@@ -85,6 +85,7 @@ export function CropViewport({
       const { width, height } = container.getBoundingClientRect();
       setContainerBounds({ width, height });
     };
+
     updateBounds();
     const observer = new ResizeObserver(updateBounds);
     observer.observe(container);
@@ -97,15 +98,18 @@ export function CropViewport({
     width: Math.max(0, containerBounds.width - cropToolGutter),
     height: Math.max(0, containerBounds.height - cropToolGutter),
   };
+
   const viewportAspectRatio = cropIsApplied
     ? (sourceAspectRatio * cropSelection.crop.width) / cropSelection.crop.height
     : sourceAspectRatio;
+
   const viewport = containBounds(viewportBounds, viewportAspectRatio);
   const viewportFrame = {
     ...centerFrame(viewportBounds, viewport),
     left: cropToolGutter + (viewportBounds.width - viewport.width) / 2,
     top: cropToolGutter + (viewportBounds.height - viewport.height) / 2,
   };
+
   const selectionFrame = cropFrame(viewportFrame, cropSelection.crop);
   const sourceFrame = cropIsApplied
     ? {
@@ -115,6 +119,7 @@ export function CropViewport({
         top: -(cropSelection.crop.y * viewport.height) / cropSelection.crop.height,
       }
     : { width: viewport.width, height: viewport.height, left: 0, top: 0 };
+
   const viewportTransition = !cropSelection.isDragging
     ? "transition-[width,height,left,top] duration-200 ease-out motion-reduce:transition-none"
     : "";

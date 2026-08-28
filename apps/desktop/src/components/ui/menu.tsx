@@ -239,6 +239,7 @@ function MenuSub({
     },
     [id, onOpenChange, open, submenuCoordinator],
   );
+
   const context = React.useMemo(() => ({ setOpen }), [setOpen]);
 
   return (

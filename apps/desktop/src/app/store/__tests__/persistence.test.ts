@@ -128,6 +128,7 @@ describe("Redux Persist store integration", () => {
         _persist: JSON.stringify({ version: -1, rehydrated: true }),
       }),
     });
+
     const { store } = await createPersistedTestStore(storage);
 
     expect(store.getState().preferences).toEqual({
@@ -229,6 +230,7 @@ describe("Redux Persist store integration", () => {
         loopPlaybackEnabledDefault: false,
       }),
     });
+
     const { store } = await createPersistedTestStore(storage);
 
     expect(store.getState().preferences).toEqual(DEFAULT_PREFERENCES);

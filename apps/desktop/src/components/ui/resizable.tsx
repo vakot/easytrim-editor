@@ -198,12 +198,14 @@ function ResizablePanelControl({ panelId, mode = "toggle", children }: Resizable
   const collapsedPanelCount = Array.from(panelStates.values()).filter(
     (panelState) => panelState.isCollapsed,
   ).length;
+
   const isCollapsed = panelStates.size > 0 && collapsedPanelCount === panelStates.size;
   const isMixed = collapsedPanelCount > 0 && collapsedPanelCount < panelStates.size;
   const isExpanded = panelStates.size > 0 && collapsedPanelCount === 0;
 
   const child =
     typeof children === "function" ? children({ isCollapsed, isMixed, isExpanded }) : children;
+
   const handleClick = {
     collapse: handleCollapse,
     expand: handleExpand,

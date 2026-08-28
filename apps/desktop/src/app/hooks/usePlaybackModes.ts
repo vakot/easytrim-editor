@@ -52,6 +52,7 @@ export function usePlaybackModes({
       playbackRangeRef.current ?? activeRange(trim, trim.startMicros),
       loopEnabledRef.current,
     );
+
     if (action.type === "continue") {
       boundaryHandledRef.current = false;
       return { reached: false };

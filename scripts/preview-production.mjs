@@ -16,6 +16,7 @@ const metadata = JSON.parse(metadataResult.stdout);
 const desktopPackage = metadata.packages.find(
   (candidate) => candidate.name === "easytrim-editor-desktop",
 );
+
 const binaryTarget = desktopPackage?.targets.find((target) => target.kind.includes("bin"));
 
 if (!binaryTarget) {
@@ -25,6 +26,7 @@ if (!binaryTarget) {
 
 const executableName =
   process.platform === "win32" ? `${binaryTarget.name}.exe` : binaryTarget.name;
+
 const executablePath = join(metadata.target_directory, "release", executableName);
 
 try {

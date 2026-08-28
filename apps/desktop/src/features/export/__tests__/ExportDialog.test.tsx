@@ -28,6 +28,7 @@ describe("ExportDialog", () => {
       setItem: async () => undefined,
       removeItem: async () => undefined,
     });
+
     store.dispatch(sourceSelected({ source: firstSource }));
     store.dispatch(sourceReady({ loadToken: 1, media: media(firstSource.sourcePath) }));
 

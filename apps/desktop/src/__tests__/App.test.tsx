@@ -56,6 +56,7 @@ const selection: SourceRef = {
   displayName: "holiday.mp4",
   sourcePath: "C:/Media/holiday.mp4",
 };
+
 const replacementSelection: SourceRef = {
   displayName: "replacement.mp4",
   sourcePath: "C:/Media/replacement.mp4",
@@ -118,6 +119,7 @@ function installAudioMocks(initiallyReady = true) {
     audioElements.push(element);
     return element;
   });
+
   const audioContext = {
     destination: {},
     resume: vi.fn().mockResolvedValue(undefined),
@@ -292,6 +294,7 @@ describe("App", () => {
     const readyState = vi
       .spyOn(HTMLMediaElement.prototype, "readyState", "get")
       .mockReturnValue(HTMLMediaElement.HAVE_METADATA);
+
     mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
 
@@ -334,6 +337,7 @@ describe("App", () => {
     let resolveAudioPreviews!: (
       previews: Array<{ mediaToken: number; streamIndex: number; url: string }>,
     ) => void;
+
     mocks.chooseSource.mockResolvedValue([selection]);
     mocks.inspectMedia.mockResolvedValue({
       ...media,
@@ -496,6 +500,7 @@ describe("App", () => {
     const timelineHeading = screen.getByRole("heading", {
       name: "Selected Segment",
     }).parentElement?.parentElement;
+
     expect(timelineHeading).not.toBeNull();
     expect(within(timelineHeading as HTMLElement).getByLabelText("Current playback time")).toBe(
       screen.getByLabelText("Current playback time"),
@@ -508,10 +513,12 @@ describe("App", () => {
     const videoTimelineRow = screen
       .getByLabelText("Video trim timeline")
       .closest("[data-slot='timeline-row']");
+
     expect(videoTimelineRow).not.toBeNull();
     const videoToolbar = within(videoTimelineRow as HTMLElement).getByRole("toolbar", {
       name: "Video timeline tools",
     });
+
     expect(screen.getByText("Tools")).toHaveAttribute("data-slot", "timeline-tools-title");
     expect(videoToolbar).toHaveAttribute("data-slot", "timeline-toolbar");
     expect(videoToolbar).toHaveClass("flex", "items-stretch");
@@ -564,6 +571,7 @@ describe("App", () => {
     const playbackSpeedButton = within(videoToolbar).getByRole("button", {
       name: "Playback speed",
     });
+
     await user.click(playbackSpeedButton);
     const playbackSpeedSlider = screen.getByRole("slider", { name: "Playback speed" });
     playbackSpeedSlider.focus();
@@ -732,6 +740,7 @@ describe("App", () => {
       y: 0,
       toJSON: () => ({}),
     });
+
     mocks.chooseSource.mockResolvedValue([selection]);
     mocks.inspectMedia.mockResolvedValue({
       ...media,
@@ -867,6 +876,7 @@ describe("App", () => {
       y: 0,
       toJSON: () => ({}),
     });
+
     mocks.chooseSource.mockResolvedValue([selection]);
     mocks.prepareWaveforms
       .mockImplementationOnce(
@@ -963,10 +973,12 @@ describe("App", () => {
     const audioPlay = vi
       .spyOn(audio, "play")
       .mockRejectedValue(new DOMException("Playback interrupted", "AbortError"));
+
     const audioPause = vi.spyOn(audio, "pause").mockImplementation(() => undefined);
     const audioConstructor = vi.fn(function AudioMock() {
       return audio;
     });
+
     const audioContext = {
       destination: {},
       resume: vi.fn().mockResolvedValue(undefined),
@@ -998,6 +1010,7 @@ describe("App", () => {
       const videoPlay = vi.spyOn(video, "play").mockImplementation(async () => {
         fireEvent.play(video);
       });
+
       const videoPause = vi.spyOn(video, "pause").mockImplementation(() => undefined);
 
       await user.click(screen.getByRole("button", { name: "Play" }));
@@ -1102,6 +1115,7 @@ describe("App", () => {
       paused = false;
       return Promise.resolve();
     });
+
     const pause = vi.spyOn(video, "pause").mockImplementation(() => {
       paused = true;
     });
@@ -1247,6 +1261,7 @@ describe("App", () => {
     const setStart = screen.getByRole("button", {
       name: "Set segment start to current position",
     });
+
     const setEnd = screen.getByRole("button", {
       name: "Set segment end to current position",
     });

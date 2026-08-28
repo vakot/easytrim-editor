@@ -67,6 +67,7 @@ run("docker", [
 const tauriConfig = JSON.parse(
   await readFile(join("apps", "desktop", "src-tauri", "tauri.conf.json"), "utf8"),
 );
+
 const config = bundlesByPlatform.linux;
 const artifacts = config.artifacts.map((artifact) =>
   join(outputDirectory, getReleaseArtifactName(tauriConfig.version, config, artifact)),

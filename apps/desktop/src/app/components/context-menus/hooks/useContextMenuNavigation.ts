@@ -19,6 +19,7 @@ export function useContextMenuNavigation(): Record<ContextMenuId, MenuNavigation
       return current === id ? null : current;
     });
   }, []);
+
   const handleTriggerPointerEnter = useCallback(
     (id: ContextMenuId) => {
       if (openMenu !== null && openMenu !== id) {
@@ -28,6 +29,7 @@ export function useContextMenuNavigation(): Record<ContextMenuId, MenuNavigation
     },
     [openMenu],
   );
+
   const handleTriggerPointerLeave = useCallback((id: ContextMenuId) => {
     if (switchingMenuRef.current === id) switchingMenuRef.current = null;
   }, []);

@@ -51,17 +51,21 @@ export function SpectrumWheel({
       event.clientY - bounds.top,
       bounds.width,
     );
+
     scrubbedColor.current = selectedColor;
     onPreview(selectedColor);
   };
+
   const startScrubbing = (event: PointerEvent<HTMLButtonElement>) => {
     activePointerId.current = event.pointerId;
     event.currentTarget.setPointerCapture(event.pointerId);
     chooseColor(event);
   };
+
   const scrubColor = (event: PointerEvent<HTMLButtonElement>) => {
     if (activePointerId.current === event.pointerId) chooseColor(event);
   };
+
   const stopScrubbing = (event: PointerEvent<HTMLButtonElement>, commit: boolean) => {
     if (activePointerId.current !== event.pointerId) return;
     activePointerId.current = null;
@@ -72,6 +76,7 @@ export function SpectrumWheel({
     if (!commit) onCancel();
     scrubbedColor.current = null;
   };
+
   const adjustHue = (event: KeyboardEvent<HTMLButtonElement>) => {
     if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
     event.preventDefault();

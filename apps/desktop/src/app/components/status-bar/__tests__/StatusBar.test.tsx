@@ -87,6 +87,7 @@ describe("StatusBar", () => {
       currentFrame: 8,
       totalFrames: 8,
     });
+
     const { rerender } = renderQueue([completed]);
 
     mocks.queue = [exportToast({ status: "queued", startedAt: null })];

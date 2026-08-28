@@ -79,6 +79,7 @@ export function ExportDialog() {
   const hasMatchingResolutionPreset = resolutionPresets.some(
     (option) => option.value === resolutionValue,
   );
+
   const sourceAspectRatio = source.video.width / source.video.height;
   const frameRateValue = settings.frameRate
     ? `${settings.frameRate.numerator}/${settings.frameRate.denominator}`

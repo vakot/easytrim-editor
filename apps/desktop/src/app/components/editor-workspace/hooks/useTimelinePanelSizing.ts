@@ -12,6 +12,7 @@ const PENDING_SOURCE_CONSTRAINTS = {
   defaultSize: 170,
   maxSize: "100%",
 } as const;
+
 const EMPTY_TIMELINE_CONSTRAINTS = timelinePanelSizeConstraints(0);
 
 export function timelinePanelTargetSize(

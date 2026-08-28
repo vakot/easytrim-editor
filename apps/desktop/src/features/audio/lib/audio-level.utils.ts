@@ -11,6 +11,7 @@ export function volumePercentToDecibels(volumePercent: number): number {
     MIN_SLIDER_DECIBELS,
     Math.min(MAX_SLIDER_DECIBELS, 20 * Math.log10(volumePercent / 50)),
   );
+
   return Math.round(decibels * 10) / 10;
 }
 

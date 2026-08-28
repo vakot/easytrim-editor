@@ -139,6 +139,7 @@ function createReadyStore(withImportedItem = true) {
     setItem: async () => undefined,
     removeItem: async () => undefined,
   });
+
   store.dispatch(
     sourceSelected({
       source: {
@@ -168,6 +169,7 @@ beforeEach(() => {
       const active = getState().export.queue.find(
         (item) => item.id === getState().export.activeItemId,
       );
+
       if (active?.status === "imported" && active.origin === "history-fork") {
         dispatch(importQueueItemRemoved(active.id));
       }
@@ -299,6 +301,7 @@ describe("export thunks and runtime queue", () => {
         source: { displayName: "next.mp4", sourcePath: "C:/Media/next.mp4" },
       },
     };
+
     store.dispatch(importQueueItemAdded(importedItem));
     store.dispatch(importQueueItemAdded(nextItem));
     store.dispatch(activeQueueItemChanged(importedItem.id));
@@ -413,6 +416,7 @@ describe("export thunks and runtime queue", () => {
       displayName: "other.mp4",
       sourcePath: "C:/Media/other.mp4",
     };
+
     const restoredMedia = { ...media, durationMicros: 2_000_000 };
     mocks.activateSourcePath.mockResolvedValue(source);
     mocks.activateSource.mockImplementation(
@@ -439,6 +443,7 @@ describe("export thunks and runtime queue", () => {
         trim: { startMicros: 250_000, endMicros: 1_750_000 },
       },
     };
+
     store.dispatch(queueEntryAdded(historicalItem));
 
     await expect(store.dispatch(restoreExportQueueItemRequested(queuedItem.id))).resolves.toBe(
@@ -468,10 +473,12 @@ describe("export thunks and runtime queue", () => {
       displayName: "history.mp4",
       sourcePath: "C:/Media/history.mp4",
     };
+
     const historicalItem = {
       ...queuedItem,
       snapshot: { ...queuedItem.snapshot, source },
     };
+
     const secondHistoryItem = { ...historicalItem, id: "export-second" };
     mocks.activateSourcePath.mockResolvedValue(source);
     mocks.activateSource.mockImplementation(

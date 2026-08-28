@@ -59,6 +59,7 @@ vi.mock("react-resizable-panels", async () => {
       if (!controller) {
         const initiallyCollapsed =
           props.collapsedSize !== undefined && props.defaultSize === props.collapsedSize;
+
         primitive.collapsed.set(id, initiallyCollapsed);
         controller = {
           collapse: vi.fn(() => reportResize(id, true)),

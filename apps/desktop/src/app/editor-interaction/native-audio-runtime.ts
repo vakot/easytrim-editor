@@ -17,6 +17,7 @@ export function getOrCreateNativeAudioBinding(
     gain: context.createGain(),
     connectedMaster: null,
   };
+
   bindings.set(element, binding);
   return binding;
 }

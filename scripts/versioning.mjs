@@ -3,6 +3,7 @@ import { join } from "node:path";
 
 const VERSION_PATTERN =
   /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/;
+
 const VERSION_INCREMENTS = new Set(["patch", "minor", "major"]);
 
 function parseVersion(version, label) {
@@ -44,6 +45,7 @@ function replaceMatchedVersion(content, pattern, version, label) {
 const cargoWorkspaceVersionPattern = /(\[workspace\.package\][\s\S]*?\bversion\s*=\s*")([^"]+)(")/;
 const cargoLockVersionPattern =
   /(\[\[package\]\]\r?\nname = "easytrim-editor-desktop"\r?\nversion = ")([^"]+)(")/;
+
 const jsonVersionPattern = /("version"\s*:\s*")([^"]+)(")/;
 
 export function resolveVersion(currentVersion, request) {
@@ -89,12 +91,14 @@ export async function bumpVersion(request, repositoryRoot = process.cwd()) {
     cargoLock: join(repositoryRoot, "Cargo.lock"),
     tauriConfig: join(repositoryRoot, "apps", "desktop", "src-tauri", "tauri.conf.json"),
   };
+
   const [packageContent, cargoToml, cargoLock, tauriContent] = await Promise.all([
     readFile(paths.packageJson, "utf8"),
     readFile(paths.cargoToml, "utf8"),
     readFile(paths.cargoLock, "utf8"),
     readFile(paths.tauriConfig, "utf8"),
   ]);
+
   const packageJson = JSON.parse(packageContent);
   const tauriConfig = JSON.parse(tauriContent);
   const versions = {
@@ -103,6 +107,7 @@ export async function bumpVersion(request, repositoryRoot = process.cwd()) {
     cargoLock: readMatchedVersion(cargoLock, cargoLockVersionPattern, "Cargo lock package version"),
     tauri: tauriConfig.version,
   };
+
   const uniqueVersions = new Set(Object.values(versions));
 
   if (uniqueVersions.size !== 1) {

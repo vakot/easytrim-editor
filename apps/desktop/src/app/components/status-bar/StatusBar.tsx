@@ -110,6 +110,7 @@ function StatusBarUpdateButton() {
     checkForUpdates,
     installUpdate,
   } = useAppUpdates();
+
   const updateAction = getUpdateButtonAction(updateStatus, availableVersion, isInstalling, {
     loading: t("statusBar.loading"),
     update: t("statusBar.update"),

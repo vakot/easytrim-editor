@@ -50,6 +50,7 @@ describe("usePlaybackModes", () => {
     const { result: nonLooping } = renderHook(() =>
       usePlaybackModes({ loopEnabled: false, segmentEnabled: true }),
     );
+
     expect(nonLooping.current.consumeBoundary(20_000_000, trim)).toEqual({
       reached: true,
       action: { type: "stop", positionMicros: 20_000_000 },
@@ -63,6 +64,7 @@ describe("usePlaybackModes", () => {
     const { result: looping } = renderHook(() =>
       usePlaybackModes({ loopEnabled: true, segmentEnabled: true }),
     );
+
     expect(looping.current.consumeBoundary(20_000_000, trim)).toEqual({
       reached: true,
       action: { type: "restart", positionMicros: 10_000_000 },

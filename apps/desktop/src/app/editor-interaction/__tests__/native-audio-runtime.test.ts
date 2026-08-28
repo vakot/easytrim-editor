@@ -11,6 +11,7 @@ function createAudioContextMock() {
     connect: vi.fn((destination: unknown) => destination),
     disconnect: vi.fn(),
   }));
+
   const createGain = vi.fn(() => ({
     gain: { value: 1 },
     connect: vi.fn((destination: unknown) => destination),

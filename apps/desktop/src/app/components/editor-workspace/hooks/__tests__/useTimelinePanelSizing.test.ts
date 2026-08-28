@@ -16,6 +16,7 @@ const panelMock = vi.hoisted(() => {
       model.currentSize = size;
     }),
   };
+
   return { model, panel, ref: { current: panel } };
 });
 
@@ -68,6 +69,7 @@ describe("useTimelinePanelSizing", () => {
         },
       },
     );
+
     panelMock.model.currentSize = 400;
     panelMock.panel.resize.mockClear();
 
@@ -93,6 +95,7 @@ describe("useTimelinePanelSizing", () => {
         },
       },
     );
+
     panelMock.model.collapsed = true;
     panelMock.panel.resize.mockClear();
 
@@ -107,6 +110,7 @@ describe("useTimelinePanelSizing", () => {
       ({ hasSource, audioTrackCount }) => useTimelinePanelSizing(hasSource, audioTrackCount),
       { initialProps: { hasSource: true, audioTrackCount: 3 as number | null } },
     );
+
     panelMock.model.currentSize = 400;
     panelMock.panel.resize.mockClear();
 
@@ -144,6 +148,7 @@ describe("useTimelinePanelSizing", () => {
       ({ hasSource, audioTrackCount }) => useTimelinePanelSizing(hasSource, audioTrackCount),
       { initialProps: { hasSource: true, audioTrackCount: 3 as number | null } },
     );
+
     panelMock.model.currentSize = 400;
     panelMock.panel.resize.mockClear();
 

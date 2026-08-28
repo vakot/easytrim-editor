@@ -22,6 +22,7 @@ export function requestPlaybackFrame(
     const id = video.requestVideoFrameCallback((now, metadata) => {
       callback(now, metadata.mediaTime);
     });
+
     return { kind: "video", id, video };
   }
 

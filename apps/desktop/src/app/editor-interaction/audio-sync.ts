@@ -31,6 +31,7 @@ export function synchronizeAudioPosition(
     -MAX_RATE_CORRECTION,
     Math.min(MAX_RATE_CORRECTION, signedDriftSeconds * 0.5),
   );
+
   audio.playbackRate = playbackRate * (1 + correction);
   return "rate";
 }

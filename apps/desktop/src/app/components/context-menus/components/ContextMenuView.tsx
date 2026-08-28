@@ -196,16 +196,19 @@ function CustomColorPickerPanel({
     setHexValue(resolvePrimaryColor(color).slice(1));
     previewPrimaryColor(color);
   };
+
   const commit = (color: PrimaryColor) => {
     onPreviewChange(null);
     setHexValue(resolvePrimaryColor(color).slice(1));
     if (isCustomPrimaryColor(color)) dispatch(customPrimaryColorChanged(color));
   };
+
   const cancel = () => {
     onPreviewChange(null);
     setHexValue(customPrimaryColor.slice(1));
     previewPrimaryColor(null);
   };
+
   const updateHexValue = (value: string) => {
     setHexValue(value);
     const color = `#${value}`;

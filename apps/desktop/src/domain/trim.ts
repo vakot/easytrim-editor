@@ -42,8 +42,10 @@ export function advanceDirectionalSnapLatch(
 ): DirectionalSnapState {
   const nextDirection: DragDirection | null =
     movementMicros > 0 ? 1 : movementMicros < 0 ? -1 : latch.direction;
+
   const directionChanged =
     nextDirection !== null && latch.direction !== null && nextDirection !== latch.direction;
+
   const ignoredDirection = directionChanged ? null : latch.ignoredDirection;
   const anchorHeld = directionChanged ? false : latch.anchorHeld;
 
@@ -118,6 +120,7 @@ export function moveTrimRange(range: TrimRange, requestedStartMicros: number): T
     0,
     range.sourceDurationMicros - durationMicros,
   );
+
   return {
     ...range,
     startMicros,
@@ -179,6 +182,7 @@ export function playheadAfterSegmentMove(
       playheadMicros,
       true,
     );
+
     if (followed.boundary) {
       return followed;
     }
@@ -230,6 +234,7 @@ function safeBoundaryFollowAfterMove(
   const playhead = clampInteger(playheadMicros, 0, nextRange.sourceDurationMicros);
   const previousBoundaryMicros =
     boundary === "start" ? previousRange.startMicros : previousRange.endMicros;
+
   const nextBoundaryMicros = boundary === "start" ? nextRange.startMicros : nextRange.endMicros;
   const movementMicros = nextBoundaryMicros - previousBoundaryMicros;
   const movingTowardOpposite = boundary === "start" ? movementMicros > 0 : movementMicros < 0;

@@ -70,6 +70,7 @@ export function applyEditorSnapshot(
     const current = selectAudioTracks(getState()).find(
       (candidate) => candidate.streamIndex === track.streamIndex,
     );
+
     if (current && current.enabled !== track.enabled) {
       dispatch(audioTrackToggled({ streamIndex: track.streamIndex }));
     }

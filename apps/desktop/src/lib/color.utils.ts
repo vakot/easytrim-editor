@@ -25,6 +25,7 @@ export function hslToHex(hue: number, saturation: number, lightness: number): He
             : segment < 5
               ? [secondary, 0, chroma]
               : [chroma, 0, secondary];
+
   const match = lightness / 100 - chroma / 2;
   return `#${[red, green, blue]
     .map((channel) =>
@@ -55,5 +56,6 @@ export function hexToHsl(hex: string) {
           60 +
           360) %
         360;
+
   return { hue, saturation: saturation * 100 };
 }

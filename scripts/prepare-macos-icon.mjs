@@ -19,6 +19,7 @@ const source = resolve(
   "macos",
   `${iconName}.icon`,
 );
+
 const output = resolve(repositoryRoot, "target", "icon-assets", "macos");
 const partialInfoPlist = resolve(output, "partial-info.plist");
 

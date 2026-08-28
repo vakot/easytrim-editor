@@ -223,6 +223,7 @@ export const restoreActiveImportedItemRequested =
       (candidate): candidate is importQueueItem =>
         candidate.id === id && candidate.status === "imported",
     );
+
     if (!item || getState().export.activeItemId !== id) return false;
 
     const restorationId = queueRestoreSequence;
@@ -277,6 +278,7 @@ export const navigateToImportedItem =
             candidate.id === id && candidate.status === "imported",
         )
       : null;
+
     if (id !== null && !target) return false;
     if (state.export.activeItemId === id && (id !== null || !selectHasSource(state))) return false;
 

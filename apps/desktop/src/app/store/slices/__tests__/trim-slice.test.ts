@@ -12,6 +12,7 @@ describe("trim slice", () => {
       loading,
       sourceReady({ loadToken: 1, media: media(firstSource.sourcePath) }),
     );
+
     const invalid = trimReducer(
       ready,
       trimChanged({

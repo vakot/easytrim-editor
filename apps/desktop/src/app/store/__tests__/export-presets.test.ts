@@ -22,6 +22,7 @@ describe("export presets", () => {
       initialExportPresetState,
       exportArgumentsChanged("-c:v libx264 -crf 20"),
     );
+
     const created = exportPresetsReducer(edited, exportPresetCreated({ name: "CPU fallback" }));
     expect(created.presets.find((preset) => preset.id === created.selectedPresetId)).toMatchObject({
       name: "CPU fallback",
@@ -33,6 +34,7 @@ describe("export presets", () => {
       exportPresetsReducer(selected, exportArgumentsChanged("-c:v libx264 -crf 18")),
       exportPresetUpdated({ name: "High quality CPU" }),
     );
+
     expect(updated.presets.find((preset) => preset.id === updated.selectedPresetId)).toMatchObject({
       name: "High quality CPU",
       argumentsText: "-c:v libx264 -crf 18",
@@ -70,6 +72,7 @@ describe("export presets", () => {
       exportPresetsReducer(initialExportPresetState, exportPresetCreated({ name: "Portable" })),
       exportPresetSelected("runtime-preset-1"),
     );
+
     persistExportPresetState(saved);
     expect(loadExportPresetState()).toEqual(saved);
   });

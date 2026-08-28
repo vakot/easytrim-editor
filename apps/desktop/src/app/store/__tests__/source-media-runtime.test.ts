@@ -35,10 +35,12 @@ const source: SourceRef = {
   displayName: "runtime.mp4",
   sourcePath: "C:/Media/runtime.mp4",
 };
+
 const secondSource: SourceRef = {
   displayName: "second.mp4",
   sourcePath: "C:/Media/second.mp4",
 };
+
 const media: MediaInfo = {
   formatName: "mp4",
   durationMicros: 1_000_000,

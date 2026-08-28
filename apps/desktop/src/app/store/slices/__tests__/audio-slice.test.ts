@@ -30,6 +30,7 @@ describe("audio slice", () => {
       ready,
       audioTrackVolumeChanged({ streamIndex: 2, volumePercent: 0 }),
     );
+
     const unmuted = audioReducer(muted, audioTrackToggled({ streamIndex: 2 }));
     const merged = audioReducer(unmuted, audioMergeToggled());
     const masterMuted = audioReducer(merged, masterAudioToggled());
@@ -50,6 +51,7 @@ describe("audio slice", () => {
         streamIndexes: [2, 4],
       }),
     );
+
     const stale = audioReducer(
       loading,
       waveformReady({
@@ -60,6 +62,7 @@ describe("audio slice", () => {
         url: "media://stale",
       }),
     );
+
     const current = audioReducer(
       stale,
       waveformReady({

@@ -144,6 +144,7 @@ describe("CustomTitleBar", () => {
     const dragRegion = screen
       .getByRole("banner")
       .querySelector<HTMLElement>('header > div[aria-hidden="true"]');
+
     if (!dragRegion) throw new Error("Expected title bar drag region");
     fireEvent.pointerDown(dragRegion, { button: 0, clientX: 10, clientY: 10, pointerId: 1 });
     fireEvent.pointerMove(dragRegion, { clientX: 20, clientY: 10, pointerId: 1 });

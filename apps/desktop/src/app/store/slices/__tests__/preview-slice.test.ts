@@ -16,6 +16,7 @@ describe("preview slice", () => {
       initialPreviewState,
       sourceSelected({ source: firstSource }),
     );
+
     const loadingSecond = previewReducer(loadingFirst, sourceSelected({ source: secondSource }));
     expect(loadingSecond).toEqual({ value: { status: "idle" } });
   });

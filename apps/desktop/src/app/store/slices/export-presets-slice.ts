@@ -29,6 +29,7 @@ const exportPresetsSlice = createSlice({
         name: action.payload.name.trim(),
         argumentsText: state.argumentsText,
       };
+
       state.presets.push(preset);
       state.selectedPresetId = preset.id;
       state.nextPresetSequence = nextPresetSequence;

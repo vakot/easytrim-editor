@@ -24,6 +24,7 @@ describe("preferences Redux domain", () => {
     const initialState = {
       ...DEFAULT_PREFERENCES,
     };
+
     const nextState = preferencesReducer(
       initialState,
       preferenceChanged({ key: "snapPlaybackEnabledDefault", enabled: false }),
@@ -57,6 +58,7 @@ describe("preferences Redux domain", () => {
       autoStartQueueEnabled: true,
       mergeAudioEnabledDefault: true,
     };
+
     const state = { preferences } as RootState;
 
     expect(selectPreferences(state)).toEqual(preferences);

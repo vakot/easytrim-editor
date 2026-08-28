@@ -93,10 +93,12 @@ export function loadExportPresetState(): ExportPresetState {
       typeof preset.name === "string" &&
       typeof preset.argumentsText === "string",
   );
+
   const availablePresets = presets.length > 0 ? presets : initialExportPresetState.presets;
   const selectedPresetId = availablePresets.some((preset) => preset.id === stored.selectedPresetId)
     ? stored.selectedPresetId
     : (availablePresets[0]?.id ?? null);
+
   const selectedPreset = availablePresets.find((preset) => preset.id === selectedPresetId);
 
   return {
