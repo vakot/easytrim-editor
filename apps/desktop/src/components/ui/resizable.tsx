@@ -8,14 +8,7 @@ import { Slot } from "radix-ui";
 
 type PanelId = string;
 type PanelRef = React.RefObject<ResizablePrimitive.PanelImperativeHandle | null>;
-type PanelRestoreState = "idle" | "enable" | "resize";
-type PanelState = {
-  ref: PanelRef;
-  isCollapsed: boolean;
-  isDisabled: boolean;
-  previousSize?: number;
-  restoreState: PanelRestoreState;
-};
+type PanelState = { ref: PanelRef; isCollapsed: boolean };
 
 type PanelRefsCollection = Record<PanelId, PanelState>;
 
@@ -24,9 +17,6 @@ const ResizablePanelContext = React.createContext<{
   registerPanel: (panelId: PanelId, panelRef: PanelRef) => void;
   unregisterPanel: (panelId: PanelId) => void;
   updatePanelState: (panelId: PanelId, update: (panel: PanelState) => PanelState) => void;
-  requestPanelRestore: (panelId: PanelId) => void;
-  advancePanelRestore: (panelId: PanelId) => void;
-  finishPanelRestore: (panelId: PanelId) => void;
 } | null>(null);
 
 function ResizablePanelGroup({ className, ...props }: ResizablePrimitive.GroupProps) {
@@ -81,126 +71,32 @@ function PersistedResizablePanelGroup({
 
 interface ResizablePanelProps extends Omit<ResizablePrimitive.PanelProps, "id"> {
   id: PanelId;
-  collapsibleMode?: "default" | "forced";
 }
 
-function ResizablePanel({
-  id,
-  collapsibleMode = "default",
-  onResize,
-  minSize,
-  maxSize,
-  collapsedSize,
-  disabled,
-  ...props
-}: ResizablePanelProps) {
-  const {
-    registerPanel,
-    unregisterPanel,
-    updatePanelState,
-    advancePanelRestore,
-    finishPanelRestore,
-  } = useResizablePanelContext();
+function ResizablePanel({ id, onResize, ...props }: ResizablePanelProps) {
+  const { registerPanel, unregisterPanel, updatePanelState } = useResizablePanelContext();
 
-  const panel = usePanelState(id);
   const panelRef = ResizablePrimitive.usePanelRef();
-  const isForced = collapsibleMode === "forced";
-  const isForcedDisabled = isForced && panel?.isDisabled;
-  const previousSize = panel?.previousSize;
-  const restoreState = panel?.restoreState;
-  const lockedSize = collapsedSize ?? 0;
 
   React.useEffect(() => {
     registerPanel(id, panelRef);
     return () => unregisterPanel(id);
   }, [id, panelRef, registerPanel, unregisterPanel]);
 
-  React.useEffect(() => {
-    if (!isForced || isForcedDisabled || restoreState == null) return;
-
-    if (restoreState === "enable") {
-      advancePanelRestore(id);
-      return;
-    }
-
-    if (restoreState !== "resize") return;
-
-    if (previousSize == null) {
-      panelRef.current?.expand();
-    } else {
-      panelRef.current?.resize(`${previousSize}%`);
-    }
-
-    finishPanelRestore(id);
-  }, [
-    advancePanelRestore,
-    finishPanelRestore,
-    id,
-    isForced,
-    isForcedDisabled,
-    panelRef,
-    previousSize,
-    restoreState,
-  ]);
-
-  React.useEffect(() => {
-    if (isForced && restoreState !== "idle") return;
-
-    updatePanelState(id, (currentPanel) => {
-      const isInitiallyCollapsed = panelRef.current?.isCollapsed() ?? false;
-
-      if (isForced) {
-        if (!isInitiallyCollapsed || currentPanel.isDisabled) return currentPanel;
-
-        return {
-          ...currentPanel,
-          isCollapsed: true,
-          isDisabled: true,
-        };
-      }
-
-      if (!currentPanel.isDisabled && currentPanel.restoreState === "idle") return currentPanel;
-
-      return {
-        ...currentPanel,
-        isDisabled: false,
-        restoreState: "idle",
-      };
-    });
-  }, [id, isForced, panel?.ref, panelRef, restoreState, updatePanelState]);
-
   return (
     <ResizablePrimitive.Panel
       data-slot="resizable-panel"
       id={id}
       panelRef={panelRef}
-      disabled={isForcedDisabled ? true : disabled}
-      minSize={isForcedDisabled ? lockedSize : minSize}
-      maxSize={isForcedDisabled ? lockedSize : maxSize}
-      collapsedSize={collapsedSize}
       onResize={(size, panelId, prevSize) => {
         const isCollapsed = panelRef.current?.isCollapsed() ?? false;
 
         updatePanelState(id, (currentPanel) => {
-          const isDisabled = isForced ? isCollapsed : currentPanel.isDisabled;
-          const previousSize = isForced && !isCollapsed ? size.asPercentage : undefined;
-          const restoreState = isForced ? "idle" : currentPanel.restoreState;
-
-          if (
-            currentPanel.isCollapsed === isCollapsed &&
-            currentPanel.isDisabled === isDisabled &&
-            currentPanel.restoreState === restoreState &&
-            (previousSize == null || currentPanel.previousSize === previousSize)
-          ) {
-            return currentPanel;
-          }
+          if (currentPanel.isCollapsed === isCollapsed) return currentPanel;
 
           return {
             ...currentPanel,
             isCollapsed,
-            isDisabled,
-            restoreState,
-            ...(previousSize == null ? {} : { previousSize }),
           };
         });
 
@@ -244,15 +140,12 @@ interface ResizablePanelToggleProps {
 
 function ResizablePanelToggle({ panelId, children }: ResizablePanelToggleProps) {
   const panelState = usePanelState(panelId);
-  const { requestPanelRestore } = useResizablePanelContext();
 
   const toggle = () => {
     const panel = panelState?.ref.current;
     if (!panel) return;
 
-    if (panelState.isDisabled) {
-      requestPanelRestore(panelId);
-    } else if (panel.isCollapsed()) {
+    if (panelState.isCollapsed) {
       panel.expand();
     } else {
       panel.collapse();
@@ -306,63 +199,9 @@ function ResizablePanelContextProvider({ children }: React.PropsWithChildren) {
     [],
   );
 
-  const requestPanelRestore = React.useCallback((panelId: PanelId) => {
-    setPanels((panels) => {
-      const panel = panels[panelId];
-      if (!panel || panel.restoreState !== "idle") return panels;
-
-      return {
-        ...panels,
-        [panelId]: {
-          ...panel,
-          isDisabled: false,
-          restoreState: "enable",
-        },
-      };
-    });
-  }, []);
-
-  const advancePanelRestore = React.useCallback((panelId: PanelId) => {
-    setPanels((panels) => {
-      const panel = panels[panelId];
-      if (!panel || panel.restoreState !== "enable") return panels;
-
-      return {
-        ...panels,
-        [panelId]: {
-          ...panel,
-          restoreState: "resize",
-        },
-      };
-    });
-  }, []);
-
-  const finishPanelRestore = React.useCallback((panelId: PanelId) => {
-    setPanels((panels) => {
-      const panel = panels[panelId];
-      if (!panel || panel.restoreState === "idle") return panels;
-
-      return {
-        ...panels,
-        [panelId]: {
-          ...panel,
-          restoreState: "idle",
-        },
-      };
-    });
-  }, []);
-
   return (
     <ResizablePanelContext.Provider
-      value={{
-        panels,
-        registerPanel,
-        unregisterPanel,
-        updatePanelState,
-        requestPanelRestore,
-        advancePanelRestore,
-        finishPanelRestore,
-      }}
+      value={{ panels, registerPanel, unregisterPanel, updatePanelState }}
     >
       {children}
     </ResizablePanelContext.Provider>

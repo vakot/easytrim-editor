@@ -22,13 +22,7 @@ function Playground() {
             collapsible
           >
             <PersistedResizablePanelGroup id="pane-view" orientation="vertical">
-              <ResizablePanel
-                id="pane-view-1"
-                collapsible
-                collapsibleMode="forced"
-                collapsedSize={28}
-                minSize={120}
-              >
+              <ResizablePanel id="pane-view-1" collapsible collapsedSize={28} minSize={120}>
                 <ResizablePanelToggle panelId="pane-view-1">
                   {(isCollapsed) => (
                     <Button variant="ghost" size="xs" className="px-2 justify-baseline w-full">
@@ -41,13 +35,7 @@ function Playground() {
 
               <ResizableHandle />
 
-              <ResizablePanel
-                id="pane-view-2"
-                collapsible
-                collapsibleMode="forced"
-                collapsedSize={28}
-                minSize={120}
-              >
+              <ResizablePanel id="pane-view-2" collapsible collapsedSize={28} minSize={120}>
                 <ResizablePanelToggle panelId="pane-view-2">
                   {(isCollapsed) => (
                     <Button variant="ghost" size="xs" className="px-2 justify-baseline w-full">
@@ -60,13 +48,7 @@ function Playground() {
 
               <ResizableHandle />
 
-              <ResizablePanel
-                id="pane-view-3"
-                collapsible
-                collapsibleMode="forced"
-                collapsedSize={28}
-                minSize={120}
-              >
+              <ResizablePanel id="pane-view-3" collapsible collapsedSize={28} minSize={120}>
                 <ResizablePanelToggle panelId="pane-view-3">
                   {(isCollapsed) => (
                     <Button variant="ghost" size="xs" className="px-2 justify-baseline w-full">
@@ -76,8 +58,6 @@ function Playground() {
                   )}
                 </ResizablePanelToggle>
               </ResizablePanel>
-
-              <ResizablePanel id="pane-view-4" />
             </PersistedResizablePanelGroup>
           </ResizablePanel>
 
