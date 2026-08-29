@@ -58,13 +58,13 @@ export function SourceDetails() {
   ] as const;
 
   return (
-    <dl aria-label={t("source.accessibility.metadata")} className="grid">
+    <dl aria-label={t("source.accessibility.metadata")}>
       {metadata.map(([label, value], index) => (
         <Fragment key={label}>
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-3 py-2">
-            <dt className="text-xs text-muted-foreground">{label}</dt>
+          <div className="flex w-full items-baseline justify-between gap-3 py-2">
+            <dt className="shrink-0 text-xs text-muted-foreground">{label}</dt>
             <dd
-              className="max-w-40 truncate text-right text-xs font-medium text-foreground"
+              className="min-w-0 flex-1 truncate text-right text-xs font-medium text-foreground"
               title={value}
             >
               {value}
