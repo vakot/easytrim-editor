@@ -59,13 +59,13 @@ export function PanelVisibilityControls() {
                   </DropdownMenuItem>
                 )}
               </ResizablePanelControl>
-              <ResizablePanelControl panelId="editor-stage-timeline">
+              <ResizablePanelControl panelId="editor-stage-audio">
                 {({ isCollapsed }) => (
                   <DropdownMenuItem onSelect={(event) => event.preventDefault()}>
                     {isCollapsed ? (
-                      <PanelLeftDashed aria-hidden="true" className="size-3" />
+                      <PanelBottomDashed aria-hidden="true" className="size-3" />
                     ) : (
-                      <PanelLeft aria-hidden="true" className="size-3" />
+                      <PanelBottom aria-hidden="true" className="size-3" />
                     )}
                     {t("app.labels.bottomPanel")}
                   </DropdownMenuItem>
@@ -78,9 +78,9 @@ export function PanelVisibilityControls() {
                 mode="reset"
                 panelId={["workspace-sidebar", "editor-stage-timeline"]}
               >
-                {({ isExpanded }) => (
+                {({ isDisabled }) => (
                   <DropdownMenuItem
-                    disabled={isExpanded}
+                    disabled={isDisabled}
                     onSelect={(event) => event.preventDefault()}
                   >
                     <RotateCcw aria-hidden="true" className="size-3" />
