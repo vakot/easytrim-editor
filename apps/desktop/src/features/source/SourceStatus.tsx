@@ -27,7 +27,7 @@ function StatusDot({ tone }: { tone: "success" | "error" | "neutral" }) {
 
 function CapabilityTooltip({ children, content }: { children: ReactNode; content: ReactNode }) {
   return (
-    <Tooltip delayDuration={0}>
+    <Tooltip>
       <TooltipTrigger asChild>
         <span className="inline-flex" tabIndex={0}>
           {children}
@@ -49,10 +49,10 @@ export function SourceStatus() {
 
   if (capabilities.status === "checking") {
     return (
-      <CapabilityTooltip content={t("import.capabilities.checkingDescription")}>
+      <CapabilityTooltip content={t("source.messages.checkingTools")}>
         <Badge className="text-muted-foreground" role="status" variant="outline">
           <StatusDot tone="neutral" />
-          {t("import.capabilities.checking")}
+          {t("source.status.checkingTools")}
         </Badge>
       </CapabilityTooltip>
     );
@@ -63,7 +63,7 @@ export function SourceStatus() {
       <CapabilityTooltip content={capabilities.error.message}>
         <Badge className={styles.errorBadge} role="status" variant="destructive">
           <StatusDot tone="error" />
-          {t("import.capabilities.failed")}
+          {t("source.status.toolsFailed")}
         </Badge>
       </CapabilityTooltip>
     );
@@ -76,36 +76,34 @@ export function SourceStatus() {
 
   const missing = entries
     .map(({ capability, label }) =>
-      capabilityError(label, capability, t("import.capabilities.missing")),
+      capabilityError(label, capability, t("source.messages.dependencyMissing")),
     )
     .filter((value): value is string => value !== null);
 
+  const dependencyDescription =
+    missing.length === 0 ? t("source.messages.toolsReady") : t("source.messages.toolsUnavailable");
+
   const dependencyDetails = (
     <>
-      <p>
-        {t(
-          missing.length === 0
-            ? "import.capabilities.readyDescription"
-            : "import.capabilities.unavailableDescription",
-        )}
-      </p>
+      <p>{dependencyDescription}</p>
       <ul className="grid gap-1">
-        {entries.map(({ capability, label }) => (
-          <li className={capability.available ? "text-emerald-300" : "text-red-400"} key={label}>
-            <span className="inline-flex items-center gap-1.5">
-              <StatusDot tone={capability.available ? "success" : "error"} />
-              {label}:{" "}
-              {t(
-                capability.available
-                  ? "import.capabilities.installed"
-                  : "import.capabilities.missingStatus",
-              )}
-            </span>
-            {!capability.available && capability.error ? (
-              <span className="block pl-3.5 text-muted-foreground">{capability.error}</span>
-            ) : null}
-          </li>
-        ))}
+        {entries.map(({ capability, label }) => {
+          const capabilityStatus = capability.available
+            ? t("source.status.installed")
+            : t("source.status.missing");
+
+          return (
+            <li className={capability.available ? "text-emerald-300" : "text-red-400"} key={label}>
+              <span className="inline-flex items-center gap-1.5">
+                <StatusDot tone={capability.available ? "success" : "error"} />
+                {label}: {capabilityStatus}
+              </span>
+              {!capability.available && capability.error ? (
+                <span className="block pl-3.5 text-muted-foreground">{capability.error}</span>
+              ) : null}
+            </li>
+          );
+        })}
       </ul>
     </>
   );
@@ -119,7 +117,7 @@ export function SourceStatus() {
           variant="outline"
         >
           <StatusDot tone="success" />
-          {t("import.capabilities.ready")}
+          {t("source.status.toolsReady")}
         </Badge>
       </CapabilityTooltip>
     );
@@ -129,13 +127,13 @@ export function SourceStatus() {
   return (
     <CapabilityTooltip content={dependencyDetails}>
       <Badge
-        aria-label={t("import.capabilities.unavailableLabel", { message })}
+        aria-label={t("source.accessibility.toolsUnavailable", { message })}
         className={styles.errorBadge}
         role="status"
         variant="destructive"
       >
         <StatusDot tone="error" />
-        {t("import.capabilities.unavailable")}
+        {t("source.status.toolsUnavailable")}
       </Badge>
     </CapabilityTooltip>
   );

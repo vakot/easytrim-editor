@@ -38,53 +38,62 @@ export function PlaybackControls({
   const { t } = useTranslation();
 
   return (
-    <div aria-label={t("preview.controls")} className="relative flex items-center justify-center">
+    <div
+      aria-label={t("preview.accessibility.controls")}
+      className="relative flex items-center justify-center"
+    >
       <div className="flex items-center gap-1.5">
         <TransportButton
           disabled={disabled || !canSetSegmentStart}
-          label={t("preview.setStart")}
+          label={t("preview.actions.setStart")}
           onClick={() => onSetSegmentBoundary("start")}
           shortcut="I"
           title={
-            canSetSegmentStart ? t("preview.setStartShortcut") : t("preview.setStartUnavailable")
+            canSetSegmentStart
+              ? t("preview.tooltips.setStart")
+              : t("preview.messages.setStartUnavailable")
           }
         >
           <SquareArrowRight />
         </TransportButton>
         <TransportButton
           disabled={disabled}
-          label={t("preview.previousFrame")}
+          label={t("preview.actions.previousFrame")}
           onClick={() => onStepFrame(-1)}
           shortcut="ArrowLeft"
-          title={t("preview.previousFrameShortcut")}
+          title={t("preview.tooltips.previousFrame")}
         >
           <SkipBack />
         </TransportButton>
         <TransportButton
           disabled={disabled}
-          label={isPlaying ? t("preview.pause") : t("preview.play")}
+          label={isPlaying ? t("preview.actions.pause") : t("preview.actions.play")}
           onClick={onTogglePlayback}
           primary
           shortcut="Space"
-          title={isPlaying ? t("preview.pauseShortcut") : t("preview.playShortcut")}
+          title={isPlaying ? t("preview.tooltips.pause") : t("preview.tooltips.play")}
         >
           {isPlaying ? <Pause /> : <Play />}
         </TransportButton>
         <TransportButton
           disabled={disabled}
-          label={t("preview.nextFrame")}
+          label={t("preview.actions.nextFrame")}
           onClick={() => onStepFrame(1)}
           shortcut="ArrowRight"
-          title={t("preview.nextFrameShortcut")}
+          title={t("preview.tooltips.nextFrame")}
         >
           <SkipForward />
         </TransportButton>
         <TransportButton
           disabled={disabled || !canSetSegmentEnd}
-          label={t("preview.setEnd")}
+          label={t("preview.actions.setEnd")}
           onClick={() => onSetSegmentBoundary("end")}
           shortcut="O"
-          title={canSetSegmentEnd ? t("preview.setEndShortcut") : t("preview.setEndUnavailable")}
+          title={
+            canSetSegmentEnd
+              ? t("preview.tooltips.setEnd")
+              : t("preview.messages.setEndUnavailable")
+          }
         >
           <SquareArrowLeft />
         </TransportButton>

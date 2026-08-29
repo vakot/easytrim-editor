@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useTranslation } from "react-i18next";
 
 import { CursorTooltip } from "@/components/ui/cursor-tooltip";
 
@@ -55,6 +56,7 @@ export function CropViewport({
   sourceUrl,
   videoRef,
 }: CropViewportProps) {
+  const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerBounds, setContainerBounds] = useState<Bounds>({ width: 0, height: 0 });
   const [sourceAspectRatio, setSourceAspectRatio] = useState(16 / 9);
@@ -126,7 +128,7 @@ export function CropViewport({
 
   return (
     <CursorTooltip
-      aria-label="Video crop preview"
+      aria-label={t("preview.accessibility.crop.preview")}
       className={`group relative size-full bg-preview-surface focus-visible:outline-none ${
         cropSelection.isEditing ? "overflow-visible" : "overflow-hidden"
       }`}
@@ -160,7 +162,7 @@ export function CropViewport({
       onPointerUp={cropSelection.finishDrag}
       ref={containerRef}
       tabIndex={0}
-      tooltipContent="Click preview to crop"
+      tooltipContent={t("preview.tooltips.crop")}
     >
       {!cropSelection.isOpen ? (
         <div

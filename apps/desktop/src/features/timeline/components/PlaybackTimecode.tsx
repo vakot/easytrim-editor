@@ -17,7 +17,10 @@ export function PlaybackTimecode({
   const { t } = useTranslation();
 
   return (
-    <output aria-label={t("preview.currentTime")} className="font-mono text-xs text-foreground">
+    <output
+      aria-label={t("preview.accessibility.currentTime")}
+      className="font-mono text-xs text-foreground"
+    >
       {currentMicros === null ? "00:00:00:00f" : formatPlaybackTime(currentMicros, frameRate)}
       <span className="text-muted-foreground">
         {" "}

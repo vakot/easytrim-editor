@@ -54,6 +54,13 @@ function PreferenceMenuItem({ children, icon, preferenceKey }: PreferenceMenuIte
   const preferences = useAppSelector(selectPreferences);
   const isEnabled = preferences[preferenceKey];
   const isDefaultPreference = DEFAULT_PREFERENCE_KEYS.has(preferenceKey);
+  const tooltip = isDefaultPreference
+    ? isEnabled
+      ? t("settings.tooltips.enabledByDefault")
+      : t("settings.tooltips.disabledByDefault")
+    : isEnabled
+      ? t("common.status.enabled")
+      : t("common.status.disabled");
 
   return (
     <MenuItem
@@ -63,15 +70,7 @@ function PreferenceMenuItem({ children, icon, preferenceKey }: PreferenceMenuIte
         dispatch(preferenceChanged({ key: preferenceKey, enabled: !isEnabled }));
       }}
       suffix={<Switch checked={isEnabled} size="sm" />}
-      tooltip={t(
-        isDefaultPreference
-          ? isEnabled
-            ? "app.settings.enabledByDefault"
-            : "app.settings.disabledByDefault"
-          : isEnabled
-            ? "app.settings.enabled"
-            : "app.settings.disabled",
-      )}
+      tooltip={tooltip}
       tooltipProps={{ side: "right", preserveOnTrigger: true }}
     >
       {children}
@@ -83,6 +82,10 @@ export function ContextMenuSettings({ navigation }: { navigation: MenuNavigation
   const { i18n, t } = useTranslation();
   const dispatch = useAppDispatch();
   const currentLanguage = isSupportedLanguage(i18n.resolvedLanguage) ? i18n.resolvedLanguage : "en";
+  const languageLabels: Record<SupportedLanguage, string> = {
+    en: t("settings.options.languages.english"),
+    sk: t("settings.options.languages.slovak"),
+  };
 
   const resetPreferences = () => {
     dispatch(preferencesReset());
@@ -101,7 +104,7 @@ export function ContextMenuSettings({ navigation }: { navigation: MenuNavigation
           type="button"
           variant="ghost"
         >
-          {t("app.topBarMenus.settings")}
+          {t("settings.labels.title")}
         </Button>
       </MenuTrigger>
       <MenuContent>
@@ -110,7 +113,7 @@ export function ContextMenuSettings({ navigation }: { navigation: MenuNavigation
             icon={<Play aria-hidden="true" className="size-3" />}
             preferenceKey="autoStartQueueEnabled"
           >
-            {t("app.settings.autoStartQueue")}
+            {t("settings.labels.autoStartQueue")}
           </PreferenceMenuItem>
         </MenuGroup>
         <MenuSeparator />
@@ -119,19 +122,19 @@ export function ContextMenuSettings({ navigation }: { navigation: MenuNavigation
             icon={<Magnet aria-hidden="true" className="size-3" />}
             preferenceKey="snapPlaybackEnabledDefault"
           >
-            {t("app.settings.snap")}
+            {t("settings.labels.snap")}
           </PreferenceMenuItem>
           <PreferenceMenuItem
             icon={<Repeat aria-hidden="true" className="size-3" />}
             preferenceKey="loopPlaybackEnabledDefault"
           >
-            {t("app.settings.loop")}
+            {t("settings.labels.loop")}
           </PreferenceMenuItem>
           <PreferenceMenuItem
             icon={<BetweenVerticalStart aria-hidden="true" className="size-3" />}
             preferenceKey="segmentPlaybackEnabledDefault"
           >
-            {t("app.settings.followSegment")}
+            {t("settings.labels.followSegment")}
           </PreferenceMenuItem>
         </MenuGroup>
         <MenuSeparator />
@@ -140,7 +143,7 @@ export function ContextMenuSettings({ navigation }: { navigation: MenuNavigation
             icon={<Merge aria-hidden="true" className="size-3" />}
             preferenceKey="mergeAudioEnabledDefault"
           >
-            {t("app.settings.mergeAudio")}
+            {t("settings.labels.mergeAudio")}
           </PreferenceMenuItem>
         </MenuGroup>
         <MenuSeparator />
@@ -152,7 +155,7 @@ export function ContextMenuSettings({ navigation }: { navigation: MenuNavigation
               resetPreferences();
             }}
           >
-            {t("app.settings.resetToDefault")}
+            {t("settings.actions.reset")}
           </MenuItem>
         </MenuGroup>
         <MenuSeparator />
@@ -162,7 +165,7 @@ export function ContextMenuSettings({ navigation }: { navigation: MenuNavigation
               icon={<Languages aria-hidden="true" className="size-3" />}
               suffix={currentLanguage.toUpperCase()}
             >
-              {t("app.topBarMenus.language")}
+              {t("settings.labels.language")}
             </MenuSubTrigger>
             <MenuSubContent>
               <MenuGroup>
@@ -173,7 +176,7 @@ export function ContextMenuSettings({ navigation }: { navigation: MenuNavigation
                     selected={language === currentLanguage}
                     suffix={language.toUpperCase()}
                   >
-                    {t(language === "en" ? "language.english" : "language.slovak")}
+                    {languageLabels[language]}
                   </MenuItem>
                 ))}
               </MenuGroup>

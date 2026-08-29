@@ -44,7 +44,7 @@ export function ContextMenuFile({ navigation }: { navigation: MenuNavigation }) 
           type="button"
           variant="ghost"
         >
-          {t("app.topBarMenus.file")}
+          {t("app.labels.file")}
         </Button>
       </MenuTrigger>
       <MenuContent>
@@ -54,14 +54,14 @@ export function ContextMenuFile({ navigation }: { navigation: MenuNavigation }) 
             onSelect={() => void dispatch(chooseSourceRequested())}
             suffix="Ctrl+O"
           >
-            {t("app.topBarMenus.openFile")}
+            {t("app.actions.openFile")}
           </MenuItem>
           <MenuItem
             disabled={!hasSource}
             onSelect={() => void dispatch(closeActiveImportedItemRequested())}
             suffix="Ctrl+Q"
           >
-            {t("app.topBarMenus.closeFile")}
+            {t("app.actions.closeFile")}
           </MenuItem>
         </MenuGroup>
         <MenuSeparator />
@@ -71,14 +71,14 @@ export function ContextMenuFile({ navigation }: { navigation: MenuNavigation }) 
             onSelect={() => void dispatch(startFastCutRequested())}
             suffix="Ctrl+S"
           >
-            {t("app.topBarMenus.saveLosslessCut")}
+            {t("export.actions.fast")}
           </MenuItem>
           <MenuItem
             disabled={!canExport}
             onSelect={() => void dispatch(openOptimizedExportDialog())}
             suffix="Ctrl+E"
           >
-            {t("app.topBarMenus.optimizeExport")}
+            {t("export.actions.optimized")}
           </MenuItem>
         </MenuGroup>
       </MenuContent>

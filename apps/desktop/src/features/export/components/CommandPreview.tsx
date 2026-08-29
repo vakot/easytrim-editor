@@ -27,14 +27,13 @@ export function CommandPreview({ command, error }: CommandPreviewProps) {
   return (
     <div className="grid gap-1.5">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-sm font-medium">{t("export.dialog.arguments")}</span>
+        <span className="text-sm font-medium">{t("export.dialogs.optimized.arguments")}</span>
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              aria-label={t(
-                copied ? "export.dialog.copiedCommand" : "export.dialog.copyCommand",
-                copied ? "Copied to clipboard" : "Copy command",
-              )}
+              aria-label={
+                copied ? t("export.status.commandCopied") : t("export.actions.copyCommand")
+              }
               disabled={!command}
               onClick={() => void copyCommand()}
               size="icon-sm"
@@ -45,20 +44,17 @@ export function CommandPreview({ command, error }: CommandPreviewProps) {
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            {t(
-              copied ? "export.dialog.copiedCommand" : "export.dialog.copyCommand",
-              copied ? "Copied to clipboard" : "Copy command",
-            )}
+            {copied ? t("export.status.commandCopied") : t("export.actions.copyCommand")}
           </TooltipContent>
         </Tooltip>
       </div>
       <div
-        aria-label={t("export.dialog.arguments")}
+        aria-label={t("export.dialogs.optimized.arguments")}
         aria-readonly="true"
         className="max-h-40 min-h-28 overflow-auto rounded-lg border bg-muted/30 p-3 font-mono text-xs leading-relaxed wrap-break-word whitespace-pre-wrap text-muted-foreground"
         role="textbox"
       >
-        {(error ?? command) || t("export.dialog.commandPreparing", "Preparing command preview…")}
+        {(error ?? command) || t("export.status.commandPreparing")}
       </div>
     </div>
   );

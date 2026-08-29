@@ -55,6 +55,19 @@ export function ContextMenuView({ navigation }: ContextMenuViewProps) {
   const CurrentThemeIcon = themeIcons[preference];
   const displayedPrimaryColor = previewColor ?? primaryColor;
   const displayedCustomColor = previewColor ?? customPrimaryColor;
+  const colorLabels: Record<(typeof PRIMARY_COLORS)[number], string> = {
+    amber: t("settings.options.colors.amber"),
+    blue: t("settings.options.colors.blue"),
+    emerald: t("settings.options.colors.emerald"),
+    rose: t("settings.options.colors.rose"),
+    violet: t("settings.options.colors.violet"),
+  };
+
+  const themeLabels: Record<keyof typeof themeIcons, string> = {
+    dark: t("settings.options.themes.dark"),
+    light: t("settings.options.themes.light"),
+    system: t("settings.options.themes.system"),
+  };
 
   const clearPreview = () => {
     setPreviewColor(null);
@@ -86,16 +99,16 @@ export function ContextMenuView({ navigation }: ContextMenuViewProps) {
           type="button"
           variant="ghost"
         >
-          {t("app.topBarMenus.view")}
+          {t("app.labels.view")}
         </Button>
       </MenuTrigger>
       <MenuContent>
         <MenuGroup>
           <MenuSub>
             <MenuSubTrigger
-              icon={<CurrentThemeIcon aria-label={t(`theme.${preference}`)} className="size-3" />}
+              icon={<CurrentThemeIcon aria-label={themeLabels[preference]} className="size-3" />}
             >
-              {t("app.topBarMenus.theme")}
+              {t("settings.labels.theme")}
             </MenuSubTrigger>
             <MenuSubContent>
               <MenuGroup>
@@ -111,7 +124,7 @@ export function ContextMenuView({ navigation }: ContextMenuViewProps) {
                       }}
                       selected={value === preference}
                     >
-                      {t(`theme.${value}`)}
+                      {themeLabels[value]}
                     </MenuItem>
                   );
                 })}
@@ -122,7 +135,7 @@ export function ContextMenuView({ navigation }: ContextMenuViewProps) {
             <MenuSubTrigger
               icon={<ColorSample color={resolvePrimaryColor(displayedPrimaryColor)} />}
             >
-              {t("app.topBarMenus.color")}
+              {t("settings.labels.color")}
             </MenuSubTrigger>
             <MenuSubContent>
               <MenuGroup>
@@ -144,7 +157,7 @@ export function ContextMenuView({ navigation }: ContextMenuViewProps) {
                       <span className="font-mono">{resolvePrimaryColor(color).toUpperCase()}</span>
                     }
                   >
-                    {t(`themeColor.${color}`)}
+                    {colorLabels[color]}
                   </MenuItem>
                 ))}
                 <MenuSub>
@@ -162,7 +175,7 @@ export function ContextMenuView({ navigation }: ContextMenuViewProps) {
                     selected={primaryColorKey === CUSTOM_PRIMARY_COLOR}
                     suffix={<span className="font-mono">{displayedCustomColor.toUpperCase()}</span>}
                   >
-                    {t("themeColor.custom")}
+                    {t("settings.options.colors.custom")}
                   </MenuSubTrigger>
                   <MenuSubContent>
                     <CustomColorPickerPanel
@@ -227,14 +240,14 @@ function CustomColorPickerPanel({
   return (
     <div className="w-auto space-y-3 p-2" onPointerMove={(event) => event.stopPropagation()}>
       <SpectrumWheel
-        aria-label={t("themeColor.spectrum")}
+        aria-label={t("settings.accessibility.colorSpectrum")}
         color={selectedColor}
         onCancel={cancel}
         onCommit={commit}
         onPreview={preview}
       />
       <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
-        <span>{t("themeColor.custom")}</span>
+        <span>{t("settings.options.colors.custom")}</span>
         <div className="flex h-6 w-15 items-center rounded-lg border border-input bg-transparent px-1.5 transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
           <span
             aria-hidden="true"
@@ -244,7 +257,7 @@ function CustomColorPickerPanel({
             #
           </span>
           <Input
-            aria-label={`${t("themeColor.custom")} hex`}
+            aria-label={t("settings.accessibility.customColorHex")}
             className="h-full w-auto min-w-0 flex-1 rounded-none border-0 p-0 font-mono text-xs text-foreground shadow-none focus-visible:border-0 focus-visible:ring-0"
             maxLength={6}
             onChange={(event) =>

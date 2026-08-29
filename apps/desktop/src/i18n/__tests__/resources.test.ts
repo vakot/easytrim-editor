@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { i18n } from "../config";
-import { resolveInitialLanguage } from "../resources";
+import { resolveInitialLanguage, resolveLanguagePreference } from "../resources";
 
 describe("resolveInitialLanguage", () => {
   it("uses the first supported system language", () => {
@@ -19,17 +19,27 @@ describe("resolveInitialLanguage", () => {
   });
 
   it("interpolates selected-track counts in merged audio summaries", () => {
-    expect(i18n.getFixedT("en")("audio.output.merged", { count: 3 })).toBe(
+    expect(i18n.getFixedT("en")("audio.messages.output.merged", { count: 3 })).toBe(
       "3 selected tracks are merged into one track",
     );
-    expect(i18n.getFixedT("sk")("audio.output.merged", { count: 3 })).toBe(
+    expect(i18n.getFixedT("sk")("audio.messages.output.merged", { count: 3 })).toBe(
       "3 vybrané stopy sa zlúčia do jednej stopy",
     );
-    expect(i18n.getFixedT("en")("audio.mergeSelectedHint")).toBe(
+    expect(i18n.getFixedT("en")("audio.tooltips.merge")).toBe(
       "All selected tracks are merged into one track; this requires encoding.",
     );
-    expect(i18n.getFixedT("sk")("audio.mergeSelectedHint")).toBe(
+    expect(i18n.getFixedT("sk")("audio.tooltips.merge")).toBe(
       "Všetky vybrané stopy sa zlúčia do jednej stopy; vyžaduje si to kódovanie.",
     );
+  });
+});
+
+describe("resolveLanguagePreference", () => {
+  it("uses a valid stored preference before system languages", () => {
+    expect(resolveLanguagePreference("sk-SK", ["en-US"])).toBe("sk");
+  });
+
+  it("falls through an invalid stored preference to system languages", () => {
+    expect(resolveLanguagePreference("de-DE", ["sk-SK", "en-US"])).toBe("sk");
   });
 });

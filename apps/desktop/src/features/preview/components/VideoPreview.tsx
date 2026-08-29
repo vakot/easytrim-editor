@@ -69,9 +69,9 @@ export function VideoPreview({
       >
         <LoaderCircle aria-hidden="true" className="size-6 animate-spin text-primary" />
         <strong className="text-foreground">
-          {isProxy ? t("preview.preparing") : t("preview.opening")}
+          {isProxy ? t("preview.status.preparing") : t("preview.status.opening")}
         </strong>
-        {isProxy ? <span>{t("preview.preparingDescription")}</span> : null}
+        {isProxy ? <span>{t("preview.messages.preparing")}</span> : null}
       </div>
     );
   }
@@ -79,12 +79,12 @@ export function VideoPreview({
   if (preview.status === "failed") {
     return (
       <Alert className="max-w-xl" variant="destructive">
-        <AlertTitle>{t("preview.error")}</AlertTitle>
+        <AlertTitle>{t("preview.messages.error")}</AlertTitle>
         <AlertDescription>
           <p>{preview.error.message}</p>
           {preview.error.diagnostics ? (
             <details className="mt-2">
-              <summary>{t("import.source.technicalDetails")}</summary>
+              <summary>{t("source.labels.technicalDetails")}</summary>
               <pre className="mt-2 max-h-48 overflow-auto text-xs whitespace-pre-wrap">
                 {preview.error.diagnostics}
               </pre>
@@ -122,7 +122,7 @@ export function VideoPreview({
           onTogglePlayback={onTogglePlayback}
           playbackRate={playbackRate}
           previewKind={value.kind}
-          sourceLabel={t("preview.sourceLabel")}
+          sourceLabel={t("preview.accessibility.source")}
           sourceUrl={value.url}
           videoRef={videoRef}
         />
@@ -135,11 +135,11 @@ export function VideoPreview({
                 tabIndex={0}
                 variant="secondary"
               >
-                {t("preview.proxyBadge")}
+                {t("preview.labels.compatible")}
               </Badge>
             </TooltipTrigger>
             <TooltipContent className="max-w-2xs text-center whitespace-normal" sideOffset={6}>
-              {t("preview.proxyBadgeDescription")}
+              {t("preview.messages.proxy")}
             </TooltipContent>
           </Tooltip>
         ) : null}

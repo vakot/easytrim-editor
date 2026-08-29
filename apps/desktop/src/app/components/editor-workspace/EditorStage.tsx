@@ -1,6 +1,7 @@
 import { LoaderCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import { Card } from "@/components/ui/card";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 
 import { usePlayback } from "@/app/hooks/usePlayback";
@@ -31,9 +32,9 @@ export function EditorStage() {
   return (
     <ResizablePanelGroup id="editor-stage" orientation="vertical" persisted>
       <ResizablePanel className="overflow-hidden" id="editor-stage-preview" minSize="14rem">
-        <div className="relative h-full overflow-hidden rounded-md border border-border bg-preview-surface">
+        <Card className="size-full border border-foreground/10 bg-preview-surface p-0 ring-0">
           <Preview />
-        </div>
+        </Card>
       </ResizablePanel>
       <ResizableHandle className="bg-transparent" style={{ height: 4 }} withHandle />
       <ResizablePanel
@@ -47,9 +48,9 @@ export function EditorStage() {
         minSize={timelinePanelSizing.constraints.minSize}
         panelRef={timelinePanelSizing.panelRef}
       >
-        <div className="relative h-full overflow-hidden rounded-md border border-border bg-card/30">
+        <Card className="size-full border border-foreground/10 p-0 ring-0">
           <EditorTimelinePanel />
-        </div>
+        </Card>
       </ResizablePanel>
     </ResizablePanelGroup>
   );
@@ -78,7 +79,7 @@ function EditorTimelinePanel() {
         >
           <div className="grid place-items-center gap-2 text-center text-sm text-muted-foreground">
             <LoaderCircle aria-hidden="true" className="size-7 animate-spin text-primary" />
-            <strong className="text-foreground">{t("common.loading")}</strong>
+            <strong className="text-foreground">{t("common.status.loading")}</strong>
           </div>
         </div>
       ) : null}

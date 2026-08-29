@@ -108,14 +108,14 @@ export function CustomTitleBar({
 
   return (
     <header
-      aria-label={t("app.windowControls.titleBar")}
+      aria-label={t("app.accessibility.titleBar")}
       className="relative flex h-9 min-h-9 items-center bg-background/95 text-foreground select-none"
       onDoubleClickCapture={handleTitleBarDoubleClick}
     >
       <div className="flex h-full items-center gap-2 px-3 text-left">
         <img alt="" className="size-5" src="/logo-symbol.svg" />
         <span className="text-xs font-semibold tracking-wide text-foreground/80">
-          {t("common.brand")}
+          {t("common.labels.brand")}
         </span>
       </div>
 
@@ -139,26 +139,24 @@ export function CustomTitleBar({
       {panelControls ? <div className="flex h-full items-center px-1">{panelControls}</div> : null}
 
       <div
-        aria-label={t("app.windowControls.group")}
+        aria-label={t("app.accessibility.windowControls")}
         className="flex h-full items-stretch"
         role="group"
       >
         <button
-          aria-label={t("app.windowControls.minimize")}
+          aria-label={t("app.actions.minimize")}
           className="inline-flex w-11 items-center justify-center transition-colors outline-none hover:bg-muted focus-visible:bg-accent"
           onClick={() => runWindowAction(minimizeWindow)}
-          title={t("app.windowControls.minimize")}
+          title={t("app.actions.minimize")}
           type="button"
         >
           <Minus aria-hidden="true" className="size-4" strokeWidth={1.5} />
         </button>
         <button
-          aria-label={
-            isMaximized ? t("app.windowControls.restore") : t("app.windowControls.maximize")
-          }
+          aria-label={isMaximized ? t("app.actions.restore") : t("app.actions.maximize")}
           className="inline-flex w-11 items-center justify-center transition-colors outline-none hover:bg-muted focus-visible:bg-accent"
           onClick={handleToggleMaximize}
-          title={isMaximized ? t("app.windowControls.restore") : t("app.windowControls.maximize")}
+          title={isMaximized ? t("app.actions.restore") : t("app.actions.maximize")}
           type="button"
         >
           {isMaximized ? (
@@ -168,10 +166,10 @@ export function CustomTitleBar({
           )}
         </button>
         <button
-          aria-label={t("app.windowControls.close")}
+          aria-label={t("common.actions.close")}
           className="hover:text-destructive-foreground focus-visible:text-destructive-foreground inline-flex w-11 items-center justify-center transition-colors outline-none hover:bg-destructive focus-visible:bg-destructive"
           onClick={() => runWindowAction(closeWindow)}
-          title={t("app.windowControls.close")}
+          title={t("common.actions.close")}
           type="button"
         >
           <X aria-hidden="true" className="size-4" strokeWidth={1.5} />
@@ -180,7 +178,7 @@ export function CustomTitleBar({
 
       {windowActionError ? (
         <span className="sr-only" role="alert">
-          {t("app.windowControls.error")}
+          {t("app.messages.windowActionFailed")}
         </span>
       ) : null}
     </header>

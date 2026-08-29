@@ -46,7 +46,9 @@ export function Preview() {
           <div className="grid place-items-center gap-2 text-center text-sm text-muted-foreground">
             <LoaderCircle aria-hidden="true" className="size-7 animate-spin text-primary" />
             <strong className="text-foreground">
-              {preview.kind === "proxy" ? t("preview.preparing") : t("preview.opening")}
+              {preview.kind === "proxy"
+                ? t("preview.status.preparing")
+                : t("preview.status.opening")}
             </strong>
           </div>
         </div>

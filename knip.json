@@ -9,6 +9,7 @@
         "scripts/generate-desktop-icons.mjs!",
         "scripts/prepare-macos-icon.mjs!",
         "scripts/bump-version.mjs!",
+        "scripts/validate-i18n.mjs!",
         "scripts/release-local.mjs!",
         "scripts/release-linux-docker.mjs!"
       ],

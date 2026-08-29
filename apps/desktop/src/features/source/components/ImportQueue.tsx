@@ -25,14 +25,14 @@ export function ImportQueue() {
           className="font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
           id="imported-queue-title"
         >
-          {t("import.queue.title")}
+          {t("queue.labels.imported")}
         </h2>
         <span className="text-xs text-muted-foreground" data-testid="imported-queue-position">
           {position} / {items.length}
         </span>
       </div>
       <p className="truncate text-sm" title={activeItem?.snapshot.source.displayName}>
-        {activeItem?.snapshot.source.displayName ?? t("import.queue.noActive")}
+        {activeItem?.snapshot.source.displayName ?? t("queue.messages.noActiveImport")}
       </p>
       <div className="grid grid-cols-2 gap-2">
         <Button
@@ -45,7 +45,7 @@ export function ImportQueue() {
           variant="outline"
         >
           <ChevronLeft aria-hidden="true" />
-          {t("import.queue.previous")}
+          {t("queue.actions.previous")}
         </Button>
         <Button
           disabled={activeIndex < 0 || activeIndex >= items.length - 1}
@@ -56,7 +56,7 @@ export function ImportQueue() {
           size="sm"
           variant="outline"
         >
-          {t("import.queue.next")}
+          {t("queue.actions.next")}
           <ChevronRight aria-hidden="true" />
         </Button>
       </div>

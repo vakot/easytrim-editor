@@ -7,7 +7,7 @@ export const FRAME_RATE_OPTIONS = [24, 25, 30, 50, 60, 120] as const;
 export function resolutionOptions(source: MediaInfo, t: TFunction) {
   const options: { label: string; value: string }[] = [
     {
-      label: t("export.sourceResolution", {
+      label: t("export.options.sourceResolution", {
         width: source.video.width,
         height: source.video.height,
       }),
