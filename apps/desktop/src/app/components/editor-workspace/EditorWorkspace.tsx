@@ -4,7 +4,7 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/componen
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectActiveItemId } from "@/app/store/slices/export-slice";
 import { selectSourceSelection } from "@/app/store/slices/source-slice";
-import { SourceDropOverlay, SourcePanel } from "@/features/source";
+import { SourcePanel } from "@/features/source";
 
 import { EditorStage } from "./EditorStage";
 
@@ -25,7 +25,7 @@ export function EditorWorkspace() {
         minSize="15rem"
       >
         <div className="h-full pb-1 pl-1">
-          <Card className="size-full border border-foreground/10 p-0 ring-0">
+          <Card className="size-full p-0 ring-inset">
             <SourcePanel />
           </Card>
         </div>
@@ -36,7 +36,6 @@ export function EditorWorkspace() {
       <ResizablePanel className="overflow-hidden" id="workspace-content" minSize="44rem">
         <div className="relative h-full pr-1">
           <EditorStage key={activeItemId ?? sourceSelection?.sourcePath ?? "no-source"} />
-          <SourceDropOverlay />
         </div>
       </ResizablePanel>
     </ResizablePanelGroup>

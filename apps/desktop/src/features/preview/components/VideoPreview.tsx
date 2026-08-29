@@ -97,7 +97,7 @@ export function VideoPreview({
 
   const { value } = preview;
   return (
-    <section className="grid size-full min-h-0 place-items-center bg-preview-surface p-4">
+    <section className="grid size-full min-h-0 place-items-center p-4">
       <div
         className={`relative size-full min-h-0 bg-preview-surface ${
           cropToolOpen ? "overflow-visible" : "overflow-hidden"

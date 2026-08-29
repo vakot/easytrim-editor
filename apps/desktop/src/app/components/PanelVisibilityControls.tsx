@@ -35,6 +35,7 @@ export function PanelVisibilityControls() {
             <TooltipTrigger asChild>
               <Button
                 aria-label={t("app.accessibility.layoutControls")}
+                className="text-secondary-foreground"
                 size="icon-sm"
                 type="button"
                 variant="ghost"
@@ -103,7 +104,7 @@ export function PanelVisibilityControls() {
         <ResizablePanelControl panelId="workspace-sidebar">
           {({ isCollapsed }) => (
             <TooltipTrigger asChild>
-              <Button size="icon-sm" variant="ghost">
+              <Button className="text-secondary-foreground" size="icon-sm" variant="ghost">
                 {isCollapsed ? (
                   <PanelLeftDashed aria-hidden="true" />
                 ) : (
@@ -119,10 +120,10 @@ export function PanelVisibilityControls() {
       </Tooltip>
 
       <Tooltip preserveOnTrigger>
-        <ResizablePanelControl panelId="editor-stage-timeline">
+        <ResizablePanelControl panelId="editor-stage-audio">
           {({ isCollapsed }) => (
             <TooltipTrigger asChild>
-              <Button size="icon-sm" variant="ghost">
+              <Button className="text-secondary-foreground" size="icon-sm" variant="ghost">
                 {isCollapsed ? (
                   <PanelBottomDashed aria-hidden="true" />
                 ) : (

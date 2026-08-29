@@ -2,14 +2,38 @@ import { Card } from "@/components/ui/card";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
-import { selectSourceMedia, selectSourceSelection } from "@/app/store/slices/source-slice";
+import { selectSourceMedia } from "@/app/store/slices/source-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
 import { AudioPanel } from "@/features/audio";
 import { Preview } from "@/features/preview";
-import { Timeline } from "@/features/timeline";
+import { SourceDropOverlay } from "@/features/source";
+import { TimelinePanel } from "@/features/timeline";
+import { cn } from "@/lib/class-names.utils";
+import { timelineGeometryStyle } from "@/lib/interaction/timeline-geometry.utils";
 
-import { useTimelinePanelSizing } from "./hooks/useTimelinePanelSizing";
-import { TimelinePane } from "./TimelinePane";
+type PanelSizes = {
+  defaultSize?: number;
+  maxSize: number;
+  minSize: number;
+};
+
+const TIMELINE_PANEL_SIZE: PanelSizes = {
+  maxSize: 152,
+  minSize: 152,
+};
+
+const AUDIO_PANEL_SIZE_DEFAULT = 93;
+const AUDIO_PANEL_SIZE_LINE = 56;
+const AUDIO_PANEL_SIZE_PLACEHOLDER = 0;
+
+const getAudioPanelSize = (lines: number = 0): PanelSizes => {
+  const audioPanelWithPlaceholder = AUDIO_PANEL_SIZE_DEFAULT + AUDIO_PANEL_SIZE_PLACEHOLDER;
+  return {
+    minSize: audioPanelWithPlaceholder + AUDIO_PANEL_SIZE_LINE,
+    defaultSize: audioPanelWithPlaceholder + AUDIO_PANEL_SIZE_LINE,
+    maxSize: audioPanelWithPlaceholder + lines * AUDIO_PANEL_SIZE_LINE,
+  };
+};
 
 const EMPTY_TIMELINE_RANGE = {
   startMicros: 0,
@@ -18,51 +42,52 @@ const EMPTY_TIMELINE_RANGE = {
 } as const;
 
 export function EditorStage() {
-  const sourceSelection = useAppSelector(selectSourceSelection);
   const media = useAppSelector(selectSourceMedia);
-  const timelinePanelSizing = useTimelinePanelSizing(
-    sourceSelection !== null,
-    media?.audioStreams.length ?? null,
-  );
+  const trim = useAppSelector(selectTrim);
+  const audioStreamsCount = media?.audioStreams.length ?? 0;
 
   return (
-    <ResizablePanelGroup id="editor-stage" orientation="vertical" persisted>
+    <ResizablePanelGroup
+      id="editor-stage"
+      orientation="vertical"
+      persisted
+      style={timelineGeometryStyle(trim ?? EMPTY_TIMELINE_RANGE)}
+    >
       <ResizablePanel className="overflow-hidden" id="editor-stage-preview" minSize="14rem">
-        <Card className="size-full border border-foreground/10 bg-preview-surface p-0 ring-0">
+        <Card className="size-full bg-preview-surface p-0 ring-inset">
+          <SourceDropOverlay />
           <Preview />
         </Card>
       </ResizablePanel>
       <ResizableHandle className="bg-transparent" style={{ height: 4 }} withHandle />
       <ResizablePanel
-        className="overflow-hidden pb-1"
-        collapsedSize={timelinePanelSizing.collapsedSize}
-        collapsible
-        defaultSize={timelinePanelSizing.initialDefaultSize}
+        className={cn("overflow-hidden", !audioStreamsCount && "pb-1")}
         groupResizeBehavior="preserve-pixel-size"
         id="editor-stage-timeline"
-        maxSize={timelinePanelSizing.constraints.maxSize}
-        minSize={timelinePanelSizing.constraints.minSize}
-        panelRef={timelinePanelSizing.panelRef}
+        {...TIMELINE_PANEL_SIZE}
       >
-        <Card className="size-full border border-foreground/10 p-0 ring-0">
-          <EditorTimelinePanel />
+        <Card className="size-full p-3 ring-inset">
+          <TimelinePanel />
         </Card>
       </ResizablePanel>
+      {audioStreamsCount > 0 && (
+        <>
+          <ResizableHandle className="bg-transparent" style={{ height: 4 }} withHandle />
+          <ResizablePanel
+            className="overflow-hidden pb-1"
+            collapsedSize={0}
+            collapsible
+            defaultSize={AUDIO_PANEL_SIZE_DEFAULT}
+            groupResizeBehavior="preserve-pixel-size"
+            id="editor-stage-audio"
+            {...getAudioPanelSize(audioStreamsCount)}
+          >
+            <Card className="size-full py-3 ring-inset">
+              <AudioPanel />
+            </Card>
+          </ResizablePanel>
+        </>
+      )}
     </ResizablePanelGroup>
-  );
-}
-
-function EditorTimelinePanel() {
-  const media = useAppSelector(selectSourceMedia);
-  const trim = useAppSelector(selectTrim);
-
-  return (
-    <>
-      <TimelinePane
-        audio={media?.audioStreams.length ? <AudioPanel /> : null}
-        range={trim ?? EMPTY_TIMELINE_RANGE}
-        timeline={<Timeline />}
-      />
-    </>
   );
 }

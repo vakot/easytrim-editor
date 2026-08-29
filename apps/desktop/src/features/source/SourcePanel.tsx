@@ -48,14 +48,19 @@ export function SourcePanel() {
       aria-label={t("source.labels.title")}
       className="flex h-full min-h-0 flex-col overflow-hidden p-1"
     >
-      <div className="flex h-7 shrink-0 items-center justify-between gap-1 px-2 text-xs font-medium">
-        <span>{t("source.labels.title")}</span>
+      <div className="flex h-7 shrink-0 items-center justify-between gap-1 px-2">
+        <h3
+          className="font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
+          id="source-panel-title"
+        >
+          {t("source.labels.title")}
+        </h3>
 
         <Menu>
           <Tooltip>
             <TooltipTrigger asChild>
               <MenuTrigger asChild>
-                <Button size="icon-xs" variant="ghost">
+                <Button className="text-secondary-foreground" size="icon-xs" variant="ghost">
                   <Ellipsis aria-hidden="true" />
                 </Button>
               </MenuTrigger>

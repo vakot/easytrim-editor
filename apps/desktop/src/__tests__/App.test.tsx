@@ -794,15 +794,18 @@ describe("App", () => {
     );
     const fixedTimeline = screen.getByTestId("timeline-fixed-content");
     const audioTracksScroll = screen.getByTestId("audio-tracks-scroll");
+    const audioPanel = document.getElementById("editor-stage-audio");
     expect(document.getElementById("editor-stage-timeline")).toContainElement(fixedTimeline);
-    expect(document.getElementById("editor-stage-timeline")).toContainElement(audioTracksScroll);
+    expect(audioPanel).not.toBeNull();
+    expect(audioPanel).toContainElement(audioTracksScroll);
     expect(fixedTimeline).toContainElement(
       screen.getByRole("heading", { name: "Selected Segment" }),
     );
     expect(fixedTimeline).not.toContainElement(
       screen.getByRole("heading", { name: "Audio tracks" }),
     );
-    expect(audioTracksScroll).toContainElement(
+    expect(audioPanel).toContainElement(screen.getByRole("heading", { name: "Audio tracks" }));
+    expect(audioTracksScroll).not.toContainElement(
       screen.getByRole("heading", { name: "Audio tracks" }),
     );
     expect(audioTracksScroll).toHaveClass("overflow-hidden");

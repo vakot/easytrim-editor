@@ -20,7 +20,7 @@ export function Preview() {
       (preview.status === "ready" && !playback.isReady && !playback.isPlaying));
 
   return (
-    <div className="relative size-full">
+    <>
       {sourceSelection === null ? (
         <VideoPreviewEmpty />
       ) : (
@@ -59,6 +59,6 @@ export function Preview() {
           </div>
         </div>
       ) : null}
-    </div>
+    </>
   );
 }

@@ -51,7 +51,7 @@ export function VideoPreviewEmpty() {
   return (
     <section
       aria-label={t("preview.accessibility.empty")}
-      className={`${styles.preview} grid size-full min-h-0 place-items-center overflow-hidden bg-preview-surface px-6 py-8`}
+      className={`${styles.preview} grid size-full min-h-0 place-items-center overflow-hidden px-6 py-8`}
     >
       <div className="grid w-[clamp(10rem,28vw,18rem)] max-w-full justify-items-center gap-10">
         <img

@@ -15,7 +15,7 @@ const EMPTY_TIMELINE_RANGE = {
   sourceDurationMicros: 1_000_000,
 } as const;
 
-export function Timeline() {
+export function TimelinePanel() {
   const media = useAppSelector(selectSourceMedia);
   const trim = useAppSelector(selectTrim);
   const isSourceReady = useAppSelector(selectSourceReady);
