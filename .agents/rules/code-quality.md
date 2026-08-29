@@ -171,8 +171,21 @@ configuration; enabling it would require a broader typed-linting migration.
 Import boundaries are enforced only where they are stable and mechanical: `components/ui` may
 not import application, feature, or store layers, and `domain` may not import application,
 feature, UI, Tauri-adapter, React, or other runtime layers. Feature-to-feature internals remain
-unenforced until the repository has enough cross-feature public API usage to define narrow,
-non-speculative exceptions; existing feature entrypoints should still be preferred.
+private, while code outside a feature must import through the feature's public `index.ts` API.
+Existing feature entrypoints should be preferred for all cross-feature consumers.
+
+The advanced correctness checks `@typescript-eslint/no-shadow` and
+`@typescript-eslint/no-use-before-define` remain disabled after repository audits. `no-shadow`
+reported intentional React wrapper names, state-updater parameters, and callback-local names;
+`no-use-before-define` reported widespread intentional function, component, and helper hoisting.
+Enabling either rule would require arbitrary exceptions or unrelated renames/reordering rather
+than preventing meaningful defects. The base ESLint `no-shadow` rule is not enabled either.
+
+Circular-dependency linting is also not enabled. The current toolchain has no lightweight,
+established cycle detector, and adding a dependency or custom analyzer solely for this check
+would exceed the scope of the architecture cleanup. A static review of feature and application
+imports found no current cross-feature cycle; new boundaries should continue to preserve the
+documented dependency direction.
 
 ## Data and State
 

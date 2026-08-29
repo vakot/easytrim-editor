@@ -112,6 +112,22 @@ export default defineConfig(
     },
   },
   {
+    files: ["apps/desktop/src/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              regex: "^@/features/[^/]+/.+",
+              message: "Import features through their public index API.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ["apps/desktop/src/components/ui/**/*.{ts,tsx}"],
     rules: {
       "no-restricted-imports": [

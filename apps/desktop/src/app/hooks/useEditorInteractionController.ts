@@ -27,24 +27,25 @@ import {
   type TrimBoundary,
   type TrimRange,
 } from "@/domain/trim";
-import { synchronizeAudioPosition } from "@/features/audio/lib/audio-sync";
-import type { NativeAudioBinding } from "@/features/audio/lib/native-audio-runtime";
 import {
   connectNativeAudioBinding,
   disconnectNativeAudioBinding,
   getOrCreateNativeAudioBinding,
-} from "@/features/audio/lib/native-audio-runtime";
-import type { PlaybackFrameHandle } from "@/features/preview/lib/media-sync";
+  type NativeAudioBinding,
+  synchronizeAudioPosition,
+} from "@/features/audio";
 import {
   cancelPlaybackFrame,
+  type PlaybackFrameHandle,
   requestPlaybackFrame,
   seekVideo,
-} from "@/features/preview/lib/media-sync";
+} from "@/features/preview";
 import {
+  cancelFrame,
   editorShortcutFromEvent,
   isShortcutBlockedTarget,
-} from "@/features/timeline/lib/editor-shortcuts";
-import { cancelFrame, syncPlayheadElements } from "@/features/timeline/lib/playhead-sync";
+  syncPlayheadElements,
+} from "@/features/timeline";
 import { isApplicationDialogOpen } from "@/lib/hotkeys.utils";
 import { seekMediaIfNeeded } from "@/lib/media-element.utils";
 
