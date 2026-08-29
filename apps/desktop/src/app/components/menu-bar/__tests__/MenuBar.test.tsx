@@ -528,7 +528,7 @@ describe("MenuBarTest", () => {
 
     const openFileItem = screen.getByRole("menuitem", { name: /Open File/ });
     expect(openFileItem).toHaveTextContent("Ctrl+O");
-    expect(openFileItem).toHaveClass("min-w-48");
+    expect(openFileItem).toHaveClass("min-w-36");
     await user.click(openFileItem);
     expect(screen.queryByRole("menuitem", { name: /Open File/ })).not.toBeInTheDocument();
 
@@ -553,7 +553,7 @@ describe("MenuBarTest", () => {
     await user.click(viewButton);
     const themeItem = screen.getByText("Theme").closest<HTMLElement>('[role="menuitem"]');
     expect(themeItem).not.toBeNull();
-    expect(themeItem).toHaveClass("min-w-48");
+    expect(themeItem).toHaveClass("min-w-36");
     themeItem?.focus();
     await user.keyboard("{ArrowRight}");
 
@@ -563,21 +563,21 @@ describe("MenuBarTest", () => {
       ).not.toBeNull();
     }
     expect(screen.getByRole("menuitemradio", { name: "System" })).toHaveAttribute(
-      "data-selected",
+      "aria-checked",
       "true",
     );
     expect(screen.getByRole("menuitemradio", { name: "Light" })).toHaveAttribute(
-      "data-selected",
+      "aria-checked",
       "false",
     );
     expect(screen.getByRole("menuitemradio", { name: "Dark" })).toHaveAttribute(
-      "data-selected",
+      "aria-checked",
       "false",
     );
 
     await user.click(screen.getByRole("menuitemradio", { name: "Light" }));
     expect(screen.getByRole("menuitemradio", { name: "Light" })).toHaveAttribute(
-      "data-selected",
+      "aria-checked",
       "true",
     );
     await user.keyboard("{Escape}");
@@ -592,11 +592,11 @@ describe("MenuBarTest", () => {
     expect(screen.getByRole("menuitemradio", { name: /English/ })).toHaveTextContent("EN");
     expect(screen.getByRole("menuitemradio", { name: /Slov/ })).toHaveTextContent("SK");
     expect(screen.getByRole("menuitemradio", { name: /English/ })).toHaveAttribute(
-      "data-selected",
+      "aria-checked",
       "true",
     );
     expect(screen.getByRole("menuitemradio", { name: /Slov/ })).toHaveAttribute(
-      "data-selected",
+      "aria-checked",
       "false",
     );
     await user.click(screen.getByRole("menuitemradio", { name: /English/ }));
