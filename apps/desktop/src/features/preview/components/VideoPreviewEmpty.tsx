@@ -1,5 +1,7 @@
 import { useTranslation } from "react-i18next";
 
+import { Kbd } from "@/components/ui/kbd";
+
 import { KofiIcon } from "@/components/brand-icons";
 import { openExternalUrl } from "@/lib/open-external-url.utils";
 
@@ -88,9 +90,7 @@ export function VideoPreviewEmpty() {
                           {shortcut.separator ?? "+"}
                         </span>
                       ) : null}
-                      <kbd className="inline-flex min-w-6 items-center justify-center rounded border border-border bg-card px-1.5 py-0.5 font-mono text-xs font-medium text-card-foreground shadow-sm">
-                        {key}
-                      </kbd>
+                      <Kbd>{key}</Kbd>
                     </span>
                   ))}
                 </span>
