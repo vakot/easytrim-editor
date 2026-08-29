@@ -22,7 +22,7 @@ export function WaveformContent({ onImageError, onRetry, track }: WaveformConten
           className="absolute inset-0 grid place-items-center text-xs text-muted-foreground"
           role="status"
         >
-          {t("audio.preparingWaveform")}
+          {t("audio.status.preparingWaveform")}
         </span>
       );
     case "ready":
@@ -41,12 +41,12 @@ export function WaveformContent({ onImageError, onRetry, track }: WaveformConten
         <div className="absolute inset-0 flex items-center justify-center gap-2 text-xs text-muted-foreground">
           <Tooltip>
             <TooltipTrigger asChild>
-              <span>{t("audio.waveformUnavailable")}</span>
+              <span>{t("audio.status.waveformUnavailable")}</span>
             </TooltipTrigger>
             <TooltipContent>{track.waveform.error.message}</TooltipContent>
           </Tooltip>
           <Button onClick={onRetry} size="xs" type="button" variant="ghost">
-            {t("common.retry")}
+            {t("common.actions.retry")}
           </Button>
         </div>
       );

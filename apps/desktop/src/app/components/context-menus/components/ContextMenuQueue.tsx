@@ -51,10 +51,10 @@ export function ContextMenuQueue({ navigation }: { navigation: MenuNavigation })
   const hasQueuedItems = queue.some((toast) => toast.status === "queued");
   const hasActiveItem = queue.some((toast) => toast.status === "rendering");
   const queueFinishLabels: Record<QueueFinishAction, string> = {
-    exit: t("app.queue.finish.exit"),
-    systemSleep: t("app.queue.finish.systemSleep"),
-    systemShutdown: t("app.queue.finish.systemShutdown"),
-    nothing: t("app.queue.finish.nothing"),
+    exit: t("queue.options.finish.exit"),
+    systemSleep: t("queue.options.finish.systemSleep"),
+    systemShutdown: t("queue.options.finish.systemShutdown"),
+    nothing: t("queue.options.finish.nothing"),
   };
 
   const queueFinishIcons: Record<QueueFinishAction, ReactNode> = {
@@ -78,7 +78,7 @@ export function ContextMenuQueue({ navigation }: { navigation: MenuNavigation })
             type="button"
             variant="ghost"
           >
-            {t("app.topBarMenus.queue")}
+            {t("queue.labels.title")}
           </Button>
         </MenuTrigger>
         <MenuContent>
@@ -89,7 +89,7 @@ export function ContextMenuQueue({ navigation }: { navigation: MenuNavigation })
               onSelect={() => void dispatch(startExportQueue())}
               suffix="Enter"
             >
-              {t("app.queue.start")}
+              {t("queue.actions.start")}
             </MenuItem>
           </MenuGroup>
           <MenuSeparator />
@@ -98,20 +98,20 @@ export function ContextMenuQueue({ navigation }: { navigation: MenuNavigation })
               disabled={!hasActiveItem}
               onSelect={() => void dispatch(cancelActiveExportRequested())}
             >
-              {t("app.queue.skip")}
+              {t("queue.actions.skip")}
             </MenuItem>
             <MenuItem
               disabled={!hasQueuedItems && !hasActiveItem}
               onSelect={() => setIsCancelQueueConfirmOpen(true)}
             >
-              {t("app.queue.cancel")}
+              {t("queue.actions.cancel")}
             </MenuItem>
           </MenuGroup>
           <MenuSeparator />
           <MenuGroup>
             <MenuSub>
               <MenuSubTrigger icon={queueFinishIcons[queueFinishAction]}>
-                {t("app.queue.onFinish")}
+                {t("queue.labels.onFinish")}
               </MenuSubTrigger>
               <MenuSubContent>
                 <MenuGroup>
@@ -137,12 +137,12 @@ export function ContextMenuQueue({ navigation }: { navigation: MenuNavigation })
       <Dialog onOpenChange={setIsCancelQueueConfirmOpen} open={isCancelQueueConfirmOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t("app.queue.cancelQueueTitle")}</DialogTitle>
-            <DialogDescription>{t("app.queue.cancelQueueDescription")}</DialogDescription>
+            <DialogTitle>{t("queue.dialogs.cancel.title")}</DialogTitle>
+            <DialogDescription>{t("queue.dialogs.cancel.description")}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button onClick={() => setIsCancelQueueConfirmOpen(false)} variant="outline">
-              {t("common.back")}
+              {t("common.actions.back")}
             </Button>
             <Button
               onClick={() => {
@@ -151,7 +151,7 @@ export function ContextMenuQueue({ navigation }: { navigation: MenuNavigation })
               }}
               variant="destructive"
             >
-              {t("common.cancel")}
+              {t("queue.actions.cancel")}
             </Button>
           </DialogFooter>
         </DialogContent>

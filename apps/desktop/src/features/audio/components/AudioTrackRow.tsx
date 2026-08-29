@@ -56,7 +56,11 @@ export const AudioTrackRow = memo(function AudioTrackRow({
       >
         <VolumeButton
           enabled={track.enabled}
-          label={t(track.enabled ? "audio.muteTrack" : "audio.enableTrack", { title })}
+          label={
+            track.enabled
+              ? t("audio.actions.muteTrack", { title })
+              : t("audio.actions.enableTrack", { title })
+          }
           onClick={() => onToggle(stream.streamIndex)}
         />
         <div className="relative min-w-0 flex-1">
@@ -83,7 +87,7 @@ export const AudioTrackRow = memo(function AudioTrackRow({
           >
             <AudioLevelControl
               className="mt-2"
-              label={t("audio.trackVolume", { title })}
+              label={t("audio.accessibility.trackVolume", { title })}
               onChange={(volumePercent) => onVolumeChange(stream.streamIndex, volumePercent)}
               volumePercent={track.enabled ? track.volumePercent : 0}
             />

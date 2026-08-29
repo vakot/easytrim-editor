@@ -45,12 +45,12 @@ export function SegmentDragHandle({
     <Tooltip>
       <TooltipTrigger asChild>
         <button
-          aria-label={t("timeline.moveSegment")}
+          aria-label={t("timeline.actions.moveSegment")}
           aria-valuemax={range.sourceDurationMicros - durationMicros}
           aria-valuemin={0}
           aria-valuenow={range.startMicros}
-          aria-valuetext={t("timeline.startsAt", {
-            time: t("timeline.accessibleSeconds", {
+          aria-valuetext={t("timeline.accessibility.startsAt", {
+            time: t("timeline.accessibility.seconds", {
               value: formatAccessibleTime(range.startMicros),
             }),
           })}
@@ -78,7 +78,7 @@ export function SegmentDragHandle({
           </svg>
         </button>
       </TooltipTrigger>
-      <TooltipContent>{t("timeline.moveSegmentHint")}</TooltipContent>
+      <TooltipContent>{t("timeline.tooltips.moveSegment")}</TooltipContent>
     </Tooltip>
   );
 }
@@ -113,7 +113,11 @@ export function TrimHandle({
   value,
 }: TrimHandleProps) {
   const { t } = useTranslation();
-  const label = boundary === "start" ? t("timeline.trimStart") : t("timeline.trimEnd");
+  const label =
+    boundary === "start"
+      ? t("timeline.accessibility.trimStart")
+      : t("timeline.accessibility.trimEnd");
+
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -122,7 +126,9 @@ export function TrimHandle({
           aria-valuemax={maximum}
           aria-valuemin={minimum}
           aria-valuenow={value}
-          aria-valuetext={t("timeline.accessibleSeconds", { value: formatAccessibleTime(value) })}
+          aria-valuetext={t("timeline.accessibility.seconds", {
+            value: formatAccessibleTime(value),
+          })}
           className={cn(
             "trim-handle",
             `trim-handle-${boundary}`,
@@ -149,7 +155,7 @@ export function TrimHandle({
           <span aria-hidden="true" />
         </button>
       </TooltipTrigger>
-      <TooltipContent>{t("timeline.trimResetHint", { label })}</TooltipContent>
+      <TooltipContent>{t("timeline.tooltips.trimReset", { label })}</TooltipContent>
     </Tooltip>
   );
 }
@@ -184,11 +190,11 @@ export function Playhead({
     <Tooltip>
       <TooltipTrigger asChild>
         <button
-          aria-label={t("timeline.playbackPosition")}
+          aria-label={t("timeline.accessibility.playbackPosition")}
           aria-valuemax={maximum}
           aria-valuemin={0}
           aria-valuenow={value}
-          aria-valuetext={t("timeline.accessibleSeconds", {
+          aria-valuetext={t("timeline.accessibility.seconds", {
             value: formatAccessibleTime(value),
           })}
           className={cn("playhead", styles.playhead)}

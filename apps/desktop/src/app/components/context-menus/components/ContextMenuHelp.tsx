@@ -42,12 +42,12 @@ export function ContextMenuHelp({ navigation }: { navigation: MenuNavigation }) 
 
   const updateLabel =
     updateStatus === "checking"
-      ? t("app.topBarMenus.checkingForUpdates")
+      ? t("app.status.checkingForUpdates")
       : updateStatus === "up-to-date"
-        ? t("app.topBarMenus.upToDate")
+        ? t("app.status.upToDate")
         : updateStatus === "available" && availableVersion
-          ? t("app.topBarMenus.updateTo", { version: availableVersion })
-          : t("app.topBarMenus.checkForUpdates");
+          ? t("app.actions.updateTo", { version: availableVersion })
+          : t("app.actions.checkForUpdates");
 
   const updateHint =
     updateStatus === "checking" ? (
@@ -75,7 +75,7 @@ export function ContextMenuHelp({ navigation }: { navigation: MenuNavigation }) 
           type="button"
           variant="ghost"
         >
-          Help
+          {t("app.labels.help")}
         </Button>
       </MenuTrigger>
       <MenuContent>
@@ -84,7 +84,7 @@ export function ContextMenuHelp({ navigation }: { navigation: MenuNavigation }) 
             icon={<ExternalLink aria-hidden="true" className="size-3" />}
             onSelect={() => void openExternalUrl(CHANGELOG_URL)}
           >
-            {t("app.topBarMenus.changelog")}
+            {t("support.actions.changelog")}
           </MenuItem>
           <MenuItem
             disabled={updateStatus === "checking" || isInstalling}
@@ -100,7 +100,7 @@ export function ContextMenuHelp({ navigation }: { navigation: MenuNavigation }) 
             icon={<GithubIcon className="size-3" />}
             onSelect={() => void openExternalUrl(PROJECT_PAGE_URL)}
           >
-            {t("app.topBarMenus.projectPage")}
+            {t("support.actions.projectPage")}
           </MenuItem>
         </MenuGroup>
         <MenuSeparator />
@@ -109,7 +109,7 @@ export function ContextMenuHelp({ navigation }: { navigation: MenuNavigation }) 
             icon={<KofiIcon className="size-3" />}
             onSelect={() => void openExternalUrl(SUPPORT_PROJECT_URL)}
           >
-            {t("app.topBarMenus.supportProject")}
+            {t("support.actions.projectSupport")}
           </MenuItem>
         </MenuGroup>
         <MenuSeparator />
@@ -120,7 +120,7 @@ export function ContextMenuHelp({ navigation }: { navigation: MenuNavigation }) 
               void openExternalUrl(`${PROJECT_PAGE_URL}/releases/tag/v${currentVersion}`)
             }
           >
-            {t("app.topBarMenus.version", { version: currentVersion })}
+            {t("app.labels.version", { version: currentVersion })}
           </MenuItem>
         </MenuGroup>
       </MenuContent>

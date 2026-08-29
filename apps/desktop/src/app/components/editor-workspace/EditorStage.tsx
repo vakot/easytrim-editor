@@ -79,7 +79,7 @@ function EditorTimelinePanel() {
         >
           <div className="grid place-items-center gap-2 text-center text-sm text-muted-foreground">
             <LoaderCircle aria-hidden="true" className="size-7 animate-spin text-primary" />
-            <strong className="text-foreground">{t("common.loading")}</strong>
+            <strong className="text-foreground">{t("common.status.loading")}</strong>
           </div>
         </div>
       ) : null}

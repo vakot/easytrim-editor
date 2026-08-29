@@ -29,8 +29,8 @@ export function formatDecibels(volumePercent: number): string {
 export function formatChannels(stream: AudioStream, t: TFunction): string {
   if (stream.channelLayout) return stream.channelLayout;
   return stream.channels === undefined
-    ? t("audio.unknownLayout")
-    : t("audio.channels", { count: stream.channels });
+    ? t("audio.options.unknownLayout")
+    : t("audio.options.channels", { count: stream.channels });
 }
 
 export function audioOutputSummary(
@@ -38,10 +38,10 @@ export function audioOutputSummary(
   mergeAudio: boolean,
   t: TFunction,
 ): string {
-  if (enabledCount === 0) return t("audio.output.videoOnly");
+  if (enabledCount === 0) return t("audio.messages.output.videoOnly");
   if (mergeAudio && enabledCount > 1) {
-    return t("audio.output.merged", { count: enabledCount });
+    return t("audio.messages.output.merged", { count: enabledCount });
   }
-  if (mergeAudio) return t("audio.output.oneTrack");
-  return t("audio.output.separate", { count: enabledCount });
+  if (mergeAudio) return t("audio.messages.output.oneTrack");
+  return t("audio.messages.output.separate", { count: enabledCount });
 }

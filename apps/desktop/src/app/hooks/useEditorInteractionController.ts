@@ -476,7 +476,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
       pauseAudioPlayback();
       setIsPlaying(false);
       stopPlayheadAnimation();
-      setTransportError(t("preview.playbackFailed"));
+      setTransportError(t("preview.messages.playbackFailed"));
     });
   }, [pauseAudioPlayback, stopPlayheadAnimation, syncAudioPlayback, t]);
 

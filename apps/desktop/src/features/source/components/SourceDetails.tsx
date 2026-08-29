@@ -16,43 +16,47 @@ import {
 export function SourceDetails() {
   const media = useAppSelector(selectSourceMedia);
   const { t } = useTranslation();
-  const noSource = t("import.source.noSource");
+  const noSource = t("source.messages.noSource");
   const frameRate = media?.video.averageFrameRate ?? media?.video.realFrameRate;
-  const unknown = media ? t("common.unknown") : noSource;
+  const unknown = media ? t("common.status.unknown") : noSource;
   const metadata = [
     [
-      t("import.source.metadata.container"),
+      t("source.labels.metadata.container"),
       media ? (media.formatLongName ?? media.formatName) : noSource,
     ],
-    [t("import.source.metadata.duration"), media ? formatDuration(media.durationMicros) : noSource],
+    [t("source.labels.metadata.duration"), media ? formatDuration(media.durationMicros) : noSource],
     [
-      t("import.source.metadata.resolution"),
+      t("source.labels.metadata.resolution"),
       media ? `${media.video.width} \u00d7 ${media.video.height}` : noSource,
     ],
     [
-      t("import.source.metadata.frameRate"),
+      t("source.labels.metadata.frameRate"),
       media
-        ? formatFrameRate(frameRate, unknown, (value) => t("units.framesPerSecond", { value }))
+        ? formatFrameRate(frameRate, unknown, (value) =>
+            t("units.labels.framesPerSecond", { value }),
+          )
         : noSource,
     ],
     [
-      t("import.source.metadata.videoCodec"),
+      t("source.labels.metadata.videoCodec"),
       media ? media.video.codecName.toUpperCase() : noSource,
     ],
     [
-      t("import.source.metadata.fileSize"),
+      t("source.labels.metadata.fileSize"),
       media ? formatBytes(media.sizeBytes, unknown) : noSource,
     ],
     [
-      t("import.source.metadata.bitrate"),
+      t("source.labels.metadata.bitrate"),
       media
-        ? formatBitrate(media.bitrate, unknown, (value) => t("units.megabitsPerSecond", { value }))
+        ? formatBitrate(media.bitrate, unknown, (value) =>
+            t("units.labels.megabitsPerSecond", { value }),
+          )
         : noSource,
     ],
   ] as const;
 
   return (
-    <dl aria-label={t("import.source.metadataLabel")} className="grid">
+    <dl aria-label={t("source.accessibility.metadata")} className="grid">
       {metadata.map(([label, value], index) => (
         <Fragment key={label}>
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-3 py-2">

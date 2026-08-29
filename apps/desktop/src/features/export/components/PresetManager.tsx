@@ -26,7 +26,11 @@ import {
 import { selectTriggerVariants } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
-import { type ExportPreset, presetNameError } from "@/app/store/lib/export-presets";
+import {
+  type ExportPreset,
+  type PresetNameError,
+  presetNameError,
+} from "@/app/store/lib/export-presets";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
   exportArgumentsChanged,
@@ -51,8 +55,13 @@ export function PresetManager() {
   const [editingPresetId, setEditingPresetId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
   const [draftArguments, setDraftArguments] = useState("");
-  const [presetError, setPresetError] = useState<string | null>(null);
+  const [presetError, setPresetError] = useState<PresetNameError | null>(null);
   const [presetToDelete, setPresetToDelete] = useState<ExportPreset | null>(null);
+  const presetErrorMessages: Record<PresetNameError, string> = {
+    duplicate: t("export.messages.presetNameDuplicate"),
+    required: t("export.messages.presetNameRequired"),
+    tooLong: t("export.messages.presetNameTooLong"),
+  };
 
   function openCreateDialog() {
     setEditingPresetId(null);
@@ -91,7 +100,7 @@ export function PresetManager() {
   return (
     <section className="grid gap-3">
       <div className="grid gap-1.5">
-        <Label>{t("export.presets.label", "Preset")}</Label>
+        <Label>{t("export.labels.preset")}</Label>
         <Menu>
           <MenuTrigger
             className={selectTriggerVariants({
@@ -101,7 +110,7 @@ export function PresetManager() {
             data-size="default"
           >
             <span className="truncate">
-              {selectedPreset?.name ?? t("export.presets.select", "Select a preset")}
+              {selectedPreset?.name ?? t("export.options.selectPreset")}
             </span>
             <ChevronDownIcon className="pointer-events-none size-4 shrink-0" />
           </MenuTrigger>
@@ -125,7 +134,7 @@ export function PresetManager() {
                 </MenuItem>
                 <MenuSub>
                   <MenuSubTrigger
-                    aria-label={t("export.presets.actions", "Preset actions")}
+                    aria-label={t("export.accessibility.presetActions")}
                     className="flex size-8 shrink-0 items-center justify-center rounded-sm outline-none hover:bg-accent focus:bg-accent"
                   >
                     <MoreHorizontal className="size-4" />
@@ -139,14 +148,14 @@ export function PresetManager() {
                       onSelect={() => openEditDialog(preset)}
                     >
                       <Pencil className="size-3.5" />
-                      {t("export.presets.edit", "Edit")}
+                      {t("common.actions.edit")}
                     </MenuItem>
                     <MenuItem
                       className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-destructive outline-none focus:bg-accent"
                       onSelect={() => setPresetToDelete(preset)}
                     >
                       <Trash2 className="size-3.5" />
-                      {t("export.presets.delete", "Delete")}
+                      {t("common.actions.delete")}
                     </MenuItem>
                   </MenuSubContent>
                 </MenuSub>
@@ -158,7 +167,7 @@ export function PresetManager() {
               onSelect={openCreateDialog}
             >
               <Plus className="size-3.5" />
-              {t("export.presets.new", "Add new preset")}
+              {t("export.actions.addPreset")}
             </MenuItem>
           </MenuContent>
         </Menu>
@@ -167,14 +176,12 @@ export function PresetManager() {
       <Dialog onOpenChange={(open) => !open && setDialogMode(null)} open={dialogMode !== null}>
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
-            <DialogTitle>{t("export.presets.newTitle", "New preset")}</DialogTitle>
-            <DialogDescription>
-              {t("export.presets.dialogDescription", "Save a reusable FFmpeg configuration.")}
-            </DialogDescription>
+            <DialogTitle>{t("export.dialogs.preset.createTitle")}</DialogTitle>
+            <DialogDescription>{t("export.dialogs.preset.createDescription")}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-3">
             <div className="grid gap-1.5">
-              <Label htmlFor="preset-name">{t("export.presets.name", "Name")}</Label>
+              <Label htmlFor="preset-name">{t("export.dialogs.preset.name")}</Label>
               <Input
                 id="preset-name"
                 onChange={(event) => setDraftName(event.target.value)}
@@ -182,7 +189,7 @@ export function PresetManager() {
               />
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor="preset-arguments">{t("export.dialog.arguments")}</Label>
+              <Label htmlFor="preset-arguments">{t("export.dialogs.optimized.arguments")}</Label>
               <Textarea
                 className="min-h-28 resize-y font-mono text-xs"
                 id="preset-arguments"
@@ -190,13 +197,15 @@ export function PresetManager() {
                 value={draftArguments}
               />
             </div>
-            {presetError ? <p className="text-xs text-destructive">{presetError}</p> : null}
+            {presetError ? (
+              <p className="text-xs text-destructive">{presetErrorMessages[presetError]}</p>
+            ) : null}
           </div>
           <DialogFooter>
             <Button onClick={() => setDialogMode(null)} variant="outline">
-              {t("common.cancel")}
+              {t("common.actions.cancel")}
             </Button>
-            <Button onClick={savePreset}>{t("common.save", "Save")}</Button>
+            <Button onClick={savePreset}>{t("common.actions.save")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -207,17 +216,16 @@ export function PresetManager() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t("export.presets.deleteTitle", "Delete preset?")}</DialogTitle>
+            <DialogTitle>{t("export.dialogs.preset.deleteTitle")}</DialogTitle>
             <DialogDescription>
-              {t("export.presets.deleteDescription", {
+              {t("export.dialogs.preset.deleteDescription", {
                 name: presetToDelete?.name ?? "",
-                defaultValue: `Delete “${presetToDelete?.name ?? ""}”? This cannot be undone.`,
               })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button onClick={() => setPresetToDelete(null)} variant="outline">
-              {t("common.cancel")}
+              {t("common.actions.cancel")}
             </Button>
             <Button
               onClick={() => {
@@ -229,7 +237,7 @@ export function PresetManager() {
               }}
               variant="destructive"
             >
-              {t("export.presets.delete", "Delete")}
+              {t("common.actions.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -46,15 +46,9 @@ describe("export presets", () => {
   });
 
   it("rejects blank, long, and duplicate names without changing state", () => {
-    expect(presetNameError(initialExportPresetState.presets, " ")).toBe(
-      "A preset name is required.",
-    );
-    expect(presetNameError(initialExportPresetState.presets, "x".repeat(65))).toBe(
-      "Preset names must be 64 characters or fewer.",
-    );
-    expect(presetNameError(initialExportPresetState.presets, "P3 · Fast")).toBe(
-      "Preset names must be unique.",
-    );
+    expect(presetNameError(initialExportPresetState.presets, " ")).toBe("required");
+    expect(presetNameError(initialExportPresetState.presets, "x".repeat(65))).toBe("tooLong");
+    expect(presetNameError(initialExportPresetState.presets, "P3 · Fast")).toBe("duplicate");
     expect(
       exportPresetsReducer(initialExportPresetState, exportPresetCreated({ name: "P3 · Fast" })),
     ).toBe(initialExportPresetState);

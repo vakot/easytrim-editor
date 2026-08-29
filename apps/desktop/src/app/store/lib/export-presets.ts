@@ -11,6 +11,8 @@ export interface ExportPreset {
   name: string;
 }
 
+export type PresetNameError = "duplicate" | "required" | "tooLong";
+
 interface ExportPresetState {
   argumentsText: string;
   nextPresetSequence: number;
@@ -118,13 +120,13 @@ export function presetNameError(
   presets: ExportPreset[],
   name: string,
   excludedPresetId?: string,
-): string | null {
+): PresetNameError | null {
   const normalized = name.trim();
   if (!normalized) {
-    return "A preset name is required.";
+    return "required";
   }
   if (normalized.length > 64) {
-    return "Preset names must be 64 characters or fewer.";
+    return "tooLong";
   }
   if (
     presets.some(
@@ -133,7 +135,7 @@ export function presetNameError(
         preset.name.localeCompare(normalized, undefined, { sensitivity: "accent" }) === 0,
     )
   ) {
-    return "Preset names must be unique.";
+    return "duplicate";
   }
   return null;
 }

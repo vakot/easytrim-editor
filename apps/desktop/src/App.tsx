@@ -132,7 +132,7 @@ function EasyTrimEditorApp() {
             variant="destructive"
           >
             <AlertDescription>
-              {t("app.dragUnavailable", { message: dropListenerError.message })}
+              {t("app.messages.dragUnavailable", { message: dropListenerError.message })}
             </AlertDescription>
           </Alert>
         ) : null}
