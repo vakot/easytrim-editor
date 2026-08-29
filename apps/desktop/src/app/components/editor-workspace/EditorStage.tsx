@@ -1,10 +1,6 @@
-import { LoaderCircle } from "lucide-react";
-import { useTranslation } from "react-i18next";
-
 import { Card } from "@/components/ui/card";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 
-import { usePlayback } from "@/app/hooks/usePlayback";
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectSourceMedia, selectSourceSelection } from "@/app/store/slices/source-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
@@ -57,11 +53,8 @@ export function EditorStage() {
 }
 
 function EditorTimelinePanel() {
-  const { t } = useTranslation();
-  const sourceSelection = useAppSelector(selectSourceSelection);
   const media = useAppSelector(selectSourceMedia);
   const trim = useAppSelector(selectTrim);
-  const playback = usePlayback();
 
   return (
     <>
@@ -70,19 +63,6 @@ function EditorTimelinePanel() {
         range={trim ?? EMPTY_TIMELINE_RANGE}
         timeline={<Timeline />}
       />
-      {sourceSelection !== null && !playback.isReady ? (
-        <div
-          aria-live="polite"
-          className="absolute inset-0 z-30 grid place-items-center bg-background/75 backdrop-blur-sm"
-          data-testid="editor-loading-overlay"
-          role="status"
-        >
-          <div className="grid place-items-center gap-2 text-center text-sm text-muted-foreground">
-            <LoaderCircle aria-hidden="true" className="size-7 animate-spin text-primary" />
-            <strong className="text-foreground">{t("common.status.loading")}</strong>
-          </div>
-        </div>
-      ) : null}
     </>
   );
 }

@@ -14,9 +14,13 @@ export function Preview() {
   const playback = usePlayback();
   const sourceSelection = useAppSelector(selectSourceSelection);
   const preview = useAppSelector(selectPreview);
+  const showLoadingOverlay =
+    sourceSelection !== null &&
+    (preview.status === "loading" ||
+      (preview.status === "ready" && !playback.isReady && !playback.isPlaying));
 
   return (
-    <>
+    <div className="relative size-full">
       {sourceSelection === null ? (
         <VideoPreviewEmpty />
       ) : (
@@ -36,7 +40,7 @@ export function Preview() {
           videoRef={playback.videoRef}
         />
       )}
-      {sourceSelection !== null && preview.status === "loading" ? (
+      {showLoadingOverlay ? (
         <div
           aria-live="polite"
           className="absolute inset-0 z-30 grid place-items-center bg-background/75 backdrop-blur-sm"
@@ -46,13 +50,15 @@ export function Preview() {
           <div className="grid place-items-center gap-2 text-center text-sm text-muted-foreground">
             <LoaderCircle aria-hidden="true" className="size-7 animate-spin text-primary" />
             <strong className="text-foreground">
-              {preview.kind === "proxy"
+              {preview.status === "loading" && preview.kind === "proxy"
                 ? t("preview.status.preparing")
-                : t("preview.status.opening")}
+                : preview.status === "loading"
+                  ? t("preview.status.opening")
+                  : t("common.status.loading")}
             </strong>
           </div>
         </div>
       ) : null}
-    </>
+    </div>
   );
 }
