@@ -63,7 +63,10 @@ export function SourceDetails() {
         <Fragment key={label}>
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-3 py-2">
             <dt className="text-xs text-muted-foreground">{label}</dt>
-            <dd className="max-w-40 truncate text-right text-xs font-medium text-foreground">
+            <dd
+              className="max-w-40 truncate text-right text-xs font-medium text-foreground"
+              title={value}
+            >
               {value}
             </dd>
           </div>
