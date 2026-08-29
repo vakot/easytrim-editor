@@ -2,11 +2,11 @@ import { Info } from "lucide-react";
 import type { RefObject } from "react";
 import { useTranslation } from "react-i18next";
 
-import type { AudioTrackState } from "@/app/store/slices/audio-slice";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
+import type { AudioTrackState } from "@/app/store/slices/audio-slice";
 import { timelinePercent, type TrimRange } from "@/domain/trim";
 import type { AudioStream } from "@/lib/tauri/media.types";
 
