@@ -95,7 +95,6 @@ app/
 |   |-- editor-workspace/               # Application layout composition
 |   `-- providers/                      # Provider implementations and global initialization
 |-- contexts/                           # App-level Context contracts only
-|-- editor-interaction/                 # Cross-feature playback and synchronization logic
 |-- hooks/                              # Application and cross-feature hooks
 `-- store/
     |-- store.ts
@@ -231,6 +230,10 @@ app/components/context-menus/
   avoids excessive prop threading, but trivial leaves should remain presentational by default.
 - Keep pure feature logic local and give modules semantic names. Introduce `lib/` only when enough
   related internal modules justify grouping.
+- Keep business interaction logic with the owning feature: preview owns media-element playback
+  helpers, audio owns audio synchronization and native-audio runtime code, and timeline owns
+  keyboard shortcut and playhead helpers. The `app/` layer may orchestrate these capabilities from
+  application hooks and providers, but it is not a business-logic dumping ground.
 - Split files when responsibilities diverge, not at an arbitrary line count.
 
 ## Redux and runtime ownership

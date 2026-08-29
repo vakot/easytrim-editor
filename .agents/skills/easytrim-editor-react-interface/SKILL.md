@@ -54,6 +54,10 @@ Use `easytrim-editor-tauri-rust` for IPC/native changes and `easytrim-editor-ffm
   logic and effects to feature `hooks/` when that creates a meaningful responsibility. Keep
   focused nested components presentational by default, and group semantic pure/internal modules
   under `lib/` only when enough related files justify it.
+- Keep feature business logic in its owning feature: preview media synchronization, audio
+  synchronization/native-audio runtime, and timeline keyboard/playhead helpers belong under their
+  respective feature `lib/` modules. Reserve `app/` for orchestration hooks, providers, contexts,
+  and composition.
 - Keep sibling component variants flat under their owner's `components/` directory. Avoid
   one-directory-per-variant wrappers and internal barrels that only re-export one file.
 
