@@ -37,6 +37,12 @@ choosing Redux.
   `store.ts`, `redux-hooks.ts`, `persistence.ts`, and application-owned slices under
   `slices/`. A feature-owned Redux domain may remain with its owning feature, following
   the repository dependency direction.
+- Organize additional store support by responsibility: use `store/integration/` for
+  cross-slice/domain/native/runtime orchestration and its integration tests, and
+  `store/lib/` for pure or mostly pure store-layer helpers and models. The integration
+  directory contains implementation modules as well as tests; it is not test-only.
+- Keep Redux Persist infrastructure at `store/persistence.ts` and typed hooks at
+  `store/redux-hooks.ts`; neither belongs in `integration` or `lib`.
 - Keep `store.ts` composition-only. Put custom Redux middleware under
   `app/store/middleware/`, and put cross-domain RTK listener reactions under
   `app/store/middleware/listeners/`. Use one shared listener middleware instance unless

@@ -101,6 +101,8 @@ app/
     |-- store.ts
     |-- redux-hooks.ts
     |-- persistence.ts
+    |-- integration/                  # Redux ↔ domain/native/runtime orchestration
+    |-- lib/                          # Pure store-layer helpers and models
     |-- middleware/
     `-- slices/
 ```
@@ -109,6 +111,11 @@ app/
   application-owned state. A feature-owned Redux domain may remain in its feature when the root
   store deliberately composes it.
 - `app/store/persistence.ts` owns Redux Persist configuration and storage-adapter normalization.
+- `app/store/integration/` contains implementation modules as well as their integration tests. It
+  owns cross-slice orchestration and bridges between Redux and domain, native, or application
+  runtime behavior; it is not a test-only directory.
+- `app/store/lib/` owns pure or mostly pure helpers and models that support the store layer without
+  orchestrating Redux or external runtimes. Do not use it as a generic dumping ground.
 - `app/contexts/` contains app-level Context contracts and declarations. It does not own Provider
   runtime effects or initialization.
 - `app/components/providers/` contains app-level Provider implementations and initialization.
