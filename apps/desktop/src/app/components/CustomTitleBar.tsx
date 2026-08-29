@@ -13,8 +13,8 @@ import {
 
 interface CustomTitleBarProps {
   menuControls?: ReactNode;
-  statusContent?: ReactNode;
   panelControls?: ReactNode;
+  statusContent?: ReactNode;
 }
 
 interface PendingDrag {
@@ -28,8 +28,8 @@ const DRAG_START_DISTANCE = 4;
 
 export function CustomTitleBar({
   menuControls,
-  statusContent,
   panelControls,
+  statusContent,
 }: CustomTitleBarProps) {
   const { t } = useTranslation();
   const [isMaximized, setIsMaximized] = useState(false);
@@ -108,12 +108,12 @@ export function CustomTitleBar({
 
   return (
     <header
-      className="relative flex h-9 min-h-9 items-center bg-background/95 text-foreground select-none"
       aria-label={t("app.windowControls.titleBar")}
+      className="relative flex h-9 min-h-9 items-center bg-background/95 text-foreground select-none"
       onDoubleClickCapture={handleTitleBarDoubleClick}
     >
       <div className="flex h-full items-center gap-2 px-3 text-left">
-        <img className="size-5" src="/logo-symbol.svg" alt="" />
+        <img alt="" className="size-5" src="/logo-symbol.svg" />
         <span className="text-xs font-semibold tracking-wide text-foreground/80">
           {t("common.brand")}
         </span>
@@ -128,53 +128,53 @@ export function CustomTitleBar({
       ) : null}
 
       <div
+        aria-hidden="true"
         className="h-full min-w-0 flex-1 cursor-default"
+        onPointerCancel={handleDragPointerEnd}
         onPointerDown={handleDragPointerDown}
         onPointerMove={handleDragPointerMove}
         onPointerUp={handleDragPointerEnd}
-        onPointerCancel={handleDragPointerEnd}
-        aria-hidden="true"
       />
 
       {panelControls ? <div className="flex h-full items-center px-1">{panelControls}</div> : null}
 
       <div
+        aria-label={t("app.windowControls.group")}
         className="flex h-full items-stretch"
         role="group"
-        aria-label={t("app.windowControls.group")}
       >
         <button
-          type="button"
-          className="inline-flex w-11 items-center justify-center outline-none transition-colors hover:bg-muted focus-visible:bg-accent"
           aria-label={t("app.windowControls.minimize")}
-          title={t("app.windowControls.minimize")}
+          className="inline-flex w-11 items-center justify-center outline-none transition-colors hover:bg-muted focus-visible:bg-accent"
           onClick={() => runWindowAction(minimizeWindow)}
+          title={t("app.windowControls.minimize")}
+          type="button"
         >
-          <Minus className="size-4" strokeWidth={1.5} aria-hidden="true" />
+          <Minus aria-hidden="true" className="size-4" strokeWidth={1.5} />
         </button>
         <button
-          type="button"
-          className="inline-flex w-11 items-center justify-center outline-none transition-colors hover:bg-muted focus-visible:bg-accent"
           aria-label={
             isMaximized ? t("app.windowControls.restore") : t("app.windowControls.maximize")
           }
-          title={isMaximized ? t("app.windowControls.restore") : t("app.windowControls.maximize")}
+          className="inline-flex w-11 items-center justify-center outline-none transition-colors hover:bg-muted focus-visible:bg-accent"
           onClick={handleToggleMaximize}
+          title={isMaximized ? t("app.windowControls.restore") : t("app.windowControls.maximize")}
+          type="button"
         >
           {isMaximized ? (
-            <Copy className="size-3.5" strokeWidth={1.5} aria-hidden="true" />
+            <Copy aria-hidden="true" className="size-3.5" strokeWidth={1.5} />
           ) : (
-            <Square className="size-3.5" strokeWidth={1.5} aria-hidden="true" />
+            <Square aria-hidden="true" className="size-3.5" strokeWidth={1.5} />
           )}
         </button>
         <button
-          type="button"
-          className="inline-flex w-11 items-center justify-center outline-none transition-colors hover:bg-destructive hover:text-destructive-foreground focus-visible:bg-destructive focus-visible:text-destructive-foreground"
           aria-label={t("app.windowControls.close")}
-          title={t("app.windowControls.close")}
+          className="inline-flex w-11 items-center justify-center outline-none transition-colors hover:bg-destructive hover:text-destructive-foreground focus-visible:bg-destructive focus-visible:text-destructive-foreground"
           onClick={() => runWindowAction(closeWindow)}
+          title={t("app.windowControls.close")}
+          type="button"
         >
-          <X className="size-4" strokeWidth={1.5} aria-hidden="true" />
+          <X aria-hidden="true" className="size-4" strokeWidth={1.5} />
         </button>
       </div>
 

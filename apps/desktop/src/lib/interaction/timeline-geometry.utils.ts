@@ -3,10 +3,10 @@ import type { CSSProperties } from "react";
 import { timelinePercent, type TrimRange } from "@/domain/trim";
 
 interface TimelineGeometryVariables {
-  "--timeline-trim-start": string;
+  "--timeline-trim-center": string;
   "--timeline-trim-end": string;
   "--timeline-trim-end-inset": string;
-  "--timeline-trim-center": string;
+  "--timeline-trim-start": string;
 }
 
 export function timelineGeometryVariables(range: TrimRange): TimelineGeometryVariables {

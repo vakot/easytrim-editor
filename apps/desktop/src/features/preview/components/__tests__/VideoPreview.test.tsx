@@ -54,8 +54,8 @@ describe("VideoPreview", () => {
     const videoRef = createRef<HTMLVideoElement>();
     renderPreview(
       <VideoPreview
-        preview={readyPreview("easytrim-media://preview-1")}
         muted
+        preview={readyPreview("easytrim-media://preview-1")}
         videoRef={videoRef}
         {...callbacks}
       />,
@@ -86,8 +86,8 @@ describe("VideoPreview", () => {
       const videoRef = createRef<HTMLVideoElement>();
       const { container } = renderPreview(
         <VideoPreview
-          preview={readyPreview("easytrim-media://preview-1")}
           muted
+          preview={readyPreview("easytrim-media://preview-1")}
           videoRef={videoRef}
           {...callbacks}
         />,
@@ -116,8 +116,8 @@ describe("VideoPreview", () => {
     const videoRef = createRef<HTMLVideoElement>();
     const { container } = renderPreview(
       <VideoPreview
-        preview={readyPreview("easytrim-media://preview-1")}
         muted
+        preview={readyPreview("easytrim-media://preview-1")}
         videoRef={videoRef}
         {...callbacks}
       />,
@@ -169,8 +169,8 @@ describe("VideoPreview", () => {
     const videoRef = createRef<HTMLVideoElement>();
     const { container } = renderPreview(
       <VideoPreview
-        preview={readyPreview("easytrim-media://preview-1")}
         muted
+        preview={readyPreview("easytrim-media://preview-1")}
         videoRef={videoRef}
         {...callbacks}
       />,
@@ -194,8 +194,8 @@ describe("VideoPreview", () => {
     const videoRef = createRef<HTMLVideoElement>();
     const { container } = renderPreview(
       <VideoPreview
-        preview={readyPreview("easytrim-media://preview-1")}
         muted
+        preview={readyPreview("easytrim-media://preview-1")}
         videoRef={videoRef}
         {...callbacks}
       />,
@@ -217,8 +217,8 @@ describe("VideoPreview", () => {
     const videoRef = createRef<HTMLVideoElement>();
     const { container } = renderPreview(
       <VideoPreview
-        preview={readyPreview("easytrim-media://preview-1")}
         muted
+        preview={readyPreview("easytrim-media://preview-1")}
         videoRef={videoRef}
         {...callbacks}
       />,
@@ -244,8 +244,8 @@ describe("VideoPreview", () => {
     const videoRef = createRef<HTMLVideoElement>();
     const { container, rerender } = renderPreview(
       <VideoPreview
-        preview={readyPreview("easytrim-media://preview-1")}
         muted
+        preview={readyPreview("easytrim-media://preview-1")}
         videoRef={videoRef}
         {...callbacks}
       />,
@@ -258,8 +258,8 @@ describe("VideoPreview", () => {
 
     rerender(
       <VideoPreview
-        preview={readyPreview("easytrim-media://preview-2")}
         muted
+        preview={readyPreview("easytrim-media://preview-2")}
         videoRef={videoRef}
         {...callbacks}
       />,

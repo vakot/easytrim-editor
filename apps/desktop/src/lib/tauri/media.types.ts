@@ -2,43 +2,43 @@ import type { SourceRef } from "@/domain/source";
 
 export interface AppError {
   code: string;
-  message: string;
   diagnostics?: string;
+  message: string;
 }
 
 interface TrimSelection {
-  startMicros: number;
   endMicros: number;
+  startMicros: number;
 }
 
 export interface ExportProgress {
-  operationId: string;
-  elapsedMicros: number;
-  frame?: number;
-  fps?: string;
-  speed?: string;
   bitrate?: string;
-  totalSize?: number;
+  elapsedMicros: number;
+  fps?: string;
+  frame?: number;
+  operationId: string;
   phase: "running" | "completed";
+  speed?: string;
+  totalSize?: number;
 }
 
 export interface OutputSelection {
-  outputId: string;
   displayName: string;
   displayPath: string;
+  outputId: string;
 }
 
 export interface ExportResult {
-  operationId: string;
   displayName: string;
   displayPath: string;
+  operationId: string;
 }
 
 export interface FastExportRequest {
-  sourcePath: string;
-  trim: TrimSelection;
   audioTracks: AudioTrackSelection[];
   mergeAudio: boolean;
+  sourcePath: string;
+  trim: TrimSelection;
 }
 
 interface AudioTrackSelection {
@@ -47,10 +47,10 @@ interface AudioTrackSelection {
 }
 
 export interface OptimizedExportRequest extends FastExportRequest {
-  resolution: { width: number; height: number };
-  crop?: { x: number; y: number; width: number; height: number };
-  frameRate?: { numerator: number; denominator: number };
   arguments: string;
+  crop?: { height: number; width: number; x: number; y: number };
+  frameRate?: { denominator: number; numerator: number };
+  resolution: { height: number; width: number };
 }
 
 export interface OptimizedExportPlan {
@@ -59,8 +59,8 @@ export interface OptimizedExportPlan {
 
 export interface BinaryCapability {
   available: boolean;
-  version?: string;
   error?: string;
+  version?: string;
 }
 
 export interface MediaCapabilities {
@@ -69,65 +69,65 @@ export interface MediaCapabilities {
 }
 
 export interface FrameRate {
-  numerator: number;
   denominator: number;
   displayValue?: number;
+  numerator: number;
 }
 
 export interface VideoStream {
-  streamIndex: number;
+  averageFrameRate?: FrameRate;
   codecName: string;
-  width: number;
-  height: number;
-  codedWidth?: number;
   codedHeight?: number;
-  sampleAspectRatio?: string;
-  pixelFormat?: string;
+  codedWidth?: number;
+  colorPrimaries?: string;
   colorSpace?: string;
   colorTransfer?: string;
-  colorPrimaries?: string;
-  timeBase?: string;
-  averageFrameRate?: FrameRate;
+  height: number;
+  pixelFormat?: string;
   realFrameRate?: FrameRate;
   rotationDegrees?: number;
+  sampleAspectRatio?: string;
+  streamIndex: number;
+  timeBase?: string;
+  width: number;
 }
 
 export interface AudioStream {
-  streamIndex: number;
-  codecName: string;
-  channels?: number;
   channelLayout?: string;
-  sampleRateHz?: number;
-  language?: string;
-  title?: string;
+  channels?: number;
+  codecName: string;
   isDefault: boolean;
+  language?: string;
+  sampleRateHz?: number;
+  streamIndex: number;
+  title?: string;
 }
 
 export interface ChapterInfo {
+  endMicros: number;
   id: number;
   startMicros: number;
-  endMicros: number;
   title?: string;
 }
 
 export interface MediaInfo {
-  formatName: string;
-  formatLongName?: string;
-  durationMicros: number;
-  startTimeMicros?: number;
-  sizeBytes?: number;
-  bitrate?: number;
-  video: VideoStream;
   audioStreams: AudioStream[];
+  bitrate?: number;
   chapters: ChapterInfo[];
+  durationMicros: number;
+  formatLongName?: string;
+  formatName: string;
+  sizeBytes?: number;
+  startTimeMicros?: number;
+  video: VideoStream;
 }
 
 export type PreviewKind = "source" | "proxy";
 
 export interface PreviewDescriptor {
+  kind: PreviewKind;
   mediaToken: number;
   url: string;
-  kind: PreviewKind;
 }
 
 export interface AudioPreviewDescriptor {
@@ -138,22 +138,22 @@ export interface AudioPreviewDescriptor {
 
 export type WaveformResult =
   | {
-      status: "ready";
-      jobId: string;
-      streamIndex: number;
-      width: number;
       hasSignal?: boolean;
+      jobId: string;
+      status: "ready";
+      streamIndex: number;
       url: string;
+      width: number;
     }
   | {
-      status: "failed";
+      error: AppError;
       jobId: string;
+      status: "failed";
       streamIndex: number;
       width: number;
-      error: AppError;
     };
 
 type SourceImportEvent =
-  { status: "selected"; sources: SourceRef[] } | { status: "failed"; error: AppError };
+  { sources: SourceRef[]; status: "selected" } | { error: AppError; status: "failed" };
 
-export type SourceDropEvent = { status: "drag"; active: boolean } | SourceImportEvent;
+export type SourceDropEvent = { active: boolean; status: "drag" } | SourceImportEvent;

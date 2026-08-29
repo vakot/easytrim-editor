@@ -30,13 +30,13 @@ export const VolumeButton = forwardRef<HTMLButtonElement, VolumeButtonProps>(fun
         <Button
           ref={ref}
           {...buttonProps}
-          variant="ghost"
-          size="icon-sm"
-          type="button"
           aria-label={label}
           aria-pressed={enabled}
-          onClick={onClick}
           className={cn("text-primary", className)}
+          onClick={onClick}
+          size="icon-sm"
+          type="button"
+          variant="ghost"
         >
           {enabled ? <Volume2 /> : <VolumeX />}
         </Button>

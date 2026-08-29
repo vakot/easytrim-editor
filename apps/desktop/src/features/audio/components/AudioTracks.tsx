@@ -18,41 +18,41 @@ import { AudioTrackRow } from "./AudioTrackRow";
 import { VolumeButton } from "./VolumeButton";
 
 interface AudioTracksProps {
-  streams: AudioStream[];
-  tracks: AudioTrackState[];
   masterEnabled: boolean;
   masterVolumePercent: number;
-  range: TrimRange;
-  playheadMicros: number;
-  playheadRef: RefObject<HTMLDivElement | null>;
   mergeAudio: boolean;
-  waveformPreparationEnabled: boolean;
+  onMasterVolumeChange: (volumePercent: number) => void;
+  onPrepareWaveforms: (streamIndexes: number[], width: number) => void;
+  onToggleMaster: () => void;
+  onToggleMerge: () => void;
   onToggleTrack: (streamIndex: number) => void;
   onTrackVolumeChange: (streamIndex: number, volumePercent: number) => void;
-  onToggleMaster: () => void;
-  onMasterVolumeChange: (volumePercent: number) => void;
-  onToggleMerge: () => void;
-  onPrepareWaveforms: (streamIndexes: number[], width: number) => void;
   onWaveformImageError: (streamIndex: number) => void;
+  playheadMicros: number;
+  playheadRef: RefObject<HTMLDivElement | null>;
+  range: TrimRange;
+  streams: AudioStream[];
+  tracks: AudioTrackState[];
+  waveformPreparationEnabled: boolean;
 }
 
 export function AudioTracks({
-  streams,
-  tracks,
   masterEnabled,
   masterVolumePercent,
-  range,
-  playheadMicros,
-  playheadRef,
   mergeAudio,
-  waveformPreparationEnabled,
+  onMasterVolumeChange,
+  onPrepareWaveforms,
+  onToggleMaster,
+  onToggleMerge,
   onToggleTrack,
   onTrackVolumeChange,
-  onToggleMaster,
-  onMasterVolumeChange,
-  onToggleMerge,
-  onPrepareWaveforms,
   onWaveformImageError,
+  playheadMicros,
+  playheadRef,
+  range,
+  streams,
+  tracks,
+  waveformPreparationEnabled,
 }: AudioTracksProps) {
   const { t } = useTranslation();
   const playheadPercent = timelinePercent(playheadMicros, range.sourceDurationMicros);
@@ -66,10 +66,10 @@ export function AudioTracks({
   }
 
   return (
-    <section className="grid min-w-0 gap-2" aria-labelledby="timeline-audio-title">
+    <section aria-labelledby="timeline-audio-title" className="grid min-w-0 gap-2">
       <h3
-        id="timeline-audio-title"
         className="font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
+        id="timeline-audio-title"
       >
         {t("audio.title")}
       </h3>
@@ -81,10 +81,10 @@ export function AudioTracks({
             onClick={onToggleMaster}
           />
           <AudioLevelControl
-            label={t("audio.allTracksVolume")}
-            volumePercent={masterEnabled ? masterVolumePercent : 0}
-            onChange={onMasterVolumeChange}
             className="flex-1"
+            label={t("audio.allTracksVolume")}
+            onChange={onMasterVolumeChange}
+            volumePercent={masterEnabled ? masterVolumePercent : 0}
           />
         </div>
         <div className="flex min-w-0 items-center justify-between gap-4">
@@ -92,8 +92,8 @@ export function AudioTracks({
           <Tooltip>
             <TooltipTrigger asChild>
               <div className="flex shrink-0 items-center gap-2">
-                <Checkbox id="merge-audio" checked={mergeAudio} onCheckedChange={onToggleMerge} />
-                <Label htmlFor="merge-audio" className="text-xs text-muted-foreground">
+                <Checkbox checked={mergeAudio} id="merge-audio" onCheckedChange={onToggleMerge} />
+                <Label className="text-xs text-muted-foreground" htmlFor="merge-audio">
                   {t("audio.mergeSelected")}
                 </Label>
                 <Info aria-hidden="true" className="size-3.5 text-muted-foreground" />
@@ -114,25 +114,25 @@ export function AudioTracks({
           return (
             <AudioTrackRow
               key={stream.streamIndex}
-              stream={stream}
-              track={track}
-              title={title}
+              onPrepareWaveform={onPrepareWaveforms}
               onToggle={onToggleTrack}
               onVolumeChange={onTrackVolumeChange}
-              onPrepareWaveform={onPrepareWaveforms}
               onWaveformImageError={onWaveformImageError}
+              stream={stream}
+              title={title}
+              track={track}
             />
           );
         })}
         <div
+          aria-hidden="true"
           className="pointer-events-none absolute inset-x-0 inset-y-[-0.25rem] grid min-w-0 grid-cols-[var(--editor-track-grid-columns)] gap-3"
           data-slot="audio-playhead-grid"
-          aria-hidden="true"
         >
           <div className="relative col-start-2 mx-px" data-slot="audio-playhead-track">
             <div
-              ref={playheadRef}
               className="audio-playhead absolute inset-y-0 border-l border-dashed border-foreground/70"
+              ref={playheadRef}
               style={{ left: `${playheadPercent}%` }}
             />
           </div>

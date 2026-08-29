@@ -127,8 +127,8 @@ describe("CustomTitleBar", () => {
     render(
       <CustomTitleBar
         menuControls={<span data-testid="menu-controls" />}
-        statusContent={<span data-testid="status-content">Media tools ready</span>}
         panelControls={<span data-testid="panel-controls" />}
+        statusContent={<span data-testid="status-content">Media tools ready</span>}
       />,
     );
 

@@ -68,11 +68,11 @@ export function ContextMenuView({ navigation }: ContextMenuViewProps) {
   return (
     <Menu
       modal={false}
-      open={navigation.open}
       onOpenChange={(isOpen) => {
         if (!isOpen) clearPreview();
         navigation.onOpenChange(isOpen);
       }}
+      open={navigation.open}
     >
       <MenuTrigger
         asChild
@@ -80,10 +80,10 @@ export function ContextMenuView({ navigation }: ContextMenuViewProps) {
         onPointerLeave={navigation.onTriggerPointerLeave}
       >
         <Button
+          className="text-foreground/80 data-[state=open]:bg-accent data-[state=open]:text-foreground"
+          size="xs"
           type="button"
           variant="ghost"
-          size="xs"
-          className="text-foreground/80 data-[state=open]:bg-accent data-[state=open]:text-foreground"
         >
           {t("app.topBarMenus.view")}
         </Button>
@@ -91,7 +91,7 @@ export function ContextMenuView({ navigation }: ContextMenuViewProps) {
       <MenuContent>
         <MenuSub>
           <MenuSubTrigger
-            icon={<CurrentThemeIcon className="size-3" aria-label={t(`theme.${preference}`)} />}
+            icon={<CurrentThemeIcon aria-label={t(`theme.${preference}`)} className="size-3" />}
           >
             {t("app.topBarMenus.theme")}
           </MenuSubTrigger>
@@ -100,13 +100,13 @@ export function ContextMenuView({ navigation }: ContextMenuViewProps) {
               const Icon = themeIcons[value];
               return (
                 <MenuItem
+                  icon={<Icon aria-hidden="true" className="size-3" />}
                   key={value}
-                  icon={<Icon className="size-3" aria-hidden="true" />}
-                  selected={value === preference}
                   onSelect={(event) => {
                     event.preventDefault();
                     dispatch(themePreferenceChanged(value));
                   }}
+                  selected={value === preference}
                 >
                   {t(`theme.${value}`)}
                 </MenuItem>
@@ -121,21 +121,21 @@ export function ContextMenuView({ navigation }: ContextMenuViewProps) {
           <MenuSubContent>
             {PRIMARY_COLORS.map((color) => (
               <MenuItem
-                key={color}
                 icon={
                   <ColorSample
                     color={resolvePrimaryColor(color)}
                     selected={color === primaryColorKey}
                   />
                 }
-                selected={color === primaryColorKey}
-                suffix={
-                  <span className="font-mono">{resolvePrimaryColor(color).toUpperCase()}</span>
-                }
+                key={color}
                 onSelect={(event) => {
                   event.preventDefault();
                   dispatch(primaryColorChanged(color));
                 }}
+                selected={color === primaryColorKey}
+                suffix={
+                  <span className="font-mono">{resolvePrimaryColor(color).toUpperCase()}</span>
+                }
               >
                 {t(`themeColor.${color}`)}
               </MenuItem>
@@ -148,20 +148,20 @@ export function ContextMenuView({ navigation }: ContextMenuViewProps) {
                     selected={primaryColorKey === CUSTOM_PRIMARY_COLOR}
                   />
                 }
-                selected={primaryColorKey === CUSTOM_PRIMARY_COLOR}
-                suffix={<span className="font-mono">{displayedCustomColor.toUpperCase()}</span>}
                 onClick={() => {
                   setPreviewColor(null);
                   dispatch(primaryColorChanged(customPrimaryColor));
                 }}
+                selected={primaryColorKey === CUSTOM_PRIMARY_COLOR}
+                suffix={<span className="font-mono">{displayedCustomColor.toUpperCase()}</span>}
               >
                 {t("themeColor.custom")}
               </MenuSubTrigger>
               <MenuSubContent>
                 <CustomColorPickerPanel
-                  previewColor={previewColor}
-                  onPreviewChange={setPreviewColor}
                   onClose={closeMenu}
+                  onPreviewChange={setPreviewColor}
+                  previewColor={previewColor}
                 />
               </MenuSubContent>
             </MenuSub>
@@ -173,15 +173,15 @@ export function ContextMenuView({ navigation }: ContextMenuViewProps) {
 }
 
 interface CustomColorPickerPanelProps {
-  previewColor: PrimaryColor | null;
-  onPreviewChange: (color: PrimaryColor | null) => void;
   onClose: () => void;
+  onPreviewChange: (color: PrimaryColor | null) => void;
+  previewColor: PrimaryColor | null;
 }
 
 function CustomColorPickerPanel({
-  previewColor,
-  onPreviewChange,
   onClose,
+  onPreviewChange,
+  previewColor,
 }: CustomColorPickerPanelProps) {
   const { t } = useTranslation();
   const { previewPrimaryColor } = useTheme();
@@ -218,11 +218,11 @@ function CustomColorPickerPanel({
   return (
     <div className="w-auto space-y-3 p-2" onPointerMove={(event) => event.stopPropagation()}>
       <SpectrumWheel
-        color={selectedColor}
         aria-label={t("themeColor.spectrum")}
-        onPreview={preview}
-        onCommit={commit}
+        color={selectedColor}
         onCancel={cancel}
+        onCommit={commit}
+        onPreview={preview}
       />
       <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
         <span>{t("themeColor.custom")}</span>

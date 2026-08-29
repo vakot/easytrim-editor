@@ -57,38 +57,38 @@ const EMPTY_TRIM: TrimRange = {
 const AUDIO_SYNC_INTERVAL_MS = 100;
 
 export interface EditorInteractionRuntime {
-  videoRef: React.RefObject<HTMLVideoElement | null>;
-  playheadRef: React.RefObject<HTMLButtonElement | null>;
   audioPlayheadRef: React.RefObject<HTMLDivElement | null>;
+  canSetSegmentEnd: boolean;
+  canSetSegmentStart: boolean;
   displayedPlayheadMicros: number;
-  isPlaying: boolean;
   isPlaybackReady: boolean;
-  transportError: string | null;
+  isPlaying: boolean;
   nativeLoopEnabled: boolean;
-  videoMuted: boolean;
-  onLoadedMetadata: () => void;
   onCanPlay: () => void;
-  onPlay: () => void;
-  onPause: () => void;
-  onTimeUpdate: (seconds: number) => void;
+  onCropToolOpenChange: (isOpen: boolean) => void;
   onEnded: () => void;
-  onTogglePlayback: () => void;
-  onStepFrame: (direction: -1 | 1) => void;
-  onSetSegmentBoundary: (boundary: TrimBoundary) => void;
-  onTrimBoundaryChange: (boundary: TrimBoundary, nextTrim: TrimRange) => TrimBoundary | null;
-  onSegmentMove: (nextTrim: TrimRange) => TrimBoundary | null;
-  onTrimDragStart: () => void;
-  onTrimDragEnd: () => void;
-  onSegmentDragStart: () => void;
-  onSegmentDragEnd: () => void;
-  onSeek: (micros: number) => void;
-  onScrubStart: () => void;
+  onLoadedMetadata: () => void;
+  onPause: () => void;
+  onPlay: () => void;
+  onPreviewPlaybackError: (previewKind: "source" | "proxy") => void;
   onScrub: (micros: number) => void;
   onScrubEnd: () => void;
-  onCropToolOpenChange: (isOpen: boolean) => void;
-  onPreviewPlaybackError: (previewKind: "source" | "proxy") => void;
-  canSetSegmentStart: boolean;
-  canSetSegmentEnd: boolean;
+  onScrubStart: () => void;
+  onSeek: (micros: number) => void;
+  onSegmentDragEnd: () => void;
+  onSegmentDragStart: () => void;
+  onSegmentMove: (nextTrim: TrimRange) => TrimBoundary | null;
+  onSetSegmentBoundary: (boundary: TrimBoundary) => void;
+  onStepFrame: (direction: -1 | 1) => void;
+  onTimeUpdate: (seconds: number) => void;
+  onTogglePlayback: () => void;
+  onTrimBoundaryChange: (boundary: TrimBoundary, nextTrim: TrimRange) => TrimBoundary | null;
+  onTrimDragEnd: () => void;
+  onTrimDragStart: () => void;
+  playheadRef: React.RefObject<HTMLButtonElement | null>;
+  transportError: string | null;
+  videoMuted: boolean;
+  videoRef: React.RefObject<HTMLVideoElement | null>;
 }
 
 export function useEditorInteractionController(): EditorInteractionRuntime {
@@ -146,13 +146,13 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
   const audioReadyListenersRef = useRef(new Map<number, () => void>());
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioNodesRef = useRef(
-    new Map<number, { source: MediaElementAudioSourceNode; gain: GainNode }>(),
+    new Map<number, { gain: GainNode; source: MediaElementAudioSourceNode }>(),
   );
 
   const nativeAudioBindingsRef = useRef(new Map<HTMLVideoElement, NativeAudioBinding>());
   const nativeAudioBindingRef = useRef<{
-    element: HTMLVideoElement;
     binding: NativeAudioBinding;
+    element: HTMLVideoElement;
   } | null>(null);
 
   const masterGainRef = useRef<GainNode | null>(null);
@@ -191,9 +191,9 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
   const nativeLoopEnabledRef = useRef(nativeLoopEnabled);
   const shortcutActionsRef = useRef<{
     enabled: boolean;
-    togglePlayback: () => void;
-    stepFrame: (direction: -1 | 1) => void;
     setSegmentBoundary: (boundary: TrimBoundary) => void;
+    stepFrame: (direction: -1 | 1) => void;
+    togglePlayback: () => void;
   } | null>(null);
 
   const removeAudioRuntime = useCallback((streamIndex: number) => {

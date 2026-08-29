@@ -62,7 +62,7 @@ async function waitForRehydration(persistor: Persistor): Promise<void> {
 
 async function createPersistedTestStore(
   storage = createTestStorage(),
-): Promise<{ store: AppStore; persistor: Persistor; storage: TestStorage }> {
+): Promise<{ persistor: Persistor; storage: TestStorage; store: AppStore }> {
   const store = createAppStore(storage);
   const persistor = createAppPersistor(store);
   activePersistors.push(persistor);
@@ -171,7 +171,7 @@ describe("Redux Persist store integration", () => {
   });
 
   it("never persists active editor tools", async () => {
-    const { store, persistor, storage } = await createPersistedTestStore();
+    const { persistor, storage, store } = await createPersistedTestStore();
 
     store.dispatch(playbackSpeedChanged(3));
     await persistor.flush();
@@ -184,7 +184,7 @@ describe("Redux Persist store integration", () => {
   });
 
   it("never persists export runtime state, queue entries, or dialog state", async () => {
-    const { store, persistor, storage } = await createPersistedTestStore();
+    const { persistor, storage, store } = await createPersistedTestStore();
     store.dispatch(
       optimizedExportDialogOpened({
         resolution: { width: 1920, height: 1080 },
@@ -242,7 +242,7 @@ describe("Redux Persist store integration", () => {
   });
 
   it("persists a dispatched preference action without UI storage calls", async () => {
-    const { store, persistor, storage } = await createPersistedTestStore();
+    const { persistor, storage, store } = await createPersistedTestStore();
 
     store.dispatch(preferenceChanged({ key: "loopPlaybackEnabledDefault", enabled: false }));
     await persistor.flush();
@@ -255,7 +255,7 @@ describe("Redux Persist store integration", () => {
   });
 
   it("persists reset state", async () => {
-    const { store, persistor, storage } = await createPersistedTestStore();
+    const { persistor, storage, store } = await createPersistedTestStore();
 
     store.dispatch(preferenceChanged({ key: "loopPlaybackEnabledDefault", enabled: false }));
     await persistor.flush();
@@ -269,7 +269,7 @@ describe("Redux Persist store integration", () => {
   });
 
   it("persists theme actions without runtime or derived values", async () => {
-    const { store, persistor, storage } = await createPersistedTestStore();
+    const { persistor, storage, store } = await createPersistedTestStore();
 
     store.dispatch(themePreferenceChanged("dark"));
     store.dispatch(primaryColorChanged("blue"));

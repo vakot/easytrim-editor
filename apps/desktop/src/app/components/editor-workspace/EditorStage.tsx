@@ -29,23 +29,23 @@ export function EditorStage() {
   );
 
   return (
-    <ResizablePanelGroup id="editor-stage" persisted orientation="vertical">
-      <ResizablePanel id="editor-stage-preview" minSize="14rem" className="overflow-hidden">
+    <ResizablePanelGroup id="editor-stage" orientation="vertical" persisted>
+      <ResizablePanel className="overflow-hidden" id="editor-stage-preview" minSize="14rem">
         <div className="relative rounded-md border border-border h-full overflow-hidden bg-preview-surface">
           <Preview />
         </div>
       </ResizablePanel>
-      <ResizableHandle withHandle style={{ height: 4 }} className="bg-transparent" />
+      <ResizableHandle className="bg-transparent" style={{ height: 4 }} withHandle />
       <ResizablePanel
-        id="editor-stage-timeline"
-        panelRef={timelinePanelSizing.panelRef}
-        defaultSize={timelinePanelSizing.initialDefaultSize}
-        collapsible
-        collapsedSize={timelinePanelSizing.collapsedSize}
-        minSize={timelinePanelSizing.constraints.minSize}
-        maxSize={timelinePanelSizing.constraints.maxSize}
         className="overflow-hidden pb-1"
+        collapsedSize={timelinePanelSizing.collapsedSize}
+        collapsible
+        defaultSize={timelinePanelSizing.initialDefaultSize}
         groupResizeBehavior="preserve-pixel-size"
+        id="editor-stage-timeline"
+        maxSize={timelinePanelSizing.constraints.maxSize}
+        minSize={timelinePanelSizing.constraints.minSize}
+        panelRef={timelinePanelSizing.panelRef}
       >
         <div className="relative rounded-md border border-border h-full overflow-hidden bg-card/30">
           <EditorTimelinePanel />
@@ -65,19 +65,19 @@ function EditorTimelinePanel() {
   return (
     <>
       <TimelinePane
+        audio={media?.audioStreams.length ? <AudioPanel /> : null}
         range={trim ?? EMPTY_TIMELINE_RANGE}
         timeline={<Timeline />}
-        audio={media?.audioStreams.length ? <AudioPanel /> : null}
       />
       {sourceSelection !== null && !playback.isReady ? (
         <div
-          className="absolute inset-0 z-30 grid place-items-center bg-background/75 backdrop-blur-sm"
-          role="status"
           aria-live="polite"
+          className="absolute inset-0 z-30 grid place-items-center bg-background/75 backdrop-blur-sm"
           data-testid="editor-loading-overlay"
+          role="status"
         >
           <div className="grid place-items-center gap-2 text-center text-sm text-muted-foreground">
-            <LoaderCircle className="size-7 animate-spin text-primary" aria-hidden="true" />
+            <LoaderCircle aria-hidden="true" className="size-7 animate-spin text-primary" />
             <strong className="text-foreground">{t("common.loading")}</strong>
           </div>
         </div>

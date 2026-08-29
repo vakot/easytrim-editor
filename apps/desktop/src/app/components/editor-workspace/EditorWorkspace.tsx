@@ -14,14 +14,14 @@ export function EditorWorkspace() {
   return (
     <ResizablePanelGroup id="workspace" persisted>
       <ResizablePanel
-        id="workspace-sidebar"
-        collapsible
-        collapsedSize={0}
-        defaultSize="20rem"
-        minSize="15rem"
-        maxSize="30rem"
-        groupResizeBehavior="preserve-pixel-size"
         className="overflow-hidden"
+        collapsedSize={0}
+        collapsible
+        defaultSize="20rem"
+        groupResizeBehavior="preserve-pixel-size"
+        id="workspace-sidebar"
+        maxSize="30rem"
+        minSize="15rem"
       >
         <div className="h-full pl-1 pb-1">
           <div className="rounded-md border border-border h-full overflow-hidden bg-card/30">
@@ -30,9 +30,9 @@ export function EditorWorkspace() {
         </div>
       </ResizablePanel>
 
-      <ResizableHandle withHandle style={{ width: 4 }} className="bg-transparent" />
+      <ResizableHandle className="bg-transparent" style={{ width: 4 }} withHandle />
 
-      <ResizablePanel id="workspace-content" minSize="44rem" className="overflow-hidden">
+      <ResizablePanel className="overflow-hidden" id="workspace-content" minSize="44rem">
         <div className="relative h-full pr-1">
           <EditorStage key={activeItemId ?? sourceSelection?.sourcePath ?? "no-source"} />
           <SourceDropOverlay />

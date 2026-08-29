@@ -162,7 +162,7 @@ async function startQueuedExport(
     trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
     crop: selectCropApplied(state) ? selectCrop(state) : null,
     masterAudio: selectMasterAudio(state),
-    audioTracks: selectAudioTracks(state).map(({ streamIndex, enabled, volumePercent }) => ({
+    audioTracks: selectAudioTracks(state).map(({ enabled, streamIndex, volumePercent }) => ({
       streamIndex,
       enabled,
       volumePercent,
@@ -289,8 +289,8 @@ function selectedAudioTracks(state: ReturnType<Parameters<AppThunk>[1]>) {
 function getTotalFrames(
   request: FastExportRequest | OptimizedExportRequest,
   video: {
-    averageFrameRate?: { numerator: number; denominator: number };
-    realFrameRate?: { numerator: number; denominator: number };
+    averageFrameRate?: { denominator: number; numerator: number };
+    realFrameRate?: { denominator: number; numerator: number };
   },
 ) {
   const frameRate =

@@ -57,25 +57,25 @@ export function ContextMenuQueue({ navigation }: { navigation: MenuNavigation })
   };
 
   const queueFinishIcons: Record<QueueFinishAction, ReactNode> = {
-    exit: <LogOut className="size-3" aria-hidden="true" />,
-    systemSleep: <Moon className="size-3" aria-hidden="true" />,
-    systemShutdown: <Power className="size-3" aria-hidden="true" />,
-    nothing: <CircleStop className="size-3" aria-hidden="true" />,
+    exit: <LogOut aria-hidden="true" className="size-3" />,
+    systemSleep: <Moon aria-hidden="true" className="size-3" />,
+    systemShutdown: <Power aria-hidden="true" className="size-3" />,
+    nothing: <CircleStop aria-hidden="true" className="size-3" />,
   };
 
   return (
     <>
-      <Menu modal={false} open={navigation.open} onOpenChange={navigation.onOpenChange}>
+      <Menu modal={false} onOpenChange={navigation.onOpenChange} open={navigation.open}>
         <MenuTrigger
           asChild
           onPointerEnter={navigation.onTriggerPointerEnter}
           onPointerLeave={navigation.onTriggerPointerLeave}
         >
           <Button
+            className="text-foreground/80 data-[state=open]:bg-accent data-[state=open]:text-foreground"
+            size="xs"
             type="button"
             variant="ghost"
-            size="xs"
-            className="text-foreground/80 data-[state=open]:bg-accent data-[state=open]:text-foreground"
           >
             {t("app.topBarMenus.queue")}
           </Button>
@@ -84,8 +84,8 @@ export function ContextMenuQueue({ navigation }: { navigation: MenuNavigation })
           <MenuItem
             aria-keyshortcuts="Enter"
             disabled={!hasQueuedItems || queueStarted}
-            suffix="Enter"
             onSelect={() => void dispatch(startExportQueue())}
+            suffix="Enter"
           >
             {t("app.queue.start")}
           </MenuItem>
@@ -110,13 +110,13 @@ export function ContextMenuQueue({ navigation }: { navigation: MenuNavigation })
             <MenuSubContent>
               {availableQueueFinishActions.map((action) => (
                 <MenuItem
-                  key={action}
                   icon={queueFinishIcons[action]}
-                  selected={action === queueFinishAction}
+                  key={action}
                   onSelect={(event) => {
                     event.preventDefault();
                     dispatch(queueFinishActionChanged(action));
                   }}
+                  selected={action === queueFinishAction}
                 >
                   {queueFinishLabels[action]}
                 </MenuItem>
@@ -125,22 +125,22 @@ export function ContextMenuQueue({ navigation }: { navigation: MenuNavigation })
           </MenuSub>
         </MenuContent>
       </Menu>
-      <Dialog open={isCancelQueueConfirmOpen} onOpenChange={setIsCancelQueueConfirmOpen}>
+      <Dialog onOpenChange={setIsCancelQueueConfirmOpen} open={isCancelQueueConfirmOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t("app.queue.cancelQueueTitle")}</DialogTitle>
             <DialogDescription>{t("app.queue.cancelQueueDescription")}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCancelQueueConfirmOpen(false)}>
+            <Button onClick={() => setIsCancelQueueConfirmOpen(false)} variant="outline">
               {t("common.back")}
             </Button>
             <Button
-              variant="destructive"
               onClick={() => {
                 setIsCancelQueueConfirmOpen(false);
                 void dispatch(cancelAllExportsRequested());
               }}
+              variant="destructive"
             >
               {t("common.cancel")}
             </Button>

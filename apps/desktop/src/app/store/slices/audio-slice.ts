@@ -17,33 +17,33 @@ import type { RootState } from "../store";
 
 type WaveformState =
   | { status: "idle" }
-  | { status: "loading"; jobId: string; width: number }
-  | { status: "ready"; jobId: string; width: number; url: string }
-  | { status: "failed"; jobId: string; width: number; error: AppError };
+  | { jobId: string; status: "loading"; width: number }
+  | { jobId: string; status: "ready"; url: string; width: number }
+  | { error: AppError; jobId: string; status: "failed"; width: number };
 
 type AudioPreviewState =
-  | { status: "idle"; previews: AudioPreviewDescriptor[] }
-  | { status: "loading"; previews: AudioPreviewDescriptor[] }
-  | { status: "ready"; previews: AudioPreviewDescriptor[] }
+  | { previews: AudioPreviewDescriptor[]; status: "idle" }
+  | { previews: AudioPreviewDescriptor[]; status: "loading" }
+  | { previews: AudioPreviewDescriptor[]; status: "ready" }
   | {
-      status: "unavailable";
-      previews: AudioPreviewDescriptor[];
       error: AppError;
+      previews: AudioPreviewDescriptor[];
+      status: "unavailable";
     };
 
 export interface AudioTrackState {
-  streamIndex: number;
   enabled: boolean;
+  streamIndex: number;
   volumePercent: number;
   waveform: WaveformState;
 }
 
 interface AudioState {
-  tracks: AudioTrackState[];
   masterEnabled: boolean;
   masterVolumePercent: number;
   mergeAudio: boolean;
   previews: AudioPreviewState | null;
+  tracks: AudioTrackState[];
 }
 
 const DEFAULT_UNMUTE_VOLUME_PERCENT = 50;
@@ -114,8 +114,8 @@ const audioSlice = createSlice({
       state,
       action: PayloadAction<{
         jobId: string;
-        width: number;
         streamIndexes: number[];
+        width: number;
       }>,
     ) => {
       state.tracks = updateWaveformTracks(state.tracks, action.payload.streamIndexes, () => ({
@@ -147,10 +147,10 @@ const audioSlice = createSlice({
     waveformsFailed: (
       state,
       action: PayloadAction<{
-        jobId: string;
-        width: number;
-        streamIndexes: number[];
         error: AppError;
+        jobId: string;
+        streamIndexes: number[];
+        width: number;
       }>,
     ) => {
       state.tracks = updateWaveformTracks(state.tracks, action.payload.streamIndexes, (track) =>
@@ -237,6 +237,7 @@ function updateWaveformTracks(
 }
 
 export const {
+  audioMergeToggled,
   audioPreviewsLoading,
   audioPreviewsReady,
   audioPreviewsUnavailable,
@@ -244,11 +245,10 @@ export const {
   audioTrackVolumeChanged,
   masterAudioToggled,
   masterVolumeChanged,
-  audioMergeToggled,
-  waveformsLoading,
-  waveformReady,
   waveformDisplayFailed,
+  waveformReady,
   waveformsFailed,
+  waveformsLoading,
 } = audioSlice.actions;
 
 export const audioReducer = audioSlice.reducer;

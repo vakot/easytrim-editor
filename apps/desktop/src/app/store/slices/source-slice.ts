@@ -16,17 +16,17 @@ import type { RootState } from "../store";
 type CapabilityState =
   | { status: "checking" }
   | { status: "ready"; value: MediaCapabilities }
-  | { status: "failed"; error: AppError };
+  | { error: AppError; status: "failed" };
 
 type SourceStatus = "idle" | "loading-source" | "ready" | "failed";
 
 interface SourceState {
-  status: SourceStatus;
-  source: SourceRef | null;
+  capabilities: CapabilityState;
+  error: AppError | null;
   loadToken: number;
   media: MediaInfo | null;
-  error: AppError | null;
-  capabilities: CapabilityState;
+  source: SourceRef | null;
+  status: SourceStatus;
 }
 
 export const initialSourceState: SourceState = {
@@ -87,7 +87,7 @@ const sourceSlice = createSlice({
   },
 });
 
-export const { capabilitiesReady, capabilitiesFailed } = sourceSlice.actions;
+export const { capabilitiesFailed, capabilitiesReady } = sourceSlice.actions;
 export const sourceReducer = sourceSlice.reducer;
 
 export const selectSourceStatus = (state: RootState): SourceStatus => state.source.status;

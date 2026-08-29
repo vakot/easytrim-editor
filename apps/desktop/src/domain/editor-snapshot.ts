@@ -2,26 +2,26 @@ import type { CropRect } from "./crop";
 import type { SourceRef } from "./source";
 import { createFullTrimRange, type TrimRange } from "./trim";
 
-type EditorSnapshotTrim = { kind: "full-source" } | { startMicros: number; endMicros: number };
+type EditorSnapshotTrim = { kind: "full-source" } | { endMicros: number; startMicros: number };
 
 export interface EditorSnapshot {
-  source: SourceRef;
-  trim: EditorSnapshotTrim;
-  crop: CropRect | null;
   audio: {
     master: { enabled: boolean; volumePercent: number };
-    tracks: Array<{ streamIndex: number; enabled: boolean; volumePercent: number }>;
     mergeAudio: boolean;
+    tracks: Array<{ enabled: boolean; streamIndex: number; volumePercent: number }>;
   };
+  crop: CropRect | null;
+  source: SourceRef;
+  trim: EditorSnapshotTrim;
 }
 
 export function createEditorSnapshot(input: {
-  source: SourceRef;
-  trim: EditorSnapshot["trim"];
+  audioTracks: EditorSnapshot["audio"]["tracks"];
   crop: CropRect | null;
   masterAudio: EditorSnapshot["audio"]["master"];
-  audioTracks: EditorSnapshot["audio"]["tracks"];
   mergeAudio: boolean;
+  source: SourceRef;
+  trim: EditorSnapshot["trim"];
 }): EditorSnapshot {
   return {
     source: { ...input.source },

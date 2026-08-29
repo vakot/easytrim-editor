@@ -7,9 +7,9 @@ import type { RootState } from "../store";
 
 export type PreviewState =
   | { status: "idle" }
-  | { status: "loading"; kind: PreviewKind }
+  | { kind: PreviewKind; status: "loading" }
   | { status: "ready"; value: PreviewDescriptor }
-  | { status: "failed"; error: AppError };
+  | { error: AppError; status: "failed" };
 
 interface PreviewSliceState {
   value: PreviewState;
@@ -47,7 +47,7 @@ const previewSlice = createSlice({
   },
 });
 
-export const { previewLoading, previewReady, previewFailed } = previewSlice.actions;
+export const { previewFailed, previewLoading, previewReady } = previewSlice.actions;
 export const previewReducer = previewSlice.reducer;
 
 export const selectPreview = (state: RootState): PreviewState => state.preview.value;

@@ -12,11 +12,11 @@ import { Button } from "@/components/ui/button";
 import { Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from "@/components/ui/menu";
 
 import { useAppUpdates } from "@/app/hooks/useAppUpdates";
+import { GithubIcon, KofiIcon } from "@/components/brand-icons";
 import { getCurrentVersion } from "@/lib/app-version.utils";
 import { openExternalUrl } from "@/lib/open-external-url.utils";
 
 import type { MenuNavigation } from "../types";
-import { GithubIcon, KofiIcon } from "@/components/brand-icons";
 
 const CHANGELOG_URL = "https://github.com/vakot/easytrim-editor/releases";
 const PROJECT_PAGE_URL = "https://github.com/vakot/easytrim-editor";
@@ -26,11 +26,11 @@ export function ContextMenuHelp({ navigation }: { navigation: MenuNavigation }) 
   const { t } = useTranslation();
   const currentVersion = getCurrentVersion();
   const {
-    status: updateStatus,
     availableVersion,
-    isInstalling,
     checkForUpdates,
     installUpdate,
+    isInstalling,
+    status: updateStatus,
   } = useAppUpdates();
 
   const updateLabel =
@@ -44,36 +44,36 @@ export function ContextMenuHelp({ navigation }: { navigation: MenuNavigation }) 
 
   const updateHint =
     updateStatus === "checking" ? (
-      <LoaderCircle className="size-3 animate-spin" aria-hidden="true" />
+      <LoaderCircle aria-hidden="true" className="size-3 animate-spin" />
     ) : updateStatus === "available" ? (
-      <Download className="size-3" aria-hidden="true" />
+      <Download aria-hidden="true" className="size-3" />
     ) : updateStatus === "up-to-date" ? (
-      <CheckCircle2 className="size-3 text-emerald-500" aria-hidden="true" />
+      <CheckCircle2 aria-hidden="true" className="size-3 text-emerald-500" />
     ) : updateStatus === "error" ? (
-      <CircleAlert className="size-3 text-destructive" aria-hidden="true" />
+      <CircleAlert aria-hidden="true" className="size-3 text-destructive" />
     ) : updateStatus === "idle" ? (
-      <RefreshCw className="size-3" aria-hidden="true" />
+      <RefreshCw aria-hidden="true" className="size-3" />
     ) : undefined;
 
   return (
-    <Menu modal={false} open={navigation.open} onOpenChange={navigation.onOpenChange}>
+    <Menu modal={false} onOpenChange={navigation.onOpenChange} open={navigation.open}>
       <MenuTrigger
         asChild
         onPointerEnter={navigation.onTriggerPointerEnter}
         onPointerLeave={navigation.onTriggerPointerLeave}
       >
         <Button
+          className="text-foreground/80 data-[state=open]:bg-accent data-[state=open]:text-foreground"
+          size="xs"
           type="button"
           variant="ghost"
-          size="xs"
-          className="text-foreground/80 data-[state=open]:bg-accent data-[state=open]:text-foreground"
         >
           Help
         </Button>
       </MenuTrigger>
       <MenuContent>
         <MenuItem
-          icon={<ExternalLink className="size-3" aria-hidden="true" />}
+          icon={<ExternalLink aria-hidden="true" className="size-3" />}
           onSelect={() => void openExternalUrl(CHANGELOG_URL)}
         >
           {t("app.topBarMenus.changelog")}
@@ -103,7 +103,7 @@ export function ContextMenuHelp({ navigation }: { navigation: MenuNavigation }) 
         </MenuItem>
         <MenuSeparator />
         <MenuItem
-          icon={<ExternalLink className="size-3" aria-hidden="true" />}
+          icon={<ExternalLink aria-hidden="true" className="size-3" />}
           onSelect={() =>
             void openExternalUrl(`${PROJECT_PAGE_URL}/releases/tag/v${currentVersion}`)
           }

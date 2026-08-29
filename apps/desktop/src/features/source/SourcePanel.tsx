@@ -35,8 +35,8 @@ export function SourcePanel() {
 
   return (
     <aside
-      className="flex h-full min-h-0 flex-col overflow-hidden p-1"
       aria-label={t("import.source.sidebar")}
+      className="flex h-full min-h-0 flex-col overflow-hidden p-1"
     >
       <div className="flex h-7 shrink-0 items-center justify-between gap-1 px-2 text-xs font-medium">
         <span>{t("import.source.sidebar")}</span>
@@ -57,9 +57,9 @@ export function SourcePanel() {
               disabled
               icon={
                 panels["workspace-sidebar-source-details"] ? (
-                  <Eye className="size-3" aria-hidden="true" />
+                  <Eye aria-hidden="true" className="size-3" />
                 ) : (
-                  <EyeOff className="size-3" aria-hidden="true" />
+                  <EyeOff aria-hidden="true" className="size-3" />
                 )
               }
               onSelect={(event) => {
@@ -72,9 +72,9 @@ export function SourcePanel() {
             <MenuItem
               icon={
                 panels["workspace-sidebar-import-queue"] ? (
-                  <Eye className="size-3" aria-hidden="true" />
+                  <Eye aria-hidden="true" className="size-3" />
                 ) : (
-                  <EyeOff className="size-3" aria-hidden="true" />
+                  <EyeOff aria-hidden="true" className="size-3" />
                 )
               }
               onSelect={(event) => {
@@ -87,9 +87,9 @@ export function SourcePanel() {
             <MenuItem
               icon={
                 panels["workspace-sidebar-export-queue"] ? (
-                  <Eye className="size-3" aria-hidden="true" />
+                  <Eye aria-hidden="true" className="size-3" />
                 ) : (
-                  <EyeOff className="size-3" aria-hidden="true" />
+                  <EyeOff aria-hidden="true" className="size-3" />
                 )
               }
               onSelect={(event) => {
@@ -102,7 +102,7 @@ export function SourcePanel() {
             <MenuSeparator />
             <MenuItem
               disabled={enabledCount === 3}
-              icon={<RotateCcw className="size-3" aria-hidden="true" />}
+              icon={<RotateCcw aria-hidden="true" className="size-3" />}
               onSelect={(event) => {
                 event.preventDefault();
                 setPanels(DEFAULT_PANELS);
@@ -114,21 +114,21 @@ export function SourcePanel() {
         </Menu>
       </div>
 
-      <ResizablePanelGroup id="workspace-sidebar-content" persisted orientation="vertical">
+      <ResizablePanelGroup id="workspace-sidebar-content" orientation="vertical" persisted>
         {panels["workspace-sidebar-source-details"] && (
           <ResizablePanel
+            className="flex min-h-0 flex-col overflow-hidden"
+            collapsedSize={24}
+            collapsible
             id="workspace-sidebar-source-details"
             minSize={120}
-            collapsible
-            collapsedSize={24}
-            className="flex min-h-0 flex-col overflow-hidden"
           >
             <ResizablePanelControl panelId="workspace-sidebar-source-details">
               {({ isCollapsed }) => (
                 <Button
-                  variant="ghost"
-                  size="xs"
                   className="justify-baseline px-2 w-full text-foreground/80"
+                  size="xs"
+                  variant="ghost"
                 >
                   {!isSingle &&
                     (isCollapsed ? (
@@ -151,18 +151,18 @@ export function SourcePanel() {
             </ResizableHandle>
 
             <ResizablePanel
+              className="flex min-h-0 flex-col overflow-hidden"
+              collapsedSize={24}
+              collapsible
               id="workspace-sidebar-import-queue"
               minSize={120}
-              collapsible
-              collapsedSize={24}
-              className="flex min-h-0 flex-col overflow-hidden"
             >
               <ResizablePanelControl panelId="workspace-sidebar-import-queue">
                 {({ isCollapsed }) => (
                   <Button
-                    variant="ghost"
-                    size="xs"
                     className="justify-baseline px-2 w-full text-foreground/80"
+                    size="xs"
+                    variant="ghost"
                   >
                     {!isSingle &&
                       (isCollapsed ? (
@@ -186,18 +186,18 @@ export function SourcePanel() {
             </ResizableHandle>
 
             <ResizablePanel
+              className="flex min-h-0 flex-col overflow-hidden"
+              collapsedSize={24}
+              collapsible
               id="workspace-sidebar-export-queue"
               minSize={120}
-              collapsible
-              collapsedSize={24}
-              className="flex min-h-0 flex-col overflow-hidden"
             >
               <ResizablePanelControl panelId="workspace-sidebar-export-queue">
                 {({ isCollapsed }) => (
                   <Button
-                    variant="ghost"
-                    size="xs"
                     className="justify-baseline px-2 w-full text-foreground/80"
+                    size="xs"
+                    variant="ghost"
                   >
                     {!isSingle &&
                       (isCollapsed ? (
@@ -222,7 +222,7 @@ function PlaceholderRows({ label }: { label: string }) {
   const { t } = useTranslation();
 
   return (
-    <ScrollArea type="auto" className="min-h-0 flex-1">
+    <ScrollArea className="min-h-0 flex-1" type="auto">
       <div className="space-y-1 p-2 text-xs text-muted-foreground">
         {PLACEHOLDER_ROWS.map((row) => (
           <p key={row}>{t("import.source.placeholder", { label, row })}</p>

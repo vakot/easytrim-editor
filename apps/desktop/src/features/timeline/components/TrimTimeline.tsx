@@ -17,64 +17,64 @@ import { TimelineTimeValue } from "./TimelineTimeValue";
 import styles from "./TrimTimeline.module.css";
 
 interface TrimTimelineProps {
-  range: TrimRange;
   disabled?: boolean;
-  playheadMicros: number;
-  playheadRef: RefObject<HTMLButtonElement | null>;
   frameRate?: FrameRate;
-  playbackControls: ReactNode;
-  playbackTimecode: ReactNode;
-  videoToolbar: ReactNode;
   onChange: (boundary: TrimBoundary, range: TrimRange) => TrimBoundary | null;
   onMoveSegment: (range: TrimRange) => TrimBoundary | null;
-  onTrimDragStart: () => void;
-  onTrimDragEnd: () => void;
-  onSegmentDragStart: () => void;
-  onSegmentDragEnd: () => void;
-  onSeek: (micros: number) => void;
-  onScrubStart: () => void;
   onScrub: (micros: number) => void;
   onScrubEnd: () => void;
+  onScrubStart: () => void;
+  onSeek: (micros: number) => void;
+  onSegmentDragEnd: () => void;
+  onSegmentDragStart: () => void;
+  onTrimDragEnd: () => void;
+  onTrimDragStart: () => void;
+  playbackControls: ReactNode;
+  playbackTimecode: ReactNode;
+  playheadMicros: number;
+  playheadRef: RefObject<HTMLButtonElement | null>;
+  range: TrimRange;
+  videoToolbar: ReactNode;
 }
 
 export function TrimTimeline({
-  range,
   disabled = false,
-  playheadMicros,
-  playheadRef,
   frameRate,
-  playbackControls,
-  playbackTimecode,
-  videoToolbar,
   onChange,
   onMoveSegment,
-  onTrimDragStart,
-  onTrimDragEnd,
-  onSegmentDragStart,
-  onSegmentDragEnd,
-  onSeek,
-  onScrubStart,
   onScrub,
   onScrubEnd,
+  onScrubStart,
+  onSeek,
+  onSegmentDragEnd,
+  onSegmentDragStart,
+  onTrimDragEnd,
+  onTrimDragStart,
+  playbackControls,
+  playbackTimecode,
+  playheadMicros,
+  playheadRef,
+  range,
+  videoToolbar,
 }: TrimTimelineProps) {
   const { t } = useTranslation();
   const {
-    trackRef,
+    finishScrub,
+    finishSegmentDrag,
+    finishTrimDrag,
+    handlePlayheadKeyboard,
+    handleSegmentKeyboard,
+    handleTrimKeyboard,
+    handleTrimPointer,
+    moveScrub,
+    moveSegmentDrag,
+    resetBoundary,
     segmentDragging,
     segmentSnapPoint,
-    trimDragState,
-    handleTrimPointer,
-    finishTrimDrag,
-    handleTrimKeyboard,
-    resetBoundary,
-    startSegmentDrag,
-    moveSegmentDrag,
-    finishSegmentDrag,
-    handleSegmentKeyboard,
     startScrub,
-    moveScrub,
-    finishScrub,
-    handlePlayheadKeyboard,
+    startSegmentDrag,
+    trackRef,
+    trimDragState,
   } = useTrimTimelineInteractions({
     range,
     playheadMicros,
@@ -96,31 +96,32 @@ export function TrimTimeline({
   const playheadPercent = timelinePercent(playheadValue, range.sourceDurationMicros);
 
   return (
-    <section className="min-w-0 select-none" aria-labelledby="timeline-title">
+    <section aria-labelledby="timeline-title" className="min-w-0 select-none">
       <TimelineHeader
-        range={range}
-        frameRate={frameRate}
         disabled={disabled}
+        frameRate={frameRate}
         playbackControls={playbackControls}
         playbackTimecode={playbackTimecode}
+        range={range}
       />
-      <TimelineScale range={range} frameRate={frameRate} disabled={disabled} />
+      <TimelineScale disabled={disabled} frameRate={frameRate} range={range} />
       <div
         className="grid min-w-0 grid-cols-[var(--editor-track-grid-columns)] items-center gap-3"
         data-slot="timeline-row"
       >
         <div
+          aria-label={t("timeline.toolsLabel")}
           className="flex w-full items-stretch"
           data-slot="timeline-toolbar"
           role="toolbar"
-          aria-label={t("timeline.toolsLabel")}
         >
           {videoToolbar}
         </div>
         <div
-          ref={trackRef}
-          className={`${styles.track} ${disabled ? `cursor-not-allowed ${styles.trackDisabled}` : ""}`}
           aria-label={t("timeline.trackLabel")}
+          className={`${styles.track} ${disabled ? `cursor-not-allowed ${styles.trackDisabled}` : ""}`}
+          onLostPointerCapture={(event) => finishScrub(event, false)}
+          onPointerCancel={(event) => finishScrub(event, false)}
           onPointerDown={(event) => {
             if (!disabled && event.target === event.currentTarget) {
               startScrub(event, event.currentTarget);
@@ -128,8 +129,7 @@ export function TrimTimeline({
           }}
           onPointerMove={moveScrub}
           onPointerUp={(event) => finishScrub(event, true)}
-          onPointerCancel={(event) => finishScrub(event, false)}
-          onLostPointerCapture={(event) => finishScrub(event, false)}
+          ref={trackRef}
         >
           <div
             className={`${styles.selection} ${disabled ? styles.selectionDisabled : ""}`}
@@ -139,59 +139,59 @@ export function TrimTimeline({
             }}
           />
           <SegmentDragHandle
-            range={range}
+            disabled={disabled}
             dragging={segmentDragging}
-            snapPoint={segmentSnapPoint}
+            onKeyDown={handleSegmentKeyboard}
+            onLostPointerCapture={(event) => finishSegmentDrag(event, false)}
+            onPointerCancel={(event) => finishSegmentDrag(event, false)}
             onPointerDown={startSegmentDrag}
             onPointerMove={moveSegmentDrag}
             onPointerUp={(event) => finishSegmentDrag(event, true)}
-            onPointerCancel={(event) => finishSegmentDrag(event, false)}
-            onLostPointerCapture={(event) => finishSegmentDrag(event, false)}
-            onKeyDown={handleSegmentKeyboard}
-            disabled={disabled}
+            range={range}
+            snapPoint={segmentSnapPoint}
           />
           {!disabled ? (
             <Playhead
-              playheadRef={playheadRef}
-              percent={playheadPercent}
-              value={playheadValue}
-              maximum={range.sourceDurationMicros}
               frameRate={frameRate}
+              maximum={range.sourceDurationMicros}
+              onKeyDown={handlePlayheadKeyboard}
+              onLostPointerCapture={(event) => finishScrub(event, false)}
+              onPointerCancel={(event) => finishScrub(event, false)}
               onPointerDown={(event) => startScrub(event, event.currentTarget)}
               onPointerMove={moveScrub}
               onPointerUp={(event) => finishScrub(event, true)}
-              onPointerCancel={(event) => finishScrub(event, false)}
-              onLostPointerCapture={(event) => finishScrub(event, false)}
-              onKeyDown={handlePlayheadKeyboard}
+              percent={playheadPercent}
+              playheadRef={playheadRef}
+              value={playheadValue}
             />
           ) : null}
           <TrimHandle
             boundary="start"
-            value={range.startMicros}
-            minimum={0}
-            maximum={range.endMicros - minimumDurationMicros}
+            disabled={disabled}
             dragging={trimDragState?.boundary === "start"}
-            snapActive={trimDragState?.boundary === "start" && trimDragState.snapActive}
-            onPointerDown={(event) => handleTrimPointer("start", event, true)}
-            onPointerMove={(event) => handleTrimPointer("start", event, false)}
-            onPointerEnd={() => finishTrimDrag("start")}
+            maximum={range.endMicros - minimumDurationMicros}
+            minimum={0}
             onDoubleClick={() => resetBoundary("start")}
             onKeyDown={(event) => handleTrimKeyboard("start", event)}
-            disabled={disabled}
+            onPointerDown={(event) => handleTrimPointer("start", event, true)}
+            onPointerEnd={() => finishTrimDrag("start")}
+            onPointerMove={(event) => handleTrimPointer("start", event, false)}
+            snapActive={trimDragState?.boundary === "start" && trimDragState.snapActive}
+            value={range.startMicros}
           />
           <TrimHandle
             boundary="end"
-            value={range.endMicros}
-            minimum={range.startMicros + minimumDurationMicros}
-            maximum={range.sourceDurationMicros}
+            disabled={disabled}
             dragging={trimDragState?.boundary === "end"}
-            snapActive={trimDragState?.boundary === "end" && trimDragState.snapActive}
-            onPointerDown={(event) => handleTrimPointer("end", event, true)}
-            onPointerMove={(event) => handleTrimPointer("end", event, false)}
-            onPointerEnd={() => finishTrimDrag("end")}
+            maximum={range.sourceDurationMicros}
+            minimum={range.startMicros + minimumDurationMicros}
             onDoubleClick={() => resetBoundary("end")}
             onKeyDown={(event) => handleTrimKeyboard("end", event)}
-            disabled={disabled}
+            onPointerDown={(event) => handleTrimPointer("end", event, true)}
+            onPointerEnd={() => finishTrimDrag("end")}
+            onPointerMove={(event) => handleTrimPointer("end", event, false)}
+            snapActive={trimDragState?.boundary === "end" && trimDragState.snapActive}
+            value={range.endMicros}
           />
         </div>
       </div>
@@ -200,11 +200,11 @@ export function TrimTimeline({
 }
 
 function TimelineHeader({
-  range,
-  frameRate,
   disabled,
+  frameRate,
   playbackControls,
   playbackTimecode,
+  range,
 }: Pick<
   TrimTimelineProps,
   "range" | "frameRate" | "disabled" | "playbackControls" | "playbackTimecode"
@@ -214,29 +214,29 @@ function TimelineHeader({
     <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-6">
       <div className="min-w-0 justify-self-start">
         <h2
-          id="timeline-title"
           className="mb-0.5 font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
+          id="timeline-title"
         >
           {t("timeline.selectedSegment")}
         </h2>
         {playbackTimecode}
       </div>
       <div className="justify-self-center">{playbackControls}</div>
-      <dl className="m-0 flex justify-self-end gap-5" aria-label={t("timeline.trimValues")}>
+      <dl aria-label={t("timeline.trimValues")} className="m-0 flex justify-self-end gap-5">
         <TimelineTimeValue
+          frameRate={frameRate}
           label={t("timeline.start")}
           micros={disabled ? null : range.startMicros}
-          frameRate={frameRate}
         />
         <TimelineTimeValue
+          frameRate={frameRate}
           label={t("timeline.end")}
           micros={disabled ? null : range.endMicros}
-          frameRate={frameRate}
         />
         <TimelineTimeValue
+          frameRate={frameRate}
           label={t("timeline.duration")}
           micros={disabled ? null : range.endMicros - range.startMicros}
-          frameRate={frameRate}
         />
       </dl>
     </div>
@@ -244,15 +244,15 @@ function TimelineHeader({
 }
 
 function TimelineScale({
-  range,
-  frameRate,
   disabled,
+  frameRate,
+  range,
 }: Pick<TrimTimelineProps, "range" | "frameRate" | "disabled">) {
   const { t } = useTranslation();
   return (
     <div
-      className="mt-3 mb-1 grid min-w-0 grid-cols-[var(--editor-track-grid-columns)] items-end gap-3"
       aria-hidden="true"
+      className="mt-3 mb-1 grid min-w-0 grid-cols-[var(--editor-track-grid-columns)] items-end gap-3"
     >
       <span
         className="text-[0.625rem] font-bold tracking-[0.08em] text-muted-foreground uppercase"

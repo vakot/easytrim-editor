@@ -42,12 +42,12 @@ const DEFAULT_PREFERENCE_KEYS = new Set<PreferenceKey>([
 ]);
 
 interface PreferenceMenuItemProps {
-  preferenceKey: PreferenceKey;
-  icon: ReactNode;
   children: ReactNode;
+  icon: ReactNode;
+  preferenceKey: PreferenceKey;
 }
 
-function PreferenceMenuItem({ preferenceKey, icon, children }: PreferenceMenuItemProps) {
+function PreferenceMenuItem({ children, icon, preferenceKey }: PreferenceMenuItemProps) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const preferences = useAppSelector(selectPreferences);
@@ -57,6 +57,11 @@ function PreferenceMenuItem({ preferenceKey, icon, children }: PreferenceMenuIte
   return (
     <MenuItem
       icon={icon}
+      onSelect={(event) => {
+        event.preventDefault();
+        dispatch(preferenceChanged({ key: preferenceKey, enabled: !isEnabled }));
+      }}
+      suffix={<Switch checked={isEnabled} size="sm" />}
       tooltip={t(
         isDefaultPreference
           ? isEnabled
@@ -67,11 +72,6 @@ function PreferenceMenuItem({ preferenceKey, icon, children }: PreferenceMenuIte
             : "app.settings.disabled",
       )}
       tooltipProps={{ side: "right", preserveOnTrigger: true }}
-      suffix={<Switch size="sm" checked={isEnabled} />}
-      onSelect={(event) => {
-        event.preventDefault();
-        dispatch(preferenceChanged({ key: preferenceKey, enabled: !isEnabled }));
-      }}
     >
       {children}
     </MenuItem>
@@ -79,7 +79,7 @@ function PreferenceMenuItem({ preferenceKey, icon, children }: PreferenceMenuIte
 }
 
 export function ContextMenuSettings({ navigation }: { navigation: MenuNavigation }) {
-  const { t, i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
   const dispatch = useAppDispatch();
   const currentLanguage = isSupportedLanguage(i18n.resolvedLanguage) ? i18n.resolvedLanguage : "en";
 
@@ -88,57 +88,57 @@ export function ContextMenuSettings({ navigation }: { navigation: MenuNavigation
   };
 
   return (
-    <Menu modal={false} open={navigation.open} onOpenChange={navigation.onOpenChange}>
+    <Menu modal={false} onOpenChange={navigation.onOpenChange} open={navigation.open}>
       <MenuTrigger
         asChild
         onPointerEnter={navigation.onTriggerPointerEnter}
         onPointerLeave={navigation.onTriggerPointerLeave}
       >
         <Button
+          className="text-foreground/80 data-[state=open]:bg-accent data-[state=open]:text-foreground"
+          size="xs"
           type="button"
           variant="ghost"
-          size="xs"
-          className="text-foreground/80 data-[state=open]:bg-accent data-[state=open]:text-foreground"
         >
           {t("app.topBarMenus.settings")}
         </Button>
       </MenuTrigger>
       <MenuContent>
         <PreferenceMenuItem
+          icon={<Play aria-hidden="true" className="size-3" />}
           preferenceKey="autoStartQueueEnabled"
-          icon={<Play className="size-3" aria-hidden="true" />}
         >
           {t("app.settings.autoStartQueue")}
         </PreferenceMenuItem>
         <MenuSeparator />
         <PreferenceMenuItem
+          icon={<Magnet aria-hidden="true" className="size-3" />}
           preferenceKey="snapPlaybackEnabledDefault"
-          icon={<Magnet className="size-3" aria-hidden="true" />}
         >
           {t("app.settings.snap")}
         </PreferenceMenuItem>
         <PreferenceMenuItem
+          icon={<Repeat aria-hidden="true" className="size-3" />}
           preferenceKey="loopPlaybackEnabledDefault"
-          icon={<Repeat className="size-3" aria-hidden="true" />}
         >
           {t("app.settings.loop")}
         </PreferenceMenuItem>
         <PreferenceMenuItem
+          icon={<BetweenVerticalStart aria-hidden="true" className="size-3" />}
           preferenceKey="segmentPlaybackEnabledDefault"
-          icon={<BetweenVerticalStart className="size-3" aria-hidden="true" />}
         >
           {t("app.settings.followSegment")}
         </PreferenceMenuItem>
         <MenuSeparator />
         <PreferenceMenuItem
+          icon={<Merge aria-hidden="true" className="size-3" />}
           preferenceKey="mergeAudioEnabledDefault"
-          icon={<Merge className="size-3" aria-hidden="true" />}
         >
           {t("app.settings.mergeAudio")}
         </PreferenceMenuItem>
         <MenuSeparator />
         <MenuItem
-          icon={<RotateCcw className="size-3" aria-hidden="true" />}
+          icon={<RotateCcw aria-hidden="true" className="size-3" />}
           onSelect={(event) => {
             event.preventDefault();
             resetPreferences();
@@ -149,7 +149,7 @@ export function ContextMenuSettings({ navigation }: { navigation: MenuNavigation
         <MenuSeparator />
         <MenuSub>
           <MenuSubTrigger
-            icon={<Languages className="size-3" aria-hidden="true" />}
+            icon={<Languages aria-hidden="true" className="size-3" />}
             suffix={currentLanguage.toUpperCase()}
           >
             {t("app.topBarMenus.language")}
@@ -158,9 +158,9 @@ export function ContextMenuSettings({ navigation }: { navigation: MenuNavigation
             {(["en", "sk"] as const).map((language) => (
               <MenuItem
                 key={language}
+                onSelect={() => void i18n.changeLanguage(language as SupportedLanguage)}
                 selected={language === currentLanguage}
                 suffix={language.toUpperCase()}
-                onSelect={() => void i18n.changeLanguage(language as SupportedLanguage)}
               >
                 {t(language === "en" ? "language.english" : "language.slovak")}
               </MenuItem>

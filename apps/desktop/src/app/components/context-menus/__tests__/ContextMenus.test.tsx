@@ -107,21 +107,21 @@ describe("ContextMenus", () => {
   const versionMenuLabel = `Version ${currentVersion}`;
 
   type MenuTestOverrides = {
-    isChoosingSource?: boolean;
-    hasSource?: boolean;
-    canSave?: boolean;
-    canExport?: boolean;
-    queueStarted?: boolean;
-    hasQueuedItems?: boolean;
-    hasActiveItem?: boolean;
-    queueFinishAction?: QueueFinishAction;
     availableQueueFinishActions?: QueueFinishAction[];
-    preferences?: Preferences;
+    canExport?: boolean;
+    canSave?: boolean;
+    customPrimaryColor?: `#${string}`;
+    hasActiveItem?: boolean;
+    hasQueuedItems?: boolean;
+    hasSource?: boolean;
+    isChoosingSource?: boolean;
     onPreferenceChange?: (key: keyof Preferences, enabled: boolean) => void;
     onPreferencesReset?: () => void;
-    themePreference?: "system" | "light" | "dark";
+    preferences?: Preferences;
     primaryColor?: string;
-    customPrimaryColor?: `#${string}`;
+    queueFinishAction?: QueueFinishAction;
+    queueStarted?: boolean;
+    themePreference?: "system" | "light" | "dark";
   };
 
   function configureMenuState(overrides: MenuTestOverrides = {}, notify: () => void = () => {}) {
@@ -161,7 +161,7 @@ describe("ContextMenus", () => {
         menuState.preferences = { ...DEFAULT_PREFERENCES };
       });
 
-    menuState.dispatch = vi.fn((action: { type: string; payload?: unknown }) => {
+    menuState.dispatch = vi.fn((action: { payload?: unknown; type: string }) => {
       if (
         action.type === "preferences/preferenceChanged" &&
         typeof action.payload === "object" &&
@@ -169,7 +169,7 @@ describe("ContextMenus", () => {
         "key" in action.payload &&
         "enabled" in action.payload
       ) {
-        const payload = action.payload as { key: keyof Preferences; enabled: boolean };
+        const payload = action.payload as { enabled: boolean; key: keyof Preferences };
         setPreference(payload.key, payload.enabled);
       }
       if (action.type === "preferences/preferencesReset") {
@@ -291,7 +291,7 @@ describe("ContextMenus", () => {
     render(
       <TooltipProvider>
         <ThemeProvider>
-          <ContextMenus isChoosingSource={false} canSave canExport />
+          <ContextMenus canExport canSave isChoosingSource={false} />
         </ThemeProvider>
       </TooltipProvider>,
     );
@@ -363,7 +363,7 @@ describe("ContextMenus", () => {
               installUpdate: vi.fn(),
             }}
           >
-            <ContextMenus isChoosingSource={false} canSave canExport />
+            <ContextMenus canExport canSave isChoosingSource={false} />
           </AppUpdatesContext.Provider>
         </ThemeProvider>
       </TooltipProvider>,
@@ -380,7 +380,7 @@ describe("ContextMenus", () => {
     render(
       <TooltipProvider>
         <ThemeProvider>
-          <ContextMenus isChoosingSource={false} canSave canExport />
+          <ContextMenus canExport canSave isChoosingSource={false} />
         </ThemeProvider>
       </TooltipProvider>,
     );
@@ -414,7 +414,7 @@ describe("ContextMenus", () => {
     render(
       <TooltipProvider>
         <ThemeProvider>
-          <ContextMenus isChoosingSource={false} canSave canExport />
+          <ContextMenus canExport canSave isChoosingSource={false} />
         </ThemeProvider>
       </TooltipProvider>,
     );
@@ -435,7 +435,7 @@ describe("ContextMenus", () => {
     render(
       <TooltipProvider>
         <ThemeProvider>
-          <ContextMenus isChoosingSource={false} canSave canExport />
+          <ContextMenus canExport canSave isChoosingSource={false} />
         </ThemeProvider>
       </TooltipProvider>,
     );
@@ -454,9 +454,10 @@ describe("ContextMenus", () => {
       <TooltipProvider>
         <ThemeProvider>
           <ContextMenus
-            isChoosingSource={false}
-            canSave
             canExport
+            canSave
+            isChoosingSource={false}
+            onPreferenceChange={vi.fn()}
             preferences={{
               snapPlaybackEnabledDefault: false,
               loopPlaybackEnabledDefault: false,
@@ -464,7 +465,6 @@ describe("ContextMenus", () => {
               autoStartQueueEnabled: false,
               mergeAudioEnabledDefault: false,
             }}
-            onPreferenceChange={vi.fn()}
           />
         </ThemeProvider>
       </TooltipProvider>,
@@ -492,7 +492,7 @@ describe("ContextMenus", () => {
               installUpdate: vi.fn(),
             }}
           >
-            <ContextMenus isChoosingSource={false} canSave canExport />
+            <ContextMenus canExport canSave isChoosingSource={false} />
           </AppUpdatesContext.Provider>
         </ThemeProvider>
       </TooltipProvider>,
@@ -509,7 +509,7 @@ describe("ContextMenus", () => {
     render(
       <TooltipProvider>
         <ThemeProvider>
-          <ContextMenus isChoosingSource={false} hasSource canSave canExport />
+          <ContextMenus canExport canSave hasSource isChoosingSource={false} />
         </ThemeProvider>
       </TooltipProvider>,
     );
@@ -540,7 +540,7 @@ describe("ContextMenus", () => {
     render(
       <TooltipProvider>
         <ThemeProvider>
-          <ContextMenus isChoosingSource={false} canSave canExport />
+          <ContextMenus canExport canSave isChoosingSource={false} />
         </ThemeProvider>
       </TooltipProvider>,
     );
@@ -603,11 +603,11 @@ describe("ContextMenus", () => {
       <TooltipProvider>
         <ThemeProvider>
           <ContextMenus
-            isChoosingSource={false}
-            canSave
             canExport
-            primaryColor="blue"
+            canSave
             customPrimaryColor="#123456"
+            isChoosingSource={false}
+            primaryColor="blue"
           />
         </ThemeProvider>
       </TooltipProvider>,
@@ -692,7 +692,7 @@ describe("ContextMenus", () => {
     render(
       <TooltipProvider>
         <ThemeProvider>
-          <ContextMenus isChoosingSource={false} canSave canExport />
+          <ContextMenus canExport canSave isChoosingSource={false} />
         </ThemeProvider>
       </TooltipProvider>,
     );
@@ -769,7 +769,7 @@ describe("ContextMenus", () => {
     render(
       <TooltipProvider>
         <ThemeProvider>
-          <ContextMenus isChoosingSource={false} canSave canExport />
+          <ContextMenus canExport canSave isChoosingSource={false} />
         </ThemeProvider>
       </TooltipProvider>,
     );

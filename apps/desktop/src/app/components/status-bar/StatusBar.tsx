@@ -37,8 +37,8 @@ export function StatusBar() {
   return (
     <div className="bg-card/30">
       <footer
-        data-slot="status-bar"
         className="flex h-7 min-h-7 shrink-0 items-center px-4 pb-1 text-xs text-muted-foreground"
+        data-slot="status-bar"
       >
         <span className="flex min-w-0 items-center gap-1.5">
           <span>v{getCurrentVersion()}</span>
@@ -52,15 +52,15 @@ export function StatusBar() {
                 {activeExportPath?.filename ?? activeExport.filename}
               </span>
             </span>
-            <Separator orientation="vertical" className="h-4 mt-1 self-center" />
+            <Separator className="h-4 mt-1 self-center" orientation="vertical" />
             <div className="flex shrink-0 items-center gap-2">
               <div
+                aria-label={t("statusBar.exportProgress")}
+                aria-valuemax={100}
+                aria-valuemin={0}
+                aria-valuenow={progressPercent}
                 className="h-1.5 w-28 overflow-hidden rounded-full bg-muted"
                 role="progressbar"
-                aria-label={t("statusBar.exportProgress")}
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={progressPercent}
               >
                 <div
                   className="h-full rounded-full bg-primary transition-[width] duration-150"
@@ -69,24 +69,24 @@ export function StatusBar() {
               </div>
               <span className="w-10 text-right tabular-nums">{progressPercent}%</span>
             </div>
-            <Separator orientation="vertical" className="h-4 mt-1 self-center" />
+            <Separator className="h-4 mt-1 self-center" orientation="vertical" />
             <StatusMetricTooltip label={t("statusBar.frames")}>
               {activeExport.currentFrame ?? 0}f / {activeExport.totalFrames ?? 0}f
             </StatusMetricTooltip>
-            <Separator orientation="vertical" className="h-4 mt-1 self-center" />
+            <Separator className="h-4 mt-1 self-center" orientation="vertical" />
             <StatusMetricTooltip label={t("statusBar.fps")}>
               {Math.round(activeExport.fps ?? 0)} FPS
             </StatusMetricTooltip>
-            <Separator orientation="vertical" className="h-4 mt-1 self-center" />
+            <Separator className="h-4 mt-1 self-center" orientation="vertical" />
             <StatusMetricTooltip label={t("statusBar.bitrate")}>
               {activeExport.bitrate ?? "0 kbits/s"}
             </StatusMetricTooltip>
-            <Separator orientation="vertical" className="h-4 mt-1 self-center" />
+            <Separator className="h-4 mt-1 self-center" orientation="vertical" />
             <StatusMetricTooltip label={t("statusBar.estimateSize")}>
               {formatStatusFileSize(activeExport.fileSizeBytes)} /{" "}
               {formatStatusFileSize(activeExport.estimatedFileSizeBytes)}
             </StatusMetricTooltip>
-            <Separator orientation="vertical" className="h-4 mt-1 self-center" />
+            <Separator className="h-4 mt-1 self-center" orientation="vertical" />
             <StatusMetricTooltip label={t("statusBar.estimateTime")}>
               {formatExportDuration(activeExport.estimatedElapsedTimeMs ?? 0)} /{" "}
               {formatExportDuration(activeExport.estimatedTotalTimeMs ?? 0)}
@@ -98,7 +98,7 @@ export function StatusBar() {
   );
 }
 
-function StatusMetricTooltip({ label, children }: { label: string; children: ReactNode }) {
+function StatusMetricTooltip({ children, label }: { children: ReactNode; label: string }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -116,11 +116,11 @@ function formatStatusFileSize(bytes: number | undefined) {
 function StatusBarUpdateButton() {
   const { t } = useTranslation();
   const {
-    status: updateStatus,
     availableVersion,
-    isInstalling,
     checkForUpdates,
     installUpdate,
+    isInstalling,
+    status: updateStatus,
   } = useAppUpdates();
 
   const updateAction = getUpdateButtonAction(updateStatus, availableVersion, isInstalling, {
@@ -142,11 +142,11 @@ function StatusBarUpdateButton() {
 
   return (
     <Button
-      type="button"
-      size="xs"
-      variant={updateAction.variant}
       disabled={updateAction.disabled}
       onClick={handleUpdateClick}
+      size="xs"
+      type="button"
+      variant={updateAction.variant}
     >
       {updateAction.icon}
       {updateAction.label}
@@ -155,16 +155,16 @@ function StatusBarUpdateButton() {
 }
 
 interface StatusBarUpdateAction {
-  label: string;
-  icon: ReactNode;
   disabled: boolean;
+  icon: ReactNode;
+  label: string;
   variant: "default" | "destructive";
 }
 
 interface StatusBarUpdateLabels {
+  error: string;
   loading: string;
   update: string;
-  error: string;
 }
 
 function getUpdateButtonAction(
@@ -176,7 +176,7 @@ function getUpdateButtonAction(
   if (isLoading || status === "checking") {
     return {
       label: labels.loading,
-      icon: <LoaderCircle className="size-3 animate-spin" aria-hidden="true" />,
+      icon: <LoaderCircle aria-hidden="true" className="size-3 animate-spin" />,
       disabled: true,
       variant: "default",
     };
@@ -185,7 +185,7 @@ function getUpdateButtonAction(
   if (status === "available" && availableVersion !== null) {
     return {
       label: labels.update,
-      icon: <Download className="size-3" aria-hidden="true" />,
+      icon: <Download aria-hidden="true" className="size-3" />,
       disabled: false,
       variant: "default",
     };
@@ -194,7 +194,7 @@ function getUpdateButtonAction(
   if (status === "error") {
     return {
       label: labels.error,
-      icon: <CircleAlert className="size-3" aria-hidden="true" />,
+      icon: <CircleAlert aria-hidden="true" className="size-3" />,
       disabled: false,
       variant: "destructive",
     };

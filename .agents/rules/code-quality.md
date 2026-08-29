@@ -148,6 +148,20 @@ or separation materially improves module boundaries or maintainability. Before c
 primitive file, inspect its consumers and preserve intentionally shared, public, or feature-level
 contracts as separate modules.
 
+### Declaration and prop ordering
+
+Named declaration members should use deterministic alphabetical ordering wherever ordering has
+no semantic meaning. The TypeScript/React ESLint configuration enforces case-insensitive natural
+ascending alphabetical order for interface members, object-type members, JSX props, destructured
+object patterns, and named import/export members. Existing `simple-import-sort` rules continue to
+own import and export declaration ordering.
+
+The JSX rule uses one simple alphabetical order; it does not add special callback-last or
+reserved-prop groups. Object literals that are not destructuring patterns are intentionally not
+auto-sorted because spreads, duplicate keys, getters/setters, computed keys, and insertion-order
+APIs can make property order observable. Preserve those orders unless a specific review confirms
+that reordering is semantically safe. ESLint's `pnpm lint:fix` workflow applies the safe fixes.
+
 ## Data and State
 
 Keep state ownership clear.

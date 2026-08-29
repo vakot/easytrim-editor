@@ -14,7 +14,7 @@ const preferencesSlice = createSlice({
   name: "preferences",
   initialState: createInitialState,
   reducers: {
-    preferenceChanged: (state, action: PayloadAction<{ key: PreferenceKey; enabled: boolean }>) => {
+    preferenceChanged: (state, action: PayloadAction<{ enabled: boolean; key: PreferenceKey }>) => {
       state[action.payload.key] = action.payload.enabled;
     },
     preferencesReset: (state) => {

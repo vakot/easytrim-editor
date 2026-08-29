@@ -27,41 +27,41 @@ export function Timeline() {
 
   return (
     <TrimTimeline
-      range={timelineRange}
       disabled={controlsDisabled}
-      playheadMicros={timeline.playheadMicros}
-      playheadRef={timeline.playheadRef}
       frameRate={frameRate}
+      onChange={timeline.onChange}
+      onMoveSegment={timeline.onMoveSegment}
+      onScrub={timeline.onScrub}
+      onScrubEnd={timeline.onScrubEnd}
+      onScrubStart={timeline.onScrubStart}
+      onSeek={timeline.onSeek}
+      onSegmentDragEnd={timeline.onSegmentDragEnd}
+      onSegmentDragStart={timeline.onSegmentDragStart}
+      onTrimDragEnd={timeline.onTrimDragEnd}
+      onTrimDragStart={timeline.onTrimDragStart}
       playbackControls={
         <PlaybackControls
-          isPlaying={playback.isPlaying}
-          error={playback.transportError}
-          canSetSegmentStart={timeline.canSetSegmentStart}
           canSetSegmentEnd={timeline.canSetSegmentEnd}
+          canSetSegmentStart={timeline.canSetSegmentStart}
           disabled={controlsDisabled}
-          onTogglePlayback={playback.toggle}
-          onStepFrame={playback.stepFrame}
+          error={playback.transportError}
+          isPlaying={playback.isPlaying}
           onSetSegmentBoundary={playback.setSegmentBoundary}
+          onStepFrame={playback.stepFrame}
+          onTogglePlayback={playback.toggle}
         />
       }
       playbackTimecode={
         <PlaybackTimecode
           currentMicros={controlsDisabled ? null : timeline.playheadMicros}
-          sourceDurationMicros={controlsDisabled ? null : timelineRange.sourceDurationMicros}
           frameRate={frameRate}
+          sourceDurationMicros={controlsDisabled ? null : timelineRange.sourceDurationMicros}
         />
       }
+      playheadMicros={timeline.playheadMicros}
+      playheadRef={timeline.playheadRef}
+      range={timelineRange}
       videoToolbar={<TimelineTools />}
-      onChange={timeline.onChange}
-      onMoveSegment={timeline.onMoveSegment}
-      onTrimDragStart={timeline.onTrimDragStart}
-      onTrimDragEnd={timeline.onTrimDragEnd}
-      onSegmentDragStart={timeline.onSegmentDragStart}
-      onSegmentDragEnd={timeline.onSegmentDragEnd}
-      onSeek={timeline.onSeek}
-      onScrubStart={timeline.onScrubStart}
-      onScrub={timeline.onScrub}
-      onScrubEnd={timeline.onScrubEnd}
     />
   );
 }

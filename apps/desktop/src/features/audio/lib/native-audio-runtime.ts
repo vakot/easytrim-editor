@@ -1,7 +1,7 @@
 export interface NativeAudioBinding {
-  source: MediaElementAudioSourceNode;
-  gain: GainNode;
   connectedMaster: GainNode | null;
+  gain: GainNode;
+  source: MediaElementAudioSourceNode;
 }
 
 export function getOrCreateNativeAudioBinding(

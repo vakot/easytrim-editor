@@ -18,23 +18,23 @@ function waveformStateWidth(track: AudioTrackState): number | null {
 }
 
 interface AudioTrackRowProps {
-  stream: AudioStream;
-  track: AudioTrackState;
-  title: string;
+  onPrepareWaveform: (streamIndexes: number[], width: number) => void;
   onToggle: (streamIndex: number) => void;
   onVolumeChange: (streamIndex: number, volumePercent: number) => void;
-  onPrepareWaveform: (streamIndexes: number[], width: number) => void;
   onWaveformImageError: (streamIndex: number) => void;
+  stream: AudioStream;
+  title: string;
+  track: AudioTrackState;
 }
 
 export const AudioTrackRow = memo(function AudioTrackRow({
-  stream,
-  track,
-  title,
+  onPrepareWaveform,
   onToggle,
   onVolumeChange,
-  onPrepareWaveform,
   onWaveformImageError,
+  stream,
+  title,
+  track,
 }: AudioTrackRowProps) {
   const { t } = useTranslation();
   const [controlsVisible, setControlsVisible] = useState(false);
@@ -47,12 +47,12 @@ export const AudioTrackRow = memo(function AudioTrackRow({
       <Card
         className="relative flex flex-row items-center gap-2 bg-transparent p-1 pr-2 ring-transparent transition-[background-color,box-shadow] duration-150 data-[controls-visible=true]:bg-card data-[controls-visible=true]:ring-foreground/10"
         data-controls-visible={controlsVisible}
-        onPointerEnter={() => setControlsVisible(true)}
-        onPointerLeave={() => setControlsVisible(false)}
-        onFocusCapture={() => setControlsVisible(true)}
         onBlurCapture={(event) => {
           if (!event.currentTarget.contains(event.relatedTarget)) setControlsVisible(false);
         }}
+        onFocusCapture={() => setControlsVisible(true)}
+        onPointerEnter={() => setControlsVisible(true)}
+        onPointerLeave={() => setControlsVisible(false)}
       >
         <VolumeButton
           enabled={track.enabled}
@@ -61,9 +61,9 @@ export const AudioTrackRow = memo(function AudioTrackRow({
         />
         <div className="relative min-w-0 flex-1">
           <div
+            aria-hidden={controlsVisible}
             className="leading-tight opacity-100 transition-opacity duration-150 data-[controls-visible=true]:opacity-0"
             data-controls-visible={controlsVisible}
-            aria-hidden={controlsVisible}
           >
             <p
               className="truncate text-sm font-semibold transition-colors data-[enabled=false]:text-muted-foreground"
@@ -76,16 +76,16 @@ export const AudioTrackRow = memo(function AudioTrackRow({
             </p>
           </div>
           <div
+            aria-hidden={!controlsVisible}
             className="pointer-events-none absolute inset-0 flex items-center opacity-0 transition-opacity duration-150 data-[controls-visible=true]:pointer-events-auto data-[controls-visible=true]:opacity-100"
             data-controls-visible={controlsVisible}
-            aria-hidden={!controlsVisible}
             inert={!controlsVisible}
           >
             <AudioLevelControl
-              label={t("audio.trackVolume", { title })}
-              volumePercent={track.enabled ? track.volumePercent : 0}
-              onChange={(volumePercent) => onVolumeChange(stream.streamIndex, volumePercent)}
               className="mt-2"
+              label={t("audio.trackVolume", { title })}
+              onChange={(volumePercent) => onVolumeChange(stream.streamIndex, volumePercent)}
+              volumePercent={track.enabled ? track.volumePercent : 0}
             />
           </div>
         </div>
@@ -95,18 +95,18 @@ export const AudioTrackRow = memo(function AudioTrackRow({
         data-enabled={track.enabled}
       >
         <WaveformContent
-          track={track}
+          onImageError={() => onWaveformImageError(stream.streamIndex)}
           onRetry={() =>
             onPrepareWaveform(
               [stream.streamIndex],
               waveformStateWidth(track) || WAVEFORM_RENDER_WIDTH,
             )
           }
-          onImageError={() => onWaveformImageError(stream.streamIndex)}
+          track={track}
         />
         <div
-          className="pointer-events-none absolute inset-y-0 border-x border-primary/70 bg-primary/5"
           aria-hidden="true"
+          className="pointer-events-none absolute inset-y-0 border-x border-primary/70 bg-primary/5"
           style={{
             left: "var(--timeline-trim-start)",
             right: "var(--timeline-trim-end-inset)",

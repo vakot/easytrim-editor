@@ -61,7 +61,7 @@ describe("useTimelinePanelSizing", () => {
 
   it("resets an explicitly cleared source and preserves that valid size for the next source", () => {
     const { rerender } = renderHook(
-      ({ hasSource, audioTrackCount }) => useTimelinePanelSizing(hasSource, audioTrackCount),
+      ({ audioTrackCount, hasSource }) => useTimelinePanelSizing(hasSource, audioTrackCount),
       {
         initialProps: {
           hasSource: true,
@@ -87,7 +87,7 @@ describe("useTimelinePanelSizing", () => {
 
   it("keeps an explicitly cleared timeline collapsed", () => {
     const { rerender, result } = renderHook(
-      ({ hasSource, audioTrackCount }) => useTimelinePanelSizing(hasSource, audioTrackCount),
+      ({ audioTrackCount, hasSource }) => useTimelinePanelSizing(hasSource, audioTrackCount),
       {
         initialProps: {
           hasSource: true,
@@ -107,7 +107,7 @@ describe("useTimelinePanelSizing", () => {
 
   it("preserves the user size with permissive bounds while replacement metadata is pending", () => {
     const { rerender, result } = renderHook(
-      ({ hasSource, audioTrackCount }) => useTimelinePanelSizing(hasSource, audioTrackCount),
+      ({ audioTrackCount, hasSource }) => useTimelinePanelSizing(hasSource, audioTrackCount),
       { initialProps: { hasSource: true, audioTrackCount: 3 as number | null } },
     );
 
@@ -145,7 +145,7 @@ describe("useTimelinePanelSizing", () => {
 
   it("clamps the preserved size when the confirmed source allows less height", () => {
     const { rerender } = renderHook(
-      ({ hasSource, audioTrackCount }) => useTimelinePanelSizing(hasSource, audioTrackCount),
+      ({ audioTrackCount, hasSource }) => useTimelinePanelSizing(hasSource, audioTrackCount),
       { initialProps: { hasSource: true, audioTrackCount: 3 as number | null } },
     );
 

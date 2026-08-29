@@ -5,10 +5,10 @@ import type { AppError } from "@/lib/tauri/media.types";
 import type { RootState } from "../store";
 
 interface ImportWorkflowState {
+  dropListenerError: AppError | null;
   isChoosingSource: boolean;
   isNativeDialogOpen: boolean;
   isSourceDragActive: boolean;
-  dropListenerError: AppError | null;
 }
 
 const initialImportWorkflowState: ImportWorkflowState = {
@@ -48,12 +48,12 @@ const importWorkflowSlice = createSlice({
 });
 
 export const {
-  sourceChoiceStarted,
-  sourceChoiceFinished,
-  nativeDialogStateChanged,
-  sourceDragChanged,
   dropListenerErrorCleared,
   dropListenerFailed,
+  nativeDialogStateChanged,
+  sourceChoiceFinished,
+  sourceChoiceStarted,
+  sourceDragChanged,
 } = importWorkflowSlice.actions;
 
 export const importWorkflowReducer = importWorkflowSlice.reducer;

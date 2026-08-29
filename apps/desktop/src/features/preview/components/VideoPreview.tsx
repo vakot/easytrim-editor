@@ -13,35 +13,35 @@ import type { PreviewState } from "@/app/store/slices/preview-slice";
 import { CropViewport } from "./CropViewport";
 
 interface VideoPreviewProps {
-  preview: PreviewState;
-  nativeLoopEnabled?: boolean;
   muted: boolean;
-  videoRef: RefObject<HTMLVideoElement | null>;
-  onPlaybackError: (previewKind: "source" | "proxy") => void;
-  onLoadedMetadata: () => void;
+  nativeLoopEnabled?: boolean;
   onCanPlay: () => void;
-  onTogglePlayback: () => void;
-  onPlay: () => void;
-  onPause: () => void;
-  onTimeUpdate: (seconds: number) => void;
-  onEnded: () => void;
   onCropToolOpenChange?: (isOpen: boolean) => void;
+  onEnded: () => void;
+  onLoadedMetadata: () => void;
+  onPause: () => void;
+  onPlay: () => void;
+  onPlaybackError: (previewKind: "source" | "proxy") => void;
+  onTimeUpdate: (seconds: number) => void;
+  onTogglePlayback: () => void;
+  preview: PreviewState;
+  videoRef: RefObject<HTMLVideoElement | null>;
 }
 
 export function VideoPreview({
-  preview,
-  nativeLoopEnabled = false,
   muted,
-  videoRef,
-  onPlaybackError,
-  onLoadedMetadata,
+  nativeLoopEnabled = false,
   onCanPlay,
-  onTogglePlayback,
-  onPlay,
-  onPause,
-  onTimeUpdate,
-  onEnded,
   onCropToolOpenChange,
+  onEnded,
+  onLoadedMetadata,
+  onPause,
+  onPlay,
+  onPlaybackError,
+  onTimeUpdate,
+  onTogglePlayback,
+  preview,
+  videoRef,
 }: VideoPreviewProps) {
   const { t } = useTranslation();
   const playbackRate = useAppSelector(selectPlaybackSpeed);
@@ -67,7 +67,7 @@ export function VideoPreview({
         className="grid place-items-center gap-2 text-center text-sm text-muted-foreground"
         role="status"
       >
-        <LoaderCircle className="size-6 animate-spin text-primary" aria-hidden="true" />
+        <LoaderCircle aria-hidden="true" className="size-6 animate-spin text-primary" />
         <strong className="text-foreground">
           {isProxy ? t("preview.preparing") : t("preview.opening")}
         </strong>
@@ -78,7 +78,7 @@ export function VideoPreview({
 
   if (preview.status === "failed") {
     return (
-      <Alert variant="destructive" className="max-w-xl">
+      <Alert className="max-w-xl" variant="destructive">
         <AlertTitle>{t("preview.error")}</AlertTitle>
         <AlertDescription>
           <p>{preview.error.message}</p>
@@ -105,40 +105,40 @@ export function VideoPreview({
       >
         <CropViewport
           key={value.url}
-          sourceUrl={value.url}
-          previewKind={value.kind}
-          sourceLabel={t("preview.sourceLabel")}
-          playbackRate={playbackRate}
-          nativeLoopEnabled={nativeLoopEnabled}
           muted={muted}
-          videoRef={videoRef}
-          onTogglePlayback={onTogglePlayback}
-          onLoadedMetadata={onLoadedMetadata}
+          nativeLoopEnabled={nativeLoopEnabled}
           onCanPlay={onCanPlay}
-          onPlay={onPlay}
-          onPause={onPause}
-          onTimeUpdate={onTimeUpdate}
+          onCropToolOpenChange={setCropToolOpen}
           onEnded={onEnded}
           onError={() => {
             if (reportedUrl.current === value.url) return;
             reportedUrl.current = value.url;
             onPlaybackError(value.kind);
           }}
-          onCropToolOpenChange={setCropToolOpen}
+          onLoadedMetadata={onLoadedMetadata}
+          onPause={onPause}
+          onPlay={onPlay}
+          onTimeUpdate={onTimeUpdate}
+          onTogglePlayback={onTogglePlayback}
+          playbackRate={playbackRate}
+          previewKind={value.kind}
+          sourceLabel={t("preview.sourceLabel")}
+          sourceUrl={value.url}
+          videoRef={videoRef}
         />
         {value.kind === "proxy" ? (
           <Tooltip>
             <TooltipTrigger asChild>
               <Badge
-                variant="secondary"
+                className="absolute top-3 right-3 cursor-help"
                 role="status"
                 tabIndex={0}
-                className="absolute top-3 right-3 cursor-help"
+                variant="secondary"
               >
                 {t("preview.proxyBadge")}
               </Badge>
             </TooltipTrigger>
-            <TooltipContent sideOffset={6} className="max-w-[18rem] whitespace-normal text-center">
+            <TooltipContent className="max-w-[18rem] whitespace-normal text-center" sideOffset={6}>
               {t("preview.proxyBadgeDescription")}
             </TooltipContent>
           </Tooltip>

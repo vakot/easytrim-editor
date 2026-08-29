@@ -1,17 +1,17 @@
 interface PlaybackFrameRate {
-  numerator: number;
   denominator: number;
+  numerator: number;
 }
 
 export interface PlaybackRange {
-  startMicros: number;
   endMicros: number;
+  startMicros: number;
 }
 
 export type PlaybackBoundaryAction =
   | { type: "continue" }
-  | { type: "restart"; positionMicros: number }
-  | { type: "stop"; positionMicros: number };
+  | { positionMicros: number; type: "restart" }
+  | { positionMicros: number; type: "stop" };
 
 export function frameDurationMicros(frameRate: PlaybackFrameRate | undefined): number {
   if (!frameRate || frameRate.numerator <= 0 || frameRate.denominator <= 0) {

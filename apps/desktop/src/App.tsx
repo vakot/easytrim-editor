@@ -118,8 +118,8 @@ function EasyTrimEditorApp() {
       <main className="fixed inset-0 grid h-dvh w-screen min-w-80 overflow-hidden bg-background grid-rows-[2.25rem_minmax(0,1fr)_auto]">
         <CustomTitleBar
           menuControls={<ContextMenus />}
-          statusContent={<SourceStatus />}
           panelControls={<PanelVisibilityControls />}
+          statusContent={<SourceStatus />}
         />
 
         <ExportDialog />
@@ -128,8 +128,8 @@ function EasyTrimEditorApp() {
 
         {dropListenerError ? (
           <Alert
-            variant="destructive"
             className="fixed top-20 left-1/2 z-50 w-auto -translate-x-1/2"
+            variant="destructive"
           >
             <AlertDescription>
               {t("app.dragUnavailable", { message: dropListenerError.message })}

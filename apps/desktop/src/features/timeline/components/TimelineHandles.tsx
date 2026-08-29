@@ -15,29 +15,29 @@ function formatAccessibleTime(micros: number): string {
 }
 
 interface SegmentDragHandleProps {
-  range: TrimRange;
+  disabled?: boolean;
   dragging: boolean;
-  snapPoint: SegmentSnapPoint | null;
+  onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void;
+  onLostPointerCapture: (event: PointerEvent<HTMLButtonElement>) => void;
+  onPointerCancel: (event: PointerEvent<HTMLButtonElement>) => void;
   onPointerDown: (event: PointerEvent<HTMLButtonElement>) => void;
   onPointerMove: (event: PointerEvent<HTMLButtonElement>) => void;
   onPointerUp: (event: PointerEvent<HTMLButtonElement>) => void;
-  onPointerCancel: (event: PointerEvent<HTMLButtonElement>) => void;
-  onLostPointerCapture: (event: PointerEvent<HTMLButtonElement>) => void;
-  onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void;
-  disabled?: boolean;
+  range: TrimRange;
+  snapPoint: SegmentSnapPoint | null;
 }
 
 export function SegmentDragHandle({
-  range,
+  disabled = false,
   dragging,
-  snapPoint,
+  onKeyDown,
+  onLostPointerCapture,
+  onPointerCancel,
   onPointerDown,
   onPointerMove,
   onPointerUp,
-  onPointerCancel,
-  onLostPointerCapture,
-  onKeyDown,
-  disabled = false,
+  range,
+  snapPoint,
 }: SegmentDragHandleProps) {
   const { t } = useTranslation();
   const durationMicros = range.endMicros - range.startMicros;
@@ -45,35 +45,35 @@ export function SegmentDragHandle({
     <Tooltip>
       <TooltipTrigger asChild>
         <button
-          className={cn(
-            "segment-drag-handle",
-            styles.segment,
-            disabled && ["cursor-not-allowed", styles.segmentDisabled],
-          )}
-          type="button"
-          role="slider"
           aria-label={t("timeline.moveSegment")}
-          aria-valuemin={0}
           aria-valuemax={range.sourceDurationMicros - durationMicros}
+          aria-valuemin={0}
           aria-valuenow={range.startMicros}
           aria-valuetext={t("timeline.startsAt", {
             time: t("timeline.accessibleSeconds", {
               value: formatAccessibleTime(range.startMicros),
             }),
           })}
+          className={cn(
+            "segment-drag-handle",
+            styles.segment,
+            disabled && ["cursor-not-allowed", styles.segmentDisabled],
+          )}
           data-dragging={dragging ? "true" : undefined}
           data-snap-active={snapPoint ? "true" : undefined}
           data-snap-point={snapPoint ?? undefined}
-          style={{ left: "var(--timeline-trim-center)" }}
+          disabled={disabled}
+          onKeyDown={onKeyDown}
+          onLostPointerCapture={onLostPointerCapture}
+          onPointerCancel={onPointerCancel}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
-          onPointerCancel={onPointerCancel}
-          onLostPointerCapture={onLostPointerCapture}
-          onKeyDown={onKeyDown}
-          disabled={disabled}
+          role="slider"
+          style={{ left: "var(--timeline-trim-center)" }}
+          type="button"
         >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
+          <svg aria-hidden="true" viewBox="0 0 24 24">
             <path d="m7 7-5 5 5 5v-3h10v3l5-5-5-5v3H7z" />
           </svg>
         </button>
@@ -85,32 +85,32 @@ export function SegmentDragHandle({
 
 interface TrimHandleProps {
   boundary: TrimBoundary;
-  value: number;
-  minimum: number;
-  maximum: number;
+  disabled?: boolean;
   dragging: boolean;
-  snapActive: boolean;
-  onPointerDown: (event: PointerEvent<HTMLButtonElement>) => void;
-  onPointerMove: (event: PointerEvent<HTMLButtonElement>) => void;
-  onPointerEnd: () => void;
+  maximum: number;
+  minimum: number;
   onDoubleClick: () => void;
   onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void;
-  disabled?: boolean;
+  onPointerDown: (event: PointerEvent<HTMLButtonElement>) => void;
+  onPointerEnd: () => void;
+  onPointerMove: (event: PointerEvent<HTMLButtonElement>) => void;
+  snapActive: boolean;
+  value: number;
 }
 
 export function TrimHandle({
   boundary,
-  value,
-  minimum,
-  maximum,
+  disabled = false,
   dragging,
-  snapActive,
-  onPointerDown,
-  onPointerMove,
-  onPointerEnd,
+  maximum,
+  minimum,
   onDoubleClick,
   onKeyDown,
-  disabled = false,
+  onPointerDown,
+  onPointerEnd,
+  onPointerMove,
+  snapActive,
+  value,
 }: TrimHandleProps) {
   const { t } = useTranslation();
   const label = boundary === "start" ? t("timeline.trimStart") : t("timeline.trimEnd");
@@ -118,6 +118,11 @@ export function TrimHandle({
     <Tooltip>
       <TooltipTrigger asChild>
         <button
+          aria-label={label}
+          aria-valuemax={maximum}
+          aria-valuemin={minimum}
+          aria-valuenow={value}
+          aria-valuetext={t("timeline.accessibleSeconds", { value: formatAccessibleTime(value) })}
           className={cn(
             "trim-handle",
             `trim-handle-${boundary}`,
@@ -125,26 +130,21 @@ export function TrimHandle({
             boundary === "start" ? styles.start : styles.end,
             disabled && cn("cursor-not-allowed", styles.trimDisabled),
           )}
-          type="button"
-          role="slider"
-          aria-label={label}
-          aria-valuemin={minimum}
-          aria-valuemax={maximum}
-          aria-valuenow={value}
-          aria-valuetext={t("timeline.accessibleSeconds", { value: formatAccessibleTime(value) })}
           data-dragging={dragging ? "true" : undefined}
           data-snap-active={snapActive ? "true" : undefined}
-          style={{
-            left: boundary === "start" ? "var(--timeline-trim-start)" : "var(--timeline-trim-end)",
-          }}
+          disabled={disabled}
+          onDoubleClick={onDoubleClick}
+          onKeyDown={onKeyDown}
+          onLostPointerCapture={onPointerEnd}
+          onPointerCancel={onPointerEnd}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerEnd}
-          onPointerCancel={onPointerEnd}
-          onLostPointerCapture={onPointerEnd}
-          onDoubleClick={onDoubleClick}
-          onKeyDown={onKeyDown}
-          disabled={disabled}
+          role="slider"
+          style={{
+            left: boundary === "start" ? "var(--timeline-trim-start)" : "var(--timeline-trim-end)",
+          }}
+          type="button"
         >
           <span aria-hidden="true" />
         </button>
@@ -155,53 +155,53 @@ export function TrimHandle({
 }
 
 export function Playhead({
-  playheadRef,
-  percent,
-  value,
-  maximum,
   frameRate,
+  maximum,
+  onKeyDown,
+  onLostPointerCapture,
+  onPointerCancel,
   onPointerDown,
   onPointerMove,
   onPointerUp,
-  onPointerCancel,
-  onLostPointerCapture,
-  onKeyDown,
+  percent,
+  playheadRef,
+  value,
 }: {
-  playheadRef: RefObject<HTMLButtonElement | null>;
-  percent: number;
-  value: number;
-  maximum: number;
   frameRate?: FrameRate;
+  maximum: number;
+  onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void;
+  onLostPointerCapture: (event: PointerEvent<HTMLButtonElement>) => void;
+  onPointerCancel: (event: PointerEvent<HTMLButtonElement>) => void;
   onPointerDown: (event: PointerEvent<HTMLButtonElement>) => void;
   onPointerMove: (event: PointerEvent<HTMLButtonElement>) => void;
   onPointerUp: (event: PointerEvent<HTMLButtonElement>) => void;
-  onPointerCancel: (event: PointerEvent<HTMLButtonElement>) => void;
-  onLostPointerCapture: (event: PointerEvent<HTMLButtonElement>) => void;
-  onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void;
+  percent: number;
+  playheadRef: RefObject<HTMLButtonElement | null>;
+  value: number;
 }) {
   const { t } = useTranslation();
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <button
-          ref={playheadRef}
-          className={cn("playhead", styles.playhead)}
-          type="button"
-          style={{ left: `${percent}%` }}
-          role="slider"
           aria-label={t("timeline.playbackPosition")}
-          aria-valuemin={0}
           aria-valuemax={maximum}
+          aria-valuemin={0}
           aria-valuenow={value}
           aria-valuetext={t("timeline.accessibleSeconds", {
             value: formatAccessibleTime(value),
           })}
+          className={cn("playhead", styles.playhead)}
+          onKeyDown={onKeyDown}
+          onLostPointerCapture={onLostPointerCapture}
+          onPointerCancel={onPointerCancel}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
-          onPointerCancel={onPointerCancel}
-          onLostPointerCapture={onLostPointerCapture}
-          onKeyDown={onKeyDown}
+          ref={playheadRef}
+          role="slider"
+          style={{ left: `${percent}%` }}
+          type="button"
         />
       </TooltipTrigger>
       <TooltipContent>{formatPlaybackTime(value, frameRate)}</TooltipContent>

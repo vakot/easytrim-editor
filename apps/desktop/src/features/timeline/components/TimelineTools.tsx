@@ -42,10 +42,10 @@ export function TimelineTools() {
         <PlaybackSpeedTool />
       </div>
       <Separator
-        orientation="vertical"
+        aria-hidden="true"
         className="mx-1"
         data-slot="timeline-tools-divider"
-        aria-hidden="true"
+        orientation="vertical"
       />
       <div className="shrink-0 self-start">
         <ResetToolsTool />
@@ -63,8 +63,8 @@ function SnapPlaybackTool() {
     <TimelineToolButton
       enabled={enabled}
       label={t("preview.snapPlayback.label")}
-      title={t(enabled ? "preview.snapPlayback.enabled" : "preview.snapPlayback.disabled")}
       onClick={() => dispatch(snapPlaybackToggled())}
+      title={t(enabled ? "preview.snapPlayback.enabled" : "preview.snapPlayback.disabled")}
     >
       <Magnet />
     </TimelineToolButton>
@@ -80,8 +80,8 @@ function LoopPlaybackTool() {
     <TimelineToolButton
       enabled={enabled}
       label={t("preview.loopPlayback.label")}
-      title={t(enabled ? "preview.loopPlayback.enabled" : "preview.loopPlayback.disabled")}
       onClick={() => dispatch(loopPlaybackToggled())}
+      title={t(enabled ? "preview.loopPlayback.enabled" : "preview.loopPlayback.disabled")}
     >
       <Repeat />
     </TimelineToolButton>
@@ -97,8 +97,8 @@ function SegmentPlaybackTool() {
     <TimelineToolButton
       enabled={enabled}
       label={t("preview.segmentPlayback.label")}
-      title={t(enabled ? "preview.segmentPlayback.enabled" : "preview.segmentPlayback.disabled")}
       onClick={() => dispatch(segmentPlaybackToggled())}
+      title={t(enabled ? "preview.segmentPlayback.enabled" : "preview.segmentPlayback.disabled")}
     >
       <BetweenVerticalStart />
     </TimelineToolButton>
@@ -118,33 +118,33 @@ function PlaybackSpeedTool() {
         <TooltipTrigger asChild>
           <PopoverTrigger asChild>
             <Button
-              variant="secondary"
-              size="icon-sm"
-              type="button"
               aria-label={t("preview.playbackSpeed.label")}
               aria-pressed={enabled}
               className={enabled ? "text-primary aria-expanded:text-primary" : undefined}
+              size="icon-sm"
+              type="button"
+              variant="secondary"
             >
               <Gauge />
             </Button>
           </PopoverTrigger>
         </TooltipTrigger>
         <TooltipContent>{t("preview.playbackSpeed.tooltip")}</TooltipContent>
-        <PopoverContent side="bottom" align="center" className="w-56 p-2.5">
+        <PopoverContent align="center" className="w-56 p-2.5" side="bottom">
           <div className="flex items-center gap-2">
             <Slider
+              aria-label={t("preview.playbackSpeed.label")}
               className="mt-2 min-w-0 flex-1 **:data-[slot=slider-track]:h-1.5"
-              min={0}
+              markers={PLAYBACK_SPEED_MARKERS}
               max={PLAYBACK_SPEED_STEPS.length - 1}
-              step={1}
-              value={[stepIndex]}
+              min={0}
+              onDoubleClick={() => dispatch(playbackSpeedChanged(DEFAULT_PLAYBACK_SPEED))}
               onValueChange={([index]) => {
                 const nextSpeed = PLAYBACK_SPEED_STEPS[index ?? stepIndex];
                 if (nextSpeed !== undefined) dispatch(playbackSpeedChanged(nextSpeed));
               }}
-              onDoubleClick={() => dispatch(playbackSpeedChanged(DEFAULT_PLAYBACK_SPEED))}
-              aria-label={t("preview.playbackSpeed.label")}
-              markers={PLAYBACK_SPEED_MARKERS}
+              step={1}
+              value={[stepIndex]}
             />
             <output className="w-10 shrink-0 text-right font-mono text-xs text-muted-foreground">
               {speed.toFixed(2)}×
@@ -165,9 +165,9 @@ function ResetToolsTool() {
     <TimelineToolButton
       enabled={false}
       label={t("preview.resetTools")}
-      title={t("preview.resetTools")}
       onClick={() => dispatch(editorToolsReset(createEditorToolsStateFromPreferences(preferences)))}
       preserveOnTrigger={false}
+      title={t("preview.resetTools")}
     >
       <RotateCcw />
     </TimelineToolButton>
@@ -175,31 +175,31 @@ function ResetToolsTool() {
 }
 
 function TimelineToolButton({
+  children,
   enabled,
   label,
-  title,
   onClick,
-  children,
   preserveOnTrigger = true,
+  title,
 }: {
+  children: React.ReactNode;
   enabled: boolean;
   label: string;
-  title: string;
   onClick: () => void;
-  children: React.ReactNode;
   preserveOnTrigger?: boolean;
+  title: string;
 }) {
   return (
     <Tooltip preserveOnTrigger={preserveOnTrigger}>
       <TooltipTrigger asChild>
         <Button
-          variant="secondary"
-          size="icon-sm"
-          type="button"
           aria-label={label}
           aria-pressed={enabled}
-          onClick={onClick}
           className={enabled ? "text-primary" : undefined}
+          onClick={onClick}
+          size="icon-sm"
+          type="button"
+          variant="secondary"
         >
           {children}
         </Button>

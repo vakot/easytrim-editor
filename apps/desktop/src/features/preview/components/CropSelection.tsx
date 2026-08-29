@@ -4,14 +4,14 @@ import type { CropFrame } from "../lib/crop-frame.utils";
 import type { CropHandle } from "../lib/crop-geometry.utils";
 
 interface CropSelectionProps {
-  frame: CropFrame;
   enterFrom: CropFrame | null;
+  frame: CropFrame;
   isDragging: boolean;
-  selectionRef: RefObject<HTMLDivElement | null>;
   onPointerDown: (event: PointerEvent<HTMLElement>, handle: CropHandle) => void;
+  selectionRef: RefObject<HTMLDivElement | null>;
 }
 
-const HANDLES: Array<{ handle: Exclude<CropHandle, "move">; label: string; className: string }> = [
+const HANDLES: Array<{ className: string; handle: Exclude<CropHandle, "move">; label: string }> = [
   {
     handle: "top-left",
     label: "Resize crop from top left",
@@ -55,11 +55,11 @@ const HANDLES: Array<{ handle: Exclude<CropHandle, "move">; label: string; class
 ];
 
 export function CropSelection({
-  frame,
   enterFrom,
+  frame,
   isDragging,
-  selectionRef,
   onPointerDown,
+  selectionRef,
 }: CropSelectionProps) {
   const displayedFrame = enterFrom ?? frame;
   const transition = !isDragging
@@ -68,36 +68,36 @@ export function CropSelection({
 
   return (
     <div
-      ref={selectionRef}
       className={`absolute border-2 border-primary bg-primary/10 ${transition}`}
+      onClick={(event) => event.stopPropagation()}
+      onPointerDown={(event) => onPointerDown(event, "move")}
+      ref={selectionRef}
       style={{
         width: displayedFrame.width,
         height: displayedFrame.height,
         left: displayedFrame.left,
         top: displayedFrame.top,
       }}
-      onClick={(event) => event.stopPropagation()}
-      onPointerDown={(event) => onPointerDown(event, "move")}
     >
       {isDragging ? (
         <svg
           aria-hidden="true"
-          data-crop-rule-of-thirds
           className="pointer-events-none absolute inset-0 size-full opacity-80 mix-blend-difference"
-          viewBox="0 0 3 3"
+          data-crop-rule-of-thirds
           preserveAspectRatio="none"
+          viewBox="0 0 3 3"
         >
           <path
-            data-crop-guide="vertical"
             d="M1 0V3 M2 0V3"
+            data-crop-guide="vertical"
             fill="none"
             stroke="white"
             strokeWidth="1"
             vectorEffect="non-scaling-stroke"
           />
           <path
-            data-crop-guide="horizontal"
             d="M0 1H3 M0 2H3"
+            data-crop-guide="horizontal"
             fill="none"
             stroke="white"
             strokeWidth="1"
@@ -105,13 +105,13 @@ export function CropSelection({
           />
         </svg>
       ) : null}
-      {HANDLES.map(({ handle, label, className }) => (
+      {HANDLES.map(({ className, handle, label }) => (
         <button
-          key={handle}
-          type="button"
           aria-label={label}
           className={`absolute z-10 size-4 rounded-full border-2 border-background bg-primary shadow-sm ${className}`}
+          key={handle}
           onPointerDown={(event) => onPointerDown(event, handle)}
+          type="button"
         />
       ))}
     </div>

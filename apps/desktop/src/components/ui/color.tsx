@@ -5,9 +5,9 @@ import type { HexColor } from "@/lib/color.types";
 import { colorFromSpectrumPosition, hexToHsl } from "@/lib/color.utils";
 
 function ColorSample({
+  className,
   color,
   selected = false,
-  className,
   style,
   ...props
 }: React.ComponentProps<"span"> & {
@@ -16,13 +16,13 @@ function ColorSample({
 }) {
   return (
     <span
-      data-slot="color-sample"
       aria-hidden="true"
       className={cn(
         "size-3 rounded-full ring-1 ring-foreground/20",
         selected && "ring-2 ring-foreground ring-offset-1 ring-offset-popover",
         className,
       )}
+      data-slot="color-sample"
       style={{
         backgroundColor: color,
         ...style,
@@ -33,23 +33,23 @@ function ColorSample({
 }
 
 function SpectrumWheel({
-  color,
-  onPreview,
-  onCommit,
-  onCancel,
   className,
-  style,
+  color,
+  onCancel,
+  onCommit,
+  onKeyDown,
+  onPointerCancel,
   onPointerDown,
   onPointerMove,
   onPointerUp,
-  onPointerCancel,
-  onKeyDown,
+  onPreview,
+  style,
   ...props
 }: React.ComponentProps<"button"> & {
   color: string;
-  onPreview?: (color: HexColor) => void;
-  onCommit?: (color: HexColor) => void;
   onCancel?: () => void;
+  onCommit?: (color: HexColor) => void;
+  onPreview?: (color: HexColor) => void;
 }) {
   const wheelRef = React.useRef<HTMLButtonElement>(null);
   const activePointerId = React.useRef<number | null>(null);
@@ -124,17 +124,18 @@ function SpectrumWheel({
 
   return (
     <button
-      ref={wheelRef}
-      data-slot="spectrum-wheel"
-      type="button"
       className={cn(
         "relative block size-48 touch-none cursor-crosshair rounded-full outline-none ring-1 ring-foreground/10 focus-visible:ring-2 focus-visible:ring-ring",
         className,
       )}
-      style={{
-        background:
-          "radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(255,255,255,0) 70%), conic-gradient(from 0deg, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000)",
-        ...style,
+      data-slot="spectrum-wheel"
+      onKeyDown={(event) => {
+        adjustHue(event);
+        onKeyDown?.(event);
+      }}
+      onPointerCancel={(event) => {
+        stopScrubbing(event, false);
+        onPointerCancel?.(event);
       }}
       onPointerDown={(event) => {
         startScrubbing(event);
@@ -148,20 +149,19 @@ function SpectrumWheel({
         stopScrubbing(event, true);
         onPointerUp?.(event);
       }}
-      onPointerCancel={(event) => {
-        stopScrubbing(event, false);
-        onPointerCancel?.(event);
+      ref={wheelRef}
+      style={{
+        background:
+          "radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(255,255,255,0) 70%), conic-gradient(from 0deg, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000)",
+        ...style,
       }}
-      onKeyDown={(event) => {
-        adjustHue(event);
-        onKeyDown?.(event);
-      }}
+      type="button"
       {...props}
     >
       <span
-        data-slot="spectrum-wheel-marker"
         aria-hidden="true"
         className="absolute size-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-md"
+        data-slot="spectrum-wheel-marker"
         style={getColorMarkerStyle(color)}
       />
     </button>

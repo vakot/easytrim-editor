@@ -1,5 +1,6 @@
 import eslint from "@eslint/js";
 import eslintConfigPrettier from "eslint-config-prettier/flat";
+import perfectionist from "eslint-plugin-perfectionist";
 import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
 import simpleImportSort from "eslint-plugin-simple-import-sort";
@@ -15,12 +16,68 @@ export default tseslint.config(
   {
     files: ["**/*.{js,cjs,mjs,ts,tsx}"],
     plugins: {
+      perfectionist,
       "simple-import-sort": simpleImportSort,
     },
     rules: {
       eqeqeq: ["error", "always", { null: "ignore" }],
       "no-duplicate-imports": ["error", { allowSeparateTypeImports: true, includeExports: true }],
       "object-shorthand": ["error", "always"],
+      "perfectionist/sort-interfaces": [
+        "error",
+        {
+          ignoreCase: true,
+          order: "asc",
+          type: "natural",
+        },
+      ],
+      "perfectionist/sort-jsx-props": [
+        "error",
+        {
+          ignoreCase: true,
+          order: "asc",
+          type: "natural",
+        },
+      ],
+      "perfectionist/sort-named-exports": [
+        "error",
+        {
+          ignoreCase: true,
+          order: "asc",
+          type: "natural",
+        },
+      ],
+      "perfectionist/sort-named-imports": [
+        "error",
+        {
+          ignoreCase: true,
+          order: "asc",
+          type: "natural",
+        },
+      ],
+      "perfectionist/sort-object-types": [
+        "error",
+        {
+          ignoreCase: true,
+          order: "asc",
+          type: "natural",
+        },
+      ],
+      // Keep object-literal insertion order intact; only destructuring is mechanically sorted.
+      "perfectionist/sort-objects": [
+        "error",
+        {
+          ignoreCase: true,
+          order: "asc",
+          type: "natural",
+          useConfigurationIf: {
+            objectType: "destructured",
+          },
+        },
+        {
+          type: "unsorted",
+        },
+      ],
       "padding-line-between-statements": [
         "error",
         {

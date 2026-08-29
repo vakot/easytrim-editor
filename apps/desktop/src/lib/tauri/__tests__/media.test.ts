@@ -22,9 +22,9 @@ import {
 } from "../media";
 
 type NativeDropEvent =
-  | { payload: { type: "enter"; paths: string[] } }
+  | { payload: { paths: string[]; type: "enter" } }
   | { payload: { type: "over" } }
-  | { payload: { type: "drop"; paths: string[] } }
+  | { payload: { paths: string[]; type: "drop" } }
   | { payload: { type: "leave" } };
 
 let nativeDropListener: ((event: NativeDropEvent) => void) | undefined;

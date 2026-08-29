@@ -19,41 +19,41 @@ import { CropSnapMarkers } from "./CropSnapMarkers";
 const CROP_TOOL_GUTTER_PX = 16;
 
 interface CropViewportProps {
-  sourceUrl: string;
-  previewKind: "source" | "proxy";
-  sourceLabel: string;
-  playbackRate: number;
-  nativeLoopEnabled: boolean;
   muted: boolean;
-  videoRef: RefObject<HTMLVideoElement | null>;
-  onTogglePlayback: () => void;
-  onLoadedMetadata: () => void;
+  nativeLoopEnabled: boolean;
   onCanPlay: () => void;
-  onPlay: () => void;
-  onPause: () => void;
-  onTimeUpdate: (seconds: number) => void;
+  onCropToolOpenChange: (isOpen: boolean) => void;
   onEnded: () => void;
   onError: () => void;
-  onCropToolOpenChange: (isOpen: boolean) => void;
+  onLoadedMetadata: () => void;
+  onPause: () => void;
+  onPlay: () => void;
+  onTimeUpdate: (seconds: number) => void;
+  onTogglePlayback: () => void;
+  playbackRate: number;
+  previewKind: "source" | "proxy";
+  sourceLabel: string;
+  sourceUrl: string;
+  videoRef: RefObject<HTMLVideoElement | null>;
 }
 
 export function CropViewport({
-  sourceUrl,
-  previewKind,
-  sourceLabel,
-  playbackRate,
-  nativeLoopEnabled,
   muted,
-  videoRef,
-  onTogglePlayback,
-  onLoadedMetadata,
+  nativeLoopEnabled,
   onCanPlay,
-  onPlay,
-  onPause,
-  onTimeUpdate,
+  onCropToolOpenChange,
   onEnded,
   onError,
-  onCropToolOpenChange,
+  onLoadedMetadata,
+  onPause,
+  onPlay,
+  onTimeUpdate,
+  onTogglePlayback,
+  playbackRate,
+  previewKind,
+  sourceLabel,
+  sourceUrl,
+  videoRef,
 }: CropViewportProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerBounds, setContainerBounds] = useState<Bounds>({ width: 0, height: 0 });
@@ -82,7 +82,7 @@ export function CropViewport({
     const container = containerRef.current;
     if (!container) return;
     const updateBounds = () => {
-      const { width, height } = container.getBoundingClientRect();
+      const { height, width } = container.getBoundingClientRect();
       setContainerBounds({ width, height });
     };
 
@@ -126,13 +126,10 @@ export function CropViewport({
 
   return (
     <CursorTooltip
-      ref={containerRef}
+      aria-label="Video crop preview"
       className={`group relative size-full bg-preview-surface focus-visible:outline-none ${
         cropSelection.isEditing ? "overflow-visible" : "overflow-hidden"
       }`}
-      tabIndex={0}
-      aria-label="Video crop preview"
-      tooltipContent="Click preview to crop"
       disabled={cropSelection.isOpen}
       onBlur={(event: FocusEvent<HTMLDivElement>) => {
         if (!event.currentTarget.contains(event.relatedTarget)) cropSelection.close();
@@ -158,15 +155,18 @@ export function CropViewport({
         }
         cropSelection.open(viewportFrame);
       }}
+      onPointerCancel={cropSelection.finishDrag}
       onPointerMove={(event) => cropSelection.moveDrag(event, viewport)}
       onPointerUp={cropSelection.finishDrag}
-      onPointerCancel={cropSelection.finishDrag}
+      ref={containerRef}
+      tabIndex={0}
+      tooltipContent="Click preview to crop"
     >
       {!cropSelection.isOpen ? (
         <div
           aria-hidden="true"
-          data-crop-preview-affordance
           className="pointer-events-none absolute inset-0 z-10 border border-primary/70 bg-primary/5 opacity-0 ring-1 ring-primary/20 transition-[opacity,transform] duration-150 ease-out group-hover:opacity-100 group-focus-visible:opacity-100 motion-reduce:transition-none"
+          data-crop-preview-affordance
         />
       ) : null}
       <div
@@ -179,25 +179,23 @@ export function CropViewport({
         }}
       >
         <video
-          ref={videoRef}
-          key={sourceUrl}
-          data-playback-rate={playbackRate}
-          className={`absolute max-w-none cursor-pointer ${viewportTransition}`}
-          style={sourceFrame}
-          crossOrigin="anonymous"
-          src={sourceUrl}
-          preload="auto"
-          muted={muted}
-          loop={nativeLoopEnabled}
-          playsInline
           aria-label={sourceLabel}
+          className={`absolute max-w-none cursor-pointer ${viewportTransition}`}
+          crossOrigin="anonymous"
+          data-playback-rate={playbackRate}
           data-preview-kind={previewKind}
+          key={sourceUrl}
+          loop={nativeLoopEnabled}
+          muted={muted}
+          onCanPlay={onCanPlay}
+          onEnded={onEnded}
+          onError={onError}
           onLoadedMetadata={(event) => {
-            const { videoWidth, videoHeight } = event.currentTarget;
+            const { videoHeight, videoWidth } = event.currentTarget;
             if (videoWidth > 0 && videoHeight > 0) setSourceAspectRatio(videoWidth / videoHeight);
             onLoadedMetadata();
           }}
-          onCanPlay={onCanPlay}
+          onPause={onPause}
           onPlay={(event) => {
             if (cropSelection.isOpen) {
               event.currentTarget.pause();
@@ -205,21 +203,23 @@ export function CropViewport({
             }
             onPlay();
           }}
-          onPause={onPause}
           onTimeUpdate={(event) => onTimeUpdate(event.currentTarget.currentTime)}
-          onEnded={onEnded}
-          onError={onError}
+          playsInline
+          preload="auto"
+          ref={videoRef}
+          src={sourceUrl}
+          style={sourceFrame}
         />
       </div>
       {cropSelection.isEditing ? (
         <>
           <CropSnapMarkers frame={viewportFrame} />
           <CropSelection
-            frame={selectionFrame}
             enterFrom={cropSelection.enterFrom}
+            frame={selectionFrame}
             isDragging={cropSelection.isDragging}
-            selectionRef={cropSelection.selectionRef}
             onPointerDown={cropSelection.startDrag}
+            selectionRef={cropSelection.selectionRef}
           />
         </>
       ) : null}

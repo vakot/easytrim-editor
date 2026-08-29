@@ -5,10 +5,10 @@ import type { RootState } from "@/app/store/store";
 import { DEFAULT_PLAYBACK_SPEED, type PlaybackSpeed } from "@/domain/playback-speed";
 
 type EditorToolsState = {
-  snapPlaybackEnabled: boolean;
   loopPlaybackEnabled: boolean;
-  segmentPlaybackEnabled: boolean;
   playbackSpeed: PlaybackSpeed;
+  segmentPlaybackEnabled: boolean;
+  snapPlaybackEnabled: boolean;
 };
 
 const createInitialState = (): EditorToolsState =>
@@ -50,11 +50,11 @@ const editorToolsSlice = createSlice({
 export const {
   editorToolsInitialized,
   editorToolsReset,
-  snapPlaybackToggled,
-  snapPlaybackChanged,
   loopPlaybackToggled,
-  segmentPlaybackToggled,
   playbackSpeedChanged,
+  segmentPlaybackToggled,
+  snapPlaybackChanged,
+  snapPlaybackToggled,
 } = editorToolsSlice.actions;
 export const editorToolsReducer = editorToolsSlice.reducer;
 

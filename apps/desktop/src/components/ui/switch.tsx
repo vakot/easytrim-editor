@@ -43,15 +43,15 @@ function Switch({
 }: React.ComponentProps<typeof SwitchPrimitive.Root> & VariantProps<typeof switchVariants>) {
   return (
     <SwitchPrimitive.Root
-      data-slot="switch"
-      data-size={size}
       className={cn(switchVariants({ size, className }))}
+      data-size={size}
+      data-slot="switch"
       {...props}
     >
       <SwitchPrimitive.Thumb
-        data-slot="switch-thumb"
-        data-size={size}
         className={cn(thumbVariants({ size }))}
+        data-size={size}
+        data-slot="switch-thumb"
       />
     </SwitchPrimitive.Root>
   );

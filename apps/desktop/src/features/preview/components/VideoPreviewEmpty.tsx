@@ -1,9 +1,9 @@
 import { useTranslation } from "react-i18next";
 
+import { KofiIcon } from "@/components/brand-icons";
 import { openExternalUrl } from "@/lib/open-external-url.utils";
 
 import styles from "./VideoPreviewEmpty.module.css";
-import { KofiIcon } from "@/components/brand-icons";
 
 const KOFI_URL = "https://ko-fi.com/vakot";
 
@@ -51,40 +51,40 @@ export function VideoPreviewEmpty() {
 
   return (
     <section
-      className={`${styles.preview} grid size-full min-h-0 place-items-center overflow-hidden bg-preview-surface px-6 py-8`}
       aria-label={t("preview.emptyMock.label")}
+      className={`${styles.preview} grid size-full min-h-0 place-items-center overflow-hidden bg-preview-surface px-6 py-8`}
     >
       <div className="grid w-[clamp(10rem,28vw,18rem)] max-w-full justify-items-center gap-10">
         <img
-          src="/logo-symbol.svg"
           alt=""
           aria-hidden="true"
           className="pointer-events-none aspect-square w-full grayscale opacity-20"
+          src="/logo-symbol.svg"
         />
 
         <div className="grid w-full justify-items-center gap-4">
           <div
+            aria-label={t("preview.emptyMock.shortcutsLabel")}
             className={`${styles.hints} grid w-full gap-2 text-left text-sm text-muted-foreground`}
             role="list"
-            aria-label={t("preview.emptyMock.shortcutsLabel")}
           >
             {shortcuts.map((shortcut) => (
               <div className="flex min-w-0 items-center gap-3" key={shortcut.id} role="listitem">
                 <span className="shrink-0">{t(shortcut.label)}</span>
                 <span
-                  className="min-w-4 flex-1 border-b border-dotted border-muted-foreground/40"
                   aria-hidden="true"
+                  className="min-w-4 flex-1 border-b border-dotted border-muted-foreground/40"
                 />
                 <span
-                  className="flex shrink-0 items-center gap-1"
                   aria-label={shortcut.keys.join(` ${shortcut.separator ?? "+"} `)}
+                  className="flex shrink-0 items-center gap-1"
                 >
                   {shortcut.keys.map((key) => (
                     <span className="flex items-center gap-1" key={key}>
                       {key !== shortcut.keys[0] ? (
                         <span
-                          className="inline-flex w-3 shrink-0 justify-center font-mono text-xs"
                           aria-hidden="true"
+                          className="inline-flex w-3 shrink-0 justify-center font-mono text-xs"
                         >
                           {shortcut.separator ?? "+"}
                         </span>

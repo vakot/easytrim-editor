@@ -20,11 +20,11 @@ function ToggleButtonTooltip({
     <TooltipProvider delayDuration={0}>
       <Tooltip
         defaultOpen={defaultOpen}
-        preserveOnTrigger={preserveOnTrigger}
         disableHoverableContent
+        preserveOnTrigger={preserveOnTrigger}
       >
         <TooltipTrigger asChild>
-          <button type="button" onClick={() => setEnabled((current) => !current)}>
+          <button onClick={() => setEnabled((current) => !current)} type="button">
             Toggle
           </button>
         </TooltipTrigger>

@@ -22,20 +22,20 @@ function StatusDot({ tone }: { tone: "success" | "error" | "neutral" }) {
   const color =
     tone === "success" ? "bg-emerald-300" : tone === "error" ? "bg-red-400" : "bg-muted-foreground";
 
-  return <span className={`size-1.5 rounded-full ${color}`} aria-hidden="true" />;
+  return <span aria-hidden="true" className={`size-1.5 rounded-full ${color}`} />;
 }
 
 function CapabilityTooltip({ children, content }: { children: ReactNode; content: ReactNode }) {
   return (
     <Tooltip delayDuration={0}>
       <TooltipTrigger asChild>
-        <span tabIndex={0} className="inline-flex">
+        <span className="inline-flex" tabIndex={0}>
           {children}
         </span>
       </TooltipTrigger>
       <TooltipContent
-        sideOffset={6}
         className="max-w-[16rem] flex-col items-stretch gap-2 whitespace-normal"
+        sideOffset={6}
       >
         {content}
       </TooltipContent>
@@ -50,7 +50,7 @@ export function SourceStatus() {
   if (capabilities.status === "checking") {
     return (
       <CapabilityTooltip content={t("import.capabilities.checkingDescription")}>
-        <Badge variant="outline" role="status" className="text-muted-foreground">
+        <Badge className="text-muted-foreground" role="status" variant="outline">
           <StatusDot tone="neutral" />
           {t("import.capabilities.checking")}
         </Badge>
@@ -61,7 +61,7 @@ export function SourceStatus() {
   if (capabilities.status === "failed") {
     return (
       <CapabilityTooltip content={capabilities.error.message}>
-        <Badge variant="destructive" role="status" className={styles.errorBadge}>
+        <Badge className={styles.errorBadge} role="status" variant="destructive">
           <StatusDot tone="error" />
           {t("import.capabilities.failed")}
         </Badge>
@@ -75,7 +75,7 @@ export function SourceStatus() {
   ];
 
   const missing = entries
-    .map(({ label, capability }) =>
+    .map(({ capability, label }) =>
       capabilityError(label, capability, t("import.capabilities.missing")),
     )
     .filter((value): value is string => value !== null);
@@ -90,8 +90,8 @@ export function SourceStatus() {
         )}
       </p>
       <ul className="grid gap-1">
-        {entries.map(({ label, capability }) => (
-          <li key={label} className={capability.available ? "text-emerald-300" : "text-red-400"}>
+        {entries.map(({ capability, label }) => (
+          <li className={capability.available ? "text-emerald-300" : "text-red-400"} key={label}>
             <span className="inline-flex items-center gap-1.5">
               <StatusDot tone={capability.available ? "success" : "error"} />
               {label}:{" "}
@@ -114,9 +114,9 @@ export function SourceStatus() {
     return (
       <CapabilityTooltip content={dependencyDetails}>
         <Badge
-          variant="outline"
-          role="status"
           className="border-emerald-400/35 bg-emerald-400/8 text-emerald-300"
+          role="status"
+          variant="outline"
         >
           <StatusDot tone="success" />
           {t("import.capabilities.ready")}
@@ -129,10 +129,10 @@ export function SourceStatus() {
   return (
     <CapabilityTooltip content={dependencyDetails}>
       <Badge
-        variant="destructive"
-        role="status"
         aria-label={t("import.capabilities.unavailableLabel", { message })}
         className={styles.errorBadge}
+        role="status"
+        variant="destructive"
       >
         <StatusDot tone="error" />
         {t("import.capabilities.unavailable")}

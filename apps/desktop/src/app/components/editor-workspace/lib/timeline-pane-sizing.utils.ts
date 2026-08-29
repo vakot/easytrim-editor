@@ -1,7 +1,7 @@
 export interface TimelinePanelSizeConstraints {
-  minSize: number;
   defaultSize: number;
   maxSize: number;
+  minSize: number;
 }
 
 // These values mirror the fixed CSS layout. The timeline and audio controls

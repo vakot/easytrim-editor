@@ -12,7 +12,7 @@ export function ContextMenus() {
   const navigation = useContextMenuNavigation();
 
   return (
-    <nav className="flex h-full items-center gap-0.5" aria-label={t("app.topBarMenus.label")}>
+    <nav aria-label={t("app.topBarMenus.label")} className="flex h-full items-center gap-0.5">
       <ContextMenuFile navigation={navigation.file} />
       <ContextMenuView navigation={navigation.view} />
       <ContextMenuQueue navigation={navigation.queue} />

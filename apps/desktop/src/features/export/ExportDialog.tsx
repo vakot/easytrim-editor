@@ -87,7 +87,7 @@ export function ExportDialog() {
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog onOpenChange={onOpenChange} open={open}>
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>{t("export.export")}</DialogTitle>
@@ -99,7 +99,6 @@ export function ExportDialog() {
               <div className="grid gap-1.5">
                 <Label htmlFor="export-resolution">{t("export.dialog.resolution")}</Label>
                 <Select
-                  value={hasMatchingResolutionPreset ? resolutionValue : "custom"}
                   onValueChange={(value) => {
                     const [width, height] = value.split("x").map(Number);
                     if (width && height) {
@@ -111,8 +110,9 @@ export function ExportDialog() {
                       );
                     }
                   }}
+                  value={hasMatchingResolutionPreset ? resolutionValue : "custom"}
                 >
-                  <SelectTrigger id="export-resolution" className="w-full">
+                  <SelectTrigger className="w-full" id="export-resolution">
                     <SelectValue>
                       {!hasMatchingResolutionPreset ? "Custom scaling" : undefined}
                     </SelectValue>
@@ -133,10 +133,8 @@ export function ExportDialog() {
                 <div className="flex items-center gap-1.5">
                   <Input
                     id="export-width"
-                    type="number"
                     inputMode="numeric"
                     min={1}
-                    value={settings.resolution.width}
                     onChange={(event) => {
                       const width = Number(event.target.value);
                       if (!Number.isInteger(width) || width <= 0) return;
@@ -152,14 +150,14 @@ export function ExportDialog() {
                         }),
                       );
                     }}
+                    type="number"
+                    value={settings.resolution.width}
                   />
                   <span aria-hidden="true">×</span>
                   <Input
                     aria-label="Height"
-                    type="number"
                     inputMode="numeric"
                     min={1}
-                    value={settings.resolution.height}
                     onChange={(event) => {
                       const height = Number(event.target.value);
                       if (!Number.isInteger(height) || height <= 0) return;
@@ -175,19 +173,21 @@ export function ExportDialog() {
                         }),
                       );
                     }}
+                    type="number"
+                    value={settings.resolution.height}
                   />
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
-                        type="button"
-                        variant="secondary"
-                        size="icon"
                         aria-label={
                           isAspectRatioLocked ? "Unlock aspect ratio" : "Lock aspect ratio"
                         }
                         aria-pressed={isAspectRatioLocked}
-                        onClick={() => setIsAspectRatioLocked((locked) => !locked)}
                         className={isAspectRatioLocked ? "text-primary" : undefined}
+                        onClick={() => setIsAspectRatioLocked((locked) => !locked)}
+                        size="icon"
+                        type="button"
+                        variant="secondary"
                       >
                         {isAspectRatioLocked ? <Link2 /> : <Unlink2 />}
                       </Button>
@@ -202,7 +202,6 @@ export function ExportDialog() {
             <div className="grid gap-1.5">
               <Label htmlFor="export-frame-rate">{t("export.dialog.frameRate")}</Label>
               <Select
-                value={frameRateValue}
                 onValueChange={(value) =>
                   void dispatch(
                     optimizedExportSettingsChangedRequested({
@@ -211,8 +210,9 @@ export function ExportDialog() {
                     }),
                   )
                 }
+                value={frameRateValue}
               >
-                <SelectTrigger id="export-frame-rate" className="w-full">
+                <SelectTrigger className="w-full" id="export-frame-rate">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -229,7 +229,7 @@ export function ExportDialog() {
           <CommandPreview command={commandPreview} error={commandPreviewError?.message} />
           <p className="text-xs text-muted-foreground">{t("export.dialog.saveNotice")}</p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <Button onClick={() => onOpenChange(false)} variant="outline">
               {t("common.cancel")}
             </Button>
             <Button onClick={() => void dispatch(startOptimizedExportRequested())}>
@@ -239,7 +239,7 @@ export function ExportDialog() {
         </DialogContent>
       </Dialog>
       {launchError ? (
-        <Alert variant="destructive" className="absolute top-full right-5 z-40 mt-2 w-80">
+        <Alert className="absolute top-full right-5 z-40 mt-2 w-80" variant="destructive">
           <AlertDescription>{launchError.message}</AlertDescription>
         </Alert>
       ) : null}

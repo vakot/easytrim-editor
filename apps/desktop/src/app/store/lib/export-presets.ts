@@ -5,17 +5,17 @@ const DEFAULT_OPTIMIZED_ARGUMENTS =
   "-c:v hevc_nvenc -preset p3 -tune hq -rc vbr -cq 24 -b:v 0 -spatial_aq 1 -temporal_aq 1 -aq-strength 8 -pix_fmt yuv420p -c:a aac -b:a 160k -movflags +faststart";
 
 export interface ExportPreset {
-  id: string;
-  name: string;
   argumentsText: string;
   description?: string;
+  id: string;
+  name: string;
 }
 
 interface ExportPresetState {
-  presets: ExportPreset[];
-  selectedPresetId: string | null;
   argumentsText: string;
   nextPresetSequence: number;
+  presets: ExportPreset[];
+  selectedPresetId: string | null;
 }
 
 const DEFAULT_NVENC_ARGUMENTS = (preset: number) =>

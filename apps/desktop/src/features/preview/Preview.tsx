@@ -21,30 +21,30 @@ export function Preview() {
         <VideoPreviewEmpty />
       ) : (
         <VideoPreview
-          preview={preview}
-          nativeLoopEnabled={playback.nativeLoopEnabled}
           muted={playback.videoMuted}
-          videoRef={playback.videoRef}
-          onPlaybackError={playback.onPreviewPlaybackError}
-          onLoadedMetadata={playback.onLoadedMetadata}
+          nativeLoopEnabled={playback.nativeLoopEnabled}
           onCanPlay={playback.onCanPlay}
-          onTogglePlayback={playback.toggle}
-          onPlay={playback.onPlay}
-          onPause={playback.onPause}
-          onTimeUpdate={playback.onTimeUpdate}
-          onEnded={playback.onEnded}
           onCropToolOpenChange={playback.onCropToolOpenChange}
+          onEnded={playback.onEnded}
+          onLoadedMetadata={playback.onLoadedMetadata}
+          onPause={playback.onPause}
+          onPlay={playback.onPlay}
+          onPlaybackError={playback.onPreviewPlaybackError}
+          onTimeUpdate={playback.onTimeUpdate}
+          onTogglePlayback={playback.toggle}
+          preview={preview}
+          videoRef={playback.videoRef}
         />
       )}
       {sourceSelection !== null && preview.status === "loading" ? (
         <div
-          className="absolute inset-0 z-30 grid place-items-center bg-background/75 backdrop-blur-sm"
-          role="status"
           aria-live="polite"
+          className="absolute inset-0 z-30 grid place-items-center bg-background/75 backdrop-blur-sm"
           data-testid="editor-loading-overlay"
+          role="status"
         >
           <div className="grid place-items-center gap-2 text-center text-sm text-muted-foreground">
-            <LoaderCircle className="size-7 animate-spin text-primary" aria-hidden="true" />
+            <LoaderCircle aria-hidden="true" className="size-7 animate-spin text-primary" />
             <strong className="text-foreground">
               {preview.kind === "proxy" ? t("preview.preparing") : t("preview.opening")}
             </strong>

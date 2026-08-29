@@ -5,19 +5,19 @@ import type { FrameRate } from "@/lib/tauri/media.types";
 
 interface PlaybackTimecodeProps {
   currentMicros: number | null;
-  sourceDurationMicros: number | null;
   frameRate?: FrameRate;
+  sourceDurationMicros: number | null;
 }
 
 export function PlaybackTimecode({
   currentMicros,
-  sourceDurationMicros,
   frameRate,
+  sourceDurationMicros,
 }: PlaybackTimecodeProps) {
   const { t } = useTranslation();
 
   return (
-    <output className="font-mono text-xs text-foreground" aria-label={t("preview.currentTime")}>
+    <output aria-label={t("preview.currentTime")} className="font-mono text-xs text-foreground">
       {currentMicros === null ? "00:00:00:00f" : formatPlaybackTime(currentMicros, frameRate)}
       <span className="text-muted-foreground">
         {" "}

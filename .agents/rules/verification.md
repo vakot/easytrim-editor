@@ -100,6 +100,11 @@ Do not run broad auto-fix or formatting commands when they would modify unrelate
 
 Verification commands should not create unnecessary diff noise.
 
+`pnpm lint:fix` applies the configured deterministic declaration and prop ordering rules where
+Perfectionist can safely fix them. `pnpm lint` enforces case-insensitive natural ascending order
+for interfaces, object types, JSX props, destructured object patterns, and named import/export
+members; semantically ordered object literals remain outside that automatic rule.
+
 ## Manual Verification
 
 When behavior cannot be meaningfully verified through automated checks alone, identify the relevant manual verification.

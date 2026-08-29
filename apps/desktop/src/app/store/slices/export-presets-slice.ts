@@ -60,10 +60,10 @@ const exportPresetsSlice = createSlice({
 
 export const {
   exportArgumentsChanged,
-  exportPresetSelected,
   exportPresetCreated,
-  exportPresetUpdated,
   exportPresetDeleted,
+  exportPresetSelected,
+  exportPresetUpdated,
 } = exportPresetsSlice.actions;
 export const exportPresetsReducer = exportPresetsSlice.reducer;
 

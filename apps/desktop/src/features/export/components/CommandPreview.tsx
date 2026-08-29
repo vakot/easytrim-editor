@@ -31,15 +31,15 @@ export function CommandPreview({ command, error }: CommandPreviewProps) {
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
               aria-label={t(
                 copied ? "export.dialog.copiedCommand" : "export.dialog.copyCommand",
                 copied ? "Copied to clipboard" : "Copy command",
               )}
               disabled={!command}
               onClick={() => void copyCommand()}
+              size="icon-sm"
+              type="button"
+              variant="ghost"
             >
               {copied ? <Check /> : <Copy />}
             </Button>
@@ -53,10 +53,10 @@ export function CommandPreview({ command, error }: CommandPreviewProps) {
         </Tooltip>
       </div>
       <div
+        aria-label={t("export.dialog.arguments")}
+        aria-readonly="true"
         className="max-h-40 min-h-28 overflow-auto rounded-lg border bg-muted/30 p-3 font-mono text-xs leading-relaxed break-words whitespace-pre-wrap text-muted-foreground"
         role="textbox"
-        aria-readonly="true"
-        aria-label={t("export.dialog.arguments")}
       >
         {(error ?? command) || t("export.dialog.commandPreparing", "Preparing command preview…")}
       </div>

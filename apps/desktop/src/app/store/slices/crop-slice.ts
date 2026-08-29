@@ -11,8 +11,8 @@ interface CropState {
 }
 
 interface CropResolution {
-  width: number;
   height: number;
+  width: number;
 }
 
 export const initialCropState: CropState = { value: FULL_CROP };

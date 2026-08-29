@@ -196,7 +196,7 @@ function captureActiveQueueItemDraft(
         trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
         crop: selectCrop(state),
         masterAudio: selectMasterAudio(state),
-        audioTracks: selectAudioTracks(state).map(({ streamIndex, enabled, volumePercent }) => ({
+        audioTracks: selectAudioTracks(state).map(({ enabled, streamIndex, volumePercent }) => ({
           streamIndex,
           enabled,
           volumePercent,

@@ -17,15 +17,15 @@ import { snapCropToGuides } from "../lib/crop-snapping.utils";
 const SNAP_REACH_PX = 12;
 
 interface DragState {
-  handle: CropHandle;
   crop: CropRect;
+  handle: CropHandle;
   startX: number;
   startY: number;
 }
 
 interface CropSelectionBounds {
-  width: number;
   height: number;
+  width: number;
 }
 
 export function useCropSelection(previewRef: RefObject<HTMLDivElement | null>) {

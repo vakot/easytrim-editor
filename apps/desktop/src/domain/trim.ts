@@ -1,29 +1,29 @@
 export type TrimBoundary = "start" | "end";
 
 export interface TrimRange {
-  startMicros: number;
   endMicros: number;
   sourceDurationMicros: number;
+  startMicros: number;
 }
 
 export type SegmentSnapPoint = TrimBoundary | "center";
 
 interface SegmentSnapResult {
-  range: TrimRange;
   point: SegmentSnapPoint | null;
+  range: TrimRange;
 }
 
 type DragDirection = -1 | 1;
 
 export interface DirectionalSnapLatch {
+  anchorHeld: boolean;
   direction: DragDirection | null;
   ignoredDirection: DragDirection | null;
-  anchorHeld: boolean;
 }
 
 interface DirectionalSnapState {
-  latch: DirectionalSnapLatch;
   anchorIgnored: boolean;
+  latch: DirectionalSnapLatch;
 }
 
 const MIN_SELECTION_MICROS = 1_000_000;
@@ -162,8 +162,8 @@ export function snapMovedTrimRangeToPlayhead(
 }
 
 interface PlayheadBoundaryFollow {
-  playheadMicros: number;
   boundary: TrimBoundary | null;
+  playheadMicros: number;
 }
 
 export function playheadAfterSegmentMove(

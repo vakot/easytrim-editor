@@ -1,15 +1,15 @@
 import type { CropRect } from "./crop-geometry.utils";
 
 export interface Bounds {
-  width: number;
   height: number;
+  width: number;
 }
 
 export interface CropFrame {
-  width: number;
   height: number;
   left: number;
   top: number;
+  width: number;
 }
 
 export function centerFrame(bounds: Bounds, size: Bounds): CropFrame {

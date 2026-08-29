@@ -24,12 +24,12 @@ import { normalizeAppError } from "@/lib/tauri/media.utils";
 import { performQueueFinishAction } from "@/lib/tauri/queue";
 
 interface RuntimeExportJob {
-  item: ExportQueueItem;
   canceled: boolean;
-  operationId: string | null;
-  startedAt: number | null;
   dispatch: AppDispatch;
   getState: () => RootState;
+  item: ExportQueueItem;
+  operationId: string | null;
+  startedAt: number | null;
 }
 
 const pendingJobs: RuntimeExportJob[] = [];

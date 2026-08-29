@@ -38,26 +38,26 @@ export function AudioPanel() {
 
   return (
     <AudioTracks
-      streams={media?.audioStreams ?? []}
-      tracks={audioTracks}
       masterEnabled={masterAudio.enabled}
       masterVolumePercent={masterAudio.volumePercent}
-      range={trim ?? EMPTY_TIMELINE_RANGE}
-      playheadMicros={timeline.playheadMicros}
-      playheadRef={playback.audioPlayheadRef}
       mergeAudio={mergeAudio}
-      waveformPreparationEnabled={playback.isReady}
+      onMasterVolumeChange={(volumePercent) => dispatch(masterVolumeChanged({ volumePercent }))}
+      onPrepareWaveforms={(streamIndexes, width) =>
+        sourcePath && void dispatch(prepareSourceWaveforms(sourcePath, streamIndexes, width))
+      }
+      onToggleMaster={() => dispatch(masterAudioToggled())}
+      onToggleMerge={() => dispatch(audioMergeToggled())}
       onToggleTrack={(streamIndex) => dispatch(audioTrackToggled({ streamIndex }))}
       onTrackVolumeChange={(streamIndex, volumePercent) =>
         dispatch(audioTrackVolumeChanged({ streamIndex, volumePercent }))
       }
-      onToggleMaster={() => dispatch(masterAudioToggled())}
-      onMasterVolumeChange={(volumePercent) => dispatch(masterVolumeChanged({ volumePercent }))}
-      onToggleMerge={() => dispatch(audioMergeToggled())}
-      onPrepareWaveforms={(streamIndexes, width) =>
-        sourcePath && void dispatch(prepareSourceWaveforms(sourcePath, streamIndexes, width))
-      }
       onWaveformImageError={(streamIndex) => dispatch(waveformDisplayFailed({ streamIndex }))}
+      playheadMicros={timeline.playheadMicros}
+      playheadRef={playback.audioPlayheadRef}
+      range={trim ?? EMPTY_TIMELINE_RANGE}
+      streams={media?.audioStreams ?? []}
+      tracks={audioTracks}
+      waveformPreparationEnabled={playback.isReady}
     />
   );
 }

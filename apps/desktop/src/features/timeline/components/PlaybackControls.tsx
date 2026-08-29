@@ -15,82 +15,82 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import type { TrimBoundary } from "@/domain/trim";
 
 interface PlaybackControlsProps {
-  isPlaying: boolean;
-  error: string | null;
-  canSetSegmentStart: boolean;
   canSetSegmentEnd: boolean;
+  canSetSegmentStart: boolean;
   disabled?: boolean;
-  onTogglePlayback: () => void;
-  onStepFrame: (direction: -1 | 1) => void;
+  error: string | null;
+  isPlaying: boolean;
   onSetSegmentBoundary: (boundary: TrimBoundary) => void;
+  onStepFrame: (direction: -1 | 1) => void;
+  onTogglePlayback: () => void;
 }
 
 export function PlaybackControls({
-  isPlaying,
-  error,
-  canSetSegmentStart,
   canSetSegmentEnd,
+  canSetSegmentStart,
   disabled = false,
-  onTogglePlayback,
-  onStepFrame,
+  error,
+  isPlaying,
   onSetSegmentBoundary,
+  onStepFrame,
+  onTogglePlayback,
 }: PlaybackControlsProps) {
   const { t } = useTranslation();
 
   return (
-    <div className="relative flex items-center justify-center" aria-label={t("preview.controls")}>
+    <div aria-label={t("preview.controls")} className="relative flex items-center justify-center">
       <div className="flex items-center gap-1.5">
         <TransportButton
+          disabled={disabled || !canSetSegmentStart}
           label={t("preview.setStart")}
+          onClick={() => onSetSegmentBoundary("start")}
           shortcut="I"
           title={
             canSetSegmentStart ? t("preview.setStartShortcut") : t("preview.setStartUnavailable")
           }
-          disabled={disabled || !canSetSegmentStart}
-          onClick={() => onSetSegmentBoundary("start")}
         >
           <SquareArrowRight />
         </TransportButton>
         <TransportButton
+          disabled={disabled}
           label={t("preview.previousFrame")}
+          onClick={() => onStepFrame(-1)}
           shortcut="ArrowLeft"
           title={t("preview.previousFrameShortcut")}
-          disabled={disabled}
-          onClick={() => onStepFrame(-1)}
         >
           <SkipBack />
         </TransportButton>
         <TransportButton
+          disabled={disabled}
           label={isPlaying ? t("preview.pause") : t("preview.play")}
+          onClick={onTogglePlayback}
+          primary
           shortcut="Space"
           title={isPlaying ? t("preview.pauseShortcut") : t("preview.playShortcut")}
-          primary
-          disabled={disabled}
-          onClick={onTogglePlayback}
         >
           {isPlaying ? <Pause /> : <Play />}
         </TransportButton>
         <TransportButton
+          disabled={disabled}
           label={t("preview.nextFrame")}
+          onClick={() => onStepFrame(1)}
           shortcut="ArrowRight"
           title={t("preview.nextFrameShortcut")}
-          disabled={disabled}
-          onClick={() => onStepFrame(1)}
         >
           <SkipForward />
         </TransportButton>
         <TransportButton
+          disabled={disabled || !canSetSegmentEnd}
           label={t("preview.setEnd")}
+          onClick={() => onSetSegmentBoundary("end")}
           shortcut="O"
           title={canSetSegmentEnd ? t("preview.setEndShortcut") : t("preview.setEndUnavailable")}
-          disabled={disabled || !canSetSegmentEnd}
-          onClick={() => onSetSegmentBoundary("end")}
         >
           <SquareArrowLeft />
         </TransportButton>
       </div>
       {error ? (
-        <Alert variant="destructive" className="absolute top-full z-10 mt-2 w-72">
+        <Alert className="absolute top-full z-10 mt-2 w-72" variant="destructive">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       ) : null}
@@ -99,35 +99,35 @@ export function PlaybackControls({
 }
 
 function TransportButton({
+  children,
+  disabled,
   label,
+  onClick,
+  primary = false,
   shortcut,
   title,
-  primary = false,
-  disabled,
-  onClick,
-  children,
 }: {
+  children: React.ReactNode;
+  disabled?: boolean;
   label: string;
+  onClick: () => void;
+  primary?: boolean;
   shortcut: string;
   title: string;
-  primary?: boolean;
-  disabled?: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
 }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <Button
-          variant={primary ? "default" : "ghost"}
-          size={primary ? "icon-lg" : "icon-sm"}
-          type="button"
-          data-editor-shortcut="true"
-          aria-label={label}
           aria-keyshortcuts={shortcut}
+          aria-label={label}
+          className={primary ? "rounded-full" : undefined}
+          data-editor-shortcut="true"
           disabled={disabled}
           onClick={onClick}
-          className={primary ? "rounded-full" : undefined}
+          size={primary ? "icon-lg" : "icon-sm"}
+          type="button"
+          variant={primary ? "default" : "ghost"}
         >
           {children}
         </Button>

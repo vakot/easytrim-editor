@@ -6,12 +6,12 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import type { AudioTrackState } from "@/app/store/slices/audio-slice";
 
 interface WaveformContentProps {
-  track: AudioTrackState;
-  onRetry: () => void;
   onImageError: () => void;
+  onRetry: () => void;
+  track: AudioTrackState;
 }
 
-export function WaveformContent({ track, onRetry, onImageError }: WaveformContentProps) {
+export function WaveformContent({ onImageError, onRetry, track }: WaveformContentProps) {
   const { t } = useTranslation();
 
   switch (track.waveform.status) {
@@ -28,12 +28,12 @@ export function WaveformContent({ track, onRetry, onImageError }: WaveformConten
     case "ready":
       return (
         <img
-          className="waveform-image absolute inset-0 size-full object-fill"
-          src={track.waveform.url}
           alt=""
           aria-hidden="true"
+          className="waveform-image absolute inset-0 size-full object-fill"
           draggable={false}
           onError={onImageError}
+          src={track.waveform.url}
         />
       );
     case "failed":
@@ -45,7 +45,7 @@ export function WaveformContent({ track, onRetry, onImageError }: WaveformConten
             </TooltipTrigger>
             <TooltipContent>{track.waveform.error.message}</TooltipContent>
           </Tooltip>
-          <Button variant="ghost" size="xs" type="button" onClick={onRetry}>
+          <Button onClick={onRetry} size="xs" type="button" variant="ghost">
             {t("common.retry")}
           </Button>
         </div>

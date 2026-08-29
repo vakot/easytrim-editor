@@ -13,9 +13,9 @@ import {
 import type { RootState } from "../store";
 
 interface ThemeState {
+  customPrimaryColor: CustomPrimaryColor;
   preference: ThemePreference;
   primaryColor: PrimaryColor;
-  customPrimaryColor: CustomPrimaryColor;
 }
 
 const createInitialState = (): ThemeState => ({
@@ -44,7 +44,7 @@ const themeSlice = createSlice({
   },
 });
 
-export const { themePreferenceChanged, primaryColorChanged, customPrimaryColorChanged } =
+export const { customPrimaryColorChanged, primaryColorChanged, themePreferenceChanged } =
   themeSlice.actions;
 export const themeReducer = themeSlice.reducer;
 

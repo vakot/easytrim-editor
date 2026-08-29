@@ -25,10 +25,10 @@ function UpdateProbe() {
     <div>
       <span data-testid="status">{updates.status}</span>
       <span data-testid="version">{updates.availableVersion ?? ""}</span>
-      <button type="button" onClick={() => void updates.checkForUpdates()}>
+      <button onClick={() => void updates.checkForUpdates()} type="button">
         Check
       </button>
-      <button type="button" onClick={() => void updates.installUpdate()}>
+      <button onClick={() => void updates.installUpdate()} type="button">
         Install
       </button>
     </div>
