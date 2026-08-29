@@ -18,7 +18,7 @@ import { selectTriggerVariants } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 
-import { type ExportPreset, presetNameError } from "@/app/store/export-presets";
+import { type ExportPreset, presetNameError } from "@/app/store/lib/export-presets";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
   exportArgumentsChanged,

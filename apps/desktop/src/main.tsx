@@ -5,7 +5,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 
 import { AppErrorBoundary } from "./app/components/AppErrorBoundary";
-import { startSourceMediaRuntime } from "./app/store/source-media-runtime";
+import { startSourceMediaRuntime } from "./app/store/integration/source-media-runtime";
 import { store } from "./app/store/store";
 import { App } from "./App";
 

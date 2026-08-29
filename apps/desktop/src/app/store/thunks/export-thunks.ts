@@ -1,14 +1,14 @@
 import { sourceFailed } from "@/app/store/actions/source-actions";
-import { applyEditorSnapshot } from "@/app/store/editor-snapshot";
-import { outputDefaults } from "@/app/store/export-defaults.utils";
+import { applyEditorSnapshot } from "@/app/store/integration/editor-snapshot";
 import {
   cancelActiveExport,
   cancelAllQueuedExports,
   cancelQueuedExport,
   enqueueExport,
   setExportQueueExecutionEnabled,
-} from "@/app/store/export-queue-runtime";
-import { getReplacementImportedItem } from "@/app/store/imported-queue";
+} from "@/app/store/integration/export-queue-runtime";
+import { outputDefaults } from "@/app/store/lib/export-defaults";
+import { getReplacementImportedItem } from "@/app/store/lib/imported-queue";
 import {
   selectAudioTracks,
   selectMasterAudio,

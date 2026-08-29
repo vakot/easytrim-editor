@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { startSourceMediaRuntime } from "@/app/store/integration/source-media-runtime";
 import { selectimportQueueItems } from "@/app/store/slices/export-slice";
 import { selectIsSourceDragActive } from "@/app/store/slices/import-workflow-slice";
 import { selectSourceError, selectSourceMedia } from "@/app/store/slices/source-slice";
-import { startSourceMediaRuntime } from "@/app/store/source-media-runtime";
 import { createAppStore } from "@/app/store/store";
 import type { SourceRef } from "@/domain/source";
 import type { MediaInfo, SourceDropEvent } from "@/lib/tauri/media.types";

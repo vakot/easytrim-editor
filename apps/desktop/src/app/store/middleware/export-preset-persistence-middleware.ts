@@ -1,6 +1,6 @@
 import type { Middleware } from "@reduxjs/toolkit";
 
-import { persistExportPresetState } from "@/app/store/export-presets";
+import { persistExportPresetState } from "@/app/store/lib/export-presets";
 
 import type { RootState } from "../store";
 

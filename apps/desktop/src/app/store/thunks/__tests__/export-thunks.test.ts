@@ -43,7 +43,7 @@ vi.mock("@/app/store/thunks/source-media-thunks", () => ({
 }));
 
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
-import { resetExportQueueRuntimeForTests } from "@/app/store/export-queue-runtime";
+import { resetExportQueueRuntimeForTests } from "@/app/store/integration/export-queue-runtime";
 import {
   activeQueueItemChanged,
   type ExportQueueItem,

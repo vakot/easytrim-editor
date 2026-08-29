@@ -6,8 +6,11 @@ import {
   sourceReady,
   sourceSelected,
 } from "@/app/store/actions/source-actions";
-import { applyEditorSnapshot, createDefaultEditorSnapshot } from "@/app/store/editor-snapshot";
-import { getReplacementImportedItem } from "@/app/store/imported-queue";
+import {
+  applyEditorSnapshot,
+  createDefaultEditorSnapshot,
+} from "@/app/store/integration/editor-snapshot";
+import { getReplacementImportedItem } from "@/app/store/lib/imported-queue";
 import {
   audioPreviewsLoading,
   audioPreviewsReady,

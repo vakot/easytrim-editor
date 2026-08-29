@@ -4,13 +4,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DEFAULT_PREFERENCES } from "../app/preferences";
 import { sourceCleared } from "../app/store/actions/source-actions";
+import { startSourceMediaRuntime } from "../app/store/integration/source-media-runtime";
 import {
   createEditorToolsStateFromPreferences,
   editorToolsInitialized,
 } from "../app/store/slices/editor-tools-slice";
 import { importQueueItemRemoved, selectimportQueueItems } from "../app/store/slices/export-slice";
 import { selectHasSource } from "../app/store/slices/source-slice";
-import { startSourceMediaRuntime } from "../app/store/source-media-runtime";
 import { store } from "../app/store/store";
 import { checkMediaCapabilitiesRequested } from "../app/store/thunks/source-media-thunks";
 import type { SourceRef } from "../domain/source";
