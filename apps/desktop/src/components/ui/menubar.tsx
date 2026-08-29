@@ -76,7 +76,6 @@ interface MenubarItemProps extends React.ComponentProps<typeof MenubarPrimitive.
   icon?: React.ReactNode;
   inset?: boolean;
   selected?: boolean;
-  suffix?: React.ReactNode;
   tooltip?: React.ReactNode;
   tooltipProps?: React.ComponentProps<typeof TooltipContent> &
     Pick<React.ComponentProps<typeof Tooltip>, "preserveOnTrigger">;
@@ -91,7 +90,6 @@ function MenubarItem({
   icon,
   inset,
   selected = false,
-  suffix,
   tooltip,
   tooltipProps: { preserveOnTrigger, ...tooltipProps } = {},
   variant = "default",
@@ -111,9 +109,7 @@ function MenubarItem({
       disabled={disabled}
       {...props}
     >
-      <MenubarItemLayout icon={icon} suffix={suffix}>
-        {children}
-      </MenubarItemLayout>
+      <MenubarItemLayout icon={icon}>{children}</MenubarItemLayout>
     </MenubarPrimitive.Item>
   );
 
@@ -131,10 +127,9 @@ interface MenubarItemLayoutProps {
   children: React.ReactNode;
   icon?: React.ReactNode;
   submenu?: boolean;
-  suffix?: React.ReactNode;
 }
 
-function MenubarItemLayout({ children, icon, submenu = false, suffix }: MenubarItemLayoutProps) {
+function MenubarItemLayout({ children, icon, submenu = false }: MenubarItemLayoutProps) {
   return (
     <>
       <span
@@ -143,17 +138,9 @@ function MenubarItemLayout({ children, icon, submenu = false, suffix }: MenubarI
       >
         {icon}
       </span>
-      <span className="min-w-0 flex-1 truncate" data-slot="menubar-name">
+      <span className="flex min-w-0 flex-1 items-center truncate" data-slot="menubar-name">
         {children}
       </span>
-      {suffix !== undefined ? (
-        <span
-          className="flex shrink-0 items-center justify-end text-xs text-muted-foreground"
-          data-slot="menubar-suffix"
-        >
-          {suffix}
-        </span>
-      ) : null}
       <span
         className="flex size-3 shrink-0 items-center justify-center"
         data-slot="menubar-chevron"
@@ -273,7 +260,6 @@ interface MenubarSubTriggerProps extends React.ComponentProps<typeof MenubarPrim
   icon?: React.ReactNode;
   inset?: boolean;
   selected?: boolean;
-  suffix?: React.ReactNode;
 }
 
 function MenubarSubTrigger({
@@ -284,7 +270,6 @@ function MenubarSubTrigger({
   icon,
   inset,
   selected = false,
-  suffix,
   ...props
 }: MenubarSubTriggerProps) {
   return (
@@ -300,7 +285,7 @@ function MenubarSubTrigger({
       disabled={disabled}
       {...props}
     >
-      <MenubarItemLayout icon={icon} submenu suffix={suffix}>
+      <MenubarItemLayout icon={icon} submenu>
         {children}
       </MenubarItemLayout>
     </MenubarPrimitive.SubTrigger>

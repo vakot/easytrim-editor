@@ -10,6 +10,7 @@ import {
   MenubarGroup,
   MenubarItem,
   MenubarMenu,
+  MenubarShortcut,
   MenubarSub,
   MenubarSubContent,
   MenubarSubTrigger,
@@ -140,11 +141,11 @@ export function MenuBarView({ onClose }: MenuBarViewProps) {
                       dispatch(primaryColorChanged(color));
                     }}
                     selected={color === primaryColorKey}
-                    suffix={
-                      <span className="font-mono">{resolvePrimaryColor(color).toUpperCase()}</span>
-                    }
                   >
                     {colorLabels[color]}
+                    <MenubarShortcut>
+                      <span className="font-mono">{resolvePrimaryColor(color).toUpperCase()}</span>
+                    </MenubarShortcut>
                   </MenubarItem>
                 ))}
                 <MenubarSub>
@@ -160,9 +161,11 @@ export function MenuBarView({ onClose }: MenuBarViewProps) {
                       dispatch(primaryColorChanged(customPrimaryColor));
                     }}
                     selected={primaryColorKey === CUSTOM_PRIMARY_COLOR}
-                    suffix={<span className="font-mono">{displayedCustomColor.toUpperCase()}</span>}
                   >
                     {t("settings.options.colors.custom")}
+                    <MenubarShortcut>
+                      <span className="font-mono">{displayedCustomColor.toUpperCase()}</span>
+                    </MenubarShortcut>
                   </MenubarSubTrigger>
                   <MenubarSubContent>
                     <CustomColorPickerPanel

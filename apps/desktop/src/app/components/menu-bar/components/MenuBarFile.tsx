@@ -7,6 +7,7 @@ import {
   MenubarItem,
   MenubarMenu,
   MenubarSeparator,
+  MenubarShortcut,
   MenubarTrigger,
 } from "@/components/ui/menubar";
 
@@ -46,33 +47,30 @@ export function MenuBarFile() {
           <MenubarItem
             disabled={isChoosingSource}
             onSelect={() => void dispatch(chooseSourceRequested())}
-            suffix="Ctrl+O"
           >
             {t("app.actions.openFile")}
+            <MenubarShortcut>Ctrl+O</MenubarShortcut>
           </MenubarItem>
           <MenubarItem
             disabled={!hasSource}
             onSelect={() => void dispatch(closeActiveImportedItemRequested())}
-            suffix="Ctrl+Q"
           >
             {t("app.actions.closeFile")}
+            <MenubarShortcut>Ctrl+Q</MenubarShortcut>
           </MenubarItem>
         </MenubarGroup>
         <MenubarSeparator />
         <MenubarGroup>
-          <MenubarItem
-            disabled={!canSave}
-            onSelect={() => void dispatch(startFastCutRequested())}
-            suffix="Ctrl+S"
-          >
+          <MenubarItem disabled={!canSave} onSelect={() => void dispatch(startFastCutRequested())}>
             {t("export.actions.fast")}
+            <MenubarShortcut>Ctrl+S</MenubarShortcut>
           </MenubarItem>
           <MenubarItem
             disabled={!canExport}
             onSelect={() => void dispatch(openOptimizedExportDialog())}
-            suffix="Ctrl+E"
           >
             {t("export.actions.optimized")}
+            <MenubarShortcut>Ctrl+E</MenubarShortcut>
           </MenubarItem>
         </MenubarGroup>
       </MenubarContent>

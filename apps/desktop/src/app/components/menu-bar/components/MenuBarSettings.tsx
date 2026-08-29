@@ -17,6 +17,7 @@ import {
   MenubarItem,
   MenubarMenu,
   MenubarSeparator,
+  MenubarShortcut,
   MenubarSub,
   MenubarSubContent,
   MenubarSubTrigger,
@@ -67,11 +68,13 @@ function PreferenceMenuItem({ children, icon, preferenceKey }: PreferenceMenuIte
         event.preventDefault();
         dispatch(preferenceChanged({ key: preferenceKey, enabled: !isEnabled }));
       }}
-      suffix={<Switch checked={isEnabled} size="sm" />}
       tooltip={tooltip}
       tooltipProps={{ side: "right", preserveOnTrigger: true }}
     >
       {children}
+      <MenubarShortcut className="tracking-normal">
+        <Switch checked={isEnabled} size="sm" />
+      </MenubarShortcut>
     </MenubarItem>
   );
 }
@@ -155,11 +158,9 @@ export function MenuBarSettings() {
         <MenubarSeparator />
         <MenubarGroup>
           <MenubarSub>
-            <MenubarSubTrigger
-              icon={<Languages aria-hidden="true" className="size-3" />}
-              suffix={currentLanguage.toUpperCase()}
-            >
+            <MenubarSubTrigger icon={<Languages aria-hidden="true" className="size-3" />}>
               {t("settings.labels.language")}
+              <MenubarShortcut>{currentLanguage.toUpperCase()}</MenubarShortcut>
             </MenubarSubTrigger>
             <MenubarSubContent>
               <MenubarGroup>
@@ -168,9 +169,9 @@ export function MenuBarSettings() {
                     key={language}
                     onSelect={() => void i18n.changeLanguage(language as SupportedLanguage)}
                     selected={language === currentLanguage}
-                    suffix={language.toUpperCase()}
                   >
                     {languageLabels[language]}
+                    <MenubarShortcut>{language.toUpperCase()}</MenubarShortcut>
                   </MenubarItem>
                 ))}
               </MenubarGroup>

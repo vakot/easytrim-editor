@@ -17,6 +17,7 @@ import {
   MenubarItem,
   MenubarMenu,
   MenubarSeparator,
+  MenubarShortcut,
   MenubarSub,
   MenubarSubContent,
   MenubarSubTrigger,
@@ -81,9 +82,9 @@ export function MenuBarQueue() {
               aria-keyshortcuts="Enter"
               disabled={!hasQueuedItems || queueStarted}
               onSelect={() => void dispatch(startExportQueue())}
-              suffix="Enter"
             >
               {t("queue.actions.start")}
+              <MenubarShortcut>Enter</MenubarShortcut>
             </MenubarItem>
           </MenubarGroup>
           <MenubarSeparator />
