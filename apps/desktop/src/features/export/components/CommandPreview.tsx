@@ -55,7 +55,7 @@ export function CommandPreview({ command, error }: CommandPreviewProps) {
       <div
         aria-label={t("export.dialog.arguments")}
         aria-readonly="true"
-        className="max-h-40 min-h-28 overflow-auto rounded-lg border bg-muted/30 p-3 font-mono text-xs leading-relaxed break-words whitespace-pre-wrap text-muted-foreground"
+        className="max-h-40 min-h-28 overflow-auto rounded-lg border bg-muted/30 p-3 font-mono text-xs leading-relaxed wrap-break-word whitespace-pre-wrap text-muted-foreground"
         role="textbox"
       >
         {(error ?? command) || t("export.dialog.commandPreparing", "Preparing command preview…")}

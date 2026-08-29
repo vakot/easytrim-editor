@@ -106,7 +106,7 @@ export function TrimTimeline({
       />
       <TimelineScale disabled={disabled} frameRate={frameRate} range={range} />
       <div
-        className="grid min-w-0 grid-cols-[var(--editor-track-grid-columns)] items-center gap-3"
+        className="grid min-w-0 grid-cols-(--editor-track-grid-columns) items-center gap-3"
         data-slot="timeline-row"
       >
         <div
@@ -222,7 +222,7 @@ function TimelineHeader({
         {playbackTimecode}
       </div>
       <div className="justify-self-center">{playbackControls}</div>
-      <dl aria-label={t("timeline.trimValues")} className="m-0 flex justify-self-end gap-5">
+      <dl aria-label={t("timeline.trimValues")} className="m-0 flex gap-5 justify-self-end">
         <TimelineTimeValue
           frameRate={frameRate}
           label={t("timeline.start")}
@@ -252,7 +252,7 @@ function TimelineScale({
   return (
     <div
       aria-hidden="true"
-      className="mt-3 mb-1 grid min-w-0 grid-cols-[var(--editor-track-grid-columns)] items-end gap-3"
+      className="mt-3 mb-1 grid min-w-0 grid-cols-(--editor-track-grid-columns) items-end gap-3"
     >
       <span
         className="text-[0.625rem] font-bold tracking-[0.08em] text-muted-foreground uppercase"

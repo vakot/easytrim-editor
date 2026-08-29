@@ -21,7 +21,7 @@ export function CropSnapMarkers({ frame }: CropSnapMarkersProps) {
           style={{ left: frame.left + frame.width * point, top: frame.top - 12 }}
         >
           <span
-            className="absolute bottom-full left-1/2 -translate-x-1/2 whitespace-nowrap pb-0.5 text-[0.625rem] leading-none text-muted-foreground"
+            className="absolute bottom-full left-1/2 -translate-x-1/2 pb-0.5 text-[0.625rem] leading-none whitespace-nowrap text-muted-foreground"
             data-crop-snap-label="top"
           >
             {formatPercent(point)}
@@ -36,7 +36,7 @@ export function CropSnapMarkers({ frame }: CropSnapMarkersProps) {
           style={{ left: frame.left - 12, top: frame.top + frame.height * point }}
         >
           <span
-            className="absolute right-full top-1/2 -translate-y-1/2 rotate-180 text whitespace-nowrap pl-0.75 text-[0.625rem] leading-none text-muted-foreground"
+            className="text absolute top-1/2 right-full -translate-y-1/2 rotate-180 pl-0.75 text-[0.625rem] leading-none whitespace-nowrap text-muted-foreground"
             data-crop-snap-label="left"
             style={{ writingMode: "vertical-lr" }}
           >

@@ -115,7 +115,7 @@ function EasyTrimEditorApp() {
 
   return (
     <TooltipProvider>
-      <main className="fixed inset-0 grid h-dvh w-screen min-w-80 overflow-hidden bg-background grid-rows-[2.25rem_minmax(0,1fr)_auto]">
+      <main className="fixed inset-0 grid h-dvh w-screen min-w-80 grid-rows-[2.25rem_minmax(0,1fr)_auto] overflow-hidden bg-background">
         <CustomTitleBar
           menuControls={<ContextMenus />}
           panelControls={<PanelVisibilityControls />}

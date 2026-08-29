@@ -5,6 +5,7 @@ import perfectionist from "eslint-plugin-perfectionist";
 import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
 import simpleImportSort from "eslint-plugin-simple-import-sort";
+import tailwindcss from "eslint-plugin-tailwindcss";
 import globals from "globals";
 import tseslint from "typescript-eslint";
 
@@ -206,6 +207,27 @@ export default defineConfig(
       "@typescript-eslint/no-import-type-side-effects": "error",
       ...reactHooks.configs.flat.recommended.rules,
       ...reactRefresh.configs.vite.rules,
+    },
+  },
+  {
+    files: ["apps/desktop/src/**/*.{ts,tsx}"],
+    plugins: {
+      tailwindcss,
+    },
+    settings: {
+      tailwindcss: {
+        cssConfigPath: "src/styles/globals.css",
+        functions: ["cn", "cva", "clsx", "twMerge"],
+        parseKeyFunctions: ["clsx"],
+      },
+    },
+    rules: {
+      "tailwindcss/enforces-canonical-classname": "error",
+      "tailwindcss/enforces-negative-arbitrary-values": "error",
+      "tailwindcss/enforces-shorthand": "error",
+      "tailwindcss/important-modifier-suffix": "error",
+      "tailwindcss/no-contradicting-classname": "error",
+      "tailwindcss/no-unnecessary-arbitrary-value": "error",
     },
   },
   {

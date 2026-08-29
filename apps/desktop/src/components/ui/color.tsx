@@ -125,7 +125,7 @@ function SpectrumWheel({
   return (
     <button
       className={cn(
-        "relative block size-48 touch-none cursor-crosshair rounded-full outline-none ring-1 ring-foreground/10 focus-visible:ring-2 focus-visible:ring-ring",
+        "relative block size-48 cursor-crosshair touch-none rounded-full ring-1 ring-foreground/10 outline-none focus-visible:ring-2 focus-visible:ring-ring",
         className,
       )}
       data-slot="spectrum-wheel"
@@ -160,7 +160,7 @@ function SpectrumWheel({
     >
       <span
         aria-hidden="true"
-        className="absolute size-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-md"
+        className="absolute size-4 -translate-1/2 rounded-full border-2 border-white shadow-md"
         data-slot="spectrum-wheel-marker"
         style={getColorMarkerStyle(color)}
       />

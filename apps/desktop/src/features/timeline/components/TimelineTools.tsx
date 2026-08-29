@@ -35,7 +35,7 @@ const PLAYBACK_SPEED_MARKERS = [0.5, 1, 1.5, 2, 3].map((speed) => ({
 export function TimelineTools() {
   return (
     <>
-      <div className="grid grid-flow-col auto-cols-7 grid-rows-[repeat(2,1.75rem)] gap-1">
+      <div className="grid auto-cols-7 grid-flow-col grid-rows-[repeat(2,1.75rem)] gap-1">
         <SnapPlaybackTool />
         <LoopPlaybackTool />
         <SegmentPlaybackTool />

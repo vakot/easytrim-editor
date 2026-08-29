@@ -187,6 +187,25 @@ would exceed the scope of the architecture cleanup. A static review of feature a
 imports found no current cross-feature cycle; new boundaries should continue to preserve the
 documented dependency direction.
 
+### Tailwind CSS
+
+Tailwind CSS v4 classes are validated in the desktop source by
+`eslint-plugin-tailwindcss`. ESLint rejects contradicting utilities, non-canonical utility
+spellings, non-canonical negative arbitrary values, replaceable utility combinations, prefix-form
+important modifiers, and arbitrary values that duplicate an existing theme utility. Arbitrary
+values remain valid when they represent a genuine custom value; `no-arbitrary-value` is not
+enabled.
+
+Class ordering belongs exclusively to `prettier-plugin-tailwindcss`, configured through the
+repository Prettier settings and the desktop `globals.css` stylesheet. ESLint's
+`classnames-order` rule is intentionally not enabled, so ESLint and Prettier do not rewrite the
+same class lists. `pnpm lint:fix` runs the existing ESLint fixer followed by Prettier, while
+`pnpm format` and `pnpm format:check` remain the formatting-only workflows. The Tailwind parser
+recognizes the repository's `cn`, `cva`, `clsx`, and
+`twMerge` composition calls. `no-custom-classname` remains disabled because the application
+intentionally uses CSS-module selectors, runtime/DOM hook classes, and other non-Tailwind names
+that cannot be whitelisted accurately without masking real findings.
+
 ## Data and State
 
 Keep state ownership clear.

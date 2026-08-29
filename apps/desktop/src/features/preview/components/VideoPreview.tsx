@@ -85,7 +85,7 @@ export function VideoPreview({
           {preview.error.diagnostics ? (
             <details className="mt-2">
               <summary>{t("import.source.technicalDetails")}</summary>
-              <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap text-xs">
+              <pre className="mt-2 max-h-48 overflow-auto text-xs whitespace-pre-wrap">
                 {preview.error.diagnostics}
               </pre>
             </details>
@@ -138,7 +138,7 @@ export function VideoPreview({
                 {t("preview.proxyBadge")}
               </Badge>
             </TooltipTrigger>
-            <TooltipContent className="max-w-[18rem] whitespace-normal text-center" sideOffset={6}>
+            <TooltipContent className="max-w-2xs text-center whitespace-normal" sideOffset={6}>
               {t("preview.proxyBadgeDescription")}
             </TooltipContent>
           </Tooltip>

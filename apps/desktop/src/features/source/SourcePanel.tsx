@@ -126,7 +126,7 @@ export function SourcePanel() {
             <ResizablePanelControl panelId="workspace-sidebar-source-details">
               {({ isCollapsed }) => (
                 <Button
-                  className="justify-baseline px-2 w-full text-foreground/80"
+                  className="w-full justify-baseline px-2 text-foreground/80"
                   size="xs"
                   variant="ghost"
                 >
@@ -146,7 +146,7 @@ export function SourcePanel() {
 
         {panels["workspace-sidebar-import-queue"] && (
           <>
-            <ResizableHandle className="px-2 bg-transparent" style={{ height: 4 }}>
+            <ResizableHandle className="bg-transparent px-2" style={{ height: 4 }}>
               <Separator />
             </ResizableHandle>
 
@@ -160,7 +160,7 @@ export function SourcePanel() {
               <ResizablePanelControl panelId="workspace-sidebar-import-queue">
                 {({ isCollapsed }) => (
                   <Button
-                    className="justify-baseline px-2 w-full text-foreground/80"
+                    className="w-full justify-baseline px-2 text-foreground/80"
                     size="xs"
                     variant="ghost"
                   >
@@ -181,7 +181,7 @@ export function SourcePanel() {
 
         {panels["workspace-sidebar-export-queue"] && (
           <>
-            <ResizableHandle className="px-2 bg-transparent" style={{ height: 4 }}>
+            <ResizableHandle className="bg-transparent px-2" style={{ height: 4 }}>
               <Separator />
             </ResizableHandle>
 
@@ -195,7 +195,7 @@ export function SourcePanel() {
               <ResizablePanelControl panelId="workspace-sidebar-export-queue">
                 {({ isCollapsed }) => (
                   <Button
-                    className="justify-baseline px-2 w-full text-foreground/80"
+                    className="w-full justify-baseline px-2 text-foreground/80"
                     size="xs"
                     variant="ghost"
                   >

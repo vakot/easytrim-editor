@@ -22,7 +22,7 @@ const switchVariants = cva(
 );
 
 const thumbVariants: typeof switchVariants = cva(
-  "pointer-events-none block  translate-x-0.5 rounded-full bg-background shadow-sm ring-0 transition-transform",
+  "pointer-events-none block translate-x-0.5 rounded-full bg-background shadow-sm ring-0 transition-transform",
   {
     variants: {
       size: {

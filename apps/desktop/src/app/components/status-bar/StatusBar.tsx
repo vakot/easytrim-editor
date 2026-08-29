@@ -52,7 +52,7 @@ export function StatusBar() {
                 {activeExportPath?.filename ?? activeExport.filename}
               </span>
             </span>
-            <Separator className="h-4 mt-1 self-center" orientation="vertical" />
+            <Separator className="mt-1 h-4 self-center" orientation="vertical" />
             <div className="flex shrink-0 items-center gap-2">
               <div
                 aria-label={t("statusBar.exportProgress")}
@@ -69,24 +69,24 @@ export function StatusBar() {
               </div>
               <span className="w-10 text-right tabular-nums">{progressPercent}%</span>
             </div>
-            <Separator className="h-4 mt-1 self-center" orientation="vertical" />
+            <Separator className="mt-1 h-4 self-center" orientation="vertical" />
             <StatusMetricTooltip label={t("statusBar.frames")}>
               {activeExport.currentFrame ?? 0}f / {activeExport.totalFrames ?? 0}f
             </StatusMetricTooltip>
-            <Separator className="h-4 mt-1 self-center" orientation="vertical" />
+            <Separator className="mt-1 h-4 self-center" orientation="vertical" />
             <StatusMetricTooltip label={t("statusBar.fps")}>
               {Math.round(activeExport.fps ?? 0)} FPS
             </StatusMetricTooltip>
-            <Separator className="h-4 mt-1 self-center" orientation="vertical" />
+            <Separator className="mt-1 h-4 self-center" orientation="vertical" />
             <StatusMetricTooltip label={t("statusBar.bitrate")}>
               {activeExport.bitrate ?? "0 kbits/s"}
             </StatusMetricTooltip>
-            <Separator className="h-4 mt-1 self-center" orientation="vertical" />
+            <Separator className="mt-1 h-4 self-center" orientation="vertical" />
             <StatusMetricTooltip label={t("statusBar.estimateSize")}>
               {formatStatusFileSize(activeExport.fileSizeBytes)} /{" "}
               {formatStatusFileSize(activeExport.estimatedFileSizeBytes)}
             </StatusMetricTooltip>
-            <Separator className="h-4 mt-1 self-center" orientation="vertical" />
+            <Separator className="mt-1 h-4 self-center" orientation="vertical" />
             <StatusMetricTooltip label={t("statusBar.estimateTime")}>
               {formatExportDuration(activeExport.estimatedElapsedTimeMs ?? 0)} /{" "}
               {formatExportDuration(activeExport.estimatedTotalTimeMs ?? 0)}
@@ -102,7 +102,7 @@ function StatusMetricTooltip({ children, label }: { children: ReactNode; label: 
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <span className="shrink-0 tabular-nums py-1">{children}</span>
+        <span className="shrink-0 py-1 tabular-nums">{children}</span>
       </TooltipTrigger>
       <TooltipContent side="top">{label}</TooltipContent>
     </Tooltip>

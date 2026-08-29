@@ -73,7 +73,7 @@ export function AudioTracks({
       >
         {t("audio.title")}
       </h3>
-      <div className="grid min-w-0 grid-cols-[var(--editor-track-grid-columns)] items-center gap-3">
+      <div className="grid min-w-0 grid-cols-(--editor-track-grid-columns) items-center gap-3">
         <div className="flex min-w-0 items-center gap-2 p-1 pr-2">
           <VolumeButton
             enabled={masterEnabled}
@@ -126,7 +126,7 @@ export function AudioTracks({
         })}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 inset-y-[-0.25rem] grid min-w-0 grid-cols-[var(--editor-track-grid-columns)] gap-3"
+          className="pointer-events-none absolute inset-x-0 -inset-y-1 grid min-w-0 grid-cols-(--editor-track-grid-columns) gap-3"
           data-slot="audio-playhead-grid"
         >
           <div className="relative col-start-2 mx-px" data-slot="audio-playhead-track">

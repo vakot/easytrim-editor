@@ -229,14 +229,14 @@ function CustomColorPickerPanel({
         <div className="flex h-6 w-15 items-center rounded-lg border border-input bg-transparent px-1.5 transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
           <span
             aria-hidden="true"
-            className="pointer-events-none select-none shrink-0 font-mono text-xs text-muted-foreground"
+            className="pointer-events-none shrink-0 font-mono text-xs text-muted-foreground select-none"
             data-slot="hex-prefix"
           >
             #
           </span>
           <Input
             aria-label={`${t("themeColor.custom")} hex`}
-            className="h-full w-auto min-w-0 flex-1 rounded-none border-0 px-0 py-0 font-mono text-xs text-foreground shadow-none focus-visible:border-0 focus-visible:ring-0"
+            className="h-full w-auto min-w-0 flex-1 rounded-none border-0 p-0 font-mono text-xs text-foreground shadow-none focus-visible:border-0 focus-visible:ring-0"
             maxLength={6}
             onChange={(event) =>
               updateHexValue(event.target.value.replace(/[^0-9a-fA-F]/g, "").slice(0, 6))

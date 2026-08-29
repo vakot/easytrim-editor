@@ -58,7 +58,7 @@ export function VideoPreviewEmpty() {
         <img
           alt=""
           aria-hidden="true"
-          className="pointer-events-none aspect-square w-full grayscale opacity-20"
+          className="pointer-events-none aspect-square w-full opacity-20 grayscale"
           src="/logo-symbol.svg"
         />
 

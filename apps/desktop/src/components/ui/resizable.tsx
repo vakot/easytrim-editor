@@ -75,7 +75,7 @@ function ResizablePanelGroupPersisted({
 function ResizablePanelGroupBase({ className, ...props }: ResizablePrimitive.GroupProps) {
   return (
     <ResizablePrimitive.Group
-      className={cn("flex h-full w-full aria-[orientation=vertical]:flex-col", className)}
+      className={cn("flex size-full aria-[orientation=vertical]:flex-col", className)}
       data-slot="resizable-panel-group"
       {...props}
     />
@@ -133,14 +133,14 @@ function ResizableHandle({
     <ResizablePrimitive.Separator
       aria-orientation={orientation}
       className={cn(
-        "relative flex w-px items-center justify-center bg-border ring-offset-background after:pointer-events-none after:absolute after:top-1/2 after:left-1/2 after:z-20 after:h-1 after:w-1 after:-translate-x-1/2 after:-translate-y-1/2 after:rounded after:bg-transparent focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-hidden data-[separator='hover']:after:bg-primary/70 data-[separator='active']:after:bg-primary aria-[orientation=horizontal]:h-px aria-[orientation=horizontal]:w-full aria-[orientation=horizontal]:after:w-full aria-[orientation=vertical]:h-full aria-[orientation=vertical]:w-px aria-[orientation=vertical]:after:h-full [&[aria-orientation=vertical]>div]:rotate-90",
+        "relative flex w-px items-center justify-center bg-border ring-offset-background after:pointer-events-none after:absolute after:top-1/2 after:left-1/2 after:z-20 after:size-1 after:-translate-1/2 after:rounded after:bg-transparent focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-hidden aria-[orientation=horizontal]:h-px aria-[orientation=horizontal]:w-full aria-[orientation=horizontal]:after:w-full aria-[orientation=vertical]:h-full aria-[orientation=vertical]:w-px aria-[orientation=vertical]:after:h-full data-[separator='active']:after:bg-primary data-[separator='hover']:after:bg-primary/70 [&[aria-orientation=vertical]>div]:rotate-90",
         className,
       )}
       data-slot="resizable-handle"
       {...props}
     >
       {children ??
-        (withHandle ? <div className="z-10 flex w-6 h-0.5 shrink-0 rounded-lg bg-border" /> : null)}
+        (withHandle ? <div className="z-10 flex h-0.5 w-6 shrink-0 rounded-lg bg-border" /> : null)}
     </ResizablePrimitive.Separator>
   );
 }

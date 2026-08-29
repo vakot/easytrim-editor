@@ -23,8 +23,8 @@ export function EditorWorkspace() {
         maxSize="30rem"
         minSize="15rem"
       >
-        <div className="h-full pl-1 pb-1">
-          <div className="rounded-md border border-border h-full overflow-hidden bg-card/30">
+        <div className="h-full pb-1 pl-1">
+          <div className="h-full overflow-hidden rounded-md border border-border bg-card/30">
             <SourcePanel />
           </div>
         </div>

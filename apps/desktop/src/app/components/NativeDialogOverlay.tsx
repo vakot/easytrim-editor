@@ -7,7 +7,7 @@ export function NativeDialogOverlay() {
   return (
     <div
       aria-live="polite"
-      className="fixed inset-0 z-[100] grid place-items-center bg-black/55 backdrop-blur-sm"
+      className="fixed inset-0 z-100 grid place-items-center bg-black/55 backdrop-blur-sm"
       role="status"
     >
       <div className="grid min-w-64 justify-items-center gap-2 rounded-xl border border-border bg-popover p-6 text-center shadow-2xl">

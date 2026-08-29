@@ -203,7 +203,7 @@ function MenuSeparator({
 }: React.ComponentProps<typeof MenuPrimitive.Separator>) {
   return (
     <MenuPrimitive.Separator
-      className={cn("my-0.5 mx-1.5 h-px bg-border", className)}
+      className={cn("mx-1.5 my-0.5 h-px bg-border", className)}
       data-slot="menu-separator"
       {...props}
     />

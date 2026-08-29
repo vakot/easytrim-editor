@@ -53,14 +53,14 @@ function Slider({
 
         return (
           <span
-            className="pointer-events-none absolute top-1/2 h-3 w-px -translate-x-1/2 -translate-y-1/2 bg-muted-foreground/70"
+            className="pointer-events-none absolute top-1/2 h-3 w-px -translate-1/2 bg-muted-foreground/70"
             data-slot="slider-marker"
             key={`${marker.value}-${String(marker.label)}`}
             style={{
               left: `calc(${position * 100}% + ${0.375 - position * 0.75}rem)`,
             }}
           >
-            <span className="absolute bottom-full left-1/2 -translate-x-1/2 whitespace-nowrap pb-0.5 text-[0.625rem] leading-none text-muted-foreground">
+            <span className="absolute bottom-full left-1/2 -translate-x-1/2 pb-0.5 text-[0.625rem] leading-none whitespace-nowrap text-muted-foreground">
               {marker.label}
             </span>
           </span>

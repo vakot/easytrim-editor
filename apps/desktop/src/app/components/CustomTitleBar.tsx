@@ -122,7 +122,7 @@ export function CustomTitleBar({
       {menuControls ? <div className="flex h-full items-center px-1">{menuControls}</div> : null}
 
       {statusContent ? (
-        <div className="absolute left-1/2 top-1/2 flex h-full -translate-x-1/2 -translate-y-1/2 items-center px-2">
+        <div className="absolute top-1/2 left-1/2 flex h-full -translate-1/2 items-center px-2">
           {statusContent}
         </div>
       ) : null}
@@ -145,7 +145,7 @@ export function CustomTitleBar({
       >
         <button
           aria-label={t("app.windowControls.minimize")}
-          className="inline-flex w-11 items-center justify-center outline-none transition-colors hover:bg-muted focus-visible:bg-accent"
+          className="inline-flex w-11 items-center justify-center transition-colors outline-none hover:bg-muted focus-visible:bg-accent"
           onClick={() => runWindowAction(minimizeWindow)}
           title={t("app.windowControls.minimize")}
           type="button"
@@ -156,7 +156,7 @@ export function CustomTitleBar({
           aria-label={
             isMaximized ? t("app.windowControls.restore") : t("app.windowControls.maximize")
           }
-          className="inline-flex w-11 items-center justify-center outline-none transition-colors hover:bg-muted focus-visible:bg-accent"
+          className="inline-flex w-11 items-center justify-center transition-colors outline-none hover:bg-muted focus-visible:bg-accent"
           onClick={handleToggleMaximize}
           title={isMaximized ? t("app.windowControls.restore") : t("app.windowControls.maximize")}
           type="button"
@@ -169,7 +169,7 @@ export function CustomTitleBar({
         </button>
         <button
           aria-label={t("app.windowControls.close")}
-          className="inline-flex w-11 items-center justify-center outline-none transition-colors hover:bg-destructive hover:text-destructive-foreground focus-visible:bg-destructive focus-visible:text-destructive-foreground"
+          className="hover:text-destructive-foreground focus-visible:text-destructive-foreground inline-flex w-11 items-center justify-center transition-colors outline-none hover:bg-destructive focus-visible:bg-destructive"
           onClick={() => runWindowAction(closeWindow)}
           title={t("app.windowControls.close")}
           type="button"

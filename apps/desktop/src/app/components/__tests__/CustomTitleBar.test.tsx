@@ -135,7 +135,7 @@ describe("CustomTitleBar", () => {
     const statusContent = screen.getByTestId("status-content");
     const statusSlot = statusContent.parentElement;
     expect(statusSlot).not.toBeNull();
-    expect(statusSlot).toHaveClass("absolute", "left-1/2", "-translate-x-1/2");
+    expect(statusSlot).toHaveClass("absolute", "left-1/2", "-translate-1/2");
   });
 
   it("delegates dragging and window controls to the native adapter", async () => {
