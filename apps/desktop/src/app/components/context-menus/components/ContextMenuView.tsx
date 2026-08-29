@@ -219,7 +219,7 @@ function CustomColorPickerPanel({
     <div className="w-auto space-y-3 p-2" onPointerMove={(event) => event.stopPropagation()}>
       <SpectrumWheel
         color={selectedColor}
-        label={t("themeColor.spectrum")}
+        aria-label={t("themeColor.spectrum")}
         onPreview={preview}
         onCommit={commit}
         onCancel={cancel}
