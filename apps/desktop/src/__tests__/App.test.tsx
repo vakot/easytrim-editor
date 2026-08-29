@@ -311,7 +311,7 @@ describe("App", () => {
     expect(screen.queryByTestId("audio-tracks-scroll")).not.toBeInTheDocument();
   });
 
-  it("keeps the editor covered and interactions disabled until the preview can play", async () => {
+  it("keeps the preview covered and playback controls disabled until it can play", async () => {
     const readyState = vi
       .spyOn(HTMLMediaElement.prototype, "readyState", "get")
       .mockReturnValue(HTMLMediaElement.HAVE_METADATA);
@@ -328,6 +328,7 @@ describe("App", () => {
       const trimEnd = screen.getByRole("slider", { name: "Trim end" });
 
       expect(screen.getByTestId("editor-loading-overlay")).toBeInTheDocument();
+      expect(screen.getByTestId("timeline-fixed-content")).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Play" })).toBeDisabled();
       video.currentTime = 10;
       fireEvent.timeUpdate(video);
@@ -411,6 +412,7 @@ describe("App", () => {
 
       await waitFor(() => expect(audioElements).toHaveLength(2));
       expect(screen.getByTestId("editor-loading-overlay")).toBeInTheDocument();
+      expect(screen.getByTestId("timeline-fixed-content")).toBeInTheDocument();
       expect(mocks.prepareWaveforms).not.toHaveBeenCalled();
       for (const audio of audioElements) fireEvent.canPlay(audio);
 
