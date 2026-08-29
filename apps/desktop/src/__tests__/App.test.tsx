@@ -527,6 +527,7 @@ describe("App", () => {
 
       await user.click(screen.getByRole("button", { name: "Enable Commentary" }));
       await waitFor(() => expect(audioElements).toHaveLength(4));
+      expect(screen.queryByTestId("editor-loading-overlay")).not.toBeInTheDocument();
       const transitionAudio = audioElements.slice(2);
       const transitionAudioPlay = transitionAudio.map((audio) =>
         vi.spyOn(audio, "play").mockResolvedValue(),

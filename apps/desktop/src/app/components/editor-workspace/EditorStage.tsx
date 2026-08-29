@@ -70,7 +70,7 @@ function EditorTimelinePanel() {
         range={trim ?? EMPTY_TIMELINE_RANGE}
         timeline={<Timeline />}
       />
-      {sourceSelection !== null && !playback.isReady ? (
+      {sourceSelection !== null && !playback.isReady && !playback.isPlaying ? (
         <div
           aria-live="polite"
           className="absolute inset-0 z-30 grid place-items-center bg-background/75 backdrop-blur-sm"
