@@ -24,13 +24,17 @@ export function PanelVisibilityControls() {
   const { t } = useTranslation();
 
   return (
-    <div aria-label={t("app.panels.group")} className="flex items-center gap-0.5" role="group">
+    <div
+      aria-label={t("app.accessibility.panels")}
+      className="flex items-center gap-0.5"
+      role="group"
+    >
       <Tooltip>
         <Menu modal={false}>
           <MenuTrigger asChild>
             <TooltipTrigger asChild>
               <Button
-                aria-label={t("app.panels.layoutMenu")}
+                aria-label={t("app.accessibility.layoutControls")}
                 size="icon-sm"
                 type="button"
                 variant="ghost"
@@ -53,7 +57,7 @@ export function PanelVisibilityControls() {
                     }
                     onSelect={(event) => event.preventDefault()}
                   >
-                    {t("app.panels.leftPanel")}
+                    {t("app.labels.leftPanel")}
                   </MenuItem>
                 )}
               </ResizablePanelControl>
@@ -69,7 +73,7 @@ export function PanelVisibilityControls() {
                     }
                     onSelect={(event) => event.preventDefault()}
                   >
-                    {t("app.panels.bottomPanel")}
+                    {t("app.labels.bottomPanel")}
                   </MenuItem>
                 )}
               </ResizablePanelControl>
@@ -86,16 +90,16 @@ export function PanelVisibilityControls() {
                     icon={<RotateCcw aria-hidden="true" className="size-3" />}
                     onSelect={(event) => event.preventDefault()}
                   >
-                    {t("app.panels.resetLayout")}
+                    {t("app.actions.resetLayout")}
                   </MenuItem>
                 )}
               </ResizablePanelControl>
             </MenuGroup>
           </MenuContent>
         </Menu>
-        <TooltipContent>{t("app.panels.customizeLayout")}</TooltipContent>
+        <TooltipContent>{t("app.tooltips.customizeLayout")}</TooltipContent>
       </Tooltip>
-      <Tooltip>
+      <Tooltip preserveOnTrigger>
         <ResizablePanelControl panelId="workspace-sidebar">
           {({ isCollapsed }) => (
             <TooltipTrigger asChild>
@@ -110,11 +114,11 @@ export function PanelVisibilityControls() {
           )}
         </ResizablePanelControl>
         <TooltipContent>
-          {t("app.panels.togglePanel", { panel: t("app.panels.leftPanel") })}
+          {t("app.tooltips.togglePanel", { panel: t("app.labels.leftPanel") })}
         </TooltipContent>
       </Tooltip>
 
-      <Tooltip>
+      <Tooltip preserveOnTrigger>
         <ResizablePanelControl panelId="editor-stage-timeline">
           {({ isCollapsed }) => (
             <TooltipTrigger asChild>
@@ -129,7 +133,7 @@ export function PanelVisibilityControls() {
           )}
         </ResizablePanelControl>
         <TooltipContent>
-          {t("app.panels.togglePanel", { panel: t("app.panels.bottomPanel") })}
+          {t("app.tooltips.togglePanel", { panel: t("app.labels.bottomPanel") })}
         </TooltipContent>
       </Tooltip>
     </div>

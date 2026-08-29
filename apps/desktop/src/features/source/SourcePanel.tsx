@@ -45,11 +45,11 @@ export function SourcePanel() {
 
   return (
     <aside
-      aria-label={t("import.source.sidebar")}
+      aria-label={t("source.labels.title")}
       className="flex h-full min-h-0 flex-col overflow-hidden p-1"
     >
       <div className="flex h-7 shrink-0 items-center justify-between gap-1 px-2 text-xs font-medium">
-        <span>{t("import.source.sidebar")}</span>
+        <span>{t("source.labels.title")}</span>
 
         <Menu>
           <Tooltip>
@@ -60,7 +60,7 @@ export function SourcePanel() {
                 </Button>
               </MenuTrigger>
             </TooltipTrigger>
-            <TooltipContent side="bottom">{t("import.source.sidebarControls")}</TooltipContent>
+            <TooltipContent side="bottom">{t("source.tooltips.sidebarControls")}</TooltipContent>
           </Tooltip>
           <MenuContent>
             <MenuGroup>
@@ -78,7 +78,7 @@ export function SourcePanel() {
                   handlePanelToggle("workspace-sidebar-source-details");
                 }}
               >
-                {t("import.source.mediaDetails")}
+                {t("source.labels.mediaDetails")}
               </MenuItem>
               <MenuItem
                 icon={
@@ -93,7 +93,7 @@ export function SourcePanel() {
                   handlePanelToggle("workspace-sidebar-import-queue");
                 }}
               >
-                {t("import.source.importQueue")}
+                {t("queue.labels.import")}
               </MenuItem>
               <MenuItem
                 icon={
@@ -108,7 +108,7 @@ export function SourcePanel() {
                   handlePanelToggle("workspace-sidebar-export-queue");
                 }}
               >
-                {t("import.source.exportQueue")}
+                {t("queue.labels.export")}
               </MenuItem>
             </MenuGroup>
             <MenuSeparator />
@@ -121,7 +121,7 @@ export function SourcePanel() {
                   setPanels(DEFAULT_PANELS);
                 }}
               >
-                {t("app.panels.resetLayout")}
+                {t("app.actions.resetLayout")}
               </MenuItem>
             </MenuGroup>
           </MenuContent>
@@ -150,7 +150,7 @@ export function SourcePanel() {
                     ) : (
                       <ChevronDown aria-hidden="true" />
                     ))}
-                  {t("import.source.mediaDetails")}
+                  {t("source.labels.mediaDetails")}
                 </Button>
               )}
             </ResizablePanelControl>
@@ -187,7 +187,7 @@ export function SourcePanel() {
                       ) : (
                         <ChevronDown aria-hidden="true" />
                       ))}
-                    {t("import.source.importQueue")}
+                    {t("queue.labels.import")}
                   </Button>
                 )}
               </ResizablePanelControl>
@@ -225,7 +225,7 @@ export function SourcePanel() {
                       ) : (
                         <ChevronDown aria-hidden="true" />
                       ))}
-                    {t("import.source.exportQueue")}
+                    {t("queue.labels.export")}
                   </Button>
                 )}
               </ResizablePanelControl>

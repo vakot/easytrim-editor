@@ -110,7 +110,7 @@ export function TrimTimeline({
         data-slot="timeline-row"
       >
         <div
-          aria-label={t("timeline.toolsLabel")}
+          aria-label={t("timeline.accessibility.tools")}
           className="flex w-full items-stretch"
           data-slot="timeline-toolbar"
           role="toolbar"
@@ -118,7 +118,7 @@ export function TrimTimeline({
           {videoToolbar}
         </div>
         <div
-          aria-label={t("timeline.trackLabel")}
+          aria-label={t("timeline.accessibility.track")}
           className={`${styles.track} ${disabled ? `cursor-not-allowed ${styles.trackDisabled}` : ""}`}
           onLostPointerCapture={(event) => finishScrub(event, false)}
           onPointerCancel={(event) => finishScrub(event, false)}
@@ -217,25 +217,28 @@ function TimelineHeader({
           className="mb-0.5 font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
           id="timeline-title"
         >
-          {t("timeline.selectedSegment")}
+          {t("timeline.labels.selectedSegment")}
         </h2>
         {playbackTimecode}
       </div>
       <div className="justify-self-center">{playbackControls}</div>
-      <dl aria-label={t("timeline.trimValues")} className="m-0 flex gap-5 justify-self-end">
+      <dl
+        aria-label={t("timeline.accessibility.trimValues")}
+        className="m-0 flex gap-5 justify-self-end"
+      >
         <TimelineTimeValue
           frameRate={frameRate}
-          label={t("timeline.start")}
+          label={t("timeline.labels.start")}
           micros={disabled ? null : range.startMicros}
         />
         <TimelineTimeValue
           frameRate={frameRate}
-          label={t("timeline.end")}
+          label={t("timeline.labels.end")}
           micros={disabled ? null : range.endMicros}
         />
         <TimelineTimeValue
           frameRate={frameRate}
-          label={t("timeline.duration")}
+          label={t("timeline.labels.duration")}
           micros={disabled ? null : range.endMicros - range.startMicros}
         />
       </dl>
@@ -258,7 +261,7 @@ function TimelineScale({
         className="text-[0.625rem] font-bold tracking-[0.08em] text-muted-foreground uppercase"
         data-slot="timeline-tools-title"
       >
-        {t("timeline.tools")}
+        {t("timeline.labels.tools")}
       </span>
       <div className="flex justify-between font-mono text-[0.625rem] text-muted-foreground">
         {[0, 0.25, 0.5, 0.75, 1].map((fraction) => (

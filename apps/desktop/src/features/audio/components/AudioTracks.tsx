@@ -62,7 +62,7 @@ export function AudioTracks({
   useWaveformPreparation(tracks, waveformPreparationEnabled, onPrepareWaveforms);
 
   if (streams.length === 0) {
-    return <p className="text-sm text-muted-foreground">{t("audio.noTracks")}</p>;
+    return <p className="text-sm text-muted-foreground">{t("audio.messages.noTracks")}</p>;
   }
 
   return (
@@ -71,18 +71,18 @@ export function AudioTracks({
         className="font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
         id="timeline-audio-title"
       >
-        {t("audio.title")}
+        {t("audio.labels.title")}
       </h3>
       <div className="grid min-w-0 grid-cols-(--editor-track-grid-columns) items-center gap-3">
         <div className="flex min-w-0 items-center gap-2 p-1 pr-2">
           <VolumeButton
             enabled={masterEnabled}
-            label={t("audio.allTracks")}
+            label={t("audio.labels.allTracks")}
             onClick={onToggleMaster}
           />
           <AudioLevelControl
             className="flex-1"
-            label={t("audio.allTracksVolume")}
+            label={t("audio.accessibility.allTracksVolume")}
             onChange={onMasterVolumeChange}
             volumePercent={masterEnabled ? masterVolumePercent : 0}
           />
@@ -94,12 +94,12 @@ export function AudioTracks({
               <div className="flex shrink-0 items-center gap-2">
                 <Checkbox checked={mergeAudio} id="merge-audio" onCheckedChange={onToggleMerge} />
                 <Label className="text-xs text-muted-foreground" htmlFor="merge-audio">
-                  {t("audio.mergeSelected")}
+                  {t("audio.actions.merge")}
                 </Label>
                 <Info aria-hidden="true" className="size-3.5 text-muted-foreground" />
               </div>
             </TooltipTrigger>
-            <TooltipContent>{t("audio.mergeSelectedHint")}</TooltipContent>
+            <TooltipContent>{t("audio.tooltips.merge")}</TooltipContent>
           </Tooltip>
         </div>
       </div>
@@ -109,7 +109,9 @@ export function AudioTracks({
           const track = tracks.find((candidate) => candidate.streamIndex === stream.streamIndex);
           if (!track) return null;
           const title =
-            stream.title ?? stream.language ?? t("audio.defaultTrack", { number: index + 1 });
+            stream.title ??
+            stream.language ??
+            t("audio.labels.defaultTrack", { number: index + 1 });
 
           return (
             <AudioTrackRow

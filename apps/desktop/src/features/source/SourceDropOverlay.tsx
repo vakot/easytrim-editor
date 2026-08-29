@@ -12,7 +12,7 @@ export function SourceDropOverlay() {
 
   return (
     <div
-      aria-label={t("import.dropOverlay.label")}
+      aria-label={t("source.labels.drop")}
       aria-live="polite"
       className="absolute inset-0 z-40 grid place-items-center bg-background/82 backdrop-blur-sm"
       role="status"
@@ -22,8 +22,8 @@ export function SourceDropOverlay() {
           <FileVideo2 aria-hidden="true" className="size-6" />
           <Plus className="absolute -right-0.5 -bottom-0.5 size-4 rounded-full bg-primary p-0.5 text-primary-foreground" />
         </span>
-        <strong>{t("import.dropOverlay.label")}</strong>
-        <span className="text-xs text-muted-foreground">{t("import.dropOverlay.description")}</span>
+        <strong>{t("source.labels.drop")}</strong>
+        <span className="text-xs text-muted-foreground">{t("source.messages.dropReset")}</span>
       </div>
     </div>
   );

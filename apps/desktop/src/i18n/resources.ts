@@ -1,5 +1,6 @@
 import { en } from "./locales/en";
 import { sk } from "./locales/sk";
+import type { TranslationSchema } from "./schema";
 
 export const DEFAULT_LANGUAGE = "en";
 export const SUPPORTED_LANGUAGES = ["en", "sk"] as const;
@@ -9,7 +10,7 @@ export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 export const resources = {
   en: { translation: en },
   sk: { translation: sk },
-} as const;
+} as const satisfies Record<SupportedLanguage, { translation: TranslationSchema }>;
 
 export function resolveInitialLanguage(
   preferredLanguages: readonly string[] = browserLanguages(),

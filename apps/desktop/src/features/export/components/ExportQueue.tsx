@@ -42,13 +42,13 @@ export function ExportQueue() {
           className="font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
           id="export-queue-title"
         >
-          {t("export.queue")}
+          {t("queue.labels.export")}
         </h2>
         <span className="text-xs text-muted-foreground">{queue.length}</span>
       </div>
       {queue.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted-foreground">
-          {t("export.empty")}
+          {t("queue.messages.empty")}
         </p>
       ) : (
         <div aria-live="polite" className="grid gap-2" role="status">
@@ -73,8 +73,10 @@ function ExportQueueItem({ item, now }: { item: ExportQueueItem; now: number }) 
     item.status === "rendering" || item.status === "completed"
       ? formatDuration(durationMs ?? 0)
       : item.status === "failed"
-        ? t("export.status.failure")
-        : t(`export.status.${item.status}`);
+        ? t("queue.status.failed")
+        : item.status === "canceled"
+          ? t("queue.status.canceled")
+          : t("queue.status.queued");
 
   function openLocation() {
     if (isCompleted) void openFileLocation(item.path).catch(() => undefined);
@@ -94,7 +96,7 @@ function ExportQueueItem({ item, now }: { item: ExportQueueItem; now: number }) 
       )}
     >
       <button
-        aria-label={t("export.restoreItem", { filename: item.filename })}
+        aria-label={t("queue.accessibility.restoreItem", { filename: item.filename })}
         className="min-w-0 cursor-pointer text-left"
         onClick={() => void restoreItem()}
         type="button"
@@ -131,7 +133,7 @@ function ExportQueueItem({ item, now }: { item: ExportQueueItem; now: number }) 
       <div className="flex items-center gap-1">
         {item.status === "queued" || item.status === "rendering" ? (
           <Button
-            aria-label={t("export.cancelItem", { filename: item.filename })}
+            aria-label={t("queue.accessibility.cancelItem", { filename: item.filename })}
             onClick={(event) => {
               event.stopPropagation();
               dispatch(cancelExportRequested(item.id));
@@ -146,15 +148,17 @@ function ExportQueueItem({ item, now }: { item: ExportQueueItem; now: number }) 
             {item.status === "completed" ? (
               <>
                 <span
-                  aria-label={t("export.statusLabel", {
-                    status: t(`export.status.${item.status}`),
+                  aria-label={t("queue.accessibility.status", {
+                    status: t("queue.status.completed"),
                   })}
                   className="grid size-7 place-items-center"
                 >
                   <Check className="size-4 text-emerald-400" />
                 </span>
                 <Button
-                  aria-label={t("export.openLocation", { filename: item.filename })}
+                  aria-label={t("queue.accessibility.openLocation", {
+                    filename: item.filename,
+                  })}
                   onClick={(event) => {
                     event.stopPropagation();
                     openLocation();
@@ -167,8 +171,8 @@ function ExportQueueItem({ item, now }: { item: ExportQueueItem; now: number }) 
               </>
             ) : item.status === "failed" ? (
               <span
-                aria-label={t("export.statusLabel", {
-                  status: t(`export.status.${item.status}`),
+                aria-label={t("queue.accessibility.status", {
+                  status: t("queue.status.failed"),
                 })}
                 className="grid size-7 place-items-center"
               >
@@ -176,8 +180,8 @@ function ExportQueueItem({ item, now }: { item: ExportQueueItem; now: number }) 
               </span>
             ) : (
               <span
-                aria-label={t("export.statusLabel", {
-                  status: t(`export.status.${item.status}`),
+                aria-label={t("queue.accessibility.status", {
+                  status: t("queue.status.canceled"),
                 })}
                 className="grid size-7 place-items-center"
               >
