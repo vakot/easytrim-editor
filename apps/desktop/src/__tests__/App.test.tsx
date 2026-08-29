@@ -558,11 +558,69 @@ describe("App", () => {
       await user.click(screen.getByRole("button", { name: "Mute eng" }));
       await user.click(screen.getByRole("button", { name: "Enable Commentary" }));
 
-      await waitFor(() => expect(nativeSource.connectedGain?.gain.value).toBe(1));
+      await waitFor(() => expect(nativeSource.connectedGain?.gain.value).toBe(0));
       expect(video).toHaveProperty("muted", false);
       expect(nativeSource.disconnect).toHaveBeenCalledTimes(nativeSourceDisconnects);
       expect(videoPlay).toHaveBeenCalledOnce();
       expect(videoPause).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("uses custom audio when a single non-default track is selected", async () => {
+    mocks.chooseSource.mockResolvedValue([selection]);
+    mocks.inspectMedia.mockResolvedValue({
+      ...media,
+      audioStreams: [
+        ...media.audioStreams,
+        {
+          streamIndex: 2,
+          codecName: "aac",
+          channels: 2,
+          channelLayout: "stereo",
+          sampleRateHz: 48_000,
+          title: "Mic",
+          isDefault: false,
+        },
+        {
+          streamIndex: 3,
+          codecName: "aac",
+          channels: 2,
+          channelLayout: "stereo",
+          sampleRateHz: 48_000,
+          title: "Game",
+          isDefault: false,
+        },
+      ],
+    });
+    mocks.prepareAudioPreviews.mockResolvedValue(
+      [1, 2, 3].map((streamIndex) => ({
+        mediaToken: 1,
+        streamIndex,
+        url: `http://easytrim-media.localhost/source-1?variant=audio&stream=${streamIndex}`,
+      })),
+    );
+    const { mediaElementSources } = installAudioMocks();
+    const user = userEvent.setup();
+
+    try {
+      render(<App />);
+      await openSourcePicker(user);
+      const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
+      const nativeSource = await waitFor(() => {
+        const source = mediaElementSources.find((candidate) => candidate.element === video);
+        expect(source?.connectedGain).not.toBeNull();
+        return source!;
+      });
+
+      await user.click(screen.getByRole("button", { name: "Mute eng" }));
+      await user.click(screen.getByRole("button", { name: "Mute Game" }));
+      await waitFor(() => expect(nativeSource.connectedGain?.gain.value).toBe(0));
+
+      await user.click(screen.getByRole("button", { name: "Mute Mic" }));
+      await user.click(screen.getByRole("button", { name: "Enable Game" }));
+      await waitFor(() => expect(nativeSource.connectedGain?.gain.value).toBe(0));
     } finally {
       vi.unstubAllGlobals();
     }

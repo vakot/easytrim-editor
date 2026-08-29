@@ -117,21 +117,25 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
 
   const sourcePath = sourceSelection?.sourcePath ?? null;
   const sourceAudioStreams = media?.audioStreams ?? [];
+  const enabledAudioTracks = audioTracks.filter((track) => track.enabled);
   const activeExternalAudioStreamCount = audioTracks.filter(
     (track) => track.enabled && audioPreviewUrls[track.streamIndex] !== undefined,
   ).length;
 
-  const usesExternalAudio =
-    audioPreviewState?.status === "ready" && activeExternalAudioStreamCount > 1;
+  const nativeAudioStreamIndex =
+    sourceAudioStreams.find((stream) => stream.isDefault)?.streamIndex ??
+    sourceAudioStreams[0]?.streamIndex;
 
-  const nativeAudioTrack = usesExternalAudio
-    ? undefined
-    : (audioTracks.find((track) => track.enabled) ??
-      audioTracks.find(
-        (track) =>
-          sourceAudioStreams.find((stream) => stream.streamIndex === track.streamIndex)?.isDefault,
-      ) ??
-      audioTracks[0]);
+  const selectedAudioTrack = enabledAudioTracks.length === 1 ? enabledAudioTracks[0] : undefined;
+
+  const nativeAudioTrack =
+    selectedAudioTrack?.streamIndex === nativeAudioStreamIndex ? selectedAudioTrack : undefined;
+
+  const usesExternalAudio =
+    audioPreviewState?.status === "ready" &&
+    activeExternalAudioStreamCount === enabledAudioTracks.length &&
+    enabledAudioTracks.length > 0 &&
+    (enabledAudioTracks.length > 1 || nativeAudioTrack === undefined);
 
   const previewKey =
     sourcePath && preview.status === "ready" ? `${sourcePath}:${preview.value.url}` : null;
