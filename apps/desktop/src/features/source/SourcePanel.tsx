@@ -5,13 +5,13 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
-  Menu,
-  MenuContent,
-  MenuGroup,
-  MenuItem,
-  MenuSeparator,
-  MenuTrigger,
-} from "@/components/ui/menu";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -53,10 +53,10 @@ export function SourcePanel() {
         {t("source.labels.title")}
       </h3>
 
-      <Menu>
+      <DropdownMenu>
         <Tooltip>
           <TooltipTrigger asChild>
-            <MenuTrigger asChild>
+            <DropdownMenuTrigger asChild>
               <Button
                 className="absolute top-2 right-3 text-secondary-foreground"
                 size="icon-xs"
@@ -64,13 +64,13 @@ export function SourcePanel() {
               >
                 <Ellipsis aria-hidden="true" />
               </Button>
-            </MenuTrigger>
+            </DropdownMenuTrigger>
           </TooltipTrigger>
           <TooltipContent side="bottom">{t("source.tooltips.sidebarControls")}</TooltipContent>
         </Tooltip>
-        <MenuContent>
-          <MenuGroup>
-            <MenuItem
+        <DropdownMenuContent>
+          <DropdownMenuGroup>
+            <DropdownMenuItem
               disabled
               icon={
                 panels["workspace-sidebar-source-details"] ? (
@@ -85,8 +85,8 @@ export function SourcePanel() {
               }}
             >
               {t("source.labels.mediaDetails")}
-            </MenuItem>
-            <MenuItem
+            </DropdownMenuItem>
+            <DropdownMenuItem
               icon={
                 panels["workspace-sidebar-import-queue"] ? (
                   <Eye aria-hidden="true" className="size-3" />
@@ -100,8 +100,8 @@ export function SourcePanel() {
               }}
             >
               {t("queue.labels.import")}
-            </MenuItem>
-            <MenuItem
+            </DropdownMenuItem>
+            <DropdownMenuItem
               icon={
                 panels["workspace-sidebar-export-queue"] ? (
                   <Eye aria-hidden="true" className="size-3" />
@@ -115,11 +115,11 @@ export function SourcePanel() {
               }}
             >
               {t("queue.labels.export")}
-            </MenuItem>
-          </MenuGroup>
-          <MenuSeparator />
-          <MenuGroup>
-            <MenuItem
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
+          <DropdownMenuSeparator />
+          <DropdownMenuGroup>
+            <DropdownMenuItem
               disabled={enabledCount === 3}
               icon={<RotateCcw aria-hidden="true" className="size-3" />}
               onSelect={(event) => {
@@ -128,10 +128,10 @@ export function SourcePanel() {
               }}
             >
               {t("app.actions.resetLayout")}
-            </MenuItem>
-          </MenuGroup>
-        </MenuContent>
-      </Menu>
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <ResizablePanelGroup id="workspace-sidebar-content" orientation="vertical" persisted>
         {panels["workspace-sidebar-source-details"] && (

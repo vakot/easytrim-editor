@@ -10,13 +10,13 @@ import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import {
-  Menu,
-  MenuContent,
-  MenuGroup,
-  MenuItem,
-  MenuSeparator,
-  MenuTrigger,
-} from "@/components/ui/menu";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ResizablePanelControl } from "@/components/ui/resizable";
 import { Toggle } from "@/components/ui/toggle";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -31,8 +31,8 @@ export function PanelVisibilityControls() {
       role="group"
     >
       <Tooltip>
-        <Menu modal={false}>
-          <MenuTrigger asChild>
+        <DropdownMenu modal={false}>
+          <DropdownMenuTrigger asChild>
             <TooltipTrigger asChild>
               <Button
                 aria-label={t("app.accessibility.layoutControls")}
@@ -44,12 +44,12 @@ export function PanelVisibilityControls() {
                 <LayoutPanelLeft aria-hidden="true" className="size-4" />
               </Button>
             </TooltipTrigger>
-          </MenuTrigger>
-          <MenuContent>
-            <MenuGroup>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuGroup>
               <ResizablePanelControl panelId="workspace-sidebar">
                 {({ isCollapsed }) => (
-                  <MenuItem
+                  <DropdownMenuItem
                     icon={
                       isCollapsed ? (
                         <PanelLeftDashed aria-hidden="true" className="size-3" />
@@ -60,12 +60,12 @@ export function PanelVisibilityControls() {
                     onSelect={(event) => event.preventDefault()}
                   >
                     {t("app.labels.leftPanel")}
-                  </MenuItem>
+                  </DropdownMenuItem>
                 )}
               </ResizablePanelControl>
               <ResizablePanelControl panelId="editor-stage-timeline">
                 {({ isCollapsed }) => (
-                  <MenuItem
+                  <DropdownMenuItem
                     icon={
                       isCollapsed ? (
                         <PanelLeftDashed aria-hidden="true" className="size-3" />
@@ -76,29 +76,29 @@ export function PanelVisibilityControls() {
                     onSelect={(event) => event.preventDefault()}
                   >
                     {t("app.labels.bottomPanel")}
-                  </MenuItem>
+                  </DropdownMenuItem>
                 )}
               </ResizablePanelControl>
-            </MenuGroup>
-            <MenuSeparator />
-            <MenuGroup>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
               <ResizablePanelControl
                 mode="reset"
                 panelId={["workspace-sidebar", "editor-stage-timeline"]}
               >
                 {({ isExpanded }) => (
-                  <MenuItem
+                  <DropdownMenuItem
                     disabled={isExpanded}
                     icon={<RotateCcw aria-hidden="true" className="size-3" />}
                     onSelect={(event) => event.preventDefault()}
                   >
                     {t("app.actions.resetLayout")}
-                  </MenuItem>
+                  </DropdownMenuItem>
                 )}
               </ResizablePanelControl>
-            </MenuGroup>
-          </MenuContent>
-        </Menu>
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <TooltipContent>{t("app.tooltips.customizeLayout")}</TooltipContent>
       </Tooltip>
       <Tooltip preserveOnTrigger>
