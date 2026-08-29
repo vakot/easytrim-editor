@@ -39,7 +39,7 @@ interface PersistedResizablePanelGroupProps extends Omit<
   "defaultLayout" | "id"
 > {
   id: string;
-  storage?: ResizablePrimitive.LayoutStorage;
+  storage?: ResizableLayoutStorage;
 }
 
 function ResizablePanelGroupPersisted({

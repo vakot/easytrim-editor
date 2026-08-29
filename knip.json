@@ -20,6 +20,7 @@
       "project": ["src/**/*.ts!", "src/**/*.tsx!"],
       "ignoreDependencies": ["@fontsource/inter", "shadcn", "tw-animate-css"],
       "ignore": [
+        "src/components/**",
         "src/test/**",
         "src/**/__tests__/**",
         "src/**/*.test.ts",
