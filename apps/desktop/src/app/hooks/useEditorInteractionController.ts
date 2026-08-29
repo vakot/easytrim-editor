@@ -117,18 +117,21 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
 
   const sourcePath = sourceSelection?.sourcePath ?? null;
   const sourceAudioStreams = media?.audioStreams ?? [];
-  const externalAudioStreamCount = Object.keys(audioPreviewUrls).length;
   const activeExternalAudioStreamCount = audioTracks.filter(
     (track) => track.enabled && audioPreviewUrls[track.streamIndex] !== undefined,
   ).length;
 
-  const usesExternalAudio = audioPreviewState?.status === "ready" && externalAudioStreamCount > 0;
+  const usesExternalAudio =
+    audioPreviewState?.status === "ready" && activeExternalAudioStreamCount > 1;
+
   const nativeAudioTrack = usesExternalAudio
     ? undefined
-    : (audioTracks.find(
+    : (audioTracks.find((track) => track.enabled) ??
+      audioTracks.find(
         (track) =>
           sourceAudioStreams.find((stream) => stream.streamIndex === track.streamIndex)?.isDefault,
-      ) ?? audioTracks[0]);
+      ) ??
+      audioTracks[0]);
 
   const previewKey =
     sourcePath && preview.status === "ready" ? `${sourcePath}:${preview.value.url}` : null;
@@ -181,7 +184,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     previewKey !== null &&
     readyPreviewKey === previewKey &&
     audioPreviewState?.status !== "loading" &&
-    (activeExternalAudioStreamCount === 0 ||
+    (!usesExternalAudio ||
       (audioReadiness.sourcePath === sourcePath &&
         audioReadiness.streamIndexes.size === activeExternalAudioStreamCount));
 
@@ -441,6 +444,37 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
       synchronizeAudioPosition(audio, seconds, playbackRateRef.current, force);
   }, []);
 
+  const handlePlaybackStartFailure = useCallback(() => {
+    playbackStartSequenceRef.current += 1;
+    playbackRequestedRef.current = false;
+    isPlayingRef.current = false;
+    videoRef.current?.pause();
+    pauseAudioPlayback();
+    setIsPlaying(false);
+    stopPlayheadAnimation();
+    setTransportError(t("preview.messages.playbackFailed"));
+  }, [pauseAudioPlayback, stopPlayheadAnimation, t]);
+
+  const resumeExternalAudioPlayback = useCallback(() => {
+    const video = videoRef.current;
+    if (!video || video.paused) return;
+
+    const startSequence = playbackStartSequenceRef.current;
+    const seconds = video.currentTime;
+    syncAudioPlayback(seconds, true);
+    const audio = [...audioElementsRef.current.values()];
+    const resumeAudioContext = audioContextRef.current?.resume() ?? Promise.resolve();
+    void Promise.all([resumeAudioContext, ...audio.map((element) => element.play())]).catch(() => {
+      if (startSequence !== playbackStartSequenceRef.current) return;
+      handlePlaybackStartFailure();
+    });
+  }, [handlePlaybackStartFailure, syncAudioPlayback]);
+
+  useEffect(() => {
+    if (!usesExternalAudio || !isPlaybackReady || !isPlayingRef.current) return;
+    resumeExternalAudioPlayback();
+  }, [isPlaybackReady, resumeExternalAudioPlayback, usesExternalAudio]);
+
   const commitSeek = useCallback((micros: number) => {
     const clamped = clampPlaybackMicros(micros, trimRef.current.sourceDurationMicros);
     currentPlayheadMicrosRef.current = clamped;
@@ -469,16 +503,9 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     const resumeAudioContext = audioContextRef.current?.resume() ?? Promise.resolve();
     void Promise.all([resumeAudioContext, ...media.map((element) => element.play())]).catch(() => {
       if (startSequence !== playbackStartSequenceRef.current) return;
-      playbackStartSequenceRef.current += 1;
-      playbackRequestedRef.current = false;
-      isPlayingRef.current = false;
-      video.pause();
-      pauseAudioPlayback();
-      setIsPlaying(false);
-      stopPlayheadAnimation();
-      setTransportError(t("preview.messages.playbackFailed"));
+      handlePlaybackStartFailure();
     });
-  }, [pauseAudioPlayback, stopPlayheadAnimation, syncAudioPlayback, t]);
+  }, [handlePlaybackStartFailure, syncAudioPlayback]);
 
   const handlePlaybackBoundary = useCallback(
     (currentMicros: number): boolean => {

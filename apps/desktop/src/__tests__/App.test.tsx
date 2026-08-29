@@ -109,6 +109,7 @@ async function waitForSourcePresence(expected: boolean) {
 
 function installAudioMocks(initiallyReady = true) {
   const audioElements: HTMLAudioElement[] = [];
+  const gainNodes: Array<{ gain: { value: number } }> = [];
   const audioConstructor = vi.fn(function AudioMock() {
     const element = document.createElement("audio");
     Object.defineProperty(element, "readyState", {
@@ -116,6 +117,8 @@ function installAudioMocks(initiallyReady = true) {
       get: () =>
         initiallyReady ? HTMLMediaElement.HAVE_FUTURE_DATA : HTMLMediaElement.HAVE_METADATA,
     });
+    Object.defineProperty(element, "pause", { configurable: true, value: vi.fn() });
+
     audioElements.push(element);
     return element;
   });
@@ -124,11 +127,17 @@ function installAudioMocks(initiallyReady = true) {
     destination: {},
     resume: vi.fn().mockResolvedValue(undefined),
     close: vi.fn().mockResolvedValue(undefined),
-    createGain: vi.fn(() => ({
-      gain: { value: 1 },
-      connect: vi.fn(),
-      disconnect: vi.fn(),
-    })),
+    createGain: vi.fn(() => {
+      const gainNode = {
+        gain: { value: 1 },
+        connect: vi.fn(),
+        disconnect: vi.fn(),
+      };
+
+      gainNodes.push(gainNode);
+
+      return gainNode;
+    }),
     createMediaElementSource: vi.fn(() => ({
       connect: vi.fn((destination: unknown) => destination),
       disconnect: vi.fn(),
@@ -143,7 +152,7 @@ function installAudioMocks(initiallyReady = true) {
     }),
   );
 
-  return { audioConstructor, audioContext, audioElements };
+  return { audioConstructor, audioContext, audioElements, gainNodes };
 }
 
 beforeEach(() => {
@@ -429,6 +438,110 @@ describe("App", () => {
     expect(mocks.prepareAudioPreviews).not.toHaveBeenCalled();
     expect(video).toHaveProperty("muted", false);
     expect(video).toHaveAttribute("crossorigin", "anonymous");
+  });
+
+  it("switches between native and custom audio without interrupting video playback", async () => {
+    mocks.chooseSource.mockResolvedValue([selection]);
+    mocks.inspectMedia.mockResolvedValue({
+      ...media,
+      audioStreams: [
+        ...media.audioStreams,
+        {
+          streamIndex: 2,
+          codecName: "ac3",
+          channels: 6,
+          channelLayout: "5.1",
+          sampleRateHz: 48_000,
+          title: "Commentary",
+          isDefault: false,
+        },
+      ],
+    });
+    mocks.prepareAudioPreviews.mockResolvedValue([
+      {
+        mediaToken: 1,
+        streamIndex: 1,
+        url: "http://easytrim-media.localhost/source-1?variant=audio&stream=1",
+      },
+      {
+        mediaToken: 1,
+        streamIndex: 2,
+        url: "http://easytrim-media.localhost/source-1?variant=audio&stream=2",
+      },
+    ]);
+    const { audioElements, gainNodes } = installAudioMocks(false);
+
+    const user = userEvent.setup();
+
+    try {
+      render(<App />);
+      await openSourcePicker(user);
+      const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
+      let videoPaused = true;
+      Object.defineProperty(video, "paused", {
+        configurable: true,
+        get: () => videoPaused,
+      });
+      const videoPlay = vi.fn(async () => {
+        videoPaused = false;
+        fireEvent.play(video);
+      });
+
+      const videoPause = vi.fn(() => {
+        videoPaused = true;
+      });
+
+      Object.defineProperty(video, "pause", { configurable: true, value: videoPause });
+      Object.defineProperty(video, "play", { configurable: true, value: videoPlay });
+
+      await user.click(screen.getByRole("button", { name: "Mute Commentary" }));
+      expect(video).toHaveProperty("muted", false);
+
+      Object.defineProperty(video, "currentTime", {
+        configurable: true,
+        value: 10,
+        writable: true,
+      });
+      fireEvent.timeUpdate(video);
+      await user.click(screen.getByRole("button", { name: "Play" }));
+      expect(videoPlay).toHaveBeenCalledOnce();
+      videoPause.mockClear();
+
+      await user.click(screen.getByRole("button", { name: "Enable Commentary" }));
+      await waitFor(() => expect(audioElements).toHaveLength(4));
+      const transitionAudio = audioElements.slice(2);
+      const transitionAudioPlay = transitionAudio.map((audio) =>
+        vi.spyOn(audio, "play").mockResolvedValue(),
+      );
+
+      for (const audio of transitionAudio) fireEvent.canPlay(audio);
+      await waitFor(() =>
+        expect(transitionAudioPlay.every((play) => play.mock.calls.length === 1)).toBe(true),
+      );
+
+      expect(video).toHaveProperty("muted", true);
+      expect(transitionAudio.every((audio) => audio.currentTime === 10)).toBe(true);
+      expect(videoPlay).toHaveBeenCalledOnce();
+      expect(videoPause).not.toHaveBeenCalled();
+
+      const transitionAudioPause = transitionAudio.map((audio) => vi.spyOn(audio, "pause"));
+      await user.click(screen.getByRole("button", { name: "Mute Commentary" }));
+
+      await waitFor(() => expect(video).toHaveProperty("muted", false));
+      expect(transitionAudioPause.every((pause) => pause.mock.calls.length > 0)).toBe(true);
+      expect(videoPlay).toHaveBeenCalledOnce();
+      expect(videoPause).not.toHaveBeenCalled();
+
+      await user.click(screen.getByRole("button", { name: "Mute eng" }));
+      await user.click(screen.getByRole("button", { name: "Enable Commentary" }));
+
+      await waitFor(() => expect(gainNodes.at(-1)?.gain.value).toBe(1));
+      expect(video).toHaveProperty("muted", false);
+      expect(videoPlay).toHaveBeenCalledOnce();
+      expect(videoPause).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it("opens the source picker with Ctrl+O", () => {
@@ -966,15 +1079,32 @@ describe("App", () => {
         },
       ],
     });
+    mocks.prepareAudioPreviews.mockResolvedValue([
+      {
+        mediaToken: 1,
+        streamIndex: 1,
+        url: "http://easytrim-media.localhost/source-1?variant=audio&stream=1",
+      },
+      {
+        mediaToken: 1,
+        streamIndex: 2,
+        url: "http://easytrim-media.localhost/source-1?variant=audio&stream=2",
+      },
+    ]);
     const user = userEvent.setup();
-    const audio = document.createElement("audio");
+    const audioElements = [document.createElement("audio"), document.createElement("audio")];
     const audioPlay = vi
-      .spyOn(audio, "play")
-      .mockRejectedValue(new DOMException("Playback interrupted", "AbortError"));
+      .fn()
+      .mockRejectedValueOnce(new DOMException("Playback interrupted", "AbortError"))
+      .mockRejectedValueOnce(new DOMException("Playback interrupted", "AbortError"));
 
-    const audioPause = vi.spyOn(audio, "pause").mockImplementation(() => undefined);
+    const audioPause = vi.fn();
+    for (const element of audioElements) {
+      Object.defineProperty(element, "pause", { configurable: true, value: audioPause });
+      Object.defineProperty(element, "play", { configurable: true, value: audioPlay });
+    }
     const audioConstructor = vi.fn(function AudioMock() {
-      return audio;
+      return audioElements.shift();
     });
 
     const audioContext = {
@@ -1004,7 +1134,7 @@ describe("App", () => {
       render(<App />);
       await openSourcePicker(user);
       const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
-      await waitFor(() => expect(audioConstructor).toHaveBeenCalledOnce());
+      await waitFor(() => expect(audioConstructor).toHaveBeenCalledTimes(2));
       const videoPlay = vi.spyOn(video, "play").mockImplementation(async () => {
         fireEvent.play(video);
       });
@@ -1019,7 +1149,7 @@ describe("App", () => {
       expect(audioPause).toHaveBeenCalled();
       expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
 
-      audioPlay.mockResolvedValueOnce(undefined);
+      audioPlay.mockResolvedValue(undefined);
       await user.click(screen.getByRole("button", { name: "Play" }));
 
       await waitFor(() => expect(videoPlay).toHaveBeenCalledTimes(2));
