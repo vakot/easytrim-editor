@@ -1,12 +1,12 @@
 import "i18next";
 
-import type { en } from "./locales/en";
+import type { TranslationSchema } from "./schema";
 
 declare module "i18next" {
   interface CustomTypeOptions {
     defaultNS: "translation";
     resources: {
-      translation: typeof en;
+      translation: TranslationSchema;
     };
     returnNull: false;
   }

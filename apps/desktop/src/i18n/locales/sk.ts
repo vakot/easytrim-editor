@@ -1,8 +1,4 @@
-import type { en } from "./en";
-
-type TranslationShape<T> = {
-  [Key in keyof T]: T[Key] extends string ? string : TranslationShape<T[Key]>;
-};
+import type { TranslationSchema } from "../schema";
 
 export const sk = {
   common: {
@@ -326,4 +322,4 @@ export const sk = {
     framesPerSecond: "{{value}} fps",
     megabitsPerSecond: "{{value}} Mb/s",
   },
-} satisfies TranslationShape<typeof en>;
+} satisfies TranslationSchema;
