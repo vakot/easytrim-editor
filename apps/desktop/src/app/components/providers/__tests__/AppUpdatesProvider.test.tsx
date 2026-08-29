@@ -14,6 +14,9 @@ const nativeUpdates = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/tauri/updates", () => nativeUpdates);
+vi.mock("@/lib/tauri/updates.utils", () => ({
+  isTauriRuntime: nativeUpdates.isTauriRuntime,
+}));
 
 function UpdateProbe() {
   const updates = useAppUpdates();

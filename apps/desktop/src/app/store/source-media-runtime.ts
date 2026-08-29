@@ -7,7 +7,8 @@ import {
   checkMediaCapabilitiesRequested,
   ingestSources,
 } from "@/app/store/thunks/source-media-thunks";
-import { listenForSourceDrops, normalizeAppError } from "@/lib/tauri/media";
+import { listenForSourceDrops } from "@/lib/tauri/media";
+import { normalizeAppError } from "@/lib/tauri/media.utils";
 
 /**
  * Starts the application-lifetime source/media integration once, outside React

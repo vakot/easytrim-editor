@@ -1,6 +1,6 @@
 import type { TFunction } from "i18next";
 
-import type { FrameRate, MediaInfo } from "@/lib/tauri/media";
+import type { FrameRate, MediaInfo } from "@/lib/tauri/media.types";
 
 export const FRAME_RATE_OPTIONS = [24, 25, 30, 50, 60, 120] as const;
 

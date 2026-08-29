@@ -1,5 +1,5 @@
 import type { SourceRef } from "@/domain/source";
-import type { MediaInfo } from "@/lib/tauri/media";
+import type { MediaInfo } from "@/lib/tauri/media.types";
 
 export const firstSource: SourceRef = {
   displayName: "first.mp4",

@@ -1,4 +1,4 @@
-import type { BinaryCapability } from "@/lib/tauri/media";
+import type { BinaryCapability } from "@/lib/tauri/media.types";
 
 export function capabilityError(
   label: string,

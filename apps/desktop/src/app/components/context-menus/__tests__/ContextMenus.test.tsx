@@ -17,7 +17,7 @@ import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import type { SourceRef } from "@/domain/source";
 import { getCurrentVersion } from "@/lib/app-version.utils";
 import { openExternalUrl } from "@/lib/open-external-url.utils";
-import type { QueueFinishAction } from "@/lib/tauri/queue";
+import type { QueueFinishAction } from "@/lib/tauri/queue.types";
 
 import { ContextMenus as AppContextMenus } from "../ContextMenus";
 

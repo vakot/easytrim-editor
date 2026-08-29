@@ -15,12 +15,12 @@ import {
 } from "@/domain/export-metrics";
 import {
   cancelOperation,
-  type ExportProgress,
-  normalizeAppError,
   releaseExportSource,
   renderFast,
   renderOptimized,
 } from "@/lib/tauri/media";
+import type { ExportProgress } from "@/lib/tauri/media.types";
+import { normalizeAppError } from "@/lib/tauri/media.utils";
 import { performQueueFinishAction } from "@/lib/tauri/queue";
 
 interface RuntimeExportJob {
@@ -172,7 +172,7 @@ async function renderJob(job: RuntimeExportJob) {
       job.item.route === "fast"
         ? await renderFast(job.item.request, job.item.outputId, onProgress)
         : await renderOptimized(
-            job.item.request as import("@/lib/tauri/media").OptimizedExportRequest,
+            job.item.request as import("@/lib/tauri/media.types").OptimizedExportRequest,
             job.item.outputId,
             onProgress,
           );

@@ -1,7 +1,7 @@
 import { createAction } from "@reduxjs/toolkit";
 
 import type { SourceRef } from "@/domain/source";
-import type { AppError, MediaInfo } from "@/lib/tauri/media";
+import type { AppError, MediaInfo } from "@/lib/tauri/media.types";
 
 export const sourceSelected = createAction<{
   source: SourceRef;

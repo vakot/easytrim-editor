@@ -11,7 +11,7 @@ import type {
   AudioPreviewDescriptor,
   MediaInfo,
   WaveformResult,
-} from "@/lib/tauri/media";
+} from "@/lib/tauri/media.types";
 
 import type { RootState } from "../store";
 

@@ -1,7 +1,8 @@
 import { type KeyboardEvent, type PointerEvent, useRef } from "react";
 
 import { cn } from "@/lib/class-names.utils";
-import { colorFromSpectrumPosition, type HexColor, hexToHsl } from "@/lib/color.utils";
+import type { HexColor } from "@/lib/color.types";
+import { colorFromSpectrumPosition, hexToHsl } from "@/lib/color.utils";
 
 interface ColorSampleProps {
   color: string;

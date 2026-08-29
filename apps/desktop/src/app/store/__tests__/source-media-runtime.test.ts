@@ -6,7 +6,7 @@ import { selectSourceError, selectSourceMedia } from "@/app/store/slices/source-
 import { startSourceMediaRuntime } from "@/app/store/source-media-runtime";
 import { createAppStore } from "@/app/store/store";
 import type { SourceRef } from "@/domain/source";
-import type { MediaInfo, SourceDropEvent } from "@/lib/tauri/media";
+import type { MediaInfo, SourceDropEvent } from "@/lib/tauri/media.types";
 
 const mocks = vi.hoisted(() => ({
   checkMediaCapabilities: vi.fn(),

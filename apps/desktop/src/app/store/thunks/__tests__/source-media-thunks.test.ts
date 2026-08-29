@@ -49,7 +49,7 @@ import {
 } from "@/app/store/thunks/source-media-thunks";
 import type { EditorSnapshot } from "@/domain/editor-snapshot";
 import type { SourceRef } from "@/domain/source";
-import type { MediaInfo, WaveformResult } from "@/lib/tauri/media";
+import type { MediaInfo, WaveformResult } from "@/lib/tauri/media.types";
 
 const mocks = vi.hoisted(() => ({
   checkMediaCapabilities: vi.fn(),

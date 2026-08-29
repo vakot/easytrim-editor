@@ -49,17 +49,16 @@ import { createEditorSnapshot } from "@/domain/editor-snapshot";
 import type { SourceRef } from "@/domain/source";
 import {
   activateSourcePath,
-  type AppError,
   checkMediaCapabilities,
   chooseSource as chooseSourceDialog,
   inspectMedia,
-  normalizeAppError,
   prepareAudioPreviews,
   prepareProxyPreview,
   prepareSourcePreview,
   prepareWaveforms,
-  type PreviewKind,
 } from "@/lib/tauri/media";
+import type { AppError, PreviewKind } from "@/lib/tauri/media.types";
+import { normalizeAppError } from "@/lib/tauri/media.utils";
 
 export type AppThunk<ReturnValue = void | Promise<unknown>> = (
   dispatch: AppDispatch,

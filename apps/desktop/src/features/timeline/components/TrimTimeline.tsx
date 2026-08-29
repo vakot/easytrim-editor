@@ -1,14 +1,41 @@
+import type { ReactNode, RefObject } from "react";
 import { useTranslation } from "react-i18next";
 
 import { clampPlaybackMicros, formatPlaybackTime } from "@/domain/playback";
-import { minimumSelectionMicros, timelinePercent } from "@/domain/trim";
+import {
+  minimumSelectionMicros,
+  timelinePercent,
+  type TrimBoundary,
+  type TrimRange,
+} from "@/domain/trim";
+import type { FrameRate } from "@/lib/tauri/media.types";
 
 import { useTrimTimelineInteractions } from "../hooks/useTrimTimelineInteractions";
 
 import { Playhead, SegmentDragHandle, TrimHandle } from "./TimelineHandles";
 import { TimelineTimeValue } from "./TimelineTimeValue";
 import styles from "./TrimTimeline.module.css";
-import type { TrimTimelineProps } from "./TrimTimeline.types";
+
+interface TrimTimelineProps {
+  range: TrimRange;
+  disabled?: boolean;
+  playheadMicros: number;
+  playheadRef: RefObject<HTMLButtonElement | null>;
+  frameRate?: FrameRate;
+  playbackControls: ReactNode;
+  playbackTimecode: ReactNode;
+  videoToolbar: ReactNode;
+  onChange: (boundary: TrimBoundary, range: TrimRange) => TrimBoundary | null;
+  onMoveSegment: (range: TrimRange) => TrimBoundary | null;
+  onTrimDragStart: () => void;
+  onTrimDragEnd: () => void;
+  onSegmentDragStart: () => void;
+  onSegmentDragEnd: () => void;
+  onSeek: (micros: number) => void;
+  onScrubStart: () => void;
+  onScrub: (micros: number) => void;
+  onScrubEnd: () => void;
+}
 
 export function TrimTimeline({
   range,

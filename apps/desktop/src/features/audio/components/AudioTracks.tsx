@@ -1,19 +1,40 @@
 import { Info } from "lucide-react";
+import type { RefObject } from "react";
 import { useTranslation } from "react-i18next";
 
+import type { AudioTrackState } from "@/app/store/slices/audio-slice";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-import { timelinePercent } from "@/domain/trim";
+import { timelinePercent, type TrimRange } from "@/domain/trim";
+import type { AudioStream } from "@/lib/tauri/media.types";
 
 import { useWaveformPreparation } from "../hooks/useWaveformPreparation";
 import { audioOutputSummary } from "../lib/audio-level.utils";
 
 import { AudioLevelControl } from "./AudioLevelControl";
 import { AudioTrackRow } from "./AudioTrackRow";
-import type { AudioTracksProps } from "./AudioTracks.types";
 import { VolumeButton } from "./VolumeButton";
+
+interface AudioTracksProps {
+  streams: AudioStream[];
+  tracks: AudioTrackState[];
+  masterEnabled: boolean;
+  masterVolumePercent: number;
+  range: TrimRange;
+  playheadMicros: number;
+  playheadRef: RefObject<HTMLDivElement | null>;
+  mergeAudio: boolean;
+  waveformPreparationEnabled: boolean;
+  onToggleTrack: (streamIndex: number) => void;
+  onTrackVolumeChange: (streamIndex: number, volumePercent: number) => void;
+  onToggleMaster: () => void;
+  onMasterVolumeChange: (volumePercent: number) => void;
+  onToggleMerge: () => void;
+  onPrepareWaveforms: (streamIndexes: number[], width: number) => void;
+  onWaveformImageError: (streamIndex: number) => void;
+}
 
 export function AudioTracks({
   streams,

@@ -1,4 +1,4 @@
-export type HexColor = `#${string}`;
+import type { HexColor } from "./color.types";
 
 export function colorFromSpectrumPosition(x: number, y: number, size: number): HexColor {
   const radius = size / 2;

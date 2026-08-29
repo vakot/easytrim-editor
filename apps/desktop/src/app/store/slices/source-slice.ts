@@ -9,7 +9,7 @@ import {
   sourceSelected,
 } from "@/app/store/actions/source-actions";
 import type { SourceRef } from "@/domain/source";
-import type { AppError, MediaCapabilities, MediaInfo } from "@/lib/tauri/media";
+import type { AppError, MediaCapabilities, MediaInfo } from "@/lib/tauri/media.types";
 
 import type { RootState } from "../store";
 

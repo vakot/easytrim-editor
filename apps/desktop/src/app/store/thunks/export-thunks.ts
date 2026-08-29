@@ -52,13 +52,12 @@ import { cloneEditorSnapshot, createEditorSnapshot } from "@/domain/editor-snaps
 import {
   activateSourcePath,
   chooseOutputPath,
-  type FastExportRequest,
-  normalizeAppError,
-  type OptimizedExportRequest,
   planOptimizedExport,
   releaseExportSource,
   reserveExportSource,
 } from "@/lib/tauri/media";
+import type { FastExportRequest, OptimizedExportRequest } from "@/lib/tauri/media.types";
+import { normalizeAppError } from "@/lib/tauri/media.utils";
 import { availableQueueFinishActions } from "@/lib/tauri/queue";
 
 import type { AppThunk } from "./source-media-thunks";

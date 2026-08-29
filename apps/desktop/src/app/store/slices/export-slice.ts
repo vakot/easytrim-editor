@@ -10,8 +10,8 @@ import type {
   FastExportRequest,
   FrameRate,
   OptimizedExportRequest,
-} from "@/lib/tauri/media";
-import type { QueueFinishAction } from "@/lib/tauri/queue";
+} from "@/lib/tauri/media.types";
+import type { QueueFinishAction } from "@/lib/tauri/queue.types";
 
 import type { RootState } from "../store";
 

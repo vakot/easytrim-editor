@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 
 import { formatPlaybackTime } from "@/domain/playback";
-import type { FrameRate } from "@/lib/tauri/media";
+import type { FrameRate } from "@/lib/tauri/media.types";
 
 interface PlaybackTimecodeProps {
   currentMicros: number | null;

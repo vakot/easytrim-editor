@@ -35,7 +35,7 @@ import {
   cancelAllExportsRequested,
   startExportQueue,
 } from "@/app/store/thunks/export-thunks";
-import type { QueueFinishAction } from "@/lib/tauri/queue";
+import type { QueueFinishAction } from "@/lib/tauri/queue.types";
 
 import type { MenuNavigation } from "../types";
 

@@ -73,7 +73,7 @@ import {
   startFastCutRequested,
   startOptimizedExportRequested,
 } from "@/app/store/thunks/export-thunks";
-import type { MediaInfo } from "@/lib/tauri/media";
+import type { MediaInfo } from "@/lib/tauri/media.types";
 
 const media: MediaInfo = {
   formatName: "matroska",

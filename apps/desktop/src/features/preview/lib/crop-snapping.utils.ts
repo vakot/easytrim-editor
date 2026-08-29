@@ -1,4 +1,5 @@
-import { QUARTER_SNAP_POINTS, snapToNearestPoint } from "@/lib/interaction/snap-points.utils";
+import { QUARTER_SNAP_POINTS } from "@/lib/interaction/snap-points.consts";
+import { snapToNearestPoint } from "@/lib/interaction/snap-points.utils";
 
 import { type CropHandle, type CropRect, MIN_CROP_SIZE } from "./crop-geometry.utils";
 

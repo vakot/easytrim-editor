@@ -1,4 +1,5 @@
-import { type HexColor, hexToHsl, hslToHex } from "@/lib/color.utils";
+import type { HexColor } from "@/lib/color.types";
+import { hexToHsl, hslToHex } from "@/lib/color.utils";
 
 const SYSTEM_THEME_QUERY = "(prefers-color-scheme: dark)";
 export type ThemePreference = "system" | "light" | "dark";

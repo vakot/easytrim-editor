@@ -14,7 +14,7 @@ import { startSourceMediaRuntime } from "../app/store/source-media-runtime";
 import { store } from "../app/store/store";
 import { checkMediaCapabilitiesRequested } from "../app/store/thunks/source-media-thunks";
 import type { SourceRef } from "../domain/source";
-import type { MediaCapabilities, MediaInfo, SourceDropEvent } from "../lib/tauri/media";
+import type { MediaCapabilities, MediaInfo, SourceDropEvent } from "../lib/tauri/media.types";
 
 const mocks = vi.hoisted(() => ({
   checkMediaCapabilities: vi.fn(),

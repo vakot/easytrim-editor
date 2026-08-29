@@ -1,13 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 
-export type QueueFinishAction = "exit" | "systemSleep" | "systemShutdown" | "nothing";
-
-const QUEUE_FINISH_ACTIONS: readonly QueueFinishAction[] = [
-  "exit",
-  "systemSleep",
-  "systemShutdown",
-  "nothing",
-];
+import type { QueueFinishAction } from "./queue.types";
+import { isQueueFinishAction, normalizeQueueError } from "./queue.utils";
 
 export async function availableQueueFinishActions(): Promise<QueueFinishAction[]> {
   try {
@@ -25,18 +19,4 @@ export async function performQueueFinishAction(action: QueueFinishAction): Promi
   } catch (error: unknown) {
     throw normalizeQueueError(error);
   }
-}
-
-function isQueueFinishAction(value: unknown): value is QueueFinishAction {
-  return typeof value === "string" && QUEUE_FINISH_ACTIONS.includes(value as QueueFinishAction);
-}
-
-function normalizeQueueError(error: unknown): Error {
-  if (error instanceof Error) return error;
-  if (typeof error === "string") return new Error(error);
-  if (typeof error === "object" && error !== null && "message" in error) {
-    const message = (error as { message: unknown }).message;
-    if (typeof message === "string") return new Error(message);
-  }
-  return new Error("The queue finish action could not be completed.");
 }
