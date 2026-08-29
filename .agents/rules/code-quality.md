@@ -162,6 +162,18 @@ auto-sorted because spreads, duplicate keys, getters/setters, computed keys, and
 APIs can make property order observable. Preserve those orders unless a specific review confirms
 that reordering is semantically safe. ESLint's `pnpm lint:fix` workflow applies the safe fixes.
 
+Type-only imports and import-side-effect syntax are enforced with
+`@typescript-eslint/consistent-type-imports` and
+`@typescript-eslint/no-import-type-side-effects`. `consistent-type-exports` is intentionally not
+enabled because it requires type-aware parser services that are not part of the current lint
+configuration; enabling it would require a broader typed-linting migration.
+
+Import boundaries are enforced only where they are stable and mechanical: `components/ui` may
+not import application, feature, or store layers, and `domain` may not import application,
+feature, UI, Tauri-adapter, React, or other runtime layers. Feature-to-feature internals remain
+unenforced until the repository has enough cross-feature public API usage to define narrow,
+non-speculative exceptions; existing feature entrypoints should still be preferred.
+
 ## Data and State
 
 Keep state ownership clear.

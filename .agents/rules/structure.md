@@ -274,6 +274,11 @@ features -> components/ui, domain, lib, and local internals
   rather than bypassing public APIs or creating a cycle.
 - Shared UI primitives, pure domain logic, and technical adapters do not import product features.
 
+ESLint mechanically enforces the highest-value frontend boundaries: `components/ui` cannot import
+application, feature, or store layers, and `domain` cannot import application, feature, UI,
+React, Tauri-adapter, or other application-runtime modules. Feature-to-feature internal import
+restrictions remain intentionally unenforced until stable public API exceptions are needed.
+
 ## Frontend naming and exports
 
 ### Directories

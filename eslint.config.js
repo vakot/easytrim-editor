@@ -112,6 +112,61 @@ export default defineConfig(
     },
   },
   {
+    files: ["apps/desktop/src/components/ui/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@/app", "@/app/**", "@/features", "@/features/**", "@/store", "@/store/**"],
+              message: "UI primitives must not depend on application, feature, or state layers.",
+            },
+            {
+              regex: "^\\.\\.(?:/\\.\\.)*/(?:app|features|store)(?:/|$)",
+              message: "UI primitives must not depend on application, feature, or state layers.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ["apps/desktop/src/domain/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: [
+                "@/app",
+                "@/app/**",
+                "@/components",
+                "@/components/**",
+                "@/features",
+                "@/features/**",
+                "@/lib/tauri",
+                "@/lib/tauri/**",
+                "@/store",
+                "@/store/**",
+              ],
+              message: "Domain modules must remain framework- and application-independent.",
+            },
+            {
+              group: ["react", "react-dom", "react/**", "react-dom/**"],
+              message: "Domain modules must remain framework- and application-independent.",
+            },
+            {
+              regex: "^\\.\\.(?:/\\.\\.)*/(?:app|components|features|lib/tauri|store)(?:/|$)",
+              message: "Domain modules must remain framework- and application-independent.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ["apps/desktop/src/**/*.{ts,tsx}", "apps/desktop/vite.config.ts"],
     languageOptions: {
       globals: {
