@@ -1,10 +1,11 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 import {
+  type ExportPreset,
   loadExportPresetState,
   presetNameError,
-  type ExportPreset,
-} from "@/features/export/export-presets";
+} from "@/app/store/lib/export-presets";
+
 import type { RootState } from "../store";
 
 const exportPresetsSlice = createSlice({
@@ -20,9 +21,6 @@ const exportPresetsSlice = createSlice({
       state.selectedPresetId = preset.id;
       state.argumentsText = preset.argumentsText;
     },
-    exportPresetNewStarted: (state) => {
-      state.selectedPresetId = null;
-    },
     exportPresetCreated: (state, action: PayloadAction<{ name: string }>) => {
       if (presetNameError(state.presets, action.payload.name)) return;
       const nextPresetSequence = state.nextPresetSequence + 1;
@@ -31,6 +29,7 @@ const exportPresetsSlice = createSlice({
         name: action.payload.name.trim(),
         argumentsText: state.argumentsText,
       };
+
       state.presets.push(preset);
       state.selectedPresetId = preset.id;
       state.nextPresetSequence = nextPresetSequence;
@@ -61,11 +60,10 @@ const exportPresetsSlice = createSlice({
 
 export const {
   exportArgumentsChanged,
-  exportPresetSelected,
-  exportPresetNewStarted,
   exportPresetCreated,
-  exportPresetUpdated,
   exportPresetDeleted,
+  exportPresetSelected,
+  exportPresetUpdated,
 } = exportPresetsSlice.actions;
 export const exportPresetsReducer = exportPresetsSlice.reducer;
 

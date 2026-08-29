@@ -1,5 +1,17 @@
 {
+  "arrowParens": "always",
+  "bracketSameLine": false,
+  "bracketSpacing": true,
   "endOfLine": "lf",
   "printWidth": 100,
-  "proseWrap": "preserve"
+  "proseWrap": "preserve",
+  "quoteProps": "as-needed",
+  "semi": true,
+  "singleQuote": false,
+  "plugins": ["prettier-plugin-tailwindcss"],
+  "tailwindFunctions": ["cn", "cva", "clsx", "twMerge"],
+  "tailwindStylesheet": "./apps/desktop/src/styles/globals.css",
+  "tabWidth": 2,
+  "trailingComma": "all",
+  "useTabs": false
 }

@@ -2,16 +2,17 @@ import { createSelector, createSlice, type PayloadAction } from "@reduxjs/toolki
 
 import { sourceCleared, sourceFailed, sourceSelected } from "@/app/store/actions/source-actions";
 import { selectSourceMedia } from "@/app/store/slices/source-slice";
-import { FULL_CROP, type CropRect } from "@/domain/crop";
+import { type CropRect, FULL_CROP } from "@/domain/crop";
+
 import type { RootState } from "../store";
 
-export interface CropState {
+interface CropState {
   value: CropRect;
 }
 
-export interface CropResolution {
-  width: number;
+interface CropResolution {
   height: number;
+  width: number;
 }
 
 export const initialCropState: CropState = { value: FULL_CROP };

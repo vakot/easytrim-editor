@@ -1,6 +1,23 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { usePlaybackModes } from "@/app/hooks/usePlaybackModes";
+import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
+import {
+  selectAudioPreviews,
+  selectAudioTracks,
+  selectMasterAudio,
+} from "@/app/store/slices/audio-slice";
+import {
+  selectLoopPlaybackEnabled,
+  selectPlaybackSpeed,
+  selectSegmentPlaybackEnabled,
+  selectSnapPlaybackEnabled,
+} from "@/app/store/slices/editor-tools-slice";
+import { selectPreview } from "@/app/store/slices/preview-slice";
+import { selectSourceMedia, selectSourceSelection } from "@/app/store/slices/source-slice";
+import { selectTrim, trimChanged } from "@/app/store/slices/trim-slice";
+import { handlePreviewPlaybackError as handlePreviewPlaybackErrorRequested } from "@/app/store/thunks/source-media-thunks";
 import { clampPlaybackMicros, frameDurationMicros } from "@/domain/playback";
 import {
   canSetTrimBoundaryAtPlayhead,
@@ -10,85 +27,69 @@ import {
   type TrimBoundary,
   type TrimRange,
 } from "@/domain/trim";
-import { isApplicationDialogOpen } from "@/lib/hotkeys";
-import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
-import {
-  selectLoopPlaybackEnabled,
-  selectPlaybackSpeed,
-  selectSegmentPlaybackEnabled,
-  selectSnapPlaybackEnabled,
-} from "@/app/store/slices/editor-tools-slice";
-import {
-  selectAudioPreviews,
-  selectAudioTracks,
-  selectMasterAudio,
-} from "@/app/store/slices/audio-slice";
-import { selectPreview } from "@/app/store/slices/preview-slice";
-import { selectSourceMedia, selectSourceSelection } from "@/app/store/slices/source-slice";
-import { selectTrim, trimChanged } from "@/app/store/slices/trim-slice";
-import { handlePreviewPlaybackError as handlePreviewPlaybackErrorRequested } from "@/app/store/thunks/source-media-thunks";
-import { usePlaybackModes } from "@/features/editor/hooks/usePlaybackModes";
-import { synchronizeAudioPosition } from "@/features/editor/utils/audio-sync";
-import {
-  editorShortcutFromEvent,
-  isShortcutBlockedTarget,
-} from "@/features/editor/utils/editor-shortcuts";
 import {
   connectNativeAudioBinding,
   disconnectNativeAudioBinding,
   getOrCreateNativeAudioBinding,
   type NativeAudioBinding,
-} from "@/features/editor/utils/native-audio-runtime";
+  synchronizeAudioPosition,
+} from "@/features/audio";
+import {
+  cancelPlaybackFrame,
+  type PlaybackFrameHandle,
+  requestPlaybackFrame,
+  seekVideo,
+} from "@/features/preview";
 import {
   cancelFrame,
-  cancelPlaybackFrame,
-  requestPlaybackFrame,
-  seekMediaIfNeeded,
-  seekVideo,
+  editorShortcutFromEvent,
+  isShortcutBlockedTarget,
   syncPlayheadElements,
-  type PlaybackFrameHandle,
-} from "@/features/editor/utils/media-sync";
+} from "@/features/timeline";
+import { isApplicationDialogOpen } from "@/lib/hotkeys.utils";
+import { seekMediaIfNeeded } from "@/lib/media-element.utils";
 
 const EMPTY_TRIM: TrimRange = {
   startMicros: 0,
   endMicros: 0,
   sourceDurationMicros: 0,
 };
+
 const AUDIO_SYNC_INTERVAL_MS = 100;
 
 export interface EditorInteractionRuntime {
-  videoRef: React.RefObject<HTMLVideoElement | null>;
-  playheadRef: React.RefObject<HTMLButtonElement | null>;
   audioPlayheadRef: React.RefObject<HTMLDivElement | null>;
+  canSetSegmentEnd: boolean;
+  canSetSegmentStart: boolean;
   displayedPlayheadMicros: number;
-  isPlaying: boolean;
   isPlaybackReady: boolean;
-  transportError: string | null;
+  isPlaying: boolean;
   nativeLoopEnabled: boolean;
-  videoMuted: boolean;
-  onLoadedMetadata: () => void;
   onCanPlay: () => void;
-  onPlay: () => void;
-  onPause: () => void;
-  onTimeUpdate: (seconds: number) => void;
+  onCropToolOpenChange: (isOpen: boolean) => void;
   onEnded: () => void;
-  onTogglePlayback: () => void;
-  onStepFrame: (direction: -1 | 1) => void;
-  onSetSegmentBoundary: (boundary: TrimBoundary) => void;
-  onTrimBoundaryChange: (boundary: TrimBoundary, nextTrim: TrimRange) => TrimBoundary | null;
-  onSegmentMove: (nextTrim: TrimRange) => TrimBoundary | null;
-  onTrimDragStart: () => void;
-  onTrimDragEnd: () => void;
-  onSegmentDragStart: () => void;
-  onSegmentDragEnd: () => void;
-  onSeek: (micros: number) => void;
-  onScrubStart: () => void;
+  onLoadedMetadata: () => void;
+  onPause: () => void;
+  onPlay: () => void;
+  onPreviewPlaybackError: (previewKind: "source" | "proxy") => void;
   onScrub: (micros: number) => void;
   onScrubEnd: () => void;
-  onCropToolOpenChange: (isOpen: boolean) => void;
-  onPreviewPlaybackError: (previewKind: "source" | "proxy") => void;
-  canSetSegmentStart: boolean;
-  canSetSegmentEnd: boolean;
+  onScrubStart: () => void;
+  onSeek: (micros: number) => void;
+  onSegmentDragEnd: () => void;
+  onSegmentDragStart: () => void;
+  onSegmentMove: (nextTrim: TrimRange) => TrimBoundary | null;
+  onSetSegmentBoundary: (boundary: TrimBoundary) => void;
+  onStepFrame: (direction: -1 | 1) => void;
+  onTimeUpdate: (seconds: number) => void;
+  onTogglePlayback: () => void;
+  onTrimBoundaryChange: (boundary: TrimBoundary, nextTrim: TrimRange) => TrimBoundary | null;
+  onTrimDragEnd: () => void;
+  onTrimDragStart: () => void;
+  playheadRef: React.RefObject<HTMLButtonElement | null>;
+  transportError: string | null;
+  videoMuted: boolean;
+  videoRef: React.RefObject<HTMLVideoElement | null>;
 }
 
 export function useEditorInteractionController(): EditorInteractionRuntime {
@@ -113,12 +114,14 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
       ),
     [audioPreviewState?.previews],
   );
+
   const sourcePath = sourceSelection?.sourcePath ?? null;
   const sourceAudioStreams = media?.audioStreams ?? [];
   const externalAudioStreamCount = Object.keys(audioPreviewUrls).length;
   const activeExternalAudioStreamCount = audioTracks.filter(
     (track) => track.enabled && audioPreviewUrls[track.streamIndex] !== undefined,
   ).length;
+
   const usesExternalAudio = audioPreviewState?.status === "ready" && externalAudioStreamCount > 0;
   const nativeAudioTrack = usesExternalAudio
     ? undefined
@@ -126,8 +129,10 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
         (track) =>
           sourceAudioStreams.find((stream) => stream.streamIndex === track.streamIndex)?.isDefault,
       ) ?? audioTracks[0]);
+
   const previewKey =
     sourcePath && preview.status === "ready" ? `${sourcePath}:${preview.value.url}` : null;
+
   const [playheadMicros, setPlayheadMicros] = useState(trim.startMicros);
   const [isPlaying, setIsPlaying] = useState(false);
   const [transportError, setTransportError] = useState<string | null>(null);
@@ -136,18 +141,21 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     sourcePath: string | null;
     streamIndexes: Set<number>;
   }>(() => ({ sourcePath: null, streamIndexes: new Set() }));
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioElementsRef = useRef(new Map<number, HTMLAudioElement>());
   const audioReadyListenersRef = useRef(new Map<number, () => void>());
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioNodesRef = useRef(
-    new Map<number, { source: MediaElementAudioSourceNode; gain: GainNode }>(),
+    new Map<number, { gain: GainNode; source: MediaElementAudioSourceNode }>(),
   );
+
   const nativeAudioBindingsRef = useRef(new Map<HTMLVideoElement, NativeAudioBinding>());
   const nativeAudioBindingRef = useRef<{
-    element: HTMLVideoElement;
     binding: NativeAudioBinding;
+    element: HTMLVideoElement;
   } | null>(null);
+
   const masterGainRef = useRef<GainNode | null>(null);
   const playheadRef = useRef<HTMLButtonElement>(null);
   const audioPlayheadRef = useRef<HTMLDivElement>(null);
@@ -176,15 +184,17 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     (activeExternalAudioStreamCount === 0 ||
       (audioReadiness.sourcePath === sourcePath &&
         audioReadiness.streamIndexes.size === activeExternalAudioStreamCount));
+
   const isPlaybackReadyRef = useRef(isPlaybackReady);
   const nativeLoopEnabled =
     isPlaybackReady && loopPlaybackEnabled && !segmentPlaybackEnabled && !usesExternalAudio;
+
   const nativeLoopEnabledRef = useRef(nativeLoopEnabled);
   const shortcutActionsRef = useRef<{
     enabled: boolean;
-    togglePlayback: () => void;
-    stepFrame: (direction: -1 | 1) => void;
     setSegmentBoundary: (boundary: TrimBoundary) => void;
+    stepFrame: (direction: -1 | 1) => void;
+    togglePlayback: () => void;
   } | null>(null);
 
   const removeAudioRuntime = useCallback((streamIndex: number) => {
@@ -260,6 +270,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     loopEnabled: loopPlaybackEnabled,
     segmentEnabled: segmentPlaybackEnabled,
   });
+
   const displayedPlayheadMicros = clampPlaybackMicros(playheadMicros, trim.sourceDurationMicros);
 
   useEffect(() => {
@@ -309,6 +320,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
           ),
         )
       : {};
+
     const activeStreamIndexes = new Set(Object.keys(activeExternalAudioUrls).map(Number));
     for (const streamIndex of audioElementsRef.current.keys()) {
       if (!activeStreamIndexes.has(streamIndex)) removeAudioRuntime(streamIndex);
@@ -329,11 +341,13 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
         setAudioReadiness((current) => {
           const indexes =
             current.sourcePath === sourcePath ? new Set(current.streamIndexes) : new Set<number>();
+
           if (indexes.has(streamIndex)) return current;
           indexes.add(streamIndex);
           return { sourcePath, streamIndexes: indexes };
         });
       };
+
       element.addEventListener("canplay", markReady, { once: true });
       audioReadyListenersRef.current.set(streamIndex, markReady);
       document.body.appendChild(element);
@@ -383,6 +397,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
       const combinedGain =
         (masterAudio.enabled ? masterAudio.volumePercent / 50 : 0) *
         (nativeAudioTrack.enabled ? nativeAudioTrack.volumePercent / 50 : 0);
+
       videoRef.current.volume = Math.min(1, combinedGain);
     }
   }, [
@@ -420,6 +435,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
   const pauseAudioPlayback = useCallback(() => {
     for (const audio of audioElementsRef.current.values()) audio.pause();
   }, []);
+
   const syncAudioPlayback = useCallback((seconds: number, force = false) => {
     for (const audio of audioElementsRef.current.values())
       synchronizeAudioPosition(audio, seconds, playbackRateRef.current, force);
@@ -499,6 +515,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
         mediaTimeSeconds * 1_000_000,
         trimRef.current.sourceDurationMicros,
       );
+
       currentPlayheadMicrosRef.current = currentMicros;
       syncPlayheadElements(
         playheadRef.current,
@@ -520,6 +537,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
       }
       playbackFrameRef.current = requestPlaybackFrame(video, update);
     };
+
     const video = videoRef.current;
     if (video) playbackFrameRef.current = requestPlaybackFrame(video, update);
   }, [handlePlaybackBoundary, stopPlayheadAnimation, syncAudioPlayback]);
@@ -543,6 +561,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     pendingTrimCommitRef.current = null;
     if (pendingTrim && sourcePath) dispatch(trimChanged({ trim: pendingTrim }));
   }, [dispatch, sourcePath]);
+
   const queueTrimCommit = useCallback(
     (nextTrim: TrimRange) => {
       pendingTrimCommitRef.current = nextTrim;
@@ -556,6 +575,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     },
     [dispatch, sourcePath],
   );
+
   const queueScrubSeek = useCallback(
     (micros: number) => {
       pendingScrubMicrosRef.current = clampPlaybackMicros(
@@ -572,12 +592,14 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     },
     [commitSeek],
   );
+
   const flushScrubSeek = useCallback(() => {
     cancelFrame(scrubFrameRef);
     const pendingMicros = pendingScrubMicrosRef.current;
     pendingScrubMicrosRef.current = null;
     if (pendingMicros !== null) commitSeek(pendingMicros);
   }, [commitSeek]);
+
   const handleScrubStart = useCallback(() => {
     timelineInteractionActiveRef.current = true;
     playbackStartSequenceRef.current += 1;
@@ -589,6 +611,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     setIsPlaying(false);
     stopPlayheadAnimation();
   }, [pauseAudioPlayback, stopPlayheadAnimation]);
+
   const handleScrubEnd = useCallback(() => {
     flushScrubSeek();
     timelineInteractionActiveRef.current = false;
@@ -615,10 +638,12 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
       currentPlayheadMicrosRef.current,
       trimRef.current,
     );
+
     if (startMicros !== currentPlayheadMicrosRef.current) commitSeek(startMicros);
     playbackModes.resetBoundary();
     startMediaPlayback();
   }, [commitSeek, playbackModes, startMediaPlayback]);
+
   const handleStepFrame = useCallback(
     (direction: -1 | 1) => {
       playbackStartSequenceRef.current += 1;
@@ -631,6 +656,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     },
     [commitSeek, frameRate, stopPlayheadAnimation],
   );
+
   const handleSetSegmentBoundary = useCallback(
     (boundary: TrimBoundary) => {
       if (!sourcePath) return;
@@ -643,12 +669,14 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     },
     [dispatch, flushTrimCommit, sourcePath],
   );
+
   const handleTrimBoundaryChange = useCallback(
     (boundary: TrimBoundary, nextTrim: TrimRange) => {
       const currentMicros = currentPlayheadMicrosRef.current;
       const follow = snapPlaybackEnabled
         ? playheadFollowAfterTrimBoundaryMove(trimRef.current, nextTrim, boundary, currentMicros)
         : { playheadMicros: currentMicros, boundary: null };
+
       trimRef.current = nextTrim;
       queueTrimCommit(nextTrim);
       if (follow.playheadMicros !== currentMicros) queueScrubSeek(follow.playheadMicros);
@@ -656,6 +684,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     },
     [queueScrubSeek, queueTrimCommit, snapPlaybackEnabled],
   );
+
   const handleSegmentMove = useCallback(
     (nextTrim: TrimRange) => {
       const currentMicros = currentPlayheadMicrosRef.current;
@@ -668,6 +697,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
               segmentFollowBoundaryRef.current,
             )
           : { playheadMicros: currentMicros, boundary: null };
+
       segmentFollowBoundaryRef.current = follow.boundary;
       trimRef.current = nextTrim;
       queueTrimCommit(nextTrim);
@@ -676,17 +706,20 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     },
     [queueScrubSeek, queueTrimCommit, snapPlaybackEnabled],
   );
+
   const handleSegmentDragStart = useCallback(() => {
     segmentDragActiveRef.current = true;
     segmentFollowBoundaryRef.current = null;
     handleScrubStart();
   }, [handleScrubStart]);
+
   const handleSegmentDragEnd = useCallback(() => {
     segmentDragActiveRef.current = false;
     segmentFollowBoundaryRef.current = null;
     flushTrimCommit();
     handleScrubEnd();
   }, [flushTrimCommit, handleScrubEnd]);
+
   const handleTrimDragEnd = useCallback(() => {
     flushTrimCommit();
     handleScrubEnd();
@@ -698,6 +731,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
         seconds * 1_000_000,
         trimRef.current.sourceDurationMicros,
       );
+
       if (isPlayingRef.current) {
         handlePlaybackBoundary(currentMicros);
         return;
@@ -715,6 +749,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     },
     [handlePlaybackBoundary, stopPlayheadAnimation, syncAudioPlayback],
   );
+
   const onPause = useCallback(() => {
     if (isPlayingRef.current) {
       void videoRef.current?.play().catch(() => undefined);
@@ -727,6 +762,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     stopPlayheadAnimation();
     if (videoRef.current) onTimeUpdate(videoRef.current.currentTime);
   }, [onTimeUpdate, pauseAudioPlayback, stopPlayheadAnimation]);
+
   const onCropToolOpenChange = useCallback(
     (isOpen: boolean) => {
       if (isOpen) {
@@ -748,6 +784,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     },
     [pauseAudioPlayback, startMediaPlayback, stopPlayheadAnimation],
   );
+
   const onPreviewPlaybackError = useCallback(
     (previewKind: "source" | "proxy") => {
       playbackStartSequenceRef.current += 1;

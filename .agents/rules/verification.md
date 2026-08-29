@@ -93,9 +93,17 @@ Run configured checks relevant to the affected files.
 
 Prefer repository-defined commands over manually constructed equivalents.
 
+Run `pnpm knip` for production dead-code analysis. Its production graph intentionally excludes
+tests, so test-only imports must not be used to justify production files, exports, or types.
+
 Do not run broad auto-fix or formatting commands when they would modify unrelated files.
 
 Verification commands should not create unnecessary diff noise.
+
+`pnpm lint:fix` applies the configured deterministic declaration and prop ordering rules where
+Perfectionist can safely fix them. `pnpm lint` enforces case-insensitive natural ascending order
+for interfaces, object types, JSX props, destructured object patterns, and named import/export
+members; semantically ordered object literals remain outside that automatic rule.
 
 ## Manual Verification
 

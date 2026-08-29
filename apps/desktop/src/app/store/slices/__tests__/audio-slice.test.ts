@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
+import { firstSource, mediaWithAudio } from "@/test/source.fixtures";
+
 import {
   audioMergeToggled,
   audioReducer,
@@ -12,7 +14,6 @@ import {
   waveformReady,
   waveformsLoading,
 } from "../audio-slice";
-import { firstSource, mediaWithAudio } from "./test-fixtures";
 
 function readyAudio() {
   const loading = audioReducer(initialAudioState, sourceSelected({ source: firstSource }));
@@ -29,6 +30,7 @@ describe("audio slice", () => {
       ready,
       audioTrackVolumeChanged({ streamIndex: 2, volumePercent: 0 }),
     );
+
     const unmuted = audioReducer(muted, audioTrackToggled({ streamIndex: 2 }));
     const merged = audioReducer(unmuted, audioMergeToggled());
     const masterMuted = audioReducer(merged, masterAudioToggled());
@@ -49,6 +51,7 @@ describe("audio slice", () => {
         streamIndexes: [2, 4],
       }),
     );
+
     const stale = audioReducer(
       loading,
       waveformReady({
@@ -59,6 +62,7 @@ describe("audio slice", () => {
         url: "media://stale",
       }),
     );
+
     const current = audioReducer(
       stale,
       waveformReady({

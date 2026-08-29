@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { sourceCleared, sourceSelected, sourceReady } from "@/app/store/actions/source-actions";
+import { sourceCleared, sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
+import { firstSource, media } from "@/test/source.fixtures";
+
+import { createAppStore } from "../../store";
 import {
   cropChanged,
   cropReducer,
@@ -8,8 +11,6 @@ import {
   selectCropApplied,
   selectCropResolution,
 } from "../crop-slice";
-import { createAppStore } from "../../store";
-import { firstSource, media } from "./test-fixtures";
 
 describe("crop slice", () => {
   it("resets to FULL_CROP on source lifecycle events and derives applied state", () => {
@@ -21,6 +22,7 @@ describe("crop slice", () => {
         resolution: { width: 1536, height: 1080 },
       }),
     );
+
     const cleared = cropReducer(changed, sourceCleared());
 
     expect(selectCropApplied({ crop: changed } as never)).toBe(true);

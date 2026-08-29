@@ -5,7 +5,8 @@ import { DropdownMenu as MenuPrimitive } from "radix-ui";
 import * as React from "react";
 
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
+
+import { cn } from "@/lib/class-names.utils";
 
 type MenuInteraction = "keyboard" | "pointer" | null;
 
@@ -82,9 +83,12 @@ function MenuContent({
     <MenuSubmenuCoordinator>
       <MenuPrimitive.Portal>
         <MenuPrimitive.Content
-          data-slot="menu-content"
           align={align}
-          sideOffset={sideOffset}
+          className={cn(
+            "z-50 min-w-56 rounded-md border bg-popover p-1 text-popover-foreground shadow-lg ring-1 ring-foreground/10",
+            className,
+          )}
+          data-slot="menu-content"
           onCloseAutoFocus={(event) => {
             onCloseAutoFocus?.(event);
             if (!event.defaultPrevented && interactionRef.current === "pointer") {
@@ -92,10 +96,7 @@ function MenuContent({
             }
             interactionRef.current = null;
           }}
-          className={cn(
-            "z-50 min-w-56 rounded-md border bg-popover p-1 text-popover-foreground shadow-lg ring-1 ring-foreground/10",
-            className,
-          )}
+          sideOffset={sideOffset}
           {...props}
         />
       </MenuPrimitive.Portal>
@@ -135,15 +136,15 @@ function MenuItem({
   const submenuCoordinator = React.useContext(MenuSubmenuCoordinatorContext);
   const item = (
     <MenuPrimitive.Item
-      data-slot="menu-item"
-      data-selected={selected}
       aria-current={ariaCurrent ?? (selected ? "true" : undefined)}
+      className={cn(menuItemClassName, className)}
+      data-selected={selected}
+      data-slot="menu-item"
       disabled={disabled}
       onPointerMove={(event) => {
         onPointerMove?.(event);
         if (!disabled && !event.defaultPrevented) submenuCoordinator?.closeSubmenu();
       }}
-      className={cn(menuItemClassName, className)}
       {...props}
     >
       <MenuItemLayout icon={icon} suffix={suffix}>
@@ -190,7 +191,7 @@ function MenuItemLayout({ children, icon, submenu = false, suffix }: MenuItemLay
         </span>
       ) : null}
       <span className="flex size-3 shrink-0 items-center justify-center" data-slot="menu-chevron">
-        {submenu ? <ChevronRight className="size-3" aria-hidden="true" /> : null}
+        {submenu ? <ChevronRight aria-hidden="true" className="size-3" /> : null}
       </span>
     </>
   );
@@ -202,8 +203,8 @@ function MenuSeparator({
 }: React.ComponentProps<typeof MenuPrimitive.Separator>) {
   return (
     <MenuPrimitive.Separator
+      className={cn("mx-1.5 my-0.5 h-px bg-border", className)}
       data-slot="menu-separator"
-      className={cn("my-0.5 mx-1.5 h-px bg-border", className)}
       {...props}
     />
   );
@@ -238,11 +239,12 @@ function MenuSub({
     },
     [id, onOpenChange, open, submenuCoordinator],
   );
+
   const context = React.useMemo(() => ({ setOpen }), [setOpen]);
 
   return (
     <MenuSubContext.Provider value={context}>
-      <MenuPrimitive.Sub data-slot="menu-sub" open={resolvedOpen} onOpenChange={setOpen} {...props}>
+      <MenuPrimitive.Sub data-slot="menu-sub" onOpenChange={setOpen} open={resolvedOpen} {...props}>
         {children}
       </MenuPrimitive.Sub>
     </MenuSubContext.Provider>
@@ -271,18 +273,18 @@ function MenuSubTrigger({
 
   return (
     <MenuPrimitive.SubTrigger
-      data-slot="menu-sub-trigger"
-      data-selected={selected}
       aria-current={ariaCurrent ?? (selected ? "true" : undefined)}
+      className={cn(menuItemClassName, className)}
+      data-selected={selected}
+      data-slot="menu-sub-trigger"
       disabled={disabled}
       onPointerMove={(event) => {
         onPointerMove?.(event);
         if (!disabled && !event.defaultPrevented) submenu.setOpen(true);
       }}
-      className={cn(menuItemClassName, className)}
       {...props}
     >
-      <MenuItemLayout icon={icon} suffix={suffix} submenu>
+      <MenuItemLayout icon={icon} submenu suffix={suffix}>
         {children}
       </MenuItemLayout>
     </MenuPrimitive.SubTrigger>
@@ -299,13 +301,13 @@ function MenuSubContent({
     <MenuSubmenuCoordinator>
       <MenuPrimitive.Portal>
         <MenuPrimitive.SubContent
-          data-slot="menu-sub-content"
           alignOffset={alignOffset}
-          sideOffset={sideOffset}
           className={cn(
             "z-50 min-w-56 rounded-lg border bg-popover p-1 text-popover-foreground shadow-lg ring-1 ring-foreground/10",
             className,
           )}
+          data-slot="menu-sub-content"
+          sideOffset={sideOffset}
           {...props}
         />
       </MenuPrimitive.Portal>

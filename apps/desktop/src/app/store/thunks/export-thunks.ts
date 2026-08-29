@@ -1,5 +1,14 @@
 import { sourceFailed } from "@/app/store/actions/source-actions";
-import { applyEditorSnapshot } from "@/app/store/editor-snapshot";
+import { applyEditorSnapshot } from "@/app/store/integration/editor-snapshot";
+import {
+  cancelActiveExport,
+  cancelAllQueuedExports,
+  cancelQueuedExport,
+  enqueueExport,
+  setExportQueueExecutionEnabled,
+} from "@/app/store/integration/export-queue-runtime";
+import { outputDefaults } from "@/app/store/lib/export-defaults";
+import { getReplacementImportedItem } from "@/app/store/lib/imported-queue";
 import {
   selectAudioTracks,
   selectMasterAudio,
@@ -8,6 +17,9 @@ import {
 import { selectCrop, selectCropApplied, selectCropResolution } from "@/app/store/slices/crop-slice";
 import {
   exportLaunchFailed,
+  type ExportQueueItem,
+  type ExportSettings,
+  type importQueueItem,
   importQueueItemAdded,
   optimizedExportDialogClosed,
   optimizedExportDialogOpened,
@@ -17,15 +29,12 @@ import {
   optimizedExportSettingsChanged,
   queueFinishActionsAvailable,
   queueItemPromoted,
+  type QueueItemPromotion,
   queuePaused,
   queueStarted,
   selectActiveItemId,
   selectActiveQueueItem,
   selectimportQueueItems,
-  type ExportQueueItem,
-  type ExportSettings,
-  type importQueueItem,
-  type QueueItemPromotion,
 } from "@/app/store/slices/export-slice";
 import { nativeDialogStateChanged } from "@/app/store/slices/import-workflow-slice";
 import {
@@ -40,26 +49,17 @@ import {
   navigateToImportedItem,
 } from "@/app/store/thunks/source-media-thunks";
 import { cloneEditorSnapshot, createEditorSnapshot } from "@/domain/editor-snapshot";
-import { outputDefaults } from "@/features/export/utils/export-options";
-import {
-  cancelActiveExport,
-  cancelAllQueuedExports,
-  cancelQueuedExport,
-  enqueueExport,
-  setExportQueueExecutionEnabled,
-} from "@/features/export/utils/export-queue";
-import { getReplacementImportedItem } from "@/features/import-source/utils/imported-queue";
 import {
   activateSourcePath,
   chooseOutputPath,
-  normalizeAppError,
   planOptimizedExport,
   releaseExportSource,
   reserveExportSource,
-  type FastExportRequest,
-  type OptimizedExportRequest,
 } from "@/lib/tauri/media";
-import { availableQueueFinishActions, type QueueFinishAction } from "@/lib/tauri/queue";
+import type { FastExportRequest, OptimizedExportRequest } from "@/lib/tauri/media.types";
+import { normalizeAppError } from "@/lib/tauri/media.utils";
+import { availableQueueFinishActions } from "@/lib/tauri/queue";
+
 import type { AppThunk } from "./source-media-thunks";
 
 let optimizedPlanRequestSequence = 0;
@@ -86,18 +86,18 @@ export const pauseExportQueue = (): AppThunk => (dispatch, getState) => {
   setExportQueueExecutionEnabled(false, dispatch, getState);
 };
 
-export const cancelActiveExportRequested = (): AppThunk => () => {
-  cancelActiveExport();
+export const cancelActiveExportRequested = (): AppThunk => (_dispatch, getState) => {
+  cancelActiveExport(getState);
 };
 
-export const cancelAllExportsRequested = (): AppThunk => () => {
-  cancelAllQueuedExports();
+export const cancelAllExportsRequested = (): AppThunk => (_dispatch, getState) => {
+  cancelAllQueuedExports(getState);
 };
 
 export const cancelExportRequested =
   (id: string): AppThunk =>
-  () => {
-    cancelQueuedExport(id);
+  (_dispatch, getState) => {
+    cancelQueuedExport(id, getState);
   };
 
 export const openOptimizedExportDialog = (): AppThunk => async (dispatch, getState) => {
@@ -162,7 +162,7 @@ async function startQueuedExport(
     trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
     crop: selectCropApplied(state) ? selectCrop(state) : null,
     masterAudio: selectMasterAudio(state),
-    audioTracks: selectAudioTracks(state).map(({ streamIndex, enabled, volumePercent }) => ({
+    audioTracks: selectAudioTracks(state).map(({ enabled, streamIndex, volumePercent }) => ({
       streamIndex,
       enabled,
       volumePercent,
@@ -199,10 +199,12 @@ async function startQueuedExport(
       path: output.displayPath,
       totalFrames: getTotalFrames(request, media.video),
     };
+
     dispatch(queueItemPromoted(promotion));
     const promoted = getState().export.queue.find(
       (item): item is ExportQueueItem => item.id === importedItemId && item.status !== "imported",
     );
+
     if (!promoted) return;
     enqueueExport(promoted, dispatch, getState);
     dispatch(navigateToImportedItem(replacementItem?.id ?? null));
@@ -287,8 +289,8 @@ function selectedAudioTracks(state: ReturnType<Parameters<AppThunk>[1]>) {
 function getTotalFrames(
   request: FastExportRequest | OptimizedExportRequest,
   video: {
-    averageFrameRate?: { numerator: number; denominator: number };
-    realFrameRate?: { numerator: number; denominator: number };
+    averageFrameRate?: { denominator: number; numerator: number };
+    realFrameRate?: { denominator: number; numerator: number };
   },
 ) {
   const frameRate =
@@ -299,14 +301,13 @@ function getTotalFrames(
         : video.realFrameRate
           ? video.realFrameRate.numerator / video.realFrameRate.denominator
           : undefined;
+
   if (!frameRate || frameRate <= 0) return undefined;
   return Math.max(
     1,
     Math.round(((request.trim.endMicros - request.trim.startMicros) / 1_000_000) * frameRate),
   );
 }
-
-export type { QueueFinishAction };
 
 export const restoreExportQueueItemRequested =
   (id: string): AppThunk<Promise<boolean>> =>
@@ -326,6 +327,7 @@ export const restoreExportQueueItemRequested =
         origin: "history-fork",
         snapshot: cloneEditorSnapshot(item.snapshot),
       };
+
       dispatch(importQueueItemAdded(fork));
       await dispatch(activateSource(source, fork.snapshot.audio.mergeAudio));
       if (restorationId !== restoreSequence) return false;

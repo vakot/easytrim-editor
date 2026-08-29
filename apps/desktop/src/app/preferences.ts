@@ -1,9 +1,9 @@
 export interface Preferences {
-  snapPlaybackEnabledDefault: boolean;
-  loopPlaybackEnabledDefault: boolean;
-  segmentPlaybackEnabledDefault: boolean;
   autoStartQueueEnabled: boolean;
+  loopPlaybackEnabledDefault: boolean;
   mergeAudioEnabledDefault: boolean;
+  segmentPlaybackEnabledDefault: boolean;
+  snapPlaybackEnabledDefault: boolean;
 }
 
 export type PreferenceKey = keyof Preferences;

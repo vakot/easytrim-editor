@@ -1,11 +1,21 @@
-import { ContextMenus } from "@/app/components/ContextMenus";
+import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import { Provider as ReduxProvider } from "react-redux";
+import { PersistGate } from "redux-persist/integration/react";
+
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ResizablePanelContextProvider } from "@/components/ui/resizable";
+import { TooltipProvider } from "@/components/ui/tooltip";
+
+import { ContextMenus } from "@/app/components/context-menus";
 import { CustomTitleBar } from "@/app/components/CustomTitleBar";
+import { EditorWorkspace } from "@/app/components/editor-workspace/EditorWorkspace";
 import { NativeDialogOverlay } from "@/app/components/NativeDialogOverlay";
 import { PanelVisibilityControls } from "@/app/components/PanelVisibilityControls";
-import { AppUpdatesProvider } from "@/app/components/Providers/AppUpdatesProvider";
-import { EditorContractsProvider } from "@/app/components/Providers/EditorContractsProvider";
-import { StatusBar } from "@/app/components/StatusBar";
-import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
+import { AppUpdatesProvider } from "@/app/components/providers/AppUpdatesProvider";
+import { EditorContractsProvider } from "@/app/components/providers/EditorContractsProvider";
+import { StatusBar } from "@/app/components/status-bar";
+import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectCropApplied } from "@/app/store/slices/crop-slice";
 import { selectHasQueuedExports, selectQueueStarted } from "@/app/store/slices/export-slice";
 import {
@@ -13,11 +23,7 @@ import {
   selectIsChoosingSource,
   selectIsNativeDialogOpen,
 } from "@/app/store/slices/import-workflow-slice";
-import {
-  selectCapabilities,
-  selectHasSource,
-  selectSourceReady,
-} from "@/app/store/slices/source-slice";
+import { selectHasSource, selectSourceReady } from "@/app/store/slices/source-slice";
 import { persistor, store } from "@/app/store/store";
 import {
   loadQueueFinishActions,
@@ -30,20 +36,12 @@ import {
   closeActiveImportedItemRequested,
 } from "@/app/store/thunks/source-media-thunks";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ResizablePanelContextProvider } from "@/components/ui/resizable";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { OptimizedExportDialog } from "@/features/export/components/OptimizedExportDialog";
-import { CapabilityStatus, SourceWorkspace } from "@/features/import-source/SourceWorkspace";
+import { ExportDialog } from "@/features/export";
+import { SourceStatus } from "@/features/source";
 import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
-import { useEffect } from "react";
-import { useTranslation } from "react-i18next";
-import { Provider as ReduxProvider } from "react-redux";
-import { PersistGate } from "redux-persist/integration/react";
 
 function EasyTrimEditorApp() {
   const dispatch = useAppDispatch();
-  const capabilities = useAppSelector(selectCapabilities);
   const canExport = useAppSelector(selectSourceReady);
   const cropApplied = useAppSelector(selectCropApplied);
   const queueStarted = useAppSelector(selectQueueStarted);
@@ -97,6 +95,7 @@ function EasyTrimEditorApp() {
       const openDialog = document.querySelector<HTMLElement>(
         '[data-slot="dialog-content"][data-state="open"]',
       );
+
       if (openDialog) {
         openDialog.querySelector<HTMLElement>('[data-slot="dialog-close"]')?.click();
         return;
@@ -116,21 +115,21 @@ function EasyTrimEditorApp() {
 
   return (
     <TooltipProvider>
-      <main className="fixed inset-0 grid h-dvh w-screen min-w-80 overflow-hidden bg-background grid-rows-[2.25rem_minmax(0,1fr)_auto]">
+      <main className="fixed inset-0 grid h-dvh w-screen min-w-80 grid-rows-[2.25rem_minmax(0,1fr)_auto] overflow-hidden bg-background">
         <CustomTitleBar
           menuControls={<ContextMenus />}
-          statusContent={<CapabilityStatus capabilities={capabilities} />}
           panelControls={<PanelVisibilityControls />}
+          statusContent={<SourceStatus />}
         />
 
-        <OptimizedExportDialog />
+        <ExportDialog />
 
         {isNativeDialogOpen ? <NativeDialogOverlay /> : null}
 
         {dropListenerError ? (
           <Alert
-            variant="destructive"
             className="fixed top-20 left-1/2 z-50 w-auto -translate-x-1/2"
+            variant="destructive"
           >
             <AlertDescription>
               {t("app.dragUnavailable", { message: dropListenerError.message })}
@@ -138,14 +137,14 @@ function EasyTrimEditorApp() {
           </Alert>
         ) : null}
 
-        <SourceWorkspace />
+        <EditorWorkspace />
         <StatusBar />
       </main>
     </TooltipProvider>
   );
 }
 
-function App() {
+export function App() {
   return (
     <AppUpdatesProvider>
       <ReduxProvider store={store}>
@@ -162,5 +161,3 @@ function App() {
     </AppUpdatesProvider>
   );
 }
-
-export default App;

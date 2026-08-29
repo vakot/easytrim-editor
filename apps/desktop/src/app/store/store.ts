@@ -3,37 +3,35 @@ import {
   FLUSH,
   PAUSE,
   PERSIST,
+  type Persistor,
   persistStore,
   PURGE,
   REGISTER,
   REHYDRATE,
-  type Persistor,
 } from "redux-persist";
 
-import { createPersistedReducer, reduxStorage, type PersistStorage } from "@/app/store/persistence";
+import { sourceFailed, sourceReady } from "@/app/store/actions/source-actions";
 import { appMiddleware } from "@/app/store/middleware";
-import { panelLayoutReducer } from "@/app/store/slices/panel-layout-slice";
+import { createPersistedReducer, type PersistStorage, reduxStorage } from "@/app/store/persistence";
 import { audioReducer } from "@/app/store/slices/audio-slice";
 import { cropReducer } from "@/app/store/slices/crop-slice";
-import { exportPresetsReducer } from "@/app/store/slices/export-presets-slice";
-import { exportReducer } from "@/app/store/slices/export-slice";
-import { importWorkflowReducer } from "@/app/store/slices/import-workflow-slice";
-import { preferencesReducer } from "@/app/store/slices/preferences-slice";
 import {
   createEditorToolsStateFromPreferences,
   editorToolsInitialized,
   editorToolsReducer,
 } from "@/app/store/slices/editor-tools-slice";
+import { exportPresetsReducer } from "@/app/store/slices/export-presets-slice";
+import { exportReducer } from "@/app/store/slices/export-slice";
+import { importWorkflowReducer } from "@/app/store/slices/import-workflow-slice";
+import { preferencesReducer } from "@/app/store/slices/preferences-slice";
 import { previewReducer } from "@/app/store/slices/preview-slice";
 import { sourceReducer } from "@/app/store/slices/source-slice";
 import { themeReducer } from "@/app/store/slices/theme-slice";
 import { trimReducer } from "@/app/store/slices/trim-slice";
-import { sourceFailed, sourceReady } from "@/app/store/actions/source-actions";
 
 const combinedReducer = combineReducers({
   audio: audioReducer,
   crop: cropReducer,
-  panelLayout: panelLayoutReducer,
   editorTools: editorToolsReducer,
   export: exportReducer,
   exportPresets: exportPresetsReducer,
@@ -62,7 +60,7 @@ const rootReducer = (state: RootState | undefined, action: UnknownAction): RootS
   return combinedReducer(state, action);
 };
 
-export const persistedReducer = createPersistedReducer(rootReducer);
+const persistedReducer = createPersistedReducer(rootReducer);
 
 export function createAppStore(storage: PersistStorage = reduxStorage) {
   const reducer =

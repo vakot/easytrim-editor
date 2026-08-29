@@ -13,7 +13,7 @@ Follow the auto-loaded `AGENTS.md`. Before native changes, read:
 
 - [repository structure](../../rules/structure.md);
 - [runtime and security](../../rules/security-runtime.md);
-- [quality gates](../../rules/quality.md);
+- [quality gates](../../rules/verification.md);
 - [native architecture contract](references/architecture.md).
 
 Inspect the current manifests, lockfiles, and affected TypeScript IPC types, and confirm actual Rust/Tauri versions before using an API.

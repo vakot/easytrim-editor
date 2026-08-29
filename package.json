@@ -16,6 +16,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --fix --max-warnings 0 && prettier --write .",
+    "knip": "knip --production",
     "typecheck": "pnpm --filter @easytrim-editor/desktop typecheck",
     "test": "pnpm --filter @easytrim-editor/desktop test",
     "test:release": "node --test scripts/__tests__/*.test.mjs",
@@ -24,16 +26,23 @@
     "version:bump": "node scripts/bump-version.mjs",
     "release:local": "node scripts/release-local.mjs",
     "release:linux": "node scripts/release-linux-docker.mjs",
-    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm test:release && pnpm build:web",
+    "check": "pnpm format:check && pnpm lint && pnpm knip && pnpm typecheck && pnpm test && pnpm test:release && pnpm build:web",
     "tauri": "pnpm --filter @easytrim-editor/desktop tauri"
   },
   "devDependencies": {
-    "@eslint/js": "10.0.1",
-    "eslint": "10.8.0",
+    "@eslint/js": "9.39.5",
+    "eslint": "9.39.5",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-perfectionist": "5.10.1",
     "eslint-plugin-react-hooks": "7.1.1",
     "eslint-plugin-react-refresh": "0.5.3",
+    "eslint-plugin-simple-import-sort": "14.0.0",
+    "eslint-plugin-tailwindcss": "4.4.0",
     "globals": "17.8.0",
+    "knip": "6.32.3",
     "prettier": "3.9.6",
+    "prettier-plugin-tailwindcss": "0.8.1",
+    "typescript": "6.0.3",
     "typescript-eslint": "8.65.0"
   }
 }

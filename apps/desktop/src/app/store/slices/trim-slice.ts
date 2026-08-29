@@ -1,4 +1,3 @@
-import { createFullTrimRange, isValidTrimRange, type TrimRange } from "@/domain/trim";
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 import {
@@ -7,9 +6,11 @@ import {
   sourceReady,
   sourceSelected,
 } from "@/app/store/actions/source-actions";
+import { createFullTrimRange, isValidTrimRange, type TrimRange } from "@/domain/trim";
+
 import type { RootState } from "../store";
 
-export interface TrimState {
+interface TrimState {
   value: TrimRange | null;
 }
 
@@ -46,5 +47,3 @@ export const { trimChanged } = trimSlice.actions;
 export const trimReducer = trimSlice.reducer;
 
 export const selectTrim = (state: RootState): TrimRange | null => state.trim.value;
-export const selectTrimStart = (state: RootState): number => state.trim.value?.startMicros ?? 0;
-export const selectTrimEnd = (state: RootState): number => state.trim.value?.endMicros ?? 0;

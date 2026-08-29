@@ -6,7 +6,11 @@ import {
   sourceReady,
   sourceSelected,
 } from "@/app/store/actions/source-actions";
-import { applyEditorSnapshot, createDefaultEditorSnapshot } from "@/app/store/editor-snapshot";
+import {
+  applyEditorSnapshot,
+  createDefaultEditorSnapshot,
+} from "@/app/store/integration/editor-snapshot";
+import { getReplacementImportedItem } from "@/app/store/lib/imported-queue";
 import {
   audioPreviewsLoading,
   audioPreviewsReady,
@@ -21,12 +25,12 @@ import {
 import { selectCrop } from "@/app/store/slices/crop-slice";
 import {
   activeQueueItemChanged,
+  type importQueueItem,
   importQueueItemRemoved,
   importQueueItemsAdded,
   queueItemSnapshotUpdated,
   selectActiveQueueItem,
   selectimportQueueItems,
-  type importQueueItem,
 } from "@/app/store/slices/export-slice";
 import {
   dropListenerErrorCleared,
@@ -46,20 +50,18 @@ import { selectTrim } from "@/app/store/slices/trim-slice";
 import type { AppDispatch, RootState } from "@/app/store/store";
 import { createEditorSnapshot } from "@/domain/editor-snapshot";
 import type { SourceRef } from "@/domain/source";
-import { getReplacementImportedItem } from "@/features/import-source/utils/imported-queue";
 import {
   activateSourcePath,
   checkMediaCapabilities,
   chooseSource as chooseSourceDialog,
   inspectMedia,
-  normalizeAppError,
   prepareAudioPreviews,
   prepareProxyPreview,
   prepareSourcePreview,
   prepareWaveforms,
-  type AppError,
-  type PreviewKind,
 } from "@/lib/tauri/media";
+import type { AppError, PreviewKind } from "@/lib/tauri/media.types";
+import { normalizeAppError } from "@/lib/tauri/media.utils";
 
 export type AppThunk<ReturnValue = void | Promise<unknown>> = (
   dispatch: AppDispatch,
@@ -194,7 +196,7 @@ function captureActiveQueueItemDraft(
         trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
         crop: selectCrop(state),
         masterAudio: selectMasterAudio(state),
-        audioTracks: selectAudioTracks(state).map(({ streamIndex, enabled, volumePercent }) => ({
+        audioTracks: selectAudioTracks(state).map(({ enabled, streamIndex, volumePercent }) => ({
           streamIndex,
           enabled,
           volumePercent,
@@ -223,6 +225,7 @@ export const restoreActiveImportedItemRequested =
       (candidate): candidate is importQueueItem =>
         candidate.id === id && candidate.status === "imported",
     );
+
     if (!item || getState().export.activeItemId !== id) return false;
 
     const restorationId = queueRestoreSequence;
@@ -277,6 +280,7 @@ export const navigateToImportedItem =
             candidate.id === id && candidate.status === "imported",
         )
       : null;
+
     if (id !== null && !target) return false;
     if (state.export.activeItemId === id && (id !== null || !selectHasSource(state))) return false;
 

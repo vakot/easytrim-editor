@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-import type { RootState } from "@/app/store/store";
 import { DEFAULT_PREFERENCES, type Preferences } from "@/app/preferences";
 import {
   createEditorToolsStateFromPreferences,
@@ -9,15 +8,16 @@ import {
   editorToolsReset,
   loopPlaybackToggled,
   playbackSpeedChanged,
-  snapPlaybackToggled,
+  segmentPlaybackToggled,
   selectEditorTools,
   selectLoopPlaybackEnabled,
   selectPlaybackSpeed,
-  selectSnapPlaybackEnabled,
   selectSegmentPlaybackEnabled,
+  selectSnapPlaybackEnabled,
   snapPlaybackChanged,
-  segmentPlaybackToggled,
+  snapPlaybackToggled,
 } from "@/app/store/slices/editor-tools-slice";
+import type { RootState } from "@/app/store/store";
 import { DEFAULT_PLAYBACK_SPEED, type PlaybackSpeed } from "@/domain/playback-speed";
 
 describe("editor tools Redux domain", () => {
@@ -79,10 +79,12 @@ describe("editor tools Redux domain", () => {
       undefined,
       editorToolsInitialized(createEditorToolsStateFromPreferences(DEFAULT_PREFERENCES)),
     );
+
     const modeState = editorToolsReducer(
       editorToolsReducer(initialState, loopPlaybackToggled()),
       segmentPlaybackToggled(),
     );
+
     const speed: PlaybackSpeed = 2;
 
     expect(modeState.loopPlaybackEnabled).toBe(false);
@@ -98,6 +100,7 @@ describe("editor tools Redux domain", () => {
       ),
       snapPlaybackToggled(),
     );
+
     const currentDefaults: Preferences = {
       ...DEFAULT_PREFERENCES,
       snapPlaybackEnabledDefault: false,
@@ -119,6 +122,7 @@ describe("editor tools Redux domain", () => {
       segmentPlaybackEnabled: false,
       playbackSpeed: 1.5 as PlaybackSpeed,
     };
+
     const state = { editorTools } as RootState;
 
     expect(selectEditorTools(state)).toBe(editorTools);

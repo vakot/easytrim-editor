@@ -3,11 +3,12 @@ import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { CustomTitleBar } from "../CustomTitleBar";
-import { ContextMenus } from "../ContextMenus";
+import { AppUpdatesContext } from "@/app/contexts/app-updates-context";
 import { store } from "@/app/store/store";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
-import { AppUpdatesContext } from "@/app/contexts/app-updates-context";
+
+import { ContextMenus } from "../context-menus";
+import { CustomTitleBar } from "../CustomTitleBar";
 
 const windowActions = vi.hoisted(() => ({
   closeWindow: vi.fn(() => Promise.resolve()),
@@ -126,15 +127,15 @@ describe("CustomTitleBar", () => {
     render(
       <CustomTitleBar
         menuControls={<span data-testid="menu-controls" />}
-        statusContent={<span data-testid="status-content">Media tools ready</span>}
         panelControls={<span data-testid="panel-controls" />}
+        statusContent={<span data-testid="status-content">Media tools ready</span>}
       />,
     );
 
     const statusContent = screen.getByTestId("status-content");
     const statusSlot = statusContent.parentElement;
     expect(statusSlot).not.toBeNull();
-    expect(statusSlot).toHaveClass("absolute", "left-1/2", "-translate-x-1/2");
+    expect(statusSlot).toHaveClass("absolute", "left-1/2", "-translate-1/2");
   });
 
   it("delegates dragging and window controls to the native adapter", async () => {
@@ -143,6 +144,7 @@ describe("CustomTitleBar", () => {
     const dragRegion = screen
       .getByRole("banner")
       .querySelector<HTMLElement>('header > div[aria-hidden="true"]');
+
     if (!dragRegion) throw new Error("Expected title bar drag region");
     fireEvent.pointerDown(dragRegion, { button: 0, clientX: 10, clientY: 10, pointerId: 1 });
     fireEvent.pointerMove(dragRegion, { clientX: 20, clientY: 10, pointerId: 1 });

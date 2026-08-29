@@ -1,18 +1,19 @@
 import { Check, CircleX, ExternalLink, TriangleAlert, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { openFileLocation } from "@/lib/tauri/media";
-import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
-import { selectExportQueue, type ExportQueueItem } from "@/app/store/slices/export-slice";
+
+import { useTimeline } from "@/app/hooks/useTimeline";
+import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
+import { type ExportQueueItem, selectExportQueue } from "@/app/store/slices/export-slice";
 import {
   cancelExportRequested,
   restoreExportQueueItemRequested,
 } from "@/app/store/thunks/export-thunks";
-import { useTimeline } from "@/app/hooks/useEditorContracts";
 import { editorSnapshotTrimStart } from "@/domain/editor-snapshot";
-import { useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
+import { cn } from "@/lib/class-names.utils";
+import { openFileLocation } from "@/lib/tauri/media";
 
 const statusStyles = {
   rendering: "border-l-primary",
@@ -35,11 +36,11 @@ export function ExportQueue() {
   }, [hasRenderingItem]);
 
   return (
-    <section className="grid gap-3" aria-labelledby="export-queue-title">
+    <section aria-labelledby="export-queue-title" className="grid gap-3">
       <div className="flex items-center justify-between">
         <h2
-          id="export-queue-title"
           className="font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
+          id="export-queue-title"
         >
           {t("export.queue")}
         </h2>
@@ -50,9 +51,9 @@ export function ExportQueue() {
           {t("export.empty")}
         </p>
       ) : (
-        <div className="grid gap-2" role="status" aria-live="polite">
+        <div aria-live="polite" className="grid gap-2" role="status">
           {queue.map((item) => (
-            <ExportQueueItem key={item.id} item={item} now={now} />
+            <ExportQueueItem item={item} key={item.id} now={now} />
           ))}
         </div>
       )}
@@ -67,6 +68,7 @@ function ExportQueueItem({ item, now }: { item: ExportQueueItem; now: number }) 
   const isCompleted = item.status === "completed";
   const durationMs =
     item.status === "rendering" && item.startedAt ? now - item.startedAt : item.durationMs;
+
   const statusLabel =
     item.status === "rendering" || item.status === "completed"
       ? formatDuration(durationMs ?? 0)
@@ -86,16 +88,16 @@ function ExportQueueItem({ item, now }: { item: ExportQueueItem; now: number }) 
   return (
     <div
       className={cn(
-        "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-xl border border-border border-l-4 bg-card p-3",
+        "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-xl border border-l-4 border-border bg-card p-3",
         statusStyles[item.status],
         "transition-colors hover:bg-muted/60",
       )}
     >
       <button
-        type="button"
-        className="min-w-0 cursor-pointer text-left"
         aria-label={t("export.restoreItem", { filename: item.filename })}
+        className="min-w-0 cursor-pointer text-left"
         onClick={() => void restoreItem()}
+        type="button"
       >
         <div className="flex min-w-0 items-baseline gap-1.5 text-sm">
           <strong className="truncate">{item.filename}</strong>
@@ -108,8 +110,8 @@ function ExportQueueItem({ item, now }: { item: ExportQueueItem; now: number }) 
           >
             ·{" "}
             {item.status === "rendering" || item.status === "completed" ? (
-              <span className="inline-grid whitespace-nowrap text-right tabular-nums">
-                <span className="invisible col-start-1 row-start-1" aria-hidden="true">
+              <span className="inline-grid text-right whitespace-nowrap tabular-nums">
+                <span aria-hidden="true" className="invisible col-start-1 row-start-1">
                   {durationPlaceholder(statusLabel)}
                 </span>
                 <span className="col-start-1 row-start-1">{statusLabel}</span>
@@ -129,13 +131,13 @@ function ExportQueueItem({ item, now }: { item: ExportQueueItem; now: number }) 
       <div className="flex items-center gap-1">
         {item.status === "queued" || item.status === "rendering" ? (
           <Button
-            variant="destructive"
-            size="icon-sm"
+            aria-label={t("export.cancelItem", { filename: item.filename })}
             onClick={(event) => {
               event.stopPropagation();
               dispatch(cancelExportRequested(item.id));
             }}
-            aria-label={t("export.cancelItem", { filename: item.filename })}
+            size="icon-sm"
+            variant="destructive"
           >
             <X />
           </Button>
@@ -144,40 +146,40 @@ function ExportQueueItem({ item, now }: { item: ExportQueueItem; now: number }) 
             {item.status === "completed" ? (
               <>
                 <span
-                  className="grid size-7 place-items-center"
                   aria-label={t("export.statusLabel", {
                     status: t(`export.status.${item.status}`),
                   })}
+                  className="grid size-7 place-items-center"
                 >
                   <Check className="size-4 text-emerald-400" />
                 </span>
                 <Button
-                  variant="ghost"
-                  size="icon-sm"
+                  aria-label={t("export.openLocation", { filename: item.filename })}
                   onClick={(event) => {
                     event.stopPropagation();
                     openLocation();
                   }}
-                  aria-label={t("export.openLocation", { filename: item.filename })}
+                  size="icon-sm"
+                  variant="ghost"
                 >
                   <ExternalLink />
                 </Button>
               </>
             ) : item.status === "failed" ? (
               <span
-                className="grid size-7 place-items-center"
                 aria-label={t("export.statusLabel", {
                   status: t(`export.status.${item.status}`),
                 })}
+                className="grid size-7 place-items-center"
               >
                 <TriangleAlert className="size-4 text-destructive" />
               </span>
             ) : (
               <span
-                className="grid size-7 place-items-center"
                 aria-label={t("export.statusLabel", {
                   status: t(`export.status.${item.status}`),
                 })}
+                className="grid size-7 place-items-center"
               >
                 <CircleX className="size-4 text-destructive" />
               </span>

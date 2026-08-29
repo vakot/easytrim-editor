@@ -1,17 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import { DEFAULT_PREFERENCES, type Preferences } from "@/app/preferences";
-import type { RootState } from "@/app/store/store";
 import {
-  preferencesReducer,
   preferenceChanged,
+  preferencesReducer,
   preferencesReset,
-  selectLoopPlaybackEnabledDefault,
   selectMergeAudioEnabledDefault,
   selectPreferences,
-  selectSnapPlaybackEnabledDefault,
-  selectSegmentPlaybackEnabledDefault,
 } from "@/app/store/slices/preferences-slice";
+import type { RootState } from "@/app/store/store";
 
 describe("preferences Redux domain", () => {
   it("starts from deterministic product defaults without persistence access", () => {
@@ -24,6 +21,7 @@ describe("preferences Redux domain", () => {
     const initialState = {
       ...DEFAULT_PREFERENCES,
     };
+
     const nextState = preferencesReducer(
       initialState,
       preferenceChanged({ key: "snapPlaybackEnabledDefault", enabled: false }),
@@ -57,12 +55,13 @@ describe("preferences Redux domain", () => {
       autoStartQueueEnabled: true,
       mergeAudioEnabledDefault: true,
     };
+
     const state = { preferences } as RootState;
 
     expect(selectPreferences(state)).toEqual(preferences);
-    expect(selectSnapPlaybackEnabledDefault(state)).toBe(false);
-    expect(selectLoopPlaybackEnabledDefault(state)).toBe(true);
-    expect(selectSegmentPlaybackEnabledDefault(state)).toBe(false);
+    expect(selectPreferences(state).snapPlaybackEnabledDefault).toBe(false);
+    expect(selectPreferences(state).loopPlaybackEnabledDefault).toBe(true);
+    expect(selectPreferences(state).segmentPlaybackEnabledDefault).toBe(false);
     expect(selectMergeAudioEnabledDefault(state)).toBe(true);
   });
 });

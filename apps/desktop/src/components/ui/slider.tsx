@@ -1,22 +1,22 @@
-import * as React from "react";
 import { Slider as SliderPrimitive } from "radix-ui";
+import * as React from "react";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/class-names.utils";
 
 export interface SliderMarker {
-  value: number;
   label: React.ReactNode;
+  value: number;
 }
 
 function Slider({
-  className,
-  defaultValue,
-  value,
-  min = 0,
-  max = 100,
   "aria-label": ariaLabel,
   "aria-labelledby": ariaLabelledBy,
+  className,
+  defaultValue,
   markers = [],
+  max = 100,
+  min = 0,
+  value,
   ...props
 }: React.ComponentProps<typeof SliderPrimitive.Root> & { markers?: readonly SliderMarker[] }) {
   const _values = React.useMemo(
@@ -26,40 +26,41 @@ function Slider({
 
   return (
     <SliderPrimitive.Root
-      data-slot="slider"
-      defaultValue={defaultValue}
-      value={value}
-      min={min}
-      max={max}
       className={cn(
         "relative isolate flex w-full touch-none items-center select-none data-disabled:opacity-50 data-vertical:h-full data-vertical:min-h-40 data-vertical:w-auto data-vertical:flex-col",
         markers.length > 0 && "py-2",
         className,
       )}
+      data-slot="slider"
+      defaultValue={defaultValue}
+      max={max}
+      min={min}
+      value={value}
       {...props}
     >
       <SliderPrimitive.Track
-        data-slot="slider-track"
         className="relative z-0 grow overflow-hidden rounded-full bg-muted data-horizontal:h-1.5 data-horizontal:w-full data-vertical:h-full data-vertical:w-1"
+        data-slot="slider-track"
       >
         <SliderPrimitive.Range
-          data-slot="slider-range"
           className="absolute z-2 bg-primary select-none data-horizontal:h-full data-vertical:w-full"
+          data-slot="slider-range"
         />
       </SliderPrimitive.Track>
       {markers.map((marker) => {
         const position =
           max === min ? 0 : (Math.min(max, Math.max(min, marker.value)) - min) / (max - min);
+
         return (
           <span
-            className="pointer-events-none absolute top-1/2 h-3 w-px -translate-x-1/2 -translate-y-1/2 bg-muted-foreground/70"
+            className="pointer-events-none absolute top-1/2 h-3 w-px -translate-1/2 bg-muted-foreground/70"
             data-slot="slider-marker"
             key={`${marker.value}-${String(marker.label)}`}
             style={{
               left: `calc(${position * 100}% + ${0.375 - position * 0.75}rem)`,
             }}
           >
-            <span className="absolute bottom-full left-1/2 -translate-x-1/2 whitespace-nowrap pb-0.5 text-[0.625rem] leading-none text-muted-foreground">
+            <span className="absolute bottom-full left-1/2 -translate-x-1/2 pb-0.5 text-[0.625rem] leading-none whitespace-nowrap text-muted-foreground">
               {marker.label}
             </span>
           </span>
@@ -67,11 +68,11 @@ function Slider({
       })}
       {Array.from({ length: _values.length }, (_, index) => (
         <SliderPrimitive.Thumb
-          data-slot="slider-thumb"
-          key={index}
           aria-label={ariaLabel}
           aria-labelledby={ariaLabelledBy}
           className="relative z-10 block size-3 shrink-0 rounded-full border border-ring bg-white ring-ring/50 transition-[color,box-shadow] select-none after:absolute after:-inset-2 hover:ring-3 focus-visible:ring-3 focus-visible:outline-hidden active:ring-3 disabled:pointer-events-none disabled:opacity-50"
+          data-slot="slider-thumb"
+          key={index}
         />
       ))}
     </SliderPrimitive.Root>

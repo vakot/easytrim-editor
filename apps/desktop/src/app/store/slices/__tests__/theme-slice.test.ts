@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-import type { RootState } from "@/app/store/store";
 import {
   customPrimaryColorChanged,
   primaryColorChanged,
@@ -11,6 +10,7 @@ import {
   themePreferenceChanged,
   themeReducer,
 } from "@/app/store/slices/theme-slice";
+import type { RootState } from "@/app/store/store";
 
 describe("theme Redux domain", () => {
   it("starts from deterministic product defaults", () => {

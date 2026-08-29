@@ -1,17 +1,17 @@
 "use client";
 
+import { Slot } from "radix-ui";
 import * as React from "react";
 import * as ResizablePrimitive from "react-resizable-panels";
 
-import { cn } from "@/lib/utils";
-import { Slot } from "radix-ui";
+import { cn } from "@/lib/class-names.utils";
 
 type PanelId = string;
 type PanelRef = React.RefObject<ResizablePrimitive.PanelImperativeHandle | null>;
 type PanelState = {
-  ref: PanelRef;
   isCollapsed: boolean;
   isDefaultCollapsed: boolean;
+  ref: PanelRef;
 };
 
 type PanelRefsCollection = Record<PanelId, PanelState>;
@@ -39,14 +39,14 @@ interface PersistedResizablePanelGroupProps extends Omit<
   "defaultLayout" | "id"
 > {
   id: string;
-  storage?: ResizablePrimitive.LayoutStorage;
+  storage?: ResizableLayoutStorage;
 }
 
 function ResizablePanelGroupPersisted({
-  id,
-  storage = localStorage,
-  onLayoutChanged,
   children,
+  id,
+  onLayoutChanged,
+  storage = localStorage,
   ...props
 }: PersistedResizablePanelGroupProps) {
   const panelIds = getPanelIds(children);
@@ -60,8 +60,8 @@ function ResizablePanelGroupPersisted({
   return (
     <ResizablePanelGroupBase
       {...props}
-      id={id}
       defaultLayout={persistedLayout.defaultLayout}
+      id={id}
       onLayoutChanged={(layout, meta) => {
         persistedLayout.onLayoutChanged(layout, meta);
         onLayoutChanged?.(layout, meta);
@@ -75,8 +75,8 @@ function ResizablePanelGroupPersisted({
 function ResizablePanelGroupBase({ className, ...props }: ResizablePrimitive.GroupProps) {
   return (
     <ResizablePrimitive.Group
+      className={cn("flex size-full aria-[orientation=vertical]:flex-col", className)}
       data-slot="resizable-panel-group"
-      className={cn("flex h-full w-full aria-[orientation=vertical]:flex-col", className)}
       {...props}
     />
   );
@@ -86,7 +86,7 @@ interface ResizablePanelProps extends Omit<ResizablePrimitive.PanelProps, "panel
   panelRef?: PanelRef;
 }
 
-function ResizablePanel({ id, panelRef: propsPanelRef, onResize, ...props }: ResizablePanelProps) {
+function ResizablePanel({ id, onResize, panelRef: propsPanelRef, ...props }: ResizablePanelProps) {
   const { registerPanel, unregisterPanel, updatePanelState } = useResizablePanelContext();
 
   const internalPanelRef = ResizablePrimitive.usePanelRef();
@@ -102,7 +102,6 @@ function ResizablePanel({ id, panelRef: propsPanelRef, onResize, ...props }: Res
     <ResizablePrimitive.Panel
       data-slot="resizable-panel"
       id={id}
-      panelRef={panelRef}
       onResize={(size, panelId, prevSize) => {
         if (id) {
           const isCollapsed = panelRef.current?.isCollapsed() ?? false;
@@ -115,49 +114,50 @@ function ResizablePanel({ id, panelRef: propsPanelRef, onResize, ...props }: Res
 
         onResize?.(size, panelId, prevSize);
       }}
+      panelRef={panelRef}
       {...props}
     />
   );
 }
 
 function ResizableHandle({
-  withHandle,
-  className,
-  children,
   "aria-orientation": orientation,
+  children,
+  className,
+  withHandle,
   ...props
 }: ResizablePrimitive.SeparatorProps & {
   withHandle?: boolean;
 }) {
   return (
     <ResizablePrimitive.Separator
-      data-slot="resizable-handle"
       aria-orientation={orientation}
       className={cn(
-        "relative flex w-px items-center justify-center bg-border ring-offset-background after:pointer-events-none after:absolute after:top-1/2 after:left-1/2 after:z-20 after:h-1 after:w-1 after:-translate-x-1/2 after:-translate-y-1/2 after:rounded after:bg-transparent focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-hidden data-[separator='hover']:after:bg-primary/70 data-[separator='active']:after:bg-primary aria-[orientation=horizontal]:h-px aria-[orientation=horizontal]:w-full aria-[orientation=horizontal]:after:w-full aria-[orientation=vertical]:h-full aria-[orientation=vertical]:w-px aria-[orientation=vertical]:after:h-full [&[aria-orientation=vertical]>div]:rotate-90",
+        "relative flex w-px items-center justify-center bg-border ring-offset-background after:pointer-events-none after:absolute after:top-1/2 after:left-1/2 after:z-20 after:size-1 after:-translate-1/2 after:rounded after:bg-transparent focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-hidden aria-[orientation=horizontal]:h-px aria-[orientation=horizontal]:w-full aria-[orientation=horizontal]:after:w-full aria-[orientation=vertical]:h-full aria-[orientation=vertical]:w-px aria-[orientation=vertical]:after:h-full data-[separator='active']:after:bg-primary data-[separator='hover']:after:bg-primary/70 [&[aria-orientation=vertical]>div]:rotate-90",
         className,
       )}
+      data-slot="resizable-handle"
       {...props}
     >
       {children ??
-        (withHandle ? <div className="z-10 flex w-6 h-0.5 shrink-0 rounded-lg bg-border" /> : null)}
+        (withHandle ? <div className="z-10 flex h-0.5 w-6 shrink-0 rounded-lg bg-border" /> : null)}
     </ResizablePrimitive.Separator>
   );
 }
 
 interface ResizablePanelControlState {
   isCollapsed: boolean;
-  isMixed: boolean;
   isExpanded: boolean;
+  isMixed: boolean;
 }
 
 interface ResizablePanelControlProps {
-  panelId: PanelId | PanelId[];
-  mode?: "toggle" | "collapse" | "expand" | "reset";
   children?: React.ReactNode | ((state: ResizablePanelControlState) => React.ReactNode);
+  mode?: "toggle" | "collapse" | "expand" | "reset";
+  panelId: PanelId | PanelId[];
 }
 
-function ResizablePanelControl({ panelId, mode = "toggle", children }: ResizablePanelControlProps) {
+function ResizablePanelControl({ children, mode = "toggle", panelId }: ResizablePanelControlProps) {
   const panelIds = Array.isArray(panelId) ? panelId : [panelId];
   const panelStates = usePanelStates(panelIds);
 
@@ -198,12 +198,14 @@ function ResizablePanelControl({ panelId, mode = "toggle", children }: Resizable
   const collapsedPanelCount = Array.from(panelStates.values()).filter(
     (panelState) => panelState.isCollapsed,
   ).length;
+
   const isCollapsed = panelStates.size > 0 && collapsedPanelCount === panelStates.size;
   const isMixed = collapsedPanelCount > 0 && collapsedPanelCount < panelStates.size;
   const isExpanded = panelStates.size > 0 && collapsedPanelCount === 0;
 
   const child =
     typeof children === "function" ? children({ isCollapsed, isMixed, isExpanded }) : children;
+
   const handleClick = {
     collapse: handleCollapse,
     expand: handleExpand,

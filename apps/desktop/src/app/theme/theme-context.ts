@@ -3,8 +3,8 @@ import { createContext } from "react";
 import type { PrimaryColor, ResolvedTheme } from "./theme";
 
 export interface ThemeContextValue {
-  resolvedTheme: ResolvedTheme;
   previewPrimaryColor: (primaryColor: PrimaryColor | null) => void;
+  resolvedTheme: ResolvedTheme;
 }
 
 export const ThemeContext = createContext<ThemeContextValue | null>(null);

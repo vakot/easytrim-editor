@@ -1,10 +1,10 @@
 "use client";
 
-import * as React from "react";
-import { Switch as SwitchPrimitive } from "radix-ui";
 import { cva, type VariantProps } from "class-variance-authority";
+import { Switch as SwitchPrimitive } from "radix-ui";
+import * as React from "react";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/class-names.utils";
 
 const switchVariants = cva(
   "peer inline-flex shrink-0 cursor-pointer items-center rounded-full border border-transparent bg-input shadow-xs transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 data-checked:bg-primary",
@@ -22,7 +22,7 @@ const switchVariants = cva(
 );
 
 const thumbVariants: typeof switchVariants = cva(
-  "pointer-events-none block  translate-x-0.5 rounded-full bg-background shadow-sm ring-0 transition-transform",
+  "pointer-events-none block translate-x-0.5 rounded-full bg-background shadow-sm ring-0 transition-transform",
   {
     variants: {
       size: {
@@ -43,15 +43,15 @@ function Switch({
 }: React.ComponentProps<typeof SwitchPrimitive.Root> & VariantProps<typeof switchVariants>) {
   return (
     <SwitchPrimitive.Root
-      data-slot="switch"
-      data-size={size}
       className={cn(switchVariants({ size, className }))}
+      data-size={size}
+      data-slot="switch"
       {...props}
     >
       <SwitchPrimitive.Thumb
-        data-slot="switch-thumb"
-        data-size={size}
         className={cn(thumbVariants({ size }))}
+        data-size={size}
+        data-slot="switch-thumb"
       />
     </SwitchPrimitive.Root>
   );

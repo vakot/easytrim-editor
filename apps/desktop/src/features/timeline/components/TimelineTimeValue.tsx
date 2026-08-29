@@ -1,14 +1,14 @@
-import type { FrameRate } from "@/lib/tauri/media";
 import { formatPlaybackTime } from "@/domain/playback";
+import type { FrameRate } from "@/lib/tauri/media.types";
 
 export function TimelineTimeValue({
+  frameRate,
   label,
   micros,
-  frameRate,
 }: {
+  frameRate?: FrameRate;
   label: string;
   micros: number | null;
-  frameRate?: FrameRate;
 }) {
   return (
     <div className="grid gap-px">

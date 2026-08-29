@@ -1,7 +1,9 @@
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 
-import { STORAGE_KEYS, readStoredJson, writeStoredJson } from "@/lib/storage";
+import { STORAGE_KEYS } from "@/lib/storage.consts";
+import { readStoredJson, writeStoredJson } from "@/lib/storage.utils";
+
 import {
   DEFAULT_LANGUAGE,
   resolveInitialLanguage,
@@ -12,6 +14,7 @@ import {
 const storedPreferences = readStoredJson<{ language?: unknown }>(STORAGE_KEYS.preferences);
 const storedLanguage =
   typeof storedPreferences?.language === "string" ? storedPreferences.language : undefined;
+
 const initialLanguage = storedLanguage ? resolveInitialLanguage([storedLanguage]) : undefined;
 
 void i18n.use(initReactI18next).init({
@@ -39,4 +42,4 @@ i18n.on("languageChanged", (language) => {
   writeStoredJson(STORAGE_KEYS.preferences, { ...stored, language: resolvedLanguage });
 });
 
-export default i18n;
+export { i18n };

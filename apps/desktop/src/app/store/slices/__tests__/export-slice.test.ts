@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { sourceSelected } from "@/app/store/actions/source-actions";
 import type { RootState } from "@/app/store/store";
+
 import { cropChanged } from "../crop-slice";
 import {
   exportCanceled,
@@ -142,6 +143,7 @@ describe("export slice", () => {
       origin: "history-fork" as const,
       snapshot: item.snapshot,
     };
+
     let state = exportReducer(initialExportState, importQueueItemAdded(imported));
     state = exportReducer(state, importQueueItemRemoved(imported.id));
     expect(state.queue).toEqual([]);

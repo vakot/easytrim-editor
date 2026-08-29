@@ -9,7 +9,14 @@ import {
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
-import { Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from "@/components/ui/menu";
+import {
+  Menu,
+  MenuContent,
+  MenuGroup,
+  MenuItem,
+  MenuSeparator,
+  MenuTrigger,
+} from "@/components/ui/menu";
 import { ResizablePanelControl } from "@/components/ui/resizable";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -17,73 +24,77 @@ export function PanelVisibilityControls() {
   const { t } = useTranslation();
 
   return (
-    <div className="flex items-center gap-0.5" role="group" aria-label={t("app.panels.group")}>
+    <div aria-label={t("app.panels.group")} className="flex items-center gap-0.5" role="group">
       <Menu modal={false}>
         <MenuTrigger asChild>
           <Button
+            aria-label={t("app.panels.layoutMenu")}
+            size="icon-sm"
             type="button"
             variant="ghost"
-            size="icon-sm"
-            aria-label={t("app.panels.layoutMenu")}
           >
-            <LayoutPanelLeft className="size-4" aria-hidden="true" />
+            <LayoutPanelLeft aria-hidden="true" className="size-4" />
           </Button>
         </MenuTrigger>
         <MenuContent>
-          <ResizablePanelControl panelId="workspace-sidebar">
-            {({ isCollapsed }) => (
-              <MenuItem
-                icon={
-                  isCollapsed ? (
-                    <PanelLeftDashed className="size-3" aria-hidden="true" />
-                  ) : (
-                    <PanelLeft className="size-3" aria-hidden="true" />
-                  )
-                }
-                onSelect={(event) => event.preventDefault()}
-              >
-                {t("app.panels.leftPanel")}
-              </MenuItem>
-            )}
-          </ResizablePanelControl>
-          <ResizablePanelControl panelId="editor-stage-timeline">
-            {({ isCollapsed }) => (
-              <MenuItem
-                icon={
-                  isCollapsed ? (
-                    <PanelLeftDashed className="size-3" aria-hidden="true" />
-                  ) : (
-                    <PanelLeft className="size-3" aria-hidden="true" />
-                  )
-                }
-                onSelect={(event) => event.preventDefault()}
-              >
-                {t("app.panels.bottomPanel")}
-              </MenuItem>
-            )}
-          </ResizablePanelControl>
+          <MenuGroup>
+            <ResizablePanelControl panelId="workspace-sidebar">
+              {({ isCollapsed }) => (
+                <MenuItem
+                  icon={
+                    isCollapsed ? (
+                      <PanelLeftDashed aria-hidden="true" className="size-3" />
+                    ) : (
+                      <PanelLeft aria-hidden="true" className="size-3" />
+                    )
+                  }
+                  onSelect={(event) => event.preventDefault()}
+                >
+                  {t("app.panels.leftPanel")}
+                </MenuItem>
+              )}
+            </ResizablePanelControl>
+            <ResizablePanelControl panelId="editor-stage-timeline">
+              {({ isCollapsed }) => (
+                <MenuItem
+                  icon={
+                    isCollapsed ? (
+                      <PanelLeftDashed aria-hidden="true" className="size-3" />
+                    ) : (
+                      <PanelLeft aria-hidden="true" className="size-3" />
+                    )
+                  }
+                  onSelect={(event) => event.preventDefault()}
+                >
+                  {t("app.panels.bottomPanel")}
+                </MenuItem>
+              )}
+            </ResizablePanelControl>
+          </MenuGroup>
           <MenuSeparator />
-          <ResizablePanelControl
-            panelId={["workspace-sidebar", "editor-stage-timeline"]}
-            mode="reset"
-          >
-            {({ isExpanded }) => (
-              <MenuItem
-                disabled={isExpanded}
-                icon={<RotateCcw className="size-3" aria-hidden="true" />}
-                onSelect={(event) => event.preventDefault()}
-              >
-                {t("app.panels.resetLayout")}
-              </MenuItem>
-            )}
-          </ResizablePanelControl>
+          <MenuGroup>
+            <ResizablePanelControl
+              mode="reset"
+              panelId={["workspace-sidebar", "editor-stage-timeline"]}
+            >
+              {({ isExpanded }) => (
+                <MenuItem
+                  disabled={isExpanded}
+                  icon={<RotateCcw aria-hidden="true" className="size-3" />}
+                  onSelect={(event) => event.preventDefault()}
+                >
+                  {t("app.panels.resetLayout")}
+                </MenuItem>
+              )}
+            </ResizablePanelControl>
+          </MenuGroup>
         </MenuContent>
       </Menu>
       <Tooltip>
         <TooltipTrigger asChild>
           <ResizablePanelControl panelId="workspace-sidebar">
             {({ isCollapsed }) => (
-              <Button variant="ghost" size="icon-sm">
+              <Button size="icon-sm" variant="ghost">
                 {isCollapsed ? (
                   <PanelLeftDashed aria-hidden="true" />
                 ) : (
@@ -102,7 +113,7 @@ export function PanelVisibilityControls() {
         <TooltipTrigger asChild>
           <ResizablePanelControl panelId="editor-stage-timeline">
             {({ isCollapsed }) => (
-              <Button variant="ghost" size="icon-sm">
+              <Button size="icon-sm" variant="ghost">
                 {isCollapsed ? (
                   <PanelBottomDashed aria-hidden="true" />
                 ) : (

@@ -1,21 +1,21 @@
-import { afterEach, describe, expect, it } from "vitest";
 import type { Persistor, Storage as PersistStorage } from "redux-persist";
+import { afterEach, describe, expect, it } from "vitest";
 
+import { DEFAULT_PREFERENCES } from "@/app/preferences";
+import { persistConfig, resolveReduxPersistStorage } from "@/app/store/persistence";
 import {
   createEditorToolsStateFromPreferences,
   editorToolsReset,
   playbackSpeedChanged,
 } from "@/app/store/slices/editor-tools-slice";
+import { optimizedExportDialogOpened, queueEntryAdded } from "@/app/store/slices/export-slice";
 import { preferenceChanged, preferencesReset } from "@/app/store/slices/preferences-slice";
 import {
   customPrimaryColorChanged,
   primaryColorChanged,
   themePreferenceChanged,
 } from "@/app/store/slices/theme-slice";
-import { optimizedExportDialogOpened, queueEntryAdded } from "@/app/store/slices/export-slice";
-import { createAppPersistor, createAppStore, type AppStore } from "@/app/store/store";
-import { persistConfig, resolveReduxPersistStorage } from "@/app/store/persistence";
-import { DEFAULT_PREFERENCES } from "@/app/preferences";
+import { type AppStore, createAppPersistor, createAppStore } from "@/app/store/store";
 
 interface TestStorage extends PersistStorage {
   values: Map<string, string>;
@@ -62,7 +62,7 @@ async function waitForRehydration(persistor: Persistor): Promise<void> {
 
 async function createPersistedTestStore(
   storage = createTestStorage(),
-): Promise<{ store: AppStore; persistor: Persistor; storage: TestStorage }> {
+): Promise<{ persistor: Persistor; storage: TestStorage; store: AppStore }> {
   const store = createAppStore(storage);
   const persistor = createAppPersistor(store);
   activePersistors.push(persistor);
@@ -128,6 +128,7 @@ describe("Redux Persist store integration", () => {
         _persist: JSON.stringify({ version: -1, rehydrated: true }),
       }),
     });
+
     const { store } = await createPersistedTestStore(storage);
 
     expect(store.getState().preferences).toEqual({
@@ -170,7 +171,7 @@ describe("Redux Persist store integration", () => {
   });
 
   it("never persists active editor tools", async () => {
-    const { store, persistor, storage } = await createPersistedTestStore();
+    const { persistor, storage, store } = await createPersistedTestStore();
 
     store.dispatch(playbackSpeedChanged(3));
     await persistor.flush();
@@ -183,7 +184,7 @@ describe("Redux Persist store integration", () => {
   });
 
   it("never persists export runtime state, queue entries, or dialog state", async () => {
-    const { store, persistor, storage } = await createPersistedTestStore();
+    const { persistor, storage, store } = await createPersistedTestStore();
     store.dispatch(
       optimizedExportDialogOpened({
         resolution: { width: 1920, height: 1080 },
@@ -229,6 +230,7 @@ describe("Redux Persist store integration", () => {
         loopPlaybackEnabledDefault: false,
       }),
     });
+
     const { store } = await createPersistedTestStore(storage);
 
     expect(store.getState().preferences).toEqual(DEFAULT_PREFERENCES);
@@ -240,7 +242,7 @@ describe("Redux Persist store integration", () => {
   });
 
   it("persists a dispatched preference action without UI storage calls", async () => {
-    const { store, persistor, storage } = await createPersistedTestStore();
+    const { persistor, storage, store } = await createPersistedTestStore();
 
     store.dispatch(preferenceChanged({ key: "loopPlaybackEnabledDefault", enabled: false }));
     await persistor.flush();
@@ -253,7 +255,7 @@ describe("Redux Persist store integration", () => {
   });
 
   it("persists reset state", async () => {
-    const { store, persistor, storage } = await createPersistedTestStore();
+    const { persistor, storage, store } = await createPersistedTestStore();
 
     store.dispatch(preferenceChanged({ key: "loopPlaybackEnabledDefault", enabled: false }));
     await persistor.flush();
@@ -267,7 +269,7 @@ describe("Redux Persist store integration", () => {
   });
 
   it("persists theme actions without runtime or derived values", async () => {
-    const { store, persistor, storage } = await createPersistedTestStore();
+    const { persistor, storage, store } = await createPersistedTestStore();
 
     store.dispatch(themePreferenceChanged("dark"));
     store.dispatch(primaryColorChanged("blue"));

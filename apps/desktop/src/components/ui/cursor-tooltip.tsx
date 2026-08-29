@@ -1,28 +1,27 @@
 import {
-  useEffect,
-  forwardRef,
-  useRef,
-  useState,
   type ComponentProps,
+  forwardRef,
   type MouseEvent,
   type PointerEvent,
   type ReactNode,
+  useEffect,
+  useRef,
+  useState,
 } from "react";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/class-names.utils";
 
 interface CursorTooltipProps extends ComponentProps<"div"> {
-  tooltipContent: ReactNode;
   delayDuration?: number;
   disabled?: boolean;
   offset?: number;
+  tooltipContent: ReactNode;
 }
 
 export const CursorTooltip = forwardRef<HTMLDivElement, CursorTooltipProps>(function CursorTooltip(
   {
     children,
     className,
-    tooltipContent,
     delayDuration = 500,
     disabled = false,
     offset = 12,
@@ -30,6 +29,7 @@ export const CursorTooltip = forwardRef<HTMLDivElement, CursorTooltipProps>(func
     onPointerEnter,
     onPointerLeave,
     onPointerMove,
+    tooltipContent,
     ...props
   },
   ref,
@@ -91,18 +91,18 @@ export const CursorTooltip = forwardRef<HTMLDivElement, CursorTooltipProps>(func
   return (
     <div
       {...props}
-      ref={ref}
       className={cn("relative", className)}
       onClick={handleClick}
       onPointerEnter={handlePointerEnter}
       onPointerLeave={handlePointerLeave}
       onPointerMove={handlePointerMove}
+      ref={ref}
     >
       {children}
       {visible && position && !disabled ? (
         <span
-          role="tooltip"
           className="pointer-events-none absolute z-10 rounded bg-foreground px-2 py-1 text-xs text-background shadow"
+          role="tooltip"
           style={{ left: position.x, top: position.y }}
         >
           {tooltipContent}

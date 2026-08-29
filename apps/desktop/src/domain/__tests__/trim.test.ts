@@ -11,12 +11,18 @@ import {
   moveTrimBoundary,
   moveTrimRange,
   playheadAfterSegmentMove,
-  playheadAfterTrimBoundaryMove,
+  playheadFollowAfterTrimBoundaryMove,
+  settleDirectionalSnapLatch,
   setTrimBoundaryAtPlayhead,
   snapMovedTrimRangeToPlayhead,
-  settleDirectionalSnapLatch,
   timelinePercent,
 } from "../trim";
+
+function playheadAfterTrimBoundaryMove(
+  ...args: Parameters<typeof playheadFollowAfterTrimBoundaryMove>
+) {
+  return playheadFollowAfterTrimBoundaryMove(...args).playheadMicros;
+}
 
 describe("trim domain", () => {
   it("initializes the full source in integer microseconds", () => {
@@ -155,6 +161,7 @@ describe("trim domain", () => {
       endMicros: 20_000_000,
       sourceDurationMicros: 60_000_000,
     };
+
     const beforeRightContact = moveTrimRange(movingRight, 20_000_000);
     const rightContact = moveTrimRange(beforeRightContact, 30_000_000);
 
@@ -168,6 +175,7 @@ describe("trim domain", () => {
       30_000_000,
       null,
     );
+
     expect(caughtRight).toEqual({
       playheadMicros: 30_000_000,
       boundary: "start",
@@ -179,6 +187,7 @@ describe("trim domain", () => {
       caughtRight.playheadMicros,
       caughtRight.boundary,
     );
+
     expect(followedRight).toEqual({
       playheadMicros: 35_000_000,
       boundary: "start",
@@ -189,6 +198,7 @@ describe("trim domain", () => {
       followedRight.playheadMicros,
       followedRight.boundary,
     );
+
     expect(releasedRight).toEqual({
       playheadMicros: 35_000_000,
       boundary: null,
@@ -199,6 +209,7 @@ describe("trim domain", () => {
       endMicros: 50_000_000,
       sourceDurationMicros: 60_000_000,
     };
+
     const beforeLeftContact = moveTrimRange(movingLeft, 25_000_000);
     const leftContact = moveTrimRange(beforeLeftContact, 20_000_000);
 
@@ -218,6 +229,7 @@ describe("trim domain", () => {
       caughtLeft.playheadMicros,
       caughtLeft.boundary,
     );
+
     expect(followedLeft).toEqual({
       playheadMicros: 25_000_000,
       boundary: "end",
@@ -230,6 +242,7 @@ describe("trim domain", () => {
       followedLeft.playheadMicros,
       followedLeft.boundary,
     );
+
     expect(releasedLeft).toEqual({
       playheadMicros: 25_000_000,
       boundary: null,
@@ -242,6 +255,7 @@ describe("trim domain", () => {
       releasedLeft.playheadMicros,
       releasedLeft.boundary,
     );
+
     expect(caughtOpposite).toEqual({
       playheadMicros: 25_000_000,
       boundary: "start",
@@ -304,6 +318,7 @@ describe("trim domain", () => {
       endMicros: 8_000_000,
       sourceDurationMicros: 10_000_000,
     };
+
     const caughtEnd = { ...range, endMicros: 5_000_000 };
     const reversedEnd = { ...range, endMicros: 7_000_000 };
     const beforeEndContact = { ...range, endMicros: 6_000_000 };

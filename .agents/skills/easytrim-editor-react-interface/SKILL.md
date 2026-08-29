@@ -12,7 +12,7 @@ Build a minimal React + TypeScript + Vite interface that the project owner can r
 Follow the auto-loaded `AGENTS.md`. Before frontend changes, read:
 
 - [repository structure](../../rules/structure.md);
-- [quality gates](../../rules/quality.md);
+- [quality gates](../../rules/verification.md);
 - [runtime and security](../../rules/security-runtime.md) when IPC, paths, state lifetime, or local assets are involved;
 - [UI contract](references/ui-contract.md).
 
@@ -25,18 +25,47 @@ Use `easytrim-editor-tauri-rust` for IPC/native changes and `easytrim-editor-ffm
 - Use React, strict TypeScript, Vite, semantic HTML, Tailwind, and the repository's shadcn primitives.
 - Reuse `components/ui` for buttons, dialogs, fields, tooltips, popovers, sliders, checkboxes, cards, and alerts. Add a shadcn primitive before hand-building an equivalent control.
 - Keep generated primitives generic. Put product-specific composition in the owning feature.
+- When a primitive is intentionally extracted, name dedicated type-only modules with `.types.ts`
+  and use a semantic kebab-case base for module-level contracts or a matching PascalCase component
+  base for non-prop component types. Keep component props in the component file rather than
+  extracting a props-only `.types.ts` file. When one cohesive subsystem shares a type-only contract
+  across internal folders or sibling components, use `types.ts` at the subsystem root. Keep required
+  ambient declarations as `.d.ts`.
+- Apply the same owner-based dotted suffix convention to intentionally extracted frontend
+  primitives: use `.consts.ts` for grouped static values, `.utils.ts` for cohesive supporting
+  helpers, and an accurate role such as `.fixtures.ts` for other self-contained primitive groups.
+  Keep semantic domain, state, runtime, adapter, and configuration module names unsuffixed.
+- Avoid single-consumer primitive files. Do not split a helper, type, constant, or small
+  implementation detail from its owning module solely because it has a different declaration kind.
+  Keep it colocated unless it has multiple consumers, is independently reusable, represents a
+  meaningful standalone abstraction, or separation materially improves maintainability or module
+  boundaries. Inspect consumers before extracting or merging.
 - Use Tailwind utilities first. Reserve colocated CSS modules for precise pseudo-elements, keyframes, or browser-native styling that would be obscure as utilities.
 - Use Redux Toolkit for approved application/domain state according to
   `easytrim-editor-redux-state`. Keep local component state for ephemeral visual and
   interaction concerns; do not introduce another state library or ad-hoc application
   context.
 - Keep app-level Context declarations under `app/contexts/` and their Provider
-  implementations under `app/components/Providers/`; feature-owned Contexts and the
+  implementations under `app/components/providers/`; feature-owned Contexts and the
   theme subsystem remain with their owning feature/subsystem.
 - Keep Tauri calls behind the typed adapter defined by the structure rule.
+- Split mixed frontend Tauri clients by role: the semantic adapter owns IPC actions,
+  `<adapter>.types.ts` owns request/result/error contracts, and `<adapter>.utils.ts` owns reusable
+  response parsing or normalization. Import each role directly instead of re-exporting it through
+  the action adapter.
 - Keep FFmpeg strings, path validation, and process details out of components.
 - Load no analytics, remote assets, fonts, or network resources.
-- Keep feature components primarily presentational; move effects and stateful workflows to `hooks/` or the app composition layer and pure transformations to `utils/`.
+- Let feature orchestration roots own capability state/logic orchestration and feature layout;
+  they may select and dispatch Redux state intrinsic to the capability. Move cohesive interaction
+  logic and effects to feature `hooks/` when that creates a meaningful responsibility. Keep
+  focused nested components presentational by default, and group semantic pure/internal modules
+  under `lib/` only when enough related files justify it.
+- Keep feature business logic in its owning feature: preview media synchronization, audio
+  synchronization/native-audio runtime, and timeline keyboard/playhead helpers belong under their
+  respective feature `lib/` modules. Reserve `app/` for orchestration hooks, providers, contexts,
+  and composition.
+- Keep sibling component variants flat under their owner's `components/` directory. Avoid
+  one-directory-per-variant wrappers and internal barrels that only re-export one file.
 
 ## Model editor state explicitly
 
@@ -116,6 +145,9 @@ Keep these regions visible without navigation:
 ## Frontend test focus
 
 In addition to the shared quality gate, cover:
+
+- place test suites in the owning module folder's `__tests__/` directory and preserve the source
+  filename stem before `.test.ts` or `.test.tsx`;
 
 - picker/drop import and immediate replacement;
 - reducer and timeline coordinate boundaries;

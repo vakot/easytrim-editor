@@ -1,20 +1,21 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
-import { type RootState } from "../store";
 import {
+  type CustomPrimaryColor,
   DEFAULT_CUSTOM_PRIMARY_COLOR,
   DEFAULT_PRIMARY_COLOR,
   isCustomPrimaryColor,
-  type CustomPrimaryColor,
   type PrimaryColor,
   type PrimaryColorKey,
   type ThemePreference,
 } from "@/app/theme/theme";
 
-export interface ThemeState {
+import type { RootState } from "../store";
+
+interface ThemeState {
+  customPrimaryColor: CustomPrimaryColor;
   preference: ThemePreference;
   primaryColor: PrimaryColor;
-  customPrimaryColor: CustomPrimaryColor;
 }
 
 const createInitialState = (): ThemeState => ({
@@ -43,7 +44,7 @@ const themeSlice = createSlice({
   },
 });
 
-export const { themePreferenceChanged, primaryColorChanged, customPrimaryColorChanged } =
+export const { customPrimaryColorChanged, primaryColorChanged, themePreferenceChanged } =
   themeSlice.actions;
 export const themeReducer = themeSlice.reducer;
 

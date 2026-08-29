@@ -1,13 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import { sourceSelected } from "@/app/store/actions/source-actions";
+import { firstSource, secondSource } from "@/test/source.fixtures";
+
 import {
   initialPreviewState,
   previewFailed,
   previewReducer,
   selectPreview,
 } from "../preview-slice";
-import { firstSource, secondSource } from "./test-fixtures";
 
 describe("preview slice", () => {
   it("resets the preview when the source changes", () => {
@@ -15,6 +16,7 @@ describe("preview slice", () => {
       initialPreviewState,
       sourceSelected({ source: firstSource }),
     );
+
     const loadingSecond = previewReducer(loadingFirst, sourceSelected({ source: secondSource }));
     expect(loadingSecond).toEqual({ value: { status: "idle" } });
   });

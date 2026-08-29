@@ -1,28 +1,11 @@
 import { relaunch } from "@tauri-apps/plugin-process";
 import { check } from "@tauri-apps/plugin-updater";
 
+import type { AvailableUpdate } from "./updates.types";
+import { getErrorMessage, isWindowsRuntime } from "./updates.utils";
+
 const updaterEndpoint =
   "https://github.com/vakot/easytrim-editor/releases/latest/download/latest.json";
-
-function getErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
-
-export interface AvailableUpdate {
-  version: string;
-  install: () => Promise<void>;
-}
-
-export function isTauriRuntime(): boolean {
-  return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
-}
-
-function isWindowsRuntime(): boolean {
-  return (
-    typeof navigator !== "undefined" &&
-    (/Windows/i.test(navigator.userAgent) || /Win/i.test(navigator.platform))
-  );
-}
 
 export async function checkForUpdates(): Promise<AvailableUpdate | null> {
   try {

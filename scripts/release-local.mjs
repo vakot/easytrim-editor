@@ -1,16 +1,16 @@
+import { spawnSync } from "node:child_process";
 import {
   access,
   copyFile,
   mkdir,
   mkdtemp,
-  readFile,
   readdir,
+  readFile,
   rm,
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, join, relative, resolve } from "node:path";
-import { spawnSync } from "node:child_process";
 
 import {
   bundlesByPlatform,
@@ -93,6 +93,7 @@ const build = spawnSync("pnpm", tauriArgs, {
   stdio: "inherit",
   shell: process.platform === "win32",
 });
+
 if (build.status !== 0) {
   process.exit(build.status ?? 1);
 }
@@ -103,6 +104,7 @@ const bundleRoot = join(
   "release",
   "bundle",
 );
+
 const artifacts = [];
 for (const artifact of config.artifacts) {
   const artifactDirectory = join(bundleRoot, artifact.bundle);
@@ -130,6 +132,7 @@ if (artifacts.length === 0) {
 const stagingDirectory = outputDirectory
   ? resolve(outputDirectory)
   : await mkdtemp(join(tmpdir(), "easytrim-release-"));
+
 const removeStagingDirectory = !outputDirectory;
 
 await mkdir(stagingDirectory, { recursive: true });
@@ -141,6 +144,7 @@ try {
         stagingDirectory,
         getReleaseArtifactName(tauriConfig.version, config, artifact),
       );
+
       const signature = `${path}.sig`;
 
       try {
@@ -157,6 +161,7 @@ try {
 
   const updaterArtifact =
     stagedArtifacts.find(({ artifact }) => artifact.bundle === "nsis") ?? stagedArtifacts[0];
+
   const updaterJsonPath = join(stagingDirectory, "latest.json");
   const updaterJson = {
     version: tauriConfig.version,
@@ -181,6 +186,7 @@ try {
       ...stagedArtifacts.flatMap(({ path, signature }) => [path, signature]),
       updaterJsonPath,
     ];
+
     console.log(`Uploading signed artifacts and latest.json to GitHub release ${tag}...`);
     const upload = spawnSync("gh", ["release", "upload", tag, ...uploadPaths, "--clobber"], {
       stdio: "inherit",

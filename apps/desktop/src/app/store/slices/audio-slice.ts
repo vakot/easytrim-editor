@@ -11,38 +11,39 @@ import type {
   AudioPreviewDescriptor,
   MediaInfo,
   WaveformResult,
-} from "@/lib/tauri/media";
+} from "@/lib/tauri/media.types";
+
 import type { RootState } from "../store";
 
-export type WaveformState =
+type WaveformState =
   | { status: "idle" }
-  | { status: "loading"; jobId: string; width: number }
-  | { status: "ready"; jobId: string; width: number; url: string }
-  | { status: "failed"; jobId: string; width: number; error: AppError };
+  | { jobId: string; status: "loading"; width: number }
+  | { jobId: string; status: "ready"; url: string; width: number }
+  | { error: AppError; jobId: string; status: "failed"; width: number };
 
-export type AudioPreviewState =
-  | { status: "idle"; previews: AudioPreviewDescriptor[] }
-  | { status: "loading"; previews: AudioPreviewDescriptor[] }
-  | { status: "ready"; previews: AudioPreviewDescriptor[] }
+type AudioPreviewState =
+  | { previews: AudioPreviewDescriptor[]; status: "idle" }
+  | { previews: AudioPreviewDescriptor[]; status: "loading" }
+  | { previews: AudioPreviewDescriptor[]; status: "ready" }
   | {
-      status: "unavailable";
-      previews: AudioPreviewDescriptor[];
       error: AppError;
+      previews: AudioPreviewDescriptor[];
+      status: "unavailable";
     };
 
 export interface AudioTrackState {
-  streamIndex: number;
   enabled: boolean;
+  streamIndex: number;
   volumePercent: number;
   waveform: WaveformState;
 }
 
-export interface AudioState {
-  tracks: AudioTrackState[];
+interface AudioState {
   masterEnabled: boolean;
   masterVolumePercent: number;
   mergeAudio: boolean;
   previews: AudioPreviewState | null;
+  tracks: AudioTrackState[];
 }
 
 const DEFAULT_UNMUTE_VOLUME_PERCENT = 50;
@@ -79,17 +80,11 @@ const audioSlice = createSlice({
       const track = state.tracks.find(
         (candidate) => candidate.streamIndex === action.payload.streamIndex,
       );
+
       if (!track) return;
       track.enabled = !track.enabled;
       if (track.enabled && track.volumePercent <= 0)
         track.volumePercent = DEFAULT_UNMUTE_VOLUME_PERCENT;
-    },
-    audioTracksSetEnabled: (state, action: PayloadAction<{ enabled: boolean }>) => {
-      for (const track of state.tracks) {
-        track.enabled = action.payload.enabled;
-        if (action.payload.enabled && track.volumePercent <= 0)
-          track.volumePercent = DEFAULT_UNMUTE_VOLUME_PERCENT;
-      }
     },
     audioTrackVolumeChanged: (
       state,
@@ -98,6 +93,7 @@ const audioSlice = createSlice({
       const track = state.tracks.find(
         (candidate) => candidate.streamIndex === action.payload.streamIndex,
       );
+
       if (!track) return;
       track.enabled = action.payload.volumePercent > 0;
       track.volumePercent = action.payload.volumePercent;
@@ -118,8 +114,8 @@ const audioSlice = createSlice({
       state,
       action: PayloadAction<{
         jobId: string;
-        width: number;
         streamIndexes: number[];
+        width: number;
       }>,
     ) => {
       state.tracks = updateWaveformTracks(state.tracks, action.payload.streamIndexes, () => ({
@@ -135,6 +131,7 @@ const audioSlice = createSlice({
       const track = state.tracks.find(
         (candidate) => candidate.streamIndex === action.payload.streamIndex,
       );
+
       if (track?.waveform.status === "ready") {
         track.waveform = {
           status: "failed",
@@ -150,10 +147,10 @@ const audioSlice = createSlice({
     waveformsFailed: (
       state,
       action: PayloadAction<{
-        jobId: string;
-        width: number;
-        streamIndexes: number[];
         error: AppError;
+        jobId: string;
+        streamIndexes: number[];
+        width: number;
       }>,
     ) => {
       state.tracks = updateWaveformTracks(state.tracks, action.payload.streamIndexes, (track) =>
@@ -240,25 +237,23 @@ function updateWaveformTracks(
 }
 
 export const {
+  audioMergeToggled,
   audioPreviewsLoading,
   audioPreviewsReady,
   audioPreviewsUnavailable,
   audioTrackToggled,
-  audioTracksSetEnabled,
   audioTrackVolumeChanged,
   masterAudioToggled,
   masterVolumeChanged,
-  audioMergeToggled,
-  waveformsLoading,
-  waveformReady,
   waveformDisplayFailed,
+  waveformReady,
   waveformsFailed,
+  waveformsLoading,
 } = audioSlice.actions;
 
 export const audioReducer = audioSlice.reducer;
 
 const EMPTY_AUDIO_TRACKS: AudioTrackState[] = [];
-const EMPTY_WAVEFORMS: WaveformState[] = [];
 
 export const selectAudioTracks = (state: RootState): AudioTrackState[] =>
   state.audio.tracks.length > 0 ? state.audio.tracks : EMPTY_AUDIO_TRACKS;
@@ -269,6 +264,3 @@ export const selectMasterAudio = createSelector([(state: RootState) => state.aud
 export const selectMergeAudio = (state: RootState): boolean => state.audio.mergeAudio;
 export const selectAudioPreviews = (state: RootState): AudioPreviewState | null =>
   state.audio.previews;
-export const selectWaveforms = createSelector([selectAudioTracks], (tracks): WaveformState[] =>
-  tracks.length > 0 ? tracks.map((track) => track.waveform) : EMPTY_WAVEFORMS,
-);

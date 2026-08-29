@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import i18n from "../config";
+import { i18n } from "../config";
 import { resolveInitialLanguage } from "../resources";
 
 describe("resolveInitialLanguage", () => {

@@ -1,16 +1,17 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 import { sourceCleared, sourceFailed, sourceSelected } from "@/app/store/actions/source-actions";
-import type { AppError, PreviewDescriptor, PreviewKind } from "@/lib/tauri/media";
+import type { AppError, PreviewDescriptor, PreviewKind } from "@/lib/tauri/media.types";
+
 import type { RootState } from "../store";
 
 export type PreviewState =
   | { status: "idle" }
-  | { status: "loading"; kind: PreviewKind }
+  | { kind: PreviewKind; status: "loading" }
   | { status: "ready"; value: PreviewDescriptor }
-  | { status: "failed"; error: AppError };
+  | { error: AppError; status: "failed" };
 
-export interface PreviewSliceState {
+interface PreviewSliceState {
   value: PreviewState;
 }
 
@@ -46,9 +47,7 @@ const previewSlice = createSlice({
   },
 });
 
-export const { previewLoading, previewReady, previewFailed } = previewSlice.actions;
+export const { previewFailed, previewLoading, previewReady } = previewSlice.actions;
 export const previewReducer = previewSlice.reducer;
 
 export const selectPreview = (state: RootState): PreviewState => state.preview.value;
-export const selectPreviewStatus = (state: RootState): PreviewState["status"] =>
-  state.preview.value.status;

@@ -1,17 +1,17 @@
-export interface PlaybackFrameRate {
-  numerator: number;
+interface PlaybackFrameRate {
   denominator: number;
+  numerator: number;
 }
 
 export interface PlaybackRange {
-  startMicros: number;
   endMicros: number;
+  startMicros: number;
 }
 
 export type PlaybackBoundaryAction =
   | { type: "continue" }
-  | { type: "restart"; positionMicros: number }
-  | { type: "stop"; positionMicros: number };
+  | { positionMicros: number; type: "restart" }
+  | { positionMicros: number; type: "stop" };
 
 export function frameDurationMicros(frameRate: PlaybackFrameRate | undefined): number {
   if (!frameRate || frameRate.numerator <= 0 || frameRate.denominator <= 0) {
@@ -66,12 +66,14 @@ export function formatPlaybackTime(
       ? Math.round(((micros / 1_000_000) * frameRate.numerator) / frameRate.denominator)
       : Math.round(micros / frameDuration),
   );
+
   const framesPerSecond = Math.max(
     1,
     frameRate && frameRate.numerator > 0 && frameRate.denominator > 0
       ? Math.round(frameRate.numerator / frameRate.denominator)
       : 10,
   );
+
   const wholeSeconds = Math.floor(totalFrames / framesPerSecond);
   const frames = totalFrames - Math.round(wholeSeconds * framesPerSecond);
   const hours = Math.floor(wholeSeconds / 3_600);

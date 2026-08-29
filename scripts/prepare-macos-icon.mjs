@@ -1,6 +1,6 @@
+import { spawnSync } from "node:child_process";
 import { mkdir, readdir, rm, stat } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
-import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 if (process.platform !== "darwin") {
@@ -19,6 +19,7 @@ const source = resolve(
   "macos",
   `${iconName}.icon`,
 );
+
 const output = resolve(repositoryRoot, "target", "icon-assets", "macos");
 const partialInfoPlist = resolve(output, "partial-info.plist");
 

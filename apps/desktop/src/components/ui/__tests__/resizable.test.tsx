@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { useState, type ReactNode, type RefObject } from "react";
+import { type ReactNode, type RefObject, useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -59,6 +59,7 @@ vi.mock("react-resizable-panels", async () => {
       if (!controller) {
         const initiallyCollapsed =
           props.collapsedSize !== undefined && props.defaultSize === props.collapsedSize;
+
         primitive.collapsed.set(id, initiallyCollapsed);
         controller = {
           collapse: vi.fn(() => reportResize(id, true)),
@@ -113,7 +114,7 @@ function DynamicPanelGroup() {
     <ResizablePanelContextProvider>
       <button onClick={() => setShowSecondPanel(true)}>Show second panel</button>
       <div style={{ height: 500 }}>
-        <ResizablePanelGroup id="dynamic-panels" persisted orientation="vertical">
+        <ResizablePanelGroup id="dynamic-panels" orientation="vertical" persisted>
           <ResizablePanel id="first-panel" minSize={100}>
             First panel
           </ResizablePanel>
@@ -145,8 +146,8 @@ describe("ResizablePanelGroup", () => {
         <div style={{ height: 500 }}>
           <ResizablePanelGroup
             id="fragment-panels"
-            persisted
             orientation="vertical"
+            persisted
             storage={storage}
           >
             <ResizablePanel id="first-panel">First panel</ResizablePanel>
@@ -179,16 +180,16 @@ function ControlHarness({ mode }: { mode: "toggle" | "collapse" | "expand" | "re
   return (
     <ResizablePanelContextProvider>
       <ResizablePanelGroup>
-        <ResizablePanel id="open-panel" collapsible collapsedSize={0} defaultSize={50} />
-        <ResizablePanel id="collapsed-panel" collapsible collapsedSize={0} defaultSize={0} />
+        <ResizablePanel collapsedSize={0} collapsible defaultSize={50} id="open-panel" />
+        <ResizablePanel collapsedSize={0} collapsible defaultSize={0} id="collapsed-panel" />
       </ResizablePanelGroup>
 
-      <ResizablePanelControl panelId={["open-panel", "collapsed-panel"]} mode={mode}>
+      <ResizablePanelControl mode={mode} panelId={["open-panel", "collapsed-panel"]}>
         {({ isCollapsed, isMixed }) => (
           <button
+            aria-label="Run control"
             data-collapsed={String(isCollapsed)}
             data-mixed={String(isMixed)}
-            aria-label="Run control"
           >
             Run control
           </button>

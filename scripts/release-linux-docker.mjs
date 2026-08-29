@@ -1,6 +1,6 @@
+import { spawnSync } from "node:child_process";
 import { mkdir, readFile, stat } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { spawnSync } from "node:child_process";
 
 import { bundlesByPlatform, getReleaseArtifactName } from "./release-artifacts.mjs";
 
@@ -67,6 +67,7 @@ run("docker", [
 const tauriConfig = JSON.parse(
   await readFile(join("apps", "desktop", "src-tauri", "tauri.conf.json"), "utf8"),
 );
+
 const config = bundlesByPlatform.linux;
 const artifacts = config.artifacts.map((artifact) =>
   join(outputDirectory, getReleaseArtifactName(tauriConfig.version, config, artifact)),

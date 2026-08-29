@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import { sourceFailed, sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
+import { firstSource, media, secondSource } from "@/test/source.fixtures";
+
 import {
   initialSourceState,
   selectHasSource,
@@ -8,7 +10,6 @@ import {
   selectSourceSelection,
   sourceReducer,
 } from "../source-slice";
-import { firstSource, media, secondSource } from "./test-fixtures";
 
 describe("source slice", () => {
   it("establishes the selected source and preserves the failed replacement", () => {
@@ -44,6 +45,7 @@ describe("source slice", () => {
       loading,
       sourceReady({ loadToken: 1, media: media(firstSource.sourcePath) }),
     );
+
     const state = { source: ready } as never;
 
     expect(selectHasSource(state)).toBe(true);

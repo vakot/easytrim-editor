@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
-import { trimChanged, trimReducer, initialTrimState, selectTrim } from "../trim-slice";
-import { firstSource, media } from "./test-fixtures";
+import { firstSource, media } from "@/test/source.fixtures";
+
+import { initialTrimState, selectTrim, trimChanged, trimReducer } from "../trim-slice";
 
 describe("trim slice", () => {
   it("initializes a full trim and rejects invalid or stale updates", () => {
@@ -11,6 +12,7 @@ describe("trim slice", () => {
       loading,
       sourceReady({ loadToken: 1, media: media(firstSource.sourcePath) }),
     );
+
     const invalid = trimReducer(
       ready,
       trimChanged({

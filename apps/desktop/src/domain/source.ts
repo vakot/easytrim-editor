@@ -1,4 +1,4 @@
 export interface SourceRef {
-  sourcePath: string;
   displayName: string;
+  sourcePath: string;
 }

@@ -1,13 +1,14 @@
-import { useCallback, useLayoutEffect, useMemo, useSyncExternalStore, type ReactNode } from "react";
+import { type ReactNode, useCallback, useLayoutEffect, useMemo, useSyncExternalStore } from "react";
 
-import { useAppSelector } from "@/app/store/hooks";
+import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectPrimaryColor, selectThemePreference } from "@/app/store/slices/theme-slice";
+
 import {
+  type PrimaryColor,
   primaryColorPalette,
   resolveTheme,
   subscribeToSystemTheme,
   systemPrefersDark,
-  type PrimaryColor,
 } from "./theme";
 import { ThemeContext } from "./theme-context";
 

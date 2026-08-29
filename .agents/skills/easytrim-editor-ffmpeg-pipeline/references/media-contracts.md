@@ -2,7 +2,7 @@
 
 Read the relevant section before changing media behavior.
 
-Process safety and argument-array execution live in the [runtime and security rule](../../../rules/security-runtime.md). Required output assertions and media fixtures live in the [quality rule](../../../rules/quality.md).
+Process safety and argument-array execution live in the [runtime and security rule](../../../rules/security-runtime.md). Required output assertions and media fixtures live in the [verification rule](../../../rules/verification.md).
 
 ## 1. Canonical metadata
 
@@ -142,6 +142,6 @@ Calculate percentage from processed output time divided by selected duration, cl
 
 ## 8. Output verification
 
-Apply the media gate in the [quality rule](../../../rules/quality.md). Add mode-specific tolerances for the behavior changed; do not weaken shared stream, duration, mapping, or readability assertions.
+Apply the media gate in the [verification rule](../../../rules/verification.md). Add mode-specific tolerances for the behavior changed; do not weaken shared stream, duration, mapping, or readability assertions.
 
 Use `-n` unless the user has explicitly selected and confirmed an existing output through the native save dialog; only that confirmation authorizes `-y`.

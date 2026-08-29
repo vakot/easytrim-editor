@@ -2,7 +2,7 @@
 
 Read this reference before creating or materially changing the Tauri command surface or runtime state.
 
-Repository-wide module ownership and dependency direction live in the [structure rule](../../../rules/structure.md). Path/process authority, capabilities, temporary files, persistence, and binary provenance live in the [runtime and security rule](../../../rules/security-runtime.md). Native checks live in the [quality rule](../../../rules/quality.md).
+Repository-wide module ownership and dependency direction live in the [structure rule](../../../rules/structure.md). Path/process authority, capabilities, temporary files, persistence, and binary provenance live in the [runtime and security rule](../../../rules/security-runtime.md). Native checks live in the [verification rule](../../../rules/verification.md).
 
 ## Initial command contract
 

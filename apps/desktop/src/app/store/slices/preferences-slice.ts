@@ -1,9 +1,10 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
-import { type RootState } from "../store";
 import { DEFAULT_PREFERENCES, type PreferenceKey, type Preferences } from "@/app/preferences";
 
-export type PreferencesState = Preferences;
+import type { RootState } from "../store";
+
+type PreferencesState = Preferences;
 
 const createInitialState = (): PreferencesState => ({
   ...DEFAULT_PREFERENCES,
@@ -13,7 +14,7 @@ const preferencesSlice = createSlice({
   name: "preferences",
   initialState: createInitialState,
   reducers: {
-    preferenceChanged: (state, action: PayloadAction<{ key: PreferenceKey; enabled: boolean }>) => {
+    preferenceChanged: (state, action: PayloadAction<{ enabled: boolean; key: PreferenceKey }>) => {
       state[action.payload.key] = action.payload.enabled;
     },
     preferencesReset: (state) => {
@@ -26,12 +27,6 @@ export const { preferenceChanged, preferencesReset } = preferencesSlice.actions;
 export const preferencesReducer = preferencesSlice.reducer;
 
 export const selectPreferences = (state: RootState): Preferences => state.preferences;
-export const selectSnapPlaybackEnabledDefault = (state: RootState): boolean =>
-  selectPreferences(state).snapPlaybackEnabledDefault;
-export const selectLoopPlaybackEnabledDefault = (state: RootState): boolean =>
-  selectPreferences(state).loopPlaybackEnabledDefault;
-export const selectSegmentPlaybackEnabledDefault = (state: RootState): boolean =>
-  selectPreferences(state).segmentPlaybackEnabledDefault;
 export const selectMergeAudioEnabledDefault = (state: RootState): boolean =>
   selectPreferences(state).mergeAudioEnabledDefault;
 export const selectAutoStartQueueEnabled = (state: RootState): boolean =>

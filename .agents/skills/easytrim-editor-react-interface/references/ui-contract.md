@@ -2,7 +2,7 @@
 
 Read this reference before creating or materially changing the editor interface.
 
-Frontend feature/component ownership and dependency direction live in the [structure rule](../../../rules/structure.md). TypeScript and frontend test commands live in the [quality rule](../../../rules/quality.md).
+Frontend feature/component ownership and dependency direction live in the [structure rule](../../../rules/structure.md). TypeScript and frontend test commands live in the [verification rule](../../../rules/verification.md).
 
 ## 1. State shape
 

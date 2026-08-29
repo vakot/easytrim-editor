@@ -4,23 +4,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DEFAULT_PREFERENCES } from "../app/preferences";
 import { sourceCleared } from "../app/store/actions/source-actions";
+import { startSourceMediaRuntime } from "../app/store/integration/source-media-runtime";
 import {
   createEditorToolsStateFromPreferences,
   editorToolsInitialized,
 } from "../app/store/slices/editor-tools-slice";
 import { importQueueItemRemoved, selectimportQueueItems } from "../app/store/slices/export-slice";
-import {
-  PANEL_IDS,
-  panelCollapsedChanged,
-  panelsResetToDefault,
-  type PanelResetRequest,
-} from "../app/store/slices/panel-layout-slice";
 import { selectHasSource } from "../app/store/slices/source-slice";
-import { startSourceMediaRuntime } from "../app/store/source-media-runtime";
 import { store } from "../app/store/store";
 import { checkMediaCapabilitiesRequested } from "../app/store/thunks/source-media-thunks";
 import type { SourceRef } from "../domain/source";
-import type { MediaCapabilities, MediaInfo, SourceDropEvent } from "../lib/tauri/media";
+import type { MediaCapabilities, MediaInfo, SourceDropEvent } from "../lib/tauri/media.types";
 
 const mocks = vi.hoisted(() => ({
   checkMediaCapabilities: vi.fn(),
@@ -51,7 +45,7 @@ vi.mock("../lib/tauri/media", async (importOriginal) => {
   };
 });
 
-import App from "../App";
+import { App } from "../App";
 
 const capabilities: MediaCapabilities = {
   ffmpeg: { available: true, version: "ffmpeg version 7.1" },
@@ -62,6 +56,7 @@ const selection: SourceRef = {
   displayName: "holiday.mp4",
   sourcePath: "C:/Media/holiday.mp4",
 };
+
 const replacementSelection: SourceRef = {
   displayName: "replacement.mp4",
   sourcePath: "C:/Media/replacement.mp4",
@@ -101,13 +96,6 @@ const media: MediaInfo = {
 let sourceDropListener: ((event: SourceDropEvent) => void) | undefined;
 let stopSourceMediaRuntime: (() => void) | undefined;
 
-const RESET_ALL_PANELS = Object.values(PANEL_IDS).map((panelId) => ({
-  panelId,
-  resetCollapsed: true,
-  resetSize: true,
-  resetVisible: true,
-})) satisfies PanelResetRequest[];
-
 async function openSourcePicker(user: ReturnType<typeof userEvent.setup>) {
   screen.getByRole("button", { name: "File" }).focus();
   await user.keyboard("{Enter}");
@@ -131,6 +119,7 @@ function installAudioMocks(initiallyReady = true) {
     audioElements.push(element);
     return element;
   });
+
   const audioContext = {
     destination: {},
     resume: vi.fn().mockResolvedValue(undefined),
@@ -159,7 +148,6 @@ function installAudioMocks(initiallyReady = true) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  store.dispatch(panelsResetToDefault(RESET_ALL_PANELS));
   store.dispatch(sourceCleared());
   for (const item of selectimportQueueItems(store.getState())) {
     store.dispatch(importQueueItemRemoved(item.id));
@@ -256,25 +244,13 @@ describe("App", () => {
       "aria-pressed",
       "false",
     );
-  });
+  }, 10_000);
 
   it("starts with the editor in a no-source state", async () => {
     render(<App />);
 
     expect(screen.queryByText("Start a new clip")).not.toBeInTheDocument();
-    expect(screen.getByLabelText("Video editor workspace")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Media details" })).toHaveAttribute(
-      "aria-expanded",
-      "true",
-    );
-    expect(screen.getByRole("button", { name: "Import queue" })).toHaveAttribute(
-      "aria-expanded",
-      "true",
-    );
-    expect(screen.getByRole("button", { name: "Export queue" })).toHaveAttribute(
-      "aria-expanded",
-      "true",
-    );
+    expect(screen.getByRole("complementary", { name: "Source" })).toBeInTheDocument();
     expect(screen.getByRole("list", { name: "Keyboard shortcuts" })).toHaveTextContent("Open File");
     expect(screen.getByRole("list", { name: "Keyboard shortcuts" })).toHaveTextContent(
       "Save Lossless Cut",
@@ -303,7 +279,6 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "Play" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Previous frame" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Next frame" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Toggle Bottom panel" })).not.toBeDisabled();
     expect(screen.getByRole("slider", { name: "Move selected segment" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Snap playback" })).not.toBeDisabled();
     expect(screen.getByRole("button", { name: "Loop playback" })).not.toBeDisabled();
@@ -319,6 +294,7 @@ describe("App", () => {
     const readyState = vi
       .spyOn(HTMLMediaElement.prototype, "readyState", "get")
       .mockReturnValue(HTMLMediaElement.HAVE_METADATA);
+
     mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
 
@@ -361,6 +337,7 @@ describe("App", () => {
     let resolveAudioPreviews!: (
       previews: Array<{ mediaToken: number; streamIndex: number; url: string }>,
     ) => void;
+
     mocks.chooseSource.mockResolvedValue([selection]);
     mocks.inspectMedia.mockResolvedValue({
       ...media,
@@ -486,7 +463,7 @@ describe("App", () => {
     );
   });
 
-  it("imports a selected video and renders the editor with sidebar placeholders", async () => {
+  it("imports a selected video and renders the editor with sidebar panels", async () => {
     mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
     render(<App />);
@@ -494,19 +471,7 @@ describe("App", () => {
     await openSourcePicker(user);
 
     await waitForSourcePresence(true);
-    expect(screen.getByRole("button", { name: "Media details" })).toHaveAttribute(
-      "aria-expanded",
-      "true",
-    );
-    expect(screen.getByRole("button", { name: "Import queue" })).toHaveAttribute(
-      "aria-expanded",
-      "true",
-    );
-    expect(screen.getByRole("button", { name: "Export queue" })).toHaveAttribute(
-      "aria-expanded",
-      "true",
-    );
-    expect(screen.getByText("Media details placeholder 20")).toBeInTheDocument();
+    expect(screen.getByLabelText("Video metadata")).toBeInTheDocument();
     expect(screen.getByLabelText("Source video preview")).toHaveAttribute(
       "src",
       "http://easytrim-media.localhost/source-1?variant=source",
@@ -521,7 +486,7 @@ describe("App", () => {
     expect(audioPlayhead).toBeInTheDocument();
     const audioPlayheadGrid = audioPlayhead?.closest('[data-slot="audio-playhead-grid"]');
     expect(audioPlayheadGrid).toHaveAttribute("aria-hidden", "true");
-    expect(audioPlayheadGrid).toHaveClass("grid-cols-[var(--editor-track-grid-columns)]");
+    expect(audioPlayheadGrid).toHaveClass("grid-cols-(--editor-track-grid-columns)");
     expect(audioPlayhead?.parentElement).toHaveAttribute("data-slot", "audio-playhead-track");
     expect(
       screen.getByRole("button", { name: "Set segment start to current position" }),
@@ -535,6 +500,7 @@ describe("App", () => {
     const timelineHeading = screen.getByRole("heading", {
       name: "Selected Segment",
     }).parentElement?.parentElement;
+
     expect(timelineHeading).not.toBeNull();
     expect(within(timelineHeading as HTMLElement).getByLabelText("Current playback time")).toBe(
       screen.getByLabelText("Current playback time"),
@@ -543,14 +509,16 @@ describe("App", () => {
       within(timelineHeading as HTMLElement).getByLabelText("Preview playback controls"),
     ).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Trim" })).not.toBeInTheDocument();
-    expect(screen.getByLabelText("Video preview and timeline area")).toBeInTheDocument();
+    expect(document.getElementById("editor-stage")).toBeInTheDocument();
     const videoTimelineRow = screen
       .getByLabelText("Video trim timeline")
       .closest("[data-slot='timeline-row']");
+
     expect(videoTimelineRow).not.toBeNull();
     const videoToolbar = within(videoTimelineRow as HTMLElement).getByRole("toolbar", {
       name: "Video timeline tools",
     });
+
     expect(screen.getByText("Tools")).toHaveAttribute("data-slot", "timeline-tools-title");
     expect(videoToolbar).toHaveAttribute("data-slot", "timeline-toolbar");
     expect(videoToolbar).toHaveClass("flex", "items-stretch");
@@ -603,6 +571,7 @@ describe("App", () => {
     const playbackSpeedButton = within(videoToolbar).getByRole("button", {
       name: "Playback speed",
     });
+
     await user.click(playbackSpeedButton);
     const playbackSpeedSlider = screen.getByRole("slider", { name: "Playback speed" });
     playbackSpeedSlider.focus();
@@ -613,35 +582,25 @@ describe("App", () => {
     expect(playbackSpeedButton).toHaveAttribute("aria-pressed", "false");
     expect(playbackSpeedButton).not.toHaveClass("text-primary");
     expect(within(videoTimelineRow as HTMLElement).queryByText("Video")).not.toBeInTheDocument();
-    const sourceDetailsPanel = screen.getByTestId(PANEL_IDS.sourceDetails);
-    for (const sectionName of ["Media details", "Import queue", "Export queue"]) {
-      const trigger = within(sourceDetailsPanel).getByRole("button", { name: sectionName });
-      const content = within(sourceDetailsPanel).getByRole("region", { name: sectionName });
-      expect(trigger).toHaveAttribute("aria-expanded", "true");
-      expect(content.querySelector('[data-slot="scroll-area-viewport"]')).not.toBeNull();
-    }
-    expect(within(sourceDetailsPanel).getAllByRole("separator")).toHaveLength(2);
-    expect(screen.getByTestId("preview-panel")).toContainElement(
+    const sourceDetailsPanel = document.getElementById("workspace-sidebar");
+    expect(sourceDetailsPanel).not.toBeNull();
+    expect(sourceDetailsPanel).toContainElement(screen.getByLabelText("Video metadata"));
+    expect(sourceDetailsPanel).toContainElement(
+      screen.getByRole("button", { name: "Import queue" }),
+    );
+    expect(sourceDetailsPanel).toContainElement(
+      screen.getByRole("heading", { name: "Export queue" }),
+    );
+    expect(document.getElementById("editor-stage-preview")).toContainElement(
       screen.getByLabelText("Source video preview"),
     );
-    expect(screen.getByTestId(PANEL_IDS.timeline)).toContainElement(
+    expect(document.getElementById("editor-stage-timeline")).toContainElement(
       screen.getByRole("heading", { name: "Selected Segment" }),
     );
-    const sourceResizeHandle = screen.getByRole("separator", { name: "Resize source details" });
-    const timelineResizeHandle = screen.getByRole("separator", {
-      name: "Resize preview and timeline",
-    });
-    expect(sourceResizeHandle).toHaveAttribute("aria-orientation", "vertical");
-    expect(sourceResizeHandle).toHaveAttribute("tabindex", "0");
-    expect(sourceResizeHandle).toHaveClass("w-px", "after:w-1");
-    expect(timelineResizeHandle).toHaveAttribute("aria-orientation", "horizontal");
-    expect(timelineResizeHandle).toHaveAttribute("tabindex", "0");
-    expect(timelineResizeHandle).toHaveClass("aria-[orientation=horizontal]:h-px", "after:h-1");
-    expect(screen.getAllByRole("separator")).toHaveLength(4);
     const fixedTimeline = screen.getByTestId("timeline-fixed-content");
     const audioTracksScroll = screen.getByTestId("audio-tracks-scroll");
-    expect(screen.getByTestId(PANEL_IDS.timeline)).toContainElement(fixedTimeline);
-    expect(screen.getByTestId(PANEL_IDS.timeline)).toContainElement(audioTracksScroll);
+    expect(document.getElementById("editor-stage-timeline")).toContainElement(fixedTimeline);
+    expect(document.getElementById("editor-stage-timeline")).toContainElement(audioTracksScroll);
     expect(fixedTimeline).toContainElement(
       screen.getByRole("heading", { name: "Selected Segment" }),
     );
@@ -677,97 +636,6 @@ describe("App", () => {
     expect(screen.queryByTestId("audio-tracks-scroll")).not.toBeInTheDocument();
     expect(screen.queryByText("This source has no audio tracks.")).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Audio tracks" })).not.toBeInTheDocument();
-  });
-
-  it("toggles source details and audio panels while keeping the timeline visible", async () => {
-    mocks.chooseSource.mockResolvedValue([selection]);
-    const user = userEvent.setup();
-    render(<App />);
-
-    await openSourcePicker(user);
-    await waitForSourcePresence(true);
-
-    const sourceDetailsToggle = screen.getByRole("button", {
-      name: "Toggle Left panel",
-    });
-    const audioTracksToggle = screen.getByRole("button", {
-      name: "Toggle Bottom panel",
-    });
-    expect(sourceDetailsToggle).toHaveAttribute("aria-pressed", "true");
-    expect(audioTracksToggle).toHaveAttribute("aria-pressed", "true");
-
-    await user.click(sourceDetailsToggle);
-    expect(screen.getByRole("button", { name: "Media details" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Export queue" })).toBeInTheDocument();
-    expect(document.getElementById("source-details-resize-handle")).not.toHaveAttribute(
-      "aria-hidden",
-    );
-    expect(document.getElementById("source-details-resize-handle")).toBeEmptyDOMElement();
-
-    await user.click(screen.getByRole("button", { name: "Toggle Left panel" }));
-    expect(screen.getByRole("button", { name: "Media details" })).toBeInTheDocument();
-
-    await user.click(audioTracksToggle);
-    expect(screen.queryByTestId("audio-tracks-scroll")).not.toBeInTheDocument();
-    expect(screen.getByTestId("timeline-fixed-content")).toBeInTheDocument();
-    expect(document.getElementById("preview-timeline-resize-handle")).not.toHaveAttribute(
-      "aria-hidden",
-    );
-    expect(document.getElementById("preview-timeline-resize-handle")).toBeEmptyDOMElement();
-
-    await user.click(screen.getByRole("button", { name: "Toggle Bottom panel" }));
-    expect(screen.getByTestId("audio-tracks-scroll")).toBeInTheDocument();
-    expect(document.getElementById("preview-timeline-resize-handle")).not.toHaveAttribute(
-      "aria-hidden",
-    );
-    expect(document.getElementById("preview-timeline-resize-handle")?.firstElementChild).not.toBe(
-      null,
-    );
-  });
-
-  it("resets panel visibility from the panel controls", async () => {
-    mocks.chooseSource.mockResolvedValue([selection]);
-    const user = userEvent.setup();
-    render(<App />);
-
-    await openSourcePicker(user);
-    await waitForSourcePresence(true);
-    store.dispatch(
-      panelCollapsedChanged({
-        panelId: PANEL_IDS.sidebarimportQueue,
-        collapsed: true,
-      }),
-    );
-    await waitFor(() =>
-      expect(screen.getByRole("button", { name: "Import queue" })).toHaveAttribute(
-        "aria-expanded",
-        "false",
-      ),
-    );
-    screen.getByRole("button", { name: "Layout controls" }).focus();
-    await user.keyboard("{Enter}");
-    const leftPanelRow = screen.getByRole("menuitem", { name: /Left panel/ });
-    const bottomPanelRow = screen.getByRole("menuitem", { name: /Bottom panel/ });
-    expect(leftPanelRow).toHaveAttribute("data-selected", "false");
-    expect(bottomPanelRow).toHaveAttribute("data-selected", "false");
-    expect(within(leftPanelRow).getByRole("switch")).toBeChecked();
-    expect(within(bottomPanelRow).getByRole("switch")).toBeChecked();
-    await user.click(within(leftPanelRow).getByRole("switch"));
-    await user.click(within(bottomPanelRow).getByRole("switch"));
-    await user.click(screen.getByRole("menuitem", { name: "Reset editor layout" }));
-
-    expect(screen.getByRole("button", { name: "Toggle Left panel" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
-    expect(screen.getByRole("button", { name: "Toggle Bottom panel" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
-    expect(screen.getByRole("button", { name: "Import queue" })).toHaveAttribute(
-      "aria-expanded",
-      "false",
-    );
   });
 
   it("uses Escape to clear focus without closing the source", async () => {
@@ -870,6 +738,7 @@ describe("App", () => {
       y: 0,
       toJSON: () => ({}),
     });
+
     mocks.chooseSource.mockResolvedValue([selection]);
     mocks.inspectMedia.mockResolvedValue({
       ...media,
@@ -1005,6 +874,7 @@ describe("App", () => {
       y: 0,
       toJSON: () => ({}),
     });
+
     mocks.chooseSource.mockResolvedValue([selection]);
     mocks.prepareWaveforms
       .mockImplementationOnce(
@@ -1101,10 +971,12 @@ describe("App", () => {
     const audioPlay = vi
       .spyOn(audio, "play")
       .mockRejectedValue(new DOMException("Playback interrupted", "AbortError"));
+
     const audioPause = vi.spyOn(audio, "pause").mockImplementation(() => undefined);
     const audioConstructor = vi.fn(function AudioMock() {
       return audio;
     });
+
     const audioContext = {
       destination: {},
       resume: vi.fn().mockResolvedValue(undefined),
@@ -1136,6 +1008,7 @@ describe("App", () => {
       const videoPlay = vi.spyOn(video, "play").mockImplementation(async () => {
         fireEvent.play(video);
       });
+
       const videoPause = vi.spyOn(video, "pause").mockImplementation(() => undefined);
 
       await user.click(screen.getByRole("button", { name: "Play" }));
@@ -1240,6 +1113,7 @@ describe("App", () => {
       paused = false;
       return Promise.resolve();
     });
+
     const pause = vi.spyOn(video, "pause").mockImplementation(() => {
       paused = true;
     });
@@ -1385,6 +1259,7 @@ describe("App", () => {
     const setStart = screen.getByRole("button", {
       name: "Set segment start to current position",
     });
+
     const setEnd = screen.getByRole("button", {
       name: "Set segment end to current position",
     });

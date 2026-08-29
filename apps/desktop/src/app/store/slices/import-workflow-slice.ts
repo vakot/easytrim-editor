@@ -1,16 +1,17 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
-import type { AppError } from "@/lib/tauri/media";
+import type { AppError } from "@/lib/tauri/media.types";
+
 import type { RootState } from "../store";
 
-export interface ImportWorkflowState {
+interface ImportWorkflowState {
+  dropListenerError: AppError | null;
   isChoosingSource: boolean;
   isNativeDialogOpen: boolean;
   isSourceDragActive: boolean;
-  dropListenerError: AppError | null;
 }
 
-export const initialImportWorkflowState: ImportWorkflowState = {
+const initialImportWorkflowState: ImportWorkflowState = {
   isChoosingSource: false,
   isNativeDialogOpen: false,
   isSourceDragActive: false,
@@ -47,12 +48,12 @@ const importWorkflowSlice = createSlice({
 });
 
 export const {
-  sourceChoiceStarted,
-  sourceChoiceFinished,
-  nativeDialogStateChanged,
-  sourceDragChanged,
   dropListenerErrorCleared,
   dropListenerFailed,
+  nativeDialogStateChanged,
+  sourceChoiceFinished,
+  sourceChoiceStarted,
+  sourceDragChanged,
 } = importWorkflowSlice.actions;
 
 export const importWorkflowReducer = importWorkflowSlice.reducer;

@@ -8,24 +8,25 @@ import {
   sourceReady,
   sourceSelected,
 } from "@/app/store/actions/source-actions";
-import type { AppError, MediaCapabilities, MediaInfo } from "@/lib/tauri/media";
 import type { SourceRef } from "@/domain/source";
+import type { AppError, MediaCapabilities, MediaInfo } from "@/lib/tauri/media.types";
+
 import type { RootState } from "../store";
 
-export type CapabilityState =
+type CapabilityState =
   | { status: "checking" }
   | { status: "ready"; value: MediaCapabilities }
-  | { status: "failed"; error: AppError };
+  | { error: AppError; status: "failed" };
 
-export type SourceStatus = "idle" | "loading-source" | "ready" | "failed";
+type SourceStatus = "idle" | "loading-source" | "ready" | "failed";
 
-export interface SourceState {
-  status: SourceStatus;
-  source: SourceRef | null;
+interface SourceState {
+  capabilities: CapabilityState;
+  error: AppError | null;
   loadToken: number;
   media: MediaInfo | null;
-  error: AppError | null;
-  capabilities: CapabilityState;
+  source: SourceRef | null;
+  status: SourceStatus;
 }
 
 export const initialSourceState: SourceState = {
@@ -86,13 +87,11 @@ const sourceSlice = createSlice({
   },
 });
 
-export const { capabilitiesReady, capabilitiesFailed } = sourceSlice.actions;
+export const { capabilitiesFailed, capabilitiesReady } = sourceSlice.actions;
 export const sourceReducer = sourceSlice.reducer;
 
-export const selectSourceStatus = (state: RootState): SourceStatus => state.source.status;
 export const selectSourceSelection = (state: RootState): SourceRef | null => state.source.source;
 export const selectSourceMedia = (state: RootState): MediaInfo | null => state.source.media;
-export const selectSourceError = (state: RootState): AppError | null => state.source.error;
 export const selectCapabilities = (state: RootState): CapabilityState => state.source.capabilities;
 export const selectHasSource = (state: RootState): boolean => state.source.source !== null;
 export const selectSourceReady = (state: RootState): boolean =>
