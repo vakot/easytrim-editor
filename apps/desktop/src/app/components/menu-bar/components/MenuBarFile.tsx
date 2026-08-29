@@ -2,13 +2,13 @@ import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import {
-  Menu,
-  MenuContent,
-  MenuGroup,
-  MenuItem,
-  MenuSeparator,
-  MenuTrigger,
-} from "@/components/ui/menu";
+  MenubarContent,
+  MenubarGroup,
+  MenubarItem,
+  MenubarMenu,
+  MenubarSeparator,
+  MenubarTrigger,
+} from "@/components/ui/menubar";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectCropApplied } from "@/app/store/slices/crop-slice";
@@ -20,9 +20,7 @@ import {
   closeActiveImportedItemRequested,
 } from "@/app/store/thunks/source-media-thunks";
 
-import type { MenuNavigation } from "../types";
-
-export function ContextMenuFile({ navigation }: { navigation: MenuNavigation }) {
+export function MenuBarFile() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const canExport = useAppSelector(selectSourceReady);
@@ -32,12 +30,8 @@ export function ContextMenuFile({ navigation }: { navigation: MenuNavigation }) 
   const canSave = canExport && !cropApplied;
 
   return (
-    <Menu modal={false} onOpenChange={navigation.onOpenChange} open={navigation.open}>
-      <MenuTrigger
-        asChild
-        onPointerEnter={navigation.onTriggerPointerEnter}
-        onPointerLeave={navigation.onTriggerPointerLeave}
-      >
+    <MenubarMenu value="file">
+      <MenubarTrigger asChild>
         <Button
           className="text-foreground/80 data-[state=open]:bg-accent data-[state=open]:text-foreground"
           size="xs"
@@ -46,42 +40,42 @@ export function ContextMenuFile({ navigation }: { navigation: MenuNavigation }) 
         >
           {t("app.labels.file")}
         </Button>
-      </MenuTrigger>
-      <MenuContent>
-        <MenuGroup>
-          <MenuItem
+      </MenubarTrigger>
+      <MenubarContent>
+        <MenubarGroup>
+          <MenubarItem
             disabled={isChoosingSource}
             onSelect={() => void dispatch(chooseSourceRequested())}
             suffix="Ctrl+O"
           >
             {t("app.actions.openFile")}
-          </MenuItem>
-          <MenuItem
+          </MenubarItem>
+          <MenubarItem
             disabled={!hasSource}
             onSelect={() => void dispatch(closeActiveImportedItemRequested())}
             suffix="Ctrl+Q"
           >
             {t("app.actions.closeFile")}
-          </MenuItem>
-        </MenuGroup>
-        <MenuSeparator />
-        <MenuGroup>
-          <MenuItem
+          </MenubarItem>
+        </MenubarGroup>
+        <MenubarSeparator />
+        <MenubarGroup>
+          <MenubarItem
             disabled={!canSave}
             onSelect={() => void dispatch(startFastCutRequested())}
             suffix="Ctrl+S"
           >
             {t("export.actions.fast")}
-          </MenuItem>
-          <MenuItem
+          </MenubarItem>
+          <MenubarItem
             disabled={!canExport}
             onSelect={() => void dispatch(openOptimizedExportDialog())}
             suffix="Ctrl+E"
           >
             {t("export.actions.optimized")}
-          </MenuItem>
-        </MenuGroup>
-      </MenuContent>
-    </Menu>
+          </MenubarItem>
+        </MenubarGroup>
+      </MenubarContent>
+    </MenubarMenu>
   );
 }

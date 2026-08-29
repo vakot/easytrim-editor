@@ -7,9 +7,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ResizablePanelContextProvider } from "@/components/ui/resizable";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
-import { ContextMenus } from "@/app/components/context-menus";
 import { CustomTitleBar } from "@/app/components/CustomTitleBar";
 import { EditorWorkspace } from "@/app/components/editor-workspace/EditorWorkspace";
+import { MenuBar } from "@/app/components/menu-bar";
 import { NativeDialogOverlay } from "@/app/components/NativeDialogOverlay";
 import { PanelVisibilityControls } from "@/app/components/PanelVisibilityControls";
 import { AppUpdatesProvider } from "@/app/components/providers/AppUpdatesProvider";
@@ -117,7 +117,7 @@ function EasyTrimEditorApp() {
     <TooltipProvider>
       <main className="fixed inset-0 grid h-dvh w-screen min-w-80 grid-rows-[2.25rem_minmax(0,1fr)_auto] overflow-hidden bg-background">
         <CustomTitleBar
-          menuControls={<ContextMenus />}
+          menuControls={<MenuBar />}
           panelControls={<PanelVisibilityControls />}
           statusContent={<SourceStatus />}
         />

@@ -10,26 +10,24 @@ import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import {
-  Menu,
-  MenuContent,
-  MenuGroup,
-  MenuItem,
-  MenuSeparator,
-  MenuTrigger,
-} from "@/components/ui/menu";
+  MenubarContent,
+  MenubarGroup,
+  MenubarItem,
+  MenubarMenu,
+  MenubarSeparator,
+  MenubarTrigger,
+} from "@/components/ui/menubar";
 
 import { useAppUpdates } from "@/app/hooks/useAppUpdates";
 import { GithubIcon, KofiIcon } from "@/components/brand-icons";
 import { getCurrentVersion } from "@/lib/app-version.utils";
 import { openExternalUrl } from "@/lib/open-external-url.utils";
 
-import type { MenuNavigation } from "../types";
-
 const CHANGELOG_URL = "https://github.com/vakot/easytrim-editor/releases";
 const PROJECT_PAGE_URL = "https://github.com/vakot/easytrim-editor";
 const SUPPORT_PROJECT_URL = "https://ko-fi.com/vakot";
 
-export function ContextMenuHelp({ navigation }: { navigation: MenuNavigation }) {
+export function MenuBarHelp() {
   const { t } = useTranslation();
   const currentVersion = getCurrentVersion();
   const {
@@ -63,12 +61,8 @@ export function ContextMenuHelp({ navigation }: { navigation: MenuNavigation }) 
     ) : undefined;
 
   return (
-    <Menu modal={false} onOpenChange={navigation.onOpenChange} open={navigation.open}>
-      <MenuTrigger
-        asChild
-        onPointerEnter={navigation.onTriggerPointerEnter}
-        onPointerLeave={navigation.onTriggerPointerLeave}
-      >
+    <MenubarMenu value="help">
+      <MenubarTrigger asChild>
         <Button
           className="text-foreground/80 data-[state=open]:bg-accent data-[state=open]:text-foreground"
           size="xs"
@@ -77,16 +71,16 @@ export function ContextMenuHelp({ navigation }: { navigation: MenuNavigation }) 
         >
           {t("app.labels.help")}
         </Button>
-      </MenuTrigger>
-      <MenuContent>
-        <MenuGroup>
-          <MenuItem
+      </MenubarTrigger>
+      <MenubarContent>
+        <MenubarGroup>
+          <MenubarItem
             icon={<ExternalLink aria-hidden="true" className="size-3" />}
             onSelect={() => void openExternalUrl(CHANGELOG_URL)}
           >
             {t("support.actions.changelog")}
-          </MenuItem>
-          <MenuItem
+          </MenubarItem>
+          <MenubarItem
             disabled={updateStatus === "checking" || isInstalling}
             icon={updateHint}
             onSelect={(event) => {
@@ -95,35 +89,35 @@ export function ContextMenuHelp({ navigation }: { navigation: MenuNavigation }) 
             }}
           >
             {updateLabel}
-          </MenuItem>
-          <MenuItem
+          </MenubarItem>
+          <MenubarItem
             icon={<GithubIcon className="size-3" />}
             onSelect={() => void openExternalUrl(PROJECT_PAGE_URL)}
           >
             {t("support.actions.projectPage")}
-          </MenuItem>
-        </MenuGroup>
-        <MenuSeparator />
-        <MenuGroup>
-          <MenuItem
+          </MenubarItem>
+        </MenubarGroup>
+        <MenubarSeparator />
+        <MenubarGroup>
+          <MenubarItem
             icon={<KofiIcon className="size-3" />}
             onSelect={() => void openExternalUrl(SUPPORT_PROJECT_URL)}
           >
             {t("support.actions.projectSupport")}
-          </MenuItem>
-        </MenuGroup>
-        <MenuSeparator />
-        <MenuGroup>
-          <MenuItem
+          </MenubarItem>
+        </MenubarGroup>
+        <MenubarSeparator />
+        <MenubarGroup>
+          <MenubarItem
             icon={<ExternalLink aria-hidden="true" className="size-3" />}
             onSelect={() =>
               void openExternalUrl(`${PROJECT_PAGE_URL}/releases/tag/v${currentVersion}`)
             }
           >
             {t("app.labels.version", { version: currentVersion })}
-          </MenuItem>
-        </MenuGroup>
-      </MenuContent>
-    </Menu>
+          </MenubarItem>
+        </MenubarGroup>
+      </MenubarContent>
+    </MenubarMenu>
   );
 }

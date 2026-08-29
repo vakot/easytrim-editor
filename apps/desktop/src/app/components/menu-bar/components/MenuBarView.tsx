@@ -6,15 +6,15 @@ import { Button } from "@/components/ui/button";
 import { ColorSample, SpectrumWheel } from "@/components/ui/color";
 import { Input } from "@/components/ui/input";
 import {
-  Menu,
-  MenuContent,
-  MenuGroup,
-  MenuItem,
-  MenuSub,
-  MenuSubContent,
-  MenuSubTrigger,
-  MenuTrigger,
-} from "@/components/ui/menu";
+  MenubarContent,
+  MenubarGroup,
+  MenubarItem,
+  MenubarMenu,
+  MenubarSub,
+  MenubarSubContent,
+  MenubarSubTrigger,
+  MenubarTrigger,
+} from "@/components/ui/menubar";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
@@ -35,15 +35,13 @@ import {
 } from "@/app/theme/theme";
 import { useTheme } from "@/app/theme/useTheme";
 
-import type { MenuNavigation } from "../types";
-
 const themeIcons = { system: Monitor, light: Sun, dark: Moon } as const;
 
-interface ContextMenuViewProps {
-  navigation: MenuNavigation;
+interface MenuBarViewProps {
+  onClose: () => void;
 }
 
-export function ContextMenuView({ navigation }: ContextMenuViewProps) {
+export function MenuBarView({ onClose }: MenuBarViewProps) {
   const { t } = useTranslation();
   const { previewPrimaryColor } = useTheme();
   const dispatch = useAppDispatch();
@@ -76,23 +74,12 @@ export function ContextMenuView({ navigation }: ContextMenuViewProps) {
 
   const closeMenu = () => {
     clearPreview();
-    navigation.onOpenChange(false);
+    onClose();
   };
 
   return (
-    <Menu
-      modal={false}
-      onOpenChange={(isOpen) => {
-        if (!isOpen) clearPreview();
-        navigation.onOpenChange(isOpen);
-      }}
-      open={navigation.open}
-    >
-      <MenuTrigger
-        asChild
-        onPointerEnter={navigation.onTriggerPointerEnter}
-        onPointerLeave={navigation.onTriggerPointerLeave}
-      >
+    <MenubarMenu value="view">
+      <MenubarTrigger asChild>
         <Button
           className="text-foreground/80 data-[state=open]:bg-accent data-[state=open]:text-foreground"
           size="xs"
@@ -101,21 +88,21 @@ export function ContextMenuView({ navigation }: ContextMenuViewProps) {
         >
           {t("app.labels.view")}
         </Button>
-      </MenuTrigger>
-      <MenuContent>
-        <MenuGroup>
-          <MenuSub>
-            <MenuSubTrigger
+      </MenubarTrigger>
+      <MenubarContent>
+        <MenubarGroup>
+          <MenubarSub>
+            <MenubarSubTrigger
               icon={<CurrentThemeIcon aria-label={themeLabels[preference]} className="size-3" />}
             >
               {t("settings.labels.theme")}
-            </MenuSubTrigger>
-            <MenuSubContent>
-              <MenuGroup>
+            </MenubarSubTrigger>
+            <MenubarSubContent>
+              <MenubarGroup>
                 {(["system", "light", "dark"] as const).map((value) => {
                   const Icon = themeIcons[value];
                   return (
-                    <MenuItem
+                    <MenubarItem
                       icon={<Icon aria-hidden="true" className="size-3" />}
                       key={value}
                       onSelect={(event) => {
@@ -125,22 +112,22 @@ export function ContextMenuView({ navigation }: ContextMenuViewProps) {
                       selected={value === preference}
                     >
                       {themeLabels[value]}
-                    </MenuItem>
+                    </MenubarItem>
                   );
                 })}
-              </MenuGroup>
-            </MenuSubContent>
-          </MenuSub>
-          <MenuSub>
-            <MenuSubTrigger
+              </MenubarGroup>
+            </MenubarSubContent>
+          </MenubarSub>
+          <MenubarSub>
+            <MenubarSubTrigger
               icon={<ColorSample color={resolvePrimaryColor(displayedPrimaryColor)} />}
             >
               {t("settings.labels.color")}
-            </MenuSubTrigger>
-            <MenuSubContent>
-              <MenuGroup>
+            </MenubarSubTrigger>
+            <MenubarSubContent>
+              <MenubarGroup>
                 {PRIMARY_COLORS.map((color) => (
-                  <MenuItem
+                  <MenubarItem
                     icon={
                       <ColorSample
                         color={resolvePrimaryColor(color)}
@@ -158,10 +145,10 @@ export function ContextMenuView({ navigation }: ContextMenuViewProps) {
                     }
                   >
                     {colorLabels[color]}
-                  </MenuItem>
+                  </MenubarItem>
                 ))}
-                <MenuSub>
-                  <MenuSubTrigger
+                <MenubarSub>
+                  <MenubarSubTrigger
                     icon={
                       <ColorSample
                         color={resolvePrimaryColor(displayedCustomColor)}
@@ -176,21 +163,21 @@ export function ContextMenuView({ navigation }: ContextMenuViewProps) {
                     suffix={<span className="font-mono">{displayedCustomColor.toUpperCase()}</span>}
                   >
                     {t("settings.options.colors.custom")}
-                  </MenuSubTrigger>
-                  <MenuSubContent>
+                  </MenubarSubTrigger>
+                  <MenubarSubContent>
                     <CustomColorPickerPanel
                       onClose={closeMenu}
                       onPreviewChange={setPreviewColor}
                       previewColor={previewColor}
                     />
-                  </MenuSubContent>
-                </MenuSub>
-              </MenuGroup>
-            </MenuSubContent>
-          </MenuSub>
-        </MenuGroup>
-      </MenuContent>
-    </Menu>
+                  </MenubarSubContent>
+                </MenubarSub>
+              </MenubarGroup>
+            </MenubarSubContent>
+          </MenubarSub>
+        </MenubarGroup>
+      </MenubarContent>
+    </MenubarMenu>
   );
 }
 

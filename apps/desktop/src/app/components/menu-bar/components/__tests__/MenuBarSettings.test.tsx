@@ -1,8 +1,9 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
+import { Menubar } from "@/components/ui/menubar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { DEFAULT_PREFERENCES } from "@/app/preferences";
@@ -10,28 +11,23 @@ import { sourceSelected } from "@/app/store/actions/source-actions";
 import { selectMergeAudio } from "@/app/store/slices/audio-slice";
 import { createAppStore } from "@/app/store/store";
 
-import { ContextMenuSettings } from "../ContextMenuSettings";
-
-const navigation = {
-  open: true,
-  onOpenChange: vi.fn(),
-  onTriggerPointerEnter: vi.fn(),
-  onTriggerPointerLeave: vi.fn(),
-};
+import { MenuBarSettings } from "../MenuBarSettings";
 
 function renderSettings() {
   const store = createAppStore();
   render(
     <Provider store={store}>
       <TooltipProvider delayDuration={0}>
-        <ContextMenuSettings navigation={navigation} />
+        <Menubar value="settings">
+          <MenuBarSettings />
+        </Menubar>
       </TooltipProvider>
     </Provider>,
   );
   return store;
 }
 
-describe("ContextMenuSettings Redux integration", () => {
+describe("MenuBarSettings Redux integration", () => {
   it("dispatches preference changes through Redux", async () => {
     const user = userEvent.setup();
     const store = renderSettings();

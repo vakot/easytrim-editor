@@ -12,16 +12,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Menu,
-  MenuContent,
-  MenuGroup,
-  MenuItem,
-  MenuSeparator,
-  MenuSub,
-  MenuSubContent,
-  MenuSubTrigger,
-  MenuTrigger,
-} from "@/components/ui/menu";
+  MenubarContent,
+  MenubarGroup,
+  MenubarItem,
+  MenubarMenu,
+  MenubarSeparator,
+  MenubarSub,
+  MenubarSubContent,
+  MenubarSubTrigger,
+  MenubarTrigger,
+} from "@/components/ui/menubar";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
@@ -38,9 +38,7 @@ import {
 } from "@/app/store/thunks/export-thunks";
 import type { QueueFinishAction } from "@/lib/tauri/queue.types";
 
-import type { MenuNavigation } from "../types";
-
-export function ContextMenuQueue({ navigation }: { navigation: MenuNavigation }) {
+export function MenuBarQueue() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const [isCancelQueueConfirmOpen, setIsCancelQueueConfirmOpen] = useState(false);
@@ -66,12 +64,8 @@ export function ContextMenuQueue({ navigation }: { navigation: MenuNavigation })
 
   return (
     <>
-      <Menu modal={false} onOpenChange={navigation.onOpenChange} open={navigation.open}>
-        <MenuTrigger
-          asChild
-          onPointerEnter={navigation.onTriggerPointerEnter}
-          onPointerLeave={navigation.onTriggerPointerLeave}
-        >
+      <MenubarMenu value="queue">
+        <MenubarTrigger asChild>
           <Button
             className="text-foreground/80 data-[state=open]:bg-accent data-[state=open]:text-foreground"
             size="xs"
@@ -80,43 +74,43 @@ export function ContextMenuQueue({ navigation }: { navigation: MenuNavigation })
           >
             {t("queue.labels.title")}
           </Button>
-        </MenuTrigger>
-        <MenuContent>
-          <MenuGroup>
-            <MenuItem
+        </MenubarTrigger>
+        <MenubarContent>
+          <MenubarGroup>
+            <MenubarItem
               aria-keyshortcuts="Enter"
               disabled={!hasQueuedItems || queueStarted}
               onSelect={() => void dispatch(startExportQueue())}
               suffix="Enter"
             >
               {t("queue.actions.start")}
-            </MenuItem>
-          </MenuGroup>
-          <MenuSeparator />
-          <MenuGroup>
-            <MenuItem
+            </MenubarItem>
+          </MenubarGroup>
+          <MenubarSeparator />
+          <MenubarGroup>
+            <MenubarItem
               disabled={!hasActiveItem}
               onSelect={() => void dispatch(cancelActiveExportRequested())}
             >
               {t("queue.actions.skip")}
-            </MenuItem>
-            <MenuItem
+            </MenubarItem>
+            <MenubarItem
               disabled={!hasQueuedItems && !hasActiveItem}
               onSelect={() => setIsCancelQueueConfirmOpen(true)}
             >
               {t("queue.actions.cancel")}
-            </MenuItem>
-          </MenuGroup>
-          <MenuSeparator />
-          <MenuGroup>
-            <MenuSub>
-              <MenuSubTrigger icon={queueFinishIcons[queueFinishAction]}>
+            </MenubarItem>
+          </MenubarGroup>
+          <MenubarSeparator />
+          <MenubarGroup>
+            <MenubarSub>
+              <MenubarSubTrigger icon={queueFinishIcons[queueFinishAction]}>
                 {t("queue.labels.onFinish")}
-              </MenuSubTrigger>
-              <MenuSubContent>
-                <MenuGroup>
+              </MenubarSubTrigger>
+              <MenubarSubContent>
+                <MenubarGroup>
                   {availableQueueFinishActions.map((action) => (
-                    <MenuItem
+                    <MenubarItem
                       icon={queueFinishIcons[action]}
                       key={action}
                       onSelect={(event) => {
@@ -126,14 +120,14 @@ export function ContextMenuQueue({ navigation }: { navigation: MenuNavigation })
                       selected={action === queueFinishAction}
                     >
                       {queueFinishLabels[action]}
-                    </MenuItem>
+                    </MenubarItem>
                   ))}
-                </MenuGroup>
-              </MenuSubContent>
-            </MenuSub>
-          </MenuGroup>
-        </MenuContent>
-      </Menu>
+                </MenubarGroup>
+              </MenubarSubContent>
+            </MenubarSub>
+          </MenubarGroup>
+        </MenubarContent>
+      </MenubarMenu>
       <Dialog onOpenChange={setIsCancelQueueConfirmOpen} open={isCancelQueueConfirmOpen}>
         <DialogContent>
           <DialogHeader>

@@ -12,16 +12,16 @@ import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import {
-  Menu,
-  MenuContent,
-  MenuGroup,
-  MenuItem,
-  MenuSeparator,
-  MenuSub,
-  MenuSubContent,
-  MenuSubTrigger,
-  MenuTrigger,
-} from "@/components/ui/menu";
+  MenubarContent,
+  MenubarGroup,
+  MenubarItem,
+  MenubarMenu,
+  MenubarSeparator,
+  MenubarSub,
+  MenubarSubContent,
+  MenubarSubTrigger,
+  MenubarTrigger,
+} from "@/components/ui/menubar";
 import { Switch } from "@/components/ui/switch";
 
 import type { PreferenceKey } from "@/app/preferences";
@@ -32,8 +32,6 @@ import {
   selectPreferences,
 } from "@/app/store/slices/preferences-slice";
 import { isSupportedLanguage, type SupportedLanguage } from "@/i18n/resources";
-
-import type { MenuNavigation } from "../types";
 
 const DEFAULT_PREFERENCE_KEYS = new Set<PreferenceKey>([
   "snapPlaybackEnabledDefault",
@@ -63,7 +61,7 @@ function PreferenceMenuItem({ children, icon, preferenceKey }: PreferenceMenuIte
       : t("common.status.disabled");
 
   return (
-    <MenuItem
+    <MenubarItem
       icon={icon}
       onSelect={(event) => {
         event.preventDefault();
@@ -74,11 +72,11 @@ function PreferenceMenuItem({ children, icon, preferenceKey }: PreferenceMenuIte
       tooltipProps={{ side: "right", preserveOnTrigger: true }}
     >
       {children}
-    </MenuItem>
+    </MenubarItem>
   );
 }
 
-export function ContextMenuSettings({ navigation }: { navigation: MenuNavigation }) {
+export function MenuBarSettings() {
   const { i18n, t } = useTranslation();
   const dispatch = useAppDispatch();
   const currentLanguage = isSupportedLanguage(i18n.resolvedLanguage) ? i18n.resolvedLanguage : "en";
@@ -92,12 +90,8 @@ export function ContextMenuSettings({ navigation }: { navigation: MenuNavigation
   };
 
   return (
-    <Menu modal={false} onOpenChange={navigation.onOpenChange} open={navigation.open}>
-      <MenuTrigger
-        asChild
-        onPointerEnter={navigation.onTriggerPointerEnter}
-        onPointerLeave={navigation.onTriggerPointerLeave}
-      >
+    <MenubarMenu value="settings">
+      <MenubarTrigger asChild>
         <Button
           className="text-foreground/80 data-[state=open]:bg-accent data-[state=open]:text-foreground"
           size="xs"
@@ -106,18 +100,18 @@ export function ContextMenuSettings({ navigation }: { navigation: MenuNavigation
         >
           {t("settings.labels.title")}
         </Button>
-      </MenuTrigger>
-      <MenuContent>
-        <MenuGroup>
+      </MenubarTrigger>
+      <MenubarContent>
+        <MenubarGroup>
           <PreferenceMenuItem
             icon={<Play aria-hidden="true" className="size-3" />}
             preferenceKey="autoStartQueueEnabled"
           >
             {t("settings.labels.autoStartQueue")}
           </PreferenceMenuItem>
-        </MenuGroup>
-        <MenuSeparator />
-        <MenuGroup>
+        </MenubarGroup>
+        <MenubarSeparator />
+        <MenubarGroup>
           <PreferenceMenuItem
             icon={<Magnet aria-hidden="true" className="size-3" />}
             preferenceKey="snapPlaybackEnabledDefault"
@@ -136,19 +130,19 @@ export function ContextMenuSettings({ navigation }: { navigation: MenuNavigation
           >
             {t("settings.labels.followSegment")}
           </PreferenceMenuItem>
-        </MenuGroup>
-        <MenuSeparator />
-        <MenuGroup>
+        </MenubarGroup>
+        <MenubarSeparator />
+        <MenubarGroup>
           <PreferenceMenuItem
             icon={<Merge aria-hidden="true" className="size-3" />}
             preferenceKey="mergeAudioEnabledDefault"
           >
             {t("settings.labels.mergeAudio")}
           </PreferenceMenuItem>
-        </MenuGroup>
-        <MenuSeparator />
-        <MenuGroup>
-          <MenuItem
+        </MenubarGroup>
+        <MenubarSeparator />
+        <MenubarGroup>
+          <MenubarItem
             icon={<RotateCcw aria-hidden="true" className="size-3" />}
             onSelect={(event) => {
               event.preventDefault();
@@ -156,34 +150,34 @@ export function ContextMenuSettings({ navigation }: { navigation: MenuNavigation
             }}
           >
             {t("settings.actions.reset")}
-          </MenuItem>
-        </MenuGroup>
-        <MenuSeparator />
-        <MenuGroup>
-          <MenuSub>
-            <MenuSubTrigger
+          </MenubarItem>
+        </MenubarGroup>
+        <MenubarSeparator />
+        <MenubarGroup>
+          <MenubarSub>
+            <MenubarSubTrigger
               icon={<Languages aria-hidden="true" className="size-3" />}
               suffix={currentLanguage.toUpperCase()}
             >
               {t("settings.labels.language")}
-            </MenuSubTrigger>
-            <MenuSubContent>
-              <MenuGroup>
+            </MenubarSubTrigger>
+            <MenubarSubContent>
+              <MenubarGroup>
                 {(["en", "sk"] as const).map((language) => (
-                  <MenuItem
+                  <MenubarItem
                     key={language}
                     onSelect={() => void i18n.changeLanguage(language as SupportedLanguage)}
                     selected={language === currentLanguage}
                     suffix={language.toUpperCase()}
                   >
                     {languageLabels[language]}
-                  </MenuItem>
+                  </MenubarItem>
                 ))}
-              </MenuGroup>
-            </MenuSubContent>
-          </MenuSub>
-        </MenuGroup>
-      </MenuContent>
-    </Menu>
+              </MenubarGroup>
+            </MenubarSubContent>
+          </MenubarSub>
+        </MenubarGroup>
+      </MenubarContent>
+    </MenubarMenu>
   );
 }

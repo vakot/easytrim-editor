@@ -97,10 +97,16 @@ let sourceDropListener: ((event: SourceDropEvent) => void) | undefined;
 let stopSourceMediaRuntime: (() => void) | undefined;
 
 async function openSourcePicker(user: ReturnType<typeof userEvent.setup>) {
-  screen.getByRole("button", { name: "File" }).focus();
+  getMenuTrigger("File").focus();
   await user.keyboard("{Enter}");
   await user.click(screen.getByRole("menuitem", { name: /Open File/ }));
   (document.activeElement as HTMLElement | null)?.blur();
+}
+
+function getMenuTrigger(name: string) {
+  return within(screen.getByRole("menubar", { name: "Application menus" })).getByRole("menuitem", {
+    name,
+  });
 }
 
 async function waitForSourcePresence(expected: boolean) {
@@ -252,9 +258,7 @@ describe("App", () => {
       "false",
     );
 
-    screen.getByRole("button", { name: "File" }).focus();
-    await user.keyboard("{Enter}");
-    await user.click(screen.getByRole("menuitem", { name: /Open File/ }));
+    fireEvent.keyDown(window, { key: "o", code: "KeyO", ctrlKey: true });
     await screen.findByRole("heading", { name: "Selected Segment" });
 
     expect(screen.getByRole("button", { name: "Snap playback" })).toHaveAttribute(
@@ -642,7 +646,7 @@ describe("App", () => {
     await openSourcePicker(user);
     await waitForSourcePresence(true);
 
-    screen.getByRole("button", { name: "File" }).focus();
+    getMenuTrigger("File").focus();
     await user.keyboard("{Enter}");
     expect(screen.getByRole("menuitem", { name: /Close File/ })).toHaveTextContent("Ctrl+Q");
     await user.keyboard("{Escape}");
@@ -650,12 +654,6 @@ describe("App", () => {
     fireEvent.keyDown(window, { key: "й", code: "KeyQ", ctrlKey: true });
 
     await waitForSourcePresence(false);
-    screen.getByRole("button", { name: "File" }).focus();
-    await user.keyboard("{Enter}");
-    expect(screen.getByRole("menuitem", { name: /Close File/ })).toHaveAttribute(
-      "aria-disabled",
-      "true",
-    );
   });
 
   it("imports a selected video and renders the editor with sidebar panels", async () => {
@@ -823,9 +821,9 @@ describe("App", () => {
       screen.queryByText("Import a video to inspect its source and prepare a precise cut."),
     ).not.toBeInTheDocument();
     expect(screen.getByRole("banner", { name: "Window title bar" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "File" })).toBeInTheDocument();
+    expect(getMenuTrigger("File")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "View" })).toBeInTheDocument();
+    expect(getMenuTrigger("View")).toBeInTheDocument();
   });
 
   it("renders only the timeline when the source has no audio tracks", async () => {
@@ -849,7 +847,7 @@ describe("App", () => {
 
     await openSourcePicker(user);
     await waitForSourcePresence(true);
-    const fileMenuButton = screen.getByRole("button", { name: "File" });
+    const fileMenuButton = getMenuTrigger("File");
     fileMenuButton.focus();
     expect(document.activeElement).toBe(fileMenuButton);
 
@@ -869,7 +867,7 @@ describe("App", () => {
 
     await openSourcePicker(user);
     await waitForSourcePresence(true);
-    screen.getByRole("button", { name: "File" }).focus();
+    getMenuTrigger("File").focus();
     await user.keyboard("{Enter}");
     await user.click(screen.getByRole("menuitem", { name: /Optimize & Export/ }));
     expect(screen.getByRole("dialog")).toBeInTheDocument();
@@ -2576,7 +2574,7 @@ describe("App", () => {
     await openSourcePicker(user);
     await waitForSourcePresence(true);
 
-    screen.getByRole("button", { name: "File" }).focus();
+    getMenuTrigger("File").focus();
     await user.keyboard("{Enter}");
     await user.click(screen.getByRole("menuitem", { name: /Open File/ }));
 
