@@ -12,12 +12,11 @@ import { Button } from "@/components/ui/button";
 import { Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from "@/components/ui/menu";
 
 import { useAppUpdates } from "@/app/hooks/useAppUpdates";
-import { githubBrandIcon, kofiBrandIcon } from "@/components/brand-icons.consts";
-import { BrandIcon } from "@/components/BrandIcon";
 import { getCurrentVersion } from "@/lib/app-version.utils";
 import { openExternalUrl } from "@/lib/open-external-url.utils";
 
 import type { MenuNavigation } from "../types";
+import { GithubIcon, KofiIcon } from "@/components/brand-icons";
 
 const CHANGELOG_URL = "https://github.com/vakot/easytrim-editor/releases";
 const PROJECT_PAGE_URL = "https://github.com/vakot/easytrim-editor";
@@ -90,14 +89,14 @@ export function ContextMenuHelp({ navigation }: { navigation: MenuNavigation }) 
           {updateLabel}
         </MenuItem>
         <MenuItem
-          icon={<BrandIcon className="size-3" icon={githubBrandIcon} />}
+          icon={<GithubIcon className="size-3" />}
           onSelect={() => void openExternalUrl(PROJECT_PAGE_URL)}
         >
           {t("app.topBarMenus.projectPage")}
         </MenuItem>
         <MenuSeparator />
         <MenuItem
-          icon={<BrandIcon className="size-3" icon={kofiBrandIcon} />}
+          icon={<KofiIcon className="size-3" />}
           onSelect={() => void openExternalUrl(SUPPORT_PROJECT_URL)}
         >
           {t("app.topBarMenus.supportProject")}

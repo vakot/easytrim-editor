@@ -1,10 +1,9 @@
 import { useTranslation } from "react-i18next";
 
-import { kofiBrandIcon } from "@/components/brand-icons.consts";
-import { BrandIcon } from "@/components/BrandIcon";
 import { openExternalUrl } from "@/lib/open-external-url.utils";
 
 import styles from "./VideoPreviewEmpty.module.css";
+import { KofiIcon } from "@/components/brand-icons";
 
 const KOFI_URL = "https://ko-fi.com/vakot";
 
@@ -108,7 +107,7 @@ export function VideoPreviewEmpty() {
               void openExternalUrl(KOFI_URL);
             }}
           >
-            <BrandIcon className="size-3.5 text-primary" icon={kofiBrandIcon} />
+            <KofiIcon className="size-3.5 text-primary" />
             <span>{t("support.onKofi")}</span>
           </a>
         </div>
