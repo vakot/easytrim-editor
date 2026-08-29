@@ -132,7 +132,7 @@ export function SourcePanel() {
         {panels["workspace-sidebar-source-details"] && (
           <ResizablePanel
             className="flex min-h-0 flex-col overflow-hidden"
-            collapsedSize={24}
+            collapsedSize={28}
             collapsible
             id="workspace-sidebar-source-details"
             minSize={120}
@@ -140,7 +140,7 @@ export function SourcePanel() {
             <ResizablePanelControl panelId="workspace-sidebar-source-details">
               {({ isCollapsed }) => (
                 <Button
-                  className="w-full justify-baseline px-2 text-foreground/80"
+                  className="my-0.5 w-full justify-baseline px-2 text-foreground/80"
                   size="xs"
                   variant="ghost"
                 >
@@ -163,13 +163,13 @@ export function SourcePanel() {
 
         {panels["workspace-sidebar-import-queue"] && (
           <>
-            <ResizableHandle className="bg-transparent px-2" style={{ height: 4 }}>
+            <ResizableHandle className="bg-transparent px-2">
               <Separator />
             </ResizableHandle>
 
             <ResizablePanel
               className="flex min-h-0 flex-col overflow-hidden"
-              collapsedSize={24}
+              collapsedSize={28}
               collapsible
               id="workspace-sidebar-import-queue"
               minSize={120}
@@ -177,7 +177,7 @@ export function SourcePanel() {
               <ResizablePanelControl panelId="workspace-sidebar-import-queue">
                 {({ isCollapsed }) => (
                   <Button
-                    className="w-full justify-baseline px-2 text-foreground/80"
+                    className="my-0.5 w-full justify-baseline px-2 text-foreground/80"
                     size="xs"
                     variant="ghost"
                   >
@@ -201,13 +201,13 @@ export function SourcePanel() {
 
         {panels["workspace-sidebar-export-queue"] && (
           <>
-            <ResizableHandle className="bg-transparent px-2" style={{ height: 4 }}>
+            <ResizableHandle className="bg-transparent px-2">
               <Separator />
             </ResizableHandle>
 
             <ResizablePanel
               className="flex min-h-0 flex-col overflow-hidden"
-              collapsedSize={24}
+              collapsedSize={28}
               collapsible
               id="workspace-sidebar-export-queue"
               minSize={120}
@@ -215,7 +215,7 @@ export function SourcePanel() {
               <ResizablePanelControl panelId="workspace-sidebar-export-queue">
                 {({ isCollapsed }) => (
                   <Button
-                    className="w-full justify-baseline px-2 text-foreground/80"
+                    className="my-0.5 w-full justify-baseline px-2 text-foreground/80"
                     size="xs"
                     variant="ghost"
                   >
