@@ -311,19 +311,16 @@ The primary hook export matches the filename. First-class TypeScript modules use
 kebab-case names such as `source-actions.ts`, `source-media-runtime.ts`, and
 `panel-layout-listener.ts`.
 
-Dedicated extracted primitive modules use a dotted role suffix. Use a semantic kebab-case base for
-module-level primitives and a PascalCase base matching the owner for component-specific
+When a primitive is intentionally extracted, use a dotted role suffix. Use a semantic kebab-case
+base for module-level primitives and a PascalCase base matching the owner for component-specific
 primitives:
 
 ```text
-source-import.types.ts
 media.types.ts
 brand-icons.consts.ts
 storage.consts.ts
 StatusBar.consts.ts
-timeline-format.utils.ts
 media.utils.ts
-StatusBar.utils.ts
 source.fixtures.ts
 ```
 
@@ -332,6 +329,18 @@ small cohesive helper functions or supporting calculations. Apply the same `<own
 shape to other dedicated primitive roles such as `.fixtures.ts`, `.mocks.ts`, or `.schemas.ts`
 when they exist. The suffix must describe the complete module; do not label state, runtime,
 adapters, domain models, or configuration as utilities merely because they export functions.
+
+### Primitive colocation
+
+Avoid single-consumer primitive files. Do not create separate `.utils.ts`, `.types.ts`,
+`.consts.ts`, or similar files solely to separate declarations by kind. If a helper, type,
+constant, or small implementation detail has one owning consumer, keep it in that module unless it
+is independently reusable, represents a meaningful standalone abstraction, or separation materially
+improves module boundaries or maintainability. Prefer a cohesive domain module such as
+`audio-sync.ts` or `media-sync.ts` over a group of role-suffixed files when all declarations belong
+to that module. Review consumers before extracting or merging; multiple consumers, intentional
+cross-module sharing, and feature-level or public contracts are valid reasons to keep a dedicated
+file.
 
 When a type-only contract is shared across multiple internal folders or sibling components of one
 cohesive subsystem, place it in `types.ts` at that subsystem's root. This is the deliberate shared

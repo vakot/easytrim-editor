@@ -138,6 +138,16 @@ Avoid:
 
 Do not rename established concepts without a concrete reason.
 
+### Cohesion and primitive files
+
+Prefer ownership-based colocation over file splitting by declaration kind. Do not create a
+single-consumer `.utils.ts`, `.types.ts`, `.consts.ts`, or similar primitive file solely to keep
+helpers, types, or constants separate. Keep declarations in their owning module unless they have
+multiple consumers, are independently reusable, represent a meaningful standalone abstraction,
+or separation materially improves module boundaries or maintainability. Before changing a
+primitive file, inspect its consumers and preserve intentionally shared, public, or feature-level
+contracts as separate modules.
+
 ## Data and State
 
 Keep state ownership clear.

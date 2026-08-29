@@ -25,15 +25,21 @@ Use `easytrim-editor-tauri-rust` for IPC/native changes and `easytrim-editor-ffm
 - Use React, strict TypeScript, Vite, semantic HTML, Tailwind, and the repository's shadcn primitives.
 - Reuse `components/ui` for buttons, dialogs, fields, tooltips, popovers, sliders, checkboxes, cards, and alerts. Add a shadcn primitive before hand-building an equivalent control.
 - Keep generated primitives generic. Put product-specific composition in the owning feature.
-- Name dedicated type-only modules with `.types.ts`: use a semantic kebab-case base for
-  module-level contracts and a matching PascalCase component base for non-prop component types.
-  Keep component props in the component file rather than extracting a props-only `.types.ts` file.
-  When one cohesive subsystem shares a type-only contract across internal folders or sibling
-  components, use `types.ts` at the subsystem root. Keep required ambient declarations as `.d.ts`.
-- Apply the same owner-based dotted suffix convention to dedicated frontend primitives: use
-  `.consts.ts` for grouped static values, `.utils.ts` for cohesive supporting helpers, and an
-  accurate role such as `.fixtures.ts` for other self-contained primitive groups. Keep semantic
-  domain, state, runtime, adapter, and configuration module names unsuffixed.
+- When a primitive is intentionally extracted, name dedicated type-only modules with `.types.ts`
+  and use a semantic kebab-case base for module-level contracts or a matching PascalCase component
+  base for non-prop component types. Keep component props in the component file rather than
+  extracting a props-only `.types.ts` file. When one cohesive subsystem shares a type-only contract
+  across internal folders or sibling components, use `types.ts` at the subsystem root. Keep required
+  ambient declarations as `.d.ts`.
+- Apply the same owner-based dotted suffix convention to intentionally extracted frontend
+  primitives: use `.consts.ts` for grouped static values, `.utils.ts` for cohesive supporting
+  helpers, and an accurate role such as `.fixtures.ts` for other self-contained primitive groups.
+  Keep semantic domain, state, runtime, adapter, and configuration module names unsuffixed.
+- Avoid single-consumer primitive files. Do not split a helper, type, constant, or small
+  implementation detail from its owning module solely because it has a different declaration kind.
+  Keep it colocated unless it has multiple consumers, is independently reusable, represents a
+  meaningful standalone abstraction, or separation materially improves maintainability or module
+  boundaries. Inspect consumers before extracting or merging.
 - Use Tailwind utilities first. Reserve colocated CSS modules for precise pseudo-elements, keyframes, or browser-native styling that would be obscure as utilities.
 - Use Redux Toolkit for approved application/domain state according to
   `easytrim-editor-redux-state`. Keep local component state for ephemeral visual and
