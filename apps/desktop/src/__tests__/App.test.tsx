@@ -109,7 +109,13 @@ async function waitForSourcePresence(expected: boolean) {
 
 function installAudioMocks(initiallyReady = true) {
   const audioElements: HTMLAudioElement[] = [];
-  const gainNodes: Array<{ gain: { value: number } }> = [];
+  const mediaElementSources: Array<{
+    connect: ReturnType<typeof vi.fn>;
+    connectedGain: { gain: { value: number } } | null;
+    disconnect: ReturnType<typeof vi.fn>;
+    element: HTMLMediaElement;
+  }> = [];
+
   const audioConstructor = vi.fn(function AudioMock() {
     const element = document.createElement("audio");
     Object.defineProperty(element, "readyState", {
@@ -127,21 +133,27 @@ function installAudioMocks(initiallyReady = true) {
     destination: {},
     resume: vi.fn().mockResolvedValue(undefined),
     close: vi.fn().mockResolvedValue(undefined),
-    createGain: vi.fn(() => {
-      const gainNode = {
-        gain: { value: 1 },
-        connect: vi.fn(),
-        disconnect: vi.fn(),
-      };
-
-      gainNodes.push(gainNode);
-
-      return gainNode;
-    }),
-    createMediaElementSource: vi.fn(() => ({
-      connect: vi.fn((destination: unknown) => destination),
+    createGain: vi.fn(() => ({
+      gain: { value: 1 },
+      connect: vi.fn(),
       disconnect: vi.fn(),
     })),
+    createMediaElementSource: vi.fn((element: HTMLMediaElement) => {
+      const source: (typeof mediaElementSources)[number] = {
+        connect: vi.fn(),
+        connectedGain: null,
+        disconnect: vi.fn(),
+        element,
+      };
+
+      source.connect.mockImplementation((destination: unknown) => {
+        source.connectedGain = destination as { gain: { value: number } };
+        return destination;
+      });
+
+      mediaElementSources.push(source);
+      return source;
+    }),
   };
 
   vi.stubGlobal("Audio", audioConstructor);
@@ -152,7 +164,7 @@ function installAudioMocks(initiallyReady = true) {
     }),
   );
 
-  return { audioConstructor, audioContext, audioElements, gainNodes };
+  return { audioConstructor, audioContext, audioElements, mediaElementSources };
 }
 
 beforeEach(() => {
@@ -469,7 +481,7 @@ describe("App", () => {
         url: "http://easytrim-media.localhost/source-1?variant=audio&stream=2",
       },
     ]);
-    const { audioElements, gainNodes } = installAudioMocks(false);
+    const { audioElements, mediaElementSources } = installAudioMocks(false);
 
     const user = userEvent.setup();
 
@@ -477,6 +489,12 @@ describe("App", () => {
       render(<App />);
       await openSourcePicker(user);
       const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
+      await waitFor(() =>
+        expect(mediaElementSources.filter((source) => source.element === video)).toHaveLength(1),
+      );
+      const nativeSource = mediaElementSources.find((source) => source.element === video)!;
+      await waitFor(() => expect(nativeSource.connectedGain).not.toBeNull());
+      const nativeSourceDisconnects = nativeSource.disconnect.mock.calls.length;
       let videoPaused = true;
       Object.defineProperty(video, "paused", {
         configurable: true,
@@ -519,7 +537,9 @@ describe("App", () => {
         expect(transitionAudioPlay.every((play) => play.mock.calls.length === 1)).toBe(true),
       );
 
-      expect(video).toHaveProperty("muted", true);
+      expect(video).toHaveProperty("muted", false);
+      expect(nativeSource.connectedGain?.gain.value).toBe(0);
+      expect(nativeSource.disconnect).toHaveBeenCalledTimes(nativeSourceDisconnects);
       expect(transitionAudio.every((audio) => audio.currentTime === 10)).toBe(true);
       expect(videoPlay).toHaveBeenCalledOnce();
       expect(videoPause).not.toHaveBeenCalled();
@@ -535,8 +555,9 @@ describe("App", () => {
       await user.click(screen.getByRole("button", { name: "Mute eng" }));
       await user.click(screen.getByRole("button", { name: "Enable Commentary" }));
 
-      await waitFor(() => expect(gainNodes.at(-1)?.gain.value).toBe(1));
+      await waitFor(() => expect(nativeSource.connectedGain?.gain.value).toBe(1));
       expect(video).toHaveProperty("muted", false);
+      expect(nativeSource.disconnect).toHaveBeenCalledTimes(nativeSourceDisconnects);
       expect(videoPlay).toHaveBeenCalledOnce();
       expect(videoPause).not.toHaveBeenCalled();
     } finally {

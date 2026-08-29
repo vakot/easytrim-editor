@@ -364,7 +364,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
 
     const video = videoRef.current;
     cleanupStaleNativeAudioBindings(video);
-    if (usesExternalAudio || !video) {
+    if (!video) {
       disconnectCurrentNativeAudioRoute();
     } else {
       const binding = getOrCreateNativeAudioBinding(nativeAudioBindingsRef.current, context, video);
@@ -844,7 +844,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     isPlaybackReady,
     transportError,
     nativeLoopEnabled,
-    videoMuted: usesExternalAudio || !nativeAudioTrack,
+    videoMuted: usesExternalAudio && typeof AudioContext === "undefined",
     onLoadedMetadata: () => commitSeek(displayedPlayheadMicros),
     onCanPlay: () => {
       if (previewKey) setReadyPreviewKey(previewKey);
