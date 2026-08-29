@@ -78,7 +78,7 @@ export function AudioPanel() {
             <VolumeButton
               enabled={masterAudio.enabled}
               label={t("audio.labels.allTracks")}
-              onPressedChange={() => dispatch(masterAudioToggled())}
+              onClick={() => dispatch(masterAudioToggled())}
             />
             <AudioLevelControl
               className="flex-1"

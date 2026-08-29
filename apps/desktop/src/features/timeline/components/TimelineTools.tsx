@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
-import { Toggle } from "@/components/ui/toggle";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
@@ -64,7 +63,7 @@ function SnapPlaybackTool() {
     <TimelineToolButton
       enabled={enabled}
       label={t("preview.labels.snapPlayback")}
-      onPressedChange={() => dispatch(snapPlaybackToggled())}
+      onClick={() => dispatch(snapPlaybackToggled())}
       title={enabled ? t("preview.tooltips.snapEnabled") : t("preview.tooltips.snapDisabled")}
     >
       <Magnet />
@@ -81,7 +80,7 @@ function LoopPlaybackTool() {
     <TimelineToolButton
       enabled={enabled}
       label={t("preview.labels.loopPlayback")}
-      onPressedChange={() => dispatch(loopPlaybackToggled())}
+      onClick={() => dispatch(loopPlaybackToggled())}
       title={enabled ? t("preview.tooltips.loopEnabled") : t("preview.tooltips.loopDisabled")}
     >
       <Repeat />
@@ -98,7 +97,7 @@ function SegmentPlaybackTool() {
     <TimelineToolButton
       enabled={enabled}
       label={t("preview.labels.segmentPlayback")}
-      onPressedChange={() => dispatch(segmentPlaybackToggled())}
+      onClick={() => dispatch(segmentPlaybackToggled())}
       title={enabled ? t("preview.tooltips.segmentEnabled") : t("preview.tooltips.segmentDisabled")}
     >
       <BetweenVerticalStart />
@@ -118,18 +117,16 @@ function PlaybackSpeedTool() {
       <Popover>
         <TooltipTrigger asChild>
           <PopoverTrigger asChild>
-            <Toggle
+            <Button
               aria-label={t("preview.labels.playbackSpeed")}
-              className={
-                enabled ? "size-7 p-0 text-primary aria-expanded:text-primary" : "size-7 p-0"
-              }
-              data-size="icon-sm"
-              data-variant="secondary"
-              pressed={enabled}
-              size="sm"
+              aria-pressed={enabled}
+              className={enabled ? "text-primary aria-expanded:text-primary" : undefined}
+              size="icon-sm"
+              type="button"
+              variant="secondary"
             >
               <Gauge />
-            </Toggle>
+            </Button>
           </PopoverTrigger>
         </TooltipTrigger>
         <TooltipContent>{t("preview.tooltips.playbackSpeed")}</TooltipContent>
@@ -165,22 +162,15 @@ function ResetToolsTool() {
   const dispatch = useAppDispatch();
 
   return (
-    <Tooltip preserveOnTrigger={false}>
-      <TooltipTrigger asChild>
-        <Button
-          aria-label={t("preview.actions.resetTools")}
-          onClick={() =>
-            dispatch(editorToolsReset(createEditorToolsStateFromPreferences(preferences)))
-          }
-          size="icon-sm"
-          type="button"
-          variant="secondary"
-        >
-          <RotateCcw />
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent>{t("preview.actions.resetTools")}</TooltipContent>
-    </Tooltip>
+    <TimelineToolButton
+      enabled={false}
+      label={t("preview.actions.resetTools")}
+      onClick={() => dispatch(editorToolsReset(createEditorToolsStateFromPreferences(preferences)))}
+      preserveOnTrigger={false}
+      title={t("preview.actions.resetTools")}
+    >
+      <RotateCcw />
+    </TimelineToolButton>
   );
 }
 
@@ -188,30 +178,31 @@ function TimelineToolButton({
   children,
   enabled,
   label,
-  onPressedChange,
+  onClick,
   preserveOnTrigger = true,
   title,
 }: {
   children: React.ReactNode;
   enabled: boolean;
   label: string;
-  onPressedChange: () => void;
+  onClick: () => void;
   preserveOnTrigger?: boolean;
   title: string;
 }) {
   return (
     <Tooltip preserveOnTrigger={preserveOnTrigger}>
       <TooltipTrigger asChild>
-        <Toggle
+        <Button
           aria-label={label}
-          className={enabled ? "size-7 p-0 text-primary" : "size-7 p-0"}
-          data-size="icon-sm"
-          onPressedChange={onPressedChange}
-          pressed={enabled}
-          size="sm"
+          aria-pressed={enabled}
+          className={enabled ? "text-primary" : undefined}
+          onClick={onClick}
+          size="icon-sm"
+          type="button"
+          variant="secondary"
         >
           {children}
-        </Toggle>
+        </Button>
       </TooltipTrigger>
       <TooltipContent>{title}</TooltipContent>
     </Tooltip>
