@@ -13,5 +13,13 @@
   "eslint.workingDirectories": [{ "mode": "location" }],
   "files.eol": "\n",
   "prettier.configPath": ".prettierrc.json",
-  "prettier.requireConfig": true
+  "prettier.requireConfig": true,
+  "javascript.preferences.autoImportFileExcludePatterns": [
+    "**/node_modules/radix-ui/**",
+    "**/node_modules/react-resizable-panels/**"
+  ],
+  "typescript.preferences.autoImportFileExcludePatterns": [
+    "**/node_modules/radix-ui/**",
+    "**/node_modules/react-resizable-panels/**"
+  ]
 }

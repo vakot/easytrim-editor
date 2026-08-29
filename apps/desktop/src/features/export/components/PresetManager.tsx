@@ -1,5 +1,4 @@
 import { ChevronDownIcon, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
-import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -14,8 +13,17 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Menu,
+  MenuContent,
+  MenuItem,
+  MenuSeparator,
+  MenuSub,
+  MenuSubContent,
+  MenuSubTrigger,
+  MenuTrigger,
+} from "@/components/ui/menu";
 import { selectTriggerVariants } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 
 import { type ExportPreset, presetNameError } from "@/app/store/lib/export-presets";
@@ -84,8 +92,8 @@ export function PresetManager() {
     <section className="grid gap-3">
       <div className="grid gap-1.5">
         <Label>{t("export.presets.label", "Preset")}</Label>
-        <DropdownMenuPrimitive.Root>
-          <DropdownMenuPrimitive.Trigger
+        <Menu>
+          <MenuTrigger
             className={selectTriggerVariants({
               variant: "primary",
               className: "w-full font-normal",
@@ -96,68 +104,64 @@ export function PresetManager() {
               {selectedPreset?.name ?? t("export.presets.select", "Select a preset")}
             </span>
             <ChevronDownIcon className="pointer-events-none size-4 shrink-0" />
-          </DropdownMenuPrimitive.Trigger>
-          <DropdownMenuPrimitive.Portal>
-            <DropdownMenuPrimitive.Content
-              align="start"
-              className="z-50 min-w-56 rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
-              sideOffset={6}
-            >
-              {presets.map((preset) => (
-                <div className="flex items-center gap-1" key={preset.id}>
-                  <DropdownMenuPrimitive.Item
-                    className="min-w-0 flex-1 cursor-pointer rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent"
-                    onSelect={() => dispatch(exportPresetSelected(preset.id))}
+          </MenuTrigger>
+          <MenuContent
+            align="start"
+            className="z-50 min-w-56 rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
+            sideOffset={6}
+          >
+            {presets.map((preset) => (
+              <div className="flex items-center gap-1" key={preset.id}>
+                <MenuItem
+                  className="min-w-0 flex-1 cursor-pointer rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent"
+                  onSelect={() => dispatch(exportPresetSelected(preset.id))}
+                >
+                  <span className="block truncate">{preset.name}</span>
+                  {preset.description ? (
+                    <span className="block truncate text-xs text-muted-foreground">
+                      {preset.description}
+                    </span>
+                  ) : null}
+                </MenuItem>
+                <MenuSub>
+                  <MenuSubTrigger
+                    aria-label={t("export.presets.actions", "Preset actions")}
+                    className="flex size-8 shrink-0 items-center justify-center rounded-sm outline-none hover:bg-accent focus:bg-accent"
                   >
-                    <span className="block truncate">{preset.name}</span>
-                    {preset.description ? (
-                      <span className="block truncate text-xs text-muted-foreground">
-                        {preset.description}
-                      </span>
-                    ) : null}
-                  </DropdownMenuPrimitive.Item>
-                  <DropdownMenuPrimitive.Sub>
-                    <DropdownMenuPrimitive.SubTrigger
-                      aria-label={t("export.presets.actions", "Preset actions")}
-                      className="flex size-8 shrink-0 items-center justify-center rounded-sm outline-none hover:bg-accent focus:bg-accent"
+                    <MoreHorizontal className="size-4" />
+                  </MenuSubTrigger>
+                  <MenuSubContent
+                    className="z-50 min-w-32 rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
+                    sideOffset={4}
+                  >
+                    <MenuItem
+                      className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent"
+                      onSelect={() => openEditDialog(preset)}
                     >
-                      <MoreHorizontal className="size-4" />
-                    </DropdownMenuPrimitive.SubTrigger>
-                    <DropdownMenuPrimitive.Portal>
-                      <DropdownMenuPrimitive.SubContent
-                        className="z-50 min-w-32 rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
-                        sideOffset={4}
-                      >
-                        <DropdownMenuPrimitive.Item
-                          className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent"
-                          onSelect={() => openEditDialog(preset)}
-                        >
-                          <Pencil className="size-3.5" />
-                          {t("export.presets.edit", "Edit")}
-                        </DropdownMenuPrimitive.Item>
-                        <DropdownMenuPrimitive.Item
-                          className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-destructive outline-none focus:bg-accent"
-                          onSelect={() => setPresetToDelete(preset)}
-                        >
-                          <Trash2 className="size-3.5" />
-                          {t("export.presets.delete", "Delete")}
-                        </DropdownMenuPrimitive.Item>
-                      </DropdownMenuPrimitive.SubContent>
-                    </DropdownMenuPrimitive.Portal>
-                  </DropdownMenuPrimitive.Sub>
-                </div>
-              ))}
-              <Separator className="my-1" />
-              <DropdownMenuPrimitive.Item
-                className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent"
-                onSelect={openCreateDialog}
-              >
-                <Plus className="size-3.5" />
-                {t("export.presets.new", "Add new preset")}
-              </DropdownMenuPrimitive.Item>
-            </DropdownMenuPrimitive.Content>
-          </DropdownMenuPrimitive.Portal>
-        </DropdownMenuPrimitive.Root>
+                      <Pencil className="size-3.5" />
+                      {t("export.presets.edit", "Edit")}
+                    </MenuItem>
+                    <MenuItem
+                      className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-destructive outline-none focus:bg-accent"
+                      onSelect={() => setPresetToDelete(preset)}
+                    >
+                      <Trash2 className="size-3.5" />
+                      {t("export.presets.delete", "Delete")}
+                    </MenuItem>
+                  </MenuSubContent>
+                </MenuSub>
+              </div>
+            ))}
+            <MenuSeparator className="my-1" />
+            <MenuItem
+              className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent"
+              onSelect={openCreateDialog}
+            >
+              <Plus className="size-3.5" />
+              {t("export.presets.new", "Add new preset")}
+            </MenuItem>
+          </MenuContent>
+        </Menu>
       </div>
 
       <Dialog onOpenChange={(open) => !open && setDialogMode(null)} open={dialogMode !== null}>

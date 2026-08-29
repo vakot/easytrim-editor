@@ -174,6 +174,12 @@ feature, UI, Tauri-adapter, React, or other runtime layers. Feature-to-feature i
 private, while code outside a feature must import through the feature's public `index.ts` API.
 Existing feature entrypoints should be preferred for all cross-feature consumers.
 
+The underlying `radix-ui` and `react-resizable-panels` packages are restricted to
+`src/components` by ESLint. Application and feature code must use the local `components/ui`
+wrappers instead. Workspace TypeScript and JavaScript auto-import suggestions exclude those
+packages to reduce accidental direct imports; VS Code does not provide a folder-scoped equivalent,
+so the exclusion also applies while editing the local wrappers.
+
 The advanced correctness checks `@typescript-eslint/no-shadow` and
 `@typescript-eslint/no-use-before-define` remain disabled after repository audits. `no-shadow`
 reported intentional React wrapper names, state-updater parameters, and callback-local names;

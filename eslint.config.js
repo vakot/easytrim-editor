@@ -129,6 +129,33 @@ export default defineConfig(
     },
   },
   {
+    files: ["apps/desktop/src/**/*.{ts,tsx}"],
+    ignores: ["apps/desktop/src/components/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              regex: "^@/features/[^/]+/.+",
+              message: "Import features through their public index API.",
+            },
+            {
+              group: [
+                "radix-ui",
+                "radix-ui/**",
+                "react-resizable-panels",
+                "react-resizable-panels/**",
+              ],
+              message:
+                "Use the local components/ui primitive instead of importing the underlying UI package directly.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ["apps/desktop/src/components/ui/**/*.{ts,tsx}"],
     rules: {
       "no-restricted-imports": [
