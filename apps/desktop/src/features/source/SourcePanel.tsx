@@ -17,6 +17,7 @@ import {
   ResizablePanelControl,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -154,7 +155,9 @@ export function SourcePanel() {
               )}
             </ResizablePanelControl>
 
-            <SourceDetails />
+            <ScrollArea className="px-3">
+              <SourceDetails />
+            </ScrollArea>
           </ResizablePanel>
         )}
 
@@ -189,7 +192,9 @@ export function SourcePanel() {
                 )}
               </ResizablePanelControl>
 
-              <ImportQueue />
+              <ScrollArea className="px-3">
+                <ImportQueue />
+              </ScrollArea>
             </ResizablePanel>
           </>
         )}
@@ -225,7 +230,9 @@ export function SourcePanel() {
                 )}
               </ResizablePanelControl>
 
-              <ExportQueue />
+              <ScrollArea className="px-3">
+                <ExportQueue />
+              </ScrollArea>
             </ResizablePanel>
           </>
         )}
