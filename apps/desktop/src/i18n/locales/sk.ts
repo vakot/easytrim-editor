@@ -159,6 +159,7 @@ export const sk = {
         container: "Kontajner",
         duration: "Trvanie",
         fileSize: "Veľkosť súboru",
+        filename: "Názov súboru",
         frameRate: "Snímková frekvencia",
         resolution: "Rozlíšenie",
         videoCodec: "Video kodek",

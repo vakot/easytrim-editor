@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Separator } from "@/components/ui/separator";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
-import { selectSourceMedia } from "@/app/store/slices/source-slice";
+import { selectSourceMedia, selectSourceSelection } from "@/app/store/slices/source-slice";
 
 import {
   formatBitrate,
@@ -15,11 +15,13 @@ import {
 
 export function SourceDetails() {
   const media = useAppSelector(selectSourceMedia);
+  const source = useAppSelector(selectSourceSelection);
   const { t } = useTranslation();
   const noSource = t("source.messages.noSource");
   const frameRate = media?.video.averageFrameRate ?? media?.video.realFrameRate;
   const unknown = media ? t("common.status.unknown") : noSource;
   const metadata = [
+    [t("source.labels.metadata.filename"), source ? source.displayName : noSource],
     [
       t("source.labels.metadata.container"),
       media ? (media.formatLongName ?? media.formatName) : noSource,

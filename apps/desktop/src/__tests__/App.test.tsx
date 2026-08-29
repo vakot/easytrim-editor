@@ -666,7 +666,10 @@ describe("App", () => {
     await openSourcePicker(user);
 
     await waitForSourcePresence(true);
-    expect(screen.getByLabelText("Video metadata")).toBeInTheDocument();
+    const metadata = screen.getByLabelText("Video metadata");
+    expect(metadata).toBeInTheDocument();
+    expect(within(metadata).getByText("Filename")).toBeInTheDocument();
+    expect(within(metadata).getByText(selection.displayName)).toBeInTheDocument();
     expect(screen.getByLabelText("Source video preview")).toHaveAttribute(
       "src",
       "http://easytrim-media.localhost/source-1?variant=source",

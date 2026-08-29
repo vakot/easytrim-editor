@@ -157,6 +157,7 @@ export const en = {
         container: "Container",
         duration: "Duration",
         fileSize: "File size",
+        filename: "Filename",
         frameRate: "Frame rate",
         resolution: "Resolution",
         videoCodec: "Video codec",
