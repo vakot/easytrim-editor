@@ -1,6 +1,7 @@
 import { seekMediaIfNeeded } from "@/lib/media-element.utils";
 
-import type { PlaybackFrameHandle } from "./media-sync.types";
+export type PlaybackFrameHandle =
+  { kind: "video"; id: number; video: HTMLVideoElement } | { kind: "animation"; id: number };
 
 export function seekVideo(video: HTMLVideoElement | null, micros: number) {
   if (video) seekMediaIfNeeded(video, micros / 1_000_000);

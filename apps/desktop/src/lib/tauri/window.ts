@@ -1,4 +1,12 @@
-import { getNativeWindow } from "./window.utils";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+
+function getNativeWindow() {
+  if (typeof window === "undefined" || !("__TAURI_INTERNALS__" in window)) {
+    return null;
+  }
+
+  return getCurrentWindow();
+}
 
 export function startWindowDragging(): Promise<void> {
   return getNativeWindow()?.startDragging() ?? Promise.resolve();

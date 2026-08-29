@@ -9,11 +9,23 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import type { UpdateStatus } from "@/app/contexts/app-updates-context";
 import { useAppUpdates } from "@/app/hooks/useAppUpdates";
 import { useAppSelector } from "@/app/store/redux-hooks";
-import { selectExportQueue } from "@/app/store/slices/export-slice";
+import { type ExportQueueItem, selectExportQueue } from "@/app/store/slices/export-slice";
 import { formatExportDuration, formatExportFileSize } from "@/domain/export-metrics";
 import { getCurrentVersion } from "@/lib/app-version.utils";
 
-import { selectStatusBarExport, splitFilePath } from "./StatusBar.utils";
+function splitFilePath(path: string) {
+  const separatorIndex = Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\"));
+  if (separatorIndex < 0) return { directory: "", filename: path };
+
+  return {
+    directory: path.slice(0, separatorIndex + 1),
+    filename: path.slice(separatorIndex + 1),
+  };
+}
+
+function selectStatusBarExport(queue: ExportQueueItem[]) {
+  return [...queue].reverse().find((item) => item.status === "rendering");
+}
 
 export function StatusBar() {
   const { t } = useTranslation();

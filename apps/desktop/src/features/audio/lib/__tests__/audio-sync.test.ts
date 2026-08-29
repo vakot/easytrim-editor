@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { PLAYING_AUDIO_HARD_RESYNC_THRESHOLD_SECONDS } from "../audio-sync.consts";
-import { synchronizeAudioPosition } from "../audio-sync.utils";
+import {
+  PLAYING_AUDIO_HARD_RESYNC_THRESHOLD_SECONDS,
+  synchronizeAudioPosition,
+} from "../audio-sync";
 
 function audioAt(currentTime: number, seeking = false): HTMLMediaElement {
   return { currentTime, seeking, playbackRate: 1 } as HTMLMediaElement;

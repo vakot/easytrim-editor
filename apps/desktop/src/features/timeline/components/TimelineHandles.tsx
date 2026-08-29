@@ -8,9 +8,11 @@ import type { SegmentSnapPoint, TrimBoundary, TrimRange } from "@/domain/trim";
 import { cn } from "@/lib/class-names.utils";
 import type { FrameRate } from "@/lib/tauri/media.types";
 
-import { formatAccessibleTime } from "../lib/timeline-format.utils";
-
 import styles from "./TrimTimeline.module.css";
+
+function formatAccessibleTime(micros: number): string {
+  return (micros / 1_000_000).toFixed(3);
+}
 
 interface SegmentDragHandleProps {
   range: TrimRange;

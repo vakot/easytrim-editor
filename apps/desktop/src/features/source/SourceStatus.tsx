@@ -6,9 +6,17 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectCapabilities } from "@/app/store/slices/source-slice";
+import type { BinaryCapability } from "@/lib/tauri/media.types";
 
-import { capabilityError } from "./lib/media-formatters.utils";
 import styles from "./SourceStatus.module.css";
+
+function capabilityError(
+  label: string,
+  capability: BinaryCapability,
+  unavailableMessage: string,
+): string | null {
+  return capability.available ? null : `${label}: ${capability.error ?? unavailableMessage}`;
+}
 
 function StatusDot({ tone }: { tone: "success" | "error" | "neutral" }) {
   const color =

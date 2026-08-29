@@ -24,7 +24,6 @@ vi.mock("@/app/store/redux-hooks", () => ({
 }));
 
 import { StatusBar } from "../StatusBar";
-import { selectStatusBarExport } from "../StatusBar.utils";
 
 function exportToast(overrides: Partial<ExportQueueItem>): ExportQueueItem {
   return {
@@ -76,7 +75,9 @@ describe("StatusBar", () => {
       durationMs: null,
     });
 
-    expect(selectStatusBarExport([completed, queued])).toBeUndefined();
+    renderQueue([completed, queued]);
+
+    expect(screen.queryByText("clip.mp4")).not.toBeInTheDocument();
   });
 
   it("clears the status bar while waiting for the next export to start", () => {

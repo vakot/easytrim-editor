@@ -1,6 +1,6 @@
 import { seekMediaIfNeeded } from "@/lib/media-element.utils";
 
-import { PLAYING_AUDIO_HARD_RESYNC_THRESHOLD_SECONDS } from "./audio-sync.consts";
+export const PLAYING_AUDIO_HARD_RESYNC_THRESHOLD_SECONDS = 0.12;
 const PLAYING_AUDIO_DRIFT_TOLERANCE_SECONDS = 0.025;
 const MAX_RATE_CORRECTION = 0.05;
 
