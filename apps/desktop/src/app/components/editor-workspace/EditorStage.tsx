@@ -22,16 +22,16 @@ const TIMELINE_PANEL_SIZE: PanelSizes = {
   minSize: 152,
 };
 
-const AUDIO_PANEL_SIZE_DEFAULT = 93;
-const AUDIO_PANEL_SIZE_LINE = 56;
-const AUDIO_PANEL_SIZE_PLACEHOLDER = 0;
+const AUDIO_PANEL_SIZE_MIN = 144;
+const AUDIO_PANEL_SIZE_DEFAULT = 115;
+const AUDIO_PANEL_SIZE_LINE = 51;
 
 const getAudioPanelSize = (lines: number = 0): PanelSizes => {
-  const audioPanelWithPlaceholder = AUDIO_PANEL_SIZE_DEFAULT + AUDIO_PANEL_SIZE_PLACEHOLDER;
+  const audioPanelSizeMax = AUDIO_PANEL_SIZE_DEFAULT + lines * AUDIO_PANEL_SIZE_LINE;
   return {
-    minSize: audioPanelWithPlaceholder + AUDIO_PANEL_SIZE_LINE,
-    defaultSize: audioPanelWithPlaceholder + AUDIO_PANEL_SIZE_LINE,
-    maxSize: audioPanelWithPlaceholder + lines * AUDIO_PANEL_SIZE_LINE,
+    minSize: AUDIO_PANEL_SIZE_MIN,
+    defaultSize: lines > 0 ? AUDIO_PANEL_SIZE_MIN : AUDIO_PANEL_SIZE_DEFAULT,
+    maxSize: audioPanelSizeMax,
   };
 };
 
@@ -66,9 +66,7 @@ export function EditorStage() {
         id="editor-stage-timeline"
         {...TIMELINE_PANEL_SIZE}
       >
-        <Card className="size-full p-3 ring-inset">
-          <TimelinePanel />
-        </Card>
+        <TimelinePanel />
       </ResizablePanel>
       {audioStreamsCount > 0 && (
         <>
@@ -82,9 +80,7 @@ export function EditorStage() {
             id="editor-stage-audio"
             {...getAudioPanelSize(audioStreamsCount)}
           >
-            <Card className="size-full py-3 ring-inset">
-              <AudioPanel />
-            </Card>
+            <AudioPanel />
           </ResizablePanel>
         </>
       )}

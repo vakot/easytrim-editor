@@ -2,6 +2,7 @@ import { t } from "i18next";
 import { Info, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { ResizablePanelControl } from "@/components/ui/resizable";
@@ -53,23 +54,27 @@ export function AudioPanel() {
   const outputSummary = audioOutputSummary(enabledCount, mergeAudio, t);
 
   return (
-    <section aria-labelledby="timeline-audio-title" className="grid h-full min-w-0">
-      <div className="px-3">
-        <div className="flex justify-between">
-          <h3
-            className="font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
-            id="timeline-audio-title"
+    <section aria-labelledby="timeline-audio-title" className="h-full">
+      <Card className="relative size-full gap-0 pt-3 pb-0 ring-inset">
+        <h3
+          className="mx-3 mb-2 font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
+          id="timeline-audio-title"
+        >
+          {t("audio.labels.title")}
+        </h3>
+
+        <ResizablePanelControl panelId="editor-stage-audio">
+          <Button
+            className="absolute top-2 right-3 text-secondary-foreground"
+            size="icon-xs"
+            variant="ghost"
           >
-            {t("audio.labels.title")}
-          </h3>
-          <ResizablePanelControl panelId="editor-stage-audio">
-            <Button className="text-secondary-foreground" size="icon-sm" variant="ghost">
-              <X aria-hidden="true" />
-            </Button>
-          </ResizablePanelControl>
-        </div>
-        <div className="grid min-w-0 grid-cols-(--editor-track-grid-columns) items-center gap-3">
-          <div className="flex min-w-0 items-center gap-2 p-1 pr-2">
+            <X aria-hidden="true" />
+          </Button>
+        </ResizablePanelControl>
+
+        <div className="grid min-w-0 grid-cols-(--editor-track-grid-columns) items-center gap-3 pr-3 pl-1">
+          <div className="flex min-w-0 items-center gap-2 px-1 pr-2">
             <VolumeButton
               enabled={masterAudio.enabled}
               label={t("audio.labels.allTracks")}
@@ -102,32 +107,33 @@ export function AudioPanel() {
             </Tooltip>
           </div>
         </div>
-      </div>
 
-      <div className="px-5">
-        <Separator />
-      </div>
+        <Separator className="mt-2" />
 
-      <ScrollArea className="px-3" data-testid="audio-tracks-scroll">
-        <div className="mt-2">
-          <AudioTracks
-            onPrepareWaveforms={(streamIndexes, width) =>
-              sourcePath && void dispatch(prepareSourceWaveforms(sourcePath, streamIndexes, width))
-            }
-            onToggleTrack={(streamIndex) => dispatch(audioTrackToggled({ streamIndex }))}
-            onTrackVolumeChange={(streamIndex, volumePercent) =>
-              dispatch(audioTrackVolumeChanged({ streamIndex, volumePercent }))
-            }
-            onWaveformImageError={(streamIndex) => dispatch(waveformDisplayFailed({ streamIndex }))}
-            playheadMicros={timeline.playheadMicros}
-            playheadRef={playback.audioPlayheadRef}
-            range={trim ?? EMPTY_TIMELINE_RANGE}
-            streams={media?.audioStreams ?? []}
-            tracks={audioTracks}
-            waveformPreparationEnabled={playback.isReady}
-          />
-        </div>
-      </ScrollArea>
+        <ScrollArea className="pr-3 pl-1" data-testid="audio-tracks-scroll">
+          <div className="my-2">
+            <AudioTracks
+              onPrepareWaveforms={(streamIndexes, width) =>
+                sourcePath &&
+                void dispatch(prepareSourceWaveforms(sourcePath, streamIndexes, width))
+              }
+              onToggleTrack={(streamIndex) => dispatch(audioTrackToggled({ streamIndex }))}
+              onTrackVolumeChange={(streamIndex, volumePercent) =>
+                dispatch(audioTrackVolumeChanged({ streamIndex, volumePercent }))
+              }
+              onWaveformImageError={(streamIndex) =>
+                dispatch(waveformDisplayFailed({ streamIndex }))
+              }
+              playheadMicros={timeline.playheadMicros}
+              playheadRef={playback.audioPlayheadRef}
+              range={trim ?? EMPTY_TIMELINE_RANGE}
+              streams={media?.audioStreams ?? []}
+              tracks={audioTracks}
+              waveformPreparationEnabled={playback.isReady}
+            />
+          </div>
+        </ScrollArea>
+      </Card>
     </section>
   );
 }

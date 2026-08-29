@@ -1,4 +1,5 @@
-import { Card } from "@/components/ui/card";
+import { useTranslation } from "react-i18next";
+
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
@@ -9,13 +10,15 @@ import { SourcePanel } from "@/features/source";
 import { EditorStage } from "./EditorStage";
 
 export function EditorWorkspace() {
+  const { t } = useTranslation();
+
   const sourceSelection = useAppSelector(selectSourceSelection);
   const activeItemId = useAppSelector(selectActiveItemId);
 
   return (
-    <ResizablePanelGroup id="workspace" persisted>
+    <ResizablePanelGroup className="pr-2 pl-1" id="workspace" persisted>
       <ResizablePanel
-        className="overflow-hidden"
+        className="overflow-hidden pb-1 pl-1"
         collapsedSize={0}
         collapsible
         defaultSize="20rem"
@@ -24,19 +27,18 @@ export function EditorWorkspace() {
         maxSize="30rem"
         minSize="15rem"
       >
-        <div className="h-full pb-1 pl-1">
-          <Card className="size-full p-0 ring-inset">
-            <SourcePanel />
-          </Card>
-        </div>
+        <aside
+          aria-label={t("source.labels.title")}
+          className="relative flex h-full min-h-0 flex-col overflow-hidden"
+        >
+          <SourcePanel />
+        </aside>
       </ResizablePanel>
 
       <ResizableHandle className="bg-transparent" style={{ width: 4 }} withHandle />
 
       <ResizablePanel className="overflow-hidden" id="workspace-content" minSize="44rem">
-        <div className="relative h-full pr-1">
-          <EditorStage key={activeItemId ?? sourceSelection?.sourcePath ?? "no-source"} />
-        </div>
+        <EditorStage key={activeItemId ?? sourceSelection?.sourcePath ?? "no-source"} />
       </ResizablePanel>
     </ResizablePanelGroup>
   );

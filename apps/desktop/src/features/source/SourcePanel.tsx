@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   Menu,
   MenuContent,
@@ -18,7 +19,6 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { ExportQueue } from "@/features/export";
@@ -44,99 +44,98 @@ export function SourcePanel() {
   };
 
   return (
-    <aside
-      aria-label={t("source.labels.title")}
-      className="flex h-full min-h-0 flex-col overflow-hidden p-1"
-    >
-      <div className="flex h-7 shrink-0 items-center justify-between gap-1 px-2">
-        <h3
-          className="font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
-          id="source-panel-title"
-        >
-          {t("source.labels.title")}
-        </h3>
+    <Card className="relative size-full gap-2 pt-3 pb-1 ring-inset">
+      <h3
+        className="mx-3 font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
+        id="source-panel-title"
+      >
+        {t("source.labels.title")}
+      </h3>
 
-        <Menu>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <MenuTrigger asChild>
-                <Button className="text-secondary-foreground" size="icon-xs" variant="ghost">
-                  <Ellipsis aria-hidden="true" />
-                </Button>
-              </MenuTrigger>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">{t("source.tooltips.sidebarControls")}</TooltipContent>
-          </Tooltip>
-          <MenuContent>
-            <MenuGroup>
-              <MenuItem
-                disabled
-                icon={
-                  panels["workspace-sidebar-source-details"] ? (
-                    <Eye aria-hidden="true" className="size-3" />
-                  ) : (
-                    <EyeOff aria-hidden="true" className="size-3" />
-                  )
-                }
-                onSelect={(event) => {
-                  event.preventDefault();
-                  handlePanelToggle("workspace-sidebar-source-details");
-                }}
+      <Menu>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <MenuTrigger asChild>
+              <Button
+                className="absolute top-2 right-3 text-secondary-foreground"
+                size="icon-xs"
+                variant="ghost"
               >
-                {t("source.labels.mediaDetails")}
-              </MenuItem>
-              <MenuItem
-                icon={
-                  panels["workspace-sidebar-import-queue"] ? (
-                    <Eye aria-hidden="true" className="size-3" />
-                  ) : (
-                    <EyeOff aria-hidden="true" className="size-3" />
-                  )
-                }
-                onSelect={(event) => {
-                  event.preventDefault();
-                  handlePanelToggle("workspace-sidebar-import-queue");
-                }}
-              >
-                {t("queue.labels.import")}
-              </MenuItem>
-              <MenuItem
-                icon={
-                  panels["workspace-sidebar-export-queue"] ? (
-                    <Eye aria-hidden="true" className="size-3" />
-                  ) : (
-                    <EyeOff aria-hidden="true" className="size-3" />
-                  )
-                }
-                onSelect={(event) => {
-                  event.preventDefault();
-                  handlePanelToggle("workspace-sidebar-export-queue");
-                }}
-              >
-                {t("queue.labels.export")}
-              </MenuItem>
-            </MenuGroup>
-            <MenuSeparator />
-            <MenuGroup>
-              <MenuItem
-                disabled={enabledCount === 3}
-                icon={<RotateCcw aria-hidden="true" className="size-3" />}
-                onSelect={(event) => {
-                  event.preventDefault();
-                  setPanels(DEFAULT_PANELS);
-                }}
-              >
-                {t("app.actions.resetLayout")}
-              </MenuItem>
-            </MenuGroup>
-          </MenuContent>
-        </Menu>
-      </div>
+                <Ellipsis aria-hidden="true" />
+              </Button>
+            </MenuTrigger>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">{t("source.tooltips.sidebarControls")}</TooltipContent>
+        </Tooltip>
+        <MenuContent>
+          <MenuGroup>
+            <MenuItem
+              disabled
+              icon={
+                panels["workspace-sidebar-source-details"] ? (
+                  <Eye aria-hidden="true" className="size-3" />
+                ) : (
+                  <EyeOff aria-hidden="true" className="size-3" />
+                )
+              }
+              onSelect={(event) => {
+                event.preventDefault();
+                handlePanelToggle("workspace-sidebar-source-details");
+              }}
+            >
+              {t("source.labels.mediaDetails")}
+            </MenuItem>
+            <MenuItem
+              icon={
+                panels["workspace-sidebar-import-queue"] ? (
+                  <Eye aria-hidden="true" className="size-3" />
+                ) : (
+                  <EyeOff aria-hidden="true" className="size-3" />
+                )
+              }
+              onSelect={(event) => {
+                event.preventDefault();
+                handlePanelToggle("workspace-sidebar-import-queue");
+              }}
+            >
+              {t("queue.labels.import")}
+            </MenuItem>
+            <MenuItem
+              icon={
+                panels["workspace-sidebar-export-queue"] ? (
+                  <Eye aria-hidden="true" className="size-3" />
+                ) : (
+                  <EyeOff aria-hidden="true" className="size-3" />
+                )
+              }
+              onSelect={(event) => {
+                event.preventDefault();
+                handlePanelToggle("workspace-sidebar-export-queue");
+              }}
+            >
+              {t("queue.labels.export")}
+            </MenuItem>
+          </MenuGroup>
+          <MenuSeparator />
+          <MenuGroup>
+            <MenuItem
+              disabled={enabledCount === 3}
+              icon={<RotateCcw aria-hidden="true" className="size-3" />}
+              onSelect={(event) => {
+                event.preventDefault();
+                setPanels(DEFAULT_PANELS);
+              }}
+            >
+              {t("app.actions.resetLayout")}
+            </MenuItem>
+          </MenuGroup>
+        </MenuContent>
+      </Menu>
 
       <ResizablePanelGroup id="workspace-sidebar-content" orientation="vertical" persisted>
         {panels["workspace-sidebar-source-details"] && (
           <ResizablePanel
-            className="flex min-h-0 flex-col overflow-hidden"
+            className="flex min-h-0 flex-col overflow-hidden px-1"
             collapsedSize={28}
             collapsible
             id="workspace-sidebar-source-details"
@@ -168,12 +167,10 @@ export function SourcePanel() {
 
         {panels["workspace-sidebar-import-queue"] && (
           <>
-            <ResizableHandle className="bg-transparent px-2">
-              <Separator />
-            </ResizableHandle>
+            <ResizableHandle className="my-0.5" />
 
             <ResizablePanel
-              className="flex min-h-0 flex-col overflow-hidden"
+              className="flex min-h-0 flex-col overflow-hidden px-1"
               collapsedSize={28}
               collapsible
               id="workspace-sidebar-import-queue"
@@ -206,12 +203,10 @@ export function SourcePanel() {
 
         {panels["workspace-sidebar-export-queue"] && (
           <>
-            <ResizableHandle className="bg-transparent px-2">
-              <Separator />
-            </ResizableHandle>
+            <ResizableHandle className="my-0.5" />
 
             <ResizablePanel
-              className="flex min-h-0 flex-col overflow-hidden"
+              className="flex min-h-0 flex-col overflow-hidden px-1"
               collapsedSize={28}
               collapsible
               id="workspace-sidebar-export-queue"
@@ -242,6 +237,6 @@ export function SourcePanel() {
           </>
         )}
       </ResizablePanelGroup>
-    </aside>
+    </Card>
   );
 }
