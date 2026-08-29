@@ -18,7 +18,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ResizablePanelControl } from "@/components/ui/resizable";
-import { Toggle } from "@/components/ui/toggle";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export function PanelVisibilityControls() {
@@ -60,8 +59,11 @@ export function PanelVisibilityControls() {
                 )}
               </ResizablePanelControl>
               <ResizablePanelControl panelId="editor-stage-audio">
-                {({ isCollapsed }) => (
-                  <DropdownMenuItem onSelect={(event) => event.preventDefault()}>
+                {({ isAvailable, isCollapsed, isDisabled }) => (
+                  <DropdownMenuItem
+                    disabled={!isAvailable || isDisabled}
+                    onSelect={(event) => event.preventDefault()}
+                  >
                     {isCollapsed ? (
                       <PanelBottomDashed aria-hidden="true" className="size-3" />
                     ) : (
@@ -97,20 +99,20 @@ export function PanelVisibilityControls() {
         <ResizablePanelControl panelId="workspace-sidebar">
           {({ isCollapsed }) => (
             <TooltipTrigger asChild>
-              <Toggle
+              <Button
                 aria-label={t("app.tooltips.togglePanel", {
                   panel: t("app.labels.leftPanel"),
                 })}
                 className="size-7 p-0 text-secondary-foreground"
-                pressed={!isCollapsed}
-                size="sm"
+                size="icon-sm"
+                variant="ghost"
               >
                 {isCollapsed ? (
                   <PanelLeftDashed aria-hidden="true" />
                 ) : (
                   <PanelLeft aria-hidden="true" />
                 )}
-              </Toggle>
+              </Button>
             </TooltipTrigger>
           )}
         </ResizablePanelControl>
@@ -121,22 +123,23 @@ export function PanelVisibilityControls() {
 
       <Tooltip preserveOnTrigger>
         <ResizablePanelControl panelId="editor-stage-audio">
-          {({ isCollapsed }) => (
+          {({ isAvailable, isCollapsed, isDisabled }) => (
             <TooltipTrigger asChild>
-              <Toggle
+              <Button
                 aria-label={t("app.tooltips.togglePanel", {
                   panel: t("app.labels.bottomPanel"),
                 })}
                 className="size-7 p-0 text-secondary-foreground"
-                pressed={!isCollapsed}
-                size="sm"
+                disabled={!isAvailable || isDisabled}
+                size="icon-sm"
+                variant="ghost"
               >
                 {isCollapsed ? (
                   <PanelBottomDashed aria-hidden="true" />
                 ) : (
                   <PanelBottom aria-hidden="true" />
                 )}
-              </Toggle>
+              </Button>
             </TooltipTrigger>
           )}
         </ResizablePanelControl>

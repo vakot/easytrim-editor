@@ -19,7 +19,6 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Toggle } from "@/components/ui/toggle";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { ExportQueue } from "@/features/export";
@@ -131,17 +130,17 @@ export function SourcePanel() {
         {panels["workspace-sidebar-source-details"] && (
           <ResizablePanel
             className="flex min-h-0 flex-col overflow-hidden px-1"
-            collapsedSize={28}
+            collapsedSize={32}
             collapsible
             id="workspace-sidebar-source-details"
             minSize={120}
           >
             <ResizablePanelControl panelId="workspace-sidebar-source-details">
               {({ isCollapsed }) => (
-                <Toggle
-                  className="my-0.5 h-6 w-full justify-baseline px-2 text-foreground/80"
-                  pressed={!isCollapsed}
-                  size="sm"
+                <Button
+                  className="my-1 w-full justify-baseline px-2 text-foreground/80"
+                  size="xs"
+                  variant="ghost"
                 >
                   {!isSingle &&
                     (isCollapsed ? (
@@ -150,7 +149,7 @@ export function SourcePanel() {
                       <ChevronDown aria-hidden="true" />
                     ))}
                   {t("source.labels.mediaDetails")}
-                </Toggle>
+                </Button>
               )}
             </ResizablePanelControl>
 
@@ -162,21 +161,21 @@ export function SourcePanel() {
 
         {panels["workspace-sidebar-import-queue"] && (
           <>
-            <ResizableHandle className="my-0.5" />
+            <ResizableHandle />
 
             <ResizablePanel
               className="flex min-h-0 flex-col overflow-hidden px-1"
-              collapsedSize={28}
+              collapsedSize={32}
               collapsible
               id="workspace-sidebar-import-queue"
               minSize={120}
             >
               <ResizablePanelControl panelId="workspace-sidebar-import-queue">
                 {({ isCollapsed }) => (
-                  <Toggle
-                    className="my-0.5 h-6 w-full justify-baseline px-2 text-foreground/80"
-                    pressed={!isCollapsed}
-                    size="sm"
+                  <Button
+                    className="my-1 w-full justify-baseline px-2 text-foreground/80"
+                    size="xs"
+                    variant="ghost"
                   >
                     {!isSingle &&
                       (isCollapsed ? (
@@ -185,7 +184,7 @@ export function SourcePanel() {
                         <ChevronDown aria-hidden="true" />
                       ))}
                     {t("queue.labels.import")}
-                  </Toggle>
+                  </Button>
                 )}
               </ResizablePanelControl>
 
@@ -198,21 +197,21 @@ export function SourcePanel() {
 
         {panels["workspace-sidebar-export-queue"] && (
           <>
-            <ResizableHandle className="my-0.5" />
+            <ResizableHandle />
 
             <ResizablePanel
               className="flex min-h-0 flex-col overflow-hidden px-1"
-              collapsedSize={28}
+              collapsedSize={32}
               collapsible
               id="workspace-sidebar-export-queue"
               minSize={120}
             >
               <ResizablePanelControl panelId="workspace-sidebar-export-queue">
                 {({ isCollapsed }) => (
-                  <Toggle
-                    className="my-0.5 h-6 w-full justify-baseline px-2 text-foreground/80"
-                    pressed={!isCollapsed}
-                    size="sm"
+                  <Button
+                    className="my-1 w-full justify-baseline px-2 text-foreground/80"
+                    size="xs"
+                    variant="ghost"
                   >
                     {!isSingle &&
                       (isCollapsed ? (
@@ -221,7 +220,7 @@ export function SourcePanel() {
                         <ChevronDown aria-hidden="true" />
                       ))}
                     {t("queue.labels.export")}
-                  </Toggle>
+                  </Button>
                 )}
               </ResizablePanelControl>
 
