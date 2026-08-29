@@ -49,32 +49,24 @@ export function PanelVisibilityControls() {
             <DropdownMenuGroup>
               <ResizablePanelControl panelId="workspace-sidebar">
                 {({ isCollapsed }) => (
-                  <DropdownMenuItem
-                    icon={
-                      isCollapsed ? (
-                        <PanelLeftDashed aria-hidden="true" className="size-3" />
-                      ) : (
-                        <PanelLeft aria-hidden="true" className="size-3" />
-                      )
-                    }
-                    onSelect={(event) => event.preventDefault()}
-                  >
+                  <DropdownMenuItem onSelect={(event) => event.preventDefault()}>
+                    {isCollapsed ? (
+                      <PanelLeftDashed aria-hidden="true" className="size-3" />
+                    ) : (
+                      <PanelLeft aria-hidden="true" className="size-3" />
+                    )}
                     {t("app.labels.leftPanel")}
                   </DropdownMenuItem>
                 )}
               </ResizablePanelControl>
               <ResizablePanelControl panelId="editor-stage-timeline">
                 {({ isCollapsed }) => (
-                  <DropdownMenuItem
-                    icon={
-                      isCollapsed ? (
-                        <PanelLeftDashed aria-hidden="true" className="size-3" />
-                      ) : (
-                        <PanelLeft aria-hidden="true" className="size-3" />
-                      )
-                    }
-                    onSelect={(event) => event.preventDefault()}
-                  >
+                  <DropdownMenuItem onSelect={(event) => event.preventDefault()}>
+                    {isCollapsed ? (
+                      <PanelLeftDashed aria-hidden="true" className="size-3" />
+                    ) : (
+                      <PanelLeft aria-hidden="true" className="size-3" />
+                    )}
                     {t("app.labels.bottomPanel")}
                   </DropdownMenuItem>
                 )}
@@ -89,9 +81,9 @@ export function PanelVisibilityControls() {
                 {({ isExpanded }) => (
                   <DropdownMenuItem
                     disabled={isExpanded}
-                    icon={<RotateCcw aria-hidden="true" className="size-3" />}
                     onSelect={(event) => event.preventDefault()}
                   >
+                    <RotateCcw aria-hidden="true" className="size-3" />
                     {t("app.actions.resetLayout")}
                   </DropdownMenuItem>
                 )}

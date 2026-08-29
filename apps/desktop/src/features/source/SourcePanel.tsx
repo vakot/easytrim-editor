@@ -72,48 +72,42 @@ export function SourcePanel() {
           <DropdownMenuGroup>
             <DropdownMenuItem
               disabled
-              icon={
-                panels["workspace-sidebar-source-details"] ? (
-                  <Eye aria-hidden="true" className="size-3" />
-                ) : (
-                  <EyeOff aria-hidden="true" className="size-3" />
-                )
-              }
               onSelect={(event) => {
                 event.preventDefault();
                 handlePanelToggle("workspace-sidebar-source-details");
               }}
             >
+              {panels["workspace-sidebar-source-details"] ? (
+                <Eye aria-hidden="true" className="size-3" />
+              ) : (
+                <EyeOff aria-hidden="true" className="size-3" />
+              )}
               {t("source.labels.mediaDetails")}
             </DropdownMenuItem>
             <DropdownMenuItem
-              icon={
-                panels["workspace-sidebar-import-queue"] ? (
-                  <Eye aria-hidden="true" className="size-3" />
-                ) : (
-                  <EyeOff aria-hidden="true" className="size-3" />
-                )
-              }
               onSelect={(event) => {
                 event.preventDefault();
                 handlePanelToggle("workspace-sidebar-import-queue");
               }}
             >
+              {panels["workspace-sidebar-import-queue"] ? (
+                <Eye aria-hidden="true" className="size-3" />
+              ) : (
+                <EyeOff aria-hidden="true" className="size-3" />
+              )}
               {t("queue.labels.import")}
             </DropdownMenuItem>
             <DropdownMenuItem
-              icon={
-                panels["workspace-sidebar-export-queue"] ? (
-                  <Eye aria-hidden="true" className="size-3" />
-                ) : (
-                  <EyeOff aria-hidden="true" className="size-3" />
-                )
-              }
               onSelect={(event) => {
                 event.preventDefault();
                 handlePanelToggle("workspace-sidebar-export-queue");
               }}
             >
+              {panels["workspace-sidebar-export-queue"] ? (
+                <Eye aria-hidden="true" className="size-3" />
+              ) : (
+                <EyeOff aria-hidden="true" className="size-3" />
+              )}
               {t("queue.labels.export")}
             </DropdownMenuItem>
           </DropdownMenuGroup>
@@ -121,12 +115,12 @@ export function SourcePanel() {
           <DropdownMenuGroup>
             <DropdownMenuItem
               disabled={enabledCount === 3}
-              icon={<RotateCcw aria-hidden="true" className="size-3" />}
               onSelect={(event) => {
                 event.preventDefault();
                 setPanels(DEFAULT_PANELS);
               }}
             >
+              <RotateCcw aria-hidden="true" className="size-3" />
               {t("app.actions.resetLayout")}
             </DropdownMenuItem>
           </DropdownMenuGroup>

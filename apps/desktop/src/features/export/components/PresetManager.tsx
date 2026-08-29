@@ -14,6 +14,7 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuSub,
@@ -114,61 +115,56 @@ export function PresetManager() {
             </span>
             <ChevronDownIcon className="pointer-events-none size-4 shrink-0" />
           </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="start"
-            className="z-50 min-w-56 rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
-            sideOffset={6}
-          >
-            {presets.map((preset) => (
-              <div className="flex items-center gap-1" key={preset.id}>
-                <DropdownMenuItem
-                  className="min-w-0 flex-1 cursor-pointer rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent"
-                  onSelect={() => dispatch(exportPresetSelected(preset.id))}
-                >
-                  <span className="block truncate">{preset.name}</span>
-                  {preset.description ? (
-                    <span className="block truncate text-xs text-muted-foreground">
-                      {preset.description}
+          <DropdownMenuContent align="start" className="min-w-56" sideOffset={6}>
+            <DropdownMenuGroup>
+              {presets.map((preset) => (
+                <div className="flex items-center gap-1" key={preset.id}>
+                  <DropdownMenuItem
+                    className="min-w-0 flex-1"
+                    onSelect={() => dispatch(exportPresetSelected(preset.id))}
+                  >
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate">{preset.name}</span>
+                      {preset.description ? (
+                        <span className="block truncate text-xs text-muted-foreground">
+                          {preset.description}
+                        </span>
+                      ) : null}
                     </span>
-                  ) : null}
-                </DropdownMenuItem>
-                <DropdownMenuSub>
-                  <DropdownMenuSubTrigger
-                    aria-label={t("export.accessibility.presetActions")}
-                    className="flex size-8 shrink-0 items-center justify-center rounded-sm outline-none hover:bg-accent focus:bg-accent"
-                  >
-                    <MoreHorizontal className="size-4" />
-                  </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent
-                    className="z-50 min-w-32 rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
-                    sideOffset={4}
-                  >
-                    <DropdownMenuItem
-                      className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent"
-                      onSelect={() => openEditDialog(preset)}
+                  </DropdownMenuItem>
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger
+                      aria-label={t("export.accessibility.presetActions")}
+                      className="size-8 shrink-0 justify-center p-0"
                     >
-                      <Pencil className="size-3.5" />
-                      {t("common.actions.edit")}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-destructive outline-none focus:bg-accent"
-                      onSelect={() => setPresetToDelete(preset)}
-                    >
-                      <Trash2 className="size-3.5" />
-                      {t("common.actions.delete")}
-                    </DropdownMenuItem>
-                  </DropdownMenuSubContent>
-                </DropdownMenuSub>
-              </div>
-            ))}
-            <DropdownMenuSeparator className="my-1" />
-            <DropdownMenuItem
-              className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent"
-              onSelect={openCreateDialog}
-            >
-              <Plus className="size-3.5" />
-              {t("export.actions.addPreset")}
-            </DropdownMenuItem>
+                      <MoreHorizontal className="size-4" />
+                    </DropdownMenuSubTrigger>
+                    <DropdownMenuSubContent className="min-w-32">
+                      <DropdownMenuGroup>
+                        <DropdownMenuItem onSelect={() => openEditDialog(preset)}>
+                          <Pencil className="size-3.5" />
+                          {t("common.actions.edit")}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onSelect={() => setPresetToDelete(preset)}
+                          variant="destructive"
+                        >
+                          <Trash2 className="size-3.5" />
+                          {t("common.actions.delete")}
+                        </DropdownMenuItem>
+                      </DropdownMenuGroup>
+                    </DropdownMenuSubContent>
+                  </DropdownMenuSub>
+                </div>
+              ))}
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuItem onSelect={openCreateDialog}>
+                <Plus className="size-3.5" />
+                {t("export.actions.addPreset")}
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
