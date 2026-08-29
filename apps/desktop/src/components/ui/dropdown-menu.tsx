@@ -1,8 +1,35 @@
+import { cva } from "class-variance-authority";
 import { CheckIcon, ChevronRightIcon } from "lucide-react";
 import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui";
 import * as React from "react";
 
 import { cn } from "@/lib/class-names.utils";
+
+const dropdownMenuItemVariants = cva(
+  "relative flex cursor-default items-center gap-1.5 rounded-md select-none [&_svg]:pointer-events-none [&_svg]:shrink-0",
+  {
+    variants: {
+      kind: {
+        checkbox:
+          "py-1 pr-1.5 pl-7 text-xs outline-hidden focus:bg-accent focus:text-accent-foreground focus:**:text-accent-foreground data-inset:pl-7 data-disabled:pointer-events-none",
+        item: "group/dropdown-menu-item h-6 min-w-48 px-1.5 py-1 text-xs outline-hidden focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-inset:pl-7 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg:not([class*='size-'])]:size-3",
+        radio:
+          "py-1 pr-1.5 pl-7 text-sm outline-hidden focus:bg-accent focus:text-accent-foreground focus:**:text-accent-foreground data-inset:pl-7 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg:not([class*='size-'])]:size-4",
+        subTrigger:
+          "group/dropdown-menu-item h-6 min-w-48 px-1.5 py-1 text-xs outline-none focus:bg-accent focus:text-accent-foreground data-inset:pl-7 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-open:bg-accent data-open:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg:not([class*='size-'])]:size-3",
+      },
+      variant: {
+        default: "",
+        destructive:
+          "data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-destructive dark:data-[variant=destructive]:focus:bg-destructive/20 data-[variant=destructive]:*:[svg]:text-destructive!",
+      },
+    },
+    defaultVariants: {
+      kind: "item",
+      variant: "default",
+    },
+  },
+);
 
 function DropdownMenu({ ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.Root>) {
   return <DropdownMenuPrimitive.Root data-slot="dropdown-menu" {...props} />;
@@ -57,10 +84,7 @@ function DropdownMenuItem({
 }) {
   return (
     <DropdownMenuPrimitive.Item
-      className={cn(
-        "group/dropdown-menu-item relative flex min-w-48 cursor-default items-center gap-1.5 rounded-md px-1.5 py-1 text-xs outline-hidden select-none focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-inset:pl-7 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-destructive dark:data-[variant=destructive]:focus:bg-destructive/20 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3 data-[variant=destructive]:*:[svg]:text-destructive!",
-        className,
-      )}
+      className={cn(dropdownMenuItemVariants({ kind: "item", variant, className }))}
       data-inset={inset}
       data-slot="dropdown-menu-item"
       data-variant={variant}
@@ -81,10 +105,7 @@ function DropdownMenuCheckboxItem({
   return (
     <DropdownMenuPrimitive.CheckboxItem
       checked={checked}
-      className={cn(
-        "relative flex cursor-default items-center gap-1.5 rounded-md py-1 pr-1.5 pl-7 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground focus:**:text-accent-foreground data-inset:pl-7 data-disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0",
-        className,
-      )}
+      className={cn(dropdownMenuItemVariants({ kind: "checkbox", className }))}
       data-inset={inset}
       data-slot="dropdown-menu-checkbox-item"
       {...props}
@@ -118,10 +139,7 @@ function DropdownMenuRadioItem({
 }) {
   return (
     <DropdownMenuPrimitive.RadioItem
-      className={cn(
-        "relative flex cursor-default items-center gap-1.5 rounded-md py-1 pr-1.5 pl-7 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground focus:**:text-accent-foreground data-inset:pl-7 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
-        className,
-      )}
+      className={cn(dropdownMenuItemVariants({ kind: "radio", className }))}
       data-inset={inset}
       data-slot="dropdown-menu-radio-item"
       {...props}
@@ -196,10 +214,7 @@ function DropdownMenuSubTrigger({
 }) {
   return (
     <DropdownMenuPrimitive.SubTrigger
-      className={cn(
-        "group/dropdown-menu-item relative flex min-w-48 cursor-default items-center gap-1.5 rounded-md px-1.5 py-1 text-xs outline-none select-none focus:bg-accent focus:text-accent-foreground data-inset:pl-7 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-open:bg-accent data-open:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3",
-        className,
-      )}
+      className={cn(dropdownMenuItemVariants({ kind: "subTrigger", className }))}
       data-inset={inset}
       data-slot="dropdown-menu-sub-trigger"
       {...props}
@@ -232,6 +247,7 @@ export {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
+  dropdownMenuItemVariants,
   DropdownMenuLabel,
   DropdownMenuPortal,
   DropdownMenuRadioGroup,

@@ -1,3 +1,4 @@
+import { cva } from "class-variance-authority";
 import { CheckIcon, ChevronRightIcon } from "lucide-react";
 import { Menubar as MenubarPrimitive } from "radix-ui";
 import * as React from "react";
@@ -5,6 +6,32 @@ import * as React from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { cn } from "@/lib/class-names.utils";
+
+const menubarItemVariants = cva(
+  "relative flex cursor-default items-center gap-1.5 rounded-md select-none [&_svg]:pointer-events-none [&_svg]:shrink-0",
+  {
+    variants: {
+      kind: {
+        checkbox:
+          "py-1 pr-1.5 pl-7 text-xs outline-hidden focus:bg-accent focus:text-accent-foreground focus:**:text-accent-foreground data-inset:pl-7 data-disabled:pointer-events-none",
+        item: "group/menubar-item h-6 min-w-48 px-1.5 py-1 text-xs outline-hidden focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-inset:pl-7 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg:not([class*='size-'])]:size-3",
+        radio:
+          "py-1 pr-1.5 pl-7 text-sm outline-hidden focus:bg-accent focus:text-accent-foreground focus:**:text-accent-foreground data-inset:pl-7 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg:not([class*='size-'])]:size-4",
+        subTrigger:
+          "group/menubar-item h-6 min-w-48 px-1.5 py-1 text-xs outline-none focus:bg-accent focus:text-accent-foreground data-inset:pl-7 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-open:bg-accent data-open:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg:not([class*='size-'])]:size-3",
+      },
+      variant: {
+        default: "",
+        destructive:
+          "data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-destructive dark:data-[variant=destructive]:focus:bg-destructive/20 data-[variant=destructive]:*:[svg]:text-destructive!",
+      },
+    },
+    defaultVariants: {
+      kind: "item",
+      variant: "default",
+    },
+  },
+);
 
 function Menubar({ className, ...props }: React.ComponentProps<typeof MenubarPrimitive.Root>) {
   return (
@@ -39,7 +66,7 @@ function MenubarTrigger({
   return (
     <MenubarPrimitive.Trigger
       className={cn(
-        "flex items-center rounded-sm px-1.5 py-0.5 text-sm font-medium outline-hidden select-none hover:bg-muted aria-expanded:bg-muted",
+        "flex items-center rounded-sm px-1.5 py-0.5 text-xs font-medium outline-hidden select-none hover:bg-muted aria-expanded:bg-muted",
         className,
       )}
       data-slot="menubar-trigger"
@@ -98,10 +125,7 @@ function MenubarItem({
   const item = (
     <MenubarPrimitive.Item
       aria-current={ariaCurrent ?? (selected ? "true" : undefined)}
-      className={cn(
-        "group/menubar-item relative flex min-w-48 cursor-default items-center gap-1.5 rounded-md px-1.5 py-1 text-xs outline-hidden select-none focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-inset:pl-7 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-destructive dark:data-[variant=destructive]:focus:bg-destructive/20 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3 data-[variant=destructive]:*:[svg]:text-destructive!",
-        className,
-      )}
+      className={cn(menubarItemVariants({ kind: "item", variant, className }))}
       data-inset={inset}
       data-selected={selected}
       data-slot="menubar-item"
@@ -138,7 +162,7 @@ function MenubarItemLayout({ children, icon, submenu = false }: MenubarItemLayou
       >
         {icon}
       </span>
-      <span className="flex min-w-0 flex-1 items-center truncate" data-slot="menubar-name">
+      <span className="flex min-w-0 flex-1 items-center gap-4 truncate" data-slot="menubar-name">
         {children}
       </span>
       <span
@@ -163,10 +187,7 @@ function MenubarCheckboxItem({
   return (
     <MenubarPrimitive.CheckboxItem
       checked={checked}
-      className={cn(
-        "relative flex cursor-default items-center gap-1.5 rounded-md py-1 pr-1.5 pl-7 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground focus:**:text-accent-foreground data-inset:pl-7 data-disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0",
-        className,
-      )}
+      className={cn(menubarItemVariants({ kind: "checkbox", className }))}
       data-inset={inset}
       data-slot="menubar-checkbox-item"
       {...props}
@@ -191,10 +212,7 @@ function MenubarRadioItem({
 }) {
   return (
     <MenubarPrimitive.RadioItem
-      className={cn(
-        "relative flex cursor-default items-center gap-1.5 rounded-md py-1 pr-1.5 pl-7 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground focus:**:text-accent-foreground data-inset:pl-7 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
-        className,
-      )}
+      className={cn(menubarItemVariants({ kind: "radio", className }))}
       data-inset={inset}
       data-slot="menubar-radio-item"
       {...props}
@@ -218,7 +236,7 @@ function MenubarLabel({
 }) {
   return (
     <MenubarPrimitive.Label
-      className={cn("px-1.5 py-1 text-sm font-medium data-inset:pl-7", className)}
+      className={cn("px-1.5 py-1 text-xs font-medium data-inset:pl-7", className)}
       data-inset={inset}
       data-slot="menubar-label"
       {...props}
@@ -275,10 +293,7 @@ function MenubarSubTrigger({
   return (
     <MenubarPrimitive.SubTrigger
       aria-current={ariaCurrent ?? (selected ? "true" : undefined)}
-      className={cn(
-        "group/menubar-item relative flex min-w-48 cursor-default items-center gap-1.5 rounded-md px-1.5 py-1 text-xs outline-none select-none focus:bg-accent focus:text-accent-foreground data-inset:pl-7 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-open:bg-accent data-open:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3",
-        className,
-      )}
+      className={cn(menubarItemVariants({ kind: "subTrigger", className }))}
       data-inset={inset}
       data-selected={selected}
       data-slot="menubar-sub-trigger"
@@ -318,6 +333,7 @@ export {
   MenubarContent,
   MenubarGroup,
   MenubarItem,
+  menubarItemVariants,
   MenubarLabel,
   MenubarMenu,
   MenubarPortal,
