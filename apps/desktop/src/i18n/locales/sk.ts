@@ -103,6 +103,7 @@ export const sk = {
     panels: {
       group: "Panely editora",
       layoutMenu: "Ovládanie rozloženia",
+      customizeLayout: "Prispôsobiť rozloženie",
       leftPanel: "Ľavý panel",
       bottomPanel: "Spodný panel",
       hidePanel: "Skryť {{panel}}",
