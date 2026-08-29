@@ -1,26 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { synchronizeAudioPosition } from "@/app/editor-interaction/audio-sync";
-import {
-  editorShortcutFromEvent,
-  isShortcutBlockedTarget,
-} from "@/app/editor-interaction/editor-shortcuts";
-import {
-  cancelFrame,
-  cancelPlaybackFrame,
-  type PlaybackFrameHandle,
-  requestPlaybackFrame,
-  seekMediaIfNeeded,
-  seekVideo,
-  syncPlayheadElements,
-} from "@/app/editor-interaction/media-sync";
-import {
-  connectNativeAudioBinding,
-  disconnectNativeAudioBinding,
-  getOrCreateNativeAudioBinding,
-  type NativeAudioBinding,
-} from "@/app/editor-interaction/native-audio-runtime";
 import { usePlaybackModes } from "@/app/hooks/usePlaybackModes";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
@@ -47,7 +27,26 @@ import {
   type TrimBoundary,
   type TrimRange,
 } from "@/domain/trim";
+import { synchronizeAudioPosition } from "@/features/audio/lib/audio-sync.utils";
+import {
+  connectNativeAudioBinding,
+  disconnectNativeAudioBinding,
+  getOrCreateNativeAudioBinding,
+} from "@/features/audio/lib/native-audio-runtime";
+import type { NativeAudioBinding } from "@/features/audio/lib/native-audio-runtime.types";
+import type { PlaybackFrameHandle } from "@/features/preview/lib/media-sync.types";
+import {
+  cancelPlaybackFrame,
+  requestPlaybackFrame,
+  seekVideo,
+} from "@/features/preview/lib/media-sync.utils";
+import {
+  editorShortcutFromEvent,
+  isShortcutBlockedTarget,
+} from "@/features/timeline/lib/editor-shortcuts.utils";
+import { cancelFrame, syncPlayheadElements } from "@/features/timeline/lib/playhead-sync.utils";
 import { isApplicationDialogOpen } from "@/lib/hotkeys.utils";
+import { seekMediaIfNeeded } from "@/lib/media-element.utils";
 
 const EMPTY_TRIM: TrimRange = {
   startMicros: 0,

@@ -1,8 +1,4 @@
-export interface NativeAudioBinding {
-  source: MediaElementAudioSourceNode;
-  gain: GainNode;
-  connectedMaster: GainNode | null;
-}
+import type { NativeAudioBinding } from "./native-audio-runtime.types";
 
 export function getOrCreateNativeAudioBinding(
   bindings: Map<HTMLVideoElement, NativeAudioBinding>,

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { cancelPlaybackFrame, requestPlaybackFrame } from "../media-sync";
+import { cancelPlaybackFrame, requestPlaybackFrame } from "../media-sync.utils";
 
 describe("playback frame scheduling", () => {
   it("uses presented video frames and their media timestamps when available", () => {
