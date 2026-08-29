@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { i18n } from "../config";
-import { resolveInitialLanguage } from "../resources";
+import { resolveInitialLanguage, resolveLanguagePreference } from "../resources";
 
 describe("resolveInitialLanguage", () => {
   it("uses the first supported system language", () => {
@@ -31,5 +31,15 @@ describe("resolveInitialLanguage", () => {
     expect(i18n.getFixedT("sk")("audio.tooltips.merge")).toBe(
       "Všetky vybrané stopy sa zlúčia do jednej stopy; vyžaduje si to kódovanie.",
     );
+  });
+});
+
+describe("resolveLanguagePreference", () => {
+  it("uses a valid stored preference before system languages", () => {
+    expect(resolveLanguagePreference("sk-SK", ["en-US"])).toBe("sk");
+  });
+
+  it("falls through an invalid stored preference to system languages", () => {
+    expect(resolveLanguagePreference("de-DE", ["sk-SK", "en-US"])).toBe("sk");
   });
 });
