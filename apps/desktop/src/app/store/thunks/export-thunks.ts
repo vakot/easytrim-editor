@@ -207,7 +207,7 @@ async function startQueuedExport(
 
     if (!promoted) return;
     enqueueExport(promoted, dispatch, getState);
-    dispatch(navigateToImportedItem(replacementItem?.id ?? null));
+    if (replacementItem) dispatch(navigateToImportedItem(replacementItem.id));
   } catch (error: unknown) {
     dispatch(exportLaunchFailed(normalizeAppError(error)));
   } finally {

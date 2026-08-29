@@ -207,8 +207,10 @@ describe("export thunks and runtime queue", () => {
     const promoted = selectExportQueue(store.getState())[0];
     expect(promoted?.id).toBe(importedItem.id);
     expect(promoted?.status).toBe("queued");
+    expect(promoted?.snapshot).toEqual(importedItem.snapshot);
     expect(selectimportQueueItems(store.getState())).toHaveLength(0);
-    expect(selectActiveItemId(store.getState())).toBeNull();
+    expect(selectActiveItemId(store.getState())).toBe(importedItem.id);
+    expect(mocks.navigateToImportedItem).not.toHaveBeenCalled();
   });
 
   it("promotes optimized export using the same queue item id", async () => {
@@ -228,9 +230,11 @@ describe("export thunks and runtime queue", () => {
       id: importedItem.id,
       status: "queued",
       route: "optimized",
+      snapshot: importedItem.snapshot,
     });
     expect(selectimportQueueItems(store.getState())).toHaveLength(0);
-    expect(selectActiveItemId(store.getState())).toBeNull();
+    expect(selectActiveItemId(store.getState())).toBe(importedItem.id);
+    expect(mocks.navigateToImportedItem).not.toHaveBeenCalled();
   });
 
   it("promotes a history fork through Fast Cut using the same id", async () => {
