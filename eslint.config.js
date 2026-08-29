@@ -1,4 +1,5 @@
 import eslint from "@eslint/js";
+import { defineConfig } from "eslint/config";
 import eslintConfigPrettier from "eslint-config-prettier/flat";
 import perfectionist from "eslint-plugin-perfectionist";
 import reactHooks from "eslint-plugin-react-hooks";
@@ -7,12 +8,12 @@ import simpleImportSort from "eslint-plugin-simple-import-sort";
 import globals from "globals";
 import tseslint from "typescript-eslint";
 
-export default tseslint.config(
+export default defineConfig(
   {
     ignores: ["**/dist/**", "**/target/**", "**/src-tauri/gen/**"],
   },
   eslint.configs.recommended,
-  ...tseslint.configs.recommended,
+  tseslint.configs.recommended,
   {
     files: ["**/*.{js,cjs,mjs,ts,tsx}"],
     plugins: {
