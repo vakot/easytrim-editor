@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Toggle } from "@/components/ui/toggle";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
@@ -180,21 +181,19 @@ export function ExportDialog() {
                   />
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button
+                      <Toggle
                         aria-label={
                           isAspectRatioLocked
                             ? t("export.accessibility.unlockAspectRatio")
                             : t("export.accessibility.lockAspectRatio")
                         }
-                        aria-pressed={isAspectRatioLocked}
-                        className={isAspectRatioLocked ? "text-primary" : undefined}
-                        onClick={() => setIsAspectRatioLocked((locked) => !locked)}
-                        size="icon"
-                        type="button"
-                        variant="secondary"
+                        className={isAspectRatioLocked ? "size-8 p-0 text-primary" : "size-8 p-0"}
+                        onPressedChange={setIsAspectRatioLocked}
+                        pressed={isAspectRatioLocked}
+                        size="default"
                       >
                         {isAspectRatioLocked ? <Link2 /> : <Unlink2 />}
-                      </Button>
+                      </Toggle>
                     </TooltipTrigger>
                     <TooltipContent>
                       {isAspectRatioLocked

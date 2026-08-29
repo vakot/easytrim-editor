@@ -61,7 +61,7 @@ export const AudioTrackRow = memo(function AudioTrackRow({
               ? t("audio.actions.muteTrack", { title })
               : t("audio.actions.enableTrack", { title })
           }
-          onClick={() => onToggle(stream.streamIndex)}
+          onPressedChange={() => onToggle(stream.streamIndex)}
         />
         <div className="relative min-w-0 flex-1">
           <div

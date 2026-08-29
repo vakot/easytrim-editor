@@ -3,22 +3,22 @@ import type { ComponentPropsWithoutRef } from "react";
 import { forwardRef } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Button } from "@/components/ui/button";
+import { Toggle } from "@/components/ui/toggle";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { cn } from "@/lib/class-names.utils";
 
 type VolumeButtonProps = Omit<
-  ComponentPropsWithoutRef<typeof Button>,
-  "aria-label" | "children" | "onClick"
+  ComponentPropsWithoutRef<typeof Toggle>,
+  "aria-label" | "children" | "onPressedChange"
 > & {
   enabled: boolean;
   label: string;
-  onClick: () => void;
+  onPressedChange: () => void;
 };
 
 export const VolumeButton = forwardRef<HTMLButtonElement, VolumeButtonProps>(function VolumeButton(
-  { className, enabled, label, onClick, ...buttonProps },
+  { className, enabled, label, onPressedChange, ...toggleProps },
   ref,
 ) {
   const { t } = useTranslation();
@@ -27,19 +27,18 @@ export const VolumeButton = forwardRef<HTMLButtonElement, VolumeButtonProps>(fun
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button
+        <Toggle
           ref={ref}
-          {...buttonProps}
+          {...toggleProps}
           aria-label={label}
-          aria-pressed={enabled}
-          className={cn("text-primary", className)}
-          onClick={onClick}
-          size="icon-sm"
-          type="button"
-          variant="ghost"
+          className={cn("size-7 p-0 text-primary", className)}
+          data-size="icon-sm"
+          onPressedChange={onPressedChange}
+          pressed={enabled}
+          size="sm"
         >
           {enabled ? <Volume2 /> : <VolumeX />}
-        </Button>
+        </Toggle>
       </TooltipTrigger>
       <TooltipContent>{tooltipLabel}</TooltipContent>
     </Tooltip>

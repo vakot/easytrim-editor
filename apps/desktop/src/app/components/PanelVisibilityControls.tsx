@@ -18,6 +18,7 @@ import {
   MenuTrigger,
 } from "@/components/ui/menu";
 import { ResizablePanelControl } from "@/components/ui/resizable";
+import { Toggle } from "@/components/ui/toggle";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export function PanelVisibilityControls() {
@@ -104,13 +105,17 @@ export function PanelVisibilityControls() {
         <ResizablePanelControl panelId="workspace-sidebar">
           {({ isCollapsed }) => (
             <TooltipTrigger asChild>
-              <Button className="text-secondary-foreground" size="icon-sm" variant="ghost">
+              <Toggle
+                className="size-7 p-0 text-secondary-foreground"
+                pressed={!isCollapsed}
+                size="sm"
+              >
                 {isCollapsed ? (
                   <PanelLeftDashed aria-hidden="true" />
                 ) : (
                   <PanelLeft aria-hidden="true" />
                 )}
-              </Button>
+              </Toggle>
             </TooltipTrigger>
           )}
         </ResizablePanelControl>
@@ -123,13 +128,17 @@ export function PanelVisibilityControls() {
         <ResizablePanelControl panelId="editor-stage-audio">
           {({ isCollapsed }) => (
             <TooltipTrigger asChild>
-              <Button className="text-secondary-foreground" size="icon-sm" variant="ghost">
+              <Toggle
+                className="size-7 p-0 text-secondary-foreground"
+                pressed={!isCollapsed}
+                size="sm"
+              >
                 {isCollapsed ? (
                   <PanelBottomDashed aria-hidden="true" />
                 ) : (
                   <PanelBottom aria-hidden="true" />
                 )}
-              </Button>
+              </Toggle>
             </TooltipTrigger>
           )}
         </ResizablePanelControl>
