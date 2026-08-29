@@ -98,6 +98,9 @@ export function PanelVisibilityControls() {
           {({ isCollapsed }) => (
             <TooltipTrigger asChild>
               <Toggle
+                aria-label={t("app.tooltips.togglePanel", {
+                  panel: t("app.labels.leftPanel"),
+                })}
                 className="size-7 p-0 text-secondary-foreground"
                 pressed={!isCollapsed}
                 size="sm"
@@ -121,6 +124,9 @@ export function PanelVisibilityControls() {
           {({ isCollapsed }) => (
             <TooltipTrigger asChild>
               <Toggle
+                aria-label={t("app.tooltips.togglePanel", {
+                  panel: t("app.labels.bottomPanel"),
+                })}
                 className="size-7 p-0 text-secondary-foreground"
                 pressed={!isCollapsed}
                 size="sm"
