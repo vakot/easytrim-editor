@@ -90,10 +90,8 @@ const sourceSlice = createSlice({
 export const { capabilitiesFailed, capabilitiesReady } = sourceSlice.actions;
 export const sourceReducer = sourceSlice.reducer;
 
-export const selectSourceStatus = (state: RootState): SourceStatus => state.source.status;
 export const selectSourceSelection = (state: RootState): SourceRef | null => state.source.source;
 export const selectSourceMedia = (state: RootState): MediaInfo | null => state.source.media;
-export const selectSourceError = (state: RootState): AppError | null => state.source.error;
 export const selectCapabilities = (state: RootState): CapabilityState => state.source.capabilities;
 export const selectHasSource = (state: RootState): boolean => state.source.source !== null;
 export const selectSourceReady = (state: RootState): boolean =>

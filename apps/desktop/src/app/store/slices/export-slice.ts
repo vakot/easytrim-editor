@@ -331,9 +331,6 @@ export const selectimportQueueItems = createSelector(
 export const selectExportQueue = createSelector([selectQueueItems], (queue): ExportQueueItem[] =>
   queue.filter((item): item is ExportQueueItem => item.status !== "imported"),
 );
-export const selectActiveExport = createSelector([selectExportQueue], (queue) =>
-  queue.find((item) => item.status === "rendering"),
-);
 export const selectHasQueuedExports = (state: RootState): boolean =>
   state.export.queue.some((item) => item.status === "queued");
 export const selectHasProcessableExports = (state: RootState): boolean =>

@@ -498,6 +498,18 @@ mode and owns detection of unused production files, exports, types, and dependen
 must not establish production usage. ESLint remains responsible for unused locals, imports, and
 parameters within files, as well as TypeScript, React, formatting, and style correctness.
 
+The desktop Knip workspace intentionally excludes the generic primitive library under
+`src/components/**`; those UI building blocks are validated by ESLint, TypeScript, and their
+focused tests instead. Application and feature components remain in the production graph. Do not
+add test-only resets, `ForTest` exports, or similar escape hatches to production modules. Stateful
+integrations should scope runtime state to the owning store or instance so tests can create fresh
+state without invoking production-only cleanup APIs. Keep test-only helpers in the owning
+module's `__tests__/` directory.
+
+Application menus use `MenuGroup` for each contiguous item section. `MenuSeparator` remains the
+boundary between groups, including when a group contains one item or no labeled heading. Nested
+submenu contents follow the same grouping rule; item order and submenu behavior remain unchanged.
+
 ## Configuration
 
 Do not introduce configuration for behavior that is intentionally fixed.

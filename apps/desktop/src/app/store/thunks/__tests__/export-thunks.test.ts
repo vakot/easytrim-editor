@@ -43,7 +43,6 @@ vi.mock("@/app/store/thunks/source-media-thunks", () => ({
 }));
 
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
-import { resetExportQueueRuntimeForTests } from "@/app/store/integration/export-queue-runtime";
 import {
   activeQueueItemChanged,
   type ExportQueueItem,
@@ -52,7 +51,6 @@ import {
   importQueueItemRemoved,
   queueEntryAdded,
   queueFinishActionChanged,
-  selectActiveExport,
   selectActiveItemId,
   selectExportQueue,
   selectimportQueueItems,
@@ -154,7 +152,6 @@ function createReadyStore(withImportedItem = true) {
 }
 
 beforeEach(() => {
-  resetExportQueueRuntimeForTests();
   vi.clearAllMocks();
   mocks.chooseOutputPath.mockResolvedValue(output);
   mocks.reserveExportSource.mockResolvedValue(undefined);
@@ -560,7 +557,11 @@ describe("export thunks and runtime queue", () => {
     store.dispatch(startFastCutRequested());
     await vi.waitFor(() => expect(selectExportQueue(store.getState())).toHaveLength(2));
     store.dispatch(startExportQueue());
-    await vi.waitFor(() => expect(selectActiveExport(store.getState())).toBeUndefined());
+    await vi.waitFor(() =>
+      expect(selectExportQueue(store.getState()).some((item) => item.status === "rendering")).toBe(
+        false,
+      ),
+    );
 
     expect(selectExportQueue(store.getState()).map((item) => item.status)).toEqual([
       "completed",
@@ -597,7 +598,11 @@ describe("export thunks and runtime queue", () => {
     store.dispatch(startFastCutRequested());
     await vi.waitFor(() => expect(selectExportQueue(store.getState())).toHaveLength(2));
     store.dispatch(startExportQueue());
-    await vi.waitFor(() => expect(selectActiveExport(store.getState())).toBeDefined());
+    await vi.waitFor(() =>
+      expect(selectExportQueue(store.getState()).some((item) => item.status === "rendering")).toBe(
+        true,
+      ),
+    );
 
     finishFirst({
       operationId: "operation-1",
@@ -630,7 +635,11 @@ describe("export thunks and runtime queue", () => {
     store.dispatch(startFastCutRequested());
     await vi.waitFor(() => expect(selectExportQueue(store.getState())).toHaveLength(1));
     store.dispatch(startExportQueue());
-    await vi.waitFor(() => expect(selectActiveExport(store.getState())).toBeDefined());
+    await vi.waitFor(() =>
+      expect(selectExportQueue(store.getState()).some((item) => item.status === "rendering")).toBe(
+        true,
+      ),
+    );
 
     store.dispatch(cancelActiveExportRequested());
     expect(selectExportQueue(store.getState())[0]?.status).toBe("canceled");
@@ -662,7 +671,11 @@ describe("export thunks and runtime queue", () => {
     store.dispatch(startFastCutRequested());
     await vi.waitFor(() => expect(selectExportQueue(store.getState())).toHaveLength(2));
     store.dispatch(startExportQueue());
-    await vi.waitFor(() => expect(selectActiveExport(store.getState())).toBeDefined());
+    await vi.waitFor(() =>
+      expect(selectExportQueue(store.getState()).some((item) => item.status === "rendering")).toBe(
+        true,
+      ),
+    );
 
     store.dispatch(cancelAllExportsRequested());
     await vi.waitFor(() =>
@@ -677,7 +690,11 @@ describe("export thunks and runtime queue", () => {
       displayName: output.displayName,
       displayPath: output.displayPath,
     });
-    await vi.waitFor(() => expect(selectActiveExport(store.getState())).toBeUndefined());
+    await vi.waitFor(() =>
+      expect(selectExportQueue(store.getState()).some((item) => item.status === "rendering")).toBe(
+        false,
+      ),
+    );
     expect(mocks.performQueueFinishAction).not.toHaveBeenCalled();
   });
 

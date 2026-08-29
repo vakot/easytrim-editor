@@ -205,16 +205,6 @@ export function playheadAfterSegmentMove(
   };
 }
 
-export function playheadAfterTrimBoundaryMove(
-  previousRange: TrimRange,
-  nextRange: TrimRange,
-  boundary: TrimBoundary,
-  playheadMicros: number,
-): number {
-  return playheadFollowAfterTrimBoundaryMove(previousRange, nextRange, boundary, playheadMicros)
-    .playheadMicros;
-}
-
 export function playheadFollowAfterTrimBoundaryMove(
   previousRange: TrimRange,
   nextRange: TrimRange,

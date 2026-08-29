@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import {
   Menu,
   MenuContent,
+  MenuGroup,
   MenuItem,
   MenuSeparator,
   MenuSub,
@@ -104,69 +105,81 @@ export function ContextMenuSettings({ navigation }: { navigation: MenuNavigation
         </Button>
       </MenuTrigger>
       <MenuContent>
-        <PreferenceMenuItem
-          icon={<Play aria-hidden="true" className="size-3" />}
-          preferenceKey="autoStartQueueEnabled"
-        >
-          {t("app.settings.autoStartQueue")}
-        </PreferenceMenuItem>
-        <MenuSeparator />
-        <PreferenceMenuItem
-          icon={<Magnet aria-hidden="true" className="size-3" />}
-          preferenceKey="snapPlaybackEnabledDefault"
-        >
-          {t("app.settings.snap")}
-        </PreferenceMenuItem>
-        <PreferenceMenuItem
-          icon={<Repeat aria-hidden="true" className="size-3" />}
-          preferenceKey="loopPlaybackEnabledDefault"
-        >
-          {t("app.settings.loop")}
-        </PreferenceMenuItem>
-        <PreferenceMenuItem
-          icon={<BetweenVerticalStart aria-hidden="true" className="size-3" />}
-          preferenceKey="segmentPlaybackEnabledDefault"
-        >
-          {t("app.settings.followSegment")}
-        </PreferenceMenuItem>
-        <MenuSeparator />
-        <PreferenceMenuItem
-          icon={<Merge aria-hidden="true" className="size-3" />}
-          preferenceKey="mergeAudioEnabledDefault"
-        >
-          {t("app.settings.mergeAudio")}
-        </PreferenceMenuItem>
-        <MenuSeparator />
-        <MenuItem
-          icon={<RotateCcw aria-hidden="true" className="size-3" />}
-          onSelect={(event) => {
-            event.preventDefault();
-            resetPreferences();
-          }}
-        >
-          {t("app.settings.resetToDefault")}
-        </MenuItem>
-        <MenuSeparator />
-        <MenuSub>
-          <MenuSubTrigger
-            icon={<Languages aria-hidden="true" className="size-3" />}
-            suffix={currentLanguage.toUpperCase()}
+        <MenuGroup>
+          <PreferenceMenuItem
+            icon={<Play aria-hidden="true" className="size-3" />}
+            preferenceKey="autoStartQueueEnabled"
           >
-            {t("app.topBarMenus.language")}
-          </MenuSubTrigger>
-          <MenuSubContent>
-            {(["en", "sk"] as const).map((language) => (
-              <MenuItem
-                key={language}
-                onSelect={() => void i18n.changeLanguage(language as SupportedLanguage)}
-                selected={language === currentLanguage}
-                suffix={language.toUpperCase()}
-              >
-                {t(language === "en" ? "language.english" : "language.slovak")}
-              </MenuItem>
-            ))}
-          </MenuSubContent>
-        </MenuSub>
+            {t("app.settings.autoStartQueue")}
+          </PreferenceMenuItem>
+        </MenuGroup>
+        <MenuSeparator />
+        <MenuGroup>
+          <PreferenceMenuItem
+            icon={<Magnet aria-hidden="true" className="size-3" />}
+            preferenceKey="snapPlaybackEnabledDefault"
+          >
+            {t("app.settings.snap")}
+          </PreferenceMenuItem>
+          <PreferenceMenuItem
+            icon={<Repeat aria-hidden="true" className="size-3" />}
+            preferenceKey="loopPlaybackEnabledDefault"
+          >
+            {t("app.settings.loop")}
+          </PreferenceMenuItem>
+          <PreferenceMenuItem
+            icon={<BetweenVerticalStart aria-hidden="true" className="size-3" />}
+            preferenceKey="segmentPlaybackEnabledDefault"
+          >
+            {t("app.settings.followSegment")}
+          </PreferenceMenuItem>
+        </MenuGroup>
+        <MenuSeparator />
+        <MenuGroup>
+          <PreferenceMenuItem
+            icon={<Merge aria-hidden="true" className="size-3" />}
+            preferenceKey="mergeAudioEnabledDefault"
+          >
+            {t("app.settings.mergeAudio")}
+          </PreferenceMenuItem>
+        </MenuGroup>
+        <MenuSeparator />
+        <MenuGroup>
+          <MenuItem
+            icon={<RotateCcw aria-hidden="true" className="size-3" />}
+            onSelect={(event) => {
+              event.preventDefault();
+              resetPreferences();
+            }}
+          >
+            {t("app.settings.resetToDefault")}
+          </MenuItem>
+        </MenuGroup>
+        <MenuSeparator />
+        <MenuGroup>
+          <MenuSub>
+            <MenuSubTrigger
+              icon={<Languages aria-hidden="true" className="size-3" />}
+              suffix={currentLanguage.toUpperCase()}
+            >
+              {t("app.topBarMenus.language")}
+            </MenuSubTrigger>
+            <MenuSubContent>
+              <MenuGroup>
+                {(["en", "sk"] as const).map((language) => (
+                  <MenuItem
+                    key={language}
+                    onSelect={() => void i18n.changeLanguage(language as SupportedLanguage)}
+                    selected={language === currentLanguage}
+                    suffix={language.toUpperCase()}
+                  >
+                    {t(language === "en" ? "language.english" : "language.slovak")}
+                  </MenuItem>
+                ))}
+              </MenuGroup>
+            </MenuSubContent>
+          </MenuSub>
+        </MenuGroup>
       </MenuContent>
     </Menu>
   );

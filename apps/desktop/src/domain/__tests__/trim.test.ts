@@ -11,12 +11,18 @@ import {
   moveTrimBoundary,
   moveTrimRange,
   playheadAfterSegmentMove,
-  playheadAfterTrimBoundaryMove,
+  playheadFollowAfterTrimBoundaryMove,
   settleDirectionalSnapLatch,
   setTrimBoundaryAtPlayhead,
   snapMovedTrimRangeToPlayhead,
   timelinePercent,
 } from "../trim";
+
+function playheadAfterTrimBoundaryMove(
+  ...args: Parameters<typeof playheadFollowAfterTrimBoundaryMove>
+) {
+  return playheadFollowAfterTrimBoundaryMove(...args).playheadMicros;
+}
 
 describe("trim domain", () => {
   it("initializes the full source in integer microseconds", () => {

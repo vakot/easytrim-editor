@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import {
   Menu,
   MenuContent,
+  MenuGroup,
   MenuItem,
   MenuSub,
   MenuSubContent,
@@ -89,84 +90,92 @@ export function ContextMenuView({ navigation }: ContextMenuViewProps) {
         </Button>
       </MenuTrigger>
       <MenuContent>
-        <MenuSub>
-          <MenuSubTrigger
-            icon={<CurrentThemeIcon aria-label={t(`theme.${preference}`)} className="size-3" />}
-          >
-            {t("app.topBarMenus.theme")}
-          </MenuSubTrigger>
-          <MenuSubContent>
-            {(["system", "light", "dark"] as const).map((value) => {
-              const Icon = themeIcons[value];
-              return (
-                <MenuItem
-                  icon={<Icon aria-hidden="true" className="size-3" />}
-                  key={value}
-                  onSelect={(event) => {
-                    event.preventDefault();
-                    dispatch(themePreferenceChanged(value));
-                  }}
-                  selected={value === preference}
-                >
-                  {t(`theme.${value}`)}
-                </MenuItem>
-              );
-            })}
-          </MenuSubContent>
-        </MenuSub>
-        <MenuSub>
-          <MenuSubTrigger icon={<ColorSample color={resolvePrimaryColor(displayedPrimaryColor)} />}>
-            {t("app.topBarMenus.color")}
-          </MenuSubTrigger>
-          <MenuSubContent>
-            {PRIMARY_COLORS.map((color) => (
-              <MenuItem
-                icon={
-                  <ColorSample
-                    color={resolvePrimaryColor(color)}
+        <MenuGroup>
+          <MenuSub>
+            <MenuSubTrigger
+              icon={<CurrentThemeIcon aria-label={t(`theme.${preference}`)} className="size-3" />}
+            >
+              {t("app.topBarMenus.theme")}
+            </MenuSubTrigger>
+            <MenuSubContent>
+              <MenuGroup>
+                {(["system", "light", "dark"] as const).map((value) => {
+                  const Icon = themeIcons[value];
+                  return (
+                    <MenuItem
+                      icon={<Icon aria-hidden="true" className="size-3" />}
+                      key={value}
+                      onSelect={(event) => {
+                        event.preventDefault();
+                        dispatch(themePreferenceChanged(value));
+                      }}
+                      selected={value === preference}
+                    >
+                      {t(`theme.${value}`)}
+                    </MenuItem>
+                  );
+                })}
+              </MenuGroup>
+            </MenuSubContent>
+          </MenuSub>
+          <MenuSub>
+            <MenuSubTrigger
+              icon={<ColorSample color={resolvePrimaryColor(displayedPrimaryColor)} />}
+            >
+              {t("app.topBarMenus.color")}
+            </MenuSubTrigger>
+            <MenuSubContent>
+              <MenuGroup>
+                {PRIMARY_COLORS.map((color) => (
+                  <MenuItem
+                    icon={
+                      <ColorSample
+                        color={resolvePrimaryColor(color)}
+                        selected={color === primaryColorKey}
+                      />
+                    }
+                    key={color}
+                    onSelect={(event) => {
+                      event.preventDefault();
+                      dispatch(primaryColorChanged(color));
+                    }}
                     selected={color === primaryColorKey}
-                  />
-                }
-                key={color}
-                onSelect={(event) => {
-                  event.preventDefault();
-                  dispatch(primaryColorChanged(color));
-                }}
-                selected={color === primaryColorKey}
-                suffix={
-                  <span className="font-mono">{resolvePrimaryColor(color).toUpperCase()}</span>
-                }
-              >
-                {t(`themeColor.${color}`)}
-              </MenuItem>
-            ))}
-            <MenuSub>
-              <MenuSubTrigger
-                icon={
-                  <ColorSample
-                    color={resolvePrimaryColor(displayedCustomColor)}
+                    suffix={
+                      <span className="font-mono">{resolvePrimaryColor(color).toUpperCase()}</span>
+                    }
+                  >
+                    {t(`themeColor.${color}`)}
+                  </MenuItem>
+                ))}
+                <MenuSub>
+                  <MenuSubTrigger
+                    icon={
+                      <ColorSample
+                        color={resolvePrimaryColor(displayedCustomColor)}
+                        selected={primaryColorKey === CUSTOM_PRIMARY_COLOR}
+                      />
+                    }
+                    onClick={() => {
+                      setPreviewColor(null);
+                      dispatch(primaryColorChanged(customPrimaryColor));
+                    }}
                     selected={primaryColorKey === CUSTOM_PRIMARY_COLOR}
-                  />
-                }
-                onClick={() => {
-                  setPreviewColor(null);
-                  dispatch(primaryColorChanged(customPrimaryColor));
-                }}
-                selected={primaryColorKey === CUSTOM_PRIMARY_COLOR}
-                suffix={<span className="font-mono">{displayedCustomColor.toUpperCase()}</span>}
-              >
-                {t("themeColor.custom")}
-              </MenuSubTrigger>
-              <MenuSubContent>
-                <CustomColorPickerPanel
-                  onClose={closeMenu}
-                  onPreviewChange={setPreviewColor}
-                  previewColor={previewColor}
-                />
-              </MenuSubContent>
-            </MenuSub>
-          </MenuSubContent>
-        </MenuSub>
+                    suffix={<span className="font-mono">{displayedCustomColor.toUpperCase()}</span>}
+                  >
+                    {t("themeColor.custom")}
+                  </MenuSubTrigger>
+                  <MenuSubContent>
+                    <CustomColorPickerPanel
+                      onClose={closeMenu}
+                      onPreviewChange={setPreviewColor}
+                      previewColor={previewColor}
+                    />
+                  </MenuSubContent>
+                </MenuSub>
+              </MenuGroup>
+            </MenuSubContent>
+          </MenuSub>
+        </MenuGroup>
       </MenuContent>
     </Menu>
   );

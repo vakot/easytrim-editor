@@ -14,6 +14,7 @@ import {
 import {
   Menu,
   MenuContent,
+  MenuGroup,
   MenuItem,
   MenuSeparator,
   MenuSub,
@@ -81,48 +82,56 @@ export function ContextMenuQueue({ navigation }: { navigation: MenuNavigation })
           </Button>
         </MenuTrigger>
         <MenuContent>
-          <MenuItem
-            aria-keyshortcuts="Enter"
-            disabled={!hasQueuedItems || queueStarted}
-            onSelect={() => void dispatch(startExportQueue())}
-            suffix="Enter"
-          >
-            {t("app.queue.start")}
-          </MenuItem>
+          <MenuGroup>
+            <MenuItem
+              aria-keyshortcuts="Enter"
+              disabled={!hasQueuedItems || queueStarted}
+              onSelect={() => void dispatch(startExportQueue())}
+              suffix="Enter"
+            >
+              {t("app.queue.start")}
+            </MenuItem>
+          </MenuGroup>
           <MenuSeparator />
-          <MenuItem
-            disabled={!hasActiveItem}
-            onSelect={() => void dispatch(cancelActiveExportRequested())}
-          >
-            {t("app.queue.skip")}
-          </MenuItem>
-          <MenuItem
-            disabled={!hasQueuedItems && !hasActiveItem}
-            onSelect={() => setIsCancelQueueConfirmOpen(true)}
-          >
-            {t("app.queue.cancel")}
-          </MenuItem>
+          <MenuGroup>
+            <MenuItem
+              disabled={!hasActiveItem}
+              onSelect={() => void dispatch(cancelActiveExportRequested())}
+            >
+              {t("app.queue.skip")}
+            </MenuItem>
+            <MenuItem
+              disabled={!hasQueuedItems && !hasActiveItem}
+              onSelect={() => setIsCancelQueueConfirmOpen(true)}
+            >
+              {t("app.queue.cancel")}
+            </MenuItem>
+          </MenuGroup>
           <MenuSeparator />
-          <MenuSub>
-            <MenuSubTrigger icon={queueFinishIcons[queueFinishAction]}>
-              {t("app.queue.onFinish")}
-            </MenuSubTrigger>
-            <MenuSubContent>
-              {availableQueueFinishActions.map((action) => (
-                <MenuItem
-                  icon={queueFinishIcons[action]}
-                  key={action}
-                  onSelect={(event) => {
-                    event.preventDefault();
-                    dispatch(queueFinishActionChanged(action));
-                  }}
-                  selected={action === queueFinishAction}
-                >
-                  {queueFinishLabels[action]}
-                </MenuItem>
-              ))}
-            </MenuSubContent>
-          </MenuSub>
+          <MenuGroup>
+            <MenuSub>
+              <MenuSubTrigger icon={queueFinishIcons[queueFinishAction]}>
+                {t("app.queue.onFinish")}
+              </MenuSubTrigger>
+              <MenuSubContent>
+                <MenuGroup>
+                  {availableQueueFinishActions.map((action) => (
+                    <MenuItem
+                      icon={queueFinishIcons[action]}
+                      key={action}
+                      onSelect={(event) => {
+                        event.preventDefault();
+                        dispatch(queueFinishActionChanged(action));
+                      }}
+                      selected={action === queueFinishAction}
+                    >
+                      {queueFinishLabels[action]}
+                    </MenuItem>
+                  ))}
+                </MenuGroup>
+              </MenuSubContent>
+            </MenuSub>
+          </MenuGroup>
         </MenuContent>
       </Menu>
       <Dialog onOpenChange={setIsCancelQueueConfirmOpen} open={isCancelQueueConfirmOpen}>

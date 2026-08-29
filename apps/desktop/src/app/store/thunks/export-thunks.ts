@@ -86,18 +86,18 @@ export const pauseExportQueue = (): AppThunk => (dispatch, getState) => {
   setExportQueueExecutionEnabled(false, dispatch, getState);
 };
 
-export const cancelActiveExportRequested = (): AppThunk => () => {
-  cancelActiveExport();
+export const cancelActiveExportRequested = (): AppThunk => (_dispatch, getState) => {
+  cancelActiveExport(getState);
 };
 
-export const cancelAllExportsRequested = (): AppThunk => () => {
-  cancelAllQueuedExports();
+export const cancelAllExportsRequested = (): AppThunk => (_dispatch, getState) => {
+  cancelAllQueuedExports(getState);
 };
 
 export const cancelExportRequested =
   (id: string): AppThunk =>
-  () => {
-    cancelQueuedExport(id);
+  (_dispatch, getState) => {
+    cancelQueuedExport(id, getState);
   };
 
 export const openOptimizedExportDialog = (): AppThunk => async (dispatch, getState) => {

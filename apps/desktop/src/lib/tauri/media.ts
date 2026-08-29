@@ -125,6 +125,14 @@ export async function releaseExportSource(sourcePath: string): Promise<void> {
   }
 }
 
+export async function openFileLocation(path: string): Promise<void> {
+  try {
+    await invoke("open_file_location", { path });
+  } catch (error: unknown) {
+    throw normalizeAppError(error);
+  }
+}
+
 async function render(
   command: "render_fast" | "render_optimized",
   request: FastExportRequest | OptimizedExportRequest,

@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { startSourceMediaRuntime } from "@/app/store/integration/source-media-runtime";
 import { selectimportQueueItems } from "@/app/store/slices/export-slice";
 import { selectIsSourceDragActive } from "@/app/store/slices/import-workflow-slice";
-import { selectSourceError, selectSourceMedia } from "@/app/store/slices/source-slice";
+import { selectSourceMedia } from "@/app/store/slices/source-slice";
 import { createAppStore } from "@/app/store/store";
 import type { SourceRef } from "@/domain/source";
 import type { MediaInfo, SourceDropEvent } from "@/lib/tauri/media.types";
@@ -110,7 +110,7 @@ describe("source/media application runtime", () => {
       code: "drop_listener_failed",
       message: "Drop listener failed",
     });
-    expect(selectSourceError(appStore.getState())).toEqual({
+    expect(appStore.getState().source.error).toEqual({
       code: "drop_listener_failed",
       message: "Drop listener failed",
     });

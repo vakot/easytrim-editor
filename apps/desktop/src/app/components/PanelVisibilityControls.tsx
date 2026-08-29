@@ -9,7 +9,14 @@ import {
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
-import { Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from "@/components/ui/menu";
+import {
+  Menu,
+  MenuContent,
+  MenuGroup,
+  MenuItem,
+  MenuSeparator,
+  MenuTrigger,
+} from "@/components/ui/menu";
 import { ResizablePanelControl } from "@/components/ui/resizable";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -30,53 +37,57 @@ export function PanelVisibilityControls() {
           </Button>
         </MenuTrigger>
         <MenuContent>
-          <ResizablePanelControl panelId="workspace-sidebar">
-            {({ isCollapsed }) => (
-              <MenuItem
-                icon={
-                  isCollapsed ? (
-                    <PanelLeftDashed aria-hidden="true" className="size-3" />
-                  ) : (
-                    <PanelLeft aria-hidden="true" className="size-3" />
-                  )
-                }
-                onSelect={(event) => event.preventDefault()}
-              >
-                {t("app.panels.leftPanel")}
-              </MenuItem>
-            )}
-          </ResizablePanelControl>
-          <ResizablePanelControl panelId="editor-stage-timeline">
-            {({ isCollapsed }) => (
-              <MenuItem
-                icon={
-                  isCollapsed ? (
-                    <PanelLeftDashed aria-hidden="true" className="size-3" />
-                  ) : (
-                    <PanelLeft aria-hidden="true" className="size-3" />
-                  )
-                }
-                onSelect={(event) => event.preventDefault()}
-              >
-                {t("app.panels.bottomPanel")}
-              </MenuItem>
-            )}
-          </ResizablePanelControl>
+          <MenuGroup>
+            <ResizablePanelControl panelId="workspace-sidebar">
+              {({ isCollapsed }) => (
+                <MenuItem
+                  icon={
+                    isCollapsed ? (
+                      <PanelLeftDashed aria-hidden="true" className="size-3" />
+                    ) : (
+                      <PanelLeft aria-hidden="true" className="size-3" />
+                    )
+                  }
+                  onSelect={(event) => event.preventDefault()}
+                >
+                  {t("app.panels.leftPanel")}
+                </MenuItem>
+              )}
+            </ResizablePanelControl>
+            <ResizablePanelControl panelId="editor-stage-timeline">
+              {({ isCollapsed }) => (
+                <MenuItem
+                  icon={
+                    isCollapsed ? (
+                      <PanelLeftDashed aria-hidden="true" className="size-3" />
+                    ) : (
+                      <PanelLeft aria-hidden="true" className="size-3" />
+                    )
+                  }
+                  onSelect={(event) => event.preventDefault()}
+                >
+                  {t("app.panels.bottomPanel")}
+                </MenuItem>
+              )}
+            </ResizablePanelControl>
+          </MenuGroup>
           <MenuSeparator />
-          <ResizablePanelControl
-            mode="reset"
-            panelId={["workspace-sidebar", "editor-stage-timeline"]}
-          >
-            {({ isExpanded }) => (
-              <MenuItem
-                disabled={isExpanded}
-                icon={<RotateCcw aria-hidden="true" className="size-3" />}
-                onSelect={(event) => event.preventDefault()}
-              >
-                {t("app.panels.resetLayout")}
-              </MenuItem>
-            )}
-          </ResizablePanelControl>
+          <MenuGroup>
+            <ResizablePanelControl
+              mode="reset"
+              panelId={["workspace-sidebar", "editor-stage-timeline"]}
+            >
+              {({ isExpanded }) => (
+                <MenuItem
+                  disabled={isExpanded}
+                  icon={<RotateCcw aria-hidden="true" className="size-3" />}
+                  onSelect={(event) => event.preventDefault()}
+                >
+                  {t("app.panels.resetLayout")}
+                </MenuItem>
+              )}
+            </ResizablePanelControl>
+          </MenuGroup>
         </MenuContent>
       </Menu>
       <Tooltip>

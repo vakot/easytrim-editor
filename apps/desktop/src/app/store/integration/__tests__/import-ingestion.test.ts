@@ -6,7 +6,6 @@ import {
   selectActiveItemId,
   selectimportQueueItems,
 } from "@/app/store/slices/export-slice";
-import { selectSourceError, selectSourceStatus } from "@/app/store/slices/source-slice";
 import { trimChanged } from "@/app/store/slices/trim-slice";
 import { createAppStore } from "@/app/store/store";
 import { ingestSources, navigateToImportedItem } from "@/app/store/thunks/source-media-thunks";
@@ -52,7 +51,7 @@ function createMedia(sourcePath: string): MediaInfo {
 }
 
 async function waitForSourceReady(store: ReturnType<typeof createAppStore>) {
-  await vi.waitFor(() => expect(selectSourceStatus(store.getState())).toBe("ready"));
+  await vi.waitFor(() => expect(store.getState().source.status).toBe("ready"));
 }
 
 describe("unified source ingestion", () => {
@@ -166,7 +165,7 @@ describe("unified source ingestion", () => {
     store.dispatch(navigateToImportedItem(items[1]!.id));
 
     await vi.waitFor(() =>
-      expect(selectSourceError(store.getState())).toEqual({
+      expect(store.getState().source.error).toEqual({
         code: "io_failed",
         message: "B is no longer available.",
       }),

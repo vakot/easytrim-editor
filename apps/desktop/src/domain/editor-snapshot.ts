@@ -46,6 +46,10 @@ export function resolveEditorSnapshotTrim(
   return { ...trim, sourceDurationMicros };
 }
 
+export function editorSnapshotTrimStart(trim: EditorSnapshot["trim"]): number {
+  return "kind" in trim ? 0 : trim.startMicros;
+}
+
 export function cloneEditorSnapshot(snapshot: EditorSnapshot): EditorSnapshot {
   return createEditorSnapshot({
     source: snapshot.source,

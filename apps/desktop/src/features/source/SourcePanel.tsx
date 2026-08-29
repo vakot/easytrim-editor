@@ -3,18 +3,27 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
-import { Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from "@/components/ui/menu";
+import {
+  Menu,
+  MenuContent,
+  MenuGroup,
+  MenuItem,
+  MenuSeparator,
+  MenuTrigger,
+} from "@/components/ui/menu";
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelControl,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-const PLACEHOLDER_ROWS = Array.from({ length: 20 }, (_, index) => index + 1);
+import { ExportQueue } from "@/features/export";
+
+import { ImportQueue } from "./components/ImportQueue";
+import { SourceDetails } from "./components/SourceDetails";
 
 const DEFAULT_PANELS = {
   "workspace-sidebar-source-details": true,
@@ -53,63 +62,67 @@ export function SourcePanel() {
             <TooltipContent side="bottom">{t("import.source.sidebarControls")}</TooltipContent>
           </Tooltip>
           <MenuContent>
-            <MenuItem
-              disabled
-              icon={
-                panels["workspace-sidebar-source-details"] ? (
-                  <Eye aria-hidden="true" className="size-3" />
-                ) : (
-                  <EyeOff aria-hidden="true" className="size-3" />
-                )
-              }
-              onSelect={(event) => {
-                event.preventDefault();
-                handlePanelToggle("workspace-sidebar-source-details");
-              }}
-            >
-              {t("import.source.mediaDetails")}
-            </MenuItem>
-            <MenuItem
-              icon={
-                panels["workspace-sidebar-import-queue"] ? (
-                  <Eye aria-hidden="true" className="size-3" />
-                ) : (
-                  <EyeOff aria-hidden="true" className="size-3" />
-                )
-              }
-              onSelect={(event) => {
-                event.preventDefault();
-                handlePanelToggle("workspace-sidebar-import-queue");
-              }}
-            >
-              {t("import.source.importQueue")}
-            </MenuItem>
-            <MenuItem
-              icon={
-                panels["workspace-sidebar-export-queue"] ? (
-                  <Eye aria-hidden="true" className="size-3" />
-                ) : (
-                  <EyeOff aria-hidden="true" className="size-3" />
-                )
-              }
-              onSelect={(event) => {
-                event.preventDefault();
-                handlePanelToggle("workspace-sidebar-export-queue");
-              }}
-            >
-              {t("import.source.exportQueue")}
-            </MenuItem>
+            <MenuGroup>
+              <MenuItem
+                disabled
+                icon={
+                  panels["workspace-sidebar-source-details"] ? (
+                    <Eye aria-hidden="true" className="size-3" />
+                  ) : (
+                    <EyeOff aria-hidden="true" className="size-3" />
+                  )
+                }
+                onSelect={(event) => {
+                  event.preventDefault();
+                  handlePanelToggle("workspace-sidebar-source-details");
+                }}
+              >
+                {t("import.source.mediaDetails")}
+              </MenuItem>
+              <MenuItem
+                icon={
+                  panels["workspace-sidebar-import-queue"] ? (
+                    <Eye aria-hidden="true" className="size-3" />
+                  ) : (
+                    <EyeOff aria-hidden="true" className="size-3" />
+                  )
+                }
+                onSelect={(event) => {
+                  event.preventDefault();
+                  handlePanelToggle("workspace-sidebar-import-queue");
+                }}
+              >
+                {t("import.source.importQueue")}
+              </MenuItem>
+              <MenuItem
+                icon={
+                  panels["workspace-sidebar-export-queue"] ? (
+                    <Eye aria-hidden="true" className="size-3" />
+                  ) : (
+                    <EyeOff aria-hidden="true" className="size-3" />
+                  )
+                }
+                onSelect={(event) => {
+                  event.preventDefault();
+                  handlePanelToggle("workspace-sidebar-export-queue");
+                }}
+              >
+                {t("import.source.exportQueue")}
+              </MenuItem>
+            </MenuGroup>
             <MenuSeparator />
-            <MenuItem
-              disabled={enabledCount === 3}
-              icon={<RotateCcw aria-hidden="true" className="size-3" />}
-              onSelect={(event) => {
-                event.preventDefault();
-                setPanels(DEFAULT_PANELS);
-              }}
-            >
-              {t("app.panels.resetLayout")}
-            </MenuItem>
+            <MenuGroup>
+              <MenuItem
+                disabled={enabledCount === 3}
+                icon={<RotateCcw aria-hidden="true" className="size-3" />}
+                onSelect={(event) => {
+                  event.preventDefault();
+                  setPanels(DEFAULT_PANELS);
+                }}
+              >
+                {t("app.panels.resetLayout")}
+              </MenuItem>
+            </MenuGroup>
           </MenuContent>
         </Menu>
       </div>
@@ -140,7 +153,8 @@ export function SourcePanel() {
                 </Button>
               )}
             </ResizablePanelControl>
-            <PlaceholderRows label="sidebar-source-details" />
+
+            <SourceDetails />
           </ResizablePanel>
         )}
 
@@ -174,7 +188,8 @@ export function SourcePanel() {
                   </Button>
                 )}
               </ResizablePanelControl>
-              <PlaceholderRows label="workspace-sidebar-import-queue" />
+
+              <ImportQueue />
             </ResizablePanel>
           </>
         )}
@@ -209,25 +224,12 @@ export function SourcePanel() {
                   </Button>
                 )}
               </ResizablePanelControl>
-              <PlaceholderRows label="workspace-sidebar-export-queue" />
+
+              <ExportQueue />
             </ResizablePanel>
           </>
         )}
       </ResizablePanelGroup>
     </aside>
-  );
-}
-
-function PlaceholderRows({ label }: { label: string }) {
-  const { t } = useTranslation();
-
-  return (
-    <ScrollArea className="min-h-0 flex-1" type="auto">
-      <div className="space-y-1 p-2 text-xs text-muted-foreground">
-        {PLACEHOLDER_ROWS.map((row) => (
-          <p key={row}>{t("import.source.placeholder", { label, row })}</p>
-        ))}
-      </div>
-    </ScrollArea>
   );
 }

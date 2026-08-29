@@ -27,12 +27,6 @@ export const { preferenceChanged, preferencesReset } = preferencesSlice.actions;
 export const preferencesReducer = preferencesSlice.reducer;
 
 export const selectPreferences = (state: RootState): Preferences => state.preferences;
-export const selectSnapPlaybackEnabledDefault = (state: RootState): boolean =>
-  selectPreferences(state).snapPlaybackEnabledDefault;
-export const selectLoopPlaybackEnabledDefault = (state: RootState): boolean =>
-  selectPreferences(state).loopPlaybackEnabledDefault;
-export const selectSegmentPlaybackEnabledDefault = (state: RootState): boolean =>
-  selectPreferences(state).segmentPlaybackEnabledDefault;
 export const selectMergeAudioEnabledDefault = (state: RootState): boolean =>
   selectPreferences(state).mergeAudioEnabledDefault;
 export const selectAutoStartQueueEnabled = (state: RootState): boolean =>

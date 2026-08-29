@@ -29,10 +29,8 @@ import { selectPreview } from "@/app/store/slices/preview-slice";
 import {
   selectCapabilities,
   selectHasSource,
-  selectSourceError,
   selectSourceMedia,
   selectSourceSelection,
-  selectSourceStatus,
 } from "@/app/store/slices/source-slice";
 import { trimChanged } from "@/app/store/slices/trim-slice";
 import type { AppDispatch, RootState } from "@/app/store/store";
@@ -131,7 +129,7 @@ const ingestAndActivateSource =
     const itemId = selectimportQueueItems(getState()).at(-1)?.id;
     await vi.waitFor(() => {
       if (selectActiveItemId(getState()) !== itemId) return;
-      expect(["ready", "failed"]).toContain(selectSourceStatus(getState()));
+      expect(["ready", "failed"]).toContain(getState().source.status);
     });
   };
 
@@ -306,7 +304,7 @@ describe("source/media orchestration thunks", () => {
     await vi.waitFor(() => expect(selectSourceSelection(appStore.getState())).toEqual(firstSource));
 
     expect(mocks.activateSourcePath).toHaveBeenCalledWith(firstSource.sourcePath);
-    expect(selectSourceError(appStore.getState())).toBeNull();
+    expect(appStore.getState().source.error).toBeNull();
     expect(selectActiveItemId(appStore.getState())).toBe(firstItem!.id);
     expect(selectimportQueueItems(appStore.getState()).map((item) => item.id)).toEqual(
       idsAfterSecondImport,
@@ -386,7 +384,7 @@ describe("source/media orchestration thunks", () => {
     failSecondInspection = true;
     expect(appStore.dispatch(navigateToImportedItem(secondItem!.id))).toBe(true);
     await vi.waitFor(() =>
-      expect(selectSourceError(appStore.getState())).toEqual({
+      expect(appStore.getState().source.error).toEqual({
         code: "unsupported_media",
         message: "B could not be inspected.",
       }),
@@ -395,7 +393,7 @@ describe("source/media orchestration thunks", () => {
     expect(selectActiveItemId(appStore.getState())).toBe(secondItem!.id);
     expect(selectSourceSelection(appStore.getState())).toEqual(secondSource);
     expect(selectSourceMedia(appStore.getState())).toBeNull();
-    expect(selectSourceError(appStore.getState())).toEqual({
+    expect(appStore.getState().source.error).toEqual({
       code: "unsupported_media",
       message: "B could not be inspected.",
     });
@@ -637,7 +635,7 @@ describe("source/media orchestration thunks", () => {
 
     expect(appStore.dispatch(navigateToImportedItem(target.id))).toBe(true);
     await vi.waitFor(() =>
-      expect(selectSourceError(appStore.getState())).toEqual({
+      expect(appStore.getState().source.error).toEqual({
         code: "io_failed",
         message: "The target source could not be reopened.",
       }),
@@ -648,7 +646,7 @@ describe("source/media orchestration thunks", () => {
       target,
     ]);
     expect(selectActiveItemId(appStore.getState())).toBe(target.id);
-    expect(selectSourceError(appStore.getState())).toEqual({
+    expect(appStore.getState().source.error).toEqual({
       code: "io_failed",
       message: "The target source could not be reopened.",
     });
@@ -677,7 +675,7 @@ describe("source/media orchestration thunks", () => {
     });
     await appStore.dispatch(closeActiveImportedItemRequested());
     await vi.waitFor(() =>
-      expect(selectSourceError(appStore.getState())).toEqual({
+      expect(appStore.getState().source.error).toEqual({
         code: "io_failed",
         message: "The next source is missing.",
       }),
@@ -735,12 +733,12 @@ describe("source/media orchestration thunks", () => {
       expect(selectIsChoosingSource(appStore.getState())).toBe(false);
       expect(selectIsNativeDialogOpen(appStore.getState())).toBe(false);
     });
-    expect(selectSourceStatus(appStore.getState())).toBe("loading-source");
+    expect(appStore.getState().source.status).toBe("loading-source");
     expect(mocks.inspectMedia).toHaveBeenCalledWith(firstSource.sourcePath);
 
     inspection.resolve(createMedia(firstSource.sourcePath, 1));
     await chooserRequest;
-    expect(selectSourceStatus(appStore.getState())).toBe("ready");
+    expect(appStore.getState().source.status).toBe("ready");
     expect(selectIsNativeDialogOpen(appStore.getState())).toBe(false);
   });
 
@@ -771,7 +769,7 @@ describe("source/media orchestration thunks", () => {
 
     expect(selectIsChoosingSource(appStore.getState())).toBe(false);
     expect(selectIsNativeDialogOpen(appStore.getState())).toBe(false);
-    expect(selectSourceError(appStore.getState())).toEqual({
+    expect(appStore.getState().source.error).toEqual({
       code: "dialog_failed",
       message: "The source picker failed.",
     });
@@ -816,7 +814,7 @@ describe("source/media orchestration thunks", () => {
     mocks.inspectMedia.mockRejectedValue({ code: "unsupported_media", message: "Not a video" });
 
     await appStore.dispatch(ingestAndActivateSource(firstSource));
-    expect(selectSourceError(appStore.getState())).toEqual({
+    expect(appStore.getState().source.error).toEqual({
       code: "unsupported_media",
       message: "Not a video",
     });

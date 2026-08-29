@@ -1,7 +1,14 @@
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
-import { Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from "@/components/ui/menu";
+import {
+  Menu,
+  MenuContent,
+  MenuGroup,
+  MenuItem,
+  MenuSeparator,
+  MenuTrigger,
+} from "@/components/ui/menu";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectCropApplied } from "@/app/store/slices/crop-slice";
@@ -41,35 +48,39 @@ export function ContextMenuFile({ navigation }: { navigation: MenuNavigation }) 
         </Button>
       </MenuTrigger>
       <MenuContent>
-        <MenuItem
-          disabled={isChoosingSource}
-          onSelect={() => void dispatch(chooseSourceRequested())}
-          suffix="Ctrl+O"
-        >
-          {t("app.topBarMenus.openFile")}
-        </MenuItem>
-        <MenuItem
-          disabled={!hasSource}
-          onSelect={() => void dispatch(closeActiveImportedItemRequested())}
-          suffix="Ctrl+Q"
-        >
-          {t("app.topBarMenus.closeFile")}
-        </MenuItem>
+        <MenuGroup>
+          <MenuItem
+            disabled={isChoosingSource}
+            onSelect={() => void dispatch(chooseSourceRequested())}
+            suffix="Ctrl+O"
+          >
+            {t("app.topBarMenus.openFile")}
+          </MenuItem>
+          <MenuItem
+            disabled={!hasSource}
+            onSelect={() => void dispatch(closeActiveImportedItemRequested())}
+            suffix="Ctrl+Q"
+          >
+            {t("app.topBarMenus.closeFile")}
+          </MenuItem>
+        </MenuGroup>
         <MenuSeparator />
-        <MenuItem
-          disabled={!canSave}
-          onSelect={() => void dispatch(startFastCutRequested())}
-          suffix="Ctrl+S"
-        >
-          {t("app.topBarMenus.saveLosslessCut")}
-        </MenuItem>
-        <MenuItem
-          disabled={!canExport}
-          onSelect={() => void dispatch(openOptimizedExportDialog())}
-          suffix="Ctrl+E"
-        >
-          {t("app.topBarMenus.optimizeExport")}
-        </MenuItem>
+        <MenuGroup>
+          <MenuItem
+            disabled={!canSave}
+            onSelect={() => void dispatch(startFastCutRequested())}
+            suffix="Ctrl+S"
+          >
+            {t("app.topBarMenus.saveLosslessCut")}
+          </MenuItem>
+          <MenuItem
+            disabled={!canExport}
+            onSelect={() => void dispatch(openOptimizedExportDialog())}
+            suffix="Ctrl+E"
+          >
+            {t("app.topBarMenus.optimizeExport")}
+          </MenuItem>
+        </MenuGroup>
       </MenuContent>
     </Menu>
   );

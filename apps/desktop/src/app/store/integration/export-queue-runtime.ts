@@ -32,20 +32,41 @@ interface RuntimeExportJob {
   startedAt: number | null;
 }
 
-const pendingJobs: RuntimeExportJob[] = [];
-const jobsById = new Map<string, RuntimeExportJob>();
-let isDraining = false;
-let executionEnabled = false;
-let queueHadWork = false;
-let suppressQueueFinishAction = false;
+interface RuntimeState {
+  executionEnabled: boolean;
+  isDraining: boolean;
+  jobsById: Map<string, RuntimeExportJob>;
+  pendingJobs: RuntimeExportJob[];
+  queueHadWork: boolean;
+  suppressQueueFinishAction: boolean;
+}
+
+const runtimeByStore = new WeakMap<() => RootState, RuntimeState>();
+
+function runtimeFor(getState: () => RootState): RuntimeState {
+  const existing = runtimeByStore.get(getState);
+  if (existing) return existing;
+  const runtime: RuntimeState = {
+    executionEnabled: false,
+    isDraining: false,
+    jobsById: new Map(),
+    pendingJobs: [],
+    queueHadWork: false,
+    suppressQueueFinishAction: false,
+  };
+
+  runtimeByStore.set(getState, runtime);
+  return runtime;
+}
 
 export function setExportQueueExecutionEnabled(
   enabled: boolean,
   dispatch: AppDispatch,
   getState: () => RootState,
 ) {
-  executionEnabled = enabled;
-  if (enabled) void drainQueue(dispatch, getState);
+  const runtime = runtimeFor(getState);
+  runtime.executionEnabled = enabled;
+  if (enabled) void drainQueue(runtime, dispatch, getState);
 }
 
 export function enqueueExport(
@@ -53,6 +74,7 @@ export function enqueueExport(
   dispatch: AppDispatch,
   getState: () => RootState,
 ) {
+  const runtime = runtimeFor(getState);
   const job: RuntimeExportJob = {
     item,
     canceled: false,
@@ -62,55 +84,58 @@ export function enqueueExport(
     getState,
   };
 
-  pendingJobs.push(job);
-  jobsById.set(item.id, job);
-  queueHadWork = true;
-  void drainQueue(dispatch, getState);
+  runtime.pendingJobs.push(job);
+  runtime.jobsById.set(item.id, job);
+  runtime.queueHadWork = true;
+  void drainQueue(runtime, dispatch, getState);
 }
 
-export function cancelQueuedExport(id: string) {
-  const job = jobsById.get(id);
+export function cancelQueuedExport(id: string, getState: () => RootState) {
+  const runtime = runtimeFor(getState);
+  const job = runtime.jobsById.get(id);
   if (!job || job.canceled) return;
 
   job.canceled = true;
   job.dispatch(exportCanceled({ id, durationMs: elapsedTime(job) }));
   if (job.startedAt === null) {
-    removePendingJob(job);
+    removePendingJob(runtime, job);
   }
   if (job.operationId) {
     void cancelOperation(job.operationId).catch(() => undefined);
   } else {
     void releaseExportSource(job.item.request.sourcePath).catch(() => undefined);
   }
-  void drainQueue(job.dispatch, job.getState);
+  void drainQueue(runtime, job.dispatch, job.getState);
 }
 
-function removePendingJob(job: RuntimeExportJob) {
-  const pendingIndex = pendingJobs.indexOf(job);
-  if (pendingIndex >= 0) pendingJobs.splice(pendingIndex, 1);
-  jobsById.delete(job.item.id);
+function removePendingJob(runtime: RuntimeState, job: RuntimeExportJob) {
+  const pendingIndex = runtime.pendingJobs.indexOf(job);
+  if (pendingIndex >= 0) runtime.pendingJobs.splice(pendingIndex, 1);
+  runtime.jobsById.delete(job.item.id);
 }
 
-export function cancelActiveExport() {
-  const activeJob = [...jobsById.values()].find((job) => job.startedAt !== null);
-  if (activeJob) cancelQueuedExport(activeJob.item.id);
+export function cancelActiveExport(getState: () => RootState) {
+  const runtime = runtimeFor(getState);
+  const activeJob = [...runtime.jobsById.values()].find((job) => job.startedAt !== null);
+  if (activeJob) cancelQueuedExport(activeJob.item.id, getState);
 }
 
-export function cancelAllQueuedExports() {
-  suppressQueueFinishAction = true;
-  [...jobsById.keys()].forEach((id) => cancelQueuedExport(id));
+export function cancelAllQueuedExports(getState: () => RootState) {
+  const runtime = runtimeFor(getState);
+  runtime.suppressQueueFinishAction = true;
+  [...runtime.jobsById.keys()].forEach((id) => cancelQueuedExport(id, getState));
 }
 
-async function drainQueue(dispatch: AppDispatch, getState: () => RootState) {
-  if (isDraining || !executionEnabled) return;
-  isDraining = true;
+async function drainQueue(runtime: RuntimeState, dispatch: AppDispatch, getState: () => RootState) {
+  if (runtime.isDraining || !runtime.executionEnabled) return;
+  runtime.isDraining = true;
 
   try {
-    while (executionEnabled && pendingJobs.length > 0) {
-      const job = pendingJobs.shift();
+    while (runtime.executionEnabled && runtime.pendingJobs.length > 0) {
+      const job = runtime.pendingJobs.shift();
       if (!job) continue;
       if (job.canceled) {
-        jobsById.delete(job.item.id);
+        runtime.jobsById.delete(job.item.id);
         continue;
       }
 
@@ -119,9 +144,11 @@ async function drainQueue(dispatch: AppDispatch, getState: () => RootState) {
       await renderJob(job);
     }
   } finally {
-    isDraining = false;
-    maybePerformQueueFinishAction(dispatch, getState);
-    if (executionEnabled && pendingJobs.length > 0) void drainQueue(dispatch, getState);
+    runtime.isDraining = false;
+    maybePerformQueueFinishAction(runtime, dispatch, getState);
+    if (runtime.executionEnabled && runtime.pendingJobs.length > 0) {
+      void drainQueue(runtime, dispatch, getState);
+    }
   }
 }
 
@@ -191,7 +218,7 @@ async function renderJob(job: RuntimeExportJob) {
       );
     }
   } finally {
-    jobsById.delete(job.item.id);
+    runtimeFor(job.getState).jobsById.delete(job.item.id);
   }
 }
 
@@ -199,11 +226,22 @@ function elapsedTime(job: RuntimeExportJob) {
   return job.startedAt ? Date.now() - job.startedAt : null;
 }
 
-function maybePerformQueueFinishAction(dispatch: AppDispatch, getState: () => RootState) {
-  if (isDraining || pendingJobs.length > 0 || jobsById.size > 0 || !queueHadWork) return;
-  queueHadWork = false;
-  if (suppressQueueFinishAction) {
-    suppressQueueFinishAction = false;
+function maybePerformQueueFinishAction(
+  runtime: RuntimeState,
+  dispatch: AppDispatch,
+  getState: () => RootState,
+) {
+  if (
+    runtime.isDraining ||
+    runtime.pendingJobs.length > 0 ||
+    runtime.jobsById.size > 0 ||
+    !runtime.queueHadWork
+  ) {
+    return;
+  }
+  runtime.queueHadWork = false;
+  if (runtime.suppressQueueFinishAction) {
+    runtime.suppressQueueFinishAction = false;
     return;
   }
   const hasTerminalWork = getState().export.queue.some(
@@ -214,13 +252,4 @@ function maybePerformQueueFinishAction(dispatch: AppDispatch, getState: () => Ro
   const action = getState().export.queueFinishAction;
   if (action !== "nothing") void performQueueFinishAction(action).catch(() => undefined);
   void dispatch;
-}
-
-export function resetExportQueueRuntimeForTests() {
-  pendingJobs.length = 0;
-  jobsById.clear();
-  isDraining = false;
-  executionEnabled = false;
-  queueHadWork = false;
-  suppressQueueFinishAction = false;
 }

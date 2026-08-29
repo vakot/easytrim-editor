@@ -10,7 +10,7 @@ import { sourceSelected } from "@/app/store/actions/source-actions";
 import { selectMergeAudio } from "@/app/store/slices/audio-slice";
 import { createAppStore } from "@/app/store/store";
 
-import { ContextMenuSettings } from "../components/ContextMenuSettings";
+import { ContextMenuSettings } from "../ContextMenuSettings";
 
 const navigation = {
   open: true,

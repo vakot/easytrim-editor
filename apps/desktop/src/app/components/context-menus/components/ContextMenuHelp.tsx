@@ -9,7 +9,14 @@ import {
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
-import { Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from "@/components/ui/menu";
+import {
+  Menu,
+  MenuContent,
+  MenuGroup,
+  MenuItem,
+  MenuSeparator,
+  MenuTrigger,
+} from "@/components/ui/menu";
 
 import { useAppUpdates } from "@/app/hooks/useAppUpdates";
 import { GithubIcon, KofiIcon } from "@/components/brand-icons";
@@ -72,44 +79,50 @@ export function ContextMenuHelp({ navigation }: { navigation: MenuNavigation }) 
         </Button>
       </MenuTrigger>
       <MenuContent>
-        <MenuItem
-          icon={<ExternalLink aria-hidden="true" className="size-3" />}
-          onSelect={() => void openExternalUrl(CHANGELOG_URL)}
-        >
-          {t("app.topBarMenus.changelog")}
-        </MenuItem>
-        <MenuItem
-          disabled={updateStatus === "checking" || isInstalling}
-          icon={updateHint}
-          onSelect={(event) => {
-            event.preventDefault();
-            void (updateStatus === "available" ? installUpdate() : checkForUpdates());
-          }}
-        >
-          {updateLabel}
-        </MenuItem>
-        <MenuItem
-          icon={<GithubIcon className="size-3" />}
-          onSelect={() => void openExternalUrl(PROJECT_PAGE_URL)}
-        >
-          {t("app.topBarMenus.projectPage")}
-        </MenuItem>
+        <MenuGroup>
+          <MenuItem
+            icon={<ExternalLink aria-hidden="true" className="size-3" />}
+            onSelect={() => void openExternalUrl(CHANGELOG_URL)}
+          >
+            {t("app.topBarMenus.changelog")}
+          </MenuItem>
+          <MenuItem
+            disabled={updateStatus === "checking" || isInstalling}
+            icon={updateHint}
+            onSelect={(event) => {
+              event.preventDefault();
+              void (updateStatus === "available" ? installUpdate() : checkForUpdates());
+            }}
+          >
+            {updateLabel}
+          </MenuItem>
+          <MenuItem
+            icon={<GithubIcon className="size-3" />}
+            onSelect={() => void openExternalUrl(PROJECT_PAGE_URL)}
+          >
+            {t("app.topBarMenus.projectPage")}
+          </MenuItem>
+        </MenuGroup>
         <MenuSeparator />
-        <MenuItem
-          icon={<KofiIcon className="size-3" />}
-          onSelect={() => void openExternalUrl(SUPPORT_PROJECT_URL)}
-        >
-          {t("app.topBarMenus.supportProject")}
-        </MenuItem>
+        <MenuGroup>
+          <MenuItem
+            icon={<KofiIcon className="size-3" />}
+            onSelect={() => void openExternalUrl(SUPPORT_PROJECT_URL)}
+          >
+            {t("app.topBarMenus.supportProject")}
+          </MenuItem>
+        </MenuGroup>
         <MenuSeparator />
-        <MenuItem
-          icon={<ExternalLink aria-hidden="true" className="size-3" />}
-          onSelect={() =>
-            void openExternalUrl(`${PROJECT_PAGE_URL}/releases/tag/v${currentVersion}`)
-          }
-        >
-          {t("app.topBarMenus.version", { version: currentVersion })}
-        </MenuItem>
+        <MenuGroup>
+          <MenuItem
+            icon={<ExternalLink aria-hidden="true" className="size-3" />}
+            onSelect={() =>
+              void openExternalUrl(`${PROJECT_PAGE_URL}/releases/tag/v${currentVersion}`)
+            }
+          >
+            {t("app.topBarMenus.version", { version: currentVersion })}
+          </MenuItem>
+        </MenuGroup>
       </MenuContent>
     </Menu>
   );

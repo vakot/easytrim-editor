@@ -463,7 +463,7 @@ describe("App", () => {
     );
   });
 
-  it("imports a selected video and renders the editor with sidebar placeholders", async () => {
+  it("imports a selected video and renders the editor with sidebar panels", async () => {
     mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
     render(<App />);
@@ -471,7 +471,7 @@ describe("App", () => {
     await openSourcePicker(user);
 
     await waitForSourcePresence(true);
-    expect(screen.getByText("sidebar-source-details placeholder 20")).toBeInTheDocument();
+    expect(screen.getByLabelText("Video metadata")).toBeInTheDocument();
     expect(screen.getByLabelText("Source video preview")).toHaveAttribute(
       "src",
       "http://easytrim-media.localhost/source-1?variant=source",
@@ -584,14 +584,12 @@ describe("App", () => {
     expect(within(videoTimelineRow as HTMLElement).queryByText("Video")).not.toBeInTheDocument();
     const sourceDetailsPanel = document.getElementById("workspace-sidebar");
     expect(sourceDetailsPanel).not.toBeNull();
+    expect(sourceDetailsPanel).toContainElement(screen.getByLabelText("Video metadata"));
     expect(sourceDetailsPanel).toContainElement(
-      screen.getByText("sidebar-source-details placeholder 20"),
+      screen.getByRole("button", { name: "Import queue" }),
     );
     expect(sourceDetailsPanel).toContainElement(
-      screen.getByText("workspace-sidebar-import-queue placeholder 20"),
-    );
-    expect(sourceDetailsPanel).toContainElement(
-      screen.getByText("workspace-sidebar-export-queue placeholder 20"),
+      screen.getByRole("heading", { name: "Export queue" }),
     );
     expect(document.getElementById("editor-stage-preview")).toContainElement(
       screen.getByLabelText("Source video preview"),
