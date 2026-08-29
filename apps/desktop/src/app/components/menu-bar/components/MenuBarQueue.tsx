@@ -14,8 +14,11 @@ import {
 import {
   MenubarContent,
   MenubarGroup,
+  MenubarIcon,
   MenubarItem,
   MenubarMenu,
+  MenubarRadioGroup,
+  MenubarRadioItem,
   MenubarSeparator,
   MenubarShortcut,
   MenubarSub,
@@ -43,12 +46,15 @@ export function MenuBarQueue() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const [isCancelQueueConfirmOpen, setIsCancelQueueConfirmOpen] = useState(false);
+
   const queue = useAppSelector(selectExportQueue);
   const queueStarted = useAppSelector(selectQueueStarted);
   const queueFinishAction = useAppSelector(selectQueueFinishAction);
   const availableQueueFinishActions = useAppSelector(selectAvailableQueueFinishActions);
+
   const hasQueuedItems = queue.some((toast) => toast.status === "queued");
   const hasActiveItem = queue.some((toast) => toast.status === "rendering");
+
   const queueFinishLabels: Record<QueueFinishAction, string> = {
     exit: t("queue.options.finish.exit"),
     systemSleep: t("queue.options.finish.systemSleep"),
@@ -81,6 +87,7 @@ export function MenuBarQueue() {
             <MenubarItem
               aria-keyshortcuts="Enter"
               disabled={!hasQueuedItems || queueStarted}
+              inset
               onSelect={() => void dispatch(startExportQueue())}
             >
               {t("queue.actions.start")}
@@ -91,12 +98,14 @@ export function MenuBarQueue() {
           <MenubarGroup>
             <MenubarItem
               disabled={!hasActiveItem}
+              inset
               onSelect={() => void dispatch(cancelActiveExportRequested())}
             >
               {t("queue.actions.skip")}
             </MenubarItem>
             <MenubarItem
               disabled={!hasQueuedItems && !hasActiveItem}
+              inset
               onSelect={() => setIsCancelQueueConfirmOpen(true)}
             >
               {t("queue.actions.cancel")}
@@ -105,25 +114,23 @@ export function MenuBarQueue() {
           <MenubarSeparator />
           <MenubarGroup>
             <MenubarSub>
-              <MenubarSubTrigger icon={queueFinishIcons[queueFinishAction]}>
+              <MenubarSubTrigger inset>
+                <MenubarIcon>{queueFinishIcons[queueFinishAction]}</MenubarIcon>
                 {t("queue.labels.onFinish")}
               </MenubarSubTrigger>
               <MenubarSubContent>
-                <MenubarGroup>
+                <MenubarRadioGroup
+                  onValueChange={(action) =>
+                    dispatch(queueFinishActionChanged(action as QueueFinishAction))
+                  }
+                  value={queueFinishAction}
+                >
                   {availableQueueFinishActions.map((action) => (
-                    <MenubarItem
-                      icon={queueFinishIcons[action]}
-                      key={action}
-                      onSelect={(event) => {
-                        event.preventDefault();
-                        dispatch(queueFinishActionChanged(action));
-                      }}
-                      selected={action === queueFinishAction}
-                    >
+                    <MenubarRadioItem inset key={action} value={action}>
                       {queueFinishLabels[action]}
-                    </MenubarItem>
+                    </MenubarRadioItem>
                   ))}
-                </MenubarGroup>
+                </MenubarRadioGroup>
               </MenubarSubContent>
             </MenubarSub>
           </MenubarGroup>

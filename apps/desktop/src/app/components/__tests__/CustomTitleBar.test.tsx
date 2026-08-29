@@ -105,7 +105,7 @@ describe("CustomTitleBar", () => {
     expect(themeItem).not.toBeNull();
     themeItem?.focus();
     await user.keyboard("{ArrowRight}");
-    fireEvent.doubleClick(screen.getByRole("menuitem", { name: "System" }));
+    fireEvent.doubleClick(screen.getByRole("menuitemradio", { name: "System" }));
     expect(windowActions.toggleWindowMaximize).not.toHaveBeenCalled();
   });
 

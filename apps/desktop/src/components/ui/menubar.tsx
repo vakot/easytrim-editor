@@ -1,34 +1,31 @@
 import { cva } from "class-variance-authority";
-import { CheckIcon, ChevronRightIcon } from "lucide-react";
+import { CheckIcon, ChevronRight } from "lucide-react";
 import { Menubar as MenubarPrimitive } from "radix-ui";
 import * as React from "react";
-
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { cn } from "@/lib/class-names.utils";
 
 const menubarItemVariants = cva(
-  "relative flex cursor-default items-center gap-1.5 rounded-md select-none [&_svg]:pointer-events-none [&_svg]:shrink-0",
+  "group/menubar-item relative flex h-6 min-w-36 cursor-default items-center gap-8 rounded-md px-1.5 py-1 text-xs outline-hidden select-none focus:bg-accent focus:text-accent-foreground data-inset:px-7 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3",
   {
     variants: {
       kind: {
-        checkbox:
-          "py-1 pr-1.5 pl-7 text-xs outline-hidden focus:bg-accent focus:text-accent-foreground focus:**:text-accent-foreground data-inset:pl-7 data-disabled:pointer-events-none",
-        item: "group/menubar-item h-6 min-w-48 px-1.5 py-1 text-xs outline-hidden focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-inset:pl-7 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg:not([class*='size-'])]:size-3",
-        radio:
-          "py-1 pr-1.5 pl-7 text-sm outline-hidden focus:bg-accent focus:text-accent-foreground focus:**:text-accent-foreground data-inset:pl-7 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg:not([class*='size-'])]:size-4",
-        subTrigger:
-          "group/menubar-item h-6 min-w-48 px-1.5 py-1 text-xs outline-none focus:bg-accent focus:text-accent-foreground data-inset:pl-7 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-open:bg-accent data-open:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg:not([class*='size-'])]:size-3",
+        item: "",
+        checkbox: "pl-7",
+        radio: "pl-7",
+        subTrigger: "data-open:bg-accent data-open:text-accent-foreground",
       },
       variant: {
         default: "",
+        success:
+          "text-success focus:bg-success/10 focus:text-success dark:focus:bg-success/20 [&_svg]:text-success!",
         destructive:
-          "data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-destructive dark:data-[variant=destructive]:focus:bg-destructive/20 data-[variant=destructive]:*:[svg]:text-destructive!",
+          "text-destructive focus:bg-destructive/10 focus:text-destructive dark:focus:bg-destructive/20 [&_svg]:text-destructive!",
       },
     },
     defaultVariants: {
-      kind: "item",
       variant: "default",
+      kind: "item",
     },
   },
 );
@@ -99,79 +96,35 @@ function MenubarContent({
   );
 }
 
-interface MenubarItemProps extends React.ComponentProps<typeof MenubarPrimitive.Item> {
-  icon?: React.ReactNode;
-  inset?: boolean;
-  selected?: boolean;
-  tooltip?: React.ReactNode;
-  tooltipProps?: React.ComponentProps<typeof TooltipContent> &
-    Pick<React.ComponentProps<typeof Tooltip>, "preserveOnTrigger">;
-  variant?: "default" | "destructive";
-}
-
 function MenubarItem({
-  "aria-current": ariaCurrent,
   children,
   className,
   disabled,
-  icon,
   inset,
-  selected = false,
-  tooltip,
-  tooltipProps: { preserveOnTrigger, ...tooltipProps } = {},
+  keepOpen,
+  onSelect,
   variant = "default",
   ...props
-}: MenubarItemProps) {
-  const item = (
+}: React.ComponentProps<typeof MenubarPrimitive.Item> & {
+  inset?: boolean;
+  keepOpen?: boolean;
+  variant?: "default" | "destructive" | "success";
+}) {
+  return (
     <MenubarPrimitive.Item
-      aria-current={ariaCurrent ?? (selected ? "true" : undefined)}
       className={cn(menubarItemVariants({ kind: "item", variant, className }))}
       data-inset={inset}
-      data-selected={selected}
       data-slot="menubar-item"
       data-variant={variant}
       disabled={disabled}
+      onSelect={(event) => {
+        if (keepOpen) event.preventDefault();
+        onSelect?.(event);
+      }}
       {...props}
     >
-      <MenubarItemLayout icon={icon}>{children}</MenubarItemLayout>
+      {children}
     </MenubarPrimitive.Item>
-  );
-
-  if (tooltip === undefined) return item;
-
-  return (
-    <Tooltip preserveOnTrigger={preserveOnTrigger}>
-      <TooltipTrigger asChild>{item}</TooltipTrigger>
-      <TooltipContent {...tooltipProps}>{tooltip}</TooltipContent>
-    </Tooltip>
-  );
-}
-
-interface MenubarItemLayoutProps {
-  children: React.ReactNode;
-  icon?: React.ReactNode;
-  submenu?: boolean;
-}
-
-function MenubarItemLayout({ children, icon, submenu = false }: MenubarItemLayoutProps) {
-  return (
-    <>
-      <span
-        className="flex size-3 shrink-0 items-center justify-center text-muted-foreground"
-        data-slot="menubar-icon"
-      >
-        {icon}
-      </span>
-      <span className="flex min-w-0 flex-1 items-center gap-4 truncate" data-slot="menubar-name">
-        {children}
-      </span>
-      <span
-        className="flex size-3 shrink-0 items-center justify-center"
-        data-slot="menubar-chevron"
-      >
-        {submenu ? <ChevronRightIcon aria-hidden="true" className="size-3" /> : null}
-      </span>
-    </>
   );
 }
 
@@ -180,23 +133,32 @@ function MenubarCheckboxItem({
   children,
   className,
   inset,
+  keepOpen,
+  onSelect,
+  variant = "default",
   ...props
 }: React.ComponentProps<typeof MenubarPrimitive.CheckboxItem> & {
   inset?: boolean;
+  keepOpen?: boolean;
+  variant?: "default" | "destructive" | "success";
 }) {
   return (
     <MenubarPrimitive.CheckboxItem
       checked={checked}
-      className={cn(menubarItemVariants({ kind: "checkbox", className }))}
+      className={cn(menubarItemVariants({ kind: "checkbox", variant, className }))}
       data-inset={inset}
       data-slot="menubar-checkbox-item"
+      onSelect={(event) => {
+        if (keepOpen) event.preventDefault();
+        onSelect?.(event);
+      }}
       {...props}
     >
-      <span className="pointer-events-none absolute left-1.5 flex size-4 items-center justify-center [&_svg:not([class*='size-'])]:size-4">
+      <MenubarIcon>
         <MenubarPrimitive.ItemIndicator>
           <CheckIcon />
         </MenubarPrimitive.ItemIndicator>
-      </span>
+      </MenubarIcon>
       {children}
     </MenubarPrimitive.CheckboxItem>
   );
@@ -206,24 +168,53 @@ function MenubarRadioItem({
   children,
   className,
   inset,
+  keepOpen,
+  onSelect,
+  variant = "default",
   ...props
 }: React.ComponentProps<typeof MenubarPrimitive.RadioItem> & {
   inset?: boolean;
+  keepOpen?: boolean;
+  variant?: "default" | "destructive" | "success";
 }) {
   return (
     <MenubarPrimitive.RadioItem
-      className={cn(menubarItemVariants({ kind: "radio", className }))}
+      className={cn(menubarItemVariants({ kind: "radio", variant, className }))}
       data-inset={inset}
       data-slot="menubar-radio-item"
+      onSelect={(event) => {
+        if (keepOpen) event.preventDefault();
+        onSelect?.(event);
+      }}
       {...props}
     >
-      <span className="pointer-events-none absolute left-1.5 flex size-4 items-center justify-center [&_svg:not([class*='size-'])]:size-4">
+      <MenubarIcon>
         <MenubarPrimitive.ItemIndicator>
           <CheckIcon />
         </MenubarPrimitive.ItemIndicator>
-      </span>
+      </MenubarIcon>
       {children}
     </MenubarPrimitive.RadioItem>
+  );
+}
+
+function MenubarIcon({
+  children,
+  className,
+  side = "left",
+  ...props
+}: React.HTMLAttributes<HTMLSpanElement> & { side?: "left" | "right" }) {
+  return (
+    <span
+      className={cn(
+        "pointer-events-none absolute flex size-3 items-center justify-center text-muted-foreground [&_svg:not([class*='size-'])]:size-3",
+        side === "left" ? "left-1.5" : "right-1.5",
+        className,
+      )}
+      {...props}
+    >
+      {children}
+    </span>
   );
 }
 
@@ -236,7 +227,7 @@ function MenubarLabel({
 }) {
   return (
     <MenubarPrimitive.Label
-      className={cn("px-1.5 py-1 text-xs font-medium data-inset:pl-7", className)}
+      className={cn("px-1.5 py-1 text-xs font-medium data-inset:px-7", className)}
       data-inset={inset}
       data-slot="menubar-label"
       {...props}
@@ -275,34 +266,31 @@ function MenubarSub({ ...props }: React.ComponentProps<typeof MenubarPrimitive.S
 }
 
 interface MenubarSubTriggerProps extends React.ComponentProps<typeof MenubarPrimitive.SubTrigger> {
-  icon?: React.ReactNode;
   inset?: boolean;
-  selected?: boolean;
+  keepOpen?: boolean;
 }
 
 function MenubarSubTrigger({
-  "aria-current": ariaCurrent,
   children,
   className,
   disabled,
-  icon,
   inset,
-  selected = false,
+  keepOpen,
   ...props
 }: MenubarSubTriggerProps) {
   return (
     <MenubarPrimitive.SubTrigger
-      aria-current={ariaCurrent ?? (selected ? "true" : undefined)}
       className={cn(menubarItemVariants({ kind: "subTrigger", className }))}
       data-inset={inset}
-      data-selected={selected}
+      data-keep-open={keepOpen || undefined}
       data-slot="menubar-sub-trigger"
       disabled={disabled}
       {...props}
     >
-      <MenubarItemLayout icon={icon} submenu>
-        {children}
-      </MenubarItemLayout>
+      {children}
+      <MenubarIcon side="right">
+        <ChevronRight />
+      </MenubarIcon>
     </MenubarPrimitive.SubTrigger>
   );
 }
@@ -332,6 +320,7 @@ export {
   MenubarCheckboxItem,
   MenubarContent,
   MenubarGroup,
+  MenubarIcon,
   MenubarItem,
   menubarItemVariants,
   MenubarLabel,

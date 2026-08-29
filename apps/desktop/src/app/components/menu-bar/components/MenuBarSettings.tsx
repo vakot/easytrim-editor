@@ -12,10 +12,14 @@ import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import {
+  MenubarCheckboxItem,
   MenubarContent,
   MenubarGroup,
+  MenubarIcon,
   MenubarItem,
   MenubarMenu,
+  MenubarRadioGroup,
+  MenubarRadioItem,
   MenubarSeparator,
   MenubarShortcut,
   MenubarSub,
@@ -23,7 +27,7 @@ import {
   MenubarSubTrigger,
   MenubarTrigger,
 } from "@/components/ui/menubar";
-import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import type { PreferenceKey } from "@/app/preferences";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
@@ -62,20 +66,21 @@ function PreferenceMenuItem({ children, icon, preferenceKey }: PreferenceMenuIte
       : t("common.status.disabled");
 
   return (
-    <MenubarItem
-      icon={icon}
-      onSelect={(event) => {
-        event.preventDefault();
-        dispatch(preferenceChanged({ key: preferenceKey, enabled: !isEnabled }));
-      }}
-      tooltip={tooltip}
-      tooltipProps={{ side: "right", preserveOnTrigger: true }}
-    >
-      {children}
-      <MenubarShortcut className="tracking-normal">
-        <Switch checked={isEnabled} size="sm" />
-      </MenubarShortcut>
-    </MenubarItem>
+    <Tooltip preserveOnTrigger>
+      <TooltipTrigger asChild>
+        <MenubarCheckboxItem
+          checked={isEnabled}
+          keepOpen
+          onSelect={() => {
+            dispatch(preferenceChanged({ key: preferenceKey, enabled: !isEnabled }));
+          }}
+        >
+          <MenubarIcon side="right">{icon}</MenubarIcon>
+          {children}
+        </MenubarCheckboxItem>
+      </TooltipTrigger>
+      <TooltipContent side="right">{tooltip}</TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -145,36 +150,37 @@ export function MenuBarSettings() {
         </MenubarGroup>
         <MenubarSeparator />
         <MenubarGroup>
-          <MenubarItem
-            icon={<RotateCcw aria-hidden="true" className="size-3" />}
-            onSelect={(event) => {
-              event.preventDefault();
-              resetPreferences();
-            }}
-          >
+          <MenubarItem inset keepOpen onSelect={() => resetPreferences()} variant="destructive">
+            <MenubarIcon>
+              <RotateCcw aria-hidden="true" />
+            </MenubarIcon>
             {t("settings.actions.reset")}
           </MenubarItem>
         </MenubarGroup>
         <MenubarSeparator />
         <MenubarGroup>
           <MenubarSub>
-            <MenubarSubTrigger icon={<Languages aria-hidden="true" className="size-3" />}>
+            <MenubarSubTrigger inset>
+              <MenubarIcon>
+                <Languages aria-hidden="true" />
+              </MenubarIcon>
               {t("settings.labels.language")}
               <MenubarShortcut>{currentLanguage.toUpperCase()}</MenubarShortcut>
             </MenubarSubTrigger>
             <MenubarSubContent>
-              <MenubarGroup>
+              <MenubarRadioGroup
+                onValueChange={(language) =>
+                  void i18n.changeLanguage(language as SupportedLanguage)
+                }
+                value={currentLanguage}
+              >
                 {(["en", "sk"] as const).map((language) => (
-                  <MenubarItem
-                    key={language}
-                    onSelect={() => void i18n.changeLanguage(language as SupportedLanguage)}
-                    selected={language === currentLanguage}
-                  >
+                  <MenubarRadioItem inset key={language} value={language}>
                     {languageLabels[language]}
                     <MenubarShortcut>{language.toUpperCase()}</MenubarShortcut>
-                  </MenubarItem>
+                  </MenubarRadioItem>
                 ))}
-              </MenubarGroup>
+              </MenubarRadioGroup>
             </MenubarSubContent>
           </MenubarSub>
         </MenubarGroup>

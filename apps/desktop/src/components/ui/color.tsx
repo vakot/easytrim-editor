@@ -7,7 +7,6 @@ import { colorFromSpectrumPosition, hexToHsl } from "@/lib/color.utils";
 function ColorSample({
   className,
   color,
-  selected = false,
   style,
   ...props
 }: React.ComponentProps<"span"> & {
@@ -17,11 +16,7 @@ function ColorSample({
   return (
     <span
       aria-hidden="true"
-      className={cn(
-        "size-3 rounded-full ring-1 ring-foreground/20",
-        selected && "ring-2 ring-foreground ring-offset-1 ring-offset-popover",
-        className,
-      )}
+      className={cn("size-3 rounded-full ring-1 ring-foreground/20", className)}
       data-slot="color-sample"
       style={{
         backgroundColor: color,

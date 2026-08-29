@@ -1,3 +1,4 @@
+import type { TFunction } from "i18next";
 import {
   CheckCircle2,
   CircleAlert,
@@ -6,18 +7,21 @@ import {
   LoaderCircle,
   RefreshCw,
 } from "lucide-react";
+import React from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import {
   MenubarContent,
   MenubarGroup,
+  MenubarIcon,
   MenubarItem,
   MenubarMenu,
   MenubarSeparator,
   MenubarTrigger,
 } from "@/components/ui/menubar";
 
+import type { UpdateStatus } from "@/app/contexts/app-updates-context";
 import { useAppUpdates } from "@/app/hooks/useAppUpdates";
 import { GithubIcon, KofiIcon } from "@/components/brand-icons";
 import { getCurrentVersion } from "@/lib/app-version.utils";
@@ -38,27 +42,11 @@ export function MenuBarHelp() {
     status: updateStatus,
   } = useAppUpdates();
 
-  const updateLabel =
-    updateStatus === "checking"
-      ? t("app.status.checkingForUpdates")
-      : updateStatus === "up-to-date"
-        ? t("app.status.upToDate")
-        : updateStatus === "available" && availableVersion
-          ? t("app.actions.updateTo", { version: availableVersion })
-          : t("app.actions.checkForUpdates");
-
-  const updateHint =
-    updateStatus === "checking" ? (
-      <LoaderCircle aria-hidden="true" className="size-3 animate-spin" />
-    ) : updateStatus === "available" ? (
-      <Download aria-hidden="true" className="size-3" />
-    ) : updateStatus === "up-to-date" ? (
-      <CheckCircle2 aria-hidden="true" className="size-3 text-emerald-500" />
-    ) : updateStatus === "error" ? (
-      <CircleAlert aria-hidden="true" className="size-3 text-destructive" />
-    ) : updateStatus === "idle" ? (
-      <RefreshCw aria-hidden="true" className="size-3" />
-    ) : undefined;
+  const { icon: updateIcon, label: updateLabel } = getUpdateDetails(
+    updateStatus,
+    availableVersion,
+    t,
+  );
 
   return (
     <MenubarMenu value="help">
@@ -74,50 +62,95 @@ export function MenuBarHelp() {
       </MenubarTrigger>
       <MenubarContent>
         <MenubarGroup>
-          <MenubarItem
-            icon={<ExternalLink aria-hidden="true" className="size-3" />}
-            onSelect={() => void openExternalUrl(CHANGELOG_URL)}
-          >
+          <MenubarItem inset onSelect={() => void openExternalUrl(CHANGELOG_URL)}>
+            <MenubarIcon>
+              <ExternalLink aria-hidden="true" />
+            </MenubarIcon>
             {t("support.actions.changelog")}
           </MenubarItem>
           <MenubarItem
             disabled={updateStatus === "checking" || isInstalling}
-            icon={updateHint}
-            onSelect={(event) => {
-              event.preventDefault();
+            inset
+            keepOpen
+            onSelect={() => {
               void (updateStatus === "available" ? installUpdate() : checkForUpdates());
             }}
+            variant={updateStatus === "up-to-date" ? "success" : "default"}
           >
+            <MenubarIcon>{updateIcon}</MenubarIcon>
             {updateLabel}
           </MenubarItem>
-          <MenubarItem
-            icon={<GithubIcon className="size-3" />}
-            onSelect={() => void openExternalUrl(PROJECT_PAGE_URL)}
-          >
+          <MenubarItem inset onSelect={() => void openExternalUrl(PROJECT_PAGE_URL)}>
+            <MenubarIcon>
+              <GithubIcon aria-hidden="true" />
+            </MenubarIcon>
             {t("support.actions.projectPage")}
           </MenubarItem>
         </MenubarGroup>
         <MenubarSeparator />
         <MenubarGroup>
-          <MenubarItem
-            icon={<KofiIcon className="size-3" />}
-            onSelect={() => void openExternalUrl(SUPPORT_PROJECT_URL)}
-          >
+          <MenubarItem inset onSelect={() => void openExternalUrl(SUPPORT_PROJECT_URL)}>
+            <MenubarIcon>
+              <KofiIcon aria-hidden="true" />
+            </MenubarIcon>
             {t("support.actions.projectSupport")}
           </MenubarItem>
         </MenubarGroup>
         <MenubarSeparator />
         <MenubarGroup>
           <MenubarItem
-            icon={<ExternalLink aria-hidden="true" className="size-3" />}
+            inset
             onSelect={() =>
               void openExternalUrl(`${PROJECT_PAGE_URL}/releases/tag/v${currentVersion}`)
             }
           >
+            <MenubarIcon>
+              <ExternalLink aria-hidden="true" />
+            </MenubarIcon>
             {t("app.labels.version", { version: currentVersion })}
           </MenubarItem>
         </MenubarGroup>
       </MenubarContent>
     </MenubarMenu>
   );
+}
+
+function getUpdateDetails(
+  updateStatus: UpdateStatus,
+  availableVersion: string | null,
+  t: TFunction,
+): {
+  icon: React.ReactNode;
+  label: string;
+} {
+  switch (updateStatus) {
+    case "available":
+      return {
+        label: availableVersion ? t("app.actions.update") : t("app.actions.checkForUpdates"),
+        icon: availableVersion ? <Download aria-hidden="true" /> : <RefreshCw aria-hidden="true" />,
+      };
+    case "checking":
+      return {
+        label: t("app.status.checkingForUpdates"),
+        icon: <LoaderCircle aria-hidden="true" className="animate-spin" />,
+      };
+    case "idle":
+      return { label: t("app.actions.checkForUpdates"), icon: <RefreshCw aria-hidden="true" /> };
+    case "up-to-date":
+      return {
+        label: t("app.status.upToDate"),
+        icon: <CheckCircle2 aria-hidden="true" className="text-emerald-500" />,
+      };
+    case "error":
+      return {
+        label: t("app.actions.checkForUpdates"),
+        icon: <CircleAlert aria-hidden="true" className="text-destructive" />,
+      };
+
+    default:
+      return {
+        label: t("app.actions.checkForUpdates"),
+        icon: <RefreshCw aria-hidden="true" />,
+      };
+  }
 }

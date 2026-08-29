@@ -286,7 +286,7 @@ describe("MenuBarTest", () => {
     const finishItem = screen.getByRole("menuitem", { name: /On queue finished/ });
     finishItem.focus();
     await user.keyboard("{ArrowRight}");
-    await user.click(screen.getByRole("menuitem", { name: "Exit" }));
+    await user.click(screen.getByRole("menuitemradio", { name: "Exit" }));
     expect(menuState.dispatch).toHaveBeenCalledWith(
       expect.objectContaining({ type: "export/queueFinishActionChanged", payload: "exit" }),
     );
@@ -381,7 +381,7 @@ describe("MenuBarTest", () => {
     expect(updateItem.querySelector("svg")).not.toBeNull();
   });
 
-  it("shows a switch row for every configurable preference", async () => {
+  it("shows a checkbox menu item for every configurable preference", async () => {
     const user = userEvent.setup();
     render(
       <TooltipProvider>
@@ -393,24 +393,23 @@ describe("MenuBarTest", () => {
 
     await user.click(getMenuTrigger("Settings"));
     for (const label of ["Snap", "Loop", "Follow segment", "Auto-start Queue", "Merge audio"]) {
-      const row = screen.getByRole("menuitem", { name: label });
-      expect(within(row).getByRole("switch")).toBeInTheDocument();
+      expect(screen.getByRole("menuitemcheckbox", { name: label })).toBeInTheDocument();
     }
     const settingsMenu = screen.getAllByRole("menu").at(-1);
     expect(settingsMenu).toBeDefined();
     expect(within(settingsMenu!).getAllByRole("separator")).toHaveLength(4);
     expect(screen.queryByText("Timeline tools", { exact: true })).not.toBeInTheDocument();
     expect(screen.queryByText("Audio tools", { exact: true })).not.toBeInTheDocument();
-    expect(screen.getByRole("menuitem", { name: "Snap" })).toContainElement(
+    expect(screen.getByRole("menuitemcheckbox", { name: "Snap" })).toContainElement(
       settingsMenu!.querySelector(".lucide-magnet"),
     );
-    expect(screen.getByRole("menuitem", { name: "Loop" })).toContainElement(
+    expect(screen.getByRole("menuitemcheckbox", { name: "Loop" })).toContainElement(
       settingsMenu!.querySelector(".lucide-repeat"),
     );
-    expect(screen.getByRole("menuitem", { name: "Follow segment" })).toContainElement(
+    expect(screen.getByRole("menuitemcheckbox", { name: "Follow segment" })).toContainElement(
       settingsMenu!.querySelector(".lucide-between-vertical-start"),
     );
-    expect(screen.getByRole("menuitem", { name: "Auto-start Queue" })).toContainElement(
+    expect(screen.getByRole("menuitemcheckbox", { name: "Auto-start Queue" })).toContainElement(
       settingsMenu!.querySelector(".lucide-play"),
     );
   });
@@ -426,17 +425,16 @@ describe("MenuBarTest", () => {
     );
 
     await user.click(getMenuTrigger("Settings"));
-    const loopRow = screen.getByRole("menuitem", { name: "Loop" });
-    const loopSwitch = within(loopRow).getByRole("switch");
-    await user.click(loopSwitch);
-    expect(loopSwitch).not.toBeChecked();
+    const loopItem = screen.getByRole("menuitemcheckbox", { name: "Loop" });
+    await user.click(loopItem);
+    expect(loopItem).not.toBeChecked();
     await user.click(screen.getByRole("menuitem", { name: "Reset to default" }));
 
-    expect(loopSwitch).toBeChecked();
+    expect(loopItem).toBeChecked();
     expect(screen.getByRole("menuitem", { name: "Reset to default" })).toBeInTheDocument();
   });
 
-  it("shows the default state in preference switch tooltips", async () => {
+  it("shows the default state in preference item tooltips", async () => {
     const user = userEvent.setup();
     render(
       <TooltipProvider>
@@ -447,14 +445,14 @@ describe("MenuBarTest", () => {
     );
 
     await user.click(getMenuTrigger("Settings"));
-    const loopRow = screen.getByRole("menuitem", { name: "Loop" });
-    await user.hover(loopRow);
+    const loopItem = screen.getByRole("menuitemcheckbox", { name: "Loop" });
+    await user.hover(loopItem);
     await waitFor(() => {
       expect(screen.getByRole("tooltip")).toHaveTextContent("Enabled by default");
     });
   });
 
-  it("shows disabled by default for disabled preference switches", async () => {
+  it("shows disabled by default for disabled preference items", async () => {
     const user = userEvent.setup();
     render(
       <TooltipProvider>
@@ -477,8 +475,8 @@ describe("MenuBarTest", () => {
     );
 
     await user.click(getMenuTrigger("Settings"));
-    const mergeRow = screen.getByRole("menuitem", { name: "Merge audio" });
-    await user.hover(mergeRow);
+    const mergeItem = screen.getByRole("menuitemcheckbox", { name: "Merge audio" });
+    await user.hover(mergeItem);
     await waitFor(() => {
       expect(screen.getByRole("tooltip")).toHaveTextContent("Disabled by default");
     });
@@ -560,23 +558,25 @@ describe("MenuBarTest", () => {
     await user.keyboard("{ArrowRight}");
 
     for (const label of ["System", "Light", "Dark"]) {
-      expect(screen.getByRole("menuitem", { name: label }).querySelector("svg")).not.toBeNull();
+      expect(
+        screen.getByRole("menuitemradio", { name: label }).querySelector("svg"),
+      ).not.toBeNull();
     }
-    expect(screen.getByRole("menuitem", { name: "System" })).toHaveAttribute(
+    expect(screen.getByRole("menuitemradio", { name: "System" })).toHaveAttribute(
       "data-selected",
       "true",
     );
-    expect(screen.getByRole("menuitem", { name: "Light" })).toHaveAttribute(
+    expect(screen.getByRole("menuitemradio", { name: "Light" })).toHaveAttribute(
       "data-selected",
       "false",
     );
-    expect(screen.getByRole("menuitem", { name: "Dark" })).toHaveAttribute(
+    expect(screen.getByRole("menuitemradio", { name: "Dark" })).toHaveAttribute(
       "data-selected",
       "false",
     );
 
-    await user.click(screen.getByRole("menuitem", { name: "Light" }));
-    expect(screen.getByRole("menuitem", { name: "Light" })).toHaveAttribute(
+    await user.click(screen.getByRole("menuitemradio", { name: "Light" }));
+    expect(screen.getByRole("menuitemradio", { name: "Light" })).toHaveAttribute(
       "data-selected",
       "true",
     );
@@ -589,18 +589,18 @@ describe("MenuBarTest", () => {
     languageItem?.focus();
     await user.keyboard("{ArrowRight}");
 
-    expect(screen.getByRole("menuitem", { name: /English/ })).toHaveTextContent("EN");
-    expect(screen.getByRole("menuitem", { name: /Slov/ })).toHaveTextContent("SK");
-    expect(screen.getByRole("menuitem", { name: /English/ })).toHaveAttribute(
+    expect(screen.getByRole("menuitemradio", { name: /English/ })).toHaveTextContent("EN");
+    expect(screen.getByRole("menuitemradio", { name: /Slov/ })).toHaveTextContent("SK");
+    expect(screen.getByRole("menuitemradio", { name: /English/ })).toHaveAttribute(
       "data-selected",
       "true",
     );
-    expect(screen.getByRole("menuitem", { name: /Slov/ })).toHaveAttribute(
+    expect(screen.getByRole("menuitemradio", { name: /Slov/ })).toHaveAttribute(
       "data-selected",
       "false",
     );
-    await user.click(screen.getByRole("menuitem", { name: /English/ }));
-    expect(screen.queryByRole("menuitem", { name: /English/ })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("menuitemradio", { name: /English/ }));
+    expect(screen.queryByRole("menuitemradio", { name: /English/ })).not.toBeInTheDocument();
   });
 
   it("shows hex values and accepts custom input as soon as it is valid", async () => {
@@ -632,15 +632,15 @@ describe("MenuBarTest", () => {
       ["Blue", "#4299E1"],
       ["Emerald", "#32A876"],
     ] as const) {
-      const item = screen.getByRole("menuitem", { name: new RegExp(name) });
+      const item = screen.getByRole("menuitemradio", { name: new RegExp(name) });
       expect(item).toHaveTextContent(hex);
       expect(item.querySelector('[aria-hidden="true"]')).not.toBeNull();
     }
     const customItem = screen.getByRole("menuitem", { name: /Custom/ });
     expect(customItem).toHaveTextContent("#123456");
     expect(customItem.querySelector('[aria-hidden="true"]')).not.toBeNull();
-    await user.click(screen.getByRole("menuitem", { name: /Amber/ }));
-    expect(screen.getByRole("menuitem", { name: /Amber/ })).toBeInTheDocument();
+    await user.click(screen.getByRole("menuitemradio", { name: /Amber/ }));
+    expect(screen.getByRole("menuitemradio", { name: /Amber/ })).toBeInTheDocument();
 
     await user.click(screen.getByRole("menuitem", { name: /Custom/ }));
     expect(document.documentElement).toHaveAttribute("data-primary-color", "#123456");
@@ -788,14 +788,16 @@ describe("MenuBarTest", () => {
     await waitFor(() => expect(screen.getAllByRole("menu")).toHaveLength(2));
     const themeSubmenu = screen.getAllByRole("menu").at(-1);
     expect(themeSubmenu).toBeDefined();
-    expect(within(themeSubmenu!).getByRole("menuitem", { name: "System" })).toBeInTheDocument();
+    expect(
+      within(themeSubmenu!).getByRole("menuitemradio", { name: "System" }),
+    ).toBeInTheDocument();
 
     await user.hover(colorItem);
     await waitFor(() => expect(screen.getAllByRole("menu")).toHaveLength(2));
     const colorSubmenu = screen.getAllByRole("menu").at(-1);
     expect(colorSubmenu).toBeDefined();
     expect(
-      within(colorSubmenu!).getByRole("menuitem", { name: /Amber#EFBF04/ }),
+      within(colorSubmenu!).getByRole("menuitemradio", { name: /Amber#EFBF04/ }),
     ).toBeInTheDocument();
     expect(
       within(colorSubmenu!).queryByRole("menuitem", { name: "System" }),

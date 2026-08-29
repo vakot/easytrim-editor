@@ -29,7 +29,6 @@ export const en = {
       restart: "Restart application",
       restore: "Restore",
       update: "Update",
-      updateTo: "Update to v{{version}}",
     },
     labels: {
       bottomPanel: "Bottom panel",
