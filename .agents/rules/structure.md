@@ -307,11 +307,12 @@ primitives:
 
 ```text
 source-import.types.ts
-AudioTracks.types.ts
-TrimTimeline.types.ts
+media.types.ts
 brand-icons.consts.ts
+storage.consts.ts
 StatusBar.consts.ts
 timeline-format.utils.ts
+media.utils.ts
 StatusBar.utils.ts
 source.fixtures.ts
 ```
@@ -325,14 +326,24 @@ adapters, domain models, or configuration as utilities merely because they expor
 When a type-only contract is shared across multiple internal folders or sibling components of one
 cohesive subsystem, place it in `types.ts` at that subsystem's root. This is the deliberate shared
 subsystem exception to the owner-based suffix rule; for example, context-menu components and hooks
-consume `context-menus/types.ts`. Keep a component-only contract in `ComponentName.types.ts` and a
-module-only contract in `<module-name>.types.ts` instead of widening its ownership.
+consume `context-menus/types.ts`. Keep a non-prop component contract in `ComponentName.types.ts`
+and a module-only contract in `<module-name>.types.ts` instead of widening its ownership. Component
+props stay in the component file, including when they are used by private sibling render helpers;
+do not extract a `ComponentName.types.ts` file that only contains that component's props.
+
+When an adapter exposes independently consumed actions, contracts, and supporting parsers, split
+those roles explicitly. For example, `lib/tauri/media.ts` owns Tauri actions,
+`lib/tauri/media.types.ts` owns request/result/error contracts, and
+`lib/tauri/media.utils.ts` owns response validation and normalization. Consumers import runtime
+actions from the adapter and types or utilities directly from their role files. Apply the same
+split to other mixed-role technical modules, while leaving private implementation details with
+the role that owns them.
 
 Never use ownerless catch-all names such as `utils.ts`, `helpers.ts`, `common.ts`, or `misc.ts`.
 Aside from the scoped shared-subsystem `types.ts` exception above, role files retain their owner.
-Do not extract types, constants, or helpers from an otherwise cohesive implementation solely to
-create a suffixed file. Ambient declarations required by TypeScript or tooling retain `.d.ts`, such
-as `vite-env.d.ts` and `i18next.d.ts`.
+Keep private implementation types, constants, and helpers colocated when they are not standalone
+contracts; a role suffix is not a reason to extract them. Ambient declarations required by
+TypeScript or tooling retain `.d.ts`, such as `vite-env.d.ts` and `i18next.d.ts`.
 
 ### Tests
 

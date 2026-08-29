@@ -26,10 +26,10 @@ Use `easytrim-editor-tauri-rust` for IPC/native changes and `easytrim-editor-ffm
 - Reuse `components/ui` for buttons, dialogs, fields, tooltips, popovers, sliders, checkboxes, cards, and alerts. Add a shadcn primitive before hand-building an equivalent control.
 - Keep generated primitives generic. Put product-specific composition in the owning feature.
 - Name dedicated type-only modules with `.types.ts`: use a semantic kebab-case base for
-  module-level contracts and a matching PascalCase component base for component-specific types.
+  module-level contracts and a matching PascalCase component base for non-prop component types.
+  Keep component props in the component file rather than extracting a props-only `.types.ts` file.
   When one cohesive subsystem shares a type-only contract across internal folders or sibling
-  components, use `types.ts` at the subsystem root. Keep required ambient declarations as `.d.ts`,
-  and do not extract inline types solely for naming.
+  components, use `types.ts` at the subsystem root. Keep required ambient declarations as `.d.ts`.
 - Apply the same owner-based dotted suffix convention to dedicated frontend primitives: use
   `.consts.ts` for grouped static values, `.utils.ts` for cohesive supporting helpers, and an
   accurate role such as `.fixtures.ts` for other self-contained primitive groups. Keep semantic
@@ -43,6 +43,10 @@ Use `easytrim-editor-tauri-rust` for IPC/native changes and `easytrim-editor-ffm
   implementations under `app/components/providers/`; feature-owned Contexts and the
   theme subsystem remain with their owning feature/subsystem.
 - Keep Tauri calls behind the typed adapter defined by the structure rule.
+- Split mixed frontend Tauri clients by role: the semantic adapter owns IPC actions,
+  `<adapter>.types.ts` owns request/result/error contracts, and `<adapter>.utils.ts` owns reusable
+  response parsing or normalization. Import each role directly instead of re-exporting it through
+  the action adapter.
 - Keep FFmpeg strings, path validation, and process details out of components.
 - Load no analytics, remote assets, fonts, or network resources.
 - Let feature orchestration roots own capability state/logic orchestration and feature layout;
