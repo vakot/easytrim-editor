@@ -1,6 +1,5 @@
 import eslint from "@eslint/js";
 import eslintConfigPrettier from "eslint-config-prettier/flat";
-import importPlugin from "eslint-plugin-import";
 import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
 import simpleImportSort from "eslint-plugin-simple-import-sort";
@@ -78,32 +77,6 @@ export default tseslint.config(
       "@typescript-eslint/no-import-type-side-effects": "error",
       ...reactHooks.configs.flat.recommended.rules,
       ...reactRefresh.configs.vite.rules,
-    },
-  },
-  {
-    files: ["apps/desktop/src/**/*.{ts,tsx}"],
-    plugins: {
-      import: importPlugin,
-    },
-    settings: {
-      "import/parsers": {
-        "@typescript-eslint/parser": [".ts", ".tsx"],
-      },
-      "import/resolver": {
-        typescript: { project: "./apps/desktop/tsconfig.json" },
-      },
-    },
-    rules: {
-      // import/no-unused-modules still uses ESLint's legacy file enumeration API;
-      // the intentionally empty .eslintrc.json keeps that supported rule usable with flat config.
-      "import/no-unused-modules": [
-        "error",
-        {
-          ignoreExports: ["apps/desktop/src/components/ui/**"],
-          src: ["apps/desktop/src/**/*.{ts,tsx}"],
-          unusedExports: true,
-        },
-      ],
     },
   },
   {

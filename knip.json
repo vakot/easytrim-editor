@@ -1,0 +1,32 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "ignoreExportsUsedInFile": true,
+  "workspaces": {
+    ".": {
+      "entry": [
+        "scripts/dev.mjs!",
+        "scripts/preview-production.mjs!",
+        "scripts/generate-desktop-icons.mjs!",
+        "scripts/prepare-macos-icon.mjs!",
+        "scripts/bump-version.mjs!",
+        "scripts/release-local.mjs!",
+        "scripts/release-linux-docker.mjs!"
+      ],
+      "project": ["scripts/**/*.mjs!"],
+      "ignore": ["scripts/**/__tests__/**"]
+    },
+    "apps/desktop": {
+      "entry": ["src/main.tsx!"],
+      "project": ["src/**/*.ts!", "src/**/*.tsx!"],
+      "ignoreDependencies": ["@fontsource/inter", "shadcn", "tw-animate-css"],
+      "ignore": [
+        "src/test/**",
+        "src/**/__tests__/**",
+        "src/**/*.test.ts",
+        "src/**/*.test.tsx",
+        "src/**/*.spec.ts",
+        "src/**/*.spec.tsx"
+      ]
+    }
+  }
+}

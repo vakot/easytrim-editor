@@ -435,6 +435,11 @@ unless they serve a documented current purpose.
 
 Prefer deleting code that is no longer needed when that deletion is clearly within the task scope.
 
+For project-level dead-code analysis, use Knip through `pnpm knip`. Knip runs in production
+mode and owns detection of unused production files, exports, types, and dependencies. Tests
+must not establish production usage. ESLint remains responsible for unused locals, imports, and
+parameters within files, as well as TypeScript, React, formatting, and style correctness.
+
 ## Configuration
 
 Do not introduce configuration for behavior that is intentionally fixed.
