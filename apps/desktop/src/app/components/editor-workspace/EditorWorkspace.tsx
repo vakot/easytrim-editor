@@ -1,3 +1,4 @@
+import { Card } from "@/components/ui/card";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
@@ -24,9 +25,9 @@ export function EditorWorkspace() {
         minSize="15rem"
       >
         <div className="h-full pb-1 pl-1">
-          <div className="h-full overflow-hidden rounded-md border border-border bg-card/30">
+          <Card className="size-full border border-foreground/10 p-0 ring-0">
             <SourcePanel />
-          </div>
+          </Card>
         </div>
       </ResizablePanel>
 
