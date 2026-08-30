@@ -1,6 +1,7 @@
+import { Fragment } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Kbd } from "@/components/ui/kbd";
+import { Kbd, KbdGroup, KbdSeparator } from "@/components/ui/kbd";
 
 import { KofiIcon } from "@/components/brand-icons";
 import { openExternalUrl } from "@/lib/open-external-url.utils";
@@ -76,24 +77,16 @@ export function VideoPreviewEmpty() {
                   aria-hidden="true"
                   className="min-w-4 flex-1 border-b border-dotted border-muted-foreground/40"
                 />
-                <span
-                  aria-label={shortcut.keys.join(` ${shortcut.separator ?? "+"} `)}
-                  className="flex shrink-0 items-center gap-1"
-                >
+                <KbdGroup aria-label={shortcut.keys.join(` ${shortcut.separator ?? "+"} `)}>
                   {shortcut.keys.map((key) => (
-                    <span className="flex items-center gap-1" key={key}>
-                      {key !== shortcut.keys[0] ? (
-                        <span
-                          aria-hidden="true"
-                          className="inline-flex w-3 shrink-0 justify-center font-mono text-xs"
-                        >
-                          {shortcut.separator ?? "+"}
-                        </span>
-                      ) : null}
+                    <Fragment key={key}>
+                      {key !== shortcut.keys[0] && (
+                        <KbdSeparator>{shortcut.separator ?? "+"}</KbdSeparator>
+                      )}
                       <Kbd>{key}</Kbd>
-                    </span>
+                    </Fragment>
                   ))}
-                </span>
+                </KbdGroup>
               </div>
             ))}
           </div>

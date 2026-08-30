@@ -527,14 +527,14 @@ describe("MenuBarTest", () => {
     expect(screen.getByRole("separator")).toBeInTheDocument();
 
     const openFileItem = screen.getByRole("menuitem", { name: /Open File/ });
-    expect(openFileItem).toHaveTextContent("Ctrl+O");
+    expect(openFileItem).toHaveTextContent("CtrlO");
     expect(openFileItem).toHaveClass("min-w-42");
     await user.click(openFileItem);
     expect(screen.queryByRole("menuitem", { name: /Open File/ })).not.toBeInTheDocument();
 
     await user.click(fileButton);
     const closeFileItem = screen.getByRole("menuitem", { name: /Close File/ });
-    expect(closeFileItem).toHaveTextContent("Ctrl+Q");
+    expect(closeFileItem).toHaveTextContent("CtrlQ");
     await user.click(closeFileItem);
     expect(menuState.dispatch).toHaveBeenCalledTimes(2);
   });

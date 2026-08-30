@@ -30,7 +30,7 @@ import {
   importQueueItemsAdded,
   queueItemSnapshotUpdated,
   selectActiveQueueItem,
-  selectimportQueueItems,
+  selectImportQueueItems,
 } from "@/app/store/slices/export-slice";
 import {
   dropListenerErrorCleared,
@@ -333,7 +333,7 @@ export const closeActiveImportedItemRequested = (): AppThunk => (dispatch, getSt
     return;
   }
 
-  const importedItems = selectimportQueueItems(state);
+  const importedItems = selectImportQueueItems(state);
   const activeIndex = importedItems.findIndex((item) => item.id === activeItem.id);
   const replacementItem = getReplacementImportedItem(importedItems, activeIndex);
 

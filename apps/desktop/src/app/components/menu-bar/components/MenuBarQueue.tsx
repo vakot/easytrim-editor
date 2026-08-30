@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Kbd } from "@/components/ui/kbd";
 import {
   MenubarContent,
   MenubarGroup,
@@ -86,7 +87,9 @@ export function MenuBarQueue() {
               onSelect={() => void dispatch(startExportQueue())}
             >
               {t("queue.actions.start")}
-              <MenubarShortcut>Enter</MenubarShortcut>
+              <MenubarShortcut>
+                <Kbd>Enter</Kbd>
+              </MenubarShortcut>
             </MenubarItem>
           </MenubarGroup>
           <MenubarSeparator />
@@ -123,6 +126,7 @@ export function MenuBarQueue() {
                   {availableQueueFinishActions.map((action) => (
                     <MenubarRadioItem inset key={action} value={action}>
                       {queueFinishLabels[action]}
+                      <MenubarIcon side="right">{queueFinishIcons[action]}</MenubarIcon>
                     </MenubarRadioItem>
                   ))}
                 </MenubarRadioGroup>

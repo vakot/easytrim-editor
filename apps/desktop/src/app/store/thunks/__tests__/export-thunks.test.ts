@@ -53,7 +53,7 @@ import {
   queueFinishActionChanged,
   selectActiveItemId,
   selectExportQueue,
-  selectimportQueueItems,
+  selectImportQueueItems,
   selectOptimizedExportDialogOpen,
   selectQueueStarted,
 } from "@/app/store/slices/export-slice";
@@ -192,7 +192,7 @@ describe("export thunks and runtime queue", () => {
 
     store.dispatch(startFastCutRequested());
     await Promise.resolve();
-    expect(selectimportQueueItems(store.getState())).toEqual([importedItem]);
+    expect(selectImportQueueItems(store.getState())).toEqual([importedItem]);
     expect(selectActiveItemId(store.getState())).toBe(importedItem.id);
 
     mocks.chooseOutputPath.mockResolvedValue(output);
@@ -208,7 +208,7 @@ describe("export thunks and runtime queue", () => {
     expect(promoted?.id).toBe(importedItem.id);
     expect(promoted?.status).toBe("queued");
     expect(promoted?.snapshot).toEqual(importedItem.snapshot);
-    expect(selectimportQueueItems(store.getState())).toHaveLength(0);
+    expect(selectImportQueueItems(store.getState())).toHaveLength(0);
     expect(selectActiveItemId(store.getState())).toBe(importedItem.id);
     expect(mocks.navigateToImportedItem).not.toHaveBeenCalled();
   });
@@ -232,7 +232,7 @@ describe("export thunks and runtime queue", () => {
       route: "optimized",
       snapshot: importedItem.snapshot,
     });
-    expect(selectimportQueueItems(store.getState())).toHaveLength(0);
+    expect(selectImportQueueItems(store.getState())).toHaveLength(0);
     expect(selectActiveItemId(store.getState())).toBe(importedItem.id);
     expect(mocks.navigateToImportedItem).not.toHaveBeenCalled();
   });
@@ -248,7 +248,7 @@ describe("export thunks and runtime queue", () => {
     const promoted = selectExportQueue(store.getState())[0];
     expect(promoted?.id).toBe(historyForkItem.id);
     expect(promoted).not.toHaveProperty("origin");
-    expect(selectimportQueueItems(store.getState())).toHaveLength(0);
+    expect(selectImportQueueItems(store.getState())).toHaveLength(0);
   });
 
   it("promotes a history fork through Optimized Export using the same id", async () => {
@@ -264,7 +264,7 @@ describe("export thunks and runtime queue", () => {
       status: "queued",
       route: "optimized",
     });
-    expect(selectimportQueueItems(store.getState())).toHaveLength(0);
+    expect(selectImportQueueItems(store.getState())).toHaveLength(0);
   });
 
   it("keeps a history fork active when Fast Cut output selection is canceled", async () => {
@@ -275,7 +275,7 @@ describe("export thunks and runtime queue", () => {
     store.dispatch(startFastCutRequested());
     await Promise.resolve();
 
-    expect(selectimportQueueItems(store.getState())).toEqual([historyForkItem]);
+    expect(selectImportQueueItems(store.getState())).toEqual([historyForkItem]);
     expect(selectActiveItemId(store.getState())).toBe(historyForkItem.id);
   });
 
@@ -287,7 +287,7 @@ describe("export thunks and runtime queue", () => {
     store.dispatch(startOptimizedExportRequested());
     await Promise.resolve();
 
-    expect(selectimportQueueItems(store.getState())).toEqual([historyForkItem]);
+    expect(selectImportQueueItems(store.getState())).toEqual([historyForkItem]);
     expect(selectActiveItemId(store.getState())).toBe(historyForkItem.id);
   });
 
@@ -328,7 +328,7 @@ describe("export thunks and runtime queue", () => {
 
     expect(mocks.navigateToImportedItem).toHaveBeenCalledWith(nextItem.id);
     expect(selectActiveItemId(store.getState())).toBe(nextItem.id);
-    expect(selectimportQueueItems(store.getState()).map((item) => item.id)).toEqual([
+    expect(selectImportQueueItems(store.getState()).map((item) => item.id)).toEqual([
       importedItem.id,
       nextItem.id,
     ]);
@@ -459,7 +459,7 @@ describe("export thunks and runtime queue", () => {
     });
     expect(selectExportQueue(store.getState())).toHaveLength(1);
     expect(selectExportQueue(store.getState())[0]).toEqual(historicalItem);
-    const [fork] = selectimportQueueItems(store.getState());
+    const [fork] = selectImportQueueItems(store.getState());
     expect(fork).toMatchObject({
       status: "imported",
       origin: "history-fork",
@@ -502,14 +502,14 @@ describe("export thunks and runtime queue", () => {
     await expect(store.dispatch(restoreExportQueueItemRequested(historicalItem.id))).resolves.toBe(
       true,
     );
-    const firstFork = selectimportQueueItems(store.getState())[0];
+    const firstFork = selectImportQueueItems(store.getState())[0];
     store.dispatch(queueEntryAdded(secondHistoryItem));
 
     await expect(
       store.dispatch(restoreExportQueueItemRequested(secondHistoryItem.id)),
     ).resolves.toBe(true);
 
-    const importedItems = selectimportQueueItems(store.getState());
+    const importedItems = selectImportQueueItems(store.getState());
     expect(importedItems).toHaveLength(1);
     expect(importedItems[0]?.origin).toBe("history-fork");
     expect(importedItems[0]?.id).not.toBe(firstFork?.id);

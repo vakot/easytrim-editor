@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import {
   MenubarContent,
   MenubarGroup,
@@ -44,28 +45,48 @@ export function MenuBarFile() {
             onSelect={() => void dispatch(chooseSourceRequested())}
           >
             {t("app.actions.openFile")}
-            <MenubarShortcut>Ctrl+O</MenubarShortcut>
+            <MenubarShortcut>
+              <KbdGroup>
+                <Kbd>Ctrl</Kbd>
+                <Kbd>O</Kbd>
+              </KbdGroup>
+            </MenubarShortcut>
           </MenubarItem>
           <MenubarItem
             disabled={!hasSource}
             onSelect={() => void dispatch(closeActiveImportedItemRequested())}
           >
             {t("app.actions.closeFile")}
-            <MenubarShortcut>Ctrl+Q</MenubarShortcut>
+            <MenubarShortcut>
+              <KbdGroup>
+                <Kbd>Ctrl</Kbd>
+                <Kbd>Q</Kbd>
+              </KbdGroup>
+            </MenubarShortcut>
           </MenubarItem>
         </MenubarGroup>
         <MenubarSeparator />
         <MenubarGroup>
           <MenubarItem disabled={!canSave} onSelect={() => void dispatch(startFastCutRequested())}>
             {t("export.actions.fast")}
-            <MenubarShortcut>Ctrl+S</MenubarShortcut>
+            <MenubarShortcut>
+              <KbdGroup>
+                <Kbd>Ctrl</Kbd>
+                <Kbd>S</Kbd>
+              </KbdGroup>
+            </MenubarShortcut>
           </MenubarItem>
           <MenubarItem
             disabled={!canExport}
             onSelect={() => void dispatch(openOptimizedExportDialog())}
           >
             {t("export.actions.optimized")}
-            <MenubarShortcut>Ctrl+E</MenubarShortcut>
+            <MenubarShortcut>
+              <KbdGroup>
+                <Kbd>Ctrl</Kbd>
+                <Kbd>E</Kbd>
+              </KbdGroup>
+            </MenubarShortcut>
           </MenubarItem>
         </MenubarGroup>
       </MenubarContent>

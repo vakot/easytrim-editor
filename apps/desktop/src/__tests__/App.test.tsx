@@ -9,7 +9,7 @@ import {
   createEditorToolsStateFromPreferences,
   editorToolsInitialized,
 } from "../app/store/slices/editor-tools-slice";
-import { importQueueItemRemoved, selectimportQueueItems } from "../app/store/slices/export-slice";
+import { importQueueItemRemoved, selectImportQueueItems } from "../app/store/slices/export-slice";
 import { selectHasSource } from "../app/store/slices/source-slice";
 import { store } from "../app/store/store";
 import { checkMediaCapabilitiesRequested } from "../app/store/thunks/source-media-thunks";
@@ -176,7 +176,7 @@ function installAudioMocks(initiallyReady = true) {
 beforeEach(() => {
   vi.clearAllMocks();
   store.dispatch(sourceCleared());
-  for (const item of selectimportQueueItems(store.getState())) {
+  for (const item of selectImportQueueItems(store.getState())) {
     store.dispatch(importQueueItemRemoved(item.id));
   }
   store.dispatch(
@@ -648,7 +648,7 @@ describe("App", () => {
 
     getMenuTrigger("File").focus();
     await user.keyboard("{Enter}");
-    expect(screen.getByRole("menuitem", { name: /Close File/ })).toHaveTextContent("Ctrl+Q");
+    expect(screen.getByRole("menuitem", { name: /Close File/ })).toHaveTextContent("CtrlQ");
     await user.keyboard("{Escape}");
 
     fireEvent.keyDown(window, { key: "й", code: "KeyQ", ctrlKey: true });

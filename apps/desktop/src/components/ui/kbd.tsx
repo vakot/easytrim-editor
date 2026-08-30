@@ -13,6 +13,16 @@ function Kbd({ className, ...props }: React.ComponentProps<"kbd">) {
   );
 }
 
+function KbdSeparator({ className, ...props }: React.ComponentProps<"span">) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cn("inline-flex w-3 shrink-0 justify-center font-mono text-xs", className)}
+      {...props}
+    />
+  );
+}
+
 function KbdGroup({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <kbd
@@ -23,4 +33,4 @@ function KbdGroup({ className, ...props }: React.ComponentProps<"div">) {
   );
 }
 
-export { Kbd, KbdGroup };
+export { Kbd, KbdGroup, KbdSeparator };

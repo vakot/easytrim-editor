@@ -110,9 +110,9 @@ export function MenuBarView({ onClose }: MenuBarViewProps) {
                 value={preference}
               >
                 {(["system", "light", "dark"] as const).map((theme) => (
-                  <MenubarRadioItem keepOpen key={theme} value={theme}>
+                  <MenubarRadioItem inset keepOpen key={theme} value={theme}>
                     {themeLabels[theme]}
-                    <MenubarShortcut>{themeIcons[theme]}</MenubarShortcut>
+                    <MenubarIcon side="right">{themeIcons[theme]}</MenubarIcon>
                   </MenubarRadioItem>
                 ))}
               </MenubarRadioGroup>

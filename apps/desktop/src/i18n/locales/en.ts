@@ -11,6 +11,7 @@ export const en = {
     },
     labels: { brand: "EasyTrim Editor" },
     status: {
+      empty: "Empty",
       disabled: "Disabled",
       enabled: "Enabled",
       error: "Error",
@@ -112,7 +113,6 @@ export const en = {
     labels: {
       export: "Export queue",
       import: "Import queue",
-      imported: "Imported files",
       onFinish: "On queue finished",
       title: "Queue",
     },
@@ -121,10 +121,6 @@ export const en = {
       completed: "Completed",
       failed: "Failed",
       queued: "Queued",
-    },
-    messages: {
-      empty: "No exports yet.",
-      noActiveImport: "No imported file is active",
     },
     dialogs: {
       cancel: {

@@ -13,6 +13,7 @@ export const sk = {
     },
     labels: { brand: "EasyTrim Editor" },
     status: {
+      empty: "Prázdne",
       disabled: "Vypnuté",
       enabled: "Zapnuté",
       error: "Chyba",
@@ -114,7 +115,6 @@ export const sk = {
     labels: {
       export: "Front exportov",
       import: "Front importov",
-      imported: "Importované súbory",
       onFinish: "Po dokončení frontu",
       title: "Front",
     },
@@ -123,10 +123,6 @@ export const sk = {
       completed: "Dokončené",
       failed: "Zlyhalo",
       queued: "Vo fronte",
-    },
-    messages: {
-      empty: "Zatiaľ žiadne exporty.",
-      noActiveImport: "Nie je aktívny žiadny importovaný súbor",
     },
     dialogs: {
       cancel: {
