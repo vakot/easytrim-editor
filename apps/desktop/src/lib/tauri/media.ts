@@ -74,6 +74,14 @@ export async function moveSourceToTrash(sourcePath: string): Promise<void> {
   }
 }
 
+export async function restoreSourceFromTrash(sourcePath: string): Promise<void> {
+  try {
+    await invoke("restore_source_file", { sourcePath });
+  } catch (error: unknown) {
+    throw normalizeAppError(error);
+  }
+}
+
 export async function chooseOutputPath(defaultName: string): Promise<OutputSelection | null> {
   try {
     const value = await invoke<unknown>("choose_output_path", { defaultName });

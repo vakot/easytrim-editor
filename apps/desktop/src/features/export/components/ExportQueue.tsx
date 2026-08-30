@@ -1,4 +1,4 @@
-import { ExternalLink, Trash, X } from "lucide-react";
+import { Check, ExternalLink, RotateCcw, Trash, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -21,7 +21,7 @@ import {
 } from "@/app/store/thunks/export-thunks";
 import { editorSnapshotTrimStart } from "@/domain/editor-snapshot";
 import { cn } from "@/lib/class-names.utils";
-import { openFileLocation } from "@/lib/tauri/media";
+import { openFileLocation, restoreSourceFromTrash } from "@/lib/tauri/media";
 
 const statusStyles = {
   rendering: "border-l-primary",
@@ -99,22 +99,58 @@ function ExportQueueItem({ item, now }: ExportQueueItemProps) {
         <CardTitle className="truncate">{item.filename}</CardTitle>
         <CardDescription className="truncate">
           <ExportQueueItemStatus item={item} now={now} />
-          {isSourceDeleted ? (
-            <span className="inline-flex items-center gap-1">
-              {t("queue.status.sourceDeleted")}
-              <Trash aria-hidden="true" className="size-3.5" />
-            </span>
-          ) : (
-            item.path
-          )}
+          {item.path}
         </CardDescription>
         <CardAction>
           <ExportQueueItemAction item={item} />
         </CardAction>
       </CardHeader>
 
+      <ExportQueueItemSourceDeleted item={item} />
       <ExportQueueItemError item={item} />
     </Card>
+  );
+}
+
+function ExportQueueItemSourceDeleted({ item }: ExportQueueItemProps) {
+  const { t } = useTranslation();
+  const [isRestored, setIsRestored] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
+  const isSourceDeleted = item.sourceDeleted === true;
+
+  async function restoreSource() {
+    setIsRestoring(true);
+    try {
+      await restoreSourceFromTrash(item.snapshot.source.sourcePath);
+      setIsRestored(true);
+    } catch {
+      setIsRestored(false);
+    } finally {
+      setIsRestoring(false);
+    }
+  }
+
+  if (!isSourceDeleted) return null;
+
+  return (
+    <CardFooter className="flex justify-between gap-2 py-1 text-xs">
+      <span className="flex gap-2">
+        <Trash aria-hidden="true" className="size-3.5" />
+        {isRestored ? "Source restored" : t("queue.status.sourceDeleted")}
+      </span>
+      <Button
+        disabled={isRestored || isRestoring}
+        onClick={(event) => {
+          event.stopPropagation();
+          void restoreSource();
+        }}
+        size="xs"
+        variant="success"
+      >
+        {isRestored ? <Check /> : <RotateCcw />}
+        Restore
+      </Button>
+    </CardFooter>
   );
 }
 
