@@ -8,6 +8,7 @@ export const sk = {
       close: "Zavrieť",
       delete: "Odstrániť",
       edit: "Upraviť",
+      enable: "Povoliť",
       retry: "Skúsiť znova",
       save: "Uložiť",
     },
@@ -114,6 +115,7 @@ export const sk = {
       start: "Spustiť front",
     },
     labels: {
+      deleteSource: "Odstrániť zdroj",
       export: "Front exportov",
       import: "Front importov",
       onFinish: "Po dokončení frontu",
@@ -125,10 +127,18 @@ export const sk = {
       failed: "Zlyhalo",
       queued: "Vo fronte",
     },
+    tooltips: {
+      deleteSourceOnRenderFinish: "Po úspešnom vykreslení natrvalo odstráni zdroj",
+    },
     dialogs: {
       cancel: {
         description: "Aktívny export a všetky zostávajúce exporty vo fronte sa zrušia.",
         title: "Zrušiť front exportov?",
+      },
+      deleteSourceOnRenderFinish: {
+        description:
+          "Pôvodný zdrojový súbor sa po úspešnom dokončení vykreslenia natrvalo odstráni. Túto akciu nemožno vrátiť späť.",
+        title: "Odstrániť zdroj po vykreslení?",
       },
     },
     accessibility: {

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   chooseOutputPath: vi.fn(),
+  deleteSourceFile: vi.fn(),
   reserveExportSource: vi.fn(),
   releaseExportSource: vi.fn(),
   cancelOperation: vi.fn(),
@@ -20,6 +21,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/lib/tauri/media", () => ({
   chooseOutputPath: mocks.chooseOutputPath,
+  deleteSourceFile: mocks.deleteSourceFile,
   reserveExportSource: mocks.reserveExportSource,
   releaseExportSource: mocks.releaseExportSource,
   cancelOperation: mocks.cancelOperation,
@@ -48,6 +50,7 @@ import { importQueueItemActivated } from "@/app/store/actions/imported-queue-act
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
 import {
   activeQueueItemChanged,
+  deleteSourceOnRenderFinishChanged,
   type ExportQueueItem,
   type importQueueItem,
   importQueueItemAdded,
@@ -157,6 +160,7 @@ function createReadyStore(withImportedItem = true) {
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.chooseOutputPath.mockResolvedValue(output);
+  mocks.deleteSourceFile.mockResolvedValue(undefined);
   mocks.reserveExportSource.mockResolvedValue(undefined);
   mocks.releaseExportSource.mockResolvedValue(undefined);
   mocks.cancelOperation.mockResolvedValue(undefined);
@@ -434,6 +438,24 @@ describe("export thunks and runtime queue", () => {
     expect(mocks.renderFast).toHaveBeenCalledOnce();
     expect(selectExportQueue(store.getState())[0]?.progressPercent).toBe(100);
     await vi.waitFor(() => expect(mocks.performQueueFinishAction).toHaveBeenCalledWith("exit"));
+  });
+
+  it("deletes the source after a successful render when confirmed", async () => {
+    mocks.renderFast.mockResolvedValue({
+      operationId: "operation-delete-source",
+      displayName: output.displayName,
+      displayPath: output.displayPath,
+    });
+    const store = createReadyStore();
+    store.dispatch(deleteSourceOnRenderFinishChanged(true));
+
+    store.dispatch(startFastCutRequested());
+    await vi.waitFor(() => expect(selectExportQueue(store.getState())).toHaveLength(1));
+    store.dispatch(startExportQueue());
+
+    await vi.waitFor(() =>
+      expect(mocks.deleteSourceFile).toHaveBeenCalledWith("C:/Media/source.mp4"),
+    );
   });
 
   it("restores a queued snapshot after importing its source", async () => {

@@ -15,6 +15,7 @@ import {
 } from "@/domain/export-metrics";
 import {
   cancelOperation,
+  deleteSourceFile,
   releaseExportSource,
   renderFast,
   renderOptimized,
@@ -206,6 +207,9 @@ async function renderJob(job: RuntimeExportJob) {
 
     if (!job.canceled) {
       job.dispatch(exportCompleted({ id: job.item.id, result, durationMs: elapsedTime(job) }));
+      if (job.getState().export.deleteSourceOnRenderFinish) {
+        await deleteSourceFile(job.item.request.sourcePath).catch(() => undefined);
+      }
     }
   } catch (error: unknown) {
     if (!job.canceled) {

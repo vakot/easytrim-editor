@@ -6,6 +6,7 @@ export const en = {
       close: "Close",
       delete: "Delete",
       edit: "Edit",
+      enable: "Enable",
       retry: "Retry",
       save: "Save",
     },
@@ -112,6 +113,7 @@ export const en = {
       start: "Start queue",
     },
     labels: {
+      deleteSource: "Delete source",
       export: "Export queue",
       import: "Import queue",
       onFinish: "On queue finished",
@@ -123,10 +125,18 @@ export const en = {
       failed: "Failed",
       queued: "Queued",
     },
+    tooltips: {
+      deleteSourceOnRenderFinish: "Permanently delete the source after a successful render",
+    },
     dialogs: {
       cancel: {
         description: "The active export and all remaining queued exports will be canceled.",
         title: "Cancel export queue?",
+      },
+      deleteSourceOnRenderFinish: {
+        description:
+          "The original source file will be permanently deleted after a render finishes successfully. This cannot be undone.",
+        title: "Delete source after rendering?",
       },
     },
     accessibility: {

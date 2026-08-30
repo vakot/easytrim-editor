@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Kbd } from "@/components/ui/kbd";
 import {
+  MenubarCheckboxItem,
   MenubarContent,
   MenubarGroup,
   MenubarIcon,
@@ -27,11 +28,14 @@ import {
   MenubarSubTrigger,
   MenubarTrigger,
 } from "@/components/ui/menubar";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
+  deleteSourceOnRenderFinishChanged,
   queueFinishActionChanged,
   selectAvailableQueueFinishActions,
+  selectDeleteSourceOnRenderFinish,
   selectExportQueue,
   selectQueueFinishAction,
   selectQueueStarted,
@@ -47,8 +51,10 @@ export function MenuBarQueue() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const [isCancelQueueConfirmOpen, setIsCancelQueueConfirmOpen] = useState(false);
+  const [isDeleteSourceConfirmOpen, setIsDeleteSourceConfirmOpen] = useState(false);
 
   const queue = useAppSelector(selectExportQueue);
+  const deleteSourceOnRenderFinish = useAppSelector(selectDeleteSourceOnRenderFinish);
   const queueStarted = useAppSelector(selectQueueStarted);
   const queueFinishAction = useAppSelector(selectQueueFinishAction);
   const availableQueueFinishActions = useAppSelector(selectAvailableQueueFinishActions);
@@ -111,6 +117,26 @@ export function MenuBarQueue() {
           </MenubarGroup>
           <MenubarSeparator />
           <MenubarGroup>
+            <Tooltip preserveOnTrigger>
+              <TooltipTrigger asChild>
+                <MenubarCheckboxItem
+                  checked={deleteSourceOnRenderFinish}
+                  onSelect={() => {
+                    if (deleteSourceOnRenderFinish) {
+                      dispatch(deleteSourceOnRenderFinishChanged(false));
+                    } else {
+                      setIsDeleteSourceConfirmOpen(true);
+                    }
+                  }}
+                  variant="destructive"
+                >
+                  {t("queue.labels.deleteSource")}
+                </MenubarCheckboxItem>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                {t("queue.tooltips.deleteSourceOnRenderFinish")}
+              </TooltipContent>
+            </Tooltip>
             <MenubarSub>
               <MenubarSubTrigger inset variant="destructive">
                 <MenubarIcon>{queueFinishIcons[queueFinishAction]}</MenubarIcon>
@@ -153,6 +179,30 @@ export function MenuBarQueue() {
               variant="destructive"
             >
               {t("queue.actions.cancel")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog onOpenChange={setIsDeleteSourceConfirmOpen} open={isDeleteSourceConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("queue.dialogs.deleteSourceOnRenderFinish.title")}</DialogTitle>
+            <DialogDescription>
+              {t("queue.dialogs.deleteSourceOnRenderFinish.description")}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={() => setIsDeleteSourceConfirmOpen(false)} variant="outline">
+              {t("common.actions.back")}
+            </Button>
+            <Button
+              onClick={() => {
+                setIsDeleteSourceConfirmOpen(false);
+                dispatch(deleteSourceOnRenderFinishChanged(true));
+              }}
+              variant="destructive"
+            >
+              {t("common.actions.enable")}
             </Button>
           </DialogFooter>
         </DialogContent>
