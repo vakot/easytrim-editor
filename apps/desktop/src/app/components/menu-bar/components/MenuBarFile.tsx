@@ -1,4 +1,3 @@
-import { Trash } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -7,7 +6,6 @@ import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import {
   MenubarContent,
   MenubarGroup,
-  MenubarIcon,
   MenubarItem,
   MenubarMenu,
   MenubarSeparator,
@@ -17,7 +15,10 @@ import {
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectCropApplied } from "@/app/store/slices/crop-slice";
-import { selectIsChoosingSource } from "@/app/store/slices/import-workflow-slice";
+import {
+  selectIsChoosingSource,
+  selectIsNativeDialogOpen,
+} from "@/app/store/slices/import-workflow-slice";
 import {
   selectHasSource,
   selectSourceReady,
@@ -30,6 +31,7 @@ import {
   deleteActiveImportedItemRequested,
 } from "@/app/store/thunks/source-media-thunks";
 import { DeleteSourceDialog } from "@/features/source";
+import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
 
 export function MenuBarFile() {
   const { t } = useTranslation();
@@ -40,9 +42,25 @@ export function MenuBarFile() {
   const canExport = useAppSelector(selectSourceReady);
   const hasSource = useAppSelector(selectHasSource);
   const isChoosingSource = useAppSelector(selectIsChoosingSource);
+  const isNativeDialogOpen = useAppSelector(selectIsNativeDialogOpen);
   const cropApplied = useAppSelector(selectCropApplied);
   const sourceSelection = useAppSelector(selectSourceSelection);
   const canSave = canExport && !cropApplied;
+
+  const openDeleteDialog = () => {
+    setDeleteError(null);
+    setDeleteDialogOpen(true);
+  };
+
+  useKeyboardShortcut(
+    (event) =>
+      event.code === "KeyD" &&
+      event.ctrlKey &&
+      hasSource &&
+      !isChoosingSource &&
+      !isNativeDialogOpen,
+    openDeleteDialog,
+  );
 
   const handleDeleteSource = async () => {
     setDeletePending(true);
@@ -120,19 +138,14 @@ export function MenuBarFile() {
           </MenubarGroup>
           <MenubarSeparator />
           <MenubarGroup>
-            <MenubarItem
-              disabled={!hasSource}
-              inset
-              onSelect={() => {
-                setDeleteError(null);
-                setDeleteDialogOpen(true);
-              }}
-              variant="destructive"
-            >
-              <MenubarIcon>
-                <Trash aria-hidden="true" />
-              </MenubarIcon>
+            <MenubarItem disabled={!hasSource} onSelect={openDeleteDialog} variant="destructive">
               {t("app.actions.deleteSource")}
+              <MenubarShortcut>
+                <KbdGroup>
+                  <Kbd>Ctrl</Kbd>
+                  <Kbd>D</Kbd>
+                </KbdGroup>
+              </MenubarShortcut>
             </MenubarItem>
           </MenubarGroup>
         </MenubarContent>

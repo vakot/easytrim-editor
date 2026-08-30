@@ -550,14 +550,29 @@ describe("MenuBarTest", () => {
     );
 
     await user.click(getMenuTrigger("File"));
-    const deleteSourceItem = screen.getByRole("menuitem", { name: "Delete Source" });
+    const deleteSourceItem = screen.getByRole("menuitem", { name: /Delete Source/ });
     expect(deleteSourceItem).toHaveAttribute("data-variant", "destructive");
+    expect(deleteSourceItem).toHaveTextContent("CtrlD");
 
     await user.click(deleteSourceItem);
     expect(screen.getByRole("heading", { name: "Delete source file?" })).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Cancel" }));
     expect(screen.queryByRole("heading", { name: "Delete source file?" })).not.toBeInTheDocument();
+  });
+
+  it("opens source deletion confirmation with Ctrl+D", () => {
+    render(
+      <TooltipProvider>
+        <ThemeProvider>
+          <MenuBarTest canExport canSave hasSource isChoosingSource={false} />
+        </ThemeProvider>
+      </TooltipProvider>,
+    );
+
+    fireEvent.keyDown(window, { code: "KeyD", ctrlKey: true, key: "d" });
+
+    expect(screen.getByRole("heading", { name: "Delete source file?" })).toBeInTheDocument();
   });
 
   it("keeps Theme and Language metadata visible for every submenu option", async () => {
