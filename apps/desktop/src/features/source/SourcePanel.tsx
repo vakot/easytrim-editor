@@ -194,6 +194,7 @@ function ImportQueuePanel({ isSingle = false }: SourcePanelProps) {
       className="flex min-h-0 flex-col overflow-hidden"
       collapsedSize={32}
       collapsible
+      defaultSize={0}
       id="workspace-sidebar-import-queue"
       minSize={128}
     >
@@ -245,6 +246,7 @@ function ExportQueuePanel({ isSingle = false }: SourcePanelProps) {
       className="flex min-h-0 flex-col overflow-hidden"
       collapsedSize={32}
       collapsible
+      defaultSize={0}
       id="workspace-sidebar-export-queue"
       minSize={128}
     >
