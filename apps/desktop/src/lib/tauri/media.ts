@@ -66,7 +66,7 @@ export async function activateSourcePath(sourcePath: string): Promise<SourceRef>
   }
 }
 
-export async function deleteSourceFile(sourcePath: string): Promise<void> {
+export async function moveSourceToTrash(sourcePath: string): Promise<void> {
   try {
     await invoke("delete_source_file", { sourcePath });
   } catch (error: unknown) {

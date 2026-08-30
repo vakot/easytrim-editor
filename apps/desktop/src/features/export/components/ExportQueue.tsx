@@ -1,4 +1,4 @@
-import { ExternalLink, X } from "lucide-react";
+import { ExternalLink, Trash, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -73,6 +73,7 @@ function ExportQueueItem({ item, now }: ExportQueueItemProps) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const timeline = useTimeline();
+  const isSourceDeleted = item.sourceDeleted === true;
 
   async function restoreItem() {
     const restored = await dispatch(restoreExportQueueItemRequested(item.id));
@@ -81,19 +82,31 @@ function ExportQueueItem({ item, now }: ExportQueueItemProps) {
 
   return (
     <Card
-      aria-label={t("queue.accessibility.restoreItem", { filename: item.filename })}
+      aria-label={
+        isSourceDeleted
+          ? undefined
+          : t("queue.accessibility.restoreItem", { filename: item.filename })
+      }
       className={cn(
-        "border-l-4 transition-colors ring-inset hover:bg-muted/60",
+        "border-l-4 ring-inset",
+        !isSourceDeleted && "transition-colors hover:bg-muted/60",
         statusStyles[item.status],
       )}
-      onClick={() => void restoreItem()}
+      onClick={isSourceDeleted ? undefined : () => void restoreItem()}
       size="sm"
     >
       <CardHeader>
         <CardTitle className="truncate">{item.filename}</CardTitle>
         <CardDescription className="truncate">
           <ExportQueueItemStatus item={item} now={now} />
-          {item.path}
+          {isSourceDeleted ? (
+            <span className="inline-flex items-center gap-1">
+              {t("queue.status.sourceDeleted")}
+              <Trash aria-hidden="true" className="size-3.5" />
+            </span>
+          ) : (
+            item.path
+          )}
         </CardDescription>
         <CardAction>
           <ExportQueueItemAction item={item} />

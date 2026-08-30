@@ -55,6 +55,7 @@ export interface ExportQueueItem extends QueueItemBase {
   progressPercent: number;
   request: ExportRequest;
   route: ExportRoute;
+  sourceDeleted?: boolean;
   startedAt: number | null;
   status: ExportStatus;
   totalFrames?: number;
@@ -245,6 +246,11 @@ const exportSlice = createSlice({
       item.progressPercent = 100;
       item.durationMs = action.payload.durationMs;
     },
+    exportSourceDeleted: (state, action: PayloadAction<{ id: string }>) => {
+      const item = state.queue.find((candidate) => candidate.id === action.payload.id);
+      if (!item || item.status !== "completed") return;
+      item.sourceDeleted = true;
+    },
     exportFailed: (
       state,
       action: PayloadAction<{ durationMs: number | null; error: AppError; id: string }>,
@@ -315,6 +321,7 @@ export const {
   exportFailed,
   exportLaunchFailed,
   exportProgressReceived,
+  exportSourceDeleted,
   exportStarted,
   finishedExportsCleared,
   importQueueItemAdded,

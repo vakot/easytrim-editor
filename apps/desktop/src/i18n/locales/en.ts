@@ -124,9 +124,10 @@ export const en = {
       completed: "Completed",
       failed: "Failed",
       queued: "Queued",
+      sourceDeleted: "Source deleted",
     },
     tooltips: {
-      deleteSourceOnRenderFinish: "Permanently delete the source after a successful render",
+      deleteSourceOnRenderFinish: "Delete the source after a successful render",
     },
     dialogs: {
       cancel: {
@@ -135,7 +136,7 @@ export const en = {
       },
       deleteSourceOnRenderFinish: {
         description:
-          "The original source file will be permanently deleted after a render finishes successfully. This cannot be undone.",
+          "The original source file will be deleted after a render finishes successfully. This action can be undone.",
         title: "Delete source after rendering?",
       },
     },
@@ -193,7 +194,7 @@ export const en = {
     tooltips: { sidebarControls: "Choose visible source panels" },
     dialogs: {
       delete: {
-        description: "This permanently deletes {{name}} from your computer.",
+        description: "This deletes {{name}} from your computer. This action can be undone.",
         title: "Delete source file?",
       },
     },

@@ -50,8 +50,8 @@ import {
   activateSourcePath,
   checkMediaCapabilities,
   chooseSource as chooseSourceDialog,
-  deleteSourceFile,
   inspectMedia,
+  moveSourceToTrash,
   prepareAudioPreviews,
   prepareProxyPreview,
   prepareSourcePreview,
@@ -398,7 +398,7 @@ export const deleteActiveImportedItemRequested =
     if (!activeItem || activeItem.status !== "imported") return null;
 
     try {
-      await deleteSourceFile(activeItem.snapshot.source.sourcePath);
+      await moveSourceToTrash(activeItem.snapshot.source.sourcePath);
     } catch (error: unknown) {
       const normalized = normalizeAppError(error);
       dispatch(sourceErrorReported(normalized));

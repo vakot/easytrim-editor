@@ -126,9 +126,10 @@ export const sk = {
       completed: "Dokončené",
       failed: "Zlyhalo",
       queued: "Vo fronte",
+      sourceDeleted: "Zdroj odstránený",
     },
     tooltips: {
-      deleteSourceOnRenderFinish: "Po úspešnom vykreslení natrvalo odstráni zdroj",
+      deleteSourceOnRenderFinish: "Po úspešnom vykreslení odstráni zdroj",
     },
     dialogs: {
       cancel: {
@@ -137,7 +138,7 @@ export const sk = {
       },
       deleteSourceOnRenderFinish: {
         description:
-          "Pôvodný zdrojový súbor sa po úspešnom dokončení vykreslenia natrvalo odstráni. Túto akciu nemožno vrátiť späť.",
+          "Pôvodný zdrojový súbor sa po úspešnom dokončení vykreslenia odstráni. Túto akciu možno vrátiť späť.",
         title: "Odstrániť zdroj po vykreslení?",
       },
     },
@@ -196,7 +197,7 @@ export const sk = {
     tooltips: { sidebarControls: "Vybrať viditeľné panely zdroja" },
     dialogs: {
       delete: {
-        description: "Týmto natrvalo odstránite {{name}} z počítača.",
+        description: "Týmto odstránite {{name}} z počítača. Túto akciu možno vrátiť späť.",
         title: "Odstrániť zdrojový súbor?",
       },
     },

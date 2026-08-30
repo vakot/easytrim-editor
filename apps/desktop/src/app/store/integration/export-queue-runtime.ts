@@ -4,6 +4,7 @@ import {
   exportFailed,
   exportProgressReceived,
   type ExportQueueItem,
+  exportSourceDeleted,
   exportStarted,
 } from "@/app/store/slices/export-slice";
 import type { AppDispatch, RootState } from "@/app/store/store";
@@ -15,7 +16,7 @@ import {
 } from "@/domain/export-metrics";
 import {
   cancelOperation,
-  deleteSourceFile,
+  moveSourceToTrash,
   releaseExportSource,
   renderFast,
   renderOptimized,
@@ -208,7 +209,12 @@ async function renderJob(job: RuntimeExportJob) {
     if (!job.canceled) {
       job.dispatch(exportCompleted({ id: job.item.id, result, durationMs: elapsedTime(job) }));
       if (job.getState().export.deleteSourceOnRenderFinish) {
-        await deleteSourceFile(job.item.request.sourcePath).catch(() => undefined);
+        try {
+          await moveSourceToTrash(job.item.request.sourcePath);
+          job.dispatch(exportSourceDeleted({ id: job.item.id }));
+        } catch {
+          // Keep the completed export visible when source cleanup fails.
+        }
       }
     }
   } catch (error: unknown) {

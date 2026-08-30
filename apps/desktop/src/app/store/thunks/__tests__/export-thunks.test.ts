@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   chooseOutputPath: vi.fn(),
-  deleteSourceFile: vi.fn(),
+  moveSourceToTrash: vi.fn(),
   reserveExportSource: vi.fn(),
   releaseExportSource: vi.fn(),
   cancelOperation: vi.fn(),
@@ -21,7 +21,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/lib/tauri/media", () => ({
   chooseOutputPath: mocks.chooseOutputPath,
-  deleteSourceFile: mocks.deleteSourceFile,
+  moveSourceToTrash: mocks.moveSourceToTrash,
   reserveExportSource: mocks.reserveExportSource,
   releaseExportSource: mocks.releaseExportSource,
   cancelOperation: mocks.cancelOperation,
@@ -160,7 +160,7 @@ function createReadyStore(withImportedItem = true) {
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.chooseOutputPath.mockResolvedValue(output);
-  mocks.deleteSourceFile.mockResolvedValue(undefined);
+  mocks.moveSourceToTrash.mockResolvedValue(undefined);
   mocks.reserveExportSource.mockResolvedValue(undefined);
   mocks.releaseExportSource.mockResolvedValue(undefined);
   mocks.cancelOperation.mockResolvedValue(undefined);
@@ -454,8 +454,9 @@ describe("export thunks and runtime queue", () => {
     store.dispatch(startExportQueue());
 
     await vi.waitFor(() =>
-      expect(mocks.deleteSourceFile).toHaveBeenCalledWith("C:/Media/source.mp4"),
+      expect(mocks.moveSourceToTrash).toHaveBeenCalledWith("C:/Media/source.mp4"),
     );
+    expect(selectExportQueue(store.getState())[0]?.sourceDeleted).toBe(true);
   });
 
   it("restores a queued snapshot after importing its source", async () => {
