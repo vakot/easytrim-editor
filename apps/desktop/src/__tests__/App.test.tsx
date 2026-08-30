@@ -328,7 +328,7 @@ describe("App", () => {
     expect(screen.getAllByText("00:00:00:00f").length).toBeGreaterThanOrEqual(8);
     expect(screen.queryByRole("slider", { name: "Playback position" })).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Source video preview")).not.toBeInTheDocument();
-    expect(screen.getByTestId("audio-tracks-scroll")).toBeInTheDocument();
+    expect(screen.queryByTestId("audio-tracks-scroll")).not.toBeInTheDocument();
   });
 
   it("keeps the preview covered and playback controls disabled until it can play", async () => {
@@ -937,7 +937,7 @@ describe("App", () => {
     expect(getMenuTrigger("View")).toBeInTheDocument();
   });
 
-  it("keeps the timeline and audio panels mounted when the source has no audio tracks", async () => {
+  it("renders only the timeline panel when the source has no audio tracks", async () => {
     mocks.chooseSource.mockResolvedValue([selection]);
     mocks.inspectMedia.mockResolvedValue({ ...media, audioStreams: [] });
     const user = userEvent.setup();
@@ -946,9 +946,10 @@ describe("App", () => {
     await openSourcePicker(user);
 
     expect(await screen.findByRole("heading", { name: "Selected Segment" })).toBeInTheDocument();
-    expect(screen.getByTestId("audio-tracks-scroll")).toBeInTheDocument();
-    expect(screen.getByText("This source has no audio tracks.")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Audio tracks" })).toBeInTheDocument();
+    expect(screen.queryByTestId("audio-tracks-scroll")).not.toBeInTheDocument();
+    expect(screen.queryByText("This source has no audio tracks.")).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Audio tracks" })).not.toBeInTheDocument();
+    expect(document.getElementById("editor-stage-audio")).toBeNull();
   });
 
   it("uses Escape to clear focus without closing the source", async () => {

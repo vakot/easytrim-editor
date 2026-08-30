@@ -295,7 +295,6 @@ export const sk = {
       waveformUnavailable: "Priebeh zvuku nie je dostupný",
     },
     messages: {
-      noTracks: "Tento zdroj nemá žiadne zvukové stopy.",
       output: {
         merged_one: "{{count}} vybraná stopa sa zlúči do jednej stopy",
         merged_few: "{{count}} vybrané stopy sa zlúčia do jednej stopy",

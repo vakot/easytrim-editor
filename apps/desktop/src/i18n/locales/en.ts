@@ -292,7 +292,6 @@ export const en = {
       waveformUnavailable: "Waveform unavailable",
     },
     messages: {
-      noTracks: "This source has no audio tracks.",
       output: {
         merged_one: "{{count}} selected track is merged into one track",
         merged_few: "{{count}} selected tracks are merged into one track",

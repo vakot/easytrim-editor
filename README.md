@@ -175,7 +175,7 @@ The native layer discovers and runs FFmpeg/FFprobe, handles media inspection and
 
 ### Snapshot transition lifecycle
 
-Selecting an imported snapshot is an atomic Redux transition: the active queue item, source reference, cached metadata, trim, crop, and audio draft switch together. The persistent Details, Preview, Timeline, and Audio panels therefore observe `A -> B`, never `A -> no source -> B`.
+Selecting an imported snapshot is an atomic Redux transition: the active queue item, source reference, cached metadata, trim, crop, and audio draft switch together. The persistent Details, Preview, and Timeline panels therefore observe `A -> B`, never `A -> no source -> B`. Audio is the source-dependent layout section and is rendered only when the current source contains audio tracks.
 
 Media preparation then progresses independently for the selected source. Preview owns its opening, proxy, and terminal error states; the shared playback interaction layer enables Timeline and playback-dependent Audio behavior only after the current media elements can play. Waveforms remain a separate display-data job and may finish after playback is enabled. Source load tokens, restoration IDs, and waveform job IDs prevent late results from an older snapshot from updating the current one.
 
