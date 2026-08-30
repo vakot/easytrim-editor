@@ -173,6 +173,12 @@ scripts/                 Development, icon, preview, and release helpers
 
 The native layer discovers and runs FFmpeg/FFprobe, handles media inspection and rendering, and exposes typed commands to the React interface. Audio preview, waveforms, fast cuts, and optimized renders are coordinated through this native media layer.
 
+### Snapshot transition lifecycle
+
+Selecting an imported snapshot is an atomic Redux transition: the active queue item, source reference, cached metadata, trim, crop, and audio draft switch together. The persistent Details, Preview, Timeline, and Audio panels therefore observe `A -> B`, never `A -> no source -> B`.
+
+Media preparation then progresses independently for the selected source. Preview owns its opening, proxy, and terminal error states; the shared playback interaction layer enables Timeline and playback-dependent Audio behavior only after the current media elements can play. Waveforms remain a separate display-data job and may finish after playback is enabled. Source load tokens, restoration IDs, and waveform job IDs prevent late results from an older snapshot from updating the current one.
+
 ## License
 
 EasyTrim Editor is distributed under the [MIT License](LICENSE).
