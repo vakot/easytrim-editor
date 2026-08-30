@@ -5,7 +5,6 @@ import type { RootState } from "@/app/store/store";
 
 import { cropChanged } from "../crop-slice";
 import {
-  deleteSourceOnRenderFinishChanged,
   exportCanceled,
   exportCompleted,
   exportFailed,
@@ -141,12 +140,6 @@ describe("export slice", () => {
     expect(
       exportReducer(initialExportState, queueFinishActionChanged("systemSleep")),
     ).toMatchObject({ queueFinishAction: "systemSleep" });
-  });
-
-  it("keeps the confirmed source-deletion policy serializable", () => {
-    expect(
-      exportReducer(initialExportState, deleteSourceOnRenderFinishChanged(true)),
-    ).toMatchObject({ deleteSourceOnRenderFinish: true });
   });
 
   it("removes an imported item and clears its active identity", () => {

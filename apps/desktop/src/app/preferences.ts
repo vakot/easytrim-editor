@@ -1,5 +1,6 @@
 export interface Preferences {
   autoStartQueueEnabled: boolean;
+  deleteSourceOnRenderFinish: boolean;
   loopPlaybackEnabledDefault: boolean;
   mergeAudioEnabledDefault: boolean;
   segmentPlaybackEnabledDefault: boolean;
@@ -13,5 +14,6 @@ export const DEFAULT_PREFERENCES: Preferences = {
   loopPlaybackEnabledDefault: true,
   segmentPlaybackEnabledDefault: true,
   autoStartQueueEnabled: true,
+  deleteSourceOnRenderFinish: false,
   mergeAudioEnabledDefault: false,
 };

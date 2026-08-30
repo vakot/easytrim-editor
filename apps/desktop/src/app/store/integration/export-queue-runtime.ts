@@ -208,7 +208,7 @@ async function renderJob(job: RuntimeExportJob) {
 
     if (!job.canceled) {
       job.dispatch(exportCompleted({ id: job.item.id, result, durationMs: elapsedTime(job) }));
-      if (job.getState().export.deleteSourceOnRenderFinish) {
+      if (job.getState().preferences.deleteSourceOnRenderFinish) {
         try {
           await moveSourceToTrash(job.item.request.sourcePath);
           job.dispatch(exportSourceDeleted({ id: job.item.id }));

@@ -36,7 +36,6 @@ const menuState = vi.hoisted(() => ({
   },
   export: {
     queue: [] as Array<{ status: "queued" | "rendering" }>,
-    deleteSourceOnRenderFinish: false,
     queueStarted: false,
     queueFinishAction: "nothing" as QueueFinishAction,
     availableQueueFinishActions: ["exit", "nothing"] as QueueFinishAction[],
@@ -46,6 +45,7 @@ const menuState = vi.hoisted(() => ({
     loopPlaybackEnabledDefault: true,
     segmentPlaybackEnabledDefault: true,
     autoStartQueueEnabled: true,
+    deleteSourceOnRenderFinish: false,
     mergeAudioEnabledDefault: false,
   } as Preferences,
   theme: {
@@ -92,7 +92,6 @@ vi.mock("@/app/store/redux-hooks", () => ({
       crop: menuState.crop,
       export: {
         queue: menuState.export.queue,
-        deleteSourceOnRenderFinish: menuState.export.deleteSourceOnRenderFinish,
         queueStarted: menuState.export.queueStarted,
         queueFinishAction: menuState.export.queueFinishAction,
         availableQueueFinishActions: menuState.export.availableQueueFinishActions,
@@ -119,7 +118,6 @@ describe("MenuBarTest", () => {
     canExport?: boolean;
     canSave?: boolean;
     customPrimaryColor?: `#${string}`;
-    deleteSourceOnRenderFinish?: boolean;
     hasActiveItem?: boolean;
     hasQueuedItems?: boolean;
     hasSource?: boolean;
@@ -148,7 +146,6 @@ describe("MenuBarTest", () => {
       ...(overrides.hasQueuedItems ? [{ status: "queued" as const }] : []),
       ...(overrides.hasActiveItem ? [{ status: "rendering" as const }] : []),
     ];
-    menuState.export.deleteSourceOnRenderFinish = overrides.deleteSourceOnRenderFinish ?? false;
     menuState.export.queueStarted = overrides.queueStarted ?? false;
     menuState.export.queueFinishAction = overrides.queueFinishAction ?? "nothing";
     menuState.export.availableQueueFinishActions = overrides.availableQueueFinishActions ?? [
@@ -172,10 +169,6 @@ describe("MenuBarTest", () => {
       });
 
     menuState.dispatch = vi.fn((action: { payload?: unknown; type: string }) => {
-      if (action.type === "export/deleteSourceOnRenderFinishChanged") {
-        menuState.export.deleteSourceOnRenderFinish = action.payload as boolean;
-        notify();
-      }
       if (
         action.type === "preferences/preferenceChanged" &&
         typeof action.payload === "object" &&
@@ -313,13 +306,16 @@ describe("MenuBarTest", () => {
       screen.getByRole("heading", { name: "Delete source after rendering?" }),
     ).toBeInTheDocument();
     expect(menuState.dispatch).not.toHaveBeenCalledWith(
-      expect.objectContaining({ type: "export/deleteSourceOnRenderFinishChanged" }),
+      expect.objectContaining({
+        type: "preferences/preferenceChanged",
+        payload: { enabled: false, key: "deleteSourceOnRenderFinish" },
+      }),
     );
 
     await user.click(screen.getByRole("button", { name: "Enable" }));
     expect(menuState.dispatch).toHaveBeenCalledWith({
-      type: "export/deleteSourceOnRenderFinishChanged",
-      payload: true,
+        type: "preferences/preferenceChanged",
+        payload: { enabled: true, key: "deleteSourceOnRenderFinish" },
     });
   });
 

@@ -50,7 +50,6 @@ import { importQueueItemActivated } from "@/app/store/actions/imported-queue-act
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
 import {
   activeQueueItemChanged,
-  deleteSourceOnRenderFinishChanged,
   type ExportQueueItem,
   type importQueueItem,
   importQueueItemAdded,
@@ -447,7 +446,7 @@ describe("export thunks and runtime queue", () => {
       displayPath: output.displayPath,
     });
     const store = createReadyStore();
-    store.dispatch(deleteSourceOnRenderFinishChanged(true));
+    store.dispatch(preferenceChanged({ enabled: true, key: "deleteSourceOnRenderFinish" }));
 
     store.dispatch(startFastCutRequested());
     await vi.waitFor(() => expect(selectExportQueue(store.getState())).toHaveLength(1));
