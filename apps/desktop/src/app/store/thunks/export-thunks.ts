@@ -34,7 +34,7 @@ import {
   queueStarted,
   selectActiveItemId,
   selectActiveQueueItem,
-  selectimportQueueItems,
+  selectImportQueueItems,
 } from "@/app/store/slices/export-slice";
 import { nativeDialogStateChanged } from "@/app/store/slices/import-workflow-slice";
 import {
@@ -183,7 +183,7 @@ async function startQueuedExport(
       return;
     }
 
-    const currentImportedItems = selectimportQueueItems(getState());
+    const currentImportedItems = selectImportQueueItems(getState());
     const replacementItem = getReplacementImportedItem(
       currentImportedItems,
       currentImportedItems.findIndex((item) => item.id === importedItemId),

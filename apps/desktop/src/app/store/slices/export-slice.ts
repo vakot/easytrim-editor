@@ -323,7 +323,7 @@ export const selectActiveQueueItem = createSelector(
   [selectQueueItems, selectActiveItemId],
   (queue, activeItemId) => queue.find((item) => item.id === activeItemId),
 );
-export const selectimportQueueItems = createSelector(
+export const selectImportQueueItems = createSelector(
   [selectQueueItems],
   (queue): importQueueItem[] =>
     queue.filter((item): item is importQueueItem => item.status === "imported"),

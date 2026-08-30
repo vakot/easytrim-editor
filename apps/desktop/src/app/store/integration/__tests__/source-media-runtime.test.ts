@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { startSourceMediaRuntime } from "@/app/store/integration/source-media-runtime";
-import { selectimportQueueItems } from "@/app/store/slices/export-slice";
+import { selectImportQueueItems } from "@/app/store/slices/export-slice";
 import { selectIsSourceDragActive } from "@/app/store/slices/import-workflow-slice";
 import { selectSourceMedia } from "@/app/store/slices/source-slice";
 import { createAppStore } from "@/app/store/store";
@@ -89,8 +89,8 @@ describe("source/media application runtime", () => {
     await vi.waitFor(() => expect(selectSourceMedia(appStore.getState())).toEqual(media));
     expect(mocks.inspectMedia).toHaveBeenCalledWith(source.sourcePath);
     expect(mocks.inspectMedia).toHaveBeenCalledOnce();
-    expect(selectimportQueueItems(appStore.getState())).toHaveLength(2);
-    expect(selectimportQueueItems(appStore.getState())[0]?.origin).toBe("source-import");
+    expect(selectImportQueueItems(appStore.getState())).toHaveLength(2);
+    expect(selectImportQueueItems(appStore.getState())[0]?.origin).toBe("source-import");
 
     stop();
     stop();

@@ -4,7 +4,7 @@ import { selectAudioPreviews } from "@/app/store/slices/audio-slice";
 import {
   importQueueItemAdded,
   selectActiveItemId,
-  selectimportQueueItems,
+  selectImportQueueItems,
 } from "@/app/store/slices/export-slice";
 import { trimChanged } from "@/app/store/slices/trim-slice";
 import { createAppStore } from "@/app/store/store";
@@ -73,7 +73,7 @@ describe("unified source ingestion", () => {
     const store = createAppStore();
 
     store.dispatch(ingestSources([sourceA, sourceB, sourceC]));
-    const items = selectimportQueueItems(store.getState());
+    const items = selectImportQueueItems(store.getState());
 
     expect(items).toHaveLength(3);
     expect(items.map((item) => item.snapshot.source)).toEqual([sourceA, sourceB, sourceC]);
@@ -101,7 +101,7 @@ describe("unified source ingestion", () => {
 
     store.dispatch(ingestSources([sourceA, sourceA]));
 
-    const items = selectimportQueueItems(store.getState());
+    const items = selectImportQueueItems(store.getState());
     expect(items).toHaveLength(2);
     expect(items[0]?.snapshot.source).toEqual(sourceA);
     expect(items[1]?.snapshot.source).toEqual(sourceA);
@@ -120,7 +120,7 @@ describe("unified source ingestion", () => {
     );
     store.dispatch(ingestSources([sourceC, sourceA]));
 
-    const items = selectimportQueueItems(store.getState());
+    const items = selectImportQueueItems(store.getState());
     expect(items.map((item) => item.snapshot.source.sourcePath)).toEqual([
       sourceA.sourcePath,
       sourceB.sourcePath,
@@ -149,13 +149,13 @@ describe("unified source ingestion", () => {
     store.dispatch(ingestSources([sourceB]));
 
     await waitForSourceReady(store);
-    expect(selectimportQueueItems(store.getState()).map((item) => item.id)).not.toContain("fork-1");
+    expect(selectImportQueueItems(store.getState()).map((item) => item.id)).not.toContain("fork-1");
   });
 
   it("keeps a failed later item active in the queue", async () => {
     const store = createAppStore();
     store.dispatch(ingestSources([sourceA, sourceB]));
-    const items = selectimportQueueItems(store.getState());
+    const items = selectImportQueueItems(store.getState());
     await waitForSourceReady(store);
 
     mocks.activateSourcePath.mockRejectedValueOnce({
@@ -171,7 +171,7 @@ describe("unified source ingestion", () => {
       }),
     );
     expect(selectActiveItemId(store.getState())).toBe(items[1]?.id);
-    expect(selectimportQueueItems(store.getState())).toHaveLength(2);
+    expect(selectImportQueueItems(store.getState())).toHaveLength(2);
     expect(selectAudioPreviews(store.getState())).toBeNull();
     expect(mocks.inspectMedia).toHaveBeenCalledTimes(1);
   });
@@ -181,7 +181,7 @@ describe("unified source ingestion", () => {
 
     store.dispatch(ingestSources([]));
 
-    expect(selectimportQueueItems(store.getState())).toEqual([]);
+    expect(selectImportQueueItems(store.getState())).toEqual([]);
     expect(mocks.inspectMedia).not.toHaveBeenCalled();
   });
 });

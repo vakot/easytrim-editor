@@ -23,10 +23,13 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
+import { useAppSelector } from "@/app/store/redux-hooks";
+import { selectExportQueue } from "@/app/store/slices/export-slice";
 import { ExportQueue } from "@/features/export";
 
 import { ImportQueue } from "./components/ImportQueue";
 import { SourceDetails } from "./components/SourceDetails";
+import { useImportQueue } from "./hooks/useImportQueue";
 
 const DEFAULT_PANELS = {
   "workspace-sidebar-source-details": true,
@@ -118,110 +121,160 @@ export function SourcePanel() {
       </DropdownMenu>
 
       <ResizablePanelGroup id="workspace-sidebar-content" orientation="vertical" persisted>
-        {panels["workspace-sidebar-source-details"] && (
-          <ResizablePanel
-            className="flex min-h-0 flex-col overflow-hidden px-1"
-            collapsedSize={32}
-            collapsible
-            id="workspace-sidebar-source-details"
-            minSize={120}
-          >
-            <ResizablePanelControl panelId="workspace-sidebar-source-details">
-              {({ isCollapsed }) => (
-                <Button
-                  className="my-1 w-full justify-baseline px-2 text-foreground/80"
-                  size="xs"
-                  variant="ghost"
-                >
-                  {!isSingle &&
-                    (isCollapsed ? (
-                      <ChevronRight aria-hidden="true" />
-                    ) : (
-                      <ChevronDown aria-hidden="true" />
-                    ))}
-                  {t("source.labels.mediaDetails")}
-                </Button>
-              )}
-            </ResizablePanelControl>
-
-            <ScrollArea className="px-3">
-              <SourceDetails />
-            </ScrollArea>
-          </ResizablePanel>
-        )}
+        {panels["workspace-sidebar-source-details"] && <SourceDetailsPanel isSingle={isSingle} />}
 
         {panels["workspace-sidebar-import-queue"] && (
           <>
             <ResizableHandle />
-
-            <ResizablePanel
-              className="flex min-h-0 flex-col overflow-hidden px-1"
-              collapsedSize={32}
-              collapsible
-              id="workspace-sidebar-import-queue"
-              minSize={120}
-            >
-              <ResizablePanelControl panelId="workspace-sidebar-import-queue">
-                {({ isCollapsed }) => (
-                  <Button
-                    className="my-1 w-full justify-baseline px-2 text-foreground/80"
-                    size="xs"
-                    variant="ghost"
-                  >
-                    {!isSingle &&
-                      (isCollapsed ? (
-                        <ChevronRight aria-hidden="true" />
-                      ) : (
-                        <ChevronDown aria-hidden="true" />
-                      ))}
-                    {t("queue.labels.import")}
-                  </Button>
-                )}
-              </ResizablePanelControl>
-
-              <ScrollArea className="px-3">
-                <ImportQueue />
-              </ScrollArea>
-            </ResizablePanel>
+            <ImportQueuePanel isSingle={isSingle} />
           </>
         )}
 
         {panels["workspace-sidebar-export-queue"] && (
           <>
             <ResizableHandle />
-
-            <ResizablePanel
-              className="flex min-h-0 flex-col overflow-hidden px-1"
-              collapsedSize={32}
-              collapsible
-              id="workspace-sidebar-export-queue"
-              minSize={120}
-            >
-              <ResizablePanelControl panelId="workspace-sidebar-export-queue">
-                {({ isCollapsed }) => (
-                  <Button
-                    className="my-1 w-full justify-baseline px-2 text-foreground/80"
-                    size="xs"
-                    variant="ghost"
-                  >
-                    {!isSingle &&
-                      (isCollapsed ? (
-                        <ChevronRight aria-hidden="true" />
-                      ) : (
-                        <ChevronDown aria-hidden="true" />
-                      ))}
-                    {t("queue.labels.export")}
-                  </Button>
-                )}
-              </ResizablePanelControl>
-
-              <ScrollArea className="px-3">
-                <ExportQueue />
-              </ScrollArea>
-            </ResizablePanel>
+            <ExportQueuePanel isSingle={isSingle} />
           </>
         )}
       </ResizablePanelGroup>
     </Card>
+  );
+}
+
+interface SourcePanelProps {
+  isSingle?: boolean;
+}
+
+function SourceDetailsPanel({ isSingle = false }: SourcePanelProps) {
+  const { t } = useTranslation();
+
+  return (
+    <ResizablePanel
+      className="flex min-h-0 flex-col overflow-hidden"
+      collapsedSize={32}
+      collapsible
+      id="workspace-sidebar-source-details"
+      minSize={120}
+    >
+      <div className="px-1">
+        <ResizablePanelControl panelId="workspace-sidebar-source-details">
+          {({ isCollapsed }) => (
+            <Button
+              className="my-1 w-full justify-baseline pr-3 pl-2 text-foreground/80"
+              size="xs"
+              variant="ghost"
+            >
+              {!isSingle &&
+                (isCollapsed ? (
+                  <ChevronRight aria-hidden="true" />
+                ) : (
+                  <ChevronDown aria-hidden="true" />
+                ))}
+              {t("source.labels.mediaDetails")}
+            </Button>
+          )}
+        </ResizablePanelControl>
+      </div>
+
+      <ScrollArea className="px-3">
+        <SourceDetails />
+      </ScrollArea>
+    </ResizablePanel>
+  );
+}
+
+function ImportQueuePanel({ isSingle = false }: SourcePanelProps) {
+  const { t } = useTranslation();
+  const { activeIndex, items } = useImportQueue();
+
+  const position = activeIndex >= 0 ? activeIndex + 1 : 0;
+
+  return (
+    <ResizablePanel
+      className="flex min-h-0 flex-col overflow-hidden"
+      collapsedSize={32}
+      collapsible
+      id="workspace-sidebar-import-queue"
+      minSize={120}
+    >
+      <div className="px-1">
+        <ResizablePanelControl panelId="workspace-sidebar-import-queue">
+          {({ isCollapsed }) => (
+            <Button
+              className="my-1 flex w-full justify-between pr-3 pl-2 text-foreground/80"
+              size="xs"
+              variant="ghost"
+            >
+              <span className="flex items-center gap-1">
+                {!isSingle &&
+                  (isCollapsed ? (
+                    <ChevronRight aria-hidden="true" />
+                  ) : (
+                    <ChevronDown aria-hidden="true" />
+                  ))}
+                {t("queue.labels.import")}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {position} / {items.length}
+              </span>
+            </Button>
+          )}
+        </ResizablePanelControl>
+      </div>
+
+      <ScrollArea className="px-3">
+        <ImportQueue />
+      </ScrollArea>
+    </ResizablePanel>
+  );
+}
+
+function ExportQueuePanel({ isSingle = false }: SourcePanelProps) {
+  const { t } = useTranslation();
+
+  const queue = useAppSelector(selectExportQueue);
+  const queueIncomplete = queue.filter(
+    (queueItem) => queueItem.status === "queued" || queueItem.status === "rendering",
+  );
+
+  const queueProgress = queue.length - queueIncomplete.length;
+
+  return (
+    <ResizablePanel
+      className="flex min-h-0 flex-col overflow-hidden"
+      collapsedSize={32}
+      collapsible
+      id="workspace-sidebar-export-queue"
+      minSize={120}
+    >
+      <div className="px-1">
+        <ResizablePanelControl panelId="workspace-sidebar-export-queue">
+          {({ isCollapsed }) => (
+            <Button
+              className="my-1 flex w-full justify-between pr-3 pl-2 text-foreground/80"
+              size="xs"
+              variant="ghost"
+            >
+              <span className="flex items-center gap-1">
+                {!isSingle &&
+                  (isCollapsed ? (
+                    <ChevronRight aria-hidden="true" />
+                  ) : (
+                    <ChevronDown aria-hidden="true" />
+                  ))}
+                {t("queue.labels.export")}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {queueProgress} / {queue.length}
+              </span>
+            </Button>
+          )}
+        </ResizablePanelControl>
+      </div>
+
+      <ScrollArea className="px-3">
+        <ExportQueue />
+      </ScrollArea>
+    </ResizablePanel>
   );
 }

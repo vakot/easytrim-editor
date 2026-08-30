@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 import { useTimeline } from "@/app/hooks/useTimeline";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
@@ -36,16 +37,7 @@ export function ExportQueue() {
   }, [hasRenderingItem]);
 
   return (
-    <section aria-labelledby="export-queue-title" className="grid gap-3">
-      <div className="flex items-center justify-between">
-        <h2
-          className="font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
-          id="export-queue-title"
-        >
-          {t("queue.labels.export")}
-        </h2>
-        <span className="text-xs text-muted-foreground">{queue.length}</span>
-      </div>
+    <section>
       {queue.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted-foreground">
           {t("queue.messages.empty")}
@@ -88,9 +80,9 @@ function ExportQueueItem({ item, now }: { item: ExportQueueItem; now: number }) 
   }
 
   return (
-    <div
+    <Card
       className={cn(
-        "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-xl border border-l-4 border-border bg-card p-3",
+        "border- flex-row items-center gap-2 border-l-4 p-2 ring-inset",
         statusStyles[item.status],
         "transition-colors hover:bg-muted/60",
       )}
@@ -191,7 +183,7 @@ function ExportQueueItem({ item, now }: { item: ExportQueueItem; now: number }) 
           </div>
         )}
       </div>
-    </div>
+    </Card>
   );
 }
 
