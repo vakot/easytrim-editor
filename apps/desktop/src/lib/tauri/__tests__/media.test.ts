@@ -5,7 +5,12 @@ const mocks = vi.hoisted(() => ({
   onDragDropEvent: vi.fn(),
 }));
 
-vi.mock("@tauri-apps/api/core", () => ({ invoke: mocks.invoke }));
+vi.mock("@tauri-apps/api/core", () => ({
+  Channel: class {
+    constructor() {}
+  },
+  invoke: mocks.invoke,
+}));
 vi.mock("@tauri-apps/api/webview", () => ({
   getCurrentWebview: () => ({ onDragDropEvent: mocks.onDragDropEvent }),
 }));
@@ -20,6 +25,7 @@ import {
   prepareProxyPreview,
   prepareSourcePreview,
   prepareWaveforms,
+  renderFast,
 } from "../media";
 
 type NativeDropEvent =
@@ -109,6 +115,34 @@ describe("media IPC adapter", () => {
       commandPreview: "ffmpeg -i <source> -c:v hevc_nvenc <output>",
     });
     expect(mocks.invoke).toHaveBeenCalledWith("plan_optimized_export", { request });
+  });
+
+  it("passes the frontend diagnostic operation as the native export parent", async () => {
+    mocks.invoke.mockResolvedValue({
+      operationId: "native-op-1",
+      displayName: "clip.mkv",
+      displayPath: "C:/Exports/clip.mkv",
+    });
+    const request = {
+      sourcePath: "C:/Media/clip.mp4",
+      trim: { startMicros: 0, endMicros: 1_000_000 },
+      audioTracks: [],
+      mergeAudio: false,
+    };
+
+    await expect(renderFast(request, "output-1", vi.fn(), "diagnostic-op-1")).resolves.toEqual({
+      operationId: "native-op-1",
+      displayName: "clip.mkv",
+      displayPath: "C:/Exports/clip.mkv",
+    });
+    expect(mocks.invoke).toHaveBeenCalledWith(
+      "render_fast",
+      expect.objectContaining({
+        request,
+        outputId: "output-1",
+        diagnosticParentOperationId: "diagnostic-op-1",
+      }),
+    );
   });
 
   it("parses direct and proxy preview descriptors through narrow commands", async () => {

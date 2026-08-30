@@ -92,7 +92,7 @@ export function MenuBarQueue() {
               aria-keyshortcuts="Enter"
               disabled={!hasQueuedItems || queueStarted}
               inset
-              onSelect={() => void dispatch(startExportQueue())}
+              onSelect={() => void dispatch(startExportQueue({ id: "queue.start", type: "menu" }))}
             >
               {t("queue.actions.start")}
               <MenubarShortcut>

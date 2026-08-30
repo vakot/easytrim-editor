@@ -95,16 +95,18 @@ export async function renderFast(
   request: FastExportRequest,
   outputId: string,
   onProgress: (progress: ExportProgress) => void,
+  diagnosticParentOperationId?: string,
 ): Promise<ExportResult> {
-  return render("render_fast", request, outputId, onProgress);
+  return render("render_fast", request, outputId, onProgress, diagnosticParentOperationId);
 }
 
 export async function renderOptimized(
   request: OptimizedExportRequest,
   outputId: string,
   onProgress: (progress: ExportProgress) => void,
+  diagnosticParentOperationId?: string,
 ): Promise<ExportResult> {
-  return render("render_optimized", request, outputId, onProgress);
+  return render("render_optimized", request, outputId, onProgress, diagnosticParentOperationId);
 }
 
 export async function planOptimizedExport(
@@ -154,12 +156,18 @@ async function render(
   request: FastExportRequest | OptimizedExportRequest,
   outputId: string,
   onProgress: (progress: ExportProgress) => void,
+  diagnosticParentOperationId?: string,
 ): Promise<ExportResult> {
   try {
     const channel = new Channel<unknown>((value) => onProgress(parseExportProgress(value)));
-    return parseExportResult(
-      await invoke<unknown>(command, { request, outputId, onProgress: channel }),
-    );
+    const args = {
+      request,
+      outputId,
+      onProgress: channel,
+      ...(diagnosticParentOperationId ? { diagnosticParentOperationId } : {}),
+    };
+
+    return parseExportResult(await invoke<unknown>(command, args));
   } catch (error: unknown) {
     throw normalizeAppError(error);
   }

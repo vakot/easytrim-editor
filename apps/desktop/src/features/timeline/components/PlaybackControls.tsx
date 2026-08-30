@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import type { TrimBoundary } from "@/domain/trim";
+import type { DiagnosticOrigin } from "@/lib/tauri/diagnostics.types";
 
 interface PlaybackControlsProps {
   canSetSegmentEnd: boolean;
@@ -20,9 +21,9 @@ interface PlaybackControlsProps {
   disabled?: boolean;
   error: string | null;
   isPlaying: boolean;
-  onSetSegmentBoundary: (boundary: TrimBoundary) => void;
-  onStepFrame: (direction: -1 | 1) => void;
-  onTogglePlayback: () => void;
+  onSetSegmentBoundary: (boundary: TrimBoundary, origin?: DiagnosticOrigin) => void;
+  onStepFrame: (direction: -1 | 1, origin?: DiagnosticOrigin) => void;
+  onTogglePlayback: (origin?: DiagnosticOrigin) => void;
 }
 
 export function PlaybackControls({
@@ -46,7 +47,9 @@ export function PlaybackControls({
         <TransportButton
           disabled={disabled || !canSetSegmentStart}
           label={t("preview.actions.setStart")}
-          onClick={() => onSetSegmentBoundary("start")}
+          onClick={() => {
+            onSetSegmentBoundary("start", { type: "button", id: "set-start" });
+          }}
           shortcut="I"
           title={
             canSetSegmentStart
@@ -59,7 +62,9 @@ export function PlaybackControls({
         <TransportButton
           disabled={disabled}
           label={t("preview.actions.previousFrame")}
-          onClick={() => onStepFrame(-1)}
+          onClick={() => {
+            onStepFrame(-1, { type: "button", id: "previous-frame" });
+          }}
           shortcut="ArrowLeft"
           title={t("preview.tooltips.previousFrame")}
         >
@@ -68,7 +73,9 @@ export function PlaybackControls({
         <TransportButton
           disabled={disabled}
           label={isPlaying ? t("preview.actions.pause") : t("preview.actions.play")}
-          onClick={onTogglePlayback}
+          onClick={() => {
+            onTogglePlayback({ type: "button", id: "playback" });
+          }}
           primary
           shortcut="Space"
           title={isPlaying ? t("preview.tooltips.pause") : t("preview.tooltips.play")}
@@ -78,7 +85,9 @@ export function PlaybackControls({
         <TransportButton
           disabled={disabled}
           label={t("preview.actions.nextFrame")}
-          onClick={() => onStepFrame(1)}
+          onClick={() => {
+            onStepFrame(1, { type: "button", id: "next-frame" });
+          }}
           shortcut="ArrowRight"
           title={t("preview.tooltips.nextFrame")}
         >
@@ -87,7 +96,9 @@ export function PlaybackControls({
         <TransportButton
           disabled={disabled || !canSetSegmentEnd}
           label={t("preview.actions.setEnd")}
-          onClick={() => onSetSegmentBoundary("end")}
+          onClick={() => {
+            onSetSegmentBoundary("end", { type: "button", id: "set-end" });
+          }}
           shortcut="O"
           title={
             canSetSegmentEnd

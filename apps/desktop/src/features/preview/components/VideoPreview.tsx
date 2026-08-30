@@ -10,6 +10,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectPlaybackSpeed } from "@/app/store/slices/editor-tools-slice";
 import type { PreviewState } from "@/app/store/slices/preview-slice";
+import type { DiagnosticOrigin } from "@/lib/tauri/diagnostics.types";
 
 import { CropViewport } from "./CropViewport";
 
@@ -25,7 +26,7 @@ interface VideoPreviewProps {
   onPlaybackError: (previewKind: "source" | "proxy") => void;
   onSkip: () => void;
   onTimeUpdate: (seconds: number) => void;
-  onTogglePlayback: () => void;
+  onTogglePlayback: (origin?: DiagnosticOrigin) => void;
   preview: PreviewState;
   videoRef: RefObject<HTMLVideoElement | null>;
 }

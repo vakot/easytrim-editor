@@ -172,3 +172,23 @@ panic capture are already installed.
 Keep instrumentation at the semantic boundary: reuse the same domain action from button, hotkey,
 menu, and timeline surfaces, changing only `origin`. Do not duplicate product behavior to make a
 trace.
+
+## Phase 2 event catalogue
+
+The current application integration records these high-value boundaries:
+
+| Area                 | Representative events                                                                                    | Context                                                    |
+| -------------------- | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| Source and snapshots | `source.import.requested`, `source.open.started`, `source.prepare.started`, `snapshot.active.changed`    | source display name, opaque queue/snapshot ID, load status |
+| Preview and media    | `preview.state.changed`, `preview.proxy.started`, `media.source.changed`, `media.playback.failed`        | preview kind and bounded failure code                      |
+| Timeline and crop    | `timeline.seek.started`, `timeline.seek.completed`, `timeline.trim-boundary.changed`, `crop.tool.opened` | micros, boundary, and crop state                           |
+| Audio and waveform   | `audio.track.changed`, `audio.master.changed`, `audio.preview.state.changed`, `waveform.state.changed`   | stream index, volume, job ID, width                        |
+| Export               | `export.request.start`, `export.prepare.started`, `ffmpeg.export.started`, `ffmpeg.progress.reported`    | route, queue item, snapshot, sampled percent               |
+| Guards and cleanup   | `*.ignored`, `*.cancelled`, `source.file.delete.failed`, `export.launch.failed`                          | bounded reason and normalized error                        |
+
+Export progress is sampled at the first report, every ten percentage points, and completion. Time
+update, selector, Redux-action, and other high-frequency UI activity is intentionally not traced.
+All async operations use the operation helper and terminate as success, failure, or cancellation,
+with native FFmpeg events retaining their runtime operation ID and linking to the frontend export
+operation through `parentOperationId`.
+including source replacement and user cancellation paths.

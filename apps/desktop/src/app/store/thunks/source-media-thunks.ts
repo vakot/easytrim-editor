@@ -79,17 +79,36 @@ function isCurrentSource(state: RootState, sourcePath: string, loadToken: number
 }
 
 export const checkMediaCapabilitiesRequested = (): AppThunk => async (dispatch) => {
+  const operation = diagnostics.startOperation("media.capabilities", {
+    origin: { type: "system" },
+  });
+
   try {
-    dispatch(capabilitiesReady(await checkMediaCapabilities()));
+    const capabilities = await checkMediaCapabilities();
+    dispatch(capabilitiesReady(capabilities));
+    operation.complete({
+      ffmpeg: capabilities.ffmpeg.available,
+      ffprobe: capabilities.ffprobe.available,
+    });
   } catch (error: unknown) {
-    dispatch(capabilitiesFailed(normalizeAppError(error)));
+    const normalized = normalizeAppError(error);
+    operation.fail(normalized);
+    dispatch(capabilitiesFailed(normalized));
   }
 };
 
 export const ingestSources =
-  (sources: SourceRef[]): AppThunk =>
+  (sources: SourceRef[], origin: DiagnosticOrigin = { type: "internal" }): AppThunk =>
   (dispatch, getState) => {
-    if (sources.length === 0) return;
+    diagnostics.action("source.import.requested", origin, { sourceCount: sources.length });
+    if (sources.length === 0) {
+      diagnostics.event("source.import.ignored", {
+        data: { reason: "empty_selection" },
+        origin,
+        result: "ignored",
+      });
+      return;
+    }
 
     const mergeAudio = selectMergeAudioEnabledDefault(getState());
     const items: importQueueItem[] = sources.map((source) => ({
@@ -101,7 +120,7 @@ export const ingestSources =
 
     dispatch(dropListenerErrorCleared());
     dispatch(importQueueItemsAdded(items));
-    dispatch(navigateToImportedItem(items[0]!.id));
+    dispatch(navigateToImportedItem(items[0]!.id, origin));
   };
 
 async function prepareSelectedSource(
@@ -111,18 +130,33 @@ async function prepareSelectedSource(
   loadToken: number,
   snapshot?: EditorSnapshot,
 ): Promise<EditorSnapshot | null> {
+  const operation = diagnostics.startOperation("source.prepare", {
+    data: { displayName: source.displayName },
+    origin: { type: "internal" },
+  });
+
+  const probeOperation = operation.child("ffprobe.inspect", {
+    data: { displayName: source.displayName },
+  });
+
   let media;
   try {
     media = await inspectMedia(source.sourcePath);
+    probeOperation.complete({ audioStreamCount: media.audioStreams.length });
   } catch (error: unknown) {
     const normalized = normalizeAppError(error);
+    probeOperation.fail(normalized);
+    operation.fail(normalized);
     if (isCurrentSource(getState(), source.sourcePath, loadToken)) {
       dispatch(sourceFailed({ loadToken, error: normalized }));
     }
     return null;
   }
 
-  if (!isCurrentSource(getState(), source.sourcePath, loadToken)) return null;
+  if (!isCurrentSource(getState(), source.sourcePath, loadToken)) {
+    operation.cancel({ reason: "source_replaced" });
+    return null;
+  }
   const readySnapshot = snapshot
     ? createEditorSnapshot({
         source,
@@ -137,11 +171,19 @@ async function prepareSelectedSource(
   dispatch(sourceReady({ loadToken, media, snapshot: readySnapshot }));
 
   const audioStreamIndexes = media.audioStreams.map((stream) => stream.streamIndex);
+  let preparationFailed = false;
+  const audioOperation = operation.child("audio.preview", {
+    data: { streamCount: audioStreamIndexes.length },
+  });
+
   const audioPreparation =
     audioStreamIndexes.length <= 1
       ? Promise.resolve().then(() => {
           if (isCurrentSource(getState(), source.sourcePath, loadToken)) {
             dispatch(audioPreviewsReady({ previews: [] }));
+            audioOperation.complete({ previewCount: 0 });
+          } else {
+            audioOperation.cancel({ reason: "source_replaced" });
           }
         })
       : (async () => {
@@ -150,8 +192,13 @@ async function prepareSelectedSource(
             const previews = await prepareAudioPreviews(source.sourcePath, audioStreamIndexes);
             if (isCurrentSource(getState(), source.sourcePath, loadToken)) {
               dispatch(audioPreviewsReady({ previews }));
+              audioOperation.complete({ previewCount: previews.length });
+            } else {
+              audioOperation.cancel({ reason: "source_replaced" });
             }
           } catch (error: unknown) {
+            preparationFailed = true;
+            audioOperation.fail(error);
             if (isCurrentSource(getState(), source.sourcePath, loadToken)) {
               dispatch(
                 audioPreviewsUnavailable({
@@ -162,22 +209,41 @@ async function prepareSelectedSource(
           }
         })();
 
+  const previewOperation = operation.child("preview.prepare", {
+    data: { kind: "source" },
+  });
+
   const previewPreparation = (async () => {
     try {
       const preview = await prepareSourcePreview(source.sourcePath);
       if (isCurrentSource(getState(), source.sourcePath, loadToken)) {
         dispatch(previewReady({ preview }));
+        previewOperation.complete({ kind: preview.kind });
+      } else {
+        previewOperation.cancel({ reason: "source_replaced" });
       }
     } catch (error: unknown) {
       const normalized = normalizeAppError(error);
+      preparationFailed = true;
+      previewOperation.fail(normalized);
       if (!isCurrentSource(getState(), source.sourcePath, loadToken)) return;
       dispatch(previewFailed({ error: normalized }));
     }
   })();
 
   await Promise.all([audioPreparation, previewPreparation]);
-  if (!isCurrentSource(getState(), source.sourcePath, loadToken)) return null;
-  return (
+  if (!isCurrentSource(getState(), source.sourcePath, loadToken)) {
+    operation.cancel({ reason: "source_replaced" });
+    return null;
+  }
+  if (preparationFailed) {
+    operation.fail({
+      code: "source_prepare_failed",
+      message: "One or more media previews failed to prepare.",
+    });
+    return null;
+  }
+  const result =
     readySnapshot ??
     createEditorSnapshot({
       source,
@@ -190,8 +256,10 @@ async function prepareSelectedSource(
         volumePercent,
       })),
       mergeAudio: selectMergeAudio(getState()),
-    })
-  );
+    });
+
+  operation.complete({ audioStreamCount: audioStreamIndexes.length });
+  return result;
 }
 
 function captureActiveQueueItemDraft(
@@ -321,8 +389,9 @@ export const activateImportedItemRequested =
   };
 
 export const navigateToImportedItem =
-  (id: string | null): AppThunk<boolean> =>
+  (id: string | null, origin: DiagnosticOrigin = { type: "internal" }): AppThunk<boolean> =>
   (dispatch, getState) => {
+    diagnostics.action("snapshot.select.requested", origin, id ? { snapshotId: id } : undefined);
     const state = getState();
     const target = id
       ? state.export.queue.find(
@@ -331,16 +400,45 @@ export const navigateToImportedItem =
         )
       : null;
 
-    if (id !== null && !target) return false;
-    if (state.export.activeItemId === id && (id !== null || !selectHasSource(state))) return false;
+    if (id !== null && !target) {
+      diagnostics.event("snapshot.select.ignored", {
+        data: { reason: "snapshot_not_found", snapshotId: id },
+        origin,
+        result: "ignored",
+      });
+      return false;
+    }
+    if (state.export.activeItemId === id && (id !== null || !selectHasSource(state))) {
+      diagnostics.event("snapshot.select.ignored", {
+        data: { reason: "already_active", ...(id ? { snapshotId: id } : {}) },
+        origin,
+        result: "ignored",
+      });
+      return false;
+    }
 
     dispatch(leaveActiveImportedItem());
+    const operation = diagnostics.startOperation("snapshot.switch", {
+      origin,
+      snapshotId: id ?? undefined,
+    });
+
     if (target) {
-      void dispatch(activateImportedItemRequested(target));
+      void dispatch(activateImportedItemRequested(target)).then(
+        (restored) => {
+          if (restored) operation.complete({ itemId: target.id });
+          else
+            operation.fail(new Error("Snapshot restoration did not complete."), {
+              itemId: target.id,
+            });
+        },
+        (error: unknown) => operation.fail(error, { itemId: target.id }),
+      );
     } else {
       queueRestoreSequence += 1;
       dispatch(sourceCleared());
       dispatch(activeQueueItemChanged(null));
+      operation.complete({ reason: "cleared" });
     }
     return true;
   };
@@ -383,47 +481,76 @@ export const chooseSourceRequested =
     }
 
     if (sources.length > 0) {
-      dispatch(ingestSources(sources));
+      dispatch(ingestSources(sources, origin));
       operation.complete({ sourceCount: sources.length });
     } else {
       operation.cancel({ reason: "picker_cancelled" });
     }
   };
 
-export const closeActiveImportedItemRequested = (): AppThunk => (dispatch, getState) => {
-  const state = getState();
-  const activeItem = selectActiveQueueItem(state);
+export const closeActiveImportedItemRequested =
+  (origin: DiagnosticOrigin = { type: "internal" }): AppThunk =>
+  (dispatch, getState) => {
+    diagnostics.action("snapshot.close.requested", origin);
+    const state = getState();
+    const activeItem = selectActiveQueueItem(state);
 
-  if (!activeItem || activeItem.status !== "imported") {
-    if (!selectHasSource(state)) return;
-    dispatch(sourceCleared());
+    if (!activeItem || activeItem.status !== "imported") {
+      if (!selectHasSource(state)) {
+        diagnostics.event("snapshot.close.ignored", {
+          data: { reason: "no_active_source" },
+          origin,
+          result: "ignored",
+        });
+        return;
+      }
+      dispatch(sourceCleared());
+      dispatch(nativeDialogStateChanged(false));
+      return;
+    }
+
+    const importedItems = selectImportQueueItems(state);
+    const activeIndex = importedItems.findIndex((item) => item.id === activeItem.id);
+    const replacementItem = getReplacementImportedItem(importedItems, activeIndex);
+
+    dispatch(importQueueItemRemoved(activeItem.id));
+    dispatch(navigateToImportedItem(replacementItem?.id ?? null));
     dispatch(nativeDialogStateChanged(false));
-    return;
-  }
-
-  const importedItems = selectImportQueueItems(state);
-  const activeIndex = importedItems.findIndex((item) => item.id === activeItem.id);
-  const replacementItem = getReplacementImportedItem(importedItems, activeIndex);
-
-  dispatch(importQueueItemRemoved(activeItem.id));
-  dispatch(navigateToImportedItem(replacementItem?.id ?? null));
-  dispatch(nativeDialogStateChanged(false));
-};
+  };
 
 export const deleteActiveImportedItemRequested =
   (): AppThunk<Promise<AppError | null>> => async (dispatch, getState) => {
     const activeItem = selectActiveQueueItem(getState());
-    if (!activeItem || activeItem.status !== "imported") return null;
+    if (!activeItem || activeItem.status !== "imported") {
+      diagnostics.event("source.file.delete.ignored", {
+        data: { reason: "no_active_source" },
+        origin: { type: "button", id: "source.delete" },
+        result: "ignored",
+      });
+      return null;
+    }
+
+    const operation = diagnostics.startOperation("source.file-delete", {
+      data: { itemId: activeItem.id },
+      origin: { type: "button", id: "source.delete" },
+      snapshotId: activeItem.id,
+    });
 
     try {
       await moveSourceToTrash(activeItem.snapshot.source.sourcePath);
     } catch (error: unknown) {
       const normalized = normalizeAppError(error);
+      diagnostics.error("source.file.delete.failed", normalized, {
+        data: { itemId: activeItem.id },
+        origin: { type: "button", id: "source.delete" },
+      });
+      operation.fail(normalized);
       dispatch(sourceErrorReported(normalized));
       return normalized;
     }
 
     dispatch(closeActiveImportedItemRequested());
+    operation.complete({ itemId: activeItem.id });
     return null;
   };
 
@@ -431,6 +558,11 @@ export const handlePreviewPlaybackError =
   (sourcePath: string, previewKind: PreviewKind): AppThunk =>
   async (dispatch, getState) => {
     const loadToken = getState().source.loadToken;
+    diagnostics.event("preview.playback.failed", {
+      data: { kind: previewKind },
+      origin: { type: "system" },
+      result: "failed",
+    });
     if (!isCurrentSource(getState(), sourcePath, loadToken)) return;
     if (previewKind === "proxy") {
       dispatch(
@@ -444,13 +576,22 @@ export const handlePreviewPlaybackError =
       return;
     }
 
+    const operation = diagnostics.startOperation("preview.proxy", {
+      data: { fallback: true },
+      origin: { type: "system" },
+    });
+
     dispatch(previewLoading({ kind: "proxy" }));
     try {
       const preview = await prepareProxyPreview(sourcePath);
       if (isCurrentSource(getState(), sourcePath, loadToken)) {
         dispatch(previewReady({ preview }));
+        operation.complete({ kind: preview.kind });
+      } else {
+        operation.cancel({ reason: "source_replaced" });
       }
     } catch (error: unknown) {
+      operation.fail(error);
       if (isCurrentSource(getState(), sourcePath, loadToken)) {
         dispatch(previewFailed({ error: normalizeAppError(error) }));
       }
@@ -461,17 +602,48 @@ export const prepareSourceWaveforms =
   (sourcePath: string, streamIndexes: number[], width: number): AppThunk<Promise<string | null>> =>
   async (dispatch, getState) => {
     const loadToken = getState().source.loadToken;
-    if (streamIndexes.length === 0 || !isCurrentSource(getState(), sourcePath, loadToken))
+    diagnostics.action(
+      "waveform.generate.requested",
+      { type: "internal" },
+      {
+        streamCount: streamIndexes.length,
+        width,
+      },
+    );
+    if (streamIndexes.length === 0) {
+      diagnostics.event("waveform.generate.ignored", {
+        data: { reason: "no_audio_streams" },
+        origin: { type: "internal" },
+        result: "ignored",
+      });
       return null;
+    }
+    if (!isCurrentSource(getState(), sourcePath, loadToken)) {
+      diagnostics.event("waveform.generate.cancelled", {
+        data: { reason: "source_replaced" },
+        origin: { type: "internal" },
+        result: "cancelled",
+      });
+      return null;
+    }
 
     const jobId = `waveform-${++waveformJobSequence}`;
+    const operation = diagnostics.startOperation("waveform.generate", {
+      data: { streamCount: streamIndexes.length, width },
+      origin: { type: "internal" },
+    });
+
     dispatch(waveformsLoading({ jobId, width, streamIndexes }));
     try {
       const results = await prepareWaveforms(sourcePath, jobId, streamIndexes, width);
       if (isCurrentSource(getState(), sourcePath, loadToken)) {
         results.forEach((result) => dispatch(waveformReady(result)));
+        operation.complete({ resultCount: results.length });
+      } else {
+        operation.cancel({ reason: "source_replaced" });
       }
     } catch (error: unknown) {
+      operation.fail(error);
       if (isCurrentSource(getState(), sourcePath, loadToken)) {
         dispatch(
           waveformsFailed({

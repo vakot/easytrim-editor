@@ -1,4 +1,5 @@
 use crate::{
+    diagnostics::{DiagnosticEventInput, DiagnosticsState},
     error::AppError,
     media::{
         audio::generate_audio_previews,
@@ -9,6 +10,7 @@ use crate::{
     state::{AppState, PreviewStreamSelection},
 };
 use serde::Serialize;
+use std::sync::Arc;
 use tauri::State;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
@@ -60,17 +62,40 @@ pub struct WaveformResult {
 pub async fn inspect_media(
     source_path: String,
     state: State<'_, AppState>,
+    diagnostics: State<'_, Arc<DiagnosticsState>>,
 ) -> Result<MediaInfo, AppError> {
     let active_source = state.resolve_source_by_path(&source_path)?;
     let load_token = active_source.load_token;
     let cancellation = active_source.cancellation.clone();
+    let operation_id = format!("ffprobe-{load_token}");
+    record_ffprobe_event(&diagnostics, "ffprobe.process.spawned", &operation_id, None);
     let result = tauri::async_runtime::spawn_blocking(move || {
         probe_media(&active_source.path, move || {
             cancellation.load(std::sync::atomic::Ordering::Acquire)
         })
     })
     .await
-    .map_err(|_| AppError::internal("Video inspection stopped unexpectedly."))??;
+    .map_err(|_| AppError::internal("Video inspection stopped unexpectedly."))?;
+    let result = match result {
+        Ok(media) => {
+            record_ffprobe_event(
+                &diagnostics,
+                "ffprobe.process.exited",
+                &operation_id,
+                Some("success"),
+            );
+            media
+        }
+        Err(error) => {
+            record_ffprobe_event(
+                &diagnostics,
+                "ffprobe.process.exited",
+                &operation_id,
+                Some("failed"),
+            );
+            return Err(error);
+        }
+    };
 
     let audio_stream_index = result
         .audio_streams
@@ -93,6 +118,26 @@ pub async fn inspect_media(
         audio_stream_indexes,
     )?;
     Ok(result)
+}
+
+fn record_ffprobe_event(
+    diagnostics: &DiagnosticsState,
+    event: &str,
+    operation_id: &str,
+    result: Option<&str>,
+) {
+    let _ = diagnostics.record(DiagnosticEventInput {
+        category: "ffprobe".to_owned(),
+        data: None,
+        event: event.to_owned(),
+        level: "info".to_owned(),
+        operation_id: Some(operation_id.to_owned()),
+        origin: None,
+        parent_operation_id: None,
+        result: result.map(str::to_owned),
+        snapshot_id: None,
+        duration_ms: None,
+    });
 }
 
 #[tauri::command]
