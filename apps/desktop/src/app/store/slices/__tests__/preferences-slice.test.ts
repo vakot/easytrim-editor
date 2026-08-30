@@ -41,6 +41,7 @@ describe("preferences Redux domain", () => {
         segmentPlaybackEnabledDefault: false,
         autoStartQueueEnabled: false,
         mergeAudioEnabledDefault: true,
+        deleteSourceOnRenderFinish: false,
       },
       preferencesReset(),
     );

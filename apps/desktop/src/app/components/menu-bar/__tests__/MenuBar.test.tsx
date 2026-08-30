@@ -314,8 +314,8 @@ describe("MenuBarTest", () => {
 
     await user.click(screen.getByRole("button", { name: "Enable" }));
     expect(menuState.dispatch).toHaveBeenCalledWith({
-        type: "preferences/preferenceChanged",
-        payload: { enabled: true, key: "deleteSourceOnRenderFinish" },
+      type: "preferences/preferenceChanged",
+      payload: { enabled: true, key: "deleteSourceOnRenderFinish" },
     });
   });
 
@@ -495,6 +495,7 @@ describe("MenuBarTest", () => {
               segmentPlaybackEnabledDefault: false,
               autoStartQueueEnabled: false,
               mergeAudioEnabledDefault: false,
+              deleteSourceOnRenderFinish: false,
             }}
           />
         </ThemeProvider>

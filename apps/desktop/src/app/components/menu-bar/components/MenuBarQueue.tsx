@@ -32,16 +32,16 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
-  preferenceChanged,
-  selectDeleteSourceOnRenderFinish,
-} from "@/app/store/slices/preferences-slice";
-import {
   queueFinishActionChanged,
   selectAvailableQueueFinishActions,
   selectExportQueue,
   selectQueueFinishAction,
   selectQueueStarted,
 } from "@/app/store/slices/export-slice";
+import {
+  preferenceChanged,
+  selectDeleteSourceOnRenderFinish,
+} from "@/app/store/slices/preferences-slice";
 import {
   cancelActiveExportRequested,
   cancelAllExportsRequested,
@@ -125,7 +125,9 @@ export function MenuBarQueue() {
                   checked={deleteSourceOnRenderFinish}
                   onSelect={() => {
                     if (deleteSourceOnRenderFinish) {
-                      dispatch(preferenceChanged({ enabled: false, key: "deleteSourceOnRenderFinish" }));
+                      dispatch(
+                        preferenceChanged({ enabled: false, key: "deleteSourceOnRenderFinish" }),
+                      );
                     } else {
                       setIsDeleteSourceConfirmOpen(true);
                     }
