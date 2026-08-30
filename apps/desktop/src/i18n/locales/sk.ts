@@ -59,6 +59,13 @@ export const sk = {
       togglePanel: "Prepnúť {{panel}}",
     },
     dialogs: {
+      diagnosticsRecovery: {
+        description:
+          "EasyTrim sa pri poslednom spustení neukončil normálne. Diagnostické informácie z tejto relácie boli uložené a môžu pomôcť určiť príčinu.",
+        revealFailed: "Diagnostickú správu sa nepodarilo zobraziť v správcovi súborov.",
+        showReport: "Zobraziť správu",
+        title: "EasyTrim sa neukončil normálne",
+      },
       nativeSystem: {
         description: "Pokračujte výberom umiestnenia súboru.",
         title: "Čaká sa na systémové okno",

@@ -46,6 +46,8 @@ import { selectTrim } from "@/app/store/slices/trim-slice";
 import type { AppDispatch, RootState } from "@/app/store/store";
 import { createEditorSnapshot, type EditorSnapshot } from "@/domain/editor-snapshot";
 import type { SourceRef } from "@/domain/source";
+import { diagnostics } from "@/lib/diagnostics";
+import type { DiagnosticOrigin } from "@/lib/tauri/diagnostics.types";
 import {
   activateSourcePath,
   checkMediaCapabilities,
@@ -343,34 +345,50 @@ export const navigateToImportedItem =
     return true;
   };
 
-export const chooseSourceRequested = (): AppThunk => async (dispatch, getState) => {
-  if (getState().importWorkflow.isChoosingSource || getState().importWorkflow.isNativeDialogOpen) {
-    return;
-  }
+export const chooseSourceRequested =
+  (origin: DiagnosticOrigin = { type: "internal" }): AppThunk =>
+  async (dispatch, getState) => {
+    diagnostics.action("source.open.requested", origin);
+    if (
+      getState().importWorkflow.isChoosingSource ||
+      getState().importWorkflow.isNativeDialogOpen
+    ) {
+      diagnostics.event("source.open.ignored", {
+        data: { reason: "native_dialog_active" },
+        origin,
+        result: "ignored",
+      });
+      return;
+    }
 
-  dispatch(sourceChoiceStarted());
-  let sources: SourceRef[] = [];
-  let pickerError: AppError | null = null;
+    const operation = diagnostics.startOperation("source.open", { origin });
+    dispatch(sourceChoiceStarted());
+    let sources: SourceRef[] = [];
+    let pickerError: AppError | null = null;
 
-  try {
-    sources = await chooseSourceDialog();
-  } catch (error: unknown) {
-    pickerError = normalizeAppError(error);
-  } finally {
-    // The native picker has resolved here. Import inspection and dependent media
-    // preparation must not extend the native-dialog workflow state.
-    dispatch(sourceChoiceFinished());
-  }
+    try {
+      sources = await chooseSourceDialog();
+    } catch (error: unknown) {
+      pickerError = normalizeAppError(error);
+    } finally {
+      // The native picker has resolved here. Import inspection and dependent media
+      // preparation must not extend the native-dialog workflow state.
+      dispatch(sourceChoiceFinished());
+    }
 
-  if (pickerError) {
-    dispatch(sourceFailed({ error: pickerError }));
-    return;
-  }
+    if (pickerError) {
+      operation.fail(pickerError);
+      dispatch(sourceFailed({ error: pickerError }));
+      return;
+    }
 
-  if (sources.length > 0) {
-    dispatch(ingestSources(sources));
-  }
-};
+    if (sources.length > 0) {
+      dispatch(ingestSources(sources));
+      operation.complete({ sourceCount: sources.length });
+    } else {
+      operation.cancel({ reason: "picker_cancelled" });
+    }
+  };
 
 export const closeActiveImportedItemRequested = (): AppThunk => (dispatch, getState) => {
   const state = getState();

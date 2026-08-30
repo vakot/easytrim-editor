@@ -57,6 +57,13 @@ export const en = {
       togglePanel: "Toggle {{panel}}",
     },
     dialogs: {
+      diagnosticsRecovery: {
+        description:
+          "EasyTrim did not complete its normal shutdown the last time it was running. Diagnostic information from that session was saved and may help identify the cause.",
+        revealFailed: "The diagnostic report could not be shown in the file manager.",
+        showReport: "Show Report",
+        title: "EasyTrim did not shut down normally",
+      },
       nativeSystem: {
         description: "Choose a file location to continue.",
         title: "Waiting for system dialog",

@@ -86,7 +86,9 @@ export function MenuBarFile() {
           <MenubarGroup>
             <MenubarItem
               disabled={isChoosingSource}
-              onSelect={() => void dispatch(chooseSourceRequested())}
+              onSelect={() =>
+                void dispatch(chooseSourceRequested({ id: "file.open", type: "menu" }))
+              }
             >
               {t("app.actions.openFile")}
               <MenubarShortcut>
