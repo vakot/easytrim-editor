@@ -30,6 +30,7 @@ export const sk = {
       resetLayout: "Obnoviť rozloženie",
       restart: "Reštartovať aplikáciu",
       restore: "Obnoviť",
+      showPanel: "Zobraziť {{panel}}",
       update: "Aktualizovať",
     },
     labels: {

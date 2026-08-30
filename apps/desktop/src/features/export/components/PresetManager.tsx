@@ -15,6 +15,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
+  DropdownMenuIcon,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuSub,
@@ -141,15 +142,20 @@ export function PresetManager() {
                     </DropdownMenuSubTrigger>
                     <DropdownMenuSubContent className="min-w-32">
                       <DropdownMenuGroup>
-                        <DropdownMenuItem onSelect={() => openEditDialog(preset)}>
-                          <Pencil className="size-3.5" />
+                        <DropdownMenuItem inset onSelect={() => openEditDialog(preset)}>
+                          <DropdownMenuIcon>
+                            <Pencil className="size-3.5" />
+                          </DropdownMenuIcon>
                           {t("common.actions.edit")}
                         </DropdownMenuItem>
                         <DropdownMenuItem
+                          inset
                           onSelect={() => setPresetToDelete(preset)}
                           variant="destructive"
                         >
-                          <Trash2 className="size-3.5" />
+                          <DropdownMenuIcon>
+                            <Trash2 className="size-3.5" />
+                          </DropdownMenuIcon>
                           {t("common.actions.delete")}
                         </DropdownMenuItem>
                       </DropdownMenuGroup>
@@ -160,8 +166,10 @@ export function PresetManager() {
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem onSelect={openCreateDialog}>
-                <Plus className="size-3.5" />
+              <DropdownMenuItem inset onSelect={openCreateDialog}>
+                <DropdownMenuIcon>
+                  <Plus className="size-3.5" />
+                </DropdownMenuIcon>
                 {t("export.actions.addPreset")}
               </DropdownMenuItem>
             </DropdownMenuGroup>

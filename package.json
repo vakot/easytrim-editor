@@ -13,6 +13,8 @@
     "build:web": "pnpm --filter @easytrim-editor/desktop build",
     "preview": "node scripts/preview-production.mjs",
     "preview:web": "pnpm --filter @easytrim-editor/desktop preview",
+    "storybook": "pnpm --filter @easytrim-editor/desktop storybook",
+    "build:storybook": "pnpm --filter @easytrim-editor/desktop build:storybook",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint . --max-warnings 0 && pnpm i18n:check",
@@ -20,6 +22,7 @@
     "i18n:check": "node scripts/validate-i18n.mjs",
     "knip": "knip --production",
     "typecheck": "pnpm --filter @easytrim-editor/desktop typecheck",
+    "typecheck:storybook": "pnpm --filter @easytrim-editor/desktop typecheck:storybook",
     "test": "pnpm --filter @easytrim-editor/desktop test",
     "test:release": "node --test scripts/__tests__/*.test.mjs",
     "icons:generate": "node scripts/generate-desktop-icons.mjs",
@@ -27,7 +30,7 @@
     "version:bump": "node scripts/bump-version.mjs",
     "release:local": "node scripts/release-local.mjs",
     "release:linux": "node scripts/release-linux-docker.mjs",
-    "check": "pnpm format:check && pnpm lint && pnpm knip && pnpm typecheck && pnpm test && pnpm test:release && pnpm build:web",
+    "check": "pnpm format:check && pnpm lint && pnpm knip && pnpm typecheck && pnpm typecheck:storybook && pnpm test && pnpm test:release && pnpm build:storybook && pnpm build:web",
     "tauri": "pnpm --filter @easytrim-editor/desktop tauri"
   },
   "devDependencies": {

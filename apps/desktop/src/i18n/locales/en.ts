@@ -28,6 +28,7 @@ export const en = {
       resetLayout: "Reset layout",
       restart: "Restart application",
       restore: "Restore",
+      showPanel: "Show {{panel}}",
       update: "Update",
     },
     labels: {

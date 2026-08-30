@@ -1,6 +1,7 @@
 # Node and Vite
 node_modules/
 dist/
+storybook-static/
 .vite/
 coverage/
 *.tsbuildinfo
