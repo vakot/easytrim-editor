@@ -99,6 +99,7 @@ const output = {
 };
 
 const queuedItem: ExportQueueItem = {
+  addedAt: 1,
   id: "export-queued",
   snapshot: {
     source: { displayName: "source.mp4", sourcePath: "C:/Media/source.mp4" },
@@ -512,7 +513,7 @@ describe("export thunks and runtime queue", () => {
       snapshot: { ...queuedItem.snapshot, source },
     };
 
-    const secondHistoryItem = { ...historicalItem, id: "export-second" };
+    const secondHistoryItem = { ...historicalItem, addedAt: 2, id: "export-second" };
     const store = createReadyStore(false);
     store.dispatch(queueEntryAdded(historicalItem));
 
@@ -530,7 +531,7 @@ describe("export thunks and runtime queue", () => {
     expect(importedItems).toHaveLength(1);
     expect(importedItems[0]?.origin).toBe("history-fork");
     expect(importedItems[0]?.id).not.toBe(firstFork?.id);
-    expect(selectExportQueue(store.getState())).toEqual([historicalItem, secondHistoryItem]);
+    expect(selectExportQueue(store.getState())).toEqual([secondHistoryItem, historicalItem]);
   });
 
   it("opens, plans, configures, and starts optimized export without a controller ref", async () => {
@@ -585,8 +586,8 @@ describe("export thunks and runtime queue", () => {
     );
 
     expect(selectExportQueue(store.getState()).map((item) => item.status)).toEqual([
-      "completed",
       "failed",
+      "completed",
     ]);
     expect(selectQueueStarted(store.getState())).toBe(false);
     expect(mocks.renderFast).toHaveBeenCalledTimes(2);
@@ -631,7 +632,7 @@ describe("export thunks and runtime queue", () => {
       displayPath: output.displayPath,
     });
     await vi.waitFor(() =>
-      expect(selectExportQueue(store.getState())[1]?.status).toBe("rendering"),
+      expect(selectExportQueue(store.getState())[0]?.status).toBe("rendering"),
     );
 
     expect(selectQueueStarted(store.getState())).toBe(true);
@@ -756,7 +757,7 @@ describe("export thunks and runtime queue", () => {
     await vi.waitFor(() => expect(selectExportQueue(store.getState())).toHaveLength(2));
     await Promise.resolve();
 
-    expect(selectExportQueue(store.getState())[1]?.status).toBe("queued");
+    expect(selectExportQueue(store.getState())[0]?.status).toBe("queued");
     expect(selectQueueStarted(store.getState())).toBe(false);
     expect(mocks.renderFast).toHaveBeenCalledOnce();
   });

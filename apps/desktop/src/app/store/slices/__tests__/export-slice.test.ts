@@ -30,6 +30,7 @@ import {
 
 const settings = { resolution: { width: 1920, height: 1080 }, frameRate: undefined };
 const item = {
+  addedAt: 1,
   id: "export-1",
   snapshot: {
     source: { displayName: "first.mp4", sourcePath: "C:/Media/first.mp4" },
@@ -134,6 +135,18 @@ describe("export slice", () => {
     expect(state.queue.map((entry) => entry.status)).toEqual(["failed", "completed", "canceled"]);
     state = exportReducer(state, finishedExportsCleared());
     expect(state.queue).toEqual([]);
+  });
+
+  it("returns export queue items newest first", () => {
+    const older = { ...item, addedAt: 100, id: "export-older" };
+    const newer = { ...item, addedAt: 300, id: "export-newer" };
+    let state = exportReducer(initialExportState, queueEntryAdded(newer));
+    state = exportReducer(state, queueEntryAdded(older));
+
+    expect(selectExportQueue({ export: state } as RootState).map((entry) => entry.id)).toEqual([
+      newer.id,
+      older.id,
+    ]);
   });
 
   it("keeps the selected queue finish policy serializable", () => {
