@@ -528,7 +528,7 @@ describe("MenuBarTest", () => {
 
     const openFileItem = screen.getByRole("menuitem", { name: /Open File/ });
     expect(openFileItem).toHaveTextContent("Ctrl+O");
-    expect(openFileItem).toHaveClass("min-w-36");
+    expect(openFileItem).toHaveClass("min-w-42");
     await user.click(openFileItem);
     expect(screen.queryByRole("menuitem", { name: /Open File/ })).not.toBeInTheDocument();
 
@@ -553,7 +553,7 @@ describe("MenuBarTest", () => {
     await user.click(viewButton);
     const themeItem = screen.getByText("Theme").closest<HTMLElement>('[role="menuitem"]');
     expect(themeItem).not.toBeNull();
-    expect(themeItem).toHaveClass("min-w-36");
+    expect(themeItem).toHaveClass("min-w-42");
     themeItem?.focus();
     await user.keyboard("{ArrowRight}");
 
