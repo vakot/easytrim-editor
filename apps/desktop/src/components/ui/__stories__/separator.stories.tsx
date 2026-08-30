@@ -13,7 +13,11 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Horizontal: Story = {
-  args: { className: "w-72" },
+  render: (args) => (
+    <div className="w-72">
+      <Separator {...args} />
+    </div>
+  ),
 };
 
 export const Vertical: Story = {
