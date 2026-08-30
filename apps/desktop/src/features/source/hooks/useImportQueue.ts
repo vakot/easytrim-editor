@@ -23,7 +23,7 @@ function useImportQueue() {
   const isFirst = activeIndex === 0;
 
   const handleOpen = (id: string) => {
-    dispatch(navigateToImportedItem(id));
+    dispatch(navigateToImportedItem(id, { id: "source.queue-item", type: "button" }));
   };
 
   const handleNext = () => {
@@ -38,7 +38,7 @@ function useImportQueue() {
 
   const handleRemove = (id: string) => {
     if (id === activeItemId) {
-      dispatch(closeActiveImportedItemRequested());
+      dispatch(closeActiveImportedItemRequested({ id: "source.queue-remove", type: "button" }));
       return;
     }
 
@@ -46,7 +46,8 @@ function useImportQueue() {
   };
 
   const handleSkip = () => {
-    if (activeItemId !== null) dispatch(closeActiveImportedItemRequested());
+    if (activeItemId !== null)
+      dispatch(closeActiveImportedItemRequested({ id: "source.skip", type: "button" }));
   };
 
   const handleDelete = () => dispatch(deleteActiveImportedItemRequested());

@@ -10,6 +10,8 @@ import { useTranslation } from "react-i18next";
 
 import { CursorTooltip } from "@/components/ui/cursor-tooltip";
 
+import { diagnostics } from "@/lib/diagnostics";
+
 import { useCropSelection } from "../hooks/useCropSelection";
 import { type Bounds, centerFrame, cropFrame } from "../lib/crop-frame.utils";
 import { isFullCrop } from "../lib/crop-geometry.utils";
@@ -79,6 +81,13 @@ export function CropViewport({
     const video = videoRef.current;
     return () => video?.pause();
   }, [sourceUrl, videoRef]);
+
+  useEffect(() => {
+    diagnostics.event("media.source.changed", {
+      data: { kind: previewKind },
+      origin: { type: "internal" },
+    });
+  }, [previewKind, sourceUrl]);
 
   useLayoutEffect(() => {
     const container = containerRef.current;
@@ -190,22 +199,66 @@ export function CropViewport({
           loop={nativeLoopEnabled}
           muted={muted}
           onCanPlay={onCanPlay}
-          onEnded={onEnded}
-          onError={onError}
+          onEnded={() => {
+            diagnostics.event("media.playback.ended", {
+              data: { kind: previewKind },
+              origin: { type: "internal" },
+            });
+            onEnded();
+          }}
+          onError={() => {
+            diagnostics.error(
+              "media.playback.failed",
+              {
+                code: "media_element_error",
+                message: "The preview media element reported an error.",
+              },
+              { data: { kind: previewKind }, origin: { type: "internal" } },
+            );
+            onError();
+          }}
           onLoadedMetadata={(event) => {
             const { videoHeight, videoWidth } = event.currentTarget;
             if (videoWidth > 0 && videoHeight > 0) setSourceAspectRatio(videoWidth / videoHeight);
             onLoadedMetadata();
           }}
-          onPause={onPause}
+          onLoadStart={() =>
+            diagnostics.event("media.load.started", {
+              data: { kind: previewKind },
+              origin: { type: "internal" },
+            })
+          }
+          onPause={() => {
+            diagnostics.event("media.playback.paused", {
+              data: { kind: previewKind },
+              origin: { type: "internal" },
+            });
+            onPause();
+          }}
           onPlay={(event) => {
             if (cropSelection.isOpen) {
               event.currentTarget.pause();
               return;
             }
+            diagnostics.event("media.playback.started", {
+              data: { kind: previewKind },
+              origin: { type: "internal" },
+            });
             onPlay();
           }}
+          onStalled={() =>
+            diagnostics.warn("media.playback.stalled", {
+              data: { kind: previewKind },
+              origin: { type: "internal" },
+            })
+          }
           onTimeUpdate={(event) => onTimeUpdate(event.currentTarget.currentTime)}
+          onWaiting={() =>
+            diagnostics.event("media.playback.waiting", {
+              data: { kind: previewKind },
+              origin: { type: "internal" },
+            })
+          }
           playsInline
           preload="auto"
           ref={videoRef}

@@ -100,7 +100,9 @@ export function MenuBarFile() {
             </MenubarItem>
             <MenubarItem
               disabled={!hasSource}
-              onSelect={() => void dispatch(closeActiveImportedItemRequested())}
+              onSelect={() =>
+                void dispatch(closeActiveImportedItemRequested({ id: "file.close", type: "menu" }))
+              }
             >
               {t("app.actions.closeFile")}
               <MenubarShortcut>
@@ -115,7 +117,9 @@ export function MenuBarFile() {
           <MenubarGroup>
             <MenubarItem
               disabled={!canSave}
-              onSelect={() => void dispatch(startFastCutRequested())}
+              onSelect={() =>
+                void dispatch(startFastCutRequested({ id: "file.fast-export", type: "menu" }))
+              }
             >
               {t("export.actions.fast")}
               <MenubarShortcut>
@@ -127,7 +131,11 @@ export function MenuBarFile() {
             </MenubarItem>
             <MenubarItem
               disabled={!canExport}
-              onSelect={() => void dispatch(openOptimizedExportDialog())}
+              onSelect={() =>
+                void dispatch(
+                  openOptimizedExportDialog({ id: "file.optimized-export", type: "menu" }),
+                )
+              }
             >
               {t("export.actions.optimized")}
               <MenubarShortcut>

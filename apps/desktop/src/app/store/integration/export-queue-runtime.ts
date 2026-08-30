@@ -14,6 +14,7 @@ import {
   parseFfmpegBitrate,
   parseFfmpegNumber,
 } from "@/domain/export-metrics";
+import { type DiagnosticOperation, diagnostics } from "@/lib/diagnostics";
 import {
   cancelOperation,
   moveSourceToTrash,
@@ -27,9 +28,11 @@ import { performQueueFinishAction } from "@/lib/tauri/queue";
 
 interface RuntimeExportJob {
   canceled: boolean;
+  diagnosticsOperation: DiagnosticOperation | null;
   dispatch: AppDispatch;
   getState: () => RootState;
   item: ExportQueueItem;
+  lastDiagnosticProgress: number;
   operationId: string | null;
   startedAt: number | null;
 }
@@ -81,6 +84,8 @@ export function enqueueExport(
     item,
     canceled: false,
     operationId: null,
+    diagnosticsOperation: null,
+    lastDiagnosticProgress: -1,
     startedAt: null,
     dispatch,
     getState,
@@ -98,6 +103,12 @@ export function cancelQueuedExport(id: string, getState: () => RootState) {
   if (!job || job.canceled) return;
 
   job.canceled = true;
+  diagnostics.event("export.queue.cancelled", {
+    data: { itemId: id, started: job.startedAt !== null },
+    origin: { type: "button", id: "export.cancel" },
+    result: "cancelled",
+  });
+  job.diagnosticsOperation?.cancel({ reason: "user_requested" });
   job.dispatch(exportCanceled({ id, durationMs: elapsedTime(job) }));
   if (job.startedAt === null) {
     removePendingJob(runtime, job);
@@ -143,6 +154,11 @@ async function drainQueue(runtime: RuntimeState, dispatch: AppDispatch, getState
 
       job.startedAt = Date.now();
       dispatch(exportStarted({ id: job.item.id, startedAt: job.startedAt }));
+      job.diagnosticsOperation = diagnostics.startOperation("ffmpeg.export", {
+        data: { route: job.item.route, itemId: job.item.id },
+        origin: { type: "internal" },
+        snapshotId: job.item.id,
+      });
       await renderJob(job);
     }
   } finally {
@@ -181,6 +197,19 @@ async function renderJob(job: RuntimeExportJob) {
       durationMicros,
     );
 
+    if (
+      progressPercent === 100 ||
+      progressPercent - job.lastDiagnosticProgress >= 10 ||
+      job.lastDiagnosticProgress < 0
+    ) {
+      job.lastDiagnosticProgress = progressPercent;
+      diagnostics.event("ffmpeg.progress.reported", {
+        data: { percent: Math.round(progressPercent), phase: progress.phase },
+        operationId: job.diagnosticsOperation?.operationId,
+        snapshotId: job.item.id,
+      });
+    }
+
     job.dispatch(
       exportProgressReceived({
         id: job.item.id,
@@ -208,6 +237,7 @@ async function renderJob(job: RuntimeExportJob) {
 
     if (!job.canceled) {
       job.dispatch(exportCompleted({ id: job.item.id, result, durationMs: elapsedTime(job) }));
+      job.diagnosticsOperation?.complete({ outputType: job.item.route });
       if (job.getState().preferences.deleteSourceOnRenderFinish) {
         try {
           await moveSourceToTrash(job.item.request.sourcePath);
@@ -219,6 +249,7 @@ async function renderJob(job: RuntimeExportJob) {
     }
   } catch (error: unknown) {
     if (!job.canceled) {
+      job.diagnosticsOperation?.fail(error);
       job.dispatch(
         exportFailed({
           id: job.item.id,

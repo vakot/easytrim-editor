@@ -68,15 +68,15 @@ function EasyTrimEditorApp() {
       hasSource &&
       !isChoosingSource &&
       !isNativeDialogOpen,
-    () => void dispatch(closeActiveImportedItemRequested()),
+    () => void dispatch(closeActiveImportedItemRequested({ id: "Ctrl+Q", type: "hotkey" })),
   );
   useKeyboardShortcut(
     (event) => event.code === "KeyS" && event.ctrlKey && canExport && !cropApplied,
-    () => void dispatch(startFastCutRequested()),
+    () => void dispatch(startFastCutRequested({ id: "Ctrl+S", type: "hotkey" })),
   );
   useKeyboardShortcut(
     (event) => event.code === "KeyE" && event.ctrlKey && canExport,
-    () => void dispatch(openOptimizedExportDialog()),
+    () => void dispatch(openOptimizedExportDialog({ id: "Ctrl+E", type: "hotkey" })),
   );
   useKeyboardShortcut(
     (event) =>
@@ -84,7 +84,7 @@ function EasyTrimEditorApp() {
       !queueStarted &&
       hasQueuedExports &&
       document.activeElement === document.body,
-    () => void dispatch(startExportQueue()),
+    () => void dispatch(startExportQueue({ id: "Enter", type: "hotkey" })),
   );
 
   useEffect(() => {

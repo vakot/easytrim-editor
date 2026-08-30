@@ -46,6 +46,7 @@ import {
   isShortcutBlockedTarget,
   syncPlayheadElements,
 } from "@/features/timeline";
+import { diagnostics } from "@/lib/diagnostics";
 import { isApplicationDialogOpen } from "@/lib/hotkeys.utils";
 import { seekMediaIfNeeded } from "@/lib/media-element.utils";
 
@@ -428,6 +429,15 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
       event.preventDefault();
       event.stopPropagation();
       if (event.repeat && shortcut !== "previous-frame" && shortcut !== "next-frame") return;
+      diagnostics.action(
+        shortcut === "toggle-playback"
+          ? "playback.toggle.requested"
+          : shortcut === "set-segment-start" || shortcut === "set-segment-end"
+            ? "timeline.trim-boundary.requested"
+            : "timeline.frame-step.requested",
+        { type: "hotkey", id: event.key },
+        { shortcut },
+      );
       if (shortcut === "toggle-playback") actions.togglePlayback();
       if (shortcut === "previous-frame") actions.stepFrame(-1);
       if (shortcut === "next-frame") actions.stepFrame(1);
@@ -632,6 +642,10 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
   }, [commitSeek]);
 
   const handleScrubStart = useCallback(() => {
+    diagnostics.event("timeline.seek.started", {
+      data: { source: "timeline" },
+      origin: { type: "timeline", id: "timeline.scrub" },
+    });
     timelineInteractionActiveRef.current = true;
     playbackStartSequenceRef.current += 1;
     resumeAfterScrubRef.current = playbackRequestedRef.current || isPlayingRef.current;
@@ -645,6 +659,10 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
 
   const handleScrubEnd = useCallback(() => {
     flushScrubSeek();
+    diagnostics.event("timeline.seek.completed", {
+      data: { micros: currentPlayheadMicrosRef.current },
+      origin: { type: "timeline", id: "timeline.scrub" },
+    });
     timelineInteractionActiveRef.current = false;
     if (resumeAfterScrubRef.current) {
       resumeAfterScrubRef.current = false;
@@ -656,7 +674,21 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
 
   const handleTogglePlayback = useCallback(() => {
     const video = videoRef.current;
-    if (!video || !isPlaybackReadyRef.current) return;
+    if (!video || !isPlaybackReadyRef.current) {
+      diagnostics.event("playback.toggle.ignored", {
+        data: { reason: !video ? "video_unavailable" : "preview_not_ready" },
+        origin: { type: "internal" },
+        result: "ignored",
+      });
+      return;
+    }
+    diagnostics.action(
+      "playback.toggle.requested",
+      { type: "internal" },
+      {
+        playing: playbackRequestedRef.current || isPlayingRef.current,
+      },
+    );
     setTransportError(null);
     if (playbackRequestedRef.current || isPlayingRef.current) {
       playbackStartSequenceRef.current += 1;
@@ -677,6 +709,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
 
   const handleStepFrame = useCallback(
     (direction: -1 | 1) => {
+      diagnostics.action("timeline.frame-step.requested", { type: "internal" }, { direction });
       playbackStartSequenceRef.current += 1;
       playbackRequestedRef.current = false;
       isPlayingRef.current = false;
@@ -697,6 +730,10 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
       trimRef.current = nextTrim;
       flushTrimCommit();
       dispatch(trimChanged({ trim: nextTrim }));
+      diagnostics.event("timeline.trim-boundary.changed", {
+        data: { boundary, micros: currentMicros },
+        origin: { type: "timeline", id: "timeline.boundary" },
+      });
     },
     [dispatch, flushTrimCommit, sourcePath],
   );
@@ -792,10 +829,17 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     pauseAudioPlayback();
     stopPlayheadAnimation();
     if (videoRef.current) onTimeUpdate(videoRef.current.currentTime);
+    diagnostics.event("playback.state.changed", {
+      data: { status: "paused" },
+      origin: { type: "internal" },
+    });
   }, [onTimeUpdate, pauseAudioPlayback, stopPlayheadAnimation]);
 
   const onCropToolOpenChange = useCallback(
     (isOpen: boolean) => {
+      diagnostics.event(isOpen ? "crop.tool.opened" : "crop.tool.closed", {
+        origin: { type: "button", id: "crop.tool" },
+      });
       if (isOpen) {
         resumeAfterCropRef.current = playbackRequestedRef.current || isPlayingRef.current;
         if (!resumeAfterCropRef.current) return;
@@ -858,10 +902,18 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
       isPlayingRef.current = true;
       setIsPlaying(true);
       startPlayheadAnimation();
+      diagnostics.event("playback.state.changed", {
+        data: { status: "playing" },
+        origin: { type: "internal" },
+      });
     },
     onPause,
     onTimeUpdate,
     onEnded: () => {
+      diagnostics.event("playback.state.changed", {
+        data: { status: "ended" },
+        origin: { type: "internal" },
+      });
       if (videoRef.current) handlePlaybackBoundary(videoRef.current.currentTime * 1_000_000);
     },
     onTogglePlayback: handleTogglePlayback,

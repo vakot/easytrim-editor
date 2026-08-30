@@ -7,6 +7,7 @@ import {
   checkMediaCapabilitiesRequested,
   ingestSources,
 } from "@/app/store/thunks/source-media-thunks";
+import { diagnostics } from "@/lib/diagnostics";
 import { listenForSourceDrops } from "@/lib/tauri/media";
 import { normalizeAppError } from "@/lib/tauri/media.utils";
 
@@ -30,12 +31,22 @@ export function startSourceMediaRuntime(dispatch: AppDispatch): () => void {
 
     dispatch(sourceDragChanged(false));
     if (event.status === "failed") {
+      diagnostics.error("source.drop.failed", event.error, {
+        origin: { id: "source.drop", type: "system" },
+      });
       dispatch(dropListenerFailed(event.error));
       dispatch(sourceFailed({ error: event.error }));
       return;
     }
 
-    void dispatch(ingestSources(event.sources));
+    diagnostics.action(
+      "source.drop.requested",
+      { id: "source.drop", type: "button" },
+      {
+        sourceCount: event.sources.length,
+      },
+    );
+    void dispatch(ingestSources(event.sources, { id: "source.drop", type: "button" }));
   }).then(
     (stopListening) => {
       if (stopped) {
@@ -46,6 +57,9 @@ export function startSourceMediaRuntime(dispatch: AppDispatch): () => void {
     },
     (error: unknown) => {
       if (!stopped) {
+        diagnostics.error("source.drop.listener.failed", error, {
+          origin: { id: "source.drop", type: "system" },
+        });
         dispatch(dropListenerFailed(normalizeAppError(error)));
       }
     },

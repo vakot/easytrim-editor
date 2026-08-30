@@ -47,6 +47,8 @@ import {
   navigateToImportedItem,
 } from "@/app/store/thunks/source-media-thunks";
 import { cloneEditorSnapshot, createEditorSnapshot } from "@/domain/editor-snapshot";
+import { diagnostics } from "@/lib/diagnostics";
+import type { DiagnosticOrigin } from "@/lib/tauri/diagnostics.types";
 import {
   chooseOutputPath,
   planOptimizedExport,
@@ -69,45 +71,81 @@ function nextExportAddedAt(): number {
 }
 
 export const loadQueueFinishActions = (): AppThunk => async (dispatch) => {
+  const operation = diagnostics.startOperation("queue.finish-actions", {
+    origin: { type: "system" },
+  });
+
   try {
     const actions = await availableQueueFinishActions();
     dispatch(queueFinishActionsAvailable(actions.includes("nothing") ? actions : ["nothing"]));
+    operation.complete({ actionCount: actions.length });
   } catch {
     dispatch(queueFinishActionsAvailable(["exit", "nothing"]));
+    operation.complete({ fallback: true });
   }
 };
 
-export const startExportQueue = (): AppThunk => (dispatch, getState) => {
-  if (!getState().export.queue.some((item) => item.status === "queued")) return;
-  dispatch(queueStarted());
-  setExportQueueExecutionEnabled(true, dispatch, getState);
-};
+export const startExportQueue =
+  (origin: DiagnosticOrigin = { type: "internal" }): AppThunk =>
+  (dispatch, getState) => {
+    diagnostics.action("export.queue.start.requested", origin);
+    if (!getState().export.queue.some((item) => item.status === "queued")) {
+      diagnostics.event("export.queue.start.ignored", {
+        data: { reason: "no_queued_exports" },
+        origin,
+        result: "ignored",
+      });
+      return;
+    }
+    dispatch(queueStarted());
+    setExportQueueExecutionEnabled(true, dispatch, getState);
+  };
 
-export const pauseExportQueue = (): AppThunk => (dispatch, getState) => {
-  dispatch(queuePaused());
-  setExportQueueExecutionEnabled(false, dispatch, getState);
-};
+export const pauseExportQueue =
+  (origin: DiagnosticOrigin = { type: "internal" }): AppThunk =>
+  (dispatch, getState) => {
+    diagnostics.action("export.queue.pause.requested", origin);
+    dispatch(queuePaused());
+    setExportQueueExecutionEnabled(false, dispatch, getState);
+  };
 
 export const cancelActiveExportRequested = (): AppThunk => (_dispatch, getState) => {
+  diagnostics.action("export.cancel.requested", { id: "active", type: "button" });
   cancelActiveExport(getState);
 };
 
 export const cancelAllExportsRequested = (): AppThunk => (_dispatch, getState) => {
+  diagnostics.action("export.cancel.requested", { id: "all", type: "menu" });
   cancelAllQueuedExports(getState);
 };
 
 export const cancelExportRequested =
   (id: string): AppThunk =>
   (_dispatch, getState) => {
+    diagnostics.action(
+      "export.cancel.requested",
+      { id: "queue-item", type: "button" },
+      { itemId: id },
+    );
     cancelQueuedExport(id, getState);
   };
 
-export const openOptimizedExportDialog = (): AppThunk => async (dispatch, getState) => {
-  const settings = getInitialSettings(getState());
-  if (!settings) return;
-  dispatch(optimizedExportDialogOpened(settings));
-  await dispatch(refreshOptimizedExportPlan());
-};
+export const openOptimizedExportDialog =
+  (origin: DiagnosticOrigin = { id: "optimized", type: "button" }): AppThunk =>
+  async (dispatch, getState) => {
+    diagnostics.action("export.dialog.opened", origin);
+    const settings = getInitialSettings(getState());
+    if (!settings) {
+      diagnostics.event("export.dialog.ignored", {
+        data: { reason: "source_not_ready" },
+        origin,
+        result: "ignored",
+      });
+      return;
+    }
+    dispatch(optimizedExportDialogOpened(settings));
+    await dispatch(refreshOptimizedExportPlan());
+  };
 
 export const optimizedExportSettingsChangedRequested =
   (settings: ExportSettings): AppThunk =>
@@ -118,46 +156,96 @@ export const optimizedExportSettingsChangedRequested =
 
 export const refreshOptimizedExportPlan = (): AppThunk => async (dispatch, getState) => {
   const request = getOptimizedRequest(getState());
-  if (!request) return;
+  if (!request) {
+    diagnostics.event("export.plan.ignored", {
+      data: { reason: "source_not_ready" },
+      origin: { type: "internal" },
+      result: "ignored",
+    });
+    return;
+  }
   const sourcePath = request.sourcePath;
   const requestId = ++optimizedPlanRequestSequence;
+  const operation = diagnostics.startOperation("export.plan", {
+    data: { requestId },
+    origin: { type: "internal" },
+  });
+
   dispatch(optimizedExportPlanRequested({ requestId }));
   try {
     const plan = await planOptimizedExport(request);
     if (currentSourcePath(getState()) === sourcePath) {
       dispatch(optimizedExportPlanReceived({ requestId, commandPreview: plan.commandPreview }));
+      operation.complete();
+    } else {
+      operation.cancel({ reason: "source_replaced" });
     }
   } catch (error: unknown) {
+    operation.fail(error);
     if (currentSourcePath(getState()) === sourcePath) {
       dispatch(optimizedExportPlanFailed({ requestId, error: normalizeAppError(error) }));
     }
   }
 };
 
-export const startFastCutRequested = (): AppThunk => (dispatch, getState) => {
-  if (selectCropApplied(getState())) return;
-  void startQueuedExport("fast", dispatch, getState);
-};
+export const startFastCutRequested =
+  (origin: DiagnosticOrigin = { id: "fast-cut", type: "button" }): AppThunk =>
+  (dispatch, getState) => {
+    diagnostics.action("export.request.start", origin, { route: "fast" });
+    if (selectCropApplied(getState())) {
+      diagnostics.event("export.request.ignored", {
+        data: { reason: "crop_requires_optimized_route", route: "fast" },
+        origin,
+        result: "ignored",
+      });
+      return;
+    }
+    void startQueuedExport("fast", dispatch, getState, origin);
+  };
 
-export const startOptimizedExportRequested = (): AppThunk => (dispatch, getState) => {
-  dispatch(optimizedExportDialogClosed());
-  void startQueuedExport("optimized", dispatch, getState);
-};
+export const startOptimizedExportRequested =
+  (origin: DiagnosticOrigin = { id: "optimized", type: "button" }): AppThunk =>
+  (dispatch, getState) => {
+    diagnostics.action("export.request.start", origin, { route: "optimized" });
+    dispatch(optimizedExportDialogClosed());
+    void startQueuedExport("optimized", dispatch, getState, origin);
+  };
 
 async function startQueuedExport(
   route: "fast" | "optimized",
   dispatch: Parameters<AppThunk>[0],
   getState: Parameters<AppThunk>[1],
+  origin: DiagnosticOrigin,
 ) {
   const state = getState();
   const source = selectSourceSelection(state);
   const media = selectSourceMedia(state);
   const trim = selectTrim(state);
   const request = route === "fast" ? getFastRequest(state) : getOptimizedRequest(state);
-  if (!source || !media || !trim || !request || !selectSourceReady(state)) return;
+  if (!source || !media || !trim || !request || !selectSourceReady(state)) {
+    diagnostics.event("export.request.ignored", {
+      data: { reason: "source_not_ready", route },
+      origin,
+      result: "ignored",
+    });
+    return;
+  }
 
   const activeItem = selectActiveQueueItem(state);
-  if (!activeItem || activeItem.status !== "imported") return;
+  if (!activeItem || activeItem.status !== "imported") {
+    diagnostics.event("export.request.ignored", {
+      data: { reason: "active_item_not_imported", route },
+      origin,
+      result: "ignored",
+    });
+    return;
+  }
+  const operation = diagnostics.startOperation("export.prepare", {
+    data: { route, snapshotId: activeItem.id },
+    origin,
+    snapshotId: activeItem.id,
+  });
+
   const importedItemId = activeItem.id;
   const snapshot = createEditorSnapshot({
     source,
@@ -176,12 +264,19 @@ async function startQueuedExport(
   try {
     const defaults = outputDefaults(source.displayName);
     const output = await chooseOutputPath(defaults[route]);
-    if (!output) return;
+    if (!output) {
+      operation.cancel({ reason: "output_picker_cancelled" });
+      return;
+    }
 
-    if (!isCurrentExportContext(getState(), importedItemId, source.sourcePath)) return;
+    if (!isCurrentExportContext(getState(), importedItemId, source.sourcePath)) {
+      operation.cancel({ reason: "source_replaced" });
+      return;
+    }
     await reserveExportSource(request.sourcePath);
     if (!isCurrentExportContext(getState(), importedItemId, source.sourcePath)) {
       await releaseExportSource(request.sourcePath).catch(() => undefined);
+      operation.cancel({ reason: "source_replaced" });
       return;
     }
 
@@ -209,11 +304,17 @@ async function startQueuedExport(
       (item): item is ExportQueueItem => item.id === importedItemId && item.status !== "imported",
     );
 
-    if (!promoted) return;
+    if (!promoted) {
+      operation.fail(new Error("The export queue item could not be created."));
+      return;
+    }
     enqueueExport(promoted, dispatch, getState);
+    operation.complete({ outputType: route, filename: output.displayName });
     if (replacementItem) dispatch(navigateToImportedItem(replacementItem.id));
   } catch (error: unknown) {
-    dispatch(exportLaunchFailed(normalizeAppError(error)));
+    const normalized = normalizeAppError(error);
+    operation.fail(normalized);
+    dispatch(exportLaunchFailed(normalized));
   } finally {
     dispatch(nativeDialogStateChanged(false));
   }

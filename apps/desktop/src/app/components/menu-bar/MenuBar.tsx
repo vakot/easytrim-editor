@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 
 import { Menubar } from "@/components/ui/menubar";
 
+import { diagnostics } from "@/lib/diagnostics";
+
 import { MenuBarFile } from "./components/MenuBarFile";
 import { MenuBarHelp } from "./components/MenuBarHelp";
 import { MenuBarQueue } from "./components/MenuBarQueue";
@@ -18,6 +20,12 @@ export function MenuBar() {
       aria-label={t("app.accessibility.menus")}
       className="h-full rounded-none border-0 bg-transparent p-0"
       key={menuVersion}
+      onValueChange={(value) => {
+        diagnostics.event(value ? "menu.opened.changed" : "menu.closed.changed", {
+          data: value ? { menu: value } : { menu: "none" },
+          origin: { type: "menu", id: value || "menubar" },
+        });
+      }}
     >
       <MenuBarFile />
       <MenuBarView onClose={() => setMenuVersion((version) => version + 1)} />

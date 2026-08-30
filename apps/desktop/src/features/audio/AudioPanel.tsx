@@ -27,6 +27,7 @@ import {
 import { selectSourceMedia, selectSourceSelection } from "@/app/store/slices/source-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
 import { prepareSourceWaveforms } from "@/app/store/thunks/source-media-thunks";
+import { diagnostics } from "@/lib/diagnostics";
 
 import { AudioLevelControl } from "./components/AudioLevelControl";
 import { AudioTracks } from "./components/AudioTracks";
@@ -78,12 +79,25 @@ export function AudioPanel() {
             <VolumeButton
               enabled={masterAudio.enabled}
               label={t("audio.labels.allTracks")}
-              onClick={() => dispatch(masterAudioToggled())}
+              onClick={() => {
+                diagnostics.action("audio.master.toggle.requested", {
+                  type: "button",
+                  id: "master-mute",
+                });
+                dispatch(masterAudioToggled());
+              }}
             />
             <AudioLevelControl
               className="flex-1"
               label={t("audio.accessibility.allTracksVolume")}
-              onChange={(volumePercent) => dispatch(masterVolumeChanged({ volumePercent }))}
+              onChange={(volumePercent) => {
+                diagnostics.action(
+                  "audio.master.volume.requested",
+                  { type: "button", id: "master-volume" },
+                  { volumePercent },
+                );
+                dispatch(masterVolumeChanged({ volumePercent }));
+              }}
               volumePercent={masterAudio.enabled ? masterAudio.volumePercent : 0}
             />
           </div>
@@ -95,7 +109,13 @@ export function AudioPanel() {
                   <Checkbox
                     checked={mergeAudio}
                     id="merge-audio"
-                    onCheckedChange={() => dispatch(audioMergeToggled())}
+                    onCheckedChange={() => {
+                      diagnostics.action("audio.merge.toggle.requested", {
+                        type: "button",
+                        id: "merge-audio",
+                      });
+                      dispatch(audioMergeToggled());
+                    }}
                   />
                   <Label className="text-xs text-muted-foreground" htmlFor="merge-audio">
                     {t("audio.actions.merge")}
@@ -117,10 +137,22 @@ export function AudioPanel() {
                 sourcePath &&
                 void dispatch(prepareSourceWaveforms(sourcePath, streamIndexes, width))
               }
-              onToggleTrack={(streamIndex) => dispatch(audioTrackToggled({ streamIndex }))}
-              onTrackVolumeChange={(streamIndex, volumePercent) =>
-                dispatch(audioTrackVolumeChanged({ streamIndex, volumePercent }))
-              }
+              onToggleTrack={(streamIndex) => {
+                diagnostics.action(
+                  "audio.track.toggle.requested",
+                  { type: "button", id: "track-toggle" },
+                  { streamIndex },
+                );
+                dispatch(audioTrackToggled({ streamIndex }));
+              }}
+              onTrackVolumeChange={(streamIndex, volumePercent) => {
+                diagnostics.action(
+                  "audio.track.volume.requested",
+                  { type: "button", id: "track-volume" },
+                  { streamIndex, volumePercent },
+                );
+                dispatch(audioTrackVolumeChanged({ streamIndex, volumePercent }));
+              }}
               onWaveformImageError={(streamIndex) =>
                 dispatch(waveformDisplayFailed({ streamIndex }))
               }
