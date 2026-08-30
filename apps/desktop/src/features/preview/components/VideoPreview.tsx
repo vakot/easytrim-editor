@@ -1,7 +1,8 @@
+import { AlertCircle } from "lucide-react";
 import { type RefObject, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -49,7 +50,9 @@ export function VideoPreview({
   const playbackRate = useAppSelector(selectPlaybackSpeed);
   const reportedUrl = useRef<string | null>(null);
   const [cropToolOpen, setCropToolOpen] = useState(false);
+
   const readyUrl = preview.status === "ready" ? preview.value.url : null;
+
   useEffect(() => {
     if (videoRef.current) videoRef.current.playbackRate = playbackRate;
   }, [playbackRate, readyUrl, videoRef]);
@@ -68,27 +71,33 @@ export function VideoPreview({
 
   if (preview.status === "failed") {
     return (
-      <Alert className="max-w-xl" variant="destructive">
-        <AlertTitle>{t("preview.messages.error")}</AlertTitle>
-        <AlertDescription>
-          <p>{preview.error.message}</p>
-          {preview.error.diagnostics ? (
-            <details className="mt-2">
-              <summary>{t("source.labels.technicalDetails")}</summary>
-              <pre className="mt-2 max-h-48 overflow-auto text-xs whitespace-pre-wrap">
-                {preview.error.diagnostics}
-              </pre>
-            </details>
-          ) : null}
-          <Button className="mt-3" onClick={onSkip} size="sm" variant="outline">
-            {t("queue.actions.skip")}
-          </Button>
-        </AlertDescription>
-      </Alert>
+      <div className="flex h-full items-center justify-center">
+        <Alert className="max-w-md" variant="destructive">
+          <AlertCircle />
+          <AlertTitle>{t("preview.messages.error")}</AlertTitle>
+          <AlertDescription>
+            <p>{preview.error.message}</p>
+            {preview.error.diagnostics ? (
+              <details className="mt-2">
+                <summary>{t("source.labels.technicalDetails")}</summary>
+                <pre className="mt-2 max-h-48 overflow-auto text-xs whitespace-pre-wrap">
+                  {preview.error.diagnostics}
+                </pre>
+              </details>
+            ) : null}
+          </AlertDescription>
+          <AlertAction>
+            <Button className="mt-3" onClick={onSkip} size="sm" variant="outline">
+              {t("queue.actions.skip")}
+            </Button>
+          </AlertAction>
+        </Alert>
+      </div>
     );
   }
 
   const { value } = preview;
+
   return (
     <section className="grid size-full min-h-0 place-items-center p-4">
       <div
