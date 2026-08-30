@@ -18,6 +18,14 @@ loses at most an event whose IPC call had not reached Rust. A session log rotate
 recent runtime sessions and ten abnormal-session report directories are retained. Reports contain a
 human-readable `report.log`, structured `report.json`, and `session.json`.
 
+`report.log` renders each event as a compact multi-line entry. Origin, snapshot, operation,
+parent-operation, result, duration, and bounded data fields are included when present so the file
+opened from the recovery dialog retains the same causal relationships as JSONL.
+
+Event writes intentionally flush synchronously on the native side for Phase 1 reliability. Phase 2
+must performance-test the diagnostics path under rapid timeline seeking, playhead dragging, media
+lifecycle bursts, and snapshot switching before high-frequency instrumentation is accepted.
+
 Session metadata is written before the UI starts. Normal native application exit writes
 `app.session.completed`, flushes the log, and atomically marks the session graceful. A stale or
 corrupt marker is handled on the next launch and classified truthfully as `abnormal_shutdown`
@@ -53,6 +61,10 @@ Origins describe the surface that requested one semantic action:
 Other canonical origin types are `system`, `restore`, and `internal`. Origin does not replace or
 duplicate the domain action.
 
+`diagnostics.action()` records user intent with origin and optional data only. A requested action
+does not receive an operation result. `result: "started"` belongs exclusively to the `.started`
+event emitted by `diagnostics.startOperation()`.
+
 ## Operations and recovery
 
 `diagnostics.startOperation()` creates the ID, records start time, registers the operation, and
@@ -60,14 +72,23 @@ emits `.started`. `complete`, `fail`, and `cancel` calculate duration, emit exac
 event, and remove the operation. `child` automatically attaches the parent ID. Duplicate terminal
 calls are ignored and return `false`.
 
-Rust also rebuilds the active-operation registry from persisted start and terminal events. An
-abnormal-session report can therefore list operations that never reached a terminal state even
-after all frontend memory has been lost.
+The persisted event stream is the authoritative source for abnormal-session recovery. Frontend
+active operations exist only for runtime ergonomics, and the native in-memory registry exists only
+for live diagnostics. Neither registry survives termination and neither is persisted as mutable
+state. Report generation always reconstructs unfinished operations from persisted start and
+terminal events, so it remains valid after all process memory has been lost.
 
-The frontend sends a heartbeat every five seconds. Rust records the latest timestamp separately
-and emits only missed/recovered threshold events, avoiding noisy healthy heartbeat lines. This can
-detect a stalled webview while native code still progresses. It cannot guarantee detection when
-the entire process or runtime is frozen.
+The frontend sends a heartbeat every five seconds. Rust atomically replaces a small heartbeat state
+file containing `lastUiHeartbeatAt` and emits only missed/recovered threshold events, avoiding noisy
+healthy heartbeat lines. Reports keep that actual timestamp distinct from `lastHeartbeatEvent`,
+which is only the latest `ui.heartbeat.missed` or `ui.heartbeat.recovered` event. This can detect a
+stalled webview while native code still progresses. It cannot guarantee detection when the entire
+process or runtime is frozen.
+
+On Windows, heartbeat/session JSON replacement uses `MoveFileExW` with replace-existing and
+write-through flags after the temporary file is fully written and synchronized. A heartbeat write
+failure never fails the heartbeat command or the application; Rust emits one fallback error per
+degraded period and clears the degraded state after a successful write.
 
 ## What to log
 
@@ -96,6 +117,11 @@ Source paths can be valuable but are private. Prefer opaque source IDs and displ
 an absolute path only when it is necessary to identify a failed application-level filesystem
 operation; never include it in broad tracing or custom FFmpeg arguments.
 
+Frontend persistence failures are detached from application control flow. The first failure in a
+degraded period emits `[diagnostics] Persistent diagnostics unavailable` through `console.error`
+without attempting to log that failure recursively. Further failures are suppressed until a
+successful persistence call resets the degraded state.
+
 ## Phase 2 integration guide
 
 Record intent before dispatching existing business logic:
@@ -106,6 +132,8 @@ diagnostics.action("playback.play.requested", {
   id: "Space",
 });
 ```
+
+The emitted intent contains no `result`; start/terminal results are added only by operation helpers.
 
 Record guards rather than silently returning:
 
