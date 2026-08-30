@@ -170,7 +170,7 @@ export function MenuBarSettings() {
                 value={currentLanguage}
               >
                 {(["en", "sk"] as const).map((language) => (
-                  <MenubarRadioItem inset key={language} value={language}>
+                  <MenubarRadioItem key={language} value={language}>
                     {languageLabels[language]}
                     <MenubarShortcut>{language.toUpperCase()}</MenubarShortcut>
                   </MenubarRadioItem>

@@ -648,7 +648,7 @@ describe("App", () => {
 
     getMenuTrigger("File").focus();
     await user.keyboard("{Enter}");
-    expect(screen.getByRole("menuitem", { name: /Close File/ })).toHaveTextContent("Ctrl+Q");
+    expect(screen.getByRole("menuitem", { name: /Close File/ })).toHaveTextContent("CtrlQ");
     await user.keyboard("{Escape}");
 
     fireEvent.keyDown(window, { key: "й", code: "KeyQ", ctrlKey: true });
