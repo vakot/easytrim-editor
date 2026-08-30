@@ -13,6 +13,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
+  DropdownMenuIcon,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -48,24 +49,28 @@ export function PanelVisibilityControls() {
             <DropdownMenuGroup>
               <ResizablePanelControl panelId="workspace-sidebar">
                 {({ isCollapsed }) => (
-                  <DropdownMenuItem keepOpen>
-                    {isCollapsed ? (
-                      <PanelLeftDashed aria-hidden="true" className="size-3" />
-                    ) : (
-                      <PanelLeft aria-hidden="true" className="size-3" />
-                    )}
+                  <DropdownMenuItem inset keepOpen>
+                    <DropdownMenuIcon>
+                      {isCollapsed ? (
+                        <PanelLeftDashed aria-hidden="true" className="size-3" />
+                      ) : (
+                        <PanelLeft aria-hidden="true" className="size-3" />
+                      )}
+                    </DropdownMenuIcon>
                     {t("app.labels.leftPanel")}
                   </DropdownMenuItem>
                 )}
               </ResizablePanelControl>
               <ResizablePanelControl panelId="editor-stage-audio">
                 {({ isAvailable, isCollapsed, isDisabled }) => (
-                  <DropdownMenuItem disabled={!isAvailable || isDisabled} keepOpen>
-                    {isCollapsed ? (
-                      <PanelBottomDashed aria-hidden="true" className="size-3" />
-                    ) : (
-                      <PanelBottom aria-hidden="true" className="size-3" />
-                    )}
+                  <DropdownMenuItem disabled={!isAvailable || isDisabled} inset keepOpen>
+                    <DropdownMenuIcon>
+                      {isCollapsed ? (
+                        <PanelBottomDashed aria-hidden="true" className="size-3" />
+                      ) : (
+                        <PanelBottom aria-hidden="true" className="size-3" />
+                      )}
+                    </DropdownMenuIcon>
                     {t("app.labels.bottomPanel")}
                   </DropdownMenuItem>
                 )}
@@ -78,8 +83,10 @@ export function PanelVisibilityControls() {
                 panelId={["workspace-sidebar", "editor-stage-timeline"]}
               >
                 {({ isDisabled }) => (
-                  <DropdownMenuItem disabled={isDisabled} keepOpen>
-                    <RotateCcw aria-hidden="true" className="size-3" />
+                  <DropdownMenuItem disabled={isDisabled} inset keepOpen>
+                    <DropdownMenuIcon>
+                      <RotateCcw aria-hidden="true" className="size-3" />
+                    </DropdownMenuIcon>
                     {t("app.actions.resetLayout")}
                   </DropdownMenuItem>
                 )}

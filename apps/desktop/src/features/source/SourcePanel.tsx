@@ -8,6 +8,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
+  DropdownMenuIcon,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -71,36 +72,45 @@ export function SourcePanel() {
           <DropdownMenuGroup>
             <DropdownMenuItem
               disabled
+              inset
               keepOpen
               onSelect={() => handlePanelToggle("workspace-sidebar-source-details")}
             >
-              {panels["workspace-sidebar-source-details"] ? (
-                <Eye aria-hidden="true" className="size-3" />
-              ) : (
-                <EyeOff aria-hidden="true" className="size-3" />
-              )}
+              <DropdownMenuIcon>
+                {panels["workspace-sidebar-source-details"] ? (
+                  <Eye aria-hidden="true" className="size-3" />
+                ) : (
+                  <EyeOff aria-hidden="true" className="size-3" />
+                )}
+              </DropdownMenuIcon>
               {t("source.labels.mediaDetails")}
             </DropdownMenuItem>
             <DropdownMenuItem
+              inset
               keepOpen
               onSelect={() => handlePanelToggle("workspace-sidebar-import-queue")}
             >
-              {panels["workspace-sidebar-import-queue"] ? (
-                <Eye aria-hidden="true" className="size-3" />
-              ) : (
-                <EyeOff aria-hidden="true" className="size-3" />
-              )}
+              <DropdownMenuIcon>
+                {panels["workspace-sidebar-import-queue"] ? (
+                  <Eye aria-hidden="true" className="size-3" />
+                ) : (
+                  <EyeOff aria-hidden="true" className="size-3" />
+                )}
+              </DropdownMenuIcon>
               {t("queue.labels.import")}
             </DropdownMenuItem>
             <DropdownMenuItem
+              inset
               keepOpen
               onSelect={() => handlePanelToggle("workspace-sidebar-export-queue")}
             >
-              {panels["workspace-sidebar-export-queue"] ? (
-                <Eye aria-hidden="true" className="size-3" />
-              ) : (
-                <EyeOff aria-hidden="true" className="size-3" />
-              )}
+              <DropdownMenuIcon>
+                {panels["workspace-sidebar-export-queue"] ? (
+                  <Eye aria-hidden="true" className="size-3" />
+                ) : (
+                  <EyeOff aria-hidden="true" className="size-3" />
+                )}
+              </DropdownMenuIcon>
               {t("queue.labels.export")}
             </DropdownMenuItem>
           </DropdownMenuGroup>
@@ -108,10 +118,13 @@ export function SourcePanel() {
           <DropdownMenuGroup>
             <DropdownMenuItem
               disabled={enabledCount === 3}
+              inset
               keepOpen
               onSelect={() => setPanels(DEFAULT_PANELS)}
             >
-              <RotateCcw aria-hidden="true" className="size-3" />
+              <DropdownMenuIcon>
+                <RotateCcw aria-hidden="true" className="size-3" />
+              </DropdownMenuIcon>
               {t("app.actions.resetLayout")}
             </DropdownMenuItem>
           </DropdownMenuGroup>

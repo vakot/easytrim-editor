@@ -100,12 +100,7 @@ export function MenuBarSettings() {
   return (
     <MenubarMenu value="settings">
       <MenubarTrigger asChild>
-        <Button
-          className="text-foreground/80 data-[state=open]:bg-accent data-[state=open]:text-foreground"
-          size="xs"
-          type="button"
-          variant="ghost"
-        >
+        <Button className="text-foreground/80" size="xs" type="button" variant="ghost">
           {t("settings.labels.title")}
         </Button>
       </MenubarTrigger>
