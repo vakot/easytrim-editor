@@ -32,6 +32,17 @@ describe("diagnostics", () => {
     );
   });
 
+  it("records user intent without operation lifecycle result", () => {
+    diagnostics.action("source.open.requested", { id: "Ctrl+O", type: "hotkey" });
+
+    expect(persistDiagnosticEvent).toHaveBeenLastCalledWith({
+      category: "source",
+      event: "source.open.requested",
+      level: "info",
+      origin: { id: "Ctrl+O", type: "hotkey" },
+    });
+  });
+
   it("tracks operation timing, parentage, and one terminal event", () => {
     const parent = diagnostics.startOperation("snapshot.switch");
     const child = parent.child("preview.prepare");
@@ -78,5 +89,29 @@ describe("diagnostics", () => {
       message: '{"code":"native_failed"}',
       name: "NonErrorRejection",
     });
+  });
+
+  it("bounds persistence failure fallback without throwing or recursive logging", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    persistDiagnosticEvent.mockRejectedValueOnce(new Error("storage unavailable"));
+    persistDiagnosticEvent.mockRejectedValueOnce(new Error("storage still unavailable"));
+
+    expect(() => diagnostics.event("diagnostics.persistence.failed")).not.toThrow();
+    expect(() => diagnostics.event("diagnostics.persistence.failed")).not.toThrow();
+    await vi.waitFor(() => expect(consoleError).toHaveBeenCalledTimes(1));
+    expect(consoleError).toHaveBeenCalledWith(
+      "[diagnostics] Persistent diagnostics unavailable",
+      expect.objectContaining({ message: "storage unavailable", name: "Error" }),
+    );
+    expect(persistDiagnosticEvent).toHaveBeenCalledTimes(2);
+
+    persistDiagnosticEvent.mockResolvedValueOnce(undefined);
+    diagnostics.event("diagnostics.persistence.recovered");
+    await vi.waitFor(() => expect(persistDiagnosticEvent).toHaveBeenCalledTimes(3));
+    await Promise.resolve();
+
+    persistDiagnosticEvent.mockRejectedValueOnce(new Error("storage unavailable again"));
+    diagnostics.event("diagnostics.persistence.failed");
+    await vi.waitFor(() => expect(consoleError).toHaveBeenCalledTimes(2));
   });
 });

@@ -45,6 +45,7 @@ export interface DiagnosticOperation {
 }
 
 let operationSequence = 0;
+let persistenceDegraded = false;
 let recovery: StartupRecovery | null = null;
 const activeOperations = new Map<string, ActiveOperation>();
 
@@ -59,7 +60,17 @@ function categoryFromEvent(event: string): string {
 }
 
 function send(event: DiagnosticEventInput): void {
-  void persistDiagnosticEvent(event).catch(() => undefined);
+  observePersistence(() => persistDiagnosticEvent(event));
+}
+
+function observePersistence(persist: () => Promise<void>): void {
+  try {
+    void persist().then(() => {
+      persistenceDegraded = false;
+    }, reportDiagnosticsUnavailable);
+  } catch (error: unknown) {
+    reportDiagnosticsUnavailable(error);
+  }
 }
 
 function terminalEvent(
@@ -127,7 +138,7 @@ export const diagnostics = {
     origin: DiagnosticOrigin,
     data?: Record<string, DiagnosticValue>,
   ) {
-    this.event(event, { data, origin, result: "started" });
+    this.event(event, { data, origin });
   },
 
   error(event: DiagnosticEventName, error: unknown, options: EventOptions = {}) {
@@ -232,15 +243,21 @@ export function installGlobalDiagnostics(): () => void {
 
   window.addEventListener("error", onError);
   window.addEventListener("unhandledrejection", onUnhandledRejection);
-  const heartbeat = window.setInterval(
-    () => void recordUiHeartbeat().catch(() => undefined),
-    5_000,
-  );
+  const heartbeat = window.setInterval(() => observePersistence(recordUiHeartbeat), 5_000);
 
-  void recordUiHeartbeat().catch(() => undefined);
+  observePersistence(recordUiHeartbeat);
   return () => {
     window.clearInterval(heartbeat);
     window.removeEventListener("error", onError);
     window.removeEventListener("unhandledrejection", onUnhandledRejection);
   };
+}
+
+export function reportDiagnosticsUnavailable(error: unknown): void {
+  if (persistenceDegraded) return;
+  persistenceDegraded = true;
+  console.error(
+    "[diagnostics] Persistent diagnostics unavailable",
+    serializeDiagnosticError(error),
+  );
 }

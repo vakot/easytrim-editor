@@ -7,21 +7,14 @@ import ReactDOM from "react-dom/client";
 import { AppErrorBoundary } from "./app/components/AppErrorBoundary";
 import { startSourceMediaRuntime } from "./app/store/integration/source-media-runtime";
 import { store } from "./app/store/store";
-import { diagnostics, installGlobalDiagnostics } from "./lib/diagnostics";
+import {
+  diagnostics,
+  installGlobalDiagnostics,
+  reportDiagnosticsUnavailable,
+} from "./lib/diagnostics";
 import { App } from "./App";
 
-const stopSourceMediaRuntime = startSourceMediaRuntime(store.dispatch);
-const stopGlobalDiagnostics = installGlobalDiagnostics();
-window.addEventListener(
-  "unload",
-  () => {
-    stopGlobalDiagnostics();
-    stopSourceMediaRuntime();
-  },
-  { once: true },
-);
-
-void diagnostics.initialize().finally(() => {
+function renderApplication() {
   ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
     <React.StrictMode>
       <AppErrorBoundary>
@@ -29,4 +22,26 @@ void diagnostics.initialize().finally(() => {
       </AppErrorBoundary>
     </React.StrictMode>,
   );
-});
+}
+
+async function startApplication() {
+  try {
+    await diagnostics.initialize();
+  } catch (error: unknown) {
+    reportDiagnosticsUnavailable(error);
+  }
+
+  const stopGlobalDiagnostics = installGlobalDiagnostics();
+  const stopSourceMediaRuntime = startSourceMediaRuntime(store.dispatch);
+  window.addEventListener(
+    "unload",
+    () => {
+      stopGlobalDiagnostics();
+      stopSourceMediaRuntime();
+    },
+    { once: true },
+  );
+  renderApplication();
+}
+
+void startApplication();
