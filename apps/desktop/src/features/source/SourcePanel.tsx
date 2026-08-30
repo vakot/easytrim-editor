@@ -37,6 +37,9 @@ const DEFAULT_PANELS = {
   "workspace-sidebar-export-queue": true,
 };
 
+const PANEL_MIN_SIZE = 138;
+const PANEL_COLLAPSED_SIZE = 32;
+
 export function SourcePanel() {
   const { t } = useTranslation();
 
@@ -151,17 +154,17 @@ function SourceDetailsPanel({ isSingle = false }: SourcePanelProps) {
   return (
     <ResizablePanel
       className="flex min-h-0 flex-col overflow-hidden"
-      collapsedSize={32}
+      collapsedSize={PANEL_COLLAPSED_SIZE}
       collapsible
       id="workspace-sidebar-source-details"
-      minSize={140}
+      minSize={PANEL_MIN_SIZE}
     >
       <div className="px-1">
         <ResizablePanelControl panelId="workspace-sidebar-source-details">
           {({ isCollapsed }) => (
             <Button
-              className="my-1 w-full justify-baseline pr-3 pl-2 text-foreground/80"
-              size="xs"
+              className="my-0.5 w-full justify-baseline pr-3 pl-2 text-foreground/80"
+              size="sm"
               variant="ghost"
             >
               {!isSingle &&
@@ -192,19 +195,19 @@ function ImportQueuePanel({ isSingle = false }: SourcePanelProps) {
   return (
     <ResizablePanel
       className="flex min-h-0 flex-col overflow-hidden"
-      collapsedSize={32}
+      collapsedSize={PANEL_COLLAPSED_SIZE}
       collapsible
       defaultSize={0}
       id="workspace-sidebar-import-queue"
-      minSize={140}
+      minSize={PANEL_MIN_SIZE}
     >
       <div className="px-1">
         <ResizablePanelControl panelId="workspace-sidebar-import-queue">
           {({ isCollapsed }) => (
             <Button
               aria-label={t("queue.labels.import")}
-              className="my-1 flex w-full justify-between pr-3 pl-2 text-foreground/80"
-              size="xs"
+              className="my-0.5 flex w-full justify-between pr-3 pl-2 text-foreground/80"
+              size="sm"
               variant="ghost"
             >
               <span className="flex items-center gap-1">
@@ -244,18 +247,18 @@ function ExportQueuePanel({ isSingle = false }: SourcePanelProps) {
   return (
     <ResizablePanel
       className="flex min-h-0 flex-col overflow-hidden"
-      collapsedSize={32}
+      collapsedSize={PANEL_COLLAPSED_SIZE}
       collapsible
       defaultSize={0}
       id="workspace-sidebar-export-queue"
-      minSize={140}
+      minSize={PANEL_MIN_SIZE}
     >
       <div className="px-1">
         <ResizablePanelControl panelId="workspace-sidebar-export-queue">
           {({ isCollapsed }) => (
             <Button
-              className="my-1 flex w-full justify-between pr-3 pl-2 text-foreground/80"
-              size="xs"
+              className="my-0.5 flex w-full justify-between pr-3 pl-2 text-foreground/80"
+              size="sm"
               variant="ghost"
             >
               <span className="flex items-center gap-1">
