@@ -123,6 +123,7 @@ export function MenuBarQueue() {
                   {availableQueueFinishActions.map((action) => (
                     <MenubarRadioItem inset key={action} value={action}>
                       {queueFinishLabels[action]}
+                      <MenubarIcon side="right">{queueFinishIcons[action]}</MenubarIcon>
                     </MenubarRadioItem>
                   ))}
                 </MenubarRadioGroup>

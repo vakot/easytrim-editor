@@ -41,9 +41,10 @@ export function ExportQueue() {
       <h2 className="sr-only" id="export-queue-title">
         {t("queue.labels.export")}
       </h2>
+
       {queue.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted-foreground">
-          {t("queue.messages.empty")}
+          {t("common.status.empty")}
         </p>
       ) : (
         <div aria-live="polite" className="grid gap-2" role="status">

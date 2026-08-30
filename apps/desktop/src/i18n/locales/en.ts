@@ -11,6 +11,7 @@ export const en = {
     },
     labels: { brand: "EasyTrim Editor" },
     status: {
+      empty: "Empty",
       disabled: "Disabled",
       enabled: "Enabled",
       error: "Error",
@@ -120,9 +121,6 @@ export const en = {
       completed: "Completed",
       failed: "Failed",
       queued: "Queued",
-    },
-    messages: {
-      empty: "No exports yet.",
     },
     dialogs: {
       cancel: {

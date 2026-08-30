@@ -17,7 +17,11 @@ export function ImportQueue() {
   const { activeIndex, activeItem, items, next, prev } = useImportQueue();
 
   return (
-    <section>
+    <section aria-labelledby="import-queue-title">
+      <h2 className="sr-only" id="import-queue-title">
+        {t("queue.labels.import")}
+      </h2>
+
       <div className="sticky top-0 grid grid-cols-2 gap-2 bg-card pb-2">
         <Button disabled={activeIndex <= 0} onClick={prev} size="sm" variant="outline">
           <ChevronLeft aria-hidden="true" />
@@ -36,7 +40,7 @@ export function ImportQueue() {
 
       {items.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted-foreground">
-          {t("queue.messages.empty")}
+          {t("common.status.empty")}
         </p>
       ) : (
         <div aria-live="polite" className="grid gap-2" role="status">

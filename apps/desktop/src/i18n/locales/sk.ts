@@ -13,6 +13,7 @@ export const sk = {
     },
     labels: { brand: "EasyTrim Editor" },
     status: {
+      empty: "Prázdne",
       disabled: "Vypnuté",
       enabled: "Zapnuté",
       error: "Chyba",
@@ -122,9 +123,6 @@ export const sk = {
       completed: "Dokončené",
       failed: "Zlyhalo",
       queued: "Vo fronte",
-    },
-    messages: {
-      empty: "Zatiaľ žiadne exporty.",
     },
     dialogs: {
       cancel: {
