@@ -828,6 +828,11 @@ mod tests {
         )
         .expect("marker valid");
         assert!(marker.graceful_shutdown);
+        drop(state);
+        let next = DiagnosticsState::initialize(root.clone(), "1.0.0".to_owned())
+            .expect("next session starts");
+        assert!(next.bootstrap().expect("next bootstrap").recovery.is_none());
+        next.complete().expect("next session completes");
         fs::remove_dir_all(root).expect("temporary root removed");
     }
 
