@@ -49,7 +49,11 @@ export function Preview() {
   const skipCurrentSource = () => void dispatch(closeActiveImportedItemRequested());
 
   return (
-    <>
+    <div
+      aria-busy={showLoadingOverlay}
+      className="relative size-full min-h-0 overflow-hidden"
+      data-slot="preview-content"
+    >
       {sourceSelection === null ? (
         <VideoPreviewEmpty />
       ) : (
@@ -82,9 +86,7 @@ export function Preview() {
             <strong className="text-foreground">
               {preview.status === "loading" && preview.kind === "proxy"
                 ? t("preview.status.preparing")
-                : preview.status === "loading"
-                  ? t("preview.status.opening")
-                  : t("common.status.loading")}
+                : t("preview.status.opening")}
             </strong>
             {skipAvailableFor === transitionKey ? (
               <Button onClick={skipCurrentSource} size="sm" variant="outline">
@@ -94,6 +96,6 @@ export function Preview() {
           </div>
         </div>
       ) : null}
-    </>
+    </div>
   );
 }

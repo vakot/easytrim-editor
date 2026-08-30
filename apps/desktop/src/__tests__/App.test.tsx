@@ -457,7 +457,14 @@ describe("App", () => {
     expect(document.getElementById("editor-stage-audio")).toBe(audioPanel);
     expect(within(detailsPanel!).getByText(replacementSelection.displayName)).toBeInTheDocument();
     expect(within(detailsPanel!).getByText("1280 × 720")).toBeInTheDocument();
-    expect(previewPanel).toContainElement(screen.getByTestId("preview-loading-overlay"));
+    const previewCard = previewPanel!.querySelector('[data-slot="card"]');
+    const previewContent = previewPanel!.querySelector('[data-slot="preview-content"]');
+    const previewLoadingOverlay = screen.getByTestId("preview-loading-overlay");
+    expect(previewCard).toHaveClass("relative", "isolate", "overflow-hidden");
+    expect(previewContent).toHaveAttribute("aria-busy", "true");
+    expect(previewContent).toContainElement(previewLoadingOverlay);
+    expect(previewLoadingOverlay).not.toHaveClass("fixed");
+    expect(within(previewPanel!).getByText("Opening preview…")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Selected Segment" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Audio tracks" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Play" })).toBeDisabled();
@@ -466,6 +473,7 @@ describe("App", () => {
 
     await waitFor(() => {
       expect(screen.queryByTestId("preview-loading-overlay")).not.toBeInTheDocument();
+      expect(previewContent).toHaveAttribute("aria-busy", "false");
       expect(screen.getByRole("button", { name: "Play" })).not.toBeDisabled();
     });
   });

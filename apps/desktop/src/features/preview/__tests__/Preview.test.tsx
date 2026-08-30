@@ -45,6 +45,32 @@ afterEach(() => {
 });
 
 describe("Preview", () => {
+  it("contains source loading within the preview panel", () => {
+    const appStore = createAppStore();
+    appStore.dispatch(
+      sourceSelected({
+        loadToken: 1,
+        source: { displayName: "first.mp4", sourcePath: "C:/Media/first.mp4" },
+      }),
+    );
+    const { container } = render(
+      <Provider store={appStore}>
+        <Preview />
+      </Provider>,
+    );
+
+    const previewContent = container.querySelector('[data-slot="preview-content"]');
+    const loadingOverlay = screen.getByTestId("preview-loading-overlay");
+
+    expect(previewContent).toHaveAttribute("aria-busy", "true");
+    expect(previewContent).toHaveClass("relative", "overflow-hidden");
+    expect(previewContent).toContainElement(loadingOverlay);
+    expect(loadingOverlay).toHaveClass("absolute", "inset-0");
+    expect(loadingOverlay).not.toHaveClass("fixed");
+    expect(screen.getByText("Opening preview…")).toBeInTheDocument();
+    expect(screen.queryByText("Loading…")).not.toBeInTheDocument();
+  });
+
   it("reveals Skip after three seconds and scopes the timer to the current source", () => {
     vi.useFakeTimers();
     const appStore = createAppStore();
