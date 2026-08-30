@@ -27,6 +27,7 @@ import { StatusBar } from "../StatusBar";
 
 function exportToast(overrides: Partial<ExportQueueItem>): ExportQueueItem {
   return {
+    addedAt: 1,
     id: "export-1",
     snapshot: {
       source: { displayName: "source.mp4", sourcePath: "C:/Media/source.mp4" },

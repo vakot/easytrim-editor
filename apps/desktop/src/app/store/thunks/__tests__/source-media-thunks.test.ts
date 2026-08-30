@@ -143,6 +143,7 @@ function audioPreview(_sourcePath: string, streamIndex: number) {
 
 function createHistoryItem(snapshot: EditorSnapshot, id = "history-1"): ExportQueueItem {
   return {
+    addedAt: 1,
     id,
     snapshot,
     route: "fast",

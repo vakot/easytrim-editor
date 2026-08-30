@@ -61,6 +61,12 @@ import type { AppThunk } from "./source-media-thunks";
 
 let optimizedPlanRequestSequence = 0;
 let historyForkSequence = 0;
+let latestExportAddedAt = 0;
+
+function nextExportAddedAt(): number {
+  latestExportAddedAt = Math.max(Date.now(), latestExportAddedAt + 1);
+  return latestExportAddedAt;
+}
 
 export const loadQueueFinishActions = (): AppThunk => async (dispatch) => {
   try {
@@ -186,6 +192,7 @@ async function startQueuedExport(
     );
 
     const promotion: QueueItemPromotion = {
+      addedAt: nextExportAddedAt(),
       id: importedItemId,
       media,
       snapshot,

@@ -193,6 +193,7 @@ describe("Redux Persist store integration", () => {
     );
     store.dispatch(
       queueEntryAdded({
+        addedAt: 1,
         id: "export-1",
         snapshot: {
           source: { displayName: "source.mp4", sourcePath: "C:/Media/source.mp4" },
