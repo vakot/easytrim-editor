@@ -23,9 +23,9 @@ const menuItemVariants = cva(
       variant: {
         default: "",
         success:
-          "text-success focus:bg-success/10 focus:text-success dark:focus:bg-success/20 [&_svg]:text-success!",
+          "text-success focus:bg-success/10 focus:text-success data-open:bg-success/10 data-open:text-success dark:focus:bg-success/20 [&_svg]:text-success!",
         destructive:
-          "text-destructive focus:bg-destructive/10 focus:text-destructive dark:focus:bg-destructive/20 [&_svg]:text-destructive!",
+          "text-destructive focus:bg-destructive/10 focus:text-destructive data-open:bg-destructive/10 data-open:text-destructive dark:focus:bg-destructive/20 [&_svg]:text-destructive!",
       },
     },
     defaultVariants: {
