@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
+import { SupportLink } from "@/app/components/SupportLink";
 import type { UpdateStatus } from "@/app/contexts/app-updates-context";
 import { useAppUpdates } from "@/app/hooks/useAppUpdates";
 import { useAppSelector } from "@/app/store/redux-hooks";
@@ -43,6 +44,7 @@ export function StatusBar() {
       >
         <span className="flex min-w-0 items-center gap-1.5">
           <span>v{getCurrentVersion()}</span>
+          <span className="text-primary">·</span>
           <StatusBarUpdateButton />
         </span>
         {activeExport ? (
@@ -125,7 +127,7 @@ function StatusBarUpdateButton() {
     error: t("common.status.error"),
   });
 
-  if (!updateAction) return null;
+  if (!updateAction) return <SupportLink />;
 
   const handleUpdateClick = () => {
     if (updateStatus === "available") {
