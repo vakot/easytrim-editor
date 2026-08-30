@@ -308,10 +308,10 @@ describe("App", () => {
     expect(screen.getByRole("list", { name: "Keyboard shortcuts" })).toHaveTextContent(
       "Mark In / Mark Out",
     );
-    expect(screen.getByRole("link", { name: "Support on Ko-fi.com" })).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "Support on Ko-fi.com" })).not.toHaveLength(0);
     expect(
       screen
-        .getByRole("link", { name: "Support on Ko-fi.com" })
+        .getAllByRole("link", { name: "Support on Ko-fi.com" })[0]!
         .querySelector('[data-brand-icon="kofi"]'),
     ).not.toBeNull();
     expect(screen.getByLabelText("Current playback time")).toHaveTextContent(
@@ -447,9 +447,7 @@ describe("App", () => {
     const timelinePanel = document.getElementById("editor-stage-timeline");
     const audioPanel = document.getElementById("editor-stage-audio");
 
-    await user.click(
-      screen.getByRole("button", { name: `Restore ${replacementSelection.displayName}` }),
-    );
+    await user.click(screen.getByLabelText(`Restore ${replacementSelection.displayName}`));
 
     expect(document.getElementById("workspace-sidebar-source-details")).toBe(detailsPanel);
     expect(document.getElementById("editor-stage-preview")).toBe(previewPanel);
@@ -466,7 +464,7 @@ describe("App", () => {
     expect(previewLoadingOverlay).not.toHaveClass("fixed");
     expect(within(previewPanel!).getByText("Opening preview…")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Selected Segment" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Audio tracks" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /^Audio tracks/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Play" })).toBeDisabled();
 
     await act(async () => replacementInspection.resolve(replacementMedia));
@@ -925,11 +923,11 @@ describe("App", () => {
       screen.getByRole("heading", { name: "Selected Segment" }),
     );
     expect(fixedTimeline).not.toContainElement(
-      screen.getByRole("heading", { name: "Audio tracks" }),
+      screen.getByRole("heading", { name: /^Audio tracks/ }),
     );
-    expect(audioPanel).toContainElement(screen.getByRole("heading", { name: "Audio tracks" }));
+    expect(audioPanel).toContainElement(screen.getByRole("heading", { name: /^Audio tracks/ }));
     expect(audioTracksScroll).not.toContainElement(
-      screen.getByRole("heading", { name: "Audio tracks" }),
+      screen.getByRole("heading", { name: /^Audio tracks/ }),
     );
     expect(audioTracksScroll).toHaveClass("overflow-hidden");
     expect(audioTracksScroll.querySelector('[data-slot="scroll-area-viewport"]')).not.toBeNull();
@@ -956,7 +954,7 @@ describe("App", () => {
     expect(await screen.findByRole("heading", { name: "Selected Segment" })).toBeInTheDocument();
     expect(screen.queryByTestId("audio-tracks-scroll")).not.toBeInTheDocument();
     expect(screen.queryByText("This source has no audio tracks.")).not.toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Audio tracks" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /^Audio tracks/ })).not.toBeInTheDocument();
     expect(document.getElementById("editor-stage-audio")).toBeNull();
   });
 
@@ -1096,10 +1094,10 @@ describe("App", () => {
       render(<App />);
       await openSourcePicker(user);
 
-      expect(await screen.findByRole("heading", { name: "Audio tracks" })).toBeInTheDocument();
+      expect(await screen.findByRole("heading", { name: /^Audio tracks/ })).toBeInTheDocument();
       const allTracks = screen.getByRole("button", { name: "All audio tracks" });
       expect(allTracks).toHaveAttribute("aria-pressed", "true");
-      expect(allTracks.parentElement).not.toHaveTextContent("Audio tracks");
+      expect(allTracks.parentElement).not.toHaveTextContent(/^Audio tracks/);
       expect(screen.getByRole("button", { name: "Mute eng" })).toHaveAttribute(
         "aria-pressed",
         "true",
