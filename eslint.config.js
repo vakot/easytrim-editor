@@ -11,7 +11,7 @@ import tseslint from "typescript-eslint";
 
 export default defineConfig(
   {
-    ignores: ["**/dist/**", "**/target/**", "**/src-tauri/gen/**"],
+    ignores: ["**/dist/**", "**/storybook-static/**", "**/target/**", "**/src-tauri/gen/**"],
   },
   eslint.configs.recommended,
   tseslint.configs.recommended,
@@ -110,6 +110,15 @@ export default defineConfig(
     files: ["scripts/**/*.mjs"],
     languageOptions: {
       globals: globals.node,
+    },
+  },
+  {
+    files: ["apps/desktop/.storybook/**/*.{ts,tsx}"],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+      },
     },
   },
   {
