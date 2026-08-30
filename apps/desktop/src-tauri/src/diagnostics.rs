@@ -1,0 +1,953 @@
+use std::{
+    backtrace::Backtrace,
+    collections::HashMap,
+    fs::{self, File, OpenOptions},
+    io::{BufRead, BufReader, BufWriter, Write},
+    panic,
+    path::{Path, PathBuf},
+    process::Command,
+    sync::{Arc, Mutex, OnceLock},
+    time::{Duration, Instant},
+};
+
+use serde::{Deserialize, Serialize};
+use serde_json::{Map, Value, json};
+use time::{OffsetDateTime, format_description::well_known::Rfc3339};
+use uuid::Uuid;
+
+use crate::error::AppError;
+
+const LOG_RETENTION: usize = 8;
+const MAX_LOG_BYTES: u64 = 5 * 1024 * 1024;
+const REPORT_RETENTION: usize = 10;
+const UI_HEARTBEAT_MISSED_AFTER: Duration = Duration::from_secs(10);
+
+static GLOBAL_DIAGNOSTICS: OnceLock<Arc<DiagnosticsState>> = OnceLock::new();
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DiagnosticOrigin {
+    pub id: Option<String>,
+    #[serde(rename = "type")]
+    pub kind: String,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DiagnosticEventInput {
+    pub category: String,
+    pub data: Option<Map<String, Value>>,
+    pub event: String,
+    pub level: String,
+    pub operation_id: Option<String>,
+    pub origin: Option<DiagnosticOrigin>,
+    pub parent_operation_id: Option<String>,
+    pub result: Option<String>,
+    pub snapshot_id: Option<String>,
+    pub duration_ms: Option<u64>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct DiagnosticEvent {
+    category: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    data: Option<Map<String, Value>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    duration_ms: Option<u64>,
+    event: String,
+    level: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    operation_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    origin: Option<DiagnosticOrigin>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    parent_operation_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    result: Option<String>,
+    session_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    snapshot_id: Option<String>,
+    timestamp: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SessionMarker {
+    app_version: String,
+    graceful_shutdown: bool,
+    pid: u32,
+    session_id: String,
+    started_at: String,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StartupRecovery {
+    pub classification: String,
+    pub report_id: String,
+    pub report_path: String,
+    pub session_id: String,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DiagnosticsBootstrap {
+    pub app_version: String,
+    pub recovery: Option<StartupRecovery>,
+    pub session_id: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ActiveOperation {
+    event: String,
+    operation_id: String,
+    parent_operation_id: Option<String>,
+    started_at: String,
+}
+
+struct LogWriter {
+    file: BufWriter<File>,
+    path: PathBuf,
+    segment: u8,
+}
+
+impl LogWriter {
+    fn open(logs_dir: &Path, session_id: &str) -> std::io::Result<Self> {
+        let path = log_path(logs_dir, session_id, 0);
+        let file = OpenOptions::new().create(true).append(true).open(&path)?;
+        Ok(Self {
+            file: BufWriter::new(file),
+            path,
+            segment: 0,
+        })
+    }
+
+    fn write(&mut self, logs_dir: &Path, session_id: &str, line: &[u8]) -> std::io::Result<()> {
+        if self.path.metadata().map_or(0, |metadata| metadata.len()) + line.len() as u64
+            > MAX_LOG_BYTES
+        {
+            self.file.flush()?;
+            self.segment = self.segment.saturating_add(1);
+            self.path = log_path(logs_dir, session_id, self.segment);
+            self.file = BufWriter::new(
+                OpenOptions::new()
+                    .create(true)
+                    .append(true)
+                    .open(&self.path)?,
+            );
+        }
+        self.file.write_all(line)?;
+        self.file.write_all(b"\n")?;
+        self.file.flush()
+    }
+}
+
+pub struct DiagnosticsState {
+    active_operations: Mutex<HashMap<String, ActiveOperation>>,
+    app_version: String,
+    heartbeat_path: PathBuf,
+    last_heartbeat: Mutex<(Instant, String, bool)>,
+    logs_dir: PathBuf,
+    marker_path: PathBuf,
+    recovery: Option<StartupRecovery>,
+    session: Mutex<SessionMarker>,
+    writer: Mutex<LogWriter>,
+}
+
+impl DiagnosticsState {
+    pub fn initialize(root: PathBuf, app_version: String) -> Result<Arc<Self>, AppError> {
+        let logs_dir = root.join("diagnostics").join("logs");
+        let reports_dir = root.join("diagnostics").join("crash-reports");
+        fs::create_dir_all(&logs_dir).map_err(io_error)?;
+        fs::create_dir_all(&reports_dir).map_err(io_error)?;
+        let marker_path = root.join("diagnostics").join("current-session.json");
+        let recovery = recover_previous_session(&marker_path, &logs_dir, &reports_dir)?;
+        retain_directories(&reports_dir, REPORT_RETENTION).map_err(io_error)?;
+        retain_files(&logs_dir, LOG_RETENTION).map_err(io_error)?;
+
+        let session = SessionMarker {
+            app_version: app_version.clone(),
+            graceful_shutdown: false,
+            pid: std::process::id(),
+            session_id: Uuid::new_v4().to_string(),
+            started_at: now(),
+        };
+        write_json_atomic(&marker_path, &session).map_err(io_error)?;
+        let writer = LogWriter::open(&logs_dir, &session.session_id).map_err(io_error)?;
+        let state = Arc::new(Self {
+            active_operations: Mutex::new(HashMap::new()),
+            app_version,
+            heartbeat_path: logs_dir.join(format!("session-{}.heartbeat.json", session.session_id)),
+            last_heartbeat: Mutex::new((Instant::now(), now(), false)),
+            logs_dir,
+            marker_path,
+            recovery,
+            session: Mutex::new(session),
+            writer: Mutex::new(writer),
+        });
+        state.record(DiagnosticEventInput {
+            category: "app".to_owned(),
+            data: Some(Map::from_iter([(
+                "pid".to_owned(),
+                Value::from(std::process::id()),
+            )])),
+            duration_ms: None,
+            event: "app.session.started".to_owned(),
+            level: "info".to_owned(),
+            operation_id: None,
+            origin: Some(DiagnosticOrigin {
+                id: None,
+                kind: "system".to_owned(),
+            }),
+            parent_operation_id: None,
+            result: Some("started".to_owned()),
+            snapshot_id: None,
+        })?;
+        let _ = GLOBAL_DIAGNOSTICS.set(Arc::clone(&state));
+        Ok(state)
+    }
+
+    pub fn bootstrap(&self) -> Result<DiagnosticsBootstrap, AppError> {
+        let session = self
+            .session
+            .lock()
+            .map_err(|_| AppError::internal("Diagnostics session state is unavailable."))?;
+        Ok(DiagnosticsBootstrap {
+            app_version: self.app_version.clone(),
+            recovery: self.recovery.clone(),
+            session_id: session.session_id.clone(),
+        })
+    }
+
+    pub fn record(&self, input: DiagnosticEventInput) -> Result<(), AppError> {
+        validate_event(&input)?;
+        let session_id = self
+            .session
+            .lock()
+            .map_err(|_| AppError::internal("Diagnostics session state is unavailable."))?
+            .session_id
+            .clone();
+        let event = DiagnosticEvent {
+            category: input.category,
+            data: input.data.map(sanitize_map),
+            duration_ms: input.duration_ms,
+            event: input.event,
+            level: input.level,
+            operation_id: input.operation_id,
+            origin: input.origin,
+            parent_operation_id: input.parent_operation_id,
+            result: input.result,
+            session_id: session_id.clone(),
+            snapshot_id: input.snapshot_id,
+            timestamp: now(),
+        };
+        self.update_operations(&event)?;
+        let line = serde_json::to_vec(&event)
+            .map_err(|_| AppError::internal("A diagnostic event could not be serialized."))?;
+        self.writer
+            .lock()
+            .map_err(|_| AppError::internal("The diagnostics writer is unavailable."))?
+            .write(&self.logs_dir, &session_id, &line)
+            .map_err(io_error)
+    }
+
+    pub fn heartbeat(&self) -> Result<(), AppError> {
+        let mut heartbeat = self
+            .last_heartbeat
+            .lock()
+            .map_err(|_| AppError::internal("UI heartbeat state is unavailable."))?;
+        let elapsed = heartbeat.0.elapsed();
+        heartbeat.0 = Instant::now();
+        heartbeat.1 = now();
+        let heartbeat_timestamp = heartbeat.1.clone();
+        let _ = write_json_atomic(
+            &self.heartbeat_path,
+            &json!({ "lastUiHeartbeatAt": heartbeat_timestamp }),
+        );
+        if elapsed >= UI_HEARTBEAT_MISSED_AFTER {
+            heartbeat.2 = false;
+            drop(heartbeat);
+            self.record(DiagnosticEventInput {
+                category: "ui".to_owned(),
+                data: Some(Map::from_iter([(
+                    "elapsedMs".to_owned(),
+                    Value::from(elapsed.as_millis() as u64),
+                )])),
+                duration_ms: None,
+                event: "ui.heartbeat.recovered".to_owned(),
+                level: "warn".to_owned(),
+                operation_id: None,
+                origin: Some(DiagnosticOrigin {
+                    id: None,
+                    kind: "system".to_owned(),
+                }),
+                parent_operation_id: None,
+                result: None,
+                snapshot_id: None,
+            })?;
+        }
+        Ok(())
+    }
+
+    pub fn check_heartbeat(&self) {
+        let missed = self.last_heartbeat.lock().ok().and_then(|mut heartbeat| {
+            let elapsed = heartbeat.0.elapsed();
+            if elapsed >= UI_HEARTBEAT_MISSED_AFTER && !heartbeat.2 {
+                heartbeat.2 = true;
+                Some(elapsed)
+            } else {
+                None
+            }
+        });
+        if let Some(elapsed) = missed {
+            let _ = self.record(DiagnosticEventInput {
+                category: "ui".to_owned(),
+                data: Some(Map::from_iter([(
+                    "elapsedMs".to_owned(),
+                    Value::from(elapsed.as_millis() as u64),
+                )])),
+                duration_ms: None,
+                event: "ui.heartbeat.missed".to_owned(),
+                level: "warn".to_owned(),
+                operation_id: None,
+                origin: Some(DiagnosticOrigin {
+                    id: None,
+                    kind: "system".to_owned(),
+                }),
+                parent_operation_id: None,
+                result: None,
+                snapshot_id: None,
+            });
+        }
+    }
+
+    pub fn complete(&self) -> Result<(), AppError> {
+        let already_complete = self
+            .session
+            .lock()
+            .map_err(|_| AppError::internal("Diagnostics session state is unavailable."))?
+            .graceful_shutdown;
+        if already_complete {
+            return Ok(());
+        }
+        self.record(DiagnosticEventInput {
+            category: "app".to_owned(),
+            data: None,
+            duration_ms: None,
+            event: "app.session.completed".to_owned(),
+            level: "info".to_owned(),
+            operation_id: None,
+            origin: Some(DiagnosticOrigin {
+                id: None,
+                kind: "system".to_owned(),
+            }),
+            parent_operation_id: None,
+            result: Some("success".to_owned()),
+            snapshot_id: None,
+        })?;
+        let marker = {
+            let mut session = self
+                .session
+                .lock()
+                .map_err(|_| AppError::internal("Diagnostics session state is unavailable."))?;
+            session.graceful_shutdown = true;
+            session.clone()
+        };
+        write_json_atomic(&self.marker_path, &marker).map_err(io_error)
+    }
+
+    pub fn reveal_report(&self, report_id: &str) -> Result<(), AppError> {
+        let recovery = self
+            .recovery
+            .as_ref()
+            .filter(|recovery| recovery.report_id == report_id)
+            .ok_or_else(|| AppError::invalid_request("The diagnostic report is unavailable."))?;
+        reveal_file(Path::new(&recovery.report_path))
+    }
+
+    fn update_operations(&self, event: &DiagnosticEvent) -> Result<(), AppError> {
+        let Some(operation_id) = event.operation_id.as_ref() else {
+            return Ok(());
+        };
+        let mut operations = self
+            .active_operations
+            .lock()
+            .map_err(|_| AppError::internal("The diagnostic operation registry is unavailable."))?;
+        match event.result.as_deref() {
+            Some("started") => {
+                operations.insert(
+                    operation_id.clone(),
+                    ActiveOperation {
+                        event: event.event.trim_end_matches(".started").to_owned(),
+                        operation_id: operation_id.clone(),
+                        parent_operation_id: event.parent_operation_id.clone(),
+                        started_at: event.timestamp.clone(),
+                    },
+                );
+            }
+            Some("success" | "cancelled" | "failed" | "ignored" | "rejected") => {
+                operations.remove(operation_id);
+            }
+            _ => {}
+        }
+        Ok(())
+    }
+}
+
+pub fn install_panic_hook() {
+    let previous = panic::take_hook();
+    panic::set_hook(Box::new(move |info| {
+        if let Some(diagnostics) = GLOBAL_DIAGNOSTICS.get() {
+            let message = info
+                .payload()
+                .downcast_ref::<&str>()
+                .map(|message| (*message).to_owned())
+                .or_else(|| info.payload().downcast_ref::<String>().cloned())
+                .unwrap_or_else(|| "Non-string panic payload".to_owned());
+            let mut data = Map::new();
+            data.insert("message".to_owned(), Value::String(message));
+            data.insert(
+                "thread".to_owned(),
+                Value::String(
+                    std::thread::current()
+                        .name()
+                        .unwrap_or("unnamed")
+                        .to_owned(),
+                ),
+            );
+            data.insert(
+                "backtrace".to_owned(),
+                Value::String(Backtrace::force_capture().to_string()),
+            );
+            if let Some(location) = info.location() {
+                data.insert(
+                    "location".to_owned(),
+                    Value::String(format!(
+                        "{}:{}:{}",
+                        location.file(),
+                        location.line(),
+                        location.column()
+                    )),
+                );
+            }
+            let _ = diagnostics.record(DiagnosticEventInput {
+                category: "native".to_owned(),
+                data: Some(data),
+                duration_ms: None,
+                event: "native.panic.captured".to_owned(),
+                level: "fatal".to_owned(),
+                operation_id: None,
+                origin: Some(DiagnosticOrigin {
+                    id: None,
+                    kind: "system".to_owned(),
+                }),
+                parent_operation_id: None,
+                result: Some("failed".to_owned()),
+                snapshot_id: None,
+            });
+        }
+        previous(info);
+    }));
+}
+
+pub fn complete_global_session() {
+    if let Some(diagnostics) = GLOBAL_DIAGNOSTICS.get() {
+        let _ = diagnostics.complete();
+    }
+}
+
+fn validate_event(input: &DiagnosticEventInput) -> Result<(), AppError> {
+    let valid_name = |value: &str| {
+        !value.is_empty()
+            && value.len() <= 96
+            && value.bytes().all(|byte| {
+                byte.is_ascii_lowercase()
+                    || byte.is_ascii_digit()
+                    || byte == b'.'
+                    || byte == b'-'
+                    || byte == b'_'
+            })
+    };
+    if !valid_name(&input.event) || !valid_name(&input.category) {
+        return Err(AppError::invalid_request(
+            "The diagnostic event name is invalid.",
+        ));
+    }
+    if !matches!(
+        input.level.as_str(),
+        "trace" | "debug" | "info" | "warn" | "error" | "fatal"
+    ) {
+        return Err(AppError::invalid_request(
+            "The diagnostic level is invalid.",
+        ));
+    }
+    Ok(())
+}
+
+fn sanitize_map(data: Map<String, Value>) -> Map<String, Value> {
+    data.into_iter()
+        .take(32)
+        .map(|(key, value)| (key, sanitize_value(value, 0)))
+        .collect()
+}
+
+fn sanitize_value(value: Value, depth: u8) -> Value {
+    if depth >= 3 {
+        return Value::String("[truncated]".to_owned());
+    }
+    match value {
+        Value::String(value) => Value::String(value.chars().take(2_048).collect()),
+        Value::Array(values) => Value::Array(
+            values
+                .into_iter()
+                .take(32)
+                .map(|value| sanitize_value(value, depth + 1))
+                .collect(),
+        ),
+        Value::Object(values) => Value::Object(
+            values
+                .into_iter()
+                .take(32)
+                .filter(|(key, _)| !is_sensitive_key(key))
+                .map(|(key, value)| (key, sanitize_value(value, depth + 1)))
+                .collect(),
+        ),
+        value => value,
+    }
+}
+
+fn is_sensitive_key(key: &str) -> bool {
+    let key = key.to_ascii_lowercase();
+    ["token", "password", "secret", "credential", "authorization"]
+        .iter()
+        .any(|sensitive| key.contains(sensitive))
+}
+
+fn recover_previous_session(
+    marker_path: &Path,
+    logs_dir: &Path,
+    reports_dir: &Path,
+) -> Result<Option<StartupRecovery>, AppError> {
+    if !marker_path.exists() {
+        return Ok(None);
+    }
+    let marker = fs::read(marker_path)
+        .ok()
+        .and_then(|bytes| serde_json::from_slice::<SessionMarker>(&bytes).ok());
+    match marker {
+        Some(marker) if marker.graceful_shutdown => Ok(None),
+        Some(marker) => create_report(&marker, logs_dir, reports_dir).map(Some),
+        None => {
+            let marker = SessionMarker {
+                app_version: "unknown".to_owned(),
+                graceful_shutdown: false,
+                pid: 0,
+                session_id: format!("unknown-{}", Uuid::new_v4()),
+                started_at: "unknown".to_owned(),
+            };
+            create_report(&marker, logs_dir, reports_dir).map(Some)
+        }
+    }
+}
+
+fn create_report(
+    marker: &SessionMarker,
+    logs_dir: &Path,
+    reports_dir: &Path,
+) -> Result<StartupRecovery, AppError> {
+    let events = read_session_events(logs_dir, &marker.session_id);
+    let classification = if events
+        .iter()
+        .any(|event| event.event == "native.panic.captured")
+    {
+        "native_panic"
+    } else if events
+        .iter()
+        .any(|event| event.event.starts_with("frontend.fatal"))
+    {
+        "frontend_fatal_error"
+    } else {
+        "abnormal_shutdown"
+    };
+    let mut unfinished = HashMap::<String, ActiveOperation>::new();
+    for event in &events {
+        let Some(operation_id) = event.operation_id.as_ref() else {
+            continue;
+        };
+        match event.result.as_deref() {
+            Some("started") => {
+                unfinished.insert(
+                    operation_id.clone(),
+                    ActiveOperation {
+                        event: event.event.trim_end_matches(".started").to_owned(),
+                        operation_id: operation_id.clone(),
+                        parent_operation_id: event.parent_operation_id.clone(),
+                        started_at: event.timestamp.clone(),
+                    },
+                );
+            }
+            Some("success" | "cancelled" | "failed" | "ignored" | "rejected") => {
+                unfinished.remove(operation_id);
+            }
+            _ => {}
+        }
+    }
+    let report_id = format!("{}_{}", filename_timestamp(), marker.session_id);
+    let report_dir = reports_dir.join(&report_id);
+    fs::create_dir_all(&report_dir).map_err(io_error)?;
+    let report_path = report_dir.join("report.log");
+    let last_event = events.last();
+    let last_heartbeat = events
+        .iter()
+        .rev()
+        .find(|event| event.event.starts_with("ui.heartbeat"));
+    let heartbeat_state =
+        fs::read(logs_dir.join(format!("session-{}.heartbeat.json", marker.session_id)))
+            .ok()
+            .and_then(|bytes| serde_json::from_slice::<Value>(&bytes).ok());
+    let metadata = json!({
+        "appVersion": marker.app_version,
+        "classification": classification,
+        "lastEvent": last_event,
+        "lastRecordedEventAt": last_event.map(|event| &event.timestamp),
+        "lastUiHeartbeat": heartbeat_state.or_else(|| last_heartbeat.map(|event| json!(event))),
+        "platform": std::env::consts::OS,
+        "pid": marker.pid,
+        "sessionId": marker.session_id,
+        "sessionStartedAt": marker.started_at,
+        "unfinishedOperations": unfinished.values().collect::<Vec<_>>(),
+    });
+    write_json_atomic(&report_dir.join("report.json"), &metadata).map_err(io_error)?;
+    write_json_atomic(&report_dir.join("session.json"), marker).map_err(io_error)?;
+    let mut human = BufWriter::new(File::create(&report_path).map_err(io_error)?);
+    writeln!(human, "EasyTrim diagnostic report").map_err(io_error)?;
+    writeln!(human, "Classification: {classification}").map_err(io_error)?;
+    writeln!(human, "Session: {}", marker.session_id).map_err(io_error)?;
+    writeln!(human, "App version: {}", marker.app_version).map_err(io_error)?;
+    writeln!(human, "Started: {}", marker.started_at).map_err(io_error)?;
+    writeln!(
+        human,
+        "Last event: {}",
+        last_event.map_or("none", |event| event.event.as_str())
+    )
+    .map_err(io_error)?;
+    writeln!(human, "\nUnfinished operations:").map_err(io_error)?;
+    for operation in unfinished.values() {
+        writeln!(
+            human,
+            "- {} ({}) started {}",
+            operation.event, operation.operation_id, operation.started_at
+        )
+        .map_err(io_error)?;
+    }
+    writeln!(human, "\nEvent timeline:").map_err(io_error)?;
+    for event in &events {
+        writeln!(
+            human,
+            "{} {:<5} {} {}",
+            event.timestamp,
+            event.level.to_uppercase(),
+            event.event,
+            event
+                .data
+                .as_ref()
+                .map_or_else(String::new, |data| Value::Object(data.clone()).to_string())
+        )
+        .map_err(io_error)?;
+    }
+    human.flush().map_err(io_error)?;
+    Ok(StartupRecovery {
+        classification: classification.to_owned(),
+        report_id,
+        report_path: report_path.to_string_lossy().into_owned(),
+        session_id: marker.session_id.clone(),
+    })
+}
+
+fn read_session_events(logs_dir: &Path, session_id: &str) -> Vec<DiagnosticEvent> {
+    let mut paths = fs::read_dir(logs_dir)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .map(|entry| entry.path())
+        .filter(|path| {
+            path.file_name().is_some_and(|name| {
+                name.to_string_lossy()
+                    .starts_with(&format!("session-{session_id}"))
+            })
+        })
+        .collect::<Vec<_>>();
+    paths.sort();
+    paths
+        .into_iter()
+        .filter_map(|path| File::open(path).ok())
+        .flat_map(|file| BufReader::new(file).lines().map_while(Result::ok))
+        .filter_map(|line| serde_json::from_str(&line).ok())
+        .collect()
+}
+
+fn retain_directories(parent: &Path, keep: usize) -> std::io::Result<()> {
+    let mut entries = fs::read_dir(parent)?
+        .flatten()
+        .filter(|entry| entry.file_type().is_ok_and(|kind| kind.is_dir()))
+        .collect::<Vec<_>>();
+    entries.sort_by_key(|entry| entry.file_name());
+    let remove_count = entries.len().saturating_sub(keep);
+    for entry in entries.into_iter().take(remove_count) {
+        fs::remove_dir_all(entry.path())?;
+    }
+    Ok(())
+}
+
+fn retain_files(parent: &Path, keep_sessions: usize) -> std::io::Result<()> {
+    let mut sessions = HashMap::<String, Vec<PathBuf>>::new();
+    for entry in fs::read_dir(parent)?.flatten() {
+        let name = entry.file_name().to_string_lossy().into_owned();
+        if let Some(session) = name
+            .strip_prefix("session-")
+            .and_then(|name| name.split('.').next())
+        {
+            sessions
+                .entry(session.to_owned())
+                .or_default()
+                .push(entry.path());
+        }
+    }
+    let mut names = sessions
+        .iter()
+        .map(|(name, paths)| {
+            let modified = paths
+                .iter()
+                .filter_map(|path| path.metadata().ok()?.modified().ok())
+                .max();
+            (name.clone(), modified)
+        })
+        .collect::<Vec<_>>();
+    names.sort_by_key(|(_, modified)| *modified);
+    let remove_count = names.len().saturating_sub(keep_sessions);
+    for (name, _) in names.into_iter().take(remove_count) {
+        for path in sessions.remove(&name).unwrap_or_default() {
+            fs::remove_file(path)?;
+        }
+    }
+    Ok(())
+}
+
+fn write_json_atomic(path: &Path, value: &impl Serialize) -> std::io::Result<()> {
+    let temporary = path.with_extension("tmp");
+    let bytes = serde_json::to_vec_pretty(value).map_err(std::io::Error::other)?;
+    fs::write(&temporary, bytes)?;
+    fs::rename(temporary, path)
+}
+
+fn log_path(logs_dir: &Path, session_id: &str, segment: u8) -> PathBuf {
+    logs_dir.join(format!("session-{session_id}.{segment:03}.jsonl"))
+}
+
+fn now() -> String {
+    OffsetDateTime::now_utc()
+        .format(&Rfc3339)
+        .unwrap_or_else(|_| "unknown".to_owned())
+}
+
+fn filename_timestamp() -> String {
+    now().replace([':', '.'], "-")
+}
+
+fn io_error(error: std::io::Error) -> AppError {
+    AppError::internal(format!("Diagnostics storage failed: {error}"))
+}
+
+#[cfg(target_os = "windows")]
+fn reveal_file(path: &Path) -> Result<(), AppError> {
+    let (program, arguments) = reveal_command(path)?;
+    Command::new(program)
+        .args(arguments)
+        .spawn()
+        .map(|_| ())
+        .map_err(io_error)
+}
+
+#[cfg(target_os = "windows")]
+fn reveal_command(path: &Path) -> Result<(&'static str, Vec<String>), AppError> {
+    if !path.is_absolute() {
+        return Err(AppError::invalid_request(
+            "The diagnostic report path is invalid.",
+        ));
+    }
+    Ok(("explorer.exe", vec![format!("/select,{}", path.display())]))
+}
+
+#[cfg(target_os = "macos")]
+fn reveal_file(path: &Path) -> Result<(), AppError> {
+    Command::new("open")
+        .arg("-R")
+        .arg(path)
+        .spawn()
+        .map(|_| ())
+        .map_err(io_error)
+}
+
+#[cfg(all(unix, not(target_os = "macos")))]
+fn reveal_file(path: &Path) -> Result<(), AppError> {
+    let parent = path
+        .parent()
+        .ok_or_else(|| AppError::invalid_request("The diagnostic report path is invalid."))?;
+    Command::new("xdg-open")
+        .arg(parent)
+        .spawn()
+        .map(|_| ())
+        .map_err(io_error)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn temporary_root(name: &str) -> PathBuf {
+        let root = std::env::temp_dir().join(format!(
+            "easytrim-diagnostics-test-{name}-{}",
+            Uuid::new_v4()
+        ));
+        fs::create_dir_all(&root).expect("temporary root created");
+        root
+    }
+
+    #[test]
+    fn creates_and_completes_a_session() {
+        let root = temporary_root("session");
+        let state =
+            DiagnosticsState::initialize(root.clone(), "1.0.0".to_owned()).expect("session starts");
+        let bootstrap = state.bootstrap().expect("bootstrap available");
+        assert!(!bootstrap.session_id.is_empty());
+        state.complete().expect("session completes");
+        let marker: SessionMarker = serde_json::from_slice(
+            &fs::read(root.join("diagnostics/current-session.json")).expect("marker read"),
+        )
+        .expect("marker valid");
+        assert!(marker.graceful_shutdown);
+        fs::remove_dir_all(root).expect("temporary root removed");
+    }
+
+    #[test]
+    fn reports_an_unclosed_session_and_unfinished_operation() {
+        let root = temporary_root("recovery");
+        let first =
+            DiagnosticsState::initialize(root.clone(), "1.0.0".to_owned()).expect("first starts");
+        first
+            .record(DiagnosticEventInput {
+                category: "preview".to_owned(),
+                data: None,
+                duration_ms: None,
+                event: "preview.prepare.started".to_owned(),
+                level: "info".to_owned(),
+                operation_id: Some("preview-1".to_owned()),
+                origin: None,
+                parent_operation_id: Some("source-1".to_owned()),
+                result: Some("started".to_owned()),
+                snapshot_id: None,
+            })
+            .expect("operation persisted");
+        drop(first);
+        let second =
+            DiagnosticsState::initialize(root.clone(), "1.0.0".to_owned()).expect("second starts");
+        let recovery = second
+            .bootstrap()
+            .expect("bootstrap")
+            .recovery
+            .expect("recovery created");
+        assert_eq!(recovery.classification, "abnormal_shutdown");
+        let report = fs::read_to_string(recovery.report_path).expect("report read");
+        assert!(report.contains("preview.prepare"));
+        second.complete().expect("second completes");
+        fs::remove_dir_all(root).expect("temporary root removed");
+    }
+
+    #[test]
+    fn corrupt_marker_is_reported_without_blocking_startup() {
+        let root = temporary_root("corrupt");
+        fs::create_dir_all(root.join("diagnostics")).expect("diagnostics created");
+        fs::write(root.join("diagnostics/current-session.json"), b"not json")
+            .expect("corrupt marker written");
+        let state = DiagnosticsState::initialize(root.clone(), "1.0.0".to_owned())
+            .expect("startup recovers");
+        assert!(state.bootstrap().expect("bootstrap").recovery.is_some());
+        state.complete().expect("session completes");
+        fs::remove_dir_all(root).expect("temporary root removed");
+    }
+
+    #[test]
+    fn frontend_fatal_error_classifies_the_recovered_session() {
+        let root = temporary_root("frontend-fatal");
+        let first =
+            DiagnosticsState::initialize(root.clone(), "1.0.0".to_owned()).expect("first starts");
+        first
+            .record(DiagnosticEventInput {
+                category: "frontend".to_owned(),
+                data: None,
+                duration_ms: None,
+                event: "frontend.fatal.error".to_owned(),
+                level: "fatal".to_owned(),
+                operation_id: None,
+                origin: None,
+                parent_operation_id: None,
+                result: Some("failed".to_owned()),
+                snapshot_id: None,
+            })
+            .expect("fatal event persisted");
+        drop(first);
+        let second =
+            DiagnosticsState::initialize(root.clone(), "1.0.0".to_owned()).expect("second starts");
+        assert_eq!(
+            second
+                .bootstrap()
+                .expect("bootstrap")
+                .recovery
+                .expect("recovery")
+                .classification,
+            "frontend_fatal_error"
+        );
+        second.complete().expect("session completes");
+        fs::remove_dir_all(root).expect("temporary root removed");
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn windows_reveal_command_selects_the_report_file() {
+        let (program, arguments) =
+            reveal_command(Path::new(r"C:\diagnostics\report.log")).expect("command constructed");
+        assert_eq!(program, "explorer.exe");
+        assert_eq!(arguments, vec![r"/select,C:\diagnostics\report.log"]);
+    }
+
+    #[test]
+    fn rotates_large_logs_and_retains_recent_reports() {
+        let root = temporary_root("retention");
+        let logs = root.join("logs");
+        let reports = root.join("reports");
+        fs::create_dir_all(&logs).expect("logs created");
+        fs::create_dir_all(&reports).expect("reports created");
+        let mut writer = LogWriter::open(&logs, "session").expect("writer opens");
+        writer
+            .write(&logs, "session", &vec![b'x'; MAX_LOG_BYTES as usize])
+            .expect("first segment written");
+        writer
+            .write(&logs, "session", b"next")
+            .expect("next segment written");
+        assert!(log_path(&logs, "session", 1).exists());
+
+        for index in 0..12 {
+            fs::create_dir(reports.join(format!("{index:02}-report")))
+                .expect("report directory created");
+        }
+        retain_directories(&reports, REPORT_RETENTION).expect("reports retained");
+        assert_eq!(
+            fs::read_dir(&reports).expect("reports read").count(),
+            REPORT_RETENTION
+        );
+        assert!(!reports.join("00-report").exists());
+        fs::remove_dir_all(root).expect("temporary root removed");
+    }
+}
