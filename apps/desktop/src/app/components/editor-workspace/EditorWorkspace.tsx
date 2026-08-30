@@ -19,7 +19,7 @@ export function EditorWorkspace() {
         groupResizeBehavior="preserve-pixel-size"
         id="workspace-sidebar"
         maxSize="30rem"
-        minSize="15rem"
+        minSize={290}
       >
         <aside
           aria-label={t("source.labels.title")}
@@ -29,7 +29,11 @@ export function EditorWorkspace() {
         </aside>
       </ResizablePanel>
 
-      <ResizableHandle className="bg-transparent" style={{ width: 4 }} withHandle />
+      <ResizableHandle
+        className="self-start bg-transparent"
+        style={{ height: "calc(100% - 4px)", width: 4 }}
+        withHandle
+      />
 
       <ResizablePanel className="overflow-hidden" id="workspace-content" minSize="44rem">
         <EditorStage />
