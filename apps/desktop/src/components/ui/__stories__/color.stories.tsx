@@ -13,7 +13,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Sample: Story = {
-  args: { color: "#f59e0b", "aria-label": "Amber" },
+  args: { color: "#f59e0b", "aria-label": "Amber", className: "block size-5" },
 };
 
 export const Spectrum: Story = {

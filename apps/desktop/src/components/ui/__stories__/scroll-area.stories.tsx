@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
+import { Card } from "@/components/ui/card";
+
 import { ScrollArea } from "../scroll-area";
 
 const meta = {
@@ -14,14 +16,16 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   render: () => (
-    <ScrollArea className="h-48 w-72 rounded-md border p-4">
-      <div className="grid gap-3 pr-3 text-sm">
-        {Array.from({ length: 12 }, (_, index) => (
-          <div className="rounded-md bg-muted/50 p-2" key={index}>
-            Timeline marker {index + 1}
-          </div>
-        ))}
-      </div>
-    </ScrollArea>
+    <Card className="h-42 w-64">
+      <ScrollArea className="h-full px-2">
+        <div className="flex flex-col gap-2">
+          {Array.from({ length: 12 }, (_, index) => (
+            <div className="rounded-md bg-muted/50 p-2" key={index}>
+              Timeline marker {index + 1}
+            </div>
+          ))}
+        </div>
+      </ScrollArea>
+    </Card>
   ),
 };
