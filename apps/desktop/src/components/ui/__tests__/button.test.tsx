@@ -40,14 +40,18 @@ describe("Button", () => {
 
     const button = screen.getByRole("button", { name: "Menu" });
 
+    expect(button).toHaveAttribute("data-state", "closed");
     expect(button).not.toHaveAttribute("data-open");
 
     await user.click(button);
 
+    expect(button).toHaveAttribute("data-state", "open");
     expect(button).toHaveAttribute("data-open", "true");
+    expect(button).toHaveClass("data-open:bg-primary/80");
 
     fireEvent.pointerDown(button, { button: 0, ctrlKey: false });
 
+    expect(button).toHaveAttribute("data-state", "closed");
     expect(button).not.toHaveAttribute("data-open");
   });
 });
