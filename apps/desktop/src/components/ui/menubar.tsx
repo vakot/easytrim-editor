@@ -4,14 +4,9 @@ import * as React from "react";
 
 import {
   gateKeepOpenHandler,
-  gateKeepOpenHandlers,
-  menuContentClassName,
+  menuClassNames,
   MenuIcon,
   menuItemVariants,
-  menuLabelClassName,
-  menuSeparatorClassName,
-  menuShortcutClassName,
-  menuSubContentClassName,
 } from "@/components/ui/menu";
 
 import { cn } from "@/lib/class-names.utils";
@@ -71,7 +66,7 @@ function MenubarContent({
         align={align}
         alignOffset={alignOffset}
         className={cn(
-          menuContentClassName,
+          menuClassNames.content,
           "origin-(--radix-menubar-content-transform-origin)",
           className,
         )}
@@ -97,8 +92,6 @@ function MenubarItem({
   keepOpen?: boolean;
   variant?: "default" | "destructive" | "success";
 }) {
-  const gatedProps = gateKeepOpenHandlers(props, keepOpen, onSelect !== undefined);
-
   return (
     <MenubarPrimitive.Item
       className={cn(menuItemVariants({ kind: "item", variant, className }))}
@@ -107,7 +100,7 @@ function MenubarItem({
       data-variant={variant}
       disabled={disabled}
       onSelect={gateKeepOpenHandler(keepOpen, onSelect)}
-      {...gatedProps}
+      {...props}
     >
       {children}
     </MenubarPrimitive.Item>
@@ -115,7 +108,6 @@ function MenubarItem({
 }
 
 function MenubarCheckboxItem({
-  checked,
   children,
   className,
   inset,
@@ -128,16 +120,13 @@ function MenubarCheckboxItem({
   keepOpen?: boolean;
   variant?: "default" | "destructive" | "success";
 }) {
-  const gatedProps = gateKeepOpenHandlers(props, keepOpen, onSelect !== undefined);
-
   return (
     <MenubarPrimitive.CheckboxItem
-      checked={checked}
       className={cn(menuItemVariants({ kind: "checkbox", variant, className }))}
       data-inset={inset}
       data-slot="menubar-checkbox-item"
       onSelect={gateKeepOpenHandler(keepOpen, onSelect)}
-      {...gatedProps}
+      {...props}
     >
       <MenuIcon>
         <MenubarPrimitive.ItemIndicator>
@@ -162,15 +151,13 @@ function MenubarRadioItem({
   keepOpen?: boolean;
   variant?: "default" | "destructive" | "success";
 }) {
-  const gatedProps = gateKeepOpenHandlers(props, keepOpen, onSelect !== undefined);
-
   return (
     <MenubarPrimitive.RadioItem
       className={cn(menuItemVariants({ kind: "radio", variant, className }))}
       data-inset={inset}
       data-slot="menubar-radio-item"
       onSelect={gateKeepOpenHandler(keepOpen, onSelect)}
-      {...gatedProps}
+      {...props}
     >
       <MenuIcon>
         <MenubarPrimitive.ItemIndicator>
@@ -191,7 +178,7 @@ function MenubarLabel({
 }) {
   return (
     <MenubarPrimitive.Label
-      className={cn(menuLabelClassName, className)}
+      className={cn(menuClassNames.label, className)}
       data-inset={inset}
       data-slot="menubar-label"
       {...props}
@@ -205,7 +192,7 @@ function MenubarSeparator({
 }: React.ComponentProps<typeof MenubarPrimitive.Separator>) {
   return (
     <MenubarPrimitive.Separator
-      className={cn(menuSeparatorClassName, className)}
+      className={cn(menuClassNames.separator, className)}
       data-slot="menubar-separator"
       {...props}
     />
@@ -215,7 +202,7 @@ function MenubarSeparator({
 function MenubarShortcut({ className, ...props }: React.ComponentProps<"span">) {
   return (
     <span
-      className={cn(menuShortcutClassName, className)}
+      className={cn(menuClassNames.shortcut, className)}
       data-slot="menubar-shortcut"
       {...props}
     />
@@ -239,8 +226,6 @@ function MenubarSubTrigger({
   keepOpen,
   ...props
 }: MenubarSubTriggerProps) {
-  const gatedProps = gateKeepOpenHandlers(props, keepOpen, false);
-
   return (
     <MenubarPrimitive.SubTrigger
       className={cn(menuItemVariants({ kind: "subTrigger", className }))}
@@ -248,7 +233,7 @@ function MenubarSubTrigger({
       data-keep-open={keepOpen || undefined}
       data-slot="menubar-sub-trigger"
       disabled={disabled}
-      {...gatedProps}
+      {...props}
     >
       {children}
       <MenuIcon side="right">
@@ -268,7 +253,7 @@ function MenubarSubContent({
     <MenubarPrimitive.SubContent
       alignOffset={alignOffset}
       className={cn(
-        menuSubContentClassName,
+        menuClassNames.content,
         "origin-(--radix-menubar-content-transform-origin)",
         className,
       )}

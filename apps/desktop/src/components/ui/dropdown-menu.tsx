@@ -4,14 +4,9 @@ import * as React from "react";
 
 import {
   gateKeepOpenHandler,
-  gateKeepOpenHandlers,
-  menuContentClassName,
+  menuClassNames,
   MenuIcon,
   menuItemVariants,
-  menuLabelClassName,
-  menuSeparatorClassName,
-  menuShortcutClassName,
-  menuSubContentClassName,
 } from "@/components/ui/menu";
 
 import { cn } from "@/lib/class-names.utils";
@@ -43,7 +38,7 @@ function DropdownMenuContent({
       <DropdownMenuPrimitive.Content
         align={align}
         className={cn(
-          menuContentClassName,
+          menuClassNames.content,
           "origin-(--radix-dropdown-menu-content-transform-origin)",
           className,
         )}
@@ -72,8 +67,6 @@ function DropdownMenuItem({
   keepOpen?: boolean;
   variant?: "default" | "destructive" | "success";
 }) {
-  const gatedProps = gateKeepOpenHandlers(props, keepOpen, onSelect !== undefined);
-
   return (
     <DropdownMenuPrimitive.Item
       className={cn(menuItemVariants({ kind: "item", variant, className }))}
@@ -82,7 +75,7 @@ function DropdownMenuItem({
       data-variant={variant}
       disabled={disabled}
       onSelect={gateKeepOpenHandler(keepOpen, onSelect)}
-      {...gatedProps}
+      {...props}
     />
   );
 }
@@ -102,8 +95,6 @@ function DropdownMenuCheckboxItem({
   keepOpen?: boolean;
   variant?: "default" | "destructive" | "success";
 }) {
-  const gatedProps = gateKeepOpenHandlers(props, keepOpen, onSelect !== undefined);
-
   return (
     <DropdownMenuPrimitive.CheckboxItem
       checked={checked}
@@ -113,7 +104,7 @@ function DropdownMenuCheckboxItem({
       data-variant={variant}
       disabled={disabled}
       onSelect={gateKeepOpenHandler(keepOpen, onSelect)}
-      {...gatedProps}
+      {...props}
     >
       <MenuIcon>
         <DropdownMenuPrimitive.ItemIndicator>
@@ -145,8 +136,6 @@ function DropdownMenuRadioItem({
   keepOpen?: boolean;
   variant?: "default" | "destructive" | "success";
 }) {
-  const gatedProps = gateKeepOpenHandlers(props, keepOpen, onSelect !== undefined);
-
   return (
     <DropdownMenuPrimitive.RadioItem
       className={cn(menuItemVariants({ kind: "radio", variant, className }))}
@@ -155,7 +144,7 @@ function DropdownMenuRadioItem({
       data-variant={variant}
       disabled={disabled}
       onSelect={gateKeepOpenHandler(keepOpen, onSelect)}
-      {...gatedProps}
+      {...props}
     >
       <MenuIcon>
         <DropdownMenuPrimitive.ItemIndicator>
@@ -176,7 +165,7 @@ function DropdownMenuLabel({
 }) {
   return (
     <DropdownMenuPrimitive.Label
-      className={cn(menuLabelClassName, className)}
+      className={cn(menuClassNames.label, className)}
       data-inset={inset}
       data-slot="dropdown-menu-label"
       {...props}
@@ -190,7 +179,7 @@ function DropdownMenuSeparator({
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Separator>) {
   return (
     <DropdownMenuPrimitive.Separator
-      className={cn(menuSeparatorClassName, className)}
+      className={cn(menuClassNames.separator, className)}
       data-slot="dropdown-menu-separator"
       {...props}
     />
@@ -200,7 +189,7 @@ function DropdownMenuSeparator({
 function DropdownMenuShortcut({ className, ...props }: React.ComponentProps<"span">) {
   return (
     <span
-      className={cn(menuShortcutClassName, className)}
+      className={cn(menuClassNames.shortcut, className)}
       data-slot="dropdown-menu-shortcut"
       {...props}
     />
@@ -222,8 +211,6 @@ function DropdownMenuSubTrigger({
   inset?: boolean;
   keepOpen?: boolean;
 }) {
-  const gatedProps = gateKeepOpenHandlers(props, keepOpen, false);
-
   return (
     <DropdownMenuPrimitive.SubTrigger
       className={cn(menuItemVariants({ kind: "subTrigger", className }))}
@@ -231,7 +218,7 @@ function DropdownMenuSubTrigger({
       data-keep-open={keepOpen || undefined}
       data-slot="dropdown-menu-sub-trigger"
       disabled={disabled}
-      {...gatedProps}
+      {...props}
     >
       {children}
       <MenuIcon side="right">
@@ -248,7 +235,7 @@ function DropdownMenuSubContent({
   return (
     <DropdownMenuPrimitive.SubContent
       className={cn(
-        menuSubContentClassName,
+        menuClassNames.content,
         "origin-(--radix-dropdown-menu-content-transform-origin)",
         className,
       )}
@@ -263,6 +250,7 @@ export {
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuGroup,
+  MenuIcon as DropdownMenuIcon,
   DropdownMenuItem,
   menuItemVariants as dropdownMenuItemVariants,
   DropdownMenuLabel,

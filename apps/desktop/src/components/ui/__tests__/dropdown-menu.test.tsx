@@ -51,7 +51,7 @@ describe("DropdownMenu selection items", () => {
     expect(screen.getByRole("menuitem", { name: "Item" })).toBeInTheDocument();
   });
 
-  it("gates regular item click handlers when requested", () => {
+  it("does not cancel regular item click handlers before selection", () => {
     const onClick = vi.fn();
     renderMenu(
       <DropdownMenuItem keepOpen onClick={onClick}>
@@ -63,14 +63,23 @@ describe("DropdownMenu selection items", () => {
     fireEvent.click(item);
 
     expect(onClick).toHaveBeenCalledOnce();
-    expect(onClick.mock.calls[0]?.[0].defaultPrevented).toBe(true);
+    expect(onClick.mock.calls[0]?.[0].defaultPrevented).toBe(false);
     expect(item).toBeInTheDocument();
   });
 
   it("keeps checkbox menus open when requested", () => {
-    const onSelect = vi.fn();
+    const onCheckedChange = vi.fn();
+    const onSelect = vi.fn((event: Event) => {
+      expect(event.defaultPrevented).toBe(false);
+    });
+
     renderMenu(
-      <DropdownMenuCheckboxItem checked={false} keepOpen onSelect={onSelect}>
+      <DropdownMenuCheckboxItem
+        checked={false}
+        keepOpen
+        onCheckedChange={onCheckedChange}
+        onSelect={onSelect}
+      >
         Checkbox
       </DropdownMenuCheckboxItem>,
     );
@@ -78,14 +87,19 @@ describe("DropdownMenu selection items", () => {
     fireEvent.click(screen.getByRole("menuitemcheckbox", { name: "Checkbox" }));
 
     expect(onSelect).toHaveBeenCalledOnce();
+    expect(onCheckedChange).toHaveBeenCalledWith(true);
     expect(onSelect.mock.calls[0]?.[0].defaultPrevented).toBe(true);
     expect(screen.getByRole("menuitemcheckbox", { name: "Checkbox" })).toBeInTheDocument();
   });
 
   it("keeps radio menus open when requested", () => {
-    const onSelect = vi.fn();
+    const onSelect = vi.fn((event: Event) => {
+      expect(event.defaultPrevented).toBe(false);
+    });
+
+    const onValueChange = vi.fn();
     renderMenu(
-      <DropdownMenuRadioGroup value="radio">
+      <DropdownMenuRadioGroup onValueChange={onValueChange} value="radio">
         <DropdownMenuRadioItem keepOpen onSelect={onSelect} value="radio">
           Radio
         </DropdownMenuRadioItem>
@@ -95,6 +109,7 @@ describe("DropdownMenu selection items", () => {
     fireEvent.click(screen.getByRole("menuitemradio", { name: "Radio" }));
 
     expect(onSelect).toHaveBeenCalledOnce();
+    expect(onValueChange).toHaveBeenCalledWith("radio");
     expect(onSelect.mock.calls[0]?.[0].defaultPrevented).toBe(true);
     expect(screen.getByRole("menuitemradio", { name: "Radio" })).toBeInTheDocument();
   });
