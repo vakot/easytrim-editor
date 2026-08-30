@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Ellipsis, Eye, EyeOff, RotateCcw } from "lucide-react";
+import { ChevronDown, ChevronRight, Ellipsis, RotateCcw } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuIcon,
@@ -40,8 +41,8 @@ export function SourcePanel() {
   const enabledCount = Object.values(panels).filter(Boolean).length;
   const isSingle = enabledCount === 1;
 
-  const handlePanelToggle = (panelId: string) => {
-    setPanels({ ...panels, [panelId]: !panels[panelId] });
+  const handlePanelChange = (panelId: string, checked: boolean) => {
+    setPanels((panels) => ({ ...panels, [panelId]: checked }));
   };
 
   return (
@@ -70,49 +71,34 @@ export function SourcePanel() {
         </Tooltip>
         <DropdownMenuContent>
           <DropdownMenuGroup>
-            <DropdownMenuItem
+            <DropdownMenuCheckboxItem
+              checked={panels["workspace-sidebar-source-details"]}
               disabled
-              inset
               keepOpen
-              onSelect={() => handlePanelToggle("workspace-sidebar-source-details")}
+              onCheckedChange={(checked) =>
+                handlePanelChange("workspace-sidebar-source-details", checked === true)
+              }
             >
-              <DropdownMenuIcon>
-                {panels["workspace-sidebar-source-details"] ? (
-                  <Eye aria-hidden="true" className="size-3" />
-                ) : (
-                  <EyeOff aria-hidden="true" className="size-3" />
-                )}
-              </DropdownMenuIcon>
-              {t("source.labels.mediaDetails")}
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              inset
+              {t("app.actions.showPanel", { panel: t("source.labels.mediaDetails") })}
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={panels["workspace-sidebar-import-queue"]}
               keepOpen
-              onSelect={() => handlePanelToggle("workspace-sidebar-import-queue")}
+              onCheckedChange={(checked) =>
+                handlePanelChange("workspace-sidebar-import-queue", checked === true)
+              }
             >
-              <DropdownMenuIcon>
-                {panels["workspace-sidebar-import-queue"] ? (
-                  <Eye aria-hidden="true" className="size-3" />
-                ) : (
-                  <EyeOff aria-hidden="true" className="size-3" />
-                )}
-              </DropdownMenuIcon>
-              {t("queue.labels.import")}
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              inset
+              {t("app.actions.showPanel", { panel: t("queue.labels.import") })}
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={panels["workspace-sidebar-export-queue"]}
               keepOpen
-              onSelect={() => handlePanelToggle("workspace-sidebar-export-queue")}
+              onCheckedChange={(checked) =>
+                handlePanelChange("workspace-sidebar-export-queue", checked === true)
+              }
             >
-              <DropdownMenuIcon>
-                {panels["workspace-sidebar-export-queue"] ? (
-                  <Eye aria-hidden="true" className="size-3" />
-                ) : (
-                  <EyeOff aria-hidden="true" className="size-3" />
-                )}
-              </DropdownMenuIcon>
-              {t("queue.labels.export")}
-            </DropdownMenuItem>
+              {t("app.actions.showPanel", { panel: t("queue.labels.export") })}
+            </DropdownMenuCheckboxItem>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
           <DropdownMenuGroup>

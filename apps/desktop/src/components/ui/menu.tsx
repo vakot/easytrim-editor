@@ -8,7 +8,7 @@ const menuContentClassName =
 
 const menuLabelClassName = "px-1.5 py-1 text-xs font-medium data-inset:px-7";
 const menuSeparatorClassName = "-mx-1 my-1 h-px bg-border";
-const menuShortcutClassName = "ml-auto text-xs text-muted-foreground";
+const menuShortcutClassName = "ml-auto pl-5 text-xs text-muted-foreground";
 
 const menuItemVariants = cva(
   "group/menu-item relative flex h-6 min-w-42 cursor-default items-center rounded-md px-1.5 py-1 text-xs outline-hidden select-none focus:bg-accent focus:text-accent-foreground data-inset:px-7 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3",

@@ -11,6 +11,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuIcon,
@@ -48,31 +49,28 @@ export function PanelVisibilityControls() {
           <DropdownMenuContent>
             <DropdownMenuGroup>
               <ResizablePanelControl panelId="workspace-sidebar">
-                {({ isCollapsed }) => (
-                  <DropdownMenuItem inset keepOpen>
-                    <DropdownMenuIcon>
-                      {isCollapsed ? (
-                        <PanelLeftDashed aria-hidden="true" className="size-3" />
-                      ) : (
-                        <PanelLeft aria-hidden="true" className="size-3" />
-                      )}
+                {({ isAvailable, isCollapsed }) => (
+                  <DropdownMenuCheckboxItem checked={isAvailable && !isCollapsed} inset keepOpen>
+                    {t("app.actions.showPanel", { panel: t("app.labels.leftPanel") })}
+                    <DropdownMenuIcon side="right">
+                      <PanelLeft aria-hidden="true" className="size-3" />
                     </DropdownMenuIcon>
-                    {t("app.labels.leftPanel")}
-                  </DropdownMenuItem>
+                  </DropdownMenuCheckboxItem>
                 )}
               </ResizablePanelControl>
               <ResizablePanelControl panelId="editor-stage-audio">
                 {({ isAvailable, isCollapsed, isDisabled }) => (
-                  <DropdownMenuItem disabled={!isAvailable || isDisabled} inset keepOpen>
-                    <DropdownMenuIcon>
-                      {isCollapsed ? (
-                        <PanelBottomDashed aria-hidden="true" className="size-3" />
-                      ) : (
-                        <PanelBottom aria-hidden="true" className="size-3" />
-                      )}
+                  <DropdownMenuCheckboxItem
+                    checked={isAvailable && !isCollapsed}
+                    disabled={!isAvailable || isDisabled}
+                    inset
+                    keepOpen
+                  >
+                    {t("app.actions.showPanel", { panel: t("app.labels.bottomPanel") })}
+                    <DropdownMenuIcon side="right">
+                      <PanelBottom aria-hidden="true" className="size-3" />
                     </DropdownMenuIcon>
-                    {t("app.labels.bottomPanel")}
-                  </DropdownMenuItem>
+                  </DropdownMenuCheckboxItem>
                 )}
               </ResizablePanelControl>
             </DropdownMenuGroup>
