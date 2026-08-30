@@ -123,7 +123,6 @@ export const sk = {
     },
     status: {
       canceled: "Zrušené",
-      completed: "Dokončené",
       failed: "Zlyhalo",
       queued: "Vo fronte",
       sourceDeleted: "Zdroj odstránený",
@@ -149,7 +148,6 @@ export const sk = {
       deleteSource: "Odstrániť {{filename}} zo zariadenia",
       removeImportItem: "Odstrániť {{filename}} z frontu importov",
       restoreItem: "Obnoviť {{filename}}",
-      status: "Export: {{status}}",
     },
     options: {
       finish: {

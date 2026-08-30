@@ -121,7 +121,6 @@ export const en = {
     },
     status: {
       canceled: "Canceled",
-      completed: "Completed",
       failed: "Failed",
       queued: "Queued",
       sourceDeleted: "Source deleted",
@@ -147,7 +146,6 @@ export const en = {
       deleteSource: "Delete {{filename}} from device",
       removeImportItem: "Remove {{filename}} from import queue",
       restoreItem: "Restore {{filename}}",
-      status: "{{status}} export",
     },
     options: {
       finish: {
