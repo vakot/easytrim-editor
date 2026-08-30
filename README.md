@@ -89,6 +89,14 @@ pnpm preview:web
 
 The frontend-only preview cannot access native FFmpeg or Tauri functionality.
 
+Run the component library in Storybook:
+
+```sh
+pnpm storybook
+```
+
+See [docs/storybook.md](docs/storybook.md) for story authoring and design-system guidance.
+
 ## Quality checks
 
 Run the standard repository checks:
@@ -97,7 +105,7 @@ Run the standard repository checks:
 pnpm check
 ```
 
-This covers formatting, linting, TypeScript checks, tests, release-script tests, and the production web build.
+This covers formatting, linting, TypeScript checks, Storybook checks, tests, release-script tests, and the production web build.
 
 Native Rust checks can be run separately:
 
