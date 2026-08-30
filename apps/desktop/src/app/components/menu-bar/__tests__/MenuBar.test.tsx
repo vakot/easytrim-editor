@@ -524,7 +524,7 @@ describe("MenuBarTest", () => {
     expect(fileButton).toHaveClass("h-6");
 
     await user.click(fileButton);
-    expect(screen.getByRole("separator")).toBeInTheDocument();
+    expect(screen.getAllByRole("separator")).toHaveLength(2);
 
     const openFileItem = screen.getByRole("menuitem", { name: /Open File/ });
     expect(openFileItem).toHaveTextContent("CtrlO");
@@ -537,6 +537,27 @@ describe("MenuBarTest", () => {
     expect(closeFileItem).toHaveTextContent("CtrlQ");
     await user.click(closeFileItem);
     expect(menuState.dispatch).toHaveBeenCalledTimes(2);
+  });
+
+  it("requires confirmation before deleting the source from the File menu", async () => {
+    const user = userEvent.setup();
+    render(
+      <TooltipProvider>
+        <ThemeProvider>
+          <MenuBarTest canExport canSave hasSource isChoosingSource={false} />
+        </ThemeProvider>
+      </TooltipProvider>,
+    );
+
+    await user.click(getMenuTrigger("File"));
+    const deleteSourceItem = screen.getByRole("menuitem", { name: "Delete Source" });
+    expect(deleteSourceItem).toHaveAttribute("data-variant", "destructive");
+
+    await user.click(deleteSourceItem);
+    expect(screen.getByRole("heading", { name: "Delete source file?" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("heading", { name: "Delete source file?" })).not.toBeInTheDocument();
   });
 
   it("keeps Theme and Language metadata visible for every submenu option", async () => {

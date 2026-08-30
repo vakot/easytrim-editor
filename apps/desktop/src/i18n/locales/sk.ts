@@ -23,6 +23,7 @@ export const sk = {
   },
   app: {
     actions: {
+      deleteSource: "Odstrániť zdroj",
       checkForUpdates: "Skontrolovať aktualizácie…",
       closeFile: "Zavrieť súbor",
       maximize: "Maximalizovať",
