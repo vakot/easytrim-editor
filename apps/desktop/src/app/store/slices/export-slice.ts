@@ -350,15 +350,20 @@ export const selectImportQueueItems = createSelector(
   (queue): importQueueItem[] =>
     queue.filter((item): item is importQueueItem => item.status === "imported"),
 );
-export const selectExportQueue = createSelector([selectQueueItems], (queue): ExportQueueItem[] => {
-  const exportQueue = queue.filter((item): item is ExportQueueItem => item.status !== "imported");
+export const selectExportQueue = createSelector(
+  [selectQueueItems],
+  (queue): ExportQueueItem[] => {
+    const exportQueue = queue.filter(
+      (item): item is ExportQueueItem => item.status !== "imported",
+    );
 
-  return exportQueue.sort((left, right) => {
-    const addedAtOrder = right.addedAt - left.addedAt;
-    if (addedAtOrder !== 0 && !Number.isNaN(addedAtOrder)) return addedAtOrder;
-    return String(right.id ?? "").localeCompare(String(left.id ?? ""));
-  });
-});
+    return exportQueue.sort((left, right) => {
+      const addedAtOrder = right.addedAt - left.addedAt;
+      if (addedAtOrder !== 0 && !Number.isNaN(addedAtOrder)) return addedAtOrder;
+      return String(right.id ?? "").localeCompare(String(left.id ?? ""));
+    });
+  },
+);
 export const selectHasQueuedExports = (state: RootState): boolean =>
   state.export.queue.some((item) => item.status === "queued");
 export const selectHasProcessableExports = (state: RootState): boolean =>
