@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import type { TrimBoundary } from "@/domain/trim";
-import { diagnostics } from "@/lib/diagnostics";
+import type { DiagnosticOrigin } from "@/lib/tauri/diagnostics.types";
 
 interface PlaybackControlsProps {
   canSetSegmentEnd: boolean;
@@ -21,9 +21,9 @@ interface PlaybackControlsProps {
   disabled?: boolean;
   error: string | null;
   isPlaying: boolean;
-  onSetSegmentBoundary: (boundary: TrimBoundary) => void;
-  onStepFrame: (direction: -1 | 1) => void;
-  onTogglePlayback: () => void;
+  onSetSegmentBoundary: (boundary: TrimBoundary, origin?: DiagnosticOrigin) => void;
+  onStepFrame: (direction: -1 | 1, origin?: DiagnosticOrigin) => void;
+  onTogglePlayback: (origin?: DiagnosticOrigin) => void;
 }
 
 export function PlaybackControls({
@@ -48,12 +48,7 @@ export function PlaybackControls({
           disabled={disabled || !canSetSegmentStart}
           label={t("preview.actions.setStart")}
           onClick={() => {
-            diagnostics.action(
-              "timeline.trim-boundary.requested",
-              { type: "button", id: "set-start" },
-              { boundary: "start" },
-            );
-            onSetSegmentBoundary("start");
+            onSetSegmentBoundary("start", { type: "button", id: "set-start" });
           }}
           shortcut="I"
           title={
@@ -68,12 +63,7 @@ export function PlaybackControls({
           disabled={disabled}
           label={t("preview.actions.previousFrame")}
           onClick={() => {
-            diagnostics.action(
-              "timeline.frame-step.requested",
-              { type: "button", id: "previous-frame" },
-              { direction: -1 },
-            );
-            onStepFrame(-1);
+            onStepFrame(-1, { type: "button", id: "previous-frame" });
           }}
           shortcut="ArrowLeft"
           title={t("preview.tooltips.previousFrame")}
@@ -84,12 +74,7 @@ export function PlaybackControls({
           disabled={disabled}
           label={isPlaying ? t("preview.actions.pause") : t("preview.actions.play")}
           onClick={() => {
-            diagnostics.action(
-              "playback.toggle.requested",
-              { type: "button", id: "playback" },
-              { playing: isPlaying },
-            );
-            onTogglePlayback();
+            onTogglePlayback({ type: "button", id: "playback" });
           }}
           primary
           shortcut="Space"
@@ -101,12 +86,7 @@ export function PlaybackControls({
           disabled={disabled}
           label={t("preview.actions.nextFrame")}
           onClick={() => {
-            diagnostics.action(
-              "timeline.frame-step.requested",
-              { type: "button", id: "next-frame" },
-              { direction: 1 },
-            );
-            onStepFrame(1);
+            onStepFrame(1, { type: "button", id: "next-frame" });
           }}
           shortcut="ArrowRight"
           title={t("preview.tooltips.nextFrame")}
@@ -117,12 +97,7 @@ export function PlaybackControls({
           disabled={disabled || !canSetSegmentEnd}
           label={t("preview.actions.setEnd")}
           onClick={() => {
-            diagnostics.action(
-              "timeline.trim-boundary.requested",
-              { type: "button", id: "set-end" },
-              { boundary: "end" },
-            );
-            onSetSegmentBoundary("end");
+            onSetSegmentBoundary("end", { type: "button", id: "set-end" });
           }}
           shortcut="O"
           title={

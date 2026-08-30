@@ -116,6 +116,7 @@ pub async fn render_fast(
     request: FastExportRequest,
     output_id: String,
     on_progress: Channel<ExportProgress>,
+    diagnostic_parent_operation_id: Option<String>,
     state: State<'_, AppState>,
     diagnostics: State<'_, Arc<DiagnosticsState>>,
 ) -> Result<ExportResult, AppError> {
@@ -135,6 +136,7 @@ pub async fn render_fast(
             display_name,
             arguments,
             on_progress,
+            diagnostic_parent_operation_id,
         )
         .await
     }
@@ -148,6 +150,7 @@ pub async fn render_optimized(
     request: OptimizedExportRequest,
     output_id: String,
     on_progress: Channel<ExportProgress>,
+    diagnostic_parent_operation_id: Option<String>,
     state: State<'_, AppState>,
     diagnostics: State<'_, Arc<DiagnosticsState>>,
 ) -> Result<ExportResult, AppError> {
@@ -167,6 +170,7 @@ pub async fn render_optimized(
             display_name,
             arguments,
             on_progress,
+            diagnostic_parent_operation_id,
         )
         .await
     }
@@ -246,9 +250,16 @@ async fn run_export(
     display_name: String,
     arguments: Vec<std::ffi::OsString>,
     on_progress: Channel<ExportProgress>,
+    diagnostic_parent_operation_id: Option<String>,
 ) -> Result<ExportResult, AppError> {
     let (operation_id, cancellation) = state.begin_operation()?;
-    record_ffmpeg_event(&diagnostics, "ffmpeg.process.spawned", &operation_id, None);
+    record_ffmpeg_event(
+        &diagnostics,
+        "ffmpeg.process.spawned",
+        &operation_id,
+        None,
+        diagnostic_parent_operation_id.as_deref(),
+    );
     let _ = on_progress.send(ExportProgress {
         operation_id: operation_id.clone(),
         elapsed_micros: 0,
@@ -321,6 +332,7 @@ async fn run_export(
             } else {
                 "failed"
             }),
+            diagnostic_parent_operation_id.as_deref(),
         ),
         Ok(Err(_)) | Err(_) => {
             record_ffmpeg_event(
@@ -328,6 +340,7 @@ async fn run_export(
                 "ffmpeg.process.exited",
                 &operation_id,
                 Some("failed"),
+                diagnostic_parent_operation_id.as_deref(),
             );
         }
     }
@@ -338,6 +351,7 @@ async fn run_export(
             "ffmpeg.export.failed",
             &operation_id,
             Some("failed"),
+            diagnostic_parent_operation_id.as_deref(),
         );
         return Err(error);
     }
@@ -350,6 +364,7 @@ async fn run_export(
                 "ffmpeg.export.failed",
                 &operation_id,
                 Some("failed"),
+                diagnostic_parent_operation_id.as_deref(),
             );
             return Err(AppError::internal(
                 "The export operation stopped unexpectedly.",
@@ -365,6 +380,7 @@ async fn run_export(
                 "ffmpeg.export.failed",
                 &operation_id,
                 Some("failed"),
+                diagnostic_parent_operation_id.as_deref(),
             );
             return Err(error);
         }
@@ -376,6 +392,7 @@ async fn run_export(
             "ffmpeg.export.cancelled",
             &operation_id,
             Some("cancelled"),
+            diagnostic_parent_operation_id.as_deref(),
         );
         return Err(AppError::cancelled("The export was cancelled."));
     }
@@ -386,6 +403,7 @@ async fn run_export(
             "ffmpeg.export.failed",
             &operation_id,
             Some("failed"),
+            diagnostic_parent_operation_id.as_deref(),
         );
         return Err(AppError::render_failed(
             "FFmpeg could not render the selected segment.",
@@ -400,6 +418,7 @@ async fn run_export(
                 "ffmpeg.export.failed",
                 &operation_id,
                 Some("failed"),
+                diagnostic_parent_operation_id.as_deref(),
             );
             return Err(AppError::render_failed(
                 "The rendered output could not be verified.",
@@ -413,6 +432,7 @@ async fn run_export(
             "ffmpeg.export.failed",
             &operation_id,
             Some("failed"),
+            diagnostic_parent_operation_id.as_deref(),
         );
         return Err(AppError::render_failed("The rendered output is empty."));
     }
@@ -421,6 +441,7 @@ async fn run_export(
         "ffmpeg.export.completed",
         &operation_id,
         Some("success"),
+        diagnostic_parent_operation_id.as_deref(),
     );
     Ok(ExportResult {
         operation_id,
@@ -434,6 +455,7 @@ fn record_ffmpeg_event(
     event: &str,
     operation_id: &str,
     result: Option<&str>,
+    parent_operation_id: Option<&str>,
 ) {
     let _ = diagnostics.record(DiagnosticEventInput {
         category: "ffmpeg".to_owned(),
@@ -442,7 +464,7 @@ fn record_ffmpeg_event(
         level: "info".to_owned(),
         operation_id: Some(operation_id.to_owned()),
         origin: None,
-        parent_operation_id: None,
+        parent_operation_id: parent_operation_id.map(str::to_owned),
         result: result.map(str::to_owned),
         snapshot_id: None,
         duration_ms: None,

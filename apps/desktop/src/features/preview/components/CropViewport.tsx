@@ -11,6 +11,7 @@ import { useTranslation } from "react-i18next";
 import { CursorTooltip } from "@/components/ui/cursor-tooltip";
 
 import { diagnostics } from "@/lib/diagnostics";
+import type { DiagnosticOrigin } from "@/lib/tauri/diagnostics.types";
 
 import { useCropSelection } from "../hooks/useCropSelection";
 import { type Bounds, centerFrame, cropFrame } from "../lib/crop-frame.utils";
@@ -32,7 +33,7 @@ interface CropViewportProps {
   onPause: () => void;
   onPlay: () => void;
   onTimeUpdate: (seconds: number) => void;
-  onTogglePlayback: () => void;
+  onTogglePlayback: (origin?: DiagnosticOrigin) => void;
   playbackRate: number;
   previewKind: "source" | "proxy";
   sourceLabel: string;
@@ -154,7 +155,7 @@ export function CropViewport({
         cropSelection.open(viewportFrame);
       }}
       onDoubleClick={() => {
-        if (!cropSelection.isOpen) onTogglePlayback();
+        if (!cropSelection.isOpen) onTogglePlayback({ type: "button", id: "preview.double-click" });
       }}
       onKeyDown={(event) => {
         if (event.target !== event.currentTarget || (event.key !== "Enter" && event.key !== " "))

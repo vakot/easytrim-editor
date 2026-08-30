@@ -26,7 +26,6 @@ import {
   exportCompleted,
   exportFailed,
   exportLaunchFailed,
-  exportProgressReceived,
   exportStarted,
   optimizedExportDialogClosed,
   optimizedExportDialogOpened,
@@ -287,15 +286,6 @@ listenerMiddleware.startListening({
   effect: (action) =>
     diagnostics.event("export.state.changed", {
       data: { itemId: action.payload.id, status: "rendering" },
-      origin: internalOrigin,
-    }),
-});
-listenerMiddleware.startListening({
-  actionCreator: exportProgressReceived,
-  effect: (action) =>
-    diagnostics.event("export.progress.reported", {
-      data: { itemId: action.payload.id, percent: action.payload.progressPercent },
-      operationId: action.payload.progress.operationId,
       origin: internalOrigin,
     }),
 });

@@ -49,6 +49,7 @@ import {
 import { diagnostics } from "@/lib/diagnostics";
 import { isApplicationDialogOpen } from "@/lib/hotkeys.utils";
 import { seekMediaIfNeeded } from "@/lib/media-element.utils";
+import type { DiagnosticOrigin } from "@/lib/tauri/diagnostics.types";
 
 const EMPTY_TRIM: TrimRange = {
   startMicros: 0,
@@ -80,10 +81,10 @@ export interface EditorInteractionRuntime {
   onSegmentDragEnd: () => void;
   onSegmentDragStart: () => void;
   onSegmentMove: (nextTrim: TrimRange) => TrimBoundary | null;
-  onSetSegmentBoundary: (boundary: TrimBoundary) => void;
-  onStepFrame: (direction: -1 | 1) => void;
+  onSetSegmentBoundary: (boundary: TrimBoundary, origin?: DiagnosticOrigin) => void;
+  onStepFrame: (direction: -1 | 1, origin?: DiagnosticOrigin) => void;
   onTimeUpdate: (seconds: number) => void;
-  onTogglePlayback: () => void;
+  onTogglePlayback: (origin?: DiagnosticOrigin) => void;
   onTrimBoundaryChange: (boundary: TrimBoundary, nextTrim: TrimRange) => TrimBoundary | null;
   onTrimDragEnd: () => void;
   onTrimDragStart: () => void;
@@ -200,9 +201,9 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
   const nativeLoopEnabledRef = useRef(nativeLoopEnabled);
   const shortcutActionsRef = useRef<{
     enabled: boolean;
-    setSegmentBoundary: (boundary: TrimBoundary) => void;
-    stepFrame: (direction: -1 | 1) => void;
-    togglePlayback: () => void;
+    setSegmentBoundary: (boundary: TrimBoundary, origin?: DiagnosticOrigin) => void;
+    stepFrame: (direction: -1 | 1, origin?: DiagnosticOrigin) => void;
+    togglePlayback: (origin?: DiagnosticOrigin) => void;
   } | null>(null);
 
   const removeAudioRuntime = useCallback((streamIndex: number) => {
@@ -429,20 +430,12 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
       event.preventDefault();
       event.stopPropagation();
       if (event.repeat && shortcut !== "previous-frame" && shortcut !== "next-frame") return;
-      diagnostics.action(
-        shortcut === "toggle-playback"
-          ? "playback.toggle.requested"
-          : shortcut === "set-segment-start" || shortcut === "set-segment-end"
-            ? "timeline.trim-boundary.requested"
-            : "timeline.frame-step.requested",
-        { type: "hotkey", id: event.key },
-        { shortcut },
-      );
-      if (shortcut === "toggle-playback") actions.togglePlayback();
-      if (shortcut === "previous-frame") actions.stepFrame(-1);
-      if (shortcut === "next-frame") actions.stepFrame(1);
-      if (shortcut === "set-segment-start") actions.setSegmentBoundary("start");
-      if (shortcut === "set-segment-end") actions.setSegmentBoundary("end");
+      const origin = { type: "hotkey" as const, id: event.key };
+      if (shortcut === "toggle-playback") actions.togglePlayback(origin);
+      if (shortcut === "previous-frame") actions.stepFrame(-1, origin);
+      if (shortcut === "next-frame") actions.stepFrame(1, origin);
+      if (shortcut === "set-segment-start") actions.setSegmentBoundary("start", origin);
+      if (shortcut === "set-segment-end") actions.setSegmentBoundary("end", origin);
     }
     window.addEventListener("keydown", handleEditorShortcut, true);
     return () => window.removeEventListener("keydown", handleEditorShortcut, true);
@@ -672,44 +665,43 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     }
   }, [flushScrubSeek, playbackModes, startMediaPlayback]);
 
-  const handleTogglePlayback = useCallback(() => {
-    const video = videoRef.current;
-    if (!video || !isPlaybackReadyRef.current) {
-      diagnostics.event("playback.toggle.ignored", {
-        data: { reason: !video ? "video_unavailable" : "preview_not_ready" },
-        origin: { type: "internal" },
-        result: "ignored",
-      });
-      return;
-    }
-    diagnostics.action(
-      "playback.toggle.requested",
-      { type: "internal" },
-      {
+  const handleTogglePlayback = useCallback(
+    (origin: DiagnosticOrigin = { type: "internal" }) => {
+      diagnostics.action("playback.toggle.requested", origin, {
         playing: playbackRequestedRef.current || isPlayingRef.current,
-      },
-    );
-    setTransportError(null);
-    if (playbackRequestedRef.current || isPlayingRef.current) {
-      playbackStartSequenceRef.current += 1;
-      playbackRequestedRef.current = false;
-      isPlayingRef.current = false;
-      video.pause();
-      return;
-    }
-    const startMicros = playbackModes.startMicros(
-      currentPlayheadMicrosRef.current,
-      trimRef.current,
-    );
+      });
+      const video = videoRef.current;
+      if (!video || !isPlaybackReadyRef.current) {
+        diagnostics.event("playback.toggle.ignored", {
+          data: { reason: !video ? "video_unavailable" : "preview_not_ready" },
+          origin,
+          result: "ignored",
+        });
+        return;
+      }
+      setTransportError(null);
+      if (playbackRequestedRef.current || isPlayingRef.current) {
+        playbackStartSequenceRef.current += 1;
+        playbackRequestedRef.current = false;
+        isPlayingRef.current = false;
+        video.pause();
+        return;
+      }
+      const startMicros = playbackModes.startMicros(
+        currentPlayheadMicrosRef.current,
+        trimRef.current,
+      );
 
-    if (startMicros !== currentPlayheadMicrosRef.current) commitSeek(startMicros);
-    playbackModes.resetBoundary();
-    startMediaPlayback();
-  }, [commitSeek, playbackModes, startMediaPlayback]);
+      if (startMicros !== currentPlayheadMicrosRef.current) commitSeek(startMicros);
+      playbackModes.resetBoundary();
+      startMediaPlayback();
+    },
+    [commitSeek, playbackModes, startMediaPlayback],
+  );
 
   const handleStepFrame = useCallback(
-    (direction: -1 | 1) => {
-      diagnostics.action("timeline.frame-step.requested", { type: "internal" }, { direction });
+    (direction: -1 | 1, origin: DiagnosticOrigin = { type: "internal" }) => {
+      diagnostics.action("timeline.frame-step.requested", origin, { direction });
       playbackStartSequenceRef.current += 1;
       playbackRequestedRef.current = false;
       isPlayingRef.current = false;
@@ -722,17 +714,32 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
   );
 
   const handleSetSegmentBoundary = useCallback(
-    (boundary: TrimBoundary) => {
-      if (!sourcePath) return;
+    (boundary: TrimBoundary, origin: DiagnosticOrigin = { type: "internal" }) => {
+      diagnostics.action("timeline.trim-boundary.requested", origin, { boundary });
+      if (!sourcePath) {
+        diagnostics.event("timeline.trim-boundary.ignored", {
+          data: { boundary, reason: "source_unavailable" },
+          origin,
+          result: "ignored",
+        });
+        return;
+      }
       const currentMicros = currentPlayheadMicrosRef.current;
-      if (!canSetTrimBoundaryAtPlayhead(trimRef.current, boundary, currentMicros)) return;
+      if (!canSetTrimBoundaryAtPlayhead(trimRef.current, boundary, currentMicros)) {
+        diagnostics.event("timeline.trim-boundary.ignored", {
+          data: { boundary, reason: "outside_trim_range" },
+          origin,
+          result: "ignored",
+        });
+        return;
+      }
       const nextTrim = setTrimBoundaryAtPlayhead(trimRef.current, boundary, currentMicros);
       trimRef.current = nextTrim;
       flushTrimCommit();
       dispatch(trimChanged({ trim: nextTrim }));
       diagnostics.event("timeline.trim-boundary.changed", {
         data: { boundary, micros: currentMicros },
-        origin: { type: "timeline", id: "timeline.boundary" },
+        origin,
       });
     },
     [dispatch, flushTrimCommit, sourcePath],

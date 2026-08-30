@@ -228,11 +228,17 @@ async function renderJob(job: RuntimeExportJob) {
   try {
     const result =
       job.item.route === "fast"
-        ? await renderFast(job.item.request, job.item.outputId, onProgress)
+        ? await renderFast(
+            job.item.request,
+            job.item.outputId,
+            onProgress,
+            job.diagnosticsOperation?.operationId,
+          )
         : await renderOptimized(
             job.item.request as import("@/lib/tauri/media.types").OptimizedExportRequest,
             job.item.outputId,
             onProgress,
+            job.diagnosticsOperation?.operationId,
           );
 
     if (!job.canceled) {
