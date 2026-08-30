@@ -201,6 +201,7 @@ function ImportQueuePanel({ isSingle = false }: SourcePanelProps) {
         <ResizablePanelControl panelId="workspace-sidebar-import-queue">
           {({ isCollapsed }) => (
             <Button
+              aria-label={t("queue.labels.import")}
               className="my-1 flex w-full justify-between pr-3 pl-2 text-foreground/80"
               size="xs"
               variant="ghost"

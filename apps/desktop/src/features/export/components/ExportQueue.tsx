@@ -37,7 +37,10 @@ export function ExportQueue() {
   }, [hasRenderingItem]);
 
   return (
-    <section>
+    <section aria-labelledby="export-queue-title">
+      <h2 className="sr-only" id="export-queue-title">
+        {t("queue.labels.export")}
+      </h2>
       {queue.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted-foreground">
           {t("queue.messages.empty")}

@@ -114,7 +114,6 @@ export const sk = {
     labels: {
       export: "Front exportov",
       import: "Front importov",
-      imported: "Importované súbory",
       onFinish: "Po dokončení frontu",
       title: "Front",
     },
@@ -126,7 +125,6 @@ export const sk = {
     },
     messages: {
       empty: "Zatiaľ žiadne exporty.",
-      noActiveImport: "Nie je aktívny žiadny importovaný súbor",
     },
     dialogs: {
       cancel: {

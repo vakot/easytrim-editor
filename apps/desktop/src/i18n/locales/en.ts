@@ -112,7 +112,6 @@ export const en = {
     labels: {
       export: "Export queue",
       import: "Import queue",
-      imported: "Imported files",
       onFinish: "On queue finished",
       title: "Queue",
     },
@@ -124,7 +123,6 @@ export const en = {
     },
     messages: {
       empty: "No exports yet.",
-      noActiveImport: "No imported file is active",
     },
     dialogs: {
       cancel: {
