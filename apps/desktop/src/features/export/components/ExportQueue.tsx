@@ -82,7 +82,7 @@ function ExportQueueItem({ item, now }: { item: ExportQueueItem; now: number }) 
   return (
     <Card
       className={cn(
-        "border- flex-row items-center gap-2 border-l-4 p-2 ring-inset",
+        "flex-row items-center gap-2 border-l-4 p-2 ring-inset",
         statusStyles[item.status],
         "transition-colors hover:bg-muted/60",
       )}

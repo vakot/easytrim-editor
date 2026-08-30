@@ -14,17 +14,19 @@ function useImportQueue() {
   const isLast = activeIndex === items.length - 1;
   const isFirst = activeIndex === 0;
 
+  const handleOpen = (id: string) => {
+    dispatch(navigateToImportedItem(id));
+  };
+
   const handleNext = () => {
     const next = items[activeIndex + 1];
-    if (next) dispatch(navigateToImportedItem(next.id));
+    if (next) handleOpen(next.id);
   };
 
   const handlePrev = () => {
     const previous = items[activeIndex - 1];
-    if (previous) dispatch(navigateToImportedItem(previous.id));
+    if (previous) handleOpen(previous.id);
   };
-
-  const handleOpen = () => {};
 
   return {
     isLast,
@@ -32,9 +34,9 @@ function useImportQueue() {
     activeItem,
     activeIndex,
     items,
-    open: handleOpen,
     next: handleNext,
     prev: handlePrev,
+    open: handleOpen,
   };
 }
 

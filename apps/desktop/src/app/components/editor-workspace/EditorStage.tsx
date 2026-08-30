@@ -22,15 +22,15 @@ const TIMELINE_PANEL_SIZE: PanelSizes = {
   minSize: 152,
 };
 
-const AUDIO_PANEL_SIZE_MIN = 144;
-const AUDIO_PANEL_SIZE_DEFAULT = 115;
-const AUDIO_PANEL_SIZE_LINE = 51;
+const AUDIO_PANEL_SIZE_LINE = 56;
+const AUDIO_PANEL_SIZE_MIN = 142;
 
-const getAudioPanelSize = (lines: number = 0): PanelSizes => {
-  const audioPanelSizeMax = AUDIO_PANEL_SIZE_DEFAULT + lines * AUDIO_PANEL_SIZE_LINE;
+/** lines > 0 */
+const getAudioPanelSize = (lines: number = 1): PanelSizes => {
+  const audioPanelSizeMax = AUDIO_PANEL_SIZE_MIN + (lines - 1) * AUDIO_PANEL_SIZE_LINE;
   return {
     minSize: AUDIO_PANEL_SIZE_MIN,
-    defaultSize: lines > 0 ? AUDIO_PANEL_SIZE_MIN : AUDIO_PANEL_SIZE_DEFAULT,
+    defaultSize: AUDIO_PANEL_SIZE_MIN,
     maxSize: audioPanelSizeMax,
   };
 };
@@ -75,7 +75,6 @@ export function EditorStage() {
             className="overflow-hidden pb-1"
             collapsedSize={0}
             collapsible
-            defaultSize={AUDIO_PANEL_SIZE_DEFAULT}
             groupResizeBehavior="preserve-pixel-size"
             id="editor-stage-audio"
             {...getAudioPanelSize(audioStreamsCount)}

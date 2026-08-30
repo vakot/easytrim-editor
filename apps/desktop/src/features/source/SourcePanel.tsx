@@ -49,7 +49,7 @@ export function SourcePanel() {
   };
 
   return (
-    <Card className="relative size-full gap-2 pt-3 pb-1 ring-inset">
+    <Card className="relative size-full gap-2 pt-3 pb-0 ring-inset">
       <h3
         className="mx-3 font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
         id="source-panel-title"
@@ -154,7 +154,7 @@ function SourceDetailsPanel({ isSingle = false }: SourcePanelProps) {
       collapsedSize={32}
       collapsible
       id="workspace-sidebar-source-details"
-      minSize={120}
+      minSize={128}
     >
       <div className="px-1">
         <ResizablePanelControl panelId="workspace-sidebar-source-details">
@@ -195,7 +195,7 @@ function ImportQueuePanel({ isSingle = false }: SourcePanelProps) {
       collapsedSize={32}
       collapsible
       id="workspace-sidebar-import-queue"
-      minSize={120}
+      minSize={128}
     >
       <div className="px-1">
         <ResizablePanelControl panelId="workspace-sidebar-import-queue">
@@ -245,7 +245,7 @@ function ExportQueuePanel({ isSingle = false }: SourcePanelProps) {
       collapsedSize={32}
       collapsible
       id="workspace-sidebar-export-queue"
-      minSize={120}
+      minSize={128}
     >
       <div className="px-1">
         <ResizablePanelControl panelId="workspace-sidebar-export-queue">
