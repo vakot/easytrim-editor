@@ -188,7 +188,6 @@ The current application integration records these high-value boundaries:
 
 Export progress is sampled at the first report, every ten percentage points, and completion. Time
 update, selector, Redux-action, and other high-frequency UI activity is intentionally not traced.
-All async operations use the operation helper and terminate as success, failure, or cancellation,
-with native FFmpeg events retaining their runtime operation ID and linking to the frontend export
-operation through `parentOperationId`.
-including source replacement and user cancellation paths.
+All async operations use the operation helper and terminate as success, failure, or cancellation.
+Source replacement and user cancellation paths are represented. Native FFmpeg events retain their
+runtime operation ID and link to the frontend export operation through `parentOperationId`.

@@ -22,7 +22,7 @@ The template under `.github` is authoritative.
 
 ## Pull Request Title
 
-Use the same type, context, and title conventions defined in `.agents/commits.md`.
+Use the same type, context, and title conventions defined in `.agents/rules/commits.md`.
 
 Format:
 
@@ -261,7 +261,7 @@ It does not authorize:
 - merging;
 - remote branch cleanup.
 
-Follow `.agents/git.md` for all Git operations.
+Follow `.agents/rules/git.md` for all Git operations.
 
 ## Guiding Rule
 

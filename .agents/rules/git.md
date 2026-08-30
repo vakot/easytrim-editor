@@ -123,7 +123,7 @@ Before creating a PR:
 2. verify the intended commits;
 3. run the required project verification;
 4. read the current template under `.github`;
-5. follow `.agents/pull-requests.md`.
+5. follow `.agents/rules/pull-requests.md`.
 
 The repository PR template is authoritative.
 
@@ -132,7 +132,7 @@ The repository PR template is authoritative.
 Commit naming, authorship, scope, and atomicity are defined in:
 
 ```text
-.agents/commits.md
+.agents/rules/commits.md
 ```
 
 Git operations must preserve those rules.

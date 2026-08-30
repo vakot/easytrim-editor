@@ -269,7 +269,8 @@ By default, delegated agents must not:
 - create pull requests;
 - merge.
 
-Git workflow remains controlled by the orchestrator and must follow `.agents/git.md` and `.agents/commits.md`.
+Git workflow remains controlled by the orchestrator and must follow `.agents/rules/git.md` and
+`.agents/rules/commits.md`.
 
 ## Completion
 
@@ -281,7 +282,7 @@ Before accepting delegated work, the orchestrator should verify:
 - findings are supported by evidence;
 - implementation integrates correctly with the rest of the task.
 
-Final task completion still requires the verification defined in `.agents/verification.md`.
+Final task completion still requires the verification defined in `.agents/rules/verification.md`.
 
 ## Guiding Rule
 

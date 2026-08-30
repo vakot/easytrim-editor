@@ -221,7 +221,7 @@ Creating a commit does not authorize pushing it.
 
 After committing, leave the commit local unless the user explicitly requests a push or pull request.
 
-Remote-operation rules are defined in `.agents/git.md`.
+Remote-operation rules are defined in `.agents/rules/git.md`.
 
 ## Before Committing
 
