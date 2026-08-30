@@ -15,5 +15,7 @@ Agents must enforce these rules:
   source/operation IDs, and make cancellation and cleanup idempotent.
 - Preserve least privilege: explicit capabilities, restrictive CSP, no remote assets or broad
   frontend filesystem/shell access, and review plugin/protocol/binary changes as security-sensitive.
-- Keep editor state ephemeral, clean temporary artifacts on every lifecycle path, protect successful
-  user output, and redact private paths, secrets, and sensitive diagnostics.
+- Keep editing/session state and media caches ephemeral. Persist only explicitly documented
+  application preferences/layout state through the approved persistence boundary. Clean temporary
+  artifacts on every lifecycle path, protect successful user output, and redact private paths,
+  secrets, and sensitive diagnostics.
