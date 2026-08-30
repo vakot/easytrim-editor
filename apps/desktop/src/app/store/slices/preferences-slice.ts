@@ -31,3 +31,5 @@ export const selectMergeAudioEnabledDefault = (state: RootState): boolean =>
   selectPreferences(state).mergeAudioEnabledDefault;
 export const selectAutoStartQueueEnabled = (state: RootState): boolean =>
   selectPreferences(state).autoStartQueueEnabled;
+export const selectDeleteSourceOnRenderFinish = (state: RootState): boolean =>
+  selectPreferences(state).deleteSourceOnRenderFinish;

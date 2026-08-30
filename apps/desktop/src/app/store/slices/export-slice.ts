@@ -80,7 +80,6 @@ interface ExportState {
   availableQueueFinishActions: QueueFinishAction[];
   commandPreview: string;
   commandPreviewError: AppError | null;
-  deleteSourceOnRenderFinish: boolean;
   launchError: AppError | null;
   optimizedDialogOpen: boolean;
   optimizedPlanRequestId: number | null;
@@ -95,7 +94,6 @@ export const initialExportState: ExportState = {
   activeItemId: null,
   queueStarted: false,
   queueFinishAction: "nothing",
-  deleteSourceOnRenderFinish: false,
   availableQueueFinishActions: ["exit", "nothing"],
   optimizedDialogOpen: false,
   optimizedSettings: null,
@@ -191,9 +189,6 @@ const exportSlice = createSlice({
     },
     queueFinishActionChanged: (state, action: PayloadAction<QueueFinishAction>) => {
       state.queueFinishAction = action.payload;
-    },
-    deleteSourceOnRenderFinishChanged: (state, action: PayloadAction<boolean>) => {
-      state.deleteSourceOnRenderFinish = action.payload;
     },
     queueFinishActionsAvailable: (state, action: PayloadAction<QueueFinishAction[]>) => {
       state.availableQueueFinishActions = action.payload;
@@ -315,7 +310,6 @@ const exportSlice = createSlice({
 
 export const {
   activeQueueItemChanged,
-  deleteSourceOnRenderFinishChanged,
   exportCanceled,
   exportCompleted,
   exportFailed,
@@ -362,8 +356,6 @@ export const selectHasQueuedExports = (state: RootState): boolean =>
 export const selectHasProcessableExports = (state: RootState): boolean =>
   state.export.queue.some((item) => item.status === "queued" || item.status === "rendering");
 export const selectQueueStarted = (state: RootState): boolean => state.export.queueStarted;
-export const selectDeleteSourceOnRenderFinish = (state: RootState): boolean =>
-  state.export.deleteSourceOnRenderFinish;
 export const selectQueueFinishAction = (state: RootState): QueueFinishAction =>
   state.export.queueFinishAction;
 export const selectAvailableQueueFinishActions = (state: RootState): QueueFinishAction[] =>

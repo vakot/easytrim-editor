@@ -5,6 +5,7 @@ import {
   preferenceChanged,
   preferencesReducer,
   preferencesReset,
+  selectDeleteSourceOnRenderFinish,
   selectMergeAudioEnabledDefault,
   selectPreferences,
 } from "@/app/store/slices/preferences-slice";
@@ -40,6 +41,7 @@ describe("preferences Redux domain", () => {
         segmentPlaybackEnabledDefault: false,
         autoStartQueueEnabled: false,
         mergeAudioEnabledDefault: true,
+        deleteSourceOnRenderFinish: false,
       },
       preferencesReset(),
     );
@@ -54,6 +56,7 @@ describe("preferences Redux domain", () => {
       segmentPlaybackEnabledDefault: false,
       autoStartQueueEnabled: true,
       mergeAudioEnabledDefault: true,
+      deleteSourceOnRenderFinish: false,
     };
 
     const state = { preferences } as RootState;
@@ -63,5 +66,6 @@ describe("preferences Redux domain", () => {
     expect(selectPreferences(state).loopPlaybackEnabledDefault).toBe(true);
     expect(selectPreferences(state).segmentPlaybackEnabledDefault).toBe(false);
     expect(selectMergeAudioEnabledDefault(state)).toBe(true);
+    expect(selectDeleteSourceOnRenderFinish(state)).toBe(false);
   });
 });
