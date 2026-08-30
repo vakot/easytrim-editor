@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { usePlayback } from "@/app/hooks/usePlayback";
 import { useTimeline } from "@/app/hooks/useTimeline";
 import { useAppSelector } from "@/app/store/redux-hooks";
-import { selectSourceMedia, selectSourceReady } from "@/app/store/slices/source-slice";
+import { selectSourceMedia } from "@/app/store/slices/source-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
 
 import { PlaybackControls } from "./components/PlaybackControls";
@@ -20,11 +20,10 @@ const EMPTY_TIMELINE_RANGE = {
 export function TimelinePanel() {
   const media = useAppSelector(selectSourceMedia);
   const trim = useAppSelector(selectTrim);
-  const isSourceReady = useAppSelector(selectSourceReady);
   const playback = usePlayback();
   const timeline = useTimeline();
   const timelineRange = trim ?? EMPTY_TIMELINE_RANGE;
-  const controlsDisabled = !isSourceReady || !playback.isReady;
+  const controlsDisabled = !playback.canInteract;
   const frameRate = media?.video.averageFrameRate ?? media?.video.realFrameRate;
 
   return (

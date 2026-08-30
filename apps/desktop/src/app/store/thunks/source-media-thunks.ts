@@ -1,15 +1,11 @@
-import { importQueueItemActivationRequested } from "@/app/store/actions/imported-queue-actions";
+import { importQueueItemActivated } from "@/app/store/actions/imported-queue-actions";
 import {
   sourceCleared,
   sourceErrorReported,
   sourceFailed,
   sourceReady,
-  sourceSelected,
 } from "@/app/store/actions/source-actions";
-import {
-  applyEditorSnapshot,
-  createDefaultEditorSnapshot,
-} from "@/app/store/integration/editor-snapshot";
+import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";
 import { getReplacementImportedItem } from "@/app/store/lib/imported-queue";
 import {
   audioPreviewsLoading,
@@ -48,7 +44,7 @@ import {
 } from "@/app/store/slices/source-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
 import type { AppDispatch, RootState } from "@/app/store/store";
-import { createEditorSnapshot } from "@/domain/editor-snapshot";
+import { createEditorSnapshot, type EditorSnapshot } from "@/domain/editor-snapshot";
 import type { SourceRef } from "@/domain/source";
 import {
   activateSourcePath,
@@ -79,10 +75,6 @@ function isCurrentSource(state: RootState, sourcePath: string, loadToken: number
   );
 }
 
-function isSourceInspectionError(error: AppError): boolean {
-  return ["probe_failed", "unsupported_media", "io_failed", "source_replaced"].includes(error.code);
-}
-
 export const checkMediaCapabilitiesRequested = (): AppThunk => async (dispatch) => {
   try {
     dispatch(capabilitiesReady(await checkMediaCapabilities()));
@@ -109,74 +101,95 @@ export const ingestSources =
     dispatch(navigateToImportedItem(items[0]!.id));
   };
 
-export const activateSource =
-  (source: SourceRef, mergeAudio?: boolean): AppThunk<Promise<boolean>> =>
-  async (dispatch, getState) => {
-    const selectedMergeAudio = mergeAudio ?? getState().preferences.mergeAudioEnabledDefault;
-    const loadToken = ++sourceLoadSequence;
-    dispatch(sourceSelected({ source, mergeAudio: selectedMergeAudio, loadToken }));
+async function prepareSelectedSource(
+  dispatch: AppDispatch,
+  getState: () => RootState,
+  source: SourceRef,
+  loadToken: number,
+  snapshot?: EditorSnapshot,
+): Promise<EditorSnapshot | null> {
+  let media;
+  try {
+    media = await inspectMedia(source.sourcePath);
+  } catch (error: unknown) {
+    const normalized = normalizeAppError(error);
+    if (isCurrentSource(getState(), source.sourcePath, loadToken)) {
+      dispatch(sourceFailed({ loadToken, error: normalized }));
+    }
+    return null;
+  }
 
-    let media;
+  if (!isCurrentSource(getState(), source.sourcePath, loadToken)) return null;
+  const readySnapshot = snapshot
+    ? createEditorSnapshot({
+        source,
+        trim: snapshot.trim,
+        crop: snapshot.crop,
+        masterAudio: snapshot.audio.master,
+        audioTracks: snapshot.audio.tracks,
+        mergeAudio: snapshot.audio.mergeAudio,
+      })
+    : undefined;
+
+  dispatch(sourceReady({ loadToken, media, snapshot: readySnapshot }));
+
+  const audioStreamIndexes = media.audioStreams.map((stream) => stream.streamIndex);
+  const audioPreparation =
+    audioStreamIndexes.length <= 1
+      ? Promise.resolve().then(() => {
+          if (isCurrentSource(getState(), source.sourcePath, loadToken)) {
+            dispatch(audioPreviewsReady({ previews: [] }));
+          }
+        })
+      : (async () => {
+          dispatch(audioPreviewsLoading());
+          try {
+            const previews = await prepareAudioPreviews(source.sourcePath, audioStreamIndexes);
+            if (isCurrentSource(getState(), source.sourcePath, loadToken)) {
+              dispatch(audioPreviewsReady({ previews }));
+            }
+          } catch (error: unknown) {
+            if (isCurrentSource(getState(), source.sourcePath, loadToken)) {
+              dispatch(
+                audioPreviewsUnavailable({
+                  error: normalizeAppError(error),
+                }),
+              );
+            }
+          }
+        })();
+
+  const previewPreparation = (async () => {
     try {
-      media = await inspectMedia(source.sourcePath);
+      const preview = await prepareSourcePreview(source.sourcePath);
+      if (isCurrentSource(getState(), source.sourcePath, loadToken)) {
+        dispatch(previewReady({ preview }));
+      }
     } catch (error: unknown) {
       const normalized = normalizeAppError(error);
-      if (isCurrentSource(getState(), source.sourcePath, loadToken)) {
-        dispatch(sourceFailed({ loadToken, error: normalized }));
-      }
-      return false;
+      if (!isCurrentSource(getState(), source.sourcePath, loadToken)) return;
+      dispatch(previewFailed({ error: normalized }));
     }
+  })();
 
-    if (!isCurrentSource(getState(), source.sourcePath, loadToken)) return false;
-    dispatch(sourceReady({ loadToken, media }));
-
-    const audioStreamIndexes = media.audioStreams.map((stream) => stream.streamIndex);
-    const audioPreparation =
-      audioStreamIndexes.length <= 1
-        ? Promise.resolve().then(() => {
-            if (isCurrentSource(getState(), source.sourcePath, loadToken)) {
-              dispatch(audioPreviewsReady({ previews: [] }));
-            }
-          })
-        : (async () => {
-            dispatch(audioPreviewsLoading());
-            try {
-              const previews = await prepareAudioPreviews(source.sourcePath, audioStreamIndexes);
-              if (isCurrentSource(getState(), source.sourcePath, loadToken)) {
-                dispatch(audioPreviewsReady({ previews }));
-              }
-            } catch (error: unknown) {
-              if (isCurrentSource(getState(), source.sourcePath, loadToken)) {
-                dispatch(
-                  audioPreviewsUnavailable({
-                    error: normalizeAppError(error),
-                  }),
-                );
-              }
-            }
-          })();
-
-    dispatch(previewLoading({ kind: "source" }));
-    const previewPreparation = (async () => {
-      try {
-        const preview = await prepareSourcePreview(source.sourcePath);
-        if (isCurrentSource(getState(), source.sourcePath, loadToken)) {
-          dispatch(previewReady({ preview }));
-        }
-      } catch (error: unknown) {
-        const normalized = normalizeAppError(error);
-        if (!isCurrentSource(getState(), source.sourcePath, loadToken)) return;
-        dispatch(
-          isSourceInspectionError(normalized)
-            ? sourceFailed({ loadToken, error: normalized })
-            : previewFailed({ error: normalized }),
-        );
-      }
-    })();
-
-    await Promise.all([audioPreparation, previewPreparation]);
-    return true;
-  };
+  await Promise.all([audioPreparation, previewPreparation]);
+  if (!isCurrentSource(getState(), source.sourcePath, loadToken)) return null;
+  return (
+    readySnapshot ??
+    createEditorSnapshot({
+      source,
+      trim: { kind: "full-source" },
+      crop: null,
+      masterAudio: selectMasterAudio(getState()),
+      audioTracks: selectAudioTracks(getState()).map(({ enabled, streamIndex, volumePercent }) => ({
+        enabled,
+        streamIndex,
+        volumePercent,
+      })),
+      mergeAudio: selectMergeAudio(getState()),
+    })
+  );
+}
 
 function captureActiveQueueItemDraft(
   dispatch: Parameters<AppThunk>[0],
@@ -191,6 +204,7 @@ function captureActiveQueueItemDraft(
   dispatch(
     queueItemSnapshotUpdated({
       id: activeItem.id,
+      media: state.source.media,
       snapshot: createEditorSnapshot({
         source,
         trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
@@ -219,14 +233,20 @@ export const leaveActiveImportedItem = (): AppThunk => (dispatch, getState) => {
 };
 
 export const restoreActiveImportedItemRequested =
-  (id: string): AppThunk<Promise<boolean>> =>
+  (id: string, loadToken: number, snapshot: EditorSnapshot): AppThunk<Promise<boolean>> =>
   async (dispatch, getState) => {
     const item = getState().export.queue.find(
       (candidate): candidate is importQueueItem =>
         candidate.id === id && candidate.status === "imported",
     );
 
-    if (!item || getState().export.activeItemId !== id) return false;
+    if (
+      !item ||
+      getState().export.activeItemId !== id ||
+      getState().source.loadToken !== loadToken
+    ) {
+      return false;
+    }
 
     const restorationId = queueRestoreSequence;
     let source: SourceRef;
@@ -236,7 +256,7 @@ export const restoreActiveImportedItemRequested =
       if (restorationId !== queueRestoreSequence || getState().export.activeItemId !== id) {
         return false;
       }
-      dispatch(sourceErrorReported(normalizeAppError(error)));
+      dispatch(sourceFailed({ loadToken, error: normalizeAppError(error) }));
       return false;
     }
 
@@ -244,7 +264,14 @@ export const restoreActiveImportedItemRequested =
       return false;
     }
 
-    await dispatch(activateSource(source, item.snapshot.audio.mergeAudio));
+    const readySnapshot = await prepareSelectedSource(
+      dispatch,
+      getState,
+      source,
+      loadToken,
+      snapshot,
+    );
+
     if (restorationId !== queueRestoreSequence || getState().export.activeItemId !== id) {
       return false;
     }
@@ -266,8 +293,28 @@ export const restoreActiveImportedItemRequested =
       return false;
     }
 
-    applyEditorSnapshot(dispatch, getState, item.snapshot);
+    if (readySnapshot) {
+      dispatch(
+        queueItemSnapshotUpdated({ id, media: state.source.media, snapshot: readySnapshot }),
+      );
+    }
     return true;
+  };
+
+export const activateImportedItemRequested =
+  (item: importQueueItem): AppThunk<Promise<boolean>> =>
+  async (dispatch) => {
+    const loadToken = ++sourceLoadSequence;
+    queueRestoreSequence += 1;
+    dispatch(
+      importQueueItemActivated({
+        id: item.id,
+        loadToken,
+        media: item.media,
+        snapshot: item.snapshot,
+      }),
+    );
+    return dispatch(restoreActiveImportedItemRequested(item.id, loadToken, item.snapshot));
   };
 
 export const navigateToImportedItem =
@@ -284,11 +331,14 @@ export const navigateToImportedItem =
     if (id !== null && !target) return false;
     if (state.export.activeItemId === id && (id !== null || !selectHasSource(state))) return false;
 
-    queueRestoreSequence += 1;
     dispatch(leaveActiveImportedItem());
-    dispatch(sourceCleared());
-    dispatch(activeQueueItemChanged(id));
-    if (id !== null) dispatch(importQueueItemActivationRequested({ id }));
+    if (target) {
+      void dispatch(activateImportedItemRequested(target));
+    } else {
+      queueRestoreSequence += 1;
+      dispatch(sourceCleared());
+      dispatch(activeQueueItemChanged(null));
+    }
     return true;
   };
 
@@ -322,7 +372,6 @@ export const chooseSourceRequested = (): AppThunk => async (dispatch, getState) 
 };
 
 export const closeActiveImportedItemRequested = (): AppThunk => (dispatch, getState) => {
-  queueRestoreSequence += 1;
   const state = getState();
   const activeItem = selectActiveQueueItem(state);
 

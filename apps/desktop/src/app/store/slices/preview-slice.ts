@@ -1,5 +1,6 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
+import { importQueueItemActivated } from "@/app/store/actions/imported-queue-actions";
 import { sourceCleared, sourceFailed, sourceSelected } from "@/app/store/actions/source-actions";
 import type { AppError, PreviewDescriptor, PreviewKind } from "@/lib/tauri/media.types";
 
@@ -36,13 +37,19 @@ const previewSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(sourceSelected, (state) => {
-        state.value = { status: "idle" };
+        state.value = { status: "loading", kind: "source" };
+      })
+      .addCase(importQueueItemActivated, (state) => {
+        state.value = { status: "loading", kind: "source" };
       })
       .addCase(sourceCleared, (state) => {
         state.value = { status: "idle" };
       })
-      .addCase(sourceFailed, (state) => {
-        state.value = { status: "idle" };
+      .addCase(sourceFailed, (state, action) => {
+        state.value =
+          action.payload.loadToken === undefined
+            ? { status: "idle" }
+            : { status: "failed", error: action.payload.error };
       });
   },
 });

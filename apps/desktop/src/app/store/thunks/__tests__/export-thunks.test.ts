@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   planOptimizedExport: vi.fn(),
   activateSourcePath: vi.fn(),
   activateSource: vi.fn(),
+  activateImportedItemRequested: vi.fn(),
   leaveActiveImportedItem: vi.fn(),
   navigateToImportedItem: vi.fn(),
   restoreActiveImportedItemRequested: vi.fn(),
@@ -36,12 +37,14 @@ vi.mock("@/lib/tauri/queue", () => ({
   performQueueFinishAction: mocks.performQueueFinishAction,
 }));
 vi.mock("@/app/store/thunks/source-media-thunks", () => ({
+  activateImportedItemRequested: mocks.activateImportedItemRequested,
   activateSource: mocks.activateSource,
   leaveActiveImportedItem: mocks.leaveActiveImportedItem,
   navigateToImportedItem: mocks.navigateToImportedItem,
   restoreActiveImportedItemRequested: mocks.restoreActiveImportedItemRequested,
 }));
 
+import { importQueueItemActivated } from "@/app/store/actions/imported-queue-actions";
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
 import {
   activeQueueItemChanged,
@@ -160,6 +163,27 @@ beforeEach(() => {
   mocks.planOptimizedExport.mockResolvedValue({ commandPreview: "ffmpeg -i <source> <output>" });
   mocks.activateSourcePath.mockReset();
   mocks.activateSource.mockReset();
+  mocks.activateImportedItemRequested.mockReset();
+  mocks.activateImportedItemRequested.mockImplementation((item: importQueueItem) => {
+    return (dispatch: AppDispatch) => {
+      dispatch(
+        importQueueItemActivated({
+          id: item.id,
+          loadToken: 2,
+          media: item.media ?? media,
+          snapshot: item.snapshot,
+        }),
+      );
+      dispatch(
+        sourceReady({
+          loadToken: 2,
+          media: item.media ?? media,
+          snapshot: item.snapshot,
+        }),
+      );
+      return Promise.resolve(true);
+    };
+  });
   mocks.leaveActiveImportedItem.mockReset();
   mocks.leaveActiveImportedItem.mockImplementation(
     () => (dispatch: AppDispatch, getState: () => RootState) => {
@@ -418,22 +442,6 @@ describe("export thunks and runtime queue", () => {
       sourcePath: "C:/Media/other.mp4",
     };
 
-    const restoredMedia = { ...media, durationMicros: 2_000_000 };
-    mocks.activateSourcePath.mockResolvedValue(source);
-    mocks.activateSource.mockImplementation(
-      (
-        selectedSource: typeof source,
-        mergeAudio: boolean,
-        options: { activeItemId?: string | null } = {},
-      ) =>
-        (dispatch: AppDispatch) => {
-          dispatch(sourceSelected({ source: selectedSource, mergeAudio, loadToken: 2 }));
-          dispatch(sourceReady({ loadToken: 2, media: restoredMedia }));
-          if (options.activeItemId !== undefined) {
-            dispatch(activeQueueItemChanged(options.activeItemId));
-          }
-        },
-    );
     const store = createReadyStore(false);
     store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
     const historicalItem = {
@@ -451,7 +459,9 @@ describe("export thunks and runtime queue", () => {
       true,
     );
 
-    expect(mocks.activateSourcePath).toHaveBeenCalledWith(source.sourcePath);
+    expect(mocks.activateImportedItemRequested).toHaveBeenCalledWith(
+      expect.objectContaining({ snapshot: historicalItem.snapshot }),
+    );
     expect(store.getState().source.source).toEqual(source);
     expect(selectTrim(store.getState())).toMatchObject({
       startMicros: 250_000,
@@ -481,21 +491,6 @@ describe("export thunks and runtime queue", () => {
     };
 
     const secondHistoryItem = { ...historicalItem, id: "export-second" };
-    mocks.activateSourcePath.mockResolvedValue(source);
-    mocks.activateSource.mockImplementation(
-      (
-        selectedSource: typeof source,
-        mergeAudio: boolean,
-        options: { activeItemId?: string | null } = {},
-      ) =>
-        (dispatch: AppDispatch) => {
-          dispatch(sourceSelected({ source: selectedSource, mergeAudio, loadToken: 2 }));
-          dispatch(sourceReady({ loadToken: 2, media }));
-          if (options.activeItemId !== undefined) {
-            dispatch(activeQueueItemChanged(options.activeItemId));
-          }
-        },
-    );
     const store = createReadyStore(false);
     store.dispatch(queueEntryAdded(historicalItem));
 

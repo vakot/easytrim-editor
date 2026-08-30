@@ -6,6 +6,7 @@ import {
   selectActiveItemId,
   selectImportQueueItems,
 } from "@/app/store/slices/export-slice";
+import { selectPreview } from "@/app/store/slices/preview-slice";
 import { trimChanged } from "@/app/store/slices/trim-slice";
 import { createAppStore } from "@/app/store/store";
 import { ingestSources, navigateToImportedItem } from "@/app/store/thunks/source-media-thunks";
@@ -172,7 +173,11 @@ describe("unified source ingestion", () => {
     );
     expect(selectActiveItemId(store.getState())).toBe(items[1]?.id);
     expect(selectImportQueueItems(store.getState())).toHaveLength(2);
-    expect(selectAudioPreviews(store.getState())).toBeNull();
+    expect(selectAudioPreviews(store.getState())).toEqual({ status: "idle", previews: [] });
+    expect(selectPreview(store.getState())).toEqual({
+      status: "failed",
+      error: { code: "io_failed", message: "B is no longer available." },
+    });
     expect(mocks.inspectMedia).toHaveBeenCalledTimes(1);
   });
 

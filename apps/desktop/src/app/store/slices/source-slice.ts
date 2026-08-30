@@ -1,5 +1,6 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
+import { importQueueItemActivated } from "@/app/store/actions/imported-queue-actions";
 import {
   isValidSourceReadyPayload,
   sourceCleared,
@@ -58,6 +59,13 @@ const sourceSlice = createSlice({
         state.media = null;
         state.error = null;
       })
+      .addCase(importQueueItemActivated, (state, action) => {
+        state.status = "loading-source";
+        state.source = action.payload.snapshot.source;
+        state.loadToken = action.payload.loadToken;
+        state.media = action.payload.media ?? null;
+        state.error = null;
+      })
       .addCase(sourceCleared, (state) => {
         state.status = "idle";
         state.source = null;
@@ -96,3 +104,4 @@ export const selectCapabilities = (state: RootState): CapabilityState => state.s
 export const selectHasSource = (state: RootState): boolean => state.source.source !== null;
 export const selectSourceReady = (state: RootState): boolean =>
   state.source.status === "ready" && state.source.media !== null;
+export const selectSourceLoadToken = (state: RootState): number => state.source.loadToken;

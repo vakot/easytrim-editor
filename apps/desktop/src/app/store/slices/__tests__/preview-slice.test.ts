@@ -11,14 +11,14 @@ import {
 } from "../preview-slice";
 
 describe("preview slice", () => {
-  it("resets the preview when the source changes", () => {
+  it("starts the next source preview lifecycle when the source changes", () => {
     const loadingFirst = previewReducer(
       initialPreviewState,
       sourceSelected({ source: firstSource }),
     );
 
     const loadingSecond = previewReducer(loadingFirst, sourceSelected({ source: secondSource }));
-    expect(loadingSecond).toEqual({ value: { status: "idle" } });
+    expect(loadingSecond).toEqual({ value: { status: "loading", kind: "source" } });
   });
 
   it("records proxy failure without changing source ownership", () => {

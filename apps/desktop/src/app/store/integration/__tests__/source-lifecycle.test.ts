@@ -43,7 +43,7 @@ describe("source-bound lifecycle", () => {
     expect(state.trim.value).toBeNull();
     expect(state.crop.value).toEqual({ x: 0, y: 0, width: 1, height: 1 });
     expect(state.audio).toMatchObject({ tracks: [], mergeAudio: false });
-    expect(state.preview.value).toEqual({ status: "idle" });
+    expect(state.preview.value).toEqual({ status: "loading", kind: "source" });
   });
 
   it("clears all source-bound domains through sourceCleared", () => {

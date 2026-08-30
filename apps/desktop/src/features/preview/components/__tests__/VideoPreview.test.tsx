@@ -18,6 +18,7 @@ const callbacks = {
   onTogglePlayback: vi.fn(),
   onPlay: vi.fn(),
   onPause: vi.fn(),
+  onSkip: vi.fn(),
   onTimeUpdate: vi.fn(),
   onEnded: vi.fn(),
 };
@@ -50,6 +51,26 @@ afterAll(() => {
 });
 
 describe("VideoPreview", () => {
+  it("keeps terminal preview failures inside the panel with a shared Skip action", () => {
+    callbacks.onSkip.mockClear();
+    const videoRef = createRef<HTMLVideoElement>();
+    renderPreview(
+      <VideoPreview
+        muted
+        preview={{
+          status: "failed",
+          error: { code: "unsupported_media", message: "This source cannot be opened." },
+        }}
+        videoRef={videoRef}
+        {...callbacks}
+      />,
+    );
+
+    expect(screen.getByRole("alert")).toHaveTextContent("This source cannot be opened.");
+    fireEvent.click(screen.getByRole("button", { name: "Skip" }));
+    expect(callbacks.onSkip).toHaveBeenCalledOnce();
+  });
+
   it("explains why a compatible proxy is used from the keyboard", () => {
     const videoRef = createRef<HTMLVideoElement>();
     renderPreview(

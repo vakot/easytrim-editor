@@ -1,5 +1,6 @@
 import { createSelector, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
+import { importQueueItemActivated } from "@/app/store/actions/imported-queue-actions";
 import { sourceCleared, sourceSelected } from "@/app/store/actions/source-actions";
 import { cropChanged } from "@/app/store/slices/crop-slice";
 import type { EditorSnapshot } from "@/domain/editor-snapshot";
@@ -9,6 +10,7 @@ import type {
   ExportResult,
   FastExportRequest,
   FrameRate,
+  MediaInfo,
   OptimizedExportRequest,
 } from "@/lib/tauri/media.types";
 import type { QueueFinishAction } from "@/lib/tauri/queue.types";
@@ -22,6 +24,7 @@ type ExportRequest = FastExportRequest | OptimizedExportRequest;
 
 interface QueueItemBase {
   id: string;
+  media?: MediaInfo;
   snapshot: EditorSnapshot;
 }
 
@@ -62,6 +65,7 @@ type QueueItem = importQueueItem | ExportQueueItem;
 export interface QueueItemPromotion {
   filename: string;
   id: string;
+  media?: MediaInfo;
   outputId: string;
   path: string;
   request: ExportRequest;
@@ -155,10 +159,13 @@ const exportSlice = createSlice({
     },
     queueItemSnapshotUpdated: (
       state,
-      action: PayloadAction<{ id: string; snapshot: EditorSnapshot }>,
+      action: PayloadAction<{ id: string; media?: MediaInfo; snapshot: EditorSnapshot }>,
     ) => {
       const item = state.queue.find((candidate) => candidate.id === action.payload.id);
-      if (item?.status === "imported") item.snapshot = action.payload.snapshot;
+      if (item?.status === "imported") {
+        item.snapshot = action.payload.snapshot;
+        item.media = action.payload.media;
+      }
     },
     queueItemPromoted: (state, action: PayloadAction<QueueItemPromotion>) => {
       const index = state.queue.findIndex((candidate) => candidate.id === action.payload.id);
@@ -264,13 +271,19 @@ const exportSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    builder.addCase(sourceSelected, (state) => {
+    const resetSourceExportState = (state: ExportState) => {
       state.optimizedDialogOpen = false;
       state.optimizedSettings = null;
       state.optimizedPlanRequestId = null;
       state.commandPreview = "";
       state.commandPreviewError = null;
       state.launchError = null;
+    };
+
+    builder.addCase(sourceSelected, resetSourceExportState);
+    builder.addCase(importQueueItemActivated, (state, action) => {
+      state.activeItemId = action.payload.id;
+      resetSourceExportState(state);
     });
     builder.addCase(sourceCleared, (state) => {
       state.activeItemId = null;

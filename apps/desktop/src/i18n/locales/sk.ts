@@ -214,7 +214,6 @@ export const sk = {
     messages: {
       error: "Náhľad videa sa nepodarilo zobraziť",
       playbackFailed: "Prehrávanie sa nepodarilo spustiť.",
-      preparing: "Pri zdrojoch s vysokým rozlíšením to môže chvíľu trvať.",
       proxy:
         "Pôvodný zdroj nebolo možné prehrať priamo, preto EasyTrim pripravil kompatibilný náhľad, ktorý môže mať nižšiu kvalitu. Export stále používa pôvodný súbor.",
       setEndUnavailable: "Koniec segmentu nastavíte presunutím za začiatok zdroja",

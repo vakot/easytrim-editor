@@ -211,7 +211,6 @@ export const en = {
     messages: {
       error: "Could not preview this video",
       playbackFailed: "Playback could not start.",
-      preparing: "This can take a moment for high-resolution sources.",
       proxy:
         "The original source could not play directly, so EasyTrim prepared a compatible proxy that may use reduced quality. Exports still use the original file.",
       setEndUnavailable: "Move after the source start to set segment end",

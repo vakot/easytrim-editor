@@ -1,5 +1,11 @@
 import { createAction } from "@reduxjs/toolkit";
 
-export const importQueueItemActivationRequested = createAction<{ id: string }>(
-  "importQueue/itemActivationRequested",
-);
+import type { EditorSnapshot } from "@/domain/editor-snapshot";
+import type { MediaInfo } from "@/lib/tauri/media.types";
+
+export const importQueueItemActivated = createAction<{
+  id: string;
+  loadToken: number;
+  media?: MediaInfo;
+  snapshot: EditorSnapshot;
+}>("importQueue/itemActivated");

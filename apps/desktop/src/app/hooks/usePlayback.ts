@@ -3,6 +3,7 @@ import { useEditorInteraction } from "./useEditorInteraction";
 export function usePlayback() {
   const interaction = useEditorInteraction();
   return {
+    canInteract: interaction.isPlaybackReady,
     videoRef: interaction.videoRef,
     audioPlayheadRef: interaction.audioPlayheadRef,
     displayedPlayheadMicros: interaction.displayedPlayheadMicros,

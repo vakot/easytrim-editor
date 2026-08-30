@@ -1,5 +1,6 @@
 import { createAction } from "@reduxjs/toolkit";
 
+import type { EditorSnapshot } from "@/domain/editor-snapshot";
 import type { SourceRef } from "@/domain/source";
 import type { AppError, MediaInfo } from "@/lib/tauri/media.types";
 
@@ -11,7 +12,11 @@ export const sourceSelected = createAction<{
 
 export const sourceCleared = createAction("source/cleared");
 
-export const sourceReady = createAction<{ loadToken: number; media: MediaInfo }>("source/ready");
+export const sourceReady = createAction<{
+  loadToken: number;
+  media: MediaInfo;
+  snapshot?: EditorSnapshot;
+}>("source/ready");
 
 export const sourceFailed = createAction<{ error: AppError; loadToken?: number }>("source/failed");
 

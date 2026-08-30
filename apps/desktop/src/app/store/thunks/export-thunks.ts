@@ -1,5 +1,3 @@
-import { sourceFailed } from "@/app/store/actions/source-actions";
-import { applyEditorSnapshot } from "@/app/store/integration/editor-snapshot";
 import {
   cancelActiveExport,
   cancelAllQueuedExports,
@@ -44,13 +42,12 @@ import {
 } from "@/app/store/slices/source-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
 import {
-  activateSource,
+  activateImportedItemRequested,
   leaveActiveImportedItem,
   navigateToImportedItem,
 } from "@/app/store/thunks/source-media-thunks";
 import { cloneEditorSnapshot, createEditorSnapshot } from "@/domain/editor-snapshot";
 import {
-  activateSourcePath,
   chooseOutputPath,
   planOptimizedExport,
   releaseExportSource,
@@ -63,7 +60,6 @@ import { availableQueueFinishActions } from "@/lib/tauri/queue";
 import type { AppThunk } from "./source-media-thunks";
 
 let optimizedPlanRequestSequence = 0;
-let restoreSequence = 0;
 let historyForkSequence = 0;
 
 export const loadQueueFinishActions = (): AppThunk => async (dispatch) => {
@@ -191,6 +187,7 @@ async function startQueuedExport(
 
     const promotion: QueueItemPromotion = {
       id: importedItemId,
+      media,
       snapshot,
       route,
       request,
@@ -314,37 +311,15 @@ export const restoreExportQueueItemRequested =
   async (dispatch, getState) => {
     const item = getState().export.queue.find((candidate) => candidate.id === id);
     if (!item || item.status === "imported") return false;
-    const restorationId = ++restoreSequence;
+    dispatch(leaveActiveImportedItem());
+    const fork: importQueueItem = {
+      id: `fork-${++historyForkSequence}`,
+      status: "imported",
+      origin: "history-fork",
+      media: item.media,
+      snapshot: cloneEditorSnapshot(item.snapshot),
+    };
 
-    try {
-      dispatch(leaveActiveImportedItem());
-      const source = await activateSourcePath(item.snapshot.source.sourcePath);
-      if (restorationId !== restoreSequence) return false;
-
-      const fork: importQueueItem = {
-        id: `fork-${++historyForkSequence}`,
-        status: "imported",
-        origin: "history-fork",
-        snapshot: cloneEditorSnapshot(item.snapshot),
-      };
-
-      dispatch(importQueueItemAdded(fork));
-      await dispatch(activateSource(source, fork.snapshot.audio.mergeAudio));
-      if (restorationId !== restoreSequence) return false;
-      const state = getState();
-      if (
-        selectActiveItemId(state) !== fork.id ||
-        currentSourcePath(state) !== fork.snapshot.source.sourcePath ||
-        !state.source.media
-      ) {
-        return false;
-      }
-      applyEditorSnapshot(dispatch, getState, fork.snapshot);
-      return true;
-    } catch (error: unknown) {
-      if (restorationId === restoreSequence) {
-        dispatch(sourceFailed({ error: normalizeAppError(error) }));
-      }
-      return false;
-    }
+    dispatch(importQueueItemAdded(fork));
+    return dispatch(activateImportedItemRequested(fork));
   };

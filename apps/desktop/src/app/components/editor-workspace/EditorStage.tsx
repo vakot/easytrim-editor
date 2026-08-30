@@ -8,7 +8,6 @@ import { AudioPanel } from "@/features/audio";
 import { Preview } from "@/features/preview";
 import { SourceDropOverlay } from "@/features/source";
 import { TimelinePanel } from "@/features/timeline";
-import { cn } from "@/lib/class-names.utils";
 import { timelineGeometryStyle } from "@/lib/interaction/timeline-geometry.utils";
 
 type PanelSizes = {
@@ -61,28 +60,24 @@ export function EditorStage() {
       </ResizablePanel>
       <ResizableHandle className="bg-transparent" style={{ height: 4 }} withHandle />
       <ResizablePanel
-        className={cn("overflow-hidden", !audioStreamsCount && "pb-1")}
+        className="overflow-hidden"
         groupResizeBehavior="preserve-pixel-size"
         id="editor-stage-timeline"
         {...TIMELINE_PANEL_SIZE}
       >
         <TimelinePanel />
       </ResizablePanel>
-      {audioStreamsCount > 0 && (
-        <>
-          <ResizableHandle className="bg-transparent" style={{ height: 4 }} withHandle />
-          <ResizablePanel
-            className="overflow-hidden pb-1"
-            collapsedSize={0}
-            collapsible
-            groupResizeBehavior="preserve-pixel-size"
-            id="editor-stage-audio"
-            {...getAudioPanelSize(audioStreamsCount)}
-          >
-            <AudioPanel />
-          </ResizablePanel>
-        </>
-      )}
+      <ResizableHandle className="bg-transparent" style={{ height: 4 }} withHandle />
+      <ResizablePanel
+        className="overflow-hidden pb-1"
+        collapsedSize={0}
+        collapsible
+        groupResizeBehavior="preserve-pixel-size"
+        id="editor-stage-audio"
+        {...getAudioPanelSize(Math.max(1, audioStreamsCount))}
+      >
+        <AudioPanel />
+      </ResizablePanel>
     </ResizablePanelGroup>
   );
 }
