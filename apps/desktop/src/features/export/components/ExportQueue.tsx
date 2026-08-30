@@ -47,7 +47,7 @@ export function ExportQueue() {
           {t("common.status.empty")}
         </p>
       ) : (
-        <div aria-live="polite" className="grid gap-2" role="status">
+        <div aria-live="polite" className="grid gap-2 pb-2" role="status">
           {queue.map((item) => (
             <ExportQueueItem item={item} key={item.id} now={now} />
           ))}

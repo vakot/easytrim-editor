@@ -43,7 +43,7 @@ export function ImportQueue() {
           {t("common.status.empty")}
         </p>
       ) : (
-        <div aria-live="polite" className="grid gap-2" role="status">
+        <div aria-live="polite" className="grid gap-2 pb-2" role="status">
           {items.map((item) => (
             <ImportQueueItem active={item.id === activeItem?.id} item={item} key={item.id} />
           ))}
