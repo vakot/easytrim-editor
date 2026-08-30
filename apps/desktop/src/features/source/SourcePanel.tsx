@@ -71,10 +71,8 @@ export function SourcePanel() {
           <DropdownMenuGroup>
             <DropdownMenuItem
               disabled
-              onSelect={(event) => {
-                event.preventDefault();
-                handlePanelToggle("workspace-sidebar-source-details");
-              }}
+              keepOpen
+              onSelect={() => handlePanelToggle("workspace-sidebar-source-details")}
             >
               {panels["workspace-sidebar-source-details"] ? (
                 <Eye aria-hidden="true" className="size-3" />
@@ -84,10 +82,8 @@ export function SourcePanel() {
               {t("source.labels.mediaDetails")}
             </DropdownMenuItem>
             <DropdownMenuItem
-              onSelect={(event) => {
-                event.preventDefault();
-                handlePanelToggle("workspace-sidebar-import-queue");
-              }}
+              keepOpen
+              onSelect={() => handlePanelToggle("workspace-sidebar-import-queue")}
             >
               {panels["workspace-sidebar-import-queue"] ? (
                 <Eye aria-hidden="true" className="size-3" />
@@ -97,10 +93,8 @@ export function SourcePanel() {
               {t("queue.labels.import")}
             </DropdownMenuItem>
             <DropdownMenuItem
-              onSelect={(event) => {
-                event.preventDefault();
-                handlePanelToggle("workspace-sidebar-export-queue");
-              }}
+              keepOpen
+              onSelect={() => handlePanelToggle("workspace-sidebar-export-queue")}
             >
               {panels["workspace-sidebar-export-queue"] ? (
                 <Eye aria-hidden="true" className="size-3" />
@@ -114,10 +108,8 @@ export function SourcePanel() {
           <DropdownMenuGroup>
             <DropdownMenuItem
               disabled={enabledCount === 3}
-              onSelect={(event) => {
-                event.preventDefault();
-                setPanels(DEFAULT_PANELS);
-              }}
+              keepOpen
+              onSelect={() => setPanels(DEFAULT_PANELS)}
             >
               <RotateCcw aria-hidden="true" className="size-3" />
               {t("app.actions.resetLayout")}

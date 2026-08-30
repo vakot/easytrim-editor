@@ -54,6 +54,54 @@ describe("Menubar selection items", () => {
     expect(screen.getByRole("menuitem", { name: "Item" })).toBeInTheDocument();
   });
 
+  it("gates regular item click handlers when requested", () => {
+    const onClick = vi.fn();
+    renderMenu(
+      <MenubarItem keepOpen onClick={onClick}>
+        Item
+      </MenubarItem>,
+    );
+
+    const item = screen.getByRole("menuitem", { name: "Item" });
+    fireEvent.click(item);
+
+    expect(onClick).toHaveBeenCalledOnce();
+    expect(onClick.mock.calls[0]?.[0].defaultPrevented).toBe(true);
+    expect(item).toBeInTheDocument();
+  });
+
+  it("gates mouse handlers when requested", () => {
+    const onMouseDown = vi.fn();
+    renderMenu(
+      <MenubarItem keepOpen onMouseDown={onMouseDown}>
+        Item
+      </MenubarItem>,
+    );
+
+    const item = screen.getByRole("menuitem", { name: "Item" });
+    fireEvent.mouseDown(item);
+
+    expect(onMouseDown).toHaveBeenCalledOnce();
+    expect(onMouseDown.mock.calls[0]?.[0].defaultPrevented).toBe(true);
+    expect(item).toBeInTheDocument();
+  });
+
+  it("gates keyboard handlers when requested", () => {
+    const onKeyDown = vi.fn();
+    renderMenu(
+      <MenubarItem keepOpen onKeyDown={onKeyDown}>
+        Item
+      </MenubarItem>,
+    );
+
+    const item = screen.getByRole("menuitem", { name: "Item" });
+    fireEvent.keyDown(item, { key: "Enter" });
+
+    expect(onKeyDown).toHaveBeenCalledOnce();
+    expect(onKeyDown.mock.calls[0]?.[0].defaultPrevented).toBe(true);
+    expect(item).toBeInTheDocument();
+  });
+
   it("closes checkbox menus by default", () => {
     const onSelect = vi.fn();
     renderMenu(
@@ -82,6 +130,22 @@ describe("Menubar selection items", () => {
     expect(onSelect).toHaveBeenCalledOnce();
     expect(onSelect.mock.calls[0]?.[0].defaultPrevented).toBe(true);
     expect(screen.getByRole("menuitemcheckbox", { name: "Checkbox" })).toBeInTheDocument();
+  });
+
+  it("gates checkbox item click handlers when requested", () => {
+    const onClick = vi.fn();
+    renderMenu(
+      <MenubarCheckboxItem checked={false} keepOpen onClick={onClick}>
+        Checkbox
+      </MenubarCheckboxItem>,
+    );
+
+    const item = screen.getByRole("menuitemcheckbox", { name: "Checkbox" });
+    fireEvent.click(item);
+
+    expect(onClick).toHaveBeenCalledOnce();
+    expect(onClick.mock.calls[0]?.[0].defaultPrevented).toBe(true);
+    expect(item).toBeInTheDocument();
   });
 
   it("closes radio menus by default", () => {
@@ -116,6 +180,24 @@ describe("Menubar selection items", () => {
     expect(onSelect).toHaveBeenCalledOnce();
     expect(onSelect.mock.calls[0]?.[0].defaultPrevented).toBe(true);
     expect(screen.getByRole("menuitemradio", { name: "Radio" })).toBeInTheDocument();
+  });
+
+  it("gates radio item click handlers when requested", () => {
+    const onClick = vi.fn();
+    renderMenu(
+      <MenubarRadioGroup value="radio">
+        <MenubarRadioItem keepOpen onClick={onClick} value="radio">
+          Radio
+        </MenubarRadioItem>
+      </MenubarRadioGroup>,
+    );
+
+    const item = screen.getByRole("menuitemradio", { name: "Radio" });
+    fireEvent.click(item);
+
+    expect(onClick).toHaveBeenCalledOnce();
+    expect(onClick.mock.calls[0]?.[0].defaultPrevented).toBe(true);
+    expect(item).toBeInTheDocument();
   });
 
   it("keeps submenu triggers accessible when keepOpen is set", () => {

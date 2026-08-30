@@ -48,7 +48,7 @@ export function PanelVisibilityControls() {
             <DropdownMenuGroup>
               <ResizablePanelControl panelId="workspace-sidebar">
                 {({ isCollapsed }) => (
-                  <DropdownMenuItem onSelect={(event) => event.preventDefault()}>
+                  <DropdownMenuItem keepOpen>
                     {isCollapsed ? (
                       <PanelLeftDashed aria-hidden="true" className="size-3" />
                     ) : (
@@ -60,10 +60,7 @@ export function PanelVisibilityControls() {
               </ResizablePanelControl>
               <ResizablePanelControl panelId="editor-stage-audio">
                 {({ isAvailable, isCollapsed, isDisabled }) => (
-                  <DropdownMenuItem
-                    disabled={!isAvailable || isDisabled}
-                    onSelect={(event) => event.preventDefault()}
-                  >
+                  <DropdownMenuItem disabled={!isAvailable || isDisabled} keepOpen>
                     {isCollapsed ? (
                       <PanelBottomDashed aria-hidden="true" className="size-3" />
                     ) : (
@@ -81,10 +78,7 @@ export function PanelVisibilityControls() {
                 panelId={["workspace-sidebar", "editor-stage-timeline"]}
               >
                 {({ isDisabled }) => (
-                  <DropdownMenuItem
-                    disabled={isDisabled}
-                    onSelect={(event) => event.preventDefault()}
-                  >
+                  <DropdownMenuItem disabled={isDisabled} keepOpen>
                     <RotateCcw aria-hidden="true" className="size-3" />
                     {t("app.actions.resetLayout")}
                   </DropdownMenuItem>
