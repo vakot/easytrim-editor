@@ -6,6 +6,7 @@ use std::{
     panic,
     path::{Path, PathBuf},
     process::Command,
+    sync::atomic::{AtomicBool, Ordering},
     sync::{Arc, Mutex, OnceLock},
     time::{Duration, Instant},
 };
@@ -81,6 +82,12 @@ struct SessionMarker {
     started_at: String,
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct HeartbeatState {
+    last_ui_heartbeat_at: String,
+}
+
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StartupRecovery {
@@ -148,6 +155,7 @@ pub struct DiagnosticsState {
     active_operations: Mutex<HashMap<String, ActiveOperation>>,
     app_version: String,
     heartbeat_path: PathBuf,
+    heartbeat_persistence_degraded: AtomicBool,
     last_heartbeat: Mutex<(Instant, String, bool)>,
     logs_dir: PathBuf,
     marker_path: PathBuf,
@@ -180,6 +188,7 @@ impl DiagnosticsState {
             active_operations: Mutex::new(HashMap::new()),
             app_version,
             heartbeat_path: logs_dir.join(format!("session-{}.heartbeat.json", session.session_id)),
+            heartbeat_persistence_degraded: AtomicBool::new(false),
             last_heartbeat: Mutex::new((Instant::now(), now(), false)),
             logs_dir,
             marker_path,
@@ -262,10 +271,9 @@ impl DiagnosticsState {
         heartbeat.0 = Instant::now();
         heartbeat.1 = now();
         let heartbeat_timestamp = heartbeat.1.clone();
-        let _ = write_json_atomic(
-            &self.heartbeat_path,
-            &json!({ "lastUiHeartbeatAt": heartbeat_timestamp }),
-        );
+        self.persist_heartbeat(HeartbeatState {
+            last_ui_heartbeat_at: heartbeat_timestamp,
+        });
         if elapsed >= UI_HEARTBEAT_MISSED_AFTER {
             heartbeat.2 = false;
             drop(heartbeat);
@@ -289,6 +297,23 @@ impl DiagnosticsState {
             })?;
         }
         Ok(())
+    }
+
+    fn persist_heartbeat(&self, heartbeat: HeartbeatState) {
+        match write_json_atomic(&self.heartbeat_path, &heartbeat) {
+            Ok(()) => {
+                self.heartbeat_persistence_degraded
+                    .store(false, Ordering::Release);
+            }
+            Err(error) => {
+                if !self
+                    .heartbeat_persistence_degraded
+                    .swap(true, Ordering::AcqRel)
+                {
+                    eprintln!("[diagnostics] UI heartbeat persistence unavailable: {error}");
+                }
+            }
+        }
     }
 
     pub fn check_heartbeat(&self) {
@@ -488,6 +513,7 @@ fn validate_event(input: &DiagnosticEventInput) -> Result<(), AppError> {
 
 fn sanitize_map(data: Map<String, Value>) -> Map<String, Value> {
     data.into_iter()
+        .filter(|(key, _)| !is_sensitive_key(key))
         .take(32)
         .map(|(key, value)| (key, sanitize_value(value, 0)))
         .collect()
@@ -599,20 +625,22 @@ fn create_report(
     fs::create_dir_all(&report_dir).map_err(io_error)?;
     let report_path = report_dir.join("report.log");
     let last_event = events.last();
-    let last_heartbeat = events
+    let last_heartbeat_event = events
         .iter()
         .rev()
         .find(|event| event.event.starts_with("ui.heartbeat"));
-    let heartbeat_state =
+    let last_ui_heartbeat_at =
         fs::read(logs_dir.join(format!("session-{}.heartbeat.json", marker.session_id)))
             .ok()
-            .and_then(|bytes| serde_json::from_slice::<Value>(&bytes).ok());
+            .and_then(|bytes| serde_json::from_slice::<HeartbeatState>(&bytes).ok())
+            .map(|heartbeat| heartbeat.last_ui_heartbeat_at);
     let metadata = json!({
         "appVersion": marker.app_version,
         "classification": classification,
         "lastEvent": last_event,
         "lastRecordedEventAt": last_event.map(|event| &event.timestamp),
-        "lastUiHeartbeat": heartbeat_state.or_else(|| last_heartbeat.map(|event| json!(event))),
+        "lastHeartbeatEvent": last_heartbeat_event,
+        "lastUiHeartbeatAt": &last_ui_heartbeat_at,
         "platform": std::env::consts::OS,
         "pid": marker.pid,
         "sessionId": marker.session_id,
@@ -627,6 +655,12 @@ fn create_report(
     writeln!(human, "Session: {}", marker.session_id).map_err(io_error)?;
     writeln!(human, "App version: {}", marker.app_version).map_err(io_error)?;
     writeln!(human, "Started: {}", marker.started_at).map_err(io_error)?;
+    writeln!(
+        human,
+        "Last UI heartbeat: {}",
+        last_ui_heartbeat_at.as_deref().unwrap_or("none")
+    )
+    .map_err(io_error)?;
     writeln!(
         human,
         "Last event: {}",
@@ -644,18 +678,7 @@ fn create_report(
     }
     writeln!(human, "\nEvent timeline:").map_err(io_error)?;
     for event in &events {
-        writeln!(
-            human,
-            "{} {:<5} {} {}",
-            event.timestamp,
-            event.level.to_uppercase(),
-            event.event,
-            event
-                .data
-                .as_ref()
-                .map_or_else(String::new, |data| Value::Object(data.clone()).to_string())
-        )
-        .map_err(io_error)?;
+        write_human_event(&mut human, event).map_err(io_error)?;
     }
     human.flush().map_err(io_error)?;
     Ok(StartupRecovery {
@@ -664,6 +687,46 @@ fn create_report(
         report_path: report_path.to_string_lossy().into_owned(),
         session_id: marker.session_id.clone(),
     })
+}
+
+fn write_human_event(writer: &mut impl Write, event: &DiagnosticEvent) -> std::io::Result<()> {
+    writeln!(
+        writer,
+        "{} {:<5} {}",
+        event.timestamp,
+        event.level.to_uppercase(),
+        event.event
+    )?;
+    if let Some(origin) = &event.origin {
+        writeln!(
+            writer,
+            "  origin={}{}",
+            origin.kind,
+            origin
+                .id
+                .as_deref()
+                .map_or_else(String::new, |id| format!(":{id}"))
+        )?;
+    }
+    if let Some(snapshot_id) = &event.snapshot_id {
+        writeln!(writer, "  snapshot={snapshot_id}")?;
+    }
+    if let Some(operation_id) = &event.operation_id {
+        writeln!(writer, "  operation={operation_id}")?;
+    }
+    if let Some(parent_operation_id) = &event.parent_operation_id {
+        writeln!(writer, "  parent={parent_operation_id}")?;
+    }
+    if let Some(result) = &event.result {
+        writeln!(writer, "  result={result}")?;
+    }
+    if let Some(duration_ms) = event.duration_ms {
+        writeln!(writer, "  duration={duration_ms}ms")?;
+    }
+    if let Some(data) = &event.data {
+        writeln!(writer, "  data={}", Value::Object(data.clone()))?;
+    }
+    writeln!(writer)
 }
 
 fn read_session_events(logs_dir: &Path, session_id: &str) -> Vec<DiagnosticEvent> {
@@ -738,8 +801,49 @@ fn retain_files(parent: &Path, keep_sessions: usize) -> std::io::Result<()> {
 fn write_json_atomic(path: &Path, value: &impl Serialize) -> std::io::Result<()> {
     let temporary = path.with_extension("tmp");
     let bytes = serde_json::to_vec_pretty(value).map_err(std::io::Error::other)?;
-    fs::write(&temporary, bytes)?;
-    fs::rename(temporary, path)
+    {
+        let mut file = File::create(&temporary)?;
+        file.write_all(&bytes)?;
+        file.sync_all()?;
+    }
+    replace_file(&temporary, path)
+}
+
+#[cfg(not(target_os = "windows"))]
+fn replace_file(source: &Path, destination: &Path) -> std::io::Result<()> {
+    fs::rename(source, destination)
+}
+
+#[cfg(target_os = "windows")]
+fn replace_file(source: &Path, destination: &Path) -> std::io::Result<()> {
+    use std::os::windows::ffi::OsStrExt;
+
+    use windows_sys::Win32::Storage::FileSystem::{
+        MOVEFILE_REPLACE_EXISTING, MOVEFILE_WRITE_THROUGH, MoveFileExW,
+    };
+
+    let source = source
+        .as_os_str()
+        .encode_wide()
+        .chain(std::iter::once(0))
+        .collect::<Vec<_>>();
+    let destination = destination
+        .as_os_str()
+        .encode_wide()
+        .chain(std::iter::once(0))
+        .collect::<Vec<_>>();
+    let result = unsafe {
+        MoveFileExW(
+            source.as_ptr(),
+            destination.as_ptr(),
+            MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH,
+        )
+    };
+    if result == 0 {
+        Err(std::io::Error::last_os_error())
+    } else {
+        Ok(())
+    }
 }
 
 fn log_path(logs_dir: &Path, session_id: &str, segment: u8) -> PathBuf {
@@ -844,17 +948,37 @@ mod tests {
         first
             .record(DiagnosticEventInput {
                 category: "preview".to_owned(),
-                data: None,
+                data: Some(Map::from_iter([(
+                    "previewKind".to_owned(),
+                    Value::String("proxy".to_owned()),
+                )])),
                 duration_ms: None,
                 event: "preview.prepare.started".to_owned(),
                 level: "info".to_owned(),
                 operation_id: Some("preview-1".to_owned()),
-                origin: None,
+                origin: Some(DiagnosticOrigin {
+                    id: Some("snapshot.card".to_owned()),
+                    kind: "button".to_owned(),
+                }),
                 parent_operation_id: Some("source-1".to_owned()),
                 result: Some("started".to_owned()),
-                snapshot_id: None,
+                snapshot_id: Some("8".to_owned()),
             })
             .expect("operation persisted");
+        first
+            .record(DiagnosticEventInput {
+                category: "audio".to_owned(),
+                data: None,
+                duration_ms: Some(126),
+                event: "audio.source-switch.completed".to_owned(),
+                level: "info".to_owned(),
+                operation_id: Some("audio-switch-55".to_owned()),
+                origin: None,
+                parent_operation_id: Some("preview-1".to_owned()),
+                result: Some("success".to_owned()),
+                snapshot_id: None,
+            })
+            .expect("completed operation persisted");
         drop(first);
         let second =
             DiagnosticsState::initialize(root.clone(), "1.0.0".to_owned()).expect("second starts");
@@ -866,6 +990,13 @@ mod tests {
         assert_eq!(recovery.classification, "abnormal_shutdown");
         let report = fs::read_to_string(recovery.report_path).expect("report read");
         assert!(report.contains("preview.prepare"));
+        assert!(report.contains("  origin=button:snapshot.card"));
+        assert!(report.contains("  snapshot=8"));
+        assert!(report.contains("  operation=preview-1"));
+        assert!(report.contains("  parent=source-1"));
+        assert!(report.contains("  result=started"));
+        assert!(report.contains("  duration=126ms"));
+        assert!(report.contains("  data={\"previewKind\":\"proxy\"}"));
         second.complete().expect("second completes");
         fs::remove_dir_all(root).expect("temporary root removed");
     }
@@ -953,6 +1084,88 @@ mod tests {
             REPORT_RETENTION
         );
         assert!(!reports.join("00-report").exists());
+        fs::remove_dir_all(root).expect("temporary root removed");
+    }
+
+    #[test]
+    fn removes_sensitive_keys_at_every_object_level() {
+        let sensitive_keys = [
+            "token",
+            "accessToken",
+            "password",
+            "secret",
+            "credential",
+            "authorization",
+        ];
+        let mut nested = Map::new();
+        let mut data = Map::new();
+        for key in sensitive_keys {
+            data.insert(key.to_owned(), Value::String("top-secret".to_owned()));
+            nested.insert(key.to_owned(), Value::String("nested-secret".to_owned()));
+        }
+        data.insert("safe".to_owned(), Value::String("visible".to_owned()));
+        nested.insert("safe".to_owned(), Value::String("visible".to_owned()));
+        data.insert("nested".to_owned(), Value::Object(nested));
+
+        let sanitized = sanitize_map(data);
+        for key in sensitive_keys {
+            assert!(!sanitized.contains_key(key));
+            assert!(
+                !sanitized["nested"]
+                    .as_object()
+                    .expect("nested object")
+                    .contains_key(key)
+            );
+        }
+        assert_eq!(sanitized["safe"], "visible");
+        assert_eq!(sanitized["nested"]["safe"], "visible");
+    }
+
+    #[test]
+    fn repeated_atomic_writes_replace_existing_heartbeat_state() {
+        let root = temporary_root("heartbeat-replace");
+        let path = root.join("heartbeat.json");
+        write_json_atomic(
+            &path,
+            &HeartbeatState {
+                last_ui_heartbeat_at: "first".to_owned(),
+            },
+        )
+        .expect("first heartbeat persisted");
+        write_json_atomic(
+            &path,
+            &HeartbeatState {
+                last_ui_heartbeat_at: "second".to_owned(),
+            },
+        )
+        .expect("second heartbeat replaced the first");
+
+        let heartbeat: HeartbeatState =
+            serde_json::from_slice(&fs::read(&path).expect("heartbeat state read"))
+                .expect("heartbeat state valid");
+        assert_eq!(heartbeat.last_ui_heartbeat_at, "second");
+        fs::remove_dir_all(root).expect("temporary root removed");
+    }
+
+    #[test]
+    fn heartbeat_persistence_failure_is_bounded_and_non_fatal() {
+        let root = temporary_root("heartbeat-degraded");
+        let state =
+            DiagnosticsState::initialize(root.clone(), "1.0.0".to_owned()).expect("session starts");
+        fs::create_dir(&state.heartbeat_path).expect("blocking directory created");
+
+        state
+            .heartbeat()
+            .expect("first failed write stays non-fatal");
+        state
+            .heartbeat()
+            .expect("repeated failed write stays non-fatal");
+        assert!(state.heartbeat_persistence_degraded.load(Ordering::Acquire));
+
+        fs::remove_dir(&state.heartbeat_path).expect("blocking directory removed");
+        state.heartbeat().expect("heartbeat recovers");
+        assert!(!state.heartbeat_persistence_degraded.load(Ordering::Acquire));
+        state.complete().expect("session completes");
         fs::remove_dir_all(root).expect("temporary root removed");
     }
 }
