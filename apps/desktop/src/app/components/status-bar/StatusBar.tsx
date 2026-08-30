@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -54,19 +55,14 @@ export function StatusBar() {
             </span>
             <Separator className="mt-1 h-4 self-center" orientation="vertical" />
             <div className="flex shrink-0 items-center gap-2">
-              <div
+              <Progress
                 aria-label={t("queue.accessibility.progress")}
                 aria-valuemax={100}
                 aria-valuemin={0}
                 aria-valuenow={progressPercent}
-                className="h-1.5 w-28 overflow-hidden rounded-full bg-muted"
-                role="progressbar"
-              >
-                <div
-                  className="h-full rounded-full bg-primary transition-[width] duration-150"
-                  style={{ width: `${progressPercent}%` }}
-                />
-              </div>
+                className="h-1.5 w-28"
+                value={progressPercent}
+              />
               <span className="w-10 text-right tabular-nums">{progressPercent}%</span>
             </div>
             <Separator className="mt-1 h-4 self-center" orientation="vertical" />

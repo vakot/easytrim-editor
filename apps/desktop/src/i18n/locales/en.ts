@@ -29,7 +29,6 @@ export const en = {
       restart: "Restart application",
       restore: "Restore",
       update: "Update",
-      updateTo: "Update to v{{version}}",
     },
     labels: {
       bottomPanel: "Bottom panel",
@@ -157,6 +156,7 @@ export const en = {
         container: "Container",
         duration: "Duration",
         fileSize: "File size",
+        filename: "Filename",
         frameRate: "Frame rate",
         resolution: "Resolution",
         videoCodec: "Video codec",

@@ -10,13 +10,13 @@ import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import {
-  Menu,
-  MenuContent,
-  MenuGroup,
-  MenuItem,
-  MenuSeparator,
-  MenuTrigger,
-} from "@/components/ui/menu";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ResizablePanelControl } from "@/components/ui/resizable";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -30,11 +30,12 @@ export function PanelVisibilityControls() {
       role="group"
     >
       <Tooltip>
-        <Menu modal={false}>
-          <MenuTrigger asChild>
+        <DropdownMenu modal={false}>
+          <DropdownMenuTrigger asChild>
             <TooltipTrigger asChild>
               <Button
                 aria-label={t("app.accessibility.layoutControls")}
+                className="text-secondary-foreground"
                 size="icon-sm"
                 type="button"
                 variant="ghost"
@@ -42,68 +43,70 @@ export function PanelVisibilityControls() {
                 <LayoutPanelLeft aria-hidden="true" className="size-4" />
               </Button>
             </TooltipTrigger>
-          </MenuTrigger>
-          <MenuContent>
-            <MenuGroup>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuGroup>
               <ResizablePanelControl panelId="workspace-sidebar">
                 {({ isCollapsed }) => (
-                  <MenuItem
-                    icon={
-                      isCollapsed ? (
-                        <PanelLeftDashed aria-hidden="true" className="size-3" />
-                      ) : (
-                        <PanelLeft aria-hidden="true" className="size-3" />
-                      )
-                    }
-                    onSelect={(event) => event.preventDefault()}
-                  >
+                  <DropdownMenuItem onSelect={(event) => event.preventDefault()}>
+                    {isCollapsed ? (
+                      <PanelLeftDashed aria-hidden="true" className="size-3" />
+                    ) : (
+                      <PanelLeft aria-hidden="true" className="size-3" />
+                    )}
                     {t("app.labels.leftPanel")}
-                  </MenuItem>
+                  </DropdownMenuItem>
                 )}
               </ResizablePanelControl>
-              <ResizablePanelControl panelId="editor-stage-timeline">
-                {({ isCollapsed }) => (
-                  <MenuItem
-                    icon={
-                      isCollapsed ? (
-                        <PanelLeftDashed aria-hidden="true" className="size-3" />
-                      ) : (
-                        <PanelLeft aria-hidden="true" className="size-3" />
-                      )
-                    }
+              <ResizablePanelControl panelId="editor-stage-audio">
+                {({ isAvailable, isCollapsed, isDisabled }) => (
+                  <DropdownMenuItem
+                    disabled={!isAvailable || isDisabled}
                     onSelect={(event) => event.preventDefault()}
                   >
+                    {isCollapsed ? (
+                      <PanelBottomDashed aria-hidden="true" className="size-3" />
+                    ) : (
+                      <PanelBottom aria-hidden="true" className="size-3" />
+                    )}
                     {t("app.labels.bottomPanel")}
-                  </MenuItem>
+                  </DropdownMenuItem>
                 )}
               </ResizablePanelControl>
-            </MenuGroup>
-            <MenuSeparator />
-            <MenuGroup>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
               <ResizablePanelControl
                 mode="reset"
                 panelId={["workspace-sidebar", "editor-stage-timeline"]}
               >
-                {({ isExpanded }) => (
-                  <MenuItem
-                    disabled={isExpanded}
-                    icon={<RotateCcw aria-hidden="true" className="size-3" />}
+                {({ isDisabled }) => (
+                  <DropdownMenuItem
+                    disabled={isDisabled}
                     onSelect={(event) => event.preventDefault()}
                   >
+                    <RotateCcw aria-hidden="true" className="size-3" />
                     {t("app.actions.resetLayout")}
-                  </MenuItem>
+                  </DropdownMenuItem>
                 )}
               </ResizablePanelControl>
-            </MenuGroup>
-          </MenuContent>
-        </Menu>
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <TooltipContent>{t("app.tooltips.customizeLayout")}</TooltipContent>
       </Tooltip>
       <Tooltip preserveOnTrigger>
         <ResizablePanelControl panelId="workspace-sidebar">
           {({ isCollapsed }) => (
             <TooltipTrigger asChild>
-              <Button size="icon-sm" variant="ghost">
+              <Button
+                aria-label={t("app.tooltips.togglePanel", {
+                  panel: t("app.labels.leftPanel"),
+                })}
+                className="size-7 p-0 text-secondary-foreground"
+                size="icon-sm"
+                variant="ghost"
+              >
                 {isCollapsed ? (
                   <PanelLeftDashed aria-hidden="true" />
                 ) : (
@@ -119,10 +122,18 @@ export function PanelVisibilityControls() {
       </Tooltip>
 
       <Tooltip preserveOnTrigger>
-        <ResizablePanelControl panelId="editor-stage-timeline">
-          {({ isCollapsed }) => (
+        <ResizablePanelControl panelId="editor-stage-audio">
+          {({ isAvailable, isCollapsed, isDisabled }) => (
             <TooltipTrigger asChild>
-              <Button size="icon-sm" variant="ghost">
+              <Button
+                aria-label={t("app.tooltips.togglePanel", {
+                  panel: t("app.labels.bottomPanel"),
+                })}
+                className="size-7 p-0 text-secondary-foreground"
+                disabled={!isAvailable || isDisabled}
+                size="icon-sm"
+                variant="ghost"
+              >
                 {isCollapsed ? (
                   <PanelBottomDashed aria-hidden="true" />
                 ) : (

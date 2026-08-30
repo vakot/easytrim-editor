@@ -45,7 +45,7 @@ export const AudioTrackRow = memo(function AudioTrackRow({
       data-slot="audio-track-row"
     >
       <Card
-        className="relative flex flex-row items-center gap-2 bg-transparent p-1 pr-2 ring-transparent transition-[background-color,box-shadow] duration-150 data-[controls-visible=true]:bg-card data-[controls-visible=true]:ring-foreground/10"
+        className="relative flex flex-row items-center gap-2 bg-transparent p-1 pr-2 ring-transparent transition-[background-color,box-shadow] duration-150 ring-inset data-[controls-visible=true]:bg-card data-[controls-visible=true]:ring-foreground/10"
         data-controls-visible={controlsVisible}
         onBlurCapture={(event) => {
           if (!event.currentTarget.contains(event.relatedTarget)) setControlsVisible(false);

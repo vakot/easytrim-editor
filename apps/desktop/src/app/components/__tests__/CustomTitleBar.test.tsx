@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -7,8 +7,8 @@ import { AppUpdatesContext } from "@/app/contexts/app-updates-context";
 import { store } from "@/app/store/store";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 
-import { ContextMenus } from "../context-menus";
 import { CustomTitleBar } from "../CustomTitleBar";
+import { MenuBar } from "../menu-bar";
 
 const windowActions = vi.hoisted(() => ({
   closeWindow: vi.fn(() => Promise.resolve()),
@@ -35,13 +35,17 @@ describe("CustomTitleBar", () => {
               installUpdate: vi.fn(),
             }}
           >
-            <CustomTitleBar menuControls={<ContextMenus />} />
+            <CustomTitleBar menuControls={<MenuBar />} />
           </AppUpdatesContext.Provider>
         </ThemeProvider>
       </Provider>,
     );
 
-    await user.click(screen.getByRole("button", { name: "File" }));
+    await user.click(
+      within(screen.getByRole("menubar", { name: "Application menus" })).getByRole("menuitem", {
+        name: "File",
+      }),
+    );
 
     expect(screen.getByRole("menuitem", { name: /Open File/ })).toBeInTheDocument();
   });
@@ -60,13 +64,17 @@ describe("CustomTitleBar", () => {
               installUpdate: vi.fn(),
             }}
           >
-            <CustomTitleBar menuControls={<ContextMenus />} />
+            <CustomTitleBar menuControls={<MenuBar />} />
           </AppUpdatesContext.Provider>
         </ThemeProvider>
       </Provider>,
     );
 
-    await user.click(screen.getByRole("button", { name: "File" }));
+    await user.click(
+      within(screen.getByRole("menubar", { name: "Application menus" })).getByRole("menuitem", {
+        name: "File",
+      }),
+    );
     fireEvent.doubleClick(screen.getByRole("menuitem", { name: /Open File/ }));
     expect(windowActions.toggleWindowMaximize).not.toHaveBeenCalled();
     menuRender.unmount();
@@ -83,17 +91,21 @@ describe("CustomTitleBar", () => {
               installUpdate: vi.fn(),
             }}
           >
-            <CustomTitleBar menuControls={<ContextMenus />} />
+            <CustomTitleBar menuControls={<MenuBar />} />
           </AppUpdatesContext.Provider>
         </ThemeProvider>
       </Provider>,
     );
-    await user.click(screen.getByRole("button", { name: "View" }));
+    await user.click(
+      within(screen.getByRole("menubar", { name: "Application menus" })).getByRole("menuitem", {
+        name: "View",
+      }),
+    );
     const themeItem = screen.getByText("Theme").closest<HTMLElement>('[role="menuitem"]');
     expect(themeItem).not.toBeNull();
     themeItem?.focus();
     await user.keyboard("{ArrowRight}");
-    fireEvent.doubleClick(screen.getByRole("menuitem", { name: "System" }));
+    fireEvent.doubleClick(screen.getByRole("menuitemradio", { name: "System" }));
     expect(windowActions.toggleWindowMaximize).not.toHaveBeenCalled();
   });
 

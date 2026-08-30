@@ -31,7 +31,6 @@ export const sk = {
       restart: "Reštartovať aplikáciu",
       restore: "Obnoviť",
       update: "Aktualizovať",
-      updateTo: "Aktualizovať na v{{version}}",
     },
     labels: {
       bottomPanel: "Spodný panel",
@@ -159,6 +158,7 @@ export const sk = {
         container: "Kontajner",
         duration: "Trvanie",
         fileSize: "Veľkosť súboru",
+        filename: "Názov súboru",
         frameRate: "Snímková frekvencia",
         resolution: "Rozlíšenie",
         videoCodec: "Video kodek",

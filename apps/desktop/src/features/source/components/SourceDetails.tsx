@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Separator } from "@/components/ui/separator";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
-import { selectSourceMedia } from "@/app/store/slices/source-slice";
+import { selectSourceMedia, selectSourceSelection } from "@/app/store/slices/source-slice";
 
 import {
   formatBitrate,
@@ -15,11 +15,13 @@ import {
 
 export function SourceDetails() {
   const media = useAppSelector(selectSourceMedia);
+  const source = useAppSelector(selectSourceSelection);
   const { t } = useTranslation();
   const noSource = t("source.messages.noSource");
   const frameRate = media?.video.averageFrameRate ?? media?.video.realFrameRate;
   const unknown = media ? t("common.status.unknown") : noSource;
   const metadata = [
+    [t("source.labels.metadata.filename"), source ? source.displayName : noSource],
     [
       t("source.labels.metadata.container"),
       media ? (media.formatLongName ?? media.formatName) : noSource,
@@ -56,12 +58,15 @@ export function SourceDetails() {
   ] as const;
 
   return (
-    <dl aria-label={t("source.accessibility.metadata")} className="grid">
+    <dl aria-label={t("source.accessibility.metadata")}>
       {metadata.map(([label, value], index) => (
         <Fragment key={label}>
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-3 py-2">
-            <dt className="text-xs text-muted-foreground">{label}</dt>
-            <dd className="max-w-40 truncate text-right text-xs font-medium text-foreground">
+          <div className="flex w-full items-baseline justify-between gap-3 py-2">
+            <dt className="shrink-0 text-xs text-muted-foreground">{label}</dt>
+            <dd
+              className="min-w-0 flex-1 truncate text-right text-xs font-medium text-foreground"
+              title={value}
+            >
               {value}
             </dd>
           </div>

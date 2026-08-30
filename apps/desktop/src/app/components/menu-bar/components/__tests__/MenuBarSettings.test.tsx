@@ -1,8 +1,9 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
+import { Menubar } from "@/components/ui/menubar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { DEFAULT_PREFERENCES } from "@/app/preferences";
@@ -10,34 +11,29 @@ import { sourceSelected } from "@/app/store/actions/source-actions";
 import { selectMergeAudio } from "@/app/store/slices/audio-slice";
 import { createAppStore } from "@/app/store/store";
 
-import { ContextMenuSettings } from "../ContextMenuSettings";
-
-const navigation = {
-  open: true,
-  onOpenChange: vi.fn(),
-  onTriggerPointerEnter: vi.fn(),
-  onTriggerPointerLeave: vi.fn(),
-};
+import { MenuBarSettings } from "../MenuBarSettings";
 
 function renderSettings() {
   const store = createAppStore();
   render(
     <Provider store={store}>
       <TooltipProvider delayDuration={0}>
-        <ContextMenuSettings navigation={navigation} />
+        <Menubar value="settings">
+          <MenuBarSettings />
+        </Menubar>
       </TooltipProvider>
     </Provider>,
   );
   return store;
 }
 
-describe("ContextMenuSettings Redux integration", () => {
+describe("MenuBarSettings Redux integration", () => {
   it("dispatches preference changes through Redux", async () => {
     const user = userEvent.setup();
     const store = renderSettings();
 
-    const loopRow = screen.getByRole("menuitem", { name: "Loop" });
-    await user.click(within(loopRow).getByRole("switch"));
+    const loopItem = screen.getByRole("menuitemcheckbox", { name: "Loop" });
+    await user.click(loopItem);
 
     expect(store.getState().preferences.loopPlaybackEnabledDefault).toBe(false);
   });
@@ -45,13 +41,13 @@ describe("ContextMenuSettings Redux integration", () => {
   it("shows queue auto start enabled by default and updates its preference", async () => {
     const user = userEvent.setup();
     const store = renderSettings();
-    const autoStartQueueSwitch = within(
-      screen.getByRole("menuitem", { name: "Auto-start Queue" }),
-    ).getByRole("switch");
+    const autoStartQueueItem = screen.getByRole("menuitemcheckbox", {
+      name: "Auto-start Queue",
+    });
 
-    expect(autoStartQueueSwitch).toBeChecked();
+    expect(autoStartQueueItem).toBeChecked();
 
-    await user.click(autoStartQueueSwitch);
+    await user.click(autoStartQueueItem);
 
     expect(store.getState().preferences.autoStartQueueEnabled).toBe(false);
   });
@@ -59,12 +55,12 @@ describe("ContextMenuSettings Redux integration", () => {
   it("keeps an open preference tooltip visible and updates its label after toggling", async () => {
     const user = userEvent.setup();
     renderSettings();
-    const loopRow = screen.getByRole("menuitem", { name: "Loop" });
+    const loopItem = screen.getByRole("menuitemcheckbox", { name: "Loop" });
 
-    await user.hover(loopRow);
+    await user.hover(loopItem);
     expect(await screen.findByRole("tooltip")).toHaveTextContent("Enabled by default");
 
-    await user.click(within(loopRow).getByRole("switch"));
+    await user.click(loopItem);
 
     expect(screen.getByRole("tooltip")).toHaveTextContent("Disabled by default");
   });
@@ -72,14 +68,13 @@ describe("ContextMenuSettings Redux integration", () => {
   it("allows a preference tooltip to close after the trigger interaction finishes", async () => {
     const user = userEvent.setup();
     renderSettings();
-    const loopRow = screen.getByRole("menuitem", { name: "Loop" });
-    const loopSwitch = within(loopRow).getByRole("switch");
+    const loopItem = screen.getByRole("menuitemcheckbox", { name: "Loop" });
 
-    await user.hover(loopRow);
+    await user.hover(loopItem);
     expect(await screen.findByRole("tooltip")).toHaveTextContent("Enabled by default");
 
-    await user.click(loopSwitch);
-    fireEvent.blur(loopRow, { relatedTarget: loopSwitch });
+    await user.click(loopItem);
+    fireEvent.blur(loopItem);
 
     expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
   });
@@ -88,8 +83,8 @@ describe("ContextMenuSettings Redux integration", () => {
     const user = userEvent.setup();
     const store = renderSettings();
 
-    const loopSwitch = within(screen.getByRole("menuitem", { name: "Loop" })).getByRole("switch");
-    await user.click(loopSwitch);
+    const loopItem = screen.getByRole("menuitemcheckbox", { name: "Loop" });
+    await user.click(loopItem);
     expect(store.getState().preferences.loopPlaybackEnabledDefault).toBe(false);
     expect(store.getState().editorTools.loopPlaybackEnabled).toBe(true);
     await user.click(screen.getByRole("menuitem", { name: "Reset to default" }));
@@ -113,11 +108,9 @@ describe("ContextMenuSettings Redux integration", () => {
 
     expect(selectMergeAudio(store.getState())).toBe(true);
 
-    const mergeSwitch = within(screen.getByRole("menuitem", { name: "Merge audio" })).getByRole(
-      "switch",
-    );
+    const mergeItem = screen.getByRole("menuitemcheckbox", { name: "Merge audio" });
 
-    await user.click(mergeSwitch);
+    await user.click(mergeItem);
 
     expect(store.getState().preferences.mergeAudioEnabledDefault).toBe(true);
     expect(selectMergeAudio(store.getState())).toBe(true);

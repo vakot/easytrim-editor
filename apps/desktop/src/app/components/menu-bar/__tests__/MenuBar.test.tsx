@@ -19,7 +19,7 @@ import { getCurrentVersion } from "@/lib/app-version.utils";
 import { openExternalUrl } from "@/lib/open-external-url.utils";
 import type { QueueFinishAction } from "@/lib/tauri/queue.types";
 
-import { ContextMenus as AppContextMenus } from "../ContextMenus";
+import { MenuBar as AppMenuBar } from "../MenuBar";
 
 const menuState = vi.hoisted(() => ({
   dispatch: vi.fn(),
@@ -68,6 +68,12 @@ function render(ui: ReactElement) {
   );
 }
 
+function getMenuTrigger(name: string) {
+  return within(screen.getByRole("menubar", { name: "Application menus" })).getByRole("menuitem", {
+    name,
+  });
+}
+
 vi.mock("@/app/store/redux-hooks", () => ({
   useAppDispatch: () => menuState.dispatch,
   useAppSelector: (selector: (state: unknown) => unknown) =>
@@ -102,7 +108,7 @@ vi.mock("@/lib/open-external-url.utils", () => ({
   openExternalUrl: vi.fn(),
 }));
 
-describe("ContextMenus", () => {
+describe("MenuBarTest", () => {
   const currentVersion = getCurrentVersion();
   const versionMenuLabel = `Version ${currentVersion}`;
 
@@ -192,7 +198,7 @@ describe("ContextMenus", () => {
     });
   }
 
-  function ContextMenus(overrides: MenuTestOverrides = {}) {
+  function MenuBarTest(overrides: MenuTestOverrides = {}) {
     const [, forceUpdate] = useState(0);
     const initialized = useRef(false);
     if (!initialized.current) {
@@ -201,7 +207,7 @@ describe("ContextMenus", () => {
     }
     return (
       <ThemeProvider>
-        <AppContextMenus />
+        <AppMenuBar />
       </ThemeProvider>
     );
   }
@@ -218,7 +224,7 @@ describe("ContextMenus", () => {
             installUpdate: vi.fn(),
           }}
         >
-          <ContextMenus {...overrides} />
+          <MenuBarTest {...overrides} />
         </AppUpdatesContext.Provider>
       </TooltipProvider>,
     );
@@ -227,7 +233,7 @@ describe("ContextMenus", () => {
   it("places Queue before Settings", () => {
     renderMenus();
     const menuButtons = screen
-      .getByRole("navigation", { name: "Application menus" })
+      .getByRole("menubar", { name: "Application menus" })
       .querySelectorAll("button");
 
     const labels = [...menuButtons].map((button) => button.textContent);
@@ -241,7 +247,7 @@ describe("ContextMenus", () => {
       preferences: { ...DEFAULT_PREFERENCES, autoStartQueueEnabled: false },
     });
 
-    await user.click(screen.getByRole("button", { name: "Queue" }));
+    await user.click(getMenuTrigger("Queue"));
     const startItem = screen.getByRole("menuitem", { name: /Start queue/ });
     expect(startItem).toHaveAttribute("aria-keyshortcuts", "Enter");
     expect(screen.getAllByRole("separator")).toHaveLength(2);
@@ -254,7 +260,7 @@ describe("ContextMenus", () => {
     const user = userEvent.setup();
     renderMenus({ hasQueuedItems: true, hasActiveItem: true });
 
-    await user.click(screen.getByRole("button", { name: "Queue" }));
+    await user.click(getMenuTrigger("Queue"));
     expect(screen.getByRole("menuitem", { name: "Skip" })).toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: "Cancel" })).toBeInTheDocument();
 
@@ -264,7 +270,7 @@ describe("ContextMenus", () => {
     await user.click(screen.getByRole("button", { name: "Back" }));
     expect(screen.queryByRole("heading", { name: "Cancel export queue?" })).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Queue" }));
+    await user.click(getMenuTrigger("Queue"));
     await user.click(screen.getByRole("menuitem", { name: "Cancel" }));
     await user.click(screen.getByRole("button", { name: "Cancel" }));
     expect(menuState.dispatch).toHaveBeenCalledWith(expect.any(Function));
@@ -276,11 +282,11 @@ describe("ContextMenus", () => {
       availableQueueFinishActions: ["exit", "nothing"],
     });
 
-    await user.click(screen.getByRole("button", { name: "Queue" }));
+    await user.click(getMenuTrigger("Queue"));
     const finishItem = screen.getByRole("menuitem", { name: /On queue finished/ });
     finishItem.focus();
     await user.keyboard("{ArrowRight}");
-    await user.click(screen.getByRole("menuitem", { name: "Exit" }));
+    await user.click(screen.getByRole("menuitemradio", { name: "Exit" }));
     expect(menuState.dispatch).toHaveBeenCalledWith(
       expect.objectContaining({ type: "export/queueFinishActionChanged", payload: "exit" }),
     );
@@ -291,12 +297,12 @@ describe("ContextMenus", () => {
     render(
       <TooltipProvider>
         <ThemeProvider>
-          <ContextMenus canExport canSave isChoosingSource={false} />
+          <MenuBarTest canExport canSave isChoosingSource={false} />
         </ThemeProvider>
       </TooltipProvider>,
     );
 
-    await user.click(screen.getByRole("button", { name: "Help" }));
+    await user.click(getMenuTrigger("Help"));
     expect(screen.getByRole("menuitem", { name: "Changelog" })).toHaveTextContent("Changelog");
     expect(screen.getByRole("menuitem", { name: "Check for Updates…" })).toHaveTextContent(
       "Check for Updates…",
@@ -334,11 +340,11 @@ describe("ContextMenus", () => {
     ).toBeNull();
 
     await user.click(screen.getByRole("menuitem", { name: "Changelog" }));
-    await user.click(screen.getByRole("button", { name: "Help" }));
+    await user.click(getMenuTrigger("Help"));
     await user.click(screen.getByRole("menuitem", { name: "Project Page" }));
-    await user.click(screen.getByRole("button", { name: "Help" }));
+    await user.click(getMenuTrigger("Help"));
     await user.click(screen.getByRole("menuitem", { name: "Support the Project" }));
-    await user.click(screen.getByRole("button", { name: "Help" }));
+    await user.click(getMenuTrigger("Help"));
     await user.click(screen.getByRole("menuitem", { name: versionMenuLabel }));
 
     expect(vi.mocked(openExternalUrl).mock.calls).toEqual([
@@ -363,48 +369,47 @@ describe("ContextMenus", () => {
               installUpdate: vi.fn(),
             }}
           >
-            <ContextMenus canExport canSave isChoosingSource={false} />
+            <MenuBarTest canExport canSave isChoosingSource={false} />
           </AppUpdatesContext.Provider>
         </ThemeProvider>
       </TooltipProvider>,
     );
 
-    await user.click(screen.getByRole("button", { name: "Help" }));
+    await user.click(getMenuTrigger("Help"));
     const updateItem = screen.getByRole("menuitem", { name: "Up to Date" });
     expect(updateItem).toBeInTheDocument();
     expect(updateItem.querySelector("svg")).not.toBeNull();
   });
 
-  it("shows a switch row for every configurable preference", async () => {
+  it("shows a checkbox menu item for every configurable preference", async () => {
     const user = userEvent.setup();
     render(
       <TooltipProvider>
         <ThemeProvider>
-          <ContextMenus canExport canSave isChoosingSource={false} />
+          <MenuBarTest canExport canSave isChoosingSource={false} />
         </ThemeProvider>
       </TooltipProvider>,
     );
 
-    await user.click(screen.getByRole("button", { name: "Settings" }));
+    await user.click(getMenuTrigger("Settings"));
     for (const label of ["Snap", "Loop", "Follow segment", "Auto-start Queue", "Merge audio"]) {
-      const row = screen.getByRole("menuitem", { name: label });
-      expect(within(row).getByRole("switch")).toBeInTheDocument();
+      expect(screen.getByRole("menuitemcheckbox", { name: label })).toBeInTheDocument();
     }
     const settingsMenu = screen.getAllByRole("menu").at(-1);
     expect(settingsMenu).toBeDefined();
     expect(within(settingsMenu!).getAllByRole("separator")).toHaveLength(4);
     expect(screen.queryByText("Timeline tools", { exact: true })).not.toBeInTheDocument();
     expect(screen.queryByText("Audio tools", { exact: true })).not.toBeInTheDocument();
-    expect(screen.getByRole("menuitem", { name: "Snap" })).toContainElement(
+    expect(screen.getByRole("menuitemcheckbox", { name: "Snap" })).toContainElement(
       settingsMenu!.querySelector(".lucide-magnet"),
     );
-    expect(screen.getByRole("menuitem", { name: "Loop" })).toContainElement(
+    expect(screen.getByRole("menuitemcheckbox", { name: "Loop" })).toContainElement(
       settingsMenu!.querySelector(".lucide-repeat"),
     );
-    expect(screen.getByRole("menuitem", { name: "Follow segment" })).toContainElement(
+    expect(screen.getByRole("menuitemcheckbox", { name: "Follow segment" })).toContainElement(
       settingsMenu!.querySelector(".lucide-between-vertical-start"),
     );
-    expect(screen.getByRole("menuitem", { name: "Auto-start Queue" })).toContainElement(
+    expect(screen.getByRole("menuitemcheckbox", { name: "Auto-start Queue" })).toContainElement(
       settingsMenu!.querySelector(".lucide-play"),
     );
   });
@@ -414,46 +419,45 @@ describe("ContextMenus", () => {
     render(
       <TooltipProvider>
         <ThemeProvider>
-          <ContextMenus canExport canSave isChoosingSource={false} />
+          <MenuBarTest canExport canSave isChoosingSource={false} />
         </ThemeProvider>
       </TooltipProvider>,
     );
 
-    await user.click(screen.getByRole("button", { name: "Settings" }));
-    const loopRow = screen.getByRole("menuitem", { name: "Loop" });
-    const loopSwitch = within(loopRow).getByRole("switch");
-    await user.click(loopSwitch);
-    expect(loopSwitch).not.toBeChecked();
+    await user.click(getMenuTrigger("Settings"));
+    const loopItem = screen.getByRole("menuitemcheckbox", { name: "Loop" });
+    await user.click(loopItem);
+    expect(loopItem).not.toBeChecked();
     await user.click(screen.getByRole("menuitem", { name: "Reset to default" }));
 
-    expect(loopSwitch).toBeChecked();
+    expect(loopItem).toBeChecked();
     expect(screen.getByRole("menuitem", { name: "Reset to default" })).toBeInTheDocument();
   });
 
-  it("shows the default state in preference switch tooltips", async () => {
+  it("shows the default state in preference item tooltips", async () => {
     const user = userEvent.setup();
     render(
       <TooltipProvider>
         <ThemeProvider>
-          <ContextMenus canExport canSave isChoosingSource={false} />
+          <MenuBarTest canExport canSave isChoosingSource={false} />
         </ThemeProvider>
       </TooltipProvider>,
     );
 
-    await user.click(screen.getByRole("button", { name: "Settings" }));
-    const loopRow = screen.getByRole("menuitem", { name: "Loop" });
-    await user.hover(loopRow);
+    await user.click(getMenuTrigger("Settings"));
+    const loopItem = screen.getByRole("menuitemcheckbox", { name: "Loop" });
+    await user.hover(loopItem);
     await waitFor(() => {
       expect(screen.getByRole("tooltip")).toHaveTextContent("Enabled by default");
     });
   });
 
-  it("shows disabled by default for disabled preference switches", async () => {
+  it("shows disabled by default for disabled preference items", async () => {
     const user = userEvent.setup();
     render(
       <TooltipProvider>
         <ThemeProvider>
-          <ContextMenus
+          <MenuBarTest
             canExport
             canSave
             isChoosingSource={false}
@@ -470,9 +474,9 @@ describe("ContextMenus", () => {
       </TooltipProvider>,
     );
 
-    await user.click(screen.getByRole("button", { name: "Settings" }));
-    const mergeRow = screen.getByRole("menuitem", { name: "Merge audio" });
-    await user.hover(mergeRow);
+    await user.click(getMenuTrigger("Settings"));
+    const mergeItem = screen.getByRole("menuitemcheckbox", { name: "Merge audio" });
+    await user.hover(mergeItem);
     await waitFor(() => {
       expect(screen.getByRole("tooltip")).toHaveTextContent("Disabled by default");
     });
@@ -492,13 +496,13 @@ describe("ContextMenus", () => {
               installUpdate: vi.fn(),
             }}
           >
-            <ContextMenus canExport canSave isChoosingSource={false} />
+            <MenuBarTest canExport canSave isChoosingSource={false} />
           </AppUpdatesContext.Provider>
         </ThemeProvider>
       </TooltipProvider>,
     );
 
-    await user.click(screen.getByRole("button", { name: "Help" }));
+    await user.click(getMenuTrigger("Help"));
     const updateItem = screen.getByRole("menuitem", { name: "Check for Updates…" });
     expect(updateItem).toBeInTheDocument();
     expect(updateItem.querySelector("svg")).not.toBeNull();
@@ -509,13 +513,13 @@ describe("ContextMenus", () => {
     render(
       <TooltipProvider>
         <ThemeProvider>
-          <ContextMenus canExport canSave hasSource isChoosingSource={false} />
+          <MenuBarTest canExport canSave hasSource isChoosingSource={false} />
         </ThemeProvider>
       </TooltipProvider>,
     );
 
-    const fileButton = screen.getByRole("button", { name: "File" });
-    expect(fileButton).toHaveAttribute("data-slot", "menu-trigger");
+    const fileButton = getMenuTrigger("File");
+    expect(fileButton).toHaveAttribute("data-slot", "menubar-trigger");
     expect(fileButton).toHaveAttribute("data-size", "xs");
     expect(fileButton).toHaveClass("h-6");
 
@@ -524,7 +528,7 @@ describe("ContextMenus", () => {
 
     const openFileItem = screen.getByRole("menuitem", { name: /Open File/ });
     expect(openFileItem).toHaveTextContent("Ctrl+O");
-    expect(openFileItem).toHaveClass("min-w-48");
+    expect(openFileItem).toHaveClass("min-w-36");
     await user.click(openFileItem);
     expect(screen.queryByRole("menuitem", { name: /Open File/ })).not.toBeInTheDocument();
 
@@ -540,61 +544,63 @@ describe("ContextMenus", () => {
     render(
       <TooltipProvider>
         <ThemeProvider>
-          <ContextMenus canExport canSave isChoosingSource={false} />
+          <MenuBarTest canExport canSave isChoosingSource={false} />
         </ThemeProvider>
       </TooltipProvider>,
     );
 
-    const viewButton = screen.getByRole("button", { name: "View" });
+    const viewButton = getMenuTrigger("View");
     await user.click(viewButton);
     const themeItem = screen.getByText("Theme").closest<HTMLElement>('[role="menuitem"]');
     expect(themeItem).not.toBeNull();
-    expect(themeItem).toHaveClass("min-w-48");
+    expect(themeItem).toHaveClass("min-w-36");
     themeItem?.focus();
     await user.keyboard("{ArrowRight}");
 
     for (const label of ["System", "Light", "Dark"]) {
-      expect(screen.getByRole("menuitem", { name: label }).querySelector("svg")).not.toBeNull();
+      expect(
+        screen.getByRole("menuitemradio", { name: label }).querySelector("svg"),
+      ).not.toBeNull();
     }
-    expect(screen.getByRole("menuitem", { name: "System" })).toHaveAttribute(
-      "data-selected",
+    expect(screen.getByRole("menuitemradio", { name: "System" })).toHaveAttribute(
+      "aria-checked",
       "true",
     );
-    expect(screen.getByRole("menuitem", { name: "Light" })).toHaveAttribute(
-      "data-selected",
+    expect(screen.getByRole("menuitemradio", { name: "Light" })).toHaveAttribute(
+      "aria-checked",
       "false",
     );
-    expect(screen.getByRole("menuitem", { name: "Dark" })).toHaveAttribute(
-      "data-selected",
+    expect(screen.getByRole("menuitemradio", { name: "Dark" })).toHaveAttribute(
+      "aria-checked",
       "false",
     );
 
-    await user.click(screen.getByRole("menuitem", { name: "Light" }));
-    expect(screen.getByRole("menuitem", { name: "Light" })).toHaveAttribute(
-      "data-selected",
+    await user.click(screen.getByRole("menuitemradio", { name: "Light" }));
+    expect(screen.getByRole("menuitemradio", { name: "Light" })).toHaveAttribute(
+      "aria-checked",
       "true",
     );
     await user.keyboard("{Escape}");
     await user.keyboard("{Escape}");
-    const settingsButton = screen.getByRole("button", { name: "Settings" });
+    const settingsButton = getMenuTrigger("Settings");
     await user.click(settingsButton);
     const languageItem = screen.getByRole("menuitem", { name: /Language/ });
     expect(languageItem).not.toBeNull();
     languageItem?.focus();
     await user.keyboard("{ArrowRight}");
 
-    expect(screen.getByRole("menuitem", { name: /English/ })).toHaveTextContent("EN");
-    expect(screen.getByRole("menuitem", { name: /Slov/ })).toHaveTextContent("SK");
-    expect(screen.getByRole("menuitem", { name: /English/ })).toHaveAttribute(
-      "data-selected",
+    expect(screen.getByRole("menuitemradio", { name: /English/ })).toHaveTextContent("EN");
+    expect(screen.getByRole("menuitemradio", { name: /Slov/ })).toHaveTextContent("SK");
+    expect(screen.getByRole("menuitemradio", { name: /English/ })).toHaveAttribute(
+      "aria-checked",
       "true",
     );
-    expect(screen.getByRole("menuitem", { name: /Slov/ })).toHaveAttribute(
-      "data-selected",
+    expect(screen.getByRole("menuitemradio", { name: /Slov/ })).toHaveAttribute(
+      "aria-checked",
       "false",
     );
-    await user.click(screen.getByRole("menuitem", { name: /English/ }));
-    expect(screen.queryByRole("menuitem", { name: /English/ })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("menuitemradio", { name: /English/ }));
+    expect(screen.queryByRole("menuitemradio", { name: /English/ })).not.toBeInTheDocument();
   });
 
   it("shows hex values and accepts custom input as soon as it is valid", async () => {
@@ -602,7 +608,7 @@ describe("ContextMenus", () => {
     render(
       <TooltipProvider>
         <ThemeProvider>
-          <ContextMenus
+          <MenuBarTest
             canExport
             canSave
             customPrimaryColor="#123456"
@@ -613,7 +619,7 @@ describe("ContextMenus", () => {
       </TooltipProvider>,
     );
 
-    await user.click(screen.getByRole("button", { name: "View" }));
+    await user.click(getMenuTrigger("View"));
     const colorItem = screen.getByText("Color").closest<HTMLElement>('[role="menuitem"]');
     expect(colorItem).not.toBeNull();
     colorItem?.focus();
@@ -626,15 +632,15 @@ describe("ContextMenus", () => {
       ["Blue", "#4299E1"],
       ["Emerald", "#32A876"],
     ] as const) {
-      const item = screen.getByRole("menuitem", { name: new RegExp(name) });
+      const item = screen.getByRole("menuitemradio", { name: new RegExp(name) });
       expect(item).toHaveTextContent(hex);
       expect(item.querySelector('[aria-hidden="true"]')).not.toBeNull();
     }
     const customItem = screen.getByRole("menuitem", { name: /Custom/ });
     expect(customItem).toHaveTextContent("#123456");
     expect(customItem.querySelector('[aria-hidden="true"]')).not.toBeNull();
-    await user.click(screen.getByRole("menuitem", { name: /Amber/ }));
-    expect(screen.getByRole("menuitem", { name: /Amber/ })).toBeInTheDocument();
+    await user.click(screen.getByRole("menuitemradio", { name: /Amber/ }));
+    expect(screen.getByRole("menuitemradio", { name: /Amber/ })).toBeInTheDocument();
 
     await user.click(screen.getByRole("menuitem", { name: /Custom/ }));
     expect(document.documentElement).toHaveAttribute("data-primary-color", "#123456");
@@ -692,13 +698,13 @@ describe("ContextMenus", () => {
     render(
       <TooltipProvider>
         <ThemeProvider>
-          <ContextMenus canExport canSave isChoosingSource={false} />
+          <MenuBarTest canExport canSave isChoosingSource={false} />
         </ThemeProvider>
       </TooltipProvider>,
     );
 
-    const fileButton = screen.getByRole("button", { name: "File" });
-    const viewButton = screen.getByRole("button", { name: "View" });
+    const fileButton = getMenuTrigger("File");
+    const viewButton = getMenuTrigger("View");
 
     await user.click(fileButton);
     expect(screen.getByRole("menuitem", { name: /Open File/ })).toBeInTheDocument();
@@ -720,9 +726,9 @@ describe("ContextMenus", () => {
     const user = userEvent.setup();
     renderMenus();
 
-    await user.click(screen.getByRole("button", { name: "File" }));
+    await user.click(getMenuTrigger("File"));
     for (const menuName of ["View", "Queue", "Settings", "Help"]) {
-      await user.hover(screen.getByRole("button", { name: menuName }));
+      await user.hover(getMenuTrigger(menuName));
     }
 
     await waitFor(() => {
@@ -738,9 +744,9 @@ describe("ContextMenus", () => {
     const user = userEvent.setup();
     renderMenus();
 
-    const fileButton = screen.getByRole("button", { name: "File" });
-    const viewButton = screen.getByRole("button", { name: "View" });
-    const queueButton = screen.getByRole("button", { name: "Queue" });
+    const fileButton = getMenuTrigger("File");
+    const viewButton = getMenuTrigger("View");
+    const queueButton = getMenuTrigger("Queue");
 
     await user.click(fileButton);
     await user.hover(viewButton);
@@ -754,7 +760,7 @@ describe("ContextMenus", () => {
     const user = userEvent.setup();
     renderMenus();
 
-    const fileButton = screen.getByRole("button", { name: "File" });
+    const fileButton = getMenuTrigger("File");
     fileButton.focus();
     await user.keyboard("{Enter}");
     expect(screen.getByRole("menuitem", { name: /Open File/ })).toBeInTheDocument();
@@ -769,25 +775,29 @@ describe("ContextMenus", () => {
     render(
       <TooltipProvider>
         <ThemeProvider>
-          <ContextMenus canExport canSave isChoosingSource={false} />
+          <MenuBarTest canExport canSave isChoosingSource={false} />
         </ThemeProvider>
       </TooltipProvider>,
     );
 
-    await user.click(screen.getByRole("button", { name: "View" }));
+    await user.click(getMenuTrigger("View"));
     const themeItem = screen.getByRole("menuitem", { name: /Theme/ });
     const colorItem = screen.getByRole("menuitem", { name: /Color/ });
 
-    fireEvent.pointerMove(themeItem, { pointerType: "mouse" });
+    await user.hover(themeItem);
+    await waitFor(() => expect(screen.getAllByRole("menu")).toHaveLength(2));
     const themeSubmenu = screen.getAllByRole("menu").at(-1);
     expect(themeSubmenu).toBeDefined();
-    expect(within(themeSubmenu!).getByRole("menuitem", { name: "System" })).toBeInTheDocument();
+    expect(
+      within(themeSubmenu!).getByRole("menuitemradio", { name: "System" }),
+    ).toBeInTheDocument();
 
-    fireEvent.pointerMove(colorItem, { pointerType: "mouse" });
+    await user.hover(colorItem);
+    await waitFor(() => expect(screen.getAllByRole("menu")).toHaveLength(2));
     const colorSubmenu = screen.getAllByRole("menu").at(-1);
     expect(colorSubmenu).toBeDefined();
     expect(
-      within(colorSubmenu!).getByRole("menuitem", { name: /Amber#EFBF04/ }),
+      within(colorSubmenu!).getByRole("menuitemradio", { name: /Amber#EFBF04/ }),
     ).toBeInTheDocument();
     expect(
       within(colorSubmenu!).queryByRole("menuitem", { name: "System" }),

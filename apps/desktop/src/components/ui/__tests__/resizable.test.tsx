@@ -185,10 +185,12 @@ function ControlHarness({ mode }: { mode: "toggle" | "collapse" | "expand" | "re
       </ResizablePanelGroup>
 
       <ResizablePanelControl mode={mode} panelId={["open-panel", "collapsed-panel"]}>
-        {({ isCollapsed, isMixed }) => (
+        {({ isAvailable, isCollapsed, isDisabled, isMixed }) => (
           <button
             aria-label="Run control"
+            data-available={String(isAvailable)}
             data-collapsed={String(isCollapsed)}
+            data-disabled={String(isDisabled)}
             data-mixed={String(isMixed)}
           >
             Run control
@@ -198,6 +200,22 @@ function ControlHarness({ mode }: { mode: "toggle" | "collapse" | "expand" | "re
 
       <ResizablePanelControl panelId="collapsed-panel">
         {({ isCollapsed }) => <span data-testid="collapsed-state">{String(isCollapsed)}</span>}
+      </ResizablePanelControl>
+    </ResizablePanelContextProvider>
+  );
+}
+
+function UnavailableControl() {
+  return (
+    <ResizablePanelContextProvider>
+      <ResizablePanelControl panelId="missing-panel">
+        {({ isAvailable, isDisabled }) => (
+          <span
+            data-available={String(isAvailable)}
+            data-disabled={String(isDisabled)}
+            data-testid="unavailable-control"
+          />
+        )}
       </ResizablePanelControl>
     </ResizablePanelContextProvider>
   );
@@ -228,9 +246,24 @@ describe("ResizablePanelControl", () => {
       "false",
     );
     expect(screen.getByRole("button", { name: "Run control" })).toHaveAttribute(
+      "data-available",
+      "true",
+    );
+    expect(screen.getByRole("button", { name: "Run control" })).toHaveAttribute(
+      "data-disabled",
+      "false",
+    );
+    expect(screen.getByRole("button", { name: "Run control" })).toHaveAttribute(
       "data-mixed",
       "true",
     );
+  });
+
+  it("reports unavailable panels as disabled", () => {
+    render(<UnavailableControl />);
+
+    expect(screen.getByTestId("unavailable-control")).toHaveAttribute("data-available", "false");
+    expect(screen.getByTestId("unavailable-control")).toHaveAttribute("data-disabled", "true");
   });
 
   it("toggles each panel according to its own state", async () => {

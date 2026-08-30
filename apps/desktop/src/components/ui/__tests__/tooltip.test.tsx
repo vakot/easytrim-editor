@@ -4,7 +4,12 @@ import { useState } from "react";
 import { describe, expect, it } from "vitest";
 
 import { Button } from "../button";
-import { Menu, MenuContent, MenuItem, MenuTrigger } from "../menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../tooltip";
 
 function ToggleButtonTooltip({
@@ -37,19 +42,19 @@ function ToggleButtonTooltip({
 function MenuTriggerTooltip() {
   return (
     <TooltipProvider delayDuration={0}>
-      <Menu>
+      <DropdownMenu>
         <Tooltip>
           <TooltipTrigger asChild>
-            <MenuTrigger asChild>
+            <DropdownMenuTrigger asChild>
               <Button type="button">Open menu</Button>
-            </MenuTrigger>
+            </DropdownMenuTrigger>
           </TooltipTrigger>
           <TooltipContent>Menu controls</TooltipContent>
         </Tooltip>
-        <MenuContent>
-          <MenuItem>Menu item</MenuItem>
-        </MenuContent>
-      </Menu>
+        <DropdownMenuContent>
+          <DropdownMenuItem>Menu item</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </TooltipProvider>
   );
 }

@@ -1,4 +1,4 @@
-import { Monitor, Moon, Sun } from "lucide-react";
+import { Check, Monitor, Moon, Sun } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -6,15 +6,18 @@ import { Button } from "@/components/ui/button";
 import { ColorSample, SpectrumWheel } from "@/components/ui/color";
 import { Input } from "@/components/ui/input";
 import {
-  Menu,
-  MenuContent,
-  MenuGroup,
-  MenuItem,
-  MenuSub,
-  MenuSubContent,
-  MenuSubTrigger,
-  MenuTrigger,
-} from "@/components/ui/menu";
+  MenubarContent,
+  MenubarGroup,
+  MenubarIcon,
+  MenubarMenu,
+  MenubarRadioGroup,
+  MenubarRadioItem,
+  MenubarShortcut,
+  MenubarSub,
+  MenubarSubContent,
+  MenubarSubTrigger,
+  MenubarTrigger,
+} from "@/components/ui/menubar";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
@@ -32,29 +35,35 @@ import {
   PRIMARY_COLORS,
   type PrimaryColor,
   resolvePrimaryColor,
+  type ThemePreference,
 } from "@/app/theme/theme";
 import { useTheme } from "@/app/theme/useTheme";
 
-import type { MenuNavigation } from "../types";
+const themeIcons = {
+  system: <Monitor aria-hidden="true" />,
+  light: <Sun aria-hidden="true" />,
+  dark: <Moon aria-hidden="true" />,
+} as const;
 
-const themeIcons = { system: Monitor, light: Sun, dark: Moon } as const;
-
-interface ContextMenuViewProps {
-  navigation: MenuNavigation;
+interface MenuBarViewProps {
+  onClose: () => void;
 }
 
-export function ContextMenuView({ navigation }: ContextMenuViewProps) {
+export function MenuBarView({ onClose }: MenuBarViewProps) {
   const { t } = useTranslation();
   const { previewPrimaryColor } = useTheme();
   const dispatch = useAppDispatch();
+  const [previewColor, setPreviewColor] = useState<PrimaryColor | null>(null);
+
   const preference = useAppSelector(selectThemePreference);
   const primaryColor = useAppSelector(selectPrimaryColor);
   const primaryColorKey = useAppSelector(selectPrimaryColorKey);
   const customPrimaryColor = useAppSelector(selectCustomPrimaryColor);
-  const [previewColor, setPreviewColor] = useState<PrimaryColor | null>(null);
-  const CurrentThemeIcon = themeIcons[preference];
+
+  const currentThemeIcon = themeIcons[preference];
   const displayedPrimaryColor = previewColor ?? primaryColor;
   const displayedCustomColor = previewColor ?? customPrimaryColor;
+
   const colorLabels: Record<(typeof PRIMARY_COLORS)[number], string> = {
     amber: t("settings.options.colors.amber"),
     blue: t("settings.options.colors.blue"),
@@ -76,23 +85,12 @@ export function ContextMenuView({ navigation }: ContextMenuViewProps) {
 
   const closeMenu = () => {
     clearPreview();
-    navigation.onOpenChange(false);
+    onClose();
   };
 
   return (
-    <Menu
-      modal={false}
-      onOpenChange={(isOpen) => {
-        if (!isOpen) clearPreview();
-        navigation.onOpenChange(isOpen);
-      }}
-      open={navigation.open}
-    >
-      <MenuTrigger
-        asChild
-        onPointerEnter={navigation.onTriggerPointerEnter}
-        onPointerLeave={navigation.onTriggerPointerLeave}
-      >
+    <MenubarMenu value="view">
+      <MenubarTrigger asChild>
         <Button
           className="text-foreground/80 data-[state=open]:bg-accent data-[state=open]:text-foreground"
           size="xs"
@@ -101,96 +99,84 @@ export function ContextMenuView({ navigation }: ContextMenuViewProps) {
         >
           {t("app.labels.view")}
         </Button>
-      </MenuTrigger>
-      <MenuContent>
-        <MenuGroup>
-          <MenuSub>
-            <MenuSubTrigger
-              icon={<CurrentThemeIcon aria-label={themeLabels[preference]} className="size-3" />}
-            >
+      </MenubarTrigger>
+      <MenubarContent>
+        <MenubarGroup>
+          <MenubarSub>
+            <MenubarSubTrigger inset>
+              <MenubarIcon>{currentThemeIcon}</MenubarIcon>
               {t("settings.labels.theme")}
-            </MenuSubTrigger>
-            <MenuSubContent>
-              <MenuGroup>
-                {(["system", "light", "dark"] as const).map((value) => {
-                  const Icon = themeIcons[value];
-                  return (
-                    <MenuItem
-                      icon={<Icon aria-hidden="true" className="size-3" />}
-                      key={value}
-                      onSelect={(event) => {
-                        event.preventDefault();
-                        dispatch(themePreferenceChanged(value));
-                      }}
-                      selected={value === preference}
-                    >
-                      {themeLabels[value]}
-                    </MenuItem>
-                  );
-                })}
-              </MenuGroup>
-            </MenuSubContent>
-          </MenuSub>
-          <MenuSub>
-            <MenuSubTrigger
-              icon={<ColorSample color={resolvePrimaryColor(displayedPrimaryColor)} />}
-            >
-              {t("settings.labels.color")}
-            </MenuSubTrigger>
-            <MenuSubContent>
-              <MenuGroup>
-                {PRIMARY_COLORS.map((color) => (
-                  <MenuItem
-                    icon={
-                      <ColorSample
-                        color={resolvePrimaryColor(color)}
-                        selected={color === primaryColorKey}
-                      />
-                    }
-                    key={color}
-                    onSelect={(event) => {
-                      event.preventDefault();
-                      dispatch(primaryColorChanged(color));
-                    }}
-                    selected={color === primaryColorKey}
-                    suffix={
-                      <span className="font-mono">{resolvePrimaryColor(color).toUpperCase()}</span>
-                    }
-                  >
-                    {colorLabels[color]}
-                  </MenuItem>
+            </MenubarSubTrigger>
+            <MenubarSubContent>
+              <MenubarRadioGroup
+                onValueChange={(theme) =>
+                  dispatch(themePreferenceChanged(theme as ThemePreference))
+                }
+                value={preference}
+              >
+                {(["system", "light", "dark"] as const).map((theme) => (
+                  <MenubarRadioItem keepOpen key={theme} value={theme}>
+                    {themeLabels[theme]}
+                    <MenubarShortcut>{themeIcons[theme]}</MenubarShortcut>
+                  </MenubarRadioItem>
                 ))}
-                <MenuSub>
-                  <MenuSubTrigger
-                    icon={
-                      <ColorSample
-                        color={resolvePrimaryColor(displayedCustomColor)}
-                        selected={primaryColorKey === CUSTOM_PRIMARY_COLOR}
-                      />
-                    }
+              </MenubarRadioGroup>
+            </MenubarSubContent>
+          </MenubarSub>
+          <MenubarSub>
+            <MenubarSubTrigger inset>
+              <MenubarIcon>
+                <ColorSample color={resolvePrimaryColor(displayedPrimaryColor)} />
+              </MenubarIcon>
+              {t("settings.labels.color")}
+            </MenubarSubTrigger>
+            <MenubarSubContent>
+              <MenubarRadioGroup
+                onValueChange={(color) => dispatch(primaryColorChanged(color as PrimaryColor))}
+                value={primaryColor}
+              >
+                {PRIMARY_COLORS.map((color) => (
+                  <MenubarRadioItem inset keepOpen key={color} value={color}>
+                    {colorLabels[color]}
+                    <MenubarShortcut className="flex items-center gap-2">
+                      <span className="font-mono">{resolvePrimaryColor(color).toUpperCase()}</span>
+                      <ColorSample color={resolvePrimaryColor(color)} />
+                    </MenubarShortcut>
+                  </MenubarRadioItem>
+                ))}
+                <MenubarSub>
+                  <MenubarSubTrigger
+                    inset
                     onClick={() => {
                       setPreviewColor(null);
                       dispatch(primaryColorChanged(customPrimaryColor));
                     }}
-                    selected={primaryColorKey === CUSTOM_PRIMARY_COLOR}
-                    suffix={<span className="font-mono">{displayedCustomColor.toUpperCase()}</span>}
                   >
+                    {primaryColorKey === CUSTOM_PRIMARY_COLOR && (
+                      <MenubarIcon>
+                        <Check aria-hidden="true" />
+                      </MenubarIcon>
+                    )}
                     {t("settings.options.colors.custom")}
-                  </MenuSubTrigger>
-                  <MenuSubContent>
+                    <MenubarShortcut className="flex items-center gap-2">
+                      <span className="font-mono">{displayedCustomColor.toUpperCase()}</span>
+                      <ColorSample color={resolvePrimaryColor(displayedCustomColor)} />
+                    </MenubarShortcut>
+                  </MenubarSubTrigger>
+                  <MenubarSubContent>
                     <CustomColorPickerPanel
                       onClose={closeMenu}
                       onPreviewChange={setPreviewColor}
                       previewColor={previewColor}
                     />
-                  </MenuSubContent>
-                </MenuSub>
-              </MenuGroup>
-            </MenuSubContent>
-          </MenuSub>
-        </MenuGroup>
-      </MenuContent>
-    </Menu>
+                  </MenubarSubContent>
+                </MenubarSub>
+              </MenubarRadioGroup>
+            </MenubarSubContent>
+          </MenubarSub>
+        </MenubarGroup>
+      </MenubarContent>
+    </MenubarMenu>
   );
 }
 

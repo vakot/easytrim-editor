@@ -12,17 +12,22 @@ import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import {
-  Menu,
-  MenuContent,
-  MenuGroup,
-  MenuItem,
-  MenuSeparator,
-  MenuSub,
-  MenuSubContent,
-  MenuSubTrigger,
-  MenuTrigger,
-} from "@/components/ui/menu";
-import { Switch } from "@/components/ui/switch";
+  MenubarCheckboxItem,
+  MenubarContent,
+  MenubarGroup,
+  MenubarIcon,
+  MenubarItem,
+  MenubarMenu,
+  MenubarRadioGroup,
+  MenubarRadioItem,
+  MenubarSeparator,
+  MenubarShortcut,
+  MenubarSub,
+  MenubarSubContent,
+  MenubarSubTrigger,
+  MenubarTrigger,
+} from "@/components/ui/menubar";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import type { PreferenceKey } from "@/app/preferences";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
@@ -32,8 +37,6 @@ import {
   selectPreferences,
 } from "@/app/store/slices/preferences-slice";
 import { isSupportedLanguage, type SupportedLanguage } from "@/i18n/resources";
-
-import type { MenuNavigation } from "../types";
 
 const DEFAULT_PREFERENCE_KEYS = new Set<PreferenceKey>([
   "snapPlaybackEnabledDefault",
@@ -63,22 +66,25 @@ function PreferenceMenuItem({ children, icon, preferenceKey }: PreferenceMenuIte
       : t("common.status.disabled");
 
   return (
-    <MenuItem
-      icon={icon}
-      onSelect={(event) => {
-        event.preventDefault();
-        dispatch(preferenceChanged({ key: preferenceKey, enabled: !isEnabled }));
-      }}
-      suffix={<Switch checked={isEnabled} size="sm" />}
-      tooltip={tooltip}
-      tooltipProps={{ side: "right", preserveOnTrigger: true }}
-    >
-      {children}
-    </MenuItem>
+    <Tooltip preserveOnTrigger>
+      <TooltipTrigger asChild>
+        <MenubarCheckboxItem
+          checked={isEnabled}
+          keepOpen
+          onSelect={() => {
+            dispatch(preferenceChanged({ key: preferenceKey, enabled: !isEnabled }));
+          }}
+        >
+          <MenubarIcon side="right">{icon}</MenubarIcon>
+          {children}
+        </MenubarCheckboxItem>
+      </TooltipTrigger>
+      <TooltipContent side="right">{tooltip}</TooltipContent>
+    </Tooltip>
   );
 }
 
-export function ContextMenuSettings({ navigation }: { navigation: MenuNavigation }) {
+export function MenuBarSettings() {
   const { i18n, t } = useTranslation();
   const dispatch = useAppDispatch();
   const currentLanguage = isSupportedLanguage(i18n.resolvedLanguage) ? i18n.resolvedLanguage : "en";
@@ -92,12 +98,8 @@ export function ContextMenuSettings({ navigation }: { navigation: MenuNavigation
   };
 
   return (
-    <Menu modal={false} onOpenChange={navigation.onOpenChange} open={navigation.open}>
-      <MenuTrigger
-        asChild
-        onPointerEnter={navigation.onTriggerPointerEnter}
-        onPointerLeave={navigation.onTriggerPointerLeave}
-      >
+    <MenubarMenu value="settings">
+      <MenubarTrigger asChild>
         <Button
           className="text-foreground/80 data-[state=open]:bg-accent data-[state=open]:text-foreground"
           size="xs"
@@ -106,18 +108,18 @@ export function ContextMenuSettings({ navigation }: { navigation: MenuNavigation
         >
           {t("settings.labels.title")}
         </Button>
-      </MenuTrigger>
-      <MenuContent>
-        <MenuGroup>
+      </MenubarTrigger>
+      <MenubarContent>
+        <MenubarGroup>
           <PreferenceMenuItem
             icon={<Play aria-hidden="true" className="size-3" />}
             preferenceKey="autoStartQueueEnabled"
           >
             {t("settings.labels.autoStartQueue")}
           </PreferenceMenuItem>
-        </MenuGroup>
-        <MenuSeparator />
-        <MenuGroup>
+        </MenubarGroup>
+        <MenubarSeparator />
+        <MenubarGroup>
           <PreferenceMenuItem
             icon={<Magnet aria-hidden="true" className="size-3" />}
             preferenceKey="snapPlaybackEnabledDefault"
@@ -136,54 +138,53 @@ export function ContextMenuSettings({ navigation }: { navigation: MenuNavigation
           >
             {t("settings.labels.followSegment")}
           </PreferenceMenuItem>
-        </MenuGroup>
-        <MenuSeparator />
-        <MenuGroup>
+        </MenubarGroup>
+        <MenubarSeparator />
+        <MenubarGroup>
           <PreferenceMenuItem
             icon={<Merge aria-hidden="true" className="size-3" />}
             preferenceKey="mergeAudioEnabledDefault"
           >
             {t("settings.labels.mergeAudio")}
           </PreferenceMenuItem>
-        </MenuGroup>
-        <MenuSeparator />
-        <MenuGroup>
-          <MenuItem
-            icon={<RotateCcw aria-hidden="true" className="size-3" />}
-            onSelect={(event) => {
-              event.preventDefault();
-              resetPreferences();
-            }}
-          >
+        </MenubarGroup>
+        <MenubarSeparator />
+        <MenubarGroup>
+          <MenubarItem inset keepOpen onSelect={() => resetPreferences()} variant="destructive">
+            <MenubarIcon>
+              <RotateCcw aria-hidden="true" />
+            </MenubarIcon>
             {t("settings.actions.reset")}
-          </MenuItem>
-        </MenuGroup>
-        <MenuSeparator />
-        <MenuGroup>
-          <MenuSub>
-            <MenuSubTrigger
-              icon={<Languages aria-hidden="true" className="size-3" />}
-              suffix={currentLanguage.toUpperCase()}
-            >
+          </MenubarItem>
+        </MenubarGroup>
+        <MenubarSeparator />
+        <MenubarGroup>
+          <MenubarSub>
+            <MenubarSubTrigger inset>
+              <MenubarIcon>
+                <Languages aria-hidden="true" />
+              </MenubarIcon>
               {t("settings.labels.language")}
-            </MenuSubTrigger>
-            <MenuSubContent>
-              <MenuGroup>
+              <MenubarShortcut>{currentLanguage.toUpperCase()}</MenubarShortcut>
+            </MenubarSubTrigger>
+            <MenubarSubContent>
+              <MenubarRadioGroup
+                onValueChange={(language) =>
+                  void i18n.changeLanguage(language as SupportedLanguage)
+                }
+                value={currentLanguage}
+              >
                 {(["en", "sk"] as const).map((language) => (
-                  <MenuItem
-                    key={language}
-                    onSelect={() => void i18n.changeLanguage(language as SupportedLanguage)}
-                    selected={language === currentLanguage}
-                    suffix={language.toUpperCase()}
-                  >
+                  <MenubarRadioItem inset key={language} value={language}>
                     {languageLabels[language]}
-                  </MenuItem>
+                    <MenubarShortcut>{language.toUpperCase()}</MenubarShortcut>
+                  </MenubarRadioItem>
                 ))}
-              </MenuGroup>
-            </MenuSubContent>
-          </MenuSub>
-        </MenuGroup>
-      </MenuContent>
-    </Menu>
+              </MenubarRadioGroup>
+            </MenubarSubContent>
+          </MenubarSub>
+        </MenubarGroup>
+      </MenubarContent>
+    </MenubarMenu>
   );
 }

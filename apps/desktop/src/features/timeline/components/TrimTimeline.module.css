@@ -167,7 +167,7 @@
   position: absolute;
   inset-block: 0;
   left: 50%;
-  width: 1.15rem;
+  width: 1rem;
   background: var(--primary);
   content: "";
   transition:

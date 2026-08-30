@@ -146,7 +146,9 @@ function ResizableHandle({
 }
 
 interface ResizablePanelControlState {
+  isAvailable: boolean;
   isCollapsed: boolean;
+  isDisabled: boolean;
   isExpanded: boolean;
   isMixed: boolean;
 }
@@ -202,9 +204,23 @@ function ResizablePanelControl({ children, mode = "toggle", panelId }: Resizable
   const isCollapsed = panelStates.size > 0 && collapsedPanelCount === panelStates.size;
   const isMixed = collapsedPanelCount > 0 && collapsedPanelCount < panelStates.size;
   const isExpanded = panelStates.size > 0 && collapsedPanelCount === 0;
+  const isAvailable = panelStates.size === panelIds.length;
+  const isReset =
+    isAvailable &&
+    Array.from(panelStates.values()).every(
+      (panelState) => panelState.isCollapsed === panelState.isDefaultCollapsed,
+    );
+
+  const isDisabled =
+    !isAvailable ||
+    (mode === "collapse" && isCollapsed) ||
+    (mode === "expand" && isExpanded) ||
+    (mode === "reset" && isReset);
 
   const child =
-    typeof children === "function" ? children({ isCollapsed, isMixed, isExpanded }) : children;
+    typeof children === "function"
+      ? children({ isAvailable, isCollapsed, isDisabled, isExpanded, isMixed })
+      : children;
 
   const handleClick = {
     collapse: handleCollapse,

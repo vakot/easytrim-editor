@@ -1,5 +1,7 @@
 import { useTranslation } from "react-i18next";
 
+import { Kbd } from "@/components/ui/kbd";
+
 import { KofiIcon } from "@/components/brand-icons";
 import { openExternalUrl } from "@/lib/open-external-url.utils";
 
@@ -51,7 +53,7 @@ export function VideoPreviewEmpty() {
   return (
     <section
       aria-label={t("preview.accessibility.empty")}
-      className={`${styles.preview} grid size-full min-h-0 place-items-center overflow-hidden bg-preview-surface px-6 py-8`}
+      className={`${styles.preview} grid size-full min-h-0 place-items-center overflow-hidden px-6 py-8`}
     >
       <div className="grid w-[clamp(10rem,28vw,18rem)] max-w-full justify-items-center gap-10">
         <img
@@ -88,9 +90,7 @@ export function VideoPreviewEmpty() {
                           {shortcut.separator ?? "+"}
                         </span>
                       ) : null}
-                      <kbd className="inline-flex min-w-6 items-center justify-center rounded border border-border bg-card px-1.5 py-0.5 font-mono text-xs font-medium text-card-foreground shadow-sm">
-                        {key}
-                      </kbd>
+                      <Kbd>{key}</Kbd>
                     </span>
                   ))}
                 </span>
