@@ -1,4 +1,5 @@
 import { ChevronLeft, ChevronRight, Trash, X } from "lucide-react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -12,10 +13,27 @@ import { cn } from "@/lib/class-names.utils";
 
 import { useImportQueue } from "../hooks/useImportQueue";
 
+import { DeleteSourceDialog } from "./DeleteSourceDialog";
+
 export function ImportQueue() {
   const { t } = useTranslation();
 
-  const { activeIndex, activeItem, items, next, prev } = useImportQueue();
+  const { activeIndex, activeItem, deleteSource, items, next, prev, skip } = useImportQueue();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletePending, setDeletePending] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const handleDeleteSource = async () => {
+    setDeletePending(true);
+    setDeleteError(null);
+    const error = await deleteSource();
+    setDeletePending(false);
+    if (error) {
+      setDeleteError(error.message);
+      return;
+    }
+    setDeleteDialogOpen(false);
+  };
 
   return (
     <section aria-labelledby="import-queue-title">
@@ -23,21 +41,52 @@ export function ImportQueue() {
         {t("queue.labels.import")}
       </h2>
 
-      <div className="sticky top-0 grid grid-cols-2 gap-2 bg-card pb-2">
-        <Button disabled={activeIndex <= 0} onClick={prev} size="sm" variant="outline">
-          <ChevronLeft aria-hidden="true" />
-          {t("queue.actions.previous")}
+      <div className="sticky top-0 flex gap-2 bg-card pb-2">
+        <ButtonGroup className="flex-1">
+          <Button disabled={activeIndex <= 0} onClick={prev} size="sm" variant="outline">
+            <ChevronLeft aria-hidden="true" />
+            {t("queue.actions.previous")}
+          </Button>
+          <Button
+            disabled={activeIndex < 0 || activeIndex >= items.length - 1}
+            onClick={next}
+            size="sm"
+            variant="outline"
+          >
+            {t("queue.actions.next")}
+            <ChevronRight aria-hidden="true" />
+          </Button>
+        </ButtonGroup>
+
+        <Button disabled={activeIndex < 0} onClick={skip} size="sm" variant="outline">
+          {t("queue.actions.skip")}
         </Button>
         <Button
-          disabled={activeIndex < 0 || activeIndex >= items.length - 1}
-          onClick={next}
-          size="sm"
-          variant="outline"
+          aria-label={t("queue.accessibility.deleteSource", {
+            filename: activeItem?.snapshot.source.displayName ?? "",
+          })}
+          disabled={activeIndex < 0}
+          onClick={() => {
+            setDeleteError(null);
+            setDeleteDialogOpen(true);
+          }}
+          size="icon-sm"
+          variant="destructive"
         >
-          {t("queue.actions.next")}
-          <ChevronRight aria-hidden="true" />
+          <Trash aria-hidden="true" />
         </Button>
       </div>
+
+      {activeItem ? (
+        <DeleteSourceDialog
+          error={deleteError}
+          onConfirm={() => void handleDeleteSource()}
+          onOpenChange={setDeleteDialogOpen}
+          open={deleteDialogOpen}
+          pending={deletePending}
+          sourceName={activeItem.snapshot.source.displayName}
+        />
+      ) : null}
 
       {items.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted-foreground">

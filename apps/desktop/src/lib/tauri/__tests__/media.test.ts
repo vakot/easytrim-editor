@@ -13,6 +13,7 @@ vi.mock("@tauri-apps/api/webview", () => ({
 import {
   activateSourcePath,
   chooseSource,
+  deleteSourceFile,
   inspectMedia,
   listenForSourceDrops,
   planOptimizedExport,
@@ -65,6 +66,16 @@ describe("media IPC adapter", () => {
       sourcePath: "C:/Media/clip.mp4",
     });
     expect(mocks.invoke).toHaveBeenCalledWith("activate_source_path", {
+      sourcePath: "C:/Media/clip.mp4",
+    });
+  });
+
+  it("deletes a source through the narrow command", async () => {
+    mocks.invoke.mockResolvedValue(undefined);
+
+    await deleteSourceFile("C:/Media/clip.mp4");
+
+    expect(mocks.invoke).toHaveBeenCalledWith("delete_source_file", {
       sourcePath: "C:/Media/clip.mp4",
     });
   });

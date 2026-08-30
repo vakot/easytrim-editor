@@ -46,7 +46,8 @@ pub fn run() {
             commands::queue::perform_queue_finish_action,
             commands::source::choose_source,
             commands::source::import_dropped_sources,
-            commands::source::activate_source_path
+            commands::source::activate_source_path,
+            commands::source::delete_source_file
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

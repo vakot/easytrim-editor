@@ -6,6 +6,7 @@ import {
 } from "@/app/store/slices/export-slice";
 import {
   closeActiveImportedItemRequested,
+  deleteActiveImportedItemRequested,
   navigateToImportedItem,
 } from "@/app/store/thunks/source-media-thunks";
 
@@ -44,6 +45,12 @@ function useImportQueue() {
     dispatch(importQueueItemRemoved(id));
   };
 
+  const handleSkip = () => {
+    if (activeItemId !== null) dispatch(closeActiveImportedItemRequested());
+  };
+
+  const handleDelete = () => dispatch(deleteActiveImportedItemRequested());
+
   return {
     isLast,
     isFirst,
@@ -54,6 +61,8 @@ function useImportQueue() {
     prev: handlePrev,
     open: handleOpen,
     remove: handleRemove,
+    skip: handleSkip,
+    deleteSource: handleDelete,
   };
 }
 

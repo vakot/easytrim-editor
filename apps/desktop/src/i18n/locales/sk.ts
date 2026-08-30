@@ -134,6 +134,7 @@ export const sk = {
       cancelItem: "Zrušiť {{filename}}",
       openLocation: "Otvoriť umiestnenie {{filename}}",
       progress: "Priebeh exportu",
+      deleteSource: "Odstrániť {{filename}} zo zariadenia",
       removeImportItem: "Odstrániť {{filename}} z frontu importov",
       restoreItem: "Obnoviť {{filename}}",
       status: "Export: {{status}}",
@@ -182,6 +183,12 @@ export const sk = {
       toolsUnavailable: "Niektoré požadované multimediálne závislosti nie sú dostupné.",
     },
     tooltips: { sidebarControls: "Vybrať viditeľné panely zdroja" },
+    dialogs: {
+      delete: {
+        description: "Týmto natrvalo odstránite {{name}} z počítača.",
+        title: "Odstrániť zdrojový súbor?",
+      },
+    },
     accessibility: {
       metadata: "Metadáta videa",
       toolsUnavailable: "Multimediálne nástroje nie sú dostupné. {{message}}",

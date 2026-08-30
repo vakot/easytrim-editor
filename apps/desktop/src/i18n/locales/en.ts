@@ -132,6 +132,7 @@ export const en = {
       cancelItem: "Cancel {{filename}}",
       openLocation: "Open {{filename}} location",
       progress: "Export progress",
+      deleteSource: "Delete {{filename}} from device",
       removeImportItem: "Remove {{filename}} from import queue",
       restoreItem: "Restore {{filename}}",
       status: "{{status}} export",
@@ -179,6 +180,12 @@ export const en = {
       toolsUnavailable: "Some required media dependencies are unavailable.",
     },
     tooltips: { sidebarControls: "Choose visible source panels" },
+    dialogs: {
+      delete: {
+        description: "This permanently deletes {{name}} from your computer.",
+        title: "Delete source file?",
+      },
+    },
     accessibility: {
       metadata: "Video metadata",
       toolsUnavailable: "Media tools unavailable. {{message}}",

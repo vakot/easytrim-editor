@@ -66,6 +66,14 @@ export async function activateSourcePath(sourcePath: string): Promise<SourceRef>
   }
 }
 
+export async function deleteSourceFile(sourcePath: string): Promise<void> {
+  try {
+    await invoke("delete_source_file", { sourcePath });
+  } catch (error: unknown) {
+    throw normalizeAppError(error);
+  }
+}
+
 export async function chooseOutputPath(defaultName: string): Promise<OutputSelection | null> {
   try {
     const value = await invoke<unknown>("choose_output_path", { defaultName });

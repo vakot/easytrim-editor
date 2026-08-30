@@ -43,12 +43,12 @@ describe("ImportQueue", () => {
       </Provider>,
     );
 
-    const restoreButton = screen.getByRole("button", { name: "Restore source.mp4" });
+    const restoreCard = screen.getByLabelText("Restore source.mp4");
     const removeButton = screen.getByRole("button", {
       name: "Remove source.mp4 from import queue",
     });
 
-    expect(restoreButton).not.toContainElement(removeButton);
+    expect(restoreCard).toContainElement(removeButton);
     await user.click(removeButton);
 
     expect(selectImportQueueItems(appStore.getState())).toEqual([]);

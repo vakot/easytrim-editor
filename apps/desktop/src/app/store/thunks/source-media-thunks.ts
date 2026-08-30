@@ -50,6 +50,7 @@ import {
   activateSourcePath,
   checkMediaCapabilities,
   chooseSource as chooseSourceDialog,
+  deleteSourceFile,
   inspectMedia,
   prepareAudioPreviews,
   prepareProxyPreview,
@@ -390,6 +391,23 @@ export const closeActiveImportedItemRequested = (): AppThunk => (dispatch, getSt
   dispatch(navigateToImportedItem(replacementItem?.id ?? null));
   dispatch(nativeDialogStateChanged(false));
 };
+
+export const deleteActiveImportedItemRequested =
+  (): AppThunk<Promise<AppError | null>> => async (dispatch, getState) => {
+    const activeItem = selectActiveQueueItem(getState());
+    if (!activeItem || activeItem.status !== "imported") return null;
+
+    try {
+      await deleteSourceFile(activeItem.snapshot.source.sourcePath);
+    } catch (error: unknown) {
+      const normalized = normalizeAppError(error);
+      dispatch(sourceErrorReported(normalized));
+      return normalized;
+    }
+
+    dispatch(closeActiveImportedItemRequested());
+    return null;
+  };
 
 export const handlePreviewPlaybackError =
   (sourcePath: string, previewKind: PreviewKind): AppThunk =>

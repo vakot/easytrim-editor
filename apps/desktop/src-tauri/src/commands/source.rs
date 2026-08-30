@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{fs, path::PathBuf};
 
 use tauri::{AppHandle, State, WebviewWindow};
 use tauri_plugin_dialog::DialogExt;
@@ -60,4 +60,11 @@ pub fn activate_source_path(
     source_path: PathBuf,
 ) -> Result<SourceRef, AppError> {
     activate_source(&state, source_path)
+}
+
+#[tauri::command]
+pub fn delete_source_file(source_path: PathBuf) -> Result<(), AppError> {
+    let validated = crate::domain::source::validate_source(&source_path)?;
+    fs::remove_file(validated.path)
+        .map_err(|error| AppError::io_failed(format!("Could not delete the source file: {error}")))
 }
