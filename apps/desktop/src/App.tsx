@@ -8,6 +8,7 @@ import { ResizablePanelContextProvider } from "@/components/ui/resizable";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { CustomTitleBar } from "@/app/components/CustomTitleBar";
+import { DiagnosticsRecoveryDialog } from "@/app/components/DiagnosticsRecoveryDialog";
 import { EditorWorkspace } from "@/app/components/editor-workspace/EditorWorkspace";
 import { MenuBar } from "@/app/components/menu-bar";
 import { NativeDialogOverlay } from "@/app/components/NativeDialogOverlay";
@@ -58,7 +59,7 @@ function EasyTrimEditorApp() {
 
   useKeyboardShortcut(
     (event) => event.code === "KeyO" && event.ctrlKey && !isChoosingSource && !isNativeDialogOpen,
-    () => void dispatch(chooseSourceRequested()),
+    () => void dispatch(chooseSourceRequested({ id: "Ctrl+O", type: "hotkey" })),
   );
   useKeyboardShortcut(
     (event) =>
@@ -123,6 +124,7 @@ function EasyTrimEditorApp() {
         />
 
         <ExportDialog />
+        <DiagnosticsRecoveryDialog />
 
         {isNativeDialogOpen ? <NativeDialogOverlay /> : null}
 

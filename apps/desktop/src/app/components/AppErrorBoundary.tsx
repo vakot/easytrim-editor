@@ -1,6 +1,8 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
+import { diagnostics } from "@/lib/diagnostics";
+
 interface AppErrorBoundaryProps {
   children: ReactNode;
 }
@@ -17,6 +19,10 @@ class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorBoundary
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
+    diagnostics.fatal("frontend.fatal.react", error, {
+      data: { componentStack: info.componentStack ?? "" },
+      origin: { type: "system" },
+    });
     console.error("[app] Unhandled React error", {
       error,
       name: error.name,
