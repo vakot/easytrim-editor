@@ -213,22 +213,22 @@ function MenubarSub({ ...props }: React.ComponentProps<typeof MenubarPrimitive.S
   return <MenubarPrimitive.Sub data-slot="menubar-sub" {...props} />;
 }
 
-interface MenubarSubTriggerProps extends React.ComponentProps<typeof MenubarPrimitive.SubTrigger> {
-  inset?: boolean;
-  keepOpen?: boolean;
-}
-
 function MenubarSubTrigger({
   children,
   className,
   disabled,
   inset,
   keepOpen,
+  variant = "default",
   ...props
-}: MenubarSubTriggerProps) {
+}: React.ComponentProps<typeof MenubarPrimitive.SubTrigger> & {
+  inset?: boolean;
+  keepOpen?: boolean;
+  variant?: "default" | "destructive" | "success";
+}) {
   return (
     <MenubarPrimitive.SubTrigger
-      className={cn(menuItemVariants({ kind: "subTrigger", className }))}
+      className={cn(menuItemVariants({ kind: "subTrigger", variant, className }))}
       data-inset={inset}
       data-keep-open={keepOpen || undefined}
       data-slot="menubar-sub-trigger"

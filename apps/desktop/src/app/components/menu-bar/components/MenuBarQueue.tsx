@@ -112,7 +112,7 @@ export function MenuBarQueue() {
           <MenubarSeparator />
           <MenubarGroup>
             <MenubarSub>
-              <MenubarSubTrigger inset>
+              <MenubarSubTrigger inset variant="destructive">
                 <MenubarIcon>{queueFinishIcons[queueFinishAction]}</MenubarIcon>
                 {t("queue.labels.onFinish")}
               </MenubarSubTrigger>
