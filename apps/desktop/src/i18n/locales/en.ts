@@ -132,6 +132,7 @@ export const en = {
       cancelItem: "Cancel {{filename}}",
       openLocation: "Open {{filename}} location",
       progress: "Export progress",
+      removeImportItem: "Remove {{filename}} from import queue",
       restoreItem: "Restore {{filename}}",
       status: "{{status}} export",
     },

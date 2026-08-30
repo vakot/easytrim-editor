@@ -60,7 +60,7 @@ export function AudioPanel() {
           className="mx-3 mb-2 font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
           id="timeline-audio-title"
         >
-          {t("audio.labels.title")}
+          {t("audio.labels.title")} ({audioTracks.length})
         </h3>
 
         <ResizablePanelControl panelId="editor-stage-audio">

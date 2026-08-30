@@ -1,6 +1,13 @@
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
-import { selectActiveItemId, selectImportQueueItems } from "@/app/store/slices/export-slice";
-import { navigateToImportedItem } from "@/app/store/thunks/source-media-thunks";
+import {
+  importQueueItemRemoved,
+  selectActiveItemId,
+  selectImportQueueItems,
+} from "@/app/store/slices/export-slice";
+import {
+  closeActiveImportedItemRequested,
+  navigateToImportedItem,
+} from "@/app/store/thunks/source-media-thunks";
 
 function useImportQueue() {
   const dispatch = useAppDispatch();
@@ -28,6 +35,15 @@ function useImportQueue() {
     if (previous) handleOpen(previous.id);
   };
 
+  const handleRemove = (id: string) => {
+    if (id === activeItemId) {
+      dispatch(closeActiveImportedItemRequested());
+      return;
+    }
+
+    dispatch(importQueueItemRemoved(id));
+  };
+
   return {
     isLast,
     isFirst,
@@ -37,6 +53,7 @@ function useImportQueue() {
     next: handleNext,
     prev: handlePrev,
     open: handleOpen,
+    remove: handleRemove,
   };
 }
 

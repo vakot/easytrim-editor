@@ -154,7 +154,7 @@ function SourceDetailsPanel({ isSingle = false }: SourcePanelProps) {
       collapsedSize={32}
       collapsible
       id="workspace-sidebar-source-details"
-      minSize={128}
+      minSize={140}
     >
       <div className="px-1">
         <ResizablePanelControl panelId="workspace-sidebar-source-details">
@@ -196,7 +196,7 @@ function ImportQueuePanel({ isSingle = false }: SourcePanelProps) {
       collapsible
       defaultSize={0}
       id="workspace-sidebar-import-queue"
-      minSize={128}
+      minSize={140}
     >
       <div className="px-1">
         <ResizablePanelControl panelId="workspace-sidebar-import-queue">
@@ -248,7 +248,7 @@ function ExportQueuePanel({ isSingle = false }: SourcePanelProps) {
       collapsible
       defaultSize={0}
       id="workspace-sidebar-export-queue"
-      minSize={128}
+      minSize={140}
     >
       <div className="px-1">
         <ResizablePanelControl panelId="workspace-sidebar-export-queue">

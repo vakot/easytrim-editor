@@ -134,6 +134,7 @@ export const sk = {
       cancelItem: "Zrušiť {{filename}}",
       openLocation: "Otvoriť umiestnenie {{filename}}",
       progress: "Priebeh exportu",
+      removeImportItem: "Odstrániť {{filename}} z frontu importov",
       restoreItem: "Obnoviť {{filename}}",
       status: "Export: {{status}}",
     },

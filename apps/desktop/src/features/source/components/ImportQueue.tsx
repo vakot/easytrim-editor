@@ -1,8 +1,9 @@
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Trash, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { ButtonGroup } from "@/components/ui/button-group";
+import { Card, CardAction, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { useTimeline } from "@/app/hooks/useTimeline";
 import type { importQueueItem } from "@/app/store/slices/export-slice";
@@ -57,7 +58,7 @@ function ImportQueueItem({ active, item }: { active: boolean; item: importQueueI
   const { t } = useTranslation();
 
   const timeline = useTimeline();
-  const { open } = useImportQueue();
+  const { open, remove } = useImportQueue();
   const sourcePath = formatSourcePath(item.snapshot.source.sourcePath);
 
   async function restoreItem() {
@@ -67,24 +68,36 @@ function ImportQueueItem({ active, item }: { active: boolean; item: importQueueI
 
   return (
     <Card
+      aria-label={t("queue.accessibility.restoreItem", {
+        filename: item.snapshot.source.displayName,
+      })}
       className={cn(
-        "flex-row items-center gap-2 border-l-4 p-0 transition-colors ring-inset hover:bg-muted/60",
-        active && "border-accent-foreground",
+        "border-l-4 transition-colors ring-inset hover:bg-muted/60",
+        active && "border-l-primary",
       )}
+      onClick={() => void restoreItem()}
+      size="sm"
     >
-      <button
-        aria-label={t("queue.accessibility.restoreItem", {
-          filename: item.snapshot.source.displayName,
-        })}
-        className="size-full cursor-pointer p-2 text-left"
-        onClick={() => void restoreItem()}
-        type="button"
-      >
-        <strong className="truncate">{item.snapshot.source.displayName}</strong>
-        <p className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
-          <span className="truncate">{sourcePath}</span>
-        </p>
-      </button>
+      <CardHeader>
+        <CardTitle className="truncate">{item.snapshot.source.displayName}</CardTitle>
+        <CardDescription className="truncate">{sourcePath}</CardDescription>
+        <CardAction>
+          <Button
+            aria-label={t("queue.accessibility.removeImportItem", {
+              filename: item.snapshot.source.displayName,
+            })}
+            onClick={(event) => {
+              event.stopPropagation();
+              remove(item.id);
+            }}
+            size="icon"
+            type="button"
+            variant="destructive"
+          >
+            <X aria-hidden="true" />
+          </Button>
+        </CardAction>
+      </CardHeader>
     </Card>
   );
 }
