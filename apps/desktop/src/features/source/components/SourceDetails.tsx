@@ -61,15 +61,14 @@ export function SourceDetails() {
     <dl aria-label={t("source.accessibility.metadata")}>
       {metadata.map(([label, value], index) => (
         <Fragment key={label}>
-          <div className="flex w-full items-baseline justify-between gap-3 py-2">
-            <dt className="shrink-0 text-xs text-muted-foreground">{label}</dt>
-            <dd
-              className="min-w-0 flex-1 truncate text-right text-xs font-medium text-foreground"
-              title={value}
-            >
+          <div className="grid w-full grid-cols-[max-content_minmax(0,1fr)] items-baseline gap-3 py-2">
+            <dt className="text-xs text-muted-foreground">{label}</dt>
+
+            <dd className="truncate text-right text-xs font-medium text-foreground" title={value}>
               {value}
             </dd>
           </div>
+
           {index < metadata.length - 1 ? <Separator className="bg-border/55" /> : null}
         </Fragment>
       ))}

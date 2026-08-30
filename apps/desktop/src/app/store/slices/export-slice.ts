@@ -1,5 +1,6 @@
 import { createSelector, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
+import { importQueueItemActivated } from "@/app/store/actions/imported-queue-actions";
 import { sourceCleared, sourceSelected } from "@/app/store/actions/source-actions";
 import { cropChanged } from "@/app/store/slices/crop-slice";
 import type { EditorSnapshot } from "@/domain/editor-snapshot";
@@ -9,6 +10,7 @@ import type {
   ExportResult,
   FastExportRequest,
   FrameRate,
+  MediaInfo,
   OptimizedExportRequest,
 } from "@/lib/tauri/media.types";
 import type { QueueFinishAction } from "@/lib/tauri/queue.types";
@@ -22,6 +24,7 @@ type ExportRequest = FastExportRequest | OptimizedExportRequest;
 
 interface QueueItemBase {
   id: string;
+  media?: MediaInfo;
   snapshot: EditorSnapshot;
 }
 
@@ -52,6 +55,7 @@ export interface ExportQueueItem extends QueueItemBase {
   progressPercent: number;
   request: ExportRequest;
   route: ExportRoute;
+  sourceDeleted?: boolean;
   startedAt: number | null;
   status: ExportStatus;
   totalFrames?: number;
@@ -62,6 +66,7 @@ type QueueItem = importQueueItem | ExportQueueItem;
 export interface QueueItemPromotion {
   filename: string;
   id: string;
+  media?: MediaInfo;
   outputId: string;
   path: string;
   request: ExportRequest;
@@ -75,6 +80,7 @@ interface ExportState {
   availableQueueFinishActions: QueueFinishAction[];
   commandPreview: string;
   commandPreviewError: AppError | null;
+  deleteSourceOnRenderFinish: boolean;
   launchError: AppError | null;
   optimizedDialogOpen: boolean;
   optimizedPlanRequestId: number | null;
@@ -89,6 +95,7 @@ export const initialExportState: ExportState = {
   activeItemId: null,
   queueStarted: false,
   queueFinishAction: "nothing",
+  deleteSourceOnRenderFinish: false,
   availableQueueFinishActions: ["exit", "nothing"],
   optimizedDialogOpen: false,
   optimizedSettings: null,
@@ -155,10 +162,13 @@ const exportSlice = createSlice({
     },
     queueItemSnapshotUpdated: (
       state,
-      action: PayloadAction<{ id: string; snapshot: EditorSnapshot }>,
+      action: PayloadAction<{ id: string; media?: MediaInfo; snapshot: EditorSnapshot }>,
     ) => {
       const item = state.queue.find((candidate) => candidate.id === action.payload.id);
-      if (item?.status === "imported") item.snapshot = action.payload.snapshot;
+      if (item?.status === "imported") {
+        item.snapshot = action.payload.snapshot;
+        item.media = action.payload.media;
+      }
     },
     queueItemPromoted: (state, action: PayloadAction<QueueItemPromotion>) => {
       const index = state.queue.findIndex((candidate) => candidate.id === action.payload.id);
@@ -181,6 +191,9 @@ const exportSlice = createSlice({
     },
     queueFinishActionChanged: (state, action: PayloadAction<QueueFinishAction>) => {
       state.queueFinishAction = action.payload;
+    },
+    deleteSourceOnRenderFinishChanged: (state, action: PayloadAction<boolean>) => {
+      state.deleteSourceOnRenderFinish = action.payload;
     },
     queueFinishActionsAvailable: (state, action: PayloadAction<QueueFinishAction[]>) => {
       state.availableQueueFinishActions = action.payload;
@@ -233,6 +246,11 @@ const exportSlice = createSlice({
       item.progressPercent = 100;
       item.durationMs = action.payload.durationMs;
     },
+    exportSourceDeleted: (state, action: PayloadAction<{ id: string }>) => {
+      const item = state.queue.find((candidate) => candidate.id === action.payload.id);
+      if (!item || item.status !== "completed") return;
+      item.sourceDeleted = true;
+    },
     exportFailed: (
       state,
       action: PayloadAction<{ durationMs: number | null; error: AppError; id: string }>,
@@ -264,13 +282,19 @@ const exportSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    builder.addCase(sourceSelected, (state) => {
+    const resetSourceExportState = (state: ExportState) => {
       state.optimizedDialogOpen = false;
       state.optimizedSettings = null;
       state.optimizedPlanRequestId = null;
       state.commandPreview = "";
       state.commandPreviewError = null;
       state.launchError = null;
+    };
+
+    builder.addCase(sourceSelected, resetSourceExportState);
+    builder.addCase(importQueueItemActivated, (state, action) => {
+      state.activeItemId = action.payload.id;
+      resetSourceExportState(state);
     });
     builder.addCase(sourceCleared, (state) => {
       state.activeItemId = null;
@@ -291,11 +315,13 @@ const exportSlice = createSlice({
 
 export const {
   activeQueueItemChanged,
+  deleteSourceOnRenderFinishChanged,
   exportCanceled,
   exportCompleted,
   exportFailed,
   exportLaunchFailed,
   exportProgressReceived,
+  exportSourceDeleted,
   exportStarted,
   finishedExportsCleared,
   importQueueItemAdded,
@@ -336,6 +362,8 @@ export const selectHasQueuedExports = (state: RootState): boolean =>
 export const selectHasProcessableExports = (state: RootState): boolean =>
   state.export.queue.some((item) => item.status === "queued" || item.status === "rendering");
 export const selectQueueStarted = (state: RootState): boolean => state.export.queueStarted;
+export const selectDeleteSourceOnRenderFinish = (state: RootState): boolean =>
+  state.export.deleteSourceOnRenderFinish;
 export const selectQueueFinishAction = (state: RootState): QueueFinishAction =>
   state.export.queueFinishAction;
 export const selectAvailableQueueFinishActions = (state: RootState): QueueFinishAction[] =>

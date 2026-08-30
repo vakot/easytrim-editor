@@ -6,6 +6,7 @@ export const en = {
       close: "Close",
       delete: "Delete",
       edit: "Edit",
+      enable: "Enable",
       retry: "Retry",
       save: "Save",
     },
@@ -23,6 +24,7 @@ export const en = {
     actions: {
       checkForUpdates: "Check for Updates…",
       closeFile: "Close File",
+      deleteSource: "Delete Source",
       maximize: "Maximize",
       minimize: "Minimize",
       openFile: "Open File",
@@ -111,6 +113,7 @@ export const en = {
       start: "Start queue",
     },
     labels: {
+      deleteSource: "Delete source",
       export: "Export queue",
       import: "Import queue",
       onFinish: "On queue finished",
@@ -118,22 +121,31 @@ export const en = {
     },
     status: {
       canceled: "Canceled",
-      completed: "Completed",
       failed: "Failed",
       queued: "Queued",
+      sourceDeleted: "Source deleted",
+    },
+    tooltips: {
+      deleteSourceOnRenderFinish: "Delete the source after a successful render",
     },
     dialogs: {
       cancel: {
         description: "The active export and all remaining queued exports will be canceled.",
         title: "Cancel export queue?",
       },
+      deleteSourceOnRenderFinish: {
+        description:
+          "The original source file will be deleted after a render finishes successfully. This action can be undone.",
+        title: "Delete source after rendering?",
+      },
     },
     accessibility: {
       cancelItem: "Cancel {{filename}}",
       openLocation: "Open {{filename}} location",
       progress: "Export progress",
+      deleteSource: "Delete {{filename}} from device",
+      removeImportItem: "Remove {{filename}} from import queue",
       restoreItem: "Restore {{filename}}",
-      status: "{{status}} export",
     },
     options: {
       finish: {
@@ -178,6 +190,12 @@ export const en = {
       toolsUnavailable: "Some required media dependencies are unavailable.",
     },
     tooltips: { sidebarControls: "Choose visible source panels" },
+    dialogs: {
+      delete: {
+        description: "This deletes {{name}} from your computer. This action can be undone.",
+        title: "Delete source file?",
+      },
+    },
     accessibility: {
       metadata: "Video metadata",
       toolsUnavailable: "Media tools unavailable. {{message}}",
@@ -211,7 +229,6 @@ export const en = {
     messages: {
       error: "Could not preview this video",
       playbackFailed: "Playback could not start.",
-      preparing: "This can take a moment for high-resolution sources.",
       proxy:
         "The original source could not play directly, so EasyTrim prepared a compatible proxy that may use reduced quality. Exports still use the original file.",
       setEndUnavailable: "Move after the source start to set segment end",
@@ -293,7 +310,6 @@ export const en = {
       waveformUnavailable: "Waveform unavailable",
     },
     messages: {
-      noTracks: "This source has no audio tracks.",
       output: {
         merged_one: "{{count}} selected track is merged into one track",
         merged_few: "{{count}} selected tracks are merged into one track",

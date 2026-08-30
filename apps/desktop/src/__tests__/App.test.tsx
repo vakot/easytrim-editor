@@ -3,16 +3,23 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DEFAULT_PREFERENCES } from "../app/preferences";
-import { sourceCleared } from "../app/store/actions/source-actions";
+import { importQueueItemActivated } from "../app/store/actions/imported-queue-actions";
+import { sourceCleared, sourceReady } from "../app/store/actions/source-actions";
 import { startSourceMediaRuntime } from "../app/store/integration/source-media-runtime";
 import {
   createEditorToolsStateFromPreferences,
   editorToolsInitialized,
 } from "../app/store/slices/editor-tools-slice";
-import { importQueueItemRemoved, selectImportQueueItems } from "../app/store/slices/export-slice";
+import {
+  importQueueItemAdded,
+  importQueueItemRemoved,
+  selectImportQueueItems,
+} from "../app/store/slices/export-slice";
+import { previewReady } from "../app/store/slices/preview-slice";
 import { selectHasSource } from "../app/store/slices/source-slice";
 import { store } from "../app/store/store";
 import { checkMediaCapabilitiesRequested } from "../app/store/thunks/source-media-thunks";
+import type { EditorSnapshot } from "../domain/editor-snapshot";
 import type { SourceRef } from "../domain/source";
 import type { MediaCapabilities, MediaInfo, SourceDropEvent } from "../lib/tauri/media.types";
 
@@ -107,6 +114,15 @@ function getMenuTrigger(name: string) {
   return within(screen.getByRole("menubar", { name: "Application menus" })).getByRole("menuitem", {
     name,
   });
+}
+
+function createDeferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((promiseResolve) => {
+    resolve = promiseResolve;
+  });
+
+  return { promise, resolve };
 }
 
 async function waitForSourcePresence(expected: boolean) {
@@ -292,10 +308,10 @@ describe("App", () => {
     expect(screen.getByRole("list", { name: "Keyboard shortcuts" })).toHaveTextContent(
       "Mark In / Mark Out",
     );
-    expect(screen.getByRole("link", { name: "Support on Ko-fi.com" })).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "Support on Ko-fi.com" })).not.toHaveLength(0);
     expect(
       screen
-        .getByRole("link", { name: "Support on Ko-fi.com" })
+        .getAllByRole("link", { name: "Support on Ko-fi.com" })[0]!
         .querySelector('[data-brand-icon="kofi"]'),
     ).not.toBeNull();
     expect(screen.getByLabelText("Current playback time")).toHaveTextContent(
@@ -331,7 +347,7 @@ describe("App", () => {
       const trimStart = screen.getByRole("slider", { name: "Trim start" });
       const trimEnd = screen.getByRole("slider", { name: "Trim end" });
 
-      expect(screen.getByTestId("editor-loading-overlay")).toBeInTheDocument();
+      expect(screen.getByTestId("preview-loading-overlay")).toBeInTheDocument();
       expect(screen.getByTestId("timeline-fixed-content")).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Play" })).toBeDisabled();
       video.currentTime = 10;
@@ -349,7 +365,7 @@ describe("App", () => {
       fireEvent.canPlay(video);
 
       await waitFor(() =>
-        expect(screen.queryByTestId("editor-loading-overlay")).not.toBeInTheDocument(),
+        expect(screen.queryByTestId("preview-loading-overlay")).not.toBeInTheDocument(),
       );
       expect(screen.getByRole("button", { name: "Play" })).not.toBeDisabled();
       fireEvent.keyDown(window, { key: " ", code: "Space" });
@@ -357,6 +373,107 @@ describe("App", () => {
     } finally {
       readyState.mockRestore();
     }
+  });
+
+  it("switches snapshots atomically while keeping every workspace panel mounted", async () => {
+    const firstSnapshot: EditorSnapshot = {
+      source: selection,
+      trim: { startMicros: 0, endMicros: media.durationMicros },
+      crop: null,
+      audio: { master: { enabled: true, volumePercent: 50 }, tracks: [], mergeAudio: false },
+    };
+
+    const replacementMedia: MediaInfo = {
+      ...media,
+      durationMicros: 30_000_000,
+      video: { ...media.video, width: 1280, height: 720 },
+    };
+
+    const replacementSnapshot: EditorSnapshot = {
+      source: replacementSelection,
+      trim: { startMicros: 1_000_000, endMicros: 20_000_000 },
+      crop: null,
+      audio: { master: { enabled: true, volumePercent: 40 }, tracks: [], mergeAudio: false },
+    };
+
+    const firstItem = {
+      id: "transition-a",
+      status: "imported" as const,
+      origin: "source-import" as const,
+      media,
+      snapshot: firstSnapshot,
+    };
+
+    const replacementItem = {
+      id: "transition-b",
+      status: "imported" as const,
+      origin: "source-import" as const,
+      media: replacementMedia,
+      snapshot: replacementSnapshot,
+    };
+
+    store.dispatch(importQueueItemAdded(firstItem));
+    store.dispatch(importQueueItemAdded(replacementItem));
+    store.dispatch(
+      importQueueItemActivated({
+        id: firstItem.id,
+        loadToken: 100,
+        media,
+        snapshot: firstSnapshot,
+      }),
+    );
+    store.dispatch(sourceReady({ loadToken: 100, media, snapshot: firstSnapshot }));
+    store.dispatch(
+      previewReady({
+        preview: {
+          mediaToken: 1,
+          url: "http://easytrim-media.localhost/transition-a?variant=source",
+          kind: "source",
+        },
+      }),
+    );
+    const replacementInspection = createDeferred<MediaInfo>();
+    mocks.inspectMedia.mockImplementation((sourcePath: string) =>
+      sourcePath === replacementSelection.sourcePath
+        ? replacementInspection.promise
+        : Promise.resolve(media),
+    );
+    const user = userEvent.setup();
+    render(<App />);
+
+    await waitFor(() => expect(screen.getByRole("button", { name: "Play" })).not.toBeDisabled());
+    const detailsPanel = document.getElementById("workspace-sidebar-source-details");
+    const previewPanel = document.getElementById("editor-stage-preview");
+    const timelinePanel = document.getElementById("editor-stage-timeline");
+    const audioPanel = document.getElementById("editor-stage-audio");
+
+    await user.click(screen.getByLabelText(`Restore ${replacementSelection.displayName}`));
+
+    expect(document.getElementById("workspace-sidebar-source-details")).toBe(detailsPanel);
+    expect(document.getElementById("editor-stage-preview")).toBe(previewPanel);
+    expect(document.getElementById("editor-stage-timeline")).toBe(timelinePanel);
+    expect(document.getElementById("editor-stage-audio")).toBe(audioPanel);
+    expect(within(detailsPanel!).getByText(replacementSelection.displayName)).toBeInTheDocument();
+    expect(within(detailsPanel!).getByText("1280 × 720")).toBeInTheDocument();
+    const previewCard = previewPanel!.querySelector('[data-slot="card"]');
+    const previewContent = previewPanel!.querySelector('[data-slot="preview-content"]');
+    const previewLoadingOverlay = screen.getByTestId("preview-loading-overlay");
+    expect(previewCard).toHaveClass("relative", "isolate", "overflow-hidden");
+    expect(previewContent).toHaveAttribute("aria-busy", "true");
+    expect(previewContent).toContainElement(previewLoadingOverlay);
+    expect(previewLoadingOverlay).not.toHaveClass("fixed");
+    expect(within(previewPanel!).getByText("Opening preview…")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Selected Segment" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /^Audio tracks/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Play" })).toBeDisabled();
+
+    await act(async () => replacementInspection.resolve(replacementMedia));
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("preview-loading-overlay")).not.toBeInTheDocument();
+      expect(previewContent).toHaveAttribute("aria-busy", "false");
+      expect(screen.getByRole("button", { name: "Play" })).not.toBeDisabled();
+    });
   });
 
   it("starts waveforms only after multi-track playback is ready without waiting for them", async () => {
@@ -395,7 +512,7 @@ describe("App", () => {
       await openSourcePicker(user);
       await screen.findByLabelText("Source video preview");
 
-      expect(screen.getByTestId("editor-loading-overlay")).toBeInTheDocument();
+      expect(screen.getByTestId("preview-loading-overlay")).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Play" })).toBeDisabled();
       expect(mocks.prepareWaveforms).not.toHaveBeenCalled();
 
@@ -415,13 +532,13 @@ describe("App", () => {
       });
 
       await waitFor(() => expect(audioElements).toHaveLength(2));
-      expect(screen.getByTestId("editor-loading-overlay")).toBeInTheDocument();
+      expect(screen.getByTestId("preview-loading-overlay")).toBeInTheDocument();
       expect(screen.getByTestId("timeline-fixed-content")).toBeInTheDocument();
       expect(mocks.prepareWaveforms).not.toHaveBeenCalled();
       for (const audio of audioElements) fireEvent.canPlay(audio);
 
       await waitFor(() =>
-        expect(screen.queryByTestId("editor-loading-overlay")).not.toBeInTheDocument(),
+        expect(screen.queryByTestId("preview-loading-overlay")).not.toBeInTheDocument(),
       );
       expect(screen.getByRole("button", { name: "Play" })).not.toBeDisabled();
       await waitFor(() =>
@@ -533,7 +650,7 @@ describe("App", () => {
 
       await user.click(screen.getByRole("button", { name: "Enable Commentary" }));
       await waitFor(() => expect(audioElements).toHaveLength(4));
-      expect(screen.queryByTestId("editor-loading-overlay")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("preview-loading-overlay")).not.toBeInTheDocument();
       const transitionAudio = audioElements.slice(2);
       const transitionAudioPlay = transitionAudio.map((audio) =>
         vi.spyOn(audio, "play").mockResolvedValue(),
@@ -806,11 +923,11 @@ describe("App", () => {
       screen.getByRole("heading", { name: "Selected Segment" }),
     );
     expect(fixedTimeline).not.toContainElement(
-      screen.getByRole("heading", { name: "Audio tracks" }),
+      screen.getByRole("heading", { name: /^Audio tracks/ }),
     );
-    expect(audioPanel).toContainElement(screen.getByRole("heading", { name: "Audio tracks" }));
+    expect(audioPanel).toContainElement(screen.getByRole("heading", { name: /^Audio tracks/ }));
     expect(audioTracksScroll).not.toContainElement(
-      screen.getByRole("heading", { name: "Audio tracks" }),
+      screen.getByRole("heading", { name: /^Audio tracks/ }),
     );
     expect(audioTracksScroll).toHaveClass("overflow-hidden");
     expect(audioTracksScroll.querySelector('[data-slot="scroll-area-viewport"]')).not.toBeNull();
@@ -826,7 +943,7 @@ describe("App", () => {
     expect(getMenuTrigger("View")).toBeInTheDocument();
   });
 
-  it("renders only the timeline when the source has no audio tracks", async () => {
+  it("renders only the timeline panel when the source has no audio tracks", async () => {
     mocks.chooseSource.mockResolvedValue([selection]);
     mocks.inspectMedia.mockResolvedValue({ ...media, audioStreams: [] });
     const user = userEvent.setup();
@@ -837,7 +954,8 @@ describe("App", () => {
     expect(await screen.findByRole("heading", { name: "Selected Segment" })).toBeInTheDocument();
     expect(screen.queryByTestId("audio-tracks-scroll")).not.toBeInTheDocument();
     expect(screen.queryByText("This source has no audio tracks.")).not.toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Audio tracks" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /^Audio tracks/ })).not.toBeInTheDocument();
+    expect(document.getElementById("editor-stage-audio")).toBeNull();
   });
 
   it("uses Escape to clear focus without closing the source", async () => {
@@ -976,10 +1094,10 @@ describe("App", () => {
       render(<App />);
       await openSourcePicker(user);
 
-      expect(await screen.findByRole("heading", { name: "Audio tracks" })).toBeInTheDocument();
+      expect(await screen.findByRole("heading", { name: /^Audio tracks/ })).toBeInTheDocument();
       const allTracks = screen.getByRole("button", { name: "All audio tracks" });
       expect(allTracks).toHaveAttribute("aria-pressed", "true");
-      expect(allTracks.parentElement).not.toHaveTextContent("Audio tracks");
+      expect(allTracks.parentElement).not.toHaveTextContent(/^Audio tracks/);
       expect(screen.getByRole("button", { name: "Mute eng" })).toHaveAttribute(
         "aria-pressed",
         "true",

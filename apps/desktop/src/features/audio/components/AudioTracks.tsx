@@ -39,10 +39,6 @@ export function AudioTracks({
 
   useWaveformPreparation(tracks, waveformPreparationEnabled, onPrepareWaveforms);
 
-  if (streams.length === 0) {
-    return <p className="text-sm text-muted-foreground">{t("audio.messages.noTracks")}</p>;
-  }
-
   return (
     <div className="relative grid min-w-0 gap-2">
       {streams.map((stream, index) => {

@@ -5,11 +5,13 @@ import type { RootState } from "@/app/store/store";
 
 import { cropChanged } from "../crop-slice";
 import {
+  deleteSourceOnRenderFinishChanged,
   exportCanceled,
   exportCompleted,
   exportFailed,
   exportProgressReceived,
   exportReducer,
+  exportSourceDeleted,
   exportStarted,
   finishedExportsCleared,
   importQueueItemAdded,
@@ -122,6 +124,11 @@ describe("export slice", () => {
         durationMs: 800,
       }),
     );
+    state = exportReducer(state, exportSourceDeleted({ id: completed.id }));
+    expect(
+      selectExportQueue({ export: state } as RootState).find((entry) => entry.id === completed.id)
+        ?.sourceDeleted,
+    ).toBe(true);
     const canceled = { ...item, id: "export-3" };
     state = exportReducer(state, queueEntryAdded(canceled));
     state = exportReducer(state, exportCanceled({ id: canceled.id, durationMs: null }));
@@ -134,6 +141,12 @@ describe("export slice", () => {
     expect(
       exportReducer(initialExportState, queueFinishActionChanged("systemSleep")),
     ).toMatchObject({ queueFinishAction: "systemSleep" });
+  });
+
+  it("keeps the confirmed source-deletion policy serializable", () => {
+    expect(
+      exportReducer(initialExportState, deleteSourceOnRenderFinishChanged(true)),
+    ).toMatchObject({ deleteSourceOnRenderFinish: true });
   });
 
   it("removes an imported item and clears its active identity", () => {

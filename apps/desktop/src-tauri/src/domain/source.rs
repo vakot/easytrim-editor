@@ -49,7 +49,7 @@ pub fn validate_source(path: &Path) -> Result<ValidatedSource, AppError> {
     })
 }
 
-fn is_supported_video_path(path: &Path) -> bool {
+pub(crate) fn is_supported_video_path(path: &Path) -> bool {
     path.extension()
         .and_then(|extension| extension.to_str())
         .is_some_and(|extension| {

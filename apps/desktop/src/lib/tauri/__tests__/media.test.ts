@@ -15,6 +15,7 @@ import {
   chooseSource,
   inspectMedia,
   listenForSourceDrops,
+  moveSourceToTrash,
   planOptimizedExport,
   prepareProxyPreview,
   prepareSourcePreview,
@@ -65,6 +66,16 @@ describe("media IPC adapter", () => {
       sourcePath: "C:/Media/clip.mp4",
     });
     expect(mocks.invoke).toHaveBeenCalledWith("activate_source_path", {
+      sourcePath: "C:/Media/clip.mp4",
+    });
+  });
+
+  it("moves a source to trash through the narrow command", async () => {
+    mocks.invoke.mockResolvedValue(undefined);
+
+    await moveSourceToTrash("C:/Media/clip.mp4");
+
+    expect(mocks.invoke).toHaveBeenCalledWith("delete_source_file", {
       sourcePath: "C:/Media/clip.mp4",
     });
   });

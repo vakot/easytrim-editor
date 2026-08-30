@@ -1,11 +1,8 @@
 import { createSelector, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
-import {
-  sourceCleared,
-  sourceFailed,
-  sourceReady,
-  sourceSelected,
-} from "@/app/store/actions/source-actions";
+import { importQueueItemActivated } from "@/app/store/actions/imported-queue-actions";
+import { sourceCleared, sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
+import type { EditorSnapshot } from "@/domain/editor-snapshot";
 import type {
   AppError,
   AudioPreviewDescriptor,
@@ -177,6 +174,17 @@ const audioSlice = createSlice({
           previews: [],
         };
       })
+      .addCase(importQueueItemActivated, (state, action) => {
+        const { media, snapshot } = action.payload;
+        state.tracks = media ? createAudioTracks(media, snapshot) : [];
+        state.masterEnabled = snapshot.audio.master.enabled;
+        state.masterVolumePercent = snapshot.audio.master.volumePercent;
+        state.mergeAudio = snapshot.audio.mergeAudio;
+        state.previews = {
+          status: "idle",
+          previews: [],
+        };
+      })
       .addCase(sourceCleared, (state) => {
         state.tracks = [];
         state.masterEnabled = true;
@@ -185,25 +193,27 @@ const audioSlice = createSlice({
         state.previews = null;
       })
       .addCase(sourceReady, (state, action) => {
-        state.tracks = createAudioTracks(action.payload.media);
-      })
-      .addCase(sourceFailed, (state) => {
-        state.tracks = [];
-        state.masterEnabled = true;
-        state.masterVolumePercent = DEFAULT_UNMUTE_VOLUME_PERCENT;
-        state.mergeAudio = false;
-        state.previews = null;
+        state.tracks = createAudioTracks(action.payload.media, action.payload.snapshot);
+        if (action.payload.snapshot) {
+          state.masterEnabled = action.payload.snapshot.audio.master.enabled;
+          state.masterVolumePercent = action.payload.snapshot.audio.master.volumePercent;
+          state.mergeAudio = action.payload.snapshot.audio.mergeAudio;
+        }
       });
   },
 });
 
-function createAudioTracks(media: MediaInfo): AudioTrackState[] {
-  return media.audioStreams.map((stream) => ({
-    streamIndex: stream.streamIndex,
-    enabled: true,
-    volumePercent: DEFAULT_UNMUTE_VOLUME_PERCENT,
-    waveform: { status: "idle" },
-  }));
+function createAudioTracks(media: MediaInfo, snapshot?: EditorSnapshot): AudioTrackState[] {
+  const savedTracks = new Map(snapshot?.audio.tracks.map((track) => [track.streamIndex, track]));
+  return media.audioStreams.map((stream) => {
+    const saved = savedTracks.get(stream.streamIndex);
+    return {
+      streamIndex: stream.streamIndex,
+      enabled: saved?.enabled ?? true,
+      volumePercent: saved?.volumePercent ?? DEFAULT_UNMUTE_VOLUME_PERCENT,
+      waveform: { status: "idle" },
+    };
+  });
 }
 
 function applyWaveformResult(state: AudioState, result: WaveformResult) {

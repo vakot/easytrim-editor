@@ -2,12 +2,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   chooseOutputPath: vi.fn(),
+  moveSourceToTrash: vi.fn(),
   reserveExportSource: vi.fn(),
   releaseExportSource: vi.fn(),
   cancelOperation: vi.fn(),
   planOptimizedExport: vi.fn(),
   activateSourcePath: vi.fn(),
   activateSource: vi.fn(),
+  activateImportedItemRequested: vi.fn(),
   leaveActiveImportedItem: vi.fn(),
   navigateToImportedItem: vi.fn(),
   restoreActiveImportedItemRequested: vi.fn(),
@@ -19,6 +21,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/lib/tauri/media", () => ({
   chooseOutputPath: mocks.chooseOutputPath,
+  moveSourceToTrash: mocks.moveSourceToTrash,
   reserveExportSource: mocks.reserveExportSource,
   releaseExportSource: mocks.releaseExportSource,
   cancelOperation: mocks.cancelOperation,
@@ -36,15 +39,18 @@ vi.mock("@/lib/tauri/queue", () => ({
   performQueueFinishAction: mocks.performQueueFinishAction,
 }));
 vi.mock("@/app/store/thunks/source-media-thunks", () => ({
+  activateImportedItemRequested: mocks.activateImportedItemRequested,
   activateSource: mocks.activateSource,
   leaveActiveImportedItem: mocks.leaveActiveImportedItem,
   navigateToImportedItem: mocks.navigateToImportedItem,
   restoreActiveImportedItemRequested: mocks.restoreActiveImportedItemRequested,
 }));
 
+import { importQueueItemActivated } from "@/app/store/actions/imported-queue-actions";
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
 import {
   activeQueueItemChanged,
+  deleteSourceOnRenderFinishChanged,
   type ExportQueueItem,
   type importQueueItem,
   importQueueItemAdded,
@@ -154,12 +160,34 @@ function createReadyStore(withImportedItem = true) {
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.chooseOutputPath.mockResolvedValue(output);
+  mocks.moveSourceToTrash.mockResolvedValue(undefined);
   mocks.reserveExportSource.mockResolvedValue(undefined);
   mocks.releaseExportSource.mockResolvedValue(undefined);
   mocks.cancelOperation.mockResolvedValue(undefined);
   mocks.planOptimizedExport.mockResolvedValue({ commandPreview: "ffmpeg -i <source> <output>" });
   mocks.activateSourcePath.mockReset();
   mocks.activateSource.mockReset();
+  mocks.activateImportedItemRequested.mockReset();
+  mocks.activateImportedItemRequested.mockImplementation((item: importQueueItem) => {
+    return (dispatch: AppDispatch) => {
+      dispatch(
+        importQueueItemActivated({
+          id: item.id,
+          loadToken: 2,
+          media: item.media ?? media,
+          snapshot: item.snapshot,
+        }),
+      );
+      dispatch(
+        sourceReady({
+          loadToken: 2,
+          media: item.media ?? media,
+          snapshot: item.snapshot,
+        }),
+      );
+      return Promise.resolve(true);
+    };
+  });
   mocks.leaveActiveImportedItem.mockReset();
   mocks.leaveActiveImportedItem.mockImplementation(
     () => (dispatch: AppDispatch, getState: () => RootState) => {
@@ -412,28 +440,31 @@ describe("export thunks and runtime queue", () => {
     await vi.waitFor(() => expect(mocks.performQueueFinishAction).toHaveBeenCalledWith("exit"));
   });
 
+  it("deletes the source after a successful render when confirmed", async () => {
+    mocks.renderFast.mockResolvedValue({
+      operationId: "operation-delete-source",
+      displayName: output.displayName,
+      displayPath: output.displayPath,
+    });
+    const store = createReadyStore();
+    store.dispatch(deleteSourceOnRenderFinishChanged(true));
+
+    store.dispatch(startFastCutRequested());
+    await vi.waitFor(() => expect(selectExportQueue(store.getState())).toHaveLength(1));
+    store.dispatch(startExportQueue());
+
+    await vi.waitFor(() =>
+      expect(mocks.moveSourceToTrash).toHaveBeenCalledWith("C:/Media/source.mp4"),
+    );
+    expect(selectExportQueue(store.getState())[0]?.sourceDeleted).toBe(true);
+  });
+
   it("restores a queued snapshot after importing its source", async () => {
     const source = {
       displayName: "other.mp4",
       sourcePath: "C:/Media/other.mp4",
     };
 
-    const restoredMedia = { ...media, durationMicros: 2_000_000 };
-    mocks.activateSourcePath.mockResolvedValue(source);
-    mocks.activateSource.mockImplementation(
-      (
-        selectedSource: typeof source,
-        mergeAudio: boolean,
-        options: { activeItemId?: string | null } = {},
-      ) =>
-        (dispatch: AppDispatch) => {
-          dispatch(sourceSelected({ source: selectedSource, mergeAudio, loadToken: 2 }));
-          dispatch(sourceReady({ loadToken: 2, media: restoredMedia }));
-          if (options.activeItemId !== undefined) {
-            dispatch(activeQueueItemChanged(options.activeItemId));
-          }
-        },
-    );
     const store = createReadyStore(false);
     store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
     const historicalItem = {
@@ -451,7 +482,9 @@ describe("export thunks and runtime queue", () => {
       true,
     );
 
-    expect(mocks.activateSourcePath).toHaveBeenCalledWith(source.sourcePath);
+    expect(mocks.activateImportedItemRequested).toHaveBeenCalledWith(
+      expect.objectContaining({ snapshot: historicalItem.snapshot }),
+    );
     expect(store.getState().source.source).toEqual(source);
     expect(selectTrim(store.getState())).toMatchObject({
       startMicros: 250_000,
@@ -481,21 +514,6 @@ describe("export thunks and runtime queue", () => {
     };
 
     const secondHistoryItem = { ...historicalItem, id: "export-second" };
-    mocks.activateSourcePath.mockResolvedValue(source);
-    mocks.activateSource.mockImplementation(
-      (
-        selectedSource: typeof source,
-        mergeAudio: boolean,
-        options: { activeItemId?: string | null } = {},
-      ) =>
-        (dispatch: AppDispatch) => {
-          dispatch(sourceSelected({ source: selectedSource, mergeAudio, loadToken: 2 }));
-          dispatch(sourceReady({ loadToken: 2, media }));
-          if (options.activeItemId !== undefined) {
-            dispatch(activeQueueItemChanged(options.activeItemId));
-          }
-        },
-    );
     const store = createReadyStore(false);
     store.dispatch(queueEntryAdded(historicalItem));
 

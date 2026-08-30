@@ -1,6 +1,7 @@
 import { createSelector, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
-import { sourceCleared, sourceFailed, sourceSelected } from "@/app/store/actions/source-actions";
+import { importQueueItemActivated } from "@/app/store/actions/imported-queue-actions";
+import { sourceCleared, sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
 import { selectSourceMedia } from "@/app/store/slices/source-slice";
 import { type CropRect, FULL_CROP } from "@/domain/crop";
 
@@ -30,11 +31,16 @@ const cropSlice = createSlice({
       .addCase(sourceSelected, (state) => {
         state.value = FULL_CROP;
       })
+      .addCase(importQueueItemActivated, (state, action) => {
+        state.value = action.payload.snapshot.crop ?? FULL_CROP;
+      })
       .addCase(sourceCleared, (state) => {
         state.value = FULL_CROP;
       })
-      .addCase(sourceFailed, (state) => {
-        state.value = FULL_CROP;
+      .addCase(sourceReady, (state, action) => {
+        if (action.payload.snapshot) {
+          state.value = action.payload.snapshot.crop ?? FULL_CROP;
+        }
       });
   },
 });

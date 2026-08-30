@@ -1,9 +1,10 @@
-import { LoaderCircle } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { type RefObject, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
@@ -22,6 +23,7 @@ interface VideoPreviewProps {
   onPause: () => void;
   onPlay: () => void;
   onPlaybackError: (previewKind: "source" | "proxy") => void;
+  onSkip: () => void;
   onTimeUpdate: (seconds: number) => void;
   onTogglePlayback: () => void;
   preview: PreviewState;
@@ -38,6 +40,7 @@ export function VideoPreview({
   onPause,
   onPlay,
   onPlaybackError,
+  onSkip,
   onTimeUpdate,
   onTogglePlayback,
   preview,
@@ -47,7 +50,9 @@ export function VideoPreview({
   const playbackRate = useAppSelector(selectPlaybackSpeed);
   const reportedUrl = useRef<string | null>(null);
   const [cropToolOpen, setCropToolOpen] = useState(false);
+
   const readyUrl = preview.status === "ready" ? preview.value.url : null;
+
   useEffect(() => {
     if (videoRef.current) videoRef.current.playbackRate = playbackRate;
   }, [playbackRate, readyUrl, videoRef]);
@@ -61,41 +66,38 @@ export function VideoPreview({
   }, [cropToolOpen, onCropToolOpenChange]);
 
   if (preview.status === "idle" || preview.status === "loading") {
-    const isProxy = preview.status === "loading" && preview.kind === "proxy";
-    return (
-      <div
-        className="grid place-items-center gap-2 text-center text-sm text-muted-foreground"
-        role="status"
-      >
-        <LoaderCircle aria-hidden="true" className="size-6 animate-spin text-primary" />
-        <strong className="text-foreground">
-          {isProxy ? t("preview.status.preparing") : t("preview.status.opening")}
-        </strong>
-        {isProxy ? <span>{t("preview.messages.preparing")}</span> : null}
-      </div>
-    );
+    return <div aria-hidden="true" className="size-full bg-preview-surface" />;
   }
 
   if (preview.status === "failed") {
     return (
-      <Alert className="max-w-xl" variant="destructive">
-        <AlertTitle>{t("preview.messages.error")}</AlertTitle>
-        <AlertDescription>
-          <p>{preview.error.message}</p>
-          {preview.error.diagnostics ? (
-            <details className="mt-2">
-              <summary>{t("source.labels.technicalDetails")}</summary>
-              <pre className="mt-2 max-h-48 overflow-auto text-xs whitespace-pre-wrap">
-                {preview.error.diagnostics}
-              </pre>
-            </details>
-          ) : null}
-        </AlertDescription>
-      </Alert>
+      <div className="flex h-full items-center justify-center">
+        <Alert className="max-w-md" variant="destructive">
+          <AlertCircle />
+          <AlertTitle>{t("preview.messages.error")}</AlertTitle>
+          <AlertDescription>
+            <p>{preview.error.message}</p>
+            {preview.error.diagnostics ? (
+              <details className="mt-2">
+                <summary>{t("source.labels.technicalDetails")}</summary>
+                <pre className="mt-2 max-h-48 overflow-auto text-xs whitespace-pre-wrap">
+                  {preview.error.diagnostics}
+                </pre>
+              </details>
+            ) : null}
+          </AlertDescription>
+          <AlertAction>
+            <Button className="mt-3" onClick={onSkip} size="sm" variant="outline">
+              {t("queue.actions.skip")}
+            </Button>
+          </AlertAction>
+        </Alert>
+      </div>
     );
   }
 
   const { value } = preview;
+
   return (
     <section className="grid size-full min-h-0 place-items-center p-4">
       <div

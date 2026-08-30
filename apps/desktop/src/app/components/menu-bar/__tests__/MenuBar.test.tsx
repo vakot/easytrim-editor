@@ -36,6 +36,7 @@ const menuState = vi.hoisted(() => ({
   },
   export: {
     queue: [] as Array<{ status: "queued" | "rendering" }>,
+    deleteSourceOnRenderFinish: false,
     queueStarted: false,
     queueFinishAction: "nothing" as QueueFinishAction,
     availableQueueFinishActions: ["exit", "nothing"] as QueueFinishAction[],
@@ -91,6 +92,7 @@ vi.mock("@/app/store/redux-hooks", () => ({
       crop: menuState.crop,
       export: {
         queue: menuState.export.queue,
+        deleteSourceOnRenderFinish: menuState.export.deleteSourceOnRenderFinish,
         queueStarted: menuState.export.queueStarted,
         queueFinishAction: menuState.export.queueFinishAction,
         availableQueueFinishActions: menuState.export.availableQueueFinishActions,
@@ -117,6 +119,7 @@ describe("MenuBarTest", () => {
     canExport?: boolean;
     canSave?: boolean;
     customPrimaryColor?: `#${string}`;
+    deleteSourceOnRenderFinish?: boolean;
     hasActiveItem?: boolean;
     hasQueuedItems?: boolean;
     hasSource?: boolean;
@@ -145,6 +148,7 @@ describe("MenuBarTest", () => {
       ...(overrides.hasQueuedItems ? [{ status: "queued" as const }] : []),
       ...(overrides.hasActiveItem ? [{ status: "rendering" as const }] : []),
     ];
+    menuState.export.deleteSourceOnRenderFinish = overrides.deleteSourceOnRenderFinish ?? false;
     menuState.export.queueStarted = overrides.queueStarted ?? false;
     menuState.export.queueFinishAction = overrides.queueFinishAction ?? "nothing";
     menuState.export.availableQueueFinishActions = overrides.availableQueueFinishActions ?? [
@@ -168,6 +172,10 @@ describe("MenuBarTest", () => {
       });
 
     menuState.dispatch = vi.fn((action: { payload?: unknown; type: string }) => {
+      if (action.type === "export/deleteSourceOnRenderFinishChanged") {
+        menuState.export.deleteSourceOnRenderFinish = action.payload as boolean;
+        notify();
+      }
       if (
         action.type === "preferences/preferenceChanged" &&
         typeof action.payload === "object" &&
@@ -290,6 +298,29 @@ describe("MenuBarTest", () => {
     expect(menuState.dispatch).toHaveBeenCalledWith(
       expect.objectContaining({ type: "export/queueFinishActionChanged", payload: "exit" }),
     );
+  });
+
+  it("requires confirmation before enabling source deletion after render", async () => {
+    const user = userEvent.setup();
+    renderMenus();
+
+    await user.click(getMenuTrigger("Queue"));
+    const deleteSourceItem = screen.getByRole("menuitemcheckbox", { name: "Delete source" });
+    expect(deleteSourceItem).toHaveAttribute("aria-checked", "false");
+
+    await user.click(deleteSourceItem);
+    expect(
+      screen.getByRole("heading", { name: "Delete source after rendering?" }),
+    ).toBeInTheDocument();
+    expect(menuState.dispatch).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: "export/deleteSourceOnRenderFinishChanged" }),
+    );
+
+    await user.click(screen.getByRole("button", { name: "Enable" }));
+    expect(menuState.dispatch).toHaveBeenCalledWith({
+      type: "export/deleteSourceOnRenderFinishChanged",
+      payload: true,
+    });
   });
 
   it("opens Help links with the current release version", async () => {
@@ -524,7 +555,7 @@ describe("MenuBarTest", () => {
     expect(fileButton).toHaveClass("h-6");
 
     await user.click(fileButton);
-    expect(screen.getByRole("separator")).toBeInTheDocument();
+    expect(screen.getAllByRole("separator")).toHaveLength(2);
 
     const openFileItem = screen.getByRole("menuitem", { name: /Open File/ });
     expect(openFileItem).toHaveTextContent("CtrlO");
@@ -537,6 +568,42 @@ describe("MenuBarTest", () => {
     expect(closeFileItem).toHaveTextContent("CtrlQ");
     await user.click(closeFileItem);
     expect(menuState.dispatch).toHaveBeenCalledTimes(2);
+  });
+
+  it("requires confirmation before deleting the source from the File menu", async () => {
+    const user = userEvent.setup();
+    render(
+      <TooltipProvider>
+        <ThemeProvider>
+          <MenuBarTest canExport canSave hasSource isChoosingSource={false} />
+        </ThemeProvider>
+      </TooltipProvider>,
+    );
+
+    await user.click(getMenuTrigger("File"));
+    const deleteSourceItem = screen.getByRole("menuitem", { name: /Delete Source/ });
+    expect(deleteSourceItem).toHaveAttribute("data-variant", "destructive");
+    expect(deleteSourceItem).toHaveTextContent("CtrlD");
+
+    await user.click(deleteSourceItem);
+    expect(screen.getByRole("heading", { name: "Delete source file?" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("heading", { name: "Delete source file?" })).not.toBeInTheDocument();
+  });
+
+  it("opens source deletion confirmation with Ctrl+D", () => {
+    render(
+      <TooltipProvider>
+        <ThemeProvider>
+          <MenuBarTest canExport canSave hasSource isChoosingSource={false} />
+        </ThemeProvider>
+      </TooltipProvider>,
+    );
+
+    fireEvent.keyDown(window, { code: "KeyD", ctrlKey: true, key: "d" });
+
+    expect(screen.getByRole("heading", { name: "Delete source file?" })).toBeInTheDocument();
   });
 
   it("keeps Theme and Language metadata visible for every submenu option", async () => {

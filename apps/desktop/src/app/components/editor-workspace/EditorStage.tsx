@@ -54,7 +54,7 @@ export function EditorStage() {
       style={timelineGeometryStyle(trim ?? EMPTY_TIMELINE_RANGE)}
     >
       <ResizablePanel className="overflow-hidden" id="editor-stage-preview" minSize="14rem">
-        <Card className="size-full bg-preview-surface p-0 ring-inset">
+        <Card className="relative isolate size-full bg-preview-surface p-0 ring-inset">
           <SourceDropOverlay />
           <Preview />
         </Card>

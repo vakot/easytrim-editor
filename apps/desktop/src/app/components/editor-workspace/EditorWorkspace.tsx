@@ -2,18 +2,12 @@ import { useTranslation } from "react-i18next";
 
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 
-import { useAppSelector } from "@/app/store/redux-hooks";
-import { selectActiveItemId } from "@/app/store/slices/export-slice";
-import { selectSourceSelection } from "@/app/store/slices/source-slice";
 import { SourcePanel } from "@/features/source";
 
 import { EditorStage } from "./EditorStage";
 
 export function EditorWorkspace() {
   const { t } = useTranslation();
-
-  const sourceSelection = useAppSelector(selectSourceSelection);
-  const activeItemId = useAppSelector(selectActiveItemId);
 
   return (
     <ResizablePanelGroup className="pr-2 pl-1" id="workspace" persisted>
@@ -25,7 +19,7 @@ export function EditorWorkspace() {
         groupResizeBehavior="preserve-pixel-size"
         id="workspace-sidebar"
         maxSize="30rem"
-        minSize="15rem"
+        minSize={290}
       >
         <aside
           aria-label={t("source.labels.title")}
@@ -35,10 +29,14 @@ export function EditorWorkspace() {
         </aside>
       </ResizablePanel>
 
-      <ResizableHandle className="bg-transparent" style={{ width: 4 }} withHandle />
+      <ResizableHandle
+        className="self-start bg-transparent"
+        style={{ height: "calc(100% - 4px)", width: 4 }}
+        withHandle
+      />
 
       <ResizablePanel className="overflow-hidden" id="workspace-content" minSize="44rem">
-        <EditorStage key={activeItemId ?? sourceSelection?.sourcePath ?? "no-source"} />
+        <EditorStage />
       </ResizablePanel>
     </ResizablePanelGroup>
   );

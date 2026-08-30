@@ -3,12 +3,9 @@ import { useTranslation } from "react-i18next";
 
 import { Kbd, KbdGroup, KbdSeparator } from "@/components/ui/kbd";
 
-import { KofiIcon } from "@/components/brand-icons";
-import { openExternalUrl } from "@/lib/open-external-url.utils";
+import { SupportLink } from "@/app/components/SupportLink";
 
 import styles from "./VideoPreviewEmpty.module.css";
-
-const KOFI_URL = "https://ko-fi.com/vakot";
 
 export function VideoPreviewEmpty() {
   const { t } = useTranslation();
@@ -91,17 +88,7 @@ export function VideoPreviewEmpty() {
             ))}
           </div>
 
-          <a
-            className="inline-flex items-center justify-center gap-1.5 text-center text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-            href={KOFI_URL}
-            onClick={(event) => {
-              event.preventDefault();
-              void openExternalUrl(KOFI_URL);
-            }}
-          >
-            <KofiIcon className="size-3.5 text-primary" />
-            <span>{t("support.actions.koFi")}</span>
-          </a>
+          <SupportLink />
         </div>
       </div>
     </section>

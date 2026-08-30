@@ -244,12 +244,19 @@ describe("source/media orchestration thunks", () => {
     expect(importedItems[0]?.snapshot.source.sourcePath).toBe(firstSource.sourcePath);
     expect(selectActiveItemId(appStore.getState())).toBe(importedItems[1]?.id);
 
+    const observedSources: Array<SourceRef | null> = [];
+    const unsubscribe = appStore.subscribe(() => {
+      observedSources.push(selectSourceSelection(appStore.getState()));
+    });
+
     expect(appStore.dispatch(navigateToImportedItem(firstItem!.id))).toBe(true);
+    unsubscribe();
     expect(selectActiveItemId(appStore.getState())).toBe(firstItem!.id);
-    expect(selectSourceSelection(appStore.getState())).toBeNull();
-    expect(selectSourceMedia(appStore.getState())).toBeNull();
-    expect(selectPreview(appStore.getState())).toEqual({ status: "idle" });
-    expect(selectAudioTracks(appStore.getState())).toEqual([]);
+    expect(selectSourceSelection(appStore.getState())).toEqual(firstSource);
+    expect(selectSourceMedia(appStore.getState())).toEqual(createMedia(firstSource.sourcePath, 1));
+    expect(selectPreview(appStore.getState())).toEqual({ status: "loading", kind: "source" });
+    expect(selectAudioTracks(appStore.getState())).toHaveLength(1);
+    expect(observedSources).not.toContain(null);
     await vi.waitFor(() => expect(selectSourceSelection(appStore.getState())).toEqual(firstSource));
     expect(selectActiveItemId(appStore.getState())).toBe(firstItem!.id);
     expect(appStore.getState().trim.value).toMatchObject({
@@ -392,16 +399,23 @@ describe("source/media orchestration thunks", () => {
 
     expect(selectActiveItemId(appStore.getState())).toBe(secondItem!.id);
     expect(selectSourceSelection(appStore.getState())).toEqual(secondSource);
-    expect(selectSourceMedia(appStore.getState())).toBeNull();
+    expect(selectSourceMedia(appStore.getState())).toEqual(createMedia(secondSource.sourcePath, 2));
     expect(appStore.getState().source.error).toEqual({
       code: "unsupported_media",
       message: "B could not be inspected.",
     });
-    expect(appStore.getState().trim.value).toBeNull();
+    expect(appStore.getState().trim.value).toMatchObject({
+      startMicros: 0,
+      endMicros: 5_000_000,
+    });
     expect(selectCrop(appStore.getState())).not.toEqual(savedCrop);
     expect(selectMasterAudio(appStore.getState())).toEqual({ enabled: true, volumePercent: 50 });
-    expect(selectAudioTracks(appStore.getState())).toEqual([]);
+    expect(selectAudioTracks(appStore.getState())).toHaveLength(2);
     expect(selectMergeAudio(appStore.getState())).toBe(false);
+    expect(selectPreview(appStore.getState())).toMatchObject({
+      status: "failed",
+      error: { code: "unsupported_media", message: "B could not be inspected." },
+    });
     expect(selectImportQueueItems(appStore.getState()).map((item) => item.id)).toEqual(queueIds);
     expect(mocks.activateSourcePath).toHaveBeenCalledWith(secondSource.sourcePath);
     expect(mocks.activateSourcePath).not.toHaveBeenLastCalledWith(firstSource.sourcePath);
@@ -686,7 +700,12 @@ describe("source/media orchestration thunks", () => {
       thirdItem!.id,
     ]);
     expect(selectActiveItemId(appStore.getState())).toBe(thirdItem!.id);
-    expect(selectSourceSelection(appStore.getState())).toBeNull();
+    expect(selectSourceSelection(appStore.getState())).toEqual(thirdSource);
+    expect(selectSourceMedia(appStore.getState())).toEqual(createMedia(thirdSource.sourcePath, 1));
+    expect(selectPreview(appStore.getState())).toMatchObject({
+      status: "failed",
+      error: { code: "io_failed", message: "The next source is missing." },
+    });
   });
 
   it("discards a history fork when a new source is imported", async () => {
@@ -807,6 +826,63 @@ describe("source/media orchestration thunks", () => {
     expect(selectSourceSelection(appStore.getState())).toEqual(secondSource);
     expect(mocks.prepareSourcePreview).toHaveBeenCalledTimes(1);
     expect(mocks.prepareSourcePreview).toHaveBeenCalledWith(secondSource.sourcePath);
+  });
+
+  it("keeps C authoritative when snapshot restorations complete out of order", async () => {
+    const appStore = createAppStore();
+    const sources = [firstSource, secondSource, thirdSource];
+    const inspections = new Map(
+      sources.map((source) => [source.sourcePath, createDeferred<MediaInfo>()]),
+    );
+
+    const items = sources.map((source, index) => ({
+      id: `import-race-${index + 1}`,
+      status: "imported" as const,
+      origin: "source-import" as const,
+      media: createMedia(source.sourcePath, 1),
+      snapshot: {
+        source,
+        trim: { startMicros: index * 100_000, endMicros: 5_000_000 },
+        crop: null,
+        audio: {
+          master: { enabled: true, volumePercent: 50 },
+          tracks: [],
+          mergeAudio: false,
+        },
+      },
+    }));
+
+    for (const item of items) appStore.dispatch(importQueueItemAdded(item));
+    mocks.inspectMedia.mockImplementation(
+      (sourcePath: string) => inspections.get(sourcePath)!.promise,
+    );
+
+    expect(appStore.dispatch(navigateToImportedItem(items[0]!.id))).toBe(true);
+    await vi.waitFor(() => expect(mocks.inspectMedia).toHaveBeenCalledWith(firstSource.sourcePath));
+    expect(selectSourceSelection(appStore.getState())).toEqual(firstSource);
+
+    expect(appStore.dispatch(navigateToImportedItem(items[1]!.id))).toBe(true);
+    await vi.waitFor(() =>
+      expect(mocks.inspectMedia).toHaveBeenCalledWith(secondSource.sourcePath),
+    );
+    expect(selectSourceSelection(appStore.getState())).toEqual(secondSource);
+
+    expect(appStore.dispatch(navigateToImportedItem(items[2]!.id))).toBe(true);
+    await vi.waitFor(() => expect(mocks.inspectMedia).toHaveBeenCalledWith(thirdSource.sourcePath));
+    expect(selectSourceSelection(appStore.getState())).toEqual(thirdSource);
+    expect(selectSourceMedia(appStore.getState())).toEqual(createMedia(thirdSource.sourcePath, 1));
+
+    inspections.get(thirdSource.sourcePath)!.resolve(createMedia(thirdSource.sourcePath, 1));
+    await vi.waitFor(() => expect(selectPreview(appStore.getState()).status).toBe("ready"));
+    inspections.get(secondSource.sourcePath)!.resolve(createMedia(secondSource.sourcePath, 2));
+    inspections.get(firstSource.sourcePath)!.resolve(createMedia(firstSource.sourcePath, 2));
+    await vi.waitFor(() => expect(mocks.inspectMedia).toHaveBeenCalledTimes(3));
+
+    expect(selectActiveItemId(appStore.getState())).toBe(items[2]!.id);
+    expect(selectSourceSelection(appStore.getState())).toEqual(thirdSource);
+    expect(selectSourceMedia(appStore.getState())).toEqual(createMedia(thirdSource.sourcePath, 1));
+    expect(mocks.prepareSourcePreview).toHaveBeenCalledTimes(1);
+    expect(mocks.prepareSourcePreview).toHaveBeenCalledWith(thirdSource.sourcePath);
   });
 
   it("records inspection failures and capability failures as serializable app errors", async () => {

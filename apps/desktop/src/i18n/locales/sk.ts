@@ -8,6 +8,7 @@ export const sk = {
       close: "Zavrieť",
       delete: "Odstrániť",
       edit: "Upraviť",
+      enable: "Povoliť",
       retry: "Skúsiť znova",
       save: "Uložiť",
     },
@@ -23,6 +24,7 @@ export const sk = {
   },
   app: {
     actions: {
+      deleteSource: "Odstrániť zdroj",
       checkForUpdates: "Skontrolovať aktualizácie…",
       closeFile: "Zavrieť súbor",
       maximize: "Maximalizovať",
@@ -113,6 +115,7 @@ export const sk = {
       start: "Spustiť front",
     },
     labels: {
+      deleteSource: "Odstrániť zdroj",
       export: "Front exportov",
       import: "Front importov",
       onFinish: "Po dokončení frontu",
@@ -120,22 +123,31 @@ export const sk = {
     },
     status: {
       canceled: "Zrušené",
-      completed: "Dokončené",
       failed: "Zlyhalo",
       queued: "Vo fronte",
+      sourceDeleted: "Zdroj odstránený",
+    },
+    tooltips: {
+      deleteSourceOnRenderFinish: "Po úspešnom vykreslení odstráni zdroj",
     },
     dialogs: {
       cancel: {
         description: "Aktívny export a všetky zostávajúce exporty vo fronte sa zrušia.",
         title: "Zrušiť front exportov?",
       },
+      deleteSourceOnRenderFinish: {
+        description:
+          "Pôvodný zdrojový súbor sa po úspešnom dokončení vykreslenia odstráni. Túto akciu možno vrátiť späť.",
+        title: "Odstrániť zdroj po vykreslení?",
+      },
     },
     accessibility: {
       cancelItem: "Zrušiť {{filename}}",
       openLocation: "Otvoriť umiestnenie {{filename}}",
       progress: "Priebeh exportu",
+      deleteSource: "Odstrániť {{filename}} zo zariadenia",
+      removeImportItem: "Odstrániť {{filename}} z frontu importov",
       restoreItem: "Obnoviť {{filename}}",
-      status: "Export: {{status}}",
     },
     options: {
       finish: {
@@ -181,6 +193,12 @@ export const sk = {
       toolsUnavailable: "Niektoré požadované multimediálne závislosti nie sú dostupné.",
     },
     tooltips: { sidebarControls: "Vybrať viditeľné panely zdroja" },
+    dialogs: {
+      delete: {
+        description: "Týmto odstránite {{name}} z počítača. Túto akciu možno vrátiť späť.",
+        title: "Odstrániť zdrojový súbor?",
+      },
+    },
     accessibility: {
       metadata: "Metadáta videa",
       toolsUnavailable: "Multimediálne nástroje nie sú dostupné. {{message}}",
@@ -214,7 +232,6 @@ export const sk = {
     messages: {
       error: "Náhľad videa sa nepodarilo zobraziť",
       playbackFailed: "Prehrávanie sa nepodarilo spustiť.",
-      preparing: "Pri zdrojoch s vysokým rozlíšením to môže chvíľu trvať.",
       proxy:
         "Pôvodný zdroj nebolo možné prehrať priamo, preto EasyTrim pripravil kompatibilný náhľad, ktorý môže mať nižšiu kvalitu. Export stále používa pôvodný súbor.",
       setEndUnavailable: "Koniec segmentu nastavíte presunutím za začiatok zdroja",
@@ -296,7 +313,6 @@ export const sk = {
       waveformUnavailable: "Priebeh zvuku nie je dostupný",
     },
     messages: {
-      noTracks: "Tento zdroj nemá žiadne zvukové stopy.",
       output: {
         merged_one: "{{count}} vybraná stopa sa zlúči do jednej stopy",
         merged_few: "{{count}} vybrané stopy sa zlúčia do jednej stopy",

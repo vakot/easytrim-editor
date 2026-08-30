@@ -1,26 +1,59 @@
 import { LoaderCircle } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { Button } from "@/components/ui/button";
+
 import { usePlayback } from "@/app/hooks/usePlayback";
-import { useAppSelector } from "@/app/store/redux-hooks";
+import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectPreview } from "@/app/store/slices/preview-slice";
-import { selectSourceSelection } from "@/app/store/slices/source-slice";
+import { selectSourceLoadToken, selectSourceSelection } from "@/app/store/slices/source-slice";
+import { closeActiveImportedItemRequested } from "@/app/store/thunks/source-media-thunks";
 
 import { VideoPreview } from "./components/VideoPreview";
 import { VideoPreviewEmpty } from "./components/VideoPreviewEmpty";
 
 export function Preview() {
   const { t } = useTranslation();
+  const dispatch = useAppDispatch();
   const playback = usePlayback();
   const sourceSelection = useAppSelector(selectSourceSelection);
+  const sourceLoadToken = useAppSelector(selectSourceLoadToken);
   const preview = useAppSelector(selectPreview);
+  const transitionKey = `${sourceLoadToken}:${sourceSelection?.sourcePath ?? "no-source"}`;
+  const [completedTransitionKey, setCompletedTransitionKey] = useState<string | null>(null);
   const showLoadingOverlay =
     sourceSelection !== null &&
     (preview.status === "loading" ||
-      (preview.status === "ready" && !playback.isReady && !playback.isPlaying));
+      (preview.status === "ready" &&
+        completedTransitionKey !== transitionKey &&
+        !playback.isReady));
+
+  const [skipAvailableFor, setSkipAvailableFor] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (sourceSelection !== null && preview.status === "ready" && playback.isReady) {
+      // Playback becoming ready completes this source transition. Later audio-route
+      // reconfiguration must not revive the source-opening overlay.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCompletedTransitionKey(transitionKey);
+    }
+  }, [playback.isReady, preview.status, sourceSelection, transitionKey]);
+
+  useEffect(() => {
+    if (!showLoadingOverlay) return;
+    const timeout = window.setTimeout(() => setSkipAvailableFor(transitionKey), 3_000);
+    return () => window.clearTimeout(timeout);
+  }, [showLoadingOverlay, transitionKey]);
+
+  const skipCurrentSource = () => void dispatch(closeActiveImportedItemRequested());
 
   return (
-    <>
+    <div
+      aria-busy={showLoadingOverlay}
+      className="relative size-full min-h-0 overflow-hidden"
+      data-slot="preview-content"
+    >
       {sourceSelection === null ? (
         <VideoPreviewEmpty />
       ) : (
@@ -34,6 +67,7 @@ export function Preview() {
           onPause={playback.onPause}
           onPlay={playback.onPlay}
           onPlaybackError={playback.onPreviewPlaybackError}
+          onSkip={skipCurrentSource}
           onTimeUpdate={playback.onTimeUpdate}
           onTogglePlayback={playback.toggle}
           preview={preview}
@@ -44,7 +78,7 @@ export function Preview() {
         <div
           aria-live="polite"
           className="absolute inset-0 z-30 grid place-items-center bg-background/75 backdrop-blur-sm"
-          data-testid="editor-loading-overlay"
+          data-testid="preview-loading-overlay"
           role="status"
         >
           <div className="grid place-items-center gap-2 text-center text-sm text-muted-foreground">
@@ -52,13 +86,16 @@ export function Preview() {
             <strong className="text-foreground">
               {preview.status === "loading" && preview.kind === "proxy"
                 ? t("preview.status.preparing")
-                : preview.status === "loading"
-                  ? t("preview.status.opening")
-                  : t("common.status.loading")}
+                : t("preview.status.opening")}
             </strong>
+            {skipAvailableFor === transitionKey ? (
+              <Button onClick={skipCurrentSource} size="sm" variant="outline">
+                {t("queue.actions.skip")}
+              </Button>
+            ) : null}
           </div>
         </div>
       ) : null}
-    </>
+    </div>
   );
 }

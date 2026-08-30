@@ -32,7 +32,6 @@ Child keys include only context not already expressed by their ancestors:
 
 ```text
 good: preview.actions.play
-good: queue.status.completed
 bad:  preview.actions.playPreview
 bad:  queue.status.queueCompleted
 ```
