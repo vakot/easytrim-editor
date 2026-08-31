@@ -23,17 +23,15 @@ import type { ActivityFeedView } from "@/app/preferences";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
   activityFeedViewChanged,
-  selectActivityFeedView,
-} from "@/app/store/slices/preferences-slice";
-import {
   customPrimaryColorChanged,
   primaryColorChanged,
+  selectActivityFeedView,
   selectCustomPrimaryColor,
   selectPrimaryColor,
   selectPrimaryColorKey,
   selectThemePreference,
   themePreferenceChanged,
-} from "@/app/store/slices/theme-slice";
+} from "@/app/store/slices/preferences-slice";
 import {
   CUSTOM_PRIMARY_COLOR,
   isCustomPrimaryColor,

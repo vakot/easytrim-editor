@@ -3,13 +3,20 @@ import { describe, expect, it } from "vitest";
 import { DEFAULT_PREFERENCES, type Preferences } from "@/app/preferences";
 import {
   activityFeedViewChanged,
+  customPrimaryColorChanged,
   preferenceChanged,
   preferencesReducer,
   preferencesReset,
+  primaryColorChanged,
   selectActivityFeedView,
+  selectCustomPrimaryColor,
   selectDeleteSourceOnRenderFinish,
   selectMergeAudioEnabledDefault,
   selectPreferences,
+  selectPrimaryColor,
+  selectPrimaryColorKey,
+  selectThemePreference,
+  themePreferenceChanged,
 } from "@/app/store/slices/preferences-slice";
 import type { RootState } from "@/app/store/store";
 
@@ -44,6 +51,18 @@ describe("preferences Redux domain", () => {
     );
   });
 
+  it("changes theme and color preferences while retaining the custom value", () => {
+    const themedState = preferencesReducer(undefined, themePreferenceChanged("dark"));
+    const presetState = preferencesReducer(themedState, primaryColorChanged("blue"));
+    const customState = preferencesReducer(presetState, customPrimaryColorChanged("#123456"));
+    const nextPresetState = preferencesReducer(customState, primaryColorChanged("rose"));
+
+    expect(themedState.theme).toBe("dark");
+    expect(presetState).toMatchObject({ primaryColor: "blue", customPrimaryColor: "#efbf04" });
+    expect(customState).toMatchObject({ primaryColor: "#123456", customPrimaryColor: "#123456" });
+    expect(nextPresetState).toMatchObject({ primaryColor: "rose", customPrimaryColor: "#123456" });
+  });
+
   it("resets all preferences to product defaults", () => {
     const state = preferencesReducer(
       {
@@ -54,6 +73,9 @@ describe("preferences Redux domain", () => {
         mergeAudioEnabledDefault: true,
         deleteSourceOnRenderFinish: false,
         activityFeedView: "default",
+        theme: "system",
+        primaryColor: "amber",
+        customPrimaryColor: "#efbf04",
       },
       preferencesReset(),
     );
@@ -70,6 +92,9 @@ describe("preferences Redux domain", () => {
       mergeAudioEnabledDefault: true,
       deleteSourceOnRenderFinish: false,
       activityFeedView: "default",
+      theme: "system",
+      primaryColor: "amber",
+      customPrimaryColor: "#efbf04",
     };
 
     const state = { preferences } as RootState;
@@ -81,6 +106,10 @@ describe("preferences Redux domain", () => {
     expect(selectMergeAudioEnabledDefault(state)).toBe(true);
     expect(selectDeleteSourceOnRenderFinish(state)).toBe(false);
     expect(selectActivityFeedView(state)).toBe("default");
+    expect(selectThemePreference(state)).toBe("system");
+    expect(selectPrimaryColor(state)).toBe("amber");
+    expect(selectPrimaryColorKey(state)).toBe("amber");
+    expect(selectCustomPrimaryColor(state)).toBe("#efbf04");
   });
 
   it("falls back to the default activity feed view for invalid persisted state", () => {

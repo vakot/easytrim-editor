@@ -7,7 +7,9 @@ state and runtime resources close to their owners.
 
 - **Redux** owns editor/application state shared across unrelated UI, used by multiple interaction
   paths, or participating in a workflow: source selection/readiness, media capabilities, trim,
-  audio choices, preview status, tools, export queue, and serializable workflow status.
+  audio choices, preview status, tools, export queue, Preferences, and serializable workflow
+  status. Preferences owns durable user choices such as theme, primary colors, activity feed view,
+  and editor defaults.
 - **Feature Redux** remains with the owning capability when multiple consumers or complex domain
   transitions justify it. It is not a generic global bucket.
 - **Local React state or feature-hook state** owns hover, focus, disclosure, popovers, pointer

@@ -26,6 +26,17 @@ export function isCustomPrimaryColor(value: unknown): value is CustomPrimaryColo
   return typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value);
 }
 
+export function isPrimaryColor(value: unknown): value is PrimaryColor {
+  return (
+    isCustomPrimaryColor(value) ||
+    (typeof value === "string" && PRIMARY_COLORS.includes(value as (typeof PRIMARY_COLORS)[number]))
+  );
+}
+
+export function isThemePreference(value: unknown): value is ThemePreference {
+  return value === "system" || value === "light" || value === "dark";
+}
+
 export function resolvePrimaryColor(color: PrimaryColor): string {
   return color.startsWith("#")
     ? color

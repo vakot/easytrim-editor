@@ -1,7 +1,7 @@
 import { type ReactNode, useCallback, useLayoutEffect, useMemo, useSyncExternalStore } from "react";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
-import { selectPrimaryColor, selectThemePreference } from "@/app/store/slices/theme-slice";
+import { selectPrimaryColor, selectThemePreference } from "@/app/store/slices/preferences-slice";
 
 import {
   type PrimaryColor,
