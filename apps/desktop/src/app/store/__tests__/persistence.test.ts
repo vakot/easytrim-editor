@@ -11,14 +11,12 @@ import {
 import { optimizedExportDialogOpened, queueEntryAdded } from "@/app/store/slices/export-slice";
 import {
   activityFeedViewChanged,
+  customPrimaryColorChanged,
   preferenceChanged,
   preferencesReset,
-} from "@/app/store/slices/preferences-slice";
-import {
-  customPrimaryColorChanged,
   primaryColorChanged,
   themePreferenceChanged,
-} from "@/app/store/slices/theme-slice";
+} from "@/app/store/slices/preferences-slice";
 import { type AppStore, createAppPersistor, createAppStore } from "@/app/store/store";
 
 interface TestStorage extends PersistStorage {
@@ -96,16 +94,11 @@ describe("Redux Persist store integration", () => {
     const store = createAppStore(storage);
 
     expect(store.getState().preferences).toEqual(DEFAULT_PREFERENCES);
-    expect(store.getState().theme).toEqual({
-      preference: "system",
-      primaryColor: "amber",
-      customPrimaryColor: "#efbf04",
-    });
     expect(storage.values).toEqual(new Map());
   });
 
-  it("configures only canonical preference and layout domains for persistence", () => {
-    expect(persistConfig.whitelist).toEqual(["panelLayout", "preferences", "theme"]);
+  it("configures Preferences as the persisted application domain", () => {
+    expect(persistConfig.whitelist).toEqual(["preferences"]);
     expect(persistConfig.whitelist).not.toContain("activityFeedView");
     expect(persistConfig.whitelist).not.toContain("editorTools");
     expect(persistConfig.whitelist).not.toContain("importWorkflow");
@@ -135,21 +128,29 @@ describe("Redux Persist store integration", () => {
       }),
     });
 
-    const { store } = await createPersistedTestStore(storage);
+    const { persistor, store } = await createPersistedTestStore(storage);
 
     expect(store.getState().preferences).toEqual({
       ...DEFAULT_PREFERENCES,
       loopPlaybackEnabledDefault: false,
       activityFeedView: "compact",
-    });
-    expect(store.getState().editorTools.loopPlaybackEnabled).toBe(false);
-    expect(store.getState().editorTools.playbackSpeed).toBe(1);
-    expect(store.getState().theme).toEqual({
-      preference: "dark",
+      theme: "dark",
       primaryColor: "#123456",
       customPrimaryColor: "#123456",
     });
+    expect(store.getState().editorTools.loopPlaybackEnabled).toBe(false);
+    expect(store.getState().editorTools.playbackSpeed).toBe(1);
+    expect(store.getState()).not.toHaveProperty("theme");
     expect(store.getState().preferences.activityFeedView).toBe("compact");
+
+    await persistor.flush();
+    const migratedRoot = await readPersistedRoot(storage);
+    expect(migratedRoot).not.toHaveProperty("theme");
+    expect(JSON.parse(String(migratedRoot.preferences))).toMatchObject({
+      theme: "dark",
+      primaryColor: "#123456",
+      customPrimaryColor: "#123456",
+    });
   });
 
   it("does not rewrite active tools when a Preference changes", async () => {
@@ -243,11 +244,7 @@ describe("Redux Persist store integration", () => {
     const { store } = await createPersistedTestStore(storage);
 
     expect(store.getState().preferences).toEqual(DEFAULT_PREFERENCES);
-    expect(store.getState().theme).toEqual({
-      preference: "system",
-      primaryColor: "amber",
-      customPrimaryColor: "#efbf04",
-    });
+    expect(store.getState()).not.toHaveProperty("theme");
   });
 
   it("falls back to the default for invalid and legacy activity feed view data", async () => {
@@ -294,7 +291,7 @@ describe("Redux Persist store integration", () => {
     });
   });
 
-  it("persists theme actions without runtime or derived values", async () => {
+  it("persists theme actions inside Preferences without runtime or derived values", async () => {
     const { persistor, storage, store } = await createPersistedTestStore();
 
     store.dispatch(themePreferenceChanged("dark"));
@@ -303,14 +300,15 @@ describe("Redux Persist store integration", () => {
     await persistor.flush();
 
     const persistedRoot = await readPersistedRoot(storage);
-    expect(JSON.parse(String(persistedRoot.theme))).toEqual({
-      preference: "dark",
+    expect(JSON.parse(String(persistedRoot.preferences))).toMatchObject({
+      theme: "dark",
       primaryColor: "#123456",
       customPrimaryColor: "#123456",
     });
-    expect(persistedRoot).not.toHaveProperty("resolvedTheme");
-    expect(JSON.parse(String(persistedRoot.theme))).not.toHaveProperty("primaryColorKey");
-    expect(JSON.parse(String(persistedRoot.theme))).not.toHaveProperty("systemPrefersDark");
+    expect(persistedRoot).not.toHaveProperty("theme");
+    expect(JSON.parse(String(persistedRoot.preferences))).not.toHaveProperty("resolvedTheme");
+    expect(JSON.parse(String(persistedRoot.preferences))).not.toHaveProperty("primaryColorKey");
+    expect(JSON.parse(String(persistedRoot.preferences))).not.toHaveProperty("systemPrefersDark");
   });
 
   it("persists activity feed view changes through preferences", async () => {

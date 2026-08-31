@@ -53,12 +53,10 @@ const menuState = vi.hoisted(() => ({
     autoStartQueueEnabled: true,
     deleteSourceOnRenderFinish: false,
     mergeAudioEnabledDefault: false,
+    theme: "system",
+    primaryColor: "amber",
+    customPrimaryColor: "#efbf04",
   } as Preferences,
-  theme: {
-    preference: "system" as "system" | "light" | "dark",
-    primaryColor: "amber" as string,
-    customPrimaryColor: "#efbf04" as `#${string}`,
-  },
 }));
 
 const defaultAppUpdates = {
@@ -86,7 +84,6 @@ vi.mock("@/app/store/redux-hooks", () => ({
   useAppSelector: (selector: (state: unknown) => unknown) =>
     selector({
       preferences: menuState.preferences,
-      theme: menuState.theme,
       importWorkflow: menuState.importWorkflow,
       source: {
         status: menuState.source.selection && menuState.source.isReady ? "ready" : "idle",
@@ -132,10 +129,10 @@ describe("MenuBarTest", () => {
     onPreferenceChange?: (key: PreferenceKey, enabled: boolean) => void;
     onPreferencesReset?: () => void;
     preferences?: Preferences;
-    primaryColor?: string;
+    primaryColor?: Preferences["primaryColor"];
     queueFinishAction?: QueueFinishAction;
     queueStarted?: boolean;
-    themePreference?: "system" | "light" | "dark";
+    themePreference?: Preferences["theme"];
   };
 
   function configureMenuState(overrides: MenuTestOverrides = {}, notify: () => void = () => {}) {
@@ -163,9 +160,9 @@ describe("MenuBarTest", () => {
     if (overrides.activityFeedView !== undefined) {
       menuState.preferences.activityFeedView = overrides.activityFeedView;
     }
-    menuState.theme.preference = overrides.themePreference ?? "system";
-    menuState.theme.primaryColor = overrides.primaryColor ?? "amber";
-    menuState.theme.customPrimaryColor = overrides.customPrimaryColor ?? "#efbf04";
+    menuState.preferences.theme = overrides.themePreference ?? "system";
+    menuState.preferences.primaryColor = overrides.primaryColor ?? "amber";
+    menuState.preferences.customPrimaryColor = overrides.customPrimaryColor ?? "#efbf04";
     const setPreference =
       overrides.onPreferenceChange ??
       ((key: PreferenceKey, enabled: boolean) => {
@@ -192,18 +189,18 @@ describe("MenuBarTest", () => {
       if (action.type === "preferences/preferencesReset") {
         resetPreferences();
       }
-      if (action.type === "theme/themePreferenceChanged") {
-        menuState.theme.preference = action.payload as "system" | "light" | "dark";
+      if (action.type === "preferences/themePreferenceChanged") {
+        menuState.preferences.theme = action.payload as Preferences["theme"];
       }
-      if (action.type === "theme/primaryColorChanged") {
-        menuState.theme.primaryColor = action.payload as string;
+      if (action.type === "preferences/primaryColorChanged") {
+        menuState.preferences.primaryColor = action.payload as Preferences["primaryColor"];
         if ((action.payload as string).startsWith("#")) {
-          menuState.theme.customPrimaryColor = action.payload as `#${string}`;
+          menuState.preferences.customPrimaryColor = action.payload as `#${string}`;
         }
       }
-      if (action.type === "theme/customPrimaryColorChanged") {
-        menuState.theme.primaryColor = action.payload as string;
-        menuState.theme.customPrimaryColor = action.payload as `#${string}`;
+      if (action.type === "preferences/customPrimaryColorChanged") {
+        menuState.preferences.primaryColor = action.payload as Preferences["primaryColor"];
+        menuState.preferences.customPrimaryColor = action.payload as `#${string}`;
       }
       if (action.type === "preferences/activityFeedViewChanged") {
         menuState.preferences.activityFeedView = action.payload as ActivityFeedView;
@@ -503,6 +500,9 @@ describe("MenuBarTest", () => {
             isChoosingSource={false}
             onPreferenceChange={vi.fn()}
             preferences={{
+              theme: "system",
+              primaryColor: "amber",
+              customPrimaryColor: "#efbf04",
               activityFeedView: "default",
               snapPlaybackEnabledDefault: false,
               loopPlaybackEnabledDefault: false,
