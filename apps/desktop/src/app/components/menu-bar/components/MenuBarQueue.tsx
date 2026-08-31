@@ -89,6 +89,26 @@ export function MenuBarQueue() {
     nothing: <CircleStop aria-hidden="true" className="size-3" />,
   };
 
+  const deleteSourceMenuItem = (
+    <MenubarCheckboxItem
+      checked={deleteSourceOnRenderFinish}
+      keepOpen
+      onSelect={() => {
+        if (deleteSourceOnRenderFinish) {
+          dispatch(
+            preferenceChanged({
+              enabled: false,
+              key: "deleteSourceOnRenderFinish",
+            }),
+          );
+        }
+      }}
+      variant="destructive"
+    >
+      {t("queue.labels.deleteSource")}
+    </MenubarCheckboxItem>
+  );
+
   return (
     <>
       <MenubarMenu value="queue">
@@ -150,25 +170,11 @@ export function MenuBarQueue() {
             <AlertDialog>
               <Tooltip preserveOnTrigger>
                 <TooltipTrigger asChild>
-                  <AlertDialogTrigger asChild>
-                    <MenubarCheckboxItem
-                      checked={deleteSourceOnRenderFinish}
-                      keepOpen
-                      onSelect={() => {
-                        if (deleteSourceOnRenderFinish) {
-                          dispatch(
-                            preferenceChanged({
-                              enabled: false,
-                              key: "deleteSourceOnRenderFinish",
-                            }),
-                          );
-                        }
-                      }}
-                      variant="destructive"
-                    >
-                      {t("queue.labels.deleteSource")}
-                    </MenubarCheckboxItem>
-                  </AlertDialogTrigger>
+                  {deleteSourceOnRenderFinish ? (
+                    deleteSourceMenuItem
+                  ) : (
+                    <AlertDialogTrigger asChild>{deleteSourceMenuItem}</AlertDialogTrigger>
+                  )}
                 </TooltipTrigger>
                 <TooltipContent side="right">
                   {t("queue.tooltips.deleteSourceOnRenderFinish")}

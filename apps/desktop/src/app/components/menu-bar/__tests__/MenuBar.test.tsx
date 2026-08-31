@@ -328,6 +328,31 @@ describe("MenuBarTest", () => {
     });
   });
 
+  it("disables source deletion without confirmation", async () => {
+    const user = userEvent.setup();
+    renderMenus({
+      preferences: { ...DEFAULT_PREFERENCES, deleteSourceOnRenderFinish: true },
+    });
+
+    await user.click(getMenuTrigger("Queue"));
+    const deleteSourceItem = screen.getByRole("menuitemcheckbox", { name: "Delete source" });
+    expect(deleteSourceItem).toHaveAttribute("aria-checked", "true");
+
+    await user.click(deleteSourceItem);
+
+    expect(menuState.dispatch).toHaveBeenCalledWith({
+      type: "preferences/preferenceChanged",
+      payload: { enabled: false, key: "deleteSourceOnRenderFinish" },
+    });
+    expect(screen.getByRole("menuitemcheckbox", { name: "Delete source" })).toHaveAttribute(
+      "aria-checked",
+      "false",
+    );
+    expect(
+      screen.queryByRole("heading", { name: "Delete source after rendering?" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("opens Help links with the current release version", async () => {
     const user = userEvent.setup();
     render(
