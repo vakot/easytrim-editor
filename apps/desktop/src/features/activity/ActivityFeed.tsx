@@ -4,6 +4,7 @@ import {
   CircleX,
   ExternalLink,
   Film,
+  Info,
   LoaderCircle,
   type LucideIcon,
   RotateCcw,
@@ -239,12 +240,26 @@ export function ActivityFeedView({
 
   return (
     <section aria-labelledby={titleId} className="flex h-full min-h-0 flex-col gap-2">
-      <h3
-        className="mx-3 font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
-        id={titleId}
-      >
-        {t("app.labels.activityFeed")}
-      </h3>
+      <div className="mx-3 flex items-center gap-1.5">
+        <h3
+          className="font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
+          id={titleId}
+        >
+          {t("app.labels.activityFeed")}
+        </h3>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              aria-label={t("app.accessibility.activityFeedPrivacy")}
+              className="inline-flex size-4 items-center justify-center text-primary"
+              type="button"
+            >
+              <Info aria-hidden="true" className="size-3.5 text-primary" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>{t("app.tooltips.activityFeedPrivacy")}</TooltipContent>
+        </Tooltip>
+      </div>
 
       <ResizablePanelControl panelId="workspace-activity">
         <Button

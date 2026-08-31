@@ -215,7 +215,9 @@ function TimelineHeader({
 >) {
   const { t } = useTranslation();
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-6">
+    <div
+      className={`${styles.timelineHeader} grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-6`}
+    >
       <div className="min-w-0 justify-self-start">
         <h2
           className="mb-0.5 font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
@@ -228,7 +230,7 @@ function TimelineHeader({
       <div className="justify-self-center">{playbackControls}</div>
       <dl
         aria-label={t("timeline.accessibility.trimValues")}
-        className="m-0 flex gap-5 justify-self-end"
+        className={`${styles.timelineValues} m-0 flex gap-5 justify-self-end`}
       >
         <TimelineTimeValue
           frameRate={frameRate}
