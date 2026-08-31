@@ -37,6 +37,13 @@ export interface DiagnosticsBootstrap {
   sessionId: string;
 }
 
+export interface DiagnosticSessionSummary {
+  endedAt: string | null;
+  gracefulShutdown: boolean;
+  sessionId: string;
+  startedAt: string;
+}
+
 export type SerializedDiagnosticError = {
   cause?: SerializedDiagnosticError | DiagnosticValue;
   message: string;

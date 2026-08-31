@@ -7,6 +7,7 @@ import {
   groupActivityEntries,
   projectActivityEvent,
   projectActivityEvents,
+  resolveAvailableActivityActions,
 } from "../activity-projection";
 
 const labels: ActivityProjectionLabels = {
@@ -114,6 +115,83 @@ describe("activity projection", () => {
         labels,
       ),
     ).toHaveLength(1);
+  });
+
+  it("combines retained and current sessions with stable identity and original timestamps", () => {
+    const retained = diagnosticEvent("ffmpeg.export.completed", {
+      data: { outputPath, outputType: "fast" },
+      operationId: "retained-export",
+      sessionId: "retained-session",
+      timestamp: "2026-08-29T09:00:00.000Z",
+    });
+
+    const current = diagnosticEvent("ffmpeg.export.completed", {
+      data: { outputPath, outputType: "optimized" },
+      operationId: "current-export",
+      sessionId: "current-session",
+      timestamp: "2026-08-31T09:00:00.000Z",
+    });
+
+    const entries = projectActivityEvents(
+      [retained, diagnosticEvent("preview.media.ready"), current, current],
+      labels,
+    );
+
+    expect(entries).toMatchObject([
+      {
+        id: "retained-session:retained-export:ffmpeg.export.completed",
+        sessionId: "retained-session",
+        timestamp: "2026-08-29T09:00:00.000Z",
+      },
+      {
+        id: "current-session:current-export:ffmpeg.export.completed",
+        sessionId: "current-session",
+        timestamp: "2026-08-31T09:00:00.000Z",
+      },
+    ]);
+  });
+
+  it("offers restore only for authoritative current-session state while preserving open", () => {
+    const retainedDelete = projectActivityEvent(
+      diagnosticEvent("source.file-delete.completed", {
+        data: { itemId: "shared-target", sourcePath },
+        operationId: "retained-delete",
+        sessionId: "retained-session",
+      }),
+      labels,
+    );
+
+    const currentDelete = projectActivityEvent(
+      diagnosticEvent("source.file-delete.completed", {
+        data: { itemId: "shared-target", sourcePath },
+        operationId: "current-delete",
+        sessionId: "current-session",
+      }),
+      labels,
+    );
+
+    const retainedExport = projectActivityEvent(
+      diagnosticEvent("ffmpeg.export.completed", {
+        data: { outputPath, outputType: "fast" },
+        operationId: "retained-export",
+        sessionId: "retained-session",
+      }),
+      labels,
+    );
+
+    const entries = resolveAvailableActivityActions(
+      [retainedDelete, currentDelete, retainedExport].filter((entry) => entry !== null),
+      "current-session",
+      new Set(["shared-target"]),
+    );
+
+    expect(entries[0]?.action).toBeUndefined();
+    expect(entries[1]?.action).toEqual({
+      kind: "restore",
+      path: sourcePath,
+      targetId: "shared-target",
+    });
+    expect(entries[2]?.action).toEqual({ kind: "open", path: outputPath });
   });
 
   it("groups by local calendar date and orders groups and entries newest first", () => {

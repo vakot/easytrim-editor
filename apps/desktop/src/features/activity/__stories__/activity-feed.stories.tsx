@@ -50,6 +50,18 @@ const entries: ActivityEntry[] = [
     timestamp: new Date(2026, 7, 30, 9, 30).toISOString(),
     title: "File deleted",
   },
+  {
+    action: {
+      kind: "open",
+      path: "C:\\Users\\Editor\\Videos\\Archive\\client-review-cut.mp4",
+    },
+    id: "retained-session:cut-older:ffmpeg.export.completed",
+    kind: "fast-cut-completed",
+    path: "C:\\Users\\Editor\\Videos\\Archive\\client-review-cut.mp4",
+    sessionId: "retained-session",
+    timestamp: new Date(2026, 7, 28, 11, 10).toISOString(),
+    title: "Fast cut completed",
+  },
 ];
 
 const meta = {

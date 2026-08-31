@@ -19,9 +19,15 @@ import { selectExportQueue } from "@/app/store/slices/export-slice";
 import { restoreExportSourceRequested } from "@/app/store/thunks/export-thunks";
 import { formatSourcePath } from "@/features/source";
 import {
+  getCurrentDiagnosticSessionId,
   getCurrentSessionDiagnosticsSnapshot,
   subscribeToCurrentSessionDiagnostics,
 } from "@/lib/diagnostics";
+import {
+  getPersistedDiagnosticsHistorySnapshot,
+  loadPersistedDiagnosticsHistory,
+  subscribeToPersistedDiagnosticsHistory,
+} from "@/lib/diagnostics-history";
 import { openFileLocation } from "@/lib/tauri/media";
 
 import {
@@ -31,6 +37,7 @@ import {
   type ActivityProjectionLabels,
   groupActivityEntries,
   projectActivityEvents,
+  resolveAvailableActivityActions,
 } from "./activity-projection";
 
 const activityIcons: Record<ActivityKind, LucideIcon> = {
@@ -65,9 +72,19 @@ export function ActivityFeed() {
     getCurrentSessionDiagnosticsSnapshot,
   );
 
+  const historySnapshot = useSyncExternalStore(
+    subscribeToPersistedDiagnosticsHistory,
+    getPersistedDiagnosticsHistorySnapshot,
+    getPersistedDiagnosticsHistorySnapshot,
+  );
+
   useEffect(() => {
     const interval = window.setInterval(() => setCurrentTime(Date.now()), 60_000);
     return () => window.clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    void loadPersistedDiagnosticsHistory();
   }, []);
 
   const labels = useMemo<ActivityProjectionLabels>(
@@ -92,12 +109,12 @@ export function ActivityFeed() {
 
   const entries = useMemo(
     () =>
-      projectActivityEvents(diagnosticSnapshot.events, labels).map((entry) =>
-        entry.action?.kind === "restore" && !restorableSourceIds.has(entry.action.targetId)
-          ? { ...entry, action: undefined }
-          : entry,
+      resolveAvailableActivityActions(
+        projectActivityEvents([...historySnapshot.events, ...diagnosticSnapshot.events], labels),
+        getCurrentDiagnosticSessionId(),
+        restorableSourceIds,
       ),
-    [diagnosticSnapshot, labels, restorableSourceIds],
+    [diagnosticSnapshot, historySnapshot, labels, restorableSourceIds],
   );
 
   const handleAction = useCallback(

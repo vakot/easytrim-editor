@@ -263,6 +263,10 @@ export function getCurrentSessionDiagnosticsSnapshot(): {
   return currentSessionSnapshot;
 }
 
+export function getCurrentDiagnosticSessionId(): string | null {
+  return currentSessionId;
+}
+
 export function subscribeToCurrentSessionDiagnostics(listener: () => void): () => void {
   currentSessionListeners.add(listener);
   return () => currentSessionListeners.delete(listener);

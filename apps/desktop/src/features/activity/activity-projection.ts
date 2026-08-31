@@ -69,6 +69,22 @@ export function projectActivityEvents(
   return entries;
 }
 
+export function resolveAvailableActivityActions(
+  entries: readonly ActivityEntry[],
+  currentSessionId: string | null,
+  restorableTargetIds: ReadonlySet<string>,
+): ActivityEntry[] {
+  return entries.map((entry) => {
+    if (
+      entry.action?.kind !== "restore" ||
+      (entry.sessionId === currentSessionId && restorableTargetIds.has(entry.action.targetId))
+    ) {
+      return entry;
+    }
+    return { ...entry, action: undefined };
+  });
+}
+
 export function groupActivityEntries(entries: readonly ActivityEntry[]): ActivityGroup[] {
   const orderedEntries = [...entries].sort(compareActivityEntries);
   const groups = new Map<string, { date: Date; entries: ActivityEntry[] }>();
