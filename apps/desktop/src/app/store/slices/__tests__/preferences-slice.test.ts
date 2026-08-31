@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import { DEFAULT_PREFERENCES, type Preferences } from "@/app/preferences";
 import {
+  activityFeedViewChanged,
   preferenceChanged,
   preferencesReducer,
   preferencesReset,
+  selectActivityFeedView,
   selectDeleteSourceOnRenderFinish,
   selectMergeAudioEnabledDefault,
   selectPreferences,
@@ -33,6 +35,15 @@ describe("preferences Redux domain", () => {
     expect(nextState.mergeAudioEnabledDefault).toBe(initialState.mergeAudioEnabledDefault);
   });
 
+  it("changes the activity feed view without changing unrelated preferences", () => {
+    const nextState = preferencesReducer(undefined, activityFeedViewChanged("compact"));
+
+    expect(nextState.activityFeedView).toBe("compact");
+    expect(nextState.loopPlaybackEnabledDefault).toBe(
+      DEFAULT_PREFERENCES.loopPlaybackEnabledDefault,
+    );
+  });
+
   it("resets all preferences to product defaults", () => {
     const state = preferencesReducer(
       {
@@ -42,6 +53,7 @@ describe("preferences Redux domain", () => {
         autoStartQueueEnabled: false,
         mergeAudioEnabledDefault: true,
         deleteSourceOnRenderFinish: false,
+        activityFeedView: "default",
       },
       preferencesReset(),
     );
@@ -57,6 +69,7 @@ describe("preferences Redux domain", () => {
       autoStartQueueEnabled: true,
       mergeAudioEnabledDefault: true,
       deleteSourceOnRenderFinish: false,
+      activityFeedView: "default",
     };
 
     const state = { preferences } as RootState;
@@ -67,5 +80,14 @@ describe("preferences Redux domain", () => {
     expect(selectPreferences(state).segmentPlaybackEnabledDefault).toBe(false);
     expect(selectMergeAudioEnabledDefault(state)).toBe(true);
     expect(selectDeleteSourceOnRenderFinish(state)).toBe(false);
+    expect(selectActivityFeedView(state)).toBe("default");
+  });
+
+  it("falls back to the default activity feed view for invalid persisted state", () => {
+    const state = {
+      preferences: { ...DEFAULT_PREFERENCES, activityFeedView: "expanded" },
+    } as unknown as RootState;
+
+    expect(selectActivityFeedView(state)).toBe("default");
   });
 });

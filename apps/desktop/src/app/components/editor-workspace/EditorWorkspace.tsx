@@ -37,7 +37,12 @@ export function EditorWorkspace() {
         withHandle
       />
 
-      <ResizablePanel className="overflow-hidden" id="workspace-content" minSize="44rem">
+      <ResizablePanel
+        className="overflow-hidden"
+        groupResizeBehavior="preserve-relative-size"
+        id="workspace-content"
+        minSize="44rem"
+      >
         <EditorStage />
       </ResizablePanel>
 

@@ -9,7 +9,11 @@ import {
   playbackSpeedChanged,
 } from "@/app/store/slices/editor-tools-slice";
 import { optimizedExportDialogOpened, queueEntryAdded } from "@/app/store/slices/export-slice";
-import { preferenceChanged, preferencesReset } from "@/app/store/slices/preferences-slice";
+import {
+  activityFeedViewChanged,
+  preferenceChanged,
+  preferencesReset,
+} from "@/app/store/slices/preferences-slice";
 import {
   customPrimaryColorChanged,
   primaryColorChanged,
@@ -102,6 +106,7 @@ describe("Redux Persist store integration", () => {
 
   it("configures only canonical preference and layout domains for persistence", () => {
     expect(persistConfig.whitelist).toEqual(["panelLayout", "preferences", "theme"]);
+    expect(persistConfig.whitelist).not.toContain("activityFeedView");
     expect(persistConfig.whitelist).not.toContain("editorTools");
     expect(persistConfig.whitelist).not.toContain("importWorkflow");
     expect(persistConfig.whitelist).not.toContain("source");
@@ -119,6 +124,7 @@ describe("Redux Persist store integration", () => {
         preferences: JSON.stringify({
           ...DEFAULT_PREFERENCES,
           loopPlaybackEnabledDefault: false,
+          activityFeedView: "compact",
         }),
         theme: JSON.stringify({
           preference: "dark",
@@ -134,6 +140,7 @@ describe("Redux Persist store integration", () => {
     expect(store.getState().preferences).toEqual({
       ...DEFAULT_PREFERENCES,
       loopPlaybackEnabledDefault: false,
+      activityFeedView: "compact",
     });
     expect(store.getState().editorTools.loopPlaybackEnabled).toBe(false);
     expect(store.getState().editorTools.playbackSpeed).toBe(1);
@@ -142,6 +149,7 @@ describe("Redux Persist store integration", () => {
       primaryColor: "#123456",
       customPrimaryColor: "#123456",
     });
+    expect(store.getState().preferences.activityFeedView).toBe("compact");
   });
 
   it("does not rewrite active tools when a Preference changes", async () => {
@@ -242,6 +250,23 @@ describe("Redux Persist store integration", () => {
     });
   });
 
+  it("falls back to the default for invalid and legacy activity feed view data", async () => {
+    const storage = createTestStorage({
+      [`persist:${persistConfig.key}`]: JSON.stringify({
+        preferences: JSON.stringify({
+          ...DEFAULT_PREFERENCES,
+          activityFeedView: "expanded",
+        }),
+        activityView: JSON.stringify("compact"),
+        _persist: JSON.stringify({ version: -1, rehydrated: true }),
+      }),
+    });
+
+    const { store } = await createPersistedTestStore(storage);
+
+    expect(store.getState().preferences.activityFeedView).toBe("default");
+  });
+
   it("persists a dispatched preference action without UI storage calls", async () => {
     const { persistor, storage, store } = await createPersistedTestStore();
 
@@ -286,6 +311,18 @@ describe("Redux Persist store integration", () => {
     expect(persistedRoot).not.toHaveProperty("resolvedTheme");
     expect(JSON.parse(String(persistedRoot.theme))).not.toHaveProperty("primaryColorKey");
     expect(JSON.parse(String(persistedRoot.theme))).not.toHaveProperty("systemPrefersDark");
+  });
+
+  it("persists activity feed view changes through preferences", async () => {
+    const { persistor, storage, store } = await createPersistedTestStore();
+
+    store.dispatch(activityFeedViewChanged("compact"));
+    await persistor.flush();
+
+    const persistedRoot = await readPersistedRoot(storage);
+    expect(JSON.parse(String(persistedRoot.preferences))).toMatchObject({
+      activityFeedView: "compact",
+    });
   });
 
   it("keeps independently created stores and persistors isolated", async () => {

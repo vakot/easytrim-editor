@@ -1,11 +1,14 @@
 import type { Reducer } from "@reduxjs/toolkit";
 import {
+  createTransform,
   type PersistConfig,
   persistReducer,
   type PersistState,
   type Storage as PersistStorage,
 } from "redux-persist";
 import reduxStorageModule from "redux-persist/lib/storage";
+
+import { DEFAULT_PREFERENCES, type Preferences } from "@/app/preferences";
 
 function hasPersistStorageMethods(value: unknown): value is PersistStorage {
   return (
@@ -40,10 +43,28 @@ export function resolveReduxPersistStorage(value: unknown): PersistStorage {
 // NOTE: Vite 8 unwraps redux-persist's CommonJS subpath differently from Vitest.
 export const reduxStorage = resolveReduxPersistStorage(reduxStorageModule);
 
+const preferencesTransform = createTransform(
+  (state: unknown) => state,
+  (state: unknown): Preferences => {
+    if (typeof state !== "object" || state === null || Array.isArray(state)) {
+      return DEFAULT_PREFERENCES;
+    }
+
+    const persistedPreferences = state as Partial<Preferences>;
+    return {
+      ...DEFAULT_PREFERENCES,
+      ...persistedPreferences,
+      activityFeedView: persistedPreferences.activityFeedView === "compact" ? "compact" : "default",
+    };
+  },
+  { whitelist: ["preferences"] },
+);
+
 export const persistConfig: PersistConfig<unknown> = {
   key: "easytrim-redux",
   storage: reduxStorage,
   // NOTE: Root allow-listing keeps future reducers runtime-only until explicitly opted in.
+  transforms: [preferencesTransform],
   whitelist: ["panelLayout", "preferences", "theme"],
 };
 
