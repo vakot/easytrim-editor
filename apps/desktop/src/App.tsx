@@ -119,7 +119,7 @@ function EasyTrimEditorApp() {
 
   return (
     <TooltipProvider>
-      <Toaster position="bottom-right" theme={resolvedTheme} />
+      <Toaster duration={10000} position="top-center" theme={resolvedTheme} />
       <main className="fixed inset-0 grid h-dvh w-screen min-w-80 grid-rows-[2.25rem_minmax(0,1fr)_auto] overflow-hidden bg-background">
         <CustomTitleBar
           menuControls={<MenuBar />}

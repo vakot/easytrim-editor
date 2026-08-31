@@ -21,6 +21,14 @@ import { DeleteSourceDialog } from "./DeleteSourceDialog";
 
 type ImportQueueActionMode = "remove" | "delete";
 
+function ToastFilePath({ sourcePath }: { sourcePath: string }) {
+  return (
+    <span className="block max-w-full truncate" dir="rtl" title={sourcePath}>
+      {sourcePath}
+    </span>
+  );
+}
+
 export function ImportQueue() {
   const { t } = useTranslation();
 
@@ -53,7 +61,7 @@ export function ImportQueue() {
       restorePending = true;
       toast.loading(t("queue.messages.fileRestore.loading", { filename }), {
         action: null,
-        description: sourcePath,
+        description: <ToastFilePath sourcePath={sourcePath} />,
         id: deleteToastId,
       });
 
@@ -61,7 +69,7 @@ export function ImportQueue() {
         await restoreSourceFromTrash(sourcePath);
         toast.success(t("queue.messages.fileRestore.success"), {
           action: null,
-          description: sourcePath,
+          description: <ToastFilePath sourcePath={sourcePath} />,
           id: deleteToastId,
         });
       } catch (error: unknown) {
@@ -73,7 +81,7 @@ export function ImportQueue() {
           }),
           {
             action: { label: t("app.actions.restore"), onClick: () => void restore() },
-            description: sourcePath,
+            description: <ToastFilePath sourcePath={sourcePath} />,
             id: deleteToastId,
           },
         );
@@ -87,7 +95,7 @@ export function ImportQueue() {
     });
 
     toast.promise(deleteOperation, {
-      description: sourcePath,
+      description: <ToastFilePath sourcePath={sourcePath} />,
       error: (error: unknown) => {
         const normalized = normalizeAppError(error);
         return t("queue.messages.fileDelete.error", {
@@ -98,8 +106,7 @@ export function ImportQueue() {
       loading: t("queue.messages.fileDelete.loading", { filename }),
       success: () => ({
         action: { label: t("app.actions.restore"), onClick: () => void restore() },
-        description: sourcePath,
-        duration: Infinity,
+        description: <ToastFilePath sourcePath={sourcePath} />,
         message: t("queue.messages.fileDelete.success"),
       }),
       id: deleteToastId,

@@ -21,7 +21,7 @@ function StoryShell({ children }: { children: ReactNode }) {
   return (
     <>
       <div className="flex flex-wrap justify-center gap-2">{children}</div>
-      <Toaster position="bottom-right" theme="light" />
+      <Toaster duration={10000} position="top-center" theme="light" />
     </>
   );
 }

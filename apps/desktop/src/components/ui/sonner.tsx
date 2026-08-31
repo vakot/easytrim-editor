@@ -2,10 +2,11 @@ import { Toaster as Sonner, type ToasterProps } from "sonner";
 
 import { cn } from "@/lib/class-names.utils";
 
-function Toaster({ className, toastOptions, ...props }: ToasterProps) {
+function Toaster({ className, duration = 10000, toastOptions, ...props }: ToasterProps) {
   return (
     <Sonner
       className={cn("toaster group", className)}
+      duration={duration}
       toastOptions={{
         ...toastOptions,
         classNames: {
