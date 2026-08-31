@@ -1,8 +1,14 @@
 import { LoaderCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import { useAppSelector } from "@/app/store/redux-hooks";
+import { selectIsNativeDialogOpen } from "@/app/store/slices/import-workflow-slice";
+
 export function NativeDialogOverlay() {
   const { t } = useTranslation();
+  const isNativeDialogOpen = useAppSelector(selectIsNativeDialogOpen);
+
+  if (!isNativeDialogOpen) return null;
 
   return (
     <div

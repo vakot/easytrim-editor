@@ -2753,7 +2753,7 @@ describe("App", () => {
     expect(await screen.findByLabelText("Source video preview")).toBeInTheDocument();
   });
 
-  it("shows the native drag overlay over the editor stage", async () => {
+  it("shows the native drag overlay over the full app", async () => {
     mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
     render(<App />);
@@ -2762,7 +2762,10 @@ describe("App", () => {
     await waitForSourcePresence(true);
 
     act(() => sourceDropListener?.({ status: "drag", active: true }));
-    expect(screen.getByRole("status", { name: "Drop video to open" })).toBeInTheDocument();
+    expect(screen.getByRole("status", { name: "Drop video to open" })).toHaveClass(
+      "fixed",
+      "inset-0",
+    );
 
     act(() => sourceDropListener?.({ status: "drag", active: false }));
     expect(screen.queryByRole("status", { name: "Drop video to open" })).not.toBeInTheDocument();

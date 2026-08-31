@@ -14,7 +14,7 @@ export function SourceDropOverlay() {
     <div
       aria-label={t("source.labels.drop")}
       aria-live="polite"
-      className="absolute inset-0 z-40 grid place-items-center bg-background/82 backdrop-blur-sm"
+      className="fixed inset-0 z-100 grid place-items-center bg-background/82 backdrop-blur-sm"
       role="status"
     >
       <div className="grid justify-items-center gap-2 rounded-2xl border border-dashed border-primary/70 bg-card/95 px-10 py-8 text-center shadow-2xl">
