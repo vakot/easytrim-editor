@@ -17,38 +17,18 @@ import { AppUpdatesProvider } from "@/app/components/providers/AppUpdatesProvide
 import { EditorContractsProvider } from "@/app/components/providers/EditorContractsProvider";
 import { StatusBar } from "@/app/components/status-bar";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
-import { selectCropApplied } from "@/app/store/slices/crop-slice";
-import { selectHasQueuedExports, selectQueueStarted } from "@/app/store/slices/export-slice";
 import {
   selectDropListenerError,
-  selectIsChoosingSource,
   selectIsNativeDialogOpen,
 } from "@/app/store/slices/import-workflow-slice";
-import { selectHasSource, selectSourceReady } from "@/app/store/slices/source-slice";
 import { persistor, store } from "@/app/store/store";
-import {
-  loadQueueFinishActions,
-  openOptimizedExportDialog,
-  startExportQueue,
-  startFastCutRequested,
-} from "@/app/store/thunks/export-thunks";
-import {
-  chooseSourceRequested,
-  closeActiveImportedItemRequested,
-} from "@/app/store/thunks/source-media-thunks";
+import { loadQueueFinishActions } from "@/app/store/thunks/export-thunks";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import { ExportDialog } from "@/features/export";
 import { SourceStatus } from "@/features/source";
-import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
 
 function EasyTrimEditorApp() {
   const dispatch = useAppDispatch();
-  const canExport = useAppSelector(selectSourceReady);
-  const cropApplied = useAppSelector(selectCropApplied);
-  const queueStarted = useAppSelector(selectQueueStarted);
-  const hasQueuedExports = useAppSelector(selectHasQueuedExports);
-  const hasSource = useAppSelector(selectHasSource);
-  const isChoosingSource = useAppSelector(selectIsChoosingSource);
   const isNativeDialogOpen = useAppSelector(selectIsNativeDialogOpen);
   const dropListenerError = useAppSelector(selectDropListenerError);
   const { t } = useTranslation();
@@ -56,63 +36,6 @@ function EasyTrimEditorApp() {
   useEffect(() => {
     void dispatch(loadQueueFinishActions());
   }, [dispatch]);
-
-  useKeyboardShortcut(
-    (event) => event.code === "KeyO" && event.ctrlKey && !isChoosingSource && !isNativeDialogOpen,
-    () => void dispatch(chooseSourceRequested({ id: "Ctrl+O", type: "hotkey" })),
-  );
-  useKeyboardShortcut(
-    (event) =>
-      event.code === "KeyQ" &&
-      event.ctrlKey &&
-      hasSource &&
-      !isChoosingSource &&
-      !isNativeDialogOpen,
-    () => void dispatch(closeActiveImportedItemRequested({ id: "Ctrl+Q", type: "hotkey" })),
-  );
-  useKeyboardShortcut(
-    (event) => event.code === "KeyS" && event.ctrlKey && canExport && !cropApplied,
-    () => void dispatch(startFastCutRequested({ id: "Ctrl+S", type: "hotkey" })),
-  );
-  useKeyboardShortcut(
-    (event) => event.code === "KeyE" && event.ctrlKey && canExport,
-    () => void dispatch(openOptimizedExportDialog({ id: "Ctrl+E", type: "hotkey" })),
-  );
-  useKeyboardShortcut(
-    (event) =>
-      event.key === "Enter" &&
-      !queueStarted &&
-      hasQueuedExports &&
-      document.activeElement === document.body,
-    () => void dispatch(startExportQueue({ id: "Enter", type: "hotkey" })),
-  );
-
-  useEffect(() => {
-    if (!hasSource) return;
-
-    function handleEscape(event: KeyboardEvent) {
-      if (event.key !== "Escape" || isNativeDialogOpen) return;
-
-      const openDialog = document.querySelector<HTMLElement>(
-        '[data-slot="dialog-content"][data-state="open"]',
-      );
-
-      if (openDialog) {
-        openDialog.querySelector<HTMLElement>('[data-slot="dialog-close"]')?.click();
-        return;
-      }
-
-      event.preventDefault();
-      event.stopPropagation();
-      const activeElement = document.activeElement;
-      if (activeElement instanceof HTMLElement && activeElement !== document.body) {
-        activeElement.blur();
-      }
-    }
-
-    window.addEventListener("keydown", handleEscape, true);
-    return () => window.removeEventListener("keydown", handleEscape, true);
-  }, [hasSource, isNativeDialogOpen]);
 
   return (
     <TooltipProvider>

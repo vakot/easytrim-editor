@@ -96,9 +96,8 @@ application infrastructure.
 ## Selectors and actions
 
 Prefer narrow selectors such as `selectSourceSelection`, `selectTrim`,
-`selectAudioTracks`, `selectCanExport`, and `selectHasQueuedExports` when those
-represent real domain concepts. Keep derived capability and button-availability logic
-in selectors rather than duplicated state.
+`selectAudioTracks` and `selectCanExport` when those represent real domain concepts. Keep
+derived capability and button-availability logic in selectors rather than duplicated state.
 
 Prefer actions named after transitions, for example:
 

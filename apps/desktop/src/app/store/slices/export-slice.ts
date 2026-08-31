@@ -365,8 +365,6 @@ export const selectExportQueue = createSelector([selectQueueItems], (queue): Exp
     return String(right.id ?? "").localeCompare(String(left.id ?? ""));
   });
 });
-export const selectHasQueuedExports = (state: RootState): boolean =>
-  state.export.queue.some((item) => item.status === "queued");
 export const selectHasProcessableExports = (state: RootState): boolean =>
   state.export.queue.some((item) => item.status === "queued" || item.status === "rendering");
 export const selectQueueStarted = (state: RootState): boolean => state.export.queueStarted;

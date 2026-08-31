@@ -281,7 +281,6 @@ describe("MenuBarTest", () => {
     await user.click(screen.getByRole("button", { name: "Back" }));
     expect(screen.queryByRole("heading", { name: "Cancel export queue?" })).not.toBeInTheDocument();
 
-    await user.click(getMenuTrigger("Queue"));
     await user.click(screen.getByRole("menuitem", { name: "Cancel" }));
     await user.click(screen.getByRole("button", { name: "Cancel" }));
     expect(menuState.dispatch).toHaveBeenCalledWith(expect.any(Function));
@@ -327,6 +326,31 @@ describe("MenuBarTest", () => {
       type: "preferences/preferenceChanged",
       payload: { enabled: true, key: "deleteSourceOnRenderFinish" },
     });
+  });
+
+  it("disables source deletion without confirmation", async () => {
+    const user = userEvent.setup();
+    renderMenus({
+      preferences: { ...DEFAULT_PREFERENCES, deleteSourceOnRenderFinish: true },
+    });
+
+    await user.click(getMenuTrigger("Queue"));
+    const deleteSourceItem = screen.getByRole("menuitemcheckbox", { name: "Delete source" });
+    expect(deleteSourceItem).toHaveAttribute("aria-checked", "true");
+
+    await user.click(deleteSourceItem);
+
+    expect(menuState.dispatch).toHaveBeenCalledWith({
+      type: "preferences/preferenceChanged",
+      payload: { enabled: false, key: "deleteSourceOnRenderFinish" },
+    });
+    expect(screen.getByRole("menuitemcheckbox", { name: "Delete source" })).toHaveAttribute(
+      "aria-checked",
+      "false",
+    );
+    expect(
+      screen.queryByRole("heading", { name: "Delete source after rendering?" }),
+    ).not.toBeInTheDocument();
   });
 
   it("opens Help links with the current release version", async () => {
@@ -577,6 +601,8 @@ describe("MenuBarTest", () => {
     await user.click(fileButton);
     const closeFileItem = screen.getByRole("menuitem", { name: /Close File/ });
     expect(closeFileItem).toHaveTextContent("CtrlQ");
+    const deleteSourceItem = screen.getByRole("menuitem", { name: /Delete Source/ });
+    expect(deleteSourceItem).toHaveTextContent("CtrlD");
     await user.click(closeFileItem);
     expect(menuState.dispatch).toHaveBeenCalledTimes(2);
   });
