@@ -53,7 +53,7 @@ export function VideoPreviewLoadingOverlay({ onSkip }: VideoPreviewLoadingOverla
   if (!showLoadingOverlay) return null;
 
   return (
-    <Backdrop className="absolute">
+    <Backdrop className="absolute" data-testid="preview-loading-overlay">
       <div className="grid place-items-center gap-3">
         <LoaderCircle aria-hidden="true" className="size-7 animate-spin text-primary" />
         <strong className="text-foreground">
