@@ -3,10 +3,15 @@ import type { DiagnosticEvent, DiagnosticValue } from "@/lib/tauri/diagnostics.t
 export type ActivityKind =
   "fast-cut-completed" | "file-deleted" | "file-restored" | "render-completed";
 
+export type ActivityAction =
+  { kind: "open"; path: string } | { kind: "restore"; path: string; targetId: string };
+
 export interface ActivityEntry {
+  action?: ActivityAction;
   data?: Record<string, DiagnosticValue>;
   id: string;
   kind: ActivityKind;
+  path?: string;
   sessionId: string;
   timestamp: string;
   title: string;
@@ -32,10 +37,11 @@ type ActivityEventProjector = (
 
 const ACTIVITY_EVENT_CONFIG = {
   "ffmpeg.export.completed": projectExportCompleted,
-  "source.file-delete.completed": (event, labels) =>
-    createActivityEntry(event, "file-deleted", labels.fileDeleted),
-  "source.file-restore.completed": (event, labels) =>
-    createActivityEntry(event, "file-restored", labels.fileRestored),
+  "source.file-delete.completed": projectFileDeleted,
+  "source.file-restore.completed": (event, labels) => {
+    const path = diagnosticString(event.data?.sourcePath);
+    return createActivityEntry(event, "file-restored", labels.fileRestored, { path });
+  },
 } satisfies Record<string, ActivityEventProjector>;
 
 export function projectActivityEvent(
@@ -90,28 +96,58 @@ function projectExportCompleted(
   labels: ActivityProjectionLabels,
 ): ActivityEntry | null {
   if (event.data?.outputType === "fast") {
-    return createActivityEntry(event, "fast-cut-completed", labels.fastCutCompleted);
+    return createCompletedExportEntry(event, "fast-cut-completed", labels.fastCutCompleted);
   }
   if (event.data?.outputType === "optimized") {
-    return createActivityEntry(event, "render-completed", labels.renderCompleted);
+    return createCompletedExportEntry(event, "render-completed", labels.renderCompleted);
   }
   return null;
+}
+
+function createCompletedExportEntry(
+  event: DiagnosticEvent,
+  kind: Extract<ActivityKind, "fast-cut-completed" | "render-completed">,
+  title: string,
+): ActivityEntry | null {
+  const path = diagnosticString(event.data?.outputPath);
+  return createActivityEntry(event, kind, title, {
+    ...(path ? { action: { kind: "open", path } as const } : {}),
+    path,
+  });
+}
+
+function projectFileDeleted(
+  event: DiagnosticEvent,
+  labels: ActivityProjectionLabels,
+): ActivityEntry | null {
+  const path = diagnosticString(event.data?.sourcePath);
+  const targetId = diagnosticString(event.data?.itemId);
+  return createActivityEntry(event, "file-deleted", labels.fileDeleted, {
+    ...(path && targetId ? { action: { kind: "restore", path, targetId } as const } : {}),
+    path,
+  });
 }
 
 function createActivityEntry(
   event: DiagnosticEvent,
   kind: ActivityKind,
   title: string,
+  metadata: Pick<ActivityEntry, "action" | "path"> = {},
 ): ActivityEntry | null {
   if (!event.operationId || Number.isNaN(Date.parse(event.timestamp))) return null;
   return {
     ...(event.data ? { data: event.data } : {}),
     id: `${event.sessionId}:${event.operationId}:${event.event}`,
     kind,
+    ...metadata,
     sessionId: event.sessionId,
     timestamp: event.timestamp,
     title,
   };
+}
+
+function diagnosticString(value: DiagnosticValue | undefined): string | undefined {
+  return typeof value === "string" && value.length > 0 ? value : undefined;
 }
 
 function compareActivityEntries(left: ActivityEntry, right: ActivityEntry): number {

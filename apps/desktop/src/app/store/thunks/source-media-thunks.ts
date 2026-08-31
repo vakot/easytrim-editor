@@ -535,18 +535,19 @@ export const deleteActiveImportedItemRequested =
       return null;
     }
 
+    const sourcePath = item.snapshot.source.sourcePath;
     const operation = diagnostics.startOperation("source.file-delete", {
-      data: { itemId: item.id },
+      data: { itemId: item.id, sourcePath },
       origin: { type: "button", id: "source.delete" },
       snapshotId: item.id,
     });
 
     try {
-      await moveSourceToTrash(item.snapshot.source.sourcePath);
+      await moveSourceToTrash(sourcePath);
     } catch (error: unknown) {
       const normalized = normalizeAppError(error);
       diagnostics.error("source.file.delete.failed", normalized, {
-        data: { itemId: item.id },
+        data: { itemId: item.id, sourcePath },
         origin: { type: "button", id: "source.delete" },
       });
       operation.fail(normalized);
@@ -559,7 +560,7 @@ export const deleteActiveImportedItemRequested =
     } else {
       dispatch(importQueueItemRemoved(item.id));
     }
-    operation.complete({ itemId: item.id });
+    operation.complete({ itemId: item.id, sourcePath });
     return null;
   };
 

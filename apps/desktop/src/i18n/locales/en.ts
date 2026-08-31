@@ -27,6 +27,7 @@ export const en = {
       deleteSource: "Delete Source",
       maximize: "Maximize",
       minimize: "Minimize",
+      open: "Open",
       openFile: "Open File",
       resetLayout: "Reset layout",
       restart: "Restart application",

@@ -16,6 +16,9 @@ const labels: ActivityProjectionLabels = {
   renderCompleted: "Optimized render completed",
 };
 
+const outputPath = "C:/Exports/clip.mp4";
+const sourcePath = "C:/Media/source.mp4";
+
 function diagnosticEvent(
   event: DiagnosticEvent["event"],
   overrides: Partial<DiagnosticEvent> = {},
@@ -38,23 +41,56 @@ describe("activity projection", () => {
     ["optimized", "render-completed", "Optimized render completed"],
   ] as const)("projects a completed %s export", (outputType, kind, title) => {
     const entry = projectActivityEvent(
-      diagnosticEvent("ffmpeg.export.completed", { data: { outputType } }),
+      diagnosticEvent("ffmpeg.export.completed", { data: { outputPath, outputType } }),
       labels,
     );
 
     expect(entry).toMatchObject({
+      action: { kind: "open", path: outputPath },
       kind,
+      path: outputPath,
       sessionId: "session-1",
       timestamp: "2026-08-31T09:00:00.000Z",
       title,
     });
   });
 
+  it("projects a deleted file with its path and restore target", () => {
+    expect(
+      projectActivityEvent(
+        diagnosticEvent("source.file-delete.completed", {
+          data: { itemId: "export-1", sourcePath },
+        }),
+        labels,
+      ),
+    ).toMatchObject({
+      action: { kind: "restore", path: sourcePath, targetId: "export-1" },
+      kind: "file-deleted",
+      path: sourcePath,
+      title: "File deleted",
+    });
+  });
+
+  it("projects a restored file with its path and no action", () => {
+    const entry = projectActivityEvent(
+      diagnosticEvent("source.file-restore.completed", { data: { sourcePath } }),
+      labels,
+    );
+
+    expect(entry).toMatchObject({
+      kind: "file-restored",
+      path: sourcePath,
+      title: "File restored",
+    });
+    expect(entry?.action).toBeUndefined();
+  });
+
   it.each([
-    ["source.file-delete.completed", "file-deleted", "File deleted"],
-    ["source.file-restore.completed", "file-restored", "File restored"],
-  ] as const)("projects %s with its semantic activity kind", (event, kind, title) => {
-    expect(projectActivityEvent(diagnosticEvent(event), labels)).toMatchObject({ kind, title });
+    ["ffmpeg.export.completed", { outputType: "fast" }],
+    ["source.file-delete.completed", { itemId: "export-1" }],
+    ["source.file-delete.completed", { sourcePath }],
+  ] as const)("does not create an invalid action for %s without required data", (event, data) => {
+    expect(projectActivityEvent(diagnosticEvent(event, { data }), labels)?.action).toBeUndefined();
   });
 
   it.each([

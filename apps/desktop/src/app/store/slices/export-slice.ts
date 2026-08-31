@@ -248,6 +248,11 @@ const exportSlice = createSlice({
       if (!item || item.status !== "completed") return;
       item.sourceDeleted = true;
     },
+    exportSourceRestored: (state, action: PayloadAction<{ id: string }>) => {
+      const item = state.queue.find((candidate) => candidate.id === action.payload.id);
+      if (!item || item.status !== "completed" || !item.sourceDeleted) return;
+      item.sourceDeleted = false;
+    },
     exportFailed: (
       state,
       action: PayloadAction<{ durationMs: number | null; error: AppError; id: string }>,
@@ -318,6 +323,7 @@ export const {
   exportLaunchFailed,
   exportProgressReceived,
   exportSourceDeleted,
+  exportSourceRestored,
   exportStarted,
   finishedExportsCleared,
   importQueueItemAdded,

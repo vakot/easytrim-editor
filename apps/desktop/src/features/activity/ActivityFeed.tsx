@@ -1,6 +1,7 @@
 import { Film, RotateCcw, Scissors, Trash2 } from "lucide-react";
 import {
   type ComponentType,
+  useCallback,
   useEffect,
   useId,
   useMemo,
@@ -9,15 +10,27 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Marker, MarkerContent, MarkerIcon } from "@/components/ui/marker";
+import { Button } from "@/components/ui/button";
+import {
+  Marker,
+  MarkerAction,
+  MarkerContent,
+  MarkerDescription,
+  MarkerIcon,
+} from "@/components/ui/marker";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
+import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
+import { selectExportQueue } from "@/app/store/slices/export-slice";
+import { restoreExportSourceRequested } from "@/app/store/thunks/export-thunks";
 import {
   getCurrentSessionDiagnosticsSnapshot,
   subscribeToCurrentSessionDiagnostics,
 } from "@/lib/diagnostics";
+import { openFileLocation } from "@/lib/tauri/media";
 
 import {
+  type ActivityAction,
   type ActivityEntry,
   type ActivityKind,
   type ActivityProjectionLabels,
@@ -35,10 +48,13 @@ const activityIcons: Record<ActivityKind, ComponentType> = {
 interface ActivityFeedViewProps {
   entries: readonly ActivityEntry[];
   now: number;
+  onAction?: (action: ActivityAction) => void;
 }
 
 export function ActivityFeed() {
   const { t } = useTranslation();
+  const dispatch = useAppDispatch();
+  const exportQueue = useAppSelector(selectExportQueue);
   const [currentTime, setCurrentTime] = useState(() => Date.now());
   const diagnosticSnapshot = useSyncExternalStore(
     subscribeToCurrentSessionDiagnostics,
@@ -61,15 +77,41 @@ export function ActivityFeed() {
     [t],
   );
 
-  const entries = useMemo(
-    () => projectActivityEvents(diagnosticSnapshot.events, labels),
-    [diagnosticSnapshot, labels],
+  const restorableSourceIds = useMemo(
+    () =>
+      new Set(
+        exportQueue
+          .filter((item) => item.status === "completed" && item.sourceDeleted)
+          .map((item) => item.id),
+      ),
+    [exportQueue],
   );
 
-  return <ActivityFeedView entries={entries} now={currentTime} />;
+  const entries = useMemo(
+    () =>
+      projectActivityEvents(diagnosticSnapshot.events, labels).map((entry) =>
+        entry.action?.kind === "restore" && !restorableSourceIds.has(entry.action.targetId)
+          ? { ...entry, action: undefined }
+          : entry,
+      ),
+    [diagnosticSnapshot, labels, restorableSourceIds],
+  );
+
+  const handleAction = useCallback(
+    (action: ActivityAction) => {
+      if (action.kind === "restore") {
+        void dispatch(restoreExportSourceRequested(action.targetId));
+        return;
+      }
+      void openFileLocation(action.path).catch(() => undefined);
+    },
+    [dispatch],
+  );
+
+  return <ActivityFeedView entries={entries} now={currentTime} onAction={handleAction} />;
 }
 
-export function ActivityFeedView({ entries, now }: ActivityFeedViewProps) {
+export function ActivityFeedView({ entries, now, onAction }: ActivityFeedViewProps) {
   const { i18n, t } = useTranslation();
 
   const locale = i18n.resolvedLanguage ?? i18n.language;
@@ -112,7 +154,12 @@ export function ActivityFeedView({ entries, now }: ActivityFeedViewProps) {
                   </MarkerContent>
                 </Marker>
                 {group.entries.map((entry) => (
-                  <ActivityFeedEntry entry={entry} key={entry.id} timeFormatter={timeFormatter} />
+                  <ActivityFeedEntry
+                    entry={entry}
+                    key={entry.id}
+                    onAction={onAction}
+                    timeFormatter={timeFormatter}
+                  />
                 ))}
               </div>
             ))}
@@ -125,23 +172,44 @@ export function ActivityFeedView({ entries, now }: ActivityFeedViewProps) {
 
 function ActivityFeedEntry({
   entry,
+  onAction,
   timeFormatter,
 }: {
   entry: ActivityEntry;
+  onAction?: (action: ActivityAction) => void;
   timeFormatter: Intl.DateTimeFormat;
 }) {
+  const { t } = useTranslation();
   const Icon = activityIcons[entry.kind];
+  const action = entry.action;
   return (
-    <Marker className="items-center text-xs">
+    <Marker className="items-start text-xs">
       <MarkerIcon className="text-muted-foreground">
         <Icon />
       </MarkerIcon>
-      <MarkerContent className="flex flex-1 items-start justify-between gap-2">
+      <MarkerContent>
         <span className="text-foreground">{entry.title}</span>
-        <time className="shrink-0 text-xs" dateTime={entry.timestamp}>
-          {timeFormatter.format(new Date(entry.timestamp))}
-        </time>
+        <MarkerDescription>
+          <time className="shrink-0" dateTime={entry.timestamp}>
+            {timeFormatter.format(new Date(entry.timestamp))}
+          </time>
+          {entry.path ? (
+            <>
+              <span aria-hidden="true">В·</span>
+              <span className="min-w-0 truncate" title={entry.path}>
+                {entry.path}
+              </span>
+            </>
+          ) : null}
+        </MarkerDescription>
       </MarkerContent>
+      {action && onAction ? (
+        <MarkerAction>
+          <Button onClick={() => onAction(action)} size="xs" variant="outline">
+            {action.kind === "restore" ? t("app.actions.restore") : t("app.actions.open")}
+          </Button>
+        </MarkerAction>
+      ) : null}
     </Marker>
   );
 }
