@@ -17,6 +17,7 @@ import type {
   PreviewDescriptor,
   SourceDropEvent,
   SourceImportResult,
+  SourcePickerMode,
   WaveformResult,
 } from "./media.types";
 import {
@@ -34,9 +35,11 @@ import {
   parseWaveformResults,
 } from "./media.utils";
 
-export async function chooseSource(): Promise<SourceImportResult | null> {
+export async function chooseSource(
+  mode: SourcePickerMode = "files",
+): Promise<SourceImportResult | null> {
   try {
-    const value = await invoke<unknown>("choose_source");
+    const value = await invoke<unknown>("choose_source", { mode });
     return parseSourceImportResult(value);
   } catch (error: unknown) {
     throw normalizeAppError(error);

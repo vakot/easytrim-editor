@@ -31,6 +31,7 @@ export const sk = {
       minimize: "Minimalizovať",
       open: "Otvoriť",
       openFile: "Otvoriť súbor",
+      openFolder: "Otvoriť priečinok",
       resetLayout: "Obnoviť rozloženie",
       restart: "Reštartovať aplikáciu",
       restore: "Obnoviť",

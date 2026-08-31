@@ -166,6 +166,8 @@ export interface SourceImportResult {
   truncationReason?: string;
 }
 
+export type SourcePickerMode = "files" | "folders";
+
 type SourceImportEvent =
   | { importResult: SourceImportResult; operationId?: string; status: "selected" }
   | { operationId?: string; sources: SourceRef[]; status: "selected" }
