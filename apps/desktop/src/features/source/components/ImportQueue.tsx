@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
 import { Card, CardAction, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { SegmentedControl, SegmentedControlItem } from "@/components/ui/segmented-control";
 
 import { useTimeline } from "@/app/hooks/useTimeline";
 import type { importQueueItem } from "@/app/store/slices/export-slice";
@@ -18,8 +17,6 @@ import { normalizeAppError } from "@/lib/tauri/media.utils";
 import { useImportQueue } from "../hooks/useImportQueue";
 
 import { DeleteSourceDialog } from "./DeleteSourceDialog";
-
-type ImportQueueActionMode = "remove" | "delete";
 
 function ToastFilePath({ sourcePath }: { sourcePath: string }) {
   return (
@@ -33,7 +30,6 @@ export function ImportQueue() {
   const { t } = useTranslation();
 
   const { activeIndex, activeItem, deleteSource, items, next, prev, skip } = useImportQueue();
-  const [actionMode, setActionMode] = useState<ImportQueueActionMode>("remove");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletePending, setDeletePending] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -167,28 +163,22 @@ export function ImportQueue() {
         <Button disabled={activeIndex < 0} onClick={skip} size="sm" variant="outline">
           {t("queue.actions.skip")}
         </Button>
-        <SegmentedControl
-          aria-label={t("queue.labels.import")}
-          onValueChange={(value) => setActionMode(value as ImportQueueActionMode)}
-          value={actionMode}
+        <Button
+          aria-label={t("queue.accessibility.deleteSource", {
+            filename: activeItem?.snapshot.source.displayName,
+          })}
+          disabled={!activeItem}
+          onClick={(event) => {
+            event.stopPropagation();
+            if (!activeItem) return;
+            openDeleteDialog(activeItem?.id);
+          }}
+          size="icon-sm"
+          type="button"
+          variant="destructive"
         >
-          <SegmentedControlItem
-            aria-label={t("queue.accessibility.removeMode")}
-            size="icon-sm"
-            value="remove"
-            variant="destructive"
-          >
-            <X aria-hidden="true" />
-          </SegmentedControlItem>
-          <SegmentedControlItem
-            aria-label={t("queue.accessibility.deleteMode")}
-            size="icon-sm"
-            value="delete"
-            variant="destructive"
-          >
-            <Trash aria-hidden="true" />
-          </SegmentedControlItem>
-        </SegmentedControl>
+          <Trash aria-hidden="true" />
+        </Button>
       </div>
 
       {deleteItem ? (
@@ -210,7 +200,6 @@ export function ImportQueue() {
         <div aria-live="polite" className="grid gap-2 pb-2" role="status">
           {items.map((item) => (
             <ImportQueueItem
-              actionMode={actionMode}
               active={item.id === activeItem?.id}
               item={item}
               key={item.id}
@@ -224,12 +213,10 @@ export function ImportQueue() {
 }
 
 function ImportQueueItem({
-  actionMode,
   active,
   item,
   onDelete,
 }: {
-  actionMode: ImportQueueActionMode;
   active: boolean;
   item: importQueueItem;
   onDelete: (itemId: string) => void;
@@ -239,14 +226,6 @@ function ImportQueueItem({
   const timeline = useTimeline();
   const { open, remove } = useImportQueue();
   const sourcePath = formatSourcePath(item.snapshot.source.sourcePath);
-  const actionLabel =
-    actionMode === "delete"
-      ? t("queue.accessibility.deleteSource", {
-          filename: item.snapshot.source.displayName,
-        })
-      : t("queue.accessibility.removeImportItem", {
-          filename: item.snapshot.source.displayName,
-        });
 
   async function restoreItem() {
     open(item.id);
@@ -269,23 +248,36 @@ function ImportQueueItem({
         <CardTitle className="truncate">{item.snapshot.source.displayName}</CardTitle>
         <CardDescription className="truncate">{sourcePath}</CardDescription>
         <CardAction>
-          <Button
-            aria-label={actionLabel}
-            onClick={(event) => {
-              event.stopPropagation();
-              if (actionMode === "delete") {
+          <ButtonGroup>
+            <Button
+              aria-label={t("queue.accessibility.removeImportItem", {
+                filename: item.snapshot.source.displayName,
+              })}
+              onClick={(event) => {
+                event.stopPropagation();
+                remove(item.id);
+              }}
+              size="icon"
+              type="button"
+              variant="destructive"
+            >
+              <X aria-hidden="true" />
+            </Button>
+            <Button
+              aria-label={t("queue.accessibility.deleteSource", {
+                filename: item.snapshot.source.displayName,
+              })}
+              onClick={(event) => {
+                event.stopPropagation();
                 onDelete(item.id);
-                return;
-              }
-
-              remove(item.id);
-            }}
-            size="icon"
-            type="button"
-            variant="destructive"
-          >
-            {actionMode === "delete" ? <Trash aria-hidden="true" /> : <X aria-hidden="true" />}
-          </Button>
+              }}
+              size="icon"
+              type="button"
+              variant="destructive"
+            >
+              <Trash aria-hidden="true" />
+            </Button>
+          </ButtonGroup>
         </CardAction>
       </CardHeader>
     </Card>
