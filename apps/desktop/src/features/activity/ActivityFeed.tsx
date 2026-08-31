@@ -372,17 +372,15 @@ function ActivityFeedBranch({
           <MarkerTitle className="min-w-0 text-foreground">{filename}</MarkerTitle>
           <MarkerDescription className="truncate">
             {branch.path ? (
-              <>
-                <span className="min-w-0 flex-1 truncate" title={normalizedSourcePath}>
-                  {normalizedSourcePath}
-                </span>
-              </>
+              <span className="min-w-0 flex-1 truncate" title={normalizedSourcePath}>
+                {normalizedSourcePath}
+              </span>
             ) : null}
           </MarkerDescription>
         </MarkerContent>
       </Marker>
 
-      <MarkerGroup className="pt-2">
+      <MarkerGroup className="gap-2 pt-2">
         {branch.entries.map((entry) => (
           <ActivityFeedMarkerGroupItem
             entry={entry}
@@ -413,7 +411,7 @@ function ActivityFeedMarkerGroupItem({
   const showAction = !!action && onAction;
 
   return (
-    <Marker className="h-6 items-center text-xs">
+    <Marker className="items-center text-xs">
       <MarkerIcon className={statusPresentation.className}>
         <Icon
           aria-hidden="true"
@@ -454,7 +452,7 @@ function ActivityFeedEntry({
 
   if (compact) {
     return (
-      <Marker className="h-6 items-center text-xs">
+      <Marker className="items-center text-xs">
         <MarkerIcon className={statusPresentation.className}>
           <Icon
             aria-hidden="true"
@@ -495,11 +493,9 @@ function ActivityFeedEntry({
         />
         <MarkerDescription>
           {entry.path ? (
-            <>
-              <span className="min-w-0 flex-1 truncate" title={normalizedSourcePath}>
-                {normalizedSourcePath}
-              </span>
-            </>
+            <span className="min-w-0 flex-1 truncate" title={normalizedSourcePath}>
+              {normalizedSourcePath}
+            </span>
           ) : null}
         </MarkerDescription>
       </MarkerContent>

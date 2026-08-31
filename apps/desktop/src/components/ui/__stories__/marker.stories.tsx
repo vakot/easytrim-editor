@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { Check, File, Info, Play, RotateCcw } from "lucide-react";
+import { Check, File, Info, Play, RotateCcw, Square, Trash } from "lucide-react";
 
 import { Button } from "../button";
 import {
@@ -109,7 +109,7 @@ export const Group: Story = {
           <MarkerDescription>Filename</MarkerDescription>
         </MarkerContent>
       </Marker>
-      <MarkerGroup className="w-72 gap-3 pt-1">
+      <MarkerGroup className="w-72 gap-5 pt-1">
         <Marker>
           <MarkerIcon>
             <Play />
@@ -139,6 +139,34 @@ export const Group: Story = {
           <MarkerContent>
             <MarkerTitle>Render completed</MarkerTitle>
           </MarkerContent>
+        </Marker>
+
+        <Marker>
+          <MarkerContent>
+            <MarkerTitle>File deleted</MarkerTitle>
+          </MarkerContent>
+
+          <MarkerAction className="-mt-1">
+            <Button disabled size="xs" variant="outline">
+              Restore
+            </Button>
+          </MarkerAction>
+        </Marker>
+
+        <Marker>
+          <MarkerIcon>
+            <Square />
+          </MarkerIcon>
+
+          <MarkerContent>
+            <MarkerTitle>File restored</MarkerTitle>
+          </MarkerContent>
+
+          <MarkerAction className="-mt-1">
+            <Button size="xs" variant="outline">
+              Delete
+            </Button>
+          </MarkerAction>
         </Marker>
       </MarkerGroup>
     </>
