@@ -52,10 +52,18 @@ export const sk = {
     },
     status: {
       checkingForUpdates: "Kontrolujú sa aktualizácie…",
+      fastCutCancelled: "Rýchly strih bol zrušený",
       fastCutCompleted: "Rýchly strih bol dokončený",
+      fastCutFailed: "Rýchly strih zlyhal",
+      fastCutInterrupted: "Rýchly strih bol prerušený",
+      fastCutting: "Prebieha rýchly strih…",
       fileDeleted: "Súbor bol odstránený",
       fileRestored: "Súbor bol obnovený",
       renderCompleted: "Optimalizované vykreslenie bolo dokončené",
+      renderCancelled: "Vykreslenie bolo zrušené",
+      renderFailed: "Vykreslenie zlyhalo",
+      renderInterrupted: "Vykreslenie bolo prerušené",
+      rendering: "Prebieha vykresľovanie…",
       upToDate: "Aktuálna verzia",
     },
     messages: {

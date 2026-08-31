@@ -35,6 +35,10 @@ sessions cannot grant arbitrary filesystem access or prevent the rest of the fee
 frontend caches one asynchronous history load per application runtime and does not emit diagnostic
 events while reading diagnostics.
 
+The Activity Feed derives each export lifecycle row from the append-only `ffmpeg.export.started`
+event and its matching completion, failure, or cancellation event using the diagnostic operation
+ID. The row retains its start time and position as its terminal state arrives. A start without a
+terminal event is pending only in the current session; retained starts are shown as interrupted.
 Historical export entries may retain their `Open` action because it is a normal file-location
 request and can fail safely if the output no longer exists. A historical delete never receives a
 `Restore` action: restore remains available only when the event belongs to the active session and
