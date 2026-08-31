@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
 import { toast } from "sonner";
@@ -49,7 +49,6 @@ describe("ImportQueue", () => {
 
     renderQueue(appStore);
 
-    expect(screen.getByRole("radio", { name: "Remove from queue" })).toBeChecked();
     const restoreCard = screen.getByLabelText("Restore source.mp4");
     const removeButton = screen.getByRole("button", {
       name: "Remove source.mp4 from import queue",
@@ -62,22 +61,14 @@ describe("ImportQueue", () => {
     expect(timeline.onSeek).not.toHaveBeenCalled();
   });
 
-  it("switches item actions without changing queue contents", async () => {
+  it("shows both item actions without changing queue contents", () => {
     const appStore = createAppStore();
     addQueueItem(appStore, "import-1", "first.mp4");
     addQueueItem(appStore, "import-2", "second.mp4");
-    const user = userEvent.setup();
-
     renderQueue(appStore);
 
-    await user.click(screen.getByRole("radio", { name: "Delete source" }));
-
-    expect(
-      screen.getByRole("button", { name: "Delete first.mp4 from device" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Delete second.mp4 from device" }),
-    ).toBeInTheDocument();
+    expect(getQueueItemButton("first.mp4", "Delete first.mp4 from device")).toBeInTheDocument();
+    expect(getQueueItemButton("second.mp4", "Delete second.mp4 from device")).toBeInTheDocument();
     expect(selectImportQueueItems(appStore.getState()).map((item) => item.id)).toEqual([
       "import-1",
       "import-2",
@@ -93,8 +84,7 @@ describe("ImportQueue", () => {
 
     renderQueue(appStore);
 
-    await user.click(screen.getByRole("radio", { name: "Delete source" }));
-    await user.click(screen.getByRole("button", { name: "Delete first.mp4 from device" }));
+    await user.click(getQueueItemButton("first.mp4", "Delete first.mp4 from device"));
 
     expect(
       screen.getByText("This deletes first.mp4 from your computer. This action can be undone."),
@@ -122,8 +112,7 @@ describe("ImportQueue", () => {
 
     renderQueue(appStore);
 
-    await user.click(screen.getByRole("radio", { name: "Delete source" }));
-    await user.click(screen.getByRole("button", { name: "Delete first.mp4 from device" }));
+    await user.click(getQueueItemButton("first.mp4", "Delete first.mp4 from device"));
     await user.click(screen.getByRole("button", { name: "Delete" }));
 
     const restoreButton = await screen.findByRole("button", { name: "Restore" });
@@ -151,8 +140,7 @@ describe("ImportQueue", () => {
 
     renderQueue(appStore);
 
-    await user.click(screen.getByRole("radio", { name: "Delete source" }));
-    await user.click(screen.getByRole("button", { name: "Delete first.mp4 from device" }));
+    await user.click(getQueueItemButton("first.mp4", "Delete first.mp4 from device"));
     await user.click(screen.getByRole("button", { name: "Delete" }));
 
     expect(await screen.findByText("Deleting first.mp4…")).toBeInTheDocument();
@@ -178,8 +166,7 @@ describe("ImportQueue", () => {
 
     renderQueue(appStore);
 
-    await user.click(screen.getByRole("radio", { name: "Delete source" }));
-    await user.click(screen.getByRole("button", { name: "Delete first.mp4 from device" }));
+    await user.click(getQueueItemButton("first.mp4", "Delete first.mp4 from device"));
     await user.click(screen.getByRole("button", { name: "Delete" }));
     await user.click(await screen.findByRole("button", { name: "Restore" }));
 
@@ -203,8 +190,7 @@ describe("ImportQueue", () => {
 
     renderQueue(appStore);
 
-    await user.click(screen.getByRole("radio", { name: "Delete source" }));
-    await user.click(screen.getByRole("button", { name: "Delete first.mp4 from device" }));
+    await user.click(getQueueItemButton("first.mp4", "Delete first.mp4 from device"));
     await user.click(screen.getByRole("button", { name: "Delete" }));
 
     expect(
@@ -224,6 +210,10 @@ function renderQueue(appStore: ReturnType<typeof createAppStore>) {
       <Toaster duration={Infinity} position="bottom-right" theme="light" />
     </Provider>,
   );
+}
+
+function getQueueItemButton(filename: string, name: string) {
+  return within(screen.getByLabelText(`Restore ${filename}`)).getByRole("button", { name });
 }
 
 function addQueueItem(
