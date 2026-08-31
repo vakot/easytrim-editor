@@ -17,6 +17,7 @@ function RadioGroup({
 }
 
 function RadioGroupItem({
+  children,
   className,
   ...props
 }: React.ComponentProps<typeof RadioGroupPrimitive.Item>) {
@@ -35,6 +36,7 @@ function RadioGroupItem({
       >
         <span className="absolute top-1/2 left-1/2 size-2 -translate-1/2 rounded-full bg-primary-foreground" />
       </RadioGroupPrimitive.Indicator>
+      {children}
     </RadioGroupPrimitive.Item>
   );
 }
