@@ -12,10 +12,18 @@ import {
 } from "../activity-projection";
 
 const labels: ActivityProjectionLabels = {
+  fastCutCancelled: "Fast cut cancelled",
   fastCutCompleted: "Fast cut completed",
+  fastCutFailed: "Fast cut failed",
+  fastCutInterrupted: "Fast cut interrupted",
+  fastCutting: "Fast cutting…",
   fileDeleted: "File deleted",
   fileRestored: "File restored",
+  renderCancelled: "Render cancelled",
   renderCompleted: "Optimized render completed",
+  renderFailed: "Render failed",
+  renderInterrupted: "Render interrupted",
+  rendering: "Rendering…",
 };
 
 const outputPath = "C:/Exports/clip.mp4";
@@ -48,8 +56,8 @@ function session(
 
 describe("activity projection", () => {
   it.each([
-    ["fast", "fast-cut-completed", "Fast cut completed"],
-    ["optimized", "render-completed", "Optimized render completed"],
+    ["fast", "fast-cut", "Fast cut completed"],
+    ["optimized", "render", "Optimized render completed"],
   ] as const)("projects a completed %s export", (outputType, kind, title) => {
     const entry = projectActivityEvent(
       diagnosticEvent("ffmpeg.export.completed", { data: { outputPath, outputType } }),
@@ -61,7 +69,7 @@ describe("activity projection", () => {
       kind,
       path: outputPath,
       sessionId: "session-1",
-      timestamp: "2026-08-31T09:00:00.000Z",
+      startedAt: "2026-08-31T09:00:00.000Z",
       title,
     });
   });
@@ -127,6 +135,116 @@ describe("activity projection", () => {
     ).toHaveLength(1);
   });
 
+  it("projects a current export start as one pending entry with its output path", () => {
+    const entries = projectActivityEvents(
+      [
+        diagnosticEvent("ffmpeg.export.started", {
+          data: { outputPath, outputType: "optimized" },
+          operationId: "render-1",
+          sessionId: "current-session",
+        }),
+      ],
+      labels,
+      "current-session",
+    );
+
+    expect(entries).toEqual([
+      expect.objectContaining({
+        id: "current-session:render-1:ffmpeg.export",
+        operationId: "render-1",
+        path: outputPath,
+        startedAt: "2026-08-31T09:00:00.000Z",
+        status: "pending",
+        title: "Rendering…",
+      }),
+    ]);
+    expect(entries[0]?.action).toBeUndefined();
+  });
+
+  it.each([
+    ["ffmpeg.export.completed", "completed", "Optimized render completed", true],
+    ["ffmpeg.export.failed", "failed", "Render failed", false],
+    ["ffmpeg.export.cancelled", "cancelled", "Render cancelled", false],
+  ] as const)("replaces a started export with %s", (event, status, title, hasOpenAction) => {
+    const entries = projectActivityEvents(
+      [
+        diagnosticEvent("ffmpeg.export.started", {
+          data: { outputPath, outputType: "optimized" },
+          operationId: "render-1",
+          sessionId: "current-session",
+          timestamp: "2026-08-31T08:30:00.000Z",
+        }),
+        diagnosticEvent(event, {
+          data: event === "ffmpeg.export.completed" ? { outputPath, outputType: "optimized" } : {},
+          operationId: "render-1",
+          sessionId: "current-session",
+          timestamp: "2026-08-31T09:00:00.000Z",
+        }),
+      ],
+      labels,
+      "current-session",
+    );
+
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      id: "current-session:render-1:ffmpeg.export",
+      startedAt: "2026-08-31T08:30:00.000Z",
+      status,
+      title,
+    });
+    expect(Boolean(entries[0]?.action)).toBe(hasOpenAction);
+  });
+
+  it("treats retained starts as interrupted and keeps concurrent operations separate", () => {
+    const entries = projectActivityEvents(
+      [
+        diagnosticEvent("ffmpeg.export.started", {
+          data: { outputPath, outputType: "fast" },
+          operationId: "fast-1",
+          sessionId: "history-session",
+          timestamp: "2026-08-30T09:00:00.000Z",
+        }),
+        diagnosticEvent("ffmpeg.export.started", {
+          data: { outputPath: "C:/Exports/render.mp4", outputType: "optimized" },
+          operationId: "render-1",
+          sessionId: "history-session",
+          timestamp: "2026-08-30T09:05:00.000Z",
+        }),
+      ],
+      labels,
+      "current-session",
+    );
+
+    expect(entries).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "history-session:fast-1:ffmpeg.export",
+          status: "interrupted",
+        }),
+        expect.objectContaining({
+          id: "history-session:render-1:ffmpeg.export",
+          status: "interrupted",
+        }),
+      ]),
+    );
+  });
+
+  it("preserves a legacy completed export without an operation ID", () => {
+    const entry = projectActivityEvents(
+      [
+        diagnosticEvent("ffmpeg.export.completed", {
+          data: { outputPath, outputType: "fast" },
+          operationId: undefined,
+        }),
+      ],
+      labels,
+      "current-session",
+    )[0];
+
+    expect(entry).toMatchObject({ status: "completed", title: "Fast cut completed" });
+    expect(entry?.action).toEqual({ kind: "open", path: outputPath });
+  });
+
   it("combines retained and current sessions with stable identity and original timestamps", () => {
     const retained = diagnosticEvent("ffmpeg.export.completed", {
       data: { outputPath, outputType: "fast" },
@@ -149,14 +267,14 @@ describe("activity projection", () => {
 
     expect(entries).toMatchObject([
       {
-        id: "retained-session:retained-export:ffmpeg.export.completed",
+        id: "retained-session:retained-export:ffmpeg.export",
         sessionId: "retained-session",
-        timestamp: "2026-08-29T09:00:00.000Z",
+        startedAt: "2026-08-29T09:00:00.000Z",
       },
       {
-        id: "current-session:current-export:ffmpeg.export.completed",
+        id: "current-session:current-export:ffmpeg.export",
         sessionId: "current-session",
-        timestamp: "2026-08-31T09:00:00.000Z",
+        startedAt: "2026-08-31T09:00:00.000Z",
       },
     ]);
   });

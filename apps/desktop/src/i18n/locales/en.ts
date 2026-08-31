@@ -50,10 +50,18 @@ export const en = {
     },
     status: {
       checkingForUpdates: "Checking for Updates…",
+      fastCutCancelled: "Fast cut cancelled",
       fastCutCompleted: "Fast cut completed",
+      fastCutFailed: "Fast cut failed",
+      fastCutInterrupted: "Fast cut interrupted",
+      fastCutting: "Fast cutting…",
       fileDeleted: "File deleted",
       fileRestored: "File restored",
       renderCompleted: "Optimized render completed",
+      renderCancelled: "Render cancelled",
+      renderFailed: "Render failed",
+      renderInterrupted: "Render interrupted",
+      rendering: "Rendering…",
       upToDate: "Up to Date",
     },
     messages: {

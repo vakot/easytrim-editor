@@ -1,5 +1,16 @@
 import type { TFunction } from "i18next";
-import { ExternalLink, Film, type LucideIcon, RotateCcw, Scissors, Trash2, X } from "lucide-react";
+import {
+  CircleAlert,
+  CircleX,
+  ExternalLink,
+  Film,
+  LoaderCircle,
+  type LucideIcon,
+  RotateCcw,
+  Scissors,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useCallback, useEffect, useId, useMemo, useState, useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -41,6 +52,7 @@ import {
   type ActivityKind,
   type ActivityProjectionLabels,
   type ActivitySessionLabels,
+  type ActivityStatus,
   getActivitySessionPresentation,
   groupActivityEntriesBySession,
   projectActivityEvents,
@@ -48,11 +60,20 @@ import {
 } from "./activity-projection";
 
 const activityIcons: Record<ActivityKind, LucideIcon> = {
-  "fast-cut-completed": Scissors,
+  "fast-cut": Scissors,
   "file-deleted": Trash2,
   "file-restored": RotateCcw,
-  "render-completed": Film,
+  render: Film,
 };
+
+const activityStatusPresentation: Record<ActivityStatus, { className: string; icon?: LucideIcon }> =
+  {
+    cancelled: { className: "text-muted-foreground", icon: CircleX },
+    completed: { className: "text-muted-foreground" },
+    failed: { className: "text-destructive", icon: CircleAlert },
+    interrupted: { className: "text-destructive", icon: CircleAlert },
+    pending: { className: "text-primary", icon: LoaderCircle },
+  };
 
 const activityActionPresentation = {
   open: { getLabel: (t: TFunction) => t("app.actions.open"), icon: ExternalLink },
@@ -106,9 +127,17 @@ export function ActivityFeed() {
   const labels = useMemo<ActivityProjectionLabels>(
     () => ({
       fastCutCompleted: t("app.status.fastCutCompleted"),
+      fastCutCancelled: t("app.status.fastCutCancelled"),
+      fastCutFailed: t("app.status.fastCutFailed"),
+      fastCutInterrupted: t("app.status.fastCutInterrupted"),
+      fastCutting: t("app.status.fastCutting"),
       fileDeleted: t("app.status.fileDeleted"),
       fileRestored: t("app.status.fileRestored"),
       renderCompleted: t("app.status.renderCompleted"),
+      renderCancelled: t("app.status.renderCancelled"),
+      renderFailed: t("app.status.renderFailed"),
+      renderInterrupted: t("app.status.renderInterrupted"),
+      rendering: t("app.status.rendering"),
     }),
     [t],
   );
@@ -126,7 +155,11 @@ export function ActivityFeed() {
   const entries = useMemo(
     () =>
       resolveAvailableActivityActions(
-        projectActivityEvents([...historySnapshot.events, ...diagnosticSnapshot.events], labels),
+        projectActivityEvents(
+          [...historySnapshot.events, ...diagnosticSnapshot.events],
+          labels,
+          getCurrentDiagnosticSessionId(),
+        ),
         getCurrentDiagnosticSessionId(),
         restorableSourceIds,
       ),
@@ -266,7 +299,8 @@ function ActivityFeedEntry({
 }) {
   const { t } = useTranslation();
 
-  const Icon = activityIcons[entry.kind];
+  const statusPresentation = activityStatusPresentation[entry.status];
+  const Icon = statusPresentation.icon ?? activityIcons[entry.kind];
   const action = entry.action;
   const actionPresentation = action ? activityActionPresentation[action.kind] : undefined;
   const ActionIcon = actionPresentation?.icon;
@@ -277,14 +311,17 @@ function ActivityFeedEntry({
 
   return (
     <Marker className="items-start text-xs">
-      <MarkerIcon className="text-muted-foreground">
-        <Icon />
+      <MarkerIcon className={statusPresentation.className}>
+        <Icon
+          aria-hidden="true"
+          className={entry.status === "pending" ? "animate-spin" : undefined}
+        />
       </MarkerIcon>
       <MarkerContent className={cn(!hasAction && "pr-7")}>
         <div className="flex justify-between gap-2 text-foreground">
           {entry.title}
-          <time className="shrink-0 text-muted-foreground" dateTime={entry.timestamp}>
-            {timeFormatter.format(new Date(entry.timestamp))}
+          <time className="shrink-0 text-muted-foreground" dateTime={entry.startedAt}>
+            {timeFormatter.format(new Date(entry.startedAt))}
           </time>
         </div>
         <MarkerDescription>

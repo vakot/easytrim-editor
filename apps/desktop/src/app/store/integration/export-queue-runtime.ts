@@ -155,7 +155,12 @@ async function drainQueue(runtime: RuntimeState, dispatch: AppDispatch, getState
       job.startedAt = Date.now();
       dispatch(exportStarted({ id: job.item.id, startedAt: job.startedAt }));
       job.diagnosticsOperation = diagnostics.startOperation("ffmpeg.export", {
-        data: { route: job.item.route, itemId: job.item.id },
+        data: {
+          itemId: job.item.id,
+          outputPath: job.item.path,
+          outputType: job.item.route,
+          route: job.item.route,
+        },
         origin: { type: "internal" },
         snapshotId: job.item.id,
       });
