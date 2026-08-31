@@ -23,6 +23,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectExportQueue } from "@/app/store/slices/export-slice";
 import { restoreExportSourceRequested } from "@/app/store/thunks/export-thunks";
+import { formatSourcePath } from "@/features/source";
 import {
   getCurrentSessionDiagnosticsSnapshot,
   subscribeToCurrentSessionDiagnostics,
@@ -180,8 +181,11 @@ function ActivityFeedEntry({
   timeFormatter: Intl.DateTimeFormat;
 }) {
   const { t } = useTranslation();
+
   const Icon = activityIcons[entry.kind];
   const action = entry.action;
+  const normalizedSourcePath = formatSourcePath(entry.path ?? "");
+
   return (
     <Marker className="items-start text-xs">
       <MarkerIcon className="text-muted-foreground">
@@ -193,11 +197,15 @@ function ActivityFeedEntry({
           <time className="shrink-0" dateTime={entry.timestamp}>
             {timeFormatter.format(new Date(entry.timestamp))}
           </time>
+
           {entry.path ? (
             <>
-              <span aria-hidden="true">В·</span>
-              <span className="min-w-0 truncate" title={entry.path}>
-                {entry.path}
+              <span aria-hidden="true" className="shrink-0">
+                ·
+              </span>
+
+              <span className="min-w-0 flex-1 truncate" title={normalizedSourcePath}>
+                {normalizedSourcePath}
               </span>
             </>
           ) : null}
