@@ -18,6 +18,7 @@ export interface ActivityEntry {
   path?: string;
   sessionId: string;
   snapshotId?: string;
+  sourcePath?: string;
   startedAt: string;
   status: ActivityStatus;
   title: string;
@@ -165,17 +166,19 @@ export function groupActivityEntriesByBranch(
     }
 
     const id = `${entry.sessionId}:${entry.snapshotId}`;
+    const branchPath = entry.sourcePath ?? entry.path;
     const branch = branches.get(id);
     if (branch) {
       branch.entries = [...branch.entries, entry];
-      if (!branch.path && entry.path) branch.path = entry.path;
+      if (entry.sourcePath) branch.path = entry.sourcePath;
+      else if (!branch.path && branchPath) branch.path = branchPath;
       continue;
     }
 
     branches.set(id, {
       entries: [entry],
       id,
-      ...(entry.path ? { path: entry.path } : {}),
+      ...(branchPath ? { path: branchPath } : {}),
       sessionId: entry.sessionId,
       snapshotId: entry.snapshotId,
     });
@@ -330,6 +333,7 @@ function projectExportStart(
 ): ActivityEntry | null {
   const metadata = exportMetadata(event.data);
   const snapshotId = activitySnapshotId(event);
+  const sourcePath = diagnosticString(event.data?.sourcePath);
   if (!metadata) return null;
 
   return createActivityEntry(
@@ -339,6 +343,7 @@ function projectExportStart(
     {
       path: metadata.path,
       ...(snapshotId ? { snapshotId } : {}),
+      ...(sourcePath ? { sourcePath } : {}),
     },
   );
 }
@@ -403,6 +408,9 @@ function projectExportOperation(
 
   const path = diagnosticString(terminal?.data?.outputPath) ?? metadata.path;
   const snapshotId = activitySnapshotId(started) ?? activitySnapshotId(terminal);
+  const sourcePath =
+    diagnosticString(started.data?.sourcePath) ?? diagnosticString(terminal?.data?.sourcePath);
+
   return {
     ...(started.data ? { data: started.data } : {}),
     ...(path && status === "completed" ? { action: { kind: "open", path } as const } : {}),
@@ -412,6 +420,7 @@ function projectExportOperation(
     path,
     sessionId: started.sessionId,
     ...(snapshotId ? { snapshotId } : {}),
+    ...(sourcePath ? { sourcePath } : {}),
     startedAt: started.timestamp,
     status,
     title: exportTitle(metadata.kind, status, labels),
@@ -427,6 +436,7 @@ function projectLegacyExportTerminal(
   const status = exportStatus(event);
   const path = diagnosticString(event.data?.outputPath) ?? metadata.path;
   const snapshotId = activitySnapshotId(event);
+  const sourcePath = diagnosticString(event.data?.sourcePath);
   return {
     ...(event.data ? { data: event.data } : {}),
     ...(path && status === "completed" ? { action: { kind: "open", path } as const } : {}),
@@ -436,6 +446,7 @@ function projectLegacyExportTerminal(
     path,
     sessionId: event.sessionId,
     ...(snapshotId ? { snapshotId } : {}),
+    ...(sourcePath ? { sourcePath } : {}),
     startedAt: event.timestamp,
     status,
     title: exportTitle(metadata.kind, status, labels),

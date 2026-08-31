@@ -160,6 +160,7 @@ async function drainQueue(runtime: RuntimeState, dispatch: AppDispatch, getState
           outputPath: job.item.path,
           outputType: job.item.route,
           route: job.item.route,
+          sourcePath: job.item.request.sourcePath,
         },
         origin: { type: "internal" },
         snapshotId: job.item.id,
@@ -238,12 +239,14 @@ async function renderJob(job: RuntimeExportJob) {
             job.item.outputId,
             onProgress,
             job.diagnosticsOperation?.operationId,
+            job.item.id,
           )
         : await renderOptimized(
             job.item.request as import("@/lib/tauri/media.types").OptimizedExportRequest,
             job.item.outputId,
             onProgress,
             job.diagnosticsOperation?.operationId,
+            job.item.id,
           );
 
     if (!job.canceled) {

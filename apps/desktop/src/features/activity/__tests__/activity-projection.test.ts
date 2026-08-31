@@ -239,6 +239,91 @@ describe("activity projection", () => {
     expect(completed?.title).toBe("Optimized render completed");
   });
 
+  it("keeps historical optimized render output actions separate from source branch identity", () => {
+    const entries = projectActivityEvents(
+      [
+        diagnosticEvent("export.prepare.started", {
+          data: { route: "optimized", snapshotId: "snapshot-1", sourcePath },
+          operationId: "prepare-1",
+          sessionId: "history-session",
+          snapshotId: "snapshot-1",
+          timestamp: "2026-08-31T08:00:00.000Z",
+        }),
+        diagnosticEvent("ffmpeg.export.started", {
+          data: { outputPath, outputType: "optimized", sourcePath },
+          operationId: "export-1",
+          sessionId: "history-session",
+          snapshotId: "snapshot-1",
+          timestamp: "2026-08-31T08:01:00.000Z",
+        }),
+        diagnosticEvent("ffmpeg.export.completed", {
+          data: { outputPath, outputType: "optimized", sourcePath },
+          operationId: "export-1",
+          sessionId: "history-session",
+          snapshotId: "snapshot-1",
+          timestamp: "2026-08-31T08:02:00.000Z",
+        }),
+      ],
+      labels,
+      "current-session",
+    );
+
+    const render = entries.find((entry) => entry.title === "Optimized render completed");
+    const branch = groupActivityEntriesByBranch(entries).find(
+      (item): item is Extract<typeof item, { kind: "branch" }> =>
+        item.kind === "branch" && item.branch.snapshotId === "snapshot-1",
+    );
+
+    expect(render).toMatchObject({
+      action: { kind: "open", path: outputPath },
+      path: outputPath,
+      snapshotId: "snapshot-1",
+      sourcePath,
+    });
+    expect(branch?.branch.path).toBe(sourcePath);
+    expect(branch?.branch.entries).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ title: "Started rendering", snapshotId: "snapshot-1" }),
+        expect.objectContaining({ title: "Optimized render completed", snapshotId: "snapshot-1" }),
+      ]),
+    );
+  });
+
+  it("keeps render branches separate when similarly named outputs belong to different snapshots", () => {
+    const entries = projectActivityEvents(
+      [
+        diagnosticEvent("ffmpeg.export.completed", {
+          data: {
+            outputPath: "C:/Exports/clip-optimized.mp4",
+            outputType: "optimized",
+            sourcePath: "C:/Media/first/clip.mp4",
+          },
+          operationId: "render-1",
+          snapshotId: "snapshot-1",
+          timestamp: "2026-08-31T08:01:00.000Z",
+        }),
+        diagnosticEvent("ffmpeg.export.completed", {
+          data: {
+            outputPath: "C:/Exports/clip-optimized.mp4",
+            outputType: "optimized",
+            sourcePath: "C:/Media/second/clip.mp4",
+          },
+          operationId: "render-2",
+          snapshotId: "snapshot-2",
+          timestamp: "2026-08-31T08:02:00.000Z",
+        }),
+      ],
+      labels,
+      "session-1",
+    );
+
+    expect(
+      groupActivityEntriesByBranch(entries).map((item) =>
+        item.kind === "branch" ? item.branch.snapshotId : item.entry.snapshotId,
+      ),
+    ).toEqual(["snapshot-2", "snapshot-1"]);
+  });
+
   it("groups branch history by session-scoped snapshot identity and keeps unbound entries standalone", () => {
     const makeEntry = (
       id: string,

@@ -35,6 +35,7 @@ interface ActiveOperation {
   event: DiagnosticOperationName;
   operationId: string;
   parentOperationId?: string;
+  snapshotId?: string;
   startedAt: number;
 }
 
@@ -125,6 +126,7 @@ function terminalEvent(
     operationId: active.operationId,
     parentOperationId: active.parentOperationId,
     result,
+    ...(active.snapshotId ? { snapshotId: active.snapshotId } : {}),
   });
   return true;
 }
@@ -240,6 +242,7 @@ export const diagnostics = {
       event,
       operationId,
       ...(options.parentOperationId ? { parentOperationId: options.parentOperationId } : {}),
+      ...(options.snapshotId ? { snapshotId: options.snapshotId } : {}),
       startedAt: performance.now(),
     };
 

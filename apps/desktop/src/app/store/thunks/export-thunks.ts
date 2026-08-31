@@ -243,7 +243,7 @@ async function startQueuedExport(
     return;
   }
   const operation = diagnostics.startOperation("export.prepare", {
-    data: { route, snapshotId: activeItem.id },
+    data: { route, snapshotId: activeItem.id, sourcePath: request.sourcePath },
     origin,
     snapshotId: activeItem.id,
   });

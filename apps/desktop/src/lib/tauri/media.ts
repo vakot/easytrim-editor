@@ -97,8 +97,16 @@ export async function renderFast(
   outputId: string,
   onProgress: (progress: ExportProgress) => void,
   diagnosticParentOperationId?: string,
+  diagnosticSnapshotId?: string,
 ): Promise<ExportResult> {
-  return render("render_fast", request, outputId, onProgress, diagnosticParentOperationId);
+  return render(
+    "render_fast",
+    request,
+    outputId,
+    onProgress,
+    diagnosticParentOperationId,
+    diagnosticSnapshotId,
+  );
 }
 
 export async function renderOptimized(
@@ -106,8 +114,16 @@ export async function renderOptimized(
   outputId: string,
   onProgress: (progress: ExportProgress) => void,
   diagnosticParentOperationId?: string,
+  diagnosticSnapshotId?: string,
 ): Promise<ExportResult> {
-  return render("render_optimized", request, outputId, onProgress, diagnosticParentOperationId);
+  return render(
+    "render_optimized",
+    request,
+    outputId,
+    onProgress,
+    diagnosticParentOperationId,
+    diagnosticSnapshotId,
+  );
 }
 
 export async function planOptimizedExport(
@@ -158,6 +174,7 @@ async function render(
   outputId: string,
   onProgress: (progress: ExportProgress) => void,
   diagnosticParentOperationId?: string,
+  diagnosticSnapshotId?: string,
 ): Promise<ExportResult> {
   try {
     const channel = new Channel<unknown>((value) => onProgress(parseExportProgress(value)));
@@ -166,6 +183,7 @@ async function render(
       outputId,
       onProgress: channel,
       ...(diagnosticParentOperationId ? { diagnosticParentOperationId } : {}),
+      ...(diagnosticSnapshotId ? { diagnosticSnapshotId } : {}),
     };
 
     return parseExportResult(await invoke<unknown>(command, args));

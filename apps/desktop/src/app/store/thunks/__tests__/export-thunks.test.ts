@@ -587,6 +587,7 @@ describe("export thunks and runtime queue", () => {
 
     expect(mocks.planOptimizedExport).toHaveBeenCalledTimes(1);
     expect(mocks.renderOptimized).toHaveBeenCalledOnce();
+    expect(mocks.renderOptimized.mock.calls[0]?.[4]).toBe(importedItem.id);
   });
 
   it("keeps queued jobs sequential and reports native failures", async () => {

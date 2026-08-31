@@ -125,6 +125,22 @@ describe("diagnostics", () => {
     parent.cancel();
   });
 
+  it("preserves snapshot identity on operation terminal events", () => {
+    const operation = diagnostics.startOperation("ffmpeg.export", {
+      snapshotId: "snapshot-1",
+    });
+
+    operation.complete({ outputType: "optimized" });
+
+    expect(persistDiagnosticEvent).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        event: "ffmpeg.export.completed",
+        operationId: operation.operationId,
+        snapshotId: "snapshot-1",
+      }),
+    );
+  });
+
   it("serializes errors, nested causes, and arbitrary rejection values", () => {
     const cause = new Error("inner");
     const serialized = serializeDiagnosticError(new TypeError("outer", { cause }));

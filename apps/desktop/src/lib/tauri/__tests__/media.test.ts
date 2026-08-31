@@ -135,7 +135,9 @@ describe("media IPC adapter", () => {
       mergeAudio: false,
     };
 
-    await expect(renderFast(request, "output-1", vi.fn(), "diagnostic-op-1")).resolves.toEqual({
+    await expect(
+      renderFast(request, "output-1", vi.fn(), "diagnostic-op-1", "snapshot-1"),
+    ).resolves.toEqual({
       operationId: "native-op-1",
       displayName: "clip.mkv",
       displayPath: "C:/Exports/clip.mkv",
@@ -146,6 +148,7 @@ describe("media IPC adapter", () => {
         request,
         outputId: "output-1",
         diagnosticParentOperationId: "diagnostic-op-1",
+        diagnosticSnapshotId: "snapshot-1",
       }),
     );
   });
