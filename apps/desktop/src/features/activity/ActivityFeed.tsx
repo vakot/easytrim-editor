@@ -1,5 +1,5 @@
 import type { TFunction } from "i18next";
-import { ExternalLink, Film, type LucideIcon, RotateCcw, Scissors, Trash2 } from "lucide-react";
+import { ExternalLink, Film, type LucideIcon, RotateCcw, Scissors, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useId, useMemo, useState, useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -11,6 +11,7 @@ import {
   MarkerDescription,
   MarkerIcon,
 } from "@/components/ui/marker";
+import { ResizablePanelControl } from "@/components/ui/resizable";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -160,13 +161,23 @@ export function ActivityFeedView({ entries, now, onAction }: ActivityFeedViewPro
         {t("app.labels.activity")}
       </h3>
 
+      <ResizablePanelControl panelId="workspace-activity">
+        <Button
+          className="absolute top-2 right-3 text-secondary-foreground"
+          size="icon-xs"
+          variant="ghost"
+        >
+          <X aria-hidden="true" />
+        </Button>
+      </ResizablePanelControl>
+
       {groups.length === 0 ? (
         <p className="mx-3 rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted-foreground">
           {t("app.messages.activityEmpty")}
         </p>
       ) : (
-        <ScrollArea className="min-h-0 flex-1">
-          <div className="grid gap-3 px-3 pb-3">
+        <ScrollArea className="mr-1 min-h-0 flex-1">
+          <div className="grid gap-3 pr-2 pb-3 pl-3">
             {groups.map((group) => (
               <div className="flex flex-col gap-3" key={group.dateKey}>
                 <Marker variant="separator">
