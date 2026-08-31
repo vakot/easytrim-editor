@@ -4,6 +4,7 @@ import {
   recordUiHeartbeat,
 } from "./tauri/diagnostics";
 import type {
+  DiagnosticEvent,
   DiagnosticEventInput,
   DiagnosticEventName,
   DiagnosticLevel,
@@ -47,7 +48,14 @@ export interface DiagnosticOperation {
 let operationSequence = 0;
 let persistenceDegraded = false;
 let recovery: StartupRecovery | null = null;
+let currentSessionId: string | null = null;
 const activeOperations = new Map<string, ActiveOperation>();
+const currentSessionEvents: DiagnosticEvent[] = [];
+const currentSessionListeners = new Set<() => void>();
+let currentSessionSnapshot = {
+  events: currentSessionEvents as readonly DiagnosticEvent[],
+  version: 0,
+};
 
 function createOperationId(event: DiagnosticOperationName): string {
   const prefix = event.split(".").slice(0, 2).join("-");
@@ -60,7 +68,27 @@ function categoryFromEvent(event: string): string {
 }
 
 function send(event: DiagnosticEventInput): void {
+  currentSessionEvents.push({
+    ...event,
+    sessionId: currentSessionId ?? (currentSessionId = createLocalSessionId()),
+    timestamp: new Date().toISOString(),
+  });
+  currentSessionSnapshot = {
+    events: currentSessionEvents,
+    version: currentSessionSnapshot.version + 1,
+  };
+  currentSessionListeners.forEach((listener) => {
+    try {
+      listener();
+    } catch {
+      // Diagnostics observers are non-critical and must not interrupt persistence or editing.
+    }
+  });
   observePersistence(() => persistDiagnosticEvent(event));
+}
+
+function createLocalSessionId(): string {
+  return `frontend-${globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${++operationSequence}`}`;
 }
 
 function observePersistence(persist: () => Promise<void>): void {
@@ -185,6 +213,7 @@ export const diagnostics = {
   async initialize(): Promise<void> {
     const bootstrap = await bootstrapNativeDiagnostics();
     recovery = bootstrap?.recovery ?? null;
+    currentSessionId = bootstrap?.sessionId ?? currentSessionId ?? createLocalSessionId();
   },
 
   startOperation(
@@ -226,6 +255,18 @@ export const diagnostics = {
     this.event(event, { ...options, level: "warn" });
   },
 };
+
+export function getCurrentSessionDiagnosticsSnapshot(): {
+  events: readonly DiagnosticEvent[];
+  version: number;
+} {
+  return currentSessionSnapshot;
+}
+
+export function subscribeToCurrentSessionDiagnostics(listener: () => void): () => void {
+  currentSessionListeners.add(listener);
+  return () => currentSessionListeners.delete(listener);
+}
 
 export function installGlobalDiagnostics(): () => void {
   const onError = (event: ErrorEvent) => {

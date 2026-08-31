@@ -11,6 +11,7 @@ import {
   exportProgressReceived,
   exportReducer,
   exportSourceDeleted,
+  exportSourceRestored,
   exportStarted,
   finishedExportsCleared,
   importQueueItemAdded,
@@ -129,6 +130,11 @@ describe("export slice", () => {
       selectExportQueue({ export: state } as RootState).find((entry) => entry.id === completed.id)
         ?.sourceDeleted,
     ).toBe(true);
+    state = exportReducer(state, exportSourceRestored({ id: completed.id }));
+    expect(
+      selectExportQueue({ export: state } as RootState).find((entry) => entry.id === completed.id)
+        ?.sourceDeleted,
+    ).toBe(false);
     const canceled = { ...item, id: "export-3" };
     state = exportReducer(state, queueEntryAdded(canceled));
     state = exportReducer(state, exportCanceled({ id: canceled.id, durationMs: null }));

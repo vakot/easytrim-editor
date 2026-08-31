@@ -26,6 +26,11 @@ export interface DiagnosticEventInput {
   snapshotId?: string;
 }
 
+export interface DiagnosticEvent extends DiagnosticEventInput {
+  sessionId: string;
+  timestamp: string;
+}
+
 export interface DiagnosticsBootstrap {
   appVersion: string;
   recovery: StartupRecovery | null;

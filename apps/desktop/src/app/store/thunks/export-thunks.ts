@@ -17,6 +17,7 @@ import {
   exportLaunchFailed,
   type ExportQueueItem,
   type ExportSettings,
+  exportSourceRestored,
   type importQueueItem,
   importQueueItemAdded,
   optimizedExportDialogClosed,
@@ -54,6 +55,7 @@ import {
   planOptimizedExport,
   releaseExportSource,
   reserveExportSource,
+  restoreSourceFromTrash,
 } from "@/lib/tauri/media";
 import type { FastExportRequest, OptimizedExportRequest } from "@/lib/tauri/media.types";
 import { normalizeAppError } from "@/lib/tauri/media.utils";
@@ -430,4 +432,28 @@ export const restoreExportQueueItemRequested =
 
     dispatch(importQueueItemAdded(fork));
     return dispatch(activateImportedItemRequested(fork));
+  };
+
+export const restoreExportSourceRequested =
+  (id: string): AppThunk<Promise<boolean>> =>
+  async (dispatch, getState) => {
+    const item = getState().export.queue.find((candidate) => candidate.id === id);
+    if (!item || item.status !== "completed" || !item.sourceDeleted) return false;
+
+    const sourcePath = item.snapshot.source.sourcePath;
+    const operation = diagnostics.startOperation("source.file-restore", {
+      data: { itemId: item.id, sourcePath },
+      origin: { id: "export.restore-source", type: "button" },
+      snapshotId: item.id,
+    });
+
+    try {
+      await restoreSourceFromTrash(sourcePath);
+      dispatch(exportSourceRestored({ id: item.id }));
+      operation.complete({ itemId: item.id, sourcePath });
+      return true;
+    } catch (error: unknown) {
+      operation.fail(error, { itemId: item.id, sourcePath });
+      return false;
+    }
   };

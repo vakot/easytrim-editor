@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   moveSourceToTrash: vi.fn(),
   reserveExportSource: vi.fn(),
   releaseExportSource: vi.fn(),
+  restoreSourceFromTrash: vi.fn(),
   cancelOperation: vi.fn(),
   planOptimizedExport: vi.fn(),
   activateSourcePath: vi.fn(),
@@ -24,6 +25,7 @@ vi.mock("@/lib/tauri/media", () => ({
   moveSourceToTrash: mocks.moveSourceToTrash,
   reserveExportSource: mocks.reserveExportSource,
   releaseExportSource: mocks.releaseExportSource,
+  restoreSourceFromTrash: mocks.restoreSourceFromTrash,
   cancelOperation: mocks.cancelOperation,
   planOptimizedExport: mocks.planOptimizedExport,
   activateSourcePath: mocks.activateSourcePath,
@@ -72,6 +74,7 @@ import {
   cancelExportRequested,
   openOptimizedExportDialog,
   restoreExportQueueItemRequested,
+  restoreExportSourceRequested,
   startExportQueue,
   startFastCutRequested,
   startOptimizedExportRequested,
@@ -163,6 +166,7 @@ beforeEach(() => {
   mocks.moveSourceToTrash.mockResolvedValue(undefined);
   mocks.reserveExportSource.mockResolvedValue(undefined);
   mocks.releaseExportSource.mockResolvedValue(undefined);
+  mocks.restoreSourceFromTrash.mockResolvedValue(undefined);
   mocks.cancelOperation.mockResolvedValue(undefined);
   mocks.planOptimizedExport.mockResolvedValue({ commandPreview: "ffmpeg -i <source> <output>" });
   mocks.activateSourcePath.mockReset();
@@ -457,6 +461,33 @@ describe("export thunks and runtime queue", () => {
       expect(mocks.moveSourceToTrash).toHaveBeenCalledWith("C:/Media/source.mp4"),
     );
     expect(selectExportQueue(store.getState())[0]?.sourceDeleted).toBe(true);
+  });
+
+  it("restores a deleted export source through the typed adapter", async () => {
+    const store = createReadyStore(false);
+    store.dispatch(
+      queueEntryAdded({
+        ...queuedItem,
+        durationMs: 100,
+        operationId: "operation-completed",
+        progressPercent: 100,
+        sourceDeleted: true,
+        status: "completed",
+      }),
+    );
+
+    await expect(store.dispatch(restoreExportSourceRequested(queuedItem.id))).resolves.toBe(true);
+
+    expect(mocks.restoreSourceFromTrash).toHaveBeenCalledWith("C:/Media/source.mp4");
+    expect(selectExportQueue(store.getState())[0]?.sourceDeleted).toBe(false);
+  });
+
+  it("ignores a restore request when the source is not restorable", async () => {
+    const store = createReadyStore(false);
+
+    await expect(store.dispatch(restoreExportSourceRequested("missing"))).resolves.toBe(false);
+
+    expect(mocks.restoreSourceFromTrash).not.toHaveBeenCalled();
   });
 
   it("restores a queued snapshot after importing its source", async () => {

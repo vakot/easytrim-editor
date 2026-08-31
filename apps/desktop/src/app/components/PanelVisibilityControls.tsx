@@ -4,6 +4,8 @@ import {
   PanelBottomDashed,
   PanelLeft,
   PanelLeftDashed,
+  PanelRight,
+  PanelRightDashed,
   RotateCcw,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -144,6 +146,33 @@ export function PanelVisibilityControls() {
         </ResizablePanelControl>
         <TooltipContent>
           {t("app.tooltips.togglePanel", { panel: t("app.labels.bottomPanel") })}
+        </TooltipContent>
+      </Tooltip>
+
+      <Tooltip preserveOnTrigger>
+        <ResizablePanelControl panelId="workspace-activity">
+          {({ isAvailable, isCollapsed, isDisabled }) => (
+            <TooltipTrigger asChild>
+              <Button
+                aria-label={t("app.tooltips.togglePanel", {
+                  panel: t("app.labels.rightPanel"),
+                })}
+                className="size-7 p-0 text-secondary-foreground"
+                disabled={!isAvailable || isDisabled}
+                size="icon-sm"
+                variant="ghost"
+              >
+                {isCollapsed ? (
+                  <PanelRightDashed aria-hidden="true" />
+                ) : (
+                  <PanelRight aria-hidden="true" />
+                )}
+              </Button>
+            </TooltipTrigger>
+          )}
+        </ResizablePanelControl>
+        <TooltipContent>
+          {t("app.tooltips.togglePanel", { panel: t("app.labels.rightPanel") })}
         </TooltipContent>
       </Tooltip>
     </div>

@@ -18,6 +18,11 @@ loses at most an event whose IPC call had not reached Rust. A session log rotate
 recent runtime sessions and ten abnormal-session report directories are retained. Reports contain a
 human-readable `report.log`, structured `report.json`, and `session.json`.
 
+The Activity Feed is a curated UI projection of this diagnostic event journal, not a separate log.
+User-facing activity is not recorded or persisted independently. The first feed reads the in-memory
+current-session events; future retained-session loading should normalize saved JSONL events into the
+same `DiagnosticEvent[]` projection and presentation pipeline.
+
 `report.log` renders each event as a compact multi-line entry. Origin, snapshot, operation,
 parent-operation, result, duration, and bounded data fields are included when present so the file
 opened from the recovery dialog retains the same causal relationships as JSONL.
