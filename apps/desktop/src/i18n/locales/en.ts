@@ -132,6 +132,18 @@ export const en = {
       queued: "Queued",
       sourceDeleted: "Source deleted",
     },
+    messages: {
+      fileDelete: {
+        error: "Could not delete {{filename}}: {{message}}",
+        loading: "Deleting {{filename}}…",
+        success: "File moved to trash",
+      },
+      fileRestore: {
+        error: "Could not restore {{filename}}: {{message}}",
+        loading: "Restoring {{filename}}…",
+        success: "File restored",
+      },
+    },
     tooltips: {
       deleteSourceOnRenderFinish: "Delete the source after a successful render",
     },

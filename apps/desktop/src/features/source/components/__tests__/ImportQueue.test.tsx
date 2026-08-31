@@ -1,7 +1,10 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
+import { toast } from "sonner";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { Toaster } from "@/components/ui/sonner";
 
 import { importQueueItemAdded, selectImportQueueItems } from "@/app/store/slices/export-slice";
 import { createAppStore } from "@/app/store/store";
@@ -13,6 +16,7 @@ const timeline = vi.hoisted(() => ({
 
 const media = vi.hoisted(() => ({
   moveSourceToTrash: vi.fn(),
+  restoreSourceFromTrash: vi.fn(),
 }));
 
 vi.mock("@/app/hooks/useTimeline", () => ({
@@ -21,7 +25,11 @@ vi.mock("@/app/hooks/useTimeline", () => ({
 
 vi.mock("@/lib/tauri/media", async () => {
   const actual = await vi.importActual<typeof import("@/lib/tauri/media")>("@/lib/tauri/media");
-  return { ...actual, moveSourceToTrash: media.moveSourceToTrash };
+  return {
+    ...actual,
+    moveSourceToTrash: media.moveSourceToTrash,
+    restoreSourceFromTrash: media.restoreSourceFromTrash,
+  };
 });
 
 import { ImportQueue } from "../ImportQueue";
@@ -29,6 +37,8 @@ import { ImportQueue } from "../ImportQueue";
 describe("ImportQueue", () => {
   beforeEach(() => {
     media.moveSourceToTrash.mockReset();
+    media.restoreSourceFromTrash.mockReset();
+    toast.dismiss();
     timeline.onSeek.mockReset();
   });
 
@@ -37,11 +47,7 @@ describe("ImportQueue", () => {
     addQueueItem(appStore, "import-1", "source.mp4");
     const user = userEvent.setup();
 
-    render(
-      <Provider store={appStore}>
-        <ImportQueue />
-      </Provider>,
-    );
+    renderQueue(appStore);
 
     expect(screen.getByRole("radio", { name: "Remove from queue" })).toBeChecked();
     const restoreCard = screen.getByLabelText("Restore source.mp4");
@@ -62,11 +68,7 @@ describe("ImportQueue", () => {
     addQueueItem(appStore, "import-2", "second.mp4");
     const user = userEvent.setup();
 
-    render(
-      <Provider store={appStore}>
-        <ImportQueue />
-      </Provider>,
-    );
+    renderQueue(appStore);
 
     await user.click(screen.getByRole("radio", { name: "Delete source" }));
 
@@ -89,11 +91,7 @@ describe("ImportQueue", () => {
     media.moveSourceToTrash.mockResolvedValue(undefined);
     const user = userEvent.setup();
 
-    render(
-      <Provider store={appStore}>
-        <ImportQueue />
-      </Provider>,
-    );
+    renderQueue(appStore);
 
     await user.click(screen.getByRole("radio", { name: "Delete source" }));
     await user.click(screen.getByRole("button", { name: "Delete first.mp4 from device" }));
@@ -111,7 +109,122 @@ describe("ImportQueue", () => {
     ]);
     expect(appStore.getState().export.activeItemId).toBe("import-2");
   });
+
+  it("shows a restore action and restores only the deleted file", async () => {
+    const appStore = createAppStore();
+    addQueueItem(appStore, "import-1", "first.mp4");
+    media.moveSourceToTrash.mockResolvedValue(undefined);
+    let resolveRestore!: () => void;
+    media.restoreSourceFromTrash.mockImplementation(
+      () => new Promise<void>((resolve) => (resolveRestore = resolve)),
+    );
+    const user = userEvent.setup();
+
+    renderQueue(appStore);
+
+    await user.click(screen.getByRole("radio", { name: "Delete source" }));
+    await user.click(screen.getByRole("button", { name: "Delete first.mp4 from device" }));
+    await user.click(screen.getByRole("button", { name: "Delete" }));
+
+    const restoreButton = await screen.findByRole("button", { name: "Restore" });
+    expect(screen.getByText("C:/Media/first.mp4")).toBeInTheDocument();
+    expect(selectImportQueueItems(appStore.getState())).toEqual([]);
+
+    await user.click(restoreButton);
+
+    expect(media.restoreSourceFromTrash).toHaveBeenCalledWith("C:/Media/first.mp4");
+    resolveRestore();
+    expect(await screen.findByText("File restored")).toBeInTheDocument();
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    expect(screen.getByText("File restored")).toBeInTheDocument();
+    expect(selectImportQueueItems(appStore.getState())).toEqual([]);
+  });
+
+  it("shows delete progress before completing the operation", async () => {
+    const appStore = createAppStore();
+    addQueueItem(appStore, "import-1", "first.mp4");
+    let resolveDelete!: () => void;
+    media.moveSourceToTrash.mockImplementation(
+      () => new Promise<void>((resolve) => (resolveDelete = resolve)),
+    );
+    const user = userEvent.setup();
+
+    renderQueue(appStore);
+
+    await user.click(screen.getByRole("radio", { name: "Delete source" }));
+    await user.click(screen.getByRole("button", { name: "Delete first.mp4 from device" }));
+    await user.click(screen.getByRole("button", { name: "Delete" }));
+
+    expect(await screen.findByText("Deleting first.mp4…")).toBeInTheDocument();
+    expect(selectImportQueueItems(appStore.getState()).map((item) => item.id)).toEqual([
+      "import-1",
+    ]);
+
+    resolveDelete();
+
+    expect(await screen.findByText("File moved to trash")).toBeInTheDocument();
+    expect(selectImportQueueItems(appStore.getState())).toEqual([]);
+  });
+
+  it("reports restore failures and prevents duplicate restore calls while pending", async () => {
+    const appStore = createAppStore();
+    addQueueItem(appStore, "import-1", "first.mp4");
+    media.moveSourceToTrash.mockResolvedValue(undefined);
+    let rejectRestore!: (reason: unknown) => void;
+    media.restoreSourceFromTrash.mockImplementationOnce(
+      () => new Promise<void>((_, reject) => (rejectRestore = reject)),
+    );
+    const user = userEvent.setup();
+
+    renderQueue(appStore);
+
+    await user.click(screen.getByRole("radio", { name: "Delete source" }));
+    await user.click(screen.getByRole("button", { name: "Delete first.mp4 from device" }));
+    await user.click(screen.getByRole("button", { name: "Delete" }));
+    await user.click(await screen.findByRole("button", { name: "Restore" }));
+
+    expect(await screen.findByText("Restoring first.mp4…")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Restore" })).not.toBeInTheDocument();
+    expect(media.restoreSourceFromTrash).toHaveBeenCalledTimes(1);
+
+    rejectRestore(new Error("missing from trash"));
+
+    expect(
+      await screen.findByText("Could not restore first.mp4: missing from trash"),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Restore" })).toBeInTheDocument();
+  });
+
+  it("reports delete failures without offering restore", async () => {
+    const appStore = createAppStore();
+    addQueueItem(appStore, "import-1", "first.mp4");
+    media.moveSourceToTrash.mockRejectedValue(new Error("permission denied"));
+    const user = userEvent.setup();
+
+    renderQueue(appStore);
+
+    await user.click(screen.getByRole("radio", { name: "Delete source" }));
+    await user.click(screen.getByRole("button", { name: "Delete first.mp4 from device" }));
+    await user.click(screen.getByRole("button", { name: "Delete" }));
+
+    expect(
+      await screen.findByText("Could not delete first.mp4: permission denied"),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Restore" })).not.toBeInTheDocument();
+    expect(selectImportQueueItems(appStore.getState()).map((item) => item.id)).toEqual([
+      "import-1",
+    ]);
+  });
 });
+
+function renderQueue(appStore: ReturnType<typeof createAppStore>) {
+  return render(
+    <Provider store={appStore}>
+      <ImportQueue />
+      <Toaster duration={Infinity} position="bottom-right" theme="light" />
+    </Provider>,
+  );
+}
 
 function addQueueItem(
   appStore: ReturnType<typeof createAppStore>,

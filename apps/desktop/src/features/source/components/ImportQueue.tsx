@@ -1,6 +1,7 @@
 import { ChevronLeft, ChevronRight, Trash, X } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
@@ -11,12 +12,22 @@ import { useTimeline } from "@/app/hooks/useTimeline";
 import type { importQueueItem } from "@/app/store/slices/export-slice";
 import { editorSnapshotTrimStart } from "@/domain/editor-snapshot";
 import { cn } from "@/lib/class-names.utils";
+import { restoreSourceFromTrash } from "@/lib/tauri/media";
+import { normalizeAppError } from "@/lib/tauri/media.utils";
 
 import { useImportQueue } from "../hooks/useImportQueue";
 
 import { DeleteSourceDialog } from "./DeleteSourceDialog";
 
 type ImportQueueActionMode = "remove" | "delete";
+
+function ToastFilePath({ sourcePath }: { sourcePath: string }) {
+  return (
+    <span className="block max-w-full truncate" dir="rtl" title={sourcePath}>
+      {sourcePath}
+    </span>
+  );
+}
 
 export function ImportQueue() {
   const { t } = useTranslation();
@@ -32,15 +43,96 @@ export function ImportQueue() {
   const handleDeleteSource = async () => {
     if (!deleteItemId) return;
 
+    const item = items.find((candidate) => candidate.id === deleteItemId);
+    if (!item) return;
+
+    const filename = item.snapshot.source.displayName;
+    const sourcePath = item.snapshot.source.sourcePath;
+    const normalizedSourcePath = formatSourcePath(sourcePath);
+
     setDeletePending(true);
     setDeleteError(null);
-    const error = await deleteSource(deleteItemId);
-    setDeletePending(false);
-    if (error) {
-      setDeleteError(error.message);
-      return;
+
+    let restorePending = false;
+    const deleteToastId = `import-delete-${deleteItemId}-${Date.now()}`;
+
+    const restore = async () => {
+      if (restorePending) return;
+
+      restorePending = true;
+      toast.loading(t("queue.messages.fileRestore.loading", { filename }), {
+        action: null,
+        description: <ToastFilePath sourcePath={normalizedSourcePath} />,
+        id: deleteToastId,
+      });
+
+      try {
+        await restoreSourceFromTrash(sourcePath);
+        toast.success(t("queue.messages.fileRestore.success"), {
+          action: null,
+          description: <ToastFilePath sourcePath={normalizedSourcePath} />,
+          id: deleteToastId,
+        });
+      } catch (error: unknown) {
+        const normalized = normalizeAppError(error);
+        toast.error(
+          t("queue.messages.fileRestore.error", {
+            filename,
+            message: normalized.message,
+          }),
+          {
+            action: {
+              label: t("app.actions.restore"),
+              onClick: (event) => {
+                event.preventDefault();
+                void restore();
+              },
+            },
+            description: <ToastFilePath sourcePath={normalizedSourcePath} />,
+            id: deleteToastId,
+          },
+        );
+      } finally {
+        restorePending = false;
+      }
+    };
+
+    const deleteOperation = deleteSource(deleteItemId).then((error) => {
+      if (error) throw error;
+    });
+
+    toast.promise(deleteOperation, {
+      description: <ToastFilePath sourcePath={normalizedSourcePath} />,
+      error: (error: unknown) => {
+        const normalized = normalizeAppError(error);
+        return t("queue.messages.fileDelete.error", {
+          filename,
+          message: normalized.message,
+        });
+      },
+      loading: t("queue.messages.fileDelete.loading", { filename }),
+      success: () => ({
+        action: {
+          label: t("app.actions.restore"),
+          onClick: (event) => {
+            event.preventDefault();
+            void restore();
+          },
+        },
+        description: <ToastFilePath sourcePath={normalizedSourcePath} />,
+        message: t("queue.messages.fileDelete.success"),
+      }),
+      id: deleteToastId,
+    });
+
+    try {
+      await deleteOperation;
+      setDeleteDialogOpen(false);
+    } catch (error: unknown) {
+      setDeleteError(normalizeAppError(error).message);
+    } finally {
+      setDeletePending(false);
     }
-    setDeleteDialogOpen(false);
   };
 
   const openDeleteDialog = (itemId: string) => {
