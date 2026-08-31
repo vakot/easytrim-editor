@@ -153,7 +153,22 @@ export type WaveformResult =
       width: number;
     };
 
+export interface SourceImportResult {
+  acceptedFileCount: number;
+  directFileCount: number;
+  discoveredFileCount: number;
+  folderCount: number;
+  readErrorCount: number;
+  recursive: boolean;
+  skippedFileCount: number;
+  sources: SourceRef[];
+  truncated: boolean;
+  truncationReason?: string;
+}
+
 type SourceImportEvent =
-  { sources: SourceRef[]; status: "selected" } | { error: AppError; status: "failed" };
+  | { importResult: SourceImportResult; operationId?: string; status: "selected" }
+  | { operationId?: string; sources: SourceRef[]; status: "selected" }
+  | { error: AppError; operationId?: string; status: "failed" };
 
 export type SourceDropEvent = { active: boolean; status: "drag" } | SourceImportEvent;

@@ -3,7 +3,9 @@ import {
   CircleAlert,
   CircleX,
   ExternalLink,
+  FileVideo,
   Film,
+  FolderOpen,
   Info,
   LoaderCircle,
   type LucideIcon,
@@ -65,6 +67,8 @@ const activityIcons: Record<ActivityKind, LucideIcon> = {
   "fast-cut": Scissors,
   "file-deleted": Trash2,
   "file-restored": RotateCcw,
+  "files-imported": FileVideo,
+  "folders-imported": FolderOpen,
   render: Film,
 };
 
@@ -143,6 +147,9 @@ export function ActivityFeed() {
       fileRestoreInterrupted: t("app.status.fileRestoreInterrupted"),
       fileRestoring: t("app.status.fileRestoring"),
       fileRestored: t("app.status.fileRestored"),
+      importOpenedFiles: (count) => t("app.status.openedFiles", { count }),
+      importOpenedFilesFromFolders: (fileCount, folderCount) =>
+        `${t("app.status.openedFiles", { count: fileCount })} ${t("app.status.fromFolders", { count: folderCount })}`,
       renderCompleted: t("app.status.renderCompleted"),
       renderCancelled: t("app.status.renderCancelled"),
       renderFailed: t("app.status.renderFailed"),

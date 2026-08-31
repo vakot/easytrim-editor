@@ -4,7 +4,8 @@ import type {
   DiagnosticValue,
 } from "@/lib/tauri/diagnostics.types";
 
-export type ActivityKind = "fast-cut" | "file-deleted" | "file-restored" | "render";
+export type ActivityKind =
+  "fast-cut" | "file-deleted" | "file-restored" | "files-imported" | "folders-imported" | "render";
 export type ActivityStatus = "cancelled" | "completed" | "failed" | "interrupted" | "pending";
 export type ActivityAction =
   { kind: "open"; path: string } | { kind: "restore"; path: string; targetId: string };
@@ -40,6 +41,8 @@ export interface ActivityProjectionLabels {
   fileRestoreFailed: string;
   fileRestoreInterrupted: string;
   fileRestoring: string;
+  importOpenedFiles: (count: number) => string;
+  importOpenedFilesFromFolders: (fileCount: number, folderCount: number) => string;
   renderCancelled: string;
   renderCompleted: string;
   renderFailed: string;
@@ -66,6 +69,9 @@ const ACTIVITY_EVENT_CONFIG = {
   "source.file-restore.completed": (event, labels) => projectFileTerminal(event, "restore", labels),
   "source.file-restore.failed": (event, labels) => projectFileTerminal(event, "restore", labels),
   "source.file-restore.cancelled": (event, labels) => projectFileTerminal(event, "restore", labels),
+  "source.import.completed": (event, labels) => projectImportTerminal(event, labels),
+  "source.import.failed": (event, labels) => projectImportTerminal(event, labels),
+  "source.import.cancelled": (event, labels) => projectImportTerminal(event, labels),
 } satisfies Record<string, ActivityEventProjector>;
 
 export function projectActivityEvent(
@@ -84,6 +90,7 @@ export function projectActivityEvents(
   const entries = [
     ...projectExportLifecycleEvents(events, labels, currentSessionId),
     ...projectFileLifecycleEvents(events, labels, currentSessionId),
+    ...projectImportLifecycleEvents(events, labels),
   ];
 
   const seenIds = new Set(entries.map((entry) => entry.id));
@@ -210,6 +217,62 @@ function projectFileLifecycleEvents(
   }
 
   return entries;
+}
+
+function projectImportLifecycleEvents(
+  events: readonly DiagnosticEvent[],
+  labels: ActivityProjectionLabels,
+): ActivityEntry[] {
+  const eventsByOperation = new Map<string, DiagnosticEvent[]>();
+  const entries: ActivityEntry[] = [];
+
+  for (const event of events) {
+    if (!isImportLifecycleEvent(event) || !event.operationId) continue;
+    const operationEvents = eventsByOperation.get(event.operationId) ?? [];
+    operationEvents.push(event);
+    eventsByOperation.set(event.operationId, operationEvents);
+  }
+
+  for (const operationEvents of eventsByOperation.values()) {
+    const terminal = operationEvents.find((event) => isImportTerminalEvent(event));
+    if (!terminal) continue;
+    const started = operationEvents.find((event) => event.event === "source.import.started");
+    const entry = projectImportTerminal(terminal, labels, started);
+    if (entry) entries.push(entry);
+  }
+
+  return entries;
+}
+
+function projectImportTerminal(
+  event: DiagnosticEvent,
+  labels: ActivityProjectionLabels,
+  started?: DiagnosticEvent,
+): ActivityEntry | null {
+  const acceptedFileCount = diagnosticNumber(event.data?.acceptedFileCount) ?? 0;
+  const folderCount = diagnosticNumber(event.data?.folderCount) ?? 0;
+
+  const startedAt = started?.timestamp ?? event.timestamp;
+  if (Number.isNaN(Date.parse(startedAt))) return null;
+
+  const operationId = started?.operationId ?? event.operationId;
+  const sessionId = started?.sessionId ?? event.sessionId;
+  const kind = folderCount > 0 ? "folders-imported" : "files-imported";
+  const title =
+    folderCount > 0
+      ? labels.importOpenedFilesFromFolders(acceptedFileCount, folderCount)
+      : labels.importOpenedFiles(acceptedFileCount);
+
+  return {
+    ...(event.data ? { data: event.data } : {}),
+    id: `${sessionId}:${operationId ?? event.timestamp}:source.import`,
+    ...(operationId ? { operationId } : {}),
+    kind,
+    sessionId,
+    startedAt,
+    status: importStatus(event),
+    title,
+  };
 }
 
 function projectFileOperation(
@@ -409,6 +472,26 @@ function isFileLifecycleEvent(event: DiagnosticEvent): boolean {
   return isFileStartedEvent(event) || isFileTerminalEvent(event);
 }
 
+function isImportLifecycleEvent(event: DiagnosticEvent): boolean {
+  return event.event === "source.import.started" || isImportTerminalEvent(event);
+}
+
+function isImportTerminalEvent(event: DiagnosticEvent): boolean {
+  return (
+    event.event === "source.import.completed" ||
+    event.event === "source.import.failed" ||
+    event.event === "source.import.cancelled"
+  );
+}
+
+function importStatus(
+  event: DiagnosticEvent,
+): Extract<ActivityStatus, "cancelled" | "completed" | "failed"> {
+  if (event.event === "source.import.cancelled") return "cancelled";
+  if (event.event === "source.import.failed") return "failed";
+  return "completed";
+}
+
 function isFileStartedEvent(event: DiagnosticEvent): boolean {
   return (
     event.event === "source.file-delete.started" || event.event === "source.file-restore.started"
@@ -479,7 +562,12 @@ function createActivityEntry(
 }
 
 function isLifecycleEvent(event: DiagnosticEvent): boolean {
-  return isExportLifecycleEvent(event) || isFileLifecycleEvent(event);
+  return (
+    isExportLifecycleEvent(event) || isFileLifecycleEvent(event) || isImportLifecycleEvent(event)
+  );
+}
+function diagnosticNumber(value: DiagnosticValue | undefined): number | undefined {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0 ? value : undefined;
 }
 function diagnosticString(value: DiagnosticValue | undefined): string | undefined {
   return typeof value === "string" && value.length > 0 ? value : undefined;

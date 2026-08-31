@@ -6,7 +6,8 @@ import { selectIsSourceDragActive } from "@/app/store/slices/import-workflow-sli
 import { selectSourceMedia } from "@/app/store/slices/source-slice";
 import { createAppStore } from "@/app/store/store";
 import type { SourceRef } from "@/domain/source";
-import type { MediaInfo, SourceDropEvent } from "@/lib/tauri/media.types";
+import { getCurrentSessionDiagnosticsSnapshot } from "@/lib/diagnostics";
+import type { MediaInfo, SourceDropEvent, SourceImportResult } from "@/lib/tauri/media.types";
 
 const mocks = vi.hoisted(() => ({
   checkMediaCapabilities: vi.fn(),
@@ -51,10 +52,12 @@ const media: MediaInfo = {
 
 describe("source/media application runtime", () => {
   let sourceDropListener: ((event: SourceDropEvent) => void) | undefined;
+  let importRequested: (() => string) | undefined;
 
   beforeEach(() => {
     vi.clearAllMocks();
     sourceDropListener = undefined;
+    importRequested = undefined;
     mocks.checkMediaCapabilities.mockResolvedValue({
       ffmpeg: { available: true, version: "ffmpeg" },
       ffprobe: { available: true, version: "ffprobe" },
@@ -68,11 +71,52 @@ describe("source/media application runtime", () => {
     });
     mocks.prepareAudioPreviews.mockResolvedValue([]);
     mocks.listenForSourceDrops.mockImplementation(
-      async (listener: (event: SourceDropEvent) => void) => {
+      async (listener: (event: SourceDropEvent) => void, onImportRequested?: () => string) => {
         sourceDropListener = listener;
+        importRequested = onImportRequested;
         return mocks.unlisten;
       },
     );
+  });
+
+  it("correlates a dropped recursive import as one operation with drop origin", async () => {
+    const appStore = createAppStore();
+    const importResult: SourceImportResult = {
+      acceptedFileCount: 2,
+      directFileCount: 0,
+      discoveredFileCount: 2,
+      folderCount: 1,
+      readErrorCount: 0,
+      recursive: true,
+      skippedFileCount: 0,
+      sources: [source, secondSource],
+      truncated: false,
+    };
+
+    startSourceMediaRuntime(appStore.dispatch);
+    await vi.waitFor(() => expect(sourceDropListener).toBeDefined());
+
+    const operationId = importRequested?.();
+    expect(operationId).toBeDefined();
+    sourceDropListener?.({ operationId, importResult, status: "selected" });
+
+    await vi.waitFor(() => expect(selectImportQueueItems(appStore.getState())).toHaveLength(2));
+    const events = getCurrentSessionDiagnosticsSnapshot().events;
+    const started = [...events]
+      .reverse()
+      .find(
+        (event) => event.operationId === operationId && event.event === "source.import.started",
+      );
+
+    expect(started).toMatchObject({
+      event: "source.import.started",
+      origin: { id: "source.drop", type: "button" },
+    });
+    expect(
+      events.filter(
+        (event) => event.operationId === operationId && event.event === "source.import.completed",
+      ),
+    ).toHaveLength(1);
   });
 
   it("registers once, preserves drag/drop events, converges selected files, and cleans up once", async () => {

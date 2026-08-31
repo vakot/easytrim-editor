@@ -46,7 +46,7 @@ import { selectTrim } from "@/app/store/slices/trim-slice";
 import type { AppDispatch, RootState } from "@/app/store/store";
 import { createEditorSnapshot, type EditorSnapshot } from "@/domain/editor-snapshot";
 import type { SourceRef } from "@/domain/source";
-import { diagnostics } from "@/lib/diagnostics";
+import { type DiagnosticOperation, diagnostics } from "@/lib/diagnostics";
 import type { DiagnosticOrigin } from "@/lib/tauri/diagnostics.types";
 import {
   activateSourcePath,
@@ -59,7 +59,7 @@ import {
   prepareSourcePreview,
   prepareWaveforms,
 } from "@/lib/tauri/media";
-import type { AppError, PreviewKind } from "@/lib/tauri/media.types";
+import type { AppError, PreviewKind, SourceImportResult } from "@/lib/tauri/media.types";
 import { normalizeAppError } from "@/lib/tauri/media.utils";
 
 export type AppThunk<ReturnValue = void | Promise<unknown>> = (
@@ -98,20 +98,27 @@ export const checkMediaCapabilitiesRequested = (): AppThunk => async (dispatch) 
 };
 
 export const ingestSources =
-  (sources: SourceRef[], origin: DiagnosticOrigin = { type: "internal" }): AppThunk =>
+  (
+    input: SourceImportResult | SourceRef[],
+    origin: DiagnosticOrigin = { type: "internal" },
+    importOperation?: DiagnosticOperation,
+  ): AppThunk =>
   (dispatch, getState) => {
-    diagnostics.action("source.import.requested", origin, { sourceCount: sources.length });
-    if (sources.length === 0) {
-      diagnostics.event("source.import.ignored", {
-        data: { reason: "empty_selection" },
-        origin,
-        result: "ignored",
-      });
+    const result = normalizeSourceImportResult(input);
+    const operation = importOperation ?? diagnostics.startOperation("source.import", { origin });
+    operation.event("source.import.requested", {
+      data: importResultData(result),
+      origin,
+    });
+
+    if (result.sources.length === 0) {
+      operation.complete(importResultData(result));
+      dispatch(dropListenerErrorCleared());
       return;
     }
 
     const mergeAudio = selectMergeAudioEnabledDefault(getState());
-    const items: importQueueItem[] = sources.map((source) => ({
+    const items: importQueueItem[] = result.sources.map((source) => ({
       id: `import-${++importedItemSequence}`,
       status: "imported",
       origin: "source-import",
@@ -121,7 +128,39 @@ export const ingestSources =
     dispatch(dropListenerErrorCleared());
     dispatch(importQueueItemsAdded(items));
     dispatch(navigateToImportedItem(items[0]!.id, origin));
+    operation.complete(importResultData(result));
   };
+
+function normalizeSourceImportResult(input: SourceImportResult | SourceRef[]): SourceImportResult {
+  if (Array.isArray(input)) {
+    return {
+      acceptedFileCount: input.length,
+      directFileCount: input.length,
+      discoveredFileCount: 0,
+      folderCount: 0,
+      readErrorCount: 0,
+      recursive: false,
+      skippedFileCount: 0,
+      sources: input,
+      truncated: false,
+    };
+  }
+  return input;
+}
+
+function importResultData(result: SourceImportResult): Record<string, boolean | number | string> {
+  return {
+    acceptedFileCount: result.acceptedFileCount,
+    directFileCount: result.directFileCount,
+    discoveredFileCount: result.discoveredFileCount,
+    folderCount: result.folderCount,
+    readErrorCount: result.readErrorCount,
+    recursive: result.recursive,
+    skippedFileCount: result.skippedFileCount,
+    truncated: result.truncated,
+    ...(result.truncationReason ? { truncationReason: result.truncationReason } : {}),
+  };
+}
 
 async function prepareSelectedSource(
   dispatch: AppDispatch,
@@ -459,13 +498,13 @@ export const chooseSourceRequested =
       return;
     }
 
-    const operation = diagnostics.startOperation("source.open", { origin });
+    const operation = diagnostics.startOperation("source.import", { origin });
     dispatch(sourceChoiceStarted());
-    let sources: SourceRef[] = [];
+    let importResult: SourceImportResult | null = null;
     let pickerError: AppError | null = null;
 
     try {
-      sources = await chooseSourceDialog();
+      importResult = await chooseSourceDialog();
     } catch (error: unknown) {
       pickerError = normalizeAppError(error);
     } finally {
@@ -480,9 +519,8 @@ export const chooseSourceRequested =
       return;
     }
 
-    if (sources.length > 0) {
-      dispatch(ingestSources(sources, origin));
-      operation.complete({ sourceCount: sources.length });
+    if (importResult) {
+      dispatch(ingestSources(importResult, origin, operation));
     } else {
       operation.cancel({ reason: "picker_cancelled" });
     }
