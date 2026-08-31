@@ -503,7 +503,7 @@ describe("activity projection", () => {
     ]);
   });
 
-  it("offers restore only for authoritative current-session state while preserving open", () => {
+  it("offers restore for completed current-session deletions while preserving open", () => {
     const retainedDelete = projectActivityEvent(
       diagnosticEvent("source.file-delete.completed", {
         data: { itemId: "shared-target", sourcePath },
@@ -534,7 +534,6 @@ describe("activity projection", () => {
     const entries = resolveAvailableActivityActions(
       [retainedDelete, currentDelete, retainedExport].filter((entry) => entry !== null),
       "current-session",
-      new Set(["shared-target"]),
     );
 
     expect(entries[0]?.action).toBeUndefined();
@@ -544,6 +543,28 @@ describe("activity projection", () => {
       targetId: "shared-target",
     });
     expect(entries[2]?.action).toEqual({ kind: "open", path: outputPath });
+  });
+
+  it("keeps a manual deletion restorable without an export queue item", () => {
+    const entry = projectActivityEvent(
+      diagnosticEvent("source.file-delete.completed", {
+        data: { itemId: "import-1", sourcePath },
+        operationId: "manual-delete",
+        sessionId: "current-session",
+      }),
+      labels,
+    );
+
+    expect(
+      resolveAvailableActivityActions(
+        [entry].filter((candidate) => candidate !== null),
+        "current-session",
+      )[0]?.action,
+    ).toEqual({
+      kind: "restore",
+      path: sourcePath,
+      targetId: "import-1",
+    });
   });
 
   it("groups by canonical session metadata with current and newest sessions first", () => {

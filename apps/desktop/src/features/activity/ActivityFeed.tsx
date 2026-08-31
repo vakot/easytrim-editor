@@ -30,9 +30,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
-import { selectExportQueue } from "@/app/store/slices/export-slice";
 import { selectActivityFeedView } from "@/app/store/slices/preferences-slice";
-import { restoreExportSourceRequested } from "@/app/store/thunks/export-thunks";
+import { restoreSourceFileRequested } from "@/app/store/thunks/source-media-thunks";
 import { formatSourcePath } from "@/features/source";
 import { getCurrentVersion } from "@/lib/app-version.utils";
 import { cn } from "@/lib/class-names.utils";
@@ -107,7 +106,6 @@ const sessionSeparatorClassNames = {
 export function ActivityFeed() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const exportQueue = useAppSelector(selectExportQueue);
   const [currentTime, setCurrentTime] = useState(() => Date.now());
   const diagnosticSnapshot = useSyncExternalStore(
     subscribeToCurrentSessionDiagnostics,
@@ -159,16 +157,6 @@ export function ActivityFeed() {
     [t],
   );
 
-  const restorableSourceIds = useMemo(
-    () =>
-      new Set(
-        exportQueue
-          .filter((item) => item.status === "completed" && item.sourceDeleted)
-          .map((item) => item.id),
-      ),
-    [exportQueue],
-  );
-
   const entries = useMemo(
     () =>
       resolveAvailableActivityActions(
@@ -178,9 +166,8 @@ export function ActivityFeed() {
           getCurrentDiagnosticSessionId(),
         ),
         getCurrentDiagnosticSessionId(),
-        restorableSourceIds,
       ),
-    [diagnosticSnapshot, historySnapshot, labels, restorableSourceIds],
+    [diagnosticSnapshot, historySnapshot, labels],
   );
 
   const currentSession = getCurrentDiagnosticSessionMetadata();
@@ -191,7 +178,12 @@ export function ActivityFeed() {
   const handleAction = useCallback(
     (action: ActivityAction) => {
       if (action.kind === "restore") {
-        void dispatch(restoreExportSourceRequested(action.targetId));
+        void dispatch(
+          restoreSourceFileRequested({
+            itemId: action.targetId,
+            sourcePath: action.path,
+          }),
+        );
         return;
       }
       void openFileLocation(action.path).catch(() => undefined);

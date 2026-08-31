@@ -106,11 +106,9 @@ export function projectActivityEvents(
 export function resolveAvailableActivityActions(
   entries: readonly ActivityEntry[],
   currentSessionId: string | null,
-  restorableTargetIds: ReadonlySet<string>,
 ): ActivityEntry[] {
   return entries.map((entry) =>
-    entry.action?.kind !== "restore" ||
-    (entry.sessionId === currentSessionId && restorableTargetIds.has(entry.action.targetId))
+    entry.action?.kind !== "restore" || entry.sessionId === currentSessionId
       ? entry
       : { ...entry, action: undefined },
   );

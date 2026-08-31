@@ -21,6 +21,7 @@ import {
 import { selectCrop } from "@/app/store/slices/crop-slice";
 import {
   activeQueueItemChanged,
+  exportSourceRestored,
   type importQueueItem,
   importQueueItemRemoved,
   importQueueItemsAdded,
@@ -58,6 +59,7 @@ import {
   prepareProxyPreview,
   prepareSourcePreview,
   prepareWaveforms,
+  restoreSourceFromTrash,
 } from "@/lib/tauri/media";
 import type { AppError, PreviewKind, SourceImportResult } from "@/lib/tauri/media.types";
 import { normalizeAppError } from "@/lib/tauri/media.utils";
@@ -596,6 +598,36 @@ export const deleteActiveImportedItemRequested =
     }
     operation.complete({ itemId: item.id, sourcePath });
     return null;
+  };
+
+export const restoreSourceFileRequested =
+  (request: {
+    itemId?: string;
+    origin?: DiagnosticOrigin;
+    sourcePath: string;
+  }): AppThunk<Promise<boolean>> =>
+  async (dispatch) => {
+    const {
+      itemId,
+      origin = { id: "activity.restore-source", type: "button" },
+      sourcePath,
+    } = request;
+
+    const operation = diagnostics.startOperation("source.file-restore", {
+      data: { ...(itemId ? { itemId } : {}), sourcePath },
+      origin,
+      ...(itemId ? { snapshotId: itemId } : {}),
+    });
+
+    try {
+      await restoreSourceFromTrash(sourcePath);
+      if (itemId) dispatch(exportSourceRestored({ id: itemId }));
+      operation.complete({ ...(itemId ? { itemId } : {}), sourcePath });
+      return true;
+    } catch (error: unknown) {
+      operation.fail(error, { ...(itemId ? { itemId } : {}), sourcePath });
+      return false;
+    }
   };
 
 export const handlePreviewPlaybackError =
