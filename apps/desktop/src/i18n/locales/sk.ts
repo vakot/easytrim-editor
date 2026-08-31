@@ -101,6 +101,7 @@ export const sk = {
   settings: {
     actions: { reset: "Obnoviť predvolené" },
     labels: {
+      activityFeedView: "Zobrazenie prehľadu aktivít",
       autoStartQueue: "Automatické spustenie frontu",
       color: "Farba",
       followSegment: "Sledovať segment",
@@ -129,6 +130,7 @@ export const sk = {
         violet: "Fialová",
       },
       languages: { english: "English", slovak: "Slovenčina" },
+      activityFeedViews: { compact: "Kompaktné", default: "Predvolené" },
       themes: { dark: "Tmavá", light: "Svetlá", system: "Systémová" },
     },
   },

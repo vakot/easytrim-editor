@@ -99,6 +99,7 @@ export const en = {
   settings: {
     actions: { reset: "Reset to default" },
     labels: {
+      activityFeedView: "Activity Feed View",
       autoStartQueue: "Auto-start Queue",
       color: "Color",
       followSegment: "Follow segment",
@@ -127,6 +128,7 @@ export const en = {
         violet: "Violet",
       },
       languages: { english: "English", slovak: "Slovenčina" },
+      activityFeedViews: { compact: "Compact", default: "Default" },
       themes: { dark: "Dark", light: "Light", system: "System" },
     },
   },

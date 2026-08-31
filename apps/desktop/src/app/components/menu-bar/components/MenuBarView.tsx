@@ -1,4 +1,4 @@
-import { Check, Monitor, Moon, Sun } from "lucide-react";
+import { Check, List, Monitor, Moon, Sun } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -19,7 +19,12 @@ import {
   MenubarTrigger,
 } from "@/components/ui/menubar";
 
+import type { ActivityFeedView } from "@/app/preferences";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
+import {
+  activityFeedViewChanged,
+  selectActivityFeedView,
+} from "@/app/store/slices/preferences-slice";
 import {
   customPrimaryColorChanged,
   primaryColorChanged,
@@ -56,6 +61,7 @@ export function MenuBarView({ onClose }: MenuBarViewProps) {
   const [previewColor, setPreviewColor] = useState<PrimaryColor | null>(null);
 
   const preference = useAppSelector(selectThemePreference);
+  const activityFeedView = useAppSelector(selectActivityFeedView);
   const primaryColor = useAppSelector(selectPrimaryColor);
   const primaryColorKey = useAppSelector(selectPrimaryColorKey);
   const customPrimaryColor = useAppSelector(selectCustomPrimaryColor);
@@ -78,6 +84,11 @@ export function MenuBarView({ onClose }: MenuBarViewProps) {
     system: t("settings.options.themes.system"),
   };
 
+  const activityFeedViewLabels: Record<ActivityFeedView, string> = {
+    compact: t("settings.options.activityFeedViews.compact"),
+    default: t("settings.options.activityFeedViews.default"),
+  };
+
   const clearPreview = () => {
     setPreviewColor(null);
     previewPrimaryColor(null);
@@ -97,6 +108,28 @@ export function MenuBarView({ onClose }: MenuBarViewProps) {
       </MenubarTrigger>
       <MenubarContent>
         <MenubarGroup>
+          <MenubarSub>
+            <MenubarSubTrigger inset>
+              <MenubarIcon>
+                <List aria-hidden="true" />
+              </MenubarIcon>
+              {t("settings.labels.activityFeedView")}
+            </MenubarSubTrigger>
+            <MenubarSubContent>
+              <MenubarRadioGroup
+                onValueChange={(view) =>
+                  dispatch(activityFeedViewChanged(view as ActivityFeedView))
+                }
+                value={activityFeedView}
+              >
+                {(["default", "compact"] as const).map((view) => (
+                  <MenubarRadioItem inset keepOpen key={view} value={view}>
+                    {activityFeedViewLabels[view]}
+                  </MenubarRadioItem>
+                ))}
+              </MenubarRadioGroup>
+            </MenubarSubContent>
+          </MenubarSub>
           <MenubarSub>
             <MenubarSubTrigger inset>
               <MenubarIcon>{currentThemeIcon}</MenubarIcon>

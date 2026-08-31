@@ -1,4 +1,7 @@
+export type ActivityFeedView = "default" | "compact";
+
 export interface Preferences {
+  activityFeedView: ActivityFeedView;
   autoStartQueueEnabled: boolean;
   deleteSourceOnRenderFinish: boolean;
   loopPlaybackEnabledDefault: boolean;
@@ -7,9 +10,10 @@ export interface Preferences {
   snapPlaybackEnabledDefault: boolean;
 }
 
-export type PreferenceKey = keyof Preferences;
+export type PreferenceKey = Exclude<keyof Preferences, "activityFeedView">;
 
 export const DEFAULT_PREFERENCES: Preferences = {
+  activityFeedView: "default",
   snapPlaybackEnabledDefault: true,
   loopPlaybackEnabledDefault: true,
   segmentPlaybackEnabledDefault: true,
