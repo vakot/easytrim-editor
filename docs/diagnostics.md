@@ -22,8 +22,11 @@ The Activity Feed is a curated UI projection of this diagnostic event journal, n
 User-facing activity is not recorded or persisted independently. It renders the in-memory current
 session immediately, then loads metadata and normalized events for every retained session through
 narrow diagnostics commands. Live and retained events enter the same `DiagnosticEvent[]` projection
-and presentation pipeline, preserving their original session IDs and timestamps. History therefore
-follows the diagnostics retention limit of eight runtime sessions.
+and presentation pipeline, preserving their original session IDs and timestamps. Activity history
+is organized by diagnostics session: the current session is visually separated from retained
+sessions, and retained sessions produced by a different known application version are identified
+using their recorded diagnostics metadata. History follows the diagnostics retention limit of eight
+runtime sessions.
 
 Rust discovers exact `session-<id>.<segment>.jsonl` files and owns all path resolution and JSONL
 parsing. The active session is excluded natively and again at the frontend boundary. Invalid session
