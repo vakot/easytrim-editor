@@ -310,6 +310,7 @@ async function startQueuedExport(
       operation.fail(new Error("The export queue item could not be created."));
       return;
     }
+    if (!replacementItem) dispatch(navigateToImportedItem(null));
     enqueueExport(promoted, dispatch, getState);
     operation.complete({ outputType: route, filename: output.displayName });
     if (replacementItem) dispatch(navigateToImportedItem(replacementItem.id));
