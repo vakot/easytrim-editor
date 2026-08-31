@@ -50,6 +50,7 @@ import {
   cancelAllExportsRequested,
   startExportQueue,
 } from "@/app/store/thunks/export-thunks";
+import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
 import type { QueueFinishAction } from "@/lib/tauri/queue.types";
 
 export function MenuBarQueue() {
@@ -64,6 +65,15 @@ export function MenuBarQueue() {
 
   const hasQueuedItems = queue.some((toast) => toast.status === "queued");
   const hasActiveItem = queue.some((toast) => toast.status === "rendering");
+
+  useKeyboardShortcut(
+    (event) =>
+      event.key === "Enter" &&
+      !queueStarted &&
+      hasQueuedItems &&
+      document.activeElement === document.body,
+    () => void dispatch(startExportQueue({ id: "Enter", type: "hotkey" })),
+  );
 
   const queueFinishLabels: Record<QueueFinishAction, string> = {
     exit: t("queue.options.finish.exit"),

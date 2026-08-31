@@ -52,6 +52,27 @@ export function MenuBarFile() {
       !isNativeDialogOpen,
     () => setDeleteDialogOpen(true),
   );
+  useKeyboardShortcut(
+    (event) => event.code === "KeyO" && event.ctrlKey && !isChoosingSource && !isNativeDialogOpen,
+    () => void dispatch(chooseSourceRequested({ id: "Ctrl+O", type: "hotkey" })),
+  );
+  useKeyboardShortcut(
+    (event) =>
+      event.code === "KeyQ" &&
+      event.ctrlKey &&
+      hasSource &&
+      !isChoosingSource &&
+      !isNativeDialogOpen,
+    () => void dispatch(closeActiveImportedItemRequested({ id: "Ctrl+Q", type: "hotkey" })),
+  );
+  useKeyboardShortcut(
+    (event) => event.code === "KeyS" && event.ctrlKey && canSave,
+    () => void dispatch(startFastCutRequested({ id: "Ctrl+S", type: "hotkey" })),
+  );
+  useKeyboardShortcut(
+    (event) => event.code === "KeyE" && event.ctrlKey && canExport,
+    () => void dispatch(openOptimizedExportDialog({ id: "Ctrl+E", type: "hotkey" })),
+  );
 
   return (
     <DeleteSourceDialog

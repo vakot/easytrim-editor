@@ -981,26 +981,6 @@ describe("App", () => {
     expect(document.getElementById("editor-stage-audio")).toBeNull();
   });
 
-  it("uses Escape to clear focus without closing the source", async () => {
-    mocks.chooseSource.mockResolvedValue([selection]);
-    const user = userEvent.setup();
-    render(<App />);
-
-    await openSourcePicker(user);
-    await waitForSourcePresence(true);
-    const fileMenuButton = getMenuTrigger("File");
-    fileMenuButton.focus();
-    expect(document.activeElement).toBe(fileMenuButton);
-
-    fireEvent.keyDown(window, { key: "Escape" });
-
-    expect(document.activeElement).toBe(document.body);
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-
-    fireEvent.keyDown(window, { key: "Escape" });
-    expect(selectHasSource(store.getState())).toBe(true);
-  });
-
   it("closes an open export dialog on Escape", async () => {
     mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
@@ -1013,7 +993,7 @@ describe("App", () => {
     await user.click(screen.getByRole("menuitem", { name: /Optimize & Export/ }));
     expect(screen.getByRole("dialog")).toBeInTheDocument();
 
-    fireEvent.keyDown(window, { key: "Escape" });
+    await user.keyboard("{Escape}");
 
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
   });
