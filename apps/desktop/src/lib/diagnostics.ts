@@ -49,9 +49,13 @@ let operationSequence = 0;
 let persistenceDegraded = false;
 let recovery: StartupRecovery | null = null;
 let currentSessionId: string | null = null;
-let currentSessionEvents: readonly DiagnosticEvent[] = [];
 const activeOperations = new Map<string, ActiveOperation>();
+const currentSessionEvents: DiagnosticEvent[] = [];
 const currentSessionListeners = new Set<() => void>();
+let currentSessionSnapshot = {
+  events: currentSessionEvents as readonly DiagnosticEvent[],
+  version: 0,
+};
 
 function createOperationId(event: DiagnosticOperationName): string {
   const prefix = event.split(".").slice(0, 2).join("-");
@@ -64,14 +68,15 @@ function categoryFromEvent(event: string): string {
 }
 
 function send(event: DiagnosticEventInput): void {
-  currentSessionEvents = [
-    ...currentSessionEvents,
-    {
-      ...event,
-      sessionId: currentSessionId ?? (currentSessionId = createLocalSessionId()),
-      timestamp: new Date().toISOString(),
-    },
-  ];
+  currentSessionEvents.push({
+    ...event,
+    sessionId: currentSessionId ?? (currentSessionId = createLocalSessionId()),
+    timestamp: new Date().toISOString(),
+  });
+  currentSessionSnapshot = {
+    events: currentSessionEvents,
+    version: currentSessionSnapshot.version + 1,
+  };
   currentSessionListeners.forEach((listener) => {
     try {
       listener();
@@ -251,8 +256,11 @@ export const diagnostics = {
   },
 };
 
-export function getCurrentSessionDiagnosticEvents(): readonly DiagnosticEvent[] {
-  return currentSessionEvents;
+export function getCurrentSessionDiagnosticsSnapshot(): {
+  events: readonly DiagnosticEvent[];
+  version: number;
+} {
+  return currentSessionSnapshot;
 }
 
 export function subscribeToCurrentSessionDiagnostics(listener: () => void): () => void {

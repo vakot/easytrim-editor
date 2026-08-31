@@ -23,6 +23,7 @@
       "ignore": [
         "src/components/**",
         "src/test/**",
+        "src/**/__stories__/**",
         "src/**/__tests__/**",
         "src/**/*.test.ts",
         "src/**/*.test.tsx",

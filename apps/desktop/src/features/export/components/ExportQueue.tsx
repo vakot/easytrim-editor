@@ -21,6 +21,7 @@ import {
 } from "@/app/store/thunks/export-thunks";
 import { editorSnapshotTrimStart } from "@/domain/editor-snapshot";
 import { cn } from "@/lib/class-names.utils";
+import { diagnostics } from "@/lib/diagnostics";
 import { openFileLocation, restoreSourceFromTrash } from "@/lib/tauri/media";
 
 const statusStyles = {
@@ -119,12 +120,20 @@ function ExportQueueItemSourceDeleted({ item }: ExportQueueItemProps) {
   const isSourceDeleted = item.sourceDeleted === true;
 
   async function restoreSource() {
+    const operation = diagnostics.startOperation("source.file-restore", {
+      data: { itemId: item.id },
+      origin: { id: "export.restore-source", type: "button" },
+      snapshotId: item.id,
+    });
+
     setIsRestoring(true);
     try {
       await restoreSourceFromTrash(item.snapshot.source.sourcePath);
       setIsRestored(true);
-    } catch {
+      operation.complete({ itemId: item.id });
+    } catch (error: unknown) {
       setIsRestored(false);
+      operation.fail(error, { itemId: item.id });
     } finally {
       setIsRestoring(false);
     }

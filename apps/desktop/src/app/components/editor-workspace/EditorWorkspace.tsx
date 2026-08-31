@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 
+import { ActivityFeed } from "@/features/activity";
 import { SourcePanel } from "@/features/source";
 
 import { EditorStage } from "./EditorStage";
@@ -37,6 +38,25 @@ export function EditorWorkspace() {
 
       <ResizablePanel className="overflow-hidden" id="workspace-content" minSize="44rem">
         <EditorStage />
+      </ResizablePanel>
+
+      <ResizableHandle
+        className="self-start bg-transparent"
+        style={{ height: "calc(100% - 4px)", width: 4 }}
+        withHandle
+      />
+
+      <ResizablePanel
+        className="overflow-hidden pr-1 pb-1"
+        collapsedSize={0}
+        collapsible
+        defaultSize="20rem"
+        groupResizeBehavior="preserve-pixel-size"
+        id="workspace-activity"
+        maxSize="30rem"
+        minSize={200}
+      >
+        <ActivityFeed />
       </ResizablePanel>
     </ResizablePanelGroup>
   );

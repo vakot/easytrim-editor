@@ -12,7 +12,7 @@ vi.mock("../tauri/diagnostics", () => ({
 
 import {
   diagnostics,
-  getCurrentSessionDiagnosticEvents,
+  getCurrentSessionDiagnosticsSnapshot,
   serializeDiagnosticError,
   subscribeToCurrentSessionDiagnostics,
 } from "../diagnostics";
@@ -51,14 +51,14 @@ describe("diagnostics", () => {
   it("exposes emitted events through the current-session journal", () => {
     const listener = vi.fn();
     const unsubscribe = subscribeToCurrentSessionDiagnostics(listener);
-    const previousCount = getCurrentSessionDiagnosticEvents().length;
+    const previousCount = getCurrentSessionDiagnosticsSnapshot().events.length;
 
     diagnostics.event("source.file-delete.completed", {
       operationId: "delete-operation-1",
       result: "success",
     });
 
-    const events = getCurrentSessionDiagnosticEvents();
+    const events = getCurrentSessionDiagnosticsSnapshot().events;
     expect(events).toHaveLength(previousCount + 1);
     expect(events.at(-1)).toEqual(
       expect.objectContaining({

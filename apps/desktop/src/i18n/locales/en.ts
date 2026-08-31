@@ -77,6 +77,17 @@ export const en = {
       windowControls: "Window controls",
     },
   },
+  activity: {
+    dates: { today: "Today", yesterday: "Yesterday" },
+    entries: {
+      fastCutCompleted: "Fast cut completed",
+      fileDeleted: "File deleted",
+      fileRestored: "File restored",
+      renderCompleted: "Optimized render completed",
+    },
+    labels: { title: "Activity" },
+    messages: { empty: "Completed actions will appear here." },
+  },
   settings: {
     actions: { reset: "Reset to default" },
     labels: {

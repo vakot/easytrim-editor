@@ -245,10 +245,18 @@ async function renderJob(job: RuntimeExportJob) {
       job.dispatch(exportCompleted({ id: job.item.id, result, durationMs: elapsedTime(job) }));
       job.diagnosticsOperation?.complete({ outputType: job.item.route });
       if (job.getState().preferences.deleteSourceOnRenderFinish) {
+        const deleteOperation = diagnostics.startOperation("source.file-delete", {
+          data: { itemId: job.item.id },
+          origin: { type: "internal" },
+          snapshotId: job.item.id,
+        });
+
         try {
           await moveSourceToTrash(job.item.request.sourcePath);
           job.dispatch(exportSourceDeleted({ id: job.item.id }));
-        } catch {
+          deleteOperation.complete({ itemId: job.item.id });
+        } catch (error: unknown) {
+          deleteOperation.fail(error, { itemId: job.item.id });
           // Keep the completed export visible when source cleanup fails.
         }
       }

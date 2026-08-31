@@ -79,6 +79,17 @@ export const sk = {
       windowControls: "Ovládanie okna",
     },
   },
+  activity: {
+    dates: { today: "Dnes", yesterday: "Včera" },
+    entries: {
+      fastCutCompleted: "Rýchly strih bol dokončený",
+      fileDeleted: "Súbor bol odstránený",
+      fileRestored: "Súbor bol obnovený",
+      renderCompleted: "Optimalizované vykreslenie bolo dokončené",
+    },
+    labels: { title: "Aktivita" },
+    messages: { empty: "Dokončené akcie sa zobrazia tu." },
+  },
   settings: {
     actions: { reset: "Obnoviť predvolené" },
     labels: {
