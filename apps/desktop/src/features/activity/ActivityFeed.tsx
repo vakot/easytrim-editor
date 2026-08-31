@@ -19,9 +19,11 @@ import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectExportQueue } from "@/app/store/slices/export-slice";
 import { restoreExportSourceRequested } from "@/app/store/thunks/export-thunks";
 import { formatSourcePath } from "@/features/source";
+import { getCurrentVersion } from "@/lib/app-version.utils";
 import { cn } from "@/lib/class-names.utils";
 import {
   getCurrentDiagnosticSessionId,
+  getCurrentDiagnosticSessionMetadata,
   getCurrentSessionDiagnosticsSnapshot,
   subscribeToCurrentSessionDiagnostics,
 } from "@/lib/diagnostics";
@@ -30,6 +32,7 @@ import {
   loadPersistedDiagnosticsHistory,
   subscribeToPersistedDiagnosticsHistory,
 } from "@/lib/diagnostics-history";
+import type { DiagnosticSessionMetadata } from "@/lib/tauri/diagnostics.types";
 import { openFileLocation } from "@/lib/tauri/media";
 
 import {
@@ -37,7 +40,9 @@ import {
   type ActivityEntry,
   type ActivityKind,
   type ActivityProjectionLabels,
-  groupActivityEntries,
+  type ActivitySessionLabels,
+  getActivitySessionPresentation,
+  groupActivityEntriesBySession,
   projectActivityEvents,
   resolveAvailableActivityActions,
 } from "./activity-projection";
@@ -58,10 +63,19 @@ const activityActionPresentation = {
 >;
 
 interface ActivityFeedViewProps {
+  currentAppVersion: string;
+  currentSessionId: string | null;
   entries: readonly ActivityEntry[];
   now: number;
   onAction?: (action: ActivityAction) => void;
+  sessions: readonly DiagnosticSessionMetadata[];
 }
+
+const sessionSeparatorClassNames = {
+  current: "font-semibold text-destructive before:bg-destructive after:bg-destructive",
+  default: undefined,
+  warning: "font-medium text-warning before:bg-warning after:bg-warning",
+} satisfies Record<"current" | "default" | "warning", string | undefined>;
 
 export function ActivityFeed() {
   const { t } = useTranslation();
@@ -119,6 +133,11 @@ export function ActivityFeed() {
     [diagnosticSnapshot, historySnapshot, labels, restorableSourceIds],
   );
 
+  const currentSession = getCurrentDiagnosticSessionMetadata();
+  const sessions = currentSession
+    ? [currentSession, ...historySnapshot.sessions]
+    : historySnapshot.sessions;
+
   const handleAction = useCallback(
     (action: ActivityAction) => {
       if (action.kind === "restore") {
@@ -130,19 +149,40 @@ export function ActivityFeed() {
     [dispatch],
   );
 
-  return <ActivityFeedView entries={entries} now={currentTime} onAction={handleAction} />;
+  return (
+    <ActivityFeedView
+      currentAppVersion={getCurrentVersion()}
+      currentSessionId={currentSession?.sessionId ?? null}
+      entries={entries}
+      now={currentTime}
+      onAction={handleAction}
+      sessions={sessions}
+    />
+  );
 }
 
-export function ActivityFeedView({ entries, now, onAction }: ActivityFeedViewProps) {
+export function ActivityFeedView({
+  currentAppVersion,
+  currentSessionId,
+  entries,
+  now,
+  onAction,
+  sessions,
+}: ActivityFeedViewProps) {
   const { i18n, t } = useTranslation();
 
   const locale = i18n.resolvedLanguage ?? i18n.language;
 
   const titleId = useId();
-  const groups = useMemo(() => groupActivityEntries(entries), [entries]);
-  const currentDate = new Date(now);
+  const groups = useMemo(
+    () => groupActivityEntriesBySession(entries, sessions, currentSessionId),
+    [currentSessionId, entries, sessions],
+  );
 
-  const dateLabels = {
+  const currentDateTime = new Date(now);
+
+  const sessionLabels: ActivitySessionLabels = {
+    now: t("app.labels.now"),
     today: t("app.labels.today"),
     yesterday: t("app.labels.yesterday"),
   };
@@ -178,23 +218,36 @@ export function ActivityFeedView({ entries, now, onAction }: ActivityFeedViewPro
       ) : (
         <ScrollArea className="mr-1 min-h-0 flex-1">
           <div className="grid gap-3 pr-2 pb-3 pl-3">
-            {groups.map((group) => (
-              <div className="flex flex-col gap-3" key={group.dateKey}>
-                <Marker variant="separator">
-                  <MarkerContent className="text-xs font-medium">
-                    {formatDateLabel(group.date, currentDate, locale, dateLabels)}
-                  </MarkerContent>
-                </Marker>
-                {group.entries.map((entry) => (
-                  <ActivityFeedEntry
-                    entry={entry}
-                    key={entry.id}
-                    onAction={onAction}
-                    timeFormatter={timeFormatter}
-                  />
-                ))}
-              </div>
-            ))}
+            {groups.map((group) => {
+              const presentation = getActivitySessionPresentation(
+                group,
+                currentAppVersion,
+                currentDateTime,
+                locale,
+                sessionLabels,
+              );
+
+              return (
+                <div className="flex flex-col gap-3" key={group.sessionId}>
+                  <Marker
+                    className={cn(sessionSeparatorClassNames[presentation.tone])}
+                    variant="separator"
+                  >
+                    <MarkerContent className="text-xs font-medium">
+                      {presentation.label}
+                    </MarkerContent>
+                  </Marker>
+                  {group.entries.map((entry) => (
+                    <ActivityFeedEntry
+                      entry={entry}
+                      key={entry.id}
+                      onAction={onAction}
+                      timeFormatter={timeFormatter}
+                    />
+                  ))}
+                </div>
+              );
+            })}
           </div>
         </ScrollArea>
       )}
@@ -263,26 +316,4 @@ function ActivityFeedEntry({
       ) : null}
     </Marker>
   );
-}
-
-function formatDateLabel(
-  date: Date,
-  currentDate: Date,
-  locale: string,
-  labels: { today: string; yesterday: string },
-): string {
-  const dayDifference = calendarDayDifference(currentDate, date);
-  if (dayDifference === 0) return labels.today;
-  if (dayDifference === 1) return labels.yesterday;
-  return new Intl.DateTimeFormat(locale, {
-    day: "numeric",
-    month: "short",
-    year: date.getFullYear() === currentDate.getFullYear() ? undefined : "numeric",
-  }).format(date);
-}
-
-function calendarDayDifference(later: Date, earlier: Date): number {
-  const laterUtc = Date.UTC(later.getFullYear(), later.getMonth(), later.getDate());
-  const earlierUtc = Date.UTC(earlier.getFullYear(), earlier.getMonth(), earlier.getDate());
-  return Math.round((laterUtc - earlierUtc) / 86_400_000);
 }

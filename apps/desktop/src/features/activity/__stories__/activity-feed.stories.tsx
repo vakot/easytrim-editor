@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
+import type { DiagnosticSessionMetadata } from "@/lib/tauri/diagnostics.types";
+
 import type { ActivityEntry } from "../activity-projection";
 import { ActivityFeedView } from "../ActivityFeed";
 
@@ -10,10 +12,10 @@ const entries: ActivityEntry[] = [
       kind: "open",
       path: "C:\\Users\\Editor\\Videos\\Client Projects\\Summer Campaign\\Exports\\summer-campaign-final-optimized.mp4",
     },
-    id: "session-1:render-1:ffmpeg.export.completed",
+    id: "current-session:render-1:ffmpeg.export.completed",
     kind: "render-completed",
     path: "C:\\Users\\Editor\\Videos\\Client Projects\\Summer Campaign\\Exports\\summer-campaign-final-optimized.mp4",
-    sessionId: "session-1",
+    sessionId: "current-session",
     timestamp: new Date(2026, 7, 31, 17, 45).toISOString(),
     title: "Optimized render completed",
   },
@@ -22,33 +24,32 @@ const entries: ActivityEntry[] = [
       kind: "open",
       path: "C:\\Users\\Editor\\Videos\\Client Projects\\Summer Campaign\\Exports\\summer-campaign-fast-cut.mkv",
     },
-    id: "session-1:cut-1:ffmpeg.export.completed",
+    id: "current-session:cut-1:ffmpeg.export.completed",
     kind: "fast-cut-completed",
     path: "C:\\Users\\Editor\\Videos\\Client Projects\\Summer Campaign\\Exports\\summer-campaign-fast-cut.mkv",
-    sessionId: "session-1",
-    timestamp: new Date(2026, 7, 31, 10, 20).toISOString(),
+    sessionId: "current-session",
+    timestamp: new Date(2026, 7, 31, 16, 50).toISOString(),
     title: "Fast cut completed",
   },
   {
-    id: "session-1:restore-1:source.file-restore.completed",
+    id: "today-session:restore-1:source.file-restore.completed",
     kind: "file-restored",
     path: "C:\\Users\\Editor\\Videos\\Source Footage\\camera-a\\interview-source.mp4",
-    sessionId: "session-1",
-    timestamp: new Date(2026, 7, 30, 15, 5).toISOString(),
+    sessionId: "today-session",
+    timestamp: new Date(2026, 7, 31, 9, 45).toISOString(),
     title: "File restored",
   },
   {
     action: {
-      kind: "restore",
-      path: "C:\\Users\\Editor\\Videos\\Source Footage\\camera-b\\deleted-source.mp4",
-      targetId: "export-delete-1",
+      kind: "open",
+      path: "C:\\Users\\Editor\\Videos\\Client Projects\\Archive\\previous-render.mp4",
     },
-    id: "session-1:delete-1:source.file-delete.completed",
-    kind: "file-deleted",
-    path: "C:\\Users\\Editor\\Videos\\Source Footage\\camera-b\\deleted-source.mp4",
-    sessionId: "session-1",
-    timestamp: new Date(2026, 7, 30, 9, 30).toISOString(),
-    title: "File deleted",
+    id: "different-version-session:render-2:ffmpeg.export.completed",
+    kind: "render-completed",
+    path: "C:\\Users\\Editor\\Videos\\Client Projects\\Archive\\previous-render.mp4",
+    sessionId: "different-version-session",
+    timestamp: new Date(2026, 7, 30, 20, 42).toISOString(),
+    title: "Optimized render completed",
   },
   {
     action: {
@@ -64,10 +65,36 @@ const entries: ActivityEntry[] = [
   },
 ];
 
+const sessions: DiagnosticSessionMetadata[] = [
+  {
+    appVersion: "1.3.0",
+    sessionId: "current-session",
+    startedAt: new Date(2026, 7, 31, 16, 30).toISOString(),
+  },
+  {
+    appVersion: "1.3.0",
+    sessionId: "today-session",
+    startedAt: new Date(2026, 7, 31, 8, 52).toISOString(),
+  },
+  {
+    appVersion: "1.4.2",
+    sessionId: "different-version-session",
+    startedAt: new Date(2026, 7, 30, 20, 14).toISOString(),
+  },
+  {
+    appVersion: null,
+    sessionId: "retained-session",
+    startedAt: new Date(2026, 7, 28, 10, 3).toISOString(),
+  },
+];
+
 const meta = {
   args: {
+    currentAppVersion: "1.3.0",
+    currentSessionId: "current-session",
     now,
     onAction: () => undefined,
+    sessions,
   },
   component: ActivityFeedView,
   decorators: [
@@ -85,6 +112,6 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const MultipleDates: Story = { args: { entries } };
+export const SessionHierarchy: Story = { args: { entries } };
 
-export const Empty: Story = { args: { entries: [] } };
+export const Empty: Story = { args: { entries: [], sessions: [] } };
