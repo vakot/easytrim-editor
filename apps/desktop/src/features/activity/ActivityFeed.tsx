@@ -284,7 +284,12 @@ export function ActivityFeedView({
         </p>
       ) : (
         <ScrollArea className="mr-1 min-h-0 flex-1">
-          <div className={cn("grid pr-2 pl-3", isCompact ? "gap-1" : isBranch ? "gap-5" : "gap-3")}>
+          <div
+            className={cn(
+              "grid pr-2 pb-3 pl-3",
+              isCompact ? "gap-1" : isBranch ? "gap-5" : "gap-3",
+            )}
+          >
             {groups.map((group) => {
               const presentation = getActivitySessionPresentation(
                 group,
