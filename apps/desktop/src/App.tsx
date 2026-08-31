@@ -5,6 +5,7 @@ import { PersistGate } from "redux-persist/integration/react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ResizablePanelContextProvider } from "@/components/ui/resizable";
+import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { CustomTitleBar } from "@/app/components/CustomTitleBar";
@@ -37,6 +38,7 @@ import {
   closeActiveImportedItemRequested,
 } from "@/app/store/thunks/source-media-thunks";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
+import { useTheme } from "@/app/theme/useTheme";
 import { ExportDialog } from "@/features/export";
 import { SourceStatus } from "@/features/source";
 import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
@@ -52,6 +54,7 @@ function EasyTrimEditorApp() {
   const isNativeDialogOpen = useAppSelector(selectIsNativeDialogOpen);
   const dropListenerError = useAppSelector(selectDropListenerError);
   const { t } = useTranslation();
+  const { resolvedTheme } = useTheme();
 
   useEffect(() => {
     void dispatch(loadQueueFinishActions());
@@ -116,6 +119,7 @@ function EasyTrimEditorApp() {
 
   return (
     <TooltipProvider>
+      <Toaster position="bottom-right" theme={resolvedTheme} />
       <main className="fixed inset-0 grid h-dvh w-screen min-w-80 grid-rows-[2.25rem_minmax(0,1fr)_auto] overflow-hidden bg-background">
         <CustomTitleBar
           menuControls={<MenuBar />}
