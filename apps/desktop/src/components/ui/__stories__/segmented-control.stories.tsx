@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
+import { Trash, X } from "lucide-react";
 import * as React from "react";
 
 import { SegmentedControl, SegmentedControlItem } from "../segmented-control";
@@ -42,9 +43,28 @@ export const Controlled: Story = {
 export const ThreeOptions: Story = {
   render: () => (
     <SegmentedControl aria-label="Time range" defaultValue="day">
-      <SegmentedControlItem value="day">Day</SegmentedControlItem>
-      <SegmentedControlItem value="week">Week</SegmentedControlItem>
-      <SegmentedControlItem value="month">Month</SegmentedControlItem>
+      <SegmentedControlItem size="lg" value="day" variant="success">
+        Day
+      </SegmentedControlItem>
+      <SegmentedControlItem size="lg" value="week">
+        Week
+      </SegmentedControlItem>
+      <SegmentedControlItem size="lg" value="month" variant="destructive">
+        Month
+      </SegmentedControlItem>
+    </SegmentedControl>
+  ),
+};
+
+export const Icons: Story = {
+  render: () => (
+    <SegmentedControl defaultValue="close">
+      <SegmentedControlItem size="icon-lg" value="close" variant="destructive">
+        <X aria-hidden="true" />
+      </SegmentedControlItem>
+      <SegmentedControlItem size="icon-lg" value="delete" variant="destructive">
+        <Trash aria-hidden="true" />
+      </SegmentedControlItem>
     </SegmentedControl>
   ),
 };
