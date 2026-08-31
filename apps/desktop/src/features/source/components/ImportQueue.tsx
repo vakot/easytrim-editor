@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
 import { Card, CardAction, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { SegmentedControl, SegmentedControlItem } from "@/components/ui/segmented-control";
 
 import { useTimeline } from "@/app/hooks/useTimeline";
 import type { importQueueItem } from "@/app/store/slices/export-slice";
@@ -15,24 +16,37 @@ import { useImportQueue } from "../hooks/useImportQueue";
 
 import { DeleteSourceDialog } from "./DeleteSourceDialog";
 
+type ImportQueueActionMode = "remove" | "delete";
+
 export function ImportQueue() {
   const { t } = useTranslation();
 
   const { activeIndex, activeItem, deleteSource, items, next, prev, skip } = useImportQueue();
+  const [actionMode, setActionMode] = useState<ImportQueueActionMode>("remove");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletePending, setDeletePending] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleteItemId, setDeleteItemId] = useState<string | null>(null);
+  const deleteItem = items.find((item) => item.id === deleteItemId);
 
   const handleDeleteSource = async () => {
+    if (!deleteItemId) return;
+
     setDeletePending(true);
     setDeleteError(null);
-    const error = await deleteSource();
+    const error = await deleteSource(deleteItemId);
     setDeletePending(false);
     if (error) {
       setDeleteError(error.message);
       return;
     }
     setDeleteDialogOpen(false);
+  };
+
+  const openDeleteDialog = (itemId: string) => {
+    setDeleteItemId(itemId);
+    setDeleteError(null);
+    setDeleteDialogOpen(true);
   };
 
   return (
@@ -61,30 +75,38 @@ export function ImportQueue() {
         <Button disabled={activeIndex < 0} onClick={skip} size="sm" variant="outline">
           {t("queue.actions.skip")}
         </Button>
-        <Button
-          aria-label={t("queue.accessibility.deleteSource", {
-            filename: activeItem?.snapshot.source.displayName ?? "",
-          })}
-          disabled={activeIndex < 0}
-          onClick={() => {
-            setDeleteError(null);
-            setDeleteDialogOpen(true);
-          }}
-          size="icon-sm"
-          variant="destructive"
+        <SegmentedControl
+          aria-label={t("queue.labels.import")}
+          onValueChange={(value) => setActionMode(value as ImportQueueActionMode)}
+          value={actionMode}
         >
-          <Trash aria-hidden="true" />
-        </Button>
+          <SegmentedControlItem
+            aria-label={t("queue.accessibility.removeMode")}
+            size="icon-sm"
+            value="remove"
+            variant="destructive"
+          >
+            <X aria-hidden="true" />
+          </SegmentedControlItem>
+          <SegmentedControlItem
+            aria-label={t("queue.accessibility.deleteMode")}
+            size="icon-sm"
+            value="delete"
+            variant="destructive"
+          >
+            <Trash aria-hidden="true" />
+          </SegmentedControlItem>
+        </SegmentedControl>
       </div>
 
-      {activeItem ? (
+      {deleteItem ? (
         <DeleteSourceDialog
           error={deleteError}
           onConfirm={() => void handleDeleteSource()}
           onOpenChange={setDeleteDialogOpen}
           open={deleteDialogOpen}
           pending={deletePending}
-          sourceName={activeItem.snapshot.source.displayName}
+          sourceName={deleteItem.snapshot.source.displayName}
         />
       ) : null}
 
@@ -95,7 +117,13 @@ export function ImportQueue() {
       ) : (
         <div aria-live="polite" className="grid gap-2 pb-2" role="status">
           {items.map((item) => (
-            <ImportQueueItem active={item.id === activeItem?.id} item={item} key={item.id} />
+            <ImportQueueItem
+              actionMode={actionMode}
+              active={item.id === activeItem?.id}
+              item={item}
+              key={item.id}
+              onDelete={openDeleteDialog}
+            />
           ))}
         </div>
       )}
@@ -103,12 +131,30 @@ export function ImportQueue() {
   );
 }
 
-function ImportQueueItem({ active, item }: { active: boolean; item: importQueueItem }) {
+function ImportQueueItem({
+  actionMode,
+  active,
+  item,
+  onDelete,
+}: {
+  actionMode: ImportQueueActionMode;
+  active: boolean;
+  item: importQueueItem;
+  onDelete: (itemId: string) => void;
+}) {
   const { t } = useTranslation();
 
   const timeline = useTimeline();
   const { open, remove } = useImportQueue();
   const sourcePath = formatSourcePath(item.snapshot.source.sourcePath);
+  const actionLabel =
+    actionMode === "delete"
+      ? t("queue.accessibility.deleteSource", {
+          filename: item.snapshot.source.displayName,
+        })
+      : t("queue.accessibility.removeImportItem", {
+          filename: item.snapshot.source.displayName,
+        });
 
   async function restoreItem() {
     open(item.id);
@@ -132,18 +178,21 @@ function ImportQueueItem({ active, item }: { active: boolean; item: importQueueI
         <CardDescription className="truncate">{sourcePath}</CardDescription>
         <CardAction>
           <Button
-            aria-label={t("queue.accessibility.removeImportItem", {
-              filename: item.snapshot.source.displayName,
-            })}
+            aria-label={actionLabel}
             onClick={(event) => {
               event.stopPropagation();
+              if (actionMode === "delete") {
+                onDelete(item.id);
+                return;
+              }
+
               remove(item.id);
             }}
             size="icon"
             type="button"
             variant="destructive"
           >
-            <X aria-hidden="true" />
+            {actionMode === "delete" ? <Trash aria-hidden="true" /> : <X aria-hidden="true" />}
           </Button>
         </CardAction>
       </CardHeader>

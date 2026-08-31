@@ -151,6 +151,8 @@ export const en = {
       openLocation: "Open {{filename}} location",
       progress: "Export progress",
       deleteSource: "Delete {{filename}} from device",
+      deleteMode: "Delete source",
+      removeMode: "Remove from queue",
       removeImportItem: "Remove {{filename}} from import queue",
       restoreItem: "Restore {{filename}}",
     },
