@@ -128,7 +128,9 @@ describe("ActivityFeedView file lifecycle entries", () => {
 
     expect(screen.getByText("source.mp4")).toHaveClass("text-foreground");
     expect(screen.getAllByText("C:/Media/source.mp4")).toHaveLength(1);
-    expect(screen.getByText("Render completed")).toHaveClass("text-muted-foreground");
+    expect(screen.getByText("Render completed").closest('[data-slot="marker-title"]')).toHaveClass(
+      "text-muted-foreground",
+    );
     expect(screen.getByText("Render completed").closest('[data-slot="marker"]')).toHaveClass(
       "text-muted-foreground",
     );

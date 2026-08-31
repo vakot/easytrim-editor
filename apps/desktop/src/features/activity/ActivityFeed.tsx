@@ -356,7 +356,10 @@ function ActivityFeedBranch({
   onAction?: (action: ActivityAction) => void;
   timeFormatter: Intl.DateTimeFormat;
 }) {
+  const { t } = useTranslation();
   const normalizedSourcePath = formatSourcePath(branch.path ?? "");
+  const filename =
+    normalizedSourcePath.split(/[\\/]/).filter(Boolean).pop() ?? t("app.labels.file");
 
   return (
     <div>
@@ -366,7 +369,7 @@ function ActivityFeedBranch({
         </MarkerIcon>
 
         <MarkerContent>
-          <MarkerTitle className="min-w-0 text-foreground">Filename</MarkerTitle>
+          <MarkerTitle className="min-w-0 text-foreground">{filename}</MarkerTitle>
           <MarkerDescription className="truncate">
             {branch.path ? (
               <>
