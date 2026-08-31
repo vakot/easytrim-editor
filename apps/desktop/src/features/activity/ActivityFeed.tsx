@@ -18,6 +18,7 @@ import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectExportQueue } from "@/app/store/slices/export-slice";
 import { restoreExportSourceRequested } from "@/app/store/thunks/export-thunks";
 import { formatSourcePath } from "@/features/source";
+import { cn } from "@/lib/class-names.utils";
 import {
   getCurrentDiagnosticSessionId,
   getCurrentSessionDiagnosticsSnapshot,
@@ -208,22 +209,19 @@ function ActivityFeedEntry({
   const actionLabel = actionPresentation?.getLabel(t);
   const normalizedSourcePath = formatSourcePath(entry.path ?? "");
 
+  const hasAction = action && actionLabel && ActionIcon && onAction;
+
   return (
     <Marker className="items-start text-xs">
       <MarkerIcon className="text-muted-foreground">
         <Icon />
       </MarkerIcon>
-      <MarkerContent>
-        <div className="text-foreground">
-          {entry.title}{" "}
-          <span className="text-muted-foreground">
-            <span aria-hidden="true" className="shrink-0">
-              ·{" "}
-            </span>
-            <time className="shrink-0" dateTime={entry.timestamp}>
-              {timeFormatter.format(new Date(entry.timestamp))}
-            </time>
-          </span>
+      <MarkerContent className={cn(!hasAction && "pr-7")}>
+        <div className="flex justify-between gap-2 text-foreground">
+          {entry.title}
+          <time className="shrink-0 text-muted-foreground" dateTime={entry.timestamp}>
+            {timeFormatter.format(new Date(entry.timestamp))}
+          </time>
         </div>
         <MarkerDescription>
           {entry.path ? (
@@ -235,7 +233,7 @@ function ActivityFeedEntry({
           ) : null}
         </MarkerDescription>
       </MarkerContent>
-      {action && actionLabel && ActionIcon && onAction ? (
+      {hasAction ? (
         <MarkerAction>
           <Tooltip>
             <TooltipTrigger asChild>
