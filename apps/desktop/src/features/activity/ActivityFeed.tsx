@@ -1,3 +1,4 @@
+import type { TFunction } from "i18next";
 import { ExternalLink, Film, type LucideIcon, RotateCcw, Scissors, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useId, useMemo, useState, useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
@@ -40,11 +41,11 @@ const activityIcons: Record<ActivityKind, LucideIcon> = {
 };
 
 const activityActionPresentation = {
-  open: { icon: ExternalLink, label: "app.actions.open" },
-  restore: { icon: RotateCcw, label: "app.actions.restore" },
+  open: { getLabel: (t: TFunction) => t("app.actions.open"), icon: ExternalLink },
+  restore: { getLabel: (t: TFunction) => t("app.actions.restore"), icon: RotateCcw },
 } satisfies Record<
   ActivityAction["kind"],
-  { icon: LucideIcon; label: "app.actions.open" | "app.actions.restore" }
+  { getLabel: (t: TFunction) => string; icon: LucideIcon }
 >;
 
 interface ActivityFeedViewProps {
@@ -187,6 +188,7 @@ function ActivityFeedEntry({
   const action = entry.action;
   const actionPresentation = action ? activityActionPresentation[action.kind] : undefined;
   const ActionIcon = actionPresentation?.icon;
+  const actionLabel = actionPresentation?.getLabel(t);
   const normalizedSourcePath = formatSourcePath(entry.path ?? "");
 
   return (
@@ -216,20 +218,20 @@ function ActivityFeedEntry({
           ) : null}
         </MarkerDescription>
       </MarkerContent>
-      {action && actionPresentation && ActionIcon && onAction ? (
+      {action && actionLabel && ActionIcon && onAction ? (
         <MarkerAction>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                aria-label={t(actionPresentation.label)}
+                aria-label={actionLabel}
                 onClick={() => onAction(action)}
-                size="icon-sm"
+                size="icon-xs"
                 variant="outline"
               >
                 <ActionIcon aria-hidden="true" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>{t(actionPresentation.label)}</TooltipContent>
+            <TooltipContent>{actionLabel}</TooltipContent>
           </Tooltip>
         </MarkerAction>
       ) : null}

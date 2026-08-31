@@ -144,18 +144,6 @@ export const sk = {
       queued: "Vo fronte",
       sourceDeleted: "Zdroj odstránený",
     },
-    messages: {
-      fileDelete: {
-        error: "Súbor {{filename}} sa nepodarilo odstrániť: {{message}}",
-        loading: "Odstraňovanie súboru {{filename}}…",
-        success: "Súbor bol presunutý do koša",
-      },
-      fileRestore: {
-        error: "Súbor {{filename}} sa nepodarilo obnoviť: {{message}}",
-        loading: "Obnovovanie súboru {{filename}}…",
-        success: "Súbor bol obnovený",
-      },
-    },
     tooltips: {
       deleteSourceOnRenderFinish: "Po úspešnom vykreslení odstráni zdroj",
     },
