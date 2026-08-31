@@ -1,6 +1,14 @@
 # Code Quality
 
-This document defines repository-wide code quality expectations for automated agents.
+This document defines repository-wide code quality expectations for automated agents. Repository-
+specific naming, module, import, styling, and tooling conventions live in
+[docs/code-conventions.md](../../docs/code-conventions.md).
+
+`README.md` is the concise product/repository entry point. Do not modify it for routine feature,
+refactor, component, architecture, or implementation work when the change can be documented
+elsewhere or requires no README change. README edits require a repository-level reason such as a
+material product, platform, startup, release, license, or top-level documentation-navigation
+change.
 
 These rules are intentionally language-, framework-, and platform-agnostic.
 
@@ -137,80 +145,6 @@ Avoid:
 - misleading names that no longer match behavior.
 
 Do not rename established concepts without a concrete reason.
-
-### Cohesion and primitive files
-
-Prefer ownership-based colocation over file splitting by declaration kind. Do not create a
-single-consumer `.utils.ts`, `.types.ts`, `.consts.ts`, or similar primitive file solely to keep
-helpers, types, or constants separate. Keep declarations in their owning module unless they have
-multiple consumers, are independently reusable, represent a meaningful standalone abstraction,
-or separation materially improves module boundaries or maintainability. Before changing a
-primitive file, inspect its consumers and preserve intentionally shared, public, or feature-level
-contracts as separate modules.
-
-### Declaration and prop ordering
-
-Named declaration members should use deterministic alphabetical ordering wherever ordering has
-no semantic meaning. The TypeScript/React ESLint configuration enforces case-insensitive natural
-ascending alphabetical order for interface members, object-type members, JSX props, destructured
-object patterns, and named import/export members. Existing `simple-import-sort` rules continue to
-own import and export declaration ordering.
-
-The JSX rule uses one simple alphabetical order; it does not add special callback-last or
-reserved-prop groups. Object literals that are not destructuring patterns are intentionally not
-auto-sorted because spreads, duplicate keys, getters/setters, computed keys, and insertion-order
-APIs can make property order observable. Preserve those orders unless a specific review confirms
-that reordering is semantically safe. ESLint's `pnpm lint:fix` workflow applies the safe fixes.
-
-Type-only imports and import-side-effect syntax are enforced with
-`@typescript-eslint/consistent-type-imports` and
-`@typescript-eslint/no-import-type-side-effects`. `consistent-type-exports` is intentionally not
-enabled because it requires type-aware parser services that are not part of the current lint
-configuration; enabling it would require a broader typed-linting migration.
-
-Import boundaries are enforced only where they are stable and mechanical: `components/ui` may
-not import application, feature, or store layers, and `domain` may not import application,
-feature, UI, Tauri-adapter, React, or other runtime layers. Feature-to-feature internals remain
-private, while code outside a feature must import through the feature's public `index.ts` API.
-Existing feature entrypoints should be preferred for all cross-feature consumers.
-
-The underlying `radix-ui` and `react-resizable-panels` packages are restricted to
-`src/components` by ESLint. Application and feature code must use the local `components/ui`
-wrappers instead. Workspace TypeScript and JavaScript auto-import suggestions exclude those
-packages to reduce accidental direct imports; VS Code does not provide a folder-scoped equivalent,
-so the exclusion also applies while editing the local wrappers.
-
-The advanced correctness checks `@typescript-eslint/no-shadow` and
-`@typescript-eslint/no-use-before-define` remain disabled after repository audits. `no-shadow`
-reported intentional React wrapper names, state-updater parameters, and callback-local names;
-`no-use-before-define` reported widespread intentional function, component, and helper hoisting.
-Enabling either rule would require arbitrary exceptions or unrelated renames/reordering rather
-than preventing meaningful defects. The base ESLint `no-shadow` rule is not enabled either.
-
-Circular-dependency linting is also not enabled. The current toolchain has no lightweight,
-established cycle detector, and adding a dependency or custom analyzer solely for this check
-would exceed the scope of the architecture cleanup. A static review of feature and application
-imports found no current cross-feature cycle; new boundaries should continue to preserve the
-documented dependency direction.
-
-### Tailwind CSS
-
-Tailwind CSS v4 classes are validated in the desktop source by
-`eslint-plugin-tailwindcss`. ESLint rejects contradicting utilities, non-canonical utility
-spellings, non-canonical negative arbitrary values, replaceable utility combinations, prefix-form
-important modifiers, and arbitrary values that duplicate an existing theme utility. Arbitrary
-values remain valid when they represent a genuine custom value; `no-arbitrary-value` is not
-enabled.
-
-Class ordering belongs exclusively to `prettier-plugin-tailwindcss`, configured through the
-repository Prettier settings and the desktop `globals.css` stylesheet. ESLint's
-`classnames-order` rule is intentionally not enabled, so ESLint and Prettier do not rewrite the
-same class lists. `pnpm lint:fix` runs the existing ESLint fixer followed by Prettier, while
-`pnpm format` and `pnpm format:check` remain the formatting-only workflows. The Tailwind parser
-recognizes the repository's `cn`, `cva`, `clsx`, and
-`twMerge` composition calls. `no-custom-classname` remains disabled because the application
-intentionally uses CSS-module selectors, runtime/DOM hook classes, and other non-Tailwind names
-that cannot be whitelisted accurately without masking real findings.
 
 ## Data and State
 
@@ -470,7 +404,7 @@ Avoid brittle tests that depend unnecessarily on:
 
 Do not weaken valid tests simply to make new code pass.
 
-Verification details are defined in `.agents/verification.md`.
+Verification details are defined in `.agents/rules/verification.md`.
 
 ## Backward Compatibility
 
@@ -504,17 +438,9 @@ mode and owns detection of unused production files, exports, types, and dependen
 must not establish production usage. ESLint remains responsible for unused locals, imports, and
 parameters within files, as well as TypeScript, React, formatting, and style correctness.
 
-The desktop Knip workspace intentionally excludes the generic primitive library under
-`src/components/**`; those UI building blocks are validated by ESLint, TypeScript, and their
-focused tests instead. Application and feature components remain in the production graph. Do not
-add test-only resets, `ForTest` exports, or similar escape hatches to production modules. Stateful
-integrations should scope runtime state to the owning store or instance so tests can create fresh
-state without invoking production-only cleanup APIs. Keep test-only helpers in the owning
-module's `__tests__/` directory.
-
-Application menus use `MenuGroup` for each contiguous item section. `MenuSeparator` remains the
-boundary between groups, including when a group contains one item or no labeled heading. Nested
-submenu contents follow the same grouping rule; item order and submenu behavior remain unchanged.
+Use the repository's `pnpm knip` script for production dead-code analysis. Keep test-only helpers
+with their owning module and do not add test-only production exports or disable checks to hide a
+warning.
 
 ## Configuration
 
