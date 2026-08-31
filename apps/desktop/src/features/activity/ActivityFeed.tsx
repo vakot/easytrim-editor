@@ -28,6 +28,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectExportQueue } from "@/app/store/slices/export-slice";
+import { selectActivityFeedView } from "@/app/store/slices/preferences-slice";
 import { restoreExportSourceRequested } from "@/app/store/thunks/export-thunks";
 import { formatSourcePath } from "@/features/source";
 import { getCurrentVersion } from "@/lib/app-version.utils";
@@ -131,7 +132,15 @@ export function ActivityFeed() {
       fastCutFailed: t("app.status.fastCutFailed"),
       fastCutInterrupted: t("app.status.fastCutInterrupted"),
       fastCutting: t("app.status.fastCutting"),
+      fileDeleteCancelled: t("app.status.fileDeleteCancelled"),
+      fileDeleteFailed: t("app.status.fileDeleteFailed"),
+      fileDeleteInterrupted: t("app.status.fileDeleteInterrupted"),
+      fileDeleting: t("app.status.fileDeleting"),
       fileDeleted: t("app.status.fileDeleted"),
+      fileRestoreCancelled: t("app.status.fileRestoreCancelled"),
+      fileRestoreFailed: t("app.status.fileRestoreFailed"),
+      fileRestoreInterrupted: t("app.status.fileRestoreInterrupted"),
+      fileRestoring: t("app.status.fileRestoring"),
       fileRestored: t("app.status.fileRestored"),
       renderCompleted: t("app.status.renderCompleted"),
       renderCancelled: t("app.status.renderCancelled"),
@@ -204,6 +213,9 @@ export function ActivityFeedView({
 }: ActivityFeedViewProps) {
   const { i18n, t } = useTranslation();
 
+  const activityFeedView = useAppSelector(selectActivityFeedView);
+  const isCompact = activityFeedView === "compact";
+
   const locale = i18n.resolvedLanguage ?? i18n.language;
 
   const titleId = useId();
@@ -250,7 +262,7 @@ export function ActivityFeedView({
         </p>
       ) : (
         <ScrollArea className="mr-1 min-h-0 flex-1">
-          <div className="grid gap-3 pr-2 pb-3 pl-3">
+          <div className={cn("grid pr-2 pl-3", isCompact ? "gap-1" : "gap-3")}>
             {groups.map((group) => {
               const presentation = getActivitySessionPresentation(
                 group,
@@ -261,7 +273,10 @@ export function ActivityFeedView({
               );
 
               return (
-                <div className="flex flex-col gap-3" key={group.sessionId}>
+                <div
+                  className={cn("flex flex-col", isCompact ? "gap-1" : "gap-3")}
+                  key={group.sessionId}
+                >
                   <Marker
                     className={cn(sessionSeparatorClassNames[presentation.tone])}
                     variant="separator"
@@ -272,6 +287,7 @@ export function ActivityFeedView({
                   </Marker>
                   {group.entries.map((entry) => (
                     <ActivityFeedEntry
+                      compact={isCompact}
                       entry={entry}
                       key={entry.id}
                       onAction={onAction}
@@ -289,25 +305,45 @@ export function ActivityFeedView({
 }
 
 function ActivityFeedEntry({
+  compact = false,
   entry,
   onAction,
   timeFormatter,
 }: {
+  compact?: boolean;
   entry: ActivityEntry;
   onAction?: (action: ActivityAction) => void;
   timeFormatter: Intl.DateTimeFormat;
 }) {
-  const { t } = useTranslation();
-
   const statusPresentation = activityStatusPresentation[entry.status];
   const Icon = statusPresentation.icon ?? activityIcons[entry.kind];
   const action = entry.action;
-  const actionPresentation = action ? activityActionPresentation[action.kind] : undefined;
-  const ActionIcon = actionPresentation?.icon;
-  const actionLabel = actionPresentation?.getLabel(t);
   const normalizedSourcePath = formatSourcePath(entry.path ?? "");
 
-  const hasAction = action && actionLabel && ActionIcon && onAction;
+  const showAction = !!action && onAction;
+
+  if (compact) {
+    return (
+      <Marker className="h-6 items-center text-xs">
+        <MarkerIcon className={statusPresentation.className}>
+          <Icon
+            aria-hidden="true"
+            className={entry.status === "pending" ? "animate-spin" : undefined}
+          />
+        </MarkerIcon>
+        <MarkerContent className="min-w-0 flex-row flex-nowrap items-center gap-1">
+          <ActivityFeedEntryTitle entry={entry} timeFormatter={timeFormatter} />
+          {showAction && (
+            <ActivityFeedEntryButton
+              compact={compact}
+              entry={entry}
+              onClick={() => onAction(action)}
+            />
+          )}
+        </MarkerContent>
+      </Marker>
+    );
+  }
 
   return (
     <Marker className="items-start text-xs">
@@ -317,12 +353,9 @@ function ActivityFeedEntry({
           className={entry.status === "pending" ? "animate-spin" : undefined}
         />
       </MarkerIcon>
-      <MarkerContent className={cn(!hasAction && "pr-7")}>
-        <div className="flex justify-between gap-2 text-foreground">
-          {entry.title}
-          <time className="shrink-0 text-muted-foreground" dateTime={entry.startedAt}>
-            {timeFormatter.format(new Date(entry.startedAt))}
-          </time>
+      <MarkerContent>
+        <div className="flex min-w-0 flex-nowrap items-center gap-1">
+          <ActivityFeedEntryTitle entry={entry} timeFormatter={timeFormatter} />
         </div>
         <MarkerDescription>
           {entry.path ? (
@@ -334,23 +367,72 @@ function ActivityFeedEntry({
           ) : null}
         </MarkerDescription>
       </MarkerContent>
-      {hasAction ? (
+      {showAction && (
         <MarkerAction>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                aria-label={actionLabel}
-                onClick={() => onAction(action)}
-                size="icon-xs"
-                variant="outline"
-              >
-                <ActionIcon aria-hidden="true" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>{actionLabel}</TooltipContent>
-          </Tooltip>
+          <ActivityFeedEntryButton
+            compact={compact}
+            entry={entry}
+            onClick={() => onAction(action)}
+          />
         </MarkerAction>
-      ) : null}
+      )}
     </Marker>
+  );
+}
+
+function ActivityFeedEntryTitle({
+  entry,
+  timeFormatter,
+}: {
+  entry: ActivityEntry;
+  timeFormatter: Intl.DateTimeFormat;
+}) {
+  return (
+    <>
+      <span className={cn("truncate text-foreground", entry.status === "pending" && "shimmer")}>
+        {entry.title}
+      </span>
+      <span>·</span>
+      <time className="shrink-0 text-muted-foreground" dateTime={entry.startedAt}>
+        {timeFormatter.format(new Date(entry.startedAt))}
+      </time>
+    </>
+  );
+}
+
+function ActivityFeedEntryButton({
+  compact = false,
+  entry,
+  onClick,
+}: {
+  compact?: boolean;
+  entry: ActivityEntry;
+  onClick?: () => void;
+}) {
+  const { t } = useTranslation();
+
+  const action = entry.action;
+  const actionPresentation = action ? activityActionPresentation[action.kind] : undefined;
+  const actionLabel = actionPresentation?.getLabel(t);
+  const ActionIcon = actionPresentation?.icon;
+
+  const isValidAction = action && actionLabel && ActionIcon && onClick;
+
+  if (!isValidAction) return null;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          aria-label={actionLabel}
+          onClick={onClick}
+          size="icon-xs"
+          variant={compact ? "ghost" : "outline"}
+        >
+          <ActionIcon aria-hidden="true" />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{actionLabel}</TooltipContent>
+    </Tooltip>
   );
 }

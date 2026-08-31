@@ -17,7 +17,15 @@ const labels: ActivityProjectionLabels = {
   fastCutFailed: "Fast cut failed",
   fastCutInterrupted: "Fast cut interrupted",
   fastCutting: "Fast cutting…",
+  fileDeleteCancelled: "File deletion cancelled",
+  fileDeleteFailed: "File deletion failed",
+  fileDeleteInterrupted: "File deletion interrupted",
+  fileDeleting: "Deleting file...",
   fileDeleted: "File deleted",
+  fileRestoreCancelled: "File restoration cancelled",
+  fileRestoreFailed: "File restoration failed",
+  fileRestoreInterrupted: "File restoration interrupted",
+  fileRestoring: "Restoring file...",
   fileRestored: "File restored",
   renderCancelled: "Render cancelled",
   renderCompleted: "Optimized render completed",
@@ -102,6 +110,148 @@ describe("activity projection", () => {
       title: "File restored",
     });
     expect(entry?.action).toBeUndefined();
+  });
+
+  it("projects a file deletion as pending and updates it in place on completion", () => {
+    const entries = projectActivityEvents(
+      [
+        diagnosticEvent("source.file-delete.started", {
+          data: { itemId: "delete-1", sourcePath },
+          operationId: "delete-1",
+          sessionId: "current-session",
+          timestamp: "2026-08-31T08:00:00.000Z",
+        }),
+        diagnosticEvent("source.file-delete.completed", {
+          data: { itemId: "delete-1", sourcePath },
+          operationId: "delete-1",
+          sessionId: "current-session",
+          timestamp: "2026-08-31T08:01:00.000Z",
+        }),
+      ],
+      labels,
+      "current-session",
+    );
+
+    expect(entries).toEqual([
+      expect.objectContaining({
+        action: { kind: "restore", path: sourcePath, targetId: "delete-1" },
+        id: "current-session:delete-1:source.file-delete",
+        operationId: "delete-1",
+        startedAt: "2026-08-31T08:00:00.000Z",
+        status: "completed",
+        title: "File deleted",
+      }),
+    ]);
+  });
+
+  it.each([
+    ["failed", "File deletion failed"],
+    ["cancelled", "File deletion cancelled"],
+  ] as const)("projects a pending file deletion as %s", (terminal, title) => {
+    const entry = projectActivityEvents(
+      [
+        diagnosticEvent("source.file-delete.started", {
+          data: { itemId: "delete-1", sourcePath },
+          operationId: "delete-1",
+          sessionId: "current-session",
+        }),
+        diagnosticEvent(`source.file-delete.${terminal}`, {
+          operationId: "delete-1",
+          sessionId: "current-session",
+        }),
+      ],
+      labels,
+      "current-session",
+    )[0];
+
+    expect(entry).toMatchObject({ status: terminal, title });
+    expect(entry?.action).toBeUndefined();
+  });
+
+  it("projects restore lifecycle and retains start ordering across concurrent operations", () => {
+    const entries = projectActivityEvents(
+      [
+        diagnosticEvent("source.file-restore.started", {
+          data: { itemId: "restore-1", sourcePath },
+          operationId: "restore-1",
+          sessionId: "current-session",
+          timestamp: "2026-08-31T08:00:00.000Z",
+        }),
+        diagnosticEvent("source.file-delete.started", {
+          data: { itemId: "delete-1", sourcePath },
+          operationId: "delete-1",
+          sessionId: "current-session",
+          timestamp: "2026-08-31T08:01:00.000Z",
+        }),
+        diagnosticEvent("source.file-restore.completed", {
+          data: { itemId: "restore-1", sourcePath },
+          operationId: "restore-1",
+          sessionId: "current-session",
+          timestamp: "2026-08-31T08:02:00.000Z",
+        }),
+      ],
+      labels,
+      "current-session",
+    );
+
+    expect(entries.map((entry) => [entry.id, entry.status, entry.startedAt])).toEqual([
+      ["current-session:restore-1:source.file-restore", "completed", "2026-08-31T08:00:00.000Z"],
+      ["current-session:delete-1:source.file-delete", "pending", "2026-08-31T08:01:00.000Z"],
+    ]);
+  });
+
+  it.each([
+    ["pending", "Restoring file..."],
+    ["failed", "File restoration failed"],
+    ["cancelled", "File restoration cancelled"],
+  ] as const)("projects file restoration as %s", (status, title) => {
+    const events = [
+      diagnosticEvent("source.file-restore.started", {
+        data: { sourcePath },
+        operationId: "restore-1",
+        sessionId: "current-session",
+      }),
+      ...(status === "pending"
+        ? []
+        : [
+            diagnosticEvent(`source.file-restore.${status}`, {
+              operationId: "restore-1",
+              sessionId: "current-session",
+            }),
+          ]),
+    ];
+
+    const entry = projectActivityEvents(events, labels, "current-session")[0];
+
+    expect(entry).toMatchObject({ operationId: "restore-1", status, title });
+    expect(entry?.action).toBeUndefined();
+  });
+
+  it("marks historical unterminated file operations as interrupted", () => {
+    const entries = projectActivityEvents(
+      [
+        diagnosticEvent("source.file-delete.started", {
+          data: { itemId: "delete-1", sourcePath },
+          operationId: "delete-1",
+          sessionId: "history-session",
+        }),
+        diagnosticEvent("source.file-restore.started", {
+          data: { itemId: "restore-1", sourcePath },
+          operationId: "restore-1",
+          sessionId: "history-session",
+        }),
+      ],
+      labels,
+      "current-session",
+    );
+
+    expect(entries).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ operationId: "delete-1", status: "interrupted" }),
+        expect.objectContaining({ operationId: "restore-1", status: "interrupted" }),
+      ]),
+    );
+    expect(entries.every((entry) => entry.action === undefined)).toBe(true);
   });
 
   it.each([

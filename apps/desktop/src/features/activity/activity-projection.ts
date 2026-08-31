@@ -30,8 +30,16 @@ export interface ActivityProjectionLabels {
   fastCutFailed: string;
   fastCutInterrupted: string;
   fastCutting: string;
+  fileDeleteCancelled: string;
   fileDeleted: string;
+  fileDeleteFailed: string;
+  fileDeleteInterrupted: string;
+  fileDeleting: string;
+  fileRestoreCancelled: string;
   fileRestored: string;
+  fileRestoreFailed: string;
+  fileRestoreInterrupted: string;
+  fileRestoring: string;
   renderCancelled: string;
   renderCompleted: string;
   renderFailed: string;
@@ -52,11 +60,12 @@ type ActivityEventProjector = (
   labels: ActivityProjectionLabels,
 ) => ActivityEntry | null;
 const ACTIVITY_EVENT_CONFIG = {
-  "source.file-delete.completed": projectFileDeleted,
-  "source.file-restore.completed": (event, labels) =>
-    createActivityEntry(event, "file-restored", labels.fileRestored, {
-      path: diagnosticString(event.data?.sourcePath),
-    }),
+  "source.file-delete.completed": (event, labels) => projectFileTerminal(event, "delete", labels),
+  "source.file-delete.failed": (event, labels) => projectFileTerminal(event, "delete", labels),
+  "source.file-delete.cancelled": (event, labels) => projectFileTerminal(event, "delete", labels),
+  "source.file-restore.completed": (event, labels) => projectFileTerminal(event, "restore", labels),
+  "source.file-restore.failed": (event, labels) => projectFileTerminal(event, "restore", labels),
+  "source.file-restore.cancelled": (event, labels) => projectFileTerminal(event, "restore", labels),
 } satisfies Record<string, ActivityEventProjector>;
 
 export function projectActivityEvent(
@@ -72,10 +81,14 @@ export function projectActivityEvents(
   labels: ActivityProjectionLabels,
   currentSessionId: string | null = null,
 ): ActivityEntry[] {
-  const entries = projectExportLifecycleEvents(events, labels, currentSessionId);
+  const entries = [
+    ...projectExportLifecycleEvents(events, labels, currentSessionId),
+    ...projectFileLifecycleEvents(events, labels, currentSessionId),
+  ];
+
   const seenIds = new Set(entries.map((entry) => entry.id));
   for (const event of events) {
-    if (isExportLifecycleEvent(event)) continue;
+    if (isLifecycleEvent(event)) continue;
     const entry = projectActivityEvent(event, labels);
     if (!entry || seenIds.has(entry.id)) continue;
     seenIds.add(entry.id);
@@ -168,6 +181,75 @@ function projectExportLifecycleEvents(
     if (entry) entries.push(entry);
   }
   return entries;
+}
+
+function projectFileLifecycleEvents(
+  events: readonly DiagnosticEvent[],
+  labels: ActivityProjectionLabels,
+  currentSessionId: string | null,
+): ActivityEntry[] {
+  const eventsByOperation = new Map<string, DiagnosticEvent[]>();
+  const entries: ActivityEntry[] = [];
+
+  for (const event of events) {
+    if (!isFileLifecycleEvent(event)) continue;
+    if (!event.operationId) {
+      const entry = projectLegacyFileTerminal(event, labels);
+      if (entry) entries.push(entry);
+      continue;
+    }
+
+    const operationEvents = eventsByOperation.get(event.operationId) ?? [];
+    operationEvents.push(event);
+    eventsByOperation.set(event.operationId, operationEvents);
+  }
+
+  for (const operationEvents of eventsByOperation.values()) {
+    const entry = projectFileOperation(operationEvents, labels, currentSessionId);
+    if (entry) entries.push(entry);
+  }
+
+  return entries;
+}
+
+function projectFileOperation(
+  events: readonly DiagnosticEvent[],
+  labels: ActivityProjectionLabels,
+  currentSessionId: string | null,
+): ActivityEntry | null {
+  const started = events.find((event) => isFileStartedEvent(event));
+  const operation = started ? fileOperationKind(started) : fileTerminalOperation(events);
+  if (!operation) return null;
+
+  const terminal = events.find((event) => isFileTerminalEvent(event));
+  if (!started) return terminal ? projectLegacyFileTerminal(terminal, labels) : null;
+  if (Number.isNaN(Date.parse(started.timestamp))) return null;
+
+  const status: ActivityStatus = terminal
+    ? fileStatus(terminal)
+    : started.sessionId === currentSessionId
+      ? "pending"
+      : "interrupted";
+
+  const metadata = fileMetadata(started.data) ?? fileMetadata(terminal?.data);
+  const path = diagnosticString(terminal?.data?.sourcePath) ?? metadata?.path;
+  const targetId =
+    diagnosticString(started.data?.itemId) ?? diagnosticString(terminal?.data?.itemId);
+
+  return {
+    ...(started.data ? { data: started.data } : {}),
+    ...(operation === "delete" && status === "completed" && path && targetId
+      ? { action: { kind: "restore", path, targetId } as const }
+      : {}),
+    id: `${started.sessionId}:${started.operationId}:source.file-${operation}`,
+    kind: operation === "delete" ? "file-deleted" : "file-restored",
+    operationId: started.operationId,
+    path,
+    sessionId: started.sessionId,
+    startedAt: started.timestamp,
+    status,
+    title: fileTitle(operation, status, labels),
+  };
 }
 function projectExportOperation(
   events: readonly DiagnosticEvent[],
@@ -272,22 +354,115 @@ function exportTitle(
 
   return titles[kind][status];
 }
-function projectFileDeleted(
+function projectFileTerminal(
   event: DiagnosticEvent,
+  operation: FileOperation,
   labels: ActivityProjectionLabels,
 ): ActivityEntry | null {
   const path = diagnosticString(event.data?.sourcePath);
   const targetId = diagnosticString(event.data?.itemId);
-  return createActivityEntry(event, "file-deleted", labels.fileDeleted, {
-    ...(path && targetId ? { action: { kind: "restore", path, targetId } as const } : {}),
-    path,
-  });
+  const status = fileStatus(event);
+  return createActivityEntry(
+    event,
+    operation === "delete" ? "file-deleted" : "file-restored",
+    fileTitle(operation, status, labels),
+    {
+      ...(operation === "delete" && status === "completed" && path && targetId
+        ? { action: { kind: "restore", path, targetId } as const }
+        : {}),
+      path,
+      status,
+    },
+  );
+}
+
+function projectLegacyFileTerminal(
+  event: DiagnosticEvent,
+  labels: ActivityProjectionLabels,
+): ActivityEntry | null {
+  const operation = fileTerminalOperation([event]);
+  return operation ? projectFileTerminal(event, operation, labels) : null;
+}
+
+type FileOperation = "delete" | "restore";
+
+function fileMetadata(data: Record<string, DiagnosticValue> | undefined): { path?: string } | null {
+  if (!data) return null;
+  const path = diagnosticString(data.sourcePath);
+  return path ? { path } : null;
+}
+
+function fileOperationKind(event: DiagnosticEvent): FileOperation | null {
+  if (event.event === "source.file-delete.started") return "delete";
+  if (event.event === "source.file-restore.started") return "restore";
+  return null;
+}
+
+function fileTerminalOperation(events: readonly DiagnosticEvent[]): FileOperation | null {
+  const event = events.find((candidate) => isFileTerminalEvent(candidate));
+  if (event?.event.startsWith("source.file-delete.")) return "delete";
+  if (event?.event.startsWith("source.file-restore.")) return "restore";
+  return null;
+}
+
+function isFileLifecycleEvent(event: DiagnosticEvent): boolean {
+  return isFileStartedEvent(event) || isFileTerminalEvent(event);
+}
+
+function isFileStartedEvent(event: DiagnosticEvent): boolean {
+  return (
+    event.event === "source.file-delete.started" || event.event === "source.file-restore.started"
+  );
+}
+
+function isFileTerminalEvent(event: DiagnosticEvent): boolean {
+  return (
+    event.event === "source.file-delete.completed" ||
+    event.event === "source.file-delete.failed" ||
+    event.event === "source.file-delete.cancelled" ||
+    event.event === "source.file-restore.completed" ||
+    event.event === "source.file-restore.failed" ||
+    event.event === "source.file-restore.cancelled"
+  );
+}
+
+function fileStatus(
+  event: DiagnosticEvent,
+): Extract<ActivityStatus, "cancelled" | "completed" | "failed"> {
+  if (event.event.endsWith(".cancelled")) return "cancelled";
+  if (event.event.endsWith(".failed")) return "failed";
+  return "completed";
+}
+
+function fileTitle(
+  operation: FileOperation,
+  status: ActivityStatus,
+  labels: ActivityProjectionLabels,
+): string {
+  const titles = {
+    delete: {
+      cancelled: labels.fileDeleteCancelled,
+      completed: labels.fileDeleted,
+      failed: labels.fileDeleteFailed,
+      interrupted: labels.fileDeleteInterrupted,
+      pending: labels.fileDeleting,
+    },
+    restore: {
+      cancelled: labels.fileRestoreCancelled,
+      completed: labels.fileRestored,
+      failed: labels.fileRestoreFailed,
+      interrupted: labels.fileRestoreInterrupted,
+      pending: labels.fileRestoring,
+    },
+  } satisfies Record<FileOperation, Record<ActivityStatus, string>>;
+
+  return titles[operation][status];
 }
 function createActivityEntry(
   event: DiagnosticEvent,
   kind: ActivityKind,
   title: string,
-  metadata: Pick<ActivityEntry, "action" | "path"> = {},
+  metadata: Partial<Pick<ActivityEntry, "action" | "path" | "status">> = {},
 ): ActivityEntry | null {
   if (Number.isNaN(Date.parse(event.timestamp))) return null;
   return {
@@ -298,9 +473,13 @@ function createActivityEntry(
     ...(event.operationId ? { operationId: event.operationId } : {}),
     sessionId: event.sessionId,
     startedAt: event.timestamp,
-    status: "completed",
+    status: metadata.status ?? "completed",
     title,
   };
+}
+
+function isLifecycleEvent(event: DiagnosticEvent): boolean {
+  return isExportLifecycleEvent(event) || isFileLifecycleEvent(event);
 }
 function diagnosticString(value: DiagnosticValue | undefined): string | undefined {
   return typeof value === "string" && value.length > 0 ? value : undefined;

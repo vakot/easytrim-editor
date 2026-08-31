@@ -546,11 +546,7 @@ export const deleteActiveImportedItemRequested =
       await moveSourceToTrash(sourcePath);
     } catch (error: unknown) {
       const normalized = normalizeAppError(error);
-      diagnostics.error("source.file.delete.failed", normalized, {
-        data: { itemId: item.id, sourcePath },
-        origin: { type: "button", id: "source.delete" },
-      });
-      operation.fail(normalized);
+      operation.fail(normalized, { itemId: item.id, sourcePath });
       dispatch(sourceErrorReported(normalized));
       return normalized;
     }
