@@ -50,7 +50,7 @@ pub struct DiagnosticEventInput {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-struct DiagnosticEvent {
+pub struct DiagnosticEvent {
     category: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     data: Option<Map<String, Value>>,
@@ -103,6 +103,15 @@ pub struct DiagnosticsBootstrap {
     pub app_version: String,
     pub recovery: Option<StartupRecovery>,
     pub session_id: String,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DiagnosticSessionSummary {
+    pub ended_at: Option<String>,
+    pub graceful_shutdown: bool,
+    pub session_id: String,
+    pub started_at: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -228,6 +237,45 @@ impl DiagnosticsState {
             recovery: self.recovery.clone(),
             session_id: session.session_id.clone(),
         })
+    }
+
+    pub fn list_persisted_sessions(&self) -> Result<Vec<DiagnosticSessionSummary>, AppError> {
+        let current_session_id = self.current_session_id()?;
+        let sessions = discover_session_logs(&self.logs_dir).map_err(io_error)?;
+        let mut summaries = sessions
+            .into_iter()
+            .filter(|(session_id, _)| session_id != &current_session_id)
+            .filter_map(|(session_id, paths)| {
+                session_summary(&session_id, &read_events_from_paths(&paths, &session_id))
+            })
+            .collect::<Vec<_>>();
+        summaries.sort_by(|left, right| right.started_at.cmp(&left.started_at));
+        Ok(summaries)
+    }
+
+    pub fn read_persisted_session_events(
+        &self,
+        session_id: &str,
+    ) -> Result<Vec<DiagnosticEvent>, AppError> {
+        if !valid_session_id(session_id) {
+            return Err(AppError::invalid_request(
+                "The diagnostic session identifier is invalid.",
+            ));
+        }
+        if session_id == self.current_session_id()? {
+            return Ok(Vec::new());
+        }
+        let mut sessions = discover_session_logs(&self.logs_dir).map_err(io_error)?;
+        Ok(sessions
+            .remove(session_id)
+            .map_or_else(Vec::new, |paths| read_events_from_paths(&paths, session_id)))
+    }
+
+    fn current_session_id(&self) -> Result<String, AppError> {
+        self.session
+            .lock()
+            .map_err(|_| AppError::internal("Diagnostics session state is unavailable."))
+            .map(|session| session.session_id.clone())
     }
 
     pub fn record(&self, input: DiagnosticEventInput) -> Result<(), AppError> {
@@ -484,18 +532,7 @@ pub fn complete_global_session() {
 }
 
 fn validate_event(input: &DiagnosticEventInput) -> Result<(), AppError> {
-    let valid_name = |value: &str| {
-        !value.is_empty()
-            && value.len() <= 96
-            && value.bytes().all(|byte| {
-                byte.is_ascii_lowercase()
-                    || byte.is_ascii_digit()
-                    || byte == b'.'
-                    || byte == b'-'
-                    || byte == b'_'
-            })
-    };
-    if !valid_name(&input.event) || !valid_name(&input.category) {
+    if !valid_event_name(&input.event) || !valid_event_name(&input.category) {
         return Err(AppError::invalid_request(
             "The diagnostic event name is invalid.",
         ));
@@ -509,6 +546,18 @@ fn validate_event(input: &DiagnosticEventInput) -> Result<(), AppError> {
         ));
     }
     Ok(())
+}
+
+fn valid_event_name(value: &str) -> bool {
+    !value.is_empty()
+        && value.len() <= 96
+        && value.bytes().all(|byte| {
+            byte.is_ascii_lowercase()
+                || byte.is_ascii_digit()
+                || byte == b'.'
+                || byte == b'-'
+                || byte == b'_'
+        })
 }
 
 fn sanitize_map(data: Map<String, Value>) -> Map<String, Value> {
@@ -730,25 +779,147 @@ fn write_human_event(writer: &mut impl Write, event: &DiagnosticEvent) -> std::i
 }
 
 fn read_session_events(logs_dir: &Path, session_id: &str) -> Vec<DiagnosticEvent> {
-    let mut paths = fs::read_dir(logs_dir)
-        .into_iter()
-        .flatten()
-        .flatten()
-        .map(|entry| entry.path())
-        .filter(|path| {
-            path.file_name().is_some_and(|name| {
-                name.to_string_lossy()
-                    .starts_with(&format!("session-{session_id}"))
-            })
-        })
-        .collect::<Vec<_>>();
-    paths.sort();
+    discover_session_logs(logs_dir)
+        .ok()
+        .and_then(|mut sessions| sessions.remove(session_id))
+        .map_or_else(Vec::new, |paths| read_events_from_paths(&paths, session_id))
+}
+
+fn discover_session_logs(logs_dir: &Path) -> std::io::Result<HashMap<String, Vec<PathBuf>>> {
+    let mut sessions = HashMap::<String, Vec<PathBuf>>::new();
+    for entry in fs::read_dir(logs_dir)?.flatten() {
+        if !entry.file_type().is_ok_and(|kind| kind.is_file()) {
+            continue;
+        }
+        let name = entry.file_name();
+        let name = name.to_string_lossy();
+        let Some(session_id) = parse_session_log_name(&name) else {
+            continue;
+        };
+        sessions
+            .entry(session_id.to_owned())
+            .or_default()
+            .push(entry.path());
+    }
+    for paths in sessions.values_mut() {
+        paths.sort();
+    }
+    Ok(sessions)
+}
+
+fn parse_session_log_name(name: &str) -> Option<&str> {
+    let name = name.strip_prefix("session-")?.strip_suffix(".jsonl")?;
+    let (session_id, segment) = name.rsplit_once('.')?;
+    (segment.len() == 3
+        && segment.bytes().all(|byte| byte.is_ascii_digit())
+        && valid_session_id(session_id))
+    .then_some(session_id)
+}
+
+fn valid_session_id(session_id: &str) -> bool {
+    !session_id.is_empty()
+        && session_id.len() <= 128
+        && session_id
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-' || byte == b'_')
+}
+
+fn read_events_from_paths(paths: &[PathBuf], session_id: &str) -> Vec<DiagnosticEvent> {
     paths
-        .into_iter()
-        .filter_map(|path| File::open(path).ok())
-        .flat_map(|file| BufReader::new(file).lines().map_while(Result::ok))
-        .filter_map(|line| serde_json::from_str(&line).ok())
+        .iter()
+        .flat_map(|path| read_events_from_path(path, session_id))
         .collect()
+}
+
+fn read_events_from_path(path: &Path, session_id: &str) -> Vec<DiagnosticEvent> {
+    let Ok(file) = File::open(path) else {
+        return Vec::new();
+    };
+    let mut reader = BufReader::new(file);
+    let mut events = Vec::new();
+    let mut line = Vec::new();
+    loop {
+        line.clear();
+        match reader.read_until(b'\n', &mut line) {
+            Ok(0) | Err(_) => break,
+            Ok(_) => {
+                while matches!(line.last(), Some(b'\n' | b'\r')) {
+                    line.pop();
+                }
+                if line.is_empty() {
+                    continue;
+                }
+                let Ok(event) = serde_json::from_slice::<DiagnosticEvent>(&line) else {
+                    continue;
+                };
+                if let Some(event) = normalize_persisted_event(event, session_id) {
+                    events.push(event);
+                }
+            }
+        }
+    }
+    events
+}
+
+fn normalize_persisted_event(
+    mut event: DiagnosticEvent,
+    expected_session_id: &str,
+) -> Option<DiagnosticEvent> {
+    if event.session_id != expected_session_id
+        || !valid_session_id(&event.session_id)
+        || !valid_event_name(&event.event)
+        || !valid_event_name(&event.category)
+        || !matches!(
+            event.level.as_str(),
+            "trace" | "debug" | "info" | "warn" | "error" | "fatal"
+        )
+        || OffsetDateTime::parse(&event.timestamp, &Rfc3339).is_err()
+    {
+        return None;
+    }
+    if event.result.as_deref().is_some_and(|result| {
+        !matches!(
+            result,
+            "started" | "success" | "cancelled" | "failed" | "ignored" | "rejected"
+        )
+    }) {
+        event.result = None;
+    }
+    if event.origin.as_ref().is_some_and(|origin| {
+        !matches!(
+            origin.kind.as_str(),
+            "button" | "hotkey" | "menu" | "timeline" | "system" | "restore" | "internal"
+        )
+    }) {
+        event.origin = None;
+    }
+    event.data = event.data.map(sanitize_map);
+    Some(event)
+}
+
+fn session_summary(
+    session_id: &str,
+    events: &[DiagnosticEvent],
+) -> Option<DiagnosticSessionSummary> {
+    let started_at = events
+        .iter()
+        .find(|event| event.event == "app.session.started")
+        .or_else(|| events.first())?
+        .timestamp
+        .clone();
+    let ended_at = events
+        .iter()
+        .rev()
+        .find(|event| {
+            event.event == "app.session.completed" && event.result.as_deref() == Some("success")
+        })
+        .map(|event| event.timestamp.clone());
+    Some(DiagnosticSessionSummary {
+        graceful_shutdown: ended_at.is_some(),
+        ended_at,
+        session_id: session_id.to_owned(),
+        started_at,
+    })
 }
 
 fn retain_directories(parent: &Path, keep: usize) -> std::io::Result<()> {
@@ -919,6 +1090,23 @@ mod tests {
         root
     }
 
+    fn persisted_event(session_id: &str, event: &str, timestamp: &str) -> DiagnosticEvent {
+        DiagnosticEvent {
+            category: event.split('.').next().unwrap_or("test").to_owned(),
+            data: None,
+            duration_ms: None,
+            event: event.to_owned(),
+            level: "info".to_owned(),
+            operation_id: Some("operation-1".to_owned()),
+            origin: None,
+            parent_operation_id: None,
+            result: Some("success".to_owned()),
+            session_id: session_id.to_owned(),
+            snapshot_id: None,
+            timestamp: timestamp.to_owned(),
+        }
+    }
+
     #[test]
     fn creates_and_completes_a_session() {
         let root = temporary_root("session");
@@ -937,6 +1125,126 @@ mod tests {
             .expect("next session starts");
         assert!(next.bootstrap().expect("next bootstrap").recovery.is_none());
         next.complete().expect("next session completes");
+        fs::remove_dir_all(root).expect("temporary root removed");
+    }
+
+    #[test]
+    fn lists_and_reads_retained_sessions_without_the_active_session() {
+        let root = temporary_root("history");
+        let first =
+            DiagnosticsState::initialize(root.clone(), "1.0.0".to_owned()).expect("first starts");
+        let first_id = first.bootstrap().expect("first bootstrap").session_id;
+        first
+            .record(DiagnosticEventInput {
+                category: "ffmpeg".to_owned(),
+                data: Some(Map::from_iter([
+                    (
+                        "outputPath".to_owned(),
+                        Value::String("C:/Exports/clip.mp4".to_owned()),
+                    ),
+                    ("outputType".to_owned(), Value::String("fast".to_owned())),
+                ])),
+                duration_ms: Some(10),
+                event: "ffmpeg.export.completed".to_owned(),
+                level: "info".to_owned(),
+                operation_id: Some("export-1".to_owned()),
+                origin: None,
+                parent_operation_id: None,
+                result: Some("success".to_owned()),
+                snapshot_id: None,
+            })
+            .expect("activity persisted");
+        first.complete().expect("first completes");
+        drop(first);
+
+        let second =
+            DiagnosticsState::initialize(root.clone(), "1.0.0".to_owned()).expect("second starts");
+        let second_id = second.bootstrap().expect("second bootstrap").session_id;
+        let sessions = second.list_persisted_sessions().expect("history listed");
+
+        assert_eq!(sessions.len(), 1);
+        assert_eq!(sessions[0].session_id, first_id);
+        assert!(sessions[0].graceful_shutdown);
+        assert!(sessions[0].ended_at.is_some());
+        let events = second
+            .read_persisted_session_events(&first_id)
+            .expect("history read");
+        assert!(events.iter().all(|event| event.session_id == first_id));
+        assert!(
+            events
+                .iter()
+                .any(|event| event.event == "ffmpeg.export.completed")
+        );
+        assert!(
+            second
+                .read_persisted_session_events(&second_id)
+                .expect("active session ignored")
+                .is_empty()
+        );
+
+        second.complete().expect("second completes");
+        fs::remove_dir_all(root).expect("temporary root removed");
+    }
+
+    #[test]
+    fn persisted_reader_skips_malformed_invalid_and_partial_lines() {
+        let root = temporary_root("history-lines");
+        let logs = root.join("logs");
+        fs::create_dir_all(&logs).expect("logs created");
+        let session_id = "retained-session";
+        let valid = persisted_event(
+            session_id,
+            "ffmpeg.export.completed",
+            "2026-08-31T09:00:00Z",
+        );
+        let wrong_session = persisted_event(
+            "different-session",
+            "ffmpeg.export.completed",
+            "2026-08-31T09:01:00Z",
+        );
+        let segment = format!(
+            "{}\nnot json\n{}\n{{\"category\":\"ffmpeg\"",
+            serde_json::to_string(&valid).expect("valid event serialized"),
+            serde_json::to_string(&wrong_session).expect("invalid event serialized")
+        );
+        fs::write(log_path(&logs, session_id, 0), segment).expect("segment written");
+        fs::write(
+            log_path(&logs, session_id, 1),
+            serde_json::to_vec(&persisted_event(
+                session_id,
+                "source.file-restore.completed",
+                "2026-08-31T09:02:00Z",
+            ))
+            .expect("final event serialized"),
+        )
+        .expect("final segment written");
+
+        let events = read_session_events(&logs, session_id);
+
+        assert_eq!(events.len(), 2);
+        assert_eq!(events[0].event, "ffmpeg.export.completed");
+        assert_eq!(events[1].event, "source.file-restore.completed");
+        fs::remove_dir_all(root).expect("temporary root removed");
+    }
+
+    #[test]
+    fn persisted_history_rejects_traversal_and_tolerates_missing_sessions() {
+        let root = temporary_root("history-validation");
+        let state =
+            DiagnosticsState::initialize(root.clone(), "1.0.0".to_owned()).expect("session starts");
+
+        let error = state
+            .read_persisted_session_events("../outside")
+            .expect_err("traversal rejected");
+        assert_eq!(error.code, "invalid_request");
+        assert!(
+            state
+                .read_persisted_session_events("missing-session")
+                .expect("missing session tolerated")
+                .is_empty()
+        );
+
+        state.complete().expect("session completes");
         fs::remove_dir_all(root).expect("temporary root removed");
     }
 

@@ -22,7 +22,7 @@ tauri-plugin-opener = "2.5.4"
 tauri-plugin-process = "2.3.1"
 tauri-plugin-updater = "2.10.1"
 trash = "5.2.2"
-time = { version = "0.3.47", features = ["formatting", "serde"] }
+time = { version = "0.3.47", features = ["formatting", "parsing", "serde"] }
 uuid = { version = "1.20.0", features = ["v4"] }
 wait-timeout = "0.2.1"
 
