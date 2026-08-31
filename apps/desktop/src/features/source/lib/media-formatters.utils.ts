@@ -41,3 +41,10 @@ export function formatBitrate(
 ): string {
   return bitrate === undefined ? unknownLabel : formatUnit((bitrate / 1_000_000).toFixed(2));
 }
+
+export function formatSourcePath(sourcePath: string): string {
+  const extendedPathPrefix = "\\\\?\\";
+  return sourcePath.startsWith(extendedPathPrefix)
+    ? sourcePath.slice(extendedPathPrefix.length)
+    : sourcePath;
+}

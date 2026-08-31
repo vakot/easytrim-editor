@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -15,64 +14,27 @@ import {
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectCropApplied } from "@/app/store/slices/crop-slice";
-import {
-  selectIsChoosingSource,
-  selectIsNativeDialogOpen,
-} from "@/app/store/slices/import-workflow-slice";
-import {
-  selectHasSource,
-  selectSourceReady,
-  selectSourceSelection,
-} from "@/app/store/slices/source-slice";
+import { selectActiveItemId } from "@/app/store/slices/export-slice";
+import { selectIsChoosingSource } from "@/app/store/slices/import-workflow-slice";
+import { selectHasSource, selectSourceReady } from "@/app/store/slices/source-slice";
 import { openOptimizedExportDialog, startFastCutRequested } from "@/app/store/thunks/export-thunks";
 import {
   chooseSourceRequested,
   closeActiveImportedItemRequested,
-  deleteActiveImportedItemRequested,
 } from "@/app/store/thunks/source-media-thunks";
-import { DeleteSourceDialog } from "@/features/source";
-import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
+import { DeleteSourceDialog, DeleteSourceDialogTrigger } from "@/features/source";
 
 export function MenuBarFile() {
   const { t } = useTranslation();
+
+  const activeItemId = useAppSelector(selectActiveItemId);
+
   const dispatch = useAppDispatch();
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [deletePending, setDeletePending] = useState(false);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
   const canExport = useAppSelector(selectSourceReady);
   const hasSource = useAppSelector(selectHasSource);
   const isChoosingSource = useAppSelector(selectIsChoosingSource);
-  const isNativeDialogOpen = useAppSelector(selectIsNativeDialogOpen);
   const cropApplied = useAppSelector(selectCropApplied);
-  const sourceSelection = useAppSelector(selectSourceSelection);
   const canSave = canExport && !cropApplied;
-
-  const openDeleteDialog = () => {
-    setDeleteError(null);
-    setDeleteDialogOpen(true);
-  };
-
-  useKeyboardShortcut(
-    (event) =>
-      event.code === "KeyD" &&
-      event.ctrlKey &&
-      hasSource &&
-      !isChoosingSource &&
-      !isNativeDialogOpen,
-    openDeleteDialog,
-  );
-
-  const handleDeleteSource = async () => {
-    setDeletePending(true);
-    setDeleteError(null);
-    const error = await dispatch(deleteActiveImportedItemRequested());
-    setDeletePending(false);
-    if (error) {
-      setDeleteError(error.message);
-      return;
-    }
-    setDeleteDialogOpen(false);
-  };
 
   return (
     <>
@@ -148,28 +110,20 @@ export function MenuBarFile() {
           </MenubarGroup>
           <MenubarSeparator />
           <MenubarGroup>
-            <MenubarItem disabled={!hasSource} onSelect={openDeleteDialog} variant="destructive">
-              {t("app.actions.deleteSource")}
-              <MenubarShortcut>
-                <KbdGroup>
-                  <Kbd>Ctrl</Kbd>
-                  <Kbd>D</Kbd>
-                </KbdGroup>
-              </MenubarShortcut>
-            </MenubarItem>
+            <DeleteSourceDialog sourceId={activeItemId}>
+              <DeleteSourceDialogTrigger asChild>
+                <MenubarItem
+                  disabled={!hasSource}
+                  onSelect={(event) => event.preventDefault()}
+                  variant="destructive"
+                >
+                  {t("app.actions.deleteSource")}
+                </MenubarItem>
+              </DeleteSourceDialogTrigger>
+            </DeleteSourceDialog>
           </MenubarGroup>
         </MenubarContent>
       </MenubarMenu>
-      {sourceSelection ? (
-        <DeleteSourceDialog
-          error={deleteError}
-          onConfirm={() => void handleDeleteSource()}
-          onOpenChange={setDeleteDialogOpen}
-          open={deleteDialogOpen}
-          pending={deletePending}
-          sourceName={sourceSelection.displayName}
-        />
-      ) : null}
     </>
   );
 }
