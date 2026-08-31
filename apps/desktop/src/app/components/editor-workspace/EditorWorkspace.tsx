@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 
+import { Card } from "@/components/ui/card";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 
 import { ActivityFeed } from "@/features/activity";
@@ -11,7 +12,7 @@ export function EditorWorkspace() {
   const { t } = useTranslation();
 
   return (
-    <ResizablePanelGroup className="pr-2 pl-1" id="workspace" persisted>
+    <ResizablePanelGroup className="px-1" id="workspace" persisted>
       <ResizablePanel
         className="overflow-hidden pb-1 pl-1"
         collapsedSize={0}
@@ -56,7 +57,9 @@ export function EditorWorkspace() {
         maxSize="30rem"
         minSize={200}
       >
-        <ActivityFeed />
+        <Card className="relative size-full gap-2 pt-3 pb-0 ring-inset">
+          <ActivityFeed />
+        </Card>
       </ResizablePanel>
     </ResizablePanelGroup>
   );

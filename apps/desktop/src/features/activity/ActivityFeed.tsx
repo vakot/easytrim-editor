@@ -33,16 +33,12 @@ const activityIcons: Record<ActivityKind, ComponentType> = {
 };
 
 interface ActivityFeedViewProps {
-  dateLabels: { today: string; yesterday: string };
-  emptyLabel: string;
   entries: readonly ActivityEntry[];
-  locale: string;
   now: number;
-  title: string;
 }
 
 export function ActivityFeed() {
-  const { i18n, t } = useTranslation();
+  const { t } = useTranslation();
   const [currentTime, setCurrentTime] = useState(() => Date.now());
   const diagnosticSnapshot = useSyncExternalStore(
     subscribeToCurrentSessionDiagnostics,
@@ -70,51 +66,46 @@ export function ActivityFeed() {
     [diagnosticSnapshot, labels],
   );
 
-  return (
-    <ActivityFeedView
-      dateLabels={{
-        today: t("app.labels.today"),
-        yesterday: t("app.labels.yesterday"),
-      }}
-      emptyLabel={t("app.messages.activityEmpty")}
-      entries={entries}
-      locale={i18n.resolvedLanguage ?? i18n.language}
-      now={currentTime}
-      title={t("app.labels.activity")}
-    />
-  );
+  return <ActivityFeedView entries={entries} now={currentTime} />;
 }
 
-export function ActivityFeedView({
-  dateLabels,
-  emptyLabel,
-  entries,
-  locale,
-  now,
-  title,
-}: ActivityFeedViewProps) {
+export function ActivityFeedView({ entries, now }: ActivityFeedViewProps) {
+  const { i18n, t } = useTranslation();
+
+  const locale = i18n.resolvedLanguage ?? i18n.language;
+
   const titleId = useId();
   const groups = useMemo(() => groupActivityEntries(entries), [entries]);
   const currentDate = new Date(now);
+
+  const dateLabels = {
+    today: t("app.labels.today"),
+    yesterday: t("app.labels.yesterday"),
+  };
+
   const timeFormatter = useMemo(
     () => new Intl.DateTimeFormat(locale, { hour: "numeric", minute: "2-digit" }),
     [locale],
   );
 
   return (
-    <section aria-labelledby={titleId} className="flex h-full min-h-0 flex-col">
-      <h2 className="px-3 py-2 text-sm font-semibold text-foreground" id={titleId}>
-        {title}
-      </h2>
+    <section aria-labelledby={titleId} className="flex h-full min-h-0 flex-col gap-2">
+      <h3
+        className="mx-3 font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
+        id={titleId}
+      >
+        {t("app.labels.activity")}
+      </h3>
+
       {groups.length === 0 ? (
         <p className="mx-3 rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted-foreground">
-          {emptyLabel}
+          {t("app.messages.activityEmpty")}
         </p>
       ) : (
         <ScrollArea className="min-h-0 flex-1">
           <div className="grid gap-3 px-3 pb-3">
             {groups.map((group) => (
-              <div className="grid gap-2" key={group.dateKey}>
+              <div className="flex flex-col gap-3" key={group.dateKey}>
                 <Marker variant="separator">
                   <MarkerContent className="text-xs font-medium">
                     {formatDateLabel(group.date, currentDate, locale, dateLabels)}
@@ -141,8 +132,8 @@ function ActivityFeedEntry({
 }) {
   const Icon = activityIcons[entry.kind];
   return (
-    <Marker className="items-start" variant="border">
-      <MarkerIcon className="mt-0.5 text-foreground">
+    <Marker className="items-center text-xs">
+      <MarkerIcon className="text-muted-foreground">
         <Icon />
       </MarkerIcon>
       <MarkerContent className="flex flex-1 items-start justify-between gap-2">
