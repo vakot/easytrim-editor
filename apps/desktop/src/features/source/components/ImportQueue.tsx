@@ -99,6 +99,7 @@ export function ImportQueue() {
       success: () => ({
         action: { label: t("app.actions.restore"), onClick: () => void restore() },
         description: sourcePath,
+        duration: Infinity,
         message: t("queue.messages.fileDelete.success"),
       }),
       id: deleteToastId,
