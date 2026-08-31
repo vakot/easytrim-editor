@@ -1,13 +1,5 @@
-import { Film, RotateCcw, Scissors, Trash2 } from "lucide-react";
-import {
-  type ComponentType,
-  useCallback,
-  useEffect,
-  useId,
-  useMemo,
-  useState,
-  useSyncExternalStore,
-} from "react";
+import { ExternalLink, Film, type LucideIcon, RotateCcw, Scissors, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useId, useMemo, useState, useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -19,6 +11,7 @@ import {
   MarkerIcon,
 } from "@/components/ui/marker";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectExportQueue } from "@/app/store/slices/export-slice";
@@ -39,12 +32,20 @@ import {
   projectActivityEvents,
 } from "./activity-projection";
 
-const activityIcons: Record<ActivityKind, ComponentType> = {
+const activityIcons: Record<ActivityKind, LucideIcon> = {
   "fast-cut-completed": Scissors,
   "file-deleted": Trash2,
   "file-restored": RotateCcw,
   "render-completed": Film,
 };
+
+const activityActionPresentation = {
+  open: { icon: ExternalLink, label: "app.actions.open" },
+  restore: { icon: RotateCcw, label: "app.actions.restore" },
+} satisfies Record<
+  ActivityAction["kind"],
+  { icon: LucideIcon; label: "app.actions.open" | "app.actions.restore" }
+>;
 
 interface ActivityFeedViewProps {
   entries: readonly ActivityEntry[];
@@ -184,6 +185,8 @@ function ActivityFeedEntry({
 
   const Icon = activityIcons[entry.kind];
   const action = entry.action;
+  const actionPresentation = action ? activityActionPresentation[action.kind] : undefined;
+  const ActionIcon = actionPresentation?.icon;
   const normalizedSourcePath = formatSourcePath(entry.path ?? "");
 
   return (
@@ -192,18 +195,20 @@ function ActivityFeedEntry({
         <Icon />
       </MarkerIcon>
       <MarkerContent>
-        <span className="text-foreground">{entry.title}</span>
+        <div className="text-foreground">
+          {entry.title}{" "}
+          <span className="text-muted-foreground">
+            <span aria-hidden="true" className="shrink-0">
+              ·{" "}
+            </span>
+            <time className="shrink-0" dateTime={entry.timestamp}>
+              {timeFormatter.format(new Date(entry.timestamp))}
+            </time>
+          </span>
+        </div>
         <MarkerDescription>
-          <time className="shrink-0" dateTime={entry.timestamp}>
-            {timeFormatter.format(new Date(entry.timestamp))}
-          </time>
-
           {entry.path ? (
             <>
-              <span aria-hidden="true" className="shrink-0">
-                ·
-              </span>
-
               <span className="min-w-0 flex-1 truncate" title={normalizedSourcePath}>
                 {normalizedSourcePath}
               </span>
@@ -211,11 +216,21 @@ function ActivityFeedEntry({
           ) : null}
         </MarkerDescription>
       </MarkerContent>
-      {action && onAction ? (
+      {action && actionPresentation && ActionIcon && onAction ? (
         <MarkerAction>
-          <Button onClick={() => onAction(action)} size="xs" variant="outline">
-            {action.kind === "restore" ? t("app.actions.restore") : t("app.actions.open")}
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                aria-label={t(actionPresentation.label)}
+                onClick={() => onAction(action)}
+                size="icon-sm"
+                variant="outline"
+              >
+                <ActionIcon aria-hidden="true" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{t(actionPresentation.label)}</TooltipContent>
+          </Tooltip>
         </MarkerAction>
       ) : null}
     </Marker>
