@@ -19,9 +19,27 @@ recent runtime sessions and ten abnormal-session report directories are retained
 human-readable `report.log`, structured `report.json`, and `session.json`.
 
 The Activity Feed is a curated UI projection of this diagnostic event journal, not a separate log.
-User-facing activity is not recorded or persisted independently. The first feed reads the in-memory
-current-session events; future retained-session loading should normalize saved JSONL events into the
-same `DiagnosticEvent[]` projection and presentation pipeline.
+User-facing activity is not recorded or persisted independently. It renders the in-memory current
+session immediately, then loads metadata and normalized events for every retained session through
+narrow diagnostics commands. Live and retained events enter the same `DiagnosticEvent[]` projection
+and presentation pipeline, preserving their original session IDs and timestamps. Activity history
+is organized by diagnostics session: the current session is visually separated from retained
+sessions, and retained sessions produced by a different known application version are identified
+using their recorded diagnostics metadata. History follows the diagnostics retention limit of eight
+runtime sessions.
+
+Rust discovers exact `session-<id>.<segment>.jsonl` files and owns all path resolution and JSONL
+parsing. The active session is excluded natively and again at the frontend boundary. Invalid session
+IDs, malformed or partial JSONL lines, mismatched events, missing files, and unreadable retained
+sessions cannot grant arbitrary filesystem access or prevent the rest of the feed from loading. The
+frontend caches one asynchronous history load per application runtime and does not emit diagnostic
+events while reading diagnostics.
+
+Historical export entries may retain their `Open` action because it is a normal file-location
+request and can fail safely if the output no longer exists. A historical delete never receives a
+`Restore` action: restore remains available only when the event belongs to the active session and
+the current Redux export queue still contains authoritative restorable state for that target.
+Diagnostics history is event history, not reconstructed application state.
 
 `report.log` renders each event as a compact multi-line entry. Origin, snapshot, operation,
 parent-operation, result, duration, and bounded data fields are included when present so the file

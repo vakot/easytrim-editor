@@ -55,7 +55,7 @@ export function EditorWorkspace() {
         groupResizeBehavior="preserve-pixel-size"
         id="workspace-activity"
         maxSize="30rem"
-        minSize={200}
+        minSize={290}
       >
         <Card className="relative size-full gap-2 pt-3 pb-0 ring-inset">
           <ActivityFeed />

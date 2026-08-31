@@ -1,4 +1,8 @@
-import type { DiagnosticEvent, DiagnosticValue } from "@/lib/tauri/diagnostics.types";
+import type {
+  DiagnosticEvent,
+  DiagnosticSessionMetadata,
+  DiagnosticValue,
+} from "@/lib/tauri/diagnostics.types";
 
 export type ActivityKind =
   "fast-cut-completed" | "file-deleted" | "file-restored" | "render-completed";
@@ -17,10 +21,9 @@ export interface ActivityEntry {
   title: string;
 }
 
-export interface ActivityGroup {
-  date: Date;
-  dateKey: string;
+export interface ActivitySessionGroup extends DiagnosticSessionMetadata {
   entries: readonly ActivityEntry[];
+  isCurrent: boolean;
 }
 
 export interface ActivityProjectionLabels {
@@ -28,6 +31,17 @@ export interface ActivityProjectionLabels {
   fileDeleted: string;
   fileRestored: string;
   renderCompleted: string;
+}
+
+export interface ActivitySessionLabels {
+  now: string;
+  today: string;
+  yesterday: string;
+}
+
+export interface ActivitySessionPresentation {
+  label: string;
+  tone: "current" | "default" | "warning";
 }
 
 type ActivityEventProjector = (
@@ -69,26 +83,78 @@ export function projectActivityEvents(
   return entries;
 }
 
-export function groupActivityEntries(entries: readonly ActivityEntry[]): ActivityGroup[] {
-  const orderedEntries = [...entries].sort(compareActivityEntries);
-  const groups = new Map<string, { date: Date; entries: ActivityEntry[] }>();
-
-  for (const entry of orderedEntries) {
-    const timestamp = new Date(entry.timestamp);
-    if (Number.isNaN(timestamp.getTime())) continue;
-    const dateKey = localDateKey(timestamp);
-    const existing = groups.get(dateKey);
-    if (existing) {
-      existing.entries.push(entry);
-      continue;
+export function resolveAvailableActivityActions(
+  entries: readonly ActivityEntry[],
+  currentSessionId: string | null,
+  restorableTargetIds: ReadonlySet<string>,
+): ActivityEntry[] {
+  return entries.map((entry) => {
+    if (
+      entry.action?.kind !== "restore" ||
+      (entry.sessionId === currentSessionId && restorableTargetIds.has(entry.action.targetId))
+    ) {
+      return entry;
     }
-    groups.set(dateKey, {
-      date: new Date(timestamp.getFullYear(), timestamp.getMonth(), timestamp.getDate()),
-      entries: [entry],
+    return { ...entry, action: undefined };
+  });
+}
+
+export function groupActivityEntriesBySession(
+  entries: readonly ActivityEntry[],
+  sessions: readonly DiagnosticSessionMetadata[],
+  currentSessionId: string | null,
+): ActivitySessionGroup[] {
+  const entriesBySession = new Map<string, ActivityEntry[]>();
+  for (const entry of entries) {
+    const sessionEntries = entriesBySession.get(entry.sessionId) ?? [];
+    sessionEntries.push(entry);
+    entriesBySession.set(entry.sessionId, sessionEntries);
+  }
+
+  const uniqueSessions = new Map<string, DiagnosticSessionMetadata>();
+  for (const session of sessions) {
+    if (!uniqueSessions.has(session.sessionId)) uniqueSessions.set(session.sessionId, session);
+  }
+
+  const groups: ActivitySessionGroup[] = [];
+  for (const session of uniqueSessions.values()) {
+    const sessionEntries = entriesBySession.get(session.sessionId);
+    if (!sessionEntries?.length) continue;
+    groups.push({
+      ...session,
+      entries: [...sessionEntries].sort(compareActivityEntries),
+      isCurrent: session.sessionId === currentSessionId,
     });
   }
 
-  return [...groups].map(([dateKey, group]) => ({ dateKey, ...group }));
+  return groups.sort(compareActivitySessionGroups);
+}
+
+export function getActivitySessionPresentation(
+  group: ActivitySessionGroup,
+  currentAppVersion: string,
+  now: Date,
+  locale: string,
+  labels: ActivitySessionLabels,
+): ActivitySessionPresentation {
+  if (group.isCurrent) return { label: labels.now, tone: "current" };
+
+  const startedAt = new Date(group.startedAt);
+  const dateLabel = formatSessionDate(startedAt, now, locale, labels);
+  const timeLabel = new Intl.DateTimeFormat(locale, {
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(startedAt);
+
+  const versionLabel =
+    group.appVersion !== null && group.appVersion !== currentAppVersion
+      ? `v${group.appVersion} · `
+      : "";
+
+  return {
+    label: `${versionLabel}${dateLabel} · ${timeLabel}`,
+    tone: versionLabel ? "warning" : "default",
+  };
 }
 
 function projectExportCompleted(
@@ -155,8 +221,33 @@ function compareActivityEntries(left: ActivityEntry, right: ActivityEntry): numb
   return timestampDifference || right.id.localeCompare(left.id);
 }
 
-function localDateKey(date: Date): string {
-  return [date.getFullYear(), date.getMonth() + 1, date.getDate()]
-    .map((part) => part.toString().padStart(2, "0"))
-    .join("-");
+function compareActivitySessionGroups(
+  left: ActivitySessionGroup,
+  right: ActivitySessionGroup,
+): number {
+  if (left.isCurrent !== right.isCurrent) return left.isCurrent ? -1 : 1;
+  const timestampDifference = Date.parse(right.startedAt) - Date.parse(left.startedAt);
+  return timestampDifference || right.sessionId.localeCompare(left.sessionId);
+}
+
+function formatSessionDate(
+  startedAt: Date,
+  now: Date,
+  locale: string,
+  labels: Pick<ActivitySessionLabels, "today" | "yesterday">,
+): string {
+  const dayDifference = calendarDayDifference(now, startedAt);
+  if (dayDifference === 0) return labels.today;
+  if (dayDifference === 1) return labels.yesterday;
+  return new Intl.DateTimeFormat(locale, {
+    day: "numeric",
+    month: "short",
+    year: startedAt.getFullYear() === now.getFullYear() ? undefined : "numeric",
+  }).format(startedAt);
+}
+
+function calendarDayDifference(later: Date, earlier: Date): number {
+  const laterUtc = Date.UTC(later.getFullYear(), later.getMonth(), later.getDate());
+  const earlierUtc = Date.UTC(earlier.getFullYear(), earlier.getMonth(), earlier.getDate());
+  return Math.round((laterUtc - earlierUtc) / 86_400_000);
 }

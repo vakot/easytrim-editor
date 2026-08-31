@@ -1,17 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { persistDiagnosticEvent } = vi.hoisted(() => ({
+const { bootstrapNativeDiagnostics, persistDiagnosticEvent } = vi.hoisted(() => ({
+  bootstrapNativeDiagnostics: vi.fn(() => Promise.resolve<unknown>(null)),
   persistDiagnosticEvent: vi.fn(() => Promise.resolve()),
 }));
 
 vi.mock("../tauri/diagnostics", () => ({
-  bootstrapNativeDiagnostics: vi.fn(() => Promise.resolve(null)),
+  bootstrapNativeDiagnostics,
   persistDiagnosticEvent,
   recordUiHeartbeat: vi.fn(() => Promise.resolve()),
 }));
 
 import {
   diagnostics,
+  getCurrentDiagnosticSessionMetadata,
   getCurrentSessionDiagnosticsSnapshot,
   serializeDiagnosticError,
   subscribeToCurrentSessionDiagnostics,
@@ -19,7 +21,25 @@ import {
 
 describe("diagnostics", () => {
   beforeEach(() => {
+    bootstrapNativeDiagnostics.mockResolvedValue(null);
     persistDiagnosticEvent.mockClear();
+  });
+
+  it("exposes canonical current-session metadata from native bootstrap", async () => {
+    bootstrapNativeDiagnostics.mockResolvedValueOnce({
+      appVersion: "1.3.0",
+      recovery: null,
+      sessionId: "current-session",
+      startedAt: "2026-08-31T12:34:00Z",
+    });
+
+    await diagnostics.initialize();
+
+    expect(getCurrentDiagnosticSessionMetadata()).toEqual({
+      appVersion: "1.3.0",
+      sessionId: "current-session",
+      startedAt: "2026-08-31T12:34:00Z",
+    });
   });
 
   it("persists structured events", () => {

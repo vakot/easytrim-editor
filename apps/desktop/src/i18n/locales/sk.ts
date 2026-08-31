@@ -44,6 +44,7 @@ export const sk = {
       help: "Pomocník",
       leftPanel: "Ľavý panel",
       rightPanel: "Pravý panel",
+      now: "Teraz",
       today: "Dnes",
       version: "Verzia {{version}}",
       view: "Zobraziť",

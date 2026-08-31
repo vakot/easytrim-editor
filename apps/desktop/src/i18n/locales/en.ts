@@ -41,6 +41,7 @@ export const en = {
       file: "File",
       help: "Help",
       leftPanel: "Left panel",
+      now: "Now",
       rightPanel: "Right panel",
       today: "Today",
       version: "Version {{version}}",
