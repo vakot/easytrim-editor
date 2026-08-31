@@ -10,7 +10,12 @@ vi.mock("../tauri/diagnostics", () => ({
   recordUiHeartbeat: vi.fn(() => Promise.resolve()),
 }));
 
-import { diagnostics, serializeDiagnosticError } from "../diagnostics";
+import {
+  diagnostics,
+  getCurrentSessionDiagnosticEvents,
+  serializeDiagnosticError,
+  subscribeToCurrentSessionDiagnostics,
+} from "../diagnostics";
 
 describe("diagnostics", () => {
   beforeEach(() => {
@@ -41,6 +46,33 @@ describe("diagnostics", () => {
       level: "info",
       origin: { id: "Ctrl+O", type: "hotkey" },
     });
+  });
+
+  it("exposes emitted events through the current-session journal", () => {
+    const listener = vi.fn();
+    const unsubscribe = subscribeToCurrentSessionDiagnostics(listener);
+    const previousCount = getCurrentSessionDiagnosticEvents().length;
+
+    diagnostics.event("source.file-delete.completed", {
+      operationId: "delete-operation-1",
+      result: "success",
+    });
+
+    const events = getCurrentSessionDiagnosticEvents();
+    expect(events).toHaveLength(previousCount + 1);
+    expect(events.at(-1)).toEqual(
+      expect.objectContaining({
+        event: "source.file-delete.completed",
+        operationId: "delete-operation-1",
+        sessionId: expect.any(String),
+        timestamp: expect.any(String),
+      }),
+    );
+    expect(listener).toHaveBeenCalledOnce();
+
+    unsubscribe();
+    diagnostics.event("timeline.seek.completed");
+    expect(listener).toHaveBeenCalledOnce();
   });
 
   it("tracks operation timing, parentage, and one terminal event", () => {
