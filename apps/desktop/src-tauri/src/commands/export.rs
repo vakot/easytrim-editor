@@ -63,6 +63,11 @@ pub struct ExportResult {
     pub display_path: String,
 }
 
+struct ExportDiagnosticContext {
+    parent_operation_id: Option<String>,
+    snapshot_id: Option<String>,
+}
+
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OptimizedExportPlan {
@@ -137,8 +142,10 @@ pub async fn render_fast(
             display_name,
             arguments,
             on_progress,
-            diagnostic_parent_operation_id,
-            diagnostic_snapshot_id,
+            ExportDiagnosticContext {
+                parent_operation_id: diagnostic_parent_operation_id,
+                snapshot_id: diagnostic_snapshot_id,
+            },
         )
         .await
     }
@@ -173,8 +180,10 @@ pub async fn render_optimized(
             display_name,
             arguments,
             on_progress,
-            diagnostic_parent_operation_id,
-            diagnostic_snapshot_id,
+            ExportDiagnosticContext {
+                parent_operation_id: diagnostic_parent_operation_id,
+                snapshot_id: diagnostic_snapshot_id,
+            },
         )
         .await
     }
@@ -254,9 +263,12 @@ async fn run_export(
     display_name: String,
     arguments: Vec<std::ffi::OsString>,
     on_progress: Channel<ExportProgress>,
-    diagnostic_parent_operation_id: Option<String>,
-    diagnostic_snapshot_id: Option<String>,
+    diagnostic: ExportDiagnosticContext,
 ) -> Result<ExportResult, AppError> {
+    let ExportDiagnosticContext {
+        parent_operation_id: diagnostic_parent_operation_id,
+        snapshot_id: diagnostic_snapshot_id,
+    } = diagnostic;
     let (operation_id, cancellation) = state.begin_operation()?;
     record_ffmpeg_event(
         &diagnostics,
