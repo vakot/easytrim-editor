@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -15,7 +16,10 @@ import {
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectCropApplied } from "@/app/store/slices/crop-slice";
 import { selectActiveItemId } from "@/app/store/slices/export-slice";
-import { selectIsChoosingSource } from "@/app/store/slices/import-workflow-slice";
+import {
+  selectIsChoosingSource,
+  selectIsNativeDialogOpen,
+} from "@/app/store/slices/import-workflow-slice";
 import { selectHasSource, selectSourceReady } from "@/app/store/slices/source-slice";
 import { openOptimizedExportDialog, startFastCutRequested } from "@/app/store/thunks/export-thunks";
 import {
@@ -23,9 +27,11 @@ import {
   closeActiveImportedItemRequested,
 } from "@/app/store/thunks/source-media-thunks";
 import { DeleteSourceDialog, DeleteSourceDialogTrigger } from "@/features/source";
+import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
 
 export function MenuBarFile() {
   const { t } = useTranslation();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const activeItemId = useAppSelector(selectActiveItemId);
 
@@ -33,11 +39,26 @@ export function MenuBarFile() {
   const canExport = useAppSelector(selectSourceReady);
   const hasSource = useAppSelector(selectHasSource);
   const isChoosingSource = useAppSelector(selectIsChoosingSource);
+  const isNativeDialogOpen = useAppSelector(selectIsNativeDialogOpen);
   const cropApplied = useAppSelector(selectCropApplied);
   const canSave = canExport && !cropApplied;
 
+  useKeyboardShortcut(
+    (event) =>
+      event.code === "KeyD" &&
+      event.ctrlKey &&
+      hasSource &&
+      !isChoosingSource &&
+      !isNativeDialogOpen,
+    () => setDeleteDialogOpen(true),
+  );
+
   return (
-    <>
+    <DeleteSourceDialog
+      onOpenChange={setDeleteDialogOpen}
+      open={deleteDialogOpen}
+      sourceId={activeItemId}
+    >
       <MenubarMenu value="file">
         <MenubarTrigger asChild>
           <Button className="text-foreground/80" size="xs" type="button" variant="ghost">
@@ -110,20 +131,24 @@ export function MenuBarFile() {
           </MenubarGroup>
           <MenubarSeparator />
           <MenubarGroup>
-            <DeleteSourceDialog sourceId={activeItemId}>
-              <DeleteSourceDialogTrigger asChild>
-                <MenubarItem
-                  disabled={!hasSource}
-                  onSelect={(event) => event.preventDefault()}
-                  variant="destructive"
-                >
-                  {t("app.actions.deleteSource")}
-                </MenubarItem>
-              </DeleteSourceDialogTrigger>
-            </DeleteSourceDialog>
+            <DeleteSourceDialogTrigger asChild>
+              <MenubarItem
+                disabled={!hasSource}
+                onSelect={(event) => event.preventDefault()}
+                variant="destructive"
+              >
+                {t("app.actions.deleteSource")}
+                <MenubarShortcut>
+                  <KbdGroup>
+                    <Kbd>Ctrl</Kbd>
+                    <Kbd>D</Kbd>
+                  </KbdGroup>
+                </MenubarShortcut>
+              </MenubarItem>
+            </DeleteSourceDialogTrigger>
           </MenubarGroup>
         </MenubarContent>
       </MenubarMenu>
-    </>
+    </DeleteSourceDialog>
   );
 }

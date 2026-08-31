@@ -577,6 +577,8 @@ describe("MenuBarTest", () => {
     await user.click(fileButton);
     const closeFileItem = screen.getByRole("menuitem", { name: /Close File/ });
     expect(closeFileItem).toHaveTextContent("CtrlQ");
+    const deleteSourceItem = screen.getByRole("menuitem", { name: /Delete Source/ });
+    expect(deleteSourceItem).toHaveTextContent("CtrlD");
     await user.click(closeFileItem);
     expect(menuState.dispatch).toHaveBeenCalledTimes(2);
   });

@@ -19,10 +19,17 @@ import { useImportQueue } from "../hooks/useImportQueue";
 
 interface DeleteSourceDialogProps {
   children: React.ReactNode;
+  onOpenChange?: (open: boolean) => void;
+  open?: boolean;
   sourceId: string | null | undefined;
 }
 
-export function DeleteSourceDialog({ children, sourceId }: DeleteSourceDialogProps) {
+export function DeleteSourceDialog({
+  children,
+  onOpenChange,
+  open,
+  sourceId,
+}: DeleteSourceDialogProps) {
   const { t } = useTranslation();
 
   const { deleteSource, items } = useImportQueue();
@@ -52,7 +59,7 @@ export function DeleteSourceDialog({ children, sourceId }: DeleteSourceDialogPro
   };
 
   return (
-    <AlertDialog>
+    <AlertDialog onOpenChange={onOpenChange} open={open}>
       {children}
       <AlertDialogContent>
         <AlertDialogHeader>

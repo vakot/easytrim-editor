@@ -773,6 +773,29 @@ describe("App", () => {
     await waitForSourcePresence(false);
   });
 
+  it("opens the current source delete dialog with Ctrl+D", async () => {
+    mocks.chooseSource.mockResolvedValue([selection]);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await openSourcePicker(user);
+    await waitForSourcePresence(true);
+
+    fireEvent.keyDown(window, { key: "d", code: "KeyD", ctrlKey: true });
+
+    const deleteDialog = await screen.findByRole("alertdialog");
+    expect(
+      within(deleteDialog).getByRole("heading", { name: "Delete source file?" }),
+    ).toBeInTheDocument();
+    expect(
+      within(deleteDialog).getByText(
+        "This deletes holiday.mp4 from your computer. This action can be undone.",
+      ),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+  });
+
   it("imports a selected video and renders the editor with sidebar panels", async () => {
     mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
