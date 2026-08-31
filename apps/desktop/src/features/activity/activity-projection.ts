@@ -17,6 +17,8 @@ export interface ActivityEntry {
   operationId?: string;
   path?: string;
   sessionId: string;
+  snapshotId?: string;
+  sourcePath?: string;
   startedAt: string;
   status: ActivityStatus;
   title: string;
@@ -30,6 +32,7 @@ export interface ActivityProjectionLabels {
   fastCutCompleted: string;
   fastCutFailed: string;
   fastCutInterrupted: string;
+  fastCutStarted: string;
   fastCutting: string;
   fileDeleteCancelled: string;
   fileDeleted: string;
@@ -48,6 +51,7 @@ export interface ActivityProjectionLabels {
   renderFailed: string;
   rendering: string;
   renderInterrupted: string;
+  renderStarted: string;
 }
 export interface ActivitySessionLabels {
   now: string;
@@ -58,11 +62,21 @@ export interface ActivitySessionPresentation {
   label: string;
   tone: "current" | "default" | "warning";
 }
+export interface ActivityBranch {
+  entries: readonly ActivityEntry[];
+  id: string;
+  path?: string;
+  sessionId: string;
+  snapshotId: string;
+}
+export type ActivitySessionItem =
+  { branch: ActivityBranch; kind: "branch" } | { entry: ActivityEntry; kind: "entry" };
 type ActivityEventProjector = (
   event: DiagnosticEvent,
   labels: ActivityProjectionLabels,
 ) => ActivityEntry | null;
 const ACTIVITY_EVENT_CONFIG = {
+  "export.prepare.started": (event, labels) => projectExportStart(event, labels),
   "source.file-delete.completed": (event, labels) => projectFileTerminal(event, "delete", labels),
   "source.file-delete.failed": (event, labels) => projectFileTerminal(event, "delete", labels),
   "source.file-delete.cancelled": (event, labels) => projectFileTerminal(event, "delete", labels),
@@ -138,6 +152,46 @@ export function groupActivityEntriesBySession(
     });
   }
   return groups.sort(compareActivitySessionGroups);
+}
+export function groupActivityEntriesByBranch(
+  entries: readonly ActivityEntry[],
+): ActivitySessionItem[] {
+  const branches = new Map<string, ActivityBranch>();
+  const standalone: ActivitySessionItem[] = [];
+
+  for (const entry of entries) {
+    if (!entry.snapshotId) {
+      standalone.push({ entry, kind: "entry" });
+      continue;
+    }
+
+    const id = `${entry.sessionId}:${entry.snapshotId}`;
+    const branchPath = entry.sourcePath ?? entry.path;
+    const branch = branches.get(id);
+    if (branch) {
+      branch.entries = [...branch.entries, entry];
+      if (entry.sourcePath) branch.path = entry.sourcePath;
+      else if (!branch.path && branchPath) branch.path = branchPath;
+      continue;
+    }
+
+    branches.set(id, {
+      entries: [entry],
+      id,
+      ...(branchPath ? { path: branchPath } : {}),
+      sessionId: entry.sessionId,
+      snapshotId: entry.snapshotId,
+    });
+  }
+
+  const grouped = [...branches.values()].map((branch) => {
+    const entries = [...branch.entries].sort((left, right) => compareActivityEntries(right, left));
+    return { branch: { ...branch, entries }, kind: "branch" as const };
+  });
+
+  return [...grouped, ...standalone].sort((left, right) =>
+    compareActivityEntries(latestActivityEntry(left), latestActivityEntry(right)),
+  );
 }
 export function getActivitySessionPresentation(
   group: ActivitySessionGroup,
@@ -273,6 +327,27 @@ function projectImportTerminal(
   };
 }
 
+function projectExportStart(
+  event: DiagnosticEvent,
+  labels: ActivityProjectionLabels,
+): ActivityEntry | null {
+  const metadata = exportMetadata(event.data);
+  const snapshotId = activitySnapshotId(event);
+  const sourcePath = diagnosticString(event.data?.sourcePath);
+  if (!metadata) return null;
+
+  return createActivityEntry(
+    event,
+    metadata.kind,
+    metadata.kind === "fast-cut" ? labels.fastCutStarted : labels.renderStarted,
+    {
+      path: metadata.path,
+      ...(snapshotId ? { snapshotId } : {}),
+      ...(sourcePath ? { sourcePath } : {}),
+    },
+  );
+}
+
 function projectFileOperation(
   events: readonly DiagnosticEvent[],
   labels: ActivityProjectionLabels,
@@ -297,6 +372,8 @@ function projectFileOperation(
   const targetId =
     diagnosticString(started.data?.itemId) ?? diagnosticString(terminal?.data?.itemId);
 
+  const snapshotId = activitySnapshotId(started) ?? activitySnapshotId(terminal);
+
   return {
     ...(started.data ? { data: started.data } : {}),
     ...(operation === "delete" && status === "completed" && path && targetId
@@ -307,6 +384,7 @@ function projectFileOperation(
     operationId: started.operationId,
     path,
     sessionId: started.sessionId,
+    ...(snapshotId ? { snapshotId } : {}),
     startedAt: started.timestamp,
     status,
     title: fileTitle(operation, status, labels),
@@ -329,6 +407,10 @@ function projectExportOperation(
       : "interrupted";
 
   const path = diagnosticString(terminal?.data?.outputPath) ?? metadata.path;
+  const snapshotId = activitySnapshotId(started) ?? activitySnapshotId(terminal);
+  const sourcePath =
+    diagnosticString(started.data?.sourcePath) ?? diagnosticString(terminal?.data?.sourcePath);
+
   return {
     ...(started.data ? { data: started.data } : {}),
     ...(path && status === "completed" ? { action: { kind: "open", path } as const } : {}),
@@ -337,6 +419,8 @@ function projectExportOperation(
     operationId: started.operationId,
     path,
     sessionId: started.sessionId,
+    ...(snapshotId ? { snapshotId } : {}),
+    ...(sourcePath ? { sourcePath } : {}),
     startedAt: started.timestamp,
     status,
     title: exportTitle(metadata.kind, status, labels),
@@ -351,6 +435,8 @@ function projectLegacyExportTerminal(
   if (!metadata || Number.isNaN(Date.parse(event.timestamp))) return null;
   const status = exportStatus(event);
   const path = diagnosticString(event.data?.outputPath) ?? metadata.path;
+  const snapshotId = activitySnapshotId(event);
+  const sourcePath = diagnosticString(event.data?.sourcePath);
   return {
     ...(event.data ? { data: event.data } : {}),
     ...(path && status === "completed" ? { action: { kind: "open", path } as const } : {}),
@@ -359,6 +445,8 @@ function projectLegacyExportTerminal(
     ...(event.operationId ? { operationId: event.operationId } : {}),
     path,
     sessionId: event.sessionId,
+    ...(snapshotId ? { snapshotId } : {}),
+    ...(sourcePath ? { sourcePath } : {}),
     startedAt: event.timestamp,
     status,
     title: exportTitle(metadata.kind, status, labels),
@@ -432,6 +520,7 @@ function projectFileTerminal(
         ? { action: { kind: "restore", path, targetId } as const }
         : {}),
       path,
+      ...(activitySnapshotId(event) ? { snapshotId: activitySnapshotId(event) } : {}),
       status,
     },
   );
@@ -543,7 +632,7 @@ function createActivityEntry(
   event: DiagnosticEvent,
   kind: ActivityKind,
   title: string,
-  metadata: Partial<Pick<ActivityEntry, "action" | "path" | "status">> = {},
+  metadata: Partial<Pick<ActivityEntry, "action" | "path" | "snapshotId" | "status">> = {},
 ): ActivityEntry | null {
   if (Number.isNaN(Date.parse(event.timestamp))) return null;
   return {
@@ -573,6 +662,18 @@ function diagnosticString(value: DiagnosticValue | undefined): string | undefine
 function compareActivityEntries(left: ActivityEntry, right: ActivityEntry): number {
   const timestampDifference = Date.parse(right.startedAt) - Date.parse(left.startedAt);
   return timestampDifference || right.id.localeCompare(left.id);
+}
+function latestActivityEntry(item: ActivitySessionItem): ActivityEntry {
+  if (item.kind === "entry") return item.entry;
+  return item.branch.entries[item.branch.entries.length - 1]!;
+}
+function activitySnapshotId(event: DiagnosticEvent | null | undefined): string | undefined {
+  if (!event) return undefined;
+  return (
+    event.snapshotId ??
+    diagnosticString(event.data?.snapshotId) ??
+    diagnosticString(event.data?.itemId)
+  );
 }
 function compareActivitySessionGroups(
   left: ActivitySessionGroup,

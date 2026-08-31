@@ -70,7 +70,11 @@ const preferencesTransform = createTransform(
     return {
       ...DEFAULT_PREFERENCES,
       ...persistedPreferences,
-      activityFeedView: persistedPreferences.activityFeedView === "compact" ? "compact" : "default",
+      activityFeedView:
+        persistedPreferences.activityFeedView === "compact" ||
+        persistedPreferences.activityFeedView === "branch"
+          ? persistedPreferences.activityFeedView
+          : "default",
       customPrimaryColor: isCustomPrimaryColor(persistedPreferences.customPrimaryColor)
         ? persistedPreferences.customPrimaryColor
         : DEFAULT_PREFERENCES.customPrimaryColor,

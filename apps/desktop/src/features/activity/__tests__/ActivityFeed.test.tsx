@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 import { ResizablePanelContextProvider } from "@/components/ui/resizable";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
+import { activityFeedViewChanged } from "@/app/store/slices/preferences-slice";
 import { createAppStore } from "@/app/store/store";
 
 import type { ActivityEntry } from "../activity-projection";
@@ -17,9 +18,15 @@ const session = {
   startedAt: "2026-08-31T08:00:00.000Z",
 };
 
-function renderActivity(entry: ActivityEntry, onAction = vi.fn()) {
+function renderActivity(
+  entry: ActivityEntry,
+  onAction = vi.fn(),
+  activityFeedView: "default" | "compact" | "branch" = "default",
+) {
+  const store = createAppStore();
+  store.dispatch(activityFeedViewChanged(activityFeedView));
   return render(
-    <Provider store={createAppStore()}>
+    <Provider store={store}>
       <TooltipProvider delayDuration={0}>
         <ResizablePanelContextProvider>
           <ActivityFeedView
@@ -101,6 +108,33 @@ describe("ActivityFeedView file lifecycle entries", () => {
 
     expect(screen.getByText("Deleting file...")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Restore" })).not.toBeInTheDocument();
+  });
+
+  it("renders a branch header and muted rows without repeating the path", () => {
+    renderActivity(
+      {
+        id: "current-session:render-1:ffmpeg.export",
+        kind: "render",
+        path: "C:/Media/source.mp4",
+        sessionId: "current-session",
+        snapshotId: "snapshot-1",
+        startedAt: "2026-08-31T08:30:00.000Z",
+        status: "completed",
+        title: "Render completed",
+      },
+      vi.fn(),
+      "branch",
+    );
+
+    expect(screen.getByText("source.mp4")).toHaveClass("text-foreground");
+    expect(screen.getAllByText("C:/Media/source.mp4")).toHaveLength(1);
+    expect(screen.getByText("Render completed").closest('[data-slot="marker-title"]')).toHaveClass(
+      "text-muted-foreground",
+    );
+    expect(screen.getByText("Render completed").closest('[data-slot="marker"]')).toHaveClass(
+      "text-muted-foreground",
+    );
+    expect(document.querySelector("svg.lucide-git-branch")).toBeInTheDocument();
   });
 
   it("shows restore only after a completed deletion", async () => {

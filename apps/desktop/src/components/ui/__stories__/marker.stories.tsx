@@ -1,8 +1,16 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { Info } from "lucide-react";
+import { Check, File, Info, Play, RotateCcw, Square } from "lucide-react";
 
 import { Button } from "../button";
-import { Marker, MarkerAction, MarkerContent, MarkerDescription, MarkerIcon } from "../marker";
+import {
+  Marker,
+  MarkerAction,
+  MarkerContent,
+  MarkerDescription,
+  MarkerGroup,
+  MarkerIcon,
+  MarkerTitle,
+} from "../marker";
 
 const meta = {
   component: Marker,
@@ -86,4 +94,81 @@ export const WithDescriptionAndAction: Story = {
 export const Separator: Story = {
   args: { children: <MarkerContent>Today</MarkerContent>, variant: "separator" },
   render: (args) => <Marker className="w-72" {...args} />,
+};
+
+export const Group: Story = {
+  render: () => (
+    <>
+      <Marker className="mb-2 text-foreground">
+        <MarkerIcon>
+          <File />
+        </MarkerIcon>
+
+        <MarkerContent>
+          <MarkerTitle>File loaded</MarkerTitle>
+          <MarkerDescription>Filename</MarkerDescription>
+        </MarkerContent>
+      </Marker>
+      <MarkerGroup className="w-72 gap-5 pt-1">
+        <Marker>
+          <MarkerIcon>
+            <Play />
+          </MarkerIcon>
+
+          <MarkerContent>
+            <MarkerTitle>Started rendering</MarkerTitle>
+          </MarkerContent>
+        </Marker>
+
+        <Marker>
+          <MarkerIcon>
+            <RotateCcw />
+          </MarkerIcon>
+
+          <MarkerContent>
+            <MarkerTitle>Rendering…</MarkerTitle>
+            <MarkerDescription>Processing video</MarkerDescription>
+          </MarkerContent>
+        </Marker>
+
+        <Marker>
+          <MarkerIcon>
+            <Check />
+          </MarkerIcon>
+
+          <MarkerContent>
+            <MarkerTitle>Render completed</MarkerTitle>
+          </MarkerContent>
+        </Marker>
+
+        <Marker>
+          <MarkerContent>
+            <MarkerTitle>File deleted</MarkerTitle>
+          </MarkerContent>
+
+          <MarkerAction className="-mt-1">
+            <Button disabled size="xs" variant="outline">
+              Restore
+            </Button>
+          </MarkerAction>
+        </Marker>
+
+        <Marker>
+          <MarkerIcon>
+            <Square />
+          </MarkerIcon>
+
+          <MarkerContent>
+            <MarkerTitle>File restored</MarkerTitle>
+          </MarkerContent>
+
+          <MarkerAction className="-mt-1">
+            <Button size="xs" variant="outline">
+              Delete
+            </Button>
+          </MarkerAction>
+        </Marker>
+      </MarkerGroup>
+    </>
+  ),
 };

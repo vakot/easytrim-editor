@@ -6,6 +6,7 @@ import {
   FileVideo,
   Film,
   FolderOpen,
+  GitBranch,
   Info,
   LoaderCircle,
   type LucideIcon,
@@ -23,7 +24,9 @@ import {
   MarkerAction,
   MarkerContent,
   MarkerDescription,
+  MarkerGroup,
   MarkerIcon,
+  MarkerTitle,
 } from "@/components/ui/marker";
 import { ResizablePanelControl } from "@/components/ui/resizable";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -51,12 +54,14 @@ import { openFileLocation } from "@/lib/tauri/media";
 
 import {
   type ActivityAction,
+  type ActivityBranch,
   type ActivityEntry,
   type ActivityKind,
   type ActivityProjectionLabels,
   type ActivitySessionLabels,
   type ActivityStatus,
   getActivitySessionPresentation,
+  groupActivityEntriesByBranch,
   groupActivityEntriesBySession,
   projectActivityEvents,
   resolveAvailableActivityActions,
@@ -134,6 +139,7 @@ export function ActivityFeed() {
       fastCutCancelled: t("app.status.fastCutCancelled"),
       fastCutFailed: t("app.status.fastCutFailed"),
       fastCutInterrupted: t("app.status.fastCutInterrupted"),
+      fastCutStarted: t("app.status.fastCutStarted"),
       fastCutting: t("app.status.fastCutting"),
       fileDeleteCancelled: t("app.status.fileDeleteCancelled"),
       fileDeleteFailed: t("app.status.fileDeleteFailed"),
@@ -152,6 +158,7 @@ export function ActivityFeed() {
       renderCancelled: t("app.status.renderCancelled"),
       renderFailed: t("app.status.renderFailed"),
       renderInterrupted: t("app.status.renderInterrupted"),
+      renderStarted: t("app.status.renderStarted"),
       rendering: t("app.status.rendering"),
     }),
     [t],
@@ -215,6 +222,7 @@ export function ActivityFeedView({
 
   const activityFeedView = useAppSelector(selectActivityFeedView);
   const isCompact = activityFeedView === "compact";
+  const isBranch = activityFeedView === "branch";
 
   const locale = i18n.resolvedLanguage ?? i18n.language;
 
@@ -276,7 +284,12 @@ export function ActivityFeedView({
         </p>
       ) : (
         <ScrollArea className="mr-1 min-h-0 flex-1">
-          <div className={cn("grid pr-2 pl-3", isCompact ? "gap-1" : "gap-3")}>
+          <div
+            className={cn(
+              "grid pr-2 pb-3 pl-3",
+              isCompact ? "gap-1" : isBranch ? "gap-5" : "gap-3",
+            )}
+          >
             {groups.map((group) => {
               const presentation = getActivitySessionPresentation(
                 group,
@@ -288,7 +301,10 @@ export function ActivityFeedView({
 
               return (
                 <div
-                  className={cn("flex flex-col", isCompact ? "gap-1" : "gap-3")}
+                  className={cn(
+                    "flex flex-col",
+                    isCompact ? "gap-1" : isBranch ? "gap-5" : "gap-3",
+                  )}
                   key={group.sessionId}
                 >
                   <Marker
@@ -299,15 +315,33 @@ export function ActivityFeedView({
                       {presentation.label}
                     </MarkerContent>
                   </Marker>
-                  {group.entries.map((entry) => (
-                    <ActivityFeedEntry
-                      compact={isCompact}
-                      entry={entry}
-                      key={entry.id}
-                      onAction={onAction}
-                      timeFormatter={timeFormatter}
-                    />
-                  ))}
+                  {isBranch
+                    ? groupActivityEntriesByBranch(group.entries).map((item) =>
+                        item.kind === "branch" ? (
+                          <ActivityFeedBranch
+                            branch={item.branch}
+                            key={item.branch.id}
+                            onAction={onAction}
+                            timeFormatter={timeFormatter}
+                          />
+                        ) : (
+                          <ActivityFeedEntry
+                            entry={item.entry}
+                            key={item.entry.id}
+                            onAction={onAction}
+                            timeFormatter={timeFormatter}
+                          />
+                        ),
+                      )
+                    : group.entries.map((entry) => (
+                        <ActivityFeedEntry
+                          compact={isCompact}
+                          entry={entry}
+                          key={entry.id}
+                          onAction={onAction}
+                          timeFormatter={timeFormatter}
+                        />
+                      ))}
                 </div>
               );
             })}
@@ -315,6 +349,91 @@ export function ActivityFeedView({
         </ScrollArea>
       )}
     </section>
+  );
+}
+
+function ActivityFeedBranch({
+  branch,
+  onAction,
+  timeFormatter,
+}: {
+  branch: ActivityBranch;
+  onAction?: (action: ActivityAction) => void;
+  timeFormatter: Intl.DateTimeFormat;
+}) {
+  const { t } = useTranslation();
+  const normalizedSourcePath = formatSourcePath(branch.path ?? "");
+  const filename =
+    normalizedSourcePath.split(/[\\/]/).filter(Boolean).pop() ?? t("app.labels.file");
+
+  return (
+    <div>
+      <Marker>
+        <MarkerIcon>
+          <GitBranch />
+        </MarkerIcon>
+
+        <MarkerContent>
+          <MarkerTitle className="min-w-0 text-foreground">{filename}</MarkerTitle>
+          <MarkerDescription className="truncate">
+            {branch.path ? (
+              <span className="min-w-0 flex-1 truncate" title={normalizedSourcePath}>
+                {normalizedSourcePath}
+              </span>
+            ) : null}
+          </MarkerDescription>
+        </MarkerContent>
+      </Marker>
+
+      <MarkerGroup className="gap-2 pt-2">
+        {branch.entries.map((entry) => (
+          <ActivityFeedMarkerGroupItem
+            entry={entry}
+            key={entry.id}
+            onAction={onAction}
+            timeFormatter={timeFormatter}
+          />
+        ))}
+      </MarkerGroup>
+    </div>
+  );
+}
+
+function ActivityFeedMarkerGroupItem({
+  entry,
+  onAction,
+  timeFormatter,
+}: {
+  compact?: boolean;
+  entry: ActivityEntry;
+  onAction?: (action: ActivityAction) => void;
+  timeFormatter: Intl.DateTimeFormat;
+}) {
+  const statusPresentation = activityStatusPresentation[entry.status];
+  const Icon = statusPresentation.icon ?? activityIcons[entry.kind];
+  const action = entry.action;
+
+  const showAction = !!action && onAction;
+
+  return (
+    <Marker className="items-center text-xs">
+      <MarkerIcon className={statusPresentation.className}>
+        <Icon
+          aria-hidden="true"
+          className={entry.status === "pending" ? "animate-spin" : undefined}
+        />
+      </MarkerIcon>
+      <MarkerContent className="flex-row flex-nowrap items-center gap-1">
+        <ActivityFeedEntryTitle
+          className="text-muted-foreground"
+          entry={entry}
+          timeFormatter={timeFormatter}
+        />
+        {showAction && (
+          <ActivityFeedEntryButton compact entry={entry} onClick={() => onAction(action)} />
+        )}
+      </MarkerContent>
+    </Marker>
   );
 }
 
@@ -338,15 +457,19 @@ function ActivityFeedEntry({
 
   if (compact) {
     return (
-      <Marker className="h-6 items-center text-xs">
+      <Marker className="items-center text-xs">
         <MarkerIcon className={statusPresentation.className}>
           <Icon
             aria-hidden="true"
             className={entry.status === "pending" ? "animate-spin" : undefined}
           />
         </MarkerIcon>
-        <MarkerContent className="min-w-0 flex-row flex-nowrap items-center gap-1">
-          <ActivityFeedEntryTitle entry={entry} timeFormatter={timeFormatter} />
+        <MarkerContent className="flex-row flex-nowrap items-center gap-1">
+          <ActivityFeedEntryTitle
+            className="text-foreground"
+            entry={entry}
+            timeFormatter={timeFormatter}
+          />
           {showAction && (
             <ActivityFeedEntryButton
               compact={compact}
@@ -368,16 +491,16 @@ function ActivityFeedEntry({
         />
       </MarkerIcon>
       <MarkerContent>
-        <div className="flex min-w-0 flex-nowrap items-center gap-1">
-          <ActivityFeedEntryTitle entry={entry} timeFormatter={timeFormatter} />
-        </div>
+        <ActivityFeedEntryTitle
+          className="text-foreground"
+          entry={entry}
+          timeFormatter={timeFormatter}
+        />
         <MarkerDescription>
           {entry.path ? (
-            <>
-              <span className="min-w-0 flex-1 truncate" title={normalizedSourcePath}>
-                {normalizedSourcePath}
-              </span>
-            </>
+            <span className="min-w-0 flex-1 truncate" title={normalizedSourcePath}>
+              {normalizedSourcePath}
+            </span>
           ) : null}
         </MarkerDescription>
       </MarkerContent>
@@ -395,22 +518,22 @@ function ActivityFeedEntry({
 }
 
 function ActivityFeedEntryTitle({
+  className,
   entry,
   timeFormatter,
 }: {
+  className?: string;
   entry: ActivityEntry;
   timeFormatter: Intl.DateTimeFormat;
 }) {
   return (
-    <>
-      <span className={cn("truncate text-foreground", entry.status === "pending" && "shimmer")}>
-        {entry.title}
-      </span>
+    <MarkerTitle className={cn("flex min-w-0 flex-nowrap items-center gap-1", className)}>
+      <span className={cn("truncate", entry.status === "pending" && "shimmer")}>{entry.title}</span>
       <span>·</span>
       <time className="shrink-0 text-muted-foreground" dateTime={entry.startedAt}>
         {timeFormatter.format(new Date(entry.startedAt))}
       </time>
-    </>
+    </MarkerTitle>
   );
 }
 

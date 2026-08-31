@@ -694,7 +694,7 @@ describe("MenuBarTest", () => {
 
   it("synchronizes the Activity Feed View radio state", async () => {
     const user = userEvent.setup();
-    renderMenus({ activityFeedView: "compact" });
+    renderMenus({ activityFeedView: "branch" });
 
     await user.click(getMenuTrigger("View"));
     const activityFeedViewItem = screen.getByRole("menuitem", { name: "Activity Feed View" });
@@ -709,6 +709,10 @@ describe("MenuBarTest", () => {
       "false",
     );
     expect(screen.getByRole("menuitemradio", { name: "Compact" })).toHaveAttribute(
+      "aria-checked",
+      "false",
+    );
+    expect(screen.getByRole("menuitemradio", { name: "Branch" })).toHaveAttribute(
       "aria-checked",
       "true",
     );

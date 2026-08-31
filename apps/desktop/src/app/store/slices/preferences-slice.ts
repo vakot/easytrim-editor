@@ -70,7 +70,9 @@ export const selectDeleteSourceOnRenderFinish = (state: RootState): boolean =>
   selectPreferences(state).deleteSourceOnRenderFinish;
 export const selectActivityFeedView = (state: RootState): ActivityFeedView => {
   const activityFeedView = selectPreferences(state).activityFeedView;
-  return activityFeedView === "compact" ? "compact" : "default";
+  return activityFeedView === "compact" || activityFeedView === "branch"
+    ? activityFeedView
+    : "default";
 };
 export const selectThemePreference = (state: RootState): ThemePreference =>
   selectPreferences(state).theme;

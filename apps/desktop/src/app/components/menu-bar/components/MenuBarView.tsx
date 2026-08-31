@@ -84,6 +84,7 @@ export function MenuBarView({ onClose }: MenuBarViewProps) {
   };
 
   const activityFeedViewLabels: Record<ActivityFeedView, string> = {
+    branch: t("settings.options.activityFeedViews.branch"),
     compact: t("settings.options.activityFeedViews.compact"),
     default: t("settings.options.activityFeedViews.default"),
   };
@@ -196,7 +197,7 @@ export function MenuBarView({ onClose }: MenuBarViewProps) {
                 }
                 value={activityFeedView}
               >
-                {(["default", "compact"] as const).map((view) => (
+                {(["default", "compact", "branch"] as const).map((view) => (
                   <MenubarRadioItem inset keepOpen key={view} value={view}>
                     {activityFeedViewLabels[view]}
                   </MenubarRadioItem>
