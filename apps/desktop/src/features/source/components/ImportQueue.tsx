@@ -48,6 +48,7 @@ export function ImportQueue() {
 
     const filename = item.snapshot.source.displayName;
     const sourcePath = item.snapshot.source.sourcePath;
+    const normalizedSourcePath = formatSourcePath(sourcePath);
 
     setDeletePending(true);
     setDeleteError(null);
@@ -61,7 +62,7 @@ export function ImportQueue() {
       restorePending = true;
       toast.loading(t("queue.messages.fileRestore.loading", { filename }), {
         action: null,
-        description: <ToastFilePath sourcePath={sourcePath} />,
+        description: <ToastFilePath sourcePath={normalizedSourcePath} />,
         id: deleteToastId,
       });
 
@@ -69,7 +70,7 @@ export function ImportQueue() {
         await restoreSourceFromTrash(sourcePath);
         toast.success(t("queue.messages.fileRestore.success"), {
           action: null,
-          description: <ToastFilePath sourcePath={sourcePath} />,
+          description: <ToastFilePath sourcePath={normalizedSourcePath} />,
           id: deleteToastId,
         });
       } catch (error: unknown) {
@@ -80,8 +81,14 @@ export function ImportQueue() {
             message: normalized.message,
           }),
           {
-            action: { label: t("app.actions.restore"), onClick: () => void restore() },
-            description: <ToastFilePath sourcePath={sourcePath} />,
+            action: {
+              label: t("app.actions.restore"),
+              onClick: (event) => {
+                event.preventDefault();
+                void restore();
+              },
+            },
+            description: <ToastFilePath sourcePath={normalizedSourcePath} />,
             id: deleteToastId,
           },
         );
@@ -95,7 +102,7 @@ export function ImportQueue() {
     });
 
     toast.promise(deleteOperation, {
-      description: <ToastFilePath sourcePath={sourcePath} />,
+      description: <ToastFilePath sourcePath={normalizedSourcePath} />,
       error: (error: unknown) => {
         const normalized = normalizeAppError(error);
         return t("queue.messages.fileDelete.error", {
@@ -105,8 +112,14 @@ export function ImportQueue() {
       },
       loading: t("queue.messages.fileDelete.loading", { filename }),
       success: () => ({
-        action: { label: t("app.actions.restore"), onClick: () => void restore() },
-        description: <ToastFilePath sourcePath={sourcePath} />,
+        action: {
+          label: t("app.actions.restore"),
+          onClick: (event) => {
+            event.preventDefault();
+            void restore();
+          },
+        },
+        description: <ToastFilePath sourcePath={normalizedSourcePath} />,
         message: t("queue.messages.fileDelete.success"),
       }),
       id: deleteToastId,

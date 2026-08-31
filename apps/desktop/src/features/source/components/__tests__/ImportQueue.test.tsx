@@ -114,7 +114,10 @@ describe("ImportQueue", () => {
     const appStore = createAppStore();
     addQueueItem(appStore, "import-1", "first.mp4");
     media.moveSourceToTrash.mockResolvedValue(undefined);
-    media.restoreSourceFromTrash.mockResolvedValue(undefined);
+    let resolveRestore!: () => void;
+    media.restoreSourceFromTrash.mockImplementation(
+      () => new Promise<void>((resolve) => (resolveRestore = resolve)),
+    );
     const user = userEvent.setup();
 
     renderQueue(appStore);
@@ -130,7 +133,10 @@ describe("ImportQueue", () => {
     await user.click(restoreButton);
 
     expect(media.restoreSourceFromTrash).toHaveBeenCalledWith("C:/Media/first.mp4");
+    resolveRestore();
     expect(await screen.findByText("File restored")).toBeInTheDocument();
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    expect(screen.getByText("File restored")).toBeInTheDocument();
     expect(selectImportQueueItems(appStore.getState())).toEqual([]);
   });
 
