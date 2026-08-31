@@ -19,6 +19,7 @@
     "format:check": "prettier --check .",
     "lint": "eslint . --max-warnings 0 && pnpm i18n:check",
     "lint:fix": "eslint . --fix --max-warnings 0 && prettier --write .",
+    "lint-format": "pnpm format && pnpm lint:fix",
     "i18n:check": "node scripts/validate-i18n.mjs",
     "knip": "knip --production",
     "typecheck": "pnpm --filter @easytrim-editor/desktop typecheck",
