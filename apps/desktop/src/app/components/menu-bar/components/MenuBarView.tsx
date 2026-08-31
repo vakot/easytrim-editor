@@ -12,6 +12,7 @@ import {
   MenubarMenu,
   MenubarRadioGroup,
   MenubarRadioItem,
+  MenubarSeparator,
   MenubarShortcut,
   MenubarSub,
   MenubarSubContent,
@@ -108,28 +109,6 @@ export function MenuBarView({ onClose }: MenuBarViewProps) {
         <MenubarGroup>
           <MenubarSub>
             <MenubarSubTrigger inset>
-              <MenubarIcon>
-                <List aria-hidden="true" />
-              </MenubarIcon>
-              {t("settings.labels.activityFeedView")}
-            </MenubarSubTrigger>
-            <MenubarSubContent>
-              <MenubarRadioGroup
-                onValueChange={(view) =>
-                  dispatch(activityFeedViewChanged(view as ActivityFeedView))
-                }
-                value={activityFeedView}
-              >
-                {(["default", "compact"] as const).map((view) => (
-                  <MenubarRadioItem inset keepOpen key={view} value={view}>
-                    {activityFeedViewLabels[view]}
-                  </MenubarRadioItem>
-                ))}
-              </MenubarRadioGroup>
-            </MenubarSubContent>
-          </MenubarSub>
-          <MenubarSub>
-            <MenubarSubTrigger inset>
               <MenubarIcon>{currentThemeIcon}</MenubarIcon>
               {t("settings.labels.theme")}
             </MenubarSubTrigger>
@@ -197,6 +176,31 @@ export function MenuBarView({ onClose }: MenuBarViewProps) {
                     />
                   </MenubarSubContent>
                 </MenubarSub>
+              </MenubarRadioGroup>
+            </MenubarSubContent>
+          </MenubarSub>
+        </MenubarGroup>
+        <MenubarSeparator />
+        <MenubarGroup>
+          <MenubarSub>
+            <MenubarSubTrigger inset>
+              <MenubarIcon>
+                <List aria-hidden="true" />
+              </MenubarIcon>
+              {t("settings.labels.activityFeedView")}
+            </MenubarSubTrigger>
+            <MenubarSubContent>
+              <MenubarRadioGroup
+                onValueChange={(view) =>
+                  dispatch(activityFeedViewChanged(view as ActivityFeedView))
+                }
+                value={activityFeedView}
+              >
+                {(["default", "compact"] as const).map((view) => (
+                  <MenubarRadioItem inset keepOpen key={view} value={view}>
+                    {activityFeedViewLabels[view]}
+                  </MenubarRadioItem>
+                ))}
               </MenubarRadioGroup>
             </MenubarSubContent>
           </MenubarSub>
