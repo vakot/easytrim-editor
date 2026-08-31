@@ -259,9 +259,10 @@ describe("App", () => {
     }));
     const user = userEvent.setup();
     render(<App />);
+    const sourceMetadata = screen.getByLabelText("Video metadata");
 
-    await openSourcePicker(user);
-    await screen.findByRole("heading", { name: "Selected Segment" });
+    fireEvent.keyDown(window, { key: "o", code: "KeyO", ctrlKey: true });
+    await within(sourceMetadata).findByText(selection.displayName);
     await user.click(screen.getByRole("button", { name: "Snap playback" }));
     await user.click(screen.getByRole("button", { name: "Loop playback" }));
 
@@ -275,7 +276,7 @@ describe("App", () => {
     );
 
     fireEvent.keyDown(window, { key: "o", code: "KeyO", ctrlKey: true });
-    await screen.findByRole("heading", { name: "Selected Segment" });
+    await within(sourceMetadata).findByText(replacementSelection.displayName);
 
     expect(screen.getByRole("button", { name: "Snap playback" })).toHaveAttribute(
       "aria-pressed",

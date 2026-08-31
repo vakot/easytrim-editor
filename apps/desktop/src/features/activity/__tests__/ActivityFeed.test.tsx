@@ -111,7 +111,7 @@ describe("ActivityFeedView file lifecycle entries", () => {
   });
 
   it("renders a branch header and muted rows without repeating the path", () => {
-    renderActivity(
+    const { container } = renderActivity(
       {
         id: "current-session:render-1:ffmpeg.export",
         kind: "render",
@@ -134,7 +134,7 @@ describe("ActivityFeedView file lifecycle entries", () => {
     expect(screen.getByText("Render completed").closest('[data-slot="marker"]')).toHaveClass(
       "text-muted-foreground",
     );
-    expect(document.querySelector("svg.lucide-git-branch")).toBeInTheDocument();
+    expect(container.querySelector("svg.lucide-film")).toBeInTheDocument();
   });
 
   it("shows restore only after a completed deletion", async () => {
