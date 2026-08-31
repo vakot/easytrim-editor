@@ -82,6 +82,8 @@ export const sk = {
       windowActionFailed: "Ovládanie okna sa nepodarilo dokončiť.",
     },
     tooltips: {
+      activityFeedPrivacy:
+        "História aktivít sa ukladá iba v tomto zariadení ako súčasť miestnych diagnostických záznamov. Nikam sa nenahráva ani neposiela.",
       customizeLayout: "Prispôsobiť rozloženie",
       togglePanel: "Prepnúť {{panel}}",
     },
@@ -99,6 +101,7 @@ export const sk = {
       },
     },
     accessibility: {
+      activityFeedPrivacy: "Informácie o súkromí histórie aktivít",
       layoutControls: "Ovládanie rozloženia",
       menus: "Ponuky aplikácie",
       panels: "Panely editora",

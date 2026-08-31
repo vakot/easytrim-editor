@@ -80,6 +80,8 @@ export const en = {
       windowActionFailed: "The window control could not be completed.",
     },
     tooltips: {
+      activityFeedPrivacy:
+        "Activity history is stored only on this device as part of local diagnostic logs. It is not uploaded or sent anywhere.",
       customizeLayout: "Customize layout",
       togglePanel: "Toggle {{panel}}",
     },
@@ -97,6 +99,7 @@ export const en = {
       },
     },
     accessibility: {
+      activityFeedPrivacy: "Activity history privacy information",
       layoutControls: "Layout controls",
       menus: "Application menus",
       panels: "Editor panels",

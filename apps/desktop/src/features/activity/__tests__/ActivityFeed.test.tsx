@@ -59,6 +59,26 @@ function fileEntry(status: ActivityEntry["status"]): ActivityEntry {
 }
 
 describe("ActivityFeedView file lifecycle entries", () => {
+  it("shows localized local-only diagnostics privacy information beside the title", async () => {
+    const user = userEvent.setup();
+    renderActivity(fileEntry("pending"));
+
+    const title = screen.getByRole("heading", { name: "Activity Feed" });
+    const trigger = screen.getByRole("button", {
+      name: "Activity history privacy information",
+    });
+
+    expect(title.parentElement).toHaveClass("mx-3", "flex", "items-center");
+    expect(title.nextElementSibling).toBe(trigger);
+    expect(trigger).toHaveClass("text-primary");
+
+    await user.hover(trigger);
+
+    expect(await screen.findByRole("tooltip")).toHaveTextContent(
+      "Activity history is stored only on this device as part of local diagnostic logs. It is not uploaded or sent anywhere.",
+    );
+  });
+
   it("shows pending deletion without a restore action", () => {
     renderActivity(fileEntry("pending"));
 
