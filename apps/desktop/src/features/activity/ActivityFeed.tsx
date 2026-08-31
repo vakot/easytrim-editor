@@ -57,10 +57,10 @@ export function ActivityFeed() {
 
   const labels = useMemo<ActivityProjectionLabels>(
     () => ({
-      fastCutCompleted: t("activity.entries.fastCutCompleted"),
-      fileDeleted: t("activity.entries.fileDeleted"),
-      fileRestored: t("activity.entries.fileRestored"),
-      renderCompleted: t("activity.entries.renderCompleted"),
+      fastCutCompleted: t("app.status.fastCutCompleted"),
+      fileDeleted: t("app.status.fileDeleted"),
+      fileRestored: t("app.status.fileRestored"),
+      renderCompleted: t("app.status.renderCompleted"),
     }),
     [t],
   );
@@ -73,14 +73,14 @@ export function ActivityFeed() {
   return (
     <ActivityFeedView
       dateLabels={{
-        today: t("activity.dates.today"),
-        yesterday: t("activity.dates.yesterday"),
+        today: t("app.labels.today"),
+        yesterday: t("app.labels.yesterday"),
       }}
-      emptyLabel={t("activity.messages.empty")}
+      emptyLabel={t("app.messages.activityEmpty")}
       entries={entries}
       locale={i18n.resolvedLanguage ?? i18n.language}
       now={currentTime}
-      title={t("activity.labels.title")}
+      title={t("app.labels.activity")}
     />
   );
 }
