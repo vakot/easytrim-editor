@@ -17,19 +17,15 @@ import { AppUpdatesProvider } from "@/app/components/providers/AppUpdatesProvide
 import { EditorContractsProvider } from "@/app/components/providers/EditorContractsProvider";
 import { StatusBar } from "@/app/components/status-bar";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
-import {
-  selectDropListenerError,
-  selectIsNativeDialogOpen,
-} from "@/app/store/slices/import-workflow-slice";
+import { selectDropListenerError } from "@/app/store/slices/import-workflow-slice";
 import { persistor, store } from "@/app/store/store";
 import { loadQueueFinishActions } from "@/app/store/thunks/export-thunks";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import { ExportDialog } from "@/features/export";
-import { SourceStatus } from "@/features/source";
+import { SourceDropOverlay, SourceStatus } from "@/features/source";
 
 function EasyTrimEditorApp() {
   const dispatch = useAppDispatch();
-  const isNativeDialogOpen = useAppSelector(selectIsNativeDialogOpen);
   const dropListenerError = useAppSelector(selectDropListenerError);
   const { t } = useTranslation();
 
@@ -48,8 +44,8 @@ function EasyTrimEditorApp() {
 
         <ExportDialog />
         <DiagnosticsRecoveryDialog />
-
-        {isNativeDialogOpen ? <NativeDialogOverlay /> : null}
+        <SourceDropOverlay />
+        <NativeDialogOverlay />
 
         {dropListenerError ? (
           <Alert

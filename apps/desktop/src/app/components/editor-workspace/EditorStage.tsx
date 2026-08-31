@@ -6,7 +6,6 @@ import { selectSourceMedia } from "@/app/store/slices/source-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
 import { AudioPanel } from "@/features/audio";
 import { Preview } from "@/features/preview";
-import { SourceDropOverlay } from "@/features/source";
 import { TimelinePanel } from "@/features/timeline";
 import { cn } from "@/lib/class-names.utils";
 import { timelineGeometryStyle } from "@/lib/interaction/timeline-geometry.utils";
@@ -55,7 +54,6 @@ export function EditorStage() {
     >
       <ResizablePanel className="overflow-hidden" id="editor-stage-preview" minSize="14rem">
         <Card className="relative isolate size-full bg-preview-surface p-0 ring-inset">
-          <SourceDropOverlay />
           <Preview />
         </Card>
       </ResizablePanel>

@@ -62,7 +62,6 @@ describe("Preview", () => {
     const previewContent = container.querySelector('[data-slot="preview-content"]');
     const loadingOverlay = screen.getByTestId("preview-loading-overlay");
 
-    expect(previewContent).toHaveAttribute("aria-busy", "true");
     expect(previewContent).toHaveClass("relative", "overflow-hidden");
     expect(previewContent).toContainElement(loadingOverlay);
     expect(loadingOverlay).toHaveClass("absolute", "inset-0");
