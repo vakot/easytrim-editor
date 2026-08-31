@@ -29,6 +29,7 @@ export const en = {
       minimize: "Minimize",
       open: "Open",
       openFile: "Open File",
+      openFolder: "Open Folder",
       resetLayout: "Reset layout",
       restart: "Restart application",
       restore: "Restore",

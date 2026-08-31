@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use serde::Deserialize;
 use tauri::{AppHandle, State, WebviewWindow};
 use tauri_plugin_dialog::DialogExt;
 
@@ -14,22 +15,29 @@ use crate::{
 };
 
 #[tauri::command]
-pub async fn choose_source(app: AppHandle) -> Result<Option<SourceImportResult>, AppError> {
-    let selected_files = app
-        .dialog()
-        .file()
-        .add_filter("Video", SUPPORTED_VIDEO_EXTENSIONS)
-        .blocking_pick_files();
-    let selected_folders = app
-        .dialog()
-        .file()
-        .set_title("Add folders (Cancel to finish)")
-        .blocking_pick_folders();
+pub async fn choose_source(
+    app: AppHandle,
+    mode: Option<SourcePickerMode>,
+) -> Result<Option<SourceImportResult>, AppError> {
+    let selected_paths = match mode.unwrap_or_default() {
+        SourcePickerMode::Files => app
+            .dialog()
+            .file()
+            .add_filter("Video", SUPPORTED_VIDEO_EXTENSIONS)
+            .blocking_pick_files(),
+        SourcePickerMode::Folders => app
+            .dialog()
+            .file()
+            .set_title("Add folders")
+            .blocking_pick_folders(),
+    };
 
-    let selected = selected_files
-        .unwrap_or_default()
+    let Some(selected_paths) = selected_paths else {
+        return Ok(None);
+    };
+
+    let selected = selected_paths
         .into_iter()
-        .chain(selected_folders.unwrap_or_default())
         .map(|selected| {
             selected.into_path().map_err(|_| {
                 AppError::invalid_request("The selected source location is not supported.")
@@ -45,6 +53,14 @@ pub async fn choose_source(app: AppHandle) -> Result<Option<SourceImportResult>,
         .await
         .map_err(|_| AppError::internal("The selected sources could not be loaded."))?;
     Ok(Some(result))
+}
+
+#[derive(Clone, Copy, Debug, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum SourcePickerMode {
+    #[default]
+    Files,
+    Folders,
 }
 
 #[tauri::command]

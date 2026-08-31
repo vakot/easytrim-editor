@@ -61,7 +61,12 @@ import {
   prepareWaveforms,
   restoreSourceFromTrash,
 } from "@/lib/tauri/media";
-import type { AppError, PreviewKind, SourceImportResult } from "@/lib/tauri/media.types";
+import type {
+  AppError,
+  PreviewKind,
+  SourceImportResult,
+  SourcePickerMode,
+} from "@/lib/tauri/media.types";
 import { normalizeAppError } from "@/lib/tauri/media.utils";
 
 export type AppThunk<ReturnValue = void | Promise<unknown>> = (
@@ -485,7 +490,10 @@ export const navigateToImportedItem =
   };
 
 export const chooseSourceRequested =
-  (origin: DiagnosticOrigin = { type: "internal" }): AppThunk =>
+  (
+    origin: DiagnosticOrigin = { type: "internal" },
+    pickerMode: SourcePickerMode = "files",
+  ): AppThunk =>
   async (dispatch, getState) => {
     diagnostics.action("source.open.requested", origin);
     if (
@@ -506,7 +514,7 @@ export const chooseSourceRequested =
     let pickerError: AppError | null = null;
 
     try {
-      importResult = await chooseSourceDialog();
+      importResult = await chooseSourceDialog(pickerMode);
     } catch (error: unknown) {
       pickerError = normalizeAppError(error);
     } finally {

@@ -205,6 +205,16 @@ describe("source/media orchestration thunks", () => {
     );
   });
 
+  it("passes folder mode to the single native picker command", async () => {
+    const appStore = createAppStore();
+
+    await appStore.dispatch(
+      chooseSourceRequested({ id: "file.open-folder", type: "menu" }, "folders"),
+    );
+
+    expect(mocks.chooseSource).toHaveBeenCalledWith("folders");
+  });
+
   it("records one picker import operation with its aggregate counts and origin", async () => {
     const appStore = createAppStore();
     const importResult: SourceImportResult = {

@@ -89,7 +89,7 @@ export function MenuBarFile() {
         <MenubarContent>
           <MenubarGroup>
             <MenubarItem
-              disabled={isChoosingSource}
+              disabled={isChoosingSource || isNativeDialogOpen}
               onSelect={() =>
                 void dispatch(chooseSourceRequested({ id: "file.open", type: "menu" }))
               }
@@ -101,6 +101,16 @@ export function MenuBarFile() {
                   <Kbd>O</Kbd>
                 </KbdGroup>
               </MenubarShortcut>
+            </MenubarItem>
+            <MenubarItem
+              disabled={isChoosingSource || isNativeDialogOpen}
+              onSelect={() =>
+                void dispatch(
+                  chooseSourceRequested({ id: "file.open-folder", type: "menu" }, "folders"),
+                )
+              }
+            >
+              {t("app.actions.openFolder")}
             </MenubarItem>
             <MenubarItem
               disabled={!hasSource}

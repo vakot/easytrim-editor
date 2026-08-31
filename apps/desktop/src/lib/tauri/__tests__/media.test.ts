@@ -64,6 +64,33 @@ describe("media IPC adapter", () => {
         { displayName: "third.mp4", sourcePath: "C:/Media/third.mp4" },
       ],
     });
+    expect(mocks.invoke).toHaveBeenCalledWith("choose_source", { mode: "files" });
+  });
+
+  it("selects folders through the same command without changing file selection mode", async () => {
+    mocks.invoke.mockResolvedValue({
+      acceptedFileCount: 2,
+      directFileCount: 0,
+      discoveredFileCount: 2,
+      folderCount: 1,
+      readErrorCount: 0,
+      recursive: true,
+      skippedFileCount: 0,
+      sources: [
+        { displayName: "clip.mp4", sourcePath: "C:/Media/Folder/clip.mp4" },
+        { displayName: "second.mp4", sourcePath: "C:/Media/Folder/second.mp4" },
+      ],
+      truncated: false,
+    });
+
+    await expect(chooseSource("folders")).resolves.toMatchObject({
+      folderCount: 1,
+      sources: [
+        { displayName: "clip.mp4", sourcePath: "C:/Media/Folder/clip.mp4" },
+        { displayName: "second.mp4", sourcePath: "C:/Media/Folder/second.mp4" },
+      ],
+    });
+    expect(mocks.invoke).toHaveBeenCalledWith("choose_source", { mode: "folders" });
   });
 
   it("imports a source by its physical path", async () => {
