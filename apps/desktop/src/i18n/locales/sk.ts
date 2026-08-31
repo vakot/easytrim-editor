@@ -153,6 +153,8 @@ export const sk = {
       openLocation: "Otvoriť umiestnenie {{filename}}",
       progress: "Priebeh exportu",
       deleteSource: "Odstrániť {{filename}} zo zariadenia",
+      deleteMode: "Odstrániť zdroj",
+      removeMode: "Odstrániť z frontu",
       removeImportItem: "Odstrániť {{filename}} z frontu importov",
       restoreItem: "Obnoviť {{filename}}",
     },

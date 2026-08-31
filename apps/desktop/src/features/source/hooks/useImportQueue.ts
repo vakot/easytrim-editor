@@ -50,7 +50,7 @@ function useImportQueue() {
       dispatch(closeActiveImportedItemRequested({ id: "source.skip", type: "button" }));
   };
 
-  const handleDelete = () => dispatch(deleteActiveImportedItemRequested());
+  const handleDelete = (id?: string) => dispatch(deleteActiveImportedItemRequested(id));
 
   return {
     isLast,

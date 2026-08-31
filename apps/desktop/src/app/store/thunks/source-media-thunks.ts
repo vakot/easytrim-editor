@@ -519,9 +519,14 @@ export const closeActiveImportedItemRequested =
   };
 
 export const deleteActiveImportedItemRequested =
-  (): AppThunk<Promise<AppError | null>> => async (dispatch, getState) => {
-    const activeItem = selectActiveQueueItem(getState());
-    if (!activeItem || activeItem.status !== "imported") {
+  (itemId?: string): AppThunk<Promise<AppError | null>> =>
+  async (dispatch, getState) => {
+    const state = getState();
+    const item = itemId
+      ? selectImportQueueItems(state).find((queueItem) => queueItem.id === itemId)
+      : selectActiveQueueItem(state);
+
+    if (!item || item.status !== "imported") {
       diagnostics.event("source.file.delete.ignored", {
         data: { reason: "no_active_source" },
         origin: { type: "button", id: "source.delete" },
@@ -531,17 +536,17 @@ export const deleteActiveImportedItemRequested =
     }
 
     const operation = diagnostics.startOperation("source.file-delete", {
-      data: { itemId: activeItem.id },
+      data: { itemId: item.id },
       origin: { type: "button", id: "source.delete" },
-      snapshotId: activeItem.id,
+      snapshotId: item.id,
     });
 
     try {
-      await moveSourceToTrash(activeItem.snapshot.source.sourcePath);
+      await moveSourceToTrash(item.snapshot.source.sourcePath);
     } catch (error: unknown) {
       const normalized = normalizeAppError(error);
       diagnostics.error("source.file.delete.failed", normalized, {
-        data: { itemId: activeItem.id },
+        data: { itemId: item.id },
         origin: { type: "button", id: "source.delete" },
       });
       operation.fail(normalized);
@@ -549,8 +554,12 @@ export const deleteActiveImportedItemRequested =
       return normalized;
     }
 
-    dispatch(closeActiveImportedItemRequested());
-    operation.complete({ itemId: activeItem.id });
+    if (selectActiveQueueItem(getState())?.id === item.id) {
+      dispatch(closeActiveImportedItemRequested());
+    } else {
+      dispatch(importQueueItemRemoved(item.id));
+    }
+    operation.complete({ itemId: item.id });
     return null;
   };
 
