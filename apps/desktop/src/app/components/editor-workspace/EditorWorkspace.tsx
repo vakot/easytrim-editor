@@ -41,7 +41,7 @@ export function EditorWorkspace() {
         className="overflow-hidden"
         groupResizeBehavior="preserve-relative-size"
         id="workspace-content"
-        minSize="44rem"
+        minSize="40rem"
       >
         <EditorStage />
       </ResizablePanel>
