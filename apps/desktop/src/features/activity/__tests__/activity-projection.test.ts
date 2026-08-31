@@ -3,8 +3,10 @@ import { describe, expect, it } from "vitest";
 import type { DiagnosticEvent, DiagnosticSessionMetadata } from "@/lib/tauri/diagnostics.types";
 
 import {
+  type ActivityEntry,
   type ActivityProjectionLabels,
   getActivitySessionPresentation,
+  groupActivityEntriesByBranch,
   groupActivityEntriesBySession,
   projectActivityEvent,
   projectActivityEvents,
@@ -16,6 +18,7 @@ const labels: ActivityProjectionLabels = {
   fastCutCompleted: "Fast cut completed",
   fastCutFailed: "Fast cut failed",
   fastCutInterrupted: "Fast cut interrupted",
+  fastCutStarted: "Started fast cut",
   fastCutting: "Fast cutting…",
   fileDeleteCancelled: "File deletion cancelled",
   fileDeleteFailed: "File deletion failed",
@@ -34,6 +37,7 @@ const labels: ActivityProjectionLabels = {
   renderCompleted: "Optimized render completed",
   renderFailed: "Render failed",
   renderInterrupted: "Render interrupted",
+  renderStarted: "Started rendering",
   rendering: "Rendering…",
 };
 
@@ -154,6 +158,196 @@ describe("activity projection", () => {
       startedAt: "2026-08-31T09:00:00.000Z",
       title,
     });
+  });
+
+  it.each([
+    ["fast", "Started fast cut", "Fast cut completed"],
+    ["optimized", "Started rendering", "Optimized render completed"],
+  ] as const)(
+    "projects the %s export start separately from its lifecycle",
+    (outputType, startTitle, completedTitle) => {
+      const entries = projectActivityEvents(
+        [
+          diagnosticEvent("export.prepare.started", {
+            data: { route: outputType, snapshotId: "snapshot-1" },
+            operationId: "prepare-1",
+            sessionId: "current-session",
+            snapshotId: "snapshot-1",
+            timestamp: "2026-08-31T08:00:00.000Z",
+          }),
+          diagnosticEvent("ffmpeg.export.started", {
+            data: { outputPath, outputType },
+            operationId: "export-1",
+            sessionId: "current-session",
+            snapshotId: "snapshot-1",
+            timestamp: "2026-08-31T08:01:00.000Z",
+          }),
+          diagnosticEvent("ffmpeg.export.completed", {
+            data: { outputPath, outputType },
+            operationId: "export-1",
+            sessionId: "current-session",
+            snapshotId: "snapshot-1",
+            timestamp: "2026-08-31T08:02:00.000Z",
+          }),
+        ],
+        labels,
+        "current-session",
+      );
+
+      expect(entries).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: "current-session:prepare-1:export.prepare.started",
+            snapshotId: "snapshot-1",
+            title: startTitle,
+          }),
+          expect.objectContaining({
+            id: "current-session:export-1:ffmpeg.export",
+            snapshotId: "snapshot-1",
+            status: "completed",
+            title: completedTitle,
+          }),
+        ]),
+      );
+      expect(entries).toHaveLength(2);
+    },
+  );
+
+  it("keeps a pending export lifecycle entry stable while its terminal result arrives", () => {
+    const events = [
+      diagnosticEvent("ffmpeg.export.started", {
+        data: { outputPath, outputType: "optimized" },
+        operationId: "export-1",
+        sessionId: "current-session",
+        snapshotId: "snapshot-1",
+        timestamp: "2026-08-31T08:01:00.000Z",
+      }),
+      diagnosticEvent("ffmpeg.export.completed", {
+        data: { outputPath, outputType: "optimized" },
+        operationId: "export-1",
+        sessionId: "current-session",
+        snapshotId: "snapshot-1",
+        timestamp: "2026-08-31T08:02:00.000Z",
+      }),
+    ];
+
+    const pending = projectActivityEvents(events.slice(0, 1), labels, "current-session")[0];
+    const completed = projectActivityEvents(events, labels, "current-session")[0];
+
+    expect(pending?.id).toBe(completed?.id);
+    expect(completed?.startedAt).toBe("2026-08-31T08:01:00.000Z");
+    expect(completed?.title).toBe("Optimized render completed");
+  });
+
+  it("groups branch history by session-scoped snapshot identity and keeps unbound entries standalone", () => {
+    const makeEntry = (
+      id: string,
+      sessionId: string,
+      snapshotId: string | undefined,
+      path: string,
+      startedAt: string,
+    ): ActivityEntry => ({
+      id,
+      kind: "render",
+      path,
+      sessionId,
+      ...(snapshotId ? { snapshotId } : {}),
+      startedAt,
+      status: "completed",
+      title: id,
+    });
+
+    const items = groupActivityEntriesByBranch([
+      makeEntry(
+        "same-name-1",
+        "session-1",
+        "snapshot-1",
+        "C:/Media/clip.mp4",
+        "2026-08-31T08:00:00Z",
+      ),
+      makeEntry(
+        "same-name-2",
+        "session-1",
+        "snapshot-2",
+        "C:/Other/clip.mp4",
+        "2026-08-31T08:01:00Z",
+      ),
+      makeEntry(
+        "same-id-other-session",
+        "session-2",
+        "snapshot-1",
+        "C:/Media/clip.mp4",
+        "2026-08-31T08:02:00Z",
+      ),
+      makeEntry(
+        "same-id-later",
+        "session-1",
+        "snapshot-1",
+        "C:/Media/clip.mp4",
+        "2026-08-31T08:03:00Z",
+      ),
+      makeEntry("unbound", "session-1", undefined, "C:/Media/clip.mp4", "2026-08-31T08:04:00Z"),
+    ]);
+
+    expect(items.map((item) => item.kind)).toEqual(["entry", "branch", "branch", "branch"]);
+    const branches = items.filter(
+      (item): item is Extract<typeof item, { kind: "branch" }> => item.kind === "branch",
+    );
+
+    expect(branches.map((item) => item.branch.id)).toEqual([
+      "session-1:snapshot-1",
+      "session-2:snapshot-1",
+      "session-1:snapshot-2",
+    ]);
+    expect(branches[0]?.branch.entries.map((entry) => entry.id)).toEqual([
+      "same-name-1",
+      "same-id-later",
+    ]);
+    expect(items[0]).toMatchObject({ kind: "entry", entry: { id: "unbound" } });
+  });
+
+  it("does not add explicit start rows for file delete or restore", () => {
+    const entries = projectActivityEvents(
+      [
+        diagnosticEvent("source.file-delete.started", {
+          data: { itemId: "snapshot-1", sourcePath },
+          operationId: "delete-1",
+          snapshotId: "snapshot-1",
+        }),
+        diagnosticEvent("source.file-delete.completed", {
+          data: { itemId: "snapshot-1", sourcePath },
+          operationId: "delete-1",
+          snapshotId: "snapshot-1",
+        }),
+        diagnosticEvent("source.file-restore.started", {
+          data: { itemId: "snapshot-1", sourcePath },
+          operationId: "restore-1",
+          snapshotId: "snapshot-1",
+        }),
+        diagnosticEvent("source.file-restore.completed", {
+          data: { itemId: "snapshot-1", sourcePath },
+          operationId: "restore-1",
+          snapshotId: "snapshot-1",
+        }),
+      ],
+      labels,
+      "current-session",
+    );
+
+    expect(entries).toHaveLength(2);
+    expect(entries.map((entry) => entry.title)).toEqual(["File deleted", "File restored"]);
+  });
+
+  it("projects an unbound terminal operation without forcing it into a branch", () => {
+    const entry = projectActivityEvent(
+      diagnosticEvent("ffmpeg.export.completed", {
+        data: { outputPath, outputType: "fast" },
+        operationId: "legacy-export",
+      }),
+      labels,
+    );
+
+    expect(entry?.snapshotId).toBeUndefined();
   });
 
   it("projects a deleted file with its path and restore target", () => {

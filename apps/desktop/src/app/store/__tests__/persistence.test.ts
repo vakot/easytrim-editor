@@ -323,6 +323,19 @@ describe("Redux Persist store integration", () => {
     });
   });
 
+  it("rehydrates the branch activity feed view through Preferences", async () => {
+    const storage = createTestStorage({
+      [`persist:${persistConfig.key}`]: JSON.stringify({
+        preferences: JSON.stringify({ ...DEFAULT_PREFERENCES, activityFeedView: "branch" }),
+        _persist: JSON.stringify({ version: -1, rehydrated: true }),
+      }),
+    });
+
+    const { store } = await createPersistedTestStore(storage);
+
+    expect(store.getState().preferences.activityFeedView).toBe("branch");
+  });
+
   it("keeps independently created stores and persistors isolated", async () => {
     const firstStorage = createTestStorage();
     const secondStorage = createTestStorage();

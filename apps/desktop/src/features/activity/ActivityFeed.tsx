@@ -6,6 +6,7 @@ import {
   FileVideo,
   Film,
   FolderOpen,
+  GitBranch,
   Info,
   LoaderCircle,
   type LucideIcon,
@@ -51,12 +52,14 @@ import { openFileLocation } from "@/lib/tauri/media";
 
 import {
   type ActivityAction,
+  type ActivityBranch,
   type ActivityEntry,
   type ActivityKind,
   type ActivityProjectionLabels,
   type ActivitySessionLabels,
   type ActivityStatus,
   getActivitySessionPresentation,
+  groupActivityEntriesByBranch,
   groupActivityEntriesBySession,
   projectActivityEvents,
   resolveAvailableActivityActions,
@@ -134,6 +137,7 @@ export function ActivityFeed() {
       fastCutCancelled: t("app.status.fastCutCancelled"),
       fastCutFailed: t("app.status.fastCutFailed"),
       fastCutInterrupted: t("app.status.fastCutInterrupted"),
+      fastCutStarted: t("app.status.fastCutStarted"),
       fastCutting: t("app.status.fastCutting"),
       fileDeleteCancelled: t("app.status.fileDeleteCancelled"),
       fileDeleteFailed: t("app.status.fileDeleteFailed"),
@@ -152,6 +156,7 @@ export function ActivityFeed() {
       renderCancelled: t("app.status.renderCancelled"),
       renderFailed: t("app.status.renderFailed"),
       renderInterrupted: t("app.status.renderInterrupted"),
+      renderStarted: t("app.status.renderStarted"),
       rendering: t("app.status.rendering"),
     }),
     [t],
@@ -215,6 +220,7 @@ export function ActivityFeedView({
 
   const activityFeedView = useAppSelector(selectActivityFeedView);
   const isCompact = activityFeedView === "compact";
+  const isBranch = activityFeedView === "branch";
 
   const locale = i18n.resolvedLanguage ?? i18n.language;
 
@@ -299,15 +305,33 @@ export function ActivityFeedView({
                       {presentation.label}
                     </MarkerContent>
                   </Marker>
-                  {group.entries.map((entry) => (
-                    <ActivityFeedEntry
-                      compact={isCompact}
-                      entry={entry}
-                      key={entry.id}
-                      onAction={onAction}
-                      timeFormatter={timeFormatter}
-                    />
-                  ))}
+                  {isBranch
+                    ? groupActivityEntriesByBranch(group.entries).map((item) =>
+                        item.kind === "branch" ? (
+                          <ActivityFeedBranch
+                            branch={item.branch}
+                            key={item.branch.id}
+                            onAction={onAction}
+                            timeFormatter={timeFormatter}
+                          />
+                        ) : (
+                          <ActivityFeedEntry
+                            entry={item.entry}
+                            key={item.entry.id}
+                            onAction={onAction}
+                            timeFormatter={timeFormatter}
+                          />
+                        ),
+                      )
+                    : group.entries.map((entry) => (
+                        <ActivityFeedEntry
+                          compact={isCompact}
+                          entry={entry}
+                          key={entry.id}
+                          onAction={onAction}
+                          timeFormatter={timeFormatter}
+                        />
+                      ))}
                 </div>
               );
             })}
@@ -318,12 +342,74 @@ export function ActivityFeedView({
   );
 }
 
+function ActivityFeedBranch({
+  branch,
+  onAction,
+  timeFormatter,
+}: {
+  branch: ActivityBranch;
+  onAction?: (action: ActivityAction) => void;
+  timeFormatter: Intl.DateTimeFormat;
+}) {
+  const { t } = useTranslation();
+  const normalizedSourcePath = formatSourcePath(branch.path ?? "");
+  const filename = normalizedSourcePath.split(/[\\/]/).pop() || t("app.labels.file");
+
+  return (
+    <div className="relative pl-5">
+      <div aria-hidden="true" className="absolute inset-y-3 left-2 w-px bg-border" />
+      <div className="relative flex min-w-0 items-start gap-2 pb-1">
+        <span
+          aria-hidden="true"
+          className="mt-0.5 size-4 shrink-0 text-muted-foreground [&_svg:not([class*='size-'])]:size-4"
+        >
+          <GitBranch />
+        </span>
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="truncate text-xs text-foreground" title={filename}>
+            {filename}
+          </span>
+          {normalizedSourcePath ? (
+            <span
+              className="min-w-0 truncate text-xs text-muted-foreground"
+              title={normalizedSourcePath}
+            >
+              {normalizedSourcePath}
+            </span>
+          ) : null}
+        </span>
+      </div>
+      <div className="grid gap-1">
+        {branch.entries.map((entry) => (
+          <div
+            className={cn(
+              "relative pl-4",
+              "before:absolute before:top-1/2 before:left-0 before:h-px before:w-3 before:bg-border",
+            )}
+            key={entry.id}
+          >
+            <ActivityFeedEntry
+              branch
+              compact
+              entry={entry}
+              onAction={onAction}
+              timeFormatter={timeFormatter}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function ActivityFeedEntry({
+  branch = false,
   compact = false,
   entry,
   onAction,
   timeFormatter,
 }: {
+  branch?: boolean;
   compact?: boolean;
   entry: ActivityEntry;
   onAction?: (action: ActivityAction) => void;
@@ -333,20 +419,21 @@ function ActivityFeedEntry({
   const Icon = statusPresentation.icon ?? activityIcons[entry.kind];
   const action = entry.action;
   const normalizedSourcePath = formatSourcePath(entry.path ?? "");
+  const markerClassName = branch ? "text-muted-foreground" : statusPresentation.className;
 
   const showAction = !!action && onAction;
 
   if (compact) {
     return (
       <Marker className="h-6 items-center text-xs">
-        <MarkerIcon className={statusPresentation.className}>
+        <MarkerIcon className={markerClassName}>
           <Icon
             aria-hidden="true"
             className={entry.status === "pending" ? "animate-spin" : undefined}
           />
         </MarkerIcon>
         <MarkerContent className="min-w-0 flex-row flex-nowrap items-center gap-1">
-          <ActivityFeedEntryTitle entry={entry} timeFormatter={timeFormatter} />
+          <ActivityFeedEntryTitle entry={entry} muted={branch} timeFormatter={timeFormatter} />
           {showAction && (
             <ActivityFeedEntryButton
               compact={compact}
@@ -361,7 +448,7 @@ function ActivityFeedEntry({
 
   return (
     <Marker className="items-start text-xs">
-      <MarkerIcon className={statusPresentation.className}>
+      <MarkerIcon className={markerClassName}>
         <Icon
           aria-hidden="true"
           className={entry.status === "pending" ? "animate-spin" : undefined}
@@ -396,14 +483,22 @@ function ActivityFeedEntry({
 
 function ActivityFeedEntryTitle({
   entry,
+  muted = false,
   timeFormatter,
 }: {
   entry: ActivityEntry;
+  muted?: boolean;
   timeFormatter: Intl.DateTimeFormat;
 }) {
   return (
     <>
-      <span className={cn("truncate text-foreground", entry.status === "pending" && "shimmer")}>
+      <span
+        className={cn(
+          "truncate",
+          muted ? "text-muted-foreground" : "text-foreground",
+          entry.status === "pending" && "shimmer",
+        )}
+      >
         {entry.title}
       </span>
       <span>·</span>

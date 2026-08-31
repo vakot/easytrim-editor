@@ -6,7 +6,7 @@ import {
   type ThemePreference,
 } from "@/app/theme/theme";
 
-export type ActivityFeedView = "default" | "compact";
+export type ActivityFeedView = "default" | "compact" | "branch";
 
 export interface Preferences {
   activityFeedView: ActivityFeedView;

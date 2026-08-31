@@ -51,6 +51,13 @@ describe("preferences Redux domain", () => {
     );
   });
 
+  it("supports the persisted branch activity feed view", () => {
+    const nextState = preferencesReducer(undefined, activityFeedViewChanged("branch"));
+
+    expect(nextState.activityFeedView).toBe("branch");
+    expect(selectActivityFeedView({ preferences: nextState } as RootState)).toBe("branch");
+  });
+
   it("changes theme and color preferences while retaining the custom value", () => {
     const themedState = preferencesReducer(undefined, themePreferenceChanged("dark"));
     const presetState = preferencesReducer(themedState, primaryColorChanged("blue"));
