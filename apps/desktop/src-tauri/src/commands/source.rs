@@ -4,54 +4,61 @@ use tauri::{AppHandle, State, WebviewWindow};
 use tauri_plugin_dialog::DialogExt;
 
 use crate::{
-    application::source::{activate_source, create_source_ref},
-    domain::source::{SUPPORTED_VIDEO_EXTENSIONS, SourceRef, is_supported_video_path},
+    application::source::activate_source,
+    domain::source::{
+        SUPPORTED_VIDEO_EXTENSIONS, SourceImportResult, SourceRef, collect_source_import,
+        is_supported_video_path,
+    },
     error::AppError,
     state::AppState,
 };
 
 #[tauri::command]
-pub async fn choose_source(app: AppHandle) -> Result<Vec<SourceRef>, AppError> {
-    let selected = app
+pub async fn choose_source(app: AppHandle) -> Result<Option<SourceImportResult>, AppError> {
+    let selected_files = app
         .dialog()
         .file()
         .add_filter("Video", SUPPORTED_VIDEO_EXTENSIONS)
         .blocking_pick_files();
+    let selected_folders = app
+        .dialog()
+        .file()
+        .set_title("Add folders (Cancel to finish)")
+        .blocking_pick_folders();
 
-    let Some(selected) = selected else {
-        return Ok(Vec::new());
-    };
-
-    selected
+    let selected = selected_files
+        .unwrap_or_default()
         .into_iter()
+        .chain(selected_folders.unwrap_or_default())
         .map(|selected| {
-            let path = selected.into_path().map_err(|_| {
-                AppError::invalid_request("The selected file location is not supported.")
-            })?;
-            create_source_ref(path)
+            selected.into_path().map_err(|_| {
+                AppError::invalid_request("The selected source location is not supported.")
+            })
         })
-        .collect()
+        .collect::<Result<Vec<_>, _>>()?;
+
+    if selected.is_empty() {
+        return Ok(None);
+    }
+
+    let result = tauri::async_runtime::spawn_blocking(move || collect_source_import(&selected))
+        .await
+        .map_err(|_| AppError::internal("The selected sources could not be loaded."))?;
+    Ok(Some(result))
 }
 
 #[tauri::command]
-pub fn import_dropped_sources(
+pub async fn import_dropped_sources(
     window: WebviewWindow,
     paths: Vec<PathBuf>,
-) -> Result<Vec<SourceRef>, AppError> {
+) -> Result<SourceImportResult, AppError> {
     // Windows can keep Explorer in front after it provides a drop. Regain focus
     // for the receiving editor, without making a valid import depend on this UX step.
     let _ = window.set_focus();
 
-    let sources = paths
-        .into_iter()
-        .filter_map(|path| create_source_ref(path).ok())
-        .collect::<Vec<_>>();
-    if sources.is_empty() {
-        return Err(AppError::invalid_request(
-            "Drop a supported video file instead of an empty selection.",
-        ));
-    }
-    Ok(sources)
+    tauri::async_runtime::spawn_blocking(move || collect_source_import(&paths))
+        .await
+        .map_err(|_| AppError::internal("The dropped sources could not be loaded."))
 }
 
 #[tauri::command]

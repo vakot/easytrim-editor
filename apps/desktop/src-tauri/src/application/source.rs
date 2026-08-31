@@ -6,11 +6,6 @@ use crate::{
     state::AppState,
 };
 
-pub fn create_source_ref(path: PathBuf) -> Result<SourceRef, AppError> {
-    let validated = validate_source(&path)?;
-    source_ref_from_path(validated.path)
-}
-
 pub fn activate_source(state: &AppState, path: PathBuf) -> Result<SourceRef, AppError> {
     let generation = state.begin_source_replacement()?;
     let validated = validate_source(&path)?;
