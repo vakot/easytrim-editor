@@ -75,12 +75,27 @@ export function PanelVisibilityControls() {
                   </DropdownMenuCheckboxItem>
                 )}
               </ResizablePanelControl>
+              <ResizablePanelControl panelId="workspace-activity">
+                {({ isAvailable, isCollapsed, isDisabled }) => (
+                  <DropdownMenuCheckboxItem
+                    checked={isAvailable && !isCollapsed}
+                    disabled={!isAvailable || isDisabled}
+                    inset
+                    keepOpen
+                  >
+                    {t("app.actions.showPanel", { panel: t("app.labels.rightPanel") })}
+                    <DropdownMenuIcon side="right">
+                      <PanelRight aria-hidden="true" className="size-3" />
+                    </DropdownMenuIcon>
+                  </DropdownMenuCheckboxItem>
+                )}
+              </ResizablePanelControl>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <ResizablePanelControl
                 mode="reset"
-                panelId={["workspace-sidebar", "editor-stage-timeline"]}
+                panelId={["workspace-sidebar", "editor-stage-timeline", "workspace-activity"]}
               >
                 {({ isDisabled }) => (
                   <DropdownMenuItem disabled={isDisabled} inset keepOpen>
@@ -96,6 +111,7 @@ export function PanelVisibilityControls() {
         </DropdownMenu>
         <TooltipContent>{t("app.tooltips.customizeLayout")}</TooltipContent>
       </Tooltip>
+
       <Tooltip preserveOnTrigger>
         <ResizablePanelControl panelId="workspace-sidebar">
           {({ isCollapsed }) => (

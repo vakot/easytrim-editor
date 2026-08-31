@@ -231,7 +231,7 @@ export function ActivityFeedView({
         className="mx-3 font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
         id={titleId}
       >
-        {t("app.labels.activity")}
+        {t("app.labels.activityFeed")}
       </h3>
 
       <ResizablePanelControl panelId="workspace-activity">

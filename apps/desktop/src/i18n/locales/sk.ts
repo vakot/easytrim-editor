@@ -38,7 +38,7 @@ export const sk = {
       update: "Aktualizovať",
     },
     labels: {
-      activity: "Aktivita",
+      activityFeed: "Prehľad aktivít",
       bottomPanel: "Spodný panel",
       file: "Súbor",
       help: "Pomocník",

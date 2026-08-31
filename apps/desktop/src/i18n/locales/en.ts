@@ -36,7 +36,7 @@ export const en = {
       update: "Update",
     },
     labels: {
-      activity: "Activity",
+      activityFeed: "Activity Feed",
       bottomPanel: "Bottom panel",
       file: "File",
       help: "Help",
