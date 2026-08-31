@@ -2,6 +2,16 @@ import { ChevronDownIcon, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-re
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -214,24 +224,22 @@ export function PresetManager() {
         </DialogContent>
       </Dialog>
 
-      <Dialog
+      <AlertDialog
         onOpenChange={(open) => !open && setPresetToDelete(null)}
         open={presetToDelete !== null}
       >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("export.dialogs.preset.deleteTitle")}</DialogTitle>
-            <DialogDescription>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("export.dialogs.preset.deleteTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>
               {t("export.dialogs.preset.deleteDescription", {
                 name: presetToDelete?.name ?? "",
               })}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button onClick={() => setPresetToDelete(null)} variant="outline">
-              {t("common.actions.cancel")}
-            </Button>
-            <Button
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.actions.cancel")}</AlertDialogCancel>
+            <AlertDialogAction
               onClick={() => {
                 if (presetToDelete) {
                   dispatch(exportPresetSelected(presetToDelete.id));
@@ -242,10 +250,10 @@ export function PresetManager() {
               variant="destructive"
             >
               {t("common.actions.delete")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 }

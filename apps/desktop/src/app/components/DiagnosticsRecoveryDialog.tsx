@@ -1,15 +1,16 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 import { diagnostics } from "@/lib/diagnostics";
 import { revealDiagnosticReport } from "@/lib/tauri/diagnostics";
@@ -42,26 +43,31 @@ export function DiagnosticsRecoveryDialog({
   };
 
   return (
-    <Dialog onOpenChange={setOpen} open={open}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{t("app.dialogs.diagnosticsRecovery.title")}</DialogTitle>
-          <DialogDescription>{t("app.dialogs.diagnosticsRecovery.description")}</DialogDescription>
-        </DialogHeader>
+    <AlertDialog onOpenChange={setOpen} open={open}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{t("app.dialogs.diagnosticsRecovery.title")}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {t("app.dialogs.diagnosticsRecovery.description")}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
         {revealFailed ? (
           <p className="text-sm text-destructive">
             {t("app.dialogs.diagnosticsRecovery.revealFailed")}
           </p>
         ) : null}
-        <DialogFooter>
-          <Button onClick={() => setOpen(false)} variant="outline">
-            {t("common.actions.close")}
-          </Button>
-          <Button onClick={() => void showReport()}>
+        <AlertDialogFooter>
+          <AlertDialogCancel>{t("common.actions.close")}</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={(event) => {
+              event.preventDefault();
+              void showReport();
+            }}
+          >
             {t("app.dialogs.diagnosticsRecovery.showReport")}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
