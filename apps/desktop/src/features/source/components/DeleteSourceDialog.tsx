@@ -1,14 +1,15 @@
 import { useTranslation } from "react-i18next";
 
-import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface DeleteSourceDialogProps {
   error?: string | null;
@@ -30,24 +31,29 @@ export function DeleteSourceDialog({
   const { t } = useTranslation();
 
   return (
-    <Dialog onOpenChange={onOpenChange} open={open}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{t("source.dialogs.delete.title")}</DialogTitle>
-          <DialogDescription>
+    <AlertDialog onOpenChange={onOpenChange} open={open}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{t("source.dialogs.delete.title")}</AlertDialogTitle>
+          <AlertDialogDescription>
             {t("source.dialogs.delete.description", { name: sourceName })}
-          </DialogDescription>
-        </DialogHeader>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
         {error ? <p className="text-sm text-destructive">{error}</p> : null}
-        <DialogFooter>
-          <Button disabled={pending} onClick={() => onOpenChange(false)} variant="outline">
-            {t("common.actions.cancel")}
-          </Button>
-          <Button disabled={pending} onClick={onConfirm} variant="destructive">
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={pending}>{t("common.actions.cancel")}</AlertDialogCancel>
+          <AlertDialogAction
+            disabled={pending}
+            onClick={(event) => {
+              event.preventDefault();
+              onConfirm();
+            }}
+            variant="destructive"
+          >
             {t("common.actions.delete")}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

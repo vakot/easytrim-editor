@@ -2,15 +2,17 @@ import { CircleStop, LogOut, Moon, Power } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import { Kbd } from "@/components/ui/kbd";
 import {
   MenubarCheckboxItem,
@@ -165,17 +167,15 @@ export function MenuBarQueue() {
           </MenubarGroup>
         </MenubarContent>
       </MenubarMenu>
-      <Dialog onOpenChange={setIsCancelQueueConfirmOpen} open={isCancelQueueConfirmOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("queue.dialogs.cancel.title")}</DialogTitle>
-            <DialogDescription>{t("queue.dialogs.cancel.description")}</DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button onClick={() => setIsCancelQueueConfirmOpen(false)} variant="outline">
-              {t("common.actions.back")}
-            </Button>
-            <Button
+      <AlertDialog onOpenChange={setIsCancelQueueConfirmOpen} open={isCancelQueueConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("queue.dialogs.cancel.title")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("queue.dialogs.cancel.description")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.actions.back")}</AlertDialogCancel>
+            <AlertDialogAction
               onClick={() => {
                 setIsCancelQueueConfirmOpen(false);
                 void dispatch(cancelAllExportsRequested());
@@ -183,23 +183,23 @@ export function MenuBarQueue() {
               variant="destructive"
             >
               {t("queue.actions.cancel")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      <Dialog onOpenChange={setIsDeleteSourceConfirmOpen} open={isDeleteSourceConfirmOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("queue.dialogs.deleteSourceOnRenderFinish.title")}</DialogTitle>
-            <DialogDescription>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog onOpenChange={setIsDeleteSourceConfirmOpen} open={isDeleteSourceConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t("queue.dialogs.deleteSourceOnRenderFinish.title")}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
               {t("queue.dialogs.deleteSourceOnRenderFinish.description")}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button onClick={() => setIsDeleteSourceConfirmOpen(false)} variant="outline">
-              {t("common.actions.back")}
-            </Button>
-            <Button
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.actions.back")}</AlertDialogCancel>
+            <AlertDialogAction
               onClick={() => {
                 setIsDeleteSourceConfirmOpen(false);
                 dispatch(preferenceChanged({ enabled: true, key: "deleteSourceOnRenderFinish" }));
@@ -207,10 +207,10 @@ export function MenuBarQueue() {
               variant="destructive"
             >
               {t("common.actions.enable")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

@@ -24,13 +24,15 @@ const recovery = {
 describe("DiagnosticsRecoveryDialog", () => {
   it("stays absent when startup has no recovery report", () => {
     render(<DiagnosticsRecoveryDialog recovery={null} />);
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
   });
 
   it("shows abnormal shutdown recovery and reveals the selected report", async () => {
     render(<DiagnosticsRecoveryDialog recovery={recovery} />);
 
-    expect(screen.getByRole("dialog")).toHaveTextContent("EasyTrim did not shut down normally");
+    expect(screen.getByRole("alertdialog")).toHaveTextContent(
+      "EasyTrim did not shut down normally",
+    );
     fireEvent.click(screen.getByRole("button", { name: "Show Report" }));
 
     await waitFor(() => expect(revealDiagnosticReport).toHaveBeenCalledWith(recovery));
