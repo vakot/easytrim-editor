@@ -3,6 +3,10 @@ import * as React from "react";
 
 import { cn } from "@/lib/class-names.utils";
 
+type RadioGroupItemProps = React.ComponentProps<typeof RadioGroupPrimitive.Item> & {
+  indicator?: React.ReactNode;
+};
+
 function RadioGroup({
   className,
   ...props
@@ -16,11 +20,7 @@ function RadioGroup({
   );
 }
 
-function RadioGroupItem({
-  children,
-  className,
-  ...props
-}: React.ComponentProps<typeof RadioGroupPrimitive.Item>) {
+function RadioGroupItem({ children, className, indicator, ...props }: RadioGroupItemProps) {
   return (
     <RadioGroupPrimitive.Item
       className={cn(
@@ -30,12 +30,16 @@ function RadioGroupItem({
       data-slot="radio-group-item"
       {...props}
     >
-      <RadioGroupPrimitive.Indicator
-        className="flex size-4 items-center justify-center"
-        data-slot="radio-group-indicator"
-      >
-        <span className="absolute top-1/2 left-1/2 size-2 -translate-1/2 rounded-full bg-primary-foreground" />
-      </RadioGroupPrimitive.Indicator>
+      {indicator === undefined ? (
+        <RadioGroupPrimitive.Indicator
+          className="flex size-4 items-center justify-center"
+          data-slot="radio-group-indicator"
+        >
+          <span className="absolute top-1/2 left-1/2 size-2 -translate-1/2 rounded-full bg-primary-foreground" />
+        </RadioGroupPrimitive.Indicator>
+      ) : (
+        indicator
+      )}
       {children}
     </RadioGroupPrimitive.Item>
   );

@@ -33,6 +33,14 @@ describe("SegmentedControl", () => {
     expect(screen.getByRole("radio", { name: "Archive" })).toHaveAttribute("aria-checked", "true");
   });
 
+  it("omits the radio indicator from the segmented layout", () => {
+    renderControl();
+
+    for (const radio of screen.getAllByRole("radio")) {
+      expect(radio.querySelector('[data-slot="radio-group-indicator"]')).toBeNull();
+    }
+  });
+
   it("supports controlled selection changes", async () => {
     const user = userEvent.setup();
 

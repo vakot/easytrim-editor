@@ -22,15 +22,13 @@ function SegmentedControl({
 function SegmentedControlItem({
   className,
   ...props
-}: React.ComponentProps<typeof RadioGroupItem>) {
+}: Omit<React.ComponentProps<typeof RadioGroupItem>, "indicator">) {
   return (
-    <Button asChild size="lg" variant="outline">
+    <Button asChild variant="outline">
       <RadioGroupItem
-        className={cn(
-          "aspect-auto h-9 w-auto rounded-lg *:data-[slot=radio-group-indicator]:hidden",
-          className,
-        )}
+        className={cn("aspect-auto size-auto rounded-lg", className)}
         {...props}
+        indicator={null}
       />
     </Button>
   );
