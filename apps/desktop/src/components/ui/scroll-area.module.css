@@ -3,8 +3,8 @@
   position: absolute;
   inset-inline: 0;
   z-index: 10;
-  height: 10rem;
-  background-color: var(--card);
+  height: 2rem;
+  background-color: color-mix(in srgb, var(--card) 75%, transparent);
   opacity: 0;
   pointer-events: none;
   content: "";
