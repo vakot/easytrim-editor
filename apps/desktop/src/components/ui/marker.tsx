@@ -54,7 +54,7 @@ function MarkerContent({ className, ...props }: React.ComponentProps<"span">) {
   return (
     <span
       className={cn(
-        "min-w-0 wrap-break-word group-data-[variant=separator]/marker:flex-none group-data-[variant=separator]/marker:text-center *:[a]:underline *:[a]:underline-offset-3 *:[a]:hover:text-foreground",
+        "flex min-w-0 flex-1 flex-col wrap-break-word group-data-[variant=separator]/marker:flex-none group-data-[variant=separator]/marker:text-center *:[a]:underline *:[a]:underline-offset-3 *:[a]:hover:text-foreground",
         className,
       )}
       data-slot="marker-content"
@@ -63,4 +63,24 @@ function MarkerContent({ className, ...props }: React.ComponentProps<"span">) {
   );
 }
 
-export { Marker, MarkerContent, MarkerIcon, markerVariants };
+function MarkerDescription({ className, ...props }: React.ComponentProps<"span">) {
+  return (
+    <span
+      className={cn("flex min-w-0 items-center gap-1 text-xs text-muted-foreground", className)}
+      data-slot="marker-description"
+      {...props}
+    />
+  );
+}
+
+function MarkerAction({ className, ...props }: React.ComponentProps<"span">) {
+  return (
+    <span
+      className={cn("ml-auto shrink-0 self-start", className)}
+      data-slot="marker-action"
+      {...props}
+    />
+  );
+}
+
+export { Marker, MarkerAction, MarkerContent, MarkerDescription, MarkerIcon, markerVariants };
