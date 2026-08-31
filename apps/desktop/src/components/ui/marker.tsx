@@ -21,7 +21,7 @@ const markerVariants = cva(
 
 const markerGroupVariants = cva(
   [
-    "relative ml-2 flex flex-col pl-7",
+    "relative ml-2 flex flex-col pl-4",
 
     // Main vertical branch line — independent of gap.
     "before:absolute",
@@ -39,10 +39,11 @@ const markerGroupVariants = cva(
 
           // Rounded connector for every row.
           "*:data-[slot=marker]:after:absolute",
-          "*:data-[slot=marker]:after:-left-7",
-          "*:data-[slot=marker]:after:top-0",
+          "*:data-[slot=marker]:after:-left-4",
+          "*:data-[slot=marker]:after:top-1/2",
+          "*:data-[slot=marker]:after:-translate-y-2",
           "*:data-[slot=marker]:after:h-2",
-          "*:data-[slot=marker]:after:w-5",
+          "*:data-[slot=marker]:after:w-3",
           "*:data-[slot=marker]:after:rounded-bl-md",
           "*:data-[slot=marker]:after:border-b",
           "*:data-[slot=marker]:after:border-l",

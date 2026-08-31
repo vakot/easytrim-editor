@@ -6,7 +6,6 @@ import {
   FileVideo,
   Film,
   FolderOpen,
-  GitBranch,
   Info,
   LoaderCircle,
   type LucideIcon,
@@ -369,12 +368,10 @@ function ActivityFeedBranch({
   return (
     <div>
       <Marker>
-        <MarkerIcon>
-          <GitBranch />
-        </MarkerIcon>
+        <ActivityEntryMarkerIcon entry={branch.entries[branch.entries.length - 1]} />
 
         <MarkerContent>
-          <MarkerTitle className="min-w-0 text-foreground">{filename}</MarkerTitle>
+          <MarkerTitle className="min-w-0 text-xs text-foreground">{filename}</MarkerTitle>
           <MarkerDescription className="truncate">
             {branch.path ? (
               <span className="min-w-0 flex-1 truncate" title={normalizedSourcePath}>
@@ -409,26 +406,19 @@ function ActivityFeedMarkerGroupItem({
   onAction?: (action: ActivityAction) => void;
   timeFormatter: Intl.DateTimeFormat;
 }) {
-  const statusPresentation = activityStatusPresentation[entry.status];
-  const Icon = statusPresentation.icon ?? activityIcons[entry.kind];
   const action = entry.action;
 
   const showAction = !!action && onAction;
 
   return (
     <Marker className="items-center text-xs">
-      <MarkerIcon className={statusPresentation.className}>
-        <Icon
-          aria-hidden="true"
-          className={entry.status === "pending" ? "animate-spin" : undefined}
-        />
-      </MarkerIcon>
       <MarkerContent className="flex-row flex-nowrap items-center gap-1">
         <ActivityFeedEntryTitle
           className="text-muted-foreground"
           entry={entry}
           timeFormatter={timeFormatter}
         />
+
         {showAction && (
           <ActivityFeedEntryButton compact entry={entry} onClick={() => onAction(action)} />
         )}
@@ -448,8 +438,6 @@ function ActivityFeedEntry({
   onAction?: (action: ActivityAction) => void;
   timeFormatter: Intl.DateTimeFormat;
 }) {
-  const statusPresentation = activityStatusPresentation[entry.status];
-  const Icon = statusPresentation.icon ?? activityIcons[entry.kind];
   const action = entry.action;
   const normalizedSourcePath = formatSourcePath(entry.path ?? "");
 
@@ -457,19 +445,16 @@ function ActivityFeedEntry({
 
   if (compact) {
     return (
-      <Marker className="items-center text-xs">
-        <MarkerIcon className={statusPresentation.className}>
-          <Icon
-            aria-hidden="true"
-            className={entry.status === "pending" ? "animate-spin" : undefined}
-          />
-        </MarkerIcon>
+      <Marker className="h-6 items-center text-xs">
+        <ActivityEntryMarkerIcon entry={entry} />
+
         <MarkerContent className="flex-row flex-nowrap items-center gap-1">
           <ActivityFeedEntryTitle
             className="text-foreground"
             entry={entry}
             timeFormatter={timeFormatter}
           />
+
           {showAction && (
             <ActivityFeedEntryButton
               compact={compact}
@@ -483,19 +468,16 @@ function ActivityFeedEntry({
   }
 
   return (
-    <Marker className="items-start text-xs">
-      <MarkerIcon className={statusPresentation.className}>
-        <Icon
-          aria-hidden="true"
-          className={entry.status === "pending" ? "animate-spin" : undefined}
-        />
-      </MarkerIcon>
+    <Marker className="min-h-6 items-start text-xs">
+      <ActivityEntryMarkerIcon entry={entry} />
+
       <MarkerContent>
         <ActivityFeedEntryTitle
           className="text-foreground"
           entry={entry}
           timeFormatter={timeFormatter}
         />
+
         <MarkerDescription>
           {entry.path ? (
             <span className="min-w-0 flex-1 truncate" title={normalizedSourcePath}>
@@ -504,6 +486,7 @@ function ActivityFeedEntry({
           ) : null}
         </MarkerDescription>
       </MarkerContent>
+
       {showAction && (
         <MarkerAction>
           <ActivityFeedEntryButton
@@ -514,6 +497,22 @@ function ActivityFeedEntry({
         </MarkerAction>
       )}
     </Marker>
+  );
+}
+
+function ActivityEntryMarkerIcon({ entry }: { entry: ActivityEntry | undefined }) {
+  if (!entry) return;
+
+  const statusPresentation = activityStatusPresentation[entry.status];
+  const Icon = statusPresentation.icon ?? activityIcons[entry.kind];
+
+  return (
+    <MarkerIcon className={statusPresentation.className}>
+      <Icon
+        aria-hidden="true"
+        className={entry.status === "pending" ? "animate-spin" : undefined}
+      />
+    </MarkerIcon>
   );
 }
 
@@ -562,6 +561,7 @@ function ActivityFeedEntryButton({
       <TooltipTrigger asChild>
         <Button
           aria-label={actionLabel}
+          className={cn(compact && "-mt-1")}
           onClick={onClick}
           size="icon-xs"
           variant={compact ? "ghost" : "outline"}
