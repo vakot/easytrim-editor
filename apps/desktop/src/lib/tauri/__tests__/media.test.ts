@@ -54,11 +54,16 @@ describe("media IPC adapter", () => {
       { displayName: "third.mp4", sourcePath: "C:/Media/third.mp4" },
     ]);
 
-    await expect(chooseSource()).resolves.toEqual([
-      { displayName: "clip.mp4", sourcePath: "C:/Media/clip.mp4" },
-      { displayName: "second.mp4", sourcePath: "C:/Media/second.mp4" },
-      { displayName: "third.mp4", sourcePath: "C:/Media/third.mp4" },
-    ]);
+    await expect(chooseSource()).resolves.toMatchObject({
+      acceptedFileCount: 3,
+      directFileCount: 3,
+      folderCount: 0,
+      sources: [
+        { displayName: "clip.mp4", sourcePath: "C:/Media/clip.mp4" },
+        { displayName: "second.mp4", sourcePath: "C:/Media/second.mp4" },
+        { displayName: "third.mp4", sourcePath: "C:/Media/third.mp4" },
+      ],
+    });
   });
 
   it("imports a source by its physical path", async () => {
@@ -268,8 +273,13 @@ describe("media IPC adapter", () => {
         paths: ["C:\\private\\video.mkv"],
       });
       expect(onEvent).toHaveBeenLastCalledWith({
+        importResult: expect.objectContaining({
+          acceptedFileCount: 1,
+          directFileCount: 1,
+          folderCount: 0,
+          sources: [{ displayName: "video.mkv", sourcePath: "C:\\private\\video.mkv" }],
+        }),
         status: "selected",
-        sources: [{ displayName: "video.mkv", sourcePath: "C:\\private\\video.mkv" }],
       });
     });
   });
@@ -314,12 +324,17 @@ describe("media IPC adapter", () => {
         paths: ["C:/Media/a.mp4", "C:/Media/b.mp4", "C:/Media/c.mp4"],
       });
       expect(onEvent).toHaveBeenLastCalledWith({
+        importResult: expect.objectContaining({
+          acceptedFileCount: 3,
+          directFileCount: 3,
+          folderCount: 0,
+          sources: [
+            { displayName: "a.mp4", sourcePath: "C:/Media/a.mp4" },
+            { displayName: "b.mp4", sourcePath: "C:/Media/b.mp4" },
+            { displayName: "c.mp4", sourcePath: "C:/Media/c.mp4" },
+          ],
+        }),
         status: "selected",
-        sources: [
-          { displayName: "a.mp4", sourcePath: "C:/Media/a.mp4" },
-          { displayName: "b.mp4", sourcePath: "C:/Media/b.mp4" },
-          { displayName: "c.mp4", sourcePath: "C:/Media/c.mp4" },
-        ],
       });
     });
   });

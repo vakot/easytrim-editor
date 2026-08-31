@@ -59,6 +59,23 @@ function fileEntry(status: ActivityEntry["status"]): ActivityEntry {
 }
 
 describe("ActivityFeedView file lifecycle entries", () => {
+  it.each([
+    ["files-imported", "Opened 1 file", "lucide-file-play"],
+    ["folders-imported", "Opened 1 file from 1 folder", "lucide-folder-open"],
+  ] as const)("uses the %s import marker icon", (kind, title, iconClass) => {
+    const { container } = renderActivity({
+      id: `current-session:import-${kind}`,
+      kind,
+      operationId: `import-${kind}`,
+      sessionId: "current-session",
+      startedAt: "2026-08-31T08:30:00.000Z",
+      status: "completed",
+      title,
+    });
+
+    expect(container.querySelector(`svg.${iconClass}`)).toBeInTheDocument();
+  });
+
   it("shows localized local-only diagnostics privacy information beside the title", async () => {
     const user = userEvent.setup();
     renderActivity(fileEntry("pending"));

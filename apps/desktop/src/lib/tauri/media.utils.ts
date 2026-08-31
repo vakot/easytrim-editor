@@ -14,6 +14,7 @@ import type {
   OptimizedExportPlan,
   OutputSelection,
   PreviewDescriptor,
+  SourceImportResult,
   VideoStream,
   WaveformResult,
 } from "./media.types";
@@ -42,6 +43,39 @@ export function parseSourceRef(value: unknown): SourceRef {
 
 export function parseSourceRefs(value: unknown): SourceRef[] {
   return requireArray(value, "source references").map(parseSourceRef);
+}
+
+export function parseSourceImportResult(value: unknown): SourceImportResult | null {
+  if (value === null) return null;
+  if (Array.isArray(value)) {
+    const sources = parseSourceRefs(value);
+    return {
+      acceptedFileCount: sources.length,
+      directFileCount: sources.length,
+      discoveredFileCount: 0,
+      folderCount: 0,
+      readErrorCount: 0,
+      recursive: false,
+      skippedFileCount: 0,
+      sources,
+      truncated: false,
+    };
+  }
+
+  const result = requireRecord(value, "source import result");
+  const truncationReason = optionalString(result.truncationReason);
+  return {
+    acceptedFileCount: requireInteger(result.acceptedFileCount, "accepted file count"),
+    directFileCount: requireInteger(result.directFileCount, "direct file count"),
+    discoveredFileCount: requireInteger(result.discoveredFileCount, "discovered file count"),
+    folderCount: requireInteger(result.folderCount, "folder count"),
+    readErrorCount: requireInteger(result.readErrorCount, "read error count"),
+    recursive: requireBoolean(result.recursive, "recursive import flag"),
+    skippedFileCount: requireInteger(result.skippedFileCount, "skipped file count"),
+    sources: requireArray(result.sources, "imported sources").map(parseSourceRef),
+    truncated: requireBoolean(result.truncated, "traversal truncation flag"),
+    ...(truncationReason ? { truncationReason } : {}),
+  };
 }
 
 export function parseOutputSelection(value: unknown): OutputSelection {
@@ -287,6 +321,11 @@ function optionalBoolean(value: unknown): boolean | undefined {
 
 function requireInteger(value: unknown, label: string): number {
   if (typeof value !== "number" || !Number.isSafeInteger(value)) throw invalidResponse(label);
+  return value;
+}
+
+function requireBoolean(value: unknown, label: string): boolean {
+  if (typeof value !== "boolean") throw invalidResponse(label);
   return value;
 }
 

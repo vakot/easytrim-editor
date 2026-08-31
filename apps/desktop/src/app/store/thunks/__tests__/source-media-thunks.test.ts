@@ -44,16 +44,19 @@ import {
   leaveActiveImportedItem,
   navigateToImportedItem,
   prepareSourceWaveforms,
+  restoreSourceFileRequested,
 } from "@/app/store/thunks/source-media-thunks";
 import type { EditorSnapshot } from "@/domain/editor-snapshot";
 import type { SourceRef } from "@/domain/source";
-import type { MediaInfo, WaveformResult } from "@/lib/tauri/media.types";
+import { getCurrentSessionDiagnosticsSnapshot } from "@/lib/diagnostics";
+import type { MediaInfo, SourceImportResult, WaveformResult } from "@/lib/tauri/media.types";
 
 const mocks = vi.hoisted(() => ({
   checkMediaCapabilities: vi.fn(),
   chooseSource: vi.fn(),
   inspectMedia: vi.fn(),
   activateSourcePath: vi.fn(),
+  restoreSourceFromTrash: vi.fn(),
   prepareAudioPreviews: vi.fn(),
   prepareProxyPreview: vi.fn(),
   prepareSourcePreview: vi.fn(),
@@ -68,6 +71,7 @@ vi.mock("@/lib/tauri/media", async (importOriginal) => {
     chooseSource: mocks.chooseSource,
     inspectMedia: mocks.inspectMedia,
     activateSourcePath: mocks.activateSourcePath,
+    restoreSourceFromTrash: mocks.restoreSourceFromTrash,
     prepareAudioPreviews: mocks.prepareAudioPreviews,
     prepareProxyPreview: mocks.prepareProxyPreview,
     prepareSourcePreview: mocks.prepareSourcePreview,
@@ -172,6 +176,7 @@ describe("source/media orchestration thunks", () => {
       ffmpeg: { available: true, version: "ffmpeg" },
       ffprobe: { available: true, version: "ffprobe" },
     });
+    mocks.restoreSourceFromTrash.mockResolvedValue(undefined);
     mocks.activateSourcePath.mockImplementation(async (sourcePath: string) => {
       const source = [firstSource, secondSource, thirdSource].find(
         (candidate) => candidate.sourcePath === sourcePath,
@@ -200,6 +205,50 @@ describe("source/media orchestration thunks", () => {
     );
   });
 
+  it("records one picker import operation with its aggregate counts and origin", async () => {
+    const appStore = createAppStore();
+    const importResult: SourceImportResult = {
+      acceptedFileCount: 3,
+      directFileCount: 1,
+      discoveredFileCount: 2,
+      folderCount: 1,
+      readErrorCount: 0,
+      recursive: true,
+      skippedFileCount: 1,
+      sources: [firstSource, secondSource, thirdSource],
+      truncated: false,
+    };
+
+    mocks.chooseSource.mockResolvedValue(importResult);
+
+    await appStore.dispatch(chooseSourceRequested({ id: "Ctrl+O", type: "hotkey" }));
+
+    const events = getCurrentSessionDiagnosticsSnapshot().events;
+    const started = [...events].reverse().find((event) => event.event === "source.import.started");
+    expect(started).toMatchObject({
+      origin: { id: "Ctrl+O", type: "hotkey" },
+      result: "started",
+    });
+    const completed = [...events]
+      .reverse()
+      .find(
+        (event) =>
+          event.event === "source.import.completed" && event.operationId === started?.operationId,
+      );
+
+    expect(completed).toMatchObject({
+      data: expect.objectContaining({
+        acceptedFileCount: 3,
+        directFileCount: 1,
+        discoveredFileCount: 2,
+        folderCount: 1,
+        skippedFileCount: 1,
+      }),
+      durationMs: expect.any(Number),
+      operationId: started?.operationId,
+    });
+  });
+
   it("coordinates inspect, source preview, and multiple audio previews", async () => {
     const appStore = createAppStore();
     mocks.inspectMedia.mockResolvedValue(createMedia(firstSource.sourcePath, 2));
@@ -220,6 +269,25 @@ describe("source/media orchestration thunks", () => {
     expect(selectImportQueueItems(appStore.getState())[0]?.origin).toBe("source-import");
     expect(selectActiveItemId(appStore.getState())).toBe(
       selectImportQueueItems(appStore.getState())[0]?.id,
+    );
+  });
+
+  it("restores a manually deleted source by its diagnostic path", async () => {
+    const appStore = createAppStore();
+    const sourcePath = "C:/Media/manually-deleted.mp4";
+
+    await expect(
+      appStore.dispatch(restoreSourceFileRequested({ itemId: "import-1", sourcePath })),
+    ).resolves.toBe(true);
+
+    expect(mocks.restoreSourceFromTrash).toHaveBeenCalledWith(sourcePath);
+    expect(getCurrentSessionDiagnosticsSnapshot().events).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          data: { itemId: "import-1", sourcePath },
+          event: "source.file-restore.completed",
+        }),
+      ]),
     );
   });
 

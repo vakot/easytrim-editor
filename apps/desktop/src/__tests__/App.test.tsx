@@ -285,7 +285,7 @@ describe("App", () => {
       "aria-pressed",
       "false",
     );
-  }, 10_000);
+  });
 
   it("starts with the editor in a no-source state", async () => {
     render(<App />);
@@ -1183,7 +1183,7 @@ describe("App", () => {
       bounds.mockRestore();
       vi.unstubAllGlobals();
     }
-  });
+  }, 10_000);
 
   it("keeps tracks enabled when waveform preparation fails and retries per track", async () => {
     const bounds = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({

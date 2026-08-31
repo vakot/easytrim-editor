@@ -16,6 +16,7 @@ import type {
   OutputSelection,
   PreviewDescriptor,
   SourceDropEvent,
+  SourceImportResult,
   WaveformResult,
 } from "./media.types";
 import {
@@ -28,15 +29,15 @@ import {
   parseOptimizedExportPlan,
   parseOutputSelection,
   parsePreviewDescriptor,
+  parseSourceImportResult,
   parseSourceRef,
-  parseSourceRefs,
   parseWaveformResults,
 } from "./media.utils";
 
-export async function chooseSource(): Promise<SourceRef[]> {
+export async function chooseSource(): Promise<SourceImportResult | null> {
   try {
     const value = await invoke<unknown>("choose_source");
-    return value === null ? [] : parseSourceRefs(value);
+    return parseSourceImportResult(value);
   } catch (error: unknown) {
     throw normalizeAppError(error);
   }
@@ -232,6 +233,7 @@ export async function prepareWaveforms(
 
 export async function listenForSourceDrops(
   onEvent: (event: SourceDropEvent) => void,
+  onImportRequested?: () => string,
 ): Promise<UnlistenFn> {
   return getCurrentWebview().onDragDropEvent((event) => {
     switch (event.payload.type) {
@@ -253,9 +255,20 @@ export async function listenForSourceDrops(
           });
           break;
         }
+        const operationId = onImportRequested?.();
         void importDroppedSources(event.payload.paths).then(
-          (sources) => onEvent({ status: "selected", sources }),
-          (error: unknown) => onEvent({ status: "failed", error: normalizeAppError(error) }),
+          (importResult) =>
+            onEvent({
+              importResult,
+              ...(operationId ? { operationId } : {}),
+              status: "selected",
+            }),
+          (error: unknown) =>
+            onEvent({
+              error: normalizeAppError(error),
+              ...(operationId ? { operationId } : {}),
+              status: "failed",
+            }),
         );
         break;
       }
@@ -265,9 +278,15 @@ export async function listenForSourceDrops(
   });
 }
 
-async function importDroppedSources(paths: string[]): Promise<SourceRef[]> {
+async function importDroppedSources(paths: string[]): Promise<SourceImportResult> {
   try {
-    return parseSourceRefs(await invoke<unknown>("import_dropped_sources", { paths }));
+    const result = parseSourceImportResult(
+      await invoke<unknown>("import_dropped_sources", { paths }),
+    );
+
+    if (!result) throw new Error("The native application returned no import result.");
+
+    return result;
   } catch (error: unknown) {
     throw normalizeAppError(error);
   }

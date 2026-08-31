@@ -27,6 +27,9 @@ const labels: ActivityProjectionLabels = {
   fileRestoreInterrupted: "File restoration interrupted",
   fileRestoring: "Restoring file...",
   fileRestored: "File restored",
+  importOpenedFiles: (count) => `Opened ${count} file${count === 1 ? "" : "s"}`,
+  importOpenedFilesFromFolders: (fileCount, folderCount) =>
+    `Opened ${fileCount} file${fileCount === 1 ? "" : "s"} from ${folderCount} folder${folderCount === 1 ? "" : "s"}`,
   renderCancelled: "Render cancelled",
   renderCompleted: "Optimized render completed",
   renderFailed: "Render failed",
@@ -63,6 +66,77 @@ function session(
 }
 
 describe("activity projection", () => {
+  it("projects one completed file import from its correlated diagnostics", () => {
+    const entries = projectActivityEvents(
+      [
+        diagnosticEvent("source.import.started", {
+          operationId: "import-1",
+          timestamp: "2026-08-31T08:59:00.000Z",
+          data: { directFileCount: 1, folderCount: 0 },
+        }),
+        diagnosticEvent("source.import.requested", {
+          operationId: "import-1",
+          data: { directFileCount: 1, folderCount: 0 },
+        }),
+        diagnosticEvent("source.import.completed", {
+          operationId: "import-1",
+          data: {
+            acceptedFileCount: 1,
+            directFileCount: 1,
+            discoveredFileCount: 0,
+            folderCount: 0,
+          },
+        }),
+      ],
+      labels,
+      "session-1",
+    );
+
+    expect(entries).toEqual([
+      expect.objectContaining({
+        id: "session-1:import-1:source.import",
+        kind: "files-imported",
+        operationId: "import-1",
+        startedAt: "2026-08-31T08:59:00.000Z",
+        status: "completed",
+        title: "Opened 1 file",
+      }),
+    ]);
+  });
+
+  it("uses one folder entry and folder wording for mixed imports", () => {
+    const entries = projectActivityEvents(
+      [
+        diagnosticEvent("source.import.started", {
+          operationId: "import-2",
+          timestamp: "2026-08-31T08:59:00.000Z",
+        }),
+        diagnosticEvent("source.import.completed", {
+          operationId: "import-2",
+          data: { acceptedFileCount: 3, folderCount: 1 },
+        }),
+      ],
+      labels,
+      "session-1",
+    );
+
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      kind: "folders-imported",
+      title: "Opened 3 files from 1 folder",
+    });
+  });
+
+  it("does not project an import start as a pending Activity entry", () => {
+    expect(
+      projectActivityEvents(
+        [diagnosticEvent("source.import.started", { operationId: "import-pending" })],
+        labels,
+        "session-1",
+      ),
+    ).toEqual([]);
+  });
+
   it.each([
     ["fast", "fast-cut", "Fast cut completed"],
     ["optimized", "render", "Optimized render completed"],
@@ -429,7 +503,7 @@ describe("activity projection", () => {
     ]);
   });
 
-  it("offers restore only for authoritative current-session state while preserving open", () => {
+  it("offers restore for completed current-session deletions while preserving open", () => {
     const retainedDelete = projectActivityEvent(
       diagnosticEvent("source.file-delete.completed", {
         data: { itemId: "shared-target", sourcePath },
@@ -460,7 +534,6 @@ describe("activity projection", () => {
     const entries = resolveAvailableActivityActions(
       [retainedDelete, currentDelete, retainedExport].filter((entry) => entry !== null),
       "current-session",
-      new Set(["shared-target"]),
     );
 
     expect(entries[0]?.action).toBeUndefined();
@@ -470,6 +543,28 @@ describe("activity projection", () => {
       targetId: "shared-target",
     });
     expect(entries[2]?.action).toEqual({ kind: "open", path: outputPath });
+  });
+
+  it("keeps a manual deletion restorable without an export queue item", () => {
+    const entry = projectActivityEvent(
+      diagnosticEvent("source.file-delete.completed", {
+        data: { itemId: "import-1", sourcePath },
+        operationId: "manual-delete",
+        sessionId: "current-session",
+      }),
+      labels,
+    );
+
+    expect(
+      resolveAvailableActivityActions(
+        [entry].filter((candidate) => candidate !== null),
+        "current-session",
+      )[0]?.action,
+    ).toEqual({
+      kind: "restore",
+      path: sourcePath,
+      targetId: "import-1",
+    });
   });
 
   it("groups by canonical session metadata with current and newest sessions first", () => {
