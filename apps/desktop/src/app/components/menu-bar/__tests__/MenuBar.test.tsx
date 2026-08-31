@@ -281,7 +281,6 @@ describe("MenuBarTest", () => {
     await user.click(screen.getByRole("button", { name: "Back" }));
     expect(screen.queryByRole("heading", { name: "Cancel export queue?" })).not.toBeInTheDocument();
 
-    await user.click(getMenuTrigger("Queue"));
     await user.click(screen.getByRole("menuitem", { name: "Cancel" }));
     await user.click(screen.getByRole("button", { name: "Cancel" }));
     expect(menuState.dispatch).toHaveBeenCalledWith(expect.any(Function));

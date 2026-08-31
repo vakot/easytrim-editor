@@ -1,5 +1,5 @@
 import { CircleStop, LogOut, Moon, Power } from "lucide-react";
-import { type ReactNode, useState } from "react";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -11,6 +11,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Kbd } from "@/components/ui/kbd";
@@ -54,8 +55,6 @@ import type { QueueFinishAction } from "@/lib/tauri/queue.types";
 export function MenuBarQueue() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const [isCancelQueueConfirmOpen, setIsCancelQueueConfirmOpen] = useState(false);
-  const [isDeleteSourceConfirmOpen, setIsDeleteSourceConfirmOpen] = useState(false);
 
   const queue = useAppSelector(selectExportQueue);
   const deleteSourceOnRenderFinish = useAppSelector(selectDeleteSourceOnRenderFinish);
@@ -111,38 +110,84 @@ export function MenuBarQueue() {
             >
               {t("queue.actions.skip")}
             </MenubarItem>
-            <MenubarItem
-              disabled={!hasQueuedItems && !hasActiveItem}
-              inset
-              onSelect={() => setIsCancelQueueConfirmOpen(true)}
-            >
-              {t("queue.actions.cancel")}
-            </MenubarItem>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <MenubarItem disabled={!hasQueuedItems && !hasActiveItem} inset keepOpen>
+                  {t("queue.actions.cancel")}
+                </MenubarItem>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>{t("queue.dialogs.cancel.title")}</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {t("queue.dialogs.cancel.description")}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>{t("common.actions.back")}</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => void dispatch(cancelAllExportsRequested())}
+                    variant="destructive"
+                  >
+                    {t("queue.actions.cancel")}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </MenubarGroup>
           <MenubarSeparator />
           <MenubarGroup>
-            <Tooltip preserveOnTrigger>
-              <TooltipTrigger asChild>
-                <MenubarCheckboxItem
-                  checked={deleteSourceOnRenderFinish}
-                  onSelect={() => {
-                    if (deleteSourceOnRenderFinish) {
+            <AlertDialog>
+              <Tooltip preserveOnTrigger>
+                <TooltipTrigger asChild>
+                  <AlertDialogTrigger asChild>
+                    <MenubarCheckboxItem
+                      checked={deleteSourceOnRenderFinish}
+                      keepOpen
+                      onSelect={() => {
+                        if (deleteSourceOnRenderFinish) {
+                          dispatch(
+                            preferenceChanged({
+                              enabled: false,
+                              key: "deleteSourceOnRenderFinish",
+                            }),
+                          );
+                        }
+                      }}
+                      variant="destructive"
+                    >
+                      {t("queue.labels.deleteSource")}
+                    </MenubarCheckboxItem>
+                  </AlertDialogTrigger>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  {t("queue.tooltips.deleteSourceOnRenderFinish")}
+                </TooltipContent>
+              </Tooltip>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    {t("queue.dialogs.deleteSourceOnRenderFinish.title")}
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {t("queue.dialogs.deleteSourceOnRenderFinish.description")}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>{t("common.actions.back")}</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() =>
                       dispatch(
-                        preferenceChanged({ enabled: false, key: "deleteSourceOnRenderFinish" }),
-                      );
-                    } else {
-                      setIsDeleteSourceConfirmOpen(true);
+                        preferenceChanged({ enabled: true, key: "deleteSourceOnRenderFinish" }),
+                      )
                     }
-                  }}
-                  variant="destructive"
-                >
-                  {t("queue.labels.deleteSource")}
-                </MenubarCheckboxItem>
-              </TooltipTrigger>
-              <TooltipContent side="right">
-                {t("queue.tooltips.deleteSourceOnRenderFinish")}
-              </TooltipContent>
-            </Tooltip>
+                    variant="destructive"
+                  >
+                    {t("common.actions.enable")}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
             <MenubarSub>
               <MenubarSubTrigger inset variant="destructive">
                 <MenubarIcon>{queueFinishIcons[queueFinishAction]}</MenubarIcon>
@@ -167,50 +212,6 @@ export function MenuBarQueue() {
           </MenubarGroup>
         </MenubarContent>
       </MenubarMenu>
-      <AlertDialog onOpenChange={setIsCancelQueueConfirmOpen} open={isCancelQueueConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("queue.dialogs.cancel.title")}</AlertDialogTitle>
-            <AlertDialogDescription>{t("queue.dialogs.cancel.description")}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("common.actions.back")}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                setIsCancelQueueConfirmOpen(false);
-                void dispatch(cancelAllExportsRequested());
-              }}
-              variant="destructive"
-            >
-              {t("queue.actions.cancel")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-      <AlertDialog onOpenChange={setIsDeleteSourceConfirmOpen} open={isDeleteSourceConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t("queue.dialogs.deleteSourceOnRenderFinish.title")}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("queue.dialogs.deleteSourceOnRenderFinish.description")}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("common.actions.back")}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                setIsDeleteSourceConfirmOpen(false);
-                dispatch(preferenceChanged({ enabled: true, key: "deleteSourceOnRenderFinish" }));
-              }}
-              variant="destructive"
-            >
-              {t("common.actions.enable")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }
