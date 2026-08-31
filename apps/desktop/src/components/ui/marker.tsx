@@ -19,6 +19,43 @@ const markerVariants = cva(
   },
 );
 
+const markerGroupVariants = cva(
+  [
+    "relative ml-2 flex flex-col pl-7",
+
+    // Main vertical branch line — independent of gap.
+    "before:absolute",
+    "before:top-0",
+    "before:bottom-5",
+    "before:left-0",
+    "before:border-l",
+    "before:border-border",
+  ],
+  {
+    variants: {
+      variant: {
+        branch: [
+          "*:data-[slot=marker]:relative",
+
+          // Rounded connector for every row.
+          "*:data-[slot=marker]:after:absolute",
+          "*:data-[slot=marker]:after:-left-7",
+          "*:data-[slot=marker]:after:bottom-1/2",
+          "*:data-[slot=marker]:after:h-2",
+          "*:data-[slot=marker]:after:w-5",
+          "*:data-[slot=marker]:after:rounded-bl-md",
+          "*:data-[slot=marker]:after:border-b",
+          "*:data-[slot=marker]:after:border-l",
+          "*:data-[slot=marker]:after:border-border",
+        ],
+      },
+    },
+    defaultVariants: {
+      variant: "branch",
+    },
+  },
+);
+
 function Marker({
   asChild = false,
   className,
@@ -49,6 +86,10 @@ function MarkerIcon({ className, ...props }: React.ComponentProps<"span">) {
       {...props}
     />
   );
+}
+
+function MarkerTitle({ className, ...props }: React.ComponentProps<"div">) {
+  return <div className={cn("h-4 leading-none", className)} data-slot="marker-title" {...props} />;
 }
 
 function MarkerContent({ className, ...props }: React.ComponentProps<"span">) {
@@ -87,4 +128,27 @@ function MarkerAction({ className, ...props }: React.ComponentProps<"span">) {
   );
 }
 
-export { Marker, MarkerAction, MarkerContent, MarkerDescription, MarkerIcon, markerVariants };
+function MarkerGroup({
+  className,
+  variant = "branch",
+  ...props
+}: React.ComponentProps<"div"> & { variant?: "branch" }) {
+  return (
+    <div
+      className={cn(markerGroupVariants({ className, variant }))}
+      data-slot="marker-group"
+      {...props}
+    />
+  );
+}
+
+export {
+  Marker,
+  MarkerAction,
+  MarkerContent,
+  MarkerDescription,
+  MarkerGroup,
+  MarkerIcon,
+  MarkerTitle,
+  markerVariants,
+};

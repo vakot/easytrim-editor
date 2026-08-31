@@ -24,7 +24,9 @@ import {
   MarkerAction,
   MarkerContent,
   MarkerDescription,
+  MarkerGroup,
   MarkerIcon,
+  MarkerTitle,
 } from "@/components/ui/marker";
 import { ResizablePanelControl } from "@/components/ui/resizable";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -282,7 +284,7 @@ export function ActivityFeedView({
         </p>
       ) : (
         <ScrollArea className="mr-1 min-h-0 flex-1">
-          <div className={cn("grid pr-2 pl-3", isCompact ? "gap-1" : "gap-3")}>
+          <div className={cn("grid pr-2 pl-3", isCompact ? "gap-1" : isBranch ? "gap-5" : "gap-3")}>
             {groups.map((group) => {
               const presentation = getActivitySessionPresentation(
                 group,
@@ -294,7 +296,10 @@ export function ActivityFeedView({
 
               return (
                 <div
-                  className={cn("flex flex-col", isCompact ? "gap-1" : "gap-3")}
+                  className={cn(
+                    "flex flex-col",
+                    isCompact ? "gap-1" : isBranch ? "gap-5" : "gap-3",
+                  )}
                   key={group.sessionId}
                 >
                   <Marker
@@ -351,65 +356,87 @@ function ActivityFeedBranch({
   onAction?: (action: ActivityAction) => void;
   timeFormatter: Intl.DateTimeFormat;
 }) {
-  const { t } = useTranslation();
   const normalizedSourcePath = formatSourcePath(branch.path ?? "");
-  const filename = normalizedSourcePath.split(/[\\/]/).pop() || t("app.labels.file");
 
   return (
-    <div className="relative pl-5">
-      <div aria-hidden="true" className="absolute inset-y-3 left-2 w-px bg-border" />
-      <div className="relative flex min-w-0 items-start gap-2 pb-1">
-        <span
-          aria-hidden="true"
-          className="mt-0.5 size-4 shrink-0 text-muted-foreground [&_svg:not([class*='size-'])]:size-4"
-        >
+    <div>
+      <Marker>
+        <MarkerIcon>
           <GitBranch />
-        </span>
-        <span className="flex min-w-0 flex-1 flex-col">
-          <span className="truncate text-xs text-foreground" title={filename}>
-            {filename}
-          </span>
-          {normalizedSourcePath ? (
-            <span
-              className="min-w-0 truncate text-xs text-muted-foreground"
-              title={normalizedSourcePath}
-            >
-              {normalizedSourcePath}
-            </span>
-          ) : null}
-        </span>
-      </div>
-      <div className="grid gap-1">
+        </MarkerIcon>
+
+        <MarkerContent>
+          <MarkerTitle className="min-w-0 text-foreground">Filename</MarkerTitle>
+          <MarkerDescription className="truncate">
+            {branch.path ? (
+              <>
+                <span className="min-w-0 flex-1 truncate" title={normalizedSourcePath}>
+                  {normalizedSourcePath}
+                </span>
+              </>
+            ) : null}
+          </MarkerDescription>
+        </MarkerContent>
+      </Marker>
+
+      <MarkerGroup className="pt-2">
         {branch.entries.map((entry) => (
-          <div
-            className={cn(
-              "relative pl-4",
-              "before:absolute before:top-1/2 before:left-0 before:h-px before:w-3 before:bg-border",
-            )}
+          <ActivityFeedMarkerGroupItem
+            entry={entry}
             key={entry.id}
-          >
-            <ActivityFeedEntry
-              branch
-              compact
-              entry={entry}
-              onAction={onAction}
-              timeFormatter={timeFormatter}
-            />
-          </div>
+            onAction={onAction}
+            timeFormatter={timeFormatter}
+          />
         ))}
-      </div>
+      </MarkerGroup>
     </div>
   );
 }
 
+function ActivityFeedMarkerGroupItem({
+  entry,
+  onAction,
+  timeFormatter,
+}: {
+  compact?: boolean;
+  entry: ActivityEntry;
+  onAction?: (action: ActivityAction) => void;
+  timeFormatter: Intl.DateTimeFormat;
+}) {
+  const statusPresentation = activityStatusPresentation[entry.status];
+  const Icon = statusPresentation.icon ?? activityIcons[entry.kind];
+  const action = entry.action;
+
+  const showAction = !!action && onAction;
+
+  return (
+    <Marker className="h-6 items-center text-xs">
+      <MarkerIcon className={statusPresentation.className}>
+        <Icon
+          aria-hidden="true"
+          className={entry.status === "pending" ? "animate-spin" : undefined}
+        />
+      </MarkerIcon>
+      <MarkerContent className="flex-row flex-nowrap items-center gap-1">
+        <ActivityFeedEntryTitle
+          className="text-muted-foreground"
+          entry={entry}
+          timeFormatter={timeFormatter}
+        />
+        {showAction && (
+          <ActivityFeedEntryButton compact entry={entry} onClick={() => onAction(action)} />
+        )}
+      </MarkerContent>
+    </Marker>
+  );
+}
+
 function ActivityFeedEntry({
-  branch = false,
   compact = false,
   entry,
   onAction,
   timeFormatter,
 }: {
-  branch?: boolean;
   compact?: boolean;
   entry: ActivityEntry;
   onAction?: (action: ActivityAction) => void;
@@ -419,21 +446,24 @@ function ActivityFeedEntry({
   const Icon = statusPresentation.icon ?? activityIcons[entry.kind];
   const action = entry.action;
   const normalizedSourcePath = formatSourcePath(entry.path ?? "");
-  const markerClassName = branch ? "text-muted-foreground" : statusPresentation.className;
 
   const showAction = !!action && onAction;
 
   if (compact) {
     return (
       <Marker className="h-6 items-center text-xs">
-        <MarkerIcon className={markerClassName}>
+        <MarkerIcon className={statusPresentation.className}>
           <Icon
             aria-hidden="true"
             className={entry.status === "pending" ? "animate-spin" : undefined}
           />
         </MarkerIcon>
-        <MarkerContent className="min-w-0 flex-row flex-nowrap items-center gap-1">
-          <ActivityFeedEntryTitle entry={entry} muted={branch} timeFormatter={timeFormatter} />
+        <MarkerContent className="flex-row flex-nowrap items-center gap-1">
+          <ActivityFeedEntryTitle
+            className="text-foreground"
+            entry={entry}
+            timeFormatter={timeFormatter}
+          />
           {showAction && (
             <ActivityFeedEntryButton
               compact={compact}
@@ -448,16 +478,18 @@ function ActivityFeedEntry({
 
   return (
     <Marker className="items-start text-xs">
-      <MarkerIcon className={markerClassName}>
+      <MarkerIcon className={statusPresentation.className}>
         <Icon
           aria-hidden="true"
           className={entry.status === "pending" ? "animate-spin" : undefined}
         />
       </MarkerIcon>
       <MarkerContent>
-        <div className="flex min-w-0 flex-nowrap items-center gap-1">
-          <ActivityFeedEntryTitle entry={entry} timeFormatter={timeFormatter} />
-        </div>
+        <ActivityFeedEntryTitle
+          className="text-foreground"
+          entry={entry}
+          timeFormatter={timeFormatter}
+        />
         <MarkerDescription>
           {entry.path ? (
             <>
@@ -482,30 +514,22 @@ function ActivityFeedEntry({
 }
 
 function ActivityFeedEntryTitle({
+  className,
   entry,
-  muted = false,
   timeFormatter,
 }: {
+  className?: string;
   entry: ActivityEntry;
-  muted?: boolean;
   timeFormatter: Intl.DateTimeFormat;
 }) {
   return (
-    <>
-      <span
-        className={cn(
-          "truncate",
-          muted ? "text-muted-foreground" : "text-foreground",
-          entry.status === "pending" && "shimmer",
-        )}
-      >
-        {entry.title}
-      </span>
+    <MarkerTitle className={cn("flex min-w-0 flex-nowrap items-center gap-1", className)}>
+      <span className={cn("truncate", entry.status === "pending" && "shimmer")}>{entry.title}</span>
       <span>·</span>
       <time className="shrink-0 text-muted-foreground" dateTime={entry.startedAt}>
         {timeFormatter.format(new Date(entry.startedAt))}
       </time>
-    </>
+    </MarkerTitle>
   );
 }
 
