@@ -401,7 +401,6 @@ function ActivityFeedMarkerGroupItem({
   onAction,
   timeFormatter,
 }: {
-  compact?: boolean;
   entry: ActivityEntry;
   onAction?: (action: ActivityAction) => void;
   timeFormatter: Intl.DateTimeFormat;
