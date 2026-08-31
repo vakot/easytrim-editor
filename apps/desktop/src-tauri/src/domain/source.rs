@@ -274,7 +274,7 @@ fn is_directory_link(path: &Path, metadata: &fs::Metadata) -> bool {
     {
         use std::os::windows::fs::MetadataExt;
 
-        return metadata.file_attributes() & 0x400 != 0 && metadata.is_dir();
+        metadata.file_attributes() & 0x400 != 0 && metadata.is_dir()
     }
     #[cfg(not(windows))]
     {
@@ -430,8 +430,10 @@ mod tests {
         fs::create_dir(&depth_two).expect("create second nested directory");
         file(&depth_two.join("too-deep.mp4"));
 
-        let depth_result =
-            super::collect_source_import_with_limits(&[root.clone()], limits(1, 100, 100));
+        let depth_result = super::collect_source_import_with_limits(
+            std::slice::from_ref(&root),
+            limits(1, 100, 100),
+        );
 
         assert_eq!(depth_result.accepted_file_count, 1);
         assert_eq!(
