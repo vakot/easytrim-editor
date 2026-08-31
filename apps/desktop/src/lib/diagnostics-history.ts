@@ -2,12 +2,13 @@ import {
   listPersistedDiagnosticSessions,
   readPersistedDiagnosticSessionEvents,
 } from "./tauri/diagnostics";
-import type { DiagnosticEvent } from "./tauri/diagnostics.types";
+import type { DiagnosticEvent, DiagnosticSessionSummary } from "./tauri/diagnostics.types";
 import { getCurrentDiagnosticSessionId, reportDiagnosticsUnavailable } from "./diagnostics";
 
 interface PersistedDiagnosticsHistorySnapshot {
   events: readonly DiagnosticEvent[];
   loaded: boolean;
+  sessions: readonly DiagnosticSessionSummary[];
   version: number;
 }
 
@@ -16,6 +17,7 @@ let loadPromise: Promise<void> | null = null;
 let snapshot: PersistedDiagnosticsHistorySnapshot = {
   events: [],
   loaded: false,
+  sessions: [],
   version: 0,
 };
 
@@ -56,15 +58,18 @@ async function loadHistory(): Promise<void> {
       }),
     );
 
-    publish(history.flat());
+    publish(history.flat(), sessions);
   } catch (error: unknown) {
     reportDiagnosticsUnavailable(error);
-    publish([]);
+    publish([], []);
   }
 }
 
-function publish(events: readonly DiagnosticEvent[]): void {
-  snapshot = { events, loaded: true, version: snapshot.version + 1 };
+function publish(
+  events: readonly DiagnosticEvent[],
+  sessions: readonly DiagnosticSessionSummary[],
+): void {
+  snapshot = { events, loaded: true, sessions, version: snapshot.version + 1 };
   listeners.forEach((listener) => {
     try {
       listener();

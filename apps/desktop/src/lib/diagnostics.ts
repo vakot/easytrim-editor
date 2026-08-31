@@ -11,10 +11,12 @@ import type {
   DiagnosticOperationName,
   DiagnosticOrigin,
   DiagnosticResult,
+  DiagnosticSessionMetadata,
   DiagnosticValue,
   SerializedDiagnosticError,
   StartupRecovery,
 } from "./tauri/diagnostics.types";
+import { getCurrentVersion } from "./app-version.utils";
 
 interface EventOptions {
   data?: Record<string, DiagnosticValue>;
@@ -46,9 +48,11 @@ export interface DiagnosticOperation {
 }
 
 let operationSequence = 0;
+const localSessionStartedAt = new Date().toISOString();
 let persistenceDegraded = false;
 let recovery: StartupRecovery | null = null;
 let currentSessionId: string | null = null;
+let currentSessionMetadata: DiagnosticSessionMetadata | null = null;
 const activeOperations = new Map<string, ActiveOperation>();
 const currentSessionEvents: DiagnosticEvent[] = [];
 const currentSessionListeners = new Set<() => void>();
@@ -68,9 +72,15 @@ function categoryFromEvent(event: string): string {
 }
 
 function send(event: DiagnosticEventInput): void {
+  const sessionId = currentSessionId ?? (currentSessionId = createLocalSessionId());
+  currentSessionMetadata ??= {
+    appVersion: getCurrentVersion(),
+    sessionId,
+    startedAt: localSessionStartedAt,
+  };
   currentSessionEvents.push({
     ...event,
-    sessionId: currentSessionId ?? (currentSessionId = createLocalSessionId()),
+    sessionId,
     timestamp: new Date().toISOString(),
   });
   currentSessionSnapshot = {
@@ -214,6 +224,11 @@ export const diagnostics = {
     const bootstrap = await bootstrapNativeDiagnostics();
     recovery = bootstrap?.recovery ?? null;
     currentSessionId = bootstrap?.sessionId ?? currentSessionId ?? createLocalSessionId();
+    currentSessionMetadata = {
+      appVersion: bootstrap?.appVersion ?? getCurrentVersion(),
+      sessionId: currentSessionId,
+      startedAt: bootstrap?.startedAt ?? localSessionStartedAt,
+    };
   },
 
   startOperation(
@@ -265,6 +280,10 @@ export function getCurrentSessionDiagnosticsSnapshot(): {
 
 export function getCurrentDiagnosticSessionId(): string | null {
   return currentSessionId;
+}
+
+export function getCurrentDiagnosticSessionMetadata(): DiagnosticSessionMetadata | null {
+  return currentSessionMetadata;
 }
 
 export function subscribeToCurrentSessionDiagnostics(listener: () => void): () => void {

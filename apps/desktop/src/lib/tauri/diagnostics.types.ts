@@ -35,13 +35,18 @@ export interface DiagnosticsBootstrap {
   appVersion: string;
   recovery: StartupRecovery | null;
   sessionId: string;
+  startedAt: string;
 }
 
-export interface DiagnosticSessionSummary {
-  endedAt: string | null;
-  gracefulShutdown: boolean;
+export interface DiagnosticSessionMetadata {
+  appVersion: string | null;
   sessionId: string;
   startedAt: string;
+}
+
+export interface DiagnosticSessionSummary extends DiagnosticSessionMetadata {
+  endedAt: string | null;
+  gracefulShutdown: boolean;
 }
 
 export type SerializedDiagnosticError = {

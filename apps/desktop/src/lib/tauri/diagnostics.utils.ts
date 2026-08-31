@@ -56,6 +56,8 @@ function parseDiagnosticSessionSummary(value: unknown): DiagnosticSessionSummary
   const summary = asRecord(value);
   if (
     !summary ||
+    (summary.appVersion !== null &&
+      (typeof summary.appVersion !== "string" || summary.appVersion.length === 0)) ||
     !validSessionId(summary.sessionId) ||
     !validTimestamp(summary.startedAt) ||
     (summary.endedAt !== null && !validTimestamp(summary.endedAt)) ||
@@ -64,6 +66,7 @@ function parseDiagnosticSessionSummary(value: unknown): DiagnosticSessionSummary
     return null;
   }
   return {
+    appVersion: summary.appVersion as string | null,
     endedAt: summary.endedAt as string | null,
     gracefulShutdown: summary.gracefulShutdown,
     sessionId: summary.sessionId,

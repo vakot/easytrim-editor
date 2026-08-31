@@ -21,6 +21,7 @@ describe("diagnostics IPC adapter", () => {
   it("parses retained session metadata and drops invalid entries", async () => {
     mocks.invoke.mockResolvedValue([
       {
+        appVersion: "1.2.0",
         endedAt: "2026-08-31T10:00:00Z",
         gracefulShutdown: true,
         sessionId: "session-1",
@@ -31,6 +32,7 @@ describe("diagnostics IPC adapter", () => {
 
     await expect(listPersistedDiagnosticSessions()).resolves.toEqual([
       {
+        appVersion: "1.2.0",
         endedAt: "2026-08-31T10:00:00Z",
         gracefulShutdown: true,
         sessionId: "session-1",

@@ -103,11 +103,13 @@ pub struct DiagnosticsBootstrap {
     pub app_version: String,
     pub recovery: Option<StartupRecovery>,
     pub session_id: String,
+    pub started_at: String,
 }
 
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DiagnosticSessionSummary {
+    pub app_version: Option<String>,
     pub ended_at: Option<String>,
     pub graceful_shutdown: bool,
     pub session_id: String,
@@ -191,6 +193,7 @@ impl DiagnosticsState {
             session_id: Uuid::new_v4().to_string(),
             started_at: now(),
         };
+        let session_started_at = session.started_at.clone();
         write_json_atomic(&marker_path, &session).map_err(io_error)?;
         let writer = LogWriter::open(&logs_dir, &session.session_id).map_err(io_error)?;
         let state = Arc::new(Self {
@@ -207,10 +210,14 @@ impl DiagnosticsState {
         });
         state.record(DiagnosticEventInput {
             category: "app".to_owned(),
-            data: Some(Map::from_iter([(
-                "pid".to_owned(),
-                Value::from(std::process::id()),
-            )])),
+            data: Some(Map::from_iter([
+                (
+                    "appVersion".to_owned(),
+                    Value::String(state.app_version.clone()),
+                ),
+                ("pid".to_owned(), Value::from(std::process::id())),
+                ("startedAt".to_owned(), Value::String(session_started_at)),
+            ])),
             duration_ms: None,
             event: "app.session.started".to_owned(),
             level: "info".to_owned(),
@@ -236,6 +243,7 @@ impl DiagnosticsState {
             app_version: self.app_version.clone(),
             recovery: self.recovery.clone(),
             session_id: session.session_id.clone(),
+            started_at: session.started_at.clone(),
         })
     }
 
@@ -901,12 +909,24 @@ fn session_summary(
     session_id: &str,
     events: &[DiagnosticEvent],
 ) -> Option<DiagnosticSessionSummary> {
-    let started_at = events
+    let started_event = events
         .iter()
-        .find(|event| event.event == "app.session.started")
-        .or_else(|| events.first())?
-        .timestamp
-        .clone();
+        .find(|event| event.event == "app.session.started")?;
+    let started_at = started_event
+        .data
+        .as_ref()
+        .and_then(|data| data.get("startedAt"))
+        .and_then(Value::as_str)
+        .filter(|timestamp| OffsetDateTime::parse(timestamp, &Rfc3339).is_ok())
+        .unwrap_or(&started_event.timestamp)
+        .to_owned();
+    let app_version = started_event
+        .data
+        .as_ref()
+        .and_then(|data| data.get("appVersion"))
+        .and_then(Value::as_str)
+        .filter(|version| !version.is_empty())
+        .map(str::to_owned);
     let ended_at = events
         .iter()
         .rev()
@@ -915,6 +935,7 @@ fn session_summary(
         })
         .map(|event| event.timestamp.clone());
     Some(DiagnosticSessionSummary {
+        app_version,
         graceful_shutdown: ended_at.is_some(),
         ended_at,
         session_id: session_id.to_owned(),
@@ -1133,7 +1154,8 @@ mod tests {
         let root = temporary_root("history");
         let first =
             DiagnosticsState::initialize(root.clone(), "1.0.0".to_owned()).expect("first starts");
-        let first_id = first.bootstrap().expect("first bootstrap").session_id;
+        let first_bootstrap = first.bootstrap().expect("first bootstrap");
+        let first_id = first_bootstrap.session_id.clone();
         first
             .record(DiagnosticEventInput {
                 category: "ffmpeg".to_owned(),
@@ -1164,6 +1186,8 @@ mod tests {
 
         assert_eq!(sessions.len(), 1);
         assert_eq!(sessions[0].session_id, first_id);
+        assert_eq!(sessions[0].app_version.as_deref(), Some("1.0.0"));
+        assert_eq!(sessions[0].started_at, first_bootstrap.started_at);
         assert!(sessions[0].graceful_shutdown);
         assert!(sessions[0].ended_at.is_some());
         let events = second
@@ -1225,6 +1249,20 @@ mod tests {
         assert_eq!(events[0].event, "ffmpeg.export.completed");
         assert_eq!(events[1].event, "source.file-restore.completed");
         fs::remove_dir_all(root).expect("temporary root removed");
+    }
+
+    #[test]
+    fn retained_session_metadata_keeps_an_unknown_legacy_version() {
+        let started = persisted_event(
+            "legacy-session",
+            "app.session.started",
+            "2026-08-30T09:00:00Z",
+        );
+
+        let summary = session_summary("legacy-session", &[started]).expect("summary available");
+
+        assert_eq!(summary.app_version, None);
+        assert_eq!(summary.started_at, "2026-08-30T09:00:00Z");
     }
 
     #[test]

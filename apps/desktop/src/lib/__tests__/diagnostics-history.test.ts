@@ -34,12 +34,14 @@ describe("persisted diagnostics history", () => {
   it("loads once, excludes the current session, and publishes retained events", async () => {
     nativeDiagnostics.listPersistedDiagnosticSessions.mockResolvedValue([
       {
+        appVersion: "1.3.0",
         endedAt: null,
         gracefulShutdown: false,
         sessionId: "current-session",
         startedAt: "2026-08-31T09:00:00Z",
       },
       {
+        appVersion: "1.2.0",
         endedAt: "2026-08-30T10:00:00Z",
         gracefulShutdown: true,
         sessionId: "retained-session",
@@ -64,6 +66,13 @@ describe("persisted diagnostics history", () => {
     expect(history.getPersistedDiagnosticsHistorySnapshot()).toMatchObject({
       events: [event("retained-session", "export-1")],
       loaded: true,
+      sessions: [
+        expect.objectContaining({
+          appVersion: "1.2.0",
+          sessionId: "retained-session",
+          startedAt: "2026-08-30T09:00:00Z",
+        }),
+      ],
     });
     expect(listener).toHaveBeenCalledOnce();
   });
@@ -71,12 +80,14 @@ describe("persisted diagnostics history", () => {
   it("keeps readable sessions when another retained session fails", async () => {
     nativeDiagnostics.listPersistedDiagnosticSessions.mockResolvedValue([
       {
+        appVersion: null,
         endedAt: null,
         gracefulShutdown: false,
         sessionId: "unreadable-session",
         startedAt: "2026-08-30T10:00:00Z",
       },
       {
+        appVersion: "1.3.0",
         endedAt: null,
         gracefulShutdown: false,
         sessionId: "readable-session",
