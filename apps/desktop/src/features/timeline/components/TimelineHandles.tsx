@@ -161,6 +161,7 @@ export function TrimHandle({
 }
 
 export function Playhead({
+  disabled = false,
   frameRate,
   maximum,
   onKeyDown,
@@ -173,6 +174,7 @@ export function Playhead({
   playheadRef,
   value,
 }: {
+  disabled?: boolean;
   frameRate?: FrameRate;
   maximum: number;
   onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void;
@@ -197,7 +199,8 @@ export function Playhead({
           aria-valuetext={t("timeline.accessibility.seconds", {
             value: formatAccessibleTime(value),
           })}
-          className={cn("playhead", styles.playhead)}
+          className={cn("playhead", disabled && "opacity-30", styles.playhead)}
+          disabled={disabled}
           onKeyDown={onKeyDown}
           onLostPointerCapture={onLostPointerCapture}
           onPointerCancel={onPointerCancel}
