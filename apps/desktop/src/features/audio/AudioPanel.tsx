@@ -54,7 +54,10 @@ export function AudioPanel() {
   const outputSummary = audioOutputSummary(enabledCount, mergeAudio, t);
 
   return (
-    <section aria-labelledby="timeline-audio-title" className="relative size-full">
+    <section
+      aria-labelledby="timeline-audio-title"
+      className="relative flex size-full min-h-0 flex-col pt-3"
+    >
       <h3
         className="mx-3 mb-2 font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
         id="timeline-audio-title"
@@ -64,7 +67,7 @@ export function AudioPanel() {
 
       <ResizablePanelControl panelId="editor-stage-audio">
         <Button
-          className="absolute top-2 right-3 text-secondary-foreground"
+          className="absolute top-1 right-3 text-secondary-foreground"
           size="icon-xs"
           variant="ghost"
         >
@@ -126,9 +129,11 @@ export function AudioPanel() {
         </div>
       </div>
 
-      <Separator className="mt-2 bg-foreground/10" />
+      <div className="relative mt-2 h-0">
+        <Separator className="absolute bg-foreground/10" />
+      </div>
 
-      <ScrollArea className="pr-3 pl-1" data-testid="audio-tracks-scroll">
+      <ScrollArea className="min-h-0 flex-1 pr-3 pl-1" data-testid="audio-tracks-scroll">
         <div className="my-2">
           <AudioTracks
             onPrepareWaveforms={(streamIndexes, width) =>

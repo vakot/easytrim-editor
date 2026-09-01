@@ -98,7 +98,7 @@ export function TrimTimeline({
   return (
     <section
       aria-labelledby="timeline-title"
-      className="min-w-0 select-none"
+      className="min-w-0 p-3 select-none"
       data-testid="timeline-fixed-content"
     >
       <TimelineHeader
