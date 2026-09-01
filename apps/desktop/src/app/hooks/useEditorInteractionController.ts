@@ -290,8 +290,6 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     videoRef.current?.pause();
     cancelPlaybackFrame(playbackFrameRef);
     cleanupAudioRuntime();
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setReadyPreviewKey(null);
     setAudioReadiness({ sourcePath: null, streamIndexes: new Set() });
     // Source replacement is an explicit transport reset, not persisted editor state.
     setIsPlaying(false);
@@ -881,6 +879,33 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     [dispatch, pauseAudioPlayback, sourcePath, stopPlayheadAnimation],
   );
 
+  const onLoadedMetadata = useCallback(() => {
+    commitSeek(currentPlayheadMicrosRef.current);
+  }, [commitSeek]);
+
+  const onCanPlay = useCallback(() => {
+    if (previewKey) setReadyPreviewKey(previewKey);
+  }, [previewKey]);
+
+  const onPlay = useCallback(() => {
+    playbackRequestedRef.current = true;
+    isPlayingRef.current = true;
+    setIsPlaying(true);
+    startPlayheadAnimation();
+    diagnostics.event("playback.state.changed", {
+      data: { status: "playing" },
+      origin: { type: "internal" },
+    });
+  }, [startPlayheadAnimation]);
+
+  const onEnded = useCallback(() => {
+    diagnostics.event("playback.state.changed", {
+      data: { status: "ended" },
+      origin: { type: "internal" },
+    });
+    if (videoRef.current) handlePlaybackBoundary(videoRef.current.currentTime * 1_000_000);
+  }, [handlePlaybackBoundary]);
+
   useEffect(() => {
     shortcutActionsRef.current = {
       enabled: isPlaybackReady,
@@ -900,29 +925,12 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     transportError,
     nativeLoopEnabled,
     videoMuted: usesExternalAudio && typeof AudioContext === "undefined",
-    onLoadedMetadata: () => commitSeek(displayedPlayheadMicros),
-    onCanPlay: () => {
-      if (previewKey) setReadyPreviewKey(previewKey);
-    },
-    onPlay: () => {
-      playbackRequestedRef.current = true;
-      isPlayingRef.current = true;
-      setIsPlaying(true);
-      startPlayheadAnimation();
-      diagnostics.event("playback.state.changed", {
-        data: { status: "playing" },
-        origin: { type: "internal" },
-      });
-    },
+    onLoadedMetadata,
+    onCanPlay,
+    onPlay,
     onPause,
     onTimeUpdate,
-    onEnded: () => {
-      diagnostics.event("playback.state.changed", {
-        data: { status: "ended" },
-        origin: { type: "internal" },
-      });
-      if (videoRef.current) handlePlaybackBoundary(videoRef.current.currentTime * 1_000_000);
-    },
+    onEnded,
     onTogglePlayback: handleTogglePlayback,
     onStepFrame: handleStepFrame,
     onSetSegmentBoundary: handleSetSegmentBoundary,

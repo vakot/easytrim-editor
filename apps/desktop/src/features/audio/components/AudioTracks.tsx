@@ -1,7 +1,10 @@
-import type { RefObject } from "react";
 import { useTranslation } from "react-i18next";
 
+import { usePlayback } from "@/app/hooks/usePlayback";
+import { useTimelineState } from "@/app/hooks/useTimeline";
+import { useAppSelector } from "@/app/store/redux-hooks";
 import type { AudioTrackState } from "@/app/store/slices/audio-slice";
+import { selectTrim } from "@/app/store/slices/trim-slice";
 import { timelinePercent, type TrimRange } from "@/domain/trim";
 import type { AudioStream } from "@/lib/tauri/media.types";
 
@@ -14,9 +17,6 @@ interface AudioTracksProps {
   onToggleTrack: (streamIndex: number) => void;
   onTrackVolumeChange: (streamIndex: number, volumePercent: number) => void;
   onWaveformImageError: (streamIndex: number) => void;
-  playheadMicros: number;
-  playheadRef: RefObject<HTMLDivElement | null>;
-  range: TrimRange;
   streams: AudioStream[];
   tracks: AudioTrackState[];
   waveformPreparationEnabled: boolean;
@@ -27,16 +27,11 @@ export function AudioTracks({
   onToggleTrack,
   onTrackVolumeChange,
   onWaveformImageError,
-  playheadMicros,
-  playheadRef,
-  range,
   streams,
   tracks,
   waveformPreparationEnabled,
 }: AudioTracksProps) {
   const { t } = useTranslation();
-  const playheadPercent = timelinePercent(playheadMicros, range.sourceDurationMicros);
-
   useWaveformPreparation(tracks, waveformPreparationEnabled, onPrepareWaveforms);
 
   return (
@@ -61,18 +56,35 @@ export function AudioTracks({
           />
         );
       })}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 inset-x-0 grid min-w-0 grid-cols-(--editor-track-grid-columns) gap-3"
-        data-slot="audio-playhead-grid"
-      >
-        <div className="relative col-start-2 mx-px" data-slot="audio-playhead-track">
-          <div
-            className="audio-playhead absolute inset-y-0 border-l border-dashed border-foreground/70"
-            ref={playheadRef}
-            style={{ left: `${playheadPercent}%` }}
-          />
-        </div>
+      <AudioPlayhead />
+    </div>
+  );
+}
+
+const EMPTY_TIMELINE_RANGE: TrimRange = {
+  startMicros: 0,
+  endMicros: 1_000_000,
+  sourceDurationMicros: 1_000_000,
+};
+
+function AudioPlayhead() {
+  const { audioPlayheadRef } = usePlayback();
+  const { displayedPlayheadMicros } = useTimelineState();
+  const range = useAppSelector(selectTrim) ?? EMPTY_TIMELINE_RANGE;
+  const playheadPercent = timelinePercent(displayedPlayheadMicros, range.sourceDurationMicros);
+
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-0 inset-x-0 grid min-w-0 grid-cols-(--editor-track-grid-columns) gap-3"
+      data-slot="audio-playhead-grid"
+    >
+      <div className="relative col-start-2 mx-px" data-slot="audio-playhead-track">
+        <div
+          className="audio-playhead absolute inset-y-0 border-l border-dashed border-foreground/70"
+          ref={audioPlayheadRef}
+          style={{ left: `${playheadPercent}%` }}
+        />
       </div>
     </div>
   );

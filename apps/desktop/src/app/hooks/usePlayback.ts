@@ -1,12 +1,16 @@
-import { useEditorInteraction } from "./useEditorInteraction";
+import { useContext } from "react";
+
+import { EditorPlaybackContext } from "@/app/contexts/editor-contracts-context";
 
 export function usePlayback() {
-  const interaction = useEditorInteraction();
+  const interaction = useContext(EditorPlaybackContext);
+  if (!interaction) {
+    throw new Error("Playback contracts must be used within EditorContractsProvider.");
+  }
   return {
     canInteract: interaction.isPlaybackReady,
     videoRef: interaction.videoRef,
     audioPlayheadRef: interaction.audioPlayheadRef,
-    displayedPlayheadMicros: interaction.displayedPlayheadMicros,
     isPlaying: interaction.isPlaying,
     isReady: interaction.isPlaybackReady,
     transportError: interaction.transportError,
@@ -18,9 +22,6 @@ export function usePlayback() {
     onPause: interaction.onPause,
     onTimeUpdate: interaction.onTimeUpdate,
     onEnded: interaction.onEnded,
-    onScrubStart: interaction.onScrubStart,
-    onScrub: interaction.onScrub,
-    onScrubEnd: interaction.onScrubEnd,
     toggle: interaction.onTogglePlayback,
     stepFrame: interaction.onStepFrame,
     setSegmentBoundary: interaction.onSetSegmentBoundary,
