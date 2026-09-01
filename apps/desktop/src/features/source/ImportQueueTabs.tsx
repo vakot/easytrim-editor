@@ -2,6 +2,7 @@ import { X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";
@@ -13,8 +14,6 @@ import { useImportQueue } from "./hooks/useImportQueue";
 
 export function ImportQueueTabs() {
   const { activeItem, items, open, remove } = useImportQueue();
-
-  // TODO: early exit return null if cropToop is open
 
   return (
     <Tabs className="gap-0" onValueChange={open} value={activeItem?.id ?? ""}>
@@ -44,6 +43,7 @@ export function ImportQueueTabs() {
           ))}
         </TabsList>
       </ScrollArea>
+      <Separator className="bg-foreground/10" />
     </Tabs>
   );
 }
