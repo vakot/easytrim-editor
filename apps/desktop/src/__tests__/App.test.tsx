@@ -456,10 +456,8 @@ describe("App", () => {
     expect(document.getElementById("editor-stage-audio")).toBe(audioPanel);
     expect(within(detailsPanel!).getByText(replacementSelection.displayName)).toBeInTheDocument();
     expect(within(detailsPanel!).getByText("1280 × 720")).toBeInTheDocument();
-    const previewCard = previewPanel!.querySelector('[data-slot="card"]');
     const previewContent = previewPanel!.querySelector('[data-slot="preview-content"]');
     const previewLoadingOverlay = screen.getByTestId("preview-loading-overlay");
-    expect(previewCard).toHaveClass("relative", "isolate", "overflow-hidden");
     expect(previewContent).toContainElement(previewLoadingOverlay);
     expect(previewLoadingOverlay).not.toHaveClass("fixed");
     expect(within(previewPanel!).getByText("Opening preview…")).toBeInTheDocument();

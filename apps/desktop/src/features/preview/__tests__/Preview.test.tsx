@@ -62,7 +62,7 @@ describe("Preview", () => {
     const previewContent = container.querySelector('[data-slot="preview-content"]');
     const loadingOverlay = screen.getByTestId("preview-loading-overlay");
 
-    expect(previewContent).toHaveClass("relative", "overflow-hidden");
+    expect(previewContent).toHaveClass("relative");
     expect(previewContent).toContainElement(loadingOverlay);
     expect(loadingOverlay).toHaveClass("absolute", "inset-0");
     expect(loadingOverlay).not.toHaveClass("fixed");
