@@ -57,7 +57,7 @@ export function EditorWorkspace() {
         minSize={294}
       >
         <div className="size-full p-px">
-          <Card className="size-full pt-3 pb-0">
+          <Card className="size-full p-0">
             <ActivityFeed />
           </Card>
         </div>
