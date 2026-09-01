@@ -154,21 +154,20 @@ export function TrimTimeline({
             range={range}
             snapPoint={segmentSnapPoint}
           />
-          {!disabled ? (
-            <Playhead
-              frameRate={frameRate}
-              maximum={range.sourceDurationMicros}
-              onKeyDown={handlePlayheadKeyboard}
-              onLostPointerCapture={(event) => finishScrub(event, false)}
-              onPointerCancel={(event) => finishScrub(event, false)}
-              onPointerDown={(event) => startScrub(event, event.currentTarget)}
-              onPointerMove={moveScrub}
-              onPointerUp={(event) => finishScrub(event, true)}
-              percent={playheadPercent}
-              playheadRef={playheadRef}
-              value={playheadValue}
-            />
-          ) : null}
+          <Playhead
+            disabled={disabled}
+            frameRate={frameRate}
+            maximum={range.sourceDurationMicros}
+            onKeyDown={handlePlayheadKeyboard}
+            onLostPointerCapture={(event) => finishScrub(event, false)}
+            onPointerCancel={(event) => finishScrub(event, false)}
+            onPointerDown={(event) => startScrub(event, event.currentTarget)}
+            onPointerMove={moveScrub}
+            onPointerUp={(event) => finishScrub(event, true)}
+            percent={playheadPercent}
+            playheadRef={playheadRef}
+            value={playheadValue}
+          />
           <TrimHandle
             boundary="start"
             disabled={disabled}
