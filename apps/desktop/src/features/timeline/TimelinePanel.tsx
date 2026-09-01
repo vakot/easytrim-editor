@@ -46,8 +46,11 @@ export function TimelinePanel() {
           error={playback.transportError}
           isPlaying={playback.isPlaying}
           onSetSegmentBoundary={playback.setSegmentBoundary}
+          onShuttleEnd={playback.stopShuttle}
+          onShuttleStart={playback.startShuttle}
           onStepFrame={playback.stepFrame}
           onTogglePlayback={playback.toggle}
+          shuttleDirection={playback.shuttleDirection}
         />
       }
       playbackTimecode={

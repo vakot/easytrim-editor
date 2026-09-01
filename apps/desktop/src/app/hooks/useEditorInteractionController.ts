@@ -43,6 +43,8 @@ import {
 import {
   cancelFrame,
   editorShortcutFromEvent,
+  FRAME_SHUTTLE_PLAYBACK_RATE,
+  type FrameShuttleDirection,
   isShortcutBlockedTarget,
   syncPlayheadElements,
 } from "@/features/timeline";
@@ -58,6 +60,8 @@ const EMPTY_TRIM: TrimRange = {
 };
 
 const AUDIO_SYNC_INTERVAL_MS = 100;
+const REVERSE_SHUTTLE_SEEK_INTERVAL_MS = 50;
+const SHUTTLE_MAX_FRAME_DELTA_MS = 100;
 
 export interface EditorInteractionRuntime {
   audioPlayheadRef: React.RefObject<HTMLDivElement | null>;
@@ -82,6 +86,8 @@ export interface EditorInteractionRuntime {
   onSegmentDragStart: () => void;
   onSegmentMove: (nextTrim: TrimRange) => TrimBoundary | null;
   onSetSegmentBoundary: (boundary: TrimBoundary, origin?: DiagnosticOrigin) => void;
+  onShuttleEnd: (origin?: DiagnosticOrigin) => void;
+  onShuttleStart: (direction: FrameShuttleDirection, origin?: DiagnosticOrigin) => void;
   onStepFrame: (direction: -1 | 1, origin?: DiagnosticOrigin) => void;
   onTimeUpdate: (seconds: number) => void;
   onTogglePlayback: (origin?: DiagnosticOrigin) => void;
@@ -89,6 +95,7 @@ export interface EditorInteractionRuntime {
   onTrimDragEnd: () => void;
   onTrimDragStart: () => void;
   playheadRef: React.RefObject<HTMLButtonElement | null>;
+  shuttleDirection: FrameShuttleDirection | 0;
   transportError: string | null;
   videoMuted: boolean;
   videoRef: React.RefObject<HTMLVideoElement | null>;
@@ -144,6 +151,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
 
   const [playheadMicros, setPlayheadMicros] = useState(trim.startMicros);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [shuttleDirection, setShuttleDirection] = useState<FrameShuttleDirection | 0>(0);
   const [transportError, setTransportError] = useState<string | null>(null);
   const [readyPreviewKey, setReadyPreviewKey] = useState<string | null>(null);
   const [audioReadiness, setAudioReadiness] = useState<{
@@ -169,6 +177,9 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
   const playheadRef = useRef<HTMLButtonElement>(null);
   const audioPlayheadRef = useRef<HTMLDivElement>(null);
   const playbackFrameRef = useRef<PlaybackFrameHandle | null>(null);
+  const reverseShuttleFrameRef = useRef<number | null>(null);
+  const reverseShuttleLastFrameAtRef = useRef<number | null>(null);
+  const reverseShuttleLastSeekAtRef = useRef(0);
   const scrubFrameRef = useRef<number | null>(null);
   const pendingScrubMicrosRef = useRef<number | null>(null);
   const trimCommitFrameRef = useRef<number | null>(null);
@@ -178,6 +189,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
   const playbackStartSequenceRef = useRef(0);
   const playbackRequestedRef = useRef(false);
   const isPlayingRef = useRef(false);
+  const shuttleDirectionRef = useRef<FrameShuttleDirection | 0>(0);
   const resumeAfterCropRef = useRef(false);
   const lastPlaybackCommitAtRef = useRef(0);
   const lastAudioSyncAtRef = useRef(0);
@@ -185,7 +197,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
   const currentPlayheadMicrosRef = useRef(trim.startMicros);
   const segmentDragActiveRef = useRef(false);
   const segmentFollowBoundaryRef = useRef<TrimBoundary | null>(null);
-  const playbackRateRef = useRef(playbackSpeed);
+  const playbackRateRef = useRef<number>(playbackSpeed);
   const isPlaybackReady =
     previewKey !== null &&
     readyPreviewKey === previewKey &&
@@ -196,13 +208,19 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
 
   const isPlaybackReadyRef = useRef(isPlaybackReady);
   const nativeLoopEnabled =
-    isPlaybackReady && loopPlaybackEnabled && !segmentPlaybackEnabled && !usesExternalAudio;
+    isPlaybackReady &&
+    shuttleDirection === 0 &&
+    loopPlaybackEnabled &&
+    !segmentPlaybackEnabled &&
+    !usesExternalAudio;
 
   const nativeLoopEnabledRef = useRef(nativeLoopEnabled);
   const shortcutActionsRef = useRef<{
     enabled: boolean;
     setSegmentBoundary: (boundary: TrimBoundary, origin?: DiagnosticOrigin) => void;
+    startShuttle: (direction: FrameShuttleDirection, origin?: DiagnosticOrigin) => void;
     stepFrame: (direction: -1 | 1, origin?: DiagnosticOrigin) => void;
+    stopShuttle: (origin?: DiagnosticOrigin) => void;
     togglePlayback: (origin?: DiagnosticOrigin) => void;
   } | null>(null);
 
@@ -272,8 +290,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
   useEffect(() => {
     isPlaybackReadyRef.current = isPlaybackReady;
     nativeLoopEnabledRef.current = nativeLoopEnabled;
-    playbackRateRef.current = playbackSpeed;
-  }, [isPlaybackReady, nativeLoopEnabled, playbackSpeed]);
+  }, [isPlaybackReady, nativeLoopEnabled]);
 
   const playbackModes = usePlaybackModes({
     loopEnabled: loopPlaybackEnabled,
@@ -289,19 +306,26 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     currentPlayheadMicrosRef.current = 0;
     videoRef.current?.pause();
     cancelPlaybackFrame(playbackFrameRef);
+    cancelFrame(reverseShuttleFrameRef);
+    shuttleDirectionRef.current = 0;
     cleanupAudioRuntime();
     // Source replacement is an explicit transport reset, not persisted editor state.
     // eslint-disable-next-line react-hooks/set-state-in-effect
+    setShuttleDirection(0);
     setIsPlaying(false);
     setTransportError(null);
     setPlayheadMicros(0);
   }, [cleanupAudioRuntime, previewKey, sourcePath]);
 
   useEffect(() => {
+    const activePlaybackRate = shuttleDirection === 1 ? FRAME_SHUTTLE_PLAYBACK_RATE : playbackSpeed;
+
+    playbackRateRef.current = activePlaybackRate;
+
     const video = videoRef.current;
-    if (video) video.playbackRate = playbackSpeed;
-    for (const audio of audioElementsRef.current.values()) audio.playbackRate = playbackSpeed;
-  }, [audioPreviewUrls, playbackSpeed]);
+    if (video) video.playbackRate = activePlaybackRate;
+    for (const audio of audioElementsRef.current.values()) audio.playbackRate = activePlaybackRate;
+  }, [audioPreviewUrls, playbackSpeed, shuttleDirection]);
 
   useEffect(() => {
     if (!sourcePath || audioTracks.length === 0 || typeof AudioContext === "undefined") {
@@ -417,6 +441,15 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
   ]);
 
   useEffect(() => {
+    let heldDirection: FrameShuttleDirection | 0 = 0;
+    let shuttleStarted = false;
+
+    function releaseHeldFrameShortcut(origin: DiagnosticOrigin) {
+      if (shuttleStarted) shortcutActionsRef.current?.stopShuttle(origin);
+      heldDirection = 0;
+      shuttleStarted = false;
+    }
+
     function handleEditorShortcut(event: globalThis.KeyboardEvent) {
       if (isApplicationDialogOpen() || timelineInteractionActiveRef.current) return;
       const actions = shortcutActionsRef.current;
@@ -427,16 +460,54 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
         return;
       event.preventDefault();
       event.stopPropagation();
-      if (event.repeat && shortcut !== "previous-frame" && shortcut !== "next-frame") return;
       const origin = { type: "hotkey" as const, id: event.key };
+      const shuttleDirection =
+        shortcut === "previous-frame" ? -1 : shortcut === "next-frame" ? 1 : 0;
+
+      if (shuttleDirection !== 0) {
+        if (event.repeat) {
+          if (heldDirection === shuttleDirection && !shuttleStarted) {
+            shuttleStarted = true;
+            actions.startShuttle(shuttleDirection, origin);
+          }
+          return;
+        }
+        if (heldDirection !== 0) releaseHeldFrameShortcut(origin);
+        heldDirection = shuttleDirection;
+        actions.stepFrame(shuttleDirection, origin);
+        return;
+      }
+
+      if (event.repeat) return;
+      if (heldDirection !== 0) releaseHeldFrameShortcut(origin);
       if (shortcut === "toggle-playback") actions.togglePlayback(origin);
-      if (shortcut === "previous-frame") actions.stepFrame(-1, origin);
-      if (shortcut === "next-frame") actions.stepFrame(1, origin);
       if (shortcut === "set-segment-start") actions.setSegmentBoundary("start", origin);
       if (shortcut === "set-segment-end") actions.setSegmentBoundary("end", origin);
     }
+
+    function handleEditorShortcutRelease(event: globalThis.KeyboardEvent) {
+      const shortcut = editorShortcutFromEvent(event);
+      const releasedDirection =
+        shortcut === "previous-frame" ? -1 : shortcut === "next-frame" ? 1 : 0;
+
+      if (releasedDirection === 0 || releasedDirection !== heldDirection) return;
+      event.preventDefault();
+      event.stopPropagation();
+      releaseHeldFrameShortcut({ type: "hotkey", id: event.key });
+    }
+
+    function handleWindowBlur() {
+      if (heldDirection !== 0) releaseHeldFrameShortcut({ type: "internal", id: "window-blur" });
+    }
+
     window.addEventListener("keydown", handleEditorShortcut, true);
-    return () => window.removeEventListener("keydown", handleEditorShortcut, true);
+    window.addEventListener("keyup", handleEditorShortcutRelease, true);
+    window.addEventListener("blur", handleWindowBlur);
+    return () => {
+      window.removeEventListener("keydown", handleEditorShortcut, true);
+      window.removeEventListener("keyup", handleEditorShortcutRelease, true);
+      window.removeEventListener("blur", handleWindowBlur);
+    };
   }, []);
 
   const stopPlayheadAnimation = useCallback(() => cancelPlaybackFrame(playbackFrameRef), []);
@@ -453,12 +524,21 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     playbackStartSequenceRef.current += 1;
     playbackRequestedRef.current = false;
     isPlayingRef.current = false;
-    videoRef.current?.pause();
+    shuttleDirectionRef.current = 0;
+    cancelFrame(reverseShuttleFrameRef);
+    const video = videoRef.current;
+    if (video) {
+      video.pause();
+      video.playbackRate = playbackSpeed;
+    }
+    playbackRateRef.current = playbackSpeed;
+    for (const audio of audioElementsRef.current.values()) audio.playbackRate = playbackSpeed;
     pauseAudioPlayback();
     setIsPlaying(false);
+    setShuttleDirection(0);
     stopPlayheadAnimation();
     setTransportError(t("preview.messages.playbackFailed"));
-  }, [pauseAudioPlayback, stopPlayheadAnimation, t]);
+  }, [pauseAudioPlayback, playbackSpeed, stopPlayheadAnimation, t]);
 
   const resumeExternalAudioPlayback = useCallback(() => {
     const video = videoRef.current;
@@ -514,6 +594,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
 
   const handlePlaybackBoundary = useCallback(
     (currentMicros: number): boolean => {
+      if (shuttleDirectionRef.current !== 0) return false;
       const boundary = playbackModes.consumeBoundary(currentMicros, trimRef.current);
       if (!boundary.reached) return false;
       if (!boundary.action) return true;
@@ -578,6 +659,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     () => () => {
       playbackStartSequenceRef.current += 1;
       cancelPlaybackFrame(playbackFrameRef);
+      cancelFrame(reverseShuttleFrameRef);
       cancelFrame(scrubFrameRef);
       cancelFrame(trimCommitFrameRef);
       cleanupAudioRuntime();
@@ -585,6 +667,138 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
       void audioContextRef.current?.close();
     },
     [cleanupAllNativeAudioBindings, cleanupAudioRuntime],
+  );
+
+  const setMediaPlaybackRate = useCallback((rate: number) => {
+    playbackRateRef.current = rate;
+    if (videoRef.current) videoRef.current.playbackRate = rate;
+    for (const audio of audioElementsRef.current.values()) audio.playbackRate = rate;
+  }, []);
+
+  const handleShuttleEnd = useCallback(
+    (origin: DiagnosticOrigin = { type: "internal" }) => {
+      const direction = shuttleDirectionRef.current;
+      if (direction === 0) return;
+
+      const video = videoRef.current;
+      const finalMicros =
+        direction === 1 && video ? video.currentTime * 1_000_000 : currentPlayheadMicrosRef.current;
+
+      shuttleDirectionRef.current = 0;
+      cancelFrame(reverseShuttleFrameRef);
+      reverseShuttleLastFrameAtRef.current = null;
+      playbackStartSequenceRef.current += 1;
+      playbackRequestedRef.current = false;
+      isPlayingRef.current = false;
+      video?.pause();
+      pauseAudioPlayback();
+      setIsPlaying(false);
+      setShuttleDirection(0);
+      stopPlayheadAnimation();
+      setMediaPlaybackRate(playbackSpeed);
+      commitSeek(finalMicros);
+      diagnostics.event("timeline.shuttle.completed", {
+        data: { direction },
+        origin,
+      });
+    },
+    [commitSeek, pauseAudioPlayback, playbackSpeed, setMediaPlaybackRate, stopPlayheadAnimation],
+  );
+
+  const startReverseShuttleAnimation = useCallback(() => {
+    cancelFrame(reverseShuttleFrameRef);
+    reverseShuttleLastFrameAtRef.current = null;
+    reverseShuttleLastSeekAtRef.current = 0;
+
+    const update = (timestamp: number) => {
+      if (shuttleDirectionRef.current !== -1) {
+        reverseShuttleFrameRef.current = null;
+        return;
+      }
+
+      const previousTimestamp = reverseShuttleLastFrameAtRef.current;
+      reverseShuttleLastFrameAtRef.current = timestamp;
+      const elapsedMs =
+        previousTimestamp === null
+          ? 0
+          : Math.min(timestamp - previousTimestamp, SHUTTLE_MAX_FRAME_DELTA_MS);
+
+      const currentMicros = Math.max(
+        0,
+        currentPlayheadMicrosRef.current - elapsedMs * FRAME_SHUTTLE_PLAYBACK_RATE * 1_000,
+      );
+
+      currentPlayheadMicrosRef.current = currentMicros;
+      syncPlayheadElements(
+        playheadRef.current,
+        audioPlayheadRef.current,
+        currentMicros,
+        trimRef.current.sourceDurationMicros,
+      );
+      if (timestamp - lastPlaybackCommitAtRef.current >= 100) {
+        lastPlaybackCommitAtRef.current = timestamp;
+        setPlayheadMicros(currentMicros);
+      }
+
+      const video = videoRef.current;
+      if (
+        video &&
+        !video.seeking &&
+        timestamp - reverseShuttleLastSeekAtRef.current >= REVERSE_SHUTTLE_SEEK_INTERVAL_MS
+      ) {
+        reverseShuttleLastSeekAtRef.current = timestamp;
+        seekVideo(video, currentMicros);
+      }
+
+      if (currentMicros <= 0) {
+        handleShuttleEnd({ type: "internal", id: "source-start" });
+        return;
+      }
+      reverseShuttleFrameRef.current = requestAnimationFrame(update);
+    };
+
+    reverseShuttleFrameRef.current = requestAnimationFrame(update);
+  }, [handleShuttleEnd]);
+
+  const handleShuttleStart = useCallback(
+    (direction: FrameShuttleDirection, origin: DiagnosticOrigin = { type: "internal" }) => {
+      if (!isPlaybackReadyRef.current || shuttleDirectionRef.current === direction) return;
+      if (shuttleDirectionRef.current !== 0) handleShuttleEnd(origin);
+
+      playbackStartSequenceRef.current += 1;
+      playbackRequestedRef.current = false;
+      isPlayingRef.current = false;
+      videoRef.current?.pause();
+      pauseAudioPlayback();
+      setIsPlaying(false);
+      stopPlayheadAnimation();
+      shuttleDirectionRef.current = direction;
+      setShuttleDirection(direction);
+      playbackModes.resetBoundary();
+      diagnostics.action("timeline.shuttle.started", origin, {
+        direction,
+        rate: FRAME_SHUTTLE_PLAYBACK_RATE,
+      });
+
+      if (direction === 1) {
+        setMediaPlaybackRate(FRAME_SHUTTLE_PLAYBACK_RATE);
+        startMediaPlayback();
+        return;
+      }
+
+      setMediaPlaybackRate(playbackSpeed);
+      startReverseShuttleAnimation();
+    },
+    [
+      handleShuttleEnd,
+      pauseAudioPlayback,
+      playbackModes,
+      playbackSpeed,
+      setMediaPlaybackRate,
+      startMediaPlayback,
+      startReverseShuttleAnimation,
+      stopPlayheadAnimation,
+    ],
   );
 
   const flushTrimCommit = useCallback(() => {
@@ -633,6 +847,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
   }, [commitSeek]);
 
   const handleScrubStart = useCallback(() => {
+    if (shuttleDirectionRef.current !== 0) handleShuttleEnd();
     diagnostics.event("timeline.seek.started", {
       data: { source: "timeline" },
       origin: { type: "timeline", id: "timeline.scrub" },
@@ -646,7 +861,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     pauseAudioPlayback();
     setIsPlaying(false);
     stopPlayheadAnimation();
-  }, [pauseAudioPlayback, stopPlayheadAnimation]);
+  }, [handleShuttleEnd, pauseAudioPlayback, stopPlayheadAnimation]);
 
   const handleScrubEnd = useCallback(() => {
     flushScrubSeek();
@@ -665,6 +880,10 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
 
   const handleTogglePlayback = useCallback(
     (origin: DiagnosticOrigin = { type: "internal" }) => {
+      if (shuttleDirectionRef.current !== 0) {
+        handleShuttleEnd(origin);
+        return;
+      }
       diagnostics.action("playback.toggle.requested", origin, {
         playing: playbackRequestedRef.current || isPlayingRef.current,
       });
@@ -694,11 +913,12 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
       playbackModes.resetBoundary();
       startMediaPlayback();
     },
-    [commitSeek, playbackModes, startMediaPlayback],
+    [commitSeek, handleShuttleEnd, playbackModes, startMediaPlayback],
   );
 
   const handleStepFrame = useCallback(
     (direction: -1 | 1, origin: DiagnosticOrigin = { type: "internal" }) => {
+      if (shuttleDirectionRef.current !== 0) handleShuttleEnd(origin);
       diagnostics.action("timeline.frame-step.requested", origin, { direction });
       playbackStartSequenceRef.current += 1;
       playbackRequestedRef.current = false;
@@ -708,7 +928,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
       stopPlayheadAnimation();
       commitSeek(currentPlayheadMicrosRef.current + direction * frameDurationMicros(frameRate));
     },
-    [commitSeek, frameRate, stopPlayheadAnimation],
+    [commitSeek, frameRate, handleShuttleEnd, stopPlayheadAnimation],
   );
 
   const handleSetSegmentBoundary = useCallback(
@@ -846,6 +1066,10 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
         origin: { type: "button", id: "crop.tool" },
       });
       if (isOpen) {
+        if (shuttleDirectionRef.current !== 0) {
+          handleShuttleEnd({ type: "internal", id: "crop-tool" });
+          return;
+        }
         resumeAfterCropRef.current = playbackRequestedRef.current || isPlayingRef.current;
         if (!resumeAfterCropRef.current) return;
         playbackStartSequenceRef.current += 1;
@@ -862,11 +1086,13 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
         startMediaPlayback();
       }
     },
-    [pauseAudioPlayback, startMediaPlayback, stopPlayheadAnimation],
+    [handleShuttleEnd, pauseAudioPlayback, startMediaPlayback, stopPlayheadAnimation],
   );
 
   const onPreviewPlaybackError = useCallback(
     (previewKind: "source" | "proxy") => {
+      if (shuttleDirectionRef.current !== 0)
+        handleShuttleEnd({ type: "internal", id: "preview-error" });
       playbackStartSequenceRef.current += 1;
       playbackRequestedRef.current = false;
       isPlayingRef.current = false;
@@ -876,7 +1102,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
       stopPlayheadAnimation();
       if (sourcePath) void dispatch(handlePreviewPlaybackErrorRequested(sourcePath, previewKind));
     },
-    [dispatch, pauseAudioPlayback, sourcePath, stopPlayheadAnimation],
+    [dispatch, handleShuttleEnd, pauseAudioPlayback, sourcePath, stopPlayheadAnimation],
   );
 
   const onLoadedMetadata = useCallback(() => {
@@ -903,17 +1129,30 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
       data: { status: "ended" },
       origin: { type: "internal" },
     });
+    if (shuttleDirectionRef.current !== 0) {
+      handleShuttleEnd({ type: "internal", id: "source-end" });
+      return;
+    }
     if (videoRef.current) handlePlaybackBoundary(videoRef.current.currentTime * 1_000_000);
-  }, [handlePlaybackBoundary]);
+  }, [handlePlaybackBoundary, handleShuttleEnd]);
 
   useEffect(() => {
     shortcutActionsRef.current = {
       enabled: isPlaybackReady,
       togglePlayback: handleTogglePlayback,
       stepFrame: handleStepFrame,
+      startShuttle: handleShuttleStart,
+      stopShuttle: handleShuttleEnd,
       setSegmentBoundary: handleSetSegmentBoundary,
     };
-  }, [handleSetSegmentBoundary, handleStepFrame, handleTogglePlayback, isPlaybackReady]);
+  }, [
+    handleSetSegmentBoundary,
+    handleShuttleEnd,
+    handleShuttleStart,
+    handleStepFrame,
+    handleTogglePlayback,
+    isPlaybackReady,
+  ]);
 
   return {
     videoRef,
@@ -924,6 +1163,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     isPlaybackReady,
     transportError,
     nativeLoopEnabled,
+    shuttleDirection,
     videoMuted: usesExternalAudio && typeof AudioContext === "undefined",
     onLoadedMetadata,
     onCanPlay,
@@ -933,6 +1173,8 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     onEnded,
     onTogglePlayback: handleTogglePlayback,
     onStepFrame: handleStepFrame,
+    onShuttleStart: handleShuttleStart,
+    onShuttleEnd: handleShuttleEnd,
     onSetSegmentBoundary: handleSetSegmentBoundary,
     onTrimBoundaryChange: handleTrimBoundaryChange,
     onSegmentMove: handleSegmentMove,

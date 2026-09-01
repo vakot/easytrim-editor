@@ -1570,6 +1570,90 @@ describe("App", () => {
     input.remove();
   });
 
+  it("uses native 2x playback while the next-frame shortcut is held", async () => {
+    mocks.chooseSource.mockResolvedValue([selection]);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await openSourcePicker(user);
+    const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
+    const play = vi.spyOn(video, "play").mockResolvedValue();
+    const pause = vi.spyOn(video, "pause").mockImplementation(() => undefined);
+    const nextFrame = screen.getByRole("button", { name: "Next frame" });
+
+    fireEvent.keyDown(window, { key: "ArrowRight", code: "ArrowRight" });
+    expect(video.currentTime).toBeCloseTo(0.016683, 6);
+    expect(play).not.toHaveBeenCalled();
+
+    fireEvent.keyDown(window, { key: "ArrowRight", code: "ArrowRight", repeat: true });
+    expect(video.playbackRate).toBe(2);
+    expect(play).toHaveBeenCalledOnce();
+    expect(nextFrame).toHaveAttribute("aria-pressed", "true");
+
+    fireEvent.play(video);
+    video.currentTime = 2.5;
+    fireEvent.keyUp(window, { key: "ArrowRight", code: "ArrowRight" });
+
+    expect(pause).toHaveBeenCalled();
+    expect(video.playbackRate).toBe(1);
+    expect(nextFrame).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("slider", { name: "Playback position" })).toHaveAttribute(
+      "aria-valuenow",
+      "2500000",
+    );
+  });
+
+  it("uses a time-based coalesced seek while the previous-frame shortcut is held", async () => {
+    mocks.chooseSource.mockResolvedValue([selection]);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await openSourcePicker(user);
+    const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
+    const play = vi.spyOn(video, "play").mockResolvedValue();
+    vi.spyOn(video, "pause").mockImplementation(() => undefined);
+    video.currentTime = 10;
+    fireEvent.timeUpdate(video);
+
+    const scheduledFrames: FrameRequestCallback[] = [];
+    const requestFrame = vi
+      .spyOn(window, "requestAnimationFrame")
+      .mockImplementation((callback) => scheduledFrames.push(callback));
+
+    const cancelFrame = vi.spyOn(window, "cancelAnimationFrame").mockImplementation(() => {});
+
+    try {
+      fireEvent.keyDown(window, { key: "ArrowLeft", code: "ArrowLeft" });
+      fireEvent.keyDown(window, { key: "ArrowLeft", code: "ArrowLeft", repeat: true });
+
+      expect(play).not.toHaveBeenCalled();
+      expect(screen.getByRole("button", { name: "Previous frame" })).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      );
+      expect(scheduledFrames).toHaveLength(1);
+
+      act(() => scheduledFrames.shift()?.(1_000));
+      act(() => scheduledFrames.shift()?.(1_050));
+
+      expect(screen.getByRole("slider", { name: "Playback position" })).toHaveAttribute(
+        "aria-valuenow",
+        "9883317",
+      );
+      expect(video.currentTime).toBeCloseTo(9.883317, 6);
+
+      fireEvent.keyUp(window, { key: "ArrowLeft", code: "ArrowLeft" });
+      expect(cancelFrame).toHaveBeenCalled();
+      expect(screen.getByRole("button", { name: "Previous frame" })).toHaveAttribute(
+        "aria-pressed",
+        "false",
+      );
+    } finally {
+      requestFrame.mockRestore();
+      cancelFrame.mockRestore();
+    }
+  });
+
   it("removes the editor shortcut listener when the preview unmounts", async () => {
     mocks.chooseSource.mockResolvedValue([selection]);
     const removeEventListener = vi.spyOn(window, "removeEventListener");
