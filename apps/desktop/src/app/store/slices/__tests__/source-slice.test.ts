@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 
+import { importQueueItemActivated } from "@/app/store/actions/imported-queue-actions";
 import { sourceFailed, sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
-import { firstSource, media, secondSource } from "@/test/source.fixtures";
+import { firstSource, media, mediaWithAudio, secondSource } from "@/test/source.fixtures";
 
 import {
   initialSourceState,
+  selectAudioPanelStreamCount,
   selectHasSource,
   selectSourceReady,
   selectSourceSelection,
@@ -37,6 +39,34 @@ describe("source slice", () => {
     );
 
     expect(staleCompletion).toBe(loadingSecond);
+  });
+
+  it("preserves the audio panel footprint while replacement metadata loads", () => {
+    const loading = sourceReducer(initialSourceState, sourceSelected({ source: firstSource }));
+    const ready = sourceReducer(
+      loading,
+      sourceReady({ loadToken: 1, media: mediaWithAudio(firstSource.sourcePath) }),
+    );
+
+    const replacing = sourceReducer(
+      ready,
+      importQueueItemActivated({
+        id: "import-2",
+        loadToken: 2,
+        snapshot: {
+          source: secondSource,
+          trim: { kind: "full-source" },
+          crop: null,
+          audio: {
+            master: { enabled: true, volumePercent: 50 },
+            tracks: [],
+            mergeAudio: false,
+          },
+        },
+      }),
+    );
+
+    expect(selectAudioPanelStreamCount({ source: replacing } as never)).toBe(2);
   });
 
   it("exposes focused source selectors", () => {

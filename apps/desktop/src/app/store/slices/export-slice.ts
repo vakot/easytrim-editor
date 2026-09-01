@@ -170,6 +170,12 @@ const exportSlice = createSlice({
         item.media = action.payload.media;
       }
     },
+    queueItemMediaPreloaded: (state, action: PayloadAction<{ id: string; media: MediaInfo }>) => {
+      const item = state.queue.find((candidate) => candidate.id === action.payload.id);
+      if (item?.status === "imported") {
+        item.media = action.payload.media;
+      }
+    },
     queueItemPromoted: (state, action: PayloadAction<QueueItemPromotion>) => {
       const index = state.queue.findIndex((candidate) => candidate.id === action.payload.id);
       const item = state.queue[index];
@@ -338,6 +344,7 @@ export const {
   queueEntryAdded,
   queueFinishActionChanged,
   queueFinishActionsAvailable,
+  queueItemMediaPreloaded,
   queueItemPromoted,
   queueItemSnapshotUpdated,
   queuePaused,

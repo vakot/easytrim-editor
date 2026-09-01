@@ -25,6 +25,7 @@ import {
   type ImportQueueItem,
   importQueueItemRemoved,
   importQueueItemsAdded,
+  queueItemMediaPreloaded,
   queueItemSnapshotUpdated,
   selectActiveQueueItem,
   selectImportQueueItems,
@@ -53,6 +54,7 @@ import {
   activateSourcePath,
   checkMediaCapabilities,
   chooseSource as chooseSourceDialog,
+  inspectImportedMedia,
   inspectMedia,
   moveSourceToTrash,
   prepareAudioPreviews,
@@ -63,6 +65,7 @@ import {
 } from "@/lib/tauri/media";
 import type {
   AppError,
+  MediaInfo,
   PreviewKind,
   SourceImportResult,
   SourcePickerMode,
@@ -78,6 +81,8 @@ let waveformJobSequence = 0;
 let sourceLoadSequence = 0;
 let importedItemSequence = 0;
 let queueRestoreSequence = 0;
+const IMPORT_MEDIA_PRELOAD_CONCURRENCY = 2;
+const importedMediaPreloads = new Map<string, Promise<MediaInfo>>();
 
 function isCurrentSource(state: RootState, sourcePath: string, loadToken: number): boolean {
   return (
@@ -135,8 +140,53 @@ export const ingestSources =
     dispatch(dropListenerErrorCleared());
     dispatch(importQueueItemsAdded(items));
     dispatch(navigateToImportedItem(items[0]!.id, origin));
+    void preloadImportedItemMedia(dispatch, items.slice(1));
     operation.complete(importResultData(result));
   };
+
+function preloadImportedMedia(sourcePath: string): Promise<MediaInfo> {
+  const existing = importedMediaPreloads.get(sourcePath);
+  if (existing) return existing;
+
+  const inspection = inspectImportedMedia(sourcePath).finally(() => {
+    if (importedMediaPreloads.get(sourcePath) === inspection) {
+      importedMediaPreloads.delete(sourcePath);
+    }
+  });
+
+  importedMediaPreloads.set(sourcePath, inspection);
+  return inspection;
+}
+
+async function preloadImportedItem(
+  dispatch: AppDispatch,
+  item: ImportQueueItem,
+): Promise<MediaInfo | null> {
+  try {
+    const media = await preloadImportedMedia(item.snapshot.source.sourcePath);
+    dispatch(queueItemMediaPreloaded({ id: item.id, media }));
+    return media;
+  } catch {
+    // Activation performs the authoritative inspection and reports failures to the user.
+    return null;
+  }
+}
+
+async function preloadImportedItemMedia(
+  dispatch: AppDispatch,
+  items: ImportQueueItem[],
+): Promise<void> {
+  let nextIndex = 0;
+  const workerCount = Math.min(IMPORT_MEDIA_PRELOAD_CONCURRENCY, items.length);
+  const workers = Array.from({ length: workerCount }, async () => {
+    while (nextIndex < items.length) {
+      const item = items[nextIndex++];
+      if (item) await preloadImportedItem(dispatch, item);
+    }
+  });
+
+  await Promise.all(workers);
+}
 
 function normalizeSourceImportResult(input: SourceImportResult | SourceRef[]): SourceImportResult {
   if (Array.isArray(input)) {
@@ -185,7 +235,7 @@ async function prepareSelectedSource(
     data: { displayName: source.displayName },
   });
 
-  let media;
+  let media: MediaInfo;
   try {
     media = await inspectMedia(source.sourcePath);
     probeOperation.complete({ audioStreamCount: media.audioStreams.length });

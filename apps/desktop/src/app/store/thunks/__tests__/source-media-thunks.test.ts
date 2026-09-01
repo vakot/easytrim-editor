@@ -54,6 +54,7 @@ import type { MediaInfo, SourceImportResult, WaveformResult } from "@/lib/tauri/
 const mocks = vi.hoisted(() => ({
   checkMediaCapabilities: vi.fn(),
   chooseSource: vi.fn(),
+  inspectImportedMedia: vi.fn(),
   inspectMedia: vi.fn(),
   activateSourcePath: vi.fn(),
   restoreSourceFromTrash: vi.fn(),
@@ -69,6 +70,7 @@ vi.mock("@/lib/tauri/media", async (importOriginal) => {
     ...original,
     checkMediaCapabilities: mocks.checkMediaCapabilities,
     chooseSource: mocks.chooseSource,
+    inspectImportedMedia: mocks.inspectImportedMedia,
     inspectMedia: mocks.inspectMedia,
     activateSourcePath: mocks.activateSourcePath,
     restoreSourceFromTrash: mocks.restoreSourceFromTrash,
@@ -177,6 +179,9 @@ describe("source/media orchestration thunks", () => {
       ffprobe: { available: true, version: "ffprobe" },
     });
     mocks.restoreSourceFromTrash.mockResolvedValue(undefined);
+    mocks.inspectImportedMedia.mockImplementation(async (sourcePath: string) =>
+      createMedia(sourcePath),
+    );
     mocks.activateSourcePath.mockImplementation(async (sourcePath: string) => {
       const source = [firstSource, secondSource, thirdSource].find(
         (candidate) => candidate.sourcePath === sourcePath,
@@ -588,7 +593,9 @@ describe("source/media orchestration thunks", () => {
       expect(selectSourceSelection(appStore.getState())).toEqual(secondSource),
     );
 
-    expect(selectImportQueueItems(appStore.getState())).toEqual([target]);
+    expect(selectImportQueueItems(appStore.getState())).toEqual([
+      expect.objectContaining({ id: target.id }),
+    ]);
     expect(selectActiveItemId(appStore.getState())).toBe(target.id);
   });
 
@@ -736,7 +743,7 @@ describe("source/media orchestration thunks", () => {
 
     expect(selectImportQueueItems(appStore.getState())).toEqual([
       expect.objectContaining({ id: sourceItem?.id }),
-      target,
+      expect.objectContaining({ id: target.id }),
     ]);
     expect(selectActiveItemId(appStore.getState())).toBe(target.id);
     expect(appStore.getState().source.error).toEqual({
@@ -836,7 +843,7 @@ describe("source/media orchestration thunks", () => {
 
     inspection.resolve(createMedia(firstSource.sourcePath, 1));
     await chooserRequest;
-    expect(appStore.getState().source.status).toBe("ready");
+    await vi.waitFor(() => expect(appStore.getState().source.status).toBe("ready"));
     expect(selectIsNativeDialogOpen(appStore.getState())).toBe(false);
   });
 
