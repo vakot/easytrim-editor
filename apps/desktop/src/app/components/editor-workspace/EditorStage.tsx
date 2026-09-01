@@ -1,3 +1,5 @@
+import { type RefObject, useLayoutEffect, useRef } from "react";
+
 import { Card } from "@/components/ui/card";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 
@@ -9,7 +11,7 @@ import { Preview } from "@/features/preview";
 import { ImportQueueTabs } from "@/features/source";
 import { TimelinePanel } from "@/features/timeline";
 import { cn } from "@/lib/class-names.utils";
-import { timelineGeometryStyle } from "@/lib/interaction/timeline-geometry.utils";
+import { syncTimelineGeometry } from "@/lib/interaction/timeline-geometry.utils";
 
 type PanelSizes = {
   defaultSize?: number;
@@ -49,65 +51,73 @@ const EMPTY_TIMELINE_RANGE = {
 
 export function EditorStage() {
   const media = useAppSelector(selectSourceMedia);
-  const trim = useAppSelector(selectTrim);
+  const timelinePaneRef = useRef<HTMLDivElement>(null);
   const audioStreamsCount = media?.audioStreams.length ?? 0;
 
   return (
-    <ResizablePanelGroup
-      id="editor-stage"
-      orientation="vertical"
-      persisted
-      style={timelineGeometryStyle(trim ?? EMPTY_TIMELINE_RANGE)}
-    >
-      <ResizablePanel id="editor-stage-preview" minSize="14rem">
-        <div className="size-full p-px">
-          <Card className="size-full gap-0 bg-preview-surface p-0">
-            <ImportQueueTabs />
-            <Preview />
-          </Card>
-        </div>
-      </ResizablePanel>
+    <div className="size-full min-h-0" data-slot="timeline-pane" ref={timelinePaneRef}>
+      <TimelineGeometrySync targetRef={timelinePaneRef} />
+      <ResizablePanelGroup id="editor-stage" orientation="vertical" persisted>
+        <ResizablePanel id="editor-stage-preview" minSize="14rem">
+          <div className="size-full p-px">
+            <Card className="size-full gap-0 bg-preview-surface p-0">
+              <ImportQueueTabs />
+              <Preview />
+            </Card>
+          </div>
+        </ResizablePanel>
 
-      <ResizableHandle
-        className="bg-transparent"
-        disabled={!media}
-        style={{ height: 6 }}
-        withHandle={!!media}
-      />
+        <ResizableHandle
+          className="bg-transparent"
+          disabled={!media}
+          style={{ height: 6 }}
+          withHandle={!!media}
+        />
 
-      <ResizablePanel
-        className={cn(!audioStreamsCount && "pb-1.5")}
-        groupResizeBehavior="preserve-pixel-size"
-        id="editor-stage-timeline"
-        {...getTimelinePanelSize(audioStreamsCount > 0)}
-      >
-        <div className="size-full p-px">
-          <Card className="size-full p-0">
-            <TimelinePanel />
-          </Card>
-        </div>
-      </ResizablePanel>
+        <ResizablePanel
+          className={cn(!audioStreamsCount && "pb-1.5")}
+          groupResizeBehavior="preserve-pixel-size"
+          id="editor-stage-timeline"
+          {...getTimelinePanelSize(audioStreamsCount > 0)}
+        >
+          <div className="size-full p-px">
+            <Card className="size-full p-0">
+              <TimelinePanel />
+            </Card>
+          </div>
+        </ResizablePanel>
 
-      {audioStreamsCount > 0 && (
-        <>
-          <ResizableHandle className="bg-transparent" style={{ height: 6 }} withHandle />
+        {audioStreamsCount > 0 && (
+          <>
+            <ResizableHandle className="bg-transparent" style={{ height: 6 }} withHandle />
 
-          <ResizablePanel
-            className="pb-1.5"
-            collapsedSize={0}
-            collapsible
-            groupResizeBehavior="preserve-pixel-size"
-            id="editor-stage-audio"
-            {...getAudioPanelSize(audioStreamsCount)}
-          >
-            <div className="size-full p-px">
-              <Card className="size-full p-0">
-                <AudioPanel />
-              </Card>
-            </div>
-          </ResizablePanel>
-        </>
-      )}
-    </ResizablePanelGroup>
+            <ResizablePanel
+              className="pb-1.5"
+              collapsedSize={0}
+              collapsible
+              groupResizeBehavior="preserve-pixel-size"
+              id="editor-stage-audio"
+              {...getAudioPanelSize(audioStreamsCount)}
+            >
+              <div className="size-full p-px">
+                <Card className="size-full p-0">
+                  <AudioPanel />
+                </Card>
+              </div>
+            </ResizablePanel>
+          </>
+        )}
+      </ResizablePanelGroup>
+    </div>
   );
+}
+
+function TimelineGeometrySync({ targetRef }: { targetRef: RefObject<HTMLElement | null> }) {
+  const trim = useAppSelector(selectTrim);
+
+  useLayoutEffect(() => {
+    syncTimelineGeometry(targetRef.current, trim ?? EMPTY_TIMELINE_RANGE);
+  }, [targetRef, trim]);
+
+  return null;
 }

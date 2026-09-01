@@ -12,7 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-import { useTimeline } from "@/app/hooks/useTimeline";
+import { useTimelineCommands } from "@/app/hooks/useTimeline";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { type ExportQueueItem, selectExportQueue } from "@/app/store/slices/export-slice";
 import {
@@ -73,12 +73,12 @@ interface ExportQueueItemProps {
 function ExportQueueItem({ item, now }: ExportQueueItemProps) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const timeline = useTimeline();
+  const { onSeek } = useTimelineCommands();
   const isSourceDeleted = item.sourceDeleted === true;
 
   async function restoreItem() {
     const restored = await dispatch(restoreExportQueueItemRequested(item.id));
-    if (restored) timeline.onSeek(editorSnapshotTrimStart(item.snapshot.trim));
+    if (restored) onSeek(editorSnapshotTrimStart(item.snapshot.trim));
   }
 
   return (

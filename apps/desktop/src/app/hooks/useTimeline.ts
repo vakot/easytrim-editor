@@ -1,27 +1,47 @@
+import { useContext } from "react";
+
+import {
+  EditorTimelineCommandsContext,
+  EditorTimelineStateContext,
+} from "@/app/contexts/editor-contracts-context";
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectTrim } from "@/app/store/slices/trim-slice";
 
-import { useEditorInteraction } from "./useEditorInteraction";
+export function useTimelineState() {
+  const state = useContext(EditorTimelineStateContext);
+  if (!state) {
+    throw new Error("Timeline state must be used within EditorContractsProvider.");
+  }
+  return state;
+}
+
+export function useTimelineCommands() {
+  const commands = useContext(EditorTimelineCommandsContext);
+  if (!commands) {
+    throw new Error("Timeline commands must be used within EditorContractsProvider.");
+  }
+  return commands;
+}
 
 export function useTimeline() {
-  const interaction = useEditorInteraction();
+  const state = useTimelineState();
+  const commands = useTimelineCommands();
   const trim = useAppSelector(selectTrim);
   return {
     trim,
-    playheadMicros: interaction.displayedPlayheadMicros,
-    playheadRef: interaction.playheadRef,
-    audioPlayheadRef: interaction.audioPlayheadRef,
-    canSetSegmentStart: interaction.canSetSegmentStart,
-    canSetSegmentEnd: interaction.canSetSegmentEnd,
-    onChange: interaction.onTrimBoundaryChange,
-    onMoveSegment: interaction.onSegmentMove,
-    onTrimDragStart: interaction.onTrimDragStart,
-    onTrimDragEnd: interaction.onTrimDragEnd,
-    onSegmentDragStart: interaction.onSegmentDragStart,
-    onSegmentDragEnd: interaction.onSegmentDragEnd,
-    onSeek: interaction.onSeek,
-    onScrubStart: interaction.onScrubStart,
-    onScrub: interaction.onScrub,
-    onScrubEnd: interaction.onScrubEnd,
+    playheadMicros: state.displayedPlayheadMicros,
+    playheadRef: state.playheadRef,
+    canSetSegmentStart: state.canSetSegmentStart,
+    canSetSegmentEnd: state.canSetSegmentEnd,
+    onChange: commands.onTrimBoundaryChange,
+    onMoveSegment: commands.onSegmentMove,
+    onTrimDragStart: commands.onTrimDragStart,
+    onTrimDragEnd: commands.onTrimDragEnd,
+    onSegmentDragStart: commands.onSegmentDragStart,
+    onSegmentDragEnd: commands.onSegmentDragEnd,
+    onSeek: commands.onSeek,
+    onScrubStart: commands.onScrubStart,
+    onScrub: commands.onScrub,
+    onScrubEnd: commands.onScrubEnd,
   };
 }
