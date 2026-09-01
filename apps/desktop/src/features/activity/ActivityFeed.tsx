@@ -245,7 +245,7 @@ export function ActivityFeedView({
   );
 
   return (
-    <section aria-labelledby={titleId} className="relative flex h-full min-h-0 flex-col gap-2">
+    <section aria-labelledby={titleId} className="relative flex h-full min-h-0 flex-col gap-2 pt-3">
       <div className="mx-3 flex items-center gap-1.5">
         <h3
           className="font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
@@ -269,7 +269,7 @@ export function ActivityFeedView({
 
       <ResizablePanelControl panelId="workspace-activity">
         <Button
-          className="absolute top-2 right-3 text-secondary-foreground"
+          className="absolute top-1 right-3 text-secondary-foreground"
           size="icon-xs"
           variant="ghost"
         >

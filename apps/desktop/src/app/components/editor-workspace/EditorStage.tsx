@@ -21,12 +21,12 @@ const TIMELINE_PANEL_SIZE: PanelSizes = {
   minSize: 154,
 };
 
-const AUDIO_PANEL_SIZE_LINE = 56;
+const AUDIO_PANEL_SIZE_LINE = 58;
 const AUDIO_PANEL_SIZE_MIN = 146;
 
 /** lines > 0 */
 const getAudioPanelSize = (lines: number = 1): PanelSizes => {
-  const audioPanelSizeMax = AUDIO_PANEL_SIZE_MIN + (lines - 1) * AUDIO_PANEL_SIZE_LINE;
+  const audioPanelSizeMax = AUDIO_PANEL_SIZE_MIN + (lines - 1) * AUDIO_PANEL_SIZE_LINE + 1;
   return {
     minSize: AUDIO_PANEL_SIZE_MIN,
     defaultSize: AUDIO_PANEL_SIZE_MIN,
@@ -74,7 +74,7 @@ export function EditorStage() {
         {...TIMELINE_PANEL_SIZE}
       >
         <div className="size-full p-px">
-          <Card className="size-full p-3">
+          <Card className="size-full p-0">
             <TimelinePanel />
           </Card>
         </div>
@@ -93,7 +93,7 @@ export function EditorStage() {
             {...getAudioPanelSize(audioStreamsCount)}
           >
             <div className="size-full p-px">
-              <Card className="size-full p-0 pt-3">
+              <Card className="size-full p-0">
                 <AudioPanel />
               </Card>
             </div>

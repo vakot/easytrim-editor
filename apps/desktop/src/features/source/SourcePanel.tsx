@@ -64,7 +64,7 @@ export function SourcePanel() {
           <TooltipTrigger asChild>
             <DropdownMenuTrigger asChild>
               <Button
-                className="absolute top-2 right-3 text-secondary-foreground"
+                className="absolute top-1 right-3 text-secondary-foreground"
                 size="icon-xs"
                 variant="ghost"
               >
