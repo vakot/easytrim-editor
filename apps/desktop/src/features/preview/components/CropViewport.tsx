@@ -20,13 +20,14 @@ import { isFullCrop } from "../lib/crop-geometry.utils";
 import { CropSelection } from "./CropSelection";
 import { CropSnapMarkers } from "./CropSnapMarkers";
 
-const CROP_TOOL_GUTTER_PX = 16;
+// Covers the snap-marker offset, its labels, and a small buffer inside the clipped preview card.
+const CROP_TOOL_INSET_PX = 28;
 
 interface CropViewportProps {
   muted: boolean;
   nativeLoopEnabled: boolean;
   onCanPlay: () => void;
-  onCropToolOpenChange: (isOpen: boolean) => void;
+  onCropToolOpenChange?: (isOpen: boolean) => void;
   onEnded: () => void;
   onError: () => void;
   onLoadedMetadata: () => void;
@@ -66,7 +67,7 @@ export function CropViewport({
   const cropSelection = useCropSelection(containerRef);
 
   useEffect(() => {
-    onCropToolOpenChange(cropSelection.isOpen);
+    onCropToolOpenChange?.(cropSelection.isOpen);
   }, [cropSelection.isOpen, onCropToolOpenChange]);
 
   useEffect(() => {
@@ -105,10 +106,10 @@ export function CropViewport({
   }, []);
 
   const cropIsApplied = !cropSelection.isEditing && !isFullCrop(cropSelection.crop);
-  const cropToolGutter = cropSelection.isEditing ? CROP_TOOL_GUTTER_PX : 0;
+  const cropToolInset = cropSelection.isEditing ? CROP_TOOL_INSET_PX : 0;
   const viewportBounds = {
-    width: Math.max(0, containerBounds.width - cropToolGutter),
-    height: Math.max(0, containerBounds.height - cropToolGutter),
+    width: Math.max(0, containerBounds.width - cropToolInset * 2),
+    height: Math.max(0, containerBounds.height - cropToolInset * 2),
   };
 
   const viewportAspectRatio = cropIsApplied
@@ -116,10 +117,11 @@ export function CropViewport({
     : sourceAspectRatio;
 
   const viewport = containBounds(viewportBounds, viewportAspectRatio);
+  const centeredViewportFrame = centerFrame(viewportBounds, viewport);
   const viewportFrame = {
-    ...centerFrame(viewportBounds, viewport),
-    left: cropToolGutter + (viewportBounds.width - viewport.width) / 2,
-    top: cropToolGutter + (viewportBounds.height - viewport.height) / 2,
+    ...centeredViewportFrame,
+    left: cropToolInset + centeredViewportFrame.left,
+    top: cropToolInset + centeredViewportFrame.top,
   };
 
   const selectionFrame = cropFrame(viewportFrame, cropSelection.crop);
@@ -139,9 +141,7 @@ export function CropViewport({
   return (
     <CursorTooltip
       aria-label={t("preview.accessibility.crop.preview")}
-      className={`group relative size-full bg-preview-surface focus-visible:outline-none ${
-        cropSelection.isEditing ? "overflow-visible" : "overflow-hidden"
-      }`}
+      className="group relative size-full overflow-hidden bg-preview-surface focus-visible:outline-none"
       disabled={cropSelection.isOpen}
       onBlur={(event: FocusEvent<HTMLDivElement>) => {
         if (!event.currentTarget.contains(event.relatedTarget)) cropSelection.close();
@@ -267,9 +267,9 @@ export function CropViewport({
           style={sourceFrame}
         />
       </div>
+      <CropSnapMarkers frame={viewportFrame} visible={cropSelection.isEditing} />
       {cropSelection.isEditing ? (
         <>
-          <CropSnapMarkers frame={viewportFrame} />
           <CropSelection
             enterFrom={cropSelection.enterFrom}
             frame={selectionFrame}

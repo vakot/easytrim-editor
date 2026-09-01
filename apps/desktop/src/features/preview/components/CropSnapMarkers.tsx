@@ -4,18 +4,20 @@ import type { CropFrame } from "../lib/crop-frame.utils";
 
 interface CropSnapMarkersProps {
   frame: CropFrame;
+  visible: boolean;
 }
 
-export function CropSnapMarkers({ frame }: CropSnapMarkersProps) {
+export function CropSnapMarkers({ frame, visible }: CropSnapMarkersProps) {
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none absolute inset-0 z-10"
+      className="pointer-events-none absolute inset-0 z-10 opacity-0 transition-opacity duration-200 ease-out data-[visible=true]:opacity-100 motion-reduce:transition-none"
       data-crop-snap-markers
+      data-visible={visible}
     >
       {QUARTER_SNAP_POINTS.map((point) => (
         <span
-          className="absolute h-2 w-px -translate-x-1/2 bg-muted-foreground/70"
+          className="absolute h-2 w-px -translate-x-1/2 bg-muted-foreground/70 transition-[left,top] duration-200 ease-out motion-reduce:transition-none"
           data-crop-snap-marker="top"
           key={`top-${point}`}
           style={{ left: frame.left + frame.width * point, top: frame.top - 12 }}
@@ -30,7 +32,7 @@ export function CropSnapMarkers({ frame }: CropSnapMarkersProps) {
       ))}
       {QUARTER_SNAP_POINTS.map((point) => (
         <span
-          className="absolute h-px w-2 -translate-y-1/2 bg-muted-foreground/70"
+          className="absolute h-px w-2 -translate-y-1/2 bg-muted-foreground/70 transition-[left,top] duration-200 ease-out motion-reduce:transition-none"
           data-crop-snap-marker="left"
           key={`left-${point}`}
           style={{ left: frame.left - 12, top: frame.top + frame.height * point }}

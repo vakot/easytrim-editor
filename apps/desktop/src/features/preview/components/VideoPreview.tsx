@@ -1,5 +1,5 @@
 import { AlertCircle } from "lucide-react";
-import { type RefObject, useEffect, useRef, useState } from "react";
+import { type RefObject, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -10,7 +10,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectPlaybackSpeed } from "@/app/store/slices/editor-tools-slice";
 import type { PreviewState } from "@/app/store/slices/preview-slice";
-import { cn } from "@/lib/class-names.utils";
 import type { DiagnosticOrigin } from "@/lib/tauri/diagnostics.types";
 
 import { CropViewport } from "./CropViewport";
@@ -51,7 +50,6 @@ export function VideoPreview({
   const { t } = useTranslation();
   const playbackRate = useAppSelector(selectPlaybackSpeed);
   const reportedUrl = useRef<string | null>(null);
-  const [cropToolOpen, setCropToolOpen] = useState(false);
 
   const readyUrl = preview.status === "ready" ? preview.value.url : null;
 
@@ -62,10 +60,6 @@ export function VideoPreview({
   useEffect(() => {
     reportedUrl.current = null;
   }, [readyUrl]);
-
-  useEffect(() => {
-    onCropToolOpenChange?.(cropToolOpen);
-  }, [cropToolOpen, onCropToolOpenChange]);
 
   if (preview.status === "idle" || preview.status === "loading") {
     return <div aria-hidden="true" className="size-full bg-preview-surface" />;
@@ -102,18 +96,13 @@ export function VideoPreview({
 
   return (
     <section className="grid size-full min-h-0 place-items-center">
-      <div
-        className={cn(
-          "relative size-full min-h-0 bg-preview-surface",
-          cropToolOpen ? "overflow-visible" : "overflow-hidden",
-        )}
-      >
+      <div className="relative size-full min-h-0 overflow-hidden bg-preview-surface">
         <CropViewport
           key={value.url}
           muted={muted}
           nativeLoopEnabled={nativeLoopEnabled}
           onCanPlay={onCanPlay}
-          onCropToolOpenChange={setCropToolOpen}
+          onCropToolOpenChange={onCropToolOpenChange}
           onEnded={onEnded}
           onError={() => {
             if (reportedUrl.current === value.url) return;
