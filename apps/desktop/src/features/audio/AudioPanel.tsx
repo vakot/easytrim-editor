@@ -129,7 +129,9 @@ export function AudioPanel() {
         </div>
       </div>
 
-      <Separator className="mt-2 bg-foreground/10" />
+      <div className="relative mt-2 h-0">
+        <Separator className="absolute bg-foreground/10" />
+      </div>
 
       <ScrollArea className="min-h-0 flex-1 pr-3 pl-1" data-testid="audio-tracks-scroll">
         <div className="my-2">
