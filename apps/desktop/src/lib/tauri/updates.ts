@@ -1,6 +1,7 @@
 import { relaunch } from "@tauri-apps/plugin-process";
 import { check } from "@tauri-apps/plugin-updater";
 
+import { completeDiagnosticsSession } from "./diagnostics";
 import type { AvailableUpdate } from "./updates.types";
 import { getErrorMessage, isWindowsRuntime } from "./updates.utils";
 
@@ -16,6 +17,7 @@ export async function checkForUpdates(): Promise<AvailableUpdate | null> {
       version: update.version,
       install: async () => {
         try {
+          await completeDiagnosticsSession();
           await update.downloadAndInstall();
           console.info("[updates] Update installer launched", {
             version: update.version,

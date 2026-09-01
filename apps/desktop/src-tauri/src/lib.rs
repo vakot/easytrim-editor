@@ -52,6 +52,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::capabilities::check_media_capabilities,
             commands::diagnostics::diagnostics_bootstrap,
+            commands::diagnostics::complete_diagnostics_session,
             commands::diagnostics::list_persisted_diagnostic_sessions,
             commands::diagnostics::read_persisted_diagnostic_session_events,
             commands::diagnostics::record_diagnostic_event,

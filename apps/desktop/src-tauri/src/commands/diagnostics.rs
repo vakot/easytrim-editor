@@ -18,6 +18,13 @@ pub fn diagnostics_bootstrap(
 }
 
 #[tauri::command]
+pub fn complete_diagnostics_session(
+    diagnostics: State<'_, Arc<DiagnosticsState>>,
+) -> Result<(), AppError> {
+    diagnostics.complete()
+}
+
+#[tauri::command]
 pub async fn list_persisted_diagnostic_sessions(
     diagnostics: State<'_, Arc<DiagnosticsState>>,
 ) -> Result<Vec<DiagnosticSessionSummary>, AppError> {
