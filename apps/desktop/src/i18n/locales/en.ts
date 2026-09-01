@@ -100,6 +100,11 @@ export const en = {
         showReport: "Show Report",
         title: "EasyTrim did not shut down normally",
       },
+      shutdown: {
+        description:
+          "The active export queue is still running. Any unsaved editing data will be lost.",
+        title: "Exit while exports are running?",
+      },
       nativeSystem: {
         description: "Choose a file location to continue.",
         title: "Waiting for system dialog",

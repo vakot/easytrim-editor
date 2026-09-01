@@ -14,6 +14,7 @@ import { useAppSelector } from "@/app/store/redux-hooks";
 import { type ExportQueueItem, selectExportQueue } from "@/app/store/slices/export-slice";
 import { formatExportDuration, formatExportFileSize } from "@/domain/export-metrics";
 import { getCurrentVersion } from "@/lib/app-version.utils";
+import { requestWindowShutdown } from "@/lib/tauri/window";
 
 function splitFilePath(path: string) {
   const separatorIndex = Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\"));
@@ -131,7 +132,7 @@ function StatusBarUpdateButton() {
 
   const handleUpdateClick = () => {
     if (updateStatus === "available") {
-      void installUpdate();
+      void requestWindowShutdown(installUpdate);
       return;
     }
 

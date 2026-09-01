@@ -1,19 +1,26 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import userEvent from "@testing-library/user-event";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import type { ExportQueueItem } from "@/app/store/slices/export-slice";
 
-const mocks = vi.hoisted(() => ({ queue: [] as ExportQueueItem[] }));
+const mocks = vi.hoisted(() => ({
+  installUpdate: vi.fn(),
+  queue: [] as ExportQueueItem[],
+  requestWindowShutdown: vi.fn(),
+  status: "idle" as "available" | "idle",
+  availableVersion: null as string | null,
+}));
 
 vi.mock("@/app/hooks/useAppUpdates", () => ({
   useAppUpdates: () => ({
-    status: "idle",
-    availableVersion: null,
+    status: mocks.status,
+    availableVersion: mocks.availableVersion,
     isInstalling: false,
     checkForUpdates: vi.fn(),
-    installUpdate: vi.fn(),
+    installUpdate: mocks.installUpdate,
   }),
 }));
 vi.mock("react-i18next", () => ({
@@ -21,6 +28,9 @@ vi.mock("react-i18next", () => ({
 }));
 vi.mock("@/app/store/redux-hooks", () => ({
   useAppSelector: () => mocks.queue,
+}));
+vi.mock("@/lib/tauri/window", () => ({
+  requestWindowShutdown: mocks.requestWindowShutdown,
 }));
 
 import { StatusBar } from "../StatusBar";
@@ -66,6 +76,25 @@ function renderQueue(queue: ExportQueueItem[]) {
 }
 
 describe("StatusBar", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.status = "idle";
+    mocks.availableVersion = null;
+    mocks.queue = [];
+  });
+
+  it("routes an available update through the shutdown confirmation", async () => {
+    const user = userEvent.setup();
+    mocks.status = "available";
+    mocks.availableVersion = "2.0.0";
+    renderQueue([]);
+
+    await user.click(screen.getByRole("button", { name: "app.actions.update" }));
+
+    expect(mocks.requestWindowShutdown).toHaveBeenCalledWith(mocks.installUpdate);
+    expect(mocks.installUpdate).not.toHaveBeenCalled();
+  });
+
   it("does not show a completed export while a newer item is queued", () => {
     const completed = exportToast({ status: "completed", progressPercent: 96 });
     const queued = exportToast({

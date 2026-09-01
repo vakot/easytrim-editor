@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ResizablePanelContextProvider } from "@/components/ui/resizable";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
+import { AppShutdownGuard } from "@/app/components/AppShutdownGuard";
 import { CustomTitleBar } from "@/app/components/CustomTitleBar";
 import { DiagnosticsRecoveryDialog } from "@/app/components/DiagnosticsRecoveryDialog";
 import { EditorWorkspace } from "@/app/components/editor-workspace/EditorWorkspace";
@@ -43,6 +44,7 @@ function EasyTrimEditorApp() {
         />
 
         <ExportDialog />
+        <AppShutdownGuard />
         <DiagnosticsRecoveryDialog />
         <SourceDropOverlay />
         <NativeDialogOverlay />

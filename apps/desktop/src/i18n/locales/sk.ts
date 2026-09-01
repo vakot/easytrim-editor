@@ -102,6 +102,10 @@ export const sk = {
         showReport: "Zobraziť správu",
         title: "EasyTrim sa neukončil normálne",
       },
+      shutdown: {
+        description: "Fronta aktívnych exportov stále beží. Všetky neuložené úpravy sa stratia.",
+        title: "Ukončiť aplikáciu počas exportu?",
+      },
       nativeSystem: {
         description: "Pokračujte výberom umiestnenia súboru.",
         title: "Čaká sa na systémové okno",
