@@ -4,6 +4,7 @@ import {
   CircleAlert,
   Download,
   ExternalLink,
+  FolderInput,
   LoaderCircle,
   RefreshCw,
 } from "lucide-react";
@@ -93,7 +94,7 @@ export function MenuBarHelp() {
         <MenubarGroup>
           <MenubarItem inset onSelect={() => void revealDiagnosticLogs()}>
             <MenubarIcon>
-              <ExternalLink aria-hidden="true" />
+              <FolderInput aria-hidden="true" />
             </MenubarIcon>
             {t("support.actions.showLogs")}
           </MenubarItem>
