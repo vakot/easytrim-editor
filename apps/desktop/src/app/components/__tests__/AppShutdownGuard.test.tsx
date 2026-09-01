@@ -7,6 +7,7 @@ import { AppShutdownGuard } from "../AppShutdownGuard";
 const shutdownState = vi.hoisted(() => ({ hasProcessableExports: false }));
 const windowActions = vi.hoisted(() => ({
   closeWindow: vi.fn(() => Promise.resolve()),
+  listenForWindowCloseButtonRequests: vi.fn(),
   listenForWindowCloseRequests: vi.fn(),
   unlisten: vi.fn(),
 }));
@@ -19,12 +20,20 @@ vi.mock("@/lib/tauri/window", () => windowActions);
 describe("AppShutdownGuard", () => {
   let shouldPreventClose: (() => boolean) | undefined;
   let onCloseRequested: (() => void) | undefined;
+  let onCloseButtonRequested: (() => void) | undefined;
 
   beforeEach(() => {
     vi.clearAllMocks();
     shutdownState.hasProcessableExports = false;
     shouldPreventClose = undefined;
     onCloseRequested = undefined;
+    onCloseButtonRequested = undefined;
+    windowActions.listenForWindowCloseButtonRequests.mockImplementation(
+      (closeRequested: () => void) => {
+        onCloseButtonRequested = closeRequested;
+        return windowActions.unlisten;
+      },
+    );
     windowActions.listenForWindowCloseRequests.mockImplementation(
       async (preventClose: () => boolean, closeRequested: () => void) => {
         shouldPreventClose = preventClose;
@@ -39,6 +48,8 @@ describe("AppShutdownGuard", () => {
 
     await waitFor(() => expect(shouldPreventClose).toBeDefined());
     expect(shouldPreventClose?.()).toBe(false);
+    onCloseButtonRequested?.();
+    await waitFor(() => expect(windowActions.closeWindow).toHaveBeenCalledOnce());
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
   });
 
@@ -49,6 +60,7 @@ describe("AppShutdownGuard", () => {
 
     await waitFor(() => expect(shouldPreventClose).toBeDefined());
     expect(shouldPreventClose?.()).toBe(true);
+    onCloseButtonRequested?.();
     onCloseRequested?.();
 
     await waitFor(() =>

@@ -14,7 +14,11 @@ import {
 
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectHasProcessableExports } from "@/app/store/slices/export-slice";
-import { closeWindow, listenForWindowCloseRequests } from "@/lib/tauri/window";
+import {
+  closeWindow,
+  listenForWindowCloseButtonRequests,
+  listenForWindowCloseRequests,
+} from "@/lib/tauri/window";
 
 export function AppShutdownGuard() {
   const { t } = useTranslation();
@@ -34,7 +38,17 @@ export function AppShutdownGuard() {
       () => setOpen(true),
     );
 
+    const unlistenCloseButton = listenForWindowCloseButtonRequests(() => {
+      if (hasProcessableExports) {
+        setOpen(true);
+        return;
+      }
+
+      void closeWindow();
+    });
+
     return () => {
+      unlistenCloseButton();
       void unlistenPromise.then((unlisten) => unlisten());
     };
   }, [hasProcessableExports]);
