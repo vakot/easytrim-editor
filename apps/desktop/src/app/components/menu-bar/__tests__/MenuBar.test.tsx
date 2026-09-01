@@ -67,6 +67,8 @@ const defaultAppUpdates = {
   installUpdate: vi.fn(async () => undefined),
 };
 
+const nativeDiagnostics = vi.hoisted(() => ({ revealDiagnosticLogs: vi.fn() }));
+
 function render(ui: ReactElement) {
   return renderWithTestingLibrary(
     <AppUpdatesContext.Provider value={defaultAppUpdates}>{ui}</AppUpdatesContext.Provider>,
@@ -111,6 +113,7 @@ vi.mock("@/app/store/redux-hooks", () => ({
 vi.mock("@/lib/open-external-url.utils", () => ({
   openExternalUrl: vi.fn(),
 }));
+vi.mock("@/lib/tauri/diagnostics", () => nativeDiagnostics);
 
 describe("MenuBarTest", () => {
   const currentVersion = getCurrentVersion();
@@ -371,10 +374,11 @@ describe("MenuBarTest", () => {
     expect(screen.getByRole("menuitem", { name: "Support the Project" })).toHaveTextContent(
       "Support the Project",
     );
+    expect(screen.getByRole("menuitem", { name: "Show logs" })).toHaveTextContent("Show logs");
     expect(screen.getByRole("menuitem", { name: versionMenuLabel })).toHaveTextContent(
       currentVersion,
     );
-    expect(screen.getAllByRole("separator")).toHaveLength(2);
+    expect(screen.getAllByRole("separator")).toHaveLength(3);
 
     await user.click(screen.getByRole("menuitem", { name: "Check for Updates…" }));
     expect(screen.getByRole("menuitem", { name: "Check for Updates…" })).toBeInTheDocument();
@@ -400,6 +404,9 @@ describe("MenuBarTest", () => {
         .querySelector(".lucide-external-link"),
     ).toBeNull();
 
+    await user.click(screen.getByRole("menuitem", { name: "Show logs" }));
+    expect(nativeDiagnostics.revealDiagnosticLogs).toHaveBeenCalledOnce();
+    await user.click(getMenuTrigger("Help"));
     await user.click(screen.getByRole("menuitem", { name: "Changelog" }));
     await user.click(getMenuTrigger("Help"));
     await user.click(screen.getByRole("menuitem", { name: "Project Page" }));

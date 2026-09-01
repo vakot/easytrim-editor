@@ -448,6 +448,10 @@ impl DiagnosticsState {
         reveal_file(Path::new(&recovery.report_path))
     }
 
+    pub fn reveal_logs(&self) -> Result<(), AppError> {
+        reveal_directory(&self.logs_dir)
+    }
+
     fn update_operations(&self, event: &DiagnosticEvent) -> Result<(), AppError> {
         let Some(operation_id) = event.operation_id.as_ref() else {
             return Ok(());
@@ -1061,6 +1065,38 @@ fn reveal_file(path: &Path) -> Result<(), AppError> {
     let (program, arguments) = reveal_command(path)?;
     Command::new(program)
         .args(arguments)
+        .spawn()
+        .map(|_| ())
+        .map_err(io_error)
+}
+
+#[cfg(target_os = "windows")]
+fn reveal_directory(path: &Path) -> Result<(), AppError> {
+    if !path.is_absolute() {
+        return Err(AppError::invalid_request(
+            "The diagnostic logs path is invalid.",
+        ));
+    }
+    Command::new("explorer.exe")
+        .arg(path)
+        .spawn()
+        .map(|_| ())
+        .map_err(io_error)
+}
+
+#[cfg(target_os = "macos")]
+fn reveal_directory(path: &Path) -> Result<(), AppError> {
+    Command::new("open")
+        .arg(path)
+        .spawn()
+        .map(|_| ())
+        .map_err(io_error)
+}
+
+#[cfg(all(unix, not(target_os = "macos")))]
+fn reveal_directory(path: &Path) -> Result<(), AppError> {
+    Command::new("xdg-open")
+        .arg(path)
         .spawn()
         .map(|_| ())
         .map_err(io_error)
