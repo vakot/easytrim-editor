@@ -1695,6 +1695,11 @@ describe("App", () => {
       clientX: 350,
       pointerId: 1,
     });
+
+    expect(document.querySelector("[data-slot='timeline-pane']")).toHaveStyle({
+      "--timeline-trim-start": "25%",
+    });
+
     await flushAnimationFrame();
 
     expect(screen.getByRole("slider", { name: "Trim start" })).toHaveAttribute(
