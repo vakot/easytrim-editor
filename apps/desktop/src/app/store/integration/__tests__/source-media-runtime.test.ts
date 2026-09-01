@@ -132,7 +132,7 @@ describe("source/media application runtime", () => {
     sourceDropListener?.({ status: "selected", sources: [source, secondSource] });
     await vi.waitFor(() => expect(selectSourceMedia(appStore.getState())).toEqual(media));
     expect(mocks.inspectMedia).toHaveBeenCalledWith(source.sourcePath);
-    expect(mocks.inspectMedia).toHaveBeenCalledOnce();
+    expect(mocks.inspectMedia).toHaveBeenCalledTimes(2);
     expect(selectImportQueueItems(appStore.getState())).toHaveLength(2);
     expect(selectImportQueueItems(appStore.getState())[0]?.origin).toBe("source-import");
 

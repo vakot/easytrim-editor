@@ -588,7 +588,9 @@ describe("source/media orchestration thunks", () => {
       expect(selectSourceSelection(appStore.getState())).toEqual(secondSource),
     );
 
-    expect(selectImportQueueItems(appStore.getState())).toEqual([target]);
+    expect(selectImportQueueItems(appStore.getState())).toEqual([
+      expect.objectContaining({ id: target.id }),
+    ]);
     expect(selectActiveItemId(appStore.getState())).toBe(target.id);
   });
 
@@ -736,7 +738,7 @@ describe("source/media orchestration thunks", () => {
 
     expect(selectImportQueueItems(appStore.getState())).toEqual([
       expect.objectContaining({ id: sourceItem?.id }),
-      target,
+      expect.objectContaining({ id: target.id }),
     ]);
     expect(selectActiveItemId(appStore.getState())).toBe(target.id);
     expect(appStore.getState().source.error).toEqual({
@@ -836,7 +838,7 @@ describe("source/media orchestration thunks", () => {
 
     inspection.resolve(createMedia(firstSource.sourcePath, 1));
     await chooserRequest;
-    expect(appStore.getState().source.status).toBe("ready");
+    await vi.waitFor(() => expect(appStore.getState().source.status).toBe("ready"));
     expect(selectIsNativeDialogOpen(appStore.getState())).toBe(false);
   });
 

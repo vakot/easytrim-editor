@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
-import { selectSourceMedia } from "@/app/store/slices/source-slice";
+import { selectAudioPanelStreamCount, selectSourceMedia } from "@/app/store/slices/source-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
 import { AudioPanel } from "@/features/audio";
 import { Preview } from "@/features/preview";
@@ -51,8 +51,8 @@ const EMPTY_TIMELINE_RANGE = {
 
 export function EditorStage() {
   const media = useAppSelector(selectSourceMedia);
+  const audioStreamsCount = useAppSelector(selectAudioPanelStreamCount);
   const timelinePaneRef = useRef<HTMLDivElement>(null);
-  const audioStreamsCount = media?.audioStreams.length ?? 0;
   const initializeTimelinePane = useCallback((element: HTMLDivElement | null) => {
     timelinePaneRef.current = element;
     syncTimelineGeometry(element, EMPTY_TIMELINE_RANGE);

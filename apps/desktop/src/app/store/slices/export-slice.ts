@@ -29,6 +29,7 @@ interface QueueItemBase {
 }
 
 export interface ImportQueueItem extends QueueItemBase {
+  mediaPreloaded?: boolean;
   origin: ImportedOrigin;
   status: "imported";
 }
@@ -168,7 +169,19 @@ const exportSlice = createSlice({
       if (item?.status === "imported") {
         item.snapshot = action.payload.snapshot;
         item.media = action.payload.media;
+        delete item.mediaPreloaded;
       }
+    },
+    queueItemMediaPreloaded: (state, action: PayloadAction<{ id: string; media: MediaInfo }>) => {
+      const item = state.queue.find((candidate) => candidate.id === action.payload.id);
+      if (item?.status === "imported") {
+        item.media = action.payload.media;
+        item.mediaPreloaded = true;
+      }
+    },
+    queueItemMediaPreloadConsumed: (state, action: PayloadAction<string>) => {
+      const item = state.queue.find((candidate) => candidate.id === action.payload);
+      if (item?.status === "imported") delete item.mediaPreloaded;
     },
     queueItemPromoted: (state, action: PayloadAction<QueueItemPromotion>) => {
       const index = state.queue.findIndex((candidate) => candidate.id === action.payload.id);
@@ -338,6 +351,8 @@ export const {
   queueEntryAdded,
   queueFinishActionChanged,
   queueFinishActionsAvailable,
+  queueItemMediaPreloadConsumed,
+  queueItemMediaPreloaded,
   queueItemPromoted,
   queueItemSnapshotUpdated,
   queuePaused,

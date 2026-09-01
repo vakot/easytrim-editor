@@ -17,7 +17,7 @@ export function ImportQueueTabs() {
   // TODO: early exit return null if cropToop is open
 
   return (
-    <Tabs className="gap-0" onValueChange={open} value={activeItem?.id}>
+    <Tabs className="gap-0" onValueChange={open} value={activeItem?.id ?? ""}>
       <ScrollArea
         className="min-w-0 flex-1 px-0.75 pb-0.5"
         fadeColor="var(--preview-surface)"

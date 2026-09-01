@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { selectAudioPreviews } from "@/app/store/slices/audio-slice";
+import { selectAudioPreviews, selectAudioTracks } from "@/app/store/slices/audio-slice";
 import {
   importQueueItemAdded,
   selectActiveItemId,
@@ -37,18 +37,29 @@ const sourceA: SourceRef = { displayName: "A.mp4", sourcePath: "C:/Media/A.mp4" 
 const sourceB: SourceRef = { displayName: "B.mp4", sourcePath: "C:/Media/B.mp4" };
 const sourceC: SourceRef = { displayName: "C.mp4", sourcePath: "C:/Media/C.mp4" };
 
-function createMedia(sourcePath: string): MediaInfo {
+function createMedia(sourcePath: string, audioStreamCount = 2): MediaInfo {
   void sourcePath;
   return {
     formatName: "mp4",
     durationMicros: 5_000_000,
     video: { streamIndex: 0, codecName: "h264", width: 1280, height: 720 },
-    audioStreams: [
-      { streamIndex: 1, codecName: "aac", channels: 2, isDefault: true },
-      { streamIndex: 2, codecName: "aac", channels: 2, isDefault: false },
-    ],
+    audioStreams: Array.from({ length: audioStreamCount }, (_, index) => ({
+      streamIndex: index + 1,
+      codecName: "aac",
+      channels: 2,
+      isDefault: index === 0,
+    })),
     chapters: [],
   };
+}
+
+function createDeferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((promiseResolve) => {
+    resolve = promiseResolve;
+  });
+
+  return { promise, resolve };
 }
 
 async function waitForSourceReady(store: ReturnType<typeof createAppStore>) {
@@ -70,7 +81,7 @@ describe("unified source ingestion", () => {
     });
   });
 
-  it("appends an ordered batch with unique lightweight snapshots and activates only its first item", async () => {
+  it("preloads ordered batch metadata and activates only its first item", async () => {
     const store = createAppStore();
 
     store.dispatch(ingestSources([sourceA, sourceB, sourceC]));
@@ -86,15 +97,19 @@ describe("unified source ingestion", () => {
     ]);
 
     await waitForSourceReady(store);
+    await vi.waitFor(() =>
+      expect(selectImportQueueItems(store.getState()).every((item) => item.media)).toBe(true),
+    );
     expect(selectActiveItemId(store.getState())).toBe(items[0]?.id);
-    expect(mocks.inspectMedia).toHaveBeenCalledTimes(1);
+    expect(mocks.inspectMedia).toHaveBeenCalledTimes(3);
     expect(mocks.inspectMedia).toHaveBeenCalledWith(sourceA.sourcePath);
     expect(mocks.prepareSourcePreview).toHaveBeenCalledTimes(1);
     expect(mocks.prepareAudioPreviews).toHaveBeenCalledTimes(1);
 
     store.dispatch(navigateToImportedItem(items[1]!.id));
-    await vi.waitFor(() => expect(mocks.inspectMedia).toHaveBeenCalledWith(sourceB.sourcePath));
-    expect(mocks.inspectMedia).toHaveBeenCalledTimes(2);
+    expect(store.getState().source.media?.audioStreams).toHaveLength(2);
+    await vi.waitFor(() => expect(selectActiveItemId(store.getState())).toBe(items[1]!.id));
+    expect(mocks.inspectMedia).toHaveBeenCalledTimes(3);
   });
 
   it("keeps duplicate source paths as distinct imported items", () => {
@@ -107,6 +122,33 @@ describe("unified source ingestion", () => {
     expect(items[0]?.snapshot.source).toEqual(sourceA);
     expect(items[1]?.snapshot.source).toEqual(sourceA);
     expect(items[0]?.id).not.toBe(items[1]?.id);
+  });
+
+  it("keeps the current audio layout until an uncached target can activate with its tracks", async () => {
+    const store = createAppStore();
+    const secondInspection = createDeferred<MediaInfo>();
+    mocks.inspectMedia.mockImplementation((sourcePath: string) =>
+      sourcePath === sourceB.sourcePath
+        ? secondInspection.promise
+        : Promise.resolve(createMedia(sourcePath, 1)),
+    );
+
+    store.dispatch(ingestSources([sourceA, sourceB]));
+    const items = selectImportQueueItems(store.getState());
+    await waitForSourceReady(store);
+
+    store.dispatch(navigateToImportedItem(items[1]!.id));
+    expect(store.getState().source.source).toEqual(sourceB);
+    expect(store.getState().source.media).toBeNull();
+    expect(selectAudioTracks(store.getState())).toHaveLength(0);
+
+    secondInspection.resolve(createMedia(sourceB.sourcePath, 3));
+    await vi.waitFor(() => expect(store.getState().source.media?.audioStreams).toHaveLength(3));
+
+    expect(store.getState().source.source).toEqual(sourceB);
+    expect(store.getState().source.media?.audioStreams).toHaveLength(3);
+    expect(selectAudioTracks(store.getState())).toHaveLength(3);
+    expect(mocks.inspectMedia).toHaveBeenCalledTimes(2);
   });
 
   it("preserves existing items and captures the active draft before activating a new batch", async () => {
@@ -129,7 +171,7 @@ describe("unified source ingestion", () => {
       sourceA.sourcePath,
     ]);
     expect(items[0]?.snapshot.trim).toEqual({ startMicros: 1_000_000, endMicros: 3_000_000 });
-    expect(selectActiveItemId(store.getState())).toBe(items[2]?.id);
+    await vi.waitFor(() => expect(selectActiveItemId(store.getState())).toBe(items[2]?.id));
   });
 
   it("discards a history fork when the first item of a new batch is activated", async () => {
@@ -178,7 +220,7 @@ describe("unified source ingestion", () => {
       status: "failed",
       error: { code: "io_failed", message: "B is no longer available." },
     });
-    expect(mocks.inspectMedia).toHaveBeenCalledTimes(1);
+    expect(mocks.inspectMedia).toHaveBeenCalledTimes(2);
   });
 
   it("does nothing for an empty batch", () => {
