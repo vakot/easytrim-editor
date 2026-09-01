@@ -31,14 +31,17 @@ export function closeWindow(): Promise<void> {
 
 export function requestWindowShutdown(continuation?: WindowShutdownContinuation): Promise<void> {
   if (typeof window !== "undefined") {
-    window.dispatchEvent(
-      new CustomEvent(WINDOW_SHUTDOWN_REQUESTED, {
-        detail: continuation,
-      }),
-    );
+    const event = new CustomEvent(WINDOW_SHUTDOWN_REQUESTED, {
+      cancelable: true,
+      detail: continuation,
+    });
+
+    window.dispatchEvent(event);
+
+    if (event.defaultPrevented || continuation) return Promise.resolve();
   }
 
-  return Promise.resolve();
+  return closeWindow();
 }
 
 export function listenForWindowShutdownRequests(
@@ -52,6 +55,7 @@ export function listenForWindowShutdownRequests(
         ? (event.detail as WindowShutdownContinuation)
         : undefined;
 
+    event.preventDefault();
     onShutdownRequested(continuation);
   };
 
