@@ -1,3 +1,4 @@
+import type { UnlistenFn } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
 function getNativeWindow() {
@@ -22,6 +23,19 @@ export function toggleWindowMaximize(): Promise<void> {
 
 export function closeWindow(): Promise<void> {
   return getNativeWindow()?.close() ?? Promise.resolve();
+}
+
+export function listenForWindowCloseRequests(
+  shouldPreventClose: () => boolean,
+  onCloseRequested: () => void,
+): Promise<UnlistenFn> {
+  return (
+    getNativeWindow()?.onCloseRequested((event) => {
+      if (!shouldPreventClose()) return;
+      event.preventDefault();
+      onCloseRequested();
+    }) ?? Promise.resolve(() => undefined)
+  );
 }
 
 export function isWindowMaximized(): Promise<boolean> {
