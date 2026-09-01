@@ -10,7 +10,6 @@ export function EditorWorkspace() {
   return (
     <ResizablePanelGroup className="px-1" id="workspace" persisted>
       <ResizablePanel
-        className="pb-1.5 pl-1.5"
         collapsedSize={0}
         collapsible
         defaultSize="20rem"
@@ -19,10 +18,12 @@ export function EditorWorkspace() {
         maxSize="30rem"
         minSize={294}
       >
-        <div className="size-full p-px">
-          <Card className="size-full p-0">
-            <SourcePanel />
-          </Card>
+        <div className="size-full pb-1.5 pl-1.5">
+          <div className="size-full p-px">
+            <Card className="size-full p-0">
+              <SourcePanel />
+            </Card>
+          </div>
         </div>
       </ResizablePanel>
 
@@ -47,7 +48,6 @@ export function EditorWorkspace() {
       />
 
       <ResizablePanel
-        className="pr-1.5 pb-1.5"
         collapsedSize={0}
         collapsible
         defaultSize="20rem"
@@ -56,10 +56,12 @@ export function EditorWorkspace() {
         maxSize="30rem"
         minSize={294}
       >
-        <div className="size-full p-px">
-          <Card className="size-full p-0">
-            <ActivityFeed />
-          </Card>
+        <div className="size-full pr-1.5 pb-1.5">
+          <div className="size-full p-px">
+            <Card className="size-full p-0">
+              <ActivityFeed />
+            </Card>
+          </div>
         </div>
       </ResizablePanel>
     </ResizablePanelGroup>
