@@ -198,7 +198,7 @@ pub fn build_optimized_arguments(
         .as_ref()
         .map(|crop| {
             format!(
-                "crop=iw*{}:ih*{}:iw*{}:ih*{},scale={}:{}",
+                "crop=iw*{}:ih*{}:iw*{}:ih*{},scale={}:{},setsar=1",
                 crop.width,
                 crop.height,
                 crop.x,
@@ -209,8 +209,8 @@ pub fn build_optimized_arguments(
         })
         .unwrap_or_else(|| {
             format!(
-                "scale={}:{}",
-                request.resolution.width, request.resolution.height
+                "scale={}:{},setsar=1",
+                request.resolution.width, request.resolution.height,
             )
         });
     arguments.extend([OsString::from("-vf"), OsString::from(video_filter)]);
@@ -727,7 +727,7 @@ mod tests {
         assert!(
             values
                 .windows(2)
-                .any(|pair| pair == ["-vf", "scale=1920:1080"])
+                .any(|pair| pair == ["-vf", "scale=1920:1080,setsar=1"])
         );
         assert!(values.windows(2).any(|pair| pair == ["-r", "30/1"]));
         assert!(values.windows(2).any(|pair| pair == ["-c:v", "hevc_nvenc"]));
@@ -862,6 +862,35 @@ mod tests {
                 Path::new("out.mp4"),
             )
             .is_ok()
+        );
+    }
+
+    #[test]
+    fn custom_scaling_resets_sample_aspect_ratio_after_shrinking_wide_video() {
+        let mut wide = media();
+        wide.video.width = 5120;
+        wide.video.height = 1440;
+        let mut request = optimized_request("-c:v libx264 -crf 20");
+        request.resolution = ResolutionSelection {
+            width: 2560,
+            height: 1440,
+        };
+
+        let values = build_optimized_arguments(
+            &wide,
+            &request,
+            Path::new("source.mkv"),
+            Path::new("out.mp4"),
+        )
+        .expect("wide custom scaling request is valid")
+        .into_iter()
+        .map(|value| value.to_string_lossy().to_string())
+        .collect::<Vec<_>>();
+
+        assert!(
+            values
+                .windows(2)
+                .any(|pair| pair == ["-vf", "scale=2560:1440,setsar=1"])
         );
     }
 }
