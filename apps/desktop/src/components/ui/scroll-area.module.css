@@ -1,0 +1,35 @@
+.scrollFade::before,
+.scrollFade::after {
+  position: absolute;
+  inset-inline: 0;
+  z-index: 10;
+  height: 2rem;
+  background-color: color-mix(in srgb, var(--card) 75%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  content: "";
+  backdrop-filter: blur(2px);
+  transition: opacity 200ms ease-out;
+}
+
+.scrollFade::before {
+  top: 0;
+  mask-image: linear-gradient(to bottom, black, transparent);
+}
+
+.scrollFade::after {
+  bottom: 0;
+  mask-image: linear-gradient(to top, black, transparent);
+}
+
+.scrollFade.canScrollUp::before,
+.scrollFade.canScrollDown::after {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scrollFade::before,
+  .scrollFade::after {
+    transition: none;
+  }
+}

@@ -1,5 +1,3 @@
-import { useTranslation } from "react-i18next";
-
 import { Card } from "@/components/ui/card";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 
@@ -9,36 +7,32 @@ import { SourcePanel } from "@/features/source";
 import { EditorStage } from "./EditorStage";
 
 export function EditorWorkspace() {
-  const { t } = useTranslation();
-
   return (
     <ResizablePanelGroup className="px-1" id="workspace" persisted>
       <ResizablePanel
-        className="overflow-hidden pb-1 pl-1"
+        className="pb-1.5 pl-1.5"
         collapsedSize={0}
         collapsible
         defaultSize="20rem"
         groupResizeBehavior="preserve-pixel-size"
         id="workspace-sidebar"
         maxSize="30rem"
-        minSize={290}
+        minSize={294}
       >
-        <aside
-          aria-label={t("source.labels.title")}
-          className="relative flex h-full min-h-0 flex-col overflow-hidden"
-        >
-          <SourcePanel />
-        </aside>
+        <div className="size-full p-px">
+          <Card className="size-full p-0">
+            <SourcePanel />
+          </Card>
+        </div>
       </ResizablePanel>
 
       <ResizableHandle
         className="self-start bg-transparent"
-        style={{ height: "calc(100% - 4px)", width: 4 }}
+        style={{ height: "calc(100% - 6px)", width: 6 }}
         withHandle
       />
 
       <ResizablePanel
-        className="overflow-hidden"
         groupResizeBehavior="preserve-relative-size"
         id="workspace-content"
         minSize="40rem"
@@ -48,23 +42,25 @@ export function EditorWorkspace() {
 
       <ResizableHandle
         className="self-start bg-transparent"
-        style={{ height: "calc(100% - 4px)", width: 4 }}
+        style={{ height: "calc(100% - 6px)", width: 6 }}
         withHandle
       />
 
       <ResizablePanel
-        className="overflow-hidden pr-1 pb-1"
+        className="pr-1.5 pb-1.5"
         collapsedSize={0}
         collapsible
         defaultSize="20rem"
         groupResizeBehavior="preserve-pixel-size"
         id="workspace-activity"
         maxSize="30rem"
-        minSize={290}
+        minSize={294}
       >
-        <Card className="relative size-full gap-2 pt-3 pb-0 ring-inset">
-          <ActivityFeed />
-        </Card>
+        <div className="size-full p-px">
+          <Card className="size-full pt-3 pb-0">
+            <ActivityFeed />
+          </Card>
+        </div>
       </ResizablePanel>
     </ResizablePanelGroup>
   );

@@ -95,7 +95,7 @@ export const AudioTrackRow = memo(function AudioTrackRow({
         </div>
       </Card>
       <div
-        className="relative h-12 min-w-0 overflow-hidden rounded-lg border border-border bg-muted/30 transition-opacity data-[enabled=false]:opacity-40"
+        className="relative h-12.5 min-w-0 overflow-hidden rounded-lg border border-border bg-muted/30 transition-opacity data-[enabled=false]:opacity-40"
         data-enabled={track.enabled}
       >
         <WaveformContent

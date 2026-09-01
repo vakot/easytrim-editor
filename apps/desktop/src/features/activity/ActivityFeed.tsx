@@ -245,7 +245,7 @@ export function ActivityFeedView({
   );
 
   return (
-    <section aria-labelledby={titleId} className="flex h-full min-h-0 flex-col gap-2">
+    <section aria-labelledby={titleId} className="relative flex h-full min-h-0 flex-col gap-2">
       <div className="mx-3 flex items-center gap-1.5">
         <h3
           className="font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
@@ -371,7 +371,7 @@ function ActivityFeedBranch({
         <ActivityEntryMarkerIcon entry={branch.entries[branch.entries.length - 1]} />
 
         <MarkerContent>
-          <MarkerTitle className="min-w-0 text-xs text-foreground">{filename}</MarkerTitle>
+          <MarkerTitle className="min-w-0 truncate text-xs text-foreground">{filename}</MarkerTitle>
           <MarkerDescription className="truncate">
             {branch.path ? (
               <span className="min-w-0 flex-1 truncate" title={normalizedSourcePath}>
