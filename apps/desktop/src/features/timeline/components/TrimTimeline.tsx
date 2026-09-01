@@ -69,6 +69,7 @@ export function TrimTimeline({
     moveScrub,
     moveSegmentDrag,
     resetBoundary,
+    scrubDragging,
     segmentDragging,
     segmentSnapPoint,
     startScrub,
@@ -110,7 +111,7 @@ export function TrimTimeline({
       />
       <TimelineScale disabled={disabled} frameRate={frameRate} range={range} />
       <div
-        className="grid min-w-0 grid-cols-(--editor-track-grid-columns) items-center gap-3"
+        className="grid min-w-0 grid-cols-(--editor-timeline-track-grid-columns) items-center gap-3"
         data-slot="timeline-row"
       >
         <div
@@ -156,6 +157,7 @@ export function TrimTimeline({
           />
           <Playhead
             disabled={disabled}
+            dragging={scrubDragging}
             frameRate={frameRate}
             maximum={range.sourceDurationMicros}
             onKeyDown={handlePlayheadKeyboard}
@@ -260,7 +262,7 @@ function TimelineScale({
   return (
     <div
       aria-hidden="true"
-      className="mt-3 mb-1 grid min-w-0 grid-cols-(--editor-track-grid-columns) items-end gap-3"
+      className="mt-3 mb-1 grid min-w-0 grid-cols-(--editor-timeline-track-grid-columns) items-end gap-3"
     >
       <span
         className="text-[0.625rem] font-bold tracking-[0.08em] text-muted-foreground uppercase"

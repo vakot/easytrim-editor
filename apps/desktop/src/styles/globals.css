@@ -95,7 +95,9 @@
 .light {
   color-scheme: light;
   --editor-track-controls-width: 13rem;
-  --editor-track-grid-columns: var(--editor-track-controls-width) minmax(0, 1fr);
+  --editor-audio-track-grid-columns: var(--editor-track-controls-width) minmax(0, 1fr);
+  --editor-timeline-track-grid-columns: calc(var(--editor-track-controls-width) - 0.5rem)
+    minmax(0, 1fr);
   --background: #f6f5f2;
   --foreground: #19191d;
   --card: #fffefa;

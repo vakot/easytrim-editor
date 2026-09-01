@@ -65,7 +65,7 @@ export function AudioPanel() {
         </Button>
       </ResizablePanelControl>
 
-      <div className="grid min-w-0 grid-cols-(--editor-track-grid-columns) items-center gap-3 pr-3 pl-1">
+      <div className="grid min-w-0 grid-cols-(--editor-audio-track-grid-columns) items-center gap-3 pr-3 pl-1">
         <div className="flex min-w-0 items-center gap-2 px-1 pr-2">
           <VolumeButton
             enabled={masterAudio.enabled}
