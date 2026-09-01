@@ -4,7 +4,7 @@
   inset-inline: 0;
   z-index: 10;
   height: 2rem;
-  background-color: color-mix(in srgb, var(--card) 75%, transparent);
+  background-color: color-mix(in srgb, var(--scroll-area-fade-color, var(--card)) 75%, transparent);
   opacity: 0;
   pointer-events: none;
   content: "";
@@ -24,6 +24,28 @@
 
 .scrollFade.canScrollUp::before,
 .scrollFade.canScrollDown::after {
+  opacity: 1;
+}
+
+.horizontal::before,
+.horizontal::after {
+  inset-block: 0;
+  width: 2rem;
+  height: auto;
+}
+
+.horizontal::before {
+  inset-inline: 0 auto;
+  mask-image: linear-gradient(to right, black, transparent);
+}
+
+.horizontal::after {
+  inset-inline: auto 0;
+  mask-image: linear-gradient(to left, black, transparent);
+}
+
+.horizontal.canScrollUp::before,
+.horizontal.canScrollDown::after {
   opacity: 1;
 }
 

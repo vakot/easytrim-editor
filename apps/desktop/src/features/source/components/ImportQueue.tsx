@@ -6,7 +6,7 @@ import { ButtonGroup } from "@/components/ui/button-group";
 import { Card, CardAction, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { useTimeline } from "@/app/hooks/useTimeline";
-import type { importQueueItem } from "@/app/store/slices/export-slice";
+import type { ImportQueueItem } from "@/app/store/slices/export-slice";
 import { editorSnapshotTrimStart } from "@/domain/editor-snapshot";
 import { cn } from "@/lib/class-names.utils";
 
@@ -78,7 +78,7 @@ export function ImportQueue() {
   );
 }
 
-function ImportQueueItem({ active, item }: { active: boolean; item: importQueueItem }) {
+function ImportQueueItem({ active, item }: { active: boolean; item: ImportQueueItem }) {
   const { t } = useTranslation();
 
   const timeline = useTimeline();

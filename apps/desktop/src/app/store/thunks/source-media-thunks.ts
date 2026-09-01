@@ -22,7 +22,7 @@ import { selectCrop } from "@/app/store/slices/crop-slice";
 import {
   activeQueueItemChanged,
   exportSourceRestored,
-  type importQueueItem,
+  type ImportQueueItem,
   importQueueItemRemoved,
   importQueueItemsAdded,
   queueItemSnapshotUpdated,
@@ -125,7 +125,7 @@ export const ingestSources =
     }
 
     const mergeAudio = selectMergeAudioEnabledDefault(getState());
-    const items: importQueueItem[] = result.sources.map((source) => ({
+    const items: ImportQueueItem[] = result.sources.map((source) => ({
       id: `import-${++importedItemSequence}`,
       status: "imported",
       origin: "source-import",
@@ -353,7 +353,7 @@ export const restoreActiveImportedItemRequested =
   (id: string, loadToken: number, snapshot: EditorSnapshot): AppThunk<Promise<boolean>> =>
   async (dispatch, getState) => {
     const item = getState().export.queue.find(
-      (candidate): candidate is importQueueItem =>
+      (candidate): candidate is ImportQueueItem =>
         candidate.id === id && candidate.status === "imported",
     );
 
@@ -419,7 +419,7 @@ export const restoreActiveImportedItemRequested =
   };
 
 export const activateImportedItemRequested =
-  (item: importQueueItem): AppThunk<Promise<boolean>> =>
+  (item: ImportQueueItem): AppThunk<Promise<boolean>> =>
   async (dispatch) => {
     const loadToken = ++sourceLoadSequence;
     queueRestoreSequence += 1;
@@ -441,7 +441,7 @@ export const navigateToImportedItem =
     const state = getState();
     const target = id
       ? state.export.queue.find(
-          (candidate): candidate is importQueueItem =>
+          (candidate): candidate is ImportQueueItem =>
             candidate.id === id && candidate.status === "imported",
         )
       : null;
