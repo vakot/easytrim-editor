@@ -1,23 +1,28 @@
 import type { TFunction } from "i18next";
 
-import type { FrameRate, MediaInfo } from "@/lib/tauri/media.types";
+import type { FrameRate } from "@/lib/tauri/media.types";
 
 export const FRAME_RATE_OPTIONS = [24, 25, 30, 50, 60, 120] as const;
 
-export function resolutionOptions(source: MediaInfo, t: TFunction) {
+interface ResolutionDimensions {
+  height: number;
+  width: number;
+}
+
+export function resolutionOptions(dimensions: ResolutionDimensions, t: TFunction) {
   const options: { label: string; value: string }[] = [
     {
       label: t("export.options.sourceResolution", {
-        width: source.video.width,
-        height: source.video.height,
+        width: dimensions.width,
+        height: dimensions.height,
       }),
-      value: `${source.video.width}x${source.video.height}`,
+      value: `${dimensions.width}x${dimensions.height}`,
     },
   ];
 
   for (const height of [2160, 1440, 1080]) {
-    if (height < source.video.height) {
-      const width = Math.round((source.video.width * height) / source.video.height / 2) * 2;
+    if (height < dimensions.height) {
+      const width = Math.round((dimensions.width * height) / dimensions.height / 2) * 2;
       options.push({
         label: `${height}p \u00b7 ${width} \u00d7 ${height}`,
         value: `${width}x${height}`,

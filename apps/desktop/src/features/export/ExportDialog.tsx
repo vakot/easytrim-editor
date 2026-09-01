@@ -24,6 +24,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
+import { selectCropResolution } from "@/app/store/slices/crop-slice";
 import { selectExportArguments } from "@/app/store/slices/export-presets-slice";
 import {
   optimizedExportDialogClosed,
@@ -50,6 +51,7 @@ export function ExportDialog() {
   const dispatch = useAppDispatch();
   const open = useAppSelector(selectOptimizedExportDialogOpen);
   const source = useAppSelector(selectSourceMedia);
+  const cropResolution = useAppSelector(selectCropResolution);
   const settings = useAppSelector(selectExportSettings);
   const argumentsText = useAppSelector(selectExportArguments);
   const commandPreview = useAppSelector(selectExportCommandPreview);
@@ -75,12 +77,12 @@ export function ExportDialog() {
   };
 
   const resolutionValue = `${settings.resolution.width}x${settings.resolution.height}`;
-  const resolutionPresets = resolutionOptions(source, t);
+  const resolutionPresets = resolutionOptions(cropResolution, t);
   const hasMatchingResolutionPreset = resolutionPresets.some(
     (option) => option.value === resolutionValue,
   );
 
-  const sourceAspectRatio = source.video.width / source.video.height;
+  const cropAspectRatio = cropResolution.width / cropResolution.height;
   const frameRateValue = settings.frameRate
     ? `${settings.frameRate.numerator}/${settings.frameRate.denominator}`
     : "source";
@@ -146,7 +148,7 @@ export function ExportDialog() {
                           resolution: {
                             width,
                             height: isAspectRatioLocked
-                              ? Math.max(1, Math.round(width / sourceAspectRatio))
+                              ? Math.max(1, Math.round(width / cropAspectRatio))
                               : settings.resolution.height,
                           },
                         }),
@@ -168,7 +170,7 @@ export function ExportDialog() {
                           ...settings,
                           resolution: {
                             width: isAspectRatioLocked
-                              ? Math.max(1, Math.round(height * sourceAspectRatio))
+                              ? Math.max(1, Math.round(height * cropAspectRatio))
                               : settings.resolution.width,
                             height,
                           },
