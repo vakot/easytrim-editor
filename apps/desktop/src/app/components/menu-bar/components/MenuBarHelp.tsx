@@ -27,6 +27,7 @@ import { GithubIcon, KofiIcon } from "@/components/brand-icons";
 import { getCurrentVersion } from "@/lib/app-version.utils";
 import { openExternalUrl } from "@/lib/open-external-url.utils";
 import { revealDiagnosticLogs } from "@/lib/tauri/diagnostics";
+import { requestWindowShutdown } from "@/lib/tauri/window";
 
 const CHANGELOG_URL = "https://github.com/vakot/easytrim-editor/releases";
 const PROJECT_PAGE_URL = "https://github.com/vakot/easytrim-editor";
@@ -69,7 +70,12 @@ export function MenuBarHelp() {
             inset
             keepOpen
             onSelect={() => {
-              void (updateStatus === "available" ? installUpdate() : checkForUpdates());
+              if (updateStatus === "available") {
+                void requestWindowShutdown(installUpdate);
+                return;
+              }
+
+              void checkForUpdates();
             }}
             variant={updateStatus === "up-to-date" ? "success" : "default"}
           >

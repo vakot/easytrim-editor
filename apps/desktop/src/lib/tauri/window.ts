@@ -1,7 +1,9 @@
 import type { UnlistenFn } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
-const WINDOW_CLOSE_BUTTON_REQUESTED = "easytrim:window-close-button-requested";
+const WINDOW_SHUTDOWN_REQUESTED = "easytrim:window-shutdown-requested";
+
+export type WindowShutdownContinuation = () => void | Promise<void>;
 
 function getNativeWindow() {
   if (typeof window === "undefined" || !("__TAURI_INTERNALS__" in window)) {
@@ -27,21 +29,35 @@ export function closeWindow(): Promise<void> {
   return getNativeWindow()?.close() ?? Promise.resolve();
 }
 
-export function requestWindowClose(): Promise<void> {
+export function requestWindowShutdown(continuation?: WindowShutdownContinuation): Promise<void> {
   if (typeof window !== "undefined") {
-    window.dispatchEvent(new Event(WINDOW_CLOSE_BUTTON_REQUESTED));
+    window.dispatchEvent(
+      new CustomEvent(WINDOW_SHUTDOWN_REQUESTED, {
+        detail: continuation,
+      }),
+    );
   }
 
   return Promise.resolve();
 }
 
-export function listenForWindowCloseButtonRequests(onCloseRequested: () => void): () => void {
+export function listenForWindowShutdownRequests(
+  onShutdownRequested: (continuation?: WindowShutdownContinuation) => void,
+): () => void {
   if (typeof window === "undefined") return () => undefined;
 
-  const handleCloseRequested = () => onCloseRequested();
-  window.addEventListener(WINDOW_CLOSE_BUTTON_REQUESTED, handleCloseRequested);
+  const handleShutdownRequested = (event: Event) => {
+    const continuation =
+      event instanceof CustomEvent && typeof event.detail === "function"
+        ? (event.detail as WindowShutdownContinuation)
+        : undefined;
 
-  return () => window.removeEventListener(WINDOW_CLOSE_BUTTON_REQUESTED, handleCloseRequested);
+    onShutdownRequested(continuation);
+  };
+
+  window.addEventListener(WINDOW_SHUTDOWN_REQUESTED, handleShutdownRequested);
+
+  return () => window.removeEventListener(WINDOW_SHUTDOWN_REQUESTED, handleShutdownRequested);
 }
 
 export function listenForWindowCloseRequests(

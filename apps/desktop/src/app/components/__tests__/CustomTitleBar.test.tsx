@@ -13,7 +13,7 @@ import { MenuBar } from "../menu-bar";
 const windowActions = vi.hoisted(() => ({
   isWindowMaximized: vi.fn(() => Promise.resolve(false)),
   minimizeWindow: vi.fn(() => Promise.resolve()),
-  requestWindowClose: vi.fn(() => Promise.resolve()),
+  requestWindowShutdown: vi.fn(() => Promise.resolve()),
   startWindowDragging: vi.fn(() => Promise.resolve()),
   toggleWindowMaximize: vi.fn(() => Promise.resolve()),
 }));
@@ -169,7 +169,7 @@ describe("CustomTitleBar", () => {
       expect(windowActions.startWindowDragging).toHaveBeenCalledOnce();
       expect(windowActions.minimizeWindow).toHaveBeenCalledOnce();
       expect(windowActions.toggleWindowMaximize).toHaveBeenCalledOnce();
-      expect(windowActions.requestWindowClose).toHaveBeenCalledOnce();
+      expect(windowActions.requestWindowShutdown).toHaveBeenCalledOnce();
       expect(screen.getByRole("button", { name: "Restore" })).toBeInTheDocument();
     });
   });

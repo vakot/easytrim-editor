@@ -68,6 +68,7 @@ const defaultAppUpdates = {
 };
 
 const nativeDiagnostics = vi.hoisted(() => ({ revealDiagnosticLogs: vi.fn() }));
+const nativeWindow = vi.hoisted(() => ({ requestWindowShutdown: vi.fn() }));
 
 function render(ui: ReactElement) {
   return renderWithTestingLibrary(
@@ -114,6 +115,7 @@ vi.mock("@/lib/open-external-url.utils", () => ({
   openExternalUrl: vi.fn(),
 }));
 vi.mock("@/lib/tauri/diagnostics", () => nativeDiagnostics);
+vi.mock("@/lib/tauri/window", () => nativeWindow);
 
 describe("MenuBarTest", () => {
   const currentVersion = getCurrentVersion();
@@ -447,6 +449,34 @@ describe("MenuBarTest", () => {
     const updateItem = screen.getByRole("menuitem", { name: "Up to Date" });
     expect(updateItem).toBeInTheDocument();
     expect(updateItem.querySelector("svg")).not.toBeNull();
+  });
+
+  it("routes an available update through the shutdown confirmation", async () => {
+    const user = userEvent.setup();
+    const installUpdate = vi.fn(async () => undefined);
+    renderWithTestingLibrary(
+      <TooltipProvider>
+        <ThemeProvider>
+          <AppUpdatesContext.Provider
+            value={{
+              status: "available",
+              availableVersion: "2.0.0",
+              isInstalling: false,
+              checkForUpdates: vi.fn(),
+              installUpdate,
+            }}
+          >
+            <MenuBarTest canExport canSave isChoosingSource={false} />
+          </AppUpdatesContext.Provider>
+        </ThemeProvider>
+      </TooltipProvider>,
+    );
+
+    await user.click(getMenuTrigger("Help"));
+    await user.click(screen.getByRole("menuitem", { name: "Update" }));
+
+    expect(nativeWindow.requestWindowShutdown).toHaveBeenCalledWith(installUpdate);
+    expect(installUpdate).not.toHaveBeenCalled();
   });
 
   it("shows a checkbox menu item for every configurable preference", async () => {

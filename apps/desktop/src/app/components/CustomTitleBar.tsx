@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import {
   isWindowMaximized,
   minimizeWindow,
-  requestWindowClose,
+  requestWindowShutdown,
   startWindowDragging,
   toggleWindowMaximize,
 } from "@/lib/tauri/window";
@@ -168,7 +168,7 @@ export function CustomTitleBar({
         <button
           aria-label={t("common.actions.close")}
           className="hover:text-destructive-foreground focus-visible:text-destructive-foreground inline-flex w-11 items-center justify-center transition-colors outline-none hover:bg-destructive focus-visible:bg-destructive"
-          onClick={() => runWindowAction(requestWindowClose)}
+          onClick={() => runWindowAction(requestWindowShutdown)}
           title={t("common.actions.close")}
           type="button"
         >

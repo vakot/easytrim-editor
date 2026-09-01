@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -16,8 +16,9 @@ import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectHasProcessableExports } from "@/app/store/slices/export-slice";
 import {
   closeWindow,
-  listenForWindowCloseButtonRequests,
   listenForWindowCloseRequests,
+  listenForWindowShutdownRequests,
+  type WindowShutdownContinuation,
 } from "@/lib/tauri/window";
 
 export function AppShutdownGuard() {
@@ -25,6 +26,20 @@ export function AppShutdownGuard() {
   const hasProcessableExports = useAppSelector(selectHasProcessableExports);
   const [open, setOpen] = useState(false);
   const allowClose = useRef(false);
+  const pendingContinuation = useRef<WindowShutdownContinuation | null>(null);
+
+  const handleShutdownRequest = useCallback(
+    (continuation?: WindowShutdownContinuation) => {
+      if (hasProcessableExports) {
+        pendingContinuation.current = continuation ?? null;
+        setOpen(true);
+        return;
+      }
+
+      void (continuation?.() ?? closeWindow());
+    },
+    [hasProcessableExports],
+  );
 
   useEffect(() => {
     const unlistenPromise = listenForWindowCloseRequests(
@@ -38,22 +53,24 @@ export function AppShutdownGuard() {
       () => setOpen(true),
     );
 
-    const unlistenCloseButton = listenForWindowCloseButtonRequests(() => {
-      if (hasProcessableExports) {
-        setOpen(true);
-        return;
-      }
-
-      void closeWindow();
-    });
+    const unlistenShutdown = listenForWindowShutdownRequests(handleShutdownRequest);
 
     return () => {
-      unlistenCloseButton();
+      unlistenShutdown();
       void unlistenPromise.then((unlisten) => unlisten());
     };
-  }, [hasProcessableExports]);
+  }, [handleShutdownRequest, hasProcessableExports]);
 
   const confirmClose = () => {
+    const continuation = pendingContinuation.current;
+    pendingContinuation.current = null;
+
+    if (continuation) {
+      setOpen(false);
+      void Promise.resolve(continuation()).catch(() => setOpen(true));
+      return;
+    }
+
     allowClose.current = true;
     setOpen(false);
     void closeWindow().catch(() => {
