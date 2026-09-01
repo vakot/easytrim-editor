@@ -25,7 +25,6 @@ import {
   type ImportQueueItem,
   importQueueItemRemoved,
   importQueueItemsAdded,
-  queueItemMediaPreloadConsumed,
   queueItemMediaPreloaded,
   queueItemSnapshotUpdated,
   selectActiveQueueItem,
@@ -55,6 +54,7 @@ import {
   activateSourcePath,
   checkMediaCapabilities,
   chooseSource as chooseSourceDialog,
+  inspectImportedMedia,
   inspectMedia,
   moveSourceToTrash,
   prepareAudioPreviews,
@@ -82,7 +82,7 @@ let sourceLoadSequence = 0;
 let importedItemSequence = 0;
 let queueRestoreSequence = 0;
 const IMPORT_MEDIA_PRELOAD_CONCURRENCY = 2;
-const importedMediaInspections = new Map<string, Promise<MediaInfo>>();
+const importedMediaPreloads = new Map<string, Promise<MediaInfo>>();
 
 function isCurrentSource(state: RootState, sourcePath: string, loadToken: number): boolean {
   return (
@@ -144,17 +144,17 @@ export const ingestSources =
     operation.complete(importResultData(result));
   };
 
-function inspectImportedMedia(sourcePath: string): Promise<MediaInfo> {
-  const existing = importedMediaInspections.get(sourcePath);
+function preloadImportedMedia(sourcePath: string): Promise<MediaInfo> {
+  const existing = importedMediaPreloads.get(sourcePath);
   if (existing) return existing;
 
-  const inspection = inspectMedia(sourcePath).finally(() => {
-    if (importedMediaInspections.get(sourcePath) === inspection) {
-      importedMediaInspections.delete(sourcePath);
+  const inspection = inspectImportedMedia(sourcePath).finally(() => {
+    if (importedMediaPreloads.get(sourcePath) === inspection) {
+      importedMediaPreloads.delete(sourcePath);
     }
   });
 
-  importedMediaInspections.set(sourcePath, inspection);
+  importedMediaPreloads.set(sourcePath, inspection);
   return inspection;
 }
 
@@ -163,7 +163,7 @@ async function preloadImportedItem(
   item: ImportQueueItem,
 ): Promise<MediaInfo | null> {
   try {
-    const media = await inspectImportedMedia(item.snapshot.source.sourcePath);
+    const media = await preloadImportedMedia(item.snapshot.source.sourcePath);
     dispatch(queueItemMediaPreloaded({ id: item.id, media }));
     return media;
   } catch {
@@ -225,8 +225,6 @@ async function prepareSelectedSource(
   source: SourceRef,
   loadToken: number,
   snapshot?: EditorSnapshot,
-  preloadedMedia?: MediaInfo,
-  preloadedMediaPromise?: Promise<MediaInfo>,
 ): Promise<EditorSnapshot | null> {
   const operation = diagnostics.startOperation("source.prepare", {
     data: { displayName: source.displayName },
@@ -237,22 +235,18 @@ async function prepareSelectedSource(
     data: { displayName: source.displayName },
   });
 
-  let media = preloadedMedia;
-  if (media) {
-    probeOperation.complete({ audioStreamCount: media.audioStreams.length, preloaded: true });
-  } else {
-    try {
-      media = await (preloadedMediaPromise ?? inspectMedia(source.sourcePath));
-      probeOperation.complete({ audioStreamCount: media.audioStreams.length });
-    } catch (error: unknown) {
-      const normalized = normalizeAppError(error);
-      probeOperation.fail(normalized);
-      operation.fail(normalized);
-      if (isCurrentSource(getState(), source.sourcePath, loadToken)) {
-        dispatch(sourceFailed({ loadToken, error: normalized }));
-      }
-      return null;
+  let media: MediaInfo;
+  try {
+    media = await inspectMedia(source.sourcePath);
+    probeOperation.complete({ audioStreamCount: media.audioStreams.length });
+  } catch (error: unknown) {
+    const normalized = normalizeAppError(error);
+    probeOperation.fail(normalized);
+    operation.fail(normalized);
+    if (isCurrentSource(getState(), source.sourcePath, loadToken)) {
+      dispatch(sourceFailed({ loadToken, error: normalized }));
     }
+    return null;
   }
 
   if (!isCurrentSource(getState(), source.sourcePath, loadToken)) {
@@ -406,13 +400,7 @@ export const leaveActiveImportedItem = (): AppThunk => (dispatch, getState) => {
 };
 
 export const restoreActiveImportedItemRequested =
-  (
-    id: string,
-    loadToken: number,
-    snapshot: EditorSnapshot,
-    preloadedMedia?: MediaInfo,
-    preloadedMediaPromise?: Promise<MediaInfo>,
-  ): AppThunk<Promise<boolean>> =>
+  (id: string, loadToken: number, snapshot: EditorSnapshot): AppThunk<Promise<boolean>> =>
   async (dispatch, getState) => {
     const item = getState().export.queue.find(
       (candidate): candidate is ImportQueueItem =>
@@ -443,24 +431,12 @@ export const restoreActiveImportedItemRequested =
       return false;
     }
 
-    const latestItem = getState().export.queue.find(
-      (candidate): candidate is ImportQueueItem =>
-        candidate.id === id && candidate.status === "imported",
-    );
-
-    const preparedMedia =
-      preloadedMedia ?? (latestItem?.mediaPreloaded ? latestItem.media : undefined);
-
-    if (preparedMedia) dispatch(queueItemMediaPreloadConsumed(id));
-
     const readySnapshot = await prepareSelectedSource(
       dispatch,
       getState,
       source,
       loadToken,
       snapshot,
-      preparedMedia,
-      preloadedMediaPromise,
     );
 
     if (restorationId !== queueRestoreSequence || getState().export.activeItemId !== id) {
@@ -495,13 +471,6 @@ export const restoreActiveImportedItemRequested =
 export const activateImportedItemRequested =
   (item: ImportQueueItem): AppThunk<Promise<boolean>> =>
   async (dispatch) => {
-    const preloadedMedia = item.mediaPreloaded ? item.media : undefined;
-    const preloadedMediaPromise = item.media
-      ? undefined
-      : inspectImportedMedia(item.snapshot.source.sourcePath);
-
-    void preloadedMediaPromise?.catch(() => undefined);
-
     const loadToken = ++sourceLoadSequence;
     queueRestoreSequence += 1;
     dispatch(
@@ -512,15 +481,7 @@ export const activateImportedItemRequested =
         snapshot: item.snapshot,
       }),
     );
-    return dispatch(
-      restoreActiveImportedItemRequested(
-        item.id,
-        loadToken,
-        item.snapshot,
-        preloadedMedia,
-        preloadedMediaPromise,
-      ),
-    );
+    return dispatch(restoreActiveImportedItemRequested(item.id, loadToken, item.snapshot));
   };
 
 export const navigateToImportedItem =

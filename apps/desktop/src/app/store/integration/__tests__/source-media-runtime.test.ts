@@ -12,6 +12,7 @@ import type { MediaInfo, SourceDropEvent, SourceImportResult } from "@/lib/tauri
 const mocks = vi.hoisted(() => ({
   checkMediaCapabilities: vi.fn(),
   activateSourcePath: vi.fn(),
+  inspectImportedMedia: vi.fn(),
   inspectMedia: vi.fn(),
   listenForSourceDrops: vi.fn(),
   prepareAudioPreviews: vi.fn(),
@@ -25,6 +26,7 @@ vi.mock("@/lib/tauri/media", async (importOriginal) => {
     ...original,
     checkMediaCapabilities: mocks.checkMediaCapabilities,
     activateSourcePath: mocks.activateSourcePath,
+    inspectImportedMedia: mocks.inspectImportedMedia,
     inspectMedia: mocks.inspectMedia,
     listenForSourceDrops: mocks.listenForSourceDrops,
     prepareAudioPreviews: mocks.prepareAudioPreviews,
@@ -64,6 +66,7 @@ describe("source/media application runtime", () => {
     });
     mocks.activateSourcePath.mockResolvedValue(source);
     mocks.inspectMedia.mockResolvedValue(media);
+    mocks.inspectImportedMedia.mockResolvedValue(media);
     mocks.prepareSourcePreview.mockResolvedValue({
       mediaToken: 1,
       kind: "source",
@@ -132,7 +135,9 @@ describe("source/media application runtime", () => {
     sourceDropListener?.({ status: "selected", sources: [source, secondSource] });
     await vi.waitFor(() => expect(selectSourceMedia(appStore.getState())).toEqual(media));
     expect(mocks.inspectMedia).toHaveBeenCalledWith(source.sourcePath);
-    expect(mocks.inspectMedia).toHaveBeenCalledTimes(2);
+    expect(mocks.inspectMedia).toHaveBeenCalledTimes(1);
+    expect(mocks.inspectImportedMedia).toHaveBeenCalledWith(secondSource.sourcePath);
+    expect(mocks.inspectImportedMedia).toHaveBeenCalledTimes(1);
     expect(selectImportQueueItems(appStore.getState())).toHaveLength(2);
     expect(selectImportQueueItems(appStore.getState())[0]?.origin).toBe("source-import");
 

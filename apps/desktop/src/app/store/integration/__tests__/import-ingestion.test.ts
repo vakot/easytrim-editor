@@ -15,6 +15,7 @@ import type { MediaInfo } from "@/lib/tauri/media.types";
 
 const mocks = vi.hoisted(() => ({
   activateSourcePath: vi.fn(),
+  inspectImportedMedia: vi.fn(),
   inspectMedia: vi.fn(),
   prepareAudioPreviews: vi.fn(),
   prepareSourcePreview: vi.fn(),
@@ -26,6 +27,7 @@ vi.mock("@/lib/tauri/media", async (importOriginal) => {
   return {
     ...original,
     activateSourcePath: mocks.activateSourcePath,
+    inspectImportedMedia: mocks.inspectImportedMedia,
     inspectMedia: mocks.inspectMedia,
     prepareAudioPreviews: mocks.prepareAudioPreviews,
     prepareSourcePreview: mocks.prepareSourcePreview,
@@ -73,6 +75,9 @@ describe("unified source ingestion", () => {
       return [sourceA, sourceB, sourceC].find((source) => source.sourcePath === sourcePath);
     });
     mocks.inspectMedia.mockImplementation(async (sourcePath: string) => createMedia(sourcePath));
+    mocks.inspectImportedMedia.mockImplementation(async (sourcePath: string) =>
+      createMedia(sourcePath),
+    );
     mocks.prepareAudioPreviews.mockResolvedValue([]);
     mocks.prepareSourcePreview.mockResolvedValue({
       mediaToken: 1,
@@ -101,15 +106,22 @@ describe("unified source ingestion", () => {
       expect(selectImportQueueItems(store.getState()).every((item) => item.media)).toBe(true),
     );
     expect(selectActiveItemId(store.getState())).toBe(items[0]?.id);
-    expect(mocks.inspectMedia).toHaveBeenCalledTimes(3);
+    expect(mocks.inspectMedia).toHaveBeenCalledTimes(1);
     expect(mocks.inspectMedia).toHaveBeenCalledWith(sourceA.sourcePath);
+    expect(mocks.activateSourcePath.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.inspectMedia.mock.invocationCallOrder[0]!,
+    );
+    expect(mocks.inspectImportedMedia).toHaveBeenCalledTimes(2);
+    expect(mocks.inspectImportedMedia).toHaveBeenCalledWith(sourceB.sourcePath);
+    expect(mocks.inspectImportedMedia).toHaveBeenCalledWith(sourceC.sourcePath);
     expect(mocks.prepareSourcePreview).toHaveBeenCalledTimes(1);
     expect(mocks.prepareAudioPreviews).toHaveBeenCalledTimes(1);
 
     store.dispatch(navigateToImportedItem(items[1]!.id));
     expect(store.getState().source.media?.audioStreams).toHaveLength(2);
-    await vi.waitFor(() => expect(selectActiveItemId(store.getState())).toBe(items[1]!.id));
-    expect(mocks.inspectMedia).toHaveBeenCalledTimes(3);
+    await vi.waitFor(() => expect(store.getState().source.status).toBe("ready"));
+    expect(selectActiveItemId(store.getState())).toBe(items[1]!.id);
+    expect(mocks.inspectMedia).toHaveBeenCalledTimes(2);
   });
 
   it("keeps duplicate source paths as distinct imported items", () => {
@@ -127,6 +139,11 @@ describe("unified source ingestion", () => {
   it("keeps the current audio layout until an uncached target can activate with its tracks", async () => {
     const store = createAppStore();
     const secondInspection = createDeferred<MediaInfo>();
+    mocks.inspectImportedMedia.mockImplementation((sourcePath: string) =>
+      sourcePath === sourceB.sourcePath
+        ? Promise.reject(new Error("Background metadata unavailable"))
+        : Promise.resolve(createMedia(sourcePath, 1)),
+    );
     mocks.inspectMedia.mockImplementation((sourcePath: string) =>
       sourcePath === sourceB.sourcePath
         ? secondInspection.promise
@@ -149,6 +166,7 @@ describe("unified source ingestion", () => {
     expect(store.getState().source.media?.audioStreams).toHaveLength(3);
     expect(selectAudioTracks(store.getState())).toHaveLength(3);
     expect(mocks.inspectMedia).toHaveBeenCalledTimes(2);
+    expect(mocks.inspectImportedMedia).toHaveBeenCalledWith(sourceB.sourcePath);
   });
 
   it("preserves existing items and captures the active draft before activating a new batch", async () => {
@@ -220,7 +238,8 @@ describe("unified source ingestion", () => {
       status: "failed",
       error: { code: "io_failed", message: "B is no longer available." },
     });
-    expect(mocks.inspectMedia).toHaveBeenCalledTimes(2);
+    expect(mocks.inspectMedia).toHaveBeenCalledTimes(1);
+    expect(mocks.inspectImportedMedia).toHaveBeenCalledWith(sourceB.sourcePath);
   });
 
   it("does nothing for an empty batch", () => {

@@ -1,5 +1,6 @@
 use crate::{
     diagnostics::{DiagnosticEventInput, DiagnosticsState},
+    domain::source::validate_source,
     error::AppError,
     media::{
         audio::generate_audio_previews,
@@ -10,7 +11,7 @@ use crate::{
     state::{AppState, PreviewStreamSelection},
 };
 use serde::Serialize;
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
 use tauri::State;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
@@ -118,6 +119,14 @@ pub async fn inspect_media(
         audio_stream_indexes,
     )?;
     Ok(result)
+}
+
+#[tauri::command]
+pub async fn inspect_imported_media(source_path: PathBuf) -> Result<MediaInfo, AppError> {
+    let source = validate_source(&source_path)?;
+    tauri::async_runtime::spawn_blocking(move || probe_media(&source.path, || false))
+        .await
+        .map_err(|_| AppError::internal("Video inspection stopped unexpectedly."))?
 }
 
 fn record_ffprobe_event(

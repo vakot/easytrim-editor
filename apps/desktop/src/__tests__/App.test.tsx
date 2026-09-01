@@ -27,6 +27,7 @@ const mocks = vi.hoisted(() => ({
   checkMediaCapabilities: vi.fn(),
   chooseSource: vi.fn(),
   activateSourcePath: vi.fn(),
+  inspectImportedMedia: vi.fn(),
   inspectMedia: vi.fn(),
   listenForSourceDrops: vi.fn(),
   prepareAudioPreviews: vi.fn(),
@@ -43,6 +44,7 @@ vi.mock("../lib/tauri/media", async (importOriginal) => {
     checkMediaCapabilities: mocks.checkMediaCapabilities,
     chooseSource: mocks.chooseSource,
     activateSourcePath: mocks.activateSourcePath,
+    inspectImportedMedia: mocks.inspectImportedMedia,
     inspectMedia: mocks.inspectMedia,
     listenForSourceDrops: mocks.listenForSourceDrops,
     prepareAudioPreviews: mocks.prepareAudioPreviews,
@@ -205,6 +207,7 @@ beforeEach(() => {
     sourcePath === replacementSelection.sourcePath ? replacementSelection : selection,
   );
   mocks.inspectMedia.mockResolvedValue(media);
+  mocks.inspectImportedMedia.mockResolvedValue(media);
   mocks.prepareAudioPreviews.mockResolvedValue([
     {
       mediaToken: 1,

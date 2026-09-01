@@ -54,6 +54,7 @@ import type { MediaInfo, SourceImportResult, WaveformResult } from "@/lib/tauri/
 const mocks = vi.hoisted(() => ({
   checkMediaCapabilities: vi.fn(),
   chooseSource: vi.fn(),
+  inspectImportedMedia: vi.fn(),
   inspectMedia: vi.fn(),
   activateSourcePath: vi.fn(),
   restoreSourceFromTrash: vi.fn(),
@@ -69,6 +70,7 @@ vi.mock("@/lib/tauri/media", async (importOriginal) => {
     ...original,
     checkMediaCapabilities: mocks.checkMediaCapabilities,
     chooseSource: mocks.chooseSource,
+    inspectImportedMedia: mocks.inspectImportedMedia,
     inspectMedia: mocks.inspectMedia,
     activateSourcePath: mocks.activateSourcePath,
     restoreSourceFromTrash: mocks.restoreSourceFromTrash,
@@ -177,6 +179,9 @@ describe("source/media orchestration thunks", () => {
       ffprobe: { available: true, version: "ffprobe" },
     });
     mocks.restoreSourceFromTrash.mockResolvedValue(undefined);
+    mocks.inspectImportedMedia.mockImplementation(async (sourcePath: string) =>
+      createMedia(sourcePath),
+    );
     mocks.activateSourcePath.mockImplementation(async (sourcePath: string) => {
       const source = [firstSource, secondSource, thirdSource].find(
         (candidate) => candidate.sourcePath === sourcePath,
