@@ -7,11 +7,21 @@ import { cn } from "@/lib/class-names.utils";
 
 import styles from "./scroll-area.module.css";
 
+type ScrollAreaOrientation = "horizontal" | "vertical";
+
 function ScrollArea({
   children,
   className,
+  fadeColor,
+  orientation = "vertical",
+  scrollbarClassName,
+  style,
   ...props
-}: React.ComponentProps<typeof ScrollAreaPrimitive.Root>) {
+}: React.ComponentProps<typeof ScrollAreaPrimitive.Root> & {
+  fadeColor?: string;
+  orientation?: ScrollAreaOrientation;
+  scrollbarClassName?: string;
+}) {
   const viewportRef = React.useRef<HTMLDivElement>(null);
 
   const [scrollState, setScrollState] = React.useState({
@@ -23,11 +33,16 @@ function ScrollArea({
     const viewport = viewportRef.current;
     if (!viewport) return;
 
-    const { clientHeight, scrollHeight, scrollTop } = viewport;
-    const nextScrollState = {
-      canScrollDown: scrollHeight - clientHeight - scrollTop > 1,
-      canScrollUp: scrollTop > 1,
-    };
+    const nextScrollState =
+      orientation === "horizontal"
+        ? {
+            canScrollDown: viewport.scrollWidth - viewport.clientWidth - viewport.scrollLeft > 1,
+            canScrollUp: viewport.scrollLeft > 1,
+          }
+        : {
+            canScrollDown: viewport.scrollHeight - viewport.clientHeight - viewport.scrollTop > 1,
+            canScrollUp: viewport.scrollTop > 1,
+          };
 
     setScrollState((currentScrollState) => {
       if (
@@ -39,7 +54,7 @@ function ScrollArea({
 
       return nextScrollState;
     });
-  }, []);
+  }, [orientation]);
 
   React.useEffect(() => {
     const viewport = viewportRef.current;
@@ -61,15 +76,23 @@ function ScrollArea({
       className={cn(
         "relative overflow-hidden",
         styles.scrollFade,
+        orientation === "horizontal" && styles.horizontal,
         scrollState.canScrollUp && styles.canScrollUp,
         scrollState.canScrollDown && styles.canScrollDown,
         className,
       )}
       data-slot="scroll-area"
       {...props}
+      style={{
+        ...style,
+        ...(fadeColor ? { "--scroll-area-fade-color": fadeColor } : {}),
+      }}
     >
       <ScrollAreaPrimitive.Viewport
-        className="scroll-area-viewport size-full rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1"
+        className={cn(
+          "scroll-area-viewport size-full rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1",
+          orientation === "horizontal" ? "overflow-x-auto overflow-y-hidden" : "overflow-x-hidden",
+        )}
         data-slot="scroll-area-viewport"
         onScroll={updateScrollState}
         ref={viewportRef}
@@ -77,7 +100,7 @@ function ScrollArea({
         {children}
       </ScrollAreaPrimitive.Viewport>
 
-      <ScrollBar />
+      <ScrollBar className={scrollbarClassName} orientation={orientation} />
       <ScrollAreaPrimitive.Corner />
     </ScrollAreaPrimitive.Root>
   );
