@@ -10,6 +10,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectPlaybackSpeed } from "@/app/store/slices/editor-tools-slice";
 import type { PreviewState } from "@/app/store/slices/preview-slice";
+import { cn } from "@/lib/class-names.utils";
 import type { DiagnosticOrigin } from "@/lib/tauri/diagnostics.types";
 
 import { CropViewport } from "./CropViewport";
@@ -100,11 +101,12 @@ export function VideoPreview({
   const { value } = preview;
 
   return (
-    <section className="grid size-full min-h-0 place-items-center p-4">
+    <section className="grid size-full min-h-0 place-items-center">
       <div
-        className={`relative size-full min-h-0 bg-preview-surface ${
-          cropToolOpen ? "overflow-visible" : "overflow-hidden"
-        }`}
+        className={cn(
+          "relative size-full min-h-0 bg-preview-surface",
+          cropToolOpen ? "overflow-visible" : "overflow-hidden",
+        )}
       >
         <CropViewport
           key={value.url}

@@ -1,52 +1,87 @@
 import { X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-const mock = [
-  { filename: "History 1" },
-  { filename: "History 2" },
-  { filename: "History 3" },
-  { filename: "History 4" },
-  { filename: "History 5" },
-];
+import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";
+import type { ImportQueueItem } from "@/app/store/slices/export-slice";
+import { type CropRect, FULL_CROP } from "@/domain/crop";
+import { cn } from "@/lib/class-names.utils";
+
+import { useImportQueue } from "./hooks/useImportQueue";
 
 export function ImportQueueTabs() {
-  return (
-    <Tabs>
-      <div className="flex w-full justify-between">
-        {/* TODO: on tab change - load selected snapshot */}
-        <TabsList
-          className="w-full justify-baseline rounded-b-none bg-preview-surface"
-          defaultValue="History 1"
-        >
-          {mock.map((entry) => (
-            // TODO: fix button in button composition error
-            <TabsTrigger className="h-6 flex-0 text-xs" key={entry.filename} value={entry.filename}>
-              {entry.filename}
+  const { activeItem, items, open, remove } = useImportQueue();
 
+  // TODO: early exit return null if cropToop is open
+
+  return (
+    <Tabs className="gap-0" onValueChange={open} value={activeItem?.id}>
+      <ScrollArea
+        className="min-w-0 flex-1 px-0.75 pb-0.5"
+        fadeColor="var(--preview-surface)"
+        orientation="horizontal"
+        scrollbarClassName="data-horizontal:h-1.25"
+      >
+        <TabsList className="w-max min-w-full justify-baseline rounded-b-none bg-preview-surface pb-0">
+          {items.map((item) => (
+            <div className="relative flex shrink-0 items-center" key={item.id}>
+              <ImportQueueTabsTrigger item={item} />
               <Button
+                aria-label={`Close ${item.snapshot.source.displayName}`}
+                className="absolute right-0.5"
                 onClick={(event) => {
                   event.stopPropagation();
-                  // TODO: close snapshot
+                  remove(item.id);
                 }}
                 size="icon-2xs"
                 variant="ghost"
               >
                 <X />
               </Button>
-            </TabsTrigger>
+            </div>
           ))}
         </TabsList>
-        <div className="flex gap-0.5 p-0.75">
-          <Button size="xs" variant="secondary">
-            Export
-          </Button>
-          <Button size="xs" variant="secondary">
-            Save
-          </Button>
-        </div>
-      </div>
+      </ScrollArea>
     </Tabs>
+  );
+}
+
+function ImportQueueTabsTrigger({ item }: { item: ImportQueueItem }) {
+  const isChange = isItemSnapshotChanged(item);
+
+  return (
+    <TabsTrigger className={cn("h-6 flex-0 pr-6 text-xs", isChange && "italic")} value={item.id}>
+      {item.snapshot.source.displayName}
+    </TabsTrigger>
+  );
+}
+
+const isItemSnapshotChanged = (item: ImportQueueItem): boolean => {
+  const { media, snapshot } = item;
+  const expectedDefault = createDefaultEditorSnapshot(snapshot.source, snapshot.audio.mergeAudio);
+  const trimChanged =
+    "kind" in snapshot.trim
+      ? false
+      : media === undefined ||
+        snapshot.trim.startMicros !== 0 ||
+        snapshot.trim.endMicros !== media.durationMicros;
+
+  return (
+    trimChanged ||
+    !areCropRectsEqual(snapshot.crop ?? FULL_CROP, expectedDefault.crop ?? FULL_CROP) ||
+    snapshot.audio.master.enabled !== expectedDefault.audio.master.enabled ||
+    snapshot.audio.master.volumePercent !== expectedDefault.audio.master.volumePercent ||
+    snapshot.audio.tracks.some((track) => !track.enabled || track.volumePercent !== 50)
+  );
+};
+
+function areCropRectsEqual(left: CropRect, right: CropRect): boolean {
+  return (
+    left.x === right.x &&
+    left.y === right.y &&
+    left.width === right.width &&
+    left.height === right.height
   );
 }

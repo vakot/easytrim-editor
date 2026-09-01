@@ -61,7 +61,7 @@ export function EditorStage() {
     >
       <ResizablePanel id="editor-stage-preview" minSize="14rem">
         <div className="size-full p-px">
-          <Card className="size-full bg-preview-surface p-0">
+          <Card className="size-full gap-0 bg-preview-surface p-0">
             <ImportQueueTabs />
             <Preview />
           </Card>

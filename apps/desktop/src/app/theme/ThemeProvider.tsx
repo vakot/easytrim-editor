@@ -31,7 +31,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   useLayoutEffect(() => {
     const root = document.documentElement;
     root.classList.toggle("light", preference === "light");
-    root.classList.toggle("dark", preference === "dark");
+    root.classList.toggle("dark", resolvedTheme === "dark");
     root.dataset.theme = resolvedTheme;
     root.dataset.primaryColor = primaryColor;
     applyPrimaryColor(root, primaryColor);
