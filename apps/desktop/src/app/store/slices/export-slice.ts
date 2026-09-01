@@ -28,7 +28,7 @@ interface QueueItemBase {
   snapshot: EditorSnapshot;
 }
 
-export interface importQueueItem extends QueueItemBase {
+export interface ImportQueueItem extends QueueItemBase {
   origin: ImportedOrigin;
   status: "imported";
 }
@@ -62,7 +62,7 @@ export interface ExportQueueItem extends QueueItemBase {
   totalFrames?: number;
 }
 
-type QueueItem = importQueueItem | ExportQueueItem;
+type QueueItem = ImportQueueItem | ExportQueueItem;
 
 export interface QueueItemPromotion {
   addedAt: number;
@@ -146,11 +146,11 @@ const exportSlice = createSlice({
       state.queue.push(action.payload);
       if (action.payload.status === "imported") state.activeItemId = action.payload.id;
     },
-    importQueueItemAdded: (state, action: PayloadAction<importQueueItem>) => {
+    importQueueItemAdded: (state, action: PayloadAction<ImportQueueItem>) => {
       state.queue.push(action.payload);
       state.activeItemId = action.payload.id;
     },
-    importQueueItemsAdded: (state, action: PayloadAction<importQueueItem[]>) => {
+    importQueueItemsAdded: (state, action: PayloadAction<ImportQueueItem[]>) => {
       state.queue.push(...action.payload);
     },
     importQueueItemRemoved: (state, action: PayloadAction<string>) => {
@@ -353,8 +353,8 @@ export const selectActiveQueueItem = createSelector(
 );
 export const selectImportQueueItems = createSelector(
   [selectQueueItems],
-  (queue): importQueueItem[] =>
-    queue.filter((item): item is importQueueItem => item.status === "imported"),
+  (queue): ImportQueueItem[] =>
+    queue.filter((item): item is ImportQueueItem => item.status === "imported"),
 );
 export const selectExportQueue = createSelector([selectQueueItems], (queue): ExportQueueItem[] => {
   const exportQueue = queue.filter((item): item is ExportQueueItem => item.status !== "imported");

@@ -18,7 +18,7 @@ import {
   type ExportQueueItem,
   type ExportSettings,
   exportSourceRestored,
-  type importQueueItem,
+  type ImportQueueItem,
   importQueueItemAdded,
   optimizedExportDialogClosed,
   optimizedExportDialogOpened,
@@ -423,7 +423,7 @@ export const restoreExportQueueItemRequested =
     const item = getState().export.queue.find((candidate) => candidate.id === id);
     if (!item || item.status === "imported") return false;
     dispatch(leaveActiveImportedItem());
-    const fork: importQueueItem = {
+    const fork: ImportQueueItem = {
       id: `fork-${++historyForkSequence}`,
       status: "imported",
       origin: "history-fork",

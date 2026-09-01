@@ -53,7 +53,7 @@ import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions"
 import {
   activeQueueItemChanged,
   type ExportQueueItem,
-  type importQueueItem,
+  type ImportQueueItem,
   importQueueItemAdded,
   importQueueItemRemoved,
   queueEntryAdded,
@@ -127,14 +127,14 @@ const queuedItem: ExportQueueItem = {
   progressPercent: 0,
 };
 
-const importedItem: importQueueItem = {
+const importedItem: ImportQueueItem = {
   id: "import-1",
   status: "imported",
   origin: "source-import",
   snapshot: queuedItem.snapshot,
 };
 
-const historyForkItem: importQueueItem = {
+const historyForkItem: ImportQueueItem = {
   ...importedItem,
   id: "fork-1",
   origin: "history-fork",
@@ -172,7 +172,7 @@ beforeEach(() => {
   mocks.activateSourcePath.mockReset();
   mocks.activateSource.mockReset();
   mocks.activateImportedItemRequested.mockReset();
-  mocks.activateImportedItemRequested.mockImplementation((item: importQueueItem) => {
+  mocks.activateImportedItemRequested.mockImplementation((item: ImportQueueItem) => {
     return (dispatch: AppDispatch) => {
       dispatch(
         importQueueItemActivated({
@@ -326,7 +326,7 @@ describe("export thunks and runtime queue", () => {
   it("selects the next imported item after promotion", async () => {
     const store = createReadyStore(false);
     store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
-    const nextItem: importQueueItem = {
+    const nextItem: ImportQueueItem = {
       ...importedItem,
       id: "import-2",
       snapshot: {
