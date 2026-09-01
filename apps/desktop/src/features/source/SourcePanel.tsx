@@ -3,7 +3,6 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -52,7 +51,7 @@ export function SourcePanel() {
   };
 
   return (
-    <Card className="relative size-full gap-2 pt-3 pb-0 ring-inset">
+    <aside aria-label={t("source.labels.title")} className="relative flex size-full flex-col pt-3">
       <h3
         className="mx-3 font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
         id="source-panel-title"
@@ -140,7 +139,7 @@ export function SourcePanel() {
           </>
         )}
       </ResizablePanelGroup>
-    </Card>
+    </aside>
   );
 }
 

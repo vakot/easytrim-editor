@@ -17,7 +17,7 @@ export function Preview() {
   const skipCurrentSource = () => void dispatch(closeActiveImportedItemRequested());
 
   return (
-    <div className="relative size-full min-h-0 overflow-hidden" data-slot="preview-content">
+    <div className="relative isolate size-full" data-slot="preview-content">
       {sourceSelection === null ? (
         <VideoPreviewEmpty />
       ) : (

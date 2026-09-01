@@ -17,12 +17,12 @@ type PanelSizes = {
 };
 
 const TIMELINE_PANEL_SIZE: PanelSizes = {
-  maxSize: 152,
-  minSize: 152,
+  maxSize: 154,
+  minSize: 154,
 };
 
 const AUDIO_PANEL_SIZE_LINE = 56;
-const AUDIO_PANEL_SIZE_MIN = 142;
+const AUDIO_PANEL_SIZE_MIN = 144;
 
 /** lines > 0 */
 const getAudioPanelSize = (lines: number = 1): PanelSizes => {
@@ -52,32 +52,46 @@ export function EditorStage() {
       persisted
       style={timelineGeometryStyle(trim ?? EMPTY_TIMELINE_RANGE)}
     >
-      <ResizablePanel className="overflow-hidden" id="editor-stage-preview" minSize="14rem">
-        <Card className="relative isolate size-full bg-preview-surface p-0 ring-inset">
-          <Preview />
-        </Card>
+      <ResizablePanel id="editor-stage-preview" minSize="14rem">
+        <div className="size-full p-px">
+          <Card className="size-full bg-preview-surface p-0">
+            <Preview />
+          </Card>
+        </div>
       </ResizablePanel>
-      <ResizableHandle className="bg-transparent" style={{ height: 4 }} withHandle />
+
+      <ResizableHandle className="bg-transparent" style={{ height: 6 }} withHandle />
+
       <ResizablePanel
-        className={cn("overflow-hidden", !audioStreamsCount && "pb-1")}
+        className={cn(!audioStreamsCount && "pb-1.5")}
         groupResizeBehavior="preserve-pixel-size"
         id="editor-stage-timeline"
         {...TIMELINE_PANEL_SIZE}
       >
-        <TimelinePanel />
+        <div className="size-full p-px">
+          <Card className="size-full p-3">
+            <TimelinePanel />
+          </Card>
+        </div>
       </ResizablePanel>
+
       {audioStreamsCount > 0 && (
         <>
-          <ResizableHandle className="bg-transparent" style={{ height: 4 }} withHandle />
+          <ResizableHandle className="bg-transparent" style={{ height: 6 }} withHandle />
+
           <ResizablePanel
-            className="overflow-hidden pb-1"
+            className="pb-1.5"
             collapsedSize={0}
             collapsible
             groupResizeBehavior="preserve-pixel-size"
             id="editor-stage-audio"
             {...getAudioPanelSize(audioStreamsCount)}
           >
-            <AudioPanel />
+            <div className="size-full p-px">
+              <Card className="size-full p-0 pt-3">
+                <AudioPanel />
+              </Card>
+            </div>
           </ResizablePanel>
         </>
       )}
