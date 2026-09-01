@@ -328,6 +328,12 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "Playback speed" })).not.toBeDisabled();
     expect(screen.getAllByText("00:00:00:00f").length).toBeGreaterThanOrEqual(8);
     expect(screen.queryByRole("slider", { name: "Playback position" })).toBeDisabled();
+    expect(document.querySelector("[data-slot='timeline-pane']")).toHaveStyle({
+      "--timeline-trim-center": "50%",
+      "--timeline-trim-end": "100%",
+      "--timeline-trim-end-inset": "0%",
+      "--timeline-trim-start": "0%",
+    });
     expect(screen.queryByLabelText("Source video preview")).not.toBeInTheDocument();
     expect(screen.queryByTestId("audio-tracks-scroll")).not.toBeInTheDocument();
   });
