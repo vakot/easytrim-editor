@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { type ReactNode, type RefObject, useState } from "react";
+import { type HTMLAttributes, type ReactNode, type RefObject, useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -39,6 +39,10 @@ const primitive = vi.hoisted(() => ({
   collapsed: new Map<string, boolean>(),
 }));
 
+type MockSeparatorProps = HTMLAttributes<HTMLDivElement> & {
+  disabled?: boolean;
+};
+
 vi.mock("react-resizable-panels", async () => {
   const React = await import("react");
 
@@ -76,7 +80,11 @@ vi.mock("react-resizable-panels", async () => {
 
       return <div>{props.children}</div>;
     },
-    Separator: ({ children }: { children?: ReactNode }) => <div>{children}</div>,
+    Separator: ({ children, ...props }: MockSeparatorProps) => (
+      <div role="separator" {...props}>
+        {children}
+      </div>
+    ),
     useDefaultLayout: ({
       id,
       panelIds,
@@ -133,6 +141,12 @@ function DynamicPanelGroup() {
 }
 
 describe("ResizablePanelGroup", () => {
+  it("uses a regular cursor for disabled handles", () => {
+    render(<ResizableHandle disabled />);
+
+    expect(screen.getByRole("separator")).toHaveStyle({ cursor: "default" });
+  });
+
   it("loads persisted layouts for panels nested in fragments", () => {
     const storageKey = "react-resizable-panels:fragment-panels:first-panel:second-panel";
     const savedLayout = { "first-panel": 35, "second-panel": 65 };

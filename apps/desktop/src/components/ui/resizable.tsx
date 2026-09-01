@@ -124,6 +124,8 @@ function ResizableHandle({
   "aria-orientation": orientation,
   children,
   className,
+  disabled,
+  style,
   withHandle,
   ...props
 }: ResizablePrimitive.SeparatorProps & {
@@ -138,6 +140,8 @@ function ResizableHandle({
       )}
       data-slot="resizable-handle"
       {...props}
+      disabled={disabled}
+      style={{ ...style, ...(disabled ? { cursor: "default" } : {}) }}
     >
       {children ??
         (withHandle ? <div className="z-10 flex h-0.5 w-6 shrink-0 rounded-lg bg-border" /> : null)}
