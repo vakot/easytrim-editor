@@ -1,4 +1,4 @@
-import { type RefObject, useLayoutEffect, useRef } from "react";
+import { type RefObject, useCallback, useLayoutEffect, useRef } from "react";
 
 import { Card } from "@/components/ui/card";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
@@ -53,9 +53,13 @@ export function EditorStage() {
   const media = useAppSelector(selectSourceMedia);
   const timelinePaneRef = useRef<HTMLDivElement>(null);
   const audioStreamsCount = media?.audioStreams.length ?? 0;
+  const initializeTimelinePane = useCallback((element: HTMLDivElement | null) => {
+    timelinePaneRef.current = element;
+    syncTimelineGeometry(element, EMPTY_TIMELINE_RANGE);
+  }, []);
 
   return (
-    <div className="size-full min-h-0" data-slot="timeline-pane" ref={timelinePaneRef}>
+    <div className="size-full min-h-0" data-slot="timeline-pane" ref={initializeTimelinePane}>
       <TimelineGeometrySync targetRef={timelinePaneRef} />
       <ResizablePanelGroup id="editor-stage" orientation="vertical" persisted>
         <ResizablePanel id="editor-stage-preview" minSize="14rem">
