@@ -26,6 +26,7 @@ import { useAppUpdates } from "@/app/hooks/useAppUpdates";
 import { GithubIcon, KofiIcon } from "@/components/brand-icons";
 import { getCurrentVersion } from "@/lib/app-version.utils";
 import { openExternalUrl } from "@/lib/open-external-url.utils";
+import { revealDiagnosticLogs } from "@/lib/tauri/diagnostics";
 
 const CHANGELOG_URL = "https://github.com/vakot/easytrim-editor/releases";
 const PROJECT_PAGE_URL = "https://github.com/vakot/easytrim-editor";
@@ -80,6 +81,15 @@ export function MenuBarHelp() {
               <GithubIcon aria-hidden="true" />
             </MenubarIcon>
             {t("support.actions.projectPage")}
+          </MenubarItem>
+        </MenubarGroup>
+        <MenubarSeparator />
+        <MenubarGroup>
+          <MenubarItem inset onSelect={() => void revealDiagnosticLogs()}>
+            <MenubarIcon>
+              <ExternalLink aria-hidden="true" />
+            </MenubarIcon>
+            {t("support.actions.showLogs")}
           </MenubarItem>
         </MenubarGroup>
         <MenubarSeparator />

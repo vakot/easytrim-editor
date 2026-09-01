@@ -7,6 +7,7 @@ vi.mock("@tauri-apps/api/core", () => ({ invoke: mocks.invoke }));
 import {
   listPersistedDiagnosticSessions,
   readPersistedDiagnosticSessionEvents,
+  revealDiagnosticLogs,
 } from "../diagnostics";
 
 beforeEach(() => {
@@ -61,5 +62,11 @@ describe("diagnostics IPC adapter", () => {
     expect(mocks.invoke).toHaveBeenCalledWith("read_persisted_diagnostic_session_events", {
       sessionId: "session-1",
     });
+  });
+
+  it("reveals the diagnostic logs directory through the narrow command", async () => {
+    await revealDiagnosticLogs();
+
+    expect(mocks.invoke).toHaveBeenCalledWith("reveal_diagnostic_logs");
   });
 });

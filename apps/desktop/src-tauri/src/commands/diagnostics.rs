@@ -54,6 +54,13 @@ pub fn record_ui_heartbeat(diagnostics: State<'_, Arc<DiagnosticsState>>) -> Res
 }
 
 #[tauri::command]
+pub fn reveal_diagnostic_logs(
+    diagnostics: State<'_, Arc<DiagnosticsState>>,
+) -> Result<(), AppError> {
+    diagnostics.reveal_logs()
+}
+
+#[tauri::command]
 pub fn reveal_diagnostic_report(
     diagnostics: State<'_, Arc<DiagnosticsState>>,
     report_id: String,

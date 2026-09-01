@@ -44,6 +44,11 @@ export async function recordUiHeartbeat(): Promise<void> {
   await invoke("record_ui_heartbeat");
 }
 
+export async function revealDiagnosticLogs(): Promise<void> {
+  if (!isTauriRuntime()) return;
+  await invoke("reveal_diagnostic_logs");
+}
+
 export async function revealDiagnosticReport(recovery: StartupRecovery): Promise<void> {
   if (!isTauriRuntime()) return;
   await invoke("reveal_diagnostic_report", { reportId: recovery.reportId });
