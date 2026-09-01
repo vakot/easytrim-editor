@@ -127,14 +127,14 @@ export function SourcePanel() {
 
         {panels["workspace-sidebar-import-queue"] && (
           <>
-            <ResizableHandle />
+            <ResizableHandle className="bg-foreground/10" />
             <ImportQueuePanel isSingle={isSingle} />
           </>
         )}
 
         {panels["workspace-sidebar-export-queue"] && (
           <>
-            <ResizableHandle />
+            <ResizableHandle className="bg-foreground/10" />
             <ExportQueuePanel isSingle={isSingle} />
           </>
         )}

@@ -1,5 +1,3 @@
-import { Card } from "@/components/ui/card";
-
 import { usePlayback } from "@/app/hooks/usePlayback";
 import { useTimeline } from "@/app/hooks/useTimeline";
 import { useAppSelector } from "@/app/store/redux-hooks";

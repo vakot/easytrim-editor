@@ -22,7 +22,7 @@ const TIMELINE_PANEL_SIZE: PanelSizes = {
 };
 
 const AUDIO_PANEL_SIZE_LINE = 56;
-const AUDIO_PANEL_SIZE_MIN = 144;
+const AUDIO_PANEL_SIZE_MIN = 146;
 
 /** lines > 0 */
 const getAudioPanelSize = (lines: number = 1): PanelSizes => {
