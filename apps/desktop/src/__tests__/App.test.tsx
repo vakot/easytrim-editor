@@ -822,7 +822,7 @@ describe("App", () => {
     expect(audioPlayhead).toBeInTheDocument();
     const audioPlayheadGrid = audioPlayhead?.closest('[data-slot="audio-playhead-grid"]');
     expect(audioPlayheadGrid).toHaveAttribute("aria-hidden", "true");
-    expect(audioPlayheadGrid).toHaveClass("grid-cols-(--editor-track-grid-columns)");
+    expect(audioPlayheadGrid).toHaveClass("grid-cols-(--editor-audio-track-grid-columns)");
     expect(audioPlayhead?.parentElement).toHaveAttribute("data-slot", "audio-playhead-track");
     expect(
       screen.getByRole("button", { name: "Set segment start to current position" }),
@@ -851,11 +851,17 @@ describe("App", () => {
       .closest("[data-slot='timeline-row']");
 
     expect(videoTimelineRow).not.toBeNull();
+    expect(videoTimelineRow).toHaveClass("grid-cols-(--editor-timeline-track-grid-columns)");
     const videoToolbar = within(videoTimelineRow as HTMLElement).getByRole("toolbar", {
       name: "Video timeline tools",
     });
 
-    expect(screen.getByText("Tools")).toHaveAttribute("data-slot", "timeline-tools-title");
+    const timelineToolsTitle = screen.getByText("Tools");
+
+    expect(timelineToolsTitle).toHaveAttribute("data-slot", "timeline-tools-title");
+    expect(timelineToolsTitle.parentElement).toHaveClass(
+      "grid-cols-(--editor-timeline-track-grid-columns)",
+    );
     expect(videoToolbar).toHaveAttribute("data-slot", "timeline-toolbar");
     expect(videoToolbar).toHaveClass("flex", "items-stretch");
     for (const tool of within(videoToolbar).getAllByRole("button")) {
