@@ -16,21 +16,27 @@ type PanelSizes = {
   minSize: number;
 };
 
-const TIMELINE_PANEL_SIZE: PanelSizes = {
-  maxSize: 154,
-  minSize: 154,
-};
+const TIMELINE_PANEL_DEFAULT_SIZE = 160;
+const TIMELINE_PANEL_SECONDARY_SIZE = 154;
 
 const AUDIO_PANEL_SIZE_LINE = 58;
 const AUDIO_PANEL_SIZE_MIN = 146;
 
-/** lines > 0 */
 const getAudioPanelSize = (lines: number = 1): PanelSizes => {
-  const audioPanelSizeMax = AUDIO_PANEL_SIZE_MIN + (lines - 1) * AUDIO_PANEL_SIZE_LINE + 1;
+  const audioPanelSizeMax = AUDIO_PANEL_SIZE_MIN + (lines - 1) * AUDIO_PANEL_SIZE_LINE;
   return {
     minSize: AUDIO_PANEL_SIZE_MIN,
     defaultSize: AUDIO_PANEL_SIZE_MIN,
     maxSize: audioPanelSizeMax,
+  };
+};
+
+const getTimelinePanelSize = (hasAudio: boolean = false): PanelSizes => {
+  const size = hasAudio ? TIMELINE_PANEL_SECONDARY_SIZE : TIMELINE_PANEL_DEFAULT_SIZE;
+  return {
+    minSize: size,
+    defaultSize: size,
+    maxSize: size,
   };
 };
 
@@ -71,7 +77,7 @@ export function EditorStage() {
         className={cn(!audioStreamsCount && "pb-1.5")}
         groupResizeBehavior="preserve-pixel-size"
         id="editor-stage-timeline"
-        {...TIMELINE_PANEL_SIZE}
+        {...getTimelinePanelSize(audioStreamsCount > 0)}
       >
         <div className="size-full p-px">
           <Card className="size-full p-0">
