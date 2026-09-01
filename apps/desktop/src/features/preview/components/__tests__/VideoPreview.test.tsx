@@ -152,7 +152,7 @@ describe("VideoPreview", () => {
     ).not.toBeInTheDocument();
     fireEvent.pointerDown(viewport!);
     fireEvent.click(viewport!);
-    expect(viewport).toHaveClass("overflow-visible");
+    expect(viewport).toHaveClass("overflow-hidden");
     const handle = screen.getByRole("button", { name: "Resize crop from top left" });
     expect(handle).toBeVisible();
     expect(screen.getAllByRole("button", { name: /resize crop from/i })).toHaveLength(8);
@@ -163,6 +163,13 @@ describe("VideoPreview", () => {
     expect(container.querySelectorAll('[data-crop-snap-label="left"]')).toHaveLength(5);
     expect(container.querySelector('[data-crop-snap-marker="top"]')).toHaveClass("h-2");
     expect(container.querySelector('[data-crop-snap-marker="left"]')).toHaveClass("w-2");
+    expect(container.querySelector("[data-crop-snap-markers]")).toHaveAttribute(
+      "data-visible",
+      "true",
+    );
+    expect(container.querySelector('[data-crop-snap-marker="top"]')).toHaveClass(
+      "transition-[left,top]",
+    );
     expect(container.querySelector("[data-preview-kind]")?.parentElement).toHaveClass(
       "transition-[width,height,left,top]",
     );
@@ -181,9 +188,65 @@ describe("VideoPreview", () => {
 
     fireEvent.pointerDown(viewport!);
     fireEvent.click(viewport!);
+    expect(container.querySelector("[data-crop-snap-markers]")).toHaveAttribute(
+      "data-visible",
+      "false",
+    );
     expect(
       screen.queryByRole("button", { name: "Resize crop from top left" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("scales the crop viewport into an even inset for markers", () => {
+    const bounds = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockReturnValue(new DOMRect(0, 0, 400, 300));
+
+    try {
+      const videoRef = createRef<HTMLVideoElement>();
+      const { container } = renderPreview(
+        <VideoPreview
+          muted
+          preview={readyPreview("easytrim-media://preview-1")}
+          videoRef={videoRef}
+          {...callbacks}
+        />,
+      );
+
+      const viewport = container.querySelector("[aria-label='Video crop preview']");
+      const videoFrame = container.querySelector("[data-preview-kind]")?.parentElement;
+      expect(viewport).not.toBeNull();
+      expect(videoFrame).not.toBeNull();
+      expect(videoFrame).toHaveStyle({ height: "225px", left: "0px", width: "400px" });
+
+      fireEvent.click(viewport!);
+
+      expect(videoFrame).toHaveStyle({
+        height: "193.5px",
+        left: "28px",
+        top: "53.25px",
+        width: "344px",
+      });
+
+      const videoFrameStyle = (videoFrame as HTMLElement).style;
+      const left = Number.parseFloat(videoFrameStyle.left);
+      const top = Number.parseFloat(videoFrameStyle.top);
+      const width = Number.parseFloat(videoFrameStyle.width);
+      const height = Number.parseFloat(videoFrameStyle.height);
+
+      expect(left).toBeCloseTo(400 - left - width);
+      expect(top).toBeCloseTo(300 - top - height);
+      expect(left).toBeGreaterThanOrEqual(28);
+      expect(top).toBeGreaterThanOrEqual(28);
+      expect(container.querySelector('[data-crop-snap-marker="top"]')).toHaveStyle({
+        top: "41.25px",
+      });
+      expect(container.querySelector('[data-crop-snap-marker="left"]')).toHaveStyle({
+        left: "16px",
+      });
+    } finally {
+      bounds.mockRestore();
+    }
   });
 
   it("pauses playback while crop controls are open", () => {
