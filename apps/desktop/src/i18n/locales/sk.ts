@@ -454,6 +454,7 @@ export const sk = {
       koFi: "Podporte na Ko-fi.com",
       projectPage: "Stránka projektu",
       projectSupport: "Podporte projekt",
+      showLogs: "Zobraziť záznamy",
     },
   },
   units: {

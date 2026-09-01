@@ -18,6 +18,11 @@ export async function bootstrapNativeDiagnostics(): Promise<DiagnosticsBootstrap
   return invoke<DiagnosticsBootstrap>("diagnostics_bootstrap");
 }
 
+export async function completeDiagnosticsSession(): Promise<void> {
+  if (!isTauriRuntime()) return;
+  await invoke("complete_diagnostics_session");
+}
+
 export async function persistDiagnosticEvent(event: DiagnosticEventInput): Promise<void> {
   if (!isTauriRuntime()) return;
   await invoke("record_diagnostic_event", { event });
@@ -42,6 +47,11 @@ export async function readPersistedDiagnosticSessionEvents(
 export async function recordUiHeartbeat(): Promise<void> {
   if (!isTauriRuntime()) return;
   await invoke("record_ui_heartbeat");
+}
+
+export async function revealDiagnosticLogs(): Promise<void> {
+  if (!isTauriRuntime()) return;
+  await invoke("reveal_diagnostic_logs");
 }
 
 export async function revealDiagnosticReport(recovery: StartupRecovery): Promise<void> {

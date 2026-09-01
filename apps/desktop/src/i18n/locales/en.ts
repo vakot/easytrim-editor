@@ -452,6 +452,7 @@ export const en = {
       koFi: "Support on Ko-fi.com",
       projectPage: "Project Page",
       projectSupport: "Support the Project",
+      showLogs: "Show logs",
     },
   },
   units: {

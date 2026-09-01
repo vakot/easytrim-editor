@@ -18,6 +18,13 @@ pub fn diagnostics_bootstrap(
 }
 
 #[tauri::command]
+pub fn complete_diagnostics_session(
+    diagnostics: State<'_, Arc<DiagnosticsState>>,
+) -> Result<(), AppError> {
+    diagnostics.complete()
+}
+
+#[tauri::command]
 pub async fn list_persisted_diagnostic_sessions(
     diagnostics: State<'_, Arc<DiagnosticsState>>,
 ) -> Result<Vec<DiagnosticSessionSummary>, AppError> {
@@ -51,6 +58,13 @@ pub fn record_diagnostic_event(
 #[tauri::command]
 pub fn record_ui_heartbeat(diagnostics: State<'_, Arc<DiagnosticsState>>) -> Result<(), AppError> {
     diagnostics.heartbeat()
+}
+
+#[tauri::command]
+pub fn reveal_diagnostic_logs(
+    diagnostics: State<'_, Arc<DiagnosticsState>>,
+) -> Result<(), AppError> {
+    diagnostics.reveal_logs()
 }
 
 #[tauri::command]

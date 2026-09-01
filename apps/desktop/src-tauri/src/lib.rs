@@ -52,10 +52,12 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::capabilities::check_media_capabilities,
             commands::diagnostics::diagnostics_bootstrap,
+            commands::diagnostics::complete_diagnostics_session,
             commands::diagnostics::list_persisted_diagnostic_sessions,
             commands::diagnostics::read_persisted_diagnostic_session_events,
             commands::diagnostics::record_diagnostic_event,
             commands::diagnostics::record_ui_heartbeat,
+            commands::diagnostics::reveal_diagnostic_logs,
             commands::diagnostics::reveal_diagnostic_report,
             commands::export::cancel_operation,
             commands::export::release_export_source,
