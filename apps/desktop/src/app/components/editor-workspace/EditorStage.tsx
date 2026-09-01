@@ -60,7 +60,12 @@ export function EditorStage() {
         </div>
       </ResizablePanel>
 
-      <ResizableHandle className="bg-transparent" style={{ height: 6 }} withHandle />
+      <ResizableHandle
+        className="bg-transparent"
+        disabled={!media}
+        style={{ height: 6 }}
+        withHandle={!!media}
+      />
 
       <ResizablePanel
         className={cn(!audioStreamsCount && "pb-1.5")}
