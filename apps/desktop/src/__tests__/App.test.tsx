@@ -327,7 +327,7 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "Segment playback" })).not.toBeDisabled();
     expect(screen.getByRole("button", { name: "Playback speed" })).not.toBeDisabled();
     expect(screen.getAllByText("00:00:00:00f").length).toBeGreaterThanOrEqual(8);
-    expect(screen.queryByRole("slider", { name: "Playback position" })).toBeInTheDocument();
+    expect(screen.queryByRole("slider", { name: "Playback position" })).toBeDisabled();
     expect(screen.queryByLabelText("Source video preview")).not.toBeInTheDocument();
     expect(screen.queryByTestId("audio-tracks-scroll")).not.toBeInTheDocument();
   });
