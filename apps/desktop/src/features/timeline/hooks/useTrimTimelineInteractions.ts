@@ -58,15 +58,17 @@ export function useTrimTimelineInteractions({
   range,
 }: TrimTimelineInteractionOptions) {
   const trackRef = useRef<HTMLDivElement>(null);
-  const scrubPointerIdRef = useRef<number | null>(null);
+  const scrubDragRef = useRef<{ bounds: DOMRect; pointerId: number } | null>(null);
   const trimDragRef = useRef<{
     boundary: TrimBoundary;
+    bounds: DOMRect;
     lastPointerMicros: number;
     pointerId: number;
     snapLatch: DirectionalSnapLatch;
   } | null>(null);
 
   const segmentDragRef = useRef<{
+    bounds: DOMRect;
     grabOffsetMicros: number;
     lastPointerMicros: number;
     pointerId: number;
@@ -93,11 +95,7 @@ export function useTrimTimelineInteractions({
     );
   }
 
-  function pointerMicros(clientX: number) {
-    const bounds = trackRef.current?.getBoundingClientRect();
-    if (!bounds) {
-      return null;
-    }
+  function pointerMicros(clientX: number, bounds: DOMRect) {
     const currentRange = rangeRef.current;
     return {
       bounds,
@@ -127,11 +125,11 @@ export function useTrimTimelineInteractions({
     clientX: number,
     snapToPlayhead: boolean,
   ): boolean {
-    const pointer = pointerMicros(clientX);
     const drag = trimDragRef.current;
-    if (!pointer || !drag || drag.boundary !== boundary) {
+    if (!drag || drag.boundary !== boundary) {
       return false;
     }
+    const pointer = pointerMicros(clientX, drag.bounds);
     const snapState = advanceDirectionalSnapLatch(
       drag.snapLatch,
       pointer.micros - drag.lastPointerMicros,
@@ -164,9 +162,12 @@ export function useTrimTimelineInteractions({
     capture: boolean,
   ) {
     if (capture) {
+      const bounds = trackRef.current?.getBoundingClientRect();
+      if (!bounds) return;
       trimDragRef.current = {
         pointerId: event.pointerId,
         boundary,
+        bounds,
         lastPointerMicros: boundaryValue(rangeRef.current, boundary),
         snapLatch: createDirectionalSnapLatch(),
       };
@@ -239,9 +240,8 @@ export function useTrimTimelineInteractions({
     onTrimDragEnd();
   }
 
-  function segmentPointerPosition(clientX: number) {
-    const pointer = pointerMicros(clientX);
-    if (!pointer) return null;
+  function segmentPointerPosition(clientX: number, bounds: DOMRect) {
+    const pointer = pointerMicros(clientX, bounds);
     return {
       pointerMicros: pointer.micros,
       snapReachMicros:
@@ -287,14 +287,16 @@ export function useTrimTimelineInteractions({
   function startSegmentDrag(event: PointerEvent<HTMLButtonElement>) {
     event.preventDefault();
     event.stopPropagation();
-    const pointer = segmentPointerPosition(event.clientX);
-    if (!pointer) return;
+    const bounds = trackRef.current?.getBoundingClientRect();
+    if (!bounds) return;
+    const pointer = segmentPointerPosition(event.clientX, bounds);
     const currentRange = rangeRef.current;
     const segmentCenterMicros =
       currentRange.startMicros + (currentRange.endMicros - currentRange.startMicros) / 2;
 
     segmentDragRef.current = {
       pointerId: event.pointerId,
+      bounds,
       grabOffsetMicros: pointer.pointerMicros - segmentCenterMicros,
       lastPointerMicros: pointer.pointerMicros,
       snapModifierActive: event.shiftKey,
@@ -306,22 +308,22 @@ export function useTrimTimelineInteractions({
   }
 
   function moveSegmentDrag(event: PointerEvent<HTMLButtonElement>) {
-    if (segmentDragRef.current?.pointerId !== event.pointerId) return;
+    const drag = segmentDragRef.current;
+    if (drag?.pointerId !== event.pointerId) return;
     event.preventDefault();
     event.stopPropagation();
-    const pointer = segmentPointerPosition(event.clientX);
-    if (pointer)
-      updateSegmentFromPointer(pointer.pointerMicros, pointer.snapReachMicros, event.shiftKey);
+    const pointer = segmentPointerPosition(event.clientX, drag.bounds);
+    updateSegmentFromPointer(pointer.pointerMicros, pointer.snapReachMicros, event.shiftKey);
   }
 
   function finishSegmentDrag(event: PointerEvent<HTMLButtonElement>, includePosition: boolean) {
-    if (segmentDragRef.current?.pointerId !== event.pointerId) return;
+    const drag = segmentDragRef.current;
+    if (drag?.pointerId !== event.pointerId) return;
     event.preventDefault();
     event.stopPropagation();
     if (includePosition) {
-      const pointer = segmentPointerPosition(event.clientX);
-      if (pointer)
-        updateSegmentFromPointer(pointer.pointerMicros, pointer.snapReachMicros, event.shiftKey);
+      const pointer = segmentPointerPosition(event.clientX, drag.bounds);
+      updateSegmentFromPointer(pointer.pointerMicros, pointer.snapReachMicros, event.shiftKey);
     }
     segmentDragRef.current = null;
     setSegmentDragging(false);
@@ -361,38 +363,38 @@ export function useTrimTimelineInteractions({
     onSegmentDragEnd();
   }
 
-  function scrubMicros(clientX: number, snapToTrim: boolean) {
-    const pointer = pointerMicros(clientX);
-    if (!pointer) return null;
+  function scrubMicros(clientX: number, snapToTrim: boolean, bounds: DOMRect) {
+    const pointer = pointerMicros(clientX, bounds);
     return snapToTrim ? clampToTrim(pointer.micros, rangeRef.current) : pointer.micros;
   }
 
   function startScrub(event: PointerEvent<HTMLElement>, captureTarget: HTMLElement) {
     event.preventDefault();
     event.stopPropagation();
-    scrubPointerIdRef.current = event.pointerId;
+    const bounds = trackRef.current?.getBoundingClientRect();
+    if (!bounds) return;
+    scrubDragRef.current = { bounds, pointerId: event.pointerId };
     captureTarget.setPointerCapture?.(event.pointerId);
     onScrubStart();
-    const micros = scrubMicros(event.clientX, event.shiftKey);
-    if (micros !== null) onScrub(micros);
+    onScrub(scrubMicros(event.clientX, event.shiftKey, bounds));
   }
 
   function moveScrub(event: PointerEvent<HTMLElement>) {
-    if (scrubPointerIdRef.current !== event.pointerId) return;
+    const drag = scrubDragRef.current;
+    if (drag?.pointerId !== event.pointerId) return;
     event.preventDefault();
-    const micros = scrubMicros(event.clientX, event.shiftKey);
-    if (micros !== null) onScrub(micros);
+    onScrub(scrubMicros(event.clientX, event.shiftKey, drag.bounds));
   }
 
   function finishScrub(event: PointerEvent<HTMLElement>, includePosition: boolean) {
-    if (scrubPointerIdRef.current !== event.pointerId) return;
+    const drag = scrubDragRef.current;
+    if (drag?.pointerId !== event.pointerId) return;
     event.preventDefault();
     event.stopPropagation();
     if (includePosition) {
-      const micros = scrubMicros(event.clientX, event.shiftKey);
-      if (micros !== null) onScrub(micros);
+      onScrub(scrubMicros(event.clientX, event.shiftKey, drag.bounds));
     }
-    scrubPointerIdRef.current = null;
+    scrubDragRef.current = null;
     onScrubEnd();
   }
 

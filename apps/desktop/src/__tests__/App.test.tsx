@@ -2589,7 +2589,7 @@ describe("App", () => {
       },
     });
     const timeline = screen.getByLabelText("Video trim timeline");
-    vi.spyOn(timeline, "getBoundingClientRect").mockReturnValue({
+    const measureTimeline = vi.spyOn(timeline, "getBoundingClientRect").mockReturnValue({
       x: 100,
       y: 0,
       left: 100,
@@ -2600,6 +2600,7 @@ describe("App", () => {
       height: 52,
       toJSON: () => ({}),
     });
+
     const playhead = screen.getByRole("slider", { name: "Playback position" });
     fireEvent.play(video);
 
@@ -2618,6 +2619,7 @@ describe("App", () => {
     fireEvent.pointerUp(playhead, { clientX: 600, pointerId: 7 });
     expect(play).toHaveBeenCalledOnce();
     expect(seekAssignments).toBe(1);
+    expect(measureTimeline).toHaveBeenCalledOnce();
 
     seeking = false;
     fireEvent.seeked(video);
