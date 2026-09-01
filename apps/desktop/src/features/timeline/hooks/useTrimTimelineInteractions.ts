@@ -77,6 +77,7 @@ export function useTrimTimelineInteractions({
   } | null>(null);
 
   const rangeRef = useRef(range);
+  const [scrubDragging, setScrubDragging] = useState(false);
   const [segmentDragging, setSegmentDragging] = useState(false);
   const [segmentSnapPoint, setSegmentSnapPoint] = useState<SegmentSnapPoint | null>(null);
   const [trimDragState, setTrimDragState] = useState<TrimDragState | null>(null);
@@ -374,6 +375,7 @@ export function useTrimTimelineInteractions({
     const bounds = trackRef.current?.getBoundingClientRect();
     if (!bounds) return;
     scrubDragRef.current = { bounds, pointerId: event.pointerId };
+    setScrubDragging(true);
     captureTarget.setPointerCapture?.(event.pointerId);
     onScrubStart();
     onScrub(scrubMicros(event.clientX, event.shiftKey, bounds));
@@ -395,6 +397,7 @@ export function useTrimTimelineInteractions({
       onScrub(scrubMicros(event.clientX, event.shiftKey, drag.bounds));
     }
     scrubDragRef.current = null;
+    setScrubDragging(false);
     onScrubEnd();
   }
 
@@ -425,6 +428,7 @@ export function useTrimTimelineInteractions({
 
   return {
     trackRef,
+    scrubDragging,
     segmentDragging,
     segmentSnapPoint,
     trimDragState,

@@ -42,7 +42,7 @@ export function SegmentDragHandle({
   const { t } = useTranslation();
   const durationMicros = range.endMicros - range.startMicros;
   return (
-    <Tooltip>
+    <Tooltip open={dragging ? false : undefined}>
       <TooltipTrigger asChild>
         <button
           aria-label={t("timeline.actions.moveSegment")}
@@ -119,7 +119,7 @@ export function TrimHandle({
       : t("timeline.accessibility.trimEnd");
 
   return (
-    <Tooltip>
+    <Tooltip open={dragging ? false : undefined}>
       <TooltipTrigger asChild>
         <button
           aria-label={label}
@@ -162,6 +162,7 @@ export function TrimHandle({
 
 export function Playhead({
   disabled = false,
+  dragging,
   frameRate,
   maximum,
   onKeyDown,
@@ -175,6 +176,7 @@ export function Playhead({
   value,
 }: {
   disabled?: boolean;
+  dragging: boolean;
   frameRate?: FrameRate;
   maximum: number;
   onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void;
@@ -189,7 +191,7 @@ export function Playhead({
 }) {
   const { t } = useTranslation();
   return (
-    <Tooltip>
+    <Tooltip open={dragging ? false : undefined}>
       <TooltipTrigger asChild>
         <button
           aria-label={t("timeline.accessibility.playbackPosition")}
@@ -200,6 +202,7 @@ export function Playhead({
             value: formatAccessibleTime(value),
           })}
           className={cn("playhead", disabled && "opacity-30", styles.playhead)}
+          data-dragging={dragging ? "true" : undefined}
           disabled={disabled}
           onKeyDown={onKeyDown}
           onLostPointerCapture={onLostPointerCapture}

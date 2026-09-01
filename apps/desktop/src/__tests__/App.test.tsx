@@ -2700,6 +2700,7 @@ describe("App", () => {
     fireEvent.play(video);
 
     fireEvent.pointerDown(playhead, { clientX: 100, pointerId: 7 });
+    expect(playhead).toHaveAttribute("data-dragging", "true");
     fireEvent.pointerMove(playhead, { clientX: 600, pointerId: 7 });
 
     await waitFor(() => expect(video.currentTime).toBe(32.5));
@@ -2712,6 +2713,7 @@ describe("App", () => {
       get: () => seeking,
     });
     fireEvent.pointerUp(playhead, { clientX: 600, pointerId: 7 });
+    expect(playhead).not.toHaveAttribute("data-dragging");
     expect(play).toHaveBeenCalledOnce();
     expect(seekAssignments).toBe(1);
     expect(measureTimeline).toHaveBeenCalledOnce();

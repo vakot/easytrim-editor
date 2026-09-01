@@ -69,6 +69,7 @@ export function TrimTimeline({
     moveScrub,
     moveSegmentDrag,
     resetBoundary,
+    scrubDragging,
     segmentDragging,
     segmentSnapPoint,
     startScrub,
@@ -156,6 +157,7 @@ export function TrimTimeline({
           />
           <Playhead
             disabled={disabled}
+            dragging={scrubDragging}
             frameRate={frameRate}
             maximum={range.sourceDurationMicros}
             onKeyDown={handlePlayheadKeyboard}
