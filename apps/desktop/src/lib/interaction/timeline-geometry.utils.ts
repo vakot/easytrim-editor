@@ -1,5 +1,3 @@
-import type { CSSProperties } from "react";
-
 import { timelinePercent, type TrimRange } from "@/domain/trim";
 
 interface TimelineGeometryVariables {
@@ -23,10 +21,6 @@ export function timelineGeometryVariables(range: TrimRange): TimelineGeometryVar
     "--timeline-trim-end-inset": `${100 - endPercent}%`,
     "--timeline-trim-center": `${centerPercent}%`,
   };
-}
-
-export function timelineGeometryStyle(range: TrimRange): CSSProperties {
-  return timelineGeometryVariables(range) as CSSProperties;
 }
 
 export function syncTimelineGeometry(element: HTMLElement | null, range: TrimRange) {
