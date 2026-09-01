@@ -16,7 +16,7 @@ const media = vi.hoisted(() => ({
 }));
 
 vi.mock("@/app/hooks/useTimeline", () => ({
-  useTimeline: () => timeline,
+  useTimelineCommands: () => timeline,
 }));
 
 vi.mock("@/lib/tauri/media", async () => {
