@@ -18,6 +18,11 @@ export async function bootstrapNativeDiagnostics(): Promise<DiagnosticsBootstrap
   return invoke<DiagnosticsBootstrap>("diagnostics_bootstrap");
 }
 
+export async function completeDiagnosticsSession(): Promise<void> {
+  if (!isTauriRuntime()) return;
+  await invoke("complete_diagnostics_session");
+}
+
 export async function persistDiagnosticEvent(event: DiagnosticEventInput): Promise<void> {
   if (!isTauriRuntime()) return;
   await invoke("record_diagnostic_event", { event });
