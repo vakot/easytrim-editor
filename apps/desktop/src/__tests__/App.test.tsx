@@ -27,7 +27,6 @@ const mocks = vi.hoisted(() => ({
   checkMediaCapabilities: vi.fn(),
   chooseSource: vi.fn(),
   activateSourcePath: vi.fn(),
-  inspectImportedMedia: vi.fn(),
   inspectMedia: vi.fn(),
   listenForSourceDrops: vi.fn(),
   prepareAudioPreviews: vi.fn(),
@@ -44,7 +43,6 @@ vi.mock("../lib/tauri/media", async (importOriginal) => {
     checkMediaCapabilities: mocks.checkMediaCapabilities,
     chooseSource: mocks.chooseSource,
     activateSourcePath: mocks.activateSourcePath,
-    inspectImportedMedia: mocks.inspectImportedMedia,
     inspectMedia: mocks.inspectMedia,
     listenForSourceDrops: mocks.listenForSourceDrops,
     prepareAudioPreviews: mocks.prepareAudioPreviews,
@@ -116,15 +114,6 @@ function getMenuTrigger(name: string) {
   return within(screen.getByRole("menubar", { name: "Application menus" })).getByRole("menuitem", {
     name,
   });
-}
-
-function createDeferred<T>() {
-  let resolve!: (value: T) => void;
-  const promise = new Promise<T>((promiseResolve) => {
-    resolve = promiseResolve;
-  });
-
-  return { promise, resolve };
 }
 
 async function waitForSourcePresence(expected: boolean) {
@@ -207,7 +196,6 @@ beforeEach(() => {
     sourcePath === replacementSelection.sourcePath ? replacementSelection : selection,
   );
   mocks.inspectMedia.mockResolvedValue(media);
-  mocks.inspectImportedMedia.mockResolvedValue(media);
   mocks.prepareAudioPreviews.mockResolvedValue([
     {
       mediaToken: 1,
@@ -443,12 +431,6 @@ describe("App", () => {
         },
       }),
     );
-    const replacementInspection = createDeferred<MediaInfo>();
-    mocks.inspectMedia.mockImplementation((sourcePath: string) =>
-      sourcePath === replacementSelection.sourcePath
-        ? replacementInspection.promise
-        : Promise.resolve(media),
-    );
     const user = userEvent.setup();
     render(<App />);
 
@@ -459,9 +441,7 @@ describe("App", () => {
     const audioPanel = document.getElementById("editor-stage-audio");
 
     await user.click(screen.getByRole("button", { name: "C:\\Media" }));
-    await user.click(
-      screen.getByRole("button", { name: new RegExp(replacementSelection.displayName) }),
-    );
+    await user.click(screen.getByRole("button", { name: replacementSelection.displayName }));
 
     expect(document.getElementById("workspace-sidebar-source-details")).toBe(detailsPanel);
     expect(document.getElementById("editor-stage-preview")).toBe(previewPanel);
@@ -469,16 +449,8 @@ describe("App", () => {
     expect(document.getElementById("editor-stage-audio")).toBe(audioPanel);
     expect(within(detailsPanel!).getByText(replacementSelection.displayName)).toBeInTheDocument();
     expect(within(detailsPanel!).getByText("1280 × 720")).toBeInTheDocument();
-    const previewContent = previewPanel!.querySelector('[data-slot="preview-content"]');
-    const previewLoadingOverlay = screen.getByTestId("preview-loading-overlay");
-    expect(previewContent).toContainElement(previewLoadingOverlay);
-    expect(previewLoadingOverlay).not.toHaveClass("fixed");
-    expect(within(previewPanel!).getByText("Opening preview…")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Selected Segment" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /^Audio tracks/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Play" })).toBeDisabled();
-
-    await act(async () => replacementInspection.resolve(replacementMedia));
 
     await waitFor(() => {
       expect(screen.queryByTestId("preview-loading-overlay")).not.toBeInTheDocument();

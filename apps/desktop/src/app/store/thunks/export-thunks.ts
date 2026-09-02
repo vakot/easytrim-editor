@@ -1,7 +1,6 @@
 import {
   cancelActiveExport,
   cancelAllQueuedExports,
-  cancelQueuedExport,
   enqueueExport,
   setExportQueueExecutionEnabled,
 } from "@/app/store/integration/export-queue-runtime";
@@ -14,13 +13,10 @@ import {
 import { selectCrop, selectCropApplied, selectCropResolution } from "@/app/store/slices/crop-slice";
 import {
   editingInstanceExportAttemptQueued,
-  editingInstanceExportHistoryCleared,
   editingInstanceOptimizedSettingsChanged,
-  editingInstancesSourceAvailabilityChanged,
   selectActiveEditingInstance,
   selectActiveInstanceId,
   selectEditingInstanceAttempts,
-  selectEditingInstanceById,
   selectHasProcessableExports,
 } from "@/app/store/slices/editing-instances-slice";
 import {
@@ -51,14 +47,12 @@ import {
   planOptimizedExport,
   releaseExportSource,
   reserveExportSource,
-  restoreSourceFromTrash,
 } from "@/lib/tauri/media";
 import type { FastExportRequest, OptimizedExportRequest } from "@/lib/tauri/media.types";
 import { normalizeAppError } from "@/lib/tauri/media.utils";
 import { availableQueueFinishActions } from "@/lib/tauri/queue";
 
 import type { AppThunk } from "./source-media-thunks";
-import { navigateToEditingInstance } from "./source-media-thunks";
 
 let optimizedPlanRequestSequence = 0;
 let exportAttemptSequence = 0;
@@ -106,18 +100,6 @@ export const cancelActiveExportRequested = (): AppThunk => (_dispatch, getState)
 export const cancelAllExportsRequested = (): AppThunk => (_dispatch, getState) => {
   void cancelAllQueuedExports(getState);
 };
-
-export const cancelExportRequested =
-  (instanceId: string, attemptId: string): AppThunk =>
-  (_dispatch, getState) => {
-    void cancelQueuedExport(instanceId, attemptId, getState);
-  };
-
-export const clearExportHistoryRequested =
-  (instanceId?: string): AppThunk =>
-  (dispatch) => {
-    dispatch(editingInstanceExportHistoryCleared(instanceId));
-  };
 
 export const openOptimizedExportDialog =
   (origin: DiagnosticOrigin = { id: "optimized", type: "button" }): AppThunk =>
@@ -340,31 +322,3 @@ function getTotalFrames(
     ),
   );
 }
-
-export const restoreEditingInstanceRequested =
-  (id: string): AppThunk<Promise<boolean>> =>
-  async (dispatch, getState) => {
-    if (!selectEditingInstanceById(getState(), id)) return false;
-    return dispatch(navigateToEditingInstance(id));
-  };
-
-export const restoreEditingInstanceSourceRequested =
-  (request: {
-    instanceId?: string;
-    origin?: DiagnosticOrigin;
-    sourcePath: string;
-  }): AppThunk<Promise<boolean>> =>
-  async (dispatch) => {
-    try {
-      await restoreSourceFromTrash(request.sourcePath);
-      dispatch(
-        editingInstancesSourceAvailabilityChanged({
-          availability: "available",
-          sourcePath: request.sourcePath,
-        }),
-      );
-      return true;
-    } catch {
-      return false;
-    }
-  };

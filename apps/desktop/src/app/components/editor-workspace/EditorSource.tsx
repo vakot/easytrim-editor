@@ -75,7 +75,6 @@ export function EditorSource() {
           <DropdownMenuGroup>
             <DropdownMenuCheckboxItem
               checked={panels["workspace-sidebar-source-details"]}
-              disabled
               keepOpen
               onCheckedChange={(checked) =>
                 handlePanelChange("workspace-sidebar-source-details", checked === true)
@@ -94,6 +93,7 @@ export function EditorSource() {
             </DropdownMenuCheckboxItem>
             <DropdownMenuCheckboxItem
               checked={panels["workspace-sidebar-explorer"]}
+              disabled
               keepOpen
               onCheckedChange={(checked) =>
                 handlePanelChange("workspace-sidebar-explorer", checked === true)
@@ -120,18 +120,22 @@ export function EditorSource() {
       </DropdownMenu>
 
       <ResizablePanelGroup id="workspace-sidebar-content" orientation="vertical" persisted>
-        {panels["workspace-sidebar-source-details"] && <SourceDetailsPanel isSingle={isSingle} />}
+        {panels["workspace-sidebar-source-details"] && (
+          <>
+            <SourceDetailsPanel isSingle={isSingle} />
+            <ResizableHandle className="bg-foreground/10" />
+          </>
+        )}
 
         {panels["workspace-sidebar-active-sources"] && (
           <>
-            <ResizableHandle className="bg-foreground/10" />
             <SourceTabsPanel isSingle={isSingle} />
+            <ResizableHandle className="bg-foreground/10" />
           </>
         )}
 
         {panels["workspace-sidebar-explorer"] && (
           <>
-            <ResizableHandle className="bg-foreground/10" />
             <SourceTreePanel />
           </>
         )}
@@ -152,6 +156,7 @@ function SourceDetailsPanel({ isSingle = false }: SourcePanelProps) {
       className="flex min-h-0 flex-col overflow-hidden"
       collapsedSize={PANEL_COLLAPSED_SIZE}
       collapsible
+      defaultSize={0}
       id="workspace-sidebar-source-details"
       minSize={PANEL_MIN_SIZE}
     >
@@ -232,7 +237,6 @@ function SourceTreePanel({ isSingle = false }: SourcePanelProps) {
       className="flex min-h-0 flex-col overflow-hidden"
       collapsedSize={PANEL_COLLAPSED_SIZE}
       collapsible
-      defaultSize={0}
       id="workspace-sidebar-explorer"
       minSize={PANEL_MIN_SIZE}
     >

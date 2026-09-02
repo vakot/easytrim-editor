@@ -41,7 +41,6 @@ import {
   selectQueueFinishAction,
   selectQueueStarted,
 } from "@/app/store/slices/export-slice";
-import { selectEditingInstanceAttempts } from "@/app/store/slices/editing-instances-slice";
 import {
   preferenceChanged,
   selectDeleteSourceOnRenderFinish,

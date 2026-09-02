@@ -12,7 +12,6 @@ export const en = {
     },
     labels: { brand: "EasyTrim Editor" },
     status: {
-      empty: "Empty",
       disabled: "Disabled",
       enabled: "Enabled",
       error: "Error",
@@ -158,23 +157,14 @@ export const en = {
   queue: {
     actions: {
       cancel: "Cancel",
-      next: "Next",
-      previous: "Previous",
       skip: "Skip",
       start: "Start queue",
     },
     labels: {
       deleteSource: "Delete source",
-      export: "Export queue",
       import: "Import queue",
       onFinish: "On queue finished",
       title: "Queue",
-    },
-    status: {
-      canceled: "Canceled",
-      failed: "Failed",
-      queued: "Queued",
-      sourceDeleted: "Source deleted",
     },
     tooltips: {
       deleteSourceOnRenderFinish: "Delete the source after a successful render",
@@ -191,12 +181,7 @@ export const en = {
       },
     },
     accessibility: {
-      cancelItem: "Cancel {{filename}}",
-      openLocation: "Open {{filename}} location",
       progress: "Export progress",
-      deleteSource: "Delete {{filename}} from device",
-      removeImportItem: "Remove {{filename}} from import queue",
-      restoreItem: "Restore {{filename}}",
     },
     options: {
       finish: {

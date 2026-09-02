@@ -239,8 +239,6 @@ export const {
 export const editingInstancesReducer = editingInstancesSlice.reducer;
 
 const selectEditingInstancesState = (state: RootState) => state.editingInstances;
-export const selectEditingInstanceIds = (state: RootState) =>
-  selectEditingInstancesState(state).ids;
 export const selectEditingInstances = createSelector([selectEditingInstancesState], (state) =>
   state.ids
     .map((id) => state.entities[id])
@@ -252,10 +250,6 @@ export const selectEditingInstanceById = (state: RootState, id: EditingInstanceI
   selectEditingInstancesState(state).entities[id];
 export const selectActiveEditingInstance = createSelector([selectEditingInstancesState], (state) =>
   state.activeInstanceId ? state.entities[state.activeInstanceId] : undefined,
-);
-export const selectActiveEditingInstanceSnapshot = createSelector(
-  [selectActiveEditingInstance],
-  (instance) => instance?.snapshot,
 );
 export const selectEditingInstanceAttempts = createSelector([selectEditingInstances], (instances) =>
   instances.flatMap((instance) => instancesToAttempts(instance)),

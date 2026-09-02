@@ -45,18 +45,3 @@ export function resolveEditorSnapshotTrim(
 
   return { ...trim, sourceDurationMicros };
 }
-
-export function editorSnapshotTrimStart(trim: EditorSnapshot["trim"]): number {
-  return "kind" in trim ? 0 : trim.startMicros;
-}
-
-export function cloneEditorSnapshot(snapshot: EditorSnapshot): EditorSnapshot {
-  return createEditorSnapshot({
-    source: snapshot.source,
-    trim: snapshot.trim,
-    crop: snapshot.crop,
-    masterAudio: snapshot.audio.master,
-    audioTracks: snapshot.audio.tracks,
-    mergeAudio: snapshot.audio.mergeAudio,
-  });
-}
