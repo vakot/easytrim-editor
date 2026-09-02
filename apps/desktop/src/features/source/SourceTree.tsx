@@ -153,6 +153,7 @@ function SourceTreeInstance({
       >
         <Button
           aria-current={selected ? "true" : undefined}
+          aria-label={instance.snapshot.source.displayName}
           className="min-w-0 flex-1 justify-between overflow-hidden text-muted-foreground! transition-none group-focus-within:text-foreground! group-hover:bg-muted group-hover:text-foreground! dark:group-hover:bg-muted/50 data-open:text-foreground!"
           data-open={selected ? "true" : undefined}
           onClick={() => void dispatch(navigateToEditingInstance(instance.id))}

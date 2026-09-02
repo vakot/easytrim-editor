@@ -23,7 +23,6 @@ import { selectCrop } from "@/app/store/slices/crop-slice";
 import {
   activeEditingInstanceChanged,
   editingInstanceClosed,
-  editingInstanceDuplicated,
   editingInstancesAdded,
   editingInstanceSnapshotUpdated,
   editingInstancesSourceAvailabilityChanged,
@@ -50,11 +49,7 @@ import {
 import { selectTrim } from "@/app/store/slices/trim-slice";
 import type { AppDispatch, RootState } from "@/app/store/store";
 import type { EditingInstance } from "@/domain/editing-instance";
-import {
-  cloneEditorSnapshot,
-  createEditorSnapshot,
-  type EditorSnapshot,
-} from "@/domain/editor-snapshot";
+import { createEditorSnapshot, type EditorSnapshot } from "@/domain/editor-snapshot";
 import type { SourceRef } from "@/domain/source";
 import { type DiagnosticOperation, diagnostics } from "@/lib/diagnostics";
 import type { DiagnosticOrigin } from "@/lib/tauri/diagnostics.types";
@@ -165,37 +160,6 @@ function normalizeSourceImportResult(input: SourceImportResult | SourceRef[]): S
   }
   return input;
 }
-
-export const duplicateEditingInstanceRequested =
-  (id?: string): AppThunk<string | null> =>
-  (dispatch, getState) => {
-    const state = getState();
-    const source = id ? selectEditingInstanceById(state, id) : selectActiveEditingInstance(state);
-    if (!source) return null;
-
-    let duplicateId: string;
-    do {
-      duplicateId = `instance-${++editingInstanceSequence}`;
-    } while (selectEditingInstanceById(getState(), duplicateId));
-
-    const duplicate: EditingInstance = {
-      exportAttempts: [],
-      id: duplicateId,
-      media: source.media ? structuredClone(source.media) : undefined,
-      optimizedSettings: source.optimizedSettings
-        ? structuredClone(source.optimizedSettings)
-        : undefined,
-      origin: "duplicate",
-      snapshot: cloneEditorSnapshot(source.snapshot),
-      sourceAvailability: source.sourceAvailability,
-    };
-
-    dispatch(editingInstanceDuplicated(duplicate));
-    dispatch(
-      navigateToEditingInstance(duplicate.id, { id: "source.instance-duplicate", type: "button" }),
-    );
-    return duplicate.id;
-  };
 
 function importResultData(result: SourceImportResult): Record<string, boolean | number | string> {
   return {

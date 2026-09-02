@@ -1,6 +1,5 @@
 import type {
   AppError,
-  ExportProgress,
   ExportResult,
   FastExportRequest,
   FrameRate,
@@ -95,17 +94,4 @@ export function createExportAttempt(input: {
     snapshot: structuredClone(input.snapshot),
     state: { queuedAt: input.capturedAt, status: "queued" },
   };
-}
-
-export function isActiveExportAttempt(attempt: ExportAttempt): boolean {
-  return attempt.state.status === "queued" || attempt.state.status === "rendering";
-}
-
-export function isTerminalExportAttempt(attempt: ExportAttempt): boolean {
-  return !isActiveExportAttempt(attempt);
-}
-
-export function updateAttemptProgress(attempt: ExportAttempt, progress: ExportProgress) {
-  if (attempt.state.status !== "rendering") return;
-  attempt.state.operationId = progress.operationId;
 }

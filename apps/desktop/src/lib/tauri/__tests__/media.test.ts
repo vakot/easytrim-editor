@@ -18,7 +18,6 @@ vi.mock("@tauri-apps/api/webview", () => ({
 import {
   activateSourcePath,
   chooseSource,
-  inspectImportedMedia,
   inspectMedia,
   listenForSourceDrops,
   moveSourceToTrash,
@@ -156,22 +155,6 @@ describe("media IPC adapter", () => {
     await expect(inspectMedia("C:/Media/clip.mp4")).rejects.toEqual({
       code: "internal",
       message: "The native application returned an invalid duration.",
-    });
-  });
-
-  it("inspects queued metadata without using the active-source command", async () => {
-    mocks.invoke.mockResolvedValue({
-      formatName: "matroska",
-      durationMicros: 1_000_000,
-      video: { streamIndex: 0, codecName: "h264", width: 1280, height: 720 },
-      audioStreams: [],
-      chapters: [],
-    });
-
-    await inspectImportedMedia("C:/Media/queued.mkv");
-
-    expect(mocks.invoke).toHaveBeenCalledWith("inspect_imported_media", {
-      sourcePath: "C:/Media/queued.mkv",
     });
   });
 
