@@ -10,6 +10,7 @@ import {
 import type { PropsWithChildren } from "react";
 import { useTranslation } from "react-i18next";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -27,6 +28,7 @@ import {
   restoreSourceFileRequested,
 } from "@/app/store/thunks/source-media-thunks";
 import type { EditingInstance } from "@/domain/editing-instance";
+import { cn } from "@/lib/class-names.utils";
 
 import { DeleteSourceDialog, DeleteSourceDialogTrigger } from "./components/DeleteSourceDialog";
 import { SourceDetails } from "./components/SourceDetails";
@@ -196,9 +198,9 @@ function SourceTreeInstance({
       : (attempt?.state.status ?? (instance.media ? "ready" : undefined));
 
   const statusLabel =
-    status === "completed" && attempt?.state.status === "completed"
-      ? `completed · ${attempt.state.result.displayName}`
-      : status;
+    status === "completed" && attempt?.state.status === "completed" ? "completed" : status;
+
+  const isLoading = status === "rendering";
 
   return (
     <div
@@ -206,7 +208,7 @@ function SourceTreeInstance({
       data-open={selected}
     >
       <Button
-        className="min-w-0 flex-1 justify-between overflow-hidden text-muted-foreground! transition-none group-focus-within:pr-4 group-focus-within:text-foreground! group-hover:bg-muted group-hover:pr-4 group-hover:text-foreground! dark:group-hover:bg-muted/50"
+        className="min-w-0 flex-1 justify-between overflow-hidden text-muted-foreground! transition-none group-focus-within:pr-12 group-focus-within:text-foreground! group-hover:bg-muted group-hover:pr-12 group-hover:text-foreground! dark:group-hover:bg-muted/50"
         onClick={() => onSelect(instance.id)}
         size="xs"
         variant="ghost"
@@ -217,7 +219,14 @@ function SourceTreeInstance({
         </span>
 
         {statusLabel ? (
-          <SourceTreeStatus title={statusLabel}>{statusLabel}</SourceTreeStatus>
+          <SourceTreeStatus className={isLoading ? "shimmer" : undefined} title={statusLabel}>
+            <Badge
+              className="h-4 text-[10px] text-muted-foreground transition-none"
+              variant="outline"
+            >
+              {statusLabel}
+            </Badge>
+          </SourceTreeStatus>
         ) : null}
       </Button>
 
@@ -288,10 +297,17 @@ function SourceTreeActionGroup({
   );
 }
 
-function SourceTreeStatus({ children, title }: PropsWithChildren<{ title?: string }>) {
+function SourceTreeStatus({
+  children,
+  className,
+  title,
+}: PropsWithChildren<{ className?: string; title?: string }>) {
   return (
     <span
-      className="shrink-0 text-[10px] text-muted-foreground group-focus-within:invisible group-hover:invisible"
+      className={cn(
+        "shrink-0 text-[10px] text-muted-foreground group-focus-within:invisible group-hover:invisible",
+        className,
+      )}
       title={title}
     >
       {children}
