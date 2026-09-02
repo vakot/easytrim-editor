@@ -48,6 +48,12 @@ listener cleanup are idempotent, partial failures remain observable, and queued 
 reserved source resources until released. Source replacement resets source-bound state while
 retaining only intentionally broader defaults or presets.
 
+Open editor sessions use the single `editingInstances` slice. It owns stable instance IDs, current
+snapshots, per-instance settings, source availability, and serializable export-attempt history.
+Attempt requests and snapshots are captured at launch, while transient source/trim/crop/audio
+slices remain the active working view. The runtime owns native job handles; Redux records lifecycle
+state keyed by `(instanceId, attemptId)`. See [Editing instance lifecycle](editing-instance-lifecycle.md).
+
 Do not dispatch on every video frame, pointer movement, animation tick, or audio-graph update.
 High-frequency synchronization stays in local state or refs unless a reviewed cross-feature need
 establishes otherwise.

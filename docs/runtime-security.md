@@ -26,6 +26,13 @@ Associate each child with a source or operation ID before publishing progress. C
 idempotent: terminate, await exit, emit one terminal state, and clean temporary artifacts. Report
 success only after a successful exit and an expected/probed output.
 
+At the frontend/runtime boundary, an export job is keyed by `attemptId` and carries its owning
+`instanceId`; the captured request is immutable for the job lifetime. `operationId` identifies the
+native process and `outputId` identifies the user-selected destination. Close-instance flows await
+job cancellation and source-release cleanup before removing the Redux instance. See [Editing
+instance lifecycle](editing-instance-lifecycle.md) for the complete correlation and lifecycle
+contract.
+
 ## Paths and temporary artifacts
 
 Create one collision-safe session temporary root with source/operation subdirectories. Proxies and

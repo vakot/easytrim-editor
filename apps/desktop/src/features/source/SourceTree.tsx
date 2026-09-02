@@ -1,52 +1,70 @@
-import { ChevronRightIcon, FileVideo, Folder, FolderOpen } from "lucide-react";
+import { ChevronRightIcon, FileVideo, Folder, FolderOpen, RotateCcw, Trash2, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-import type { ImportQueueItem } from "@/app/store/slices/export-slice";
-
-import { useImportQueue } from "./hooks/useImportQueue";
+import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
+import {
+  selectActiveInstanceId,
+  selectEditingInstances,
+} from "@/app/store/slices/editing-instances-slice";
+import {
+  closeActiveEditingInstanceRequested,
+  deleteActiveEditingInstanceSourceRequested,
+  navigateToEditingInstance,
+  restoreSourceFileRequested,
+} from "@/app/store/thunks/source-media-thunks";
 import { formatSourcePath } from "./lib/media-formatters.utils";
+import { SourceDetails } from "./components/SourceDetails";
+import type { EditingInstance } from "@/domain/editing-instance";
 
-type SourceTreeNode = SourceTreeFolderNode | SourceTreeSnapshotNode;
+type SourceTreeNode =
+  | { children: SourceTreeNode[]; id: string; kind: "folder"; name: string }
+  | { instance: EditingInstance; kind: "instance" };
 
-type SourceTreeFolderNode = {
-  children: SourceTreeNode[];
-  id: string;
-  name: string;
+type SourceTreeActions = {
+  onClose: (id: string) => void;
+  onDelete: (id: string) => void;
+  onRestore: (sourcePath: string) => void;
+  onSelect: (id: string) => void;
+  value: string;
 };
-
-type SourceTreeSnapshotNode = ImportQueueItem["snapshot"] & Pick<ImportQueueItem, "id">;
 
 export function SourceTree() {
   const { t } = useTranslation();
-
-  const { activeItem, items, open } = useImportQueue();
-
-  const handleSelect = (snapshotNode: SourceTreeSnapshotNode) => {
-    console.log(snapshotNode);
-    open(snapshotNode.id);
-  };
+  const dispatch = useAppDispatch();
+  const instances = useAppSelector(selectEditingInstances);
+  const activeInstanceId = useAppSelector(selectActiveInstanceId);
 
   return (
-    <aside aria-label={t("source.labels.title")} className="flex size-full flex-col pt-3">
-      <h3
-        className="mx-3 font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
-        id="source-panel-title"
-      >
+    <aside aria-label={t("source.labels.title")} className="flex size-full min-h-0 flex-col pt-3">
+      <h3 className="mx-3 font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase" id="source-panel-title">
         {t("source.labels.title")}
       </h3>
-      <ScrollArea>
-        <div className="flex flex-1 flex-col gap-1 p-1">
+      <ScrollArea className="min-h-0 flex-1">
+        <div className="flex flex-col gap-1 p-1">
           <SourceTreeNodes
-            nodes={getSourceTreeNodes(items)}
-            onSelect={handleSelect}
-            value={activeItem?.id ?? ""}
+            nodes={getSourceTreeNodes(instances)}
+            onClose={(id) => void dispatch(closeActiveEditingInstanceRequested(id))}
+            onDelete={(id) => void dispatch(deleteActiveEditingInstanceSourceRequested(id))}
+            onRestore={(path) => void dispatch(restoreSourceFileRequested({ sourcePath: path }))}
+            onSelect={(id) => void dispatch(navigateToEditingInstance(id))}
+            value={activeInstanceId ?? ""}
           />
         </div>
       </ScrollArea>
+      <section
+        aria-labelledby="source-details-title"
+        className="min-h-0 flex-1 overflow-auto border-t border-border/55 px-3 pt-2"
+        id="workspace-sidebar-source-details"
+      >
+        <h4 className="mb-1 text-xs font-semibold text-foreground" id="source-details-title">
+          {t("source.labels.mediaDetails")}
+        </h4>
+        <SourceDetails />
+      </section>
     </aside>
   );
 }
@@ -54,182 +72,96 @@ export function SourceTree() {
 function SourceTreeNodes({
   level = 0,
   nodes,
+  onClose,
+  onDelete,
+  onRestore,
   onSelect,
   value,
-}: {
-  level?: number;
-  nodes: SourceTreeNode[];
-  onSelect?: (snapshotNode: SourceTreeSnapshotNode) => void;
-  value: string;
-}) {
-  return (
-    <>
-      {nodes.map((node) => (
-        <SourceTreeNodeItem
-          key={node.id}
-          level={level}
-          node={node}
-          onSelect={onSelect}
-          value={value}
-        />
-      ))}
-    </>
+}: { level?: number; nodes: SourceTreeNode[] } & SourceTreeActions) {
+  return nodes.map((node) =>
+    node.kind === "folder" ? (
+      <SourceTreeFolder key={node.id} level={level} node={node} onClose={onClose} onDelete={onDelete} onRestore={onRestore} onSelect={onSelect} value={value} />
+    ) : (
+      <SourceTreeInstance key={node.instance.id} instance={node.instance} level={level} onClose={onClose} onDelete={onDelete} onRestore={onRestore} onSelect={onSelect} selected={value === node.instance.id} />
+    ),
   );
 }
 
-interface SourceTreeNodeProps<T = SourceTreeNode> {
-  level: number;
-  node: T;
-  onSelect?: (snapshot: SourceTreeSnapshotNode) => void;
-  value: string;
-}
-
-const SOURCE_TREE_NODE_OFFSET = 2;
-
-function SourceTreeNodeItem({ level = 0, node, onSelect, value }: SourceTreeNodeProps) {
-  if ("children" in node) {
-    return <SourceTreeFolder level={level} node={node} onSelect={onSelect} value={value} />;
-  }
-
-  return (
-    <SourceTreeSnapshot
-      level={level}
-      node={node as SourceTreeSnapshotNode}
-      onSelect={onSelect}
-      value={value}
-    />
-  );
-}
-
-function SourceTreeSnapshot({
-  level = 0,
-  node,
-  onSelect,
-  value,
-}: SourceTreeNodeProps<SourceTreeSnapshotNode>) {
-  const isSelected = value === node.id;
-
-  return (
-    <Button
-      className="w-full justify-start overflow-hidden text-muted-foreground!"
-      data-open={isSelected}
-      onClick={() => onSelect?.(node)}
-      size="xs"
-      variant="ghost"
-    >
-      <div
-        className="flex w-full items-center gap-1"
-        style={{ paddingLeft: level * SOURCE_TREE_NODE_OFFSET * 4 + 16 }}
-      >
-        <FileVideo />
-        <span className="truncate">{node.source.displayName}</span>
-      </div>
-    </Button>
-  );
-}
-
-function SourceTreeFolder({
-  level = 0,
-  node,
-  onSelect,
-  value,
-}: SourceTreeNodeProps<SourceTreeFolderNode>) {
+function SourceTreeFolder({ level, node, ...props }: { level: number; node: Extract<SourceTreeNode, { kind: "folder" }> } & SourceTreeActions) {
   return (
     <Collapsible className="w-full">
       <CollapsibleTrigger asChild>
-        <Button
-          className="group w-full justify-start data-open:bg-transparent"
-          size="sm"
-          variant="ghost"
-        >
-          <div
-            className="flex w-full items-center gap-1"
-            style={{ paddingLeft: level * SOURCE_TREE_NODE_OFFSET * 4 }}
-          >
-            <ChevronRightIcon className="group-data-[state=open]:rotate-90" />
-            <Folder className="group-data-[state=open]:hidden" />
-            <FolderOpen className="group-data-[state=closed]:hidden" />
+        <Button className="group w-full min-w-0 justify-start data-open:bg-transparent" size="sm" variant="ghost">
+          <div className="flex min-w-0 w-full items-center gap-1" style={{ paddingLeft: level * 8 }}>
+            <ChevronRightIcon className="shrink-0 group-data-[state=open]:rotate-90" />
+            <Folder className="shrink-0 group-data-[state=open]:hidden" />
+            <FolderOpen className="hidden shrink-0 group-data-[state=open]:block" />
             <span className="truncate">{node.name}</span>
           </div>
         </Button>
       </CollapsibleTrigger>
       <CollapsibleContent>
-        <SourceTreeNodes
-          level={level + 1}
-          nodes={node.children}
-          onSelect={onSelect}
-          value={value}
-        />
+        <SourceTreeNodes {...props} level={level + 1} nodes={node.children} />
       </CollapsibleContent>
     </Collapsible>
   );
 }
 
-function getSourceTreeNodes(items: ImportQueueItem[]): SourceTreeNode[] {
-  if (items.length === 0) return [];
+function SourceTreeInstance({ instance, level, onClose, onDelete, onRestore, onSelect, selected }: { instance: EditingInstance; level: number; onClose: (id: string) => void; onDelete: (id: string) => void; onRestore: (sourcePath: string) => void; onSelect: (id: string) => void; selected: boolean }) {
+  const attempt = instance.exportAttempts.at(-1);
+  const status = instance.sourceAvailability === "deleted" ? "deleted" : attempt?.state.status ?? "ready";
+  const statusLabel = status === "completed" && attempt?.state.status === "completed" ? `completed · ${attempt.state.result.displayName}` : status;
 
-  const entries = items.map((item) => ({
-    item,
-    directories: getPathDirectories(formatSourcePath(item.snapshot.source.sourcePath)),
-  }));
+  return (
+    <div className="flex min-w-0 items-center gap-1 rounded-md pr-1" data-open={selected}>
+      <Button className="min-w-0 flex-1 justify-start overflow-hidden text-muted-foreground!" onClick={() => onSelect(instance.id)} size="xs" variant="ghost">
+        <span className="flex min-w-0 items-center gap-1" style={{ paddingLeft: level * 8 + 16 }}>
+          <FileVideo className="shrink-0" />
+          <span className="truncate">{instance.snapshot.source.displayName}</span>
+          <span className="shrink-0 text-[10px] text-muted-foreground" title={statusLabel}>{statusLabel}</span>
+        </span>
+      </Button>
+      {instance.sourceAvailability === "deleted" ? (
+        <Button aria-label="Restore source" onClick={() => onRestore(instance.snapshot.source.sourcePath)} size="icon-2xs" type="button" variant="ghost"><RotateCcw aria-hidden="true" /></Button>
+      ) : (
+        <Button aria-label="Delete source" onClick={() => onDelete(instance.id)} size="icon-2xs" type="button" variant="ghost"><Trash2 aria-hidden="true" /></Button>
+      )}
+      <Button aria-label="Close editing instance" onClick={() => onClose(instance.id)} size="icon-2xs" type="button" variant="ghost"><X aria-hidden="true" /></Button>
+    </div>
+  );
+}
 
+function getSourceTreeNodes(instances: EditingInstance[]): SourceTreeNode[] {
+  if (instances.length === 0) return [];
+  const entries = instances.map((instance) => ({ directories: getPathDirectories(formatSourcePath(instance.snapshot.source.sourcePath)), instance }));
   const commonDepth = getCommonPathDepth(entries.map(({ directories }) => directories));
-
-  const rootPath = entries[0]!.directories.slice(0, commonDepth).join("\\");
-
-  const root: SourceTreeFolderNode = {
-    id: `folder:${rootPath}`,
-    name: rootPath,
-    children: [],
-  };
-
-  for (const { directories, item } of entries) {
-    let children = root.children;
+  const rootPath = entries[0]?.directories.slice(0, commonDepth).join("\\") ?? "";
+  const roots: SourceTreeNode[] = [];
+  const rootFolder = commonDepth > 0 ? { children: [], id: `folder:${rootPath}`, kind: "folder" as const, name: rootPath } : undefined;
+  if (rootFolder) roots.push(rootFolder);
+  for (const { directories, instance } of entries) {
+    let children: SourceTreeNode[] = rootFolder ? rootFolder.children : roots;
     let currentPath = rootPath;
-
     for (const directory of directories.slice(commonDepth)) {
-      currentPath = `${currentPath}\\${directory}`;
-
-      let folder = children.find(
-        (node): node is SourceTreeFolderNode =>
-          "children" in node && node.id === `folder:${currentPath}`,
-      );
-
+      currentPath = currentPath ? `${currentPath}\\${directory}` : directory;
+      let folder = children.find((node): node is Extract<SourceTreeNode, { kind: "folder" }> => node.kind === "folder" && node.id === `folder:${currentPath}`);
       if (!folder) {
-        folder = {
-          id: `folder:${currentPath}`,
-          name: directory,
-          children: [],
-        };
-
+        folder = { children: [], id: `folder:${currentPath}`, kind: "folder", name: directory };
         children.push(folder);
       }
-
       children = folder.children;
     }
-
-    children.push({
-      ...item.snapshot,
-      id: item.id,
-    });
+    children.push({ instance, kind: "instance" });
   }
-
-  return [root];
+  return roots;
 }
 
-function getPathDirectories(path: string) {
-  return path.split(/[\\/]/).slice(0, -1);
-}
+function getPathDirectories(path: string) { return path.split(/[\\/]/).slice(0, -1); }
 
 function getCommonPathDepth(paths: string[][]) {
   const first = paths[0];
   if (!first) return 0;
-
   let depth = 0;
-
-  while (depth < first.length && paths.every((path) => path[depth] === first[depth])) {
-    depth++;
-  }
-
+  while (depth < first.length && paths.every((path) => path[depth] === first[depth])) depth++;
   return depth;
 }

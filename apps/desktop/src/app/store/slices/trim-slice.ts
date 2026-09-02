@@ -1,6 +1,6 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
-import { importQueueItemActivated } from "@/app/store/actions/imported-queue-actions";
+import { editingInstanceActivated } from "@/app/store/actions/editing-instance-actions";
 import { sourceCleared, sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
 import { resolveEditorSnapshotTrim } from "@/domain/editor-snapshot";
 import { createFullTrimRange, isValidTrimRange, type TrimRange } from "@/domain/trim";
@@ -28,7 +28,7 @@ const trimSlice = createSlice({
       .addCase(sourceSelected, (state) => {
         state.value = null;
       })
-      .addCase(importQueueItemActivated, (state, action) => {
+      .addCase(editingInstanceActivated, (state, action) => {
         const { media } = action.payload;
         state.value = media
           ? resolveEditorSnapshotTrim(action.payload.snapshot.trim, media.durationMicros)

@@ -4,11 +4,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 
-import type { ExportQueueItem } from "@/app/store/slices/export-slice";
-
 const mocks = vi.hoisted(() => ({
+  activeAttempt: null as unknown,
   installUpdate: vi.fn(),
-  queue: [] as ExportQueueItem[],
   requestWindowShutdown: vi.fn(),
   status: "idle" as "available" | "idle",
   availableVersion: null as string | null,
@@ -27,7 +25,7 @@ vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 vi.mock("@/app/store/redux-hooks", () => ({
-  useAppSelector: () => mocks.queue,
+  useAppSelector: () => mocks.activeAttempt,
 }));
 vi.mock("@/lib/tauri/window", () => ({
   requestWindowShutdown: mocks.requestWindowShutdown,
@@ -35,39 +33,7 @@ vi.mock("@/lib/tauri/window", () => ({
 
 import { StatusBar } from "../StatusBar";
 
-function exportToast(overrides: Partial<ExportQueueItem>): ExportQueueItem {
-  return {
-    addedAt: 1,
-    id: "export-1",
-    snapshot: {
-      source: { displayName: "source.mp4", sourcePath: "C:/Media/source.mp4" },
-      trim: { startMicros: 0, endMicros: 1_000_000 },
-      crop: null,
-      audio: { master: { enabled: true, volumePercent: 50 }, tracks: [], mergeAudio: false },
-    },
-    route: "optimized",
-    request: {
-      sourcePath: "C:/Media/source.mp4",
-      trim: { startMicros: 0, endMicros: 1_000_000 },
-      audioTracks: [],
-      mergeAudio: false,
-      resolution: { width: 1920, height: 1080 },
-      arguments: "",
-    },
-    outputId: "output-1",
-    operationId: "operation-1",
-    filename: "clip.mp4",
-    path: "C:/Exports/clip.mp4",
-    status: "rendering",
-    startedAt: 1_000,
-    durationMs: 1_000,
-    progressPercent: 42,
-    ...overrides,
-  };
-}
-
-function renderQueue(queue: ExportQueueItem[]) {
-  mocks.queue = queue;
+function renderStatusBar() {
   return render(
     <TooltipProvider>
       <StatusBar />
@@ -75,19 +41,42 @@ function renderQueue(queue: ExportQueueItem[]) {
   );
 }
 
+function renderingAttempt() {
+  return {
+    attempt: {
+      id: "attempt-1",
+      output: { displayName: "clip.mp4", displayPath: "C:/Exports/clip.mp4", outputId: "output-1" },
+      metrics: {
+        bitrate: "1200 kbits/s",
+        currentFrame: 42,
+        estimatedElapsedTimeMs: 500,
+        estimatedFileSizeBytes: 2_000_000,
+        estimatedTotalTimeMs: 1_000,
+        fileSizeBytes: 1_000_000,
+        fps: 60,
+        progressPercent: 42,
+        totalFrames: 100,
+        durationMs: 100,
+      },
+      state: { operationId: "operation-1", startedAt: 1, status: "rendering" },
+    },
+    instance: { id: "instance-1" },
+  };
+}
+
 describe("StatusBar", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.activeAttempt = null;
     mocks.status = "idle";
     mocks.availableVersion = null;
-    mocks.queue = [];
   });
 
   it("routes an available update through the shutdown confirmation", async () => {
     const user = userEvent.setup();
     mocks.status = "available";
     mocks.availableVersion = "2.0.0";
-    renderQueue([]);
+    renderStatusBar();
 
     await user.click(screen.getByRole("button", { name: "app.actions.update" }));
 
@@ -95,72 +84,19 @@ describe("StatusBar", () => {
     expect(mocks.installUpdate).not.toHaveBeenCalled();
   });
 
-  it("does not show a completed export while a newer item is queued", () => {
-    const completed = exportToast({ status: "completed", progressPercent: 96 });
-    const queued = exportToast({
-      id: "export-2",
-      operationId: null,
-      status: "queued",
-      startedAt: null,
-      durationMs: null,
-    });
+  it("shows progress only for the currently rendering attempt", () => {
+    const { rerender } = renderStatusBar();
+    expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
 
-    renderQueue([completed, queued]);
-
-    expect(screen.queryByText("clip.mp4")).not.toBeInTheDocument();
-  });
-
-  it("clears the status bar while waiting for the next export to start", () => {
-    const completed = exportToast({
-      status: "completed",
-      filename: "finished.mp4",
-      path: "C:/Exports/finished.mp4",
-      currentFrame: 8,
-      totalFrames: 8,
-    });
-
-    const { rerender } = renderQueue([completed]);
-
-    mocks.queue = [exportToast({ status: "queued", startedAt: null })];
+    mocks.activeAttempt = renderingAttempt();
     rerender(
       <TooltipProvider>
         <StatusBar />
       </TooltipProvider>,
     );
-    expect(screen.queryByText("finished.mp4")).not.toBeInTheDocument();
 
-    mocks.queue = [
-      exportToast({
-        id: "export-2",
-        operationId: "operation-2",
-        filename: "next.mp4",
-        path: "C:/Exports/next.mp4",
-        status: "rendering",
-        startedAt: 2_000,
-        currentFrame: 2,
-        totalFrames: 10,
-      }),
-    ];
-    rerender(
-      <TooltipProvider>
-        <StatusBar />
-      </TooltipProvider>,
-    );
-    expect(screen.getByText("next.mp4")).toBeInTheDocument();
+    expect(screen.getByText("clip.mp4")).toBeInTheDocument();
+    expect(screen.getByText("42%")).toBeInTheDocument();
+    expect(screen.getByText("42f / 100f")).toBeInTheDocument();
   });
-
-  it("renders placeholders for metrics that are not available yet", () => {
-    renderQueue([exportToast({ status: "rendering", startedAt: null, operationId: null })]);
-    expect(screen.getByText("0f / 0f")).toBeInTheDocument();
-    expect(screen.getByText("0 FPS")).toBeInTheDocument();
-  });
-
-  it.each(["completed", "failed", "canceled"] as const)(
-    "clears the export details for %s exports",
-    (status) => {
-      renderQueue([exportToast({ status, progressPercent: 37 })]);
-      expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
-      expect(screen.queryByText("clip.mp4")).not.toBeInTheDocument();
-    },
-  );
 });

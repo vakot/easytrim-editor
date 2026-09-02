@@ -1,6 +1,6 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
-import { importQueueItemActivated } from "@/app/store/actions/imported-queue-actions";
+import { editingInstanceActivated } from "@/app/store/actions/editing-instance-actions";
 import { sourceCleared, sourceFailed, sourceSelected } from "@/app/store/actions/source-actions";
 import type { AppError, PreviewDescriptor, PreviewKind } from "@/lib/tauri/media.types";
 
@@ -39,7 +39,7 @@ const previewSlice = createSlice({
       .addCase(sourceSelected, (state) => {
         state.value = { status: "loading", kind: "source" };
       })
-      .addCase(importQueueItemActivated, (state) => {
+      .addCase(editingInstanceActivated, (state) => {
         state.value = { status: "loading", kind: "source" };
       })
       .addCase(sourceCleared, (state) => {

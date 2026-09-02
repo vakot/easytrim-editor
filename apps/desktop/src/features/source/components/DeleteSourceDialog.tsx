@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -12,50 +12,31 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-
-import { normalizeAppError } from "@/lib/tauri/media.utils";
-
-import { useImportQueue } from "../hooks/useImportQueue";
+import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
+import { selectEditingInstanceById } from "@/app/store/slices/editing-instances-slice";
+import { deleteActiveEditingInstanceSourceRequested } from "@/app/store/thunks/source-media-thunks";
 
 interface DeleteSourceDialogProps {
-  children: React.ReactNode;
+  children: ReactNode;
   onOpenChange?: (open: boolean) => void;
   open?: boolean;
   sourceId: string | null | undefined;
 }
 
-export function DeleteSourceDialog({
-  children,
-  onOpenChange,
-  open,
-  sourceId,
-}: DeleteSourceDialogProps) {
+export function DeleteSourceDialog({ children, onOpenChange, open, sourceId }: DeleteSourceDialogProps) {
   const { t } = useTranslation();
-
-  const { deleteSource, items } = useImportQueue();
-
-  const [deletePending, setDeletePending] = useState(false);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
-  const deleteItem = items.find((item) => item.id === sourceId);
-
-  const filename = deleteItem?.snapshot.source.displayName;
+  const dispatch = useAppDispatch();
+  const item = useAppSelector((state) => (sourceId ? selectEditingInstanceById(state, sourceId) : undefined));
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleDeleteSource = async () => {
     if (!sourceId) return;
-
-    const item = items.find((candidate) => candidate.id === sourceId);
-    if (!item) return;
-
-    setDeletePending(true);
-    setDeleteError(null);
-
-    try {
-      await deleteSource(sourceId);
-    } catch (error: unknown) {
-      setDeleteError(normalizeAppError(error).message);
-    } finally {
-      setDeletePending(false);
-    }
+    setPending(true);
+    setError(null);
+    const result = await dispatch(deleteActiveEditingInstanceSourceRequested(sourceId));
+    if (result) setError(result.message);
+    setPending(false);
   };
 
   return (
@@ -64,20 +45,12 @@ export function DeleteSourceDialog({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{t("source.dialogs.delete.title")}</AlertDialogTitle>
-          <AlertDialogDescription>
-            {t("source.dialogs.delete.description", { name: filename })}
-          </AlertDialogDescription>
+          <AlertDialogDescription>{t("source.dialogs.delete.description", { name: item?.snapshot.source.displayName })}</AlertDialogDescription>
         </AlertDialogHeader>
-        {deleteError ? <p className="text-sm text-destructive">{deleteError}</p> : null}
+        {error ? <p className="text-sm text-destructive">{error}</p> : null}
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={deletePending}>
-            {t("common.actions.cancel")}
-          </AlertDialogCancel>
-          <AlertDialogAction
-            disabled={deletePending}
-            onClick={handleDeleteSource}
-            variant="destructive"
-          >
+          <AlertDialogCancel disabled={pending}>{t("common.actions.cancel")}</AlertDialogCancel>
+          <AlertDialogAction disabled={pending || !item} onClick={handleDeleteSource} variant="destructive">
             {t("common.actions.delete")}
           </AlertDialogAction>
         </AlertDialogFooter>

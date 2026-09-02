@@ -15,7 +15,7 @@ import {
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectCropApplied } from "@/app/store/slices/crop-slice";
-import { selectActiveItemId } from "@/app/store/slices/export-slice";
+import { selectActiveInstanceId } from "@/app/store/slices/editing-instances-slice";
 import {
   selectIsChoosingSource,
   selectIsNativeDialogOpen,
@@ -24,7 +24,7 @@ import { selectHasSource, selectSourceReady } from "@/app/store/slices/source-sl
 import { openOptimizedExportDialog, startFastCutRequested } from "@/app/store/thunks/export-thunks";
 import {
   chooseSourceRequested,
-  closeActiveImportedItemRequested,
+  closeActiveEditingInstanceRequested,
 } from "@/app/store/thunks/source-media-thunks";
 import { DeleteSourceDialog, DeleteSourceDialogTrigger } from "@/features/source";
 import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
@@ -33,7 +33,7 @@ export function MenuBarFile() {
   const { t } = useTranslation();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
-  const activeItemId = useAppSelector(selectActiveItemId);
+  const activeItemId = useAppSelector(selectActiveInstanceId);
 
   const dispatch = useAppDispatch();
   const canExport = useAppSelector(selectSourceReady);
@@ -63,7 +63,7 @@ export function MenuBarFile() {
       hasSource &&
       !isChoosingSource &&
       !isNativeDialogOpen,
-    () => void dispatch(closeActiveImportedItemRequested({ id: "Ctrl+Q", type: "hotkey" })),
+    () => void dispatch(closeActiveEditingInstanceRequested({ id: "Ctrl+Q", type: "hotkey" })),
   );
   useKeyboardShortcut(
     (event) => event.code === "KeyS" && event.ctrlKey && canSave,
@@ -115,7 +115,7 @@ export function MenuBarFile() {
             <MenubarItem
               disabled={!hasSource}
               onSelect={() =>
-                void dispatch(closeActiveImportedItemRequested({ id: "file.close", type: "menu" }))
+                void dispatch(closeActiveEditingInstanceRequested({ id: "file.close", type: "menu" }))
               }
             >
               {t("app.actions.closeFile")}
