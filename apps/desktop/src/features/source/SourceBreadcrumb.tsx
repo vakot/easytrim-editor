@@ -1,4 +1,4 @@
-import { Fragment } from "react";
+import { Children, type PropsWithChildren } from "react";
 
 import {
   Breadcrumb,
@@ -14,6 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectActiveEditingInstance } from "@/app/store/slices/editing-instances-slice";
+import type { EditingInstance } from "@/domain/editing-instance";
 
 import { SourceDetails } from "./components/SourceDetails";
 import { formatSourcePath } from "./lib/media-formatters.utils";
@@ -30,44 +31,62 @@ export function SourceBreadcrumb() {
   return (
     <Breadcrumb className="min-w-0 px-2 pb-1">
       <BreadcrumbList className="flex-nowrap overflow-hidden text-xs">
-        {directories.map((directory) => (
-          <Fragment key={directory.path}>
-            <BreadcrumbItem className="min-w-0">
-              <BreadcrumbLink className="max-w-32 truncate" title={directory.path}>
-                {directory.name}
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-          </Fragment>
-        ))}
+        <SourceBreadcrumbList>
+          {directories.map((directory) => (
+            <SourceBreadcrumbDirectory directory={directory} key={directory.path} />
+          ))}
 
-        <BreadcrumbItem className="min-w-0">
-          <BreadcrumbPage className="truncate" title={sourcePath}>
-            {instance.snapshot.source.displayName}
-          </BreadcrumbPage>
-        </BreadcrumbItem>
-
-        <BreadcrumbSeparator />
-
-        <BreadcrumbItem>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                className="h-auto max-w-56 min-w-0 gap-0 p-0"
-                size="xs"
-                title={sourcePath}
-                variant="link"
-              >
-                <BreadcrumbEllipsis />
-              </Button>
-            </PopoverTrigger>
-
-            <PopoverContent align="start" className="w-80 p-2.5" side="bottom" sideOffset={5}>
-              <SourceDetails />
-            </PopoverContent>
-          </Popover>
-        </BreadcrumbItem>
+          <SourceBreadcrumbPage instance={instance} />
+          <SourceBreadcrumbMore instance={instance} />
+        </SourceBreadcrumbList>
       </BreadcrumbList>
     </Breadcrumb>
+  );
+}
+
+function SourceBreadcrumbDirectory({ directory }: { directory: { name: string; path: string } }) {
+  return (
+    <BreadcrumbItem className="min-w-0">
+      <BreadcrumbLink className="max-w-32 truncate" title={directory.path}>
+        {directory.name}
+      </BreadcrumbLink>
+    </BreadcrumbItem>
+  );
+}
+
+function SourceBreadcrumbPage({ instance }: { instance: EditingInstance }) {
+  const { displayName } = instance.snapshot.source;
+  const sourcePath = formatSourcePath(instance.snapshot.source.sourcePath);
+
+  return (
+    <BreadcrumbItem className="min-w-0">
+      <BreadcrumbPage className="truncate" title={sourcePath}>
+        {displayName}
+      </BreadcrumbPage>
+    </BreadcrumbItem>
+  );
+}
+
+function SourceBreadcrumbMore({ instance }: { instance: EditingInstance }) {
+  return (
+    <BreadcrumbItem>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button className="h-auto max-w-56 min-w-0 gap-0 p-0" size="xs" variant="link">
+            <BreadcrumbEllipsis />
+          </Button>
+        </PopoverTrigger>
+
+        <PopoverContent align="start" className="w-80 p-2.5" side="bottom" sideOffset={5}>
+          <SourceDetails />
+        </PopoverContent>
+      </Popover>
+    </BreadcrumbItem>
+  );
+}
+
+function SourceBreadcrumbList({ children }: PropsWithChildren) {
+  return Children.toArray(children).flatMap((child, index) =>
+    index === 0 ? [child] : [<BreadcrumbSeparator key={`breadcrumb-separator-${index}`} />, child],
   );
 }
