@@ -6,15 +6,13 @@ import {
   FileVideo,
   Film,
   FolderOpen,
-  Info,
   LoaderCircle,
   type LucideIcon,
   RotateCcw,
   Scissors,
   Trash2,
-  X,
 } from "lucide-react";
-import { useCallback, useEffect, useId, useMemo, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -27,8 +25,6 @@ import {
   MarkerIcon,
   MarkerTitle,
 } from "@/components/ui/marker";
-import { ResizablePanelControl } from "@/components/ui/resizable";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
@@ -225,7 +221,6 @@ export function ActivityFeedView({
 
   const locale = i18n.resolvedLanguage ?? i18n.language;
 
-  const titleId = useId();
   const groups = useMemo(
     () => groupActivityEntriesBySession(entries, sessions, currentSessionId),
     [currentSessionId, entries, sessions],
@@ -245,109 +240,71 @@ export function ActivityFeedView({
   );
 
   return (
-    <section aria-labelledby={titleId} className="relative flex h-full min-h-0 flex-col gap-2 pt-3">
-      <div className="mx-3 flex items-center gap-1.5">
-        <h3
-          className="font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
-          id={titleId}
-        >
-          {t("app.labels.activityFeed")}
-        </h3>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              aria-label={t("app.accessibility.activityFeedPrivacy")}
-              className="inline-flex size-4 items-center justify-center text-primary"
-              type="button"
-            >
-              <Info aria-hidden="true" className="size-3.5 text-primary" />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent>{t("app.tooltips.activityFeedPrivacy")}</TooltipContent>
-        </Tooltip>
-      </div>
-
-      <ResizablePanelControl panelId="workspace-activity">
-        <Button
-          className="absolute top-1 right-3 text-secondary-foreground"
-          size="icon-xs"
-          variant="ghost"
-        >
-          <X aria-hidden="true" />
-        </Button>
-      </ResizablePanelControl>
-
+    <>
       {groups.length === 0 ? (
         <p className="mx-3 rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted-foreground">
           {t("app.messages.activityEmpty")}
         </p>
       ) : (
-        <ScrollArea className="mr-1 min-h-0 flex-1">
-          <div
-            className={cn(
-              "grid pr-2 pb-3 pl-3",
-              isCompact ? "gap-1" : isBranch ? "gap-5" : "gap-3",
-            )}
-          >
-            {groups.map((group) => {
-              const presentation = getActivitySessionPresentation(
-                group,
-                currentAppVersion,
-                currentDateTime,
-                locale,
-                sessionLabels,
-              );
+        <div className={cn("relative grid", isCompact ? "gap-1" : isBranch ? "gap-5" : "gap-3")}>
+          {groups.map((group) => {
+            const presentation = getActivitySessionPresentation(
+              group,
+              currentAppVersion,
+              currentDateTime,
+              locale,
+              sessionLabels,
+            );
 
-              return (
-                <div
-                  className={cn(
-                    "flex flex-col",
-                    isCompact ? "gap-1" : isBranch ? "gap-5" : "gap-3",
-                  )}
-                  key={group.sessionId}
-                >
+            return (
+              <div
+                className={cn("flex flex-col", isCompact ? "gap-1" : isBranch ? "gap-5" : "gap-3")}
+                key={group.sessionId}
+              >
+                <div className="sticky top-0 z-10 bg-card">
                   <Marker
-                    className={cn(sessionSeparatorClassNames[presentation.tone])}
+                    className={sessionSeparatorClassNames[presentation.tone]}
                     variant="separator"
                   >
                     <MarkerContent className="text-xs font-medium">
                       {presentation.label}
                     </MarkerContent>
                   </Marker>
-                  {isBranch
-                    ? groupActivityEntriesByBranch(group.entries).map((item) =>
-                        item.kind === "branch" ? (
-                          <ActivityFeedBranch
-                            branch={item.branch}
-                            key={item.branch.id}
-                            onAction={onAction}
-                            timeFormatter={timeFormatter}
-                          />
-                        ) : (
-                          <ActivityFeedEntry
-                            entry={item.entry}
-                            key={item.entry.id}
-                            onAction={onAction}
-                            timeFormatter={timeFormatter}
-                          />
-                        ),
-                      )
-                    : group.entries.map((entry) => (
-                        <ActivityFeedEntry
-                          compact={isCompact}
-                          entry={entry}
-                          key={entry.id}
+                </div>
+
+                {isBranch
+                  ? groupActivityEntriesByBranch(group.entries).map((item) =>
+                      item.kind === "branch" ? (
+                        <ActivityFeedBranch
+                          branch={item.branch}
+                          key={item.branch.id}
                           onAction={onAction}
                           timeFormatter={timeFormatter}
                         />
-                      ))}
-                </div>
-              );
-            })}
-          </div>
-        </ScrollArea>
+                      ) : (
+                        <ActivityFeedEntry
+                          entry={item.entry}
+                          key={item.entry.id}
+                          onAction={onAction}
+                          timeFormatter={timeFormatter}
+                        />
+                      ),
+                    )
+                  : group.entries.map((entry) => (
+                      <ActivityFeedEntry
+                        compact={isCompact}
+                        entry={entry}
+                        key={entry.id}
+                        onAction={onAction}
+                        timeFormatter={timeFormatter}
+                      />
+                    ))}
+              </div>
+            );
+          })}
+        </div>
       )}
-    </section>
+    </>
   );
 }
 
