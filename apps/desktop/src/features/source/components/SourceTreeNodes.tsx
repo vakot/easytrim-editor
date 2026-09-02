@@ -1,0 +1,191 @@
+import { ChevronRightIcon, FileVideo, Folder, FolderOpen } from "lucide-react";
+import type { ComponentProps, PropsWithChildren } from "react";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+
+import { useAppDispatch } from "@/app/store/redux-hooks";
+import { navigateToEditingInstance } from "@/app/store/thunks/source-media-thunks";
+import type { EditingInstance } from "@/domain/editing-instance";
+import { cn } from "@/lib/class-names.utils";
+
+import { formatSourcePath } from "../lib/media-formatters.utils";
+import {
+  getSourceTreeInstances,
+  type SourceTreeFolderNode,
+  type SourceTreeNode,
+} from "../lib/source-tree.utils";
+
+import { SourceTreeContextMenu } from "./SourceTreeContextMenu";
+
+export function SourceTreeNodes({
+  level = 0,
+  nodes,
+  value,
+}: {
+  level?: number;
+  nodes: SourceTreeNode[];
+  value: string;
+}) {
+  return nodes.map((node) => {
+    if (node.kind === "folder") {
+      return <SourceTreeFolder key={node.id} level={level} node={node} value={value} />;
+    }
+
+    return (
+      <SourceTreeInstance
+        instance={node.instance}
+        key={node.instance.id}
+        level={level}
+        selected={value === node.instance.id}
+      />
+    );
+  });
+}
+
+function SourceTreeFolder({
+  level,
+  node,
+  value,
+}: {
+  level: number;
+  node: SourceTreeFolderNode;
+  value: string;
+}) {
+  const instances = getSourceTreeInstances(node.children);
+
+  return (
+    <Collapsible className="w-full">
+      <SourceTreeContextMenu
+        kind="folder"
+        revealPath={node.path}
+        sourceIds={instances.map((instance) => instance.id)}
+      >
+        <div
+          className="group group-line sticky flex min-w-0 items-center gap-1 rounded-md bg-card"
+          style={{ top: level * 28, zIndex: 10 - level }}
+        >
+          <CollapsibleTrigger asChild>
+            <Button
+              aria-label={node.name}
+              className="group min-w-0 flex-1 justify-between text-xs transition-none group-focus-within:bg-muted! group-focus-within:pr-4 group-focus-within:text-foreground! group-hover:bg-muted! group-hover:pr-4 group-hover:text-foreground! dark:group-focus-within:bg-muted/50! dark:group-hover:bg-muted/50! data-open:bg-transparent!"
+              size="sm"
+              variant="ghost"
+            >
+              <div
+                className="flex w-full min-w-0 items-center gap-1"
+                style={{ paddingLeft: level * 8 }}
+              >
+                <ChevronRightIcon className="shrink-0 group-data-[state=open]:rotate-90" />
+                <Folder className="shrink-0 group-data-[state=open]:hidden" />
+                <FolderOpen className="hidden shrink-0 group-data-[state=open]:block" />
+
+                <span className="truncate">{node.name}</span>
+              </div>
+
+              <SourceTreeStatus title={String(instances.length)}>
+                ({instances.length})
+              </SourceTreeStatus>
+            </Button>
+          </CollapsibleTrigger>
+        </div>
+      </SourceTreeContextMenu>
+
+      <CollapsibleContent>
+        <SourceTreeNodes level={level + 1} nodes={node.children} value={value} />
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
+function SourceTreeInstance({
+  instance,
+  level,
+  selected,
+}: {
+  instance: EditingInstance;
+  level: number;
+  selected: boolean;
+}) {
+  const dispatch = useAppDispatch();
+  const attempt = instance.exportAttempts.at(-1);
+
+  const status =
+    instance.sourceAvailability === "deleted"
+      ? "deleted"
+      : (attempt?.state.status ?? (instance.media ? "ready" : undefined));
+
+  const isLoading = status === "rendering";
+
+  return (
+    <SourceTreeContextMenu
+      kind="file"
+      revealPath={formatSourcePath(instance.snapshot.source.sourcePath)}
+      sourceIds={[instance.id]}
+    >
+      <div
+        className="group group-line relative flex min-w-0 items-center gap-1 rounded-md"
+        data-open={selected}
+      >
+        <Button
+          aria-current={selected ? "true" : undefined}
+          aria-label={instance.snapshot.source.displayName}
+          className="min-w-0 flex-1 justify-between overflow-hidden text-muted-foreground! transition-none group-focus-within:text-foreground! group-hover:bg-muted group-hover:text-foreground! dark:group-hover:bg-muted/50 data-open:text-foreground!"
+          data-open={selected ? "true" : undefined}
+          onClick={() => void dispatch(navigateToEditingInstance(instance.id))}
+          size="xs"
+          variant="ghost"
+        >
+          <span className="flex min-w-0 items-center gap-1" style={{ paddingLeft: level * 8 + 16 }}>
+            <FileVideo className="shrink-0" />
+
+            <span className="truncate">{instance.snapshot.source.displayName}</span>
+          </span>
+
+          {status ? (
+            <SourceTreeStatus className={isLoading ? "shimmer" : undefined} title={status}>
+              <Badge
+                className="text-muted-foreground transition-none"
+                size="xs"
+                variant={getStatusVariant(status)}
+              >
+                {status}
+              </Badge>
+            </SourceTreeStatus>
+          ) : null}
+        </Button>
+      </div>
+    </SourceTreeContextMenu>
+  );
+}
+
+function SourceTreeStatus({
+  children,
+  className,
+  title,
+}: PropsWithChildren<{ className?: string; title?: string }>) {
+  return (
+    <span className={cn("shrink-0 text-[10px] text-muted-foreground", className)} title={title}>
+      {children}
+    </span>
+  );
+}
+
+function getStatusVariant(
+  status:
+    "deleted" | "queued" | "rendering" | "completed" | "failed" | "canceled" | "ready" | undefined,
+): ComponentProps<typeof Badge>["variant"] {
+  switch (status) {
+    case "deleted":
+    case "canceled":
+    case "failed":
+      return "destructive";
+
+    case "completed":
+      return "success";
+
+    default:
+      return "outline";
+  }
+}
