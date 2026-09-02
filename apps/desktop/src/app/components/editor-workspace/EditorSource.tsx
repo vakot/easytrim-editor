@@ -122,14 +122,14 @@ export function EditorSource() {
       <ResizablePanelGroup id="workspace-sidebar-content" orientation="vertical" persisted>
         {panels["workspace-sidebar-source-details"] && <SourceDetailsPanel isSingle={isSingle} />}
 
-        {panels["workspace-sidebar-import-queue"] && (
+        {panels["workspace-sidebar-active-sources"] && (
           <>
             <ResizableHandle className="bg-foreground/10" />
             <SourceTabsPanel isSingle={isSingle} />
           </>
         )}
 
-        {panels["workspace-sidebar-export-queue"] && (
+        {panels["workspace-sidebar-explorer"] && (
           <>
             <ResizableHandle className="bg-foreground/10" />
             <SourceTreePanel />
@@ -225,8 +225,6 @@ function SourceTabsPanel({ isSingle = false }: SourcePanelProps) {
 }
 
 function SourceTreePanel({ isSingle = false }: SourcePanelProps) {
-  const { t } = useTranslation();
-
   return (
     <ResizablePanel
       className="flex min-h-0 flex-col overflow-hidden"
