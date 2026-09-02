@@ -139,7 +139,7 @@ export function EditorSource() {
             isSingle={isSingle}
             label={t("source.labels.explorer")}
           >
-            <ScrollArea className="min-h-0 flex-1 px-3">
+            <ScrollArea className="min-h-0 flex-1 px-3 before:top-7">
               <SourceTree />
             </ScrollArea>
           </SourcePanelCollapsible>
