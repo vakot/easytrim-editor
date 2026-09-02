@@ -128,7 +128,7 @@ export function EditorSource() {
         {panelsVisibility["activeSources"] && (
           <SourcePanelCollapsible isSingle={isSingle} label={t("source.labels.activeSources")}>
             <div className="w-full px-3">
-              <SourceTabs background="card" className="w-full" orientation="vertical" />
+              <SourceTabs background="card" className="w-full pb-1" orientation="vertical" />
             </div>
           </SourcePanelCollapsible>
         )}
@@ -139,8 +139,8 @@ export function EditorSource() {
             isSingle={isSingle}
             label={t("source.labels.explorer")}
           >
-            <ScrollArea className="min-h-0 flex-1 px-3 before:top-7">
-              <SourceTree />
+            <ScrollArea className="min-h-0 flex-1 px-3">
+              <SourceTree className="pb-1" />
             </ScrollArea>
           </SourcePanelCollapsible>
         )}

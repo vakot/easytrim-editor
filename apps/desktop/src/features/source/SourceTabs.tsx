@@ -33,7 +33,7 @@ export function SourceTabs({
       orientation={orientation}
       value={activeInstanceId ?? ""}
     >
-      <TabsList className={`w-max min-w-full justify-baseline bg-${background} p-0 pb-1`}>
+      <TabsList className={`w-max min-w-full justify-baseline bg-${background} p-0`}>
         {readyInstances.map((instance) => (
           <div
             className={cn(
