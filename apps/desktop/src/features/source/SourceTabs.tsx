@@ -24,6 +24,8 @@ export function SourceTabs({
   const dispatch = useAppDispatch();
   const { activeInstanceId, closeInstance, readyInstances } = useEditingInstances();
 
+  if (!readyInstances.length) return null;
+
   return (
     <Tabs
       className={cn("gap-0", className)}
@@ -31,7 +33,7 @@ export function SourceTabs({
       orientation={orientation}
       value={activeInstanceId ?? ""}
     >
-      <TabsList className={`w-max min-w-full justify-baseline bg-${background} pb-0`}>
+      <TabsList className={`w-max min-w-full justify-baseline bg-${background} p-0 pb-1`}>
         {readyInstances.map((instance) => (
           <div
             className={cn(

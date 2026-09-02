@@ -1,8 +1,9 @@
-import { ChevronDown, ChevronRight, Ellipsis, RotateCcw } from "lucide-react";
-import { useState } from "react";
+import { ChevronRight, Ellipsis, RotateCcw } from "lucide-react";
+import { Children, type PropsWithChildren, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -13,47 +14,60 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelControl,
-  ResizablePanelGroup,
-} from "@/components/ui/resizable";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-import { SourceDetails, SourceTabs, SourceTree } from "@/features/source";
+import { ActivityFeed } from "@/features/activity";
+import { SourceTabs, SourceTree } from "@/features/source";
+import { cn } from "@/lib/class-names.utils";
 
-const DEFAULT_PANELS = {
-  "workspace-sidebar-source-details": true,
-  "workspace-sidebar-active-sources": true,
-  "workspace-sidebar-explorer": true,
+type PanelStateId = "activeSources" | "explorer" | "activityFeed";
+
+type PanelsVisibility = Record<PanelStateId, boolean>;
+type PanelsEditable = Record<PanelStateId, boolean>;
+
+const DEFAULT_PANELS_EDITABLE: PanelsEditable = {
+  activeSources: true,
+  explorer: false,
+  activityFeed: true,
 };
 
-const PANEL_MIN_SIZE = 138;
-const PANEL_COLLAPSED_SIZE = 32;
+const DEFAULT_PANELS_VISIBILITY: PanelsVisibility = {
+  activeSources: true,
+  explorer: true,
+  activityFeed: true,
+};
 
 export function EditorSource() {
   const { t } = useTranslation();
+  const panelLabels: Record<PanelStateId, string> = {
+    activeSources: t("source.labels.activeSources"),
+    explorer: t("source.labels.explorer"),
+    activityFeed: t("app.labels.activityFeed"),
+  };
 
-  const [panels, setPanels] = useState<Record<string, boolean>>(DEFAULT_PANELS);
-  const enabledCount = Object.values(panels).filter(Boolean).length;
-  const isSingle = enabledCount === 1;
+  const [panelsVisibility, setPanelsVisibility] = useState(DEFAULT_PANELS_VISIBILITY);
 
-  const handlePanelChange = (panelId: string, checked: boolean) => {
-    setPanels((panels) => ({ ...panels, [panelId]: checked }));
+  const enabledPanelIds = (Object.keys(panelsVisibility) as PanelStateId[]).filter(
+    (panelId) => panelsVisibility[panelId],
+  );
+
+  const isSingle = enabledPanelIds.length === 1;
+
+  const title = isSingle ? panelLabels[enabledPanelIds[0]!] : t("source.labels.title");
+
+  const handlePanelChange = (panelStateId: string, visible: boolean) => {
+    setPanelsVisibility((panelsVisibility) => ({ ...panelsVisibility, [panelStateId]: visible }));
   };
 
   return (
-    <aside
-      aria-label={t("source.labels.title")}
-      className="relative flex size-full min-h-0 flex-col pt-3"
-    >
+    <aside aria-label={title} className="relative flex size-full min-h-0 flex-col pt-3">
       <h3
-        className="mx-3 font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
+        className="mx-3 mb-1 font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
         id="source-panel-title"
       >
-        {t("source.labels.title")}
+        {title}
       </h3>
 
       <DropdownMenu>
@@ -73,42 +87,26 @@ export function EditorSource() {
         </Tooltip>
         <DropdownMenuContent>
           <DropdownMenuGroup>
-            <DropdownMenuCheckboxItem
-              checked={panels["workspace-sidebar-source-details"]}
-              keepOpen
-              onCheckedChange={(checked) =>
-                handlePanelChange("workspace-sidebar-source-details", checked === true)
-              }
-            >
-              {t("app.actions.showPanel", { panel: t("source.labels.mediaDetails") })}
-            </DropdownMenuCheckboxItem>
-            <DropdownMenuCheckboxItem
-              checked={panels["workspace-sidebar-active-sources"]}
-              keepOpen
-              onCheckedChange={(checked) =>
-                handlePanelChange("workspace-sidebar-active-sources", checked === true)
-              }
-            >
-              {t("app.actions.showPanel", { panel: t("source.labels.activeSources") })}
-            </DropdownMenuCheckboxItem>
-            <DropdownMenuCheckboxItem
-              checked={panels["workspace-sidebar-explorer"]}
-              disabled
-              keepOpen
-              onCheckedChange={(checked) =>
-                handlePanelChange("workspace-sidebar-explorer", checked === true)
-              }
-            >
-              {t("app.actions.showPanel", { panel: t("source.labels.explorer") })}
-            </DropdownMenuCheckboxItem>
+            {Object.keys(panelLabels).map((panelId) => (
+              <DropdownMenuCheckboxItem
+                checked={panelsVisibility[panelId as PanelStateId]}
+                disabled={!DEFAULT_PANELS_EDITABLE[panelId as PanelStateId]}
+                keepOpen
+                onCheckedChange={(checked) => handlePanelChange(panelId, checked)}
+              >
+                {t("app.actions.showPanel", {
+                  panel: panelLabels[panelId as PanelStateId],
+                })}
+              </DropdownMenuCheckboxItem>
+            ))}
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
             <DropdownMenuItem
-              disabled={enabledCount === 3}
+              disabled={enabledPanelIds.length === 3}
               inset
               keepOpen
-              onSelect={() => setPanels(DEFAULT_PANELS)}
+              onSelect={() => setPanelsVisibility(DEFAULT_PANELS_VISIBILITY)}
             >
               <DropdownMenuIcon>
                 <RotateCcw aria-hidden="true" className="size-3" />
@@ -119,153 +117,95 @@ export function EditorSource() {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <ResizablePanelGroup id="workspace-sidebar-content" orientation="vertical" persisted>
-        {panels["workspace-sidebar-source-details"] && (
-          <>
-            <SourceDetailsPanel isSingle={isSingle} />
-            <ResizableHandle className="bg-foreground/10" />
-          </>
+      {/* TODO: migrate to preview Breadcrumb dropdown */}
+      {/* <SourcePanelCollapsible isSingle={isSingle} label={t("source.labels.mediaDetails")}>
+        <div className="px-3">
+          <SourceDetails />
+        </div>
+      </SourcePanelCollapsible>*/}
+
+      <SourcePanelsCollapsibeGroup>
+        {panelsVisibility["activeSources"] && (
+          <SourcePanelCollapsible isSingle={isSingle} label={t("source.labels.activeSources")}>
+            <div className="w-full px-3">
+              <SourceTabs background="card" className="w-full" orientation="vertical" />
+            </div>
+          </SourcePanelCollapsible>
         )}
 
-        {panels["workspace-sidebar-active-sources"] && (
-          <>
-            <SourceTabsPanel isSingle={isSingle} />
-            <ResizableHandle className="bg-foreground/10" />
-          </>
+        {panelsVisibility["explorer"] && (
+          <SourcePanelCollapsible
+            className="data-[state=open]:flex-1"
+            isSingle={isSingle}
+            label={t("source.labels.explorer")}
+          >
+            <ScrollArea className="min-h-0 flex-1 px-3">
+              <SourceTree />
+            </ScrollArea>
+          </SourcePanelCollapsible>
         )}
 
-        {panels["workspace-sidebar-explorer"] && (
-          <>
-            <SourceTreePanel />
-          </>
+        {panelsVisibility["activityFeed"] && (
+          <SourcePanelCollapsible
+            className="max-h-75"
+            isSingle={isSingle}
+            label={t("app.labels.activityFeed")}
+          >
+            <ScrollArea className="min-h-0 flex-1 px-3 before:top-4">
+              <ActivityFeed />
+            </ScrollArea>
+          </SourcePanelCollapsible>
         )}
-      </ResizablePanelGroup>
+      </SourcePanelsCollapsibeGroup>
     </aside>
   );
 }
 
-interface SourcePanelProps {
+function SourcePanelsCollapsibeGroup({ children }: PropsWithChildren) {
+  return Children.toArray(children).flatMap((child, index) =>
+    index === 0
+      ? [child]
+      : [<Separator className="bg-foreground/10" key={`separator-${index}`} />, child],
+  );
+}
+
+interface SourcePanelCollapsibleProps {
+  children?: React.ReactNode;
+  className?: string;
   isSingle?: boolean;
+  label?: string;
 }
 
-function SourceDetailsPanel({ isSingle = false }: SourcePanelProps) {
-  const { t } = useTranslation();
-
+function SourcePanelCollapsible({
+  children,
+  className,
+  isSingle = false,
+  label,
+}: SourcePanelCollapsibleProps) {
   return (
-    <ResizablePanel
-      className="flex min-h-0 flex-col overflow-hidden"
-      collapsedSize={PANEL_COLLAPSED_SIZE}
-      collapsible
-      defaultSize={0}
-      id="workspace-sidebar-source-details"
-      minSize={PANEL_MIN_SIZE}
-    >
-      <div className="px-1">
-        <ResizablePanelControl panelId="workspace-sidebar-source-details">
-          {({ isCollapsed }) => (
-            <Button
-              className="my-0.5 w-full justify-baseline pr-3 pl-2 text-foreground/80"
-              size="sm"
-              variant="ghost"
-            >
-              {!isSingle &&
-                (isCollapsed ? (
-                  <ChevronRight aria-hidden="true" />
-                ) : (
-                  <ChevronDown aria-hidden="true" />
-                ))}
-              {t("source.labels.mediaDetails")}
-            </Button>
-          )}
-        </ResizablePanelControl>
-      </div>
-
-      <ScrollArea className="px-3">
-        <SourceDetails />
-      </ScrollArea>
-    </ResizablePanel>
+    <Collapsible className={cn("flex min-h-0 flex-col", className)} open={isSingle || undefined}>
+      <SourcePanelCollapsibleTrigger isSingle={isSingle} label={label} />
+      <CollapsibleContent className="flex min-h-0 w-full flex-1">{children}</CollapsibleContent>
+    </Collapsible>
   );
 }
 
-function SourceTabsPanel({ isSingle = false }: SourcePanelProps) {
-  const { t } = useTranslation();
+function SourcePanelCollapsibleTrigger({ isSingle = false, label }: SourcePanelCollapsibleProps) {
+  if (isSingle) return null;
 
   return (
-    <ResizablePanel
-      className="flex min-h-0 flex-col overflow-hidden"
-      collapsedSize={PANEL_COLLAPSED_SIZE}
-      collapsible
-      defaultSize={0}
-      id="workspace-sidebar-active-sources"
-      minSize={PANEL_MIN_SIZE}
-    >
-      <div className="px-1">
-        <ResizablePanelControl panelId="workspace-sidebar-active-sources">
-          {({ isCollapsed }) => (
-            <Button
-              aria-label={t("queue.labels.import")}
-              className="my-0.5 flex w-full justify-between pr-3 pl-2 text-foreground/80"
-              size="sm"
-              variant="ghost"
-            >
-              <span className="flex items-center gap-1">
-                {!isSingle &&
-                  (isCollapsed ? (
-                    <ChevronRight aria-hidden="true" />
-                  ) : (
-                    <ChevronDown aria-hidden="true" />
-                  ))}
-                {t("source.labels.activeSources")}
-              </span>
-            </Button>
-          )}
-        </ResizablePanelControl>
-      </div>
-
-      <ScrollArea className="px-2">
-        <SourceTabs background="card" className="pb-1" orientation="vertical" />
-      </ScrollArea>
-    </ResizablePanel>
-  );
-}
-
-function SourceTreePanel({ isSingle = false }: SourcePanelProps) {
-  const { t } = useTranslation();
-
-  return (
-    <ResizablePanel
-      className="flex min-h-0 flex-col overflow-hidden"
-      collapsedSize={PANEL_COLLAPSED_SIZE}
-      collapsible
-      id="workspace-sidebar-explorer"
-      minSize={PANEL_MIN_SIZE}
-    >
-      <div className="px-1">
-        <ResizablePanelControl panelId="workspace-sidebar-explorer">
-          {({ isCollapsed }) => (
-            <Button
-              aria-label="Explorer"
-              className="my-0.5 flex w-full justify-between pr-3 pl-2 text-foreground/80"
-              size="sm"
-              variant="ghost"
-            >
-              <span className="flex items-center gap-1">
-                {!isSingle &&
-                  (isCollapsed ? (
-                    <ChevronRight aria-hidden="true" />
-                  ) : (
-                    <ChevronDown aria-hidden="true" />
-                  ))}
-                {t("source.labels.explorer")}
-              </span>
-            </Button>
-          )}
-        </ResizablePanelControl>
-      </div>
-
-      <ScrollArea className="px-2">
-        <SourceTree />
-      </ScrollArea>
-    </ResizablePanel>
+    <div className="p-1">
+      <CollapsibleTrigger asChild>
+        <Button
+          aria-label={label}
+          className="group w-full justify-baseline px-2 text-secondary-foreground data-[state=open]:bg-transparent data-[state=open]:text-secondary-foreground"
+          size="sm"
+          variant="ghost"
+        >
+          {!isSingle && <ChevronRight className="shrink-0 group-data-[state=open]:rotate-90" />}
+          {label}
+        </Button>
+      </CollapsibleTrigger>
+    </div>
   );
 }

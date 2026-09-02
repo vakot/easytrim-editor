@@ -1,8 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 
-import { ActivityFeed } from "@/features/activity";
-
+import { EditorActivity } from "./EditorActivity";
 import { EditorSource } from "./EditorSource";
 import { EditorStage } from "./EditorStage";
 
@@ -59,7 +58,7 @@ export function EditorWorkspace() {
         <div className="size-full pr-1.5 pb-1.5">
           <div className="size-full p-px">
             <Card className="size-full p-0">
-              <ActivityFeed />
+              <EditorActivity />
             </Card>
           </div>
         </div>

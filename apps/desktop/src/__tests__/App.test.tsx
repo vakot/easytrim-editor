@@ -16,7 +16,7 @@ import {
   editorToolsInitialized,
 } from "../app/store/slices/editor-tools-slice";
 import { previewReady } from "../app/store/slices/preview-slice";
-import { selectHasSource } from "../app/store/slices/source-slice";
+import { selectHasSource, selectSourceSelection } from "../app/store/slices/source-slice";
 import { store } from "../app/store/store";
 import { checkMediaCapabilitiesRequested } from "../app/store/thunks/source-media-thunks";
 import type { EditorSnapshot } from "../domain/editor-snapshot";
@@ -250,10 +250,8 @@ describe("App", () => {
     }));
     const user = userEvent.setup();
     render(<App />);
-    const sourceMetadata = screen.getByLabelText("Video metadata");
-
     fireEvent.keyDown(window, { key: "o", code: "KeyO", ctrlKey: true });
-    await within(sourceMetadata).findByText(selection.displayName);
+    await waitFor(() => expect(selectSourceSelection(store.getState())).toEqual(selection));
     await user.click(screen.getByRole("button", { name: "Snap playback" }));
     await user.click(screen.getByRole("button", { name: "Loop playback" }));
 
@@ -267,7 +265,9 @@ describe("App", () => {
     );
 
     fireEvent.keyDown(window, { key: "o", code: "KeyO", ctrlKey: true });
-    await within(sourceMetadata).findByText(replacementSelection.displayName);
+    await waitFor(() =>
+      expect(selectSourceSelection(store.getState())).toEqual(replacementSelection),
+    );
 
     expect(screen.getByRole("button", { name: "Snap playback" })).toHaveAttribute(
       "aria-pressed",
@@ -435,20 +435,23 @@ describe("App", () => {
     render(<App />);
 
     await waitFor(() => expect(screen.getByRole("button", { name: "Play" })).not.toBeDisabled());
-    const detailsPanel = document.getElementById("workspace-sidebar-source-details");
+    const sourcePanel = document.getElementById("workspace-sidebar");
     const previewPanel = document.getElementById("editor-stage-preview");
     const timelinePanel = document.getElementById("editor-stage-timeline");
     const audioPanel = document.getElementById("editor-stage-audio");
 
+    await user.click(screen.getByRole("button", { name: "Explorer" }));
     await user.click(screen.getByRole("button", { name: "C:\\Media" }));
     await user.click(screen.getByRole("button", { name: replacementSelection.displayName }));
 
-    expect(document.getElementById("workspace-sidebar-source-details")).toBe(detailsPanel);
+    expect(document.getElementById("workspace-sidebar")).toBe(sourcePanel);
     expect(document.getElementById("editor-stage-preview")).toBe(previewPanel);
     expect(document.getElementById("editor-stage-timeline")).toBe(timelinePanel);
     expect(document.getElementById("editor-stage-audio")).toBe(audioPanel);
-    expect(within(detailsPanel!).getByText(replacementSelection.displayName)).toBeInTheDocument();
-    expect(within(detailsPanel!).getByText("1280 × 720")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: replacementSelection.displayName })).toHaveAttribute(
+      "aria-current",
+      "true",
+    );
     expect(screen.getByRole("heading", { name: "Selected Segment" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /^Audio tracks/ })).toBeInTheDocument();
 
@@ -518,6 +521,7 @@ describe("App", () => {
       expect(screen.getByTestId("timeline-fixed-content")).toBeInTheDocument();
       expect(mocks.prepareWaveforms).not.toHaveBeenCalled();
       for (const audio of audioElements) fireEvent.canPlay(audio);
+      fireEvent.canPlay(screen.getByLabelText("Source video preview"));
 
       await waitFor(() =>
         expect(screen.queryByTestId("preview-loading-overlay")).not.toBeInTheDocument(),
@@ -786,13 +790,9 @@ describe("App", () => {
     await openSourcePicker(user);
 
     await waitForSourcePresence(true);
-    const metadata = screen.getByLabelText("Video metadata");
-    expect(metadata).toBeInTheDocument();
-    expect(within(metadata).getByText("Filename")).toBeInTheDocument();
-    expect(within(metadata).getByText(selection.displayName)).toHaveAttribute(
-      "title",
-      selection.displayName,
-    );
+    expect(screen.getByRole("button", { name: "Active sources" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Explorer" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Activity Feed" })).toBeInTheDocument();
     expect(screen.getByLabelText("Source video preview")).toHaveAttribute(
       "src",
       "http://easytrim-media.localhost/source-1?variant=source",
@@ -909,9 +909,8 @@ describe("App", () => {
     expect(playbackSpeedButton).toHaveAttribute("aria-pressed", "false");
     expect(playbackSpeedButton).not.toHaveClass("text-primary");
     expect(within(videoTimelineRow as HTMLElement).queryByText("Video")).not.toBeInTheDocument();
-    const sourceDetailsPanel = document.getElementById("workspace-sidebar");
-    expect(sourceDetailsPanel).not.toBeNull();
-    expect(sourceDetailsPanel).toContainElement(screen.getByLabelText("Video metadata"));
+    const sourcePanel = document.getElementById("workspace-sidebar");
+    expect(sourcePanel).not.toBeNull();
     expect(document.getElementById("editor-stage-preview")).toContainElement(
       screen.getByLabelText("Source video preview"),
     );

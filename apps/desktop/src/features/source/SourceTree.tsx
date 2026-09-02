@@ -50,7 +50,7 @@ export function SourceTree() {
   const { activeInstanceId, instances } = useEditingInstances();
 
   return (
-    <div className="flex flex-col gap-1 pb-1">
+    <div className="flex flex-col gap-1">
       <SourceTreeNodes nodes={getSourceTreeNodes(instances)} value={activeInstanceId ?? ""} />
     </div>
   );
