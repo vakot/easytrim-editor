@@ -1,17 +1,8 @@
-import {
-  ChevronRightIcon,
-  FileVideo,
-  Folder,
-  FolderOpen,
-  RotateCcw,
-  Trash2,
-  X,
-} from "lucide-react";
+import { ChevronRightIcon, FileVideo, Folder, FolderOpen, X } from "lucide-react";
 import type { ComponentProps, PropsWithChildren } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ButtonGroup } from "@/components/ui/button-group";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 import { useAppDispatch } from "@/app/store/redux-hooks";
@@ -22,7 +13,6 @@ import {
 import type { EditingInstance } from "@/domain/editing-instance";
 import { cn } from "@/lib/class-names.utils";
 
-import { DeleteSourceDialog, DeleteSourceDialogTrigger } from "./components/DeleteSourceDialog";
 import { useEditingInstances } from "./hooks/useEditingInstances";
 import { formatSourcePath } from "./lib/media-formatters.utils";
 
@@ -153,7 +143,7 @@ function SourceTreeFolder({
           </Button>
         </CollapsibleTrigger>
 
-        <SourceTreeActionGroup instances={instances} onClose={onClose} onRestore={onRestore} />
+        {/* <SourceTreeActionGroup instances={instances} onClose={onClose} onRestore={onRestore} /> */}
       </div>
 
       <CollapsibleContent>
@@ -201,7 +191,7 @@ function SourceTreeInstance({
     >
       <Button
         aria-current={selected ? "true" : undefined}
-        className="min-w-0 flex-1 justify-between overflow-hidden text-muted-foreground! transition-none group-focus-within:pr-12 group-focus-within:text-foreground! group-hover:bg-muted group-hover:pr-12 group-hover:text-foreground! dark:group-hover:bg-muted/50 data-open:text-foreground!"
+        className="min-w-0 flex-1 justify-between overflow-hidden text-muted-foreground! transition-none group-focus-within:text-foreground! group-hover:bg-muted group-hover:text-foreground! dark:group-hover:bg-muted/50 data-open:text-foreground!"
         data-open={selected ? "true" : undefined}
         onClick={() => onSelect(instance.id)}
         size="xs"
@@ -226,71 +216,8 @@ function SourceTreeInstance({
         ) : null}
       </Button>
 
-      <SourceTreeActionGroup instances={[instance]} onClose={onClose} onRestore={onRestore} />
+      {/* <SourceTreeActionGroup instances={[instance]} onClose={onClose} onRestore={onRestore} /> */}
     </div>
-  );
-}
-
-function SourceTreeActionGroup({
-  instances,
-  onClose,
-  onRestore,
-}: Pick<SourceTreeActions, "onClose" | "onRestore"> & {
-  instances: EditingInstance[];
-}) {
-  if (instances.length === 0) return null;
-
-  const availableInstances = instances.filter(
-    (instance) => instance.sourceAvailability !== "deleted",
-  );
-
-  const actionInstances = availableInstances.length > 0 ? availableInstances : instances;
-
-  const isRestore = availableInstances.length === 0;
-  const isMultiple = instances.length > 1;
-
-  return (
-    <ButtonGroup className="invisible absolute right-0 group-focus-within:visible group-hover:visible">
-      <Button
-        aria-label={isMultiple ? "Close editing instances" : "Close editing instance"}
-        className="transition-none"
-        onClick={() => onClose(instances.map((instance) => instance.id))}
-        size="icon-xs"
-        type="button"
-        variant="secondary"
-      >
-        <X aria-hidden="true" />
-      </Button>
-
-      {isRestore ? (
-        <Button
-          aria-label={isMultiple ? "Restore sources" : "Restore source"}
-          className="transition-none"
-          onClick={() =>
-            onRestore(actionInstances.map((instance) => instance.snapshot.source.sourcePath))
-          }
-          size="icon-xs"
-          type="button"
-          variant="success"
-        >
-          <RotateCcw aria-hidden="true" />
-        </Button>
-      ) : (
-        <DeleteSourceDialog sourceIds={actionInstances.map((instance) => instance.id)}>
-          <DeleteSourceDialogTrigger asChild>
-            <Button
-              aria-label={isMultiple ? "Delete sources" : "Delete source"}
-              className="transition-none"
-              size="icon-xs"
-              type="button"
-              variant="destructive"
-            >
-              <Trash2 aria-hidden="true" />
-            </Button>
-          </DeleteSourceDialogTrigger>
-        </DeleteSourceDialog>
-      )}
-    </ButtonGroup>
   );
 }
 
@@ -300,13 +227,7 @@ function SourceTreeStatus({
   title,
 }: PropsWithChildren<{ className?: string; title?: string }>) {
   return (
-    <span
-      className={cn(
-        "shrink-0 text-[10px] text-muted-foreground group-focus-within:hidden group-hover:hidden",
-        className,
-      )}
-      title={title}
-    >
+    <span className={cn("shrink-0 text-[10px] text-muted-foreground", className)} title={title}>
       {children}
     </span>
   );
