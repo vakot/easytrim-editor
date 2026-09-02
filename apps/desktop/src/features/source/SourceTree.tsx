@@ -1,3 +1,4 @@
+import type { TFunction } from "i18next";
 import { ChevronRightIcon, FileVideo, Folder, FolderOpen } from "lucide-react";
 import type { ComponentProps, PropsWithChildren } from "react";
 import { useTranslation } from "react-i18next";
@@ -21,6 +22,8 @@ import {
 } from "@/app/store/thunks/source-media-thunks";
 import type { EditingInstance } from "@/domain/editing-instance";
 import { cn } from "@/lib/class-names.utils";
+import { openFileLocation } from "@/lib/tauri/media";
+import { isWindowsRuntime } from "@/lib/tauri/updates.utils";
 
 import { DeleteSourceDialog, DeleteSourceDialogTrigger } from "./components/DeleteSourceDialog";
 import { useEditingInstances } from "./hooks/useEditingInstances";
@@ -33,6 +36,7 @@ type SourceTreeFolderNode = {
   id: string;
   kind: "folder";
   name: string;
+  path: string;
 };
 
 type SourceTreeInstanceNode = {
@@ -88,7 +92,11 @@ function SourceTreeFolder({
 
   return (
     <Collapsible className="w-full">
-      <SourceTreeContextMenu kind="folder" sourceIds={instances.map((instance) => instance.id)}>
+      <SourceTreeContextMenu
+        kind="folder"
+        revealPath={node.path}
+        sourceIds={instances.map((instance) => instance.id)}
+      >
         <div
           className="group group-line sticky flex min-w-0 items-center gap-1 rounded-md bg-card"
           style={{ top: level * 28, zIndex: 10 - level }}
@@ -146,7 +154,11 @@ function SourceTreeInstance({
   const isLoading = status === "rendering";
 
   return (
-    <SourceTreeContextMenu kind="file" sourceIds={[instance.id]}>
+    <SourceTreeContextMenu
+      kind="file"
+      revealPath={formatSourcePath(instance.snapshot.source.sourcePath)}
+      sourceIds={[instance.id]}
+    >
       <div
         className="group group-line relative flex min-w-0 items-center gap-1 rounded-md"
         data-open={selected}
@@ -186,8 +198,13 @@ function SourceTreeInstance({
 function SourceTreeContextMenu({
   children,
   kind,
+  revealPath,
   sourceIds,
-}: PropsWithChildren<{ kind: "file" | "folder"; sourceIds: string[] }>) {
+}: PropsWithChildren<{
+  kind: "file" | "folder";
+  revealPath: string;
+  sourceIds: string[];
+}>) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
 
@@ -195,6 +212,10 @@ function SourceTreeContextMenu({
     for (const sourceId of sourceIds) {
       void dispatch(closeActiveEditingInstanceRequested(sourceId));
     }
+  };
+
+  const revealSource = () => {
+    void openFileLocation(revealPath).catch(() => undefined);
   };
 
   return (
@@ -217,6 +238,10 @@ function SourceTreeContextMenu({
           </ContextMenuGroup>
           <ContextMenuSeparator />
           <ContextMenuGroup>
+            <ContextMenuItem onSelect={revealSource}>{getRevealLabel(t)}</ContextMenuItem>
+          </ContextMenuGroup>
+          <ContextMenuSeparator />
+          <ContextMenuGroup>
             <DeleteSourceDialogTrigger asChild>
               <ContextMenuItem onSelect={(event) => event.preventDefault()} variant="destructive">
                 {t("common.actions.delete")}
@@ -226,6 +251,19 @@ function SourceTreeContextMenu({
         </ContextMenuContent>
       </ContextMenu>
     </DeleteSourceDialog>
+  );
+}
+
+function getRevealLabel(t: TFunction): string {
+  if (isMacOSRuntime()) return t("source.actions.revealInFinder");
+  if (isWindowsRuntime()) return t("source.actions.revealInFileExplorer");
+  return t("source.actions.revealInFileManager");
+}
+
+function isMacOSRuntime(): boolean {
+  return (
+    typeof navigator !== "undefined" &&
+    (/Mac/i.test(navigator.userAgent) || /Mac/i.test(navigator.platform))
   );
 }
 
@@ -266,23 +304,20 @@ function getSourceTreeNodes(instances: EditingInstance[]): SourceTreeNode[] {
     const directories = getPathDirectories(formatSourcePath(instance.snapshot.source.sourcePath));
 
     let parent = root;
-    let currentPath = "";
 
     for (const directory of directories) {
-      currentPath = currentPath ? `${currentPath}\\${directory}` : directory;
-
       let folder = parent.children.find(
         (node): node is SourceTreeBuildFolderNode =>
-          node.kind === "folder" && node.path === currentPath,
+          node.kind === "folder" && node.path === directory.path,
       );
 
       if (!folder) {
         folder = {
           children: [],
-          id: `folder:${currentPath}`,
+          id: `folder:${directory.path}`,
           kind: "folder",
-          name: directory,
-          path: currentPath,
+          name: directory.name,
+          path: directory.path,
         };
 
         parent.children.push(folder);
@@ -332,6 +367,7 @@ function stripBuildFolderFields(node: SourceTreeBuildNode): SourceTreeNode {
     id: node.id,
     kind: "folder",
     name: node.name,
+    path: node.path,
   };
 }
 
@@ -341,8 +377,30 @@ function getSourceTreeInstances(nodes: SourceTreeNode[]): EditingInstance[] {
   );
 }
 
-function getPathDirectories(path: string): string[] {
-  return path.split(/[\\/]/).slice(0, -1);
+function getPathDirectories(path: string): Array<{ name: string; path: string }> {
+  const separator = path.includes("\\") ? "\\" : "/";
+  const directoryPath = path.slice(0, Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\")));
+  const driveRoot = directoryPath.match(/^[A-Za-z]:[\\/]/)?.[0];
+  const root = directoryPath.startsWith(separator) ? separator : "";
+  let currentPath = driveRoot ?? root;
+
+  const directories = directoryPath.slice(currentPath.length).split(/[\\/]/).filter(Boolean);
+
+  if (driveRoot) {
+    directories.unshift(driveRoot.slice(0, 2));
+  }
+
+  return directories.map((name) => {
+    if (name === driveRoot?.slice(0, 2)) {
+      currentPath = driveRoot;
+    } else {
+      currentPath = currentPath
+        ? `${currentPath}${currentPath.endsWith(separator) ? "" : separator}${name}`
+        : name;
+    }
+
+    return { name, path: currentPath };
+  });
 }
 
 function getStatusVariant(
