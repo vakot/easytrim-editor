@@ -8,22 +8,15 @@ import {
   X,
 } from "lucide-react";
 import type { PropsWithChildren } from "react";
-import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 
-import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
+import { useAppDispatch } from "@/app/store/redux-hooks";
 import {
-  selectActiveInstanceId,
-  selectEditingInstances,
-} from "@/app/store/slices/editing-instances-slice";
-import {
-  closeActiveEditingInstanceRequested,
   navigateToEditingInstance,
   restoreSourceFileRequested,
 } from "@/app/store/thunks/source-media-thunks";
@@ -31,7 +24,7 @@ import type { EditingInstance } from "@/domain/editing-instance";
 import { cn } from "@/lib/class-names.utils";
 
 import { DeleteSourceDialog, DeleteSourceDialogTrigger } from "./components/DeleteSourceDialog";
-import { SourceDetails } from "./components/SourceDetails";
+import { useEditingInstances } from "./hooks/useEditingInstances";
 import { formatSourcePath } from "./lib/media-formatters.utils";
 
 type SourceTreeNode =
@@ -46,16 +39,9 @@ type SourceTreeActions = {
 };
 
 export function SourceTree() {
-  const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const instances = useAppSelector(selectEditingInstances);
-  const activeInstanceId = useAppSelector(selectActiveInstanceId);
 
-  const closeInstances = async (ids: string[]) => {
-    for (const id of ids) {
-      await dispatch(closeActiveEditingInstanceRequested(id));
-    }
-  };
+  const { activeInstanceId, closeInstances, instances } = useEditingInstances();
 
   const restoreSources = async (sourcePaths: string[]) => {
     for (const sourcePath of new Set(sourcePaths)) {
@@ -64,37 +50,17 @@ export function SourceTree() {
   };
 
   return (
-    <aside aria-label={t("source.labels.title")} className="flex size-full min-h-0 flex-col pt-3">
-      <h3
-        className="mx-3 font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
-        id="source-panel-title"
-      >
-        {t("source.labels.title")}
-      </h3>
-
-      <section
-        aria-labelledby="source-details-title"
-        className="min-h-0 overflow-auto px-3 pt-2"
-        id="workspace-sidebar-source-details"
-      >
-        <h4 className="sr-only">{t("source.labels.mediaDetails")}</h4>
-        <SourceDetails />
-      </section>
-
-      <Separator className="bg-foreground/10" />
-
-      <ScrollArea className="min-h-0 flex-1">
-        <div className="flex flex-col gap-1 p-1">
-          <SourceTreeNodes
-            nodes={getSourceTreeNodes(instances)}
-            onClose={(ids) => void closeInstances(ids)}
-            onRestore={(paths) => void restoreSources(paths)}
-            onSelect={(id) => void dispatch(navigateToEditingInstance(id))}
-            value={activeInstanceId ?? ""}
-          />
-        </div>
-      </ScrollArea>
-    </aside>
+    <ScrollArea className="min-h-0 flex-1">
+      <div className="flex flex-col gap-1 p-1">
+        <SourceTreeNodes
+          nodes={getSourceTreeNodes(instances)}
+          onClose={(ids) => void closeInstances(ids)}
+          onRestore={(paths) => void restoreSources(paths)}
+          onSelect={(id) => void dispatch(navigateToEditingInstance(id))}
+          value={activeInstanceId ?? ""}
+        />
+      </div>
+    </ScrollArea>
   );
 }
 
