@@ -404,7 +404,7 @@ export const restoreActiveEditingInstanceRequested =
     const restorationId = queueRestoreSequence;
     let source: SourceRef;
     try {
-      source = await activateSourcePath(instance.snapshot.source.sourcePath);
+      source = await activateSourcePath(instance.snapshot.source.sourcePath, instance.media);
     } catch (error: unknown) {
       if (restorationId !== queueRestoreSequence || selectActiveInstanceId(getState()) !== id) {
         return false;

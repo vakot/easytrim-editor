@@ -11,6 +11,7 @@ use crate::{
         is_supported_video_path,
     },
     error::AppError,
+    media::probe::MediaInfo,
     state::AppState,
 };
 
@@ -81,8 +82,9 @@ pub async fn import_dropped_sources(
 pub fn activate_source_path(
     state: State<'_, AppState>,
     source_path: PathBuf,
+    media: Option<MediaInfo>,
 ) -> Result<SourceRef, AppError> {
-    activate_source(&state, source_path)
+    activate_source(&state, source_path, media)
 }
 
 #[tauri::command]
