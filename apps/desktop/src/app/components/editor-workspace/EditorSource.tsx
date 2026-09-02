@@ -156,6 +156,7 @@ function SourceDetailsPanel({ isSingle = false }: SourcePanelProps) {
       className="flex min-h-0 flex-col overflow-hidden"
       collapsedSize={PANEL_COLLAPSED_SIZE}
       collapsible
+      defaultSize={0}
       id="workspace-sidebar-source-details"
       minSize={PANEL_MIN_SIZE}
     >
@@ -236,7 +237,6 @@ function SourceTreePanel({ isSingle = false }: SourcePanelProps) {
       className="flex min-h-0 flex-col overflow-hidden"
       collapsedSize={PANEL_COLLAPSED_SIZE}
       collapsible
-      defaultSize={0}
       id="workspace-sidebar-explorer"
       minSize={PANEL_MIN_SIZE}
     >

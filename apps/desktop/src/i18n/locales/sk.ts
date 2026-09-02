@@ -14,7 +14,6 @@ export const sk = {
     },
     labels: { brand: "EasyTrim Editor" },
     status: {
-      empty: "Prázdne",
       disabled: "Vypnuté",
       enabled: "Zapnuté",
       error: "Chyba",
@@ -159,23 +158,14 @@ export const sk = {
   queue: {
     actions: {
       cancel: "Zrušiť",
-      next: "Nasledujúci",
-      previous: "Predchádzajúci",
       skip: "Preskočiť",
       start: "Spustiť front",
     },
     labels: {
       deleteSource: "Odstrániť zdroj",
-      export: "Front exportov",
       import: "Front importov",
       onFinish: "Po dokončení frontu",
       title: "Front",
-    },
-    status: {
-      canceled: "Zrušené",
-      failed: "Zlyhalo",
-      queued: "Vo fronte",
-      sourceDeleted: "Zdroj odstránený",
     },
     tooltips: {
       deleteSourceOnRenderFinish: "Po úspešnom vykreslení odstráni zdroj",
@@ -192,12 +182,7 @@ export const sk = {
       },
     },
     accessibility: {
-      cancelItem: "Zrušiť {{filename}}",
-      openLocation: "Otvoriť umiestnenie {{filename}}",
       progress: "Priebeh exportu",
-      deleteSource: "Odstrániť {{filename}} zo zariadenia",
-      removeImportItem: "Odstrániť {{filename}} z frontu importov",
-      restoreItem: "Obnoviť {{filename}}",
     },
     options: {
       finish: {
