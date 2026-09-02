@@ -74,7 +74,7 @@ function ScrollArea({
   return (
     <ScrollAreaPrimitive.Root
       className={cn(
-        "relative overflow-hidden",
+        "relative overflow-hidden before:top-0 after:bottom-0",
         styles.scrollFade,
         orientation === "horizontal" && styles.horizontal,
         scrollState.canScrollUp && styles.canScrollUp,
@@ -114,7 +114,7 @@ function ScrollBar({
   return (
     <ScrollAreaPrimitive.ScrollAreaScrollbar
       className={cn(
-        "flex touch-none p-px transition-colors select-none data-horizontal:h-2.5 data-horizontal:flex-col data-horizontal:border-t data-horizontal:border-t-transparent data-vertical:h-full data-vertical:w-2.5 data-vertical:border-l data-vertical:border-l-transparent",
+        "z-20 flex touch-none p-px transition-colors select-none data-horizontal:h-2.5 data-horizontal:flex-col data-horizontal:border-t data-horizontal:border-t-transparent data-vertical:h-full data-vertical:w-2.5 data-vertical:border-l data-vertical:border-l-transparent",
         className,
       )}
       data-orientation={orientation}

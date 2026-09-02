@@ -13,12 +13,10 @@
 }
 
 .scrollFade::before {
-  top: 0;
   mask-image: linear-gradient(to bottom, black, transparent);
 }
 
 .scrollFade::after {
-  bottom: 0;
   mask-image: linear-gradient(to top, black, transparent);
 }
 
