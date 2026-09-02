@@ -58,40 +58,9 @@ export function SourceTabs({
 }
 
 function SourceTabsTrigger({ instance }: { instance: EditingInstance }) {
-  const isChange = isItemSnapshotChanged(instance);
-
   return (
-    <TabsTrigger className={cn("h-6 pr-6 text-xs", isChange && "italic")} value={instance.id}>
+    <TabsTrigger className="h-6 pr-6 text-xs" value={instance.id}>
       <span className="truncate">{instance.snapshot.source.displayName}</span>
     </TabsTrigger>
   );
 }
-
-const isItemSnapshotChanged = (instance: EditingInstance): boolean => {
-  return false;
-  //   const { media, snapshot } = item;
-  //   const expectedDefault = createDefaultEditorSnapshot(snapshot.source, snapshot.audio.mergeAudio);
-  //   const trimChanged =
-  //     "kind" in snapshot.trim
-  //       ? false
-  //       : media === undefined ||
-  //         snapshot.trim.startMicros !== 0 ||
-  //         snapshot.trim.endMicros !== media.durationMicros;
-
-  //   return (
-  //     trimChanged ||
-  //     !areCropRectsEqual(snapshot.crop ?? FULL_CROP, expectedDefault.crop ?? FULL_CROP) ||
-  //     snapshot.audio.master.enabled !== expectedDefault.audio.master.enabled ||
-  //     snapshot.audio.master.volumePercent !== expectedDefault.audio.master.volumePercent ||
-  //     snapshot.audio.tracks.some((track) => !track.enabled || track.volumePercent !== 50)
-  //   );
-};
-
-// function areCropRectsEqual(left: CropRect, right: CropRect): boolean {
-//   return (
-//     left.x === right.x &&
-//     left.y === right.y &&
-//     left.width === right.width &&
-//     left.height === right.height
-//   );
-// }
