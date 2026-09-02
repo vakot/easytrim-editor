@@ -2,6 +2,7 @@ import { type RefObject, useCallback, useLayoutEffect, useRef } from "react";
 
 import { Card } from "@/components/ui/card";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectAudioPanelStreamCount, selectSourceMedia } from "@/app/store/slices/source-slice";
@@ -66,7 +67,14 @@ export function EditorStage() {
           <div className="size-full p-px">
             <Card className="size-full gap-0 bg-preview-surface p-0">
               <div>
-                <SourceTabs />
+                <ScrollArea
+                  className="size-full min-w-0 px-0.75 pb-0.5"
+                  fadeColor="var(--preview-surface)"
+                  orientation="horizontal"
+                  scrollbarClassName="data-horizontal:h-1.25"
+                >
+                  <SourceTabs />
+                </ScrollArea>
               </div>
               <Preview />
             </Card>

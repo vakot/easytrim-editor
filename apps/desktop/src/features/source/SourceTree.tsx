@@ -13,7 +13,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { useAppDispatch } from "@/app/store/redux-hooks";
 import {
@@ -50,17 +49,15 @@ export function SourceTree() {
   };
 
   return (
-    <ScrollArea className="min-h-0 flex-1">
-      <div className="flex flex-col gap-1 p-1">
-        <SourceTreeNodes
-          nodes={getSourceTreeNodes(instances)}
-          onClose={(ids) => void closeInstances(ids)}
-          onRestore={(paths) => void restoreSources(paths)}
-          onSelect={(id) => void dispatch(navigateToEditingInstance(id))}
-          value={activeInstanceId ?? ""}
-        />
-      </div>
-    </ScrollArea>
+    <div className="flex flex-col gap-1 p-1">
+      <SourceTreeNodes
+        nodes={getSourceTreeNodes(instances)}
+        onClose={(ids) => void closeInstances(ids)}
+        onRestore={(paths) => void restoreSources(paths)}
+        onSelect={(id) => void dispatch(navigateToEditingInstance(id))}
+        value={activeInstanceId ?? ""}
+      />
+    </div>
   );
 }
 
@@ -106,7 +103,7 @@ function SourceTreeFolder({
 
   return (
     <Collapsible className="w-full">
-      <div className="group group-line relative flex min-w-0 items-center gap-1 rounded-md pr-1">
+      <div className="group group-line relative flex min-w-0 items-center gap-1 rounded-md">
         <CollapsibleTrigger asChild>
           <Button
             className="group min-w-0 flex-1 justify-between transition-none group-focus-within:bg-muted group-focus-within:pr-4 group-focus-within:text-foreground! group-hover:bg-muted group-hover:pr-4 group-hover:text-foreground! dark:group-focus-within:bg-muted/50 dark:group-hover:bg-muted/50"

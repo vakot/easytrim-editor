@@ -1,7 +1,6 @@
 import { X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { useAppDispatch } from "@/app/store/redux-hooks";
@@ -24,42 +23,35 @@ export function SourceTabs({
   const { activeInstanceId, closeInstance, readyInstances } = useEditingInstances();
 
   return (
-    <ScrollArea
-      className="size-full min-w-0 px-0.75 pb-0.5"
-      fadeColor={`var(--${background})`}
+    <Tabs
+      className="gap-0"
+      onValueChange={(id) => void dispatch(navigateToEditingInstance(id))}
       orientation={orientation}
-      scrollbarClassName="data-horizontal:h-1.25"
+      value={activeInstanceId ?? ""}
     >
-      <Tabs
-        className="gap-0"
-        onValueChange={(id) => void dispatch(navigateToEditingInstance(id))}
-        orientation={orientation}
-        value={activeInstanceId ?? ""}
-      >
-        <TabsList className={`w-max min-w-full justify-baseline bg-${background} pb-0`}>
-          {readyInstances.map((instance) => (
-            <div
-              className={cn(
-                "relative flex shrink-0 items-center",
-                orientation === "vertical" && "w-full",
-              )}
-              key={instance.id}
+      <TabsList className={`w-max min-w-full justify-baseline bg-${background} pb-0`}>
+        {readyInstances.map((instance) => (
+          <div
+            className={cn(
+              "relative flex shrink-0 items-center",
+              orientation === "vertical" && "w-full",
+            )}
+            key={instance.id}
+          >
+            <SourceTabsTrigger instance={instance} />
+            <Button
+              aria-label={`Close ${instance.snapshot.source.displayName}`}
+              className="absolute right-0.5"
+              onClick={() => closeInstance(instance.id)}
+              size="icon-2xs"
+              variant="ghost"
             >
-              <SourceTabsTrigger instance={instance} />
-              <Button
-                aria-label={`Close ${instance.snapshot.source.displayName}`}
-                className="absolute right-0.5"
-                onClick={() => closeInstance(instance.id)}
-                size="icon-2xs"
-                variant="ghost"
-              >
-                <X />
-              </Button>
-            </div>
-          ))}
-        </TabsList>
-      </Tabs>
-    </ScrollArea>
+              <X />
+            </Button>
+          </div>
+        ))}
+      </TabsList>
+    </Tabs>
   );
 }
 
