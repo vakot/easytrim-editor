@@ -3,18 +3,15 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DEFAULT_PREFERENCES } from "../app/preferences";
-import { importQueueItemActivated } from "../app/store/actions/imported-queue-actions";
+import { editingInstanceActivated } from "../app/store/actions/editing-instance-actions";
 import { sourceCleared, sourceReady } from "../app/store/actions/source-actions";
 import { startSourceMediaRuntime } from "../app/store/integration/source-media-runtime";
 import {
   createEditorToolsStateFromPreferences,
   editorToolsInitialized,
 } from "../app/store/slices/editor-tools-slice";
-import {
-  importQueueItemAdded,
-  importQueueItemRemoved,
-  selectImportQueueItems,
-} from "../app/store/slices/export-slice";
+import { editingInstancesAdded, editingInstanceClosed } from "../app/store/slices/editing-instances-slice";
+import { selectEditingInstances } from "../app/store/slices/editing-instances-slice";
 import { previewReady } from "../app/store/slices/preview-slice";
 import { selectHasSource } from "../app/store/slices/source-slice";
 import { store } from "../app/store/store";
@@ -194,8 +191,8 @@ function installAudioMocks(initiallyReady = true) {
 beforeEach(() => {
   vi.clearAllMocks();
   store.dispatch(sourceCleared());
-  for (const item of selectImportQueueItems(store.getState())) {
-    store.dispatch(importQueueItemRemoved(item.id));
+  for (const instance of selectEditingInstances(store.getState())) {
+    store.dispatch(editingInstanceClosed(instance.id));
   }
   store.dispatch(
     editorToolsInitialized(createEditorToolsStateFromPreferences(DEFAULT_PREFERENCES)),
@@ -407,25 +404,26 @@ describe("App", () => {
     };
 
     const firstItem = {
+      exportAttempts: [],
       id: "transition-a",
-      status: "imported" as const,
       origin: "source-import" as const,
       media,
       snapshot: firstSnapshot,
+      sourceAvailability: "available" as const,
     };
 
     const replacementItem = {
+      exportAttempts: [],
       id: "transition-b",
-      status: "imported" as const,
       origin: "source-import" as const,
       media: replacementMedia,
       snapshot: replacementSnapshot,
+      sourceAvailability: "available" as const,
     };
 
-    store.dispatch(importQueueItemAdded(firstItem));
-    store.dispatch(importQueueItemAdded(replacementItem));
+    store.dispatch(editingInstancesAdded([firstItem, replacementItem]));
     store.dispatch(
-      importQueueItemActivated({
+      editingInstanceActivated({
         id: firstItem.id,
         loadToken: 100,
         media,
@@ -457,7 +455,8 @@ describe("App", () => {
     const timelinePanel = document.getElementById("editor-stage-timeline");
     const audioPanel = document.getElementById("editor-stage-audio");
 
-    await user.click(screen.getByLabelText(`Restore ${replacementSelection.displayName}`));
+    await user.click(screen.getByRole("button", { name: "C:\\Media" }));
+    await user.click(screen.getByRole("button", { name: new RegExp(replacementSelection.displayName) }));
 
     expect(document.getElementById("workspace-sidebar-source-details")).toBe(detailsPanel);
     expect(document.getElementById("editor-stage-preview")).toBe(previewPanel);
@@ -936,12 +935,6 @@ describe("App", () => {
     const sourceDetailsPanel = document.getElementById("workspace-sidebar");
     expect(sourceDetailsPanel).not.toBeNull();
     expect(sourceDetailsPanel).toContainElement(screen.getByLabelText("Video metadata"));
-    expect(sourceDetailsPanel).toContainElement(
-      screen.getByRole("button", { name: "Import queue" }),
-    );
-    expect(sourceDetailsPanel).toContainElement(
-      screen.getByRole("heading", { name: "Export queue" }),
-    );
     expect(document.getElementById("editor-stage-preview")).toContainElement(
       screen.getByLabelText("Source video preview"),
     );

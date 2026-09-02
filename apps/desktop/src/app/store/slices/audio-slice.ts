@@ -1,6 +1,6 @@
 import { createSelector, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
-import { importQueueItemActivated } from "@/app/store/actions/imported-queue-actions";
+import { editingInstanceActivated } from "@/app/store/actions/editing-instance-actions";
 import { sourceCleared, sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
 import type { EditorSnapshot } from "@/domain/editor-snapshot";
 import type {
@@ -174,7 +174,7 @@ const audioSlice = createSlice({
           previews: [],
         };
       })
-      .addCase(importQueueItemActivated, (state, action) => {
+      .addCase(editingInstanceActivated, (state, action) => {
         const { media, snapshot } = action.payload;
         state.tracks = media ? createAudioTracks(media, snapshot) : [];
         state.masterEnabled = snapshot.audio.master.enabled;

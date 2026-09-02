@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { importQueueItemActivated } from "@/app/store/actions/imported-queue-actions";
+import { editingInstanceActivated } from "@/app/store/actions/editing-instance-actions";
 import { sourceFailed, sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
 import { firstSource, media, mediaWithAudio, secondSource } from "@/test/source.fixtures";
 
@@ -50,7 +50,7 @@ describe("source slice", () => {
 
     const replacing = sourceReducer(
       ready,
-      importQueueItemActivated({
+      editingInstanceActivated({
         id: "import-2",
         loadToken: 2,
         snapshot: {

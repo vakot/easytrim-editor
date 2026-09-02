@@ -19,6 +19,10 @@ The desktop application has two cooperating layers:
 The frontend never acquires arbitrary filesystem or process authority. The native layer never
 owns presentation concerns.
 
+The editor's cross-feature lifecycle is defined by the canonical `EditingInstance` collection;
+see [Editing instance lifecycle](editing-instance-lifecycle.md) for the contract migration table,
+identity rules, and source/export ownership boundaries.
+
 ## Frontend ownership
 
 Application code composes the editor workspace, initializes providers, owns the application store,

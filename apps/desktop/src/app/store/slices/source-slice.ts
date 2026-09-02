@@ -1,6 +1,6 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
-import { importQueueItemActivated } from "@/app/store/actions/imported-queue-actions";
+import { editingInstanceActivated } from "@/app/store/actions/editing-instance-actions";
 import {
   isValidSourceReadyPayload,
   sourceCleared,
@@ -61,7 +61,7 @@ const sourceSlice = createSlice({
         state.media = null;
         state.error = null;
       })
-      .addCase(importQueueItemActivated, (state, action) => {
+      .addCase(editingInstanceActivated, (state, action) => {
         state.status = "loading-source";
         state.source = action.payload.snapshot.source;
         state.loadToken = action.payload.loadToken;

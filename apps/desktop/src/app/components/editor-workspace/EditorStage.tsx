@@ -8,7 +8,6 @@ import { selectAudioPanelStreamCount, selectSourceMedia } from "@/app/store/slic
 import { selectTrim } from "@/app/store/slices/trim-slice";
 import { AudioPanel } from "@/features/audio";
 import { Preview } from "@/features/preview";
-import { ImportQueueTabs } from "@/features/source";
 import { TimelinePanel } from "@/features/timeline";
 import { cn } from "@/lib/class-names.utils";
 import { syncTimelineGeometry } from "@/lib/interaction/timeline-geometry.utils";
@@ -65,7 +64,6 @@ export function EditorStage() {
         <ResizablePanel id="editor-stage-preview" minSize="14rem">
           <div className="size-full p-px">
             <Card className="size-full gap-0 bg-preview-surface p-0">
-              <ImportQueueTabs />
               <Preview />
             </Card>
           </div>

@@ -22,6 +22,7 @@ import {
 } from "@/app/store/slices/editor-tools-slice";
 import { exportPresetsReducer } from "@/app/store/slices/export-presets-slice";
 import { exportReducer } from "@/app/store/slices/export-slice";
+import { editingInstancesReducer } from "@/app/store/slices/editing-instances-slice";
 import { importWorkflowReducer } from "@/app/store/slices/import-workflow-slice";
 import { preferencesReducer } from "@/app/store/slices/preferences-slice";
 import { previewReducer } from "@/app/store/slices/preview-slice";
@@ -31,6 +32,7 @@ import { trimReducer } from "@/app/store/slices/trim-slice";
 const combinedReducer = combineReducers({
   audio: audioReducer,
   crop: cropReducer,
+  editingInstances: editingInstancesReducer,
   editorTools: editorToolsReducer,
   export: exportReducer,
   exportPresets: exportPresetsReducer,

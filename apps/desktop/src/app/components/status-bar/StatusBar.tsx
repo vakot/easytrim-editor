@@ -11,7 +11,7 @@ import { SupportLink } from "@/app/components/SupportLink";
 import type { UpdateStatus } from "@/app/contexts/app-updates-context";
 import { useAppUpdates } from "@/app/hooks/useAppUpdates";
 import { useAppSelector } from "@/app/store/redux-hooks";
-import { type ExportQueueItem, selectExportQueue } from "@/app/store/slices/export-slice";
+import { selectRenderingAttempt } from "@/app/store/slices/editing-instances-slice";
 import { formatExportDuration, formatExportFileSize } from "@/domain/export-metrics";
 import { getCurrentVersion } from "@/lib/app-version.utils";
 import { requestWindowShutdown } from "@/lib/tauri/window";
@@ -26,16 +26,11 @@ function splitFilePath(path: string) {
   };
 }
 
-function selectStatusBarExport(queue: ExportQueueItem[]) {
-  return [...queue].reverse().find((item) => item.status === "rendering");
-}
-
 export function StatusBar() {
   const { t } = useTranslation();
-  const queue = useAppSelector(selectExportQueue);
-  const activeExport = selectStatusBarExport(queue);
-  const activeExportPath = activeExport ? splitFilePath(activeExport.path) : null;
-  const progressPercent = activeExport ? Math.round(activeExport.progressPercent ?? 0) : 0;
+  const activeExport = useAppSelector(selectRenderingAttempt);
+  const activeExportPath = activeExport ? splitFilePath(activeExport.attempt.output.displayPath) : null;
+  const progressPercent = activeExport ? Math.round(activeExport.attempt.metrics.progressPercent) : 0;
 
   return (
     <div className="bg-card/30">
@@ -53,7 +48,7 @@ export function StatusBar() {
             <span className="max-w-md truncate text-xs">
               <span>{activeExportPath?.directory}</span>
               <span className="font-medium text-foreground">
-                {activeExportPath?.filename ?? activeExport.filename}
+                {activeExportPath?.filename ?? activeExport.attempt.output.displayName}
               </span>
             </span>
             <Separator className="mt-1 h-4 self-center" orientation="vertical" />
@@ -70,25 +65,25 @@ export function StatusBar() {
             </div>
             <Separator className="mt-1 h-4 self-center" orientation="vertical" />
             <StatusMetricTooltip label={t("export.labels.frames")}>
-              {activeExport.currentFrame ?? 0}f / {activeExport.totalFrames ?? 0}f
+              {activeExport.attempt.metrics.currentFrame ?? 0}f / {activeExport.attempt.metrics.totalFrames ?? 0}f
             </StatusMetricTooltip>
             <Separator className="mt-1 h-4 self-center" orientation="vertical" />
             <StatusMetricTooltip label={t("export.labels.fps")}>
-              {Math.round(activeExport.fps ?? 0)} FPS
+              {Math.round(activeExport.attempt.metrics.fps ?? 0)} FPS
             </StatusMetricTooltip>
             <Separator className="mt-1 h-4 self-center" orientation="vertical" />
             <StatusMetricTooltip label={t("export.labels.bitrate")}>
-              {activeExport.bitrate ?? "0 kbits/s"}
+              {activeExport.attempt.metrics.bitrate ?? "0 kbits/s"}
             </StatusMetricTooltip>
             <Separator className="mt-1 h-4 self-center" orientation="vertical" />
             <StatusMetricTooltip label={t("export.labels.estimateSize")}>
-              {formatStatusFileSize(activeExport.fileSizeBytes)} /{" "}
-              {formatStatusFileSize(activeExport.estimatedFileSizeBytes)}
+              {formatStatusFileSize(activeExport.attempt.metrics.fileSizeBytes)} /{" "}
+                {formatStatusFileSize(activeExport.attempt.metrics.estimatedFileSizeBytes)}
             </StatusMetricTooltip>
             <Separator className="mt-1 h-4 self-center" orientation="vertical" />
             <StatusMetricTooltip label={t("export.labels.estimateTime")}>
-              {formatExportDuration(activeExport.estimatedElapsedTimeMs ?? 0)} /{" "}
-              {formatExportDuration(activeExport.estimatedTotalTimeMs ?? 0)}
+              {formatExportDuration(activeExport.attempt.metrics.estimatedElapsedTimeMs ?? 0)} /{" "}
+                {formatExportDuration(activeExport.attempt.metrics.estimatedTotalTimeMs ?? 0)}
             </StatusMetricTooltip>
           </div>
         ) : null}

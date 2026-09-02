@@ -90,7 +90,7 @@ function ScrollArea({
     >
       <ScrollAreaPrimitive.Viewport
         className={cn(
-          "scroll-area-viewport size-full rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1",
+          "scroll-area-viewport size-full rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1 [&>div]:block!",
           orientation === "horizontal" ? "overflow-x-auto overflow-y-hidden" : "overflow-x-hidden",
         )}
         data-slot="scroll-area-viewport"

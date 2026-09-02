@@ -37,10 +37,10 @@ import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
   queueFinishActionChanged,
   selectAvailableQueueFinishActions,
-  selectExportQueue,
   selectQueueFinishAction,
   selectQueueStarted,
 } from "@/app/store/slices/export-slice";
+import { selectEditingInstanceAttempts } from "@/app/store/slices/editing-instances-slice";
 import {
   preferenceChanged,
   selectDeleteSourceOnRenderFinish,
@@ -57,14 +57,14 @@ export function MenuBarQueue() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
 
-  const queue = useAppSelector(selectExportQueue);
+  const attempts = useAppSelector(selectEditingInstanceAttempts);
   const deleteSourceOnRenderFinish = useAppSelector(selectDeleteSourceOnRenderFinish);
   const queueStarted = useAppSelector(selectQueueStarted);
   const queueFinishAction = useAppSelector(selectQueueFinishAction);
   const availableQueueFinishActions = useAppSelector(selectAvailableQueueFinishActions);
 
-  const hasQueuedItems = queue.some((toast) => toast.status === "queued");
-  const hasActiveItem = queue.some((toast) => toast.status === "rendering");
+  const hasQueuedItems = attempts.some(({ attempt }) => attempt.state.status === "queued");
+  const hasActiveItem = attempts.some(({ attempt }) => attempt.state.status === "rendering");
 
   useKeyboardShortcut(
     (event) =>

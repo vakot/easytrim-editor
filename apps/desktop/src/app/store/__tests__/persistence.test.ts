@@ -8,7 +8,7 @@ import {
   editorToolsReset,
   playbackSpeedChanged,
 } from "@/app/store/slices/editor-tools-slice";
-import { optimizedExportDialogOpened, queueEntryAdded } from "@/app/store/slices/export-slice";
+import { optimizedExportDialogOpened } from "@/app/store/slices/export-slice";
 import {
   activityFeedViewChanged,
   customPrimaryColorChanged,
@@ -192,41 +192,9 @@ describe("Redux Persist store integration", () => {
     });
   });
 
-  it("never persists export runtime state, queue entries, or dialog state", async () => {
+  it("never persists export runtime state or dialog state", async () => {
     const { persistor, storage, store } = await createPersistedTestStore();
-    store.dispatch(
-      optimizedExportDialogOpened({
-        resolution: { width: 1920, height: 1080 },
-        frameRate: undefined,
-      }),
-    );
-    store.dispatch(
-      queueEntryAdded({
-        addedAt: 1,
-        id: "export-1",
-        snapshot: {
-          source: { displayName: "source.mp4", sourcePath: "C:/Media/source.mp4" },
-          trim: { startMicros: 0, endMicros: 1_000_000 },
-          crop: null,
-          audio: { master: { enabled: true, volumePercent: 50 }, tracks: [], mergeAudio: false },
-        },
-        route: "fast",
-        request: {
-          sourcePath: "C:/Media/source.mp4",
-          trim: { startMicros: 0, endMicros: 1_000_000 },
-          audioTracks: [],
-          mergeAudio: false,
-        },
-        outputId: "output-1",
-        filename: "clip.mkv",
-        path: "C:/Exports/clip.mkv",
-        status: "queued",
-        operationId: null,
-        startedAt: null,
-        durationMs: null,
-        progressPercent: 0,
-      }),
-    );
+    store.dispatch(optimizedExportDialogOpened());
     await persistor.flush();
 
     const persistedRoot = await readPersistedRoot(storage);

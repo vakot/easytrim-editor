@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
-import { selectHasProcessableExports } from "@/app/store/slices/export-slice";
+import { selectHasProcessableExports } from "@/app/store/slices/editing-instances-slice";
 import {
   closeWindow,
   listenForWindowCloseRequests,

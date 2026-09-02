@@ -1,4 +1,4 @@
-import { importQueueItemActivated } from "@/app/store/actions/imported-queue-actions";
+import { editingInstanceActivated } from "@/app/store/actions/editing-instance-actions";
 import {
   sourceCleared,
   sourceErrorReported,
@@ -6,7 +6,8 @@ import {
   sourceReady,
 } from "@/app/store/actions/source-actions";
 import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";
-import { getReplacementImportedItem } from "@/app/store/lib/imported-queue";
+import { getReplacementEditingInstance } from "@/app/store/lib/editing-instances";
+import { cancelInstanceExports } from "@/app/store/integration/export-queue-runtime";
 import {
   audioPreviewsLoading,
   audioPreviewsReady,
@@ -20,16 +21,25 @@ import {
 } from "@/app/store/slices/audio-slice";
 import { selectCrop } from "@/app/store/slices/crop-slice";
 import {
-  activeQueueItemChanged,
-  exportSourceRestored,
-  type ImportQueueItem,
-  importQueueItemRemoved,
-  importQueueItemsAdded,
-  queueItemMediaPreloaded,
-  queueItemSnapshotUpdated,
-  selectActiveQueueItem,
-  selectImportQueueItems,
-} from "@/app/store/slices/export-slice";
+  cloneEditorSnapshot,
+  createEditorSnapshot,
+  type EditorSnapshot,
+} from "@/domain/editor-snapshot";
+import type { EditingInstance } from "@/domain/editing-instance";
+import {
+  editingInstanceMediaUpdated,
+  editingInstanceClosed,
+  editingInstanceDuplicated,
+  editingInstanceSnapshotUpdated,
+  editingInstancesAdded,
+  editingInstancesSourceAvailabilityChanged,
+  activeEditingInstanceChanged,
+  selectActiveEditingInstance,
+  selectActiveInstanceId,
+  selectEditingInstanceById,
+  selectEditingInstanceAttempts,
+  selectEditingInstances,
+} from "@/app/store/slices/editing-instances-slice";
 import {
   dropListenerErrorCleared,
   nativeDialogStateChanged,
@@ -46,7 +56,6 @@ import {
 } from "@/app/store/slices/source-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
 import type { AppDispatch, RootState } from "@/app/store/store";
-import { createEditorSnapshot, type EditorSnapshot } from "@/domain/editor-snapshot";
 import type { SourceRef } from "@/domain/source";
 import { type DiagnosticOperation, diagnostics } from "@/lib/diagnostics";
 import type { DiagnosticOrigin } from "@/lib/tauri/diagnostics.types";
@@ -79,7 +88,7 @@ export type AppThunk<ReturnValue = void | Promise<unknown>> = (
 
 let waveformJobSequence = 0;
 let sourceLoadSequence = 0;
-let importedItemSequence = 0;
+let editingInstanceSequence = 0;
 let queueRestoreSequence = 0;
 const IMPORT_MEDIA_PRELOAD_CONCURRENCY = 2;
 const importedMediaPreloads = new Map<string, Promise<MediaInfo>>();
@@ -130,21 +139,22 @@ export const ingestSources =
     }
 
     const mergeAudio = selectMergeAudioEnabledDefault(getState());
-    const items: ImportQueueItem[] = result.sources.map((source) => ({
-      id: `import-${++importedItemSequence}`,
-      status: "imported",
+    const instances: EditingInstance[] = result.sources.map((source) => ({
+      exportAttempts: [],
+      id: `instance-${++editingInstanceSequence}`,
       origin: "source-import",
       snapshot: createDefaultEditorSnapshot(source, mergeAudio),
+      sourceAvailability: "available",
     }));
 
     dispatch(dropListenerErrorCleared());
-    dispatch(importQueueItemsAdded(items));
-    dispatch(navigateToImportedItem(items[0]!.id, origin));
-    void preloadImportedItemMedia(dispatch, items.slice(1));
+    dispatch(editingInstancesAdded(instances));
+    dispatch(navigateToEditingInstance(instances[0]!.id, origin));
+    void preloadImportedInstanceMedia(dispatch, instances.slice(1));
     operation.complete(importResultData(result));
   };
 
-function preloadImportedMedia(sourcePath: string): Promise<MediaInfo> {
+function preloadEditingInstanceMedia(sourcePath: string): Promise<MediaInfo> {
   const existing = importedMediaPreloads.get(sourcePath);
   if (existing) return existing;
 
@@ -158,13 +168,13 @@ function preloadImportedMedia(sourcePath: string): Promise<MediaInfo> {
   return inspection;
 }
 
-async function preloadImportedItem(
+async function preloadEditingInstance(
   dispatch: AppDispatch,
-  item: ImportQueueItem,
+  instance: EditingInstance,
 ): Promise<MediaInfo | null> {
   try {
-    const media = await preloadImportedMedia(item.snapshot.source.sourcePath);
-    dispatch(queueItemMediaPreloaded({ id: item.id, media }));
+    const media = await preloadEditingInstanceMedia(instance.snapshot.source.sourcePath);
+    dispatch(editingInstanceMediaUpdated({ id: instance.id, media }));
     return media;
   } catch {
     // Activation performs the authoritative inspection and reports failures to the user.
@@ -172,16 +182,16 @@ async function preloadImportedItem(
   }
 }
 
-async function preloadImportedItemMedia(
+async function preloadImportedInstanceMedia(
   dispatch: AppDispatch,
-  items: ImportQueueItem[],
+  items: EditingInstance[],
 ): Promise<void> {
   let nextIndex = 0;
   const workerCount = Math.min(IMPORT_MEDIA_PRELOAD_CONCURRENCY, items.length);
   const workers = Array.from({ length: workerCount }, async () => {
     while (nextIndex < items.length) {
       const item = items[nextIndex++];
-      if (item) await preloadImportedItem(dispatch, item);
+      if (item) await preloadEditingInstance(dispatch, item);
     }
   });
 
@@ -204,6 +214,35 @@ function normalizeSourceImportResult(input: SourceImportResult | SourceRef[]): S
   }
   return input;
 }
+
+export const duplicateEditingInstanceRequested =
+  (id?: string): AppThunk<string | null> =>
+  (dispatch, getState) => {
+    const state = getState();
+    const source = id ? selectEditingInstanceById(state, id) : selectActiveEditingInstance(state);
+    if (!source) return null;
+
+    let duplicateId: string;
+    do {
+      duplicateId = `instance-${++editingInstanceSequence}`;
+    } while (selectEditingInstanceById(getState(), duplicateId));
+
+    const duplicate: EditingInstance = {
+      exportAttempts: [],
+      id: duplicateId,
+      media: source.media ? structuredClone(source.media) : undefined,
+      optimizedSettings: source.optimizedSettings
+        ? structuredClone(source.optimizedSettings)
+        : undefined,
+      origin: "duplicate",
+      snapshot: cloneEditorSnapshot(source.snapshot),
+      sourceAvailability: source.sourceAvailability,
+    };
+
+    dispatch(editingInstanceDuplicated(duplicate));
+    dispatch(navigateToEditingInstance(duplicate.id, { id: "source.instance-duplicate", type: "button" }));
+    return duplicate.id;
+  };
 
 function importResultData(result: SourceImportResult): Record<string, boolean | number | string> {
   return {
@@ -358,19 +397,19 @@ async function prepareSelectedSource(
   return result;
 }
 
-function captureActiveQueueItemDraft(
+function captureActiveEditingInstanceDraft(
   dispatch: Parameters<AppThunk>[0],
   getState: Parameters<AppThunk>[1],
 ) {
   const state = getState();
-  const activeItem = selectActiveQueueItem(state);
+  const activeInstance = selectActiveEditingInstance(state);
   const source = selectSourceSelection(state);
   const trim = selectTrim(state);
-  if (!activeItem || !source || !trim || !state.source.media) return;
+  if (!activeInstance || !source || !trim || !state.source.media) return;
 
   dispatch(
-    queueItemSnapshotUpdated({
-      id: activeItem.id,
+    editingInstanceSnapshotUpdated({
+      id: activeInstance.id,
       media: state.source.media,
       snapshot: createEditorSnapshot({
         source,
@@ -388,28 +427,18 @@ function captureActiveQueueItemDraft(
   );
 }
 
-export const leaveActiveImportedItem = (): AppThunk => (dispatch, getState) => {
-  const activeItem = selectActiveQueueItem(getState());
-  if (!activeItem || activeItem.status !== "imported") return;
-
-  if (activeItem.origin === "source-import") {
-    captureActiveQueueItemDraft(dispatch, getState);
-  } else {
-    dispatch(importQueueItemRemoved(activeItem.id));
-  }
+export const leaveActiveEditingInstance = (): AppThunk => (dispatch, getState) => {
+  if (selectActiveEditingInstance(getState())) captureActiveEditingInstanceDraft(dispatch, getState);
 };
 
-export const restoreActiveImportedItemRequested =
+export const restoreActiveEditingInstanceRequested =
   (id: string, loadToken: number, snapshot: EditorSnapshot): AppThunk<Promise<boolean>> =>
   async (dispatch, getState) => {
-    const item = getState().export.queue.find(
-      (candidate): candidate is ImportQueueItem =>
-        candidate.id === id && candidate.status === "imported",
-    );
+    const instance = selectEditingInstanceById(getState(), id);
 
     if (
-      !item ||
-      getState().export.activeItemId !== id ||
+      !instance ||
+      selectActiveInstanceId(getState()) !== id ||
       getState().source.loadToken !== loadToken
     ) {
       return false;
@@ -418,16 +447,16 @@ export const restoreActiveImportedItemRequested =
     const restorationId = queueRestoreSequence;
     let source: SourceRef;
     try {
-      source = await activateSourcePath(item.snapshot.source.sourcePath);
+      source = await activateSourcePath(instance.snapshot.source.sourcePath);
     } catch (error: unknown) {
-      if (restorationId !== queueRestoreSequence || getState().export.activeItemId !== id) {
+      if (restorationId !== queueRestoreSequence || selectActiveInstanceId(getState()) !== id) {
         return false;
       }
       dispatch(sourceFailed({ loadToken, error: normalizeAppError(error) }));
       return false;
     }
 
-    if (restorationId !== queueRestoreSequence || getState().export.activeItemId !== id) {
+    if (restorationId !== queueRestoreSequence || selectActiveInstanceId(getState()) !== id) {
       return false;
     }
 
@@ -439,14 +468,14 @@ export const restoreActiveImportedItemRequested =
       snapshot,
     );
 
-    if (restorationId !== queueRestoreSequence || getState().export.activeItemId !== id) {
+    if (restorationId !== queueRestoreSequence || selectActiveInstanceId(getState()) !== id) {
       return false;
     }
 
     const state = getState();
     if (
       state.source.status !== "ready" ||
-      state.source.source?.sourcePath !== item.snapshot.source.sourcePath ||
+      state.source.source?.sourcePath !== instance.snapshot.source.sourcePath ||
       !state.source.media
     ) {
       dispatch(
@@ -462,39 +491,34 @@ export const restoreActiveImportedItemRequested =
 
     if (readySnapshot) {
       dispatch(
-        queueItemSnapshotUpdated({ id, media: state.source.media, snapshot: readySnapshot }),
+        editingInstanceSnapshotUpdated({ id, media: state.source.media, snapshot: readySnapshot }),
       );
     }
     return true;
   };
 
-export const activateImportedItemRequested =
-  (item: ImportQueueItem): AppThunk<Promise<boolean>> =>
+export const activateEditingInstanceRequested =
+  (instance: EditingInstance): AppThunk<Promise<boolean>> =>
   async (dispatch) => {
     const loadToken = ++sourceLoadSequence;
     queueRestoreSequence += 1;
     dispatch(
-      importQueueItemActivated({
-        id: item.id,
+      editingInstanceActivated({
+        id: instance.id,
         loadToken,
-        media: item.media,
-        snapshot: item.snapshot,
+        media: instance.media,
+        snapshot: instance.snapshot,
       }),
     );
-    return dispatch(restoreActiveImportedItemRequested(item.id, loadToken, item.snapshot));
+    return dispatch(restoreActiveEditingInstanceRequested(instance.id, loadToken, instance.snapshot));
   };
 
-export const navigateToImportedItem =
+export const navigateToEditingInstance =
   (id: string | null, origin: DiagnosticOrigin = { type: "internal" }): AppThunk<boolean> =>
   (dispatch, getState) => {
     diagnostics.action("snapshot.select.requested", origin, id ? { snapshotId: id } : undefined);
     const state = getState();
-    const target = id
-      ? state.export.queue.find(
-          (candidate): candidate is ImportQueueItem =>
-            candidate.id === id && candidate.status === "imported",
-        )
-      : null;
+    const target = id ? selectEditingInstanceById(state, id) : null;
 
     if (id !== null && !target) {
       diagnostics.event("snapshot.select.ignored", {
@@ -504,7 +528,7 @@ export const navigateToImportedItem =
       });
       return false;
     }
-    if (state.export.activeItemId === id && (id !== null || !selectHasSource(state))) {
+    if (selectActiveInstanceId(state) === id && (id !== null || !selectHasSource(state))) {
       diagnostics.event("snapshot.select.ignored", {
         data: { reason: "already_active", ...(id ? { snapshotId: id } : {}) },
         origin,
@@ -513,14 +537,14 @@ export const navigateToImportedItem =
       return false;
     }
 
-    dispatch(leaveActiveImportedItem());
+    dispatch(leaveActiveEditingInstance());
     const operation = diagnostics.startOperation("snapshot.switch", {
       origin,
       snapshotId: id ?? undefined,
     });
 
     if (target) {
-      void dispatch(activateImportedItemRequested(target)).then(
+      void dispatch(activateEditingInstanceRequested(target)).then(
         (restored) => {
           if (restored) operation.complete({ itemId: target.id });
           else
@@ -533,7 +557,7 @@ export const navigateToImportedItem =
     } else {
       queueRestoreSequence += 1;
       dispatch(sourceCleared());
-      dispatch(activeQueueItemChanged(null));
+      dispatch(activeEditingInstanceChanged(null));
       operation.complete({ reason: "cleared" });
     }
     return true;
@@ -586,14 +610,18 @@ export const chooseSourceRequested =
     }
   };
 
-export const closeActiveImportedItemRequested =
-  (origin: DiagnosticOrigin = { type: "internal" }): AppThunk =>
-  (dispatch, getState) => {
+export const closeActiveEditingInstanceRequested =
+  (request: DiagnosticOrigin | string = { type: "internal" }): AppThunk<Promise<void>> =>
+  async (dispatch, getState) => {
+    const origin = typeof request === "string" ? { id: "source.instance-close", type: "button" as const } : request;
     diagnostics.action("snapshot.close.requested", origin);
     const state = getState();
-    const activeItem = selectActiveQueueItem(state);
+    const requestedId = typeof request === "string" ? request : undefined;
+    const activeInstance = requestedId
+      ? selectEditingInstanceById(state, requestedId)
+      : selectActiveEditingInstance(state);
 
-    if (!activeItem || activeItem.status !== "imported") {
+    if (!activeInstance) {
       if (!selectHasSource(state)) {
         diagnostics.event("snapshot.close.ignored", {
           data: { reason: "no_active_source" },
@@ -607,24 +635,32 @@ export const closeActiveImportedItemRequested =
       return;
     }
 
-    const importedItems = selectImportQueueItems(state);
-    const activeIndex = importedItems.findIndex((item) => item.id === activeItem.id);
-    const replacementItem = getReplacementImportedItem(importedItems, activeIndex);
+    if (activeInstance.id !== selectActiveInstanceId(state)) {
+      await cancelInstanceExports(activeInstance.id, getState);
+      dispatch(editingInstanceClosed(activeInstance.id));
+      return;
+    }
 
-    dispatch(importQueueItemRemoved(activeItem.id));
-    dispatch(navigateToImportedItem(replacementItem?.id ?? null));
+    const instances = selectEditingInstances(state);
+    const activeIndex = instances.findIndex((instance) => instance.id === activeInstance.id);
+    const replacement = getReplacementEditingInstance(instances, activeIndex);
+
+    await cancelInstanceExports(activeInstance.id, getState);
+    dispatch(sourceCleared());
+    dispatch(editingInstanceClosed(activeInstance.id));
+    dispatch(navigateToEditingInstance(replacement?.id ?? null));
     dispatch(nativeDialogStateChanged(false));
   };
 
-export const deleteActiveImportedItemRequested =
+export const deleteActiveEditingInstanceSourceRequested =
   (itemId?: string): AppThunk<Promise<AppError | null>> =>
   async (dispatch, getState) => {
     const state = getState();
     const item = itemId
-      ? selectImportQueueItems(state).find((queueItem) => queueItem.id === itemId)
-      : selectActiveQueueItem(state);
+      ? selectEditingInstanceById(state, itemId)
+      : selectActiveEditingInstance(state);
 
-    if (!item || item.status !== "imported") {
+    if (!item) {
       diagnostics.event("source.file.delete.ignored", {
         data: { reason: "no_active_source" },
         origin: { type: "button", id: "source.delete" },
@@ -634,6 +670,25 @@ export const deleteActiveImportedItemRequested =
     }
 
     const sourcePath = item.snapshot.source.sourcePath;
+    const hasActiveExport = selectEditingInstanceAttempts(state).some(
+      ({ attempt, instance }) =>
+        instance.snapshot.source.sourcePath === sourcePath &&
+        (attempt.state.status === "queued" || attempt.state.status === "rendering"),
+    );
+    if (hasActiveExport) {
+      const error: AppError = {
+        code: "source_in_use",
+        message: "The source cannot be deleted while an export is queued or rendering.",
+      };
+      diagnostics.event("source.file.delete.ignored", {
+        data: { itemId: item.id, reason: "active_export", sourcePath },
+        origin: { type: "button", id: "source.delete" },
+        result: "ignored",
+      });
+      dispatch(sourceErrorReported(error));
+      return error;
+    }
+
     const operation = diagnostics.startOperation("source.file-delete", {
       data: { itemId: item.id, sourcePath },
       origin: { type: "button", id: "source.delete" },
@@ -649,11 +704,7 @@ export const deleteActiveImportedItemRequested =
       return normalized;
     }
 
-    if (selectActiveQueueItem(getState())?.id === item.id) {
-      dispatch(closeActiveImportedItemRequested());
-    } else {
-      dispatch(importQueueItemRemoved(item.id));
-    }
+    dispatch(editingInstancesSourceAvailabilityChanged({ availability: "deleted", sourcePath }));
     operation.complete({ itemId: item.id, sourcePath });
     return null;
   };
@@ -679,7 +730,9 @@ export const restoreSourceFileRequested =
 
     try {
       await restoreSourceFromTrash(sourcePath);
-      if (itemId) dispatch(exportSourceRestored({ id: itemId }));
+      dispatch(
+        editingInstancesSourceAvailabilityChanged({ availability: "available", sourcePath }),
+      );
       operation.complete({ ...(itemId ? { itemId } : {}), sourcePath });
       return true;
     } catch (error: unknown) {

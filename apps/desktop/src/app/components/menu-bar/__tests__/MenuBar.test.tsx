@@ -108,6 +108,16 @@ vi.mock("@/app/store/redux-hooks", () => ({
         commandPreviewError: null,
         launchError: null,
       },
+      editingInstances: {
+        ids: menuState.export.queue.map((_, index) => `instance-${index}`),
+        entities: Object.fromEntries(
+          menuState.export.queue.map((item, index) => [
+            `instance-${index}`,
+            { id: `instance-${index}`, exportAttempts: [{ id: `attempt-${index}`, state: { status: item.status } }] },
+          ]),
+        ),
+        activeInstanceId: null,
+      },
     }),
 }));
 

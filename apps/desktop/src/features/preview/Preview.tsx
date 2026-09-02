@@ -2,7 +2,7 @@ import { usePlayback } from "@/app/hooks/usePlayback";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectPreview } from "@/app/store/slices/preview-slice";
 import { selectSourceSelection } from "@/app/store/slices/source-slice";
-import { closeActiveImportedItemRequested } from "@/app/store/thunks/source-media-thunks";
+import { closeActiveEditingInstanceRequested } from "@/app/store/thunks/source-media-thunks";
 
 import { VideoPreview } from "./components/VideoPreview";
 import { VideoPreviewEmpty } from "./components/VideoPreviewEmpty";
@@ -14,7 +14,7 @@ export function Preview() {
   const sourceSelection = useAppSelector(selectSourceSelection);
   const preview = useAppSelector(selectPreview);
 
-  const skipCurrentSource = () => void dispatch(closeActiveImportedItemRequested());
+  const skipCurrentSource = () => void dispatch(closeActiveEditingInstanceRequested());
 
   return (
     <div className="relative isolate size-full" data-slot="preview-content">
