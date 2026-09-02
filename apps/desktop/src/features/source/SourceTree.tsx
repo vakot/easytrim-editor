@@ -7,6 +7,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import type { PropsWithChildren } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -140,7 +141,7 @@ function SourceTreeFolder({
       <div className="group group-line relative flex min-w-0 items-center gap-1 rounded-md pr-1">
         <CollapsibleTrigger asChild>
           <Button
-            className="group min-w-0 flex-1 justify-start transition-none group-focus-within:bg-muted group-focus-within:pr-4 group-focus-within:text-foreground! group-hover:bg-muted group-hover:pr-4 group-hover:text-foreground! dark:group-focus-within:bg-muted/50 dark:group-hover:bg-muted/50"
+            className="group min-w-0 flex-1 justify-between transition-none group-focus-within:bg-muted group-focus-within:pr-4 group-focus-within:text-foreground! group-hover:bg-muted group-hover:pr-4 group-hover:text-foreground! dark:group-focus-within:bg-muted/50 dark:group-hover:bg-muted/50"
             size="sm"
             variant="ghost"
           >
@@ -153,6 +154,10 @@ function SourceTreeFolder({
               <FolderOpen className="hidden shrink-0 group-data-[state=open]:block" />
               <span className="truncate">{node.name}</span>
             </div>
+
+            <SourceTreeStatus title={instances.length.toString()}>
+              ({instances.length})
+            </SourceTreeStatus>
           </Button>
         </CollapsibleTrigger>
 
@@ -209,12 +214,7 @@ function SourceTreeInstance({
           <span className="truncate">{instance.snapshot.source.displayName}</span>
         </span>
 
-        <span
-          className="shrink-0 text-[10px] text-muted-foreground group-focus-within:invisible group-hover:invisible"
-          title={statusLabel}
-        >
-          {statusLabel}
-        </span>
+        <SourceTreeStatus title={statusLabel}>{statusLabel}</SourceTreeStatus>
       </Button>
 
       <SourceTreeActionGroup instances={[instance]} onClose={onClose} onRestore={onRestore} />
@@ -281,6 +281,17 @@ function SourceTreeActionGroup({
         </DeleteSourceDialog>
       )}
     </ButtonGroup>
+  );
+}
+
+function SourceTreeStatus({ children, title }: PropsWithChildren<{ title?: string }>) {
+  return (
+    <span
+      className="shrink-0 text-[10px] text-muted-foreground group-focus-within:invisible group-hover:invisible"
+      title={title}
+    >
+      {children}
+    </span>
   );
 }
 
