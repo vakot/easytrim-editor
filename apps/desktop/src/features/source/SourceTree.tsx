@@ -36,9 +36,9 @@ type SourceTreeNode =
   | { instance: EditingInstance; kind: "instance" };
 
 type SourceTreeActions = {
-  onClose: (id: string) => void;
-  onDelete: (id: string) => void;
-  onRestore: (sourcePath: string) => void;
+  onClose: (ids: string[]) => void;
+  onDelete: (ids: string[]) => void;
+  onRestore: (sourcePaths: string[]) => void;
   onSelect: (id: string) => void;
   value: string;
 };
@@ -48,6 +48,31 @@ export function SourceTree() {
   const dispatch = useAppDispatch();
   const instances = useAppSelector(selectEditingInstances);
   const activeInstanceId = useAppSelector(selectActiveInstanceId);
+
+  const closeInstances = async (ids: string[]) => {
+    for (const id of ids) {
+      await dispatch(closeActiveEditingInstanceRequested(id));
+    }
+  };
+
+  const deleteInstances = async (ids: string[]) => {
+    const sourceIds = new Map<string, string>();
+    for (const id of ids) {
+      const instance = instances.find((item) => item.id === id);
+      if (instance && instance.sourceAvailability !== "deleted") {
+        sourceIds.set(instance.snapshot.source.sourcePath, id);
+      }
+    }
+    for (const id of sourceIds.values()) {
+      await dispatch(deleteActiveEditingInstanceSourceRequested(id));
+    }
+  };
+
+  const restoreSources = async (sourcePaths: string[]) => {
+    for (const sourcePath of new Set(sourcePaths)) {
+      await dispatch(restoreSourceFileRequested({ sourcePath }));
+    }
+  };
 
   return (
     <aside aria-label={t("source.labels.title")} className="flex size-full min-h-0 flex-col pt-3">
@@ -73,9 +98,9 @@ export function SourceTree() {
         <div className="flex flex-col gap-1 p-1">
           <SourceTreeNodes
             nodes={getSourceTreeNodes(instances)}
-            onClose={(id) => void dispatch(closeActiveEditingInstanceRequested(id))}
-            onDelete={(id) => void dispatch(deleteActiveEditingInstanceSourceRequested(id))}
-            onRestore={(path) => void dispatch(restoreSourceFileRequested({ sourcePath: path }))}
+            onClose={(ids) => void closeInstances(ids)}
+            onDelete={(ids) => void deleteInstances(ids)}
+            onRestore={(paths) => void restoreSources(paths)}
             onSelect={(id) => void dispatch(navigateToEditingInstance(id))}
             value={activeInstanceId ?? ""}
           />
@@ -126,25 +151,36 @@ function SourceTreeFolder({
   node,
   ...props
 }: { level: number; node: Extract<SourceTreeNode, { kind: "folder" }> } & SourceTreeActions) {
+  const instances = getSourceTreeInstances(node.children);
+
   return (
     <Collapsible className="w-full">
-      <CollapsibleTrigger asChild>
-        <Button
-          className="group w-full min-w-0 justify-start data-open:bg-transparent"
-          size="sm"
-          variant="ghost"
-        >
-          <div
-            className="flex w-full min-w-0 items-center gap-1"
-            style={{ paddingLeft: level * 8 }}
+      <div className="group group-line relative flex min-w-0 items-center gap-1 rounded-md pr-1">
+        <CollapsibleTrigger asChild>
+          <Button
+            className="group min-w-0 flex-1 justify-start transition-none group-focus-within:bg-muted group-focus-within:pr-4 group-focus-within:text-foreground! group-hover:bg-muted group-hover:pr-4 group-hover:text-foreground! dark:group-focus-within:bg-muted/50 dark:group-hover:bg-muted/50"
+            size="sm"
+            variant="ghost"
           >
-            <ChevronRightIcon className="shrink-0 group-data-[state=open]:rotate-90" />
-            <Folder className="shrink-0 group-data-[state=open]:hidden" />
-            <FolderOpen className="hidden shrink-0 group-data-[state=open]:block" />
-            <span className="truncate">{node.name}</span>
-          </div>
-        </Button>
-      </CollapsibleTrigger>
+            <div
+              className="flex w-full min-w-0 items-center gap-1"
+              style={{ paddingLeft: level * 8 }}
+            >
+              <ChevronRightIcon className="shrink-0 group-data-[state=open]:rotate-90" />
+              <Folder className="shrink-0 group-data-[state=open]:hidden" />
+              <FolderOpen className="hidden shrink-0 group-data-[state=open]:block" />
+              <span className="truncate">{node.name}</span>
+            </div>
+          </Button>
+        </CollapsibleTrigger>
+
+        <SourceTreeActionGroup
+          instances={instances}
+          onClose={props.onClose}
+          onDelete={props.onDelete}
+          onRestore={props.onRestore}
+        />
+      </div>
       <CollapsibleContent>
         <SourceTreeNodes {...props} level={level + 1} nodes={node.children} />
       </CollapsibleContent>
@@ -163,9 +199,9 @@ function SourceTreeInstance({
 }: {
   instance: EditingInstance;
   level: number;
-  onClose: (id: string) => void;
-  onDelete: (id: string) => void;
-  onRestore: (sourcePath: string) => void;
+  onClose: (ids: string[]) => void;
+  onDelete: (ids: string[]) => void;
+  onRestore: (sourcePaths: string[]) => void;
   onSelect: (id: string) => void;
   selected: boolean;
 }) {
@@ -202,43 +238,73 @@ function SourceTreeInstance({
         </span>
       </Button>
 
-      <ButtonGroup className="invisible absolute right-0 group-focus-within:visible group-hover:visible">
+      <SourceTreeActionGroup
+        instances={[instance]}
+        onClose={onClose}
+        onDelete={onDelete}
+        onRestore={onRestore}
+      />
+    </div>
+  );
+}
+
+function SourceTreeActionGroup({
+  instances,
+  onClose,
+  onDelete,
+  onRestore,
+}: Pick<SourceTreeActions, "onClose" | "onDelete" | "onRestore"> & {
+  instances: EditingInstance[];
+}) {
+  if (instances.length === 0) return null;
+
+  const availableInstances = instances.filter(
+    (instance) => instance.sourceAvailability !== "deleted",
+  );
+
+  const actionInstances = availableInstances.length > 0 ? availableInstances : instances;
+  const isRestore = availableInstances.length === 0;
+  const isMultiple = instances.length > 1;
+
+  return (
+    <ButtonGroup className="invisible absolute right-0 group-focus-within:visible group-hover:visible">
+      <Button
+        aria-label={isMultiple ? "Close editing instances" : "Close editing instance"}
+        className="transition-none"
+        onClick={() => onClose(instances.map((instance) => instance.id))}
+        size="icon-xs"
+        type="button"
+        variant="secondary"
+      >
+        <X aria-hidden="true" />
+      </Button>
+
+      {isRestore ? (
         <Button
-          aria-label="Close editing instance"
+          aria-label={isMultiple ? "Restore sources" : "Restore source"}
           className="transition-none"
-          onClick={() => onClose(instance.id)}
+          onClick={() =>
+            onRestore(actionInstances.map((instance) => instance.snapshot.source.sourcePath))
+          }
           size="icon-xs"
           type="button"
-          variant="secondary"
+          variant="success"
         >
-          <X aria-hidden="true" />
+          <RotateCcw aria-hidden="true" />
         </Button>
-
-        {instance.sourceAvailability === "deleted" ? (
-          <Button
-            aria-label="Restore source"
-            className="transition-none"
-            onClick={() => onRestore(instance.snapshot.source.sourcePath)}
-            size="icon-xs"
-            type="button"
-            variant="success"
-          >
-            <RotateCcw aria-hidden="true" />
-          </Button>
-        ) : (
-          <Button
-            aria-label="Delete source"
-            className="transition-none"
-            onClick={() => onDelete(instance.id)}
-            size="icon-xs"
-            type="button"
-            variant="destructive"
-          >
-            <Trash2 aria-hidden="true" />
-          </Button>
-        )}
-      </ButtonGroup>
-    </div>
+      ) : (
+        <Button
+          aria-label={isMultiple ? "Delete sources" : "Delete source"}
+          className="transition-none"
+          onClick={() => onDelete(actionInstances.map((instance) => instance.id))}
+          size="icon-xs"
+          type="button"
+          variant="destructive"
+        >
+          <Trash2 aria-hidden="true" />
+        </Button>
+      )}
+    </ButtonGroup>
   );
 }
 
@@ -277,6 +343,12 @@ function getSourceTreeNodes(instances: EditingInstance[]): SourceTreeNode[] {
     children.push({ instance, kind: "instance" });
   }
   return roots;
+}
+
+function getSourceTreeInstances(nodes: SourceTreeNode[]): EditingInstance[] {
+  return nodes.flatMap((node) =>
+    node.kind === "folder" ? getSourceTreeInstances(node.children) : [node.instance],
+  );
 }
 
 function getPathDirectories(path: string) {
