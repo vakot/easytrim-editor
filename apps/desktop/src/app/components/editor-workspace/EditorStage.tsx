@@ -10,7 +10,7 @@ import { selectAudioPanelStreamCount, selectSourceMedia } from "@/app/store/slic
 import { selectTrim } from "@/app/store/slices/trim-slice";
 import { AudioPanel } from "@/features/audio";
 import { Preview } from "@/features/preview";
-import { SourceTabs } from "@/features/source";
+import { SourceBreadcrumb, SourceTabs } from "@/features/source";
 import { TimelinePanel } from "@/features/timeline";
 import { cn } from "@/lib/class-names.utils";
 import { syncTimelineGeometry } from "@/lib/interaction/timeline-geometry.utils";
@@ -69,13 +69,14 @@ export function EditorStage() {
             <Card className="size-full gap-0 bg-preview-surface p-0">
               <div>
                 <ScrollArea
-                  className="size-full min-w-0 p-1 pb-0"
+                  className="w-full min-w-0 p-1 pb-0"
                   fadeColor="var(--preview-surface)"
                   orientation="horizontal"
                   scrollbarClassName="data-horizontal:h-1.25"
                 >
                   <SourceTabs />
                 </ScrollArea>
+                <SourceBreadcrumb />
               </div>
               <Separator className="bg-foreground/10" />
               <Preview />
