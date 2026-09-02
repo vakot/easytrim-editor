@@ -1,5 +1,5 @@
 import { ChevronRightIcon, FileVideo, Folder, FolderOpen } from "lucide-react";
-import type { ComponentProps, PropsWithChildren } from "react";
+import type { ComponentProps, CSSProperties, PropsWithChildren } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,17 +23,27 @@ const treeNodeClassName =
   "min-w-0 flex-1 text-xs justify-between overflow-hidden transition-none group-hover:bg-muted! dark:group-hover:bg-muted/50 text-secondary-foreground";
 
 export function SourceTreeNodes({
+  background = "card",
   level = 0,
   nodes,
   value,
 }: {
+  background?: "card" | "popover";
   level?: number;
   nodes: SourceTreeNode[];
   value: string;
 }) {
   return nodes.map((node) => {
     if (node.kind === "folder") {
-      return <SourceTreeFolder key={node.id} level={level} node={node} value={value} />;
+      return (
+        <SourceTreeFolder
+          background={background}
+          key={node.id}
+          level={level}
+          node={node}
+          value={value}
+        />
+      );
     }
 
     return (
@@ -48,10 +58,12 @@ export function SourceTreeNodes({
 }
 
 function SourceTreeFolder({
+  background,
   level,
   node,
   value,
 }: {
+  background: "card" | "popover";
   level: number;
   node: SourceTreeFolderNode;
   value: string;
@@ -66,8 +78,14 @@ function SourceTreeFolder({
         sourceIds={instances.map((instance) => instance.id)}
       >
         <div
-          className="group group-line sticky flex min-w-0 items-center gap-1 rounded-md bg-card"
-          style={{ top: level * 28, zIndex: 10 - level }}
+          className="group group-line sticky flex min-w-0 items-center gap-1 bg-(--source-tree-background)"
+          style={
+            {
+              "--source-tree-background": `var(--${background})`,
+              top: level * 28,
+              zIndex: 10 - level,
+            } as CSSProperties
+          }
         >
           <CollapsibleTrigger asChild>
             <Button
@@ -96,7 +114,12 @@ function SourceTreeFolder({
       </SourceTreeContextMenu>
 
       <CollapsibleContent>
-        <SourceTreeNodes level={level + 1} nodes={node.children} value={value} />
+        <SourceTreeNodes
+          background={background}
+          level={level + 1}
+          nodes={node.children}
+          value={value}
+        />
       </CollapsibleContent>
     </Collapsible>
   );

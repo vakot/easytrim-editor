@@ -30,7 +30,10 @@ type SourceTreeBuildFolderNode = {
 
 type SourceTreeBuildNode = SourceTreeBuildFolderNode | SourceTreeInstanceNode;
 
-export function getSourceTreeNodes(instances: EditingInstance[]): SourceTreeNode[] {
+export function getSourceTreeNodes(
+  instances: EditingInstance[],
+  options: { compact?: boolean } = {},
+): SourceTreeNode[] {
   if (instances.length === 0) return [];
 
   const root: SourceTreeBuildFolderNode = {
@@ -73,7 +76,7 @@ export function getSourceTreeNodes(instances: EditingInstance[]): SourceTreeNode
     });
   }
 
-  const compactedRoot = compactFolderChains(root);
+  const compactedRoot = options.compact === false ? root : compactFolderChains(root);
 
   return compactedRoot.name
     ? [stripBuildFolderFields(compactedRoot)]
@@ -84,6 +87,13 @@ export function getSourceTreeInstances(nodes: SourceTreeNode[]): EditingInstance
   return nodes.flatMap((node) =>
     node.kind === "folder" ? getSourceTreeInstances(node.children) : [node.instance],
   );
+}
+
+export function getSourceTreeSiblings(
+  nodes: SourceTreeNode[],
+  target: { kind: "folder"; path: string } | { id: string; kind: "instance" },
+): SourceTreeNode[] {
+  return findSourceTreeSiblings(nodes, target) ?? [];
 }
 
 export function getSourceAction(instances: EditingInstance[]): "delete" | "restore" {
@@ -104,6 +114,31 @@ function isMacOSRuntime(): boolean {
     typeof navigator !== "undefined" &&
     (/Mac/i.test(navigator.userAgent) || /Mac/i.test(navigator.platform))
   );
+}
+
+function findSourceTreeSiblings(
+  nodes: SourceTreeNode[],
+  target: { kind: "folder"; path: string } | { id: string; kind: "instance" },
+): SourceTreeNode[] | undefined {
+  for (const node of nodes) {
+    if (
+      (target.kind === "folder" &&
+        node.kind === "folder" &&
+        (node.path === target.path || isDriveRootPath(target.path, node.path))) ||
+      (target.kind === "instance" && node.kind === "instance" && node.instance.id === target.id)
+    ) {
+      return nodes;
+    }
+
+    if (node.kind === "folder") {
+      const siblings = findSourceTreeSiblings(node.children, target);
+      if (siblings) return siblings;
+    }
+  }
+}
+
+function isDriveRootPath(targetPath: string, nodePath: string): boolean {
+  return /^[A-Za-z]:[\\/]$/.test(targetPath) && nodePath.startsWith(targetPath);
 }
 
 function compactFolderChains(folder: SourceTreeBuildFolderNode): SourceTreeBuildFolderNode {
