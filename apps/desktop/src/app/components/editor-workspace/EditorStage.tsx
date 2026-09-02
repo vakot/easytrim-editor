@@ -3,6 +3,7 @@ import { type RefObject, useCallback, useLayoutEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectAudioPanelStreamCount, selectSourceMedia } from "@/app/store/slices/source-slice";
@@ -68,7 +69,7 @@ export function EditorStage() {
             <Card className="size-full gap-0 bg-preview-surface p-0">
               <div>
                 <ScrollArea
-                  className="size-full min-w-0 px-0.75 pb-0.5"
+                  className="size-full min-w-0 p-1 pb-0"
                   fadeColor="var(--preview-surface)"
                   orientation="horizontal"
                   scrollbarClassName="data-horizontal:h-1.25"
@@ -76,6 +77,7 @@ export function EditorStage() {
                   <SourceTabs />
                 </ScrollArea>
               </div>
+              <Separator className="bg-foreground/10" />
               <Preview />
             </Card>
           </div>
@@ -88,6 +90,7 @@ export function EditorStage() {
           withHandle={!!media}
         />
 
+        {/* TODO: combine timeline and audio panels */}
         <ResizablePanel
           className={cn(!audioStreamsCount && "pb-1.5")}
           groupResizeBehavior="preserve-pixel-size"
