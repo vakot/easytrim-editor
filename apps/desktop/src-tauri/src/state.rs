@@ -320,6 +320,18 @@ impl AppState {
             .ok_or_else(AppError::source_replaced)
     }
 
+    pub fn cancel_source_operations(&self, source_path: &Path) -> Result<(), AppError> {
+        let session = self.lock_session()?;
+        if let Some(source) = session
+            .active_source
+            .as_ref()
+            .filter(|source| source.path == source_path)
+        {
+            source.cancellation.store(true, Ordering::Release);
+        }
+        Ok(())
+    }
+
     pub fn remember_inspected_streams(
         &self,
         load_token: u64,
@@ -549,7 +561,10 @@ fn active_source_mut_by_path<'a>(
 
 #[cfg(test)]
 mod tests {
-    use std::{path::PathBuf, sync::atomic::Ordering};
+    use std::{
+        path::{Path, PathBuf},
+        sync::atomic::Ordering,
+    };
 
     use crate::domain::source::ValidatedSource;
 
@@ -636,6 +651,24 @@ mod tests {
         assert!(state.resolve_source_by_load_token(load_token).is_ok());
 
         assert!(first_job.cancellation.load(Ordering::Acquire));
+    }
+
+    #[test]
+    fn cancelling_source_operations_marks_the_active_source_cancelled() {
+        let state = AppState::default();
+        let generation = state.begin_source_replacement().expect("source starts");
+        state
+            .complete_source_replacement(generation, source("active.mp4"))
+            .expect("source completes");
+
+        state
+            .cancel_source_operations(Path::new("active.mp4"))
+            .expect("source cancellation succeeds");
+
+        let active = state
+            .resolve_source_by_path("active.mp4")
+            .expect("active source resolves");
+        assert!(active.cancellation.load(Ordering::Acquire));
     }
 
     #[test]

@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use serde::Deserialize;
 use tauri::{AppHandle, State, WebviewWindow};
@@ -88,11 +88,57 @@ pub fn activate_source_path(
 }
 
 #[tauri::command]
-pub fn delete_source_file(source_path: PathBuf) -> Result<(), AppError> {
+pub async fn delete_source_file(
+    source_path: PathBuf,
+    state: State<'_, AppState>,
+) -> Result<(), AppError> {
     let validated = crate::domain::source::validate_source(&source_path)?;
-    trash::delete(validated.path).map_err(|error| {
-        AppError::io_failed(format!("Could not move the source file to trash: {error}"))
-    })
+    state.cancel_source_operations(&validated.path)?;
+    let path = validated.path;
+    tauri::async_runtime::spawn_blocking(move || move_source_to_trash(&path))
+        .await
+        .map_err(|_| AppError::internal("Moving the source file to trash stopped unexpectedly."))?
+        .map_err(|error| {
+            AppError::io_failed(format!("Could not move the source file to trash: {error}"))
+        })
+}
+
+#[cfg(target_os = "windows")]
+const TRASH_RETRY_ATTEMPTS: usize = 20;
+
+#[cfg(target_os = "windows")]
+const TRASH_RETRY_DELAY: std::time::Duration = std::time::Duration::from_millis(100);
+
+fn move_source_to_trash(path: &Path) -> Result<(), trash::Error> {
+    #[cfg(target_os = "windows")]
+    {
+        for attempt in 0..TRASH_RETRY_ATTEMPTS {
+            match trash::delete(path) {
+                Ok(()) => return Ok(()),
+                Err(error)
+                    if attempt + 1 < TRASH_RETRY_ATTEMPTS && is_trash_operation_aborted(&error) =>
+                {
+                    std::thread::sleep(TRASH_RETRY_DELAY);
+                }
+                Err(error) => return Err(error),
+            }
+        }
+
+        unreachable!("trash retry count must be greater than zero");
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        trash::delete(path)
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn is_trash_operation_aborted(error: &trash::Error) -> bool {
+    matches!(
+        error,
+        trash::Error::Unknown { description } if description == "Some operations were aborted"
+    )
 }
 
 #[tauri::command]
