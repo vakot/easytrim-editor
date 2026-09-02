@@ -138,7 +138,7 @@ function stripBuildFolderFields(node: SourceTreeBuildNode): SourceTreeNode {
   };
 }
 
-function getPathDirectories(path: string): Array<{ name: string; path: string }> {
+export function getPathDirectories(path: string): Array<{ name: string; path: string }> {
   const separator = path.includes("\\") ? "\\" : "/";
   const directoryPath = path.slice(0, Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\")));
   const driveRoot = directoryPath.match(/^[A-Za-z]:[\\/]/)?.[0];

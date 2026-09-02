@@ -69,7 +69,7 @@ export function EditorStage() {
             <Card className="size-full gap-0 bg-preview-surface p-0">
               <div>
                 <ScrollArea
-                  className="size-full min-w-0 p-1 pb-0"
+                  className="w-full min-w-0 p-1 pb-0"
                   fadeColor="var(--preview-surface)"
                   orientation="horizontal"
                   scrollbarClassName="data-horizontal:h-1.25"
