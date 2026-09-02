@@ -7,7 +7,7 @@ import type {
   MediaInfo,
   OptimizedExportRequest,
   OutputSelection,
-} from "@/lib/tauri/media.types";
+} from "@/domain/media";
 
 export type EditingInstanceId = string;
 export type InstanceOrigin = "source-import" | "duplicate";

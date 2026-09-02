@@ -70,9 +70,17 @@ export async function inspectImportedMedia(sourcePath: string): Promise<MediaInf
   }
 }
 
-export async function activateSourcePath(sourcePath: string): Promise<SourceRef> {
+export async function activateSourcePath(
+  sourcePath: string,
+  media?: MediaInfo,
+): Promise<SourceRef> {
   try {
-    return parseSourceRef(await invoke<unknown>("activate_source_path", { sourcePath }));
+    return parseSourceRef(
+      await invoke<unknown>("activate_source_path", {
+        sourcePath,
+        ...(media ? { media } : {}),
+      }),
+    );
   } catch (error: unknown) {
     throw normalizeAppError(error);
   }

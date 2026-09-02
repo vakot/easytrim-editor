@@ -210,6 +210,8 @@ export const en = {
   source: {
     labels: {
       drop: "Drop video to open",
+      activeSources: "Active sources",
+      explorer: "Explorer",
       mediaDetails: "Media details",
       metadata: {
         bitrate: "Bitrate",

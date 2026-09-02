@@ -14,7 +14,7 @@ const PROBE_TIMEOUT: Duration = Duration::from_secs(20);
 const PROBE_STDOUT_LIMIT: usize = 2 * 1024 * 1024;
 const PROBE_STDERR_LIMIT: usize = 32 * 1024;
 
-#[derive(Clone, Debug, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FrameRate {
     pub numerator: u64,
@@ -23,7 +23,7 @@ pub struct FrameRate {
     pub display_value: Option<f64>,
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct VideoStream {
     pub stream_index: u32,
@@ -54,7 +54,7 @@ pub struct VideoStream {
     pub rotation_degrees: Option<i32>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AudioStream {
     pub stream_index: u32,
@@ -72,7 +72,7 @@ pub struct AudioStream {
     pub is_default: bool,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ChapterInfo {
     pub id: i64,
@@ -82,7 +82,7 @@ pub struct ChapterInfo {
     pub title: Option<String>,
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MediaInfo {
     pub format_name: String,

@@ -17,7 +17,7 @@ export function Preview() {
   const skipCurrentSource = () => void dispatch(closeActiveEditingInstanceRequested());
 
   return (
-    <div className="relative isolate size-full" data-slot="preview-content">
+    <div className="relative isolate flex-1" data-slot="preview-content">
       {sourceSelection === null ? (
         <VideoPreviewEmpty />
       ) : (

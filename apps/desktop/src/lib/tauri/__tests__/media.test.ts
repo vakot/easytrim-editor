@@ -28,6 +28,7 @@ import {
   prepareWaveforms,
   renderFast,
 } from "../media";
+import type { MediaInfo } from "../media.types";
 
 type NativeDropEvent =
   | { payload: { paths: string[]; type: "enter" } }
@@ -105,6 +106,33 @@ describe("media IPC adapter", () => {
       sourcePath: "C:/Media/clip.mp4",
     });
     expect(mocks.invoke).toHaveBeenCalledWith("activate_source_path", {
+      sourcePath: "C:/Media/clip.mp4",
+    });
+  });
+
+  it("hydrates an activated source with cached media metadata", async () => {
+    mocks.invoke.mockResolvedValue({
+      displayName: "clip.mp4",
+      sourcePath: "C:/Media/clip.mp4",
+    });
+
+    const cachedMedia = {
+      audioStreams: [],
+      chapters: [],
+      durationMicros: 1,
+      formatName: "mp4",
+      video: {
+        codecName: "h264",
+        height: 1,
+        streamIndex: 0,
+        width: 1,
+      },
+    } satisfies MediaInfo;
+
+    await activateSourcePath("C:/Media/clip.mp4", cachedMedia);
+
+    expect(mocks.invoke).toHaveBeenCalledWith("activate_source_path", {
+      media: cachedMedia,
       sourcePath: "C:/Media/clip.mp4",
     });
   });
