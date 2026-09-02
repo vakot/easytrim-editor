@@ -211,6 +211,7 @@ function SourceTreeContextMenu({
   const dispatch = useAppDispatch();
   const instances = useAppSelector(selectEditingInstances);
   const targetInstances = instances.filter((instance) => sourceIds.includes(instance.id));
+  const sourceAction = getSourceAction(targetInstances);
 
   const closeSources = () => {
     for (const sourceId of sourceIds) {
@@ -254,7 +255,9 @@ function SourceTreeContextMenu({
           </ContextMenuGroup>
           <ContextMenuSeparator />
           <ContextMenuGroup>
-            <ContextMenuItem onSelect={revealSource}>{getRevealLabel(t)}</ContextMenuItem>
+            <ContextMenuItem disabled={sourceAction === "restore"} onSelect={revealSource}>
+              {getRevealLabel(t)}
+            </ContextMenuItem>
           </ContextMenuGroup>
           <ContextMenuSeparator />
           <ContextMenuGroup>
