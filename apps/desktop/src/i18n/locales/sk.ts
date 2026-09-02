@@ -194,6 +194,11 @@ export const sk = {
     },
   },
   source: {
+    actions: {
+      revealInFileExplorer: "Zobraziť v Prieskumníkovi súborov",
+      revealInFileManager: "Zobraziť v správcovi súborov",
+      revealInFinder: "Zobraziť vo Finderi",
+    },
     labels: {
       drop: "Pustením otvoríte video",
       mediaDetails: "Detaily médií",

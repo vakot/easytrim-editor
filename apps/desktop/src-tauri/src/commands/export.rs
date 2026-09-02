@@ -231,24 +231,36 @@ pub fn release_export_source(
 #[tauri::command]
 pub fn open_file_location(path: String) -> Result<(), AppError> {
     let path = PathBuf::from(path);
-    if !path.is_file() {
+    if !path.is_file() && !path.is_dir() {
         return Err(AppError::io_failed(
-            "The exported file is no longer available.",
+            "The file or folder is no longer available.",
         ));
     }
 
     #[cfg(target_os = "windows")]
-    let result = Command::new("explorer.exe")
-        .arg("/select,")
-        .arg(&path)
-        .spawn();
+    let result = if path.is_dir() {
+        Command::new("explorer.exe").arg(&path).spawn()
+    } else {
+        Command::new("explorer.exe")
+            .arg("/select,")
+            .arg(&path)
+            .spawn()
+    };
 
     #[cfg(target_os = "macos")]
-    let result = Command::new("open").arg("-R").arg(&path).spawn();
+    let result = if path.is_dir() {
+        Command::new("open").arg(&path).spawn()
+    } else {
+        Command::new("open").arg("-R").arg(&path).spawn()
+    };
 
     #[cfg(all(unix, not(target_os = "macos")))]
     let result = Command::new("xdg-open")
-        .arg(path.parent().unwrap_or_else(|| std::path::Path::new(".")))
+        .arg(if path.is_dir() {
+            path.as_path()
+        } else {
+            path.parent().unwrap_or_else(|| std::path::Path::new("."))
+        })
         .spawn();
 
     result

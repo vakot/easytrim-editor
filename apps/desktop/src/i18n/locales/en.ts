@@ -193,6 +193,11 @@ export const en = {
     },
   },
   source: {
+    actions: {
+      revealInFileExplorer: "Reveal in File Explorer",
+      revealInFileManager: "Reveal in File Manager",
+      revealInFinder: "Reveal in Finder",
+    },
     labels: {
       drop: "Drop video to open",
       activeSources: "Active sources",
