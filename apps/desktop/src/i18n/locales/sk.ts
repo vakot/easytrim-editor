@@ -163,7 +163,6 @@ export const sk = {
     },
     labels: {
       deleteSource: "Odstrániť zdroj",
-      import: "Front importov",
       onFinish: "Po dokončení frontu",
       title: "Front",
     },
@@ -201,7 +200,6 @@ export const sk = {
     },
     labels: {
       drop: "Pustením otvoríte video",
-      mediaDetails: "Detaily médií",
       activeSources: "Aktívne zdroje",
       explorer: "Prieskumník",
       metadata: {

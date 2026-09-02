@@ -1,4 +1,3 @@
-import type { ParseKeys } from "i18next";
 import { ChevronRight, Ellipsis, RotateCcw } from "lucide-react";
 import { Children, type PropsWithChildren, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -27,14 +26,6 @@ type PanelStateId = "activeSources" | "explorer" | "activityFeed";
 
 type PanelsVisibility = Record<PanelStateId, boolean>;
 type PanelsEditable = Record<PanelStateId, boolean>;
-type LocaleKey = ParseKeys<"translation">;
-type PanelsLocaleKeys = Record<PanelStateId, LocaleKey>;
-
-const DEFAULT_PANELS_LOCALE_KEYS: PanelsLocaleKeys = {
-  activeSources: "source.labels.activeSources",
-  explorer: "source.labels.explorer",
-  activityFeed: "app.labels.activityFeed",
-};
 
 const DEFAULT_PANELS_EDITABLE: PanelsEditable = {
   activeSources: true,
@@ -50,6 +41,11 @@ const DEFAULT_PANELS_VISIBILITY: PanelsVisibility = {
 
 export function EditorSource() {
   const { t } = useTranslation();
+  const panelLabels: Record<PanelStateId, string> = {
+    activeSources: t("source.labels.activeSources"),
+    explorer: t("source.labels.explorer"),
+    activityFeed: t("app.labels.activityFeed"),
+  };
 
   const [panelsVisibility, setPanelsVisibility] = useState(DEFAULT_PANELS_VISIBILITY);
 
@@ -59,9 +55,7 @@ export function EditorSource() {
 
   const isSingle = enabledPanelIds.length === 1;
 
-  const title = isSingle
-    ? t(DEFAULT_PANELS_LOCALE_KEYS[enabledPanelIds[0]!])
-    : t("source.labels.title");
+  const title = isSingle ? panelLabels[enabledPanelIds[0]!] : t("source.labels.title");
 
   const handlePanelChange = (panelStateId: string, visible: boolean) => {
     setPanelsVisibility((panelsVisibility) => ({ ...panelsVisibility, [panelStateId]: visible }));
@@ -93,7 +87,7 @@ export function EditorSource() {
         </Tooltip>
         <DropdownMenuContent>
           <DropdownMenuGroup>
-            {Object.keys(DEFAULT_PANELS_LOCALE_KEYS).map((panelId) => (
+            {Object.keys(panelLabels).map((panelId) => (
               <DropdownMenuCheckboxItem
                 checked={panelsVisibility[panelId as PanelStateId]}
                 disabled={!DEFAULT_PANELS_EDITABLE[panelId as PanelStateId]}
@@ -101,7 +95,7 @@ export function EditorSource() {
                 onCheckedChange={(checked) => handlePanelChange(panelId, checked)}
               >
                 {t("app.actions.showPanel", {
-                  panel: t(DEFAULT_PANELS_LOCALE_KEYS[panelId as PanelStateId]),
+                  panel: panelLabels[panelId as PanelStateId],
                 })}
               </DropdownMenuCheckboxItem>
             ))}

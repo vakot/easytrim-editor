@@ -162,7 +162,6 @@ export const en = {
     },
     labels: {
       deleteSource: "Delete source",
-      import: "Import queue",
       onFinish: "On queue finished",
       title: "Queue",
     },
@@ -202,7 +201,6 @@ export const en = {
       drop: "Drop video to open",
       activeSources: "Active sources",
       explorer: "Explorer",
-      mediaDetails: "Media details",
       metadata: {
         bitrate: "Bitrate",
         container: "Container",
