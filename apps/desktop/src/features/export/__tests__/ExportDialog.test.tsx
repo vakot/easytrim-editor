@@ -16,7 +16,10 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
 import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";
 import { cropChanged } from "@/app/store/slices/crop-slice";
-import { activeEditingInstanceChanged, editingInstancesAdded } from "@/app/store/slices/editing-instances-slice";
+import {
+  activeEditingInstanceChanged,
+  editingInstancesAdded,
+} from "@/app/store/slices/editing-instances-slice";
 import { createAppStore } from "@/app/store/store";
 import { openOptimizedExportDialog } from "@/app/store/thunks/export-thunks";
 import { firstSource, media } from "@/test/source.fixtures";
@@ -34,7 +37,17 @@ describe("ExportDialog", () => {
 
     store.dispatch(sourceSelected({ source: firstSource }));
     store.dispatch(sourceReady({ loadToken: 1, media: media(firstSource.sourcePath) }));
-    store.dispatch(editingInstancesAdded([{ exportAttempts: [], id: "instance-1", origin: "source-import", snapshot: createDefaultEditorSnapshot(firstSource, false), sourceAvailability: "available" }]));
+    store.dispatch(
+      editingInstancesAdded([
+        {
+          exportAttempts: [],
+          id: "instance-1",
+          origin: "source-import",
+          snapshot: createDefaultEditorSnapshot(firstSource, false),
+          sourceAvailability: "available",
+        },
+      ]),
+    );
     store.dispatch(activeEditingInstanceChanged("instance-1"));
 
     render(
@@ -65,7 +78,17 @@ describe("ExportDialog", () => {
 
     store.dispatch(sourceSelected({ source: firstSource }));
     store.dispatch(sourceReady({ loadToken: 1, media: croppedMedia }));
-    store.dispatch(editingInstancesAdded([{ exportAttempts: [], id: "instance-1", origin: "source-import", snapshot: createDefaultEditorSnapshot(firstSource, false), sourceAvailability: "available" }]));
+    store.dispatch(
+      editingInstancesAdded([
+        {
+          exportAttempts: [],
+          id: "instance-1",
+          origin: "source-import",
+          snapshot: createDefaultEditorSnapshot(firstSource, false),
+          sourceAvailability: "available",
+        },
+      ]),
+    );
     store.dispatch(activeEditingInstanceChanged("instance-1"));
     store.dispatch(
       cropChanged({

@@ -191,7 +191,9 @@ function SourceTreeInstance({
 }) {
   const attempt = instance.exportAttempts.at(-1);
   const status =
-    instance.sourceAvailability === "deleted" ? "deleted" : (attempt?.state.status ?? "ready");
+    instance.sourceAvailability === "deleted"
+      ? "deleted"
+      : (attempt?.state.status ?? (instance.media ? "ready" : undefined));
 
   const statusLabel =
     status === "completed" && attempt?.state.status === "completed"
@@ -214,7 +216,9 @@ function SourceTreeInstance({
           <span className="truncate">{instance.snapshot.source.displayName}</span>
         </span>
 
-        <SourceTreeStatus title={statusLabel}>{statusLabel}</SourceTreeStatus>
+        {statusLabel ? (
+          <SourceTreeStatus title={statusLabel}>{statusLabel}</SourceTreeStatus>
+        ) : null}
       </Button>
 
       <SourceTreeActionGroup instances={[instance]} onClose={onClose} onRestore={onRestore} />

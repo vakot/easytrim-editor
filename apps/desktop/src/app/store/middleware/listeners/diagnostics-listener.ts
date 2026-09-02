@@ -279,7 +279,12 @@ listenerMiddleware.startListening({
   actionCreator: editingInstanceExportAttemptQueued,
   effect: (action) =>
     diagnostics.event("export.state.changed", {
-      data: { attemptId: action.payload.attempt.id, instanceId: action.payload.id, route: action.payload.attempt.route, status: "queued" },
+      data: {
+        attemptId: action.payload.attempt.id,
+        instanceId: action.payload.id,
+        route: action.payload.attempt.route,
+        status: "queued",
+      },
       origin: internalOrigin,
       snapshotId: action.payload.id,
     }),
@@ -288,7 +293,11 @@ listenerMiddleware.startListening({
   actionCreator: editingInstanceExportStarted,
   effect: (action) =>
     diagnostics.event("export.state.changed", {
-      data: { attemptId: action.payload.attemptId, instanceId: action.payload.id, status: "rendering" },
+      data: {
+        attemptId: action.payload.attemptId,
+        instanceId: action.payload.id,
+        status: "rendering",
+      },
       origin: internalOrigin,
       snapshotId: action.payload.id,
     }),
@@ -297,7 +306,11 @@ listenerMiddleware.startListening({
   actionCreator: editingInstanceExportCompleted,
   effect: (action) =>
     diagnostics.event("export.state.changed", {
-      data: { attemptId: action.payload.attemptId, instanceId: action.payload.id, status: "completed" },
+      data: {
+        attemptId: action.payload.attemptId,
+        instanceId: action.payload.id,
+        status: "completed",
+      },
       operationId: action.payload.result.operationId,
       origin: internalOrigin,
       snapshotId: action.payload.id,
@@ -307,7 +320,11 @@ listenerMiddleware.startListening({
   actionCreator: editingInstanceExportFailed,
   effect: (action) =>
     diagnostics.error("export.state.failed", action.payload.error, {
-      data: { attemptId: action.payload.attemptId, instanceId: action.payload.id, status: "failed" },
+      data: {
+        attemptId: action.payload.attemptId,
+        instanceId: action.payload.id,
+        status: "failed",
+      },
       origin: internalOrigin,
       snapshotId: action.payload.id,
     }),
@@ -316,7 +333,11 @@ listenerMiddleware.startListening({
   actionCreator: editingInstanceExportCanceled,
   effect: (action) =>
     diagnostics.event("export.state.changed", {
-      data: { attemptId: action.payload.attemptId, instanceId: action.payload.id, status: "cancelled" },
+      data: {
+        attemptId: action.payload.attemptId,
+        instanceId: action.payload.id,
+        status: "cancelled",
+      },
       origin: internalOrigin,
       snapshotId: action.payload.id,
     }),

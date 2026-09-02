@@ -24,8 +24,8 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
-import { selectActiveEditingInstance } from "@/app/store/slices/editing-instances-slice";
 import { selectCropResolution } from "@/app/store/slices/crop-slice";
+import { selectActiveEditingInstance } from "@/app/store/slices/editing-instances-slice";
 import { selectExportArguments } from "@/app/store/slices/export-presets-slice";
 import {
   optimizedExportDialogClosed,
@@ -54,8 +54,9 @@ export function ExportDialog() {
   const source = useAppSelector(selectSourceMedia);
   const cropResolution = useAppSelector(selectCropResolution);
   const settings = activeInstance
-    ? activeInstance.optimizedSettings ?? { frameRate: undefined, resolution: cropResolution }
+    ? (activeInstance.optimizedSettings ?? { frameRate: undefined, resolution: cropResolution })
     : null;
+
   const argumentsText = useAppSelector(selectExportArguments);
   const commandPreview = useAppSelector(selectExportCommandPreview);
   const commandPreviewError = useAppSelector(selectExportCommandPreviewError);

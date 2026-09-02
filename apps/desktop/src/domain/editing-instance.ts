@@ -22,7 +22,7 @@ export interface ExportSettings {
 export type SourceAvailability = "available" | "deleted" | "missing";
 
 export type ExportAttemptState =
-  | { status: "queued"; queuedAt: number }
+  | { queuedAt: number; status: "queued" }
   | { operationId: string | null; startedAt: number; status: "rendering" }
   | { completedAt: number; result: ExportResult; status: "completed" }
   | { error: AppError; failedAt: number; status: "failed" }

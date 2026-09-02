@@ -15,6 +15,7 @@ import { appMiddleware } from "@/app/store/middleware";
 import { createPersistedReducer, type PersistStorage, reduxStorage } from "@/app/store/persistence";
 import { audioReducer } from "@/app/store/slices/audio-slice";
 import { cropReducer } from "@/app/store/slices/crop-slice";
+import { editingInstancesReducer } from "@/app/store/slices/editing-instances-slice";
 import {
   createEditorToolsStateFromPreferences,
   editorToolsInitialized,
@@ -22,7 +23,6 @@ import {
 } from "@/app/store/slices/editor-tools-slice";
 import { exportPresetsReducer } from "@/app/store/slices/export-presets-slice";
 import { exportReducer } from "@/app/store/slices/export-slice";
-import { editingInstancesReducer } from "@/app/store/slices/editing-instances-slice";
 import { importWorkflowReducer } from "@/app/store/slices/import-workflow-slice";
 import { preferencesReducer } from "@/app/store/slices/preferences-slice";
 import { previewReducer } from "@/app/store/slices/preview-slice";

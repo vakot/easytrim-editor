@@ -7,17 +7,17 @@ Exporting never promotes, replaces, or creates another instance.
 
 ## Migration contract table
 
-| Current contract | New responsibility | Required change |
-| --- | --- | --- |
-| Imported items and export queue items are separate records | `EditingInstance` owns source, current snapshot, media descriptor, settings, and attempts | Remove the imported/exported union and promotion path |
-| Queue item ID is reused as a UI/runtime identity | `instanceId`, `attemptId`, native `operationId`, and `outputId` are distinct tracing keys | Carry all keys through Redux, runtime jobs, diagnostics, and callbacks |
-| Export request reads mutable editor state while work runs | `ExportAttempt` captures an immutable request and `EditorSnapshot` at launch | Render only from the captured attempt |
-| History restore forks a new imported item | Restore hydrates the selected instance | Do not create a history fork or change the instance ID |
-| Source deletion is attached to one queue record | Source availability is keyed by canonical source path | Update every instance sharing that path; keep instances open |
-| Close means clearing the currently loaded source | Close is instance lifecycle | Cancel that instance's native jobs, await cleanup, then remove only that instance |
-| Imported and export queues are navigation surfaces | SourceTree is the sole instance navigator | Render folders by source path and leaves by `instanceId`; keep actions separate |
-| Runtime jobs are Redux queue records | Runtime owns native handles and job cleanup; Redux owns serializable status | Keep runtime maps keyed by `attemptId` and make cancellation idempotent |
-| Redux persistence can be confused with session recovery | Editing instances, attempts, media descriptors, and runtime state are session-only | Keep them outside the persistence allow-list |
+| Current contract                                           | New responsibility                                                                        | Required change                                                                   |
+| ---------------------------------------------------------- | ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Imported items and export queue items are separate records | `EditingInstance` owns source, current snapshot, media descriptor, settings, and attempts | Remove the imported/exported union and promotion path                             |
+| Queue item ID is reused as a UI/runtime identity           | `instanceId`, `attemptId`, native `operationId`, and `outputId` are distinct tracing keys | Carry all keys through Redux, runtime jobs, diagnostics, and callbacks            |
+| Export request reads mutable editor state while work runs  | `ExportAttempt` captures an immutable request and `EditorSnapshot` at launch              | Render only from the captured attempt                                             |
+| History restore forks a new imported item                  | Restore hydrates the selected instance                                                    | Do not create a history fork or change the instance ID                            |
+| Source deletion is attached to one queue record            | Source availability is keyed by canonical source path                                     | Update every instance sharing that path; keep instances open                      |
+| Close means clearing the currently loaded source           | Close is instance lifecycle                                                               | Cancel that instance's native jobs, await cleanup, then remove only that instance |
+| Imported and export queues are navigation surfaces         | SourceTree is the sole instance navigator                                                 | Render folders by source path and leaves by `instanceId`; keep actions separate   |
+| Runtime jobs are Redux queue records                       | Runtime owns native handles and job cleanup; Redux owns serializable status               | Keep runtime maps keyed by `attemptId` and make cancellation idempotent           |
+| Redux persistence can be confused with session recovery    | Editing instances, attempts, media descriptors, and runtime state are session-only        | Keep them outside the persistence allow-list                                      |
 
 ## Canonical state
 

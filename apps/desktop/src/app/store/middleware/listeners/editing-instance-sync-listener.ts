@@ -1,12 +1,7 @@
 import { isAnyOf } from "@reduxjs/toolkit";
 
-import { sourceReady } from "@/app/store/actions/source-actions";
 import { editingInstanceActivated } from "@/app/store/actions/editing-instance-actions";
-import {
-  editingInstanceOptimizedSettingsChanged,
-  editingInstanceSnapshotUpdated as snapshotUpdated,
-  selectActiveEditingInstance,
-} from "@/app/store/slices/editing-instances-slice";
+import { sourceReady } from "@/app/store/actions/source-actions";
 import {
   audioMergeToggled,
   audioTrackToggled,
@@ -15,6 +10,11 @@ import {
   masterVolumeChanged,
 } from "@/app/store/slices/audio-slice";
 import { cropChanged } from "@/app/store/slices/crop-slice";
+import {
+  editingInstanceOptimizedSettingsChanged,
+  editingInstanceSnapshotUpdated,
+  selectActiveEditingInstance,
+} from "@/app/store/slices/editing-instances-slice";
 import { trimChanged } from "@/app/store/slices/trim-slice";
 import { createEditorSnapshot } from "@/domain/editor-snapshot";
 
@@ -41,7 +41,7 @@ listenerMiddleware.startListening({
     const trim = state.trim.value;
     if (!instance || !source || !trim || !state.source.media) return;
     listenerApi.dispatch(
-      snapshotUpdated({
+      editingInstanceSnapshotUpdated({
         id: instance.id,
         media: state.source.media,
         snapshot: createEditorSnapshot({
