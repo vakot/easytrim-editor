@@ -30,6 +30,10 @@ type SourceTreeBuildFolderNode = {
 
 type SourceTreeBuildNode = SourceTreeBuildFolderNode | SourceTreeInstanceNode;
 
+const sourceTreeNodeCollator = new Intl.Collator(undefined, {
+  sensitivity: "base",
+});
+
 export function getSourceTreeNodes(
   instances: EditingInstance[],
   options: { compact?: boolean } = {},
@@ -44,16 +48,15 @@ export function getSourceTreeNodes(
     path: "",
   };
 
+  const foldersByPath = new Map<string, SourceTreeBuildFolderNode>();
+
   for (const instance of instances) {
     const directories = getPathDirectories(formatSourcePath(instance.snapshot.source.sourcePath));
 
     let parent = root;
 
     for (const directory of directories) {
-      let folder = parent.children.find(
-        (node): node is SourceTreeBuildFolderNode =>
-          node.kind === "folder" && node.path === directory.path,
-      );
+      let folder = foldersByPath.get(directory.path);
 
       if (!folder) {
         folder = {
@@ -65,6 +68,7 @@ export function getSourceTreeNodes(
         };
 
         parent.children.push(folder);
+        foldersByPath.set(directory.path, folder);
       }
 
       parent = folder;
@@ -77,6 +81,7 @@ export function getSourceTreeNodes(
   }
 
   const compactedRoot = options.compact === false ? root : compactFolderChains(root);
+  sortSourceTreeChildren(compactedRoot);
 
   return compactedRoot.name
     ? [stripBuildFolderFields(compactedRoot)]
@@ -87,6 +92,27 @@ export function getSourceTreeInstances(nodes: SourceTreeNode[]): EditingInstance
   return nodes.flatMap((node) =>
     node.kind === "folder" ? getSourceTreeInstances(node.children) : [node.instance],
   );
+}
+
+export function getSourceTreeInstanceIds(nodes: SourceTreeNode[]): string[] {
+  const sourceIds: string[] = [];
+  const pendingNodes = [...nodes].reverse();
+
+  while (pendingNodes.length > 0) {
+    const node = pendingNodes.pop();
+    if (!node) continue;
+
+    if (node.kind === "folder") {
+      for (let index = node.children.length - 1; index >= 0; index -= 1) {
+        const child = node.children[index];
+        if (child) pendingNodes.push(child);
+      }
+    } else {
+      sourceIds.push(node.instance.id);
+    }
+  }
+
+  return sourceIds;
 }
 
 export function getSourceTreeSiblings(
@@ -157,6 +183,22 @@ function compactFolderChains(folder: SourceTreeBuildFolderNode): SourceTreeBuild
       child.kind === "folder" ? compactFolderChains(child) : child,
     ),
   };
+}
+
+function sortSourceTreeChildren(folder: SourceTreeBuildFolderNode): void {
+  folder.children.sort((left, right) => {
+    if (left.kind !== right.kind) return left.kind === "folder" ? -1 : 1;
+
+    const leftName = left.kind === "folder" ? left.name : left.instance.snapshot.source.displayName;
+    const rightName =
+      right.kind === "folder" ? right.name : right.instance.snapshot.source.displayName;
+
+    return sourceTreeNodeCollator.compare(leftName, rightName);
+  });
+
+  for (const child of folder.children) {
+    if (child.kind === "folder") sortSourceTreeChildren(child);
+  }
 }
 
 function stripBuildFolderFields(node: SourceTreeBuildNode): SourceTreeNode {

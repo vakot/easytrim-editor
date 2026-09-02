@@ -10,13 +10,13 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 
-import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
-import { selectEditingInstances } from "@/app/store/slices/editing-instances-slice";
+import { useAppDispatch } from "@/app/store/redux-hooks";
 import {
   closeActiveEditingInstanceRequested,
   navigateToEditingInstance,
   restoreSourceFileRequested,
 } from "@/app/store/thunks/source-media-thunks";
+import type { EditingInstance } from "@/domain/editing-instance";
 import { openFileLocation } from "@/lib/tauri/media";
 
 import { getRevealLabel, getSourceAction } from "../lib/source-tree.utils";
@@ -28,15 +28,15 @@ export function SourceTreeContextMenu({
   kind,
   revealPath,
   sourceIds,
+  targetInstances,
 }: PropsWithChildren<{
   kind: "file" | "folder";
   revealPath: string;
   sourceIds: string[];
+  targetInstances: EditingInstance[];
 }>) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const instances = useAppSelector(selectEditingInstances);
-  const targetInstances = instances.filter((instance) => sourceIds.includes(instance.id));
   const sourceAction = getSourceAction(targetInstances);
 
   const closeSources = () => {

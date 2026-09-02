@@ -1,5 +1,11 @@
 import { ChevronRightIcon, FileVideo, Folder, FolderOpen } from "lucide-react";
-import type { ComponentProps, CSSProperties, PropsWithChildren } from "react";
+import {
+  type ComponentProps,
+  type CSSProperties,
+  memo,
+  type PropsWithChildren,
+  useMemo,
+} from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,6 +18,7 @@ import { cn } from "@/lib/class-names.utils";
 
 import { formatSourcePath } from "../lib/media-formatters.utils";
 import {
+  getSourceTreeInstanceIds,
   getSourceTreeInstances,
   type SourceTreeFolderNode,
   type SourceTreeNode,
@@ -22,22 +29,34 @@ import { SourceTreeContextMenu } from "./SourceTreeContextMenu";
 const treeNodeClassName =
   "min-w-0 flex-1 text-xs justify-between overflow-hidden transition-none group-hover:bg-muted! dark:group-hover:bg-muted/50 text-secondary-foreground";
 
-export function SourceTreeNodes({
-  background = "card",
-  level = 0,
-  nodes,
-  value,
-}: {
+type SourceTreeNodesProps = {
   background?: "card" | "popover";
+  instancesById?: ReadonlyMap<string, EditingInstance>;
   level?: number;
   nodes: SourceTreeNode[];
   value: string;
-}) {
+};
+
+export function SourceTreeNodes({
+  background = "card",
+  instancesById: providedInstancesById,
+  level = 0,
+  nodes,
+  value,
+}: SourceTreeNodesProps) {
+  const instancesById = useMemo(
+    () =>
+      providedInstancesById ??
+      new Map(getSourceTreeInstances(nodes).map((instance) => [instance.id, instance])),
+    [nodes, providedInstancesById],
+  );
+
   return nodes.map((node) => {
     if (node.kind === "folder") {
       return (
         <SourceTreeFolder
           background={background}
+          instancesById={instancesById}
           key={node.id}
           level={level}
           node={node}
@@ -57,25 +76,32 @@ export function SourceTreeNodes({
   });
 }
 
-function SourceTreeFolder({
+const SourceTreeFolder = memo(function SourceTreeFolder({
   background,
+  instancesById,
   level,
   node,
   value,
 }: {
   background: "card" | "popover";
+  instancesById: ReadonlyMap<string, EditingInstance>;
   level: number;
   node: SourceTreeFolderNode;
   value: string;
 }) {
-  const instances = getSourceTreeInstances(node.children);
+  const sourceIds = useMemo(() => getSourceTreeInstanceIds(node.children), [node.children]);
+  const instances = useMemo(
+    () => sourceIds.flatMap((sourceId) => instancesById.get(sourceId) ?? []),
+    [instancesById, sourceIds],
+  );
 
   return (
     <Collapsible className="w-full">
       <SourceTreeContextMenu
         kind="folder"
         revealPath={node.path}
-        sourceIds={instances.map((instance) => instance.id)}
+        sourceIds={sourceIds}
+        targetInstances={instances}
       >
         <div
           className="group group-line sticky flex min-w-0 items-center gap-1 bg-(--source-tree-background)"
@@ -116,6 +142,7 @@ function SourceTreeFolder({
       <CollapsibleContent>
         <SourceTreeNodes
           background={background}
+          instancesById={instancesById}
           level={level + 1}
           nodes={node.children}
           value={value}
@@ -123,9 +150,9 @@ function SourceTreeFolder({
       </CollapsibleContent>
     </Collapsible>
   );
-}
+});
 
-function SourceTreeInstance({
+const SourceTreeInstance = memo(function SourceTreeInstance({
   instance,
   level,
   selected,
@@ -149,6 +176,7 @@ function SourceTreeInstance({
       kind="file"
       revealPath={formatSourcePath(instance.snapshot.source.sourcePath)}
       sourceIds={[instance.id]}
+      targetInstances={[instance]}
     >
       <div
         className="group group-line relative flex min-w-0 items-center gap-1 rounded-md"
@@ -184,7 +212,7 @@ function SourceTreeInstance({
       </div>
     </SourceTreeContextMenu>
   );
-}
+});
 
 function SourceTreeStatus({
   children,
