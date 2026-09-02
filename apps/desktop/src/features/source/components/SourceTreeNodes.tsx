@@ -19,6 +19,9 @@ import {
 
 import { SourceTreeContextMenu } from "./SourceTreeContextMenu";
 
+const treeNodeClassName =
+  "min-w-0 flex-1 text-xs justify-between overflow-hidden transition-none group-hover:bg-muted! dark:group-hover:bg-muted/50 text-secondary-foreground";
+
 export function SourceTreeNodes({
   level = 0,
   nodes,
@@ -69,7 +72,7 @@ function SourceTreeFolder({
           <CollapsibleTrigger asChild>
             <Button
               aria-label={node.name}
-              className="group min-w-0 flex-1 justify-between text-xs transition-none group-focus-within:bg-muted! group-focus-within:pr-4 group-focus-within:text-foreground! group-hover:bg-muted! group-hover:pr-4 group-hover:text-foreground! dark:group-focus-within:bg-muted/50! dark:group-hover:bg-muted/50! data-open:bg-transparent!"
+              className={cn(treeNodeClassName, "group data-open:bg-transparent!")}
               size="sm"
               variant="ghost"
             >
@@ -131,7 +134,7 @@ function SourceTreeInstance({
         <Button
           aria-current={selected ? "true" : undefined}
           aria-label={instance.snapshot.source.displayName}
-          className="min-w-0 flex-1 justify-between overflow-hidden text-muted-foreground! transition-none group-focus-within:text-foreground! group-hover:bg-muted group-hover:text-foreground! dark:group-hover:bg-muted/50 data-open:text-foreground!"
+          className={treeNodeClassName}
           data-open={selected ? "true" : undefined}
           onClick={() => void dispatch(navigateToEditingInstance(instance.id))}
           size="xs"
