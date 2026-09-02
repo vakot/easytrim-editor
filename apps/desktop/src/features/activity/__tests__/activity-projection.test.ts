@@ -176,7 +176,7 @@ describe("activity projection", () => {
             timestamp: "2026-08-31T08:00:00.000Z",
           }),
           diagnosticEvent("ffmpeg.export.started", {
-            data: { outputPath, outputType },
+            data: { outputPath, outputType, sourcePath },
             operationId: "export-1",
             sessionId: "current-session",
             snapshotId: "snapshot-1",
@@ -194,6 +194,11 @@ describe("activity projection", () => {
         "current-session",
       );
 
+      const branch = groupActivityEntriesByBranch(entries).find(
+        (item): item is Extract<typeof item, { kind: "branch" }> =>
+          item.kind === "branch" && item.branch.snapshotId === "snapshot-1",
+      );
+
       expect(entries).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
@@ -209,6 +214,7 @@ describe("activity projection", () => {
           }),
         ]),
       );
+      expect(branch?.branch.path).toBe(sourcePath);
       expect(entries).toHaveLength(2);
     },
   );

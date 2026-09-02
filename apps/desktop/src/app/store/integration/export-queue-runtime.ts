@@ -202,6 +202,7 @@ async function drainQueue(runtime: RuntimeState, dispatch: AppDispatch, getState
           attemptId: job.attempt.id,
           instanceId: job.instanceId,
           outputType: job.attempt.route,
+          sourcePath: job.attempt.request.sourcePath,
         },
         origin: { type: "internal" },
         snapshotId: job.instanceId,
