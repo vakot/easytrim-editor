@@ -1,18 +1,28 @@
-import { ChevronRightIcon, FileVideo, Folder, FolderOpen, X } from "lucide-react";
+import { ChevronRightIcon, FileVideo, Folder, FolderOpen } from "lucide-react";
 import type { ComponentProps, PropsWithChildren } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuGroup,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 
 import { useAppDispatch } from "@/app/store/redux-hooks";
 import {
+  closeActiveEditingInstanceRequested,
   navigateToEditingInstance,
-  restoreSourceFileRequested,
 } from "@/app/store/thunks/source-media-thunks";
 import type { EditingInstance } from "@/domain/editing-instance";
 import { cn } from "@/lib/class-names.utils";
 
+import { DeleteSourceDialog, DeleteSourceDialogTrigger } from "./components/DeleteSourceDialog";
 import { useEditingInstances } from "./hooks/useEditingInstances";
 import { formatSourcePath } from "./lib/media-formatters.utils";
 
@@ -30,33 +40,12 @@ type SourceTreeInstanceNode = {
   kind: "instance";
 };
 
-type SourceTreeActions = {
-  onClose: (ids: string[]) => void;
-  onRestore: (sourcePaths: string[]) => void;
-  onSelect: (id: string) => void;
-  value: string;
-};
-
 export function SourceTree() {
-  const dispatch = useAppDispatch();
-
-  const { activeInstanceId, closeInstances, instances } = useEditingInstances();
-
-  const restoreSources = async (sourcePaths: string[]) => {
-    for (const sourcePath of new Set(sourcePaths)) {
-      await dispatch(restoreSourceFileRequested({ sourcePath }));
-    }
-  };
+  const { activeInstanceId, instances } = useEditingInstances();
 
   return (
     <div className="flex flex-col gap-1 pb-1">
-      <SourceTreeNodes
-        nodes={getSourceTreeNodes(instances)}
-        onClose={(ids) => void closeInstances(ids)}
-        onRestore={(sourcePaths) => void restoreSources(sourcePaths)}
-        onSelect={(id) => void dispatch(navigateToEditingInstance(id))}
-        value={activeInstanceId ?? ""}
-      />
+      <SourceTreeNodes nodes={getSourceTreeNodes(instances)} value={activeInstanceId ?? ""} />
     </div>
   );
 }
@@ -64,27 +53,15 @@ export function SourceTree() {
 function SourceTreeNodes({
   level = 0,
   nodes,
-  onClose,
-  onRestore,
-  onSelect,
   value,
 }: {
   level?: number;
   nodes: SourceTreeNode[];
-} & SourceTreeActions) {
+  value: string;
+}) {
   return nodes.map((node) => {
     if (node.kind === "folder") {
-      return (
-        <SourceTreeFolder
-          key={node.id}
-          level={level}
-          node={node}
-          onClose={onClose}
-          onRestore={onRestore}
-          onSelect={onSelect}
-          value={value}
-        />
-      );
+      return <SourceTreeFolder key={node.id} level={level} node={node} value={value} />;
     }
 
     return (
@@ -92,9 +69,6 @@ function SourceTreeNodes({
         instance={node.instance}
         key={node.instance.id}
         level={level}
-        onClose={onClose}
-        onRestore={onRestore}
-        onSelect={onSelect}
         selected={value === node.instance.id}
       />
     );
@@ -104,57 +78,49 @@ function SourceTreeNodes({
 function SourceTreeFolder({
   level,
   node,
-  onClose,
-  onRestore,
-  onSelect,
   value,
 }: {
   level: number;
   node: SourceTreeFolderNode;
-} & SourceTreeActions) {
+  value: string;
+}) {
   const instances = getSourceTreeInstances(node.children);
 
   return (
     <Collapsible className="w-full">
-      <div
-        className="group group-line sticky flex min-w-0 items-center gap-1 rounded-md bg-card"
-        style={{ top: level * 28, zIndex: 10 - level }}
-      >
-        <CollapsibleTrigger asChild>
-          <Button
-            className="group min-w-0 flex-1 justify-between text-xs transition-none group-focus-within:bg-muted! group-focus-within:pr-4 group-focus-within:text-foreground! group-hover:bg-muted! group-hover:pr-4 group-hover:text-foreground! dark:group-focus-within:bg-muted/50! dark:group-hover:bg-muted/50! data-open:bg-transparent!"
-            size="sm"
-            variant="ghost"
-          >
-            <div
-              className="flex w-full min-w-0 items-center gap-1"
-              style={{ paddingLeft: level * 8 }}
+      <SourceTreeContextMenu kind="folder" sourceIds={instances.map((instance) => instance.id)}>
+        <div
+          className="group group-line sticky flex min-w-0 items-center gap-1 rounded-md bg-card"
+          style={{ top: level * 28, zIndex: 10 - level }}
+        >
+          <CollapsibleTrigger asChild>
+            <Button
+              aria-label={node.name}
+              className="group min-w-0 flex-1 justify-between text-xs transition-none group-focus-within:bg-muted! group-focus-within:pr-4 group-focus-within:text-foreground! group-hover:bg-muted! group-hover:pr-4 group-hover:text-foreground! dark:group-focus-within:bg-muted/50! dark:group-hover:bg-muted/50! data-open:bg-transparent!"
+              size="sm"
+              variant="ghost"
             >
-              <ChevronRightIcon className="shrink-0 group-data-[state=open]:rotate-90" />
-              <Folder className="shrink-0 group-data-[state=open]:hidden" />
-              <FolderOpen className="hidden shrink-0 group-data-[state=open]:block" />
+              <div
+                className="flex w-full min-w-0 items-center gap-1"
+                style={{ paddingLeft: level * 8 }}
+              >
+                <ChevronRightIcon className="shrink-0 group-data-[state=open]:rotate-90" />
+                <Folder className="shrink-0 group-data-[state=open]:hidden" />
+                <FolderOpen className="hidden shrink-0 group-data-[state=open]:block" />
 
-              <span className="truncate">{node.name}</span>
-            </div>
+                <span className="truncate">{node.name}</span>
+              </div>
 
-            <SourceTreeStatus title={String(instances.length)}>
-              ({instances.length})
-            </SourceTreeStatus>
-          </Button>
-        </CollapsibleTrigger>
-
-        {/* <SourceTreeActionGroup instances={instances} onClose={onClose} onRestore={onRestore} /> */}
-      </div>
+              <SourceTreeStatus title={String(instances.length)}>
+                ({instances.length})
+              </SourceTreeStatus>
+            </Button>
+          </CollapsibleTrigger>
+        </div>
+      </SourceTreeContextMenu>
 
       <CollapsibleContent>
-        <SourceTreeNodes
-          level={level + 1}
-          nodes={node.children}
-          onClose={onClose}
-          onRestore={onRestore}
-          onSelect={onSelect}
-          value={value}
-        />
+        <SourceTreeNodes level={level + 1} nodes={node.children} value={value} />
       </CollapsibleContent>
     </Collapsible>
   );
@@ -163,18 +129,13 @@ function SourceTreeFolder({
 function SourceTreeInstance({
   instance,
   level,
-  onClose,
-  onRestore,
-  onSelect,
   selected,
 }: {
   instance: EditingInstance;
   level: number;
-  onClose: (ids: string[]) => void;
-  onRestore: (sourcePaths: string[]) => void;
-  onSelect: (id: string) => void;
   selected: boolean;
 }) {
+  const dispatch = useAppDispatch();
   const attempt = instance.exportAttempts.at(-1);
 
   const status =
@@ -185,39 +146,85 @@ function SourceTreeInstance({
   const isLoading = status === "rendering";
 
   return (
-    <div
-      className="group group-line relative flex min-w-0 items-center gap-1 rounded-md"
-      data-open={selected}
-    >
-      <Button
-        aria-current={selected ? "true" : undefined}
-        className="min-w-0 flex-1 justify-between overflow-hidden text-muted-foreground! transition-none group-focus-within:text-foreground! group-hover:bg-muted group-hover:text-foreground! dark:group-hover:bg-muted/50 data-open:text-foreground!"
-        data-open={selected ? "true" : undefined}
-        onClick={() => onSelect(instance.id)}
-        size="xs"
-        variant="ghost"
+    <SourceTreeContextMenu kind="file" sourceIds={[instance.id]}>
+      <div
+        className="group group-line relative flex min-w-0 items-center gap-1 rounded-md"
+        data-open={selected}
       >
-        <span className="flex min-w-0 items-center gap-1" style={{ paddingLeft: level * 8 + 16 }}>
-          <FileVideo className="shrink-0" />
+        <Button
+          aria-current={selected ? "true" : undefined}
+          className="min-w-0 flex-1 justify-between overflow-hidden text-muted-foreground! transition-none group-focus-within:text-foreground! group-hover:bg-muted group-hover:text-foreground! dark:group-hover:bg-muted/50 data-open:text-foreground!"
+          data-open={selected ? "true" : undefined}
+          onClick={() => void dispatch(navigateToEditingInstance(instance.id))}
+          size="xs"
+          variant="ghost"
+        >
+          <span className="flex min-w-0 items-center gap-1" style={{ paddingLeft: level * 8 + 16 }}>
+            <FileVideo className="shrink-0" />
 
-          <span className="truncate">{instance.snapshot.source.displayName}</span>
-        </span>
+            <span className="truncate">{instance.snapshot.source.displayName}</span>
+          </span>
 
-        {status ? (
-          <SourceTreeStatus className={isLoading ? "shimmer" : undefined} title={status}>
-            <Badge
-              className="text-muted-foreground transition-none"
-              size="xs"
-              variant={getStatusVariant(status)}
-            >
-              {status}
-            </Badge>
-          </SourceTreeStatus>
-        ) : null}
-      </Button>
+          {status ? (
+            <SourceTreeStatus className={isLoading ? "shimmer" : undefined} title={status}>
+              <Badge
+                className="text-muted-foreground transition-none"
+                size="xs"
+                variant={getStatusVariant(status)}
+              >
+                {status}
+              </Badge>
+            </SourceTreeStatus>
+          ) : null}
+        </Button>
+      </div>
+    </SourceTreeContextMenu>
+  );
+}
 
-      {/* <SourceTreeActionGroup instances={[instance]} onClose={onClose} onRestore={onRestore} /> */}
-    </div>
+function SourceTreeContextMenu({
+  children,
+  kind,
+  sourceIds,
+}: PropsWithChildren<{ kind: "file" | "folder"; sourceIds: string[] }>) {
+  const { t } = useTranslation();
+  const dispatch = useAppDispatch();
+
+  const closeSources = () => {
+    for (const sourceId of sourceIds) {
+      void dispatch(closeActiveEditingInstanceRequested(sourceId));
+    }
+  };
+
+  return (
+    <DeleteSourceDialog sourceIds={sourceIds}>
+      <ContextMenu>
+        <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
+        <ContextMenuContent>
+          <ContextMenuGroup>
+            {kind === "file" ? (
+              <ContextMenuItem
+                onSelect={() => {
+                  const sourceId = sourceIds[0];
+                  if (sourceId) void dispatch(navigateToEditingInstance(sourceId));
+                }}
+              >
+                {t("app.actions.open")}
+              </ContextMenuItem>
+            ) : null}
+            <ContextMenuItem onSelect={closeSources}>{t("common.actions.close")}</ContextMenuItem>
+          </ContextMenuGroup>
+          <ContextMenuSeparator />
+          <ContextMenuGroup>
+            <DeleteSourceDialogTrigger asChild>
+              <ContextMenuItem onSelect={(event) => event.preventDefault()} variant="destructive">
+                {t("common.actions.delete")}
+              </ContextMenuItem>
+            </DeleteSourceDialogTrigger>
+          </ContextMenuGroup>
+        </ContextMenuContent>
+      </ContextMenu>
+    </DeleteSourceDialog>
   );
 }
 
