@@ -111,11 +111,7 @@ export function SourceStatus() {
   if (missing.length === 0) {
     return (
       <CapabilityTooltip content={dependencyDetails}>
-        <Badge
-          className="border-emerald-400/35 bg-emerald-400/8 text-emerald-300"
-          role="status"
-          variant="outline"
-        >
+        <Badge role="status" variant="success">
           <StatusDot tone="success" />
           {t("source.status.toolsReady")}
         </Badge>

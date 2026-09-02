@@ -221,8 +221,9 @@ function SourceTreeInstance({
         {statusLabel ? (
           <SourceTreeStatus className={isLoading ? "shimmer" : undefined} title={statusLabel}>
             <Badge
-              className="h-4 text-[10px] text-muted-foreground transition-none"
-              variant="outline"
+              className="text-muted-foreground transition-none"
+              size="xs"
+              variant={getStatusVariant(status)}
             >
               {statusLabel}
             </Badge>
@@ -305,7 +306,7 @@ function SourceTreeStatus({
   return (
     <span
       className={cn(
-        "shrink-0 text-[10px] text-muted-foreground group-focus-within:invisible group-hover:invisible",
+        "shrink-0 text-[10px] text-muted-foreground group-focus-within:hidden group-hover:hidden",
         className,
       )}
       title={title}
@@ -368,4 +369,20 @@ function getCommonPathDepth(paths: string[][]) {
   let depth = 0;
   while (depth < first.length && paths.every((path) => path[depth] === first[depth])) depth++;
   return depth;
+}
+
+function getStatusVariant(
+  status:
+    "deleted" | "queued" | "rendering" | "completed" | "failed" | "canceled" | "ready" | undefined,
+): React.ComponentProps<typeof Badge>["variant"] {
+  switch (status) {
+    case "deleted":
+    case "canceled":
+    case "failed":
+      return "destructive";
+    case "completed":
+      return "success";
+    default:
+      return "outline";
+  }
 }
