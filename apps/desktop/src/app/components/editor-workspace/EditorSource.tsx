@@ -218,7 +218,7 @@ function SourceTabsPanel({ isSingle = false }: SourcePanelProps) {
       </div>
 
       <ScrollArea className="px-2">
-        <SourceTabs background="card" orientation="vertical" />
+        <SourceTabs background="card" className="pb-1" orientation="vertical" />
       </ScrollArea>
     </ResizablePanel>
   );

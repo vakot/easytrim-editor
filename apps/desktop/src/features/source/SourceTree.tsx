@@ -59,7 +59,7 @@ export function SourceTree() {
   };
 
   return (
-    <div className="flex flex-col gap-1 p-1">
+    <div className="flex flex-col gap-1 pb-1">
       <SourceTreeNodes
         nodes={getSourceTreeNodes(instances)}
         onClose={(ids) => void closeInstances(ids)}
@@ -126,7 +126,10 @@ function SourceTreeFolder({
 
   return (
     <Collapsible className="w-full">
-      <div className="group group-line relative flex min-w-0 items-center gap-1 rounded-md">
+      <div
+        className="group group-line sticky flex min-w-0 items-center gap-1 rounded-md bg-card"
+        style={{ top: level * 28, zIndex: 10 - level }}
+      >
         <CollapsibleTrigger asChild>
           <Button
             className="group min-w-0 flex-1 justify-between text-xs transition-none group-focus-within:bg-muted! group-focus-within:pr-4 group-focus-within:text-foreground! group-hover:bg-muted! group-hover:pr-4 group-hover:text-foreground! dark:group-focus-within:bg-muted/50! dark:group-hover:bg-muted/50! data-open:bg-transparent!"

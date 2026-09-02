@@ -12,11 +12,13 @@ import { useEditingInstances } from "./hooks/useEditingInstances";
 
 interface SourceTabsProps {
   background?: "preview-surface" | "card";
+  className?: string;
   orientation?: "vertical" | "horizontal";
 }
 
 export function SourceTabs({
   background = "preview-surface",
+  className,
   orientation = "horizontal",
 }: SourceTabsProps) {
   const dispatch = useAppDispatch();
@@ -24,7 +26,7 @@ export function SourceTabs({
 
   return (
     <Tabs
-      className="gap-0"
+      className={cn("gap-0", className)}
       onValueChange={(id) => void dispatch(navigateToEditingInstance(id))}
       orientation={orientation}
       value={activeInstanceId ?? ""}
