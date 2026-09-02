@@ -15,6 +15,7 @@ import { appMiddleware } from "@/app/store/middleware";
 import { createPersistedReducer, type PersistStorage, reduxStorage } from "@/app/store/persistence";
 import { audioReducer } from "@/app/store/slices/audio-slice";
 import { cropReducer } from "@/app/store/slices/crop-slice";
+import { editingInstancesReducer } from "@/app/store/slices/editing-instances-slice";
 import {
   createEditorToolsStateFromPreferences,
   editorToolsInitialized,

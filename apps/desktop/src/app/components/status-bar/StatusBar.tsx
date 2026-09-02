@@ -29,8 +29,13 @@ function splitFilePath(path: string) {
 export function StatusBar() {
   const { t } = useTranslation();
   const activeExport = useAppSelector(selectRenderingAttempt);
-  const activeExportPath = activeExport ? splitFilePath(activeExport.attempt.output.displayPath) : null;
-  const progressPercent = activeExport ? Math.round(activeExport.attempt.metrics.progressPercent) : 0;
+  const activeExportPath = activeExport
+    ? splitFilePath(activeExport.attempt.output.displayPath)
+    : null;
+
+  const progressPercent = activeExport
+    ? Math.round(activeExport.attempt.metrics.progressPercent)
+    : 0;
 
   return (
     <div className="bg-card/30">
@@ -65,7 +70,8 @@ export function StatusBar() {
             </div>
             <Separator className="mt-1 h-4 self-center" orientation="vertical" />
             <StatusMetricTooltip label={t("export.labels.frames")}>
-              {activeExport.attempt.metrics.currentFrame ?? 0}f / {activeExport.attempt.metrics.totalFrames ?? 0}f
+              {activeExport.attempt.metrics.currentFrame ?? 0}f /{" "}
+              {activeExport.attempt.metrics.totalFrames ?? 0}f
             </StatusMetricTooltip>
             <Separator className="mt-1 h-4 self-center" orientation="vertical" />
             <StatusMetricTooltip label={t("export.labels.fps")}>
@@ -78,12 +84,12 @@ export function StatusBar() {
             <Separator className="mt-1 h-4 self-center" orientation="vertical" />
             <StatusMetricTooltip label={t("export.labels.estimateSize")}>
               {formatStatusFileSize(activeExport.attempt.metrics.fileSizeBytes)} /{" "}
-                {formatStatusFileSize(activeExport.attempt.metrics.estimatedFileSizeBytes)}
+              {formatStatusFileSize(activeExport.attempt.metrics.estimatedFileSizeBytes)}
             </StatusMetricTooltip>
             <Separator className="mt-1 h-4 self-center" orientation="vertical" />
             <StatusMetricTooltip label={t("export.labels.estimateTime")}>
               {formatExportDuration(activeExport.attempt.metrics.estimatedElapsedTimeMs ?? 0)} /{" "}
-                {formatExportDuration(activeExport.attempt.metrics.estimatedTotalTimeMs ?? 0)}
+              {formatExportDuration(activeExport.attempt.metrics.estimatedTotalTimeMs ?? 0)}
             </StatusMetricTooltip>
           </div>
         ) : null}

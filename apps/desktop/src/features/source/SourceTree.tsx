@@ -7,8 +7,10 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import type { PropsWithChildren } from "react";
 import { useTranslation } from "react-i18next";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -26,6 +28,7 @@ import {
   restoreSourceFileRequested,
 } from "@/app/store/thunks/source-media-thunks";
 import type { EditingInstance } from "@/domain/editing-instance";
+import { cn } from "@/lib/class-names.utils";
 
 import { DeleteSourceDialog, DeleteSourceDialogTrigger } from "./components/DeleteSourceDialog";
 import { SourceDetails } from "./components/SourceDetails";
@@ -140,7 +143,7 @@ function SourceTreeFolder({
       <div className="group group-line relative flex min-w-0 items-center gap-1 rounded-md pr-1">
         <CollapsibleTrigger asChild>
           <Button
-            className="group min-w-0 flex-1 justify-start transition-none group-focus-within:bg-muted group-focus-within:pr-4 group-focus-within:text-foreground! group-hover:bg-muted group-hover:pr-4 group-hover:text-foreground! dark:group-focus-within:bg-muted/50 dark:group-hover:bg-muted/50"
+            className="group min-w-0 flex-1 justify-between transition-none group-focus-within:bg-muted group-focus-within:pr-4 group-focus-within:text-foreground! group-hover:bg-muted group-hover:pr-4 group-hover:text-foreground! dark:group-focus-within:bg-muted/50 dark:group-hover:bg-muted/50"
             size="sm"
             variant="ghost"
           >
@@ -153,6 +156,10 @@ function SourceTreeFolder({
               <FolderOpen className="hidden shrink-0 group-data-[state=open]:block" />
               <span className="truncate">{node.name}</span>
             </div>
+
+            <SourceTreeStatus title={instances.length.toString()}>
+              ({instances.length})
+            </SourceTreeStatus>
           </Button>
         </CollapsibleTrigger>
 
@@ -186,12 +193,14 @@ function SourceTreeInstance({
 }) {
   const attempt = instance.exportAttempts.at(-1);
   const status =
-    instance.sourceAvailability === "deleted" ? "deleted" : (attempt?.state.status ?? "ready");
+    instance.sourceAvailability === "deleted"
+      ? "deleted"
+      : (attempt?.state.status ?? (instance.media ? "ready" : undefined));
 
   const statusLabel =
-    status === "completed" && attempt?.state.status === "completed"
-      ? `completed · ${attempt.state.result.displayName}`
-      : status;
+    status === "completed" && attempt?.state.status === "completed" ? "completed" : status;
+
+  const isLoading = status === "rendering";
 
   return (
     <div
@@ -199,7 +208,7 @@ function SourceTreeInstance({
       data-open={selected}
     >
       <Button
-        className="min-w-0 flex-1 justify-between overflow-hidden text-muted-foreground! transition-none group-focus-within:pr-4 group-focus-within:text-foreground! group-hover:bg-muted group-hover:pr-4 group-hover:text-foreground! dark:group-hover:bg-muted/50"
+        className="min-w-0 flex-1 justify-between overflow-hidden text-muted-foreground! transition-none group-focus-within:pr-12 group-focus-within:text-foreground! group-hover:bg-muted group-hover:pr-12 group-hover:text-foreground! dark:group-hover:bg-muted/50"
         onClick={() => onSelect(instance.id)}
         size="xs"
         variant="ghost"
@@ -209,12 +218,17 @@ function SourceTreeInstance({
           <span className="truncate">{instance.snapshot.source.displayName}</span>
         </span>
 
-        <span
-          className="shrink-0 text-[10px] text-muted-foreground group-focus-within:invisible group-hover:invisible"
-          title={statusLabel}
-        >
-          {statusLabel}
-        </span>
+        {statusLabel ? (
+          <SourceTreeStatus className={isLoading ? "shimmer" : undefined} title={statusLabel}>
+            <Badge
+              className="text-muted-foreground transition-none"
+              size="xs"
+              variant={getStatusVariant(status)}
+            >
+              {statusLabel}
+            </Badge>
+          </SourceTreeStatus>
+        ) : null}
       </Button>
 
       <SourceTreeActionGroup instances={[instance]} onClose={onClose} onRestore={onRestore} />
@@ -284,6 +298,24 @@ function SourceTreeActionGroup({
   );
 }
 
+function SourceTreeStatus({
+  children,
+  className,
+  title,
+}: PropsWithChildren<{ className?: string; title?: string }>) {
+  return (
+    <span
+      className={cn(
+        "shrink-0 text-[10px] text-muted-foreground group-focus-within:hidden group-hover:hidden",
+        className,
+      )}
+      title={title}
+    >
+      {children}
+    </span>
+  );
+}
+
 function getSourceTreeNodes(instances: EditingInstance[]): SourceTreeNode[] {
   if (instances.length === 0) return [];
   const entries = instances.map((instance) => ({
@@ -337,4 +369,20 @@ function getCommonPathDepth(paths: string[][]) {
   let depth = 0;
   while (depth < first.length && paths.every((path) => path[depth] === first[depth])) depth++;
   return depth;
+}
+
+function getStatusVariant(
+  status:
+    "deleted" | "queued" | "rendering" | "completed" | "failed" | "canceled" | "ready" | undefined,
+): React.ComponentProps<typeof Badge>["variant"] {
+  switch (status) {
+    case "deleted":
+    case "canceled":
+    case "failed":
+      return "destructive";
+    case "completed":
+      return "success";
+    default:
+      return "outline";
+  }
 }

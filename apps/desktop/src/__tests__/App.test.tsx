@@ -7,11 +7,14 @@ import { editingInstanceActivated } from "../app/store/actions/editing-instance-
 import { sourceCleared, sourceReady } from "../app/store/actions/source-actions";
 import { startSourceMediaRuntime } from "../app/store/integration/source-media-runtime";
 import {
+  editingInstanceClosed,
+  editingInstancesAdded,
+  selectEditingInstances,
+} from "../app/store/slices/editing-instances-slice";
+import {
   createEditorToolsStateFromPreferences,
   editorToolsInitialized,
 } from "../app/store/slices/editor-tools-slice";
-import { editingInstancesAdded, editingInstanceClosed } from "../app/store/slices/editing-instances-slice";
-import { selectEditingInstances } from "../app/store/slices/editing-instances-slice";
 import { previewReady } from "../app/store/slices/preview-slice";
 import { selectHasSource } from "../app/store/slices/source-slice";
 import { store } from "../app/store/store";
@@ -456,7 +459,9 @@ describe("App", () => {
     const audioPanel = document.getElementById("editor-stage-audio");
 
     await user.click(screen.getByRole("button", { name: "C:\\Media" }));
-    await user.click(screen.getByRole("button", { name: new RegExp(replacementSelection.displayName) }));
+    await user.click(
+      screen.getByRole("button", { name: new RegExp(replacementSelection.displayName) }),
+    );
 
     expect(document.getElementById("workspace-sidebar-source-details")).toBe(detailsPanel);
     expect(document.getElementById("editor-stage-preview")).toBe(previewPanel);

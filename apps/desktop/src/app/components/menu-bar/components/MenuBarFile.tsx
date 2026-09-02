@@ -115,7 +115,9 @@ export function MenuBarFile() {
             <MenubarItem
               disabled={!hasSource}
               onSelect={() =>
-                void dispatch(closeActiveEditingInstanceRequested({ id: "file.close", type: "menu" }))
+                void dispatch(
+                  closeActiveEditingInstanceRequested({ id: "file.close", type: "menu" }),
+                )
               }
             >
               {t("app.actions.closeFile")}

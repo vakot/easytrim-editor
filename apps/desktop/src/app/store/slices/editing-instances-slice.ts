@@ -12,7 +12,7 @@ import type {
   SourceAvailability,
 } from "@/domain/editing-instance";
 import type { EditorSnapshot } from "@/domain/editor-snapshot";
-import type { ExportProgress, ExportResult, MediaInfo, AppError } from "@/lib/tauri/media.types";
+import type { AppError, ExportProgress, ExportResult, MediaInfo } from "@/lib/tauri/media.types";
 
 import type { RootState } from "../store";
 
@@ -74,7 +74,7 @@ const editingInstancesSlice = createSlice({
     },
     editingInstanceExportAttemptQueued: (
       state,
-      action: PayloadAction<{ id: EditingInstanceId; attempt: ExportAttempt }>,
+      action: PayloadAction<{ attempt: ExportAttempt; id: EditingInstanceId }>,
     ) => {
       const instance = getInstance(state, action.payload.id);
       if (!instance) return;
@@ -93,7 +93,11 @@ const editingInstancesSlice = createSlice({
       const instance = getInstance(state, action.payload.id);
       const attempt = instance && getAttempt(instance, action.payload.attemptId);
       if (!attempt || attempt.state.status !== "queued") return;
-      attempt.state = { startedAt: action.payload.startedAt, operationId: null, status: "rendering" };
+      attempt.state = {
+        startedAt: action.payload.startedAt,
+        operationId: null,
+        status: "rendering",
+      };
     },
     editingInstanceExportProgressReceived: (
       state,
@@ -156,7 +160,8 @@ const editingInstancesSlice = createSlice({
     ) => {
       const instance = getInstance(state, action.payload.id);
       const attempt = instance && getAttempt(instance, action.payload.attemptId);
-      if (!attempt || attempt.state.status === "completed" || attempt.state.status === "failed") return;
+      if (!attempt || attempt.state.status === "completed" || attempt.state.status === "failed")
+        return;
       attempt.state = {
         canceledAt: Date.now(),
         ...(action.payload.error ? { error: action.payload.error } : {}),
@@ -166,7 +171,7 @@ const editingInstancesSlice = createSlice({
     },
     editingInstancesSourceAvailabilityChanged: (
       state,
-      action: PayloadAction<{ sourcePath: string; availability: SourceAvailability }>,
+      action: PayloadAction<{ availability: SourceAvailability; sourcePath: string }>,
     ) => {
       for (const instance of Object.values(state.entities)) {
         if (instance?.snapshot.source.sourcePath === action.payload.sourcePath) {
@@ -174,14 +179,19 @@ const editingInstancesSlice = createSlice({
         }
       }
     },
-    editingInstanceExportHistoryCleared: (state, action: PayloadAction<EditingInstanceId | undefined>) => {
+    editingInstanceExportHistoryCleared: (
+      state,
+      action: PayloadAction<EditingInstanceId | undefined>,
+    ) => {
       const instances = action.payload
         ? [getInstance(state, action.payload)]
         : Object.values(state.entities);
+
       for (const instance of instances) {
-        if (instance) instance.exportAttempts = instance.exportAttempts.filter((attempt) =>
-          attempt.state.status === "queued" || attempt.state.status === "rendering",
-        );
+        if (instance)
+          instance.exportAttempts = instance.exportAttempts.filter(
+            (attempt) => attempt.state.status === "queued" || attempt.state.status === "rendering",
+          );
       }
     },
     editingInstanceClosed: (state, action: PayloadAction<EditingInstanceId>) => {
@@ -222,41 +232,43 @@ export const {
   editingInstanceExportStarted,
   editingInstanceMediaUpdated,
   editingInstanceOptimizedSettingsChanged,
-  editingInstanceSnapshotUpdated,
   editingInstancesAdded,
+  editingInstanceSnapshotUpdated,
   editingInstancesSourceAvailabilityChanged,
 } = editingInstancesSlice.actions;
 export const editingInstancesReducer = editingInstancesSlice.reducer;
 
 const selectEditingInstancesState = (state: RootState) => state.editingInstances;
-export const selectEditingInstanceIds = (state: RootState) => selectEditingInstancesState(state).ids;
-export const selectEditingInstances = createSelector(
-  [selectEditingInstancesState],
-  (state) => state.ids.map((id) => state.entities[id]).filter((value): value is EditingInstance => Boolean(value)),
+export const selectEditingInstanceIds = (state: RootState) =>
+  selectEditingInstancesState(state).ids;
+export const selectEditingInstances = createSelector([selectEditingInstancesState], (state) =>
+  state.ids
+    .map((id) => state.entities[id])
+    .filter((value): value is EditingInstance => Boolean(value)),
 );
 export const selectActiveInstanceId = (state: RootState): EditingInstanceId | null =>
   selectEditingInstancesState(state).activeInstanceId;
 export const selectEditingInstanceById = (state: RootState, id: EditingInstanceId) =>
   selectEditingInstancesState(state).entities[id];
-export const selectActiveEditingInstance = createSelector(
-  [selectEditingInstancesState],
-  (state) => (state.activeInstanceId ? state.entities[state.activeInstanceId] : undefined),
+export const selectActiveEditingInstance = createSelector([selectEditingInstancesState], (state) =>
+  state.activeInstanceId ? state.entities[state.activeInstanceId] : undefined,
 );
 export const selectActiveEditingInstanceSnapshot = createSelector(
   [selectActiveEditingInstance],
   (instance) => instance?.snapshot,
 );
-export const selectEditingInstanceAttempts = createSelector(
-  [selectEditingInstances],
-  (instances) => instances.flatMap((instance) => instancesToAttempts(instance)),
+export const selectEditingInstanceAttempts = createSelector([selectEditingInstances], (instances) =>
+  instances.flatMap((instance) => instancesToAttempts(instance)),
 );
 export const selectHasProcessableExports = createSelector(
   [selectEditingInstanceAttempts],
-  (attempts) => attempts.some(({ attempt }) => attempt.state.status === "queued" || attempt.state.status === "rendering"),
+  (attempts) =>
+    attempts.some(
+      ({ attempt }) => attempt.state.status === "queued" || attempt.state.status === "rendering",
+    ),
 );
-export const selectRenderingAttempt = createSelector(
-  [selectEditingInstanceAttempts],
-  (attempts) => attempts.find(({ attempt }) => attempt.state.status === "rendering"),
+export const selectRenderingAttempt = createSelector([selectEditingInstanceAttempts], (attempts) =>
+  attempts.find(({ attempt }) => attempt.state.status === "rendering"),
 );
 
 function instancesToAttempts(instance: EditingInstance) {

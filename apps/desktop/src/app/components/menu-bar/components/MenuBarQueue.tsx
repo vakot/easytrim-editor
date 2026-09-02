@@ -34,6 +34,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
+import { selectEditingInstanceAttempts } from "@/app/store/slices/editing-instances-slice";
 import {
   queueFinishActionChanged,
   selectAvailableQueueFinishActions,
