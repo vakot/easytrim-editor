@@ -114,5 +114,4 @@ export const selectOptimizedExportDialogOpen = (state: RootState): boolean =>
 export const selectExportCommandPreview = (state: RootState): string => state.export.commandPreview;
 export const selectExportCommandPreviewError = (state: RootState): AppError | null =>
   state.export.commandPreviewError;
-export const selectExportLaunchError = (state: RootState): AppError | null =>
-  state.export.launchError;
+export const selectExportLaunchError = (state: RootState): AppError | null => state.export.launchError;
