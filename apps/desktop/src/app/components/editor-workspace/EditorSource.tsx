@@ -90,7 +90,7 @@ export function EditorSource() {
                 handlePanelChange("workspace-sidebar-active-sources", checked === true)
               }
             >
-              {t("app.actions.showPanel", { panel: t("queue.labels.activeSources") })}
+              {t("app.actions.showPanel", { panel: t("source.labels.activeSources") })}
             </DropdownMenuCheckboxItem>
             <DropdownMenuCheckboxItem
               checked={panels["workspace-sidebar-explorer"]}
@@ -99,7 +99,7 @@ export function EditorSource() {
                 handlePanelChange("workspace-sidebar-explorer", checked === true)
               }
             >
-              {t("app.actions.showPanel", { panel: t("queue.labels.explorer") })}
+              {t("app.actions.showPanel", { panel: t("source.labels.explorer") })}
             </DropdownMenuCheckboxItem>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
@@ -210,7 +210,7 @@ function SourceTabsPanel({ isSingle = false }: SourcePanelProps) {
                   ) : (
                     <ChevronDown aria-hidden="true" />
                   ))}
-                Active sources
+                {t("source.labels.activeSources")}
               </span>
             </Button>
           )}
@@ -225,6 +225,8 @@ function SourceTabsPanel({ isSingle = false }: SourcePanelProps) {
 }
 
 function SourceTreePanel({ isSingle = false }: SourcePanelProps) {
+  const { t } = useTranslation();
+
   return (
     <ResizablePanel
       className="flex min-h-0 flex-col overflow-hidden"
@@ -250,7 +252,7 @@ function SourceTreePanel({ isSingle = false }: SourcePanelProps) {
                   ) : (
                     <ChevronDown aria-hidden="true" />
                   ))}
-                Explorer
+                {t("source.labels.explorer")}
               </span>
             </Button>
           )}
