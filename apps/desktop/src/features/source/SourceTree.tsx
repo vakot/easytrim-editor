@@ -15,10 +15,12 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 
-import { useAppDispatch } from "@/app/store/redux-hooks";
+import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
+import { selectEditingInstances } from "@/app/store/slices/editing-instances-slice";
 import {
   closeActiveEditingInstanceRequested,
   navigateToEditingInstance,
+  restoreSourceFileRequested,
 } from "@/app/store/thunks/source-media-thunks";
 import type { EditingInstance } from "@/domain/editing-instance";
 import { cn } from "@/lib/class-names.utils";
@@ -207,6 +209,8 @@ function SourceTreeContextMenu({
 }>) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
+  const instances = useAppSelector(selectEditingInstances);
+  const targetInstances = instances.filter((instance) => sourceIds.includes(instance.id));
 
   const closeSources = () => {
     for (const sourceId of sourceIds) {
@@ -216,6 +220,18 @@ function SourceTreeContextMenu({
 
   const revealSource = () => {
     void openFileLocation(revealPath).catch(() => undefined);
+  };
+
+  const restoreSources = () => {
+    const sourcesByPath = new Map<string, string>();
+    for (const instance of targetInstances) {
+      if (instance.sourceAvailability === "deleted") {
+        sourcesByPath.set(instance.snapshot.source.sourcePath, instance.id);
+      }
+    }
+    for (const [sourcePath, itemId] of sourcesByPath) {
+      void dispatch(restoreSourceFileRequested({ itemId, sourcePath }));
+    }
   };
 
   return (
@@ -242,16 +258,29 @@ function SourceTreeContextMenu({
           </ContextMenuGroup>
           <ContextMenuSeparator />
           <ContextMenuGroup>
-            <DeleteSourceDialogTrigger asChild>
-              <ContextMenuItem onSelect={(event) => event.preventDefault()} variant="destructive">
-                {t("common.actions.delete")}
+            {sourceAction === "restore" ? (
+              <ContextMenuItem onSelect={restoreSources} variant="success">
+                {t("app.actions.restore")}
               </ContextMenuItem>
-            </DeleteSourceDialogTrigger>
+            ) : (
+              <DeleteSourceDialogTrigger asChild>
+                <ContextMenuItem onSelect={(event) => event.preventDefault()} variant="destructive">
+                  {t("common.actions.delete")}
+                </ContextMenuItem>
+              </DeleteSourceDialogTrigger>
+            )}
           </ContextMenuGroup>
         </ContextMenuContent>
       </ContextMenu>
     </DeleteSourceDialog>
   );
+}
+
+function getSourceAction(instances: EditingInstance[]): "delete" | "restore" {
+  return instances.length > 0 &&
+    instances.every((instance) => instance.sourceAvailability === "deleted")
+    ? "restore"
+    : "delete";
 }
 
 function getRevealLabel(t: TFunction): string {
