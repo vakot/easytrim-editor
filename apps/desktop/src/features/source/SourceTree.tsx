@@ -22,12 +22,12 @@ import {
 } from "@/app/store/slices/editing-instances-slice";
 import {
   closeActiveEditingInstanceRequested,
-  deleteActiveEditingInstanceSourceRequested,
   navigateToEditingInstance,
   restoreSourceFileRequested,
 } from "@/app/store/thunks/source-media-thunks";
 import type { EditingInstance } from "@/domain/editing-instance";
 
+import { DeleteSourceDialog, DeleteSourceDialogTrigger } from "./components/DeleteSourceDialog";
 import { SourceDetails } from "./components/SourceDetails";
 import { formatSourcePath } from "./lib/media-formatters.utils";
 
@@ -37,7 +37,6 @@ type SourceTreeNode =
 
 type SourceTreeActions = {
   onClose: (ids: string[]) => void;
-  onDelete: (ids: string[]) => void;
   onRestore: (sourcePaths: string[]) => void;
   onSelect: (id: string) => void;
   value: string;
@@ -52,19 +51,6 @@ export function SourceTree() {
   const closeInstances = async (ids: string[]) => {
     for (const id of ids) {
       await dispatch(closeActiveEditingInstanceRequested(id));
-    }
-  };
-
-  const deleteInstances = async (ids: string[]) => {
-    const sourceIds = new Map<string, string>();
-    for (const id of ids) {
-      const instance = instances.find((item) => item.id === id);
-      if (instance && instance.sourceAvailability !== "deleted") {
-        sourceIds.set(instance.snapshot.source.sourcePath, id);
-      }
-    }
-    for (const id of sourceIds.values()) {
-      await dispatch(deleteActiveEditingInstanceSourceRequested(id));
     }
   };
 
@@ -99,7 +85,6 @@ export function SourceTree() {
           <SourceTreeNodes
             nodes={getSourceTreeNodes(instances)}
             onClose={(ids) => void closeInstances(ids)}
-            onDelete={(ids) => void deleteInstances(ids)}
             onRestore={(paths) => void restoreSources(paths)}
             onSelect={(id) => void dispatch(navigateToEditingInstance(id))}
             value={activeInstanceId ?? ""}
@@ -114,7 +99,6 @@ function SourceTreeNodes({
   level = 0,
   nodes,
   onClose,
-  onDelete,
   onRestore,
   onSelect,
   value,
@@ -126,7 +110,6 @@ function SourceTreeNodes({
         level={level}
         node={node}
         onClose={onClose}
-        onDelete={onDelete}
         onRestore={onRestore}
         onSelect={onSelect}
         value={value}
@@ -137,7 +120,6 @@ function SourceTreeNodes({
         key={node.instance.id}
         level={level}
         onClose={onClose}
-        onDelete={onDelete}
         onRestore={onRestore}
         onSelect={onSelect}
         selected={value === node.instance.id}
@@ -177,7 +159,6 @@ function SourceTreeFolder({
         <SourceTreeActionGroup
           instances={instances}
           onClose={props.onClose}
-          onDelete={props.onDelete}
           onRestore={props.onRestore}
         />
       </div>
@@ -192,7 +173,6 @@ function SourceTreeInstance({
   instance,
   level,
   onClose,
-  onDelete,
   onRestore,
   onSelect,
   selected,
@@ -200,7 +180,6 @@ function SourceTreeInstance({
   instance: EditingInstance;
   level: number;
   onClose: (ids: string[]) => void;
-  onDelete: (ids: string[]) => void;
   onRestore: (sourcePaths: string[]) => void;
   onSelect: (id: string) => void;
   selected: boolean;
@@ -238,12 +217,7 @@ function SourceTreeInstance({
         </span>
       </Button>
 
-      <SourceTreeActionGroup
-        instances={[instance]}
-        onClose={onClose}
-        onDelete={onDelete}
-        onRestore={onRestore}
-      />
+      <SourceTreeActionGroup instances={[instance]} onClose={onClose} onRestore={onRestore} />
     </div>
   );
 }
@@ -251,9 +225,8 @@ function SourceTreeInstance({
 function SourceTreeActionGroup({
   instances,
   onClose,
-  onDelete,
   onRestore,
-}: Pick<SourceTreeActions, "onClose" | "onDelete" | "onRestore"> & {
+}: Pick<SourceTreeActions, "onClose" | "onRestore"> & {
   instances: EditingInstance[];
 }) {
   if (instances.length === 0) return null;
@@ -293,16 +266,19 @@ function SourceTreeActionGroup({
           <RotateCcw aria-hidden="true" />
         </Button>
       ) : (
-        <Button
-          aria-label={isMultiple ? "Delete sources" : "Delete source"}
-          className="transition-none"
-          onClick={() => onDelete(actionInstances.map((instance) => instance.id))}
-          size="icon-xs"
-          type="button"
-          variant="destructive"
-        >
-          <Trash2 aria-hidden="true" />
-        </Button>
+        <DeleteSourceDialog sourceIds={actionInstances.map((instance) => instance.id)}>
+          <DeleteSourceDialogTrigger asChild>
+            <Button
+              aria-label={isMultiple ? "Delete sources" : "Delete source"}
+              className="transition-none"
+              size="icon-xs"
+              type="button"
+              variant="destructive"
+            >
+              <Trash2 aria-hidden="true" />
+            </Button>
+          </DeleteSourceDialogTrigger>
+        </DeleteSourceDialog>
       )}
     </ButtonGroup>
   );

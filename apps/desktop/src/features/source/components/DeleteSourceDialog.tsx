@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -12,30 +12,53 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
-import { selectEditingInstanceById } from "@/app/store/slices/editing-instances-slice";
+import { selectEditingInstances } from "@/app/store/slices/editing-instances-slice";
 import { deleteActiveEditingInstanceSourceRequested } from "@/app/store/thunks/source-media-thunks";
 
 interface DeleteSourceDialogProps {
   children: ReactNode;
   onOpenChange?: (open: boolean) => void;
   open?: boolean;
-  sourceId: string | null | undefined;
+  sourceId?: string | null;
+  sourceIds?: string[];
 }
 
-export function DeleteSourceDialog({ children, onOpenChange, open, sourceId }: DeleteSourceDialogProps) {
+export function DeleteSourceDialog({
+  children,
+  onOpenChange,
+  open,
+  sourceId,
+  sourceIds,
+}: DeleteSourceDialogProps) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const item = useAppSelector((state) => (sourceId ? selectEditingInstanceById(state, sourceId) : undefined));
+  const instances = useAppSelector(selectEditingInstances);
+  const targetIds = sourceIds?.length ? sourceIds : sourceId ? [sourceId] : [];
+  const targetIdSet = new Set(targetIds);
+  const items = instances.filter((instance) => targetIdSet.has(instance.id));
+  const item = items[0];
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleDeleteSource = async () => {
-    if (!sourceId) return;
+    if (items.length === 0) return;
     setPending(true);
     setError(null);
-    const result = await dispatch(deleteActiveEditingInstanceSourceRequested(sourceId));
-    if (result) setError(result.message);
+    const sourceIdsByPath = new Map<string, string>();
+    for (const item of items) {
+      if (item.sourceAvailability !== "deleted") {
+        sourceIdsByPath.set(item.snapshot.source.sourcePath, item.id);
+      }
+    }
+
+    let firstError: string | null = null;
+    for (const id of sourceIdsByPath.values()) {
+      const result = await dispatch(deleteActiveEditingInstanceSourceRequested(id));
+      if (result && !firstError) firstError = result.message;
+    }
+    if (firstError) setError(firstError);
     setPending(false);
   };
 
@@ -45,12 +68,23 @@ export function DeleteSourceDialog({ children, onOpenChange, open, sourceId }: D
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{t("source.dialogs.delete.title")}</AlertDialogTitle>
-          <AlertDialogDescription>{t("source.dialogs.delete.description", { name: item?.snapshot.source.displayName })}</AlertDialogDescription>
+          <AlertDialogDescription>
+            {t("source.dialogs.delete.description", {
+              name:
+                items.length > 1
+                  ? `${item?.snapshot.source.displayName} and ${items.length - 1} more sources`
+                  : item?.snapshot.source.displayName,
+            })}
+          </AlertDialogDescription>
         </AlertDialogHeader>
         {error ? <p className="text-sm text-destructive">{error}</p> : null}
         <AlertDialogFooter>
           <AlertDialogCancel disabled={pending}>{t("common.actions.cancel")}</AlertDialogCancel>
-          <AlertDialogAction disabled={pending || !item} onClick={handleDeleteSource} variant="destructive">
+          <AlertDialogAction
+            disabled={pending || items.length === 0}
+            onClick={handleDeleteSource}
+            variant="destructive"
+          >
             {t("common.actions.delete")}
           </AlertDialogAction>
         </AlertDialogFooter>
