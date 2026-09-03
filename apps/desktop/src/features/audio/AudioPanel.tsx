@@ -1,10 +1,8 @@
 import { t } from "i18next";
-import { Info, X } from "lucide-react";
+import { Info } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { ResizablePanelControl } from "@/components/ui/resizable";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -46,7 +44,7 @@ export function AudioPanel() {
   return (
     <section
       aria-labelledby="timeline-audio-title"
-      className="relative flex size-full min-h-0 flex-col pt-3"
+      className="relative flex size-full min-h-0 flex-col"
     >
       <h3
         className="mx-3 mb-2 font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
@@ -54,16 +52,6 @@ export function AudioPanel() {
       >
         {t("audio.labels.title")} ({audioTracks.length})
       </h3>
-
-      <ResizablePanelControl panelId="editor-stage-audio">
-        <Button
-          className="absolute top-1 right-3 text-secondary-foreground"
-          size="icon-xs"
-          variant="ghost"
-        >
-          <X aria-hidden="true" />
-        </Button>
-      </ResizablePanelControl>
 
       <div className="grid min-w-0 grid-cols-(--editor-audio-track-grid-columns) items-center gap-3 pr-3 pl-1">
         <div className="flex min-w-0 items-center gap-2 px-1 pr-2">

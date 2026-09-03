@@ -129,57 +129,47 @@ export function EditorSource() {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <SourcePanelsCollapsibeGroup>
-        {panelsVisibility["activeSources"] && (
-          <>
-            <SourcePanelCollapsible isSingle={isSingle} label={panelLabels.activeSources}>
-              <div className="w-full px-3">
-                <SourceTabs background="card" className="w-full pb-1" orientation="vertical" />
-              </div>
-            </SourcePanelCollapsible>
+      {panelsVisibility["activeSources"] && (
+        <>
+          <SourcePanelCollapsible isSingle={isSingle} label={panelLabels.activeSources}>
+            <div className="w-full px-3">
+              <SourceTabs background="card" className="w-full pb-1" orientation="vertical" />
+            </div>
+          </SourcePanelCollapsible>
 
-            <Separator className="bg-foreground/10" />
-          </>
-        )}
+          <Separator className="bg-foreground/10" />
+        </>
+      )}
 
-        {panelsVisibility["explorer"] && (
+      {panelsVisibility["explorer"] && (
+        <SourcePanelCollapsible
+          className="data-[state=open]:flex-1"
+          isSingle={isSingle}
+          label={panelLabels.explorer}
+        >
+          <ScrollArea className="min-h-0 flex-1 px-3">
+            <SourceTree className="pb-1" />
+          </ScrollArea>
+        </SourcePanelCollapsible>
+      )}
+
+      {panelsVisibility["activityFeed"] && (
+        <>
+          <Separator className="bg-foreground/10" />
+
           <SourcePanelCollapsible
-            className="data-[state=open]:flex-1"
+            className="max-h-75"
             isSingle={isSingle}
-            label={panelLabels.explorer}
+            label={panelLabels.activityFeed}
+            tooltip={panelTooltips.activityFeed}
           >
-            <ScrollArea className="min-h-0 flex-1 px-3">
-              <SourceTree className="pb-1" />
+            <ScrollArea className="min-h-0 flex-1 px-3 before:top-4">
+              <ActivityFeed />
             </ScrollArea>
           </SourcePanelCollapsible>
-        )}
-
-        {panelsVisibility["activityFeed"] && (
-          <>
-            <Separator className="bg-foreground/10" />
-
-            <SourcePanelCollapsible
-              className="max-h-75"
-              isSingle={isSingle}
-              label={panelLabels.activityFeed}
-              tooltip={panelTooltips.activityFeed}
-            >
-              <ScrollArea className="min-h-0 flex-1 px-3 before:top-4">
-                <ActivityFeed />
-              </ScrollArea>
-            </SourcePanelCollapsible>
-          </>
-        )}
-      </SourcePanelsCollapsibeGroup>
+        </>
+      )}
     </aside>
-  );
-}
-
-function SourcePanelsCollapsibeGroup({ children }: PropsWithChildren) {
-  return Children.toArray(children).flatMap((child, index) =>
-    index === 0
-      ? [child]
-      : [<Separator className="bg-foreground/10" key={`separator-${index}`} />, child],
   );
 }
 

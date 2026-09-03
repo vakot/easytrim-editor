@@ -12,36 +12,37 @@ import { AudioPanel } from "@/features/audio";
 import { Preview } from "@/features/preview";
 import { SourceBreadcrumb, SourceTabs } from "@/features/source";
 import { TimelinePanel } from "@/features/timeline";
-import { cn } from "@/lib/class-names.utils";
 import { syncTimelineGeometry } from "@/lib/interaction/timeline-geometry.utils";
 
 type PanelSizes = {
-  defaultSize?: number;
+  collapsedSize: number;
+  defaultSize: number;
   maxSize: number;
   minSize: number;
 };
 
 const TIMELINE_PANEL_DEFAULT_SIZE = 160;
-const TIMELINE_PANEL_SECONDARY_SIZE = 154;
 
 const AUDIO_PANEL_SIZE_LINE = 58;
-const AUDIO_PANEL_SIZE_MIN = 146;
+const AUDIO_PANEL_SIZE_MIN = 126;
 
-const getAudioPanelSize = (lines: number = 1): PanelSizes => {
+const getTimelinePanelSize = (lines: number = 0): PanelSizes => {
+  if (lines === 0) {
+    return {
+      minSize: TIMELINE_PANEL_DEFAULT_SIZE,
+      defaultSize: TIMELINE_PANEL_DEFAULT_SIZE,
+      maxSize: TIMELINE_PANEL_DEFAULT_SIZE,
+      collapsedSize: TIMELINE_PANEL_DEFAULT_SIZE,
+    };
+  }
+
   const audioPanelSizeMax = AUDIO_PANEL_SIZE_MIN + (lines - 1) * AUDIO_PANEL_SIZE_LINE;
-  return {
-    minSize: AUDIO_PANEL_SIZE_MIN,
-    defaultSize: AUDIO_PANEL_SIZE_MIN,
-    maxSize: audioPanelSizeMax,
-  };
-};
 
-const getTimelinePanelSize = (hasAudio: boolean = false): PanelSizes => {
-  const size = hasAudio ? TIMELINE_PANEL_SECONDARY_SIZE : TIMELINE_PANEL_DEFAULT_SIZE;
   return {
-    minSize: size,
-    defaultSize: size,
-    maxSize: size,
+    collapsedSize: TIMELINE_PANEL_DEFAULT_SIZE,
+    minSize: TIMELINE_PANEL_DEFAULT_SIZE + AUDIO_PANEL_SIZE_MIN,
+    defaultSize: TIMELINE_PANEL_DEFAULT_SIZE + AUDIO_PANEL_SIZE_MIN,
+    maxSize: TIMELINE_PANEL_DEFAULT_SIZE + audioPanelSizeMax,
   };
 };
 
@@ -55,6 +56,7 @@ export function EditorStage() {
   const media = useAppSelector(selectSourceMedia);
   const audioStreamsCount = useAppSelector(selectAudioPanelStreamCount);
   const timelinePaneRef = useRef<HTMLDivElement>(null);
+
   const initializeTimelinePane = useCallback((element: HTMLDivElement | null) => {
     timelinePaneRef.current = element;
     syncTimelineGeometry(element, EMPTY_TIMELINE_RANGE);
@@ -91,40 +93,20 @@ export function EditorStage() {
           withHandle={!!media}
         />
 
-        {/* TODO: combine timeline and audio panels */}
         <ResizablePanel
-          className={cn(!audioStreamsCount && "pb-1.5")}
+          className="pb-1.5"
+          collapsible={audioStreamsCount > 0}
           groupResizeBehavior="preserve-pixel-size"
           id="editor-stage-timeline"
-          {...getTimelinePanelSize(audioStreamsCount > 0)}
+          {...getTimelinePanelSize(audioStreamsCount)}
         >
           <div className="size-full p-px">
-            <Card className="size-full p-0">
+            <Card className="size-full gap-0 p-0">
               <TimelinePanel />
+              {audioStreamsCount > 0 && <AudioPanel />}
             </Card>
           </div>
         </ResizablePanel>
-
-        {audioStreamsCount > 0 && (
-          <>
-            <ResizableHandle className="bg-transparent" style={{ height: 6 }} withHandle />
-
-            <ResizablePanel
-              className="pb-1.5"
-              collapsedSize={0}
-              collapsible
-              groupResizeBehavior="preserve-pixel-size"
-              id="editor-stage-audio"
-              {...getAudioPanelSize(audioStreamsCount)}
-            >
-              <div className="size-full p-px">
-                <Card className="size-full p-0">
-                  <AudioPanel />
-                </Card>
-              </div>
-            </ResizablePanel>
-          </>
-        )}
       </ResizablePanelGroup>
     </div>
   );

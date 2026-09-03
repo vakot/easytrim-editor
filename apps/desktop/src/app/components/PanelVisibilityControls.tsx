@@ -58,7 +58,7 @@ export function PanelVisibilityControls() {
                   </DropdownMenuCheckboxItem>
                 )}
               </ResizablePanelControl>
-              <ResizablePanelControl panelId="editor-stage-audio">
+              <ResizablePanelControl panelId="editor-stage-timeline">
                 {({ isAvailable, isCollapsed, isDisabled }) => (
                   <DropdownMenuCheckboxItem
                     checked={isAvailable && !isCollapsed}
@@ -78,7 +78,7 @@ export function PanelVisibilityControls() {
             <DropdownMenuGroup>
               <ResizablePanelControl
                 mode="reset"
-                panelId={["workspace-sidebar", "editor-stage-timeline", "workspace-activity"]}
+                panelId={["workspace-sidebar", "editor-stage-timeline"]}
               >
                 {({ isDisabled }) => (
                   <DropdownMenuItem disabled={isDisabled} inset keepOpen>
@@ -122,7 +122,7 @@ export function PanelVisibilityControls() {
       </Tooltip>
 
       <Tooltip preserveOnTrigger>
-        <ResizablePanelControl panelId="editor-stage-audio">
+        <ResizablePanelControl panelId="editor-stage-timeline">
           {({ isAvailable, isCollapsed, isDisabled }) => (
             <TooltipTrigger asChild>
               <Button
