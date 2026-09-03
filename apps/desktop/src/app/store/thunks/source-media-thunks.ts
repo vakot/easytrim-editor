@@ -585,9 +585,16 @@ export const closeActiveEditingInstanceRequested =
     const replacement = getReplacementEditingInstance(instances, activeIndex);
 
     await cancelInstanceExports(activeInstance.id, getState);
-    dispatch(sourceCleared());
     dispatch(editingInstanceClosed(activeInstance.id));
-    dispatch(navigateToEditingInstance(replacement?.id ?? null));
+    if (replacement) {
+      // A replacement activation resets source-bound domains and keeps the
+      // existing panel footprint alive while its metadata is restored. Do not
+      // publish an empty source between the two instances, or resizable panels
+      // will treat the close as a real clear and lose their boundaries.
+      dispatch(navigateToEditingInstance(replacement.id));
+    } else {
+      dispatch(sourceCleared());
+    }
     dispatch(nativeDialogStateChanged(false));
   };
 
