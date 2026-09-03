@@ -1,7 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 
-import { EditorActivity } from "./EditorActivity";
 import { EditorSource } from "./EditorSource";
 import { EditorStage } from "./EditorStage";
 
@@ -45,24 +44,6 @@ export function EditorWorkspace() {
         style={{ height: "calc(100% - 6px)", width: 6 }}
         withHandle
       />
-
-      <ResizablePanel
-        collapsedSize={0}
-        collapsible
-        defaultSize="20rem"
-        groupResizeBehavior="preserve-pixel-size"
-        id="workspace-activity"
-        maxSize="30rem"
-        minSize={294}
-      >
-        <div className="size-full pr-1.5 pb-1.5">
-          <div className="size-full p-px">
-            <Card className="size-full p-0">
-              <EditorActivity />
-            </Card>
-          </div>
-        </div>
-      </ResizablePanel>
     </ResizablePanelGroup>
   );
 }

@@ -1,4 +1,4 @@
-import { ChevronRight, Ellipsis, RotateCcw } from "lucide-react";
+import { ChevronRight, Ellipsis, Info, RotateCcw } from "lucide-react";
 import { Children, type PropsWithChildren, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -41,10 +41,17 @@ const DEFAULT_PANELS_VISIBILITY: PanelsVisibility = {
 
 export function EditorSource() {
   const { t } = useTranslation();
+
   const panelLabels: Record<PanelStateId, string> = {
     activeSources: t("source.labels.activeSources"),
     explorer: t("source.labels.explorer"),
     activityFeed: t("app.labels.activityFeed"),
+  };
+
+  const panelTooltips: Record<PanelStateId, string> = {
+    activeSources: "",
+    explorer: "",
+    activityFeed: t("app.tooltips.activityFeedPrivacy"),
   };
 
   const [panelsVisibility, setPanelsVisibility] = useState(DEFAULT_PANELS_VISIBILITY);
@@ -56,6 +63,7 @@ export function EditorSource() {
   const isSingle = enabledPanelIds.length === 1;
 
   const title = isSingle ? panelLabels[enabledPanelIds[0]!] : t("source.labels.title");
+  const tooltip = isSingle ? panelTooltips[enabledPanelIds[0]!] : null;
 
   const handlePanelChange = (panelStateId: string, visible: boolean) => {
     setPanelsVisibility((panelsVisibility) => ({ ...panelsVisibility, [panelStateId]: visible }));
@@ -63,12 +71,16 @@ export function EditorSource() {
 
   return (
     <aside aria-label={title} className="relative flex size-full min-h-0 flex-col pt-3">
-      <h3
-        className="mx-3 mb-1 font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
-        id="source-panel-title"
-      >
-        {title}
-      </h3>
+      <div className="flex justify-between pr-7">
+        <h3
+          className="mx-3 mb-1 font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
+          id="source-panel-title"
+        >
+          {title}
+        </h3>
+
+        <SourcePanelCollapsibleTooltip tooltip={tooltip} />
+      </div>
 
       <DropdownMenu>
         <Tooltip>
@@ -117,27 +129,24 @@ export function EditorSource() {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/* TODO: migrate to preview Breadcrumb dropdown */}
-      {/* <SourcePanelCollapsible isSingle={isSingle} label={t("source.labels.mediaDetails")}>
-        <div className="px-3">
-          <SourceDetails />
-        </div>
-      </SourcePanelCollapsible>*/}
-
       <SourcePanelsCollapsibeGroup>
         {panelsVisibility["activeSources"] && (
-          <SourcePanelCollapsible isSingle={isSingle} label={t("source.labels.activeSources")}>
-            <div className="w-full px-3">
-              <SourceTabs background="card" className="w-full pb-1" orientation="vertical" />
-            </div>
-          </SourcePanelCollapsible>
+          <>
+            <SourcePanelCollapsible isSingle={isSingle} label={panelLabels.activeSources}>
+              <div className="w-full px-3">
+                <SourceTabs background="card" className="w-full pb-1" orientation="vertical" />
+              </div>
+            </SourcePanelCollapsible>
+
+            <Separator className="bg-foreground/10" />
+          </>
         )}
 
         {panelsVisibility["explorer"] && (
           <SourcePanelCollapsible
             className="data-[state=open]:flex-1"
             isSingle={isSingle}
-            label={t("source.labels.explorer")}
+            label={panelLabels.explorer}
           >
             <ScrollArea className="min-h-0 flex-1 px-3">
               <SourceTree className="pb-1" />
@@ -146,15 +155,20 @@ export function EditorSource() {
         )}
 
         {panelsVisibility["activityFeed"] && (
-          <SourcePanelCollapsible
-            className="max-h-75"
-            isSingle={isSingle}
-            label={t("app.labels.activityFeed")}
-          >
-            <ScrollArea className="min-h-0 flex-1 px-3 before:top-4">
-              <ActivityFeed />
-            </ScrollArea>
-          </SourcePanelCollapsible>
+          <>
+            <Separator className="bg-foreground/10" />
+
+            <SourcePanelCollapsible
+              className="max-h-75"
+              isSingle={isSingle}
+              label={panelLabels.activityFeed}
+              tooltip={panelTooltips.activityFeed}
+            >
+              <ScrollArea className="min-h-0 flex-1 px-3 before:top-4">
+                <ActivityFeed />
+              </ScrollArea>
+            </SourcePanelCollapsible>
+          </>
         )}
       </SourcePanelsCollapsibeGroup>
     </aside>
@@ -174,6 +188,7 @@ interface SourcePanelCollapsibleProps {
   className?: string;
   isSingle?: boolean;
   label?: string;
+  tooltip?: string | null;
 }
 
 function SourcePanelCollapsible({
@@ -181,24 +196,32 @@ function SourcePanelCollapsible({
   className,
   isSingle = false,
   label,
+  tooltip,
 }: SourcePanelCollapsibleProps) {
   return (
     <Collapsible className={cn("flex min-h-0 flex-col", className)} open={isSingle || undefined}>
-      <SourcePanelCollapsibleTrigger isSingle={isSingle} label={label} />
+      <SourcePanelCollapsibleTrigger isSingle={isSingle} label={label} tooltip={tooltip} />
       <CollapsibleContent className="flex min-h-0 w-full flex-1">{children}</CollapsibleContent>
     </Collapsible>
   );
 }
 
-function SourcePanelCollapsibleTrigger({ isSingle = false, label }: SourcePanelCollapsibleProps) {
+function SourcePanelCollapsibleTrigger({
+  isSingle = false,
+  label,
+  tooltip,
+}: SourcePanelCollapsibleProps) {
   if (isSingle) return null;
 
   return (
-    <div className="p-1">
+    <div className="relative p-1">
       <CollapsibleTrigger asChild>
         <Button
           aria-label={label}
-          className="group w-full justify-baseline px-2 text-secondary-foreground data-[state=open]:bg-transparent data-[state=open]:text-secondary-foreground"
+          className={cn(
+            "group w-full justify-baseline px-2 text-secondary-foreground data-[state=open]:bg-transparent data-[state=open]:text-secondary-foreground",
+            !!tooltip && "pr-7",
+          )}
           size="sm"
           variant="ghost"
         >
@@ -206,6 +229,28 @@ function SourcePanelCollapsibleTrigger({ isSingle = false, label }: SourcePanelC
           {label}
         </Button>
       </CollapsibleTrigger>
+
+      <SourcePanelCollapsibleTooltip tooltip={tooltip} />
     </div>
+  );
+}
+
+function SourcePanelCollapsibleTooltip({ tooltip }: SourcePanelCollapsibleProps) {
+  if (!tooltip) return;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          aria-label={tooltip}
+          className="absolute top-1.5 right-2"
+          size="icon-xs"
+          variant="ghost"
+        >
+          <Info aria-hidden="true" className="size-3.5 text-primary" />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{tooltip}</TooltipContent>
+    </Tooltip>
   );
 }
