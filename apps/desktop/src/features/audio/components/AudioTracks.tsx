@@ -13,6 +13,7 @@ import { useWaveformPreparation } from "../hooks/useWaveformPreparation";
 import { AudioTrackRow } from "./AudioTrackRow";
 
 interface AudioTracksProps {
+  onCommit: () => void;
   onPrepareWaveforms: (streamIndexes: number[], width: number) => void;
   onToggleTrack: (streamIndex: number) => void;
   onTrackVolumeChange: (streamIndex: number, volumePercent: number) => void;
@@ -23,6 +24,7 @@ interface AudioTracksProps {
 }
 
 export function AudioTracks({
+  onCommit,
   onPrepareWaveforms,
   onToggleTrack,
   onTrackVolumeChange,
@@ -46,6 +48,7 @@ export function AudioTracks({
         return (
           <AudioTrackRow
             key={stream.streamIndex}
+            onCommit={onCommit}
             onPrepareWaveform={onPrepareWaveforms}
             onToggle={onToggleTrack}
             onVolumeChange={onTrackVolumeChange}

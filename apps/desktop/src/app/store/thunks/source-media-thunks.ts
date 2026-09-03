@@ -6,7 +6,10 @@ import {
   sourceReady,
 } from "@/app/store/actions/source-actions";
 import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";
-import { cancelInstanceExports } from "@/app/store/integration/export-queue-runtime";
+import {
+  cancelInstanceExports,
+  hasActiveExportForSource,
+} from "@/app/store/integration/export-queue-runtime";
 import { getReplacementEditingInstance } from "@/app/store/lib/editing-instances";
 import {
   audioPreviewsLoading,
@@ -28,9 +31,9 @@ import {
   editingInstancesSourceAvailabilityChanged,
   selectActiveEditingInstance,
   selectActiveInstanceId,
-  selectEditingInstanceAttempts,
   selectEditingInstanceById,
   selectEditingInstances,
+  selectInstanceIdsBySourceKey,
 } from "@/app/store/slices/editing-instances-slice";
 import {
   dropListenerErrorCleared,
@@ -51,6 +54,7 @@ import type { AppDispatch, RootState } from "@/app/store/store";
 import type { EditingInstance } from "@/domain/editing-instance";
 import { createEditorSnapshot, type EditorSnapshot } from "@/domain/editor-snapshot";
 import type { SourceRef } from "@/domain/source";
+import { normalizeSourceKey } from "@/domain/source";
 import { type DiagnosticOperation, diagnostics } from "@/lib/diagnostics";
 import type { DiagnosticOrigin } from "@/lib/tauri/diagnostics.types";
 import {
@@ -85,8 +89,17 @@ let editingInstanceSequence = 0;
 let queueRestoreSequence = 0;
 
 function isCurrentSource(state: RootState, sourcePath: string, loadToken: number): boolean {
+  const activeInstance = selectActiveEditingInstance(state);
+  const activeInstanceMatchesSource =
+    activeInstance &&
+    normalizeSourceKey(activeInstance.snapshot.source.sourcePath) ===
+      normalizeSourceKey(sourcePath);
+
   return (
-    selectSourceSelection(state)?.sourcePath === sourcePath && state.source.loadToken === loadToken
+    normalizeSourceKey(selectSourceSelection(state)?.sourcePath ?? "") ===
+      normalizeSourceKey(sourcePath) &&
+    state.source.loadToken === loadToken &&
+    (!activeInstanceMatchesSource || activeInstance.sourceAvailability === "available")
   );
 }
 
@@ -226,7 +239,6 @@ async function prepareSelectedSource(
   dispatch(sourceReady({ loadToken, media, snapshot: readySnapshot }));
 
   const audioStreamIndexes = media.audioStreams.map((stream) => stream.streamIndex);
-  let preparationFailed = false;
   const audioOperation = operation.child("audio.preview", {
     data: { streamCount: audioStreamIndexes.length },
   });
@@ -252,7 +264,6 @@ async function prepareSelectedSource(
               audioOperation.cancel({ reason: "source_replaced" });
             }
           } catch (error: unknown) {
-            preparationFailed = true;
             audioOperation.fail(error);
             if (isCurrentSource(getState(), source.sourcePath, loadToken)) {
               dispatch(
@@ -279,23 +290,17 @@ async function prepareSelectedSource(
       }
     } catch (error: unknown) {
       const normalized = normalizeAppError(error);
-      preparationFailed = true;
       previewOperation.fail(normalized);
       if (!isCurrentSource(getState(), source.sourcePath, loadToken)) return;
       dispatch(previewFailed({ error: normalized }));
     }
   })();
 
-  await Promise.all([audioPreparation, previewPreparation]);
+  // Audio previews are optional. The direct video preview is the minimum
+  // needed for activation; audio preparation continues without blocking it.
+  await previewPreparation;
   if (!isCurrentSource(getState(), source.sourcePath, loadToken)) {
     operation.cancel({ reason: "source_replaced" });
-    return null;
-  }
-  if (preparationFailed) {
-    operation.fail({
-      code: "source_prepare_failed",
-      message: "One or more media previews failed to prepare.",
-    });
     return null;
   }
   const result =
@@ -314,6 +319,7 @@ async function prepareSelectedSource(
     });
 
   operation.complete({ audioStreamCount: audioStreamIndexes.length });
+  void audioPreparation;
   return result;
 }
 
@@ -347,9 +353,12 @@ function captureActiveEditingInstanceDraft(
   );
 }
 
-export const leaveActiveEditingInstance = (): AppThunk => (dispatch, getState) => {
-  if (selectActiveEditingInstance(getState()))
-    captureActiveEditingInstanceDraft(dispatch, getState);
+export const commitActiveEditingInstanceDraft = (): AppThunk => (dispatch, getState) => {
+  captureActiveEditingInstanceDraft(dispatch, getState);
+};
+
+export const leaveActiveEditingInstance = (): AppThunk => (dispatch) => {
+  dispatch(commitActiveEditingInstanceDraft());
 };
 
 export const restoreActiveEditingInstanceRequested =
@@ -397,7 +406,8 @@ export const restoreActiveEditingInstanceRequested =
     const state = getState();
     if (
       state.source.status !== "ready" ||
-      state.source.source?.sourcePath !== instance.snapshot.source.sourcePath ||
+      normalizeSourceKey(state.source.source?.sourcePath ?? "") !==
+        normalizeSourceKey(instance.snapshot.source.sourcePath) ||
       !state.source.media
     ) {
       dispatch(
@@ -569,7 +579,8 @@ export const closeActiveEditingInstanceRequested =
       return;
     }
 
-    const instances = selectEditingInstances(state);
+    dispatch(commitActiveEditingInstanceDraft());
+    const instances = selectEditingInstances(getState());
     const activeIndex = instances.findIndex((instance) => instance.id === activeInstance.id);
     const replacement = getReplacementEditingInstance(instances, activeIndex);
 
@@ -578,6 +589,14 @@ export const closeActiveEditingInstanceRequested =
     dispatch(editingInstanceClosed(activeInstance.id));
     dispatch(navigateToEditingInstance(replacement?.id ?? null));
     dispatch(nativeDialogStateChanged(false));
+  };
+
+export const closeEditingInstancesRequested =
+  (ids: string[]): AppThunk<Promise<void>> =>
+  async (dispatch) => {
+    for (const id of ids) {
+      await dispatch(closeActiveEditingInstanceRequested(id));
+    }
   };
 
 export const deleteActiveEditingInstanceSourceRequested =
@@ -598,11 +617,16 @@ export const deleteActiveEditingInstanceSourceRequested =
     }
 
     const sourcePath = item.snapshot.source.sourcePath;
-    const hasActiveExport = selectEditingInstanceAttempts(state).some(
-      ({ attempt, instance }) =>
-        instance.snapshot.source.sourcePath === sourcePath &&
-        (attempt.state.status === "queued" || attempt.state.status === "rendering"),
-    );
+    const sourceKey = normalizeSourceKey(sourcePath);
+    const sourceInstanceIds = selectInstanceIdsBySourceKey(state).get(sourceKey) ?? [];
+
+    const hasActiveExport =
+      hasActiveExportForSource(sourcePath, getState) ||
+      sourceInstanceIds.some((id) => {
+        const instance = state.editingInstances.entities[id];
+        const attempt = instance?.exportAttempts.at(-1);
+        return attempt?.state.status === "queued" || attempt?.state.status === "rendering";
+      });
 
     if (hasActiveExport) {
       const error: AppError = {

@@ -14,6 +14,7 @@ interface AudioLevelControlProps {
   className?: string;
   label: string;
   onChange: (volumePercent: number) => void;
+  onCommit?: () => void;
   volumePercent: number;
 }
 
@@ -21,6 +22,7 @@ export function AudioLevelControl({
   className,
   label,
   onChange,
+  onCommit,
   volumePercent,
 }: AudioLevelControlProps) {
   const decibels = volumePercentToDecibels(volumePercent);
@@ -36,7 +38,12 @@ export function AudioLevelControl({
         ]}
         max={MAX_SLIDER_DECIBELS}
         min={MIN_SLIDER_DECIBELS}
-        onDoubleClick={() => onChange(50)}
+        onDoubleClick={() => {
+          onChange(50);
+          onCommit?.();
+        }}
+        onKeyUp={() => onCommit?.()}
+        onPointerUp={() => onCommit?.()}
         onValueChange={([value]) => onChange(decibelsToVolumePercent(value ?? decibels))}
         step={0.5}
         value={[decibels]}

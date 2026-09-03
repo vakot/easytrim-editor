@@ -21,7 +21,10 @@ import {
   waveformDisplayFailed,
 } from "@/app/store/slices/audio-slice";
 import { selectSourceMedia, selectSourceSelection } from "@/app/store/slices/source-slice";
-import { prepareSourceWaveforms } from "@/app/store/thunks/source-media-thunks";
+import {
+  commitActiveEditingInstanceDraft,
+  prepareSourceWaveforms,
+} from "@/app/store/thunks/source-media-thunks";
 import { diagnostics } from "@/lib/diagnostics";
 
 import { AudioLevelControl } from "./components/AudioLevelControl";
@@ -64,6 +67,7 @@ export function AudioPanel() {
                 id: "master-mute",
               });
               dispatch(masterAudioToggled());
+              dispatch(commitActiveEditingInstanceDraft());
             }}
           />
           <AudioLevelControl
@@ -77,6 +81,7 @@ export function AudioPanel() {
               );
               dispatch(masterVolumeChanged({ volumePercent }));
             }}
+            onCommit={() => dispatch(commitActiveEditingInstanceDraft())}
             volumePercent={masterAudio.enabled ? masterAudio.volumePercent : 0}
           />
         </div>
@@ -94,6 +99,7 @@ export function AudioPanel() {
                       id: "merge-audio",
                     });
                     dispatch(audioMergeToggled());
+                    dispatch(commitActiveEditingInstanceDraft());
                   }}
                 />
                 <Label className="text-xs text-muted-foreground" htmlFor="merge-audio">
@@ -114,6 +120,7 @@ export function AudioPanel() {
       <ScrollArea className="min-h-0 flex-1 pr-3 pl-1" data-testid="audio-tracks-scroll">
         <div className="my-2">
           <AudioTracks
+            onCommit={() => dispatch(commitActiveEditingInstanceDraft())}
             onPrepareWaveforms={(streamIndexes, width) =>
               sourcePath && void dispatch(prepareSourceWaveforms(sourcePath, streamIndexes, width))
             }
@@ -124,6 +131,7 @@ export function AudioPanel() {
                 { streamIndex },
               );
               dispatch(audioTrackToggled({ streamIndex }));
+              dispatch(commitActiveEditingInstanceDraft());
             }}
             onTrackVolumeChange={(streamIndex, volumePercent) => {
               diagnostics.action(

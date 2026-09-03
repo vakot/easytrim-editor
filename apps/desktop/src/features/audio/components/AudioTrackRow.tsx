@@ -18,6 +18,7 @@ function waveformStateWidth(track: AudioTrackState): number | null {
 }
 
 interface AudioTrackRowProps {
+  onCommit: () => void;
   onPrepareWaveform: (streamIndexes: number[], width: number) => void;
   onToggle: (streamIndex: number) => void;
   onVolumeChange: (streamIndex: number, volumePercent: number) => void;
@@ -28,6 +29,7 @@ interface AudioTrackRowProps {
 }
 
 export const AudioTrackRow = memo(function AudioTrackRow({
+  onCommit,
   onPrepareWaveform,
   onToggle,
   onVolumeChange,
@@ -89,6 +91,7 @@ export const AudioTrackRow = memo(function AudioTrackRow({
               className="mt-2"
               label={t("audio.accessibility.trackVolume", { title })}
               onChange={(volumePercent) => onVolumeChange(stream.streamIndex, volumePercent)}
+              onCommit={onCommit}
               volumePercent={track.enabled ? track.volumePercent : 0}
             />
           </div>

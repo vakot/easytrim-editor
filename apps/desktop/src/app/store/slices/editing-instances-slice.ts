@@ -12,9 +12,16 @@ import type {
   SourceAvailability,
 } from "@/domain/editing-instance";
 import type { EditorSnapshot } from "@/domain/editor-snapshot";
+import { normalizeSourceKey } from "@/domain/source";
 import type { AppError, ExportProgress, ExportResult, MediaInfo } from "@/lib/tauri/media.types";
 
 import type { RootState } from "../store";
+
+export interface EditingInstanceTopologyEntry {
+  displayName: string;
+  id: EditingInstanceId;
+  sourcePath: string;
+}
 
 export const initialEditingInstancesState: EditingInstancesState = {
   activeInstanceId: null,
@@ -111,6 +118,11 @@ const editingInstancesSlice = createSlice({
       const instance = getInstance(state, action.payload.id);
       const attempt = instance && getAttempt(instance, action.payload.attemptId);
       if (!attempt || attempt.state.status !== "rendering") return;
+      if (
+        attempt.state.operationId !== null &&
+        attempt.state.operationId !== action.payload.progress.operationId
+      )
+        return;
       attempt.state.operationId = action.payload.progress.operationId;
       Object.assign(attempt.metrics, action.payload.metrics);
     },
@@ -126,6 +138,11 @@ const editingInstancesSlice = createSlice({
       const instance = getInstance(state, action.payload.id);
       const attempt = instance && getAttempt(instance, action.payload.attemptId);
       if (!attempt || attempt.state.status !== "rendering") return;
+      if (
+        attempt.state.operationId !== null &&
+        attempt.state.operationId !== action.payload.result.operationId
+      )
+        return;
       attempt.state = {
         completedAt: Date.now(),
         result: action.payload.result,
@@ -160,7 +177,12 @@ const editingInstancesSlice = createSlice({
     ) => {
       const instance = getInstance(state, action.payload.id);
       const attempt = instance && getAttempt(instance, action.payload.attemptId);
-      if (!attempt || attempt.state.status === "completed" || attempt.state.status === "failed")
+      if (
+        !attempt ||
+        attempt.state.status === "completed" ||
+        attempt.state.status === "failed" ||
+        attempt.state.status === "canceled"
+      )
         return;
       attempt.state = {
         canceledAt: Date.now(),
@@ -174,7 +196,11 @@ const editingInstancesSlice = createSlice({
       action: PayloadAction<{ availability: SourceAvailability; sourcePath: string }>,
     ) => {
       for (const instance of Object.values(state.entities)) {
-        if (instance?.snapshot.source.sourcePath === action.payload.sourcePath) {
+        if (
+          instance &&
+          normalizeSourceKey(instance.snapshot.source.sourcePath) ===
+            normalizeSourceKey(action.payload.sourcePath)
+        ) {
           instance.sourceAvailability = action.payload.availability;
         }
       }
@@ -239,6 +265,49 @@ export const {
 export const editingInstancesReducer = editingInstancesSlice.reducer;
 
 const selectEditingInstancesState = (state: RootState) => state.editingInstances;
+const selectEditingInstanceEntities = (state: RootState) =>
+  selectEditingInstancesState(state).entities;
+
+export const selectEditingInstanceIds = (state: RootState): EditingInstanceId[] =>
+  selectEditingInstancesState(state).ids;
+
+let lastTopologyEntries: EditingInstanceTopologyEntry[] = [];
+export const selectEditingInstanceTopologyEntries = (
+  state: RootState,
+): EditingInstanceTopologyEntry[] => {
+  const ids = selectEditingInstanceIds(state);
+  const entities = selectEditingInstanceEntities(state);
+  if (
+    lastTopologyEntries.length === ids.length &&
+    ids.every((id, index) => {
+      const instance = entities[id];
+      const previous = lastTopologyEntries[index];
+      const source = instance?.snapshot.source;
+      return (
+        instance?.id === previous?.id &&
+        source?.displayName === previous?.displayName &&
+        source?.sourcePath === previous?.sourcePath
+      );
+    })
+  ) {
+    return lastTopologyEntries;
+  }
+
+  lastTopologyEntries = ids.flatMap((id) => {
+    const instance = entities[id];
+    return instance
+      ? [
+          {
+            displayName: instance.snapshot.source.displayName,
+            id,
+            sourcePath: instance.snapshot.source.sourcePath,
+          },
+        ]
+      : [];
+  });
+  return lastTopologyEntries;
+};
+
 export const selectEditingInstances = createSelector([selectEditingInstancesState], (state) =>
   state.ids
     .map((id) => state.entities[id])
@@ -254,16 +323,90 @@ export const selectActiveEditingInstance = createSelector([selectEditingInstance
 export const selectEditingInstanceAttempts = createSelector([selectEditingInstances], (instances) =>
   instances.flatMap((instance) => instancesToAttempts(instance)),
 );
-export const selectHasProcessableExports = createSelector(
-  [selectEditingInstanceAttempts],
-  (attempts) =>
-    attempts.some(
-      ({ attempt }) => attempt.state.status === "queued" || attempt.state.status === "rendering",
+export const selectLastExportAttemptByInstanceId = (
+  state: RootState,
+  id: EditingInstanceId,
+): ExportAttempt | undefined => selectEditingInstanceById(state, id)?.exportAttempts.at(-1);
+export const selectEditingInstanceStatusById = (
+  state: RootState,
+  id: EditingInstanceId,
+): ExportAttempt["state"]["status"] | "deleted" | "ready" | undefined => {
+  const instance = selectEditingInstanceById(state, id);
+  if (!instance) return undefined;
+  if (instance.sourceAvailability === "deleted") return "deleted";
+  return (
+    selectLastExportAttemptByInstanceId(state, id)?.state.status ??
+    (instance.media ? "ready" : undefined)
+  );
+};
+export const selectHasQueuedOrRenderingExportByInstanceId = (
+  state: RootState,
+  id: EditingInstanceId,
+): boolean => {
+  const attempt = selectLastExportAttemptByInstanceId(state, id);
+  return attempt?.state.status === "queued" || attempt?.state.status === "rendering";
+};
+export const selectHasReadyEditingInstances = createSelector(
+  [selectEditingInstanceEntities, selectEditingInstanceIds],
+  (entities, ids) =>
+    ids.some((id) => {
+      const instance = entities[id];
+      return Boolean(
+        instance?.sourceAvailability === "deleted" ||
+        instance?.media ||
+        instance?.exportAttempts.at(-1),
+      );
+    }),
+);
+export const selectProcessableExportCount = createSelector(
+  [selectEditingInstanceEntities, selectEditingInstanceIds],
+  (entities, ids) =>
+    ids.reduce((count, id) => count + (hasProcessableExport(entities[id]) ? 1 : 0), 0),
+);
+export const selectQueuedExportCount = createSelector(
+  [selectEditingInstanceEntities, selectEditingInstanceIds],
+  (entities, ids) =>
+    ids.reduce(
+      (count, id) =>
+        count + (entities[id]?.exportAttempts.at(-1)?.state.status === "queued" ? 1 : 0),
+      0,
     ),
 );
-export const selectRenderingAttempt = createSelector([selectEditingInstanceAttempts], (attempts) =>
-  attempts.find(({ attempt }) => attempt.state.status === "rendering"),
+export const selectHasProcessableExports = createSelector(
+  [selectProcessableExportCount],
+  (count) => count > 0,
 );
+export const selectRenderingAttempt = createSelector(
+  [selectEditingInstanceEntities, selectEditingInstanceIds],
+  (entities, ids) => {
+    for (const id of ids) {
+      const instance = entities[id];
+      const attempt = instance?.exportAttempts.find(({ state }) => state.status === "rendering");
+      if (instance && attempt) return { attempt, instance };
+    }
+    return undefined;
+  },
+);
+export const selectInstanceIdsBySourceKey = createSelector(
+  [selectEditingInstanceEntities, selectEditingInstanceIds],
+  (entities, ids) => {
+    const sourceIds = new Map<string, EditingInstanceId[]>();
+    for (const id of ids) {
+      const instance = entities[id];
+      if (!instance) continue;
+      const key = normalizeSourceKey(instance.snapshot.source.sourcePath);
+      const matchingIds = sourceIds.get(key);
+      if (matchingIds) matchingIds.push(id);
+      else sourceIds.set(key, [id]);
+    }
+    return sourceIds;
+  },
+);
+
+function hasProcessableExport(instance: EditingInstance | undefined): boolean {
+  const status = instance?.exportAttempts.at(-1)?.state.status;
+  return status === "queued" || status === "rendering";
+}
 
 function instancesToAttempts(instance: EditingInstance) {
   return instance.exportAttempts.map((attempt) => ({ attempt, instance }));

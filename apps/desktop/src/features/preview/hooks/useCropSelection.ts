@@ -1,6 +1,7 @@
 import {
   type PointerEvent as ReactPointerEvent,
   type RefObject,
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -9,6 +10,7 @@ import {
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { cropChanged, cropResolutionFor, selectCrop } from "@/app/store/slices/crop-slice";
 import { selectSourceMedia } from "@/app/store/slices/source-slice";
+import { commitActiveEditingInstanceDraft } from "@/app/store/thunks/source-media-thunks";
 
 import type { CropFrame } from "../lib/crop-frame.utils";
 import { type CropHandle, type CropRect, moveCrop, resizeCrop } from "../lib/crop-geometry.utils";
@@ -42,11 +44,12 @@ export function useCropSelection(previewRef: RefObject<HTMLDivElement | null>) {
     setIsOpen(true);
   }
 
-  function close() {
+  const close = useCallback(() => {
+    dispatch(commitActiveEditingInstanceDraft());
     setDrag(null);
     setIsOpen(false);
     setEnterFrom(null);
-  }
+  }, [dispatch]);
 
   useEffect(() => {
     if (!isOpen || !enterFrom) return;
@@ -83,7 +86,7 @@ export function useCropSelection(previewRef: RefObject<HTMLDivElement | null>) {
       document.removeEventListener("pointerdown", closeOnOutsidePointerDown);
       document.removeEventListener("keydown", closeOnEscape);
     };
-  }, [isOpen, previewRef]);
+  }, [close, isOpen, previewRef]);
 
   function startDrag(event: ReactPointerEvent<HTMLElement>, handle: CropHandle) {
     event.preventDefault();
@@ -120,6 +123,7 @@ export function useCropSelection(previewRef: RefObject<HTMLDivElement | null>) {
 
   function finishDrag() {
     if (!drag) return;
+    dispatch(commitActiveEditingInstanceDraft());
     setDrag(null);
   }
 

@@ -16,8 +16,9 @@ import {
   editingInstanceOptimizedSettingsChanged,
   selectActiveEditingInstance,
   selectActiveInstanceId,
-  selectEditingInstanceAttempts,
+  selectEditingInstanceById,
   selectHasProcessableExports,
+  selectHasQueuedOrRenderingExportByInstanceId,
 } from "@/app/store/slices/editing-instances-slice";
 import {
   exportLaunchFailed,
@@ -40,6 +41,7 @@ import { selectTrim } from "@/app/store/slices/trim-slice";
 import type { ExportRoute, ExportSettings } from "@/domain/editing-instance";
 import { createExportAttempt } from "@/domain/editing-instance";
 import { createEditorSnapshot } from "@/domain/editor-snapshot";
+import { normalizeSourceKey } from "@/domain/source";
 import { diagnostics } from "@/lib/diagnostics";
 import type { DiagnosticOrigin } from "@/lib/tauri/diagnostics.types";
 import {
@@ -53,6 +55,7 @@ import { normalizeAppError } from "@/lib/tauri/media.utils";
 import { availableQueueFinishActions } from "@/lib/tauri/queue";
 
 import type { AppThunk } from "./source-media-thunks";
+import { commitActiveEditingInstanceDraft } from "./source-media-thunks";
 
 let optimizedPlanRequestSequence = 0;
 let exportAttemptSequence = 0;
@@ -125,20 +128,20 @@ export const refreshOptimizedExportPlan = (): AppThunk => async (dispatch, getSt
   const instanceId = selectActiveInstanceId(getState());
   if (!request || !instanceId) return;
   const requestId = ++optimizedPlanRequestSequence;
-  const sourcePath = request.sourcePath;
+  const sourcePath = normalizeSourceKey(request.sourcePath);
   dispatch(optimizedExportPlanRequested({ requestId }));
   try {
     const plan = await planOptimizedExport(request);
     if (
       selectActiveInstanceId(getState()) === instanceId &&
-      currentSourcePath(getState()) === sourcePath
+      currentSourceKey(getState()) === sourcePath
     ) {
       dispatch(optimizedExportPlanReceived({ requestId, commandPreview: plan.commandPreview }));
     }
   } catch (error: unknown) {
     if (
       selectActiveInstanceId(getState()) === instanceId &&
-      currentSourcePath(getState()) === sourcePath
+      currentSourceKey(getState()) === sourcePath
     ) {
       dispatch(optimizedExportPlanFailed({ requestId, error: normalizeAppError(error) }));
     }
@@ -172,12 +175,7 @@ async function startEditingInstanceExport(
   const trim = selectTrim(state);
   const request = route === "fast" ? getFastRequest(state) : getOptimizedRequest(state);
   if (!instance || !source || !media || !trim || !request || !selectSourceReady(state)) return;
-  if (
-    instance.exportAttempts.some(
-      (attempt) => attempt.state.status === "queued" || attempt.state.status === "rendering",
-    )
-  )
-    return;
+  if (selectHasQueuedOrRenderingExportByInstanceId(state, instance.id)) return;
 
   const snapshot = createEditorSnapshot({
     source,
@@ -192,6 +190,10 @@ async function startEditingInstanceExport(
     mergeAudio: selectMergeAudio(state),
   });
 
+  // Persist the working draft at the export boundary, while the attempt keeps
+  // its own immutable snapshot for the remainder of the export lifecycle.
+  dispatch(commitActiveEditingInstanceDraft());
+
   const attemptId = nextAttemptId();
   dispatch(nativeDialogStateChanged(true));
   try {
@@ -199,7 +201,7 @@ async function startEditingInstanceExport(
     if (!output) return;
     if (
       selectActiveInstanceId(getState()) !== instance.id ||
-      currentSourcePath(getState()) !== source.sourcePath ||
+      currentSourceKey(getState()) !== normalizeSourceKey(source.sourcePath) ||
       !selectSourceReady(getState())
     )
       return;
@@ -213,7 +215,7 @@ async function startEditingInstanceExport(
 
     if (
       selectActiveInstanceId(getState()) !== instance.id ||
-      currentSourcePath(getState()) !== source.sourcePath
+      currentSourceKey(getState()) !== normalizeSourceKey(source.sourcePath)
     ) {
       await releaseIfNeeded();
       return;
@@ -229,12 +231,13 @@ async function startEditingInstanceExport(
     });
 
     dispatch(editingInstanceExportAttemptQueued({ id: instance.id, attempt }));
-    const current = selectEditingInstanceAttempts(getState()).find(
-      ({ attempt: candidate }) => candidate.id === attemptId,
+    const current = selectEditingInstanceById(getState(), instance.id)?.exportAttempts.find(
+      (candidate) => candidate.id === attemptId,
     );
 
-    if (current) enqueueExport(instance.id, current.attempt, dispatch, getState);
-    else await releaseIfNeeded();
+    if (current) {
+      if (!enqueueExport(instance.id, current, dispatch, getState)) await releaseIfNeeded();
+    } else await releaseIfNeeded();
     void origin;
   } catch (error: unknown) {
     dispatch(exportLaunchFailed(normalizeAppError(error)));
@@ -243,8 +246,8 @@ async function startEditingInstanceExport(
   }
 }
 
-function currentSourcePath(state: ReturnType<Parameters<AppThunk>[1]>) {
-  return selectSourceSelection(state)?.sourcePath;
+function currentSourceKey(state: ReturnType<Parameters<AppThunk>[1]>) {
+  return normalizeSourceKey(selectSourceSelection(state)?.sourcePath ?? "");
 }
 
 function getInitialSettings(state: ReturnType<Parameters<AppThunk>[1]>): ExportSettings | null {
