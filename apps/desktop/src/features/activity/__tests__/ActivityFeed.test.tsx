@@ -90,6 +90,34 @@ describe("ActivityFeedView file lifecycle entries", () => {
     expect(screen.queryByRole("button", { name: "Restore" })).not.toBeInTheDocument();
   });
 
+  it.each([
+    ["fast cut", "fast-cut", "Fast cut completed"],
+    ["optimized render", "render", "Optimized render completed"],
+  ] as const)("offers the Open action for a completed %s", async (_label, kind, title) => {
+    const onAction = vi.fn();
+    const user = userEvent.setup();
+    renderActivity(
+      {
+        action: { kind: "open", path: "C:/Exports/result.mp4" },
+        id: `current-session:${kind}:ffmpeg.export`,
+        kind,
+        path: "C:/Exports/result.mp4",
+        sessionId: "current-session",
+        startedAt: "2026-08-31T08:30:00.000Z",
+        status: "completed",
+        title,
+      },
+      onAction,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Open" }));
+
+    expect(onAction).toHaveBeenCalledWith({
+      kind: "open",
+      path: "C:/Exports/result.mp4",
+    });
+  });
+
   it("renders a branch header and muted rows without repeating the path", () => {
     const { container } = renderActivity(
       {
