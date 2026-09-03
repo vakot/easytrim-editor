@@ -14,6 +14,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelControl,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -38,6 +44,9 @@ const DEFAULT_PANELS_VISIBILITY: PanelsVisibility = {
   explorer: true,
   activityFeed: true,
 };
+
+const SOURCE_PANEL_COLLAPSED_SIZE = 36;
+const SOURCE_PANEL_MIN_SIZE = 160;
 
 export function EditorSource() {
   const { t } = useTranslation();
@@ -141,33 +150,38 @@ export function EditorSource() {
         </>
       )}
 
-      {panelsVisibility["explorer"] && (
-        <SourcePanelCollapsible
-          className="data-[state=open]:flex-1"
-          isSingle={isSingle}
-          label={panelLabels.explorer}
-        >
-          <ScrollArea className="min-h-0 flex-1 px-3">
-            <SourceTree className="pb-1" />
-          </ScrollArea>
-        </SourcePanelCollapsible>
-      )}
+      {(panelsVisibility["explorer"] || panelsVisibility["activityFeed"]) && (
+        <ResizablePanelGroup className="min-h-0 flex-1" orientation="vertical">
+          {panelsVisibility["explorer"] && (
+            <SourcePanelResizable
+              id="source-explorer"
+              isSingle={isSingle}
+              label={panelLabels.explorer}
+            >
+              <ScrollArea className="min-h-0 flex-1 px-3">
+                <SourceTree className="pb-1" />
+              </ScrollArea>
+            </SourcePanelResizable>
+          )}
 
-      {panelsVisibility["activityFeed"] && (
-        <>
-          <Separator className="bg-foreground/10" />
+          {panelsVisibility["explorer"] && panelsVisibility["activityFeed"] && (
+            <ResizableHandle className="bg-foreground/10" />
+          )}
 
-          <SourcePanelCollapsible
-            className="max-h-75"
-            isSingle={isSingle}
-            label={panelLabels.activityFeed}
-            tooltip={panelTooltips.activityFeed}
-          >
-            <ScrollArea className="min-h-0 flex-1 px-3 before:top-4">
-              <ActivityFeed />
-            </ScrollArea>
-          </SourcePanelCollapsible>
-        </>
+          {panelsVisibility["activityFeed"] && (
+            <SourcePanelResizable
+              defaultSize={0}
+              id="source-activity-feed"
+              isSingle={isSingle}
+              label={panelLabels.activityFeed}
+              tooltip={panelTooltips.activityFeed}
+            >
+              <ScrollArea className="min-h-0 flex-1 px-3 before:top-4">
+                <ActivityFeed />
+              </ScrollArea>
+            </SourcePanelResizable>
+          )}
+        </ResizablePanelGroup>
       )}
     </aside>
   );
@@ -193,6 +207,69 @@ function SourcePanelCollapsible({
       <SourcePanelCollapsibleTrigger isSingle={isSingle} label={label} tooltip={tooltip} />
       <CollapsibleContent className="flex min-h-0 w-full flex-1">{children}</CollapsibleContent>
     </Collapsible>
+  );
+}
+
+interface SourcePanelResizableProps extends SourcePanelCollapsibleProps {
+  defaultSize?: number | string;
+  id: string;
+  maxSize?: number | string;
+}
+
+function SourcePanelResizable({
+  children,
+  className,
+  defaultSize,
+  id,
+  isSingle = false,
+  label,
+  maxSize,
+  tooltip,
+}: SourcePanelResizableProps) {
+  return (
+    <ResizablePanel
+      className={cn("flex min-h-0 flex-col", className)}
+      collapsedSize={SOURCE_PANEL_COLLAPSED_SIZE}
+      collapsible={!isSingle}
+      defaultSize={defaultSize}
+      groupResizeBehavior="preserve-pixel-size"
+      id={id}
+      maxSize={maxSize}
+      minSize={SOURCE_PANEL_MIN_SIZE}
+    >
+      <SourcePanelResizableTrigger id={id} isSingle={isSingle} label={label} tooltip={tooltip} />
+      <div className="flex min-h-0 w-full flex-1">{children}</div>
+    </ResizablePanel>
+  );
+}
+
+function SourcePanelResizableTrigger({
+  id,
+  isSingle = false,
+  label,
+  tooltip,
+}: SourcePanelResizableProps) {
+  if (isSingle) return null;
+
+  return (
+    <div className="relative p-1">
+      <ResizablePanelControl panelId={id}>
+        {({ isCollapsed }) => (
+          <Button
+            aria-expanded={!isCollapsed}
+            aria-label={label}
+            className="group w-full justify-baseline px-2 text-secondary-foreground"
+            size="sm"
+            variant="ghost"
+          >
+            <ChevronRight className={cn("shrink-0", !isCollapsed && "rotate-90")} />
+            {label}
+          </Button>
+        )}
+      </ResizablePanelControl>
+
+      <SourcePanelCollapsibleTooltip tooltip={tooltip} />
+    </div>
   );
 }
 
