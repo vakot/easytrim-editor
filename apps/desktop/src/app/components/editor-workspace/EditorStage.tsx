@@ -65,6 +65,7 @@ export function EditorStage() {
   return (
     <div className="size-full min-h-0" data-slot="timeline-pane" ref={initializeTimelinePane}>
       <TimelineGeometrySync targetRef={timelinePaneRef} />
+
       <ResizablePanelGroup id="editor-stage" orientation="vertical" persisted>
         <ResizablePanel id="editor-stage-preview" minSize="14rem">
           <div className="size-full p-px">
