@@ -1,39 +1,20 @@
-import { isAnyOf } from "@reduxjs/toolkit";
-
 import { editingInstanceActivated } from "@/app/store/actions/editing-instance-actions";
 import { sourceReady } from "@/app/store/actions/source-actions";
-import {
-  audioMergeToggled,
-  audioTrackToggled,
-  audioTrackVolumeChanged,
-  masterAudioToggled,
-  masterVolumeChanged,
-} from "@/app/store/slices/audio-slice";
 import { cropChanged } from "@/app/store/slices/crop-slice";
 import {
   editingInstanceOptimizedSettingsChanged,
   editingInstanceSnapshotUpdated,
   selectActiveEditingInstance,
 } from "@/app/store/slices/editing-instances-slice";
-import { trimChanged } from "@/app/store/slices/trim-slice";
 import { createEditorSnapshot } from "@/domain/editor-snapshot";
 
 import { listenerMiddleware } from "../listener-middleware";
 
-const snapshotEditingActions = isAnyOf(
-  trimChanged,
-  cropChanged,
-  audioMergeToggled,
-  audioTrackToggled,
-  audioTrackVolumeChanged,
-  masterAudioToggled,
-  masterVolumeChanged,
-  sourceReady,
-  editingInstanceActivated,
-);
-
 listenerMiddleware.startListening({
-  matcher: snapshotEditingActions,
+  matcher: (
+    action,
+  ): action is ReturnType<typeof sourceReady> | ReturnType<typeof editingInstanceActivated> =>
+    sourceReady.match(action) || editingInstanceActivated.match(action),
   effect: (_, listenerApi) => {
     const state = listenerApi.getState();
     const instance = selectActiveEditingInstance(state);

@@ -65,3 +65,6 @@ transition side effects, lifetime/reset semantics, and why shared Redux ownershi
 Maintain one canonical owner; do not keep Context and Redux as synchronized stores after a migration
 has settled. Reducer, selector, and async-boundary tests should cover observable success, failure,
 cancellation, stale-result rejection, and cleanup behavior where applicable.
+
+Use the [ownership ledger](ownership-ledger.md) to record these decisions for cross-feature values
+and runtime resources.

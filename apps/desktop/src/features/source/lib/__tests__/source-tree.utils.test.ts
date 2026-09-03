@@ -34,7 +34,7 @@ describe("getSourceTreeNodes", () => {
     if (!media || media.kind !== "folder") return;
 
     expect(
-      media.children.map((node) => (node.kind === "folder" ? node.name : node.instance.id)),
+      media.children.map((node) => (node.kind === "folder" ? node.name : node.instanceId)),
     ).toEqual(["Folder", "alpha", "zeta"]);
     expect(media.children[0]).toMatchObject({ kind: "folder", path: "C:/Media/Folder" });
   });
@@ -51,7 +51,7 @@ describe("getSourceTreeNodes", () => {
 
     expect(media.name).toBe("C:\\Media");
     expect(
-      media.children.map((node) => (node.kind === "instance" ? node.instance.id : node.name)),
+      media.children.map((node) => (node.kind === "instance" ? node.instanceId : node.name)),
     ).toEqual(["first", "second"]);
   });
 });

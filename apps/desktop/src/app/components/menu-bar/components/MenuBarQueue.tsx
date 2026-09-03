@@ -34,7 +34,10 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
-import { selectEditingInstanceAttempts } from "@/app/store/slices/editing-instances-slice";
+import {
+  selectQueuedExportCount,
+  selectRenderingAttempt,
+} from "@/app/store/slices/editing-instances-slice";
 import {
   queueFinishActionChanged,
   selectAvailableQueueFinishActions,
@@ -57,14 +60,15 @@ export function MenuBarQueue() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
 
-  const attempts = useAppSelector(selectEditingInstanceAttempts);
+  const queuedExportCount = useAppSelector(selectQueuedExportCount);
+  const renderingAttempt = useAppSelector(selectRenderingAttempt);
   const deleteSourceOnRenderFinish = useAppSelector(selectDeleteSourceOnRenderFinish);
   const queueStarted = useAppSelector(selectQueueStarted);
   const queueFinishAction = useAppSelector(selectQueueFinishAction);
   const availableQueueFinishActions = useAppSelector(selectAvailableQueueFinishActions);
 
-  const hasQueuedItems = attempts.some(({ attempt }) => attempt.state.status === "queued");
-  const hasActiveItem = attempts.some(({ attempt }) => attempt.state.status === "rendering");
+  const hasQueuedItems = queuedExportCount > 0;
+  const hasActiveItem = renderingAttempt !== undefined;
 
   useKeyboardShortcut(
     (event) =>

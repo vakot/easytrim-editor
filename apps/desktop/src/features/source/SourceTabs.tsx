@@ -1,14 +1,21 @@
 import { X } from "lucide-react";
+import { memo } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-import { useAppDispatch } from "@/app/store/redux-hooks";
-import { navigateToEditingInstance } from "@/app/store/thunks/source-media-thunks";
-import type { EditingInstance } from "@/domain/editing-instance";
+import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
+import {
+  selectActiveInstanceId,
+  selectEditingInstanceStatusById,
+  selectEditingInstanceTopologyEntries,
+  selectHasReadyEditingInstances,
+} from "@/app/store/slices/editing-instances-slice";
+import {
+  closeActiveEditingInstanceRequested,
+  navigateToEditingInstance,
+} from "@/app/store/thunks/source-media-thunks";
 import { cn } from "@/lib/class-names.utils";
-
-import { useEditingInstances } from "./hooks/useEditingInstances";
 
 interface SourceTabsProps {
   background?: "preview-surface" | "card";
@@ -22,9 +29,14 @@ export function SourceTabs({
   orientation = "horizontal",
 }: SourceTabsProps) {
   const dispatch = useAppDispatch();
-  const { activeInstanceId, closeInstance, readyInstances } = useEditingInstances();
+  const activeInstanceId = useAppSelector(selectActiveInstanceId);
+  const entries = useAppSelector(selectEditingInstanceTopologyEntries);
+  const hasReadyInstances = useAppSelector(selectHasReadyEditingInstances);
+  const closeInstance = (id: string) => {
+    void dispatch(closeActiveEditingInstanceRequested(id));
+  };
 
-  if (!readyInstances.length) return null;
+  if (!hasReadyInstances) return null;
 
   return (
     <Tabs
@@ -34,35 +46,53 @@ export function SourceTabs({
       value={activeInstanceId ?? ""}
     >
       <TabsList className={`w-max min-w-full justify-baseline bg-${background} p-0`}>
-        {readyInstances.map((instance) => (
-          <div
-            className={cn(
-              "relative flex shrink-0 items-center",
-              orientation === "vertical" && "w-full",
-            )}
-            key={instance.id}
-          >
-            <SourceTabsTrigger instance={instance} />
-            <Button
-              aria-label={`Close ${instance.snapshot.source.displayName}`}
-              className="absolute right-0.5"
-              onClick={() => closeInstance(instance.id)}
-              size="icon-2xs"
-              variant="ghost"
-            >
-              <X />
-            </Button>
-          </div>
+        {entries.map((entry) => (
+          <SourceTabsEntry
+            entry={entry}
+            key={entry.id}
+            onClose={closeInstance}
+            orientation={orientation}
+          />
         ))}
       </TabsList>
     </Tabs>
   );
 }
 
-function SourceTabsTrigger({ instance }: { instance: EditingInstance }) {
+const SourceTabsEntry = memo(function SourceTabsEntry({
+  entry,
+  onClose,
+  orientation,
+}: {
+  entry: { displayName: string; id: string };
+  onClose: (id: string) => void;
+  orientation: "vertical" | "horizontal";
+}) {
+  const status = useAppSelector((state) => selectEditingInstanceStatusById(state, entry.id));
+  if (!status) return null;
+
   return (
-    <TabsTrigger className="h-6 pr-6 text-xs" value={instance.id}>
-      <span className="truncate">{instance.snapshot.source.displayName}</span>
+    <div
+      className={cn("relative flex shrink-0 items-center", orientation === "vertical" && "w-full")}
+    >
+      <SourceTabsTrigger displayName={entry.displayName} id={entry.id} />
+      <Button
+        aria-label={`Close ${entry.displayName}`}
+        className="absolute right-0.5"
+        onClick={() => onClose(entry.id)}
+        size="icon-2xs"
+        variant="ghost"
+      >
+        <X />
+      </Button>
+    </div>
+  );
+});
+
+function SourceTabsTrigger({ displayName, id }: { displayName: string; id: string }) {
+  return (
+    <TabsTrigger className="h-6 pr-6 text-xs" value={id}>
+      <span className="truncate">{displayName}</span>
     </TabsTrigger>
   );
 }

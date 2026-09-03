@@ -1,6 +1,17 @@
-import type { PropsWithChildren } from "react";
+import { type PropsWithChildren, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { shallowEqual } from "react-redux";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -10,9 +21,10 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 
-import { useAppDispatch } from "@/app/store/redux-hooks";
+import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
+import { selectEditingInstanceById } from "@/app/store/slices/editing-instances-slice";
 import {
-  closeActiveEditingInstanceRequested,
+  closeEditingInstancesRequested,
   navigateToEditingInstance,
   restoreSourceFileRequested,
 } from "@/app/store/thunks/source-media-thunks";
@@ -28,21 +40,35 @@ export function SourceTreeContextMenu({
   kind,
   revealPath,
   sourceIds,
-  targetInstances,
 }: PropsWithChildren<{
   kind: "file" | "folder";
   revealPath: string;
   sourceIds: string[];
-  targetInstances: EditingInstance[];
 }>) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
+  const targetInstances = useAppSelector(
+    (state) =>
+      sourceIds
+        .map((sourceId) => selectEditingInstanceById(state, sourceId))
+        .filter((instance): instance is EditingInstance => Boolean(instance)),
+    shallowEqual,
+  );
+
   const sourceAction = getSourceAction(targetInstances);
+  const [closeDialogOpen, setCloseDialogOpen] = useState(false);
 
   const closeSources = () => {
-    for (const sourceId of sourceIds) {
-      void dispatch(closeActiveEditingInstanceRequested(sourceId));
+    if (kind === "folder") {
+      setCloseDialogOpen(true);
+      return;
     }
+    void dispatch(closeEditingInstancesRequested(sourceIds));
+  };
+
+  const confirmCloseSources = () => {
+    setCloseDialogOpen(false);
+    void dispatch(closeEditingInstancesRequested(sourceIds));
   };
 
   const revealSource = () => {
@@ -62,45 +88,66 @@ export function SourceTreeContextMenu({
   };
 
   return (
-    <DeleteSourceDialog sourceIds={sourceIds}>
-      <ContextMenu>
-        <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
-        <ContextMenuContent>
-          <ContextMenuGroup>
-            {kind === "file" ? (
-              <ContextMenuItem
-                onSelect={() => {
-                  const sourceId = sourceIds[0];
-                  if (sourceId) void dispatch(navigateToEditingInstance(sourceId));
-                }}
-              >
-                {t("app.actions.open")}
-              </ContextMenuItem>
-            ) : null}
-            <ContextMenuItem onSelect={closeSources}>{t("common.actions.close")}</ContextMenuItem>
-          </ContextMenuGroup>
-          <ContextMenuSeparator />
-          <ContextMenuGroup>
-            <ContextMenuItem disabled={sourceAction === "restore"} onSelect={revealSource}>
-              {getRevealLabel(t)}
-            </ContextMenuItem>
-          </ContextMenuGroup>
-          <ContextMenuSeparator />
-          <ContextMenuGroup>
-            {sourceAction === "restore" ? (
-              <ContextMenuItem onSelect={restoreSources} variant="success">
-                {t("app.actions.restore")}
-              </ContextMenuItem>
-            ) : (
-              <DeleteSourceDialogTrigger asChild>
-                <ContextMenuItem onSelect={(event) => event.preventDefault()} variant="destructive">
-                  {t("common.actions.delete")}
+    <>
+      <DeleteSourceDialog sourceIds={sourceIds}>
+        <ContextMenu>
+          <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
+          <ContextMenuContent>
+            <ContextMenuGroup>
+              {kind === "file" ? (
+                <ContextMenuItem
+                  onSelect={() => {
+                    const sourceId = sourceIds[0];
+                    if (sourceId) void dispatch(navigateToEditingInstance(sourceId));
+                  }}
+                >
+                  {t("app.actions.open")}
                 </ContextMenuItem>
-              </DeleteSourceDialogTrigger>
-            )}
-          </ContextMenuGroup>
-        </ContextMenuContent>
-      </ContextMenu>
-    </DeleteSourceDialog>
+              ) : null}
+              <ContextMenuItem onSelect={closeSources}>{t("common.actions.close")}</ContextMenuItem>
+            </ContextMenuGroup>
+            <ContextMenuSeparator />
+            <ContextMenuGroup>
+              <ContextMenuItem disabled={sourceAction === "restore"} onSelect={revealSource}>
+                {getRevealLabel(t)}
+              </ContextMenuItem>
+            </ContextMenuGroup>
+            <ContextMenuSeparator />
+            <ContextMenuGroup>
+              {sourceAction === "restore" ? (
+                <ContextMenuItem onSelect={restoreSources} variant="success">
+                  {t("app.actions.restore")}
+                </ContextMenuItem>
+              ) : (
+                <DeleteSourceDialogTrigger asChild>
+                  <ContextMenuItem
+                    onSelect={(event) => event.preventDefault()}
+                    variant="destructive"
+                  >
+                    {t("common.actions.delete")}
+                  </ContextMenuItem>
+                </DeleteSourceDialogTrigger>
+              )}
+            </ContextMenuGroup>
+          </ContextMenuContent>
+        </ContextMenu>
+      </DeleteSourceDialog>
+      <AlertDialog onOpenChange={setCloseDialogOpen} open={closeDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("source.dialogs.closeFolder.title")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("source.dialogs.closeFolder.description", { count: sourceIds.length })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.actions.cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmCloseSources} variant="destructive">
+              {t("common.actions.close")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

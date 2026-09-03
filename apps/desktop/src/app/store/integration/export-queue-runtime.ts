@@ -15,6 +15,7 @@ import {
   parseFfmpegBitrate,
   parseFfmpegNumber,
 } from "@/domain/export-metrics";
+import { normalizeSourceKey } from "@/domain/source";
 import { type DiagnosticOperation, diagnostics } from "@/lib/diagnostics";
 import {
   cancelOperation,
@@ -36,18 +37,21 @@ interface RuntimeExportJob {
   getState: () => RootState;
   instanceId: EditingInstanceId;
   lastDiagnosticProgress: number;
+  lastReduxProgressAt: number;
   operationId: string | null;
   resolveCompletion: () => void;
   startedAt: number | null;
 }
 
 interface RuntimeState {
-  deferredSourceDeletes: Set<string>;
+  deferredSourceDeletes: Map<string, string>;
   executionEnabled: boolean;
   isDraining: boolean;
   jobsByAttemptId: Map<string, RuntimeExportJob>;
+  jobsByInstanceId: Map<EditingInstanceId, RuntimeExportJob>;
+  jobsBySourceKey: Map<string, Set<RuntimeExportJob>>;
   pendingJobs: RuntimeExportJob[];
-  queueHadWork: boolean;
+  queueCycle: "idle" | "running" | "finishing";
   suppressQueueFinishAction: boolean;
 }
 
@@ -59,10 +63,12 @@ function runtimeFor(getState: () => RootState): RuntimeState {
   const runtime: RuntimeState = {
     executionEnabled: false,
     isDraining: false,
+    jobsByInstanceId: new Map(),
     jobsByAttemptId: new Map(),
+    jobsBySourceKey: new Map(),
     pendingJobs: [],
-    deferredSourceDeletes: new Set(),
-    queueHadWork: false,
+    deferredSourceDeletes: new Map(),
+    queueCycle: "idle",
     suppressQueueFinishAction: false,
   };
 
@@ -88,11 +94,7 @@ export function enqueueExport(
 ) {
   const runtime = runtimeFor(getState);
   if (runtime.jobsByAttemptId.has(attempt.id)) return false;
-  if (
-    runtime.pendingJobs.some((job) => job.instanceId === instanceId) ||
-    [...runtime.jobsByAttemptId.values()].some((job) => job.instanceId === instanceId)
-  )
-    return false;
+  if (runtime.jobsByInstanceId.has(instanceId)) return false;
 
   const job: RuntimeExportJob = {
     attempt,
@@ -102,6 +104,7 @@ export function enqueueExport(
     getState,
     instanceId,
     lastDiagnosticProgress: -1,
+    lastReduxProgressAt: 0,
     operationId: null,
     startedAt: null,
     completion: Promise.resolve(),
@@ -113,7 +116,12 @@ export function enqueueExport(
   });
   runtime.pendingJobs.push(job);
   runtime.jobsByAttemptId.set(attempt.id, job);
-  runtime.queueHadWork = true;
+  runtime.jobsByInstanceId.set(instanceId, job);
+  const sourceKey = normalizeSourceKey(attempt.request.sourcePath);
+  const sourceJobs = runtime.jobsBySourceKey.get(sourceKey);
+  if (sourceJobs) sourceJobs.add(job);
+  else runtime.jobsBySourceKey.set(sourceKey, new Set([job]));
+  if (runtime.queueCycle === "idle") runtime.queueCycle = "running";
   void drainQueue(runtime, dispatch, getState);
   return true;
 }
@@ -171,10 +179,25 @@ export function cancelAllQueuedExports(getState: () => RootState) {
   ).then(() => undefined);
 }
 
+export function hasActiveExportForSource(sourcePath: string, getState: () => RootState): boolean {
+  return (runtimeFor(getState).jobsBySourceKey.get(normalizeSourceKey(sourcePath))?.size ?? 0) > 0;
+}
+
 function removePendingJob(runtime: RuntimeState, job: RuntimeExportJob) {
   const pendingIndex = runtime.pendingJobs.indexOf(job);
   if (pendingIndex >= 0) runtime.pendingJobs.splice(pendingIndex, 1);
+  unregisterJob(runtime, job);
+}
+
+function unregisterJob(runtime: RuntimeState, job: RuntimeExportJob) {
   runtime.jobsByAttemptId.delete(job.attempt.id);
+  if (runtime.jobsByInstanceId.get(job.instanceId) === job) {
+    runtime.jobsByInstanceId.delete(job.instanceId);
+  }
+  const sourceKey = normalizeSourceKey(job.attempt.request.sourcePath);
+  const sourceJobs = runtime.jobsBySourceKey.get(sourceKey);
+  sourceJobs?.delete(job);
+  if (sourceJobs?.size === 0) runtime.jobsBySourceKey.delete(sourceKey);
 }
 
 async function drainQueue(runtime: RuntimeState, dispatch: AppDispatch, getState: () => RootState) {
@@ -185,7 +208,7 @@ async function drainQueue(runtime: RuntimeState, dispatch: AppDispatch, getState
       const job = runtime.pendingJobs.shift();
       if (!job) continue;
       if (job.canceled) {
-        runtime.jobsByAttemptId.delete(job.attempt.id);
+        unregisterJob(runtime, job);
         job.resolveCompletion();
         continue;
       }
@@ -257,6 +280,15 @@ async function renderJob(job: RuntimeExportJob) {
         snapshotId: job.instanceId,
       });
     }
+    const now = Date.now();
+    if (
+      progress.phase !== "completed" &&
+      now - job.lastReduxProgressAt < 100 &&
+      progressPercent < 100
+    ) {
+      return;
+    }
+    job.lastReduxProgressAt = now;
     job.dispatch(
       editingInstanceExportProgressReceived({
         id: job.instanceId,
@@ -323,7 +355,7 @@ async function renderJob(job: RuntimeExportJob) {
       );
     }
   } finally {
-    runtimeFor(job.getState).jobsByAttemptId.delete(job.attempt.id);
+    unregisterJob(runtimeFor(job.getState), job);
     job.resolveCompletion();
   }
 }
@@ -341,11 +373,25 @@ function maybePerformQueueFinishAction(
     runtime.isDraining ||
     runtime.pendingJobs.length > 0 ||
     runtime.jobsByAttemptId.size > 0 ||
-    !runtime.queueHadWork
+    runtime.queueCycle !== "running"
   )
     return;
-  void flushDeferredSourceDeletes(runtime, dispatch);
-  runtime.queueHadWork = false;
+  runtime.queueCycle = "finishing";
+  void finishQueueCycle(runtime, dispatch, getState);
+}
+
+async function finishQueueCycle(
+  runtime: RuntimeState,
+  dispatch: AppDispatch,
+  getState: () => RootState,
+) {
+  await flushDeferredSourceDeletes(runtime, dispatch);
+  if (runtime.pendingJobs.length > 0 || runtime.jobsByAttemptId.size > 0) {
+    runtime.queueCycle = "running";
+    return;
+  }
+
+  runtime.queueCycle = "idle";
   if (runtime.suppressQueueFinishAction) {
     runtime.suppressQueueFinishAction = false;
     return;
@@ -362,22 +408,21 @@ function maybePerformQueueFinishAction(
 
 async function deleteSourceWhenUnused(job: RuntimeExportJob, sourcePath: string) {
   const runtime = runtimeFor(job.getState);
-  const hasDependentJob = [...runtime.jobsByAttemptId.values()].some(
-    (candidate) =>
-      candidate.attempt.id !== job.attempt.id &&
-      candidate.attempt.request.sourcePath === sourcePath,
-  );
+  const sourceJobs = runtime.jobsBySourceKey.get(normalizeSourceKey(sourcePath));
+  const hasDependentJob = sourceJobs
+    ? [...sourceJobs].some((candidate) => candidate !== job)
+    : false;
 
   if (hasDependentJob) {
-    runtime.deferredSourceDeletes.add(sourcePath);
+    runtime.deferredSourceDeletes.set(normalizeSourceKey(sourcePath), sourcePath);
     return;
   }
-  runtime.deferredSourceDeletes.delete(sourcePath);
+  runtime.deferredSourceDeletes.delete(normalizeSourceKey(sourcePath));
   await moveSourceToTrashAndMarkDeleted(job.dispatch, sourcePath, job.instanceId);
 }
 
 async function flushDeferredSourceDeletes(runtime: RuntimeState, dispatch: AppDispatch) {
-  const sourcePaths = [...runtime.deferredSourceDeletes];
+  const sourcePaths = [...runtime.deferredSourceDeletes.values()];
   runtime.deferredSourceDeletes.clear();
   await Promise.all(
     sourcePaths.map((sourcePath) => moveSourceToTrashAndMarkDeleted(dispatch, sourcePath)),

@@ -9,6 +9,7 @@ import { startSourceMediaRuntime } from "../app/store/integration/source-media-r
 import {
   editingInstanceClosed,
   editingInstancesAdded,
+  selectActiveInstanceId,
   selectEditingInstances,
 } from "../app/store/slices/editing-instances-slice";
 import {
@@ -459,6 +460,89 @@ describe("App", () => {
       expect(screen.queryByTestId("preview-loading-overlay")).not.toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Play" })).not.toBeDisabled();
     });
+  });
+
+  it("closes into the next source without publishing an empty transition", async () => {
+    const firstSnapshot: EditorSnapshot = {
+      source: selection,
+      trim: { startMicros: 0, endMicros: media.durationMicros },
+      crop: null,
+      audio: { master: { enabled: true, volumePercent: 50 }, tracks: [], mergeAudio: false },
+    };
+
+    const replacementSnapshot: EditorSnapshot = {
+      source: replacementSelection,
+      trim: { startMicros: 1_000_000, endMicros: 20_000_000 },
+      crop: null,
+      audio: { master: { enabled: true, volumePercent: 40 }, tracks: [], mergeAudio: false },
+    };
+
+    const firstItem = {
+      exportAttempts: [],
+      id: "close-transition-a",
+      media,
+      origin: "source-import" as const,
+      snapshot: firstSnapshot,
+      sourceAvailability: "available" as const,
+    };
+
+    const replacementItem = {
+      exportAttempts: [],
+      id: "close-transition-b",
+      media,
+      origin: "source-import" as const,
+      snapshot: replacementSnapshot,
+      sourceAvailability: "available" as const,
+    };
+
+    store.dispatch(editingInstancesAdded([firstItem, replacementItem]));
+    store.dispatch(
+      editingInstanceActivated({
+        id: firstItem.id,
+        loadToken: 200,
+        media,
+        snapshot: firstSnapshot,
+      }),
+    );
+    store.dispatch(sourceReady({ loadToken: 200, media, snapshot: firstSnapshot }));
+    store.dispatch(
+      previewReady({
+        preview: {
+          mediaToken: 2,
+          url: "http://easytrim-media.localhost/close-transition-a?variant=source",
+          kind: "source",
+        },
+      }),
+    );
+
+    const transitions: Array<{ audioStreamsCount: number; sourcePath: string | null }> = [];
+    const unsubscribe = store.subscribe(() => {
+      const state = store.getState();
+      transitions.push({
+        audioStreamsCount: state.source.audioPanelStreamCount,
+        sourcePath: state.source.source?.sourcePath ?? null,
+      });
+    });
+
+    try {
+      const user = userEvent.setup();
+      render(<App />);
+      await waitFor(() => expect(screen.getByRole("button", { name: "Play" })).not.toBeDisabled());
+
+      await user.click(
+        screen.getAllByRole("button", { name: `Close ${selection.displayName}` })[0]!,
+      );
+
+      await waitFor(() =>
+        expect(selectActiveInstanceId(store.getState())).toBe(replacementItem.id),
+      );
+
+      expect(transitions).not.toContainEqual({ audioStreamsCount: 0, sourcePath: null });
+      expect(transitions.some(({ sourcePath }) => sourcePath === null)).toBe(false);
+      expect(screen.getByRole("heading", { name: /^Audio tracks/ })).toBeInTheDocument();
+    } finally {
+      unsubscribe();
+    }
   });
 
   it("starts waveforms only after multi-track playback is ready without waiting for them", async () => {

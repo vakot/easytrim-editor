@@ -1,10 +1,13 @@
 import { useMemo } from "react";
 
-import type { EditingInstance } from "@/domain/editing-instance";
+import { useAppSelector } from "@/app/store/redux-hooks";
+import {
+  selectActiveInstanceId,
+  selectEditingInstanceTopologyEntries,
+} from "@/app/store/slices/editing-instances-slice";
 import { cn } from "@/lib/class-names.utils";
 
 import { SourceTreeNodes } from "./components/SourceTreeNodes";
-import { useEditingInstances } from "./hooks/useEditingInstances";
 import { getSourceTreeNodes } from "./lib/source-tree.utils";
 
 interface SourceTreeProps {
@@ -12,16 +15,13 @@ interface SourceTreeProps {
 }
 
 export function SourceTree({ className }: SourceTreeProps) {
-  const { activeInstanceId, instances } = useEditingInstances();
-  const nodes = useMemo(() => getSourceTreeNodes(instances), [instances]);
-  const instancesById = useMemo(
-    () => new Map<string, EditingInstance>(instances.map((instance) => [instance.id, instance])),
-    [instances],
-  );
+  const activeInstanceId = useAppSelector(selectActiveInstanceId);
+  const topologyEntries = useAppSelector(selectEditingInstanceTopologyEntries);
+  const nodes = useMemo(() => getSourceTreeNodes(topologyEntries), [topologyEntries]);
 
   return (
     <div className={cn("flex flex-col gap-1", className)}>
-      <SourceTreeNodes instancesById={instancesById} nodes={nodes} value={activeInstanceId ?? ""} />
+      <SourceTreeNodes nodes={nodes} value={activeInstanceId ?? ""} />
     </div>
   );
 }

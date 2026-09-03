@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import { sourceCleared, sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
+import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";
 import { audioMergeToggled } from "@/app/store/slices/audio-slice";
 import { cropChanged } from "@/app/store/slices/crop-slice";
+import { editingInstancesAdded } from "@/app/store/slices/editing-instances-slice";
 import { previewReady } from "@/app/store/slices/preview-slice";
 import { trimChanged } from "@/app/store/slices/trim-slice";
 import { createAppStore } from "@/app/store/store";
+import { closeEditingInstancesRequested } from "@/app/store/thunks/source-media-thunks";
 import { firstSource, media, secondSource } from "@/test/source.fixtures";
 
 describe("source-bound lifecycle", () => {
@@ -69,5 +72,31 @@ describe("source-bound lifecycle", () => {
     expect(state.source.media).toBeNull();
     expect(state.trim.value).toBeNull();
     expect(state.audio.tracks).toEqual([]);
+  });
+
+  it("closes non-active batches with one editing-instance transition", async () => {
+    const store = createAppStore();
+    store.dispatch(
+      editingInstancesAdded(
+        [firstSource, secondSource, firstSource].map((source, index) => ({
+          exportAttempts: [],
+          id: `batch-${index + 1}`,
+          origin: "source-import" as const,
+          snapshot: createDefaultEditorSnapshot(source, false),
+          sourceAvailability: "available" as const,
+        })),
+      ),
+    );
+
+    const observedIds: string[][] = [];
+    const unsubscribe = store.subscribe(() => {
+      observedIds.push([...store.getState().editingInstances.ids]);
+    });
+
+    await store.dispatch(closeEditingInstancesRequested(["batch-1", "batch-2"]));
+    unsubscribe();
+
+    expect(observedIds).toEqual([["batch-3"]]);
+    expect(store.getState().editingInstances.ids).toEqual(["batch-3"]);
   });
 });

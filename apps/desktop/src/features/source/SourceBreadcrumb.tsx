@@ -14,10 +14,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
 import {
-  selectActiveEditingInstance,
-  selectEditingInstances,
+  selectActiveInstanceId,
+  selectEditingInstanceTopologyEntries,
 } from "@/app/store/slices/editing-instances-slice";
-import type { EditingInstance } from "@/domain/editing-instance";
 
 import { SourceDetails } from "./components/SourceDetails";
 import { SourceTreeNodes } from "./components/SourceTreeNodes";
@@ -30,14 +29,15 @@ import {
 } from "./lib/source-tree.utils";
 
 export function SourceBreadcrumb() {
-  const instance = useAppSelector(selectActiveEditingInstance);
-  const instances = useAppSelector(selectEditingInstances);
+  const activeInstanceId = useAppSelector(selectActiveInstanceId);
+  const entries = useAppSelector(selectEditingInstanceTopologyEntries);
+  const instance = entries.find((entry) => entry.id === activeInstanceId);
 
   if (!instance) return null;
 
-  const sourcePath = formatSourcePath(instance.snapshot.source.sourcePath);
+  const sourcePath = formatSourcePath(instance.sourcePath);
   const directories = getPathDirectories(sourcePath);
-  const nodes = getSourceTreeNodes(instances, { compact: false });
+  const nodes = getSourceTreeNodes(entries, { compact: false });
 
   return (
     <Breadcrumb className="min-w-0 px-2 pb-1">
@@ -87,11 +87,11 @@ function SourceBreadcrumbPage({
   instance,
   nodes,
 }: {
-  instance: EditingInstance;
+  instance: { displayName: string; id: string; sourcePath: string };
   nodes: SourceTreeNode[];
 }) {
-  const { displayName } = instance.snapshot.source;
-  const sourcePath = formatSourcePath(instance.snapshot.source.sourcePath);
+  const { displayName } = instance;
+  const sourcePath = formatSourcePath(instance.sourcePath);
 
   return (
     <BreadcrumbItem className="min-w-0">

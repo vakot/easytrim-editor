@@ -232,6 +232,11 @@ export const sk = {
     },
     tooltips: { sidebarControls: "Vybrať viditeľné panely zdroja" },
     dialogs: {
+      closeFolder: {
+        description:
+          "Zavrieť všetky {{count}} zdroje v tomto priečinku? Ich neuložené úpravy sa stratia.",
+        title: "Zavrieť zdroje priečinka?",
+      },
       delete: {
         description: "Týmto odstránite {{name}} z počítača. Túto akciu možno vrátiť späť.",
         title: "Odstrániť zdrojový súbor?",

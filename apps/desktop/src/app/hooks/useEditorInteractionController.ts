@@ -17,7 +17,10 @@ import {
 import { selectPreview } from "@/app/store/slices/preview-slice";
 import { selectSourceMedia, selectSourceSelection } from "@/app/store/slices/source-slice";
 import { selectTrim, trimChanged } from "@/app/store/slices/trim-slice";
-import { handlePreviewPlaybackError as handlePreviewPlaybackErrorRequested } from "@/app/store/thunks/source-media-thunks";
+import {
+  commitActiveEditingInstanceDraft,
+  handlePreviewPlaybackError as handlePreviewPlaybackErrorRequested,
+} from "@/app/store/thunks/source-media-thunks";
 import { clampPlaybackMicros, frameDurationMicros } from "@/domain/playback";
 import {
   canSetTrimBoundaryAtPlayhead,
@@ -1010,13 +1013,15 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     segmentDragActiveRef.current = false;
     segmentFollowBoundaryRef.current = null;
     flushTrimCommit();
+    dispatch(commitActiveEditingInstanceDraft());
     handleScrubEnd();
-  }, [flushTrimCommit, handleScrubEnd]);
+  }, [dispatch, flushTrimCommit, handleScrubEnd]);
 
   const handleTrimDragEnd = useCallback(() => {
     flushTrimCommit();
+    dispatch(commitActiveEditingInstanceDraft());
     handleScrubEnd();
-  }, [flushTrimCommit, handleScrubEnd]);
+  }, [dispatch, flushTrimCommit, handleScrubEnd]);
 
   const onTimeUpdate = useCallback(
     (seconds: number) => {

@@ -16,12 +16,18 @@ import {
   editingInstanceExportProgressReceived,
   editingInstanceExportStarted,
   editingInstancesAdded,
+  editingInstancesClosed,
   editingInstanceSnapshotUpdated,
   editingInstancesReducer,
   editingInstancesSourceAvailabilityChanged,
   initialEditingInstancesState,
   selectActiveEditingInstance,
   selectEditingInstanceAttempts,
+  selectEditingInstanceIds,
+  selectEditingInstanceStatusById,
+  selectEditingInstanceTopologyEntries,
+  selectHasQueuedOrRenderingExportByInstanceId,
+  selectProcessableExportCount,
 } from "../editing-instances-slice";
 
 const baseSnapshot = createDefaultEditorSnapshot(firstSource, false);
@@ -118,6 +124,21 @@ describe("editing instances slice", () => {
         },
       }),
     );
+    state = editingInstancesReducer(
+      state,
+      editingInstanceExportProgressReceived({
+        attemptId: "attempt-1",
+        id: "instance-1",
+        metrics: { currentFrame: 99, progressPercent: 99 },
+        progress: {
+          elapsedMicros: 999_000,
+          frame: 99,
+          operationId: "stale-operation",
+          phase: "running",
+        },
+      }),
+    );
+    expect(state.entities["instance-1"]?.exportAttempts[0]?.metrics.currentFrame).toBe(4);
 
     const editedSnapshot = createEditorSnapshot({
       audioTracks: baseSnapshot.audio.tracks,
@@ -202,7 +223,7 @@ describe("editing instances slice", () => {
   it("propagates source availability across instances sharing one source path", () => {
     const sameSource = instance("instance-2", {
       ...baseSnapshot,
-      source: { ...firstSource, displayName: "copy.mp4" },
+      source: { ...firstSource, displayName: "copy.mp4", sourcePath: "C:\\Media\\first.mp4" },
     });
 
     let state = editingInstancesReducer(
@@ -241,5 +262,66 @@ describe("editing instances slice", () => {
     expect(selectActiveEditingInstance({ editingInstances: state } as never)).toBeUndefined();
     expect(selectEditingInstanceAttempts({ editingInstances: state } as never)).toHaveLength(0);
     expect(state.entities["instance-2"]?.snapshot.source).toEqual(firstSource);
+  });
+
+  it("closes a batch in one state transition while preserving surviving instances", () => {
+    const first = instance("instance-1");
+    const second = instance("instance-2", { ...baseSnapshot, source: secondSource });
+    const third = instance("instance-3");
+    let state = editingInstancesReducer(
+      initialEditingInstancesState,
+      editingInstancesAdded([first, second, third]),
+    );
+
+    state = editingInstancesReducer(state, activeEditingInstanceChanged("instance-2"));
+    state = editingInstancesReducer(state, editingInstancesClosed(["instance-1", "instance-2"]));
+
+    expect(state.ids).toEqual(["instance-3"]);
+    expect(state.entities["instance-1"]).toBeUndefined();
+    expect(state.entities["instance-2"]).toBeUndefined();
+    expect(state.entities["instance-3"]?.snapshot.source).toEqual(firstSource);
+    expect(state.activeInstanceId).toBeNull();
+  });
+
+  it("keeps narrow read models stable across unrelated progress updates", () => {
+    const first = instance("instance-1");
+    const second = instance("instance-2", { ...baseSnapshot, source: secondSource });
+    let state = editingInstancesReducer(
+      initialEditingInstancesState,
+      editingInstancesAdded([first, second]),
+    );
+
+    const root = () => ({ editingInstances: state }) as never;
+    const ids = selectEditingInstanceIds(root());
+    const topology = selectEditingInstanceTopologyEntries(root());
+
+    const queuedAttempt = attempt("attempt-1");
+    state = editingInstancesReducer(
+      state,
+      editingInstanceExportAttemptQueued({ id: "instance-1", attempt: queuedAttempt }),
+    );
+    state = editingInstancesReducer(
+      state,
+      editingInstanceExportStarted({ attemptId: "attempt-1", id: "instance-1", startedAt: 20 }),
+    );
+    state = editingInstancesReducer(
+      state,
+      editingInstanceExportProgressReceived({
+        attemptId: "attempt-1",
+        id: "instance-1",
+        metrics: { progressPercent: 10 },
+        progress: {
+          elapsedMicros: 100_000,
+          operationId: "operation-1",
+          phase: "running",
+        },
+      }),
+    );
+
+    expect(selectEditingInstanceIds(root())).toBe(ids);
+    expect(selectEditingInstanceTopologyEntries(root())).toBe(topology);
+    expect(selectEditingInstanceStatusById(root(), "instance-1")).toBe("rendering");
+    expect(selectHasQueuedOrRenderingExportByInstanceId(root(), "instance-1")).toBe(true);
+    expect(selectProcessableExportCount(root())).toBe(1);
   });
 });

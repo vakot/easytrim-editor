@@ -65,13 +65,14 @@ export function EditorStage() {
   return (
     <div className="size-full min-h-0" data-slot="timeline-pane" ref={initializeTimelinePane}>
       <TimelineGeometrySync targetRef={timelinePaneRef} />
+
       <ResizablePanelGroup id="editor-stage" orientation="vertical" persisted>
         <ResizablePanel id="editor-stage-preview" minSize="14rem">
           <div className="size-full p-px">
             <Card className="size-full gap-0 bg-preview-surface p-0">
               <div className="h-14">
                 <ScrollArea
-                  className="w-full min-w-0 px-1"
+                  className="h-8 w-full min-w-0 px-1"
                   fadeColor="var(--preview-surface)"
                   orientation="horizontal"
                   scrollbarClassName="data-horizontal:h-1.25"
