@@ -26,7 +26,7 @@ import {
 import { SourceTreeContextMenu } from "./SourceTreeContextMenu";
 
 const treeNodeClassName =
-  "min-w-0 flex-1 text-xs justify-between overflow-hidden transition-none group-hover:bg-muted! dark:group-hover:bg-muted/50";
+  "min-w-0 flex-1 text-xs justify-between overflow-hidden transition-none group-hover:bg-muted! dark:group-hover:bg-muted/50 pr-1";
 
 type SourceTreeNodesProps = {
   background?: "card" | "popover";
@@ -115,7 +115,7 @@ const SourceTreeFolder = memo(function SourceTreeFolder({
               </div>
 
               <SourceTreeStatus title={String(sourceIds.length)}>
-                ({sourceIds.length})
+                <Badge variant="ghost">{sourceIds.length}</Badge>
               </SourceTreeStatus>
             </Button>
           </CollapsibleTrigger>
