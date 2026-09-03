@@ -224,8 +224,13 @@ export const sk = {
     messages: {
       checkingTools: "Kontroluje sa pripravenosť požadovaných multimediálnych závislostí.",
       dependencyMissing: "nie je dostupné.",
+      dropDescription: "Otvorte jeden alebo viac podporovaných videosúborov z počítača.",
       dropReset: "Aktuálne úpravy sa obnovia.",
+      dropTitle: "Presuňte videá sem",
+      extensions: "MP4 · MOV · MKV · WebM · AVI",
       noSource: "Žiadny zdroj",
+      openFileDescription: "Vyberte jeden videosúbor a začnite upravovať.",
+      openFolderDescription: "Importujte všetky podporované videá z priečinka.",
       toolsReady:
         "Všetky požadované multimediálne závislosti sú nainštalované a pripravené na použitie.",
       toolsUnavailable: "Niektoré požadované multimediálne závislosti nie sú dostupné.",

@@ -825,6 +825,14 @@ describe("App", () => {
     expect(mocks.chooseSource).toHaveBeenCalledTimes(1);
   });
 
+  it("opens the folder picker with Ctrl+K", () => {
+    render(<App />);
+
+    fireEvent.keyDown(window, { key: "k", code: "KeyK", ctrlKey: true });
+
+    expect(mocks.chooseSource).toHaveBeenCalledWith("folders");
+  });
+
   it("closes the active source with the File menu and Ctrl+Q", async () => {
     mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
