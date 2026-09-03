@@ -18,6 +18,9 @@ import {
   ContextMenuGroup,
   ContextMenuItem,
   ContextMenuSeparator,
+  ContextMenuSub,
+  ContextMenuSubContent,
+  ContextMenuSubTrigger,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 
@@ -31,7 +34,12 @@ import {
 import type { EditingInstance } from "@/domain/editing-instance";
 import { openFileLocation } from "@/lib/tauri/media";
 
-import { getRevealLabel, getSourceAction } from "../lib/source-tree.utils";
+import {
+  getRevealLabel,
+  getSourceAction,
+  getSourceTreeRevealTargets,
+  type SourceTreeRevealTarget,
+} from "../lib/source-tree.utils";
 
 import { DeleteSourceDialog, DeleteSourceDialogTrigger } from "./DeleteSourceDialog";
 
@@ -56,6 +64,11 @@ export function SourceTreeContextMenu({
   );
 
   const sourceAction = getSourceAction(targetInstances);
+  const revealTargets =
+    kind === "file"
+      ? getSourceTreeRevealTargets(targetInstances[0])
+      : ([] as SourceTreeRevealTarget[]);
+
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
 
   const closeSources = () => {
@@ -71,8 +84,12 @@ export function SourceTreeContextMenu({
     void dispatch(closeEditingInstancesRequested(sourceIds));
   };
 
+  const revealFile = (path: string) => {
+    void openFileLocation(path).catch(() => undefined);
+  };
+
   const revealSource = () => {
-    void openFileLocation(revealPath).catch(() => undefined);
+    revealFile(revealPath);
   };
 
   const restoreSources = () => {
@@ -108,9 +125,31 @@ export function SourceTreeContextMenu({
             </ContextMenuGroup>
             <ContextMenuSeparator />
             <ContextMenuGroup>
-              <ContextMenuItem disabled={sourceAction === "restore"} onSelect={revealSource}>
-                {getRevealLabel(t)}
-              </ContextMenuItem>
+              {revealTargets.length > 0 ? (
+                <ContextMenuSub>
+                  <ContextMenuSubTrigger>{getRevealLabel(t)}</ContextMenuSubTrigger>
+                  <ContextMenuSubContent>
+                    <ContextMenuItem
+                      disabled={targetInstances[0]?.sourceAvailability === "deleted"}
+                      onSelect={revealSource}
+                    >
+                      {t("source.labels.title")}
+                    </ContextMenuItem>
+                    {revealTargets.map((target, index) => (
+                      <ContextMenuItem
+                        key={`${target.path}:${index}`}
+                        onSelect={() => revealFile(target.path)}
+                      >
+                        {target.displayName}
+                      </ContextMenuItem>
+                    ))}
+                  </ContextMenuSubContent>
+                </ContextMenuSub>
+              ) : (
+                <ContextMenuItem disabled={sourceAction === "restore"} onSelect={revealSource}>
+                  {getRevealLabel(t)}
+                </ContextMenuItem>
+              )}
             </ContextMenuGroup>
             <ContextMenuSeparator />
             <ContextMenuGroup>

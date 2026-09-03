@@ -28,6 +28,11 @@ export interface SourceTreeEntry {
   sourcePath: string;
 }
 
+export interface SourceTreeRevealTarget {
+  displayName: string;
+  path: string;
+}
+
 type SourceTreeBuildFolderNode = {
   children: SourceTreeBuildNode[];
   id: string;
@@ -118,6 +123,23 @@ export function getSourceTreeInstanceIds(nodes: SourceTreeNode[]): string[] {
   }
 
   return sourceIds;
+}
+
+export function getSourceTreeRevealTargets(
+  instance: EditingInstance | undefined,
+): SourceTreeRevealTarget[] {
+  return (
+    instance?.exportAttempts.flatMap((attempt) =>
+      attempt.state.status === "completed"
+        ? [
+            {
+              displayName: attempt.state.result.displayName,
+              path: attempt.state.result.displayPath,
+            },
+          ]
+        : [],
+    ) ?? []
+  );
 }
 
 export function getSourceTreeSiblings(

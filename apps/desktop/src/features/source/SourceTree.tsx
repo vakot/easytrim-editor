@@ -19,15 +19,16 @@ import { getSourceTreeNodes } from "./lib/source-tree.utils";
 
 interface SourceTreeProps {
   className?: string;
+  emptyClassName?: string;
 }
 
-export function SourceTree({ className }: SourceTreeProps) {
+export function SourceTree({ className, emptyClassName }: SourceTreeProps) {
   const activeInstanceId = useAppSelector(selectActiveInstanceId);
   const topologyEntries = useAppSelector(selectEditingInstanceTopologyEntries);
   const nodes = useMemo(() => getSourceTreeNodes(topologyEntries), [topologyEntries]);
 
   if (nodes.length === 0) {
-    return <SourceExplorerEmptyState className={className} />;
+    return <SourceExplorerEmptyState className={emptyClassName} />;
   }
 
   return (

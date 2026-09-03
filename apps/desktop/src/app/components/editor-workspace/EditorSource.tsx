@@ -141,9 +141,11 @@ export function EditorSource() {
       {panelsVisibility["activeSources"] && (
         <>
           <SourcePanelCollapsible isSingle={isSingle} label={panelLabels.activeSources}>
-            <div className="w-full px-3">
-              <SourceTabs background="card" className="w-full pb-1" orientation="vertical" />
-            </div>
+            <SourceTabs
+              background="card"
+              className="w-full px-1 pb-1 **:data-[slot=source-tab-close]:left-0.5 **:data-[slot=tabs-trigger]:pr-1 **:data-[slot=tabs-trigger]:pl-6.5"
+              orientation="vertical"
+            />
           </SourcePanelCollapsible>
 
           <Separator className="bg-foreground/10" />
@@ -158,8 +160,8 @@ export function EditorSource() {
               isSingle={isSingle}
               label={panelLabels.explorer}
             >
-              <ScrollArea className="min-h-0 flex-1 px-3">
-                <SourceTree className="pb-1" />
+              <ScrollArea className="min-h-0 flex-1">
+                <SourceTree className="px-1 pb-1" emptyClassName="px-3" />
               </ScrollArea>
             </SourcePanelResizable>
           )}

@@ -1,4 +1,4 @@
-import { X } from "lucide-react";
+import { FileVideo, X } from "lucide-react";
 import { memo } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -79,8 +79,9 @@ const SourceTabsEntry = memo(function SourceTabsEntry({
       <Button
         aria-label={`Close ${entry.displayName}`}
         className="absolute right-0.5"
+        data-slot="source-tab-close"
         onClick={() => onClose(entry.id)}
-        size="icon-2xs"
+        size="icon-xs"
         variant="ghost"
       >
         <X />
@@ -91,7 +92,8 @@ const SourceTabsEntry = memo(function SourceTabsEntry({
 
 function SourceTabsTrigger({ displayName, id }: { displayName: string; id: string }) {
   return (
-    <TabsTrigger className="h-6 pr-6 text-xs" value={id}>
+    <TabsTrigger className="h-6 pr-7 text-xs" value={id}>
+      <FileVideo aria-hidden="true" />
       <span className="truncate">{displayName}</span>
     </TabsTrigger>
   );
