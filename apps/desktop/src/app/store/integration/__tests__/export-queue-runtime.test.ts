@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   releaseExportSource: vi.fn().mockResolvedValue(undefined),
   renderFast: vi.fn(),
   renderOptimized: vi.fn(),
+  startOperation: vi.fn(),
 }));
 
 vi.mock("@/lib/tauri/media", () => ({
@@ -23,7 +24,7 @@ vi.mock("@/lib/diagnostics", () => ({
   diagnostics: {
     error: vi.fn(),
     event: vi.fn(),
-    startOperation: vi.fn(() => ({
+    startOperation: mocks.startOperation.mockImplementation(() => ({
       cancel: vi.fn(),
       complete: vi.fn(),
       fail: vi.fn(),
@@ -89,6 +90,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.releaseExportSource.mockResolvedValue(undefined);
   mocks.moveSourceToTrash.mockResolvedValue(undefined);
+  mocks.startOperation.mockClear();
 });
 
 describe("export queue runtime", () => {
@@ -124,6 +126,15 @@ describe("export queue runtime", () => {
     expect(
       store.getState().editingInstances.entities["instance-2"]?.exportAttempts[0]?.state.status,
     ).toBe("completed");
+    expect(mocks.startOperation).toHaveBeenNthCalledWith(
+      1,
+      "ffmpeg.export",
+      expect.objectContaining({
+        data: expect.objectContaining({
+          outputPath: "C:/Exports/attempt-1.mp4",
+        }),
+      }),
+    );
   });
 
   it("releases a queued reservation when cancellation happens before native start", async () => {
