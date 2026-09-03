@@ -42,7 +42,6 @@ export const en = {
       help: "Help",
       leftPanel: "Left panel",
       now: "Now",
-      rightPanel: "Right panel",
       today: "Today",
       version: "Version {{version}}",
       view: "View",
@@ -110,7 +109,6 @@ export const en = {
       },
     },
     accessibility: {
-      activityFeedPrivacy: "Activity history privacy information",
       layoutControls: "Layout controls",
       menus: "Application menus",
       panels: "Editor panels",

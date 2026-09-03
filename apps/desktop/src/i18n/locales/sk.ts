@@ -43,7 +43,6 @@ export const sk = {
       file: "Súbor",
       help: "Pomocník",
       leftPanel: "Ľavý panel",
-      rightPanel: "Pravý panel",
       now: "Teraz",
       today: "Dnes",
       version: "Verzia {{version}}",
@@ -111,7 +110,6 @@ export const sk = {
       },
     },
     accessibility: {
-      activityFeedPrivacy: "Informácie o súkromí histórie aktivít",
       layoutControls: "Ovládanie rozloženia",
       menus: "Ponuky aplikácie",
       panels: "Panely editora",

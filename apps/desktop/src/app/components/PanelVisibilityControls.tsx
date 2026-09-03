@@ -4,8 +4,6 @@ import {
   PanelBottomDashed,
   PanelLeft,
   PanelLeftDashed,
-  PanelRight,
-  PanelRightDashed,
   RotateCcw,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -60,7 +58,7 @@ export function PanelVisibilityControls() {
                   </DropdownMenuCheckboxItem>
                 )}
               </ResizablePanelControl>
-              <ResizablePanelControl panelId="editor-stage-audio">
+              <ResizablePanelControl panelId="editor-stage-timeline">
                 {({ isAvailable, isCollapsed, isDisabled }) => (
                   <DropdownMenuCheckboxItem
                     checked={isAvailable && !isCollapsed}
@@ -75,27 +73,12 @@ export function PanelVisibilityControls() {
                   </DropdownMenuCheckboxItem>
                 )}
               </ResizablePanelControl>
-              <ResizablePanelControl panelId="workspace-activity">
-                {({ isAvailable, isCollapsed, isDisabled }) => (
-                  <DropdownMenuCheckboxItem
-                    checked={isAvailable && !isCollapsed}
-                    disabled={!isAvailable || isDisabled}
-                    inset
-                    keepOpen
-                  >
-                    {t("app.actions.showPanel", { panel: t("app.labels.rightPanel") })}
-                    <DropdownMenuIcon side="right">
-                      <PanelRight aria-hidden="true" className="size-3" />
-                    </DropdownMenuIcon>
-                  </DropdownMenuCheckboxItem>
-                )}
-              </ResizablePanelControl>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <ResizablePanelControl
                 mode="reset"
-                panelId={["workspace-sidebar", "editor-stage-timeline", "workspace-activity"]}
+                panelId={["workspace-sidebar", "editor-stage-timeline"]}
               >
                 {({ isDisabled }) => (
                   <DropdownMenuItem disabled={isDisabled} inset keepOpen>
@@ -139,7 +122,7 @@ export function PanelVisibilityControls() {
       </Tooltip>
 
       <Tooltip preserveOnTrigger>
-        <ResizablePanelControl panelId="editor-stage-audio">
+        <ResizablePanelControl panelId="editor-stage-timeline">
           {({ isAvailable, isCollapsed, isDisabled }) => (
             <TooltipTrigger asChild>
               <Button
@@ -162,33 +145,6 @@ export function PanelVisibilityControls() {
         </ResizablePanelControl>
         <TooltipContent>
           {t("app.tooltips.togglePanel", { panel: t("app.labels.bottomPanel") })}
-        </TooltipContent>
-      </Tooltip>
-
-      <Tooltip preserveOnTrigger>
-        <ResizablePanelControl panelId="workspace-activity">
-          {({ isAvailable, isCollapsed, isDisabled }) => (
-            <TooltipTrigger asChild>
-              <Button
-                aria-label={t("app.tooltips.togglePanel", {
-                  panel: t("app.labels.rightPanel"),
-                })}
-                className="size-7 p-0 text-secondary-foreground"
-                disabled={!isAvailable || isDisabled}
-                size="icon-sm"
-                variant="ghost"
-              >
-                {isCollapsed ? (
-                  <PanelRightDashed aria-hidden="true" />
-                ) : (
-                  <PanelRight aria-hidden="true" />
-                )}
-              </Button>
-            </TooltipTrigger>
-          )}
-        </ResizablePanelControl>
-        <TooltipContent>
-          {t("app.tooltips.togglePanel", { panel: t("app.labels.rightPanel") })}
         </TooltipContent>
       </Tooltip>
     </div>
