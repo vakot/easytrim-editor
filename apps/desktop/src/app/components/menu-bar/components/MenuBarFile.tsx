@@ -57,6 +57,10 @@ export function MenuBarFile() {
     () => void dispatch(chooseSourceRequested({ id: "Ctrl+O", type: "hotkey" })),
   );
   useKeyboardShortcut(
+    (event) => event.code === "KeyK" && event.ctrlKey && !isChoosingSource && !isNativeDialogOpen,
+    () => void dispatch(chooseSourceRequested({ id: "Ctrl+K", type: "hotkey" }, "folders")),
+  );
+  useKeyboardShortcut(
     (event) =>
       event.code === "KeyQ" &&
       event.ctrlKey &&
@@ -111,6 +115,12 @@ export function MenuBarFile() {
               }
             >
               {t("app.actions.openFolder")}
+              <MenubarShortcut>
+                <KbdGroup>
+                  <Kbd>Ctrl</Kbd>
+                  <Kbd>K</Kbd>
+                </KbdGroup>
+              </MenubarShortcut>
             </MenubarItem>
             <MenubarItem
               disabled={!hasSource}

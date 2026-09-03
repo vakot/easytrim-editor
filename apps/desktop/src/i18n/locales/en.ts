@@ -223,8 +223,13 @@ export const en = {
     messages: {
       checkingTools: "Checking whether the required media dependencies are ready.",
       dependencyMissing: "not available.",
+      dropDescription: "Open one or more supported video files from your computer.",
       dropReset: "The current edit will be reset.",
+      dropTitle: "Drag and drop videos here",
+      extensions: "MP4 · MOV · MKV · WebM · AVI",
       noSource: "No source",
+      openFileDescription: "Choose a single video file to start editing.",
+      openFolderDescription: "Import all supported videos from a folder.",
       toolsReady: "All required media dependencies are installed and ready to use.",
       toolsUnavailable: "Some required media dependencies are unavailable.",
     },
