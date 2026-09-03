@@ -110,7 +110,6 @@ export const sk = {
       },
     },
     accessibility: {
-      activityFeedPrivacy: "Informácie o súkromí histórie aktivít",
       layoutControls: "Ovládanie rozloženia",
       menus: "Ponuky aplikácie",
       panels: "Panely editora",

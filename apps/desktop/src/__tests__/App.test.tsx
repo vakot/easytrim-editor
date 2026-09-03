@@ -919,17 +919,17 @@ describe("App", () => {
     );
     const fixedTimeline = screen.getByTestId("timeline-fixed-content");
     const audioTracksScroll = screen.getByTestId("audio-tracks-scroll");
-    const audioPanel = document.getElementById("editor-stage-audio");
-    expect(document.getElementById("editor-stage-timeline")).toContainElement(fixedTimeline);
-    expect(audioPanel).not.toBeNull();
-    expect(audioPanel).toContainElement(audioTracksScroll);
+    const timelinePanel = document.getElementById("editor-stage-timeline");
+    expect(timelinePanel).not.toBeNull();
+    expect(timelinePanel).toContainElement(fixedTimeline);
+    expect(timelinePanel).toContainElement(audioTracksScroll);
     expect(fixedTimeline).toContainElement(
       screen.getByRole("heading", { name: "Selected Segment" }),
     );
     expect(fixedTimeline).not.toContainElement(
       screen.getByRole("heading", { name: /^Audio tracks/ }),
     );
-    expect(audioPanel).toContainElement(screen.getByRole("heading", { name: /^Audio tracks/ }));
+    expect(timelinePanel).toContainElement(screen.getByRole("heading", { name: /^Audio tracks/ }));
     expect(audioTracksScroll).not.toContainElement(
       screen.getByRole("heading", { name: /^Audio tracks/ }),
     );
