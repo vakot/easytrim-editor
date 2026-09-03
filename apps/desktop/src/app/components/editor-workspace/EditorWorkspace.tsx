@@ -32,18 +32,13 @@ export function EditorWorkspace() {
       />
 
       <ResizablePanel
+        className="pr-1.5"
         groupResizeBehavior="preserve-relative-size"
         id="workspace-content"
         minSize="40rem"
       >
         <EditorStage />
       </ResizablePanel>
-
-      <ResizableHandle
-        className="self-start bg-transparent"
-        style={{ height: "calc(100% - 6px)", width: 6 }}
-        withHandle
-      />
     </ResizablePanelGroup>
   );
 }

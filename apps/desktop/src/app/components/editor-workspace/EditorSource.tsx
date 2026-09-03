@@ -165,16 +165,15 @@ export function EditorSource() {
           )}
 
           {panelsVisibility["explorer"] && panelsVisibility["activityFeed"] && (
-            <ResizableHandle className="bg-transparent" style={{ height: 6 }} withHandle />
+            <ResizableHandle className="bg-foreground/10" />
           )}
 
           {panelsVisibility["activityFeed"] && (
             <SourcePanelResizable
-              defaultSize={240}
+              defaultSize={0}
               id="source-activity-feed"
               isSingle={isSingle}
               label={panelLabels.activityFeed}
-              maxSize={300}
               tooltip={panelTooltips.activityFeed}
             >
               <ScrollArea className="min-h-0 flex-1 px-3 before:top-4">
