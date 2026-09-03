@@ -21,7 +21,8 @@ owns presentation concerns.
 
 The editor's cross-feature lifecycle is defined by the canonical `EditingInstance` collection;
 see [Editing instance lifecycle](editing-instance-lifecycle.md) for the contract migration table,
-identity rules, and source/export ownership boundaries.
+identity rules, and source/export ownership boundaries. The value-by-value ownership ledger is in
+[ownership-ledger.md](ownership-ledger.md).
 
 ## Frontend ownership
 

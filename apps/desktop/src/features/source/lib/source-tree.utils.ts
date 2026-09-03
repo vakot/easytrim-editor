@@ -16,9 +16,17 @@ export type SourceTreeFolderNode = {
 };
 
 export type SourceTreeInstanceNode = {
-  instance: EditingInstance;
+  displayName: string;
+  instanceId: string;
   kind: "instance";
+  sourcePath: string;
 };
+
+export interface SourceTreeEntry {
+  displayName: string;
+  id: string;
+  sourcePath: string;
+}
 
 type SourceTreeBuildFolderNode = {
   children: SourceTreeBuildNode[];
@@ -35,7 +43,7 @@ const sourceTreeNodeCollator = new Intl.Collator(undefined, {
 });
 
 export function getSourceTreeNodes(
-  instances: EditingInstance[],
+  instances: readonly (SourceTreeEntry | EditingInstance)[],
   options: { compact?: boolean } = {},
 ): SourceTreeNode[] {
   if (instances.length === 0) return [];
@@ -50,8 +58,9 @@ export function getSourceTreeNodes(
 
   const foldersByPath = new Map<string, SourceTreeBuildFolderNode>();
 
-  for (const instance of instances) {
-    const directories = getPathDirectories(formatSourcePath(instance.snapshot.source.sourcePath));
+  for (const input of instances) {
+    const instance = toSourceTreeEntry(input);
+    const directories = getPathDirectories(formatSourcePath(instance.sourcePath));
 
     let parent = root;
 
@@ -75,8 +84,10 @@ export function getSourceTreeNodes(
     }
 
     parent.children.push({
-      instance,
+      displayName: instance.displayName,
+      instanceId: instance.id,
       kind: "instance",
+      sourcePath: instance.sourcePath,
     });
   }
 
@@ -86,12 +97,6 @@ export function getSourceTreeNodes(
   return compactedRoot.name
     ? [stripBuildFolderFields(compactedRoot)]
     : compactedRoot.children.map(stripBuildFolderFields);
-}
-
-export function getSourceTreeInstances(nodes: SourceTreeNode[]): EditingInstance[] {
-  return nodes.flatMap((node) =>
-    node.kind === "folder" ? getSourceTreeInstances(node.children) : [node.instance],
-  );
 }
 
 export function getSourceTreeInstanceIds(nodes: SourceTreeNode[]): string[] {
@@ -108,7 +113,7 @@ export function getSourceTreeInstanceIds(nodes: SourceTreeNode[]): string[] {
         if (child) pendingNodes.push(child);
       }
     } else {
-      sourceIds.push(node.instance.id);
+      sourceIds.push(node.instanceId);
     }
   }
 
@@ -151,7 +156,7 @@ function findSourceTreeSiblings(
       (target.kind === "folder" &&
         node.kind === "folder" &&
         (node.path === target.path || isDriveRootPath(target.path, node.path))) ||
-      (target.kind === "instance" && node.kind === "instance" && node.instance.id === target.id)
+      (target.kind === "instance" && node.kind === "instance" && node.instanceId === target.id)
     ) {
       return nodes;
     }
@@ -161,6 +166,17 @@ function findSourceTreeSiblings(
       if (siblings) return siblings;
     }
   }
+}
+
+function toSourceTreeEntry(input: SourceTreeEntry | EditingInstance): SourceTreeEntry {
+  if ("snapshot" in input) {
+    return {
+      displayName: input.snapshot.source.displayName,
+      id: input.id,
+      sourcePath: input.snapshot.source.sourcePath,
+    };
+  }
+  return input;
 }
 
 function isDriveRootPath(targetPath: string, nodePath: string): boolean {
@@ -189,9 +205,8 @@ function sortSourceTreeChildren(folder: SourceTreeBuildFolderNode): void {
   folder.children.sort((left, right) => {
     if (left.kind !== right.kind) return left.kind === "folder" ? -1 : 1;
 
-    const leftName = left.kind === "folder" ? left.name : left.instance.snapshot.source.displayName;
-    const rightName =
-      right.kind === "folder" ? right.name : right.instance.snapshot.source.displayName;
+    const leftName = left.kind === "folder" ? left.name : left.displayName;
+    const rightName = right.kind === "folder" ? right.name : right.displayName;
 
     return sourceTreeNodeCollator.compare(leftName, rightName);
   });

@@ -11,15 +11,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
-import { useAppDispatch } from "@/app/store/redux-hooks";
+import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
+import { selectEditingInstanceStatusById } from "@/app/store/slices/editing-instances-slice";
 import { navigateToEditingInstance } from "@/app/store/thunks/source-media-thunks";
-import type { EditingInstance } from "@/domain/editing-instance";
 import { cn } from "@/lib/class-names.utils";
 
 import { formatSourcePath } from "../lib/media-formatters.utils";
 import {
   getSourceTreeInstanceIds,
-  getSourceTreeInstances,
   type SourceTreeFolderNode,
   type SourceTreeNode,
 } from "../lib/source-tree.utils";
@@ -27,11 +26,10 @@ import {
 import { SourceTreeContextMenu } from "./SourceTreeContextMenu";
 
 const treeNodeClassName =
-  "min-w-0 flex-1 text-xs justify-between overflow-hidden transition-none group-hover:bg-muted! dark:group-hover:bg-muted/50 text-secondary-foreground";
+  "min-w-0 flex-1 text-xs justify-between overflow-hidden transition-none group-hover:bg-muted! dark:group-hover:bg-muted/50";
 
 type SourceTreeNodesProps = {
   background?: "card" | "popover";
-  instancesById?: ReadonlyMap<string, EditingInstance>;
   level?: number;
   nodes: SourceTreeNode[];
   value: string;
@@ -39,24 +37,15 @@ type SourceTreeNodesProps = {
 
 export function SourceTreeNodes({
   background = "card",
-  instancesById: providedInstancesById,
   level = 0,
   nodes,
   value,
 }: SourceTreeNodesProps) {
-  const instancesById = useMemo(
-    () =>
-      providedInstancesById ??
-      new Map(getSourceTreeInstances(nodes).map((instance) => [instance.id, instance])),
-    [nodes, providedInstancesById],
-  );
-
   return nodes.map((node) => {
     if (node.kind === "folder") {
       return (
         <SourceTreeFolder
           background={background}
-          instancesById={instancesById}
           key={node.id}
           level={level}
           node={node}
@@ -67,10 +56,12 @@ export function SourceTreeNodes({
 
     return (
       <SourceTreeInstance
-        instance={node.instance}
-        key={node.instance.id}
+        displayName={node.displayName}
+        instanceId={node.instanceId}
+        key={node.instanceId}
         level={level}
-        selected={value === node.instance.id}
+        selected={value === node.instanceId}
+        sourcePath={node.sourcePath}
       />
     );
   });
@@ -78,31 +69,20 @@ export function SourceTreeNodes({
 
 const SourceTreeFolder = memo(function SourceTreeFolder({
   background,
-  instancesById,
   level,
   node,
   value,
 }: {
   background: "card" | "popover";
-  instancesById: ReadonlyMap<string, EditingInstance>;
   level: number;
   node: SourceTreeFolderNode;
   value: string;
 }) {
   const sourceIds = useMemo(() => getSourceTreeInstanceIds(node.children), [node.children]);
-  const instances = useMemo(
-    () => sourceIds.flatMap((sourceId) => instancesById.get(sourceId) ?? []),
-    [instancesById, sourceIds],
-  );
 
   return (
     <Collapsible className="w-full">
-      <SourceTreeContextMenu
-        kind="folder"
-        revealPath={node.path}
-        sourceIds={sourceIds}
-        targetInstances={instances}
-      >
+      <SourceTreeContextMenu kind="folder" revealPath={node.path} sourceIds={sourceIds}>
         <div
           className="group group-line sticky flex min-w-0 items-center gap-1 bg-(--source-tree-background)"
           style={
@@ -116,7 +96,10 @@ const SourceTreeFolder = memo(function SourceTreeFolder({
           <CollapsibleTrigger asChild>
             <Button
               aria-label={node.name}
-              className={cn(treeNodeClassName, "group data-open:bg-transparent!")}
+              className={cn(
+                treeNodeClassName,
+                "group text-secondary-foreground! data-open:bg-transparent!",
+              )}
               size="sm"
               variant="ghost"
             >
@@ -131,8 +114,8 @@ const SourceTreeFolder = memo(function SourceTreeFolder({
                 <span className="truncate">{node.name}</span>
               </div>
 
-              <SourceTreeStatus title={String(instances.length)}>
-                ({instances.length})
+              <SourceTreeStatus title={String(sourceIds.length)}>
+                ({sourceIds.length})
               </SourceTreeStatus>
             </Button>
           </CollapsibleTrigger>
@@ -142,7 +125,6 @@ const SourceTreeFolder = memo(function SourceTreeFolder({
       <CollapsibleContent>
         <SourceTreeNodes
           background={background}
-          instancesById={instancesById}
           level={level + 1}
           nodes={node.children}
           value={value}
@@ -153,30 +135,28 @@ const SourceTreeFolder = memo(function SourceTreeFolder({
 });
 
 const SourceTreeInstance = memo(function SourceTreeInstance({
-  instance,
+  displayName,
+  instanceId,
   level,
   selected,
+  sourcePath,
 }: {
-  instance: EditingInstance;
+  displayName: string;
+  instanceId: string;
   level: number;
   selected: boolean;
+  sourcePath: string;
 }) {
   const dispatch = useAppDispatch();
-  const attempt = instance.exportAttempts.at(-1);
-
-  const status =
-    instance.sourceAvailability === "deleted"
-      ? "deleted"
-      : (attempt?.state.status ?? (instance.media ? "ready" : undefined));
+  const status = useAppSelector((state) => selectEditingInstanceStatusById(state, instanceId));
 
   const isLoading = status === "rendering";
 
   return (
     <SourceTreeContextMenu
       kind="file"
-      revealPath={formatSourcePath(instance.snapshot.source.sourcePath)}
-      sourceIds={[instance.id]}
-      targetInstances={[instance]}
+      revealPath={formatSourcePath(sourcePath)}
+      sourceIds={[instanceId]}
     >
       <div
         className="group group-line relative flex min-w-0 items-center gap-1 rounded-md"
@@ -184,17 +164,17 @@ const SourceTreeInstance = memo(function SourceTreeInstance({
       >
         <Button
           aria-current={selected ? "true" : undefined}
-          aria-label={instance.snapshot.source.displayName}
-          className={treeNodeClassName}
+          aria-label={displayName}
+          className={cn(treeNodeClassName, "text-muted-foreground!")}
           data-open={selected ? "true" : undefined}
-          onClick={() => void dispatch(navigateToEditingInstance(instance.id))}
+          onClick={() => void dispatch(navigateToEditingInstance(instanceId))}
           size="xs"
           variant="ghost"
         >
           <span className="flex min-w-0 items-center gap-1" style={{ paddingLeft: level * 8 + 16 }}>
             <FileVideo className="shrink-0" />
 
-            <span className="truncate">{instance.snapshot.source.displayName}</span>
+            <span className="truncate">{displayName}</span>
           </span>
 
           {status ? (

@@ -1,5 +1,6 @@
 import type { PropsWithChildren } from "react";
 import { useTranslation } from "react-i18next";
+import { shallowEqual } from "react-redux";
 
 import {
   ContextMenu,
@@ -10,9 +11,10 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 
-import { useAppDispatch } from "@/app/store/redux-hooks";
+import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
+import { selectEditingInstanceById } from "@/app/store/slices/editing-instances-slice";
 import {
-  closeActiveEditingInstanceRequested,
+  closeEditingInstancesRequested,
   navigateToEditingInstance,
   restoreSourceFileRequested,
 } from "@/app/store/thunks/source-media-thunks";
@@ -28,21 +30,25 @@ export function SourceTreeContextMenu({
   kind,
   revealPath,
   sourceIds,
-  targetInstances,
 }: PropsWithChildren<{
   kind: "file" | "folder";
   revealPath: string;
   sourceIds: string[];
-  targetInstances: EditingInstance[];
 }>) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
+  const targetInstances = useAppSelector(
+    (state) =>
+      sourceIds
+        .map((sourceId) => selectEditingInstanceById(state, sourceId))
+        .filter((instance): instance is EditingInstance => Boolean(instance)),
+    shallowEqual,
+  );
+
   const sourceAction = getSourceAction(targetInstances);
 
   const closeSources = () => {
-    for (const sourceId of sourceIds) {
-      void dispatch(closeActiveEditingInstanceRequested(sourceId));
-    }
+    void dispatch(closeEditingInstancesRequested(sourceIds));
   };
 
   const revealSource = () => {

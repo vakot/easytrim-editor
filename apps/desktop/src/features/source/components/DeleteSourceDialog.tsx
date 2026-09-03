@@ -16,6 +16,7 @@ import {
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectEditingInstances } from "@/app/store/slices/editing-instances-slice";
 import { deleteActiveEditingInstanceSourceRequested } from "@/app/store/thunks/source-media-thunks";
+import { normalizeSourceKey } from "@/domain/source";
 
 interface DeleteSourceDialogProps {
   children: ReactNode;
@@ -49,7 +50,7 @@ export function DeleteSourceDialog({
     const sourceIdsByPath = new Map<string, string>();
     for (const item of items) {
       if (item.sourceAvailability !== "deleted") {
-        sourceIdsByPath.set(item.snapshot.source.sourcePath, item.id);
+        sourceIdsByPath.set(normalizeSourceKey(item.snapshot.source.sourcePath), item.id);
       }
     }
 
