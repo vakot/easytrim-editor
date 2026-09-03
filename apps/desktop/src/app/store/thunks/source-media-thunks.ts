@@ -27,6 +27,7 @@ import {
   activeEditingInstanceChanged,
   editingInstanceClosed,
   editingInstancesAdded,
+  editingInstancesClosed,
   editingInstanceSnapshotUpdated,
   editingInstancesSourceAvailabilityChanged,
   selectActiveEditingInstance,
@@ -600,9 +601,39 @@ export const closeActiveEditingInstanceRequested =
 
 export const closeEditingInstancesRequested =
   (ids: string[]): AppThunk<Promise<void>> =>
-  async (dispatch) => {
-    for (const id of ids) {
-      await dispatch(closeActiveEditingInstanceRequested(id));
+  async (dispatch, getState) => {
+    const state = getState();
+    const idsToClose = [...new Set(ids)].filter((id) => selectEditingInstanceById(state, id));
+    if (idsToClose.length === 0) return;
+
+    const closingIds = new Set(idsToClose);
+    const activeInstanceId = selectActiveInstanceId(state);
+    const activeInstanceWillClose = activeInstanceId !== null && closingIds.has(activeInstanceId);
+
+    const instances = selectEditingInstances(state);
+    const activeIndex = activeInstanceId
+      ? instances.findIndex((instance) => instance.id === activeInstanceId)
+      : -1;
+
+    const replacement =
+      activeInstanceWillClose && activeIndex >= 0
+        ? (instances.slice(activeIndex + 1).find((instance) => !closingIds.has(instance.id)) ??
+          instances
+            .slice(0, activeIndex)
+            .reverse()
+            .find((instance) => !closingIds.has(instance.id)))
+        : undefined;
+
+    if (activeInstanceWillClose) dispatch(commitActiveEditingInstanceDraft());
+
+    await Promise.all(idsToClose.map((id) => cancelInstanceExports(id, getState)));
+
+    dispatch(editingInstancesClosed(idsToClose));
+
+    if (activeInstanceWillClose) {
+      if (replacement) dispatch(navigateToEditingInstance(replacement.id));
+      else dispatch(sourceCleared());
+      dispatch(nativeDialogStateChanged(false));
     }
   };
 

@@ -229,6 +229,14 @@ const editingInstancesSlice = createSlice({
         state.activeInstanceId = null;
       }
     },
+    editingInstancesClosed: (state, action: PayloadAction<EditingInstanceId[]>) => {
+      const closingIds = new Set(action.payload);
+      state.ids = state.ids.filter((id) => !closingIds.has(id));
+      for (const id of closingIds) delete state.entities[id];
+      if (state.activeInstanceId && closingIds.has(state.activeInstanceId)) {
+        state.activeInstanceId = null;
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -259,6 +267,7 @@ export const {
   editingInstanceMediaUpdated,
   editingInstanceOptimizedSettingsChanged,
   editingInstancesAdded,
+  editingInstancesClosed,
   editingInstanceSnapshotUpdated,
   editingInstancesSourceAvailabilityChanged,
 } = editingInstancesSlice.actions;

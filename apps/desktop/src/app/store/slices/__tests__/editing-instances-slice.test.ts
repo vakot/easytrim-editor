@@ -16,6 +16,7 @@ import {
   editingInstanceExportProgressReceived,
   editingInstanceExportStarted,
   editingInstancesAdded,
+  editingInstancesClosed,
   editingInstanceSnapshotUpdated,
   editingInstancesReducer,
   editingInstancesSourceAvailabilityChanged,
@@ -261,6 +262,25 @@ describe("editing instances slice", () => {
     expect(selectActiveEditingInstance({ editingInstances: state } as never)).toBeUndefined();
     expect(selectEditingInstanceAttempts({ editingInstances: state } as never)).toHaveLength(0);
     expect(state.entities["instance-2"]?.snapshot.source).toEqual(firstSource);
+  });
+
+  it("closes a batch in one state transition while preserving surviving instances", () => {
+    const first = instance("instance-1");
+    const second = instance("instance-2", { ...baseSnapshot, source: secondSource });
+    const third = instance("instance-3");
+    let state = editingInstancesReducer(
+      initialEditingInstancesState,
+      editingInstancesAdded([first, second, third]),
+    );
+
+    state = editingInstancesReducer(state, activeEditingInstanceChanged("instance-2"));
+    state = editingInstancesReducer(state, editingInstancesClosed(["instance-1", "instance-2"]));
+
+    expect(state.ids).toEqual(["instance-3"]);
+    expect(state.entities["instance-1"]).toBeUndefined();
+    expect(state.entities["instance-2"]).toBeUndefined();
+    expect(state.entities["instance-3"]?.snapshot.source).toEqual(firstSource);
+    expect(state.activeInstanceId).toBeNull();
   });
 
   it("keeps narrow read models stable across unrelated progress updates", () => {
