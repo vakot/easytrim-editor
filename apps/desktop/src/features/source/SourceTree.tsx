@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
+import { Separator } from "@/components/ui/separator";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
@@ -46,7 +47,7 @@ function SourceExplorerEmptyState({ className }: SourceTreeProps) {
       className={cn("flex min-h-full w-full items-center justify-center py-8", className)}
       onSubmit={(event) => event.preventDefault()}
     >
-      <div className="grid w-full max-w-72 gap-5">
+      <div className="grid w-full gap-5">
         <div className="grid gap-3">
           <SourceExplorerAction
             description={t("source.messages.openFileDescription")}
@@ -68,6 +69,12 @@ function SourceExplorerEmptyState({ className }: SourceTreeProps) {
               )
             }
           />
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Separator className="flex-1" />
+          <span className="text-muted-foreground">or</span>
+          <Separator className="flex-1" />
         </div>
 
         <div className="grid justify-items-center gap-2 rounded-lg border border-dashed border-border/80 bg-muted/20 px-4 py-6 text-center">
@@ -102,6 +109,7 @@ function SourceExplorerAction({
 }) {
   return (
     <div className="grid gap-1">
+      <span className="text-xs text-muted-foreground">{description}</span>
       <Button className="w-full justify-between" onClick={onClick} type="button">
         <span className="flex items-center gap-2">
           {icon}
@@ -113,7 +121,6 @@ function SourceExplorerAction({
           ))}
         </KbdGroup>
       </Button>
-      <span className="px-2 text-xs text-muted-foreground">{description}</span>
     </div>
   );
 }
