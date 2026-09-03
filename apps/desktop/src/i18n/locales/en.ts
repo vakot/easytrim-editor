@@ -230,6 +230,11 @@ export const en = {
     },
     tooltips: { sidebarControls: "Choose visible source panels" },
     dialogs: {
+      closeFolder: {
+        description:
+          "Close all {{count}} sources in this folder? Their unsaved edits will be lost.",
+        title: "Close folder sources?",
+      },
       delete: {
         description: "This deletes {{name}} from your computer. This action can be undone.",
         title: "Delete source file?",
