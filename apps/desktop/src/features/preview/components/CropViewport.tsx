@@ -311,7 +311,7 @@ export function CropViewport({
       <CropSnapMarkers frame={viewportFrame} visible={cropSelection.isEditing} />
       {cropSelection.isOpen ? (
         <div
-          className="absolute top-3 left-1/2 z-20 flex -translate-x-1/2 gap-1 rounded-md bg-background/85 p-1 shadow-sm backdrop-blur"
+          className="absolute top-3 right-3 z-20 flex gap-1 rounded-md bg-background/85 p-1 shadow-sm backdrop-blur"
           onClick={(event) => event.stopPropagation()}
         >
           <Button
