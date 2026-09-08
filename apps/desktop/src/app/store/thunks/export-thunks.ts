@@ -10,7 +10,13 @@ import {
   selectMasterAudio,
   selectMergeAudio,
 } from "@/app/store/slices/audio-slice";
-import { selectCrop, selectCropApplied, selectCropResolution } from "@/app/store/slices/crop-slice";
+import {
+  selectCrop,
+  selectCropApplied,
+  selectCropResolution,
+  selectRotationApplied,
+  selectRotationDegrees,
+} from "@/app/store/slices/crop-slice";
 import {
   editingInstanceExportAttemptQueued,
   editingInstanceOptimizedSettingsChanged,
@@ -151,7 +157,7 @@ export const refreshOptimizedExportPlan = (): AppThunk => async (dispatch, getSt
 export const startFastCutRequested =
   (origin: DiagnosticOrigin = { id: "fast-cut", type: "button" }): AppThunk =>
   (dispatch, getState) => {
-    if (selectCropApplied(getState())) return;
+    if (selectCropApplied(getState()) || selectRotationApplied(getState())) return;
     void startEditingInstanceExport("fast", dispatch, getState, origin);
   };
 
@@ -181,6 +187,7 @@ async function startEditingInstanceExport(
     source,
     trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
     crop: selectCropApplied(state) ? selectCrop(state) : null,
+    rotation: selectRotationDegrees(state),
     masterAudio: selectMasterAudio(state),
     audioTracks: selectAudioTracks(state).map(({ enabled, streamIndex, volumePercent }) => ({
       enabled,
@@ -267,6 +274,7 @@ function getFastRequest(state: ReturnType<Parameters<AppThunk>[1]>): FastExportR
     trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
     audioTracks: selectedAudioTracks(state),
     mergeAudio: selectMergeAudio(state),
+    rotationDegrees: selectRotationDegrees(state),
   };
 }
 
@@ -283,6 +291,7 @@ function getOptimizedRequest(
     trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
     audioTracks: selectedAudioTracks(state),
     mergeAudio: selectMergeAudio(state),
+    rotationDegrees: selectRotationDegrees(state),
     resolution: settings.resolution,
     crop: selectCrop(state),
     frameRate: settings.frameRate

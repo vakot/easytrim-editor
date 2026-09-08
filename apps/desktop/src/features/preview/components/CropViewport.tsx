@@ -6,9 +6,12 @@ import {
   useRef,
   useState,
 } from "react";
+import { RotateCcw, RotateCw } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import { Button } from "@/components/ui/button";
 import { CursorTooltip } from "@/components/ui/cursor-tooltip";
+import { isQuarterTurn } from "@/domain/rotation";
 
 import { diagnostics } from "@/lib/diagnostics";
 import type { DiagnosticOrigin } from "@/lib/tauri/diagnostics.types";
@@ -112,9 +115,12 @@ export function CropViewport({
     height: Math.max(0, containerBounds.height - cropToolInset * 2),
   };
 
-  const viewportAspectRatio = cropIsApplied
-    ? (sourceAspectRatio * cropSelection.crop.width) / cropSelection.crop.height
+  const displayedSourceAspectRatio = isQuarterTurn(cropSelection.rotationDegrees)
+    ? 1 / sourceAspectRatio
     : sourceAspectRatio;
+  const viewportAspectRatio = cropIsApplied
+    ? (displayedSourceAspectRatio * cropSelection.crop.width) / cropSelection.crop.height
+    : displayedSourceAspectRatio;
 
   const viewport = containBounds(viewportBounds, viewportAspectRatio);
   const centeredViewportFrame = centerFrame(viewportBounds, viewport);
@@ -125,17 +131,48 @@ export function CropViewport({
   };
 
   const selectionFrame = cropFrame(viewportFrame, cropSelection.crop);
-  const sourceFrame = cropIsApplied
+  const displaySourceFrame = cropIsApplied
     ? {
         width: viewport.width / cropSelection.crop.width,
         height: viewport.height / cropSelection.crop.height,
-        left: -(cropSelection.crop.x * viewport.width) / cropSelection.crop.width,
-        top: -(cropSelection.crop.y * viewport.height) / cropSelection.crop.height,
       }
-    : { width: viewport.width, height: viewport.height, left: 0, top: 0 };
+    : { width: viewport.width, height: viewport.height };
+  const quarterTurn = isQuarterTurn(cropSelection.rotationDegrees);
+  const crop = cropSelection.crop;
+  const rawCrop =
+    cropSelection.rotationDegrees === 90
+      ? { x: 1 - crop.y - crop.height, y: crop.x, width: crop.height, height: crop.width }
+      : cropSelection.rotationDegrees === 180
+        ? {
+            x: 1 - crop.x - crop.width,
+            y: 1 - crop.y - crop.height,
+            width: crop.width,
+            height: crop.height,
+          }
+        : cropSelection.rotationDegrees === 270
+          ? { x: crop.y, y: 1 - crop.x - crop.width, width: crop.height, height: crop.width }
+          : crop;
+  const rawSourceFrame = quarterTurn
+    ? { width: displaySourceFrame.height, height: displaySourceFrame.width }
+    : displaySourceFrame;
+  const sourceFrame = {
+    width: rawSourceFrame.width,
+    height: rawSourceFrame.height,
+    left: cropIsApplied
+      ? (viewport.width - rawCrop.width * rawSourceFrame.width) / 2 -
+        rawCrop.x * rawSourceFrame.width
+      : (viewport.width - rawSourceFrame.width) / 2,
+    top: cropIsApplied
+      ? (viewport.height - rawCrop.height * rawSourceFrame.height) / 2 -
+        rawCrop.y * rawSourceFrame.height
+      : (viewport.height - rawSourceFrame.height) / 2,
+  };
+  const transformOrigin = cropIsApplied
+    ? `${(rawCrop.x + rawCrop.width / 2) * 100}% ${(rawCrop.y + rawCrop.height / 2) * 100}%`
+    : "center center";
 
   const viewportTransition = !cropSelection.isDragging
-    ? "transition-[width,height,left,top] duration-200 ease-out motion-reduce:transition-none"
+    ? "transition-[width,height,left,top,transform] duration-200 ease-out motion-reduce:transition-none"
     : "";
 
   return (
@@ -264,10 +301,39 @@ export function CropViewport({
           preload="auto"
           ref={videoRef}
           src={sourceUrl}
-          style={sourceFrame}
+          style={{
+            ...sourceFrame,
+            transform: `rotate(${cropSelection.rotationDegrees}deg)`,
+            transformOrigin,
+          }}
         />
       </div>
       <CropSnapMarkers frame={viewportFrame} visible={cropSelection.isEditing} />
+      {cropSelection.isOpen ? (
+        <div
+          className="absolute top-3 left-1/2 z-20 flex -translate-x-1/2 gap-1 rounded-md bg-background/85 p-1 shadow-sm backdrop-blur"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <Button
+            aria-label={t("preview.accessibility.crop.rotateCounterclockwise")}
+            onClick={cropSelection.rotateCounterclockwise}
+            size="icon-sm"
+            type="button"
+            variant="secondary"
+          >
+            <RotateCcw aria-hidden="true" />
+          </Button>
+          <Button
+            aria-label={t("preview.accessibility.crop.rotateClockwise")}
+            onClick={cropSelection.rotateClockwise}
+            size="icon-sm"
+            type="button"
+            variant="secondary"
+          >
+            <RotateCw aria-hidden="true" />
+          </Button>
+        </div>
+      ) : null}
       {cropSelection.isEditing ? (
         <>
           <CropSelection

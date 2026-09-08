@@ -309,6 +309,8 @@ export const sk = {
         bottomRight: "Zmeniť orezanie sprava odspodu",
         left: "Zmeniť orezanie zľava",
         preview: "Náhľad orezania videa",
+        rotateClockwise: "Otočiť v smere hodinových ručičiek",
+        rotateCounterclockwise: "Otočiť proti smeru hodinových ručičiek",
         right: "Zmeniť orezanie sprava",
         top: "Zmeniť orezanie zhora",
         topLeft: "Zmeniť orezanie zľava zhora",

@@ -58,6 +58,7 @@ function createAttempt(id: string, sourcePath: string = firstSource.sourcePath) 
     request: {
       audioTracks: [],
       mergeAudio: false,
+      rotationDegrees: 0,
       sourcePath,
       trim: { endMicros: 1_000_000, startMicros: 0 },
     },

@@ -6,7 +6,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import type { PreviewState } from "@/app/store/slices/preview-slice";
-import { createAppStore } from "@/app/store/store";
+import { createAppStore, type AppStore } from "@/app/store/store";
 
 import { VideoPreview } from "../VideoPreview";
 import { VideoPreviewEmpty } from "../VideoPreviewEmpty";
@@ -30,16 +30,18 @@ function readyPreview(url: string): PreviewState {
   };
 }
 
-function TooltipTestProvider({ children }: { children: ReactNode }) {
+function TooltipTestProvider({ children, store }: { children: ReactNode; store: AppStore }) {
   return (
-    <Provider store={createAppStore()}>
+    <Provider store={store}>
       <TooltipProvider delayDuration={0}>{children}</TooltipProvider>
     </Provider>
   );
 }
 
-function renderPreview(element: ReactElement) {
-  return render(element, { wrapper: TooltipTestProvider });
+function renderPreview(element: ReactElement, store = createAppStore()) {
+  return render(element, {
+    wrapper: ({ children }) => <TooltipTestProvider store={store}>{children}</TooltipTestProvider>,
+  });
 }
 
 beforeAll(() => {
@@ -171,7 +173,7 @@ describe("VideoPreview", () => {
       "transition-[left,top]",
     );
     expect(container.querySelector("[data-preview-kind]")?.parentElement).toHaveClass(
-      "transition-[width,height,left,top]",
+      "transition-[width,height,left,top,transform]",
     );
     fireEvent.pointerDown(handle, { pointerId: 1, clientX: 0, clientY: 0 });
     expect(container.querySelector("[data-crop-rule-of-thirds]")?.parentElement).toHaveClass(
@@ -272,6 +274,30 @@ describe("VideoPreview", () => {
 
     fireEvent.play(video!);
     expect(pause).toHaveBeenCalledTimes(2);
+  });
+
+  it("shows rotation controls and rotates the CSS preview in quarter turns", () => {
+    const store = createAppStore();
+    const videoRef = createRef<HTMLVideoElement>();
+    const { container } = renderPreview(
+      <VideoPreview
+        muted
+        preview={readyPreview("easytrim-media://preview-1")}
+        videoRef={videoRef}
+        {...callbacks}
+      />,
+      store,
+    );
+
+    const viewport = container.querySelector("[aria-label='Video crop preview']");
+    fireEvent.click(viewport!);
+
+    fireEvent.click(screen.getByRole("button", { name: "Rotate clockwise" }));
+    expect(store.getState().crop.rotationDegrees).toBe(90);
+    expect(container.querySelector("video")).toHaveStyle({ transform: "rotate(90deg)" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Rotate counterclockwise" }));
+    expect(store.getState().crop.rotationDegrees).toBe(0);
   });
 
   it("opens and closes crop controls with Enter or Space when the preview is focused", () => {

@@ -8,9 +8,16 @@ import {
 } from "react";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
-import { cropChanged, cropResolutionFor, selectCrop } from "@/app/store/slices/crop-slice";
+import {
+  cropChanged,
+  cropResolutionFor,
+  rotationChanged,
+  selectCrop,
+  selectRotationDegrees,
+} from "@/app/store/slices/crop-slice";
 import { selectSourceMedia } from "@/app/store/slices/source-slice";
 import { commitActiveEditingInstanceDraft } from "@/app/store/thunks/source-media-thunks";
+import { rotateDegrees } from "@/domain/rotation";
 
 import type { CropFrame } from "../lib/crop-frame.utils";
 import { type CropHandle, type CropRect, moveCrop, resizeCrop } from "../lib/crop-geometry.utils";
@@ -34,6 +41,7 @@ export function useCropSelection(previewRef: RefObject<HTMLDivElement | null>) {
   const dispatch = useAppDispatch();
   const sourceMedia = useAppSelector(selectSourceMedia);
   const crop = useAppSelector(selectCrop);
+  const rotationDegrees = useAppSelector(selectRotationDegrees);
   const [isOpen, setIsOpen] = useState(false);
   const [drag, setDrag] = useState<DragState | null>(null);
   const [enterFrom, setEnterFrom] = useState<CropFrame | null>(null);
@@ -115,7 +123,7 @@ export function useCropSelection(previewRef: RefObject<HTMLDivElement | null>) {
       dispatch(
         cropChanged({
           crop: nextCrop,
-          resolution: cropResolutionFor(sourceMedia?.video ?? null, nextCrop),
+          resolution: cropResolutionFor(sourceMedia?.video ?? null, nextCrop, rotationDegrees),
         }),
       );
     }
@@ -127,8 +135,17 @@ export function useCropSelection(previewRef: RefObject<HTMLDivElement | null>) {
     setDrag(null);
   }
 
+  const rotate = useCallback(
+    (direction: "clockwise" | "counterclockwise") => {
+      dispatch(rotationChanged(rotateDegrees(rotationDegrees, direction)));
+      dispatch(commitActiveEditingInstanceDraft());
+    },
+    [dispatch, rotationDegrees],
+  );
+
   return {
     crop,
+    rotationDegrees,
     isEditing: isOpen || drag !== null,
     isDragging: drag !== null,
     isOpen,
@@ -139,5 +156,7 @@ export function useCropSelection(previewRef: RefObject<HTMLDivElement | null>) {
     startDrag,
     moveDrag,
     finishDrag,
+    rotateClockwise: () => rotate("clockwise"),
+    rotateCounterclockwise: () => rotate("counterclockwise"),
   };
 }
