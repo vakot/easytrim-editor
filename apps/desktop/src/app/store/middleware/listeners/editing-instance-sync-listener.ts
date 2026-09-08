@@ -1,6 +1,6 @@
 import { editingInstanceActivated } from "@/app/store/actions/editing-instance-actions";
 import { sourceReady } from "@/app/store/actions/source-actions";
-import { cropChanged } from "@/app/store/slices/crop-slice";
+import { cropChanged, rotationChanged, selectCropResolution } from "@/app/store/slices/crop-slice";
 import {
   editingInstanceOptimizedSettingsChanged,
   editingInstanceSnapshotUpdated,
@@ -29,6 +29,7 @@ listenerMiddleware.startListening({
           source,
           trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
           crop: state.crop.value,
+          rotation: state.crop.rotationDegrees,
           masterAudio: {
             enabled: state.audio.masterEnabled,
             volumePercent: state.audio.masterVolumePercent,
@@ -56,6 +57,23 @@ listenerMiddleware.startListening({
         settings: {
           frameRate: instance.optimizedSettings?.frameRate,
           resolution: action.payload.resolution,
+        },
+      }),
+    );
+  },
+});
+
+listenerMiddleware.startListening({
+  actionCreator: rotationChanged,
+  effect: (_action, listenerApi) => {
+    const instance = selectActiveEditingInstance(listenerApi.getState());
+    if (!instance) return;
+    listenerApi.dispatch(
+      editingInstanceOptimizedSettingsChanged({
+        id: instance.id,
+        settings: {
+          frameRate: instance.optimizedSettings?.frameRate,
+          resolution: selectCropResolution(listenerApi.getState()),
         },
       }),
     );
