@@ -11,13 +11,11 @@ import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
   cropChanged,
   cropResolutionFor,
-  rotationChanged,
   selectCrop,
   selectRotationDegrees,
 } from "@/app/store/slices/crop-slice";
 import { selectSourceMedia } from "@/app/store/slices/source-slice";
 import { commitActiveEditingInstanceDraft } from "@/app/store/thunks/source-media-thunks";
-import { rotateDegrees } from "@/domain/rotation";
 
 import type { CropFrame } from "../lib/crop-frame.utils";
 import { type CropHandle, type CropRect, moveCrop, resizeCrop } from "../lib/crop-geometry.utils";
@@ -50,9 +48,13 @@ export function useCropSelection(previewRef: RefObject<HTMLDivElement | null>) {
   const selectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (normalizeRotation(previewRotationRef.current) === rotationDegrees) return;
-    previewRotationRef.current = rotationDegrees;
-    setPreviewRotationDegrees(rotationDegrees);
+    const previousRotation = normalizeRotation(previewRotationRef.current);
+    if (previousRotation === rotationDegrees) return;
+    const clockwiseDelta = (rotationDegrees - previousRotation + 360) % 360;
+    const delta = clockwiseDelta === 270 ? -90 : clockwiseDelta;
+    const nextPreviewRotation = previewRotationRef.current + delta;
+    previewRotationRef.current = nextPreviewRotation;
+    setPreviewRotationDegrees(nextPreviewRotation);
   }, [rotationDegrees]);
 
   function open(frame: CropFrame) {
@@ -88,6 +90,8 @@ export function useCropSelection(previewRef: RefObject<HTMLDivElement | null>) {
     if (!isOpen) return;
 
     function closeOnOutsidePointerDown(event: globalThis.PointerEvent) {
+      if (event.target instanceof Element && event.target.closest("[data-crop-rotation-controls]"))
+        return;
       if (event.target instanceof Node && previewRef.current?.contains(event.target)) return;
       close();
     }
@@ -143,18 +147,6 @@ export function useCropSelection(previewRef: RefObject<HTMLDivElement | null>) {
     setDrag(null);
   }
 
-  const rotate = useCallback(
-    (direction: "clockwise" | "counterclockwise") => {
-      const delta = direction === "clockwise" ? 90 : -90;
-      const nextPreviewRotation = previewRotationRef.current + delta;
-      previewRotationRef.current = nextPreviewRotation;
-      setPreviewRotationDegrees(nextPreviewRotation);
-      dispatch(rotationChanged(rotateDegrees(rotationDegrees, direction)));
-      dispatch(commitActiveEditingInstanceDraft());
-    },
-    [dispatch, rotationDegrees],
-  );
-
   return {
     crop,
     previewRotationDegrees,
@@ -169,8 +161,6 @@ export function useCropSelection(previewRef: RefObject<HTMLDivElement | null>) {
     startDrag,
     moveDrag,
     finishDrag,
-    rotateClockwise: () => rotate("clockwise"),
-    rotateCounterclockwise: () => rotate("counterclockwise"),
   };
 }
 

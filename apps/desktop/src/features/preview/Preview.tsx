@@ -1,3 +1,5 @@
+import { useCallback } from "react";
+
 import { usePlayback } from "@/app/hooks/usePlayback";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectPreview } from "@/app/store/slices/preview-slice";
@@ -8,11 +10,23 @@ import { VideoPreview } from "./components/VideoPreview";
 import { VideoPreviewEmpty } from "./components/VideoPreviewEmpty";
 import { VideoPreviewLoadingOverlay } from "./components/VideoPreviewLoadingOverlay";
 
-export function Preview() {
+export function Preview({
+  onCropToolOpenChange,
+}: {
+  onCropToolOpenChange?: (isOpen: boolean) => void;
+}) {
   const dispatch = useAppDispatch();
   const playback = usePlayback();
+  const { onCropToolOpenChange: playbackCropToolOpenChange } = playback;
   const sourceSelection = useAppSelector(selectSourceSelection);
   const preview = useAppSelector(selectPreview);
+  const handleCropToolOpenChange = useCallback(
+    (isOpen: boolean) => {
+      playbackCropToolOpenChange(isOpen);
+      onCropToolOpenChange?.(isOpen);
+    },
+    [onCropToolOpenChange, playbackCropToolOpenChange],
+  );
 
   const skipCurrentSource = () => void dispatch(closeActiveEditingInstanceRequested());
 
@@ -25,7 +39,7 @@ export function Preview() {
           muted={playback.videoMuted}
           nativeLoopEnabled={playback.nativeLoopEnabled}
           onCanPlay={playback.onCanPlay}
-          onCropToolOpenChange={playback.onCropToolOpenChange}
+          onCropToolOpenChange={handleCropToolOpenChange}
           onEnded={playback.onEnded}
           onLoadedMetadata={playback.onLoadedMetadata}
           onPause={playback.onPause}

@@ -1,4 +1,3 @@
-import { RotateCcw, RotateCw } from "lucide-react";
 import {
   type FocusEvent,
   type RefObject,
@@ -9,7 +8,6 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Button } from "@/components/ui/button";
 import { CursorTooltip } from "@/components/ui/cursor-tooltip";
 
 import { isQuarterTurn } from "@/domain/rotation";
@@ -314,31 +312,6 @@ export function CropViewport({
         />
       </div>
       <CropSnapMarkers frame={viewportFrame} visible={cropSelection.isEditing} />
-      {cropSelection.isOpen ? (
-        <div
-          className="absolute top-3 right-3 z-20 flex gap-1 rounded-md bg-background/85 p-1 shadow-sm backdrop-blur"
-          onClick={(event) => event.stopPropagation()}
-        >
-          <Button
-            aria-label={t("preview.accessibility.crop.rotateCounterclockwise")}
-            onClick={cropSelection.rotateCounterclockwise}
-            size="icon-sm"
-            type="button"
-            variant="secondary"
-          >
-            <RotateCcw aria-hidden="true" />
-          </Button>
-          <Button
-            aria-label={t("preview.accessibility.crop.rotateClockwise")}
-            onClick={cropSelection.rotateClockwise}
-            size="icon-sm"
-            type="button"
-            variant="secondary"
-          >
-            <RotateCw aria-hidden="true" />
-          </Button>
-        </div>
-      ) : null}
       {cropSelection.isEditing ? (
         <>
           <CropSelection

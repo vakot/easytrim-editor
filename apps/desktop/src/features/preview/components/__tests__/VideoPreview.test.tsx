@@ -5,6 +5,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 
+import { rotationChanged } from "@/app/store/slices/crop-slice";
 import type { PreviewState } from "@/app/store/slices/preview-slice";
 import { type AppStore, createAppStore } from "@/app/store/store";
 
@@ -292,19 +293,19 @@ describe("VideoPreview", () => {
     const viewport = container.querySelector("[aria-label='Video crop preview']");
     fireEvent.click(viewport!);
 
-    fireEvent.click(screen.getByRole("button", { name: "Rotate clockwise" }));
+    act(() => store.dispatch(rotationChanged(90)));
     expect(store.getState().crop.rotationDegrees).toBe(90);
     expect(container.querySelector("video")).toHaveStyle({ transform: "rotate(90deg)" });
 
-    fireEvent.click(screen.getByRole("button", { name: "Rotate clockwise" }));
-    fireEvent.click(screen.getByRole("button", { name: "Rotate clockwise" }));
+    act(() => store.dispatch(rotationChanged(180)));
+    act(() => store.dispatch(rotationChanged(270)));
     expect(store.getState().crop.rotationDegrees).toBe(270);
 
-    fireEvent.click(screen.getByRole("button", { name: "Rotate clockwise" }));
+    act(() => store.dispatch(rotationChanged(0)));
     expect(store.getState().crop.rotationDegrees).toBe(0);
     expect(container.querySelector("video")).toHaveStyle({ transform: "rotate(360deg)" });
 
-    fireEvent.click(screen.getByRole("button", { name: "Rotate counterclockwise" }));
+    act(() => store.dispatch(rotationChanged(270)));
     expect(store.getState().crop.rotationDegrees).toBe(270);
     expect(container.querySelector("video")).toHaveStyle({ transform: "rotate(270deg)" });
   });
