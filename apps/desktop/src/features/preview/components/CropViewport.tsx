@@ -1,3 +1,4 @@
+import { RotateCcw, RotateCw } from "lucide-react";
 import {
   type FocusEvent,
   type RefObject,
@@ -6,13 +7,12 @@ import {
   useRef,
   useState,
 } from "react";
-import { RotateCcw, RotateCw } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { CursorTooltip } from "@/components/ui/cursor-tooltip";
-import { isQuarterTurn } from "@/domain/rotation";
 
+import { isQuarterTurn } from "@/domain/rotation";
 import { diagnostics } from "@/lib/diagnostics";
 import type { DiagnosticOrigin } from "@/lib/tauri/diagnostics.types";
 
@@ -118,6 +118,7 @@ export function CropViewport({
   const displayedSourceAspectRatio = isQuarterTurn(cropSelection.rotationDegrees)
     ? 1 / sourceAspectRatio
     : sourceAspectRatio;
+
   const viewportAspectRatio = cropIsApplied
     ? (displayedSourceAspectRatio * cropSelection.crop.width) / cropSelection.crop.height
     : displayedSourceAspectRatio;
@@ -137,6 +138,7 @@ export function CropViewport({
         height: viewport.height / cropSelection.crop.height,
       }
     : { width: viewport.width, height: viewport.height };
+
   const quarterTurn = isQuarterTurn(cropSelection.rotationDegrees);
   const crop = cropSelection.crop;
   const rawCrop =
@@ -152,9 +154,11 @@ export function CropViewport({
         : cropSelection.rotationDegrees === 270
           ? { x: crop.y, y: 1 - crop.x - crop.width, width: crop.height, height: crop.width }
           : crop;
+
   const rawSourceFrame = quarterTurn
     ? { width: displaySourceFrame.height, height: displaySourceFrame.width }
     : displaySourceFrame;
+
   const sourceFrame = {
     width: rawSourceFrame.width,
     height: rawSourceFrame.height,
@@ -167,6 +171,7 @@ export function CropViewport({
         rawCrop.y * rawSourceFrame.height
       : (viewport.height - rawSourceFrame.height) / 2,
   };
+
   const transformOrigin = cropIsApplied
     ? `${(rawCrop.x + rawCrop.width / 2) * 100}% ${(rawCrop.y + rawCrop.height / 2) * 100}%`
     : "center center";
@@ -303,7 +308,7 @@ export function CropViewport({
           src={sourceUrl}
           style={{
             ...sourceFrame,
-            transform: `rotate(${cropSelection.rotationDegrees}deg)`,
+            transform: `rotate(${cropSelection.previewRotationDegrees}deg)`,
             transformOrigin,
           }}
         />

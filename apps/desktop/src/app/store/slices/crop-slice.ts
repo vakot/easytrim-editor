@@ -73,8 +73,10 @@ export function cropResolutionFor(
   if (!sourceDimensions) return EMPTY_RESOLUTION;
   const sourceWidth =
     rotation === 90 || rotation === 270 ? sourceDimensions.height : sourceDimensions.width;
+
   const sourceHeight =
     rotation === 90 || rotation === 270 ? sourceDimensions.width : sourceDimensions.height;
+
   return {
     width: Math.max(1, Math.round(sourceWidth * crop.width)),
     height: Math.max(1, Math.round(sourceHeight * crop.height)),

@@ -8,9 +8,9 @@ import {
   cropChanged,
   cropReducer,
   initialCropState,
+  rotationChanged,
   selectCropApplied,
   selectCropResolution,
-  rotationChanged,
 } from "../crop-slice";
 
 describe("crop slice", () => {

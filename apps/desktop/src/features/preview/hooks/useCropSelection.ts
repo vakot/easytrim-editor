@@ -42,10 +42,18 @@ export function useCropSelection(previewRef: RefObject<HTMLDivElement | null>) {
   const sourceMedia = useAppSelector(selectSourceMedia);
   const crop = useAppSelector(selectCrop);
   const rotationDegrees = useAppSelector(selectRotationDegrees);
+  const previewRotationRef = useRef<number>(rotationDegrees);
+  const [previewRotationDegrees, setPreviewRotationDegrees] = useState<number>(rotationDegrees);
   const [isOpen, setIsOpen] = useState(false);
   const [drag, setDrag] = useState<DragState | null>(null);
   const [enterFrom, setEnterFrom] = useState<CropFrame | null>(null);
   const selectionRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (normalizeRotation(previewRotationRef.current) === rotationDegrees) return;
+    previewRotationRef.current = rotationDegrees;
+    setPreviewRotationDegrees(rotationDegrees);
+  }, [rotationDegrees]);
 
   function open(frame: CropFrame) {
     setEnterFrom(frame);
@@ -137,6 +145,10 @@ export function useCropSelection(previewRef: RefObject<HTMLDivElement | null>) {
 
   const rotate = useCallback(
     (direction: "clockwise" | "counterclockwise") => {
+      const delta = direction === "clockwise" ? 90 : -90;
+      const nextPreviewRotation = previewRotationRef.current + delta;
+      previewRotationRef.current = nextPreviewRotation;
+      setPreviewRotationDegrees(nextPreviewRotation);
       dispatch(rotationChanged(rotateDegrees(rotationDegrees, direction)));
       dispatch(commitActiveEditingInstanceDraft());
     },
@@ -145,6 +157,7 @@ export function useCropSelection(previewRef: RefObject<HTMLDivElement | null>) {
 
   return {
     crop,
+    previewRotationDegrees,
     rotationDegrees,
     isEditing: isOpen || drag !== null,
     isDragging: drag !== null,
@@ -159,4 +172,8 @@ export function useCropSelection(previewRef: RefObject<HTMLDivElement | null>) {
     rotateClockwise: () => rotate("clockwise"),
     rotateCounterclockwise: () => rotate("counterclockwise"),
   };
+}
+
+function normalizeRotation(rotation: number): number {
+  return ((rotation % 360) + 360) % 360;
 }

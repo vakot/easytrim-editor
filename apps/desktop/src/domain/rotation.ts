@@ -12,6 +12,7 @@ export function rotateDegrees(
   const nextIndex =
     (ROTATION_DEGREES.indexOf(current) + offset + ROTATION_DEGREES.length) %
     ROTATION_DEGREES.length;
+
   return ROTATION_DEGREES[nextIndex] ?? 0;
 }
 
