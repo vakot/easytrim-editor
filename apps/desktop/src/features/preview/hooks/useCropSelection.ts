@@ -11,11 +11,13 @@ import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
   cropChanged,
   cropResolutionFor,
+  rotationChanged,
   selectCrop,
   selectRotationDegrees,
 } from "@/app/store/slices/crop-slice";
 import { selectSourceMedia } from "@/app/store/slices/source-slice";
 import { commitActiveEditingInstanceDraft } from "@/app/store/thunks/source-media-thunks";
+import { rotateDegrees } from "@/domain/rotation";
 
 import type { CropFrame } from "../lib/crop-frame.utils";
 import { type CropHandle, type CropRect, moveCrop, resizeCrop } from "../lib/crop-geometry.utils";
@@ -90,8 +92,6 @@ export function useCropSelection(previewRef: RefObject<HTMLDivElement | null>) {
     if (!isOpen) return;
 
     function closeOnOutsidePointerDown(event: globalThis.PointerEvent) {
-      if (event.target instanceof Element && event.target.closest("[data-crop-rotation-controls]"))
-        return;
       if (event.target instanceof Node && previewRef.current?.contains(event.target)) return;
       close();
     }
@@ -147,6 +147,18 @@ export function useCropSelection(previewRef: RefObject<HTMLDivElement | null>) {
     setDrag(null);
   }
 
+  const rotate = useCallback(
+    (direction: "clockwise" | "counterclockwise") => {
+      const delta = direction === "clockwise" ? 90 : -90;
+      const nextPreviewRotation = previewRotationRef.current + delta;
+      previewRotationRef.current = nextPreviewRotation;
+      setPreviewRotationDegrees(nextPreviewRotation);
+      dispatch(rotationChanged(rotateDegrees(rotationDegrees, direction)));
+      dispatch(commitActiveEditingInstanceDraft());
+    },
+    [dispatch, rotationDegrees],
+  );
+
   return {
     crop,
     previewRotationDegrees,
@@ -158,6 +170,8 @@ export function useCropSelection(previewRef: RefObject<HTMLDivElement | null>) {
     selectionRef,
     open,
     close,
+    rotateClockwise: () => rotate("clockwise"),
+    rotateCounterclockwise: () => rotate("counterclockwise"),
     startDrag,
     moveDrag,
     finishDrag,

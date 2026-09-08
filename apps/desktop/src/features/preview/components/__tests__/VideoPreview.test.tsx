@@ -5,7 +5,6 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 
-import { rotationChanged } from "@/app/store/slices/crop-slice";
 import type { PreviewState } from "@/app/store/slices/preview-slice";
 import { type AppStore, createAppStore } from "@/app/store/store";
 
@@ -293,21 +292,25 @@ describe("VideoPreview", () => {
     const viewport = container.querySelector("[aria-label='Video crop preview']");
     fireEvent.click(viewport!);
 
-    act(() => store.dispatch(rotationChanged(90)));
+    fireEvent.click(screen.getByRole("button", { name: "Rotate clockwise" }));
     expect(store.getState().crop.rotationDegrees).toBe(90);
     expect(container.querySelector("video")).toHaveStyle({ transform: "rotate(90deg)" });
 
-    act(() => store.dispatch(rotationChanged(180)));
-    act(() => store.dispatch(rotationChanged(270)));
+    fireEvent.click(screen.getByRole("button", { name: "Rotate clockwise" }));
+    fireEvent.click(screen.getByRole("button", { name: "Rotate clockwise" }));
     expect(store.getState().crop.rotationDegrees).toBe(270);
 
-    act(() => store.dispatch(rotationChanged(0)));
+    fireEvent.click(screen.getByRole("button", { name: "Rotate clockwise" }));
     expect(store.getState().crop.rotationDegrees).toBe(0);
     expect(container.querySelector("video")).toHaveStyle({ transform: "rotate(360deg)" });
 
-    act(() => store.dispatch(rotationChanged(270)));
+    fireEvent.click(screen.getByRole("button", { name: "Rotate counterclockwise" }));
     expect(store.getState().crop.rotationDegrees).toBe(270);
     expect(container.querySelector("video")).toHaveStyle({ transform: "rotate(270deg)" });
+
+    const controls = container.querySelector("[data-crop-rotation-controls]");
+    expect(controls).toHaveClass("flex-col", "gap-1");
+    expect(controls).not.toHaveClass("bg-background/85");
   });
 
   it("opens and closes crop controls with Enter or Space when the preview is focused", () => {

@@ -1,6 +1,4 @@
-import { RotateCcw, RotateCw } from "lucide-react";
 import { Children, type PropsWithChildren } from "react";
-import { useTranslation } from "react-i18next";
 
 import {
   Breadcrumb,
@@ -14,14 +12,11 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
-import { rotationChanged, selectRotationDegrees } from "@/app/store/slices/crop-slice";
+import { useAppSelector } from "@/app/store/redux-hooks";
 import {
   selectActiveInstanceId,
   selectEditingInstanceTopologyEntries,
 } from "@/app/store/slices/editing-instances-slice";
-import { commitActiveEditingInstanceDraft } from "@/app/store/thunks/source-media-thunks";
-import { rotateDegrees } from "@/domain/rotation";
 
 import { SourceDetails } from "./components/SourceDetails";
 import { SourceTreeNodes } from "./components/SourceTreeNodes";
@@ -33,12 +28,9 @@ import {
   type SourceTreeNode,
 } from "./lib/source-tree.utils";
 
-export function SourceBreadcrumb({ cropToolOpen }: { cropToolOpen: boolean }) {
-  const { t } = useTranslation();
-  const dispatch = useAppDispatch();
+export function SourceBreadcrumb() {
   const activeInstanceId = useAppSelector(selectActiveInstanceId);
   const entries = useAppSelector(selectEditingInstanceTopologyEntries);
-  const rotationDegrees = useAppSelector(selectRotationDegrees);
   const instance = entries.find((entry) => entry.id === activeInstanceId);
 
   if (!instance) return null;
@@ -46,52 +38,23 @@ export function SourceBreadcrumb({ cropToolOpen }: { cropToolOpen: boolean }) {
   const sourcePath = formatSourcePath(instance.sourcePath);
   const directories = getPathDirectories(sourcePath);
   const nodes = getSourceTreeNodes(entries, { compact: false });
-  const rotate = (direction: "clockwise" | "counterclockwise") => {
-    dispatch(rotationChanged(rotateDegrees(rotationDegrees, direction)));
-    dispatch(commitActiveEditingInstanceDraft());
-  };
-
   return (
     <Breadcrumb className="min-w-0 px-2 pb-1">
-      <div className="flex min-w-0 items-center justify-between gap-2">
-        <BreadcrumbList className="min-w-0 flex-1 flex-nowrap overflow-hidden text-xs">
-          <SourceBreadcrumbList>
-            {directories.map((directory) => (
-              <SourceBreadcrumbDirectory
-                directory={directory}
-                key={directory.path}
-                nodes={nodes}
-                value={instance.id}
-              />
-            ))}
+      <BreadcrumbList className="min-w-0 flex-nowrap overflow-hidden text-xs">
+        <SourceBreadcrumbList>
+          {directories.map((directory) => (
+            <SourceBreadcrumbDirectory
+              directory={directory}
+              key={directory.path}
+              nodes={nodes}
+              value={instance.id}
+            />
+          ))}
 
-            <SourceBreadcrumbPage instance={instance} nodes={nodes} />
-            <SourceBreadcrumbMore />
-          </SourceBreadcrumbList>
-        </BreadcrumbList>
-        {cropToolOpen ? (
-          <div className="flex shrink-0 gap-1" data-crop-rotation-controls>
-            <Button
-              aria-label={t("preview.accessibility.crop.rotateCounterclockwise")}
-              onClick={() => rotate("counterclockwise")}
-              size="icon-sm"
-              type="button"
-              variant="ghost"
-            >
-              <RotateCcw aria-hidden="true" />
-            </Button>
-            <Button
-              aria-label={t("preview.accessibility.crop.rotateClockwise")}
-              onClick={() => rotate("clockwise")}
-              size="icon-sm"
-              type="button"
-              variant="ghost"
-            >
-              <RotateCw aria-hidden="true" />
-            </Button>
-          </div>
-        ) : null}
-      </div>
+          <SourceBreadcrumbPage instance={instance} nodes={nodes} />
+          <SourceBreadcrumbMore />
+        </SourceBreadcrumbList>
+      </BreadcrumbList>
     </Breadcrumb>
   );
 }

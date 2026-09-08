@@ -1,4 +1,4 @@
-import { type RefObject, useCallback, useLayoutEffect, useRef, useState } from "react";
+import { type RefObject, useCallback, useLayoutEffect, useRef } from "react";
 
 import { Card } from "@/components/ui/card";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
@@ -55,7 +55,6 @@ const EMPTY_TIMELINE_RANGE = {
 export function EditorStage() {
   const media = useAppSelector(selectSourceMedia);
   const audioStreamsCount = useAppSelector(selectAudioPanelStreamCount);
-  const [cropToolOpen, setCropToolOpen] = useState(false);
   const timelinePaneRef = useRef<HTMLDivElement>(null);
 
   const initializeTimelinePane = useCallback((element: HTMLDivElement | null) => {
@@ -80,10 +79,10 @@ export function EditorStage() {
                 >
                   <SourceTabs />
                 </ScrollArea>
-                <SourceBreadcrumb cropToolOpen={cropToolOpen} />
+                <SourceBreadcrumb />
               </div>
               <Separator className="bg-foreground/10" />
-              <Preview onCropToolOpenChange={setCropToolOpen} />
+              <Preview />
             </Card>
           </div>
         </ResizablePanel>
