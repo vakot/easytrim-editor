@@ -1,6 +1,8 @@
 export interface SourceRef {
+  createdAtMicros?: number;
   displayName: string;
   sourcePath: string;
+  updatedAtMicros?: number;
 }
 
 /**

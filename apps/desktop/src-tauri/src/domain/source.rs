@@ -2,6 +2,7 @@ use std::{
     collections::HashSet,
     fs,
     path::{Path, PathBuf},
+    time::{SystemTime, UNIX_EPOCH},
 };
 
 use serde::Serialize;
@@ -37,8 +38,12 @@ pub struct ValidatedSource {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SourceRef {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub created_at_micros: Option<i64>,
     pub display_name: String,
     pub source_path: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub updated_at_micros: Option<i64>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize)]
@@ -253,10 +258,29 @@ fn source_ref_from_path(path: PathBuf) -> Result<SourceRef, AppError> {
         .map(|name| name.to_string_lossy().into_owned())
         .ok_or_else(|| AppError::invalid_request("The selected source has no usable file name."))?;
 
+    let metadata = fs::metadata(&path).ok();
+
     Ok(SourceRef {
+        created_at_micros: metadata
+            .as_ref()
+            .and_then(|metadata| metadata.created().ok())
+            .and_then(system_time_to_micros),
         display_name,
         source_path: path.display().to_string(),
+        updated_at_micros: metadata
+            .as_ref()
+            .and_then(|metadata| metadata.modified().ok())
+            .and_then(system_time_to_micros),
     })
+}
+
+fn system_time_to_micros(value: SystemTime) -> Option<i64> {
+    value
+        .duration_since(UNIX_EPOCH)
+        .ok()?
+        .as_micros()
+        .try_into()
+        .ok()
 }
 
 fn mark_truncated(result: &mut SourceImportResult, reason: &str) {

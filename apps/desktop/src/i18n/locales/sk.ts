@@ -203,11 +203,13 @@ export const sk = {
       metadata: {
         bitrate: "Dátový tok",
         container: "Kontajner",
+        createdAt: "Vytvorené",
         duration: "Trvanie",
         fileSize: "Veľkosť súboru",
         filename: "Názov súboru",
         frameRate: "Snímková frekvencia",
         resolution: "Rozlíšenie",
+        updatedAt: "Aktualizované",
         videoCodec: "Video kodek",
       },
       technicalDetails: "Technické podrobnosti",

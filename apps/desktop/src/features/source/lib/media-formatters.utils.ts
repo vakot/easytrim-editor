@@ -42,6 +42,19 @@ export function formatBitrate(
   return bitrate === undefined ? unknownLabel : formatUnit((bitrate / 1_000_000).toFixed(2));
 }
 
+export function formatDateTime(
+  micros: number | undefined,
+  locale: string,
+  unknownLabel: string,
+): string {
+  if (micros === undefined) return unknownLabel;
+
+  const date = new Date(micros / 1_000);
+  return Number.isNaN(date.getTime())
+    ? unknownLabel
+    : new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(date);
+}
+
 export function formatSourcePath(sourcePath: string): string {
   const extendedPathPrefix = "\\\\?\\";
   return sourcePath.startsWith(extendedPathPrefix)

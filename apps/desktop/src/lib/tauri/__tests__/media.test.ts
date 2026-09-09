@@ -28,6 +28,7 @@ import {
   renderFast,
 } from "../media";
 import type { MediaInfo } from "../media.types";
+import { parseSourceRef } from "../media.utils";
 
 type NativeDropEvent =
   | { payload: { paths: string[]; type: "enter" } }
@@ -48,6 +49,22 @@ beforeEach(() => {
 });
 
 describe("media IPC adapter", () => {
+  it("preserves source filesystem timestamps from native metadata", () => {
+    expect(
+      parseSourceRef({
+        createdAtMicros: 1_735_804_800_000_000,
+        displayName: "clip.mp4",
+        sourcePath: "C:/Media/clip.mp4",
+        updatedAtMicros: 1_735_804_900_000_000,
+      }),
+    ).toEqual({
+      createdAtMicros: 1_735_804_800_000_000,
+      displayName: "clip.mp4",
+      sourcePath: "C:/Media/clip.mp4",
+      updatedAtMicros: 1_735_804_900_000_000,
+    });
+  });
+
   it("accepts a source selection with its physical path", async () => {
     mocks.invoke.mockResolvedValue([
       { displayName: "clip.mp4", sourcePath: "C:/Media/clip.mp4" },
