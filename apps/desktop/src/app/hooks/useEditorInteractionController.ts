@@ -592,6 +592,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
 
       const shouldDeferSeek =
         pendingFrameStepSeekMicrosRef.current !== null || frameStepSeekFrameRef.current !== null;
+
       if (!shouldDeferSeek) {
         applyMediaSeek(clamped);
         return;
