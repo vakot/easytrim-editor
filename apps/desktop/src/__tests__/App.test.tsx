@@ -1600,7 +1600,7 @@ describe("App", () => {
     await waitFor(() => expect(play).toHaveBeenCalledTimes(2));
   });
 
-  it("prioritizes playback while keeping other shortcuts locked during text entry", async () => {
+  it("keeps editor shortcuts locked during text entry", async () => {
     mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
     render(<App />);
@@ -1633,11 +1633,16 @@ describe("App", () => {
     const input = document.createElement("input");
     document.body.append(input);
     input.focus();
+    const inputKeyDown = vi.fn();
+    input.addEventListener("keydown", inputKeyDown);
     play.mockClear();
     pause.mockClear();
     fireEvent.keyDown(input, { key: " ", code: "Space" });
     fireEvent.keyDown(input, { key: "ArrowRight", code: "ArrowRight" });
-    expect(play).toHaveBeenCalledOnce();
+    fireEvent.keyDown(input, { key: "i", code: "KeyI" });
+    fireEvent.keyDown(input, { key: "o", code: "KeyO" });
+    expect(inputKeyDown).toHaveBeenCalledTimes(4);
+    expect(play).not.toHaveBeenCalled();
     expect(pause).not.toHaveBeenCalled();
     expect(screen.getByRole("slider", { name: "Playback position" })).toHaveAttribute(
       "aria-valuenow",
