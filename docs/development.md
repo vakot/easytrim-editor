@@ -82,12 +82,13 @@ they do not measure WebView or disk latency.
 ## Playback speed and decoder workload
 
 The speed field accepts 0.25×–100×; the slider remains 0.25×–3×. Rates through 5× use native
-playback. Above 5×, the video element remains paused at a native rate of 1× and audio is muted.
-A wall clock advances source time at the requested multiplier while the preview samples frames.
+playback. Above 5×, audio is muted. While a timelapse is being prepared, the source video remains
+paused at a native rate of 1× and a wall clock advances source time while the preview samples
+frames. Once ready, the timelapse video plays sequentially at native 1×.
 Sampling is capped at the source frame rate or 60 fps, whichever is lower. Only one seek can be
-outstanding. After an expensive seek, the sampler waits an equal amount of time before requesting
-another frame, allowing the preview cadence to fall when decoding is slow. The timeline continues
-to track requested time without accumulating skipped frames.
+outstanding, and the latest requested frame replaces obsolete work. The sampler requests the next
+frame as soon as the decoder settles; it does not add an artificial idle interval. The timeline
+continues to track requested time without accumulating skipped frames.
 
 Sampling uses `fastSeek` when available and exact seeks otherwise. Pause and frame stepping land
 precisely; speed changes preserve the current source position. Native media events cannot replace
@@ -95,11 +96,11 @@ the sampled clock. Suspended/hidden windows do not accumulate time to catch up o
 
 This bounds frame requests independently of the multiplier, not CPU/GPU time per frame. With
 inter-frame codecs, decoding a target may require earlier reference frames; the browser may also
-lack fast keyframe seeking. Therefore 60 distinct preview frames per second and constant resource
-usage cannot be guaranteed for every file. An FFmpeg `select`/`fps` filter after decoding does not
-remove that decoding cost. A prepared intra-frame proxy can reduce random-seek cost but introduces
-upfront processing, storage, and lifecycle work; this playback path uses the current preview and
-does not wait for a new full-source proxy.
+lack fast keyframe seeking. For active playback above 5×, EasyTrim therefore prepares a cached
+speed-specific timelapse MP4 in native code. It contains only the sampled frames and is decoded
+sequentially by the WebView; source seeking is mapped to the shorter preview timeline. Preparation
+still has an upfront decode/encode cost for the source, and a prepared preview consumes temporary
+storage. If preparation is still running, the seek sampler remains available as a fallback.
 
 Regression coverage includes speed-independent request counts, decoder backpressure, background
 suspension, pause, loops, source cleanup, and rate changes during pending seeks. These tests use a

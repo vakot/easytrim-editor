@@ -52,7 +52,7 @@ describe("sampled preview clock", () => {
     },
   );
 
-  it("skips obsolete frames and gives slow decoding idle time without slowing the timeline", () => {
+  it("skips obsolete frames and resumes immediately after slow decoding", () => {
     const timer = clock();
     let settle: (() => void) | undefined;
     const seek = vi.fn((_micros: number, done: () => void) => {
@@ -74,10 +74,10 @@ describe("sampled preview clock", () => {
     expect(seek).toHaveBeenCalledOnce();
     settle?.();
     timer.advance(150);
-    expect(seek).toHaveBeenCalledOnce();
+    expect(seek).toHaveBeenCalledTimes(2);
     timer.advance(210);
     expect(seek).toHaveBeenCalledTimes(2);
-    expect(seek.mock.calls[1]?.[0]).toBe(21_000_000);
+    expect(seek.mock.calls[1]?.[0]).toBe(15_000_000);
     expect(onTime).toHaveBeenLastCalledWith(21_000_000, 210);
     playback.stop();
   });

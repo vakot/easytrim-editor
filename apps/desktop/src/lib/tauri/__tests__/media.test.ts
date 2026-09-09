@@ -24,6 +24,7 @@ import {
   planOptimizedExport,
   prepareProxyPreview,
   prepareSourcePreview,
+  prepareTimelapsePreview,
   prepareWaveforms,
   renderFast,
 } from "../media";
@@ -251,6 +252,24 @@ describe("media IPC adapter", () => {
     });
     expect(mocks.invoke).toHaveBeenNthCalledWith(2, "prepare_proxy_preview", {
       sourcePath: "C:/Media/clip.mp4",
+    });
+  });
+
+  it("parses a rate-specific timelapse preview descriptor", async () => {
+    mocks.invoke.mockResolvedValue({
+      mediaToken: 3,
+      rateMilli: 100_000,
+      url: "http://easytrim-media.localhost/3?variant=timelapse&rate=100000",
+    });
+
+    await expect(prepareTimelapsePreview("C:/Media/clip.mp4", 100)).resolves.toEqual({
+      mediaToken: 3,
+      rateMilli: 100_000,
+      url: "http://easytrim-media.localhost/3?variant=timelapse&rate=100000",
+    });
+    expect(mocks.invoke).toHaveBeenCalledWith("prepare_timelapse_preview", {
+      sourcePath: "C:/Media/clip.mp4",
+      speed: 100,
     });
   });
 

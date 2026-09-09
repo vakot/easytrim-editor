@@ -10,6 +10,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectPlaybackSpeed } from "@/app/store/slices/editor-tools-slice";
 import type { PreviewState } from "@/app/store/slices/preview-slice";
+import { isAudioPlaybackEnabled } from "@/domain/playback-speed";
 import type { DiagnosticOrigin } from "@/lib/tauri/diagnostics.types";
 
 import { setPlaybackRateSafely } from "../lib/media-sync";
@@ -30,6 +31,7 @@ interface VideoPreviewProps {
   onTimeUpdate: (seconds: number) => void;
   onTogglePlayback: (origin?: DiagnosticOrigin) => void;
   preview: PreviewState;
+  previewUrlOverride?: string | null;
   videoRef: RefObject<HTMLVideoElement | null>;
 }
 
@@ -47,6 +49,7 @@ export function VideoPreview({
   onTimeUpdate,
   onTogglePlayback,
   preview,
+  previewUrlOverride,
   videoRef,
 }: VideoPreviewProps) {
   const { t } = useTranslation();
@@ -56,8 +59,11 @@ export function VideoPreview({
   const readyUrl = preview.status === "ready" ? preview.value.url : null;
 
   useEffect(() => {
-    setPlaybackRateSafely(videoRef.current, playbackRate);
-  }, [playbackRate, readyUrl, videoRef]);
+    setPlaybackRateSafely(
+      videoRef.current,
+      previewUrlOverride ? 1 : isAudioPlaybackEnabled(playbackRate) ? playbackRate : 1,
+    );
+  }, [playbackRate, previewUrlOverride, readyUrl, videoRef]);
 
   useEffect(() => {
     reportedUrl.current = null;
@@ -95,12 +101,13 @@ export function VideoPreview({
   }
 
   const { value } = preview;
+  const sourceUrl = previewUrlOverride ?? value.url;
 
   return (
     <section className="grid size-full min-h-0 place-items-center">
       <div className="relative size-full min-h-0 overflow-hidden bg-preview-surface">
         <CropViewport
-          key={value.url}
+          key={sourceUrl}
           muted={muted}
           nativeLoopEnabled={nativeLoopEnabled}
           onCanPlay={onCanPlay}
@@ -119,7 +126,7 @@ export function VideoPreview({
           playbackRate={playbackRate}
           previewKind={value.kind}
           sourceLabel={t("preview.accessibility.source")}
-          sourceUrl={value.url}
+          sourceUrl={sourceUrl}
           videoRef={videoRef}
         />
         {value.kind === "proxy" ? (

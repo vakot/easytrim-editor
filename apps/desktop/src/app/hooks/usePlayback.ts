@@ -15,6 +15,7 @@ export function usePlayback() {
     isReady: interaction.isPlaybackReady,
     transportError: interaction.transportError,
     nativeLoopEnabled: interaction.nativeLoopEnabled,
+    previewUrlOverride: interaction.previewUrlOverride,
     videoMuted: interaction.videoMuted,
     onLoadedMetadata: interaction.onLoadedMetadata,
     onCanPlay: interaction.onCanPlay,

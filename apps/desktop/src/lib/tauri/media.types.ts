@@ -50,6 +50,12 @@ export interface PreviewDescriptor {
   url: string;
 }
 
+export interface TimelapsePreviewDescriptor {
+  mediaToken: number;
+  rateMilli: number;
+  url: string;
+}
+
 export interface AudioPreviewDescriptor {
   mediaToken: number;
   streamIndex: number;

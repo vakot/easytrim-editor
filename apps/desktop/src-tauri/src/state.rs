@@ -116,6 +116,7 @@ struct ActiveSourceRecord {
     media: Option<MediaInfo>,
     preview_streams: Option<PreviewStreamSelection>,
     preview: Option<PreviewArtifact>,
+    timelapse_preview: Option<(u32, PreviewArtifact)>,
     audio_previews: HashMap<u32, AudioPreviewArtifact>,
     audio_stream_indexes: Vec<u32>,
     waveform_job: Option<WaveformJobRecord>,
@@ -232,6 +233,7 @@ impl AppState {
             media: None,
             preview_streams: None,
             preview: None,
+            timelapse_preview: None,
             audio_previews: HashMap::new(),
             audio_stream_indexes: Vec::new(),
             waveform_job: None,
@@ -479,6 +481,56 @@ impl AppState {
         };
         drop(previous_preview);
         Ok(())
+    }
+
+    pub fn install_timelapse_preview(
+        &self,
+        load_token: u64,
+        rate_milli: u32,
+        preview: PreviewArtifact,
+    ) -> Result<(), AppError> {
+        let previous_preview = {
+            let mut session = self.lock_session()?;
+            let source = active_source_mut(&mut session, load_token)?;
+            if source.cancellation.load(Ordering::Acquire) {
+                return Err(AppError::source_replaced());
+            }
+            source.timelapse_preview.replace((rate_milli, preview))
+        };
+        drop(previous_preview);
+        Ok(())
+    }
+
+    pub fn resolve_timelapse_path(
+        &self,
+        load_token: u64,
+        rate_milli: u32,
+    ) -> Result<PathBuf, AppError> {
+        let session = self.lock_session()?;
+        let source = session
+            .active_source
+            .as_ref()
+            .filter(|source| source.load_token == load_token)
+            .ok_or_else(AppError::source_replaced)?;
+        source
+            .timelapse_preview
+            .as_ref()
+            .filter(|(cached_rate, _)| *cached_rate == rate_milli)
+            .map(|(_, preview)| preview.path().to_owned())
+            .ok_or_else(|| AppError::invalid_request("The timelapse preview is not available."))
+    }
+
+    pub fn timelapse_is_ready(&self, load_token: u64, rate_milli: u32) -> Result<bool, AppError> {
+        let session = self.lock_session()?;
+        let source = session
+            .active_source
+            .as_ref()
+            .filter(|source| source.load_token == load_token)
+            .ok_or_else(AppError::source_replaced)?;
+        Ok(source
+            .timelapse_preview
+            .as_ref()
+            .is_some_and(|(cached_rate, _)| *cached_rate == rate_milli))
     }
 
     pub fn resolve_audio_preview_path(

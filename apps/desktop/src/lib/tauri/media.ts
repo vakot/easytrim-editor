@@ -18,6 +18,7 @@ import type {
   SourceDropEvent,
   SourceImportResult,
   SourcePickerMode,
+  TimelapsePreviewDescriptor,
   WaveformResult,
 } from "./media.types";
 import {
@@ -32,6 +33,7 @@ import {
   parsePreviewDescriptor,
   parseSourceImportResult,
   parseSourceRef,
+  parseTimelapsePreviewDescriptor,
   parseWaveformResults,
 } from "./media.utils";
 
@@ -234,6 +236,19 @@ export async function prepareProxyPreview(sourcePath: string): Promise<PreviewDe
       await invoke<unknown>("prepare_proxy_preview", {
         sourcePath,
       }),
+    );
+  } catch (error: unknown) {
+    throw normalizeAppError(error);
+  }
+}
+
+export async function prepareTimelapsePreview(
+  sourcePath: string,
+  speed: number,
+): Promise<TimelapsePreviewDescriptor> {
+  try {
+    return parseTimelapsePreviewDescriptor(
+      await invoke<unknown>("prepare_timelapse_preview", { sourcePath, speed }),
     );
   } catch (error: unknown) {
     throw normalizeAppError(error);

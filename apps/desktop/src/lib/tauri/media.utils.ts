@@ -15,6 +15,7 @@ import type {
   OutputSelection,
   PreviewDescriptor,
   SourceImportResult,
+  TimelapsePreviewDescriptor,
   VideoStream,
   WaveformResult,
 } from "./media.types";
@@ -161,6 +162,15 @@ export function parsePreviewDescriptor(value: unknown): PreviewDescriptor {
     mediaToken: requirePositiveInteger(preview.mediaToken, "preview media token"),
     url: requireString(preview.url, "preview URL"),
     kind,
+  };
+}
+
+export function parseTimelapsePreviewDescriptor(value: unknown): TimelapsePreviewDescriptor {
+  const preview = requireRecord(value, "timelapse preview descriptor");
+  return {
+    mediaToken: requirePositiveInteger(preview.mediaToken, "preview media token"),
+    rateMilli: requirePositiveInteger(preview.rateMilli, "timelapse preview rate"),
+    url: requireString(preview.url, "timelapse preview URL"),
   };
 }
 

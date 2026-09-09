@@ -39,14 +39,15 @@ export function startSampledPlayback(options: SampledPlaybackOptions) {
       !options.isSeeking()
     ) {
       lastSampleSlot = sampleSlot;
-      const startedAt = performance.now();
       // Completion grants the next slot. No queue of skipped frames is retained.
       nextSeekAt = Infinity;
       options.seek(position, () => {
         if (stopped) return;
         const finishedAt = performance.now();
-        // Give expensive seeks an equally long idle interval to avoid saturating the decoder.
-        nextSeekAt = finishedAt + (finishedAt - startedAt);
+        // Continue immediately after the decoder settles. The single in-flight seek and
+        // latest-frame coalescing already provide backpressure; adding an idle interval
+        // would turn a slow seek into an even slower preview cadence.
+        nextSeekAt = finishedAt;
       });
     }
     frame = requestAnimationFrame(tick);

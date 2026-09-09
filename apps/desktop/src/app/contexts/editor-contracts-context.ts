@@ -21,6 +21,7 @@ export type EditorPlaybackInteraction = Pick<
   | "onStepFrame"
   | "onTimeUpdate"
   | "onTogglePlayback"
+  | "previewUrlOverride"
   | "shuttleDirection"
   | "transportError"
   | "videoMuted"

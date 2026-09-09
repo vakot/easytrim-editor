@@ -5,7 +5,7 @@ use crate::{
     media::{
         audio::generate_audio_previews,
         probe::{MediaInfo, inspect_media_cancellable as probe_media},
-        proxy::generate_preview,
+        proxy::{generate_preview, generate_timelapse_preview},
         waveform::{generate_waveforms, validate_waveform_request},
     },
     state::{AppState, PreviewStreamSelection},
@@ -27,6 +27,14 @@ pub struct PreviewDescriptor {
     pub media_token: u64,
     pub url: String,
     pub kind: PreviewKind,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TimelapsePreviewDescriptor {
+    pub media_token: u64,
+    pub rate_milli: u32,
+    pub url: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
@@ -342,12 +350,54 @@ pub async fn prepare_proxy_preview(
     })
 }
 
+#[tauri::command]
+pub async fn prepare_timelapse_preview(
+    source_path: String,
+    speed: f64,
+    state: State<'_, AppState>,
+) -> Result<TimelapsePreviewDescriptor, AppError> {
+    if !speed.is_finite() || !(5.0..=100.0).contains(&speed) {
+        return Err(AppError::invalid_request(
+            "Timelapse preview speed must be between 5x and 100x.",
+        ));
+    }
+    let rate_milli = (speed * 1_000.0).round() as u32;
+    let source = state.resolve_source_by_path(&source_path)?;
+    let media_token = source.load_token;
+    if !state.timelapse_is_ready(media_token, rate_milli)? {
+        let preview_source = source.clone();
+        let preview = tauri::async_runtime::spawn_blocking(move || {
+            generate_timelapse_preview(&preview_source, speed)
+        })
+        .await
+        .map_err(|_| AppError::internal("Timelapse preview preparation stopped unexpectedly."))??;
+        state.install_timelapse_preview(media_token, rate_milli, preview)?;
+    }
+
+    state.resolve_source_by_load_token(media_token)?;
+    Ok(TimelapsePreviewDescriptor {
+        media_token,
+        rate_milli,
+        url: timelapse_preview_url(media_token, rate_milli),
+    })
+}
+
 #[cfg(any(target_os = "windows", target_os = "android"))]
 fn preview_url(media_token: u64, kind: PreviewKind) -> String {
     format!(
         "http://easytrim-media.localhost/{media_token}?variant={}",
         preview_kind_name(kind)
     )
+}
+
+#[cfg(any(target_os = "windows", target_os = "android"))]
+fn timelapse_preview_url(media_token: u64, rate_milli: u32) -> String {
+    format!("http://easytrim-media.localhost/{media_token}?variant=timelapse&rate={rate_milli}")
+}
+
+#[cfg(not(any(target_os = "windows", target_os = "android")))]
+fn timelapse_preview_url(media_token: u64, rate_milli: u32) -> String {
+    format!("easytrim-media://localhost/{media_token}?variant=timelapse&rate={rate_milli}")
 }
 
 #[cfg(not(any(target_os = "windows", target_os = "android")))]
@@ -391,7 +441,7 @@ fn preview_kind_name(kind: PreviewKind) -> &'static str {
 
 #[cfg(test)]
 mod tests {
-    use super::{PreviewKind, preview_url, waveform_url};
+    use super::{PreviewKind, preview_url, timelapse_preview_url, waveform_url};
 
     #[test]
     fn preview_url_contains_only_the_opaque_media_token() {
@@ -406,6 +456,14 @@ mod tests {
         let url = waveform_url(17, 4, 1_280);
 
         assert!(url.ends_with("/17?variant=waveform&stream=4&width=1280"));
+        assert!(!url.contains('\\'));
+    }
+
+    #[test]
+    fn timelapse_url_contains_only_opaque_and_numeric_identifiers() {
+        let url = timelapse_preview_url(17, 100_000);
+
+        assert!(url.ends_with("/17?variant=timelapse&rate=100000"));
         assert!(!url.contains('\\'));
     }
 }

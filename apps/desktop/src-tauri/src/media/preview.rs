@@ -41,6 +41,13 @@ pub fn respond<R: Runtime>(app: &AppHandle<R>, request: Request<Vec<u8>>) -> Res
             return empty_response(StatusCode::NOT_FOUND);
         };
         state.resolve_audio_preview_path(media_token, stream_index)
+    } else if query_parameter(request.uri().query(), "variant") == Some("timelapse") {
+        let Some(rate_milli) = query_parameter(request.uri().query(), "rate")
+            .and_then(|value| value.parse::<u32>().ok())
+        else {
+            return empty_response(StatusCode::NOT_FOUND);
+        };
+        state.resolve_timelapse_path(media_token, rate_milli)
     } else {
         state.resolve_preview_path(media_token)
     };

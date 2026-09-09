@@ -34,6 +34,7 @@ const mocks = vi.hoisted(() => ({
   prepareAudioPreviews: vi.fn(),
   prepareProxyPreview: vi.fn(),
   prepareSourcePreview: vi.fn(),
+  prepareTimelapsePreview: vi.fn(),
   prepareWaveforms: vi.fn(),
   unlistenDrops: vi.fn(),
 }));
@@ -50,6 +51,7 @@ vi.mock("../lib/tauri/media", async (importOriginal) => {
     prepareAudioPreviews: mocks.prepareAudioPreviews,
     prepareProxyPreview: mocks.prepareProxyPreview,
     prepareSourcePreview: mocks.prepareSourcePreview,
+    prepareTimelapsePreview: mocks.prepareTimelapsePreview,
     prepareWaveforms: mocks.prepareWaveforms,
   };
 });
@@ -242,6 +244,7 @@ beforeEach(() => {
     url: "http://easytrim-media.localhost/source-1?variant=proxy",
     kind: "proxy",
   });
+  mocks.prepareTimelapsePreview.mockImplementation(() => new Promise(() => undefined));
   mocks.prepareWaveforms.mockImplementation(
     async (_sourcePath: string, jobId: string, streamIndexes: number[], width: number) =>
       streamIndexes.map((streamIndex) => ({
@@ -1682,6 +1685,49 @@ describe("App", () => {
       expect(video.playbackRate).toBe(1);
       expect(play).toHaveBeenCalledTimes(2);
       expect(video.currentTime).toBe(32);
+    } finally {
+      clock.restore();
+    }
+  });
+
+  it("uses a prepared sequential timelapse stream for smooth high-rate playback", async () => {
+    mocks.chooseSource.mockResolvedValue([selection]);
+    mocks.prepareTimelapsePreview.mockResolvedValue({
+      mediaToken: 1,
+      rateMilli: 100_000,
+      url: "http://easytrim-media.localhost/source-1?variant=timelapse&rate=100000",
+    });
+    const user = userEvent.setup();
+    const clock = installPlaybackClock();
+    const play = vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
+    vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => undefined);
+
+    try {
+      render(<App />);
+      await openSourcePicker(user);
+      act(() => {
+        store.dispatch(playbackSpeedChanged(100));
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Play" }));
+
+      await waitFor(() =>
+        expect(mocks.prepareTimelapsePreview).toHaveBeenCalledWith(selection.sourcePath, 100),
+      );
+      const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
+      await waitFor(() => expect(video.src).toContain("variant=timelapse"));
+      expect(video.playbackRate).toBe(1);
+      expect(video.muted).toBe(true);
+
+      Object.defineProperty(video, "paused", { configurable: true, get: () => false });
+      fireEvent.canPlay(video);
+      fireEvent.play(video);
+      video.currentTime = 0.2;
+      clock.advance(100);
+      expect(screen.getByRole("slider", { name: "Playback position" })).toHaveAttribute(
+        "aria-valuenow",
+        "20000000",
+      );
+      expect(play).toHaveBeenCalled();
     } finally {
       clock.restore();
     }

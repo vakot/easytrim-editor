@@ -35,6 +35,7 @@ export function Preview() {
           onTimeUpdate={playback.onTimeUpdate}
           onTogglePlayback={playback.toggle}
           preview={preview}
+          previewUrlOverride={playback.previewUrlOverride}
           videoRef={playback.videoRef}
         />
       )}

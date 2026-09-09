@@ -91,6 +91,7 @@ pub fn run() {
             commands::media::inspect_imported_media,
             commands::media::prepare_audio_previews,
             commands::media::prepare_proxy_preview,
+            commands::media::prepare_timelapse_preview,
             commands::media::prepare_source_preview,
             commands::media::prepare_waveforms,
             commands::queue::available_queue_finish_actions,

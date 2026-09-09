@@ -87,6 +87,78 @@ pub fn generate_preview(source: &ActiveSource) -> Result<PreviewArtifact, AppErr
     ))
 }
 
+/// Creates a compact, sequential timelapse stream for high-rate playback.
+///
+/// The browser cannot efficiently render a 100x timeline by performing a random seek for every
+/// displayed frame. This stream keeps one sampled frame per requested source interval and assigns
+/// those frames a normal playback cadence, so the WebView decodes the result sequentially.
+pub fn generate_timelapse_preview(
+    source: &ActiveSource,
+    speed: f64,
+) -> Result<PreviewArtifact, AppError> {
+    let streams = source.preview_streams.ok_or_else(|| {
+        AppError::invalid_request("Inspect the video before preparing its timelapse preview.")
+    })?;
+    let media = source.media.as_ref().ok_or_else(|| {
+        AppError::invalid_request("Inspect the video before preparing its timelapse preview.")
+    })?;
+    let source_frame_rate = media
+        .video
+        .average_frame_rate
+        .as_ref()
+        .or(media.video.real_frame_rate.as_ref())
+        .and_then(|rate| rate.display_value)
+        .filter(|rate| rate.is_finite() && *rate > 0.0)
+        .unwrap_or(60.0);
+    let output_frame_rate = source_frame_rate.min(60.0).max(1.0);
+    let frame_interval = speed / source_frame_rate;
+    let filter = format!(
+        "select='isnan(prev_selected_pts)+gte(pts-prev_selected_pts\\,{frame_interval:.9}/TB)',setpts=N/({output_frame_rate:.9}*TB)"
+    );
+    let artifact = create_artifact()?;
+    let hardware_encoder = if cfg!(target_os = "macos") {
+        Encoder::VideoToolbox
+    } else {
+        Encoder::Nvidia
+    };
+
+    let hardware_result = run_timelapse_encoder(
+        source,
+        streams,
+        artifact.path(),
+        hardware_encoder,
+        &filter,
+        output_frame_rate,
+    );
+    match hardware_result {
+        Ok(output) if output.status.success() => return Ok(artifact),
+        Err(error) if error.kind() == io::ErrorKind::Interrupted => {
+            return Err(AppError::source_replaced());
+        }
+        _ => {
+            let _ = fs::remove_file(artifact.path());
+        }
+    }
+
+    let output = run_timelapse_encoder(
+        source,
+        streams,
+        artifact.path(),
+        Encoder::Software,
+        &filter,
+        output_frame_rate,
+    )
+    .map_err(process_error)?;
+    if output.status.success() {
+        return Ok(artifact);
+    }
+
+    Err(AppError::preview_failed(
+        "A high-speed timelapse preview could not be prepared.",
+        diagnostics(&output, &source.path, artifact.path()),
+    ))
+}
+
 fn can_remux_preview(source: &ActiveSource) -> bool {
     source
         .media
@@ -177,6 +249,82 @@ fn run_encoder(
         ]);
     }
     arguments.extend([
+        OsString::from("-f"),
+        OsString::from("mp4"),
+        output_path.as_os_str().to_owned(),
+    ]);
+
+    run_bounded_cancellable(
+        OsStr::new("ffmpeg"),
+        &arguments,
+        PROXY_TIMEOUT,
+        PROXY_STDOUT_LIMIT,
+        PROXY_STDERR_LIMIT,
+        || source.cancellation.load(Ordering::Acquire),
+    )
+}
+
+fn run_timelapse_encoder(
+    source: &ActiveSource,
+    streams: PreviewStreamSelection,
+    output_path: &Path,
+    encoder: Encoder,
+    filter: &str,
+    frame_rate: f64,
+) -> io::Result<ProcessOutput> {
+    let mut arguments = vec![
+        OsString::from("-hide_banner"),
+        OsString::from("-nostdin"),
+        OsString::from("-n"),
+        OsString::from("-i"),
+        source.path.as_os_str().to_owned(),
+        OsString::from("-map"),
+        OsString::from(format!("0:{}", streams.video_stream_index)),
+        OsString::from("-an"),
+        OsString::from("-sn"),
+        OsString::from("-dn"),
+        OsString::from("-vf"),
+        OsString::from(filter),
+        OsString::from("-r"),
+        OsString::from(format!("{frame_rate:.9}")),
+        OsString::from("-pix_fmt"),
+        OsString::from("yuv420p"),
+        OsString::from("-c:v"),
+    ];
+    match encoder {
+        Encoder::Nvidia => arguments.extend([
+            OsString::from("h264_nvenc"),
+            OsString::from("-preset"),
+            OsString::from("p1"),
+            OsString::from("-cq"),
+            OsString::from("30"),
+            OsString::from("-b:v"),
+            OsString::from("0"),
+        ]),
+        Encoder::VideoToolbox => arguments.extend([
+            OsString::from("h264_videotoolbox"),
+            OsString::from("-allow_sw"),
+            OsString::from("1"),
+            OsString::from("-b:v"),
+            OsString::from("4M"),
+        ]),
+        Encoder::Software => arguments.extend([
+            OsString::from("libx264"),
+            OsString::from("-preset"),
+            OsString::from("ultrafast"),
+            OsString::from("-crf"),
+            OsString::from("28"),
+        ]),
+    }
+    arguments.extend([
+        OsString::from("-g"),
+        OsString::from("30"),
+        OsString::from("-keyint_min"),
+        OsString::from("30"),
+        OsString::from("-bf"),
+        OsString::from("0"),
+        OsString::from("-movflags"),
+        OsString::from("+faststart"),
         OsString::from("-f"),
         OsString::from("mp4"),
         output_path.as_os_str().to_owned(),

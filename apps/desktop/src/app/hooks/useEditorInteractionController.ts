@@ -58,6 +58,7 @@ import {
 import { diagnostics } from "@/lib/diagnostics";
 import { isApplicationDialogOpen } from "@/lib/hotkeys.utils";
 import type { DiagnosticOrigin } from "@/lib/tauri/diagnostics.types";
+import { prepareTimelapsePreview } from "@/lib/tauri/media";
 
 const EMPTY_TRIM: TrimRange = {
   startMicros: 0,
@@ -101,6 +102,7 @@ export interface EditorInteractionRuntime {
   onTrimDragEnd: () => void;
   onTrimDragStart: () => void;
   playheadRef: React.RefObject<HTMLButtonElement | null>;
+  previewUrlOverride: string | null;
   shuttleDirection: FrameShuttleDirection | 0;
   transportError: string | null;
   videoMuted: boolean;
@@ -161,6 +163,13 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
   const [shuttleDirection, setShuttleDirection] = useState<FrameShuttleDirection | 0>(0);
   const [transportError, setTransportError] = useState<string | null>(null);
   const [readyPreviewKey, setReadyPreviewKey] = useState<string | null>(null);
+  const [timelapsePreview, setTimelapsePreview] = useState<{
+    previewKey: string;
+    rate: number;
+    sourcePath: string;
+    url: string;
+  } | null>(null);
+
   const [audioReadiness, setAudioReadiness] = useState<{
     sourcePath: string | null;
     streamIndexes: Set<number>;
@@ -209,6 +218,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
   const segmentDragActiveRef = useRef(false);
   const segmentFollowBoundaryRef = useRef<TrimBoundary | null>(null);
   const playbackRateRef = useRef<number>(playbackSpeed);
+  const timelapseRequestRef = useRef(0);
   const isPlaybackReady =
     previewKey !== null &&
     readyPreviewKey === previewKey &&
@@ -235,6 +245,47 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     stopShuttle: (origin?: DiagnosticOrigin) => void;
     togglePlayback: (origin?: DiagnosticOrigin) => void;
   } | null>(null);
+
+  const timelapseIsActive =
+    timelapsePreview?.rate === playbackSpeed && timelapsePreview.previewKey === previewKey;
+
+  useEffect(() => {
+    const requestId = ++timelapseRequestRef.current;
+    if (
+      !sourcePath ||
+      playbackSpeed <= 5 ||
+      !isPlaybackReady ||
+      !previewKey ||
+      (!isPlayingRef.current && !playbackRequestedRef.current)
+    )
+      return;
+    if (timelapsePreview?.rate === playbackSpeed && timelapsePreview.previewKey === previewKey)
+      return;
+
+    void prepareTimelapsePreview(sourcePath, playbackSpeed)
+      .then((prepared) => {
+        if (timelapseRequestRef.current !== requestId) return;
+        setTimelapsePreview({
+          previewKey,
+          rate: prepared.rateMilli / 1_000,
+          sourcePath,
+          url: prepared.url,
+        });
+      })
+      .catch(() => undefined);
+
+    return () => {
+      if (timelapseRequestRef.current === requestId) timelapseRequestRef.current += 1;
+    };
+  }, [
+    isPlaybackReady,
+    isPlaying,
+    playbackSpeed,
+    previewKey,
+    sourcePath,
+    timelapsePreview?.rate,
+    timelapsePreview?.previewKey,
+  ]);
 
   const removeAudioRuntime = useCallback((streamIndex: number) => {
     const element = audioElementsRef.current.get(streamIndex);
@@ -633,8 +684,12 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     (micros: number) => {
       const interactive = timelineInteractionActiveRef.current;
       if (isPlayingRef.current) pauseAudioPlayback();
+      const previewMicros = timelapseIsActive
+        ? micros / (timelapsePreview?.rate ?? playbackRateRef.current)
+        : micros;
+
       scheduleVideoSeek(
-        micros,
+        previewMicros,
         interactive,
         interactive
           ? undefined
@@ -644,7 +699,14 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
             },
       );
     },
-    [pauseAudioPlayback, resumeExternalAudioPlayback, scheduleVideoSeek, syncAudioPlayback],
+    [
+      pauseAudioPlayback,
+      resumeExternalAudioPlayback,
+      scheduleVideoSeek,
+      syncAudioPlayback,
+      timelapseIsActive,
+      timelapsePreview?.rate,
+    ],
   );
 
   const flushFrameStepSeek = useCallback(() => {
@@ -713,7 +775,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     playbackRequestedRef.current = true;
     setTransportError(null);
 
-    if (!isAudioPlaybackEnabled(playbackRateRef.current)) {
+    if (!isAudioPlaybackEnabled(playbackRateRef.current) && !timelapseIsActive) {
       video.pause();
       pauseAudioPlayback();
       isPlayingRef.current = true;
@@ -725,12 +787,16 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
       ? (audioContextRef.current?.resume() ?? Promise.resolve())
       : Promise.resolve();
 
+    const previewStartMicros = timelapseIsActive
+      ? startMicros / (timelapsePreview?.rate ?? playbackRateRef.current)
+      : startMicros;
+
     // Resume the audio context within the user gesture, but do not play stale seek frames.
     void resumeAudioContext.catch(() => {
       if (startSequence !== playbackStartSequenceRef.current) return;
       handlePlaybackStartFailure();
     });
-    scheduleVideoSeek(startMicros, false, () => {
+    scheduleVideoSeek(previewStartMicros, false, () => {
       if (startSequence !== playbackStartSequenceRef.current) return;
       syncAudioPlayback(startMicros / 1_000_000, true);
       const media = audioPlaybackEnabled ? [video, ...audioElementsRef.current.values()] : [video];
@@ -746,6 +812,8 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     pauseAudioPlayback,
     scheduleVideoSeek,
     syncAudioPlayback,
+    timelapseIsActive,
+    timelapsePreview?.rate,
   ]);
 
   const handlePlaybackBoundary = useCallback(
@@ -774,7 +842,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
 
   const startPlayheadAnimation = useCallback(() => {
     stopPlayheadAnimation();
-    if (!isAudioPlaybackEnabled(playbackRateRef.current)) {
+    if (!isAudioPlaybackEnabled(playbackRateRef.current) && !timelapseIsActive) {
       sampledPlaybackRef.current = startSampledPlayback({
         startMicros: currentPlayheadMicrosRef.current,
         rate: playbackRateRef.current,
@@ -810,7 +878,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
         return;
       }
       const currentMicros = clampPlaybackMicros(
-        mediaTimeSeconds * 1_000_000,
+        mediaTimeSeconds * (timelapseIsActive ? playbackRateRef.current : 1) * 1_000_000,
         trimRef.current.sourceDurationMicros,
       );
 
@@ -844,6 +912,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     scheduleVideoSeek,
     stopPlayheadAnimation,
     syncAudioPlayback,
+    timelapseIsActive,
   ]);
 
   useEffect(() => {
@@ -852,12 +921,17 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
       shuttleDirectionRef.current !== 0
     )
       return;
-    if (!audioPlaybackEnabled) {
+    if (!audioPlaybackEnabled && !timelapseIsActive) {
       if (
         sampledPlaybackRef.current?.isRunning &&
         sampledPlaybackRef.current.rate === playbackRateRef.current
       )
         return;
+      startMediaPlayback();
+      startPlayheadAnimation();
+    } else if (timelapseIsActive) {
+      if (sampledPlaybackRef.current) stopPlayheadAnimation();
+      if (playbackFrameRef.current) return;
       startMediaPlayback();
       startPlayheadAnimation();
     } else if (sampledPlaybackRef.current) {
@@ -876,6 +950,8 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     startMediaPlayback,
     startPlayheadAnimation,
     stopPlayheadAnimation,
+    timelapseIsActive,
+    timelapsePreview?.url,
   ]);
 
   useEffect(
@@ -1289,6 +1365,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     (seconds: number) => {
       if (
         sampledPlaybackRef.current ||
+        timelapseIsActive ||
         timelineInteractionActiveRef.current ||
         pendingFrameStepSeekMicrosRef.current !== null ||
         seekSchedulerRef.current?.isPending ||
@@ -1314,7 +1391,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
       setPlayheadMicros(currentMicros);
       if (currentMicros >= trimRef.current.sourceDurationMicros) stopPlayheadAnimation();
     },
-    [handlePlaybackBoundary, stopPlayheadAnimation],
+    [handlePlaybackBoundary, stopPlayheadAnimation, timelapseIsActive],
   );
 
   const onPause = useCallback(() => {
@@ -1390,7 +1467,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
   }, [previewKey]);
 
   const onPlay = useCallback(() => {
-    if (!isAudioPlaybackEnabled(playbackRateRef.current)) {
+    if (!isAudioPlaybackEnabled(playbackRateRef.current) && !timelapseIsActive) {
       videoRef.current?.pause();
       return;
     }
@@ -1402,7 +1479,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
       data: { status: "playing" },
       origin: { type: "internal" },
     });
-  }, [startPlayheadAnimation]);
+  }, [startPlayheadAnimation, timelapseIsActive]);
 
   const onEnded = useCallback(() => {
     if (sampledPlaybackRef.current) return;
@@ -1414,8 +1491,11 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
       handleShuttleEnd({ type: "internal", id: "source-end" });
       return;
     }
-    if (videoRef.current) handlePlaybackBoundary(videoRef.current.currentTime * 1_000_000);
-  }, [handlePlaybackBoundary, handleShuttleEnd]);
+    if (videoRef.current) {
+      const rate = timelapseIsActive ? playbackRateRef.current : 1;
+      handlePlaybackBoundary(videoRef.current.currentTime * rate * 1_000_000);
+    }
+  }, [handlePlaybackBoundary, handleShuttleEnd, timelapseIsActive]);
 
   useEffect(() => {
     shortcutActionsRef.current = {
@@ -1444,6 +1524,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     isPlaybackReady,
     transportError,
     nativeLoopEnabled,
+    previewUrlOverride: timelapseIsActive ? (timelapsePreview?.url ?? null) : null,
     shuttleDirection,
     videoMuted: !audioPlaybackEnabled || (usesExternalAudio && typeof AudioContext === "undefined"),
     onLoadedMetadata,
