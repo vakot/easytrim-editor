@@ -316,7 +316,7 @@ export function CropViewport({
       <CropSnapMarkers frame={viewportFrame} visible={cropSelection.isEditing} />
       {cropSelection.isOpen ? (
         <div
-          className="absolute inset-y-0 right-0 z-20 flex w-10 flex-col items-center justify-center gap-1 border-l border-foreground/10"
+          className="absolute inset-y-0 right-0 z-20 flex w-10 flex-col items-center justify-start gap-1 border-l border-foreground/10"
           data-crop-rotation-controls
           onClick={(event) => event.stopPropagation()}
         >
