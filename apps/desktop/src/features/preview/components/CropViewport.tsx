@@ -30,6 +30,8 @@ import { CropSnapMarkers } from "./CropSnapMarkers";
 
 // Covers the snap-marker offset, its labels, and a small buffer inside the clipped preview card.
 const CROP_TOOL_INSET_PX = 28;
+// Matches the fixed `size-7 + p-1` rotation sidebar so the crop viewport reserves its space.
+const CROP_TOOL_SIDEBAR_WIDTH_PX = 36;
 
 interface CropViewportProps {
   muted: boolean;
@@ -116,8 +118,10 @@ export function CropViewport({
 
   const cropIsApplied = !cropSelection.isEditing && !isFullCrop(cropSelection.crop);
   const cropToolInset = cropSelection.isEditing ? CROP_TOOL_INSET_PX : 0;
+  const cropToolSidebarWidth = cropSelection.isOpen ? CROP_TOOL_SIDEBAR_WIDTH_PX : 0;
+
   const viewportBounds = {
-    width: Math.max(0, containerBounds.width - cropToolInset * 2),
+    width: Math.max(0, containerBounds.width - cropToolInset * 2 - cropToolSidebarWidth),
     height: Math.max(0, containerBounds.height - cropToolInset * 2),
   };
 
@@ -335,7 +339,7 @@ export function CropViewport({
       <CropSnapMarkers frame={viewportFrame} visible={cropSelection.isEditing} />
       {cropSelection.isOpen ? (
         <div
-          className="absolute inset-y-0 right-0 z-20 flex w-10 flex-col items-center justify-start gap-1 border-l border-foreground/10"
+          className="absolute inset-y-0 right-0 z-20 flex flex-col items-center justify-start gap-1 border-l border-foreground/10 p-1"
           data-crop-rotation-controls
           onClick={(event) => event.stopPropagation()}
         >
