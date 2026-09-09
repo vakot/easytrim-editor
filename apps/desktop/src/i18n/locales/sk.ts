@@ -12,7 +12,7 @@ export const sk = {
       retry: "Skúsiť znova",
       save: "Uložiť",
     },
-    labels: { brand: "EasyTrim Editor" },
+    labels: { brand: "EasyTrim Editor", search: "Hľadať" },
     status: {
       disabled: "Vypnuté",
       enabled: "Zapnuté",
@@ -231,6 +231,8 @@ export const sk = {
       noSource: "Žiadny zdroj",
       openFileDescription: "Vyberte jeden videosúbor a začnite upravovať.",
       openFolderDescription: "Importujte všetky podporované videá z priečinka.",
+      noSearchResults: "Nenašli sa žiadne zodpovedajúce zdroje.",
+      searchPlaceholder: "Hľadať zdroje...",
       toolsReady:
         "Všetky požadované multimediálne závislosti sú nainštalované a pripravené na použitie.",
       toolsUnavailable: "Niektoré požadované multimediálne závislosti nie sú dostupné.",

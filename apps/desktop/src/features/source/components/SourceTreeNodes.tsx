@@ -10,6 +10,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { HighlightedText } from "@/components/ui/search-bar";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectEditingInstanceStatusById } from "@/app/store/slices/editing-instances-slice";
@@ -32,6 +33,7 @@ type SourceTreeNodesProps = {
   background?: "card" | "popover";
   level?: number;
   nodes: SourceTreeNode[];
+  searchQuery?: string;
   value: string;
 };
 
@@ -39,6 +41,7 @@ export function SourceTreeNodes({
   background = "card",
   level = 0,
   nodes,
+  searchQuery = "",
   value,
 }: SourceTreeNodesProps) {
   return nodes.map((node) => {
@@ -49,6 +52,7 @@ export function SourceTreeNodes({
           key={node.id}
           level={level}
           node={node}
+          searchQuery={searchQuery}
           value={value}
         />
       );
@@ -60,6 +64,7 @@ export function SourceTreeNodes({
         instanceId={node.instanceId}
         key={node.instanceId}
         level={level}
+        searchQuery={searchQuery}
         selected={value === node.instanceId}
         sourcePath={node.sourcePath}
       />
@@ -71,17 +76,19 @@ const SourceTreeFolder = memo(function SourceTreeFolder({
   background,
   level,
   node,
+  searchQuery,
   value,
 }: {
   background: "card" | "popover";
   level: number;
   node: SourceTreeFolderNode;
+  searchQuery: string;
   value: string;
 }) {
   const sourceIds = useMemo(() => getSourceTreeInstanceIds(node.children), [node.children]);
 
   return (
-    <Collapsible className="w-full">
+    <Collapsible className="w-full" open={searchQuery.trim().length > 0 ? true : undefined}>
       <SourceTreeContextMenu kind="folder" revealPath={node.path} sourceIds={sourceIds}>
         <div
           className="group group-line sticky flex min-w-0 items-center gap-1 bg-(--source-tree-background)"
@@ -111,7 +118,9 @@ const SourceTreeFolder = memo(function SourceTreeFolder({
                 <Folder className="shrink-0 group-data-[state=open]:hidden" />
                 <FolderOpen className="hidden shrink-0 group-data-[state=open]:block" />
 
-                <span className="truncate">{node.name}</span>
+                <span className="truncate">
+                  <HighlightedText query={searchQuery} text={node.name} />
+                </span>
               </div>
 
               <SourceTreeStatus title={String(sourceIds.length)}>
@@ -127,6 +136,7 @@ const SourceTreeFolder = memo(function SourceTreeFolder({
           background={background}
           level={level + 1}
           nodes={node.children}
+          searchQuery={searchQuery}
           value={value}
         />
       </CollapsibleContent>
@@ -138,12 +148,14 @@ const SourceTreeInstance = memo(function SourceTreeInstance({
   displayName,
   instanceId,
   level,
+  searchQuery,
   selected,
   sourcePath,
 }: {
   displayName: string;
   instanceId: string;
   level: number;
+  searchQuery: string;
   selected: boolean;
   sourcePath: string;
 }) {
@@ -174,7 +186,9 @@ const SourceTreeInstance = memo(function SourceTreeInstance({
           <span className="flex min-w-0 items-center gap-1" style={{ paddingLeft: level * 8 + 16 }}>
             <FileVideo className="shrink-0" />
 
-            <span className="truncate">{displayName}</span>
+            <span className="truncate">
+              <HighlightedText query={searchQuery} text={displayName} />
+            </span>
           </span>
 
           {status ? (

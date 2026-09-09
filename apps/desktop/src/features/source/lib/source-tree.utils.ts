@@ -1,6 +1,7 @@
 import type { TFunction } from "i18next";
 
 import type { EditingInstance } from "@/domain/editing-instance";
+import { normalizeSearchValue } from "@/lib/search.utils";
 import { isWindowsRuntime } from "@/lib/tauri/updates.utils";
 
 import { formatSourcePath } from "./media-formatters.utils";
@@ -147,6 +148,32 @@ export function getSourceTreeSiblings(
   target: { kind: "folder"; path: string } | { id: string; kind: "instance" },
 ): SourceTreeNode[] {
   return findSourceTreeSiblings(nodes, target) ?? [];
+}
+
+export function filterSourceTreeNodes(nodes: SourceTreeNode[], query: string): SourceTreeNode[] {
+  const normalizedQuery = normalizeSearchValue(query);
+  if (!normalizedQuery) return nodes;
+
+  const filteredNodes: SourceTreeNode[] = [];
+
+  for (const node of nodes) {
+    if (node.kind === "instance") {
+      if (normalizeSearchValue(node.displayName).includes(normalizedQuery)) {
+        filteredNodes.push(node);
+      }
+      continue;
+    }
+
+    if (normalizeSearchValue(node.name).includes(normalizedQuery)) {
+      filteredNodes.push(node);
+      continue;
+    }
+
+    const children = filterSourceTreeNodes(node.children, normalizedQuery);
+    if (children.length > 0) filteredNodes.push({ ...node, children });
+  }
+
+  return filteredNodes;
 }
 
 export function getSourceAction(instances: EditingInstance[]): "delete" | "restore" {

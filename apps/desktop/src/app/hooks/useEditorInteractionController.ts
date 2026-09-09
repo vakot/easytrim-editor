@@ -458,9 +458,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
       const actions = shortcutActionsRef.current;
       const shortcut = editorShortcutFromEvent(event);
       if (!actions?.enabled || !shortcut) return;
-      const isPriorityShortcut = shortcut === "toggle-playback";
-      if (!isPriorityShortcut && (event.defaultPrevented || isShortcutBlockedTarget(event.target)))
-        return;
+      if (event.defaultPrevented || isShortcutBlockedTarget(event.target)) return;
       event.preventDefault();
       event.stopPropagation();
       const origin = { type: "hotkey" as const, id: event.key };
