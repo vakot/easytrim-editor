@@ -545,7 +545,7 @@ describe("App", () => {
     }
   });
 
-  it("starts waveforms only after multi-track playback is ready without waiting for them", async () => {
+  it("starts video playback and waveforms without waiting for multi-track audio previews", async () => {
     let resolveAudioPreviews!: (
       previews: Array<{ mediaToken: number; streamIndex: number; url: string }>,
     ) => void;
@@ -581,9 +581,21 @@ describe("App", () => {
       await openSourcePicker(user);
       await screen.findByLabelText("Source video preview");
 
-      expect(screen.getByTestId("preview-loading-overlay")).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: "Play" })).toBeDisabled();
-      expect(mocks.prepareWaveforms).not.toHaveBeenCalled();
+      expect(screen.getByRole("button", { name: "Play" })).not.toBeDisabled();
+      await waitFor(() =>
+        expect(mocks.prepareWaveforms).toHaveBeenCalledWith(
+          selection.sourcePath,
+          expect.stringMatching(/^waveform-/),
+          [1, 2],
+          4_096,
+        ),
+      );
+
+      await user.click(screen.getByRole("button", { name: "Play" }));
+
+      expect(audioContext.resume).toHaveBeenCalledOnce();
+      expect(play).toHaveBeenCalledTimes(1);
+      expect(screen.getByRole("button", { name: "Play" })).not.toBeDisabled();
 
       await act(async () => {
         resolveAudioPreviews([
@@ -599,33 +611,8 @@ describe("App", () => {
           },
         ]);
       });
-
       await waitFor(() => expect(audioElements).toHaveLength(2));
-      expect(screen.getByTestId("preview-loading-overlay")).toBeInTheDocument();
-      expect(screen.getByTestId("timeline-fixed-content")).toBeInTheDocument();
-      expect(mocks.prepareWaveforms).not.toHaveBeenCalled();
       for (const audio of audioElements) fireEvent.canPlay(audio);
-      fireEvent.canPlay(screen.getByLabelText("Source video preview"));
-
-      await waitFor(() =>
-        expect(screen.queryByTestId("preview-loading-overlay")).not.toBeInTheDocument(),
-      );
-      expect(screen.getByRole("button", { name: "Play" })).not.toBeDisabled();
-      await waitFor(() =>
-        expect(mocks.prepareWaveforms).toHaveBeenCalledWith(
-          selection.sourcePath,
-          expect.stringMatching(/^waveform-/),
-          [1, 2],
-          4_096,
-        ),
-      );
-      expect(screen.getAllByText("Preparing waveform…")).toHaveLength(2);
-
-      await user.click(screen.getByRole("button", { name: "Play" }));
-
-      expect(audioContext.resume).toHaveBeenCalledOnce();
-      expect(play).toHaveBeenCalledTimes(3);
-      expect(screen.getByRole("button", { name: "Play" })).not.toBeDisabled();
     } finally {
       play.mockRestore();
       vi.unstubAllGlobals();

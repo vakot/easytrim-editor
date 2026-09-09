@@ -206,7 +206,6 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
   const isPlaybackReady =
     previewKey !== null &&
     readyPreviewKey === previewKey &&
-    audioPreviewState?.status !== "loading" &&
     (!usesExternalAudio ||
       (audioReadiness.sourcePath === sourcePath &&
         audioReadiness.streamIndexes.size === activeExternalAudioStreamCount));
