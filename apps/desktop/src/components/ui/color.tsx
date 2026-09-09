@@ -120,7 +120,7 @@ function SpectrumWheel({
   return (
     <button
       className={cn(
-        "relative block size-48 cursor-crosshair touch-none rounded-full ring-1 ring-foreground/10 outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "relative block size-48 cursor-crosshair touch-none rounded-full ring-1 ring-foreground/10 outline-none focus-visible:ring-1 focus-visible:ring-ring",
         className,
       )}
       data-slot="spectrum-wheel"

@@ -265,7 +265,7 @@ function CustomColorPickerPanel({
       />
       <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
         <span>{t("settings.options.colors.custom")}</span>
-        <div className="flex h-6 w-15 items-center rounded-lg border border-input bg-transparent px-1.5 transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
+        <div className="flex h-6 w-15 items-center rounded-lg border border-input bg-transparent px-1.5 transition-colors focus-within:border-ring focus-within:ring-1 focus-within:ring-ring/50">
           <span
             aria-hidden="true"
             className="pointer-events-none shrink-0 font-mono text-xs text-muted-foreground select-none"

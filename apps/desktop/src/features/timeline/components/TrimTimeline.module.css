@@ -101,7 +101,7 @@
 
 .segment:focus-visible {
   z-index: 10;
-  outline: 2px solid color-mix(in oklch, var(--foreground) 72%, transparent);
+  outline: 1px solid color-mix(in oklch, var(--foreground) 72%, transparent);
   outline-offset: -2px;
 }
 
@@ -155,9 +155,7 @@
 .playhead:focus-visible::before,
 .playhead:focus-visible::after {
   background: var(--primary);
-  box-shadow:
-    0 0 0 1px var(--background),
-    0 0 0 3px color-mix(in oklch, var(--primary) 42%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in oklch, var(--primary) 42%, transparent);
 }
 
 .trim {
@@ -226,9 +224,7 @@
 }
 
 .trim:focus-visible::before {
-  box-shadow:
-    0 0 0 2px var(--background),
-    0 0 0 4px color-mix(in oklch, var(--foreground) 60%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in oklch, var(--foreground) 60%, transparent);
 }
 
 .trim[data-dragging="true"]:focus-visible::before {
