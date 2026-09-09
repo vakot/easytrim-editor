@@ -100,8 +100,9 @@
 }
 
 .segment:focus-visible {
+  z-index: 10;
   outline: 2px solid color-mix(in oklch, var(--foreground) 72%, transparent);
-  outline-offset: 2px;
+  outline-offset: -2px;
 }
 
 .segment svg {
@@ -147,6 +148,7 @@
 }
 
 .playhead:focus-visible {
+  z-index: 10;
   outline: none;
 }
 
@@ -219,6 +221,7 @@
 }
 
 .trim:focus-visible {
+  z-index: 10;
   outline: none;
 }
 
