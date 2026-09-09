@@ -127,12 +127,11 @@ function SourceBreadcrumbPopover({
       <PopoverTrigger asChild>{children}</PopoverTrigger>
       <PopoverContent
         align="start"
-        className="flex max-h-96 w-80 flex-col overflow-hidden p-1 py-2.5"
+        className="flex max-h-96 w-80 flex-col gap-2 overflow-hidden p-1 py-2.5"
         side="bottom"
       >
         <SearchBar
           aria-label={t("common.labels.search")}
-          className="mb-2"
           onValueChange={setSearchQuery}
           placeholder={t("source.messages.searchPlaceholder")}
           value={searchQuery}
