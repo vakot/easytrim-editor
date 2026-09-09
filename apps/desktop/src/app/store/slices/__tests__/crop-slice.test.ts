@@ -8,6 +8,7 @@ import {
   cropChanged,
   cropReducer,
   initialCropState,
+  rotationChanged,
   selectCropApplied,
   selectCropResolution,
 } from "../crop-slice";
@@ -45,5 +46,17 @@ describe("crop slice", () => {
       }),
     );
     expect(selectCropResolution(store.getState())).toEqual({ width: 1536, height: 1080 });
+
+    store.dispatch(rotationChanged(90));
+    expect(selectCropResolution(store.getState())).toEqual({ width: 1080, height: 1536 });
+    expect(store.getState().crop.value).toEqual({ x: 0, y: 0.1, width: 1, height: 0.8 });
+  });
+
+  it("keeps rotation constrained to the source-bound crop tool state", () => {
+    const rotated = cropReducer(initialCropState, rotationChanged(270));
+    expect(rotated.rotationDegrees).toBe(270);
+
+    const cleared = cropReducer(rotated, sourceCleared());
+    expect(cleared.rotationDegrees).toBe(0);
   });
 });

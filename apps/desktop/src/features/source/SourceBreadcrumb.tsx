@@ -38,10 +38,9 @@ export function SourceBreadcrumb() {
   const sourcePath = formatSourcePath(instance.sourcePath);
   const directories = getPathDirectories(sourcePath);
   const nodes = getSourceTreeNodes(entries, { compact: false });
-
   return (
     <Breadcrumb className="min-w-0 px-2 pb-1">
-      <BreadcrumbList className="flex-nowrap overflow-hidden text-xs">
+      <BreadcrumbList className="min-w-0 flex-nowrap overflow-hidden text-xs">
         <SourceBreadcrumbList>
           {directories.map((directory) => (
             <SourceBreadcrumbDirectory

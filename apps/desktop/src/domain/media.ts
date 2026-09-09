@@ -35,6 +35,7 @@ export interface ExportResult {
 export interface FastExportRequest {
   audioTracks: AudioTrackSelection[];
   mergeAudio: boolean;
+  rotationDegrees: import("./rotation").RotationDegrees;
   sourcePath: string;
   trim: TrimSelection;
 }

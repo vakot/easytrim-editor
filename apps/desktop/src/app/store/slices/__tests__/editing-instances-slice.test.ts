@@ -54,6 +54,7 @@ function attempt(id: string, snapshot = baseSnapshot) {
     request: {
       audioTracks: [],
       mergeAudio: false,
+      rotationDegrees: 0,
       sourcePath: snapshot.source.sourcePath,
       trim: { endMicros: 1_000_000, startMicros: 0 },
     },

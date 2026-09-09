@@ -307,6 +307,8 @@ export const en = {
         bottomRight: "Resize crop from bottom right",
         left: "Resize crop from left",
         preview: "Video crop preview",
+        rotateClockwise: "Rotate clockwise",
+        rotateCounterclockwise: "Rotate counterclockwise",
         right: "Resize crop from right",
         top: "Resize crop from top",
         topLeft: "Resize crop from top left",

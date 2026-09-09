@@ -231,6 +231,7 @@ async function prepareSelectedSource(
         source,
         trim: snapshot.trim,
         crop: snapshot.crop,
+        rotation: snapshot.rotation,
         masterAudio: snapshot.audio.master,
         audioTracks: snapshot.audio.tracks,
         mergeAudio: snapshot.audio.mergeAudio,
@@ -310,6 +311,7 @@ async function prepareSelectedSource(
       source,
       trim: { kind: "full-source" },
       crop: null,
+      rotation: 0,
       masterAudio: selectMasterAudio(getState()),
       audioTracks: selectAudioTracks(getState()).map(({ enabled, streamIndex, volumePercent }) => ({
         enabled,
@@ -342,6 +344,7 @@ function captureActiveEditingInstanceDraft(
         source,
         trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
         crop: selectCrop(state),
+        rotation: state.crop.rotationDegrees,
         masterAudio: selectMasterAudio(state),
         audioTracks: selectAudioTracks(state).map(({ enabled, streamIndex, volumePercent }) => ({
           streamIndex,

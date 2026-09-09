@@ -167,6 +167,7 @@ describe("media IPC adapter", () => {
       trim: { startMicros: 0, endMicros: 1_000_000 },
       audioTracks: [],
       mergeAudio: false,
+      rotationDegrees: 0 as const,
       resolution: { width: 1920, height: 1080 },
       arguments: "-c:v hevc_nvenc",
     };
@@ -188,6 +189,7 @@ describe("media IPC adapter", () => {
       trim: { startMicros: 0, endMicros: 1_000_000 },
       audioTracks: [],
       mergeAudio: false,
+      rotationDegrees: 0 as const,
     };
 
     await expect(

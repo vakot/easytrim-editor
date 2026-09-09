@@ -8,9 +8,16 @@ import {
 } from "react";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
-import { cropChanged, cropResolutionFor, selectCrop } from "@/app/store/slices/crop-slice";
+import {
+  cropChanged,
+  cropResolutionFor,
+  rotationChanged,
+  selectCrop,
+  selectRotationDegrees,
+} from "@/app/store/slices/crop-slice";
 import { selectSourceMedia } from "@/app/store/slices/source-slice";
 import { commitActiveEditingInstanceDraft } from "@/app/store/thunks/source-media-thunks";
+import { rotateDegrees } from "@/domain/rotation";
 
 import type { CropFrame } from "../lib/crop-frame.utils";
 import { type CropHandle, type CropRect, moveCrop, resizeCrop } from "../lib/crop-geometry.utils";
@@ -34,10 +41,23 @@ export function useCropSelection(previewRef: RefObject<HTMLDivElement | null>) {
   const dispatch = useAppDispatch();
   const sourceMedia = useAppSelector(selectSourceMedia);
   const crop = useAppSelector(selectCrop);
+  const rotationDegrees = useAppSelector(selectRotationDegrees);
+  const previewRotationRef = useRef<number>(rotationDegrees);
+  const [previewRotationDegrees, setPreviewRotationDegrees] = useState<number>(rotationDegrees);
   const [isOpen, setIsOpen] = useState(false);
   const [drag, setDrag] = useState<DragState | null>(null);
   const [enterFrom, setEnterFrom] = useState<CropFrame | null>(null);
   const selectionRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const previousRotation = normalizeRotation(previewRotationRef.current);
+    if (previousRotation === rotationDegrees) return;
+    const clockwiseDelta = (rotationDegrees - previousRotation + 360) % 360;
+    const delta = clockwiseDelta === 270 ? -90 : clockwiseDelta;
+    const nextPreviewRotation = previewRotationRef.current + delta;
+    previewRotationRef.current = nextPreviewRotation;
+    setPreviewRotationDegrees(nextPreviewRotation);
+  }, [rotationDegrees]);
 
   function open(frame: CropFrame) {
     setEnterFrom(frame);
@@ -115,7 +135,7 @@ export function useCropSelection(previewRef: RefObject<HTMLDivElement | null>) {
       dispatch(
         cropChanged({
           crop: nextCrop,
-          resolution: cropResolutionFor(sourceMedia?.video ?? null, nextCrop),
+          resolution: cropResolutionFor(sourceMedia?.video ?? null, nextCrop, rotationDegrees),
         }),
       );
     }
@@ -127,8 +147,22 @@ export function useCropSelection(previewRef: RefObject<HTMLDivElement | null>) {
     setDrag(null);
   }
 
+  const rotate = useCallback(
+    (direction: "clockwise" | "counterclockwise") => {
+      const delta = direction === "clockwise" ? 90 : -90;
+      const nextPreviewRotation = previewRotationRef.current + delta;
+      previewRotationRef.current = nextPreviewRotation;
+      setPreviewRotationDegrees(nextPreviewRotation);
+      dispatch(rotationChanged(rotateDegrees(rotationDegrees, direction)));
+      dispatch(commitActiveEditingInstanceDraft());
+    },
+    [dispatch, rotationDegrees],
+  );
+
   return {
     crop,
+    previewRotationDegrees,
+    rotationDegrees,
     isEditing: isOpen || drag !== null,
     isDragging: drag !== null,
     isOpen,
@@ -136,8 +170,14 @@ export function useCropSelection(previewRef: RefObject<HTMLDivElement | null>) {
     selectionRef,
     open,
     close,
+    rotateClockwise: () => rotate("clockwise"),
+    rotateCounterclockwise: () => rotate("counterclockwise"),
     startDrag,
     moveDrag,
     finishDrag,
   };
+}
+
+function normalizeRotation(rotation: number): number {
+  return ((rotation % 360) + 360) % 360;
 }

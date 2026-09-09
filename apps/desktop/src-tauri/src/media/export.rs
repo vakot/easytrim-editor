@@ -43,6 +43,7 @@ pub struct FastExportRequest {
     pub trim: TrimSelection,
     pub audio_tracks: Vec<AudioTrackSelection>,
     pub merge_audio: bool,
+    pub rotation_degrees: u16,
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
@@ -59,6 +60,7 @@ pub struct OptimizedExportRequest {
     pub trim: TrimSelection,
     pub audio_tracks: Vec<AudioTrackSelection>,
     pub merge_audio: bool,
+    pub rotation_degrees: u16,
     pub resolution: ResolutionSelection,
     pub crop: Option<CropSelection>,
     pub frame_rate: Option<FrameRateSelection>,
@@ -72,6 +74,12 @@ pub fn build_fast_arguments(
     output_path: &Path,
 ) -> Result<Vec<OsString>, AppError> {
     validate_common_request(source, &request.trim, &request.audio_tracks)?;
+    validate_rotation(request.rotation_degrees)?;
+    if request.rotation_degrees != 0 {
+        return Err(AppError::invalid_request(
+            "Fast cut cannot apply rotation; use optimized render.",
+        ));
+    }
 
     let mut arguments = common_input_arguments(source_path, &request.trim);
     arguments.extend([
@@ -149,6 +157,7 @@ pub fn build_optimized_arguments(
     validate_common_request(source, &request.trim, &request.audio_tracks)?;
     validate_resolution(&request.resolution)?;
     validate_crop(request.crop.as_ref())?;
+    validate_rotation(request.rotation_degrees)?;
     if let Some(frame_rate) = &request.frame_rate
         && (frame_rate.numerator == 0 || frame_rate.denominator == 0)
     {
@@ -193,26 +202,21 @@ pub fn build_optimized_arguments(
     if request.audio_tracks.is_empty() {
         arguments.push(OsString::from("-an"));
     }
-    let video_filter = request
-        .crop
-        .as_ref()
-        .map(|crop| {
-            format!(
-                "crop=iw*{}:ih*{}:iw*{}:ih*{},scale={}:{},setsar=1",
-                crop.width,
-                crop.height,
-                crop.x,
-                crop.y,
-                request.resolution.width,
-                request.resolution.height
-            )
-        })
-        .unwrap_or_else(|| {
-            format!(
-                "scale={}:{},setsar=1",
-                request.resolution.width, request.resolution.height,
-            )
-        });
+    let mut video_filters = Vec::new();
+    if request.rotation_degrees != 0 {
+        video_filters.push(rotation_filter(request.rotation_degrees));
+    }
+    if let Some(crop) = request.crop.as_ref() {
+        video_filters.push(format!(
+            "crop=iw*{}:ih*{}:iw*{}:ih*{}",
+            crop.width, crop.height, crop.x, crop.y
+        ));
+    }
+    video_filters.push(format!(
+        "scale={}:{},setsar=1",
+        request.resolution.width, request.resolution.height,
+    ));
+    let video_filter = video_filters.join(",");
     arguments.extend([OsString::from("-vf"), OsString::from(video_filter)]);
     if let Some(frame_rate) = &request.frame_rate {
         arguments.extend([
@@ -321,6 +325,25 @@ fn validate_crop(crop: Option<&CropSelection>) -> Result<(), AppError> {
         return Err(AppError::invalid_request("The crop selection is invalid."));
     }
     Ok(())
+}
+
+fn validate_rotation(rotation_degrees: u16) -> Result<(), AppError> {
+    if matches!(rotation_degrees, 0 | 90 | 180 | 270) {
+        Ok(())
+    } else {
+        Err(AppError::invalid_request(
+            "The rotation must be 0, 90, 180, or 270 degrees.",
+        ))
+    }
+}
+
+fn rotation_filter(rotation_degrees: u16) -> String {
+    match rotation_degrees {
+        90 => "transpose=1".to_owned(),
+        180 => "hflip,vflip".to_owned(),
+        270 => "transpose=2".to_owned(),
+        _ => String::new(),
+    }
 }
 
 fn audio_tracks_need_reencode(audio_tracks: &[AudioTrackSelection]) -> bool {
@@ -552,6 +575,7 @@ mod tests {
                 volume_percent: 50,
             }],
             merge_audio: false,
+            rotation_degrees: 0,
             resolution: ResolutionSelection {
                 width: 1920,
                 height: 1080,
@@ -577,6 +601,7 @@ mod tests {
                     volume_percent: 50,
                 }],
                 merge_audio: false,
+                rotation_degrees: 0,
             },
             Path::new("source.mkv"),
             Path::new("out.mkv"),
@@ -604,6 +629,7 @@ mod tests {
                 },
                 audio_tracks: Vec::new(),
                 merge_audio: false,
+                rotation_degrees: 0,
             },
             Path::new("source.mkv"),
             Path::new("out.mkv"),
@@ -615,6 +641,28 @@ mod tests {
             .collect::<Vec<_>>();
         assert!(values.contains(&"-an".to_owned()));
         assert!(values.windows(2).any(|pair| pair == ["-c:v", "copy"]));
+    }
+
+    #[test]
+    fn fast_cut_rejects_rotation_instead_of_copying_untransformed_video() {
+        let error = build_fast_arguments(
+            &media(),
+            &FastExportRequest {
+                source_path: "source.mkv".to_owned(),
+                trim: TrimSelection {
+                    start_micros: 0,
+                    end_micros: 2_000_000,
+                },
+                audio_tracks: Vec::new(),
+                merge_audio: false,
+                rotation_degrees: 90,
+            },
+            Path::new("source.mkv"),
+            Path::new("out.mkv"),
+        )
+        .expect_err("fast cut must not silently drop rotation");
+
+        assert_eq!(error.code, "invalid_request");
     }
 
     #[test]
@@ -638,6 +686,7 @@ mod tests {
                     },
                 ],
                 merge_audio: true,
+                rotation_degrees: 0,
             },
             Path::new("source.mkv"),
             Path::new("out.mkv"),
@@ -669,6 +718,7 @@ mod tests {
                     volume_percent: 100,
                 }],
                 merge_audio: false,
+                rotation_degrees: 0,
             },
             Path::new("source.mkv"),
             Path::new("out.mkv"),
@@ -704,6 +754,7 @@ mod tests {
                     volume_percent: 50,
                 }],
                 merge_audio: false,
+                rotation_degrees: 0,
                 resolution: ResolutionSelection {
                     width: 1920,
                     height: 1080,
@@ -731,6 +782,29 @@ mod tests {
         );
         assert!(values.windows(2).any(|pair| pair == ["-r", "30/1"]));
         assert!(values.windows(2).any(|pair| pair == ["-c:v", "hevc_nvenc"]));
+    }
+
+    #[test]
+    fn optimized_route_uses_the_four_supported_rotation_filters() {
+        for (rotation, filter) in [(0, ""), (90, "transpose=1,"), (180, "hflip,vflip,"), (270, "transpose=2,")] {
+            let mut request = optimized_request("-c:v libx264 -crf 20");
+            request.rotation_degrees = rotation;
+            let values = build_optimized_arguments(
+                &media(),
+                &request,
+                Path::new("source.mkv"),
+                Path::new("out.mp4"),
+            )
+            .expect("rotation request is valid")
+            .into_iter()
+            .map(|value| value.to_string_lossy().to_string())
+            .collect::<Vec<_>>();
+
+            let expected_filter = format!("{filter}scale=1920:1080,setsar=1");
+            assert!(values.windows(2).any(|pair| {
+                pair[0] == "-vf" && pair[1] == expected_filter
+            }));
+        }
     }
 
     #[test]

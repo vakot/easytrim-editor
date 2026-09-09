@@ -39,6 +39,7 @@ function completedAttempt(id: string, displayName: string, displayPath: string) 
     request: {
       audioTracks: [],
       mergeAudio: false,
+      rotationDegrees: 0,
       sourcePath: firstSource.sourcePath,
       trim: { endMicros: 1_000_000, startMicros: 0 },
     },
