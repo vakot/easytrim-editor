@@ -16,7 +16,7 @@ use crate::{
 pub const MIN_WAVEFORM_WIDTH: u32 = 64;
 pub const MAX_WAVEFORM_WIDTH: u32 = 4_096;
 const WAVEFORM_HEIGHT: u32 = 56;
-const WAVEFORM_TIMEOUT: Duration = Duration::from_secs(10 * 60);
+const WAVEFORM_TIMEOUT: Duration = Duration::from_secs(60 * 60);
 const WAVEFORM_STDOUT_LIMIT: usize = 16 * 1024;
 const WAVEFORM_STDERR_LIMIT: usize = 512 * 1024;
 const AUDIO_ACTIVITY_THRESHOLD_DB: f64 = -50.0;
@@ -41,6 +41,11 @@ pub fn generate_waveforms(
         &source.source.path,
         stream_indexes,
         width,
+        source
+            .source
+            .media
+            .as_ref()
+            .map_or(0, |media| media.duration_micros),
         artifacts
             .iter()
             .map(|(_, artifact)| artifact.path())
@@ -134,14 +139,16 @@ fn waveform_arguments(
     source_path: &Path,
     stream_indexes: &[u32],
     width: u32,
+    duration_micros: i64,
     output_paths: &[&Path],
 ) -> Vec<OsString> {
+    let envelope = waveform_envelope_filter(duration_micros, width);
     let filters = stream_indexes
         .iter()
         .enumerate()
         .map(|(index, stream_index)| {
             format!(
-                "[0:{stream_index}]aformat=channel_layouts=mono,asplit=2[wave_input{index}][activity_input{index}];[wave_input{index}]showwavespic=s={width}x{WAVEFORM_HEIGHT}:colors=0x8b5cf6:scale=sqrt[waveform{index}];[activity_input{index}]volumedetect@stream{stream_index}[activity{index}]"
+                "[0:{stream_index}]aformat=channel_layouts=mono,asplit=2[wave_input{index}][activity_input{index}];[wave_input{index}]{envelope}showwavespic=s={width}x{WAVEFORM_HEIGHT}:colors=0x8b5cf6:scale=sqrt[waveform{index}];[activity_input{index}]volumedetect@stream{stream_index}[activity{index}]"
             )
         })
         .collect::<Vec<_>>()
@@ -149,6 +156,11 @@ fn waveform_arguments(
     let mut arguments = vec![
         OsString::from("-hide_banner"),
         OsString::from("-nostdin"),
+        OsString::from("-nostats"),
+        OsString::from("-filter_complex_threads"),
+        OsString::from("1"),
+        OsString::from("-threads"),
+        OsString::from("1"),
         OsString::from("-n"),
         OsString::from("-i"),
         source_path.as_os_str().to_owned(),
@@ -180,6 +192,20 @@ fn waveform_arguments(
         ]);
     }
     arguments
+}
+
+fn waveform_envelope_filter(duration_micros: i64, width: u32) -> String {
+    if duration_micros <= 60_000_000 {
+        return String::new();
+    }
+    // showwavespic retains its entire input until EOF. Feed it an amplitude envelope,
+    // not hours of PCM. Rectify BEFORE resampling so high-frequency sound is preserved.
+    // Aim for 16 samples/pixel, with a 1 Hz floor for exceptionally long recordings.
+    let rate =
+        ((u64::from(width) * 16 * 1_000_000).div_ceil(duration_micros as u64)).clamp(1, 1_000);
+    // Two stages avoid a very large resampling ratio/filter. Rebatch tiny low-rate frames
+    // to avoid retaining hundreds of thousands of AVFrame allocations. Do not pad the tail.
+    format!("aeval=abs(val(0)),aresample=1000,aresample={rate},asetnsamples=n=1024:p=0,")
 }
 
 fn parse_audio_activity(
@@ -309,6 +335,7 @@ mod tests {
             Path::new("C:\\Videos\\source clip.mkv"),
             &[2, 4],
             1_280,
+            30_000_000,
             &[
                 Path::new("C:\\Temp\\audio-2.png"),
                 Path::new("C:\\Temp\\audio-4.png"),
@@ -346,5 +373,124 @@ mod tests {
         assert_eq!(activity.get(&2).copied(), Some(Some(true)));
         assert_eq!(activity.get(&4).copied(), Some(Some(false)));
         assert_eq!(activity.get(&6).copied(), Some(None));
+    }
+
+    #[test]
+    fn long_recordings_retain_an_envelope_instead_of_full_rate_pcm() {
+        assert_eq!(super::waveform_envelope_filter(30_000_000, 1_280), "");
+        assert_eq!(
+            super::waveform_envelope_filter(14_400_000_000, MAX_WAVEFORM_WIDTH),
+            "aeval=abs(val(0)),aresample=1000,aresample=5,asetnsamples=n=1024:p=0,"
+        );
+        let args = waveform_arguments(
+            Path::new("source.mkv"),
+            &[1, 6],
+            4_096,
+            14_400_000_000,
+            &[Path::new("one.png"), Path::new("six.png")],
+        );
+        let filters = args
+            .windows(2)
+            .find(|pair| pair[0] == "-filter_complex")
+            .unwrap()[1]
+            .to_str()
+            .unwrap();
+        assert_eq!(filters.matches("aeval=abs(val(0))").count(), 2);
+        assert!(filters.contains("[activity_input1]volumedetect@stream6"));
+        assert!(args.iter().any(|arg| arg == "-nostats"));
+    }
+
+    #[test]
+    #[ignore = "requires FFmpeg; generates and verifies a two-minute six-stream fixture"]
+    fn envelope_images_preserve_active_and_silent_streams() {
+        use crate::process::run_bounded;
+        use std::{ffi::OsStr, fs, time::Duration};
+
+        let source = super::create_artifact(99).unwrap();
+        let mut fixture_args: Vec<OsString> = [
+            "-hide_banner",
+            "-nostdin",
+            "-nostats",
+            "-f",
+            "lavfi",
+            "-i",
+            "sine=frequency=1000:sample_rate=48000:duration=120",
+            "-f",
+            "lavfi",
+            "-i",
+            "anullsrc=r=48000:cl=mono:d=120",
+            "-map",
+            "0:a",
+            "-map",
+            "1:a",
+            "-map",
+            "0:a",
+            "-map",
+            "1:a",
+            "-map",
+            "0:a",
+            "-map",
+            "1:a",
+            "-c:a",
+            "flac",
+            "-threads",
+            "1",
+            "-f",
+            "matroska",
+        ]
+        .iter()
+        .map(OsString::from)
+        .collect();
+        fixture_args.push(source.path().as_os_str().to_owned());
+        let fixture = run_bounded(
+            OsStr::new("ffmpeg"),
+            &fixture_args,
+            Duration::from_secs(60),
+            0,
+            16384,
+        )
+        .unwrap();
+        assert!(
+            fixture.status.success(),
+            "{}",
+            String::from_utf8_lossy(&fixture.stderr)
+        );
+
+        let artifacts = (0..6)
+            .map(|index| super::create_artifact(index).unwrap())
+            .collect::<Vec<_>>();
+        let indexes = [0, 1, 2, 3, 4, 5];
+        let args = waveform_arguments(
+            source.path(),
+            &indexes,
+            1280,
+            120_000_000,
+            &artifacts
+                .iter()
+                .map(|artifact| artifact.path())
+                .collect::<Vec<_>>(),
+        );
+        let output = run_bounded(
+            OsStr::new("ffmpeg"),
+            &args,
+            Duration::from_secs(60),
+            0,
+            16384,
+        )
+        .unwrap();
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let activity = super::parse_audio_activity(&output.stderr, &indexes);
+        for (index, artifact) in artifacts.iter().enumerate() {
+            assert_eq!(activity[&(index as u32)], Some(index % 2 == 0));
+            let image = fs::read(artifact.path()).unwrap();
+            assert_eq!(&image[..8], b"\x89PNG\r\n\x1a\n");
+            assert_eq!(u32::from_be_bytes(image[16..20].try_into().unwrap()), 1280);
+            assert_eq!(u32::from_be_bytes(image[20..24].try_into().unwrap()), 56);
+            assert!(image.len() < 100_000);
+        }
     }
 }

@@ -245,37 +245,42 @@ async function prepareSelectedSource(
     data: { streamCount: audioStreamIndexes.length },
   });
 
-  const audioPreparation =
-    audioStreamIndexes.length <= 1
-      ? Promise.resolve().then(() => {
-          if (isCurrentSource(getState(), source.sourcePath, loadToken)) {
-            dispatch(audioPreviewsReady({ previews: [] }));
-            audioOperation.complete({ previewCount: 0 });
-          } else {
-            audioOperation.cancel({ reason: "source_replaced" });
-          }
-        })
-      : (async () => {
-          dispatch(audioPreviewsLoading());
-          try {
-            const previews = await prepareAudioPreviews(source.sourcePath, audioStreamIndexes);
-            if (isCurrentSource(getState(), source.sourcePath, loadToken)) {
-              dispatch(audioPreviewsReady({ previews }));
-              audioOperation.complete({ previewCount: previews.length });
-            } else {
-              audioOperation.cancel({ reason: "source_replaced" });
-            }
-          } catch (error: unknown) {
-            audioOperation.fail(error);
-            if (isCurrentSource(getState(), source.sourcePath, loadToken)) {
-              dispatch(
-                audioPreviewsUnavailable({
-                  error: normalizeAppError(error),
-                }),
-              );
-            }
-          }
-        })();
+  const prepareAudio = async () => {
+    if (audioStreamIndexes.length <= 1) {
+      if (isCurrentSource(getState(), source.sourcePath, loadToken)) {
+        dispatch(audioPreviewsReady({ previews: [] }));
+        audioOperation.complete({ previewCount: 0 });
+      } else {
+        audioOperation.cancel({ reason: "source_replaced" });
+      }
+      return;
+    }
+
+    if (!isCurrentSource(getState(), source.sourcePath, loadToken)) {
+      audioOperation.cancel({ reason: "source_replaced" });
+      return;
+    }
+
+    dispatch(audioPreviewsLoading());
+    try {
+      const previews = await prepareAudioPreviews(source.sourcePath, audioStreamIndexes);
+      if (isCurrentSource(getState(), source.sourcePath, loadToken)) {
+        dispatch(audioPreviewsReady({ previews }));
+        audioOperation.complete({ previewCount: previews.length });
+      } else {
+        audioOperation.cancel({ reason: "source_replaced" });
+      }
+    } catch (error: unknown) {
+      audioOperation.fail(error);
+      if (isCurrentSource(getState(), source.sourcePath, loadToken)) {
+        dispatch(
+          audioPreviewsUnavailable({
+            error: normalizeAppError(error),
+          }),
+        );
+      }
+    }
+  };
 
   const previewOperation = operation.child("preview.prepare", {
     data: { kind: "source" },
@@ -298,8 +303,9 @@ async function prepareSelectedSource(
     }
   })();
 
-  // Audio previews are optional. The direct video preview is the minimum
-  // needed for activation; audio preparation continues without blocking it.
+  // Audio previews are optional and can require a full-source demux. Start them
+  // only after the direct video preview is available so large sources do not
+  // compete with initial video playback.
   await previewPreparation;
   if (!isCurrentSource(getState(), source.sourcePath, loadToken)) {
     operation.cancel({ reason: "source_replaced" });
@@ -322,7 +328,7 @@ async function prepareSelectedSource(
     });
 
   operation.complete({ audioStreamCount: audioStreamIndexes.length });
-  void audioPreparation;
+  void prepareAudio();
   return result;
 }
 
