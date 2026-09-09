@@ -229,6 +229,17 @@
   * {
     @apply border-border outline-ring/50;
   }
+
+  /* Keep focus indicators inside the focused control so overflow cannot clip them. */
+  :where(:focus-visible, :focus-within) {
+    --tw-ring-inset: inset;
+  }
+
+  /* Focused controls must stay above neighboring controls in overlapping layouts. */
+  :is(button, input, select, textarea, [role="button"], [tabindex]):focus-visible {
+    z-index: 10;
+  }
+
   body {
     @apply bg-background text-foreground;
   }
