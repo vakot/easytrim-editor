@@ -52,6 +52,33 @@ cargo clippy --all-targets --all-features -- -D warnings
 cargo test --all-targets
 ```
 
+## Large-source playback checks
+
+Seeking keeps one decoder request in flight and replaces the pending destination with the newest
+request. Dragging can use keyframe seeks where supported; release and frame steps remain exact.
+Audio is repositioned after the final video seek, not on every pointer update. Source replacement
+disposes the scheduler and pending interaction frames. Media range reads run on a blocking worker,
+not the window thread, and each GET body is capped at 4 MiB.
+
+Long-recording waveforms retain a rectified, downsampled amplitude envelope instead of full-rate
+PCM. They target 16 samples per image pixel, with a 1 Hz floor. Silence detection still analyzes the
+original samples. This reduces memory, not the requirement to decode the full audio; background
+work can still take minutes. Audio extraction and incompatible-source proxy encoding also remain
+full-source operations. Original codec, keyframe spacing, disk speed, and WebView support still
+limit seek latency; this is not a guarantee of instantaneous decoding for every video.
+
+Run the opt-in FFmpeg fixture check (six streams, alternating sound and silence) with:
+
+```sh
+cargo test -p easytrim-editor-desktop envelope_images -- --ignored --nocapture
+```
+
+Also test a real long source in the desktop app: drag rapidly in both directions, release while
+playing, step frames, loop a trimmed segment, change audio tracks, and replace the source during a
+seek. Confirm that the playhead follows input, the final preview lands precisely, audio resumes at
+that position, and discarded sources stop requesting data. JSDOM tests simulate decoder events;
+they do not measure WebView or disk latency.
+
 ## Storybook
 
 Use `pnpm storybook` for the interactive catalog and `pnpm build:storybook` for its production
