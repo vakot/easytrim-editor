@@ -786,7 +786,9 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
 
       const video = videoRef.current;
       const finalMicros =
-        direction === 1 && video ? video.currentTime * 1_000_000 : currentPlayheadMicrosRef.current;
+        direction === 1 && video && !video.seeking && !seekSchedulerRef.current?.isPending
+          ? video.currentTime * 1_000_000
+          : currentPlayheadMicrosRef.current;
 
       shuttleDirectionRef.current = 0;
       cancelFrame(reverseShuttleFrameRef);

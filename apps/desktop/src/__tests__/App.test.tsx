@@ -1671,6 +1671,46 @@ describe("App", () => {
     );
   });
 
+  it("preserves queued frame steps when forward shuttle ends before the decoder settles", async () => {
+    mocks.chooseSource.mockResolvedValue([selection]);
+    const user = userEvent.setup();
+    render(<App />);
+    await openSourcePicker(user);
+    const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
+    const play = vi.spyOn(video, "play").mockResolvedValue();
+    vi.spyOn(video, "pause").mockImplementation(() => undefined);
+    let position = 0;
+    let seeking = false;
+    Object.defineProperties(video, {
+      currentTime: {
+        configurable: true,
+        get: () => position,
+        set: (seconds: number) => {
+          position = seconds;
+          seeking = true;
+        },
+      },
+      seeking: { configurable: true, get: () => seeking },
+    });
+    for (let step = 0; step < 3; step++) {
+      fireEvent.keyDown(window, { key: "ArrowRight", code: "ArrowRight" });
+      if (step < 2) fireEvent.keyUp(window, { key: "ArrowRight", code: "ArrowRight" });
+    }
+    const playhead = screen.getByRole("slider", { name: "Playback position" });
+    expect(playhead).toHaveAttribute("aria-valuenow", "50049");
+    expect(video.currentTime).toBeCloseTo(0.016683, 6);
+    fireEvent.keyDown(window, { key: "ArrowRight", code: "ArrowRight", repeat: true });
+    fireEvent.keyUp(window, { key: "ArrowRight", code: "ArrowRight" });
+    expect(playhead).toHaveAttribute("aria-valuenow", "50049");
+    seeking = false;
+    fireEvent.seeked(video);
+    expect(video.currentTime).toBeCloseTo(0.050049, 6);
+    seeking = false;
+    fireEvent.seeked(video);
+    expect(play).not.toHaveBeenCalled();
+    expect(playhead).toHaveAttribute("aria-valuenow", "50049");
+  });
+
   it("uses a time-based coalesced seek while the previous-frame shortcut is held", async () => {
     mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
