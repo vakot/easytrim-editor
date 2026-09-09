@@ -53,8 +53,9 @@ pub fn run() {
                 let media_reads = Arc::clone(&media_reads);
                 tauri::async_runtime::spawn(async move {
                     // Bound concurrent disk reads and response buffers without blocking the window.
-                    let _read = media_reads.lock().await;
+                    let read = media_reads.lock_owned().await;
                     let response = tauri::async_runtime::spawn_blocking(move || {
+                        let _read = read;
                         media::preview::respond(&app, request)
                     })
                     .await
