@@ -2726,7 +2726,7 @@ describe("App", () => {
     expect(playhead).toHaveAttribute("aria-valuenow", "30000000");
   });
 
-  it("resumes playback immediately while the browser settles a scrub seek", async () => {
+  it("resumes playback only after the browser settles the final scrub seek", async () => {
     mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
     render(<App />);
@@ -2776,13 +2776,91 @@ describe("App", () => {
     });
     fireEvent.pointerUp(playhead, { clientX: 600, pointerId: 7 });
     expect(playhead).not.toHaveAttribute("data-dragging");
-    expect(play).toHaveBeenCalledOnce();
+    expect(play).not.toHaveBeenCalled();
     expect(seekAssignments).toBe(1);
     expect(measureTimeline).toHaveBeenCalledOnce();
 
     seeking = false;
     fireEvent.seeked(video);
     expect(play).toHaveBeenCalledOnce();
+  });
+
+  it("coalesces long-video scrubs without seeking six audio tracks or accepting stale media time", async () => {
+    const streams = Array.from({ length: 6 }, (_, index) => ({
+      ...media.audioStreams[0]!,
+      streamIndex: index + 1,
+      isDefault: index === 0,
+    }));
+
+    mocks.chooseSource.mockResolvedValue([selection]);
+    mocks.inspectMedia.mockResolvedValue({
+      ...media,
+      durationMicros: 14_400_000_000,
+      audioStreams: streams,
+    });
+    mocks.prepareAudioPreviews.mockResolvedValue(
+      streams.map(({ streamIndex }) => ({
+        mediaToken: 1,
+        streamIndex,
+        url: `http://easytrim-media.localhost/source-1?variant=audio&stream=${streamIndex}`,
+      })),
+    );
+    const { audioElements } = installAudioMocks();
+    const user = userEvent.setup();
+    try {
+      render(<App />);
+      await openSourcePicker(user);
+      const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
+      await waitFor(() => expect(audioElements).toHaveLength(6));
+      const audioSeeks = audioElements.map((audio) => vi.spyOn(audio, "currentTime", "set"));
+      let position = 0;
+      let seeking = false;
+      const videoSeek = vi.fn((seconds: number) => {
+        position = seconds;
+        seeking = true;
+      });
+
+      Object.defineProperties(video, {
+        currentTime: { configurable: true, get: () => position, set: videoSeek },
+        seeking: { configurable: true, get: () => seeking },
+      });
+      const timeline = screen.getByLabelText("Video trim timeline");
+      vi.spyOn(timeline, "getBoundingClientRect").mockReturnValue({
+        x: 100,
+        y: 0,
+        left: 100,
+        top: 0,
+        right: 1100,
+        bottom: 52,
+        width: 1000,
+        height: 52,
+        toJSON: () => ({}),
+      });
+      const playhead = screen.getByRole("slider", { name: "Playback position" });
+      fireEvent.pointerDown(playhead, { clientX: 100, pointerId: 9 });
+      for (const clientX of [200, 600, 1000]) {
+        fireEvent.pointerMove(playhead, { clientX, pointerId: 9 });
+        await flushAnimationFrame();
+        fireEvent.timeUpdate(video);
+      }
+      expect(videoSeek).toHaveBeenCalledOnce();
+      expect(playhead).toHaveAttribute("aria-valuenow", "12960000000");
+      for (const seek of audioSeeks) expect(seek).not.toHaveBeenCalled();
+      fireEvent.pointerUp(playhead, { clientX: 1000, pointerId: 9 });
+      seeking = false;
+      fireEvent.seeked(video);
+      expect(videoSeek).toHaveBeenCalledTimes(2);
+      expect(videoSeek).toHaveBeenLastCalledWith(12_960);
+      for (const seek of audioSeeks) expect(seek).not.toHaveBeenCalled();
+      seeking = false;
+      fireEvent.seeked(video);
+      for (const seek of audioSeeks) {
+        expect(seek).toHaveBeenCalledOnce();
+        expect(seek).toHaveBeenLastCalledWith(12_960);
+      }
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it("blocks timeline shortcuts while a timeline control is being scrubbed", async () => {
