@@ -224,10 +224,10 @@ describe("VideoPreview", () => {
       fireEvent.click(viewport!);
 
       expect(videoFrame).toHaveStyle({
-        height: "193.5px",
+        height: "173.25px",
         left: "28px",
-        top: "53.25px",
-        width: "344px",
+        top: "63.375px",
+        width: "308px",
       });
 
       const videoFrameStyle = (videoFrame as HTMLElement).style;
@@ -236,12 +236,12 @@ describe("VideoPreview", () => {
       const width = Number.parseFloat(videoFrameStyle.width);
       const height = Number.parseFloat(videoFrameStyle.height);
 
-      expect(left).toBeCloseTo(400 - left - width);
+      expect(left).toBeCloseTo(400 - 36 - left - width);
       expect(top).toBeCloseTo(300 - top - height);
       expect(left).toBeGreaterThanOrEqual(28);
       expect(top).toBeGreaterThanOrEqual(28);
       expect(container.querySelector('[data-crop-snap-marker="top"]')).toHaveStyle({
-        top: "41.25px",
+        top: "51.375px",
       });
       expect(container.querySelector('[data-crop-snap-marker="left"]')).toHaveStyle({
         left: "16px",
