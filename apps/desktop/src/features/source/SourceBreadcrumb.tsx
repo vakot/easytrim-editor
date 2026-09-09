@@ -127,7 +127,7 @@ function SourceBreadcrumbPopover({
       <PopoverTrigger asChild>{children}</PopoverTrigger>
       <PopoverContent
         align="start"
-        className="flex h-96 max-h-[var(--radix-popover-content-available-height)] w-80 flex-col gap-2 overflow-hidden p-1 pb-2.5"
+        className="flex h-96 max-h-(--radix-popover-content-available-height) w-80 flex-col gap-2 overflow-hidden p-1 pb-2.5"
         side="bottom"
       >
         <SearchBar
