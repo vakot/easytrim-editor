@@ -17,7 +17,12 @@ import { diagnostics } from "@/lib/diagnostics";
 import type { DiagnosticOrigin } from "@/lib/tauri/diagnostics.types";
 
 import { useCropSelection } from "../hooks/useCropSelection";
-import { type Bounds, centerFrame, cropFrame } from "../lib/crop-frame.utils";
+import {
+  type Bounds,
+  centerFrame,
+  cropFrame,
+  scaleFrameToSourceBounds,
+} from "../lib/crop-frame.utils";
 import { isFullCrop } from "../lib/crop-geometry.utils";
 
 import { CropSelection } from "./CropSelection";
@@ -66,6 +71,7 @@ export function CropViewport({
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerBounds, setContainerBounds] = useState<Bounds>({ width: 0, height: 0 });
+  const [sourceDimensions, setSourceDimensions] = useState<Bounds>({ width: 0, height: 0 });
   const [sourceAspectRatio, setSourceAspectRatio] = useState(16 / 9);
   const cropSelection = useCropSelection(containerRef);
 
@@ -159,17 +165,22 @@ export function CropViewport({
     ? { width: displaySourceFrame.height, height: displaySourceFrame.width }
     : displaySourceFrame;
 
+  const { frame: renderedRawSourceFrame, scale: sourceRenderScale } = scaleFrameToSourceBounds(
+    rawSourceFrame,
+    sourceDimensions,
+  );
+
   const sourceFrame = {
-    width: rawSourceFrame.width,
-    height: rawSourceFrame.height,
+    width: renderedRawSourceFrame.width,
+    height: renderedRawSourceFrame.height,
     left: cropIsApplied
-      ? (viewport.width - rawCrop.width * rawSourceFrame.width) / 2 -
-        rawCrop.x * rawSourceFrame.width
-      : (viewport.width - rawSourceFrame.width) / 2,
+      ? (viewport.width - rawCrop.width * renderedRawSourceFrame.width) / 2 -
+        rawCrop.x * renderedRawSourceFrame.width
+      : (viewport.width - renderedRawSourceFrame.width) / 2,
     top: cropIsApplied
-      ? (viewport.height - rawCrop.height * rawSourceFrame.height) / 2 -
-        rawCrop.y * rawSourceFrame.height
-      : (viewport.height - rawSourceFrame.height) / 2,
+      ? (viewport.height - rawCrop.height * renderedRawSourceFrame.height) / 2 -
+        rawCrop.y * renderedRawSourceFrame.height
+      : (viewport.height - renderedRawSourceFrame.height) / 2,
   };
 
   const transformOrigin = cropIsApplied
@@ -179,6 +190,11 @@ export function CropViewport({
   const viewportTransition = !cropSelection.isDragging
     ? "transition-[width,height,left,top,transform] duration-200 ease-out motion-reduce:transition-none"
     : "";
+
+  const previewTransform =
+    sourceRenderScale < 1
+      ? `scale(${1 / sourceRenderScale}) rotate(${cropSelection.previewRotationDegrees}deg)`
+      : `rotate(${cropSelection.previewRotationDegrees}deg)`;
 
   return (
     <CursorTooltip
@@ -262,7 +278,10 @@ export function CropViewport({
           }}
           onLoadedMetadata={(event) => {
             const { videoHeight, videoWidth } = event.currentTarget;
-            if (videoWidth > 0 && videoHeight > 0) setSourceAspectRatio(videoWidth / videoHeight);
+            if (videoWidth > 0 && videoHeight > 0) {
+              setSourceAspectRatio(videoWidth / videoHeight);
+              setSourceDimensions({ width: videoWidth, height: videoHeight });
+            }
             onLoadedMetadata();
           }}
           onLoadStart={() =>
@@ -308,7 +327,7 @@ export function CropViewport({
           src={sourceUrl}
           style={{
             ...sourceFrame,
-            transform: `rotate(${cropSelection.previewRotationDegrees}deg)`,
+            transform: previewTransform,
             transformOrigin,
           }}
         />
