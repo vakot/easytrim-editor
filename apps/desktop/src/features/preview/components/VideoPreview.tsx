@@ -12,6 +12,8 @@ import { selectPlaybackSpeed } from "@/app/store/slices/editor-tools-slice";
 import type { PreviewState } from "@/app/store/slices/preview-slice";
 import type { DiagnosticOrigin } from "@/lib/tauri/diagnostics.types";
 
+import { setPlaybackRateSafely } from "../lib/media-sync";
+
 import { CropViewport } from "./CropViewport";
 
 interface VideoPreviewProps {
@@ -54,7 +56,7 @@ export function VideoPreview({
   const readyUrl = preview.status === "ready" ? preview.value.url : null;
 
   useEffect(() => {
-    if (videoRef.current) videoRef.current.playbackRate = playbackRate;
+    setPlaybackRateSafely(videoRef.current, playbackRate);
   }, [playbackRate, readyUrl, videoRef]);
 
   useEffect(() => {

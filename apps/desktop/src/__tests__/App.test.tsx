@@ -1005,6 +1005,7 @@ describe("App", () => {
     await user.keyboard("{Enter}");
     expect(playbackSpeedInput).toHaveValue(100);
     expect(playbackSpeedSlider).toHaveAttribute("aria-valuenow", "8");
+    expect(screen.getByLabelText("Source video preview")).toHaveProperty("muted", true);
     expect(playbackSpeedButton).toHaveAttribute("aria-pressed", "true");
     expect(playbackSpeedButton).toHaveClass("text-primary", "aria-expanded:text-primary");
     fireEvent.doubleClick(playbackSpeedSlider);

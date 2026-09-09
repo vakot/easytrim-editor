@@ -3,6 +3,22 @@ import { seekMediaIfNeeded } from "@/lib/media-element.utils";
 export type PlaybackFrameHandle =
   { id: number; kind: "video"; video: HTMLVideoElement } | { id: number; kind: "animation" };
 
+export function setPlaybackRateSafely(media: HTMLMediaElement | null, rate: number): number {
+  if (!media) return rate;
+
+  try {
+    media.playbackRate = rate;
+    return media.playbackRate;
+  } catch {
+    try {
+      media.playbackRate = 1;
+      return media.playbackRate;
+    } catch {
+      return 1;
+    }
+  }
+}
+
 export function seekVideo(video: HTMLVideoElement | null, micros: number) {
   if (video) seekMediaIfNeeded(video, micros / 1_000_000);
 }

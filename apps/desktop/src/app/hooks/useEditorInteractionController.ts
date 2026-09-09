@@ -22,6 +22,7 @@ import {
   handlePreviewPlaybackError as handlePreviewPlaybackErrorRequested,
 } from "@/app/store/thunks/source-media-thunks";
 import { clampPlaybackMicros, frameDurationMicros } from "@/domain/playback";
+import { isAudioPlaybackEnabled } from "@/domain/playback-speed";
 import {
   canSetTrimBoundaryAtPlayhead,
   playheadAfterSegmentMove,
@@ -42,6 +43,7 @@ import {
   type PlaybackFrameHandle,
   requestPlaybackFrame,
   seekVideo,
+  setPlaybackRateSafely,
 } from "@/features/preview";
 import {
   cancelFrame,
@@ -111,6 +113,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
   const loopPlaybackEnabled = useAppSelector(selectLoopPlaybackEnabled);
   const segmentPlaybackEnabled = useAppSelector(selectSegmentPlaybackEnabled);
   const playbackSpeed = useAppSelector(selectPlaybackSpeed);
+  const audioPlaybackEnabled = isAudioPlaybackEnabled(playbackSpeed);
   const sourceSelection = useAppSelector(selectSourceSelection);
   const media = useAppSelector(selectSourceMedia);
   const trim = useAppSelector(selectTrim) ?? EMPTY_TRIM;
@@ -206,8 +209,9 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
   const isPlaybackReady =
     previewKey !== null &&
     readyPreviewKey === previewKey &&
-    audioPreviewState?.status !== "loading" &&
+    (audioPlaybackEnabled ? audioPreviewState?.status !== "loading" : true) &&
     (!usesExternalAudio ||
+      !audioPlaybackEnabled ||
       (audioReadiness.sourcePath === sourcePath &&
         audioReadiness.streamIndexes.size === activeExternalAudioStreamCount));
 
@@ -328,9 +332,16 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     playbackRateRef.current = activePlaybackRate;
 
     const video = videoRef.current;
-    if (video) video.playbackRate = activePlaybackRate;
-    for (const audio of audioElementsRef.current.values()) audio.playbackRate = activePlaybackRate;
-  }, [audioPreviewUrls, playbackSpeed, shuttleDirection]);
+    if (video) playbackRateRef.current = setPlaybackRateSafely(video, activePlaybackRate);
+    for (const audio of audioElementsRef.current.values()) {
+      if (!audioPlaybackEnabled) {
+        audio.pause();
+        audio.playbackRate = 1;
+      } else {
+        audio.playbackRate = activePlaybackRate;
+      }
+    }
+  }, [audioPlaybackEnabled, audioPreviewUrls, playbackSpeed, shuttleDirection]);
 
   useEffect(() => {
     if (!sourcePath || audioTracks.length === 0 || typeof AudioContext === "undefined") {
@@ -347,15 +358,16 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
       masterGain.connect(context.destination);
     }
 
-    const activeExternalAudioUrls = usesExternalAudio
-      ? Object.fromEntries(
-          Object.entries(audioPreviewUrls).filter(([streamIndexText]) =>
-            audioTracks.some(
-              (track) => track.streamIndex === Number(streamIndexText) && track.enabled,
+    const activeExternalAudioUrls =
+      audioPlaybackEnabled && usesExternalAudio
+        ? Object.fromEntries(
+            Object.entries(audioPreviewUrls).filter(([streamIndexText]) =>
+              audioTracks.some(
+                (track) => track.streamIndex === Number(streamIndexText) && track.enabled,
+              ),
             ),
-          ),
-        )
-      : {};
+          )
+        : {};
 
     const activeStreamIndexes = new Set(Object.keys(activeExternalAudioUrls).map(Number));
     for (const streamIndex of audioElementsRef.current.keys()) {
@@ -370,7 +382,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
       element.crossOrigin = "anonymous";
       element.src = url;
       element.preload = "auto";
-      element.playbackRate = playbackSpeed;
+      element.playbackRate = audioPlaybackEnabled ? playbackSpeed : 1;
       element.setAttribute("aria-hidden", "true");
       element.style.display = "none";
       const markReady = () => {
@@ -414,6 +426,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     removeAudioRuntime,
     sourcePath,
     playbackSpeed,
+    audioPlaybackEnabled,
     usesExternalAudio,
   ]);
 
@@ -518,10 +531,14 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     for (const audio of audioElementsRef.current.values()) audio.pause();
   }, []);
 
-  const syncAudioPlayback = useCallback((seconds: number, force = false) => {
-    for (const audio of audioElementsRef.current.values())
-      synchronizeAudioPosition(audio, seconds, playbackRateRef.current, force);
-  }, []);
+  const syncAudioPlayback = useCallback(
+    (seconds: number, force = false) => {
+      if (!audioPlaybackEnabled) return;
+      for (const audio of audioElementsRef.current.values())
+        synchronizeAudioPosition(audio, seconds, playbackRateRef.current, force);
+    },
+    [audioPlaybackEnabled],
+  );
 
   const handlePlaybackStartFailure = useCallback(() => {
     playbackStartSequenceRef.current += 1;
@@ -530,38 +547,43 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     shuttleDirectionRef.current = 0;
     cancelFrame(reverseShuttleFrameRef);
     const video = videoRef.current;
+    let appliedPlaybackRate = playbackSpeed;
     if (video) {
       video.pause();
-      video.playbackRate = playbackSpeed;
+      appliedPlaybackRate = setPlaybackRateSafely(video, playbackSpeed);
     }
-    playbackRateRef.current = playbackSpeed;
-    for (const audio of audioElementsRef.current.values()) audio.playbackRate = playbackSpeed;
+    playbackRateRef.current = appliedPlaybackRate;
+    for (const audio of audioElementsRef.current.values()) {
+      audio.pause();
+      audio.playbackRate = audioPlaybackEnabled ? playbackSpeed : 1;
+    }
     pauseAudioPlayback();
     setIsPlaying(false);
     setShuttleDirection(0);
     stopPlayheadAnimation();
     setTransportError(t("preview.messages.playbackFailed"));
-  }, [pauseAudioPlayback, playbackSpeed, stopPlayheadAnimation, t]);
+  }, [audioPlaybackEnabled, pauseAudioPlayback, playbackSpeed, stopPlayheadAnimation, t]);
 
   const resumeExternalAudioPlayback = useCallback(() => {
     const video = videoRef.current;
-    if (!video || video.paused) return;
+    if (!audioPlaybackEnabled || !video || video.paused) return;
 
     const startSequence = playbackStartSequenceRef.current;
     const seconds = video.currentTime;
     syncAudioPlayback(seconds, true);
     const audio = [...audioElementsRef.current.values()];
     const resumeAudioContext = audioContextRef.current?.resume() ?? Promise.resolve();
+
     void Promise.all([resumeAudioContext, ...audio.map((element) => element.play())]).catch(() => {
       if (startSequence !== playbackStartSequenceRef.current) return;
       handlePlaybackStartFailure();
     });
-  }, [handlePlaybackStartFailure, syncAudioPlayback]);
+  }, [audioPlaybackEnabled, handlePlaybackStartFailure, syncAudioPlayback]);
 
   useEffect(() => {
     if (!usesExternalAudio || !isPlaybackReady || !isPlayingRef.current) return;
     resumeExternalAudioPlayback();
-  }, [isPlaybackReady, resumeExternalAudioPlayback, usesExternalAudio]);
+  }, [audioPlaybackEnabled, isPlaybackReady, resumeExternalAudioPlayback, usesExternalAudio]);
 
   const applyMediaSeek = useCallback((micros: number) => {
     seekVideo(videoRef.current, micros);
@@ -635,13 +657,16 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     setTransportError(null);
     seekVideo(video, startMicros);
     syncAudioPlayback(startMicros / 1_000_000, true);
-    const media = [video, ...audioElementsRef.current.values()];
-    const resumeAudioContext = audioContextRef.current?.resume() ?? Promise.resolve();
+    const media = audioPlaybackEnabled ? [video, ...audioElementsRef.current.values()] : [video];
+    const resumeAudioContext = audioPlaybackEnabled
+      ? (audioContextRef.current?.resume() ?? Promise.resolve())
+      : Promise.resolve();
+
     void Promise.all([resumeAudioContext, ...media.map((element) => element.play())]).catch(() => {
       if (startSequence !== playbackStartSequenceRef.current) return;
       handlePlaybackStartFailure();
     });
-  }, [flushFrameStepSeek, handlePlaybackStartFailure, syncAudioPlayback]);
+  }, [audioPlaybackEnabled, flushFrameStepSeek, handlePlaybackStartFailure, syncAudioPlayback]);
 
   const handlePlaybackBoundary = useCallback(
     (currentMicros: number): boolean => {
@@ -722,11 +747,14 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     [cleanupAllNativeAudioBindings, cleanupAudioRuntime],
   );
 
-  const setMediaPlaybackRate = useCallback((rate: number) => {
-    playbackRateRef.current = rate;
-    if (videoRef.current) videoRef.current.playbackRate = rate;
-    for (const audio of audioElementsRef.current.values()) audio.playbackRate = rate;
-  }, []);
+  const setMediaPlaybackRate = useCallback(
+    (rate: number) => {
+      playbackRateRef.current = setPlaybackRateSafely(videoRef.current, rate);
+      for (const audio of audioElementsRef.current.values())
+        audio.playbackRate = audioPlaybackEnabled ? rate : 1;
+    },
+    [audioPlaybackEnabled],
+  );
 
   const handleShuttleEnd = useCallback(
     (origin: DiagnosticOrigin = { type: "internal" }) => {
@@ -1232,7 +1260,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     transportError,
     nativeLoopEnabled,
     shuttleDirection,
-    videoMuted: usesExternalAudio && typeof AudioContext === "undefined",
+    videoMuted: !audioPlaybackEnabled || (usesExternalAudio && typeof AudioContext === "undefined"),
     onLoadedMetadata,
     onCanPlay,
     onPlay,
