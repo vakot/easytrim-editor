@@ -15,6 +15,7 @@ import {
 import {
   createEditorToolsStateFromPreferences,
   editorToolsInitialized,
+  playbackSpeedChanged,
 } from "../app/store/slices/editor-tools-slice";
 import { previewReady } from "../app/store/slices/preview-slice";
 import { selectHasSource, selectSourceSelection } from "../app/store/slices/source-slice";
@@ -179,6 +180,33 @@ function installAudioMocks(initiallyReady = true) {
   );
 
   return { audioConstructor, audioContext, audioElements, mediaElementSources };
+}
+
+function installPlaybackClock() {
+  let now = 0;
+  let nextId = 0;
+  const frames = new Map<number, FrameRequestCallback>();
+  const time = vi.spyOn(performance, "now").mockImplementation(() => now);
+  const visibility = vi.spyOn(document, "hidden", "get").mockReturnValue(false);
+  vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
+    frames.set(++nextId, callback);
+    return nextId;
+  });
+  vi.stubGlobal("cancelAnimationFrame", (id: number) => frames.delete(id));
+  return {
+    advance: (timestamp: number) =>
+      act(() => {
+        now = timestamp;
+        const batch = [...frames.values()];
+        frames.clear();
+        for (const callback of batch) callback(now);
+      }),
+    restore() {
+      time.mockRestore();
+      visibility.mockRestore();
+      vi.unstubAllGlobals();
+    },
+  };
 }
 
 beforeEach(() => {
@@ -1596,6 +1624,161 @@ describe("App", () => {
       "0",
     );
     await waitFor(() => expect(play).toHaveBeenCalledTimes(2));
+  });
+
+  it("samples high speeds without native playback and preserves time across rate changes and pause", async () => {
+    mocks.chooseSource.mockResolvedValue([selection]);
+    const user = userEvent.setup();
+    render(<App />);
+    await openSourcePicker(user);
+    const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
+    const play = vi.spyOn(video, "play").mockResolvedValue();
+    vi.spyOn(video, "pause").mockImplementation(() => undefined);
+    const clock = installPlaybackClock();
+    const { advance } = clock;
+
+    try {
+      act(() => {
+        store.dispatch(playbackSpeedChanged(100));
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Play" }));
+      const playhead = screen.getByRole("slider", { name: "Playback position" });
+      advance(100);
+      expect(playhead).toHaveAttribute("aria-valuenow", "10000000");
+      advance(200);
+      expect(playhead).toHaveAttribute("aria-valuenow", "20000000");
+      expect(video.playbackRate).toBe(1);
+      expect(video.muted).toBe(true);
+      expect(play).not.toHaveBeenCalled();
+      fireEvent.pause(video);
+      fireEvent.timeUpdate(video);
+      expect(screen.getByRole("button", { name: "Pause" })).toBeInTheDocument();
+      act(() => {
+        store.dispatch(playbackSpeedChanged(20));
+      });
+      advance(300);
+      expect(playhead).toHaveAttribute("aria-valuenow", "22000000");
+      fireEvent.click(screen.getByRole("button", { name: "Pause" }));
+      advance(400);
+      expect(playhead).toHaveAttribute("aria-valuenow", "22000000");
+      expect(video.currentTime).toBe(22);
+      act(() => {
+        store.dispatch(playbackSpeedChanged(0.25));
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Play" }));
+      expect(video.playbackRate).toBe(0.25);
+      expect(video.muted).toBe(false);
+      expect(play).toHaveBeenCalledOnce();
+      fireEvent.play(video);
+      act(() => {
+        store.dispatch(playbackSpeedChanged(100));
+      });
+      advance(500);
+      expect(playhead).toHaveAttribute("aria-valuenow", "32000000");
+      expect(video.playbackRate).toBe(1);
+      act(() => {
+        store.dispatch(playbackSpeedChanged(1));
+      });
+      expect(video.playbackRate).toBe(1);
+      expect(play).toHaveBeenCalledTimes(2);
+      expect(video.currentTime).toBe(32);
+    } finally {
+      clock.restore();
+    }
+  });
+
+  it.each([false, true])(
+    "handles sampled playback boundaries and source cleanup with loop=%s",
+    async (loop) => {
+      mocks.chooseSource.mockResolvedValue([selection]);
+      const user = userEvent.setup();
+      render(<App />);
+      await openSourcePicker(user);
+      const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
+      const play = vi.spyOn(video, "play").mockResolvedValue();
+      vi.spyOn(video, "pause").mockImplementation(() => undefined);
+      if (!loop) fireEvent.click(screen.getByRole("button", { name: "Loop playback" }));
+      const clock = installPlaybackClock();
+      try {
+        act(() => {
+          store.dispatch(playbackSpeedChanged(100));
+        });
+        fireEvent.click(screen.getByRole("button", { name: "Play" }));
+        for (let time = 100; time <= 700; time += 100) clock.advance(time);
+        const playhead = screen.getByRole("slider", { name: "Playback position" });
+        expect(playhead).toHaveAttribute("aria-valuenow", loop ? "0" : "65000000");
+        clock.advance(800);
+        expect(playhead).toHaveAttribute("aria-valuenow", loop ? "10000000" : "65000000");
+        expect(screen.getByRole("button", { name: loop ? "Pause" : "Play" })).toBeInTheDocument();
+        expect(play).not.toHaveBeenCalled();
+        const seek = vi.spyOn(video, "currentTime", "set");
+        act(() => {
+          store.dispatch(sourceCleared());
+        });
+        seek.mockClear();
+        clock.advance(900);
+        expect(seek).not.toHaveBeenCalled();
+      } finally {
+        clock.restore();
+      }
+    },
+  );
+
+  it("preserves play and pause intent when changing sampled mode during an unfinished seek", async () => {
+    mocks.chooseSource.mockResolvedValue([selection]);
+    const user = userEvent.setup();
+    render(<App />);
+    await openSourcePicker(user);
+    const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
+    const play = vi.spyOn(video, "play").mockResolvedValue();
+    vi.spyOn(video, "pause").mockImplementation(() => undefined);
+    let seeking = false;
+    let seconds = 0;
+    Object.defineProperties(video, {
+      currentTime: {
+        configurable: true,
+        get: () => seconds,
+        set: (time: number) => {
+          seconds = time;
+          seeking = true;
+        },
+      },
+      seeking: { configurable: true, get: () => seeking },
+    });
+    const clock = installPlaybackClock();
+    try {
+      act(() => {
+        store.dispatch(playbackSpeedChanged(100));
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Play" }));
+      clock.advance(100);
+      act(() => {
+        store.dispatch(playbackSpeedChanged(1));
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Pause" }));
+      expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
+      seeking = false;
+      fireEvent.seeked(video);
+      expect(play).not.toHaveBeenCalled();
+      fireEvent.keyDown(window, { key: "ArrowRight", code: "ArrowRight" });
+      fireEvent.keyUp(window, { key: "ArrowRight", code: "ArrowRight" });
+      fireEvent.click(screen.getByRole("button", { name: "Play" }));
+      expect(play).not.toHaveBeenCalled();
+      act(() => {
+        store.dispatch(playbackSpeedChanged(100));
+      });
+      expect(screen.getByRole("button", { name: "Pause" })).toBeInTheDocument();
+      clock.advance(200);
+      expect(screen.getByRole("slider", { name: "Playback position" })).toHaveAttribute(
+        "aria-valuenow",
+        "20016683",
+      );
+      seeking = false;
+      fireEvent.seeked(video);
+      expect(play).not.toHaveBeenCalled();
+    } finally {
+      clock.restore();
+    }
   });
 
   it("keeps editor shortcuts locked during text entry", async () => {

@@ -5,5 +5,6 @@ export {
   seekVideo,
   setPlaybackRateSafely,
 } from "./lib/media-sync";
+export { startSampledPlayback } from "./lib/sampled-playback";
 export { createSeekScheduler } from "./lib/seek-scheduler";
 export { Preview } from "./Preview";

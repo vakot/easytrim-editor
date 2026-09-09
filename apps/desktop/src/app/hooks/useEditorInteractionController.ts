@@ -45,6 +45,7 @@ import {
   requestPlaybackFrame,
   seekVideo,
   setPlaybackRateSafely,
+  startSampledPlayback,
 } from "@/features/preview";
 import {
   cancelFrame,
@@ -167,6 +168,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const seekSchedulerRef = useRef<ReturnType<typeof createSeekScheduler> | null>(null);
+  const sampledPlaybackRef = useRef<ReturnType<typeof startSampledPlayback> | null>(null);
   const audioElementsRef = useRef(new Map<number, HTMLAudioElement>());
   const audioReadyListenersRef = useRef(new Map<number, () => void>());
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -218,6 +220,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
   const isPlaybackReadyRef = useRef(isPlaybackReady);
   const nativeLoopEnabled =
     isPlaybackReady &&
+    audioPlaybackEnabled &&
     shuttleDirection === 0 &&
     loopPlaybackEnabled &&
     !segmentPlaybackEnabled &&
@@ -317,6 +320,8 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     currentPlayheadMicrosRef.current = 0;
     videoRef.current?.pause();
     cancelPlaybackFrame(playbackFrameRef);
+    sampledPlaybackRef.current?.stop();
+    sampledPlaybackRef.current = null;
     cancelFrame(reverseShuttleFrameRef);
     cancelFrame(scrubFrameRef);
     cancelFrame(frameStepSeekFrameRef);
@@ -344,7 +349,16 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     playbackRateRef.current = activePlaybackRate;
 
     const video = videoRef.current;
-    if (video) playbackRateRef.current = setPlaybackRateSafely(video, activePlaybackRate);
+    if (video) {
+      const nativeRate = setPlaybackRateSafely(
+        video,
+        isAudioPlaybackEnabled(activePlaybackRate) ? activePlaybackRate : 1,
+      );
+
+      playbackRateRef.current = isAudioPlaybackEnabled(activePlaybackRate)
+        ? nativeRate
+        : activePlaybackRate;
+    }
     for (const audio of audioElementsRef.current.values()) {
       if (!audioPlaybackEnabled) {
         audio.pause();
@@ -538,7 +552,12 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     };
   }, []);
 
-  const stopPlayheadAnimation = useCallback(() => cancelPlaybackFrame(playbackFrameRef), []);
+  const stopPlayheadAnimation = useCallback(() => {
+    cancelPlaybackFrame(playbackFrameRef);
+    sampledPlaybackRef.current?.stop();
+    sampledPlaybackRef.current = null;
+  }, []);
+
   const pauseAudioPlayback = useCallback(() => {
     for (const audio of audioElementsRef.current.values()) audio.pause();
   }, []);
@@ -562,7 +581,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     let appliedPlaybackRate = playbackSpeed;
     if (video) {
       video.pause();
-      appliedPlaybackRate = setPlaybackRateSafely(video, playbackSpeed);
+      appliedPlaybackRate = setPlaybackRateSafely(video, audioPlaybackEnabled ? playbackSpeed : 1);
     }
     playbackRateRef.current = appliedPlaybackRate;
     for (const audio of audioElementsRef.current.values()) {
@@ -679,6 +698,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
         trimRef.current.sourceDurationMicros,
       );
       setPlayheadMicros(clamped);
+      sampledPlaybackRef.current?.seek(clamped);
       applyMediaSeek(clamped);
     },
     [applyMediaSeek, flushFrameStepSeek],
@@ -692,6 +712,14 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     const startSequence = ++playbackStartSequenceRef.current;
     playbackRequestedRef.current = true;
     setTransportError(null);
+
+    if (!isAudioPlaybackEnabled(playbackRateRef.current)) {
+      video.pause();
+      pauseAudioPlayback();
+      isPlayingRef.current = true;
+      setIsPlaying(true);
+      return;
+    }
 
     const resumeAudioContext = audioPlaybackEnabled
       ? (audioContextRef.current?.resume() ?? Promise.resolve())
@@ -715,6 +743,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     audioPlaybackEnabled,
     flushFrameStepSeek,
     handlePlaybackStartFailure,
+    pauseAudioPlayback,
     scheduleVideoSeek,
     syncAudioPlayback,
   ]);
@@ -745,6 +774,31 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
 
   const startPlayheadAnimation = useCallback(() => {
     stopPlayheadAnimation();
+    if (!isAudioPlaybackEnabled(playbackRateRef.current)) {
+      sampledPlaybackRef.current = startSampledPlayback({
+        startMicros: currentPlayheadMicrosRef.current,
+        rate: playbackRateRef.current,
+        frameRate: frameRate?.displayValue ?? 60,
+        isSeeking: () => seekSchedulerRef.current?.isPending ?? Boolean(videoRef.current?.seeking),
+        seek: (micros, onSettled) => scheduleVideoSeek(micros, true, onSettled),
+        onTime: (micros, timestamp) => {
+          const currentMicros = clampPlaybackMicros(micros, trimRef.current.sourceDurationMicros);
+          currentPlayheadMicrosRef.current = currentMicros;
+          syncPlayheadElements(
+            playheadRef.current,
+            audioPlayheadRef.current,
+            currentMicros,
+            trimRef.current.sourceDurationMicros,
+          );
+          if (timestamp - lastPlaybackCommitAtRef.current >= 100) {
+            lastPlaybackCommitAtRef.current = timestamp;
+            setPlayheadMicros(currentMicros);
+          }
+          return handlePlaybackBoundary(currentMicros);
+        },
+      });
+      return;
+    }
     const update = (timestamp: number, mediaTimeSeconds: number) => {
       const video = videoRef.current;
       if (!video || video.paused) {
@@ -784,12 +838,52 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
 
     const video = videoRef.current;
     if (video) playbackFrameRef.current = requestPlaybackFrame(video, update);
-  }, [handlePlaybackBoundary, stopPlayheadAnimation, syncAudioPlayback]);
+  }, [
+    frameRate?.displayValue,
+    handlePlaybackBoundary,
+    scheduleVideoSeek,
+    stopPlayheadAnimation,
+    syncAudioPlayback,
+  ]);
+
+  useEffect(() => {
+    if (
+      (!isPlayingRef.current && !playbackRequestedRef.current) ||
+      shuttleDirectionRef.current !== 0
+    )
+      return;
+    if (!audioPlaybackEnabled) {
+      if (
+        sampledPlaybackRef.current?.isRunning &&
+        sampledPlaybackRef.current.rate === playbackRateRef.current
+      )
+        return;
+      startMediaPlayback();
+      startPlayheadAnimation();
+    } else if (sampledPlaybackRef.current) {
+      if (!isPlaybackReady) {
+        sampledPlaybackRef.current.stop();
+        return;
+      }
+      stopPlayheadAnimation();
+      startMediaPlayback();
+    }
+  }, [
+    audioPlaybackEnabled,
+    isPlaying,
+    isPlaybackReady,
+    playbackSpeed,
+    startMediaPlayback,
+    startPlayheadAnimation,
+    stopPlayheadAnimation,
+  ]);
 
   useEffect(
     () => () => {
       playbackStartSequenceRef.current += 1;
       cancelPlaybackFrame(playbackFrameRef);
+      sampledPlaybackRef.current?.stop();
+      sampledPlaybackRef.current = null;
       cancelFrame(reverseShuttleFrameRef);
       cancelFrame(scrubFrameRef);
       cancelFrame(frameStepSeekFrameRef);
@@ -806,7 +900,12 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
 
   const setMediaPlaybackRate = useCallback(
     (rate: number) => {
-      playbackRateRef.current = setPlaybackRateSafely(videoRef.current, rate);
+      const nativeRate = setPlaybackRateSafely(
+        videoRef.current,
+        isAudioPlaybackEnabled(rate) ? rate : 1,
+      );
+
+      playbackRateRef.current = isAudioPlaybackEnabled(rate) ? nativeRate : rate;
       for (const audio of audioElementsRef.current.values())
         audio.playbackRate = audioPlaybackEnabled ? rate : 1;
     },
@@ -1051,10 +1150,15 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
       }
       setTransportError(null);
       if (playbackRequestedRef.current || isPlayingRef.current) {
+        const wasSampled = sampledPlaybackRef.current !== null;
         playbackStartSequenceRef.current += 1;
         playbackRequestedRef.current = false;
         isPlayingRef.current = false;
+        pauseAudioPlayback();
+        stopPlayheadAnimation();
+        setIsPlaying(false);
         video.pause();
+        if (wasSampled) commitSeek(currentPlayheadMicrosRef.current);
         return;
       }
       const startMicros = playbackModes.startMicros(
@@ -1066,7 +1170,14 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
       playbackModes.resetBoundary();
       startMediaPlayback();
     },
-    [commitSeek, handleShuttleEnd, playbackModes, startMediaPlayback],
+    [
+      commitSeek,
+      handleShuttleEnd,
+      pauseAudioPlayback,
+      playbackModes,
+      startMediaPlayback,
+      stopPlayheadAnimation,
+    ],
   );
 
   const handleStepFrame = useCallback(
@@ -1177,6 +1288,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
   const onTimeUpdate = useCallback(
     (seconds: number) => {
       if (
+        sampledPlaybackRef.current ||
         timelineInteractionActiveRef.current ||
         pendingFrameStepSeekMicrosRef.current !== null ||
         seekSchedulerRef.current?.isPending ||
@@ -1206,6 +1318,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
   );
 
   const onPause = useCallback(() => {
+    if (isPlayingRef.current && !isAudioPlaybackEnabled(playbackRateRef.current)) return;
     if (playbackRequestedRef.current && seekSchedulerRef.current?.isPending) return;
     if (isPlayingRef.current) {
       void videoRef.current?.play().catch(() => undefined);
@@ -1277,6 +1390,10 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
   }, [previewKey]);
 
   const onPlay = useCallback(() => {
+    if (!isAudioPlaybackEnabled(playbackRateRef.current)) {
+      videoRef.current?.pause();
+      return;
+    }
     playbackRequestedRef.current = true;
     isPlayingRef.current = true;
     setIsPlaying(true);
@@ -1288,6 +1405,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
   }, [startPlayheadAnimation]);
 
   const onEnded = useCallback(() => {
+    if (sampledPlaybackRef.current) return;
     diagnostics.event("playback.state.changed", {
       data: { status: "ended" },
       origin: { type: "internal" },
