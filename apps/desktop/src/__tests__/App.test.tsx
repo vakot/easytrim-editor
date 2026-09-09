@@ -995,6 +995,16 @@ describe("App", () => {
     const playbackSpeedSlider = screen.getByRole("slider", { name: "Playback speed" });
     playbackSpeedSlider.focus();
     await user.keyboard("{End}");
+    const playbackSpeedInput = screen.getByRole("spinbutton", { name: "Playback speed" });
+    expect(playbackSpeedSlider).toHaveAttribute("aria-valuemax", "8");
+    expect(playbackSpeedInput).toHaveAttribute("min", "0.25");
+    expect(playbackSpeedInput).toHaveAttribute("max", "100");
+    await user.click(playbackSpeedInput);
+    await user.clear(playbackSpeedInput);
+    await user.type(playbackSpeedInput, "100");
+    await user.keyboard("{Enter}");
+    expect(playbackSpeedInput).toHaveValue(100);
+    expect(playbackSpeedSlider).toHaveAttribute("aria-valuenow", "8");
     expect(playbackSpeedButton).toHaveAttribute("aria-pressed", "true");
     expect(playbackSpeedButton).toHaveClass("text-primary", "aria-expanded:text-primary");
     fireEvent.doubleClick(playbackSpeedSlider);

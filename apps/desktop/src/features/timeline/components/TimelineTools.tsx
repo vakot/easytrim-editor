@@ -1,7 +1,9 @@
 import { BetweenVerticalStart, Gauge, Magnet, Repeat, RotateCcw } from "lucide-react";
+import { type KeyboardEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
@@ -23,12 +25,15 @@ import {
 import { selectPreferences } from "@/app/store/slices/preferences-slice";
 import {
   DEFAULT_PLAYBACK_SPEED,
+  getPlaybackSpeedStepIndex,
+  MAX_PLAYBACK_SPEED,
+  MIN_PLAYBACK_SPEED,
+  normalizePlaybackSpeed,
   PLAYBACK_SPEED_STEPS,
-  type PlaybackSpeed,
 } from "@/domain/playback-speed";
 
-const PLAYBACK_SPEED_MARKERS = [0.5, 1, 1.5, 2, 3].map((speed) => ({
-  value: PLAYBACK_SPEED_STEPS.indexOf(speed as PlaybackSpeed),
+const PLAYBACK_SPEED_MARKERS = ([0.5, 1, 1.5, 2, 3] as const).map((speed) => ({
+  value: PLAYBACK_SPEED_STEPS.indexOf(speed),
   label: `${speed}×`,
 }));
 
@@ -109,7 +114,7 @@ function PlaybackSpeedTool() {
   const { t } = useTranslation();
   const speed = useAppSelector(selectPlaybackSpeed);
   const dispatch = useAppDispatch();
-  const stepIndex = PLAYBACK_SPEED_STEPS.indexOf(speed);
+  const stepIndex = getPlaybackSpeedStepIndex(speed);
   const enabled = speed !== DEFAULT_PLAYBACK_SPEED;
 
   return (
@@ -146,13 +151,70 @@ function PlaybackSpeedTool() {
               step={1}
               value={[stepIndex]}
             />
-            <output className="w-10 shrink-0 text-right font-mono text-xs text-muted-foreground">
-              {speed.toFixed(2)}×
-            </output>
+            <PlaybackSpeedInput
+              onSpeedChange={(nextSpeed) => dispatch(playbackSpeedChanged(nextSpeed))}
+              speed={speed}
+            />
           </div>
         </PopoverContent>
       </Popover>
     </Tooltip>
+  );
+}
+
+function PlaybackSpeedInput({
+  onSpeedChange,
+  speed,
+}: {
+  onSpeedChange: (speed: number) => void;
+  speed: number;
+}) {
+  const { t } = useTranslation();
+  const [draftSpeed, setDraftSpeed] = useState<string | null>(null);
+
+  const commitSpeed = () => {
+    const nextSpeed = normalizePlaybackSpeed(Number(draftSpeed ?? speed));
+    if (nextSpeed === null) {
+      setDraftSpeed(null);
+      return;
+    }
+
+    onSpeedChange(nextSpeed);
+    setDraftSpeed(null);
+  };
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") {
+      event.currentTarget.blur();
+    }
+  };
+
+  return (
+    <div className="group relative h-8 w-16 shrink-0">
+      <output
+        aria-hidden="true"
+        className="absolute inset-0 flex items-center justify-end font-mono text-xs text-muted-foreground transition-opacity group-focus-within:opacity-0 group-hover:opacity-0"
+      >
+        {speed.toFixed(2)}×
+      </output>
+      <Input
+        aria-label={t("preview.labels.playbackSpeed")}
+        className="absolute inset-0 h-8 w-full px-1 text-right font-mono text-xs opacity-0 transition-opacity group-focus-within:pointer-events-auto group-focus-within:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100"
+        inputMode="decimal"
+        max={MAX_PLAYBACK_SPEED}
+        min={MIN_PLAYBACK_SPEED}
+        onBlur={commitSpeed}
+        onChange={(event) => setDraftSpeed(event.target.value)}
+        onFocus={(event) => {
+          setDraftSpeed(speed.toString());
+          event.currentTarget.select();
+        }}
+        onKeyDown={handleKeyDown}
+        step="any"
+        type="number"
+        value={draftSpeed ?? speed.toString()}
+      />
+    </div>
   );
 }
 
