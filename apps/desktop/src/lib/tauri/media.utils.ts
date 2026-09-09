@@ -35,9 +35,14 @@ export function normalizeAppError(error: unknown): AppError {
 
 export function parseSourceRef(value: unknown): SourceRef {
   const source = requireRecord(value, "source reference");
+  const createdAtMicros = optionalInteger(source.createdAtMicros, "source creation time");
+  const updatedAtMicros = optionalInteger(source.updatedAtMicros, "source update time");
+
   return {
     displayName: requireString(source.displayName, "display name"),
     sourcePath: requireString(source.sourcePath, "source path"),
+    ...(createdAtMicros === undefined ? {} : { createdAtMicros }),
+    ...(updatedAtMicros === undefined ? {} : { updatedAtMicros }),
   };
 }
 

@@ -202,11 +202,13 @@ export const en = {
       metadata: {
         bitrate: "Bitrate",
         container: "Container",
+        createdAt: "Created at",
         duration: "Duration",
         fileSize: "File size",
         filename: "Filename",
         frameRate: "Frame rate",
         resolution: "Resolution",
+        updatedAt: "Updated at",
         videoCodec: "Video codec",
       },
       technicalDetails: "Technical details",

@@ -9,6 +9,7 @@ import { selectSourceMedia, selectSourceSelection } from "@/app/store/slices/sou
 import {
   formatBitrate,
   formatBytes,
+  formatDateTime,
   formatDuration,
   formatFrameRate,
 } from "../lib/media-formatters.utils";
@@ -16,12 +17,21 @@ import {
 export function SourceDetails() {
   const media = useAppSelector(selectSourceMedia);
   const source = useAppSelector(selectSourceSelection);
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
   const noSource = t("source.messages.noSource");
   const frameRate = media?.video.averageFrameRate ?? media?.video.realFrameRate;
   const unknown = media ? t("common.status.unknown") : noSource;
+  const locale = i18n.resolvedLanguage ?? i18n.language;
   const metadata = [
     [t("source.labels.metadata.filename"), source ? source.displayName : noSource],
+    [
+      t("source.labels.metadata.createdAt"),
+      formatDateTime(source?.createdAtMicros, locale, unknown),
+    ],
+    [
+      t("source.labels.metadata.updatedAt"),
+      formatDateTime(source?.updatedAtMicros, locale, unknown),
+    ],
     [
       t("source.labels.metadata.container"),
       media ? (media.formatLongName ?? media.formatName) : noSource,

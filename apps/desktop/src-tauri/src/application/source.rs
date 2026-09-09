@@ -1,4 +1,8 @@
-use std::path::PathBuf;
+use std::{
+    fs,
+    path::PathBuf,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use crate::{
     domain::source::{SourceRef, validate_source},
@@ -48,8 +52,27 @@ fn source_ref_from_path(path: PathBuf) -> Result<SourceRef, AppError> {
         .map(|name| name.to_string_lossy().into_owned())
         .ok_or_else(|| AppError::internal("The selected source has no usable file name."))?;
 
+    let metadata = fs::metadata(&path).ok();
+
     Ok(SourceRef {
+        created_at_micros: metadata
+            .as_ref()
+            .and_then(|metadata| metadata.created().ok())
+            .and_then(system_time_to_micros),
         display_name,
         source_path: path.display().to_string(),
+        updated_at_micros: metadata
+            .as_ref()
+            .and_then(|metadata| metadata.modified().ok())
+            .and_then(system_time_to_micros),
     })
+}
+
+fn system_time_to_micros(value: SystemTime) -> Option<i64> {
+    value
+        .duration_since(UNIX_EPOCH)
+        .ok()?
+        .as_micros()
+        .try_into()
+        .ok()
 }
