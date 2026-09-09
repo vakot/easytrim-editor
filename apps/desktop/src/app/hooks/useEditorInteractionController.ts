@@ -185,6 +185,8 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
   const reverseShuttleLastSeekAtRef = useRef(0);
   const scrubFrameRef = useRef<number | null>(null);
   const pendingScrubMicrosRef = useRef<number | null>(null);
+  const frameStepSeekFrameRef = useRef<number | null>(null);
+  const pendingFrameStepSeekMicrosRef = useRef<number | null>(null);
   const trimCommitFrameRef = useRef<number | null>(null);
   const pendingTrimCommitRef = useRef<TrimRange | null>(null);
   const resumeAfterScrubRef = useRef(false);
@@ -563,22 +565,69 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     resumeExternalAudioPlayback();
   }, [isPlaybackReady, resumeExternalAudioPlayback, usesExternalAudio]);
 
-  const commitSeek = useCallback((micros: number) => {
-    const clamped = clampPlaybackMicros(micros, trimRef.current.sourceDurationMicros);
-    currentPlayheadMicrosRef.current = clamped;
-    syncPlayheadElements(
-      playheadRef.current,
-      audioPlayheadRef.current,
-      clamped,
-      trimRef.current.sourceDurationMicros,
-    );
-    setPlayheadMicros(clamped);
-    seekVideo(videoRef.current, clamped);
+  const applyMediaSeek = useCallback((micros: number) => {
+    seekVideo(videoRef.current, micros);
     for (const audio of audioElementsRef.current.values())
-      seekMediaIfNeeded(audio, clamped / 1_000_000);
+      seekMediaIfNeeded(audio, micros / 1_000_000);
   }, []);
 
+  const flushFrameStepSeek = useCallback(() => {
+    cancelFrame(frameStepSeekFrameRef);
+    const pendingMicros = pendingFrameStepSeekMicrosRef.current;
+    pendingFrameStepSeekMicrosRef.current = null;
+    if (pendingMicros !== null) applyMediaSeek(pendingMicros);
+  }, [applyMediaSeek]);
+
+  const queueFrameStepSeek = useCallback(
+    (micros: number) => {
+      const clamped = clampPlaybackMicros(micros, trimRef.current.sourceDurationMicros);
+      currentPlayheadMicrosRef.current = clamped;
+      syncPlayheadElements(
+        playheadRef.current,
+        audioPlayheadRef.current,
+        clamped,
+        trimRef.current.sourceDurationMicros,
+      );
+      setPlayheadMicros(clamped);
+
+      const shouldDeferSeek =
+        pendingFrameStepSeekMicrosRef.current !== null || frameStepSeekFrameRef.current !== null;
+      if (!shouldDeferSeek) {
+        applyMediaSeek(clamped);
+        return;
+      }
+
+      pendingFrameStepSeekMicrosRef.current = clamped;
+      if (frameStepSeekFrameRef.current !== null) return;
+      frameStepSeekFrameRef.current = requestAnimationFrame(() => {
+        frameStepSeekFrameRef.current = null;
+        const pendingMicros = pendingFrameStepSeekMicrosRef.current;
+        pendingFrameStepSeekMicrosRef.current = null;
+        if (pendingMicros !== null) applyMediaSeek(pendingMicros);
+      });
+    },
+    [applyMediaSeek],
+  );
+
+  const commitSeek = useCallback(
+    (micros: number) => {
+      flushFrameStepSeek();
+      const clamped = clampPlaybackMicros(micros, trimRef.current.sourceDurationMicros);
+      currentPlayheadMicrosRef.current = clamped;
+      syncPlayheadElements(
+        playheadRef.current,
+        audioPlayheadRef.current,
+        clamped,
+        trimRef.current.sourceDurationMicros,
+      );
+      setPlayheadMicros(clamped);
+      applyMediaSeek(clamped);
+    },
+    [applyMediaSeek, flushFrameStepSeek],
+  );
+
   const startMediaPlayback = useCallback(() => {
+    flushFrameStepSeek();
     const video = videoRef.current;
     if (!video || !isPlaybackReadyRef.current) return;
     const startMicros = currentPlayheadMicrosRef.current;
@@ -593,7 +642,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
       if (startSequence !== playbackStartSequenceRef.current) return;
       handlePlaybackStartFailure();
     });
-  }, [handlePlaybackStartFailure, syncAudioPlayback]);
+  }, [flushFrameStepSeek, handlePlaybackStartFailure, syncAudioPlayback]);
 
   const handlePlaybackBoundary = useCallback(
     (currentMicros: number): boolean => {
@@ -664,7 +713,9 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
       cancelPlaybackFrame(playbackFrameRef);
       cancelFrame(reverseShuttleFrameRef);
       cancelFrame(scrubFrameRef);
+      cancelFrame(frameStepSeekFrameRef);
       cancelFrame(trimCommitFrameRef);
+      pendingFrameStepSeekMicrosRef.current = null;
       cleanupAudioRuntime();
       cleanupAllNativeAudioBindings();
       void audioContextRef.current?.close();
@@ -680,6 +731,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
 
   const handleShuttleEnd = useCallback(
     (origin: DiagnosticOrigin = { type: "internal" }) => {
+      flushFrameStepSeek();
       const direction = shuttleDirectionRef.current;
       if (direction === 0) return;
 
@@ -705,7 +757,14 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
         origin,
       });
     },
-    [commitSeek, pauseAudioPlayback, playbackSpeed, setMediaPlaybackRate, stopPlayheadAnimation],
+    [
+      commitSeek,
+      flushFrameStepSeek,
+      pauseAudioPlayback,
+      playbackSpeed,
+      setMediaPlaybackRate,
+      stopPlayheadAnimation,
+    ],
   );
 
   const startReverseShuttleAnimation = useCallback(() => {
@@ -767,6 +826,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     (direction: FrameShuttleDirection, origin: DiagnosticOrigin = { type: "internal" }) => {
       if (!isPlaybackReadyRef.current || shuttleDirectionRef.current === direction) return;
       if (shuttleDirectionRef.current !== 0) handleShuttleEnd(origin);
+      flushFrameStepSeek();
 
       playbackStartSequenceRef.current += 1;
       playbackRequestedRef.current = false;
@@ -794,6 +854,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     },
     [
       handleShuttleEnd,
+      flushFrameStepSeek,
       pauseAudioPlayback,
       playbackModes,
       playbackSpeed,
@@ -850,6 +911,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
   }, [commitSeek]);
 
   const handleScrubStart = useCallback(() => {
+    flushFrameStepSeek();
     if (shuttleDirectionRef.current !== 0) handleShuttleEnd();
     diagnostics.event("timeline.seek.started", {
       data: { source: "timeline" },
@@ -864,7 +926,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     pauseAudioPlayback();
     setIsPlaying(false);
     stopPlayheadAnimation();
-  }, [handleShuttleEnd, pauseAudioPlayback, stopPlayheadAnimation]);
+  }, [flushFrameStepSeek, handleShuttleEnd, pauseAudioPlayback, stopPlayheadAnimation]);
 
   const handleScrubEnd = useCallback(() => {
     flushScrubSeek();
@@ -929,9 +991,10 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
       videoRef.current?.pause();
       setIsPlaying(false);
       stopPlayheadAnimation();
-      commitSeek(currentPlayheadMicrosRef.current + direction * frameDurationMicros(frameRate));
+      const baseMicros = pendingFrameStepSeekMicrosRef.current ?? currentPlayheadMicrosRef.current;
+      queueFrameStepSeek(baseMicros + direction * frameDurationMicros(frameRate));
     },
-    [commitSeek, frameRate, handleShuttleEnd, stopPlayheadAnimation],
+    [frameRate, handleShuttleEnd, queueFrameStepSeek, stopPlayheadAnimation],
   );
 
   const handleSetSegmentBoundary = useCallback(
@@ -1025,6 +1088,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
 
   const onTimeUpdate = useCallback(
     (seconds: number) => {
+      if (pendingFrameStepSeekMicrosRef.current !== null) return;
       const currentMicros = clampPlaybackMicros(
         seconds * 1_000_000,
         trimRef.current.sourceDurationMicros,
