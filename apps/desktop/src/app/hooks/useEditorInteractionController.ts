@@ -39,6 +39,7 @@ import {
 } from "@/features/audio";
 import {
   cancelPlaybackFrame,
+  createSeekScheduler,
   type PlaybackFrameHandle,
   requestPlaybackFrame,
   seekVideo,
@@ -53,7 +54,6 @@ import {
 } from "@/features/timeline";
 import { diagnostics } from "@/lib/diagnostics";
 import { isApplicationDialogOpen } from "@/lib/hotkeys.utils";
-import { seekMediaIfNeeded } from "@/lib/media-element.utils";
 import type { DiagnosticOrigin } from "@/lib/tauri/diagnostics.types";
 
 const EMPTY_TRIM: TrimRange = {
@@ -163,6 +163,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
   }>(() => ({ sourcePath: null, streamIndexes: new Set() }));
 
   const videoRef = useRef<HTMLVideoElement>(null);
+  const seekSchedulerRef = useRef<ReturnType<typeof createSeekScheduler> | null>(null);
   const audioElementsRef = useRef(new Map<number, HTMLAudioElement>());
   const audioReadyListenersRef = useRef(new Map<number, () => void>());
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -206,7 +207,6 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
   const isPlaybackReady =
     previewKey !== null &&
     readyPreviewKey === previewKey &&
-    audioPreviewState?.status !== "loading" &&
     (!usesExternalAudio ||
       (audioReadiness.sourcePath === sourcePath &&
         audioReadiness.streamIndexes.size === activeExternalAudioStreamCount));
@@ -235,6 +235,8 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
       element.pause();
       const readyListener = audioReadyListenersRef.current.get(streamIndex);
       if (readyListener) element.removeEventListener("canplay", readyListener);
+      element.removeAttribute("src");
+      element.load();
       element.remove();
     }
     audioElementsRef.current.delete(streamIndex);
@@ -312,6 +314,16 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     videoRef.current?.pause();
     cancelPlaybackFrame(playbackFrameRef);
     cancelFrame(reverseShuttleFrameRef);
+    cancelFrame(scrubFrameRef);
+    cancelFrame(frameStepSeekFrameRef);
+    cancelFrame(trimCommitFrameRef);
+    pendingScrubMicrosRef.current = null;
+    pendingFrameStepSeekMicrosRef.current = null;
+    pendingTrimCommitRef.current = null;
+    timelineInteractionActiveRef.current = false;
+    resumeAfterScrubRef.current = false;
+    seekSchedulerRef.current?.dispose();
+    seekSchedulerRef.current = null;
     shuttleDirectionRef.current = 0;
     cleanupAudioRuntime();
     // Source replacement is an explicit transport reset, not persisted editor state.
@@ -563,11 +575,36 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     resumeExternalAudioPlayback();
   }, [isPlaybackReady, resumeExternalAudioPlayback, usesExternalAudio]);
 
-  const applyMediaSeek = useCallback((micros: number) => {
-    seekVideo(videoRef.current, micros);
-    for (const audio of audioElementsRef.current.values())
-      seekMediaIfNeeded(audio, micros / 1_000_000);
-  }, []);
+  const scheduleVideoSeek = useCallback(
+    (micros: number, approximate: boolean, onSettled?: () => void) => {
+      const video = videoRef.current;
+      if (!video) return;
+      if (seekSchedulerRef.current?.video !== video) {
+        seekSchedulerRef.current?.dispose();
+        seekSchedulerRef.current = createSeekScheduler(video);
+      }
+      seekSchedulerRef.current.seek(micros / 1_000_000, approximate, onSettled);
+    },
+    [],
+  );
+
+  const applyMediaSeek = useCallback(
+    (micros: number) => {
+      const interactive = timelineInteractionActiveRef.current;
+      if (isPlayingRef.current) pauseAudioPlayback();
+      scheduleVideoSeek(
+        micros,
+        interactive,
+        interactive
+          ? undefined
+          : () => {
+              syncAudioPlayback(micros / 1_000_000, true);
+              if (isPlayingRef.current) resumeExternalAudioPlayback();
+            },
+      );
+    },
+    [pauseAudioPlayback, resumeExternalAudioPlayback, scheduleVideoSeek, syncAudioPlayback],
+  );
 
   const flushFrameStepSeek = useCallback(() => {
     cancelFrame(frameStepSeekFrameRef);
@@ -633,15 +670,22 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     const startSequence = ++playbackStartSequenceRef.current;
     playbackRequestedRef.current = true;
     setTransportError(null);
-    seekVideo(video, startMicros);
-    syncAudioPlayback(startMicros / 1_000_000, true);
-    const media = [video, ...audioElementsRef.current.values()];
     const resumeAudioContext = audioContextRef.current?.resume() ?? Promise.resolve();
-    void Promise.all([resumeAudioContext, ...media.map((element) => element.play())]).catch(() => {
+    // Resume the audio context within the user gesture, but do not play stale seek frames.
+    void resumeAudioContext.catch(() => {
       if (startSequence !== playbackStartSequenceRef.current) return;
       handlePlaybackStartFailure();
     });
-  }, [flushFrameStepSeek, handlePlaybackStartFailure, syncAudioPlayback]);
+    scheduleVideoSeek(startMicros, false, () => {
+      if (startSequence !== playbackStartSequenceRef.current) return;
+      syncAudioPlayback(startMicros / 1_000_000, true);
+      const media = [video, ...audioElementsRef.current.values()];
+      void Promise.all(media.map((element) => element.play())).catch(() => {
+        if (startSequence !== playbackStartSequenceRef.current) return;
+        handlePlaybackStartFailure();
+      });
+    });
+  }, [flushFrameStepSeek, handlePlaybackStartFailure, scheduleVideoSeek, syncAudioPlayback]);
 
   const handlePlaybackBoundary = useCallback(
     (currentMicros: number): boolean => {
@@ -673,6 +717,10 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
       const video = videoRef.current;
       if (!video || video.paused) {
         playbackFrameRef.current = null;
+        return;
+      }
+      if (seekSchedulerRef.current?.isPending || video.seeking) {
+        playbackFrameRef.current = requestPlaybackFrame(video, update);
         return;
       }
       const currentMicros = clampPlaybackMicros(
@@ -715,6 +763,8 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
       cancelFrame(frameStepSeekFrameRef);
       cancelFrame(trimCommitFrameRef);
       pendingFrameStepSeekMicrosRef.current = null;
+      seekSchedulerRef.current?.dispose();
+      seekSchedulerRef.current = null;
       cleanupAudioRuntime();
       cleanupAllNativeAudioBindings();
       void audioContextRef.current?.close();
@@ -736,7 +786,9 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
 
       const video = videoRef.current;
       const finalMicros =
-        direction === 1 && video ? video.currentTime * 1_000_000 : currentPlayheadMicrosRef.current;
+        direction === 1 && video && !video.seeking && !seekSchedulerRef.current?.isPending
+          ? video.currentTime * 1_000_000
+          : currentPlayheadMicrosRef.current;
 
       shuttleDirectionRef.current = 0;
       cancelFrame(reverseShuttleFrameRef);
@@ -934,13 +986,15 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
       origin: { type: "timeline", id: "timeline.scrub" },
     });
     timelineInteractionActiveRef.current = false;
+    // A fast/keyframe seek is only for dragging; release always lands precisely.
+    applyMediaSeek(currentPlayheadMicrosRef.current);
     if (resumeAfterScrubRef.current) {
       resumeAfterScrubRef.current = false;
       playbackModes.startMicros(currentPlayheadMicrosRef.current, trimRef.current);
       playbackModes.resetBoundary();
       startMediaPlayback();
     }
-  }, [flushScrubSeek, playbackModes, startMediaPlayback]);
+  }, [applyMediaSeek, flushScrubSeek, playbackModes, startMediaPlayback]);
 
   const handleTogglePlayback = useCallback(
     (origin: DiagnosticOrigin = { type: "internal" }) => {
@@ -1087,7 +1141,13 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
 
   const onTimeUpdate = useCallback(
     (seconds: number) => {
-      if (pendingFrameStepSeekMicrosRef.current !== null) return;
+      if (
+        timelineInteractionActiveRef.current ||
+        pendingFrameStepSeekMicrosRef.current !== null ||
+        seekSchedulerRef.current?.isPending ||
+        videoRef.current?.seeking
+      )
+        return;
       const currentMicros = clampPlaybackMicros(
         seconds * 1_000_000,
         trimRef.current.sourceDurationMicros,
@@ -1105,13 +1165,13 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
         trimRef.current.sourceDurationMicros,
       );
       setPlayheadMicros(currentMicros);
-      syncAudioPlayback(seconds, true);
       if (currentMicros >= trimRef.current.sourceDurationMicros) stopPlayheadAnimation();
     },
-    [handlePlaybackBoundary, stopPlayheadAnimation, syncAudioPlayback],
+    [handlePlaybackBoundary, stopPlayheadAnimation],
   );
 
   const onPause = useCallback(() => {
+    if (playbackRequestedRef.current && seekSchedulerRef.current?.isPending) return;
     if (isPlayingRef.current) {
       void videoRef.current?.play().catch(() => undefined);
       return;
