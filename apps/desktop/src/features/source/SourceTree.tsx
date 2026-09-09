@@ -1,9 +1,10 @@
 import { FileVideo2, FolderOpen, Upload } from "lucide-react";
-import { useMemo } from "react";
+import { useDeferredValue, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
+import { SearchBar } from "@/components/ui/search-bar";
 import { Separator } from "@/components/ui/separator";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
@@ -15,7 +16,7 @@ import { chooseSourceRequested } from "@/app/store/thunks/source-media-thunks";
 import { cn } from "@/lib/class-names.utils";
 
 import { SourceTreeNodes } from "./components/SourceTreeNodes";
-import { getSourceTreeNodes } from "./lib/source-tree.utils";
+import { filterSourceTreeNodes, getSourceTreeNodes } from "./lib/source-tree.utils";
 
 interface SourceTreeProps {
   className?: string;
@@ -23,17 +24,40 @@ interface SourceTreeProps {
 }
 
 export function SourceTree({ className, emptyClassName }: SourceTreeProps) {
+  const { t } = useTranslation();
   const activeInstanceId = useAppSelector(selectActiveInstanceId);
   const topologyEntries = useAppSelector(selectEditingInstanceTopologyEntries);
+  const [searchQuery, setSearchQuery] = useState("");
+  const deferredSearchQuery = useDeferredValue(searchQuery);
   const nodes = useMemo(() => getSourceTreeNodes(topologyEntries), [topologyEntries]);
-
-  if (nodes.length === 0) {
-    return <SourceExplorerEmptyState className={emptyClassName} />;
-  }
+  const filteredNodes = useMemo(
+    () => filterSourceTreeNodes(nodes, deferredSearchQuery),
+    [deferredSearchQuery, nodes],
+  );
 
   return (
-    <div className={cn("flex flex-col gap-1", className)}>
-      <SourceTreeNodes nodes={nodes} value={activeInstanceId ?? ""} />
+    <div className={cn("flex min-h-full flex-col gap-2", className)}>
+      <SearchBar
+        aria-label={t("common.labels.search")}
+        onValueChange={setSearchQuery}
+        placeholder={t("source.messages.searchPlaceholder")}
+        value={searchQuery}
+      />
+      {nodes.length === 0 ? (
+        <SourceExplorerEmptyState className={emptyClassName} />
+      ) : filteredNodes.length === 0 ? (
+        <p className="px-2 py-4 text-center text-xs text-muted-foreground">
+          {t("source.messages.noSearchResults")}
+        </p>
+      ) : (
+        <div className="min-h-0 flex-1">
+          <SourceTreeNodes
+            nodes={filteredNodes}
+            searchQuery={deferredSearchQuery}
+            value={activeInstanceId ?? ""}
+          />
+        </div>
+      )}
     </div>
   );
 }

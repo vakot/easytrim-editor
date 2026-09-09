@@ -10,7 +10,7 @@ import {
 import { createAppStore } from "@/app/store/store";
 import type { EditingInstance } from "@/domain/editing-instance";
 
-import { SourceTree } from "../SourceTree";
+import { SourceBreadcrumb } from "../SourceBreadcrumb";
 
 function instance(id: string, displayName: string): EditingInstance {
   return {
@@ -25,8 +25,8 @@ function instance(id: string, displayName: string): EditingInstance {
   };
 }
 
-describe("SourceTree", () => {
-  it("filters Explorer sources and highlights the contained query", () => {
+describe("SourceBreadcrumb", () => {
+  it("searches and highlights sources in a breadcrumb popover", () => {
     const store = createAppStore();
     store.dispatch(
       editingInstancesAdded([
@@ -38,10 +38,11 @@ describe("SourceTree", () => {
 
     render(
       <Provider store={store}>
-        <SourceTree />
+        <SourceBreadcrumb />
       </Provider>,
     );
 
+    fireEvent.click(screen.getByTitle("C:/Media"));
     fireEvent.change(screen.getByRole("searchbox", { name: "Search" }), {
       target: { value: "record" },
     });
@@ -49,20 +50,5 @@ describe("SourceTree", () => {
     expect(screen.queryByRole("button", { name: "holiday.mp4" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "screen-recording.mp4" })).toBeInTheDocument();
     expect(screen.getByText("record").tagName).toBe("MARK");
-  });
-
-  it("renders the Explorer empty state with file, folder, and drop actions", () => {
-    render(
-      <Provider store={createAppStore()}>
-        <SourceTree />
-      </Provider>,
-    );
-
-    expect(screen.getByRole("form", { name: "Explorer" })).toBeInTheDocument();
-    expect(screen.getByRole("searchbox", { name: "Search" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Open File/ })).toHaveTextContent("CtrlO");
-    expect(screen.getByRole("button", { name: /Open Folder/ })).toHaveTextContent("CtrlK");
-    expect(screen.getByText("Drag and drop videos here")).toBeInTheDocument();
-    expect(screen.getByText("MP4 · MOV · MKV · WebM · AVI")).toBeInTheDocument();
   });
 });

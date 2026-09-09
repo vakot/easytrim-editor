@@ -4,7 +4,7 @@ import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snap
 import type { EditingInstance } from "@/domain/editing-instance";
 import { firstSource } from "@/test/source.fixtures";
 
-import { getSourceTreeNodes } from "../source-tree.utils";
+import { filterSourceTreeNodes, getSourceTreeNodes } from "../source-tree.utils";
 
 function instance(id: string, displayName: string, sourcePath: string): EditingInstance {
   return {
@@ -53,5 +53,25 @@ describe("getSourceTreeNodes", () => {
     expect(
       media.children.map((node) => (node.kind === "instance" ? node.instanceId : node.name)),
     ).toEqual(["first", "second"]);
+  });
+
+  it("filters source names by case-insensitive contains and preserves matching folders", () => {
+    const nodes = getSourceTreeNodes(
+      [
+        instance("first", "holiday.mp4", "C:/Media/holiday.mp4"),
+        instance("second", "screen-recording.mp4", "C:/Media/Clips/screen-recording.mp4"),
+      ],
+      { compact: false },
+    );
+
+    const filtered = filterSourceTreeNodes(nodes, "RECORD");
+    const drive = filtered[0];
+    const media = drive?.kind === "folder" ? drive.children[0] : undefined;
+    const clips = media?.kind === "folder" ? media.children[0] : undefined;
+
+    expect(clips).toMatchObject({ kind: "folder", name: "Clips" });
+    expect(clips?.kind === "folder" ? clips.children : []).toEqual([
+      expect.objectContaining({ displayName: "screen-recording.mp4" }),
+    ]);
   });
 });

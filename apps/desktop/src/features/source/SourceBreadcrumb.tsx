@@ -1,4 +1,5 @@
-import { Children, type PropsWithChildren } from "react";
+import { Children, type PropsWithChildren, useDeferredValue, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import {
   Breadcrumb,
@@ -11,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { SearchBar } from "@/components/ui/search-bar";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
 import {
@@ -22,6 +24,7 @@ import { SourceDetails } from "./components/SourceDetails";
 import { SourceTreeNodes } from "./components/SourceTreeNodes";
 import { formatSourcePath } from "./lib/media-formatters.utils";
 import {
+  filterSourceTreeNodes,
   getPathDirectories,
   getSourceTreeNodes,
   getSourceTreeSiblings,
@@ -111,17 +114,43 @@ function SourceBreadcrumbPopover({
   nodes,
   value,
 }: PropsWithChildren<{ nodes: SourceTreeNode[]; value: string }>) {
+  const { t } = useTranslation();
+  const [searchQuery, setSearchQuery] = useState("");
+  const deferredSearchQuery = useDeferredValue(searchQuery);
+  const filteredNodes = useMemo(
+    () => filterSourceTreeNodes(nodes, deferredSearchQuery),
+    [deferredSearchQuery, nodes],
+  );
+
   return (
     <Popover>
       <PopoverTrigger asChild>{children}</PopoverTrigger>
       <PopoverContent
         align="start"
-        className="flex max-h-96 w-80 overflow-hidden p-1 py-2.5"
+        className="flex max-h-96 w-80 flex-col overflow-hidden p-1 py-2.5"
         side="bottom"
       >
-        <ScrollArea className="flex-1">
-          <SourceTreeNodes background="popover" nodes={nodes} value={value} />
-        </ScrollArea>
+        <SearchBar
+          aria-label={t("common.labels.search")}
+          className="mb-2"
+          onValueChange={setSearchQuery}
+          placeholder={t("source.messages.searchPlaceholder")}
+          value={searchQuery}
+        />
+        {filteredNodes.length > 0 ? (
+          <ScrollArea className="min-h-0 flex-1">
+            <SourceTreeNodes
+              background="popover"
+              nodes={filteredNodes}
+              searchQuery={deferredSearchQuery}
+              value={value}
+            />
+          </ScrollArea>
+        ) : (
+          <p className="px-2 py-4 text-center text-xs text-muted-foreground">
+            {t("source.messages.noSearchResults")}
+          </p>
+        )}
       </PopoverContent>
     </Popover>
   );
