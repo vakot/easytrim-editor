@@ -15,6 +15,7 @@ use tauri::Manager;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     cleanup_stale_media_artifacts();
+    let media_reads = Arc::new(tauri::async_runtime::Mutex::new(()));
     let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init());
@@ -45,9 +46,27 @@ pub fn run() {
             app.manage(diagnostics);
             Ok(())
         })
-        .register_uri_scheme_protocol("easytrim-media", |context, request| {
-            media::preview::respond(context.app_handle(), request)
-        })
+        .register_asynchronous_uri_scheme_protocol(
+            "easytrim-media",
+            move |context, request, responder| {
+                let app = context.app_handle().clone();
+                let media_reads = Arc::clone(&media_reads);
+                tauri::async_runtime::spawn(async move {
+                    // Bound concurrent disk reads and response buffers without blocking the window.
+                    let _read = media_reads.lock().await;
+                    let response = tauri::async_runtime::spawn_blocking(move || {
+                        media::preview::respond(&app, request)
+                    })
+                    .await
+                    .unwrap_or_else(|_| {
+                        let mut response = tauri::http::Response::new(Vec::new());
+                        *response.status_mut() = tauri::http::StatusCode::INTERNAL_SERVER_ERROR;
+                        response
+                    });
+                    responder.respond(response);
+                });
+            },
+        )
         .manage(AppState::default())
         .invoke_handler(tauri::generate_handler![
             commands::capabilities::check_media_capabilities,

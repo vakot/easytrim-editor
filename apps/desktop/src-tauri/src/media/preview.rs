@@ -77,7 +77,9 @@ fn read_media_response(
         return range_not_satisfiable(file_length);
     }
 
-    let requested_range = match range_header {
+    // Range applies to GET only. HEAD must report the entire representation, including
+    // lengths beyond 4 GiB, without reading or allocating any media bytes.
+    let requested_range = match range_header.filter(|_| !is_head) {
         Some(value) => {
             let Ok(value) = value.to_str() else {
                 return range_not_satisfiable(file_length);
@@ -94,9 +96,13 @@ fn read_media_response(
         start: 0,
         end: file_length - 1,
     });
-    let capped_end = selected
-        .end
-        .min(selected.start.saturating_add(MAX_RESPONSE_BYTES - 1));
+    let capped_end = if is_head {
+        selected.end
+    } else {
+        selected
+            .end
+            .min(selected.start.saturating_add(MAX_RESPONSE_BYTES - 1))
+    };
     let response_range = ByteRange {
         start: selected.start,
         end: capped_end,
@@ -286,5 +292,64 @@ mod tests {
     #[test]
     fn response_chunks_remain_memory_bounded() {
         assert_eq!(MAX_RESPONSE_BYTES, 4 * 1024 * 1024);
+    }
+
+    #[test]
+    fn ranges_preserve_offsets_beyond_four_gib() {
+        let length = 40 * 1024 * 1024 * 1024;
+        assert_eq!(
+            parse_range("bytes=4294967296-4294967395", length),
+            Some(ByteRange {
+                start: 4_294_967_296,
+                end: 4_294_967_395
+            })
+        );
+        assert_eq!(
+            parse_range("bytes=-128", length),
+            Some(ByteRange {
+                start: length - 128,
+                end: length - 1
+            })
+        );
+    }
+
+    #[test]
+    fn serves_bounded_gets_and_full_head_metadata() {
+        use std::{fs, io::Write};
+        use tauri::http::{
+            HeaderValue, StatusCode,
+            header::{CONTENT_LENGTH, CONTENT_RANGE},
+        };
+
+        let path =
+            std::env::temp_dir().join(format!("easytrim-range-test-{}.mp4", uuid::Uuid::new_v4()));
+        let mut file = fs::File::create(&path).unwrap();
+        file.write_all(&vec![7; MAX_RESPONSE_BYTES as usize + 128])
+            .unwrap();
+        drop(file);
+
+        let head =
+            super::read_media_response(&path, true, Some(&HeaderValue::from_static("bytes=0-1")));
+        assert_eq!(head.status(), StatusCode::OK);
+        assert_eq!(
+            head.headers()[CONTENT_LENGTH],
+            (MAX_RESPONSE_BYTES + 128).to_string()
+        );
+        assert!(!head.headers().contains_key(CONTENT_RANGE));
+        assert!(head.body().is_empty());
+
+        let get = super::read_media_response(&path, false, None);
+        assert_eq!(get.status(), StatusCode::PARTIAL_CONTENT);
+        assert_eq!(get.body().len(), MAX_RESPONSE_BYTES as usize);
+        let tail =
+            super::read_media_response(&path, false, Some(&HeaderValue::from_static("bytes=-128")));
+        assert_eq!(tail.body(), &vec![7; 128]);
+        let invalid = super::read_media_response(
+            &path,
+            false,
+            Some(&HeaderValue::from_static("bytes=999999999-")),
+        );
+        assert_eq!(invalid.status(), StatusCode::RANGE_NOT_SATISFIABLE);
+        fs::remove_file(path).unwrap();
     }
 }
