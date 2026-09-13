@@ -19,6 +19,7 @@ export function EditorWorkspace() {
         <div className="size-full pb-1.5 pl-1.5">
           <div className="size-full p-px">
             <Card className="size-full p-0">
+              {/* TODO: repalce with new cards grid */}
               <EditorSource />
             </Card>
           </div>

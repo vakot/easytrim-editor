@@ -97,6 +97,7 @@ function SourceBreadcrumbPage({
 
   return (
     <BreadcrumbItem className="min-w-0">
+      {/* TODO: remove popover - open path on click (file: open folder and highlight; folder: open folder) */}
       <SourceBreadcrumbPopover
         nodes={getSourceTreeSiblings(nodes, { id: instance.id, kind: "instance" })}
         value={instance.id}
