@@ -34,10 +34,13 @@ export function SourceSelectionProvider({
       if (modifiers.shiftKey && sourceIndex !== -1 && anchorIndex !== -1) {
         const rangeStart = Math.min(sourceIndex, anchorIndex);
         const rangeEnd = Math.max(sourceIndex, anchorIndex);
-        nextSelection = toggleSelection ? new Set(selectedSourceIds) : new Set();
+        const rangeIds = sourceIds.slice(rangeStart, rangeEnd + 1);
+        const rangeIsSelected = rangeIds.every((id) => selectedSourceIds.has(id));
+        nextSelection = new Set(selectedSourceIds);
 
-        for (let index = rangeStart; index <= rangeEnd; index += 1) {
-          nextSelection.add(sourceIds[index]!);
+        for (const id of rangeIds) {
+          if (rangeIsSelected) nextSelection.delete(id);
+          else nextSelection.add(id);
         }
       } else if (toggleSelection) {
         nextSelection = new Set(selectedSourceIds);

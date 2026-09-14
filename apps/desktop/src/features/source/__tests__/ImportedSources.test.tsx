@@ -26,6 +26,7 @@ import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snap
 import {
   activeEditingInstanceChanged,
   editingInstancesAdded,
+  selectActiveInstanceId,
 } from "@/app/store/slices/editing-instances-slice";
 import { importedPreviewReady } from "@/app/store/slices/preview-slice";
 import { createAppStore } from "@/app/store/store";
@@ -127,7 +128,7 @@ describe("ImportedSources", () => {
     expect(screen.getByText("Delete folder?")).toBeInTheDocument();
   });
 
-  it("selects cards as a single item, toggle set, or range", async () => {
+  it("opens on plain click and merges modifier selections", async () => {
     const user = userEvent.setup();
     const store = createAppStore();
     store.dispatch(
@@ -137,6 +138,7 @@ describe("ImportedSources", () => {
         instance("third", "third.mp4"),
       ]),
     );
+    store.dispatch(activeEditingInstanceChanged("first"));
 
     render(
       <Provider store={store}>
@@ -150,15 +152,29 @@ describe("ImportedSources", () => {
     await user.click(cards[0]!);
     expect(cards[0]).toHaveAttribute("aria-checked", "true");
     expect(cards[1]).toHaveAttribute("aria-checked", "false");
+    expect(selectActiveInstanceId(store.getState())).toBe("first");
 
-    fireEvent.click(cards[2]!, { ctrlKey: true });
+    fireEvent.click(cards[1]!, { ctrlKey: true });
     expect(cards[0]).toHaveAttribute("aria-checked", "true");
-    expect(cards[2]).toHaveAttribute("aria-checked", "true");
+    expect(cards[1]).toHaveAttribute("aria-checked", "true");
+    expect(cards[2]).toHaveAttribute("aria-checked", "false");
+    expect(selectActiveInstanceId(store.getState())).toBe("first");
 
-    await user.click(cards[0]!);
     fireEvent.click(cards[2]!, { shiftKey: true });
     expect(cards).toHaveLength(3);
     for (const card of cards) expect(card).toHaveAttribute("aria-checked", "true");
+    expect(selectActiveInstanceId(store.getState())).toBe("first");
+
+    fireEvent.click(cards[2]!, { shiftKey: true });
+    expect(cards[0]).toHaveAttribute("aria-checked", "true");
+    expect(cards[1]).toHaveAttribute("aria-checked", "false");
+    expect(cards[2]).toHaveAttribute("aria-checked", "false");
+
+    expect(selectActiveInstanceId(store.getState())).toBe("first");
+
+    await user.click(cards[1]!);
+    expect(cards[1]).toHaveAttribute("aria-checked", "true");
+    expect(selectActiveInstanceId(store.getState())).toBe("second");
   });
 
   it("shows bulk close and delete actions without reveal", async () => {

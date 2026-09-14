@@ -11,7 +11,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { type MouseEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
@@ -132,6 +132,19 @@ export function SourceCard({ source }: SourceCardProps) {
     return sourceId === id ? [source] : [];
   });
 
+  const handleCardClick = (event: MouseEvent<HTMLDivElement>) => {
+    const modifiers = {
+      ctrlKey: event.ctrlKey,
+      metaKey: event.metaKey,
+      shiftKey: event.shiftKey,
+    };
+
+    selectSource(id, modifiers);
+    if (!event.ctrlKey && !event.metaKey && !event.shiftKey) {
+      void dispatch(navigateToEditingInstance(id));
+    }
+  };
+
   const handleContextMenu = () => {
     const sourceIsSelected = selectedSourceIds.has(id);
     setContextSourceIds(sourceIsSelected ? [...selectedSourceIds] : [id]);
@@ -157,13 +170,7 @@ export function SourceCard({ source }: SourceCardProps) {
               data-active={active ? "true" : "false"}
               data-selected={selected ? "true" : "false"}
               data-source-id={id}
-              onClick={(event) =>
-                selectSource(id, {
-                  ctrlKey: event.ctrlKey,
-                  metaKey: event.metaKey,
-                  shiftKey: event.shiftKey,
-                })
-              }
+              onClick={handleCardClick}
               onKeyDown={(event) => {
                 if (
                   event.target !== event.currentTarget ||
@@ -186,7 +193,6 @@ export function SourceCard({ source }: SourceCardProps) {
               <button
                 aria-label={`${t("app.actions.open")}: ${displayName}`}
                 className="group relative aspect-video w-full cursor-pointer overflow-hidden bg-muted text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
-                onClick={() => void dispatch(navigateToEditingInstance(id))}
                 type="button"
               >
                 {previewUrl ? (
