@@ -101,7 +101,7 @@ function SourceFolderActions({
         <DropdownMenuTrigger asChild>
           <Button
             aria-label={`${t("source.actions.folderActions")}: ${folderPath}`}
-            size="icon-sm"
+            size="icon-xs"
             variant="ghost"
           >
             <MoreHorizontal aria-hidden="true" />
