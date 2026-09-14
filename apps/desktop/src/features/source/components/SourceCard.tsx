@@ -150,10 +150,6 @@ export function SourceCard({ source }: SourceCardProps) {
     const sourceIsSelected = selectedSourceIds.has(id);
     setContextMenuIsSelection(sourceIsSelected);
     setContextSourceIds(sourceIsSelected ? [...selectedSourceIds] : [id]);
-
-    if (!sourceIsSelected) {
-      selectSource(id, { ctrlKey: true, metaKey: false, shiftKey: false });
-    }
   };
 
   return (

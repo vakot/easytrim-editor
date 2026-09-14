@@ -342,6 +342,8 @@ describe("ImportedSources", () => {
     await user.click(cards[0]!);
     fireEvent.contextMenu(cards[1]!);
 
+    expect(cards[0]).toHaveAttribute("aria-checked", "true");
+    expect(cards[1]).toHaveAttribute("aria-checked", "false");
     expect(screen.getByRole("menuitem", { name: "Close File" })).toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: "Delete File" })).toBeInTheDocument();
     expect(
