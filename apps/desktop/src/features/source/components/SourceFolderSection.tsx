@@ -27,7 +27,7 @@ import { closeEditingInstancesRequested } from "@/app/store/thunks/source-media-
 import type { EditingInstance } from "@/domain/editing-instance";
 import { openFileLocation } from "@/lib/tauri/media";
 
-import { getRevealLabel } from "../lib/source-tree.utils";
+import { getRevealLabel } from "../lib/source.utils";
 
 import { DeleteSourceDialog, DeleteSourceDialogTrigger } from "./DeleteSourceDialog";
 import { SourceCard } from "./SourceCard";

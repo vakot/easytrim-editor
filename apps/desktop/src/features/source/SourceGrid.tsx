@@ -36,7 +36,7 @@ import { SourceFolderSection } from "./components/SourceFolderSection";
 import { SourceSelectionProvider } from "./components/SourceSelectionProvider";
 import { getSourceFolderPath } from "./lib/media-formatters.utils";
 
-export function ImportedSources() {
+export function SourceGrid() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const activeInstanceId = useAppSelector(selectActiveInstanceId);
@@ -102,7 +102,7 @@ export function ImportedSources() {
 
   const initialAnchorId = activeInstanceId ?? visibleSourceIds[0] ?? null;
 
-  if (instances.length === 0) return <ImportedSourcesEmptyState />;
+  if (instances.length === 0) return <SourceGridEmptyState />;
 
   const selectedInstances = instances.filter((instance) =>
     effectiveSelectedSourceIds.has(instance.id),
@@ -112,7 +112,7 @@ export function ImportedSources() {
 
   return (
     <>
-      <div className="mx-3 mb-2 flex items-center gap-2">
+      <div className="mx-3 mb-1 flex items-center gap-1">
         <SearchBar
           aria-label={t("common.labels.search")}
           className="min-w-0 flex-1"
@@ -235,7 +235,7 @@ function SourceSelectionActions({
             <DropdownMenuIcon>
               <X aria-hidden="true" />
             </DropdownMenuIcon>
-            {t("app.actions.closeFile")}
+            {t("app.actions.closeFiles", { count: sourceIds.length })}
           </DropdownMenuItem>
 
           <DropdownMenuSeparator />
@@ -249,7 +249,7 @@ function SourceSelectionActions({
               <DropdownMenuIcon>
                 <Trash2 aria-hidden="true" />
               </DropdownMenuIcon>
-              {t("app.actions.deleteFile")}
+              {t("app.actions.deleteFiles", { count: sourceIds.length })}
             </DropdownMenuItem>
           </DeleteSourceDialogTrigger>
         </DropdownMenuContent>
@@ -258,7 +258,7 @@ function SourceSelectionActions({
   );
 }
 
-function ImportedSourcesEmptyState() {
+function SourceGridEmptyState() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
 

@@ -55,7 +55,7 @@ import { cn } from "@/lib/class-names.utils";
 import { openFileLocation } from "@/lib/tauri/media";
 
 import { formatSourcePath } from "../lib/media-formatters.utils";
-import { getRevealLabel } from "../lib/source-tree.utils";
+import { getRevealLabel } from "../lib/source.utils";
 
 import { DeleteSourceDialog, DeleteSourceDialogTrigger } from "./DeleteSourceDialog";
 import { useSourceSelection } from "./SourceSelectionContext";
@@ -151,95 +151,93 @@ export function SourceCard({ source }: SourceCardProps) {
     <DeleteSourceDialog sourceIds={contextSourceIds}>
       <ContextMenu>
         <ContextMenuTrigger asChild onContextMenu={handleContextMenu}>
-          <div className="min-w-0">
-            <Card
-              aria-checked={selected}
-              aria-label={displayName}
-              className={cn(
-                "cursor-pointer pt-0",
-                active ? "ring-primary" : undefined,
-                selected ? "ring-2 ring-primary" : undefined,
-              )}
-              data-active={active ? "true" : "false"}
-              data-selected={selected ? "true" : "false"}
-              data-source-id={id}
-              onClick={handleCardClick}
-              onKeyDown={(event) => {
-                if (
-                  event.target !== event.currentTarget ||
-                  (event.key !== " " && event.key !== "Enter")
-                ) {
-                  return;
-                }
+          <Card
+            aria-checked={selected}
+            aria-label={displayName}
+            className={cn(
+              "cursor-pointer pt-0",
+              selected ? "ring-2 ring-primary/70" : undefined,
+              active ? "ring-2 ring-primary" : undefined,
+            )}
+            data-active={active ? "true" : "false"}
+            data-selected={selected ? "true" : "false"}
+            data-source-id={id}
+            onClick={handleCardClick}
+            onKeyDown={(event) => {
+              if (
+                event.target !== event.currentTarget ||
+                (event.key !== " " && event.key !== "Enter")
+              ) {
+                return;
+              }
 
-                event.preventDefault();
-                selectSource(id, {
-                  ctrlKey: event.ctrlKey,
-                  metaKey: event.metaKey,
-                  shiftKey: event.shiftKey,
-                });
-              }}
-              role="checkbox"
-              tabIndex={0}
-              variant={variant}
-            >
-              <div className="group relative aspect-video w-full overflow-hidden bg-muted text-muted-foreground">
-                {thumbnailUrl ? (
-                  <img
-                    alt={`${displayName} thumbnail`}
-                    aria-label={`${displayName} thumbnail`}
-                    className="group-hover:scale-1.02 size-full object-cover transition-transform"
-                    src={thumbnailUrl}
-                  />
-                ) : thumbnailLoading ? (
-                  <span
-                    aria-label={t("source.status.loading")}
-                    className="grid size-full place-items-center bg-linear-to-br from-muted to-background"
-                    role="status"
-                  >
-                    <LoaderCircle aria-hidden="true" className="size-8 animate-spin text-primary" />
-                  </span>
-                ) : (
-                  <span className="grid size-full place-items-center bg-linear-to-br from-muted to-background">
-                    <span className="grid justify-items-center gap-2">
-                      <FileVideo aria-hidden="true" className="size-8 opacity-40" />
-                      <span className="text-[10px]">{t("source.messages.previewUnavailable")}</span>
-                    </span>
-                  </span>
-                )}
-                {status !== "ready" ? (
-                  <Badge
-                    className={`absolute top-2 left-2 gap-1 backdrop-blur-sm ${statusBadgeClassNames[variant]}`}
-                    size="xs"
-                    variant="outline"
-                  >
-                    <StatusIcon
-                      aria-hidden="true"
-                      className={
-                        status === "loading" || status === "rendering" ? "animate-spin" : undefined
-                      }
-                    />
-                    {statusLabel}
-                  </Badge>
-                ) : null}
-              </div>
-
-              <CardHeader>
-                <CardTitle className="truncate text-sm" title={displayName}>
-                  {displayName}
-                </CardTitle>
-                <CardDescription className="truncate" title={sourcePath}>
-                  {formatSourcePath(sourcePath)}
-                </CardDescription>
-                <CardAction
-                  className="flex items-center gap-1"
-                  onClick={(event) => event.stopPropagation()}
+              event.preventDefault();
+              selectSource(id, {
+                ctrlKey: event.ctrlKey,
+                metaKey: event.metaKey,
+                shiftKey: event.shiftKey,
+              });
+            }}
+            role="checkbox"
+            tabIndex={0}
+            variant={variant}
+          >
+            <div className="group relative aspect-video w-full overflow-hidden bg-muted text-muted-foreground">
+              {thumbnailUrl ? (
+                <img
+                  alt={`${displayName} thumbnail`}
+                  aria-label={`${displayName} thumbnail`}
+                  className="group-hover:scale-1.02 size-full object-cover transition-transform"
+                  src={thumbnailUrl}
+                />
+              ) : thumbnailLoading ? (
+                <span
+                  aria-label={t("source.status.loading")}
+                  className="grid size-full place-items-center bg-linear-to-br from-muted to-background"
+                  role="status"
                 >
-                  <SourceCardActions source={source} />
-                </CardAction>
-              </CardHeader>
-            </Card>
-          </div>
+                  <LoaderCircle aria-hidden="true" className="size-8 animate-spin text-primary" />
+                </span>
+              ) : (
+                <span className="grid size-full place-items-center bg-linear-to-br from-muted to-background">
+                  <span className="grid justify-items-center gap-2">
+                    <FileVideo aria-hidden="true" className="size-8 opacity-40" />
+                    <span className="text-[10px]">{t("source.messages.previewUnavailable")}</span>
+                  </span>
+                </span>
+              )}
+              {status !== "ready" ? (
+                <Badge
+                  className={`absolute top-2 left-2 gap-1 backdrop-blur-sm ${statusBadgeClassNames[variant]}`}
+                  size="xs"
+                  variant="outline"
+                >
+                  <StatusIcon
+                    aria-hidden="true"
+                    className={
+                      status === "loading" || status === "rendering" ? "animate-spin" : undefined
+                    }
+                  />
+                  {statusLabel}
+                </Badge>
+              ) : null}
+            </div>
+
+            <CardHeader>
+              <CardTitle className="truncate text-sm" title={displayName}>
+                {displayName}
+              </CardTitle>
+              <CardDescription className="truncate" title={sourcePath}>
+                {formatSourcePath(sourcePath)}
+              </CardDescription>
+              <CardAction
+                className="flex items-center gap-1"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <SourceCardActions source={source} />
+              </CardAction>
+            </CardHeader>
+          </Card>
         </ContextMenuTrigger>
 
         {contextMenuIsSelection ? (

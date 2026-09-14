@@ -6,7 +6,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { ActivityFeed } from "@/features/activity";
-import { ImportedSources } from "@/features/source";
+import { SourceGrid } from "@/features/source";
 
 export function EditorSource() {
   const { t } = useTranslation();
@@ -23,7 +23,7 @@ export function EditorSource() {
         {t("source.labels.importedSources")}
       </h3>
 
-      <ImportedSources />
+      <SourceGrid />
 
       <Collapsible className="shrink-0 border-t border-foreground/10 p-1" defaultOpen={false}>
         <CollapsibleTrigger asChild>

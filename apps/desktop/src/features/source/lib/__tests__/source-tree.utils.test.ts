@@ -4,7 +4,7 @@ import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snap
 import type { EditingInstance } from "@/domain/editing-instance";
 import { firstSource } from "@/test/source.fixtures";
 
-import { filterSourceTreeNodes, getSourceTreeNodes } from "../source-tree.utils";
+import { filterSourceTreeNodes, getSourceTreeNodes } from "../source.utils";
 
 function instance(id: string, displayName: string, sourcePath: string): EditingInstance {
   return {

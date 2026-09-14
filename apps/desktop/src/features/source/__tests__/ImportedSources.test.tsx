@@ -31,7 +31,7 @@ import { importedThumbnailReady } from "@/app/store/slices/preview-slice";
 import { createAppStore } from "@/app/store/store";
 import type { EditingInstance } from "@/domain/editing-instance";
 
-import { ImportedSources } from "../ImportedSources";
+import { SourceGrid } from "../SourceGrid";
 
 function instance(
   id: string,
@@ -47,7 +47,7 @@ function instance(
   };
 }
 
-describe("ImportedSources", () => {
+describe("SourceGrid", () => {
   it("renders imported source cards and filters by filename or path", () => {
     const store = createAppStore();
     store.dispatch(
@@ -61,7 +61,7 @@ describe("ImportedSources", () => {
     render(
       <Provider store={store}>
         <TooltipProvider>
-          <ImportedSources />
+          <SourceGrid />
         </TooltipProvider>
       </Provider>,
     );
@@ -97,7 +97,7 @@ describe("ImportedSources", () => {
     render(
       <Provider store={store}>
         <TooltipProvider>
-          <ImportedSources />
+          <SourceGrid />
         </TooltipProvider>
       </Provider>,
     );
@@ -143,7 +143,7 @@ describe("ImportedSources", () => {
     render(
       <Provider store={store}>
         <TooltipProvider>
-          <ImportedSources />
+          <SourceGrid />
         </TooltipProvider>
       </Provider>,
     );
@@ -192,7 +192,7 @@ describe("ImportedSources", () => {
     render(
       <Provider store={store}>
         <TooltipProvider>
-          <ImportedSources />
+          <SourceGrid />
         </TooltipProvider>
       </Provider>,
     );
@@ -225,7 +225,7 @@ describe("ImportedSources", () => {
     render(
       <Provider store={store}>
         <TooltipProvider>
-          <ImportedSources />
+          <SourceGrid />
         </TooltipProvider>
       </Provider>,
     );
@@ -254,7 +254,7 @@ describe("ImportedSources", () => {
     render(
       <Provider store={store}>
         <TooltipProvider>
-          <ImportedSources />
+          <SourceGrid />
         </TooltipProvider>
       </Provider>,
     );
@@ -277,7 +277,7 @@ describe("ImportedSources", () => {
     render(
       <Provider store={store}>
         <TooltipProvider>
-          <ImportedSources />
+          <SourceGrid />
         </TooltipProvider>
       </Provider>,
     );
@@ -304,7 +304,7 @@ describe("ImportedSources", () => {
     render(
       <Provider store={store}>
         <TooltipProvider>
-          <ImportedSources />
+          <SourceGrid />
         </TooltipProvider>
       </Provider>,
     );
@@ -332,7 +332,7 @@ describe("ImportedSources", () => {
     render(
       <Provider store={store}>
         <TooltipProvider>
-          <ImportedSources />
+          <SourceGrid />
         </TooltipProvider>
       </Provider>,
     );
@@ -355,7 +355,7 @@ describe("ImportedSources", () => {
     render(
       <Provider store={createAppStore()}>
         <TooltipProvider>
-          <ImportedSources />
+          <SourceGrid />
         </TooltipProvider>
       </Provider>,
     );
@@ -383,7 +383,7 @@ describe("ImportedSources", () => {
     render(
       <Provider store={store}>
         <TooltipProvider>
-          <ImportedSources />
+          <SourceGrid />
         </TooltipProvider>
       </Provider>,
     );
@@ -406,7 +406,7 @@ describe("ImportedSources", () => {
     render(
       <Provider store={store}>
         <TooltipProvider>
-          <ImportedSources />
+          <SourceGrid />
         </TooltipProvider>
       </Provider>,
     );
