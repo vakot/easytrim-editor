@@ -31,7 +31,7 @@ const mocks = vi.hoisted(() => ({
   inspectMedia: vi.fn(),
   listenForSourceDrops: vi.fn(),
   prepareAudioPreviews: vi.fn(),
-  prepareImportedSourcePreview: vi.fn(),
+  prepareImportedSourceThumbnail: vi.fn(),
   prepareProxyPreview: vi.fn(),
   prepareSourcePreview: vi.fn(),
   prepareWaveforms: vi.fn(),
@@ -48,7 +48,7 @@ vi.mock("../lib/tauri/media", async (importOriginal) => {
     inspectMedia: mocks.inspectMedia,
     listenForSourceDrops: mocks.listenForSourceDrops,
     prepareAudioPreviews: mocks.prepareAudioPreviews,
-    prepareImportedSourcePreview: mocks.prepareImportedSourcePreview,
+    prepareImportedSourceThumbnail: mocks.prepareImportedSourceThumbnail,
     prepareProxyPreview: mocks.prepareProxyPreview,
     prepareSourcePreview: mocks.prepareSourcePreview,
     prepareWaveforms: mocks.prepareWaveforms,
@@ -211,10 +211,9 @@ beforeEach(() => {
     url: "http://easytrim-media.localhost/source-1?variant=source",
     kind: "source",
   });
-  mocks.prepareImportedSourcePreview.mockImplementation(async (sourcePath: string) => ({
+  mocks.prepareImportedSourceThumbnail.mockImplementation(async (sourcePath: string) => ({
     mediaToken: 9,
-    url: `http://easytrim-media.localhost/9?variant=source&path=${encodeURIComponent(sourcePath)}`,
-    kind: "source" as const,
+    url: `http://easytrim-media.localhost/9?variant=thumbnail&path=${encodeURIComponent(sourcePath)}`,
   }));
   mocks.prepareProxyPreview.mockResolvedValue({
     mediaToken: 1,
@@ -448,18 +447,16 @@ describe("App", () => {
     const timelinePanel = document.getElementById("editor-stage-timeline");
     const audioPanel = document.getElementById("editor-stage-audio");
 
-    await user.click(
-      screen.getByRole("button", { name: `Open: ${replacementSelection.displayName}` }),
-    );
+    const replacementCard = screen
+      .getAllByText(replacementSelection.displayName)[0]!
+      .closest('[data-slot="card"]');
+
+    await user.click(replacementCard!);
 
     expect(document.getElementById("workspace-sidebar")).toBe(sourcePanel);
     expect(document.getElementById("editor-stage-preview")).toBe(previewPanel);
     expect(document.getElementById("editor-stage-timeline")).toBe(timelinePanel);
     expect(document.getElementById("editor-stage-audio")).toBe(audioPanel);
-    const replacementCard = screen
-      .getAllByText(replacementSelection.displayName)[0]!
-      .closest('[data-slot="card"]');
-
     expect(replacementCard).toHaveAttribute("data-active", "true");
     expect(screen.getByRole("heading", { name: "Selected Segment" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /^Audio tracks/ })).toBeInTheDocument();

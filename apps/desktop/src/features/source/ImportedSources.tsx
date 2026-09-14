@@ -21,11 +21,11 @@ import {
   selectActiveInstanceId,
   selectEditingInstances,
 } from "@/app/store/slices/editing-instances-slice";
-import { selectImportedSourcePreviews } from "@/app/store/slices/preview-slice";
+import { selectImportedSourceThumbnails } from "@/app/store/slices/preview-slice";
 import {
   chooseSourceRequested,
   closeEditingInstancesRequested,
-  prepareImportedSourcePreviewsRequested,
+  prepareImportedSourceThumbnailsRequested,
 } from "@/app/store/thunks/source-media-thunks";
 import type { EditingInstance } from "@/domain/editing-instance";
 import { normalizeSourceKey } from "@/domain/source";
@@ -41,7 +41,7 @@ export function ImportedSources() {
   const dispatch = useAppDispatch();
   const activeInstanceId = useAppSelector(selectActiveInstanceId);
   const instances = useAppSelector(selectEditingInstances);
-  const importedPreviews = useAppSelector(selectImportedSourcePreviews);
+  const importedThumbnails = useAppSelector(selectImportedSourceThumbnails);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSourceIds, setSelectedSourceIds] = useState<Set<string>>(
     () => new Set(activeInstanceId ? [activeInstanceId] : []),
@@ -59,15 +59,16 @@ export function ImportedSources() {
   }, [activeInstanceId, instances, selectedSourceIds]);
 
   useEffect(() => {
-    const instancesWithoutPreview = instances.filter(
+    const instancesWithoutThumbnail = instances.filter(
       (instance) =>
-        instance.sourceAvailability === "available" && importedPreviews[instance.id] === undefined,
+        instance.sourceAvailability === "available" &&
+        importedThumbnails[instance.id] === undefined,
     );
 
-    if (instancesWithoutPreview.length === 0) return;
+    if (instancesWithoutThumbnail.length === 0) return;
 
-    void dispatch(prepareImportedSourcePreviewsRequested(instancesWithoutPreview));
-  }, [dispatch, importedPreviews, instances]);
+    void dispatch(prepareImportedSourceThumbnailsRequested(instancesWithoutThumbnail));
+  }, [dispatch, importedThumbnails, instances]);
 
   const filteredInstances = useMemo(() => {
     const query = normalizeSearchValue(deferredSearchQuery);

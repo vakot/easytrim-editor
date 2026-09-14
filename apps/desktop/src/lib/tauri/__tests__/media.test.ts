@@ -22,7 +22,7 @@ import {
   listenForSourceDrops,
   moveSourceToTrash,
   planOptimizedExport,
-  prepareImportedSourcePreview,
+  prepareImportedSourceThumbnail,
   prepareProxyPreview,
   prepareSourcePreview,
   prepareWaveforms,
@@ -237,8 +237,7 @@ describe("media IPC adapter", () => {
       })
       .mockResolvedValueOnce({
         mediaToken: 9,
-        url: "http://easytrim-media.localhost/9223372036854775809?variant=source",
-        kind: "source",
+        url: "http://easytrim-media.localhost/9223372036854775809?variant=thumbnail",
       })
       .mockResolvedValueOnce({
         mediaToken: 3,
@@ -249,8 +248,8 @@ describe("media IPC adapter", () => {
     await expect(prepareSourcePreview("C:/Media/clip.mp4")).resolves.toMatchObject({
       kind: "source",
     });
-    await expect(prepareImportedSourcePreview("C:/Media/clip.mp4")).resolves.toMatchObject({
-      kind: "source",
+    await expect(prepareImportedSourceThumbnail("C:/Media/clip.mp4")).resolves.toMatchObject({
+      mediaToken: 9,
     });
     await expect(prepareProxyPreview("C:/Media/clip.mp4")).resolves.toMatchObject({
       kind: "proxy",
@@ -258,7 +257,7 @@ describe("media IPC adapter", () => {
     expect(mocks.invoke).toHaveBeenNthCalledWith(1, "prepare_source_preview", {
       sourcePath: "C:/Media/clip.mp4",
     });
-    expect(mocks.invoke).toHaveBeenNthCalledWith(2, "prepare_imported_source_preview", {
+    expect(mocks.invoke).toHaveBeenNthCalledWith(2, "prepare_imported_source_thumbnail", {
       sourcePath: "C:/Media/clip.mp4",
     });
     expect(mocks.invoke).toHaveBeenNthCalledWith(3, "prepare_proxy_preview", {

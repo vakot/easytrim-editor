@@ -27,7 +27,9 @@ pub fn respond<R: Runtime>(app: &AppHandle<R>, request: Request<Vec<u8>>) -> Res
     };
 
     let state = app.state::<AppState>();
-    let path = if query_parameter(request.uri().query(), "variant") == Some("waveform") {
+    let path = if query_parameter(request.uri().query(), "variant") == Some("thumbnail") {
+        state.resolve_thumbnail_path(media_token)
+    } else if query_parameter(request.uri().query(), "variant") == Some("waveform") {
         let Some(stream_index) = query_parameter(request.uri().query(), "stream")
             .and_then(|value| value.parse::<u32>().ok())
         else {
@@ -199,6 +201,7 @@ fn content_type(path: &Path) -> &'static str {
         Some("flv") => "video/x-flv",
         Some("mkv") => "video/x-matroska",
         Some("mov") => "video/quicktime",
+        Some("jpg" | "jpeg") => "image/jpeg",
         Some("png") => "image/png",
         Some("m4a") => "audio/mp4",
         Some("ts" | "mts" | "m2ts") => "video/mp2t",

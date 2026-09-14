@@ -3,21 +3,20 @@ import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const prepareImportedSourcePreview = vi.hoisted(() =>
+const prepareImportedSourceThumbnail = vi.hoisted(() =>
   vi.fn(async (sourcePath: string) => ({
-    kind: "source" as const,
     mediaToken: 1,
-    url: `http://easytrim-media.localhost/${encodeURIComponent(sourcePath)}?variant=source`,
+    url: `http://easytrim-media.localhost/${encodeURIComponent(sourcePath)}?variant=thumbnail`,
   })),
 );
 
 vi.mock("@/lib/tauri/media", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/tauri/media")>()),
-  prepareImportedSourcePreview,
+  prepareImportedSourceThumbnail,
 }));
 
 beforeEach(() => {
-  prepareImportedSourcePreview.mockClear();
+  prepareImportedSourceThumbnail.mockClear();
 });
 
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -28,7 +27,7 @@ import {
   editingInstancesAdded,
   selectActiveInstanceId,
 } from "@/app/store/slices/editing-instances-slice";
-import { importedPreviewReady } from "@/app/store/slices/preview-slice";
+import { importedThumbnailReady } from "@/app/store/slices/preview-slice";
 import { createAppStore } from "@/app/store/store";
 import type { EditingInstance } from "@/domain/editing-instance";
 
@@ -368,16 +367,15 @@ describe("ImportedSources", () => {
     expect(screen.getByRole("button", { name: /Open Folder/ })).toBeInTheDocument();
   });
 
-  it("uses the asynchronously retained preview for each source", () => {
+  it("uses the asynchronously retained thumbnail for each source", () => {
     const store = createAppStore();
     store.dispatch(editingInstancesAdded([instance("first", "holiday.mp4")]));
     store.dispatch(
-      importedPreviewReady({
+      importedThumbnailReady({
         instanceId: "first",
-        preview: {
-          kind: "source",
+        thumbnail: {
           mediaToken: 1,
-          url: "http://easytrim-media.localhost/9223372036854775809?variant=source",
+          url: "http://easytrim-media.localhost/9223372036854775809?variant=thumbnail",
         },
       }),
     );
@@ -390,13 +388,13 @@ describe("ImportedSources", () => {
       </Provider>,
     );
 
-    expect(screen.getByLabelText("holiday.mp4 preview")).toHaveAttribute(
+    expect(screen.getByLabelText("holiday.mp4 thumbnail")).toHaveAttribute(
       "src",
-      "http://easytrim-media.localhost/9223372036854775809?variant=source",
+      "http://easytrim-media.localhost/9223372036854775809?variant=thumbnail",
     );
   });
 
-  it("requests and displays a preview for every imported source", async () => {
+  it("requests and displays a thumbnail for every imported source", async () => {
     const store = createAppStore();
     store.dispatch(
       editingInstancesAdded([
@@ -413,20 +411,15 @@ describe("ImportedSources", () => {
       </Provider>,
     );
 
-    await waitFor(() => expect(prepareImportedSourcePreview).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(prepareImportedSourceThumbnail).toHaveBeenCalledTimes(2));
     await waitFor(() => {
-      expect(screen.getByLabelText("holiday.mp4 preview")).toHaveAttribute(
+      expect(screen.getByLabelText("holiday.mp4 thumbnail")).toHaveAttribute(
         "src",
-        "http://easytrim-media.localhost/C%3A%2FMedia%2Fholiday.mp4?variant=source",
+        "http://easytrim-media.localhost/C%3A%2FMedia%2Fholiday.mp4?variant=thumbnail",
       );
-      expect(screen.getByLabelText("holiday.mp4 preview")).toHaveAttribute("preload", "auto");
-      expect(screen.getByLabelText("screen-recording.mp4 preview")).toHaveAttribute(
+      expect(screen.getByLabelText("screen-recording.mp4 thumbnail")).toHaveAttribute(
         "src",
-        "http://easytrim-media.localhost/C%3A%2FMedia%2Fscreen-recording.mp4?variant=source",
-      );
-      expect(screen.getByLabelText("screen-recording.mp4 preview")).toHaveAttribute(
-        "preload",
-        "auto",
+        "http://easytrim-media.localhost/C%3A%2FMedia%2Fscreen-recording.mp4?variant=thumbnail",
       );
     });
   });

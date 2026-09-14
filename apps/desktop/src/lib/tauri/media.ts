@@ -18,6 +18,7 @@ import type {
   SourceDropEvent,
   SourceImportResult,
   SourcePickerMode,
+  ThumbnailDescriptor,
   WaveformResult,
 } from "./media.types";
 import {
@@ -32,6 +33,7 @@ import {
   parsePreviewDescriptor,
   parseSourceImportResult,
   parseSourceRef,
+  parseThumbnailDescriptor,
   parseWaveformResults,
 } from "./media.utils";
 
@@ -215,10 +217,12 @@ export async function prepareSourcePreview(sourcePath: string): Promise<PreviewD
   }
 }
 
-export async function prepareImportedSourcePreview(sourcePath: string): Promise<PreviewDescriptor> {
+export async function prepareImportedSourceThumbnail(
+  sourcePath: string,
+): Promise<ThumbnailDescriptor> {
   try {
-    return parsePreviewDescriptor(
-      await invoke<unknown>("prepare_imported_source_preview", {
+    return parseThumbnailDescriptor(
+      await invoke<unknown>("prepare_imported_source_thumbnail", {
         sourcePath,
       }),
     );

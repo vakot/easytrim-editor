@@ -15,6 +15,7 @@ import type {
   OutputSelection,
   PreviewDescriptor,
   SourceImportResult,
+  ThumbnailDescriptor,
   VideoStream,
   WaveformResult,
 } from "./media.types";
@@ -161,6 +162,14 @@ export function parsePreviewDescriptor(value: unknown): PreviewDescriptor {
     mediaToken: requirePositiveInteger(preview.mediaToken, "preview media token"),
     url: requireString(preview.url, "preview URL"),
     kind,
+  };
+}
+
+export function parseThumbnailDescriptor(value: unknown): ThumbnailDescriptor {
+  const thumbnail = requireRecord(value, "thumbnail descriptor");
+  return {
+    mediaToken: requirePositiveInteger(thumbnail.mediaToken, "thumbnail media token"),
+    url: requireString(thumbnail.url, "thumbnail URL"),
   };
 }
 

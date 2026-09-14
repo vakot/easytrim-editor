@@ -18,7 +18,10 @@ describe("preview slice", () => {
     );
 
     const loadingSecond = previewReducer(loadingFirst, sourceSelected({ source: secondSource }));
-    expect(loadingSecond).toEqual({ imported: {}, value: { status: "loading", kind: "source" } });
+    expect(loadingSecond).toEqual({
+      importedThumbnails: {},
+      value: { status: "loading", kind: "source" },
+    });
   });
 
   it("records proxy failure without changing source ownership", () => {

@@ -27,6 +27,7 @@ pub fn cleanup_stale_media_artifacts() {
         let name = name.to_string_lossy();
         let is_easytrim_artifact = name.starts_with("easytrim-preview-")
             || name.starts_with("easytrim-audio-preview-")
+            || name.starts_with("easytrim-thumbnail-")
             || name.starts_with("easytrim-waveform-");
         if !is_easytrim_artifact || !entry.file_type().is_ok_and(|file_type| file_type.is_dir()) {
             continue;
@@ -133,12 +134,12 @@ pub struct AppState {
     next_generation: AtomicU64,
     next_output: AtomicU64,
     next_operation: AtomicU64,
-    next_imported_preview: AtomicU64,
+    next_imported_thumbnail: AtomicU64,
     session: Mutex<SessionState>,
     outputs: Mutex<HashMap<String, PathBuf>>,
     operations: Mutex<HashMap<String, Arc<AtomicBool>>>,
     export_sources: Mutex<HashMap<PathBuf, RetainedExportSource>>,
-    imported_preview_paths: Mutex<HashMap<u64, PathBuf>>,
+    imported_thumbnail_artifacts: Mutex<HashMap<u64, PreviewArtifact>>,
 }
 
 #[derive(Clone, Debug)]
@@ -513,24 +514,29 @@ impl AppState {
                 .as_ref()
                 .map_or_else(|| source.path.clone(), |preview| preview.path().to_owned()));
         }
-        drop(session);
-
-        self.imported_preview_paths
-            .lock()
-            .map_err(|_| AppError::internal("The imported preview registry is unavailable."))?
-            .get(&load_token)
-            .cloned()
-            .ok_or_else(AppError::source_replaced)
+        Err(AppError::source_replaced())
     }
 
-    pub fn register_imported_preview(&self, path: PathBuf) -> Result<u64, AppError> {
-        let token =
-            (1_u64 << 63) | (self.next_imported_preview.fetch_add(1, Ordering::Relaxed) + 1);
-        self.imported_preview_paths
+    pub fn register_imported_thumbnail(&self, artifact: PreviewArtifact) -> Result<u64, AppError> {
+        let token = (1_u64 << 63)
+            | (self
+                .next_imported_thumbnail
+                .fetch_add(1, Ordering::Relaxed)
+                + 1);
+        self.imported_thumbnail_artifacts
             .lock()
-            .map_err(|_| AppError::internal("The imported preview registry is unavailable."))?
-            .insert(token, path);
+            .map_err(|_| AppError::internal("The imported thumbnail registry is unavailable."))?
+            .insert(token, artifact);
         Ok(token)
+    }
+
+    pub fn resolve_thumbnail_path(&self, media_token: u64) -> Result<PathBuf, AppError> {
+        self.imported_thumbnail_artifacts
+            .lock()
+            .map_err(|_| AppError::internal("The imported thumbnail registry is unavailable."))?
+            .get(&media_token)
+            .map(|artifact| artifact.path().to_owned())
+            .ok_or_else(AppError::source_replaced)
     }
 
     pub fn preview_is_ready(&self, load_token: u64) -> Result<bool, AppError> {
@@ -589,7 +595,7 @@ mod tests {
 
     use crate::domain::source::ValidatedSource;
 
-    use super::AppState;
+    use super::{AppState, PreviewArtifact};
 
     fn source(name: &str) -> ValidatedSource {
         ValidatedSource {
@@ -655,11 +661,19 @@ mod tests {
     }
 
     #[test]
-    fn imported_preview_survives_active_source_replacement() {
+    fn imported_thumbnail_survives_active_source_replacement() {
         let state = AppState::default();
-        let preview_token = state
-            .register_imported_preview(PathBuf::from("imported.mp4"))
-            .expect("preview registers");
+        let directory = std::env::temp_dir().join(format!(
+            "easytrim-state-thumbnail-test-{}",
+            std::process::id()
+        ));
+        std::fs::create_dir_all(&directory).expect("test artifact directory creates");
+        let thumbnail_path = directory.join("thumbnail.jpg");
+        let artifact = PreviewArtifact::new(directory, thumbnail_path.clone())
+            .expect("thumbnail artifact creates");
+        let thumbnail_token = state
+            .register_imported_thumbnail(artifact)
+            .expect("thumbnail registers");
 
         state
             .begin_source_replacement()
@@ -667,11 +681,11 @@ mod tests {
 
         assert_eq!(
             state
-                .resolve_preview_path(preview_token)
-                .expect("retained preview resolves"),
-            PathBuf::from("imported.mp4")
+                .resolve_thumbnail_path(thumbnail_token)
+                .expect("retained thumbnail resolves"),
+            thumbnail_path
         );
-        assert!(preview_token & (1_u64 << 63) != 0);
+        assert!(thumbnail_token & (1_u64 << 63) != 0);
     }
 
     #[test]

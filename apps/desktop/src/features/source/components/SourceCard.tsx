@@ -43,7 +43,7 @@ import {
   selectActiveInstanceId,
   selectEditingInstances,
 } from "@/app/store/slices/editing-instances-slice";
-import { selectImportedSourcePreviews, selectPreview } from "@/app/store/slices/preview-slice";
+import { selectImportedSourceThumbnails } from "@/app/store/slices/preview-slice";
 import { selectSourceStatus } from "@/app/store/slices/source-slice";
 import {
   closeEditingInstancesRequested,
@@ -101,8 +101,7 @@ export function SourceCard({ source }: SourceCardProps) {
   const dispatch = useAppDispatch();
   const activeInstanceId = useAppSelector(selectActiveInstanceId);
   const sourceStatus = useAppSelector(selectSourceStatus);
-  const importedPreviews = useAppSelector(selectImportedSourcePreviews);
-  const activePreview = useAppSelector(selectPreview);
+  const importedThumbnails = useAppSelector(selectImportedSourceThumbnails);
   const editingInstances = useAppSelector(selectEditingInstances);
   const { selectedSourceIds, selectSource } = useSourceSelection();
 
@@ -115,16 +114,12 @@ export function SourceCard({ source }: SourceCardProps) {
   const status = getSourceCardStatus(source, active, sourceStatus);
   const statusLabel = getSourceCardStatusLabel(t, status);
   const variant = getSourceCardVariant(status);
-  const preview = importedPreviews[source.id];
-  const importedPreviewUrl = preview?.status === "ready" ? preview.value.url : undefined;
-  const activePreviewUrl =
-    active && activePreview.status === "ready" ? activePreview.value.url : undefined;
-
-  const previewUrl = activePreviewUrl ?? importedPreviewUrl;
-  const previewLoading =
-    !previewUrl &&
+  const thumbnail = importedThumbnails[source.id];
+  const thumbnailUrl = thumbnail?.status === "ready" ? thumbnail.value.url : undefined;
+  const thumbnailLoading =
+    !thumbnailUrl &&
     source.sourceAvailability === "available" &&
-    (preview === undefined || preview.status === "loading" || activePreview.status === "loading");
+    (thumbnail === undefined || thumbnail.status === "loading");
 
   const StatusIcon = statusIcons[status];
   const contextSources = contextSourceIds.flatMap((sourceId) => {
@@ -189,16 +184,14 @@ export function SourceCard({ source }: SourceCardProps) {
               variant={variant}
             >
               <div className="group relative aspect-video w-full overflow-hidden bg-muted text-muted-foreground">
-                {previewUrl ? (
-                  <video
-                    aria-label={`${displayName} preview`}
+                {thumbnailUrl ? (
+                  <img
+                    alt={`${displayName} thumbnail`}
+                    aria-label={`${displayName} thumbnail`}
                     className="group-hover:scale-1.02 size-full object-cover transition-transform"
-                    muted
-                    playsInline
-                    preload="auto"
-                    src={previewUrl}
+                    src={thumbnailUrl}
                   />
-                ) : previewLoading ? (
+                ) : thumbnailLoading ? (
                   <span
                     aria-label={t("source.status.loading")}
                     className="grid size-full place-items-center bg-linear-to-br from-muted to-background"

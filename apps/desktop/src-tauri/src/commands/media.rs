@@ -6,6 +6,7 @@ use crate::{
         audio::generate_audio_previews,
         probe::{MediaInfo, inspect_media_cancellable as probe_media},
         proxy::generate_preview,
+        thumbnail::generate_thumbnail,
         waveform::{generate_waveforms, validate_waveform_request},
     },
     state::{AppState, PreviewStreamSelection},
@@ -27,6 +28,13 @@ pub struct PreviewDescriptor {
     pub media_token: u64,
     pub url: String,
     pub kind: PreviewKind,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ThumbnailDescriptor {
+    pub media_token: u64,
+    pub url: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
@@ -122,24 +130,18 @@ pub async fn inspect_media(
 }
 
 #[tauri::command]
-pub async fn inspect_imported_media(source_path: PathBuf) -> Result<MediaInfo, AppError> {
-    let source = validate_source(&source_path)?;
-    tauri::async_runtime::spawn_blocking(move || probe_media(&source.path, || false))
-        .await
-        .map_err(|_| AppError::internal("Video inspection stopped unexpectedly."))?
-}
-
-#[tauri::command]
-pub async fn prepare_imported_source_preview(
+pub async fn prepare_imported_source_thumbnail(
     source_path: PathBuf,
     state: State<'_, AppState>,
-) -> Result<PreviewDescriptor, AppError> {
+) -> Result<ThumbnailDescriptor, AppError> {
     let source = validate_source(&source_path)?;
-    let media_token = state.register_imported_preview(source.path)?;
-    Ok(PreviewDescriptor {
+    let thumbnail = tauri::async_runtime::spawn_blocking(move || generate_thumbnail(&source.path))
+        .await
+        .map_err(|_| AppError::internal("Thumbnail preparation stopped unexpectedly."))??;
+    let media_token = state.register_imported_thumbnail(thumbnail)?;
+    Ok(ThumbnailDescriptor {
         media_token,
-        url: preview_url(media_token, PreviewKind::Source),
-        kind: PreviewKind::Source,
+        url: thumbnail_url(media_token),
     })
 }
 
@@ -362,6 +364,16 @@ fn preview_url(media_token: u64, kind: PreviewKind) -> String {
         "http://easytrim-media.localhost/{media_token}?variant={}",
         preview_kind_name(kind)
     )
+}
+
+#[cfg(any(target_os = "windows", target_os = "android"))]
+fn thumbnail_url(media_token: u64) -> String {
+    format!("http://easytrim-media.localhost/{media_token}?variant=thumbnail")
+}
+
+#[cfg(not(any(target_os = "windows", target_os = "android")))]
+fn thumbnail_url(media_token: u64) -> String {
+    format!("easytrim-media://localhost/{media_token}?variant=thumbnail")
 }
 
 #[cfg(not(any(target_os = "windows", target_os = "android")))]

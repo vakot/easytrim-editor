@@ -50,6 +50,11 @@ export interface PreviewDescriptor {
   url: string;
 }
 
+export interface ThumbnailDescriptor {
+  mediaToken: number;
+  url: string;
+}
+
 export interface AudioPreviewDescriptor {
   mediaToken: number;
   streamIndex: number;
