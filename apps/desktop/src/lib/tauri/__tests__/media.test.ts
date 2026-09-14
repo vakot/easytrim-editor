@@ -237,7 +237,7 @@ describe("media IPC adapter", () => {
       })
       .mockResolvedValueOnce({
         mediaToken: 9,
-        url: "http://easytrim-media.localhost/9223372036854775809?variant=thumbnail",
+        url: "http://easytrim-media.localhost/9?variant=thumbnail",
       })
       .mockResolvedValueOnce({
         mediaToken: 3,

@@ -375,7 +375,7 @@ describe("ImportedSources", () => {
         instanceId: "first",
         thumbnail: {
           mediaToken: 1,
-          url: "http://easytrim-media.localhost/9223372036854775809?variant=thumbnail",
+          url: "http://easytrim-media.localhost/1?variant=thumbnail",
         },
       }),
     );
@@ -390,7 +390,7 @@ describe("ImportedSources", () => {
 
     expect(screen.getByLabelText("holiday.mp4 thumbnail")).toHaveAttribute(
       "src",
-      "http://easytrim-media.localhost/9223372036854775809?variant=thumbnail",
+      "http://easytrim-media.localhost/1?variant=thumbnail",
     );
   });
 
