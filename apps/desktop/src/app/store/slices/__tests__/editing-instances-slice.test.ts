@@ -24,10 +24,9 @@ import {
   selectActiveEditingInstance,
   selectEditingInstanceAttempts,
   selectEditingInstanceIds,
-  selectEditingInstanceStatusById,
   selectEditingInstanceTopologyEntries,
+  selectHasProcessableExports,
   selectHasQueuedOrRenderingExportByInstanceId,
-  selectProcessableExportCount,
 } from "../editing-instances-slice";
 
 const baseSnapshot = createDefaultEditorSnapshot(firstSource, false);
@@ -321,8 +320,7 @@ describe("editing instances slice", () => {
 
     expect(selectEditingInstanceIds(root())).toBe(ids);
     expect(selectEditingInstanceTopologyEntries(root())).toBe(topology);
-    expect(selectEditingInstanceStatusById(root(), "instance-1")).toBe("rendering");
     expect(selectHasQueuedOrRenderingExportByInstanceId(root(), "instance-1")).toBe(true);
-    expect(selectProcessableExportCount(root())).toBe(1);
+    expect(selectHasProcessableExports(root())).toBe(true);
   });
 });

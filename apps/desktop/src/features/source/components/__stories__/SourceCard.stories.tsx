@@ -25,7 +25,7 @@ const meta = {
     ),
   ],
   tags: ["autodocs"],
-  title: "Source/Imported Source Card",
+  title: "Source/Source Card",
 } satisfies Meta<typeof SourceCard>;
 
 export default meta;

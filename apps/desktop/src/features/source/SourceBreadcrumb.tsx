@@ -117,7 +117,12 @@ function SourceBreadcrumbMore() {
         <Tooltip>
           <TooltipTrigger asChild>
             <PopoverTrigger asChild>
-              <Button className="h-auto max-w-56 min-w-0 gap-0 p-0" size="xs" variant="link">
+              <Button
+                aria-label={t("source.labels.technicalDetails")}
+                className="h-auto max-w-56 min-w-0 gap-0 p-0"
+                size="xs"
+                variant="link"
+              >
                 <BreadcrumbEllipsis />
               </Button>
             </PopoverTrigger>

@@ -289,8 +289,8 @@ describe("SourceGrid", () => {
 
     await user.click(screen.getByRole("button", { name: "Source actions: 2" }));
 
-    expect(screen.getByRole("menuitem", { name: "Close File" })).toBeInTheDocument();
-    expect(screen.getByRole("menuitem", { name: "Delete File" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Close Files (2)" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Delete Files (2)" })).toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: /Reveal in/ })).not.toBeInTheDocument();
   });
 
