@@ -130,7 +130,7 @@ export function ImportedSources() {
         ) : null}
       </div>
 
-      <ScrollArea className="min-h-0 flex-1">
+      <ScrollArea className="min-h-0 flex-1 before:top-9">
         {visibleSourceFolders.length === 0 ? (
           <p className="px-3 py-8 text-center text-xs text-muted-foreground">
             {t("source.messages.noSearchResults")}
