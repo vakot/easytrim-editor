@@ -1,3 +1,4 @@
+import type { TFunction } from "i18next";
 import {
   CheckCircle2,
   CircleAlert,
@@ -10,7 +11,8 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import type { ComponentProps } from "react";
+import { type ComponentProps, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -31,11 +33,23 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
+import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
+import { selectActiveInstanceId } from "@/app/store/slices/editing-instances-slice";
+import { selectImportedSourcePreviews } from "@/app/store/slices/preview-slice";
+import { selectSourceStatus } from "@/app/store/slices/source-slice";
+import {
+  closeEditingInstancesRequested,
+  navigateToEditingInstance,
+  restoreSourceFileRequested,
+} from "@/app/store/thunks/source-media-thunks";
+import type { EditingInstance } from "@/domain/editing-instance";
 import { cn } from "@/lib/class-names.utils";
+import { openFileLocation } from "@/lib/tauri/media";
 
+import { DeleteSourceDialog } from "./components/DeleteSourceDialog";
 import { formatSourcePath } from "./lib/media-formatters.utils";
 
-export type SourceCardStatus =
+type SourceCardStatus =
   | "canceled"
   | "completed"
   | "deleted"
@@ -46,9 +60,9 @@ export type SourceCardStatus =
   | "ready"
   | "rendering";
 
-export type SourceCardVariant = "default" | "destructive" | "success" | "warning";
+type SourceCardVariant = "default" | "destructive" | "success" | "warning";
 
-export interface SourceCardLabels {
+interface SourceCardLabels {
   actions: string;
   active: string;
   close: string;
@@ -62,21 +76,7 @@ export interface SourceCardLabels {
 }
 
 export interface SourceCardProps {
-  active: boolean;
-  displayName: string;
-  id: string;
-  labels: SourceCardLabels;
-  onClose: () => void;
-  onDelete: () => void;
-  onOpen: () => void;
-  onRestore: () => void;
-  onReveal: () => void;
-  previewUrl?: string;
-  showRestore: boolean;
-  sourcePath: string;
-  status: SourceCardStatus;
-  statusLabel: string;
-  variant: SourceCardVariant;
+  source: EditingInstance;
 }
 
 const statusIcons: Record<SourceCardStatus, typeof CheckCircle2> = {
@@ -98,23 +98,42 @@ const statusBadgeClassNames: Record<SourceCardVariant, string> = {
   warning: "border-warning/40 bg-warning/10 text-warning",
 };
 
-export function SourceCard({
-  active,
-  displayName,
-  id,
-  labels,
-  onClose,
-  onDelete,
-  onOpen,
-  onRestore,
-  onReveal,
-  previewUrl,
-  showRestore,
-  sourcePath,
-  status,
-  statusLabel,
-  variant,
-}: SourceCardProps) {
+export function SourceCard({ source }: SourceCardProps) {
+  const { t } = useTranslation();
+  const dispatch = useAppDispatch();
+  const activeInstanceId = useAppSelector(selectActiveInstanceId);
+  const sourceStatus = useAppSelector(selectSourceStatus);
+  const importedPreviews = useAppSelector(selectImportedSourcePreviews);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  const active = source.id === activeInstanceId;
+  const displayName = source.snapshot.source.displayName;
+  const id = source.id;
+  const sourcePath = source.snapshot.source.sourcePath;
+  const status = getSourceCardStatus(source, active, sourceStatus);
+  const statusLabel = getSourceCardStatusLabel(t, status);
+  const variant = getSourceCardVariant(status);
+  const showRestore = source.sourceAvailability === "deleted";
+  const preview = importedPreviews[source.id];
+  const previewUrl = preview?.status === "ready" ? preview.value.url : undefined;
+  const labels: SourceCardLabels = {
+    actions: t("source.actions.sourceActions"),
+    active: t("source.labels.active"),
+    close: t("source.actions.close"),
+    deleteSource: t("source.actions.deleteSource"),
+    imported: t("source.labels.imported"),
+    open: t("app.actions.open"),
+    previewUnavailable: t("source.messages.previewUnavailable"),
+    reveal: t("source.actions.reveal"),
+    restore: t("app.actions.restore"),
+    restoreSource: t("source.actions.restoreSource"),
+  };
+
+  const onClose = () => void dispatch(closeEditingInstancesRequested([id]));
+  const onDelete = () => setDeleteDialogOpen(true);
+  const onOpen = () => void dispatch(navigateToEditingInstance(id));
+  const onRestore = () => void dispatch(restoreSourceFileRequested({ itemId: id, sourcePath }));
+  const onReveal = () => void openFileLocation(sourcePath);
   const StatusIcon = statusIcons[status];
   const actionLabel = showRestore ? labels.restore : labels.open;
   const actionVariant: ComponentProps<typeof Button>["variant"] = showRestore
@@ -193,8 +212,71 @@ export function SourceCard({
           {actionLabel}
         </Button>
       </CardFooter>
+
+      <DeleteSourceDialog onOpenChange={setDeleteDialogOpen} open={deleteDialogOpen} sourceId={id}>
+        <span aria-hidden="true" />
+      </DeleteSourceDialog>
     </Card>
   );
+}
+
+function getSourceCardStatus(
+  instance: EditingInstance,
+  active: boolean,
+  sourceStatus: ReturnType<typeof selectSourceStatus>,
+): SourceCardStatus {
+  if (instance.sourceAvailability === "deleted") return "deleted";
+  if (instance.sourceAvailability === "missing") return "missing";
+
+  const latestAttempt = instance.exportAttempts.at(-1)?.state.status;
+  if (latestAttempt === "queued" || latestAttempt === "rendering") return latestAttempt;
+  if (latestAttempt === "completed") return "completed";
+  if (latestAttempt === "failed") return "failed";
+  if (latestAttempt === "canceled") return "canceled";
+  if (active && sourceStatus === "failed") return "failed";
+  if (active && sourceStatus === "loading-source") return "loading";
+  return "ready";
+}
+
+function getSourceCardVariant(status: SourceCardStatus): SourceCardVariant {
+  switch (status) {
+    case "canceled":
+    case "deleted":
+    case "failed":
+      return "destructive";
+    case "completed":
+      return "success";
+    case "ready":
+      return "default";
+    case "loading":
+    case "missing":
+    case "queued":
+    case "rendering":
+      return "warning";
+  }
+}
+
+function getSourceCardStatusLabel(t: TFunction, status: SourceCardStatus): string {
+  switch (status) {
+    case "canceled":
+      return t("source.status.canceled");
+    case "completed":
+      return t("source.status.completed");
+    case "deleted":
+      return t("source.status.deleted");
+    case "failed":
+      return t("source.status.failed");
+    case "loading":
+      return t("source.status.loading");
+    case "missing":
+      return t("source.status.missing");
+    case "queued":
+      return t("source.status.queued");
+    case "ready":
+      return t("source.status.ready");
+    case "rendering":
+      return t("source.status.rendering");
+  }
 }
 
 function SourceCardActions({

@@ -1,45 +1,52 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { Provider } from "react-redux";
+import { describe, expect, it } from "vitest";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 
-import { SourceCard, type SourceCardLabels } from "../SourceCard";
+import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";
+import {
+  activeEditingInstanceChanged,
+  editingInstancesAdded,
+} from "@/app/store/slices/editing-instances-slice";
+import { createAppStore } from "@/app/store/store";
+import type { EditingInstance } from "@/domain/editing-instance";
 
-const labels: SourceCardLabels = {
-  actions: "Source actions",
-  active: "Active source",
-  close: "Close source",
-  deleteSource: "Delete source file",
-  imported: "Imported source",
-  open: "Open",
-  previewUnavailable: "Preview unavailable",
-  reveal: "Reveal in file manager",
-  restore: "Restore",
-  restoreSource: "Restore source",
-};
+import { SourceCard } from "../SourceCard";
+
+function createSource(
+  sourceAvailability: EditingInstance["sourceAvailability"] = "available",
+): EditingInstance {
+  return {
+    exportAttempts: [],
+    id: "source-1",
+    origin: "source-import",
+    snapshot: createDefaultEditorSnapshot(
+      { displayName: "holiday.mp4", sourcePath: "C:/Media/holiday.mp4" },
+      false,
+    ),
+    sourceAvailability,
+  };
+}
+
+function renderSourceCard(source = createSource()) {
+  const store = createAppStore();
+  store.dispatch(editingInstancesAdded([source]));
+  store.dispatch(activeEditingInstanceChanged(source.id));
+
+  return render(
+    <Provider store={store}>
+      <TooltipProvider>
+        <SourceCard source={source} />
+      </TooltipProvider>
+    </Provider>,
+  );
+}
 
 describe("SourceCard", () => {
-  it("renders the source title, path, status, and variant", () => {
-    render(
-      <TooltipProvider>
-        <SourceCard
-          active
-          displayName="holiday.mp4"
-          id="source-1"
-          labels={labels}
-          onClose={vi.fn()}
-          onDelete={vi.fn()}
-          onOpen={vi.fn()}
-          onRestore={vi.fn()}
-          onReveal={vi.fn()}
-          showRestore={false}
-          sourcePath="C:/Media/holiday.mp4"
-          status="ready"
-          statusLabel="Ready"
-          variant="default"
-        />
-      </TooltipProvider>,
-    );
+  it("derives the title, path, ready status, and default variant from its source", () => {
+    renderSourceCard();
 
     const card = document.querySelector('[data-slot="card"]');
     expect(card).toHaveAttribute("data-variant", "default");
@@ -49,33 +56,25 @@ describe("SourceCard", () => {
     expect(screen.getByLabelText("Source actions: holiday.mp4")).toBeInTheDocument();
   });
 
-  it("calls the open action from the preview and primary action", () => {
-    const onOpen = vi.fn();
+  it("derives the deleted state and restore action from its source", () => {
+    renderSourceCard(createSource("deleted"));
 
-    render(
-      <TooltipProvider>
-        <SourceCard
-          active={false}
-          displayName="holiday.mp4"
-          id="source-1"
-          labels={labels}
-          onClose={vi.fn()}
-          onDelete={vi.fn()}
-          onOpen={onOpen}
-          onRestore={vi.fn()}
-          onReveal={vi.fn()}
-          showRestore={false}
-          sourcePath="C:/Media/holiday.mp4"
-          status="ready"
-          statusLabel="Ready"
-          variant="default"
-        />
-      </TooltipProvider>,
+    expect(document.querySelector('[data-slot="card"]')).toHaveAttribute(
+      "data-variant",
+      "destructive",
     );
+    expect(screen.getByText("Deleted")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Restore" })).toBeInTheDocument();
+  });
 
-    fireEvent.click(screen.getByRole("button", { name: "Open: holiday.mp4" }));
-    fireEvent.click(screen.getByRole("button", { name: /^Open$/ }));
+  it("owns its delete dialog behavior", async () => {
+    renderSourceCard();
+    const user = userEvent.setup();
 
-    expect(onOpen).toHaveBeenCalledTimes(2);
+    await user.click(screen.getByRole("button", { name: "Source actions: holiday.mp4" }));
+    await user.click(screen.getByRole("menuitem", { name: "Delete source file" }));
+
+    expect(screen.getByRole("alertdialog")).toBeInTheDocument();
+    expect(screen.getByText("Delete source file?")).toBeInTheDocument();
   });
 });
