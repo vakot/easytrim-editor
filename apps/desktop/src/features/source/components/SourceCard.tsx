@@ -188,11 +188,7 @@ export function SourceCard({ source }: SourceCardProps) {
               tabIndex={0}
               variant={variant}
             >
-              <button
-                aria-label={`${t("app.actions.open")}: ${displayName}`}
-                className="group relative aspect-video w-full cursor-pointer overflow-hidden bg-muted text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
-                type="button"
-              >
+              <div className="group relative aspect-video w-full overflow-hidden bg-muted text-muted-foreground">
                 {previewUrl ? (
                   <video
                     aria-label={`${displayName} preview`}
@@ -233,7 +229,7 @@ export function SourceCard({ source }: SourceCardProps) {
                     {statusLabel}
                   </Badge>
                 ) : null}
-              </button>
+              </div>
 
               <CardHeader>
                 <CardTitle className="truncate text-sm" title={displayName}>
