@@ -34,7 +34,10 @@ pub fn generate_thumbnail(source_path: &Path) -> Result<PreviewArtifact, AppErro
     )
     .map_err(process_error)?;
 
-    if output.status.success() && artifact.path().is_file() {
+    if output.status.success()
+        && artifact.path().is_file()
+        && fs::metadata(artifact.path()).is_ok_and(|metadata| metadata.len() > 0)
+    {
         return Ok(artifact);
     }
 
@@ -79,6 +82,8 @@ fn thumbnail_arguments(
         OsString::from("5"),
         OsString::from("-f"),
         OsString::from("image2"),
+        OsString::from("-update"),
+        OsString::from("1"),
         output_path.as_os_str().to_owned(),
     ]
 }
@@ -163,8 +168,10 @@ mod tests {
         assert!(arguments.windows(2).any(|pair| pair == ["-map", "0:2"]));
         assert!(arguments.windows(2).any(|pair| pair == ["-frames:v", "1"]));
         assert!(arguments.windows(2).any(|pair| pair == ["-c:v", "mjpeg"]));
-        assert!(arguments
-            .iter()
-            .any(|argument| argument.ends_with("thumbnail.jpg")));
+        assert!(
+            arguments
+                .iter()
+                .any(|argument| argument.ends_with("thumbnail.jpg"))
+        );
     }
 }

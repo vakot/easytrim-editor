@@ -257,7 +257,9 @@ fn insert_owned_header(
 
 #[cfg(test)]
 mod tests {
-    use super::{ByteRange, MAX_RESPONSE_BYTES, parse_range, query_parameter};
+    use std::path::Path;
+
+    use super::{ByteRange, MAX_RESPONSE_BYTES, content_type, parse_range, query_parameter};
 
     #[test]
     fn parses_bounded_open_and_suffix_ranges() {
@@ -295,6 +297,12 @@ mod tests {
     #[test]
     fn response_chunks_remain_memory_bounded() {
         assert_eq!(MAX_RESPONSE_BYTES, 4 * 1024 * 1024);
+    }
+
+    #[test]
+    fn serves_jpeg_thumbnails_with_an_image_content_type() {
+        assert_eq!(content_type(Path::new("thumbnail.jpg")), "image/jpeg");
+        assert_eq!(content_type(Path::new("thumbnail.jpeg")), "image/jpeg");
     }
 
     #[test]

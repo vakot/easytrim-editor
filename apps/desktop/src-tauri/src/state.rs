@@ -518,11 +518,9 @@ impl AppState {
     }
 
     pub fn register_imported_thumbnail(&self, artifact: PreviewArtifact) -> Result<u64, AppError> {
-        let token = (1_u64 << 63)
-            | (self
-                .next_imported_thumbnail
-                .fetch_add(1, Ordering::Relaxed)
-                + 1);
+        // Thumbnail tokens use their own namespace and are only resolved for the
+        // thumbnail variant, so they can remain within JavaScript's safe integer range.
+        let token = self.next_imported_thumbnail.fetch_add(1, Ordering::Relaxed) + 1;
         self.imported_thumbnail_artifacts
             .lock()
             .map_err(|_| AppError::internal("The imported thumbnail registry is unavailable."))?
@@ -685,7 +683,7 @@ mod tests {
                 .expect("retained thumbnail resolves"),
             thumbnail_path
         );
-        assert!(thumbnail_token & (1_u64 << 63) != 0);
+        assert!(thumbnail_token > 0);
     }
 
     #[test]
