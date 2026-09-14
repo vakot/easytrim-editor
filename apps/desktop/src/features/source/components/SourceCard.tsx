@@ -40,6 +40,7 @@ import { cn } from "@/lib/class-names.utils";
 import { openFileLocation } from "@/lib/tauri/media";
 
 import { formatSourcePath } from "../lib/media-formatters.utils";
+import { getRevealLabel } from "../lib/source-tree.utils";
 
 import { DeleteSourceDialog, DeleteSourceDialogTrigger } from "./DeleteSourceDialog";
 
@@ -99,6 +100,10 @@ export function SourceCard({ source }: SourceCardProps) {
     active && activePreview.status === "ready" ? activePreview.value.url : undefined;
 
   const previewUrl = activePreviewUrl ?? importedPreviewUrl;
+  const previewLoading =
+    !previewUrl &&
+    source.sourceAvailability === "available" &&
+    (preview === undefined || preview.status === "loading" || activePreview.status === "loading");
 
   const StatusIcon = statusIcons[status];
 
@@ -124,6 +129,14 @@ export function SourceCard({ source }: SourceCardProps) {
             preload="metadata"
             src={previewUrl}
           />
+        ) : previewLoading ? (
+          <span
+            aria-label={t("source.status.loading")}
+            className="grid size-full place-items-center bg-linear-to-br from-muted to-background"
+            role="status"
+          >
+            <LoaderCircle aria-hidden="true" className="size-8 animate-spin text-primary" />
+          </span>
         ) : (
           <span className="grid size-full place-items-center bg-linear-to-br from-muted to-background">
             <span className="grid justify-items-center gap-2">
@@ -230,6 +243,7 @@ function SourceCardActions({ source }: { source: EditingInstance }) {
   const id = source.id;
   const { displayName, sourcePath } = source.snapshot.source;
   const showRestore = source.sourceAvailability === "deleted";
+  const revealLabel = getRevealLabel(t);
 
   return (
     <DropdownMenu>
@@ -258,7 +272,7 @@ function SourceCardActions({ source }: { source: EditingInstance }) {
             <ExternalLink aria-hidden="true" />
           </DropdownMenuIcon>
 
-          {t("source.actions.reveal")}
+          {revealLabel}
         </DropdownMenuItem>
 
         <DropdownMenuItem
@@ -284,7 +298,7 @@ function SourceCardActions({ source }: { source: EditingInstance }) {
               <RotateCcw aria-hidden="true" />
             </DropdownMenuIcon>
 
-            {t("source.actions.restoreSource")}
+            {t("app.actions.restore")}
           </DropdownMenuItem>
         ) : (
           <DeleteSourceDialog sourceId={id}>

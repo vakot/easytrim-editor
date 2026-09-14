@@ -1,5 +1,8 @@
+import type { TFunction } from "i18next";
+
 import type { EditingInstance } from "@/domain/editing-instance";
 import { normalizeSearchValue } from "@/lib/search.utils";
+import { isWindowsRuntime } from "@/lib/tauri/updates.utils";
 
 import { formatSourcePath } from "./media-formatters.utils";
 
@@ -149,6 +152,19 @@ export function filterSourceTreeNodes(nodes: SourceTreeNode[], query: string): S
   }
 
   return filteredNodes;
+}
+
+export function getRevealLabel(t: TFunction): string {
+  if (isMacOSRuntime()) return t("source.actions.revealInFinder");
+  if (isWindowsRuntime()) return t("source.actions.revealInFileExplorer");
+  return t("source.actions.revealInFileManager");
+}
+
+function isMacOSRuntime(): boolean {
+  return (
+    typeof navigator !== "undefined" &&
+    (/Mac/i.test(navigator.userAgent) || /Mac/i.test(navigator.platform))
+  );
 }
 
 function findSourceTreeSiblings(

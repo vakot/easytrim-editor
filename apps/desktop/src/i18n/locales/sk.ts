@@ -23,9 +23,9 @@ export const sk = {
   },
   app: {
     actions: {
-      deleteSource: "Odstrániť zdroj",
       checkForUpdates: "Skontrolovať aktualizácie…",
       closeFile: "Zavrieť súbor",
+      deleteFile: "Odstrániť súbor",
       maximize: "Maximalizovať",
       minimize: "Minimalizovať",
       open: "Otvoriť",
@@ -190,10 +190,9 @@ export const sk = {
   },
   source: {
     actions: {
-      close: "Zavrieť zdroj",
-      deleteSource: "Odstrániť zdrojový súbor",
-      reveal: "Zobraziť v správcovi súborov",
-      restoreSource: "Obnoviť zdroj",
+      revealInFileExplorer: "Zobraziť v Prieskumníkovi súborov",
+      revealInFileManager: "Zobraziť v správcovi súborov",
+      revealInFinder: "Zobraziť vo Finderi",
       sourceActions: "Akcie zdroja",
     },
     labels: {

@@ -189,10 +189,9 @@ export const en = {
   },
   source: {
     actions: {
-      close: "Close source",
-      deleteSource: "Delete source file",
-      reveal: "Reveal in file manager",
-      restoreSource: "Restore source",
+      revealInFileExplorer: "Reveal in File Explorer",
+      revealInFileManager: "Reveal in File Manager",
+      revealInFinder: "Reveal in Finder",
       sourceActions: "Source actions",
     },
     labels: {

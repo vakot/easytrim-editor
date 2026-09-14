@@ -53,6 +53,7 @@ describe("SourceCard", () => {
     expect(screen.getByText("holiday.mp4")).toBeInTheDocument();
     expect(screen.getByText("C:/Media/holiday.mp4")).toBeInTheDocument();
     expect(screen.queryByText("Ready")).not.toBeInTheDocument();
+    expect(screen.getByRole("status")).toBeInTheDocument();
     expect(screen.getByLabelText("Source actions: holiday.mp4")).toBeInTheDocument();
   });
 
@@ -67,7 +68,7 @@ describe("SourceCard", () => {
     const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: "Source actions: holiday.mp4" }));
 
-    expect(screen.getByRole("menuitem", { name: "Restore source" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Restore" })).toBeInTheDocument();
   });
 
   it("owns its delete dialog behavior", async () => {
@@ -75,7 +76,10 @@ describe("SourceCard", () => {
     const user = userEvent.setup();
 
     await user.click(screen.getByRole("button", { name: "Source actions: holiday.mp4" }));
-    await user.click(screen.getByRole("menuitem", { name: "Delete source file" }));
+    expect(
+      screen.getByRole("menuitem", { name: /Reveal in (File Manager|File Explorer|Finder)/ }),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("menuitem", { name: "Delete File" }));
 
     expect(screen.getByRole("alertdialog")).toBeInTheDocument();
     expect(screen.getByText("Delete source file?")).toBeInTheDocument();
