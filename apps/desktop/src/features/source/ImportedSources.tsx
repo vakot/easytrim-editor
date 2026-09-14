@@ -143,7 +143,7 @@ export function ImportedSources() {
             selectedSourceIds={effectiveSelectedSourceIds}
             sourceIds={visibleSourceIds}
           >
-            <div className="grid gap-3 pt-1 pb-3" data-slot="imported-sources-grid">
+            <div className="grid pb-2" data-slot="imported-sources-grid">
               {visibleSourceFolders.map((folder) => (
                 <SourceFolderSection
                   folderPath={folder.path}

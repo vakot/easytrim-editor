@@ -50,7 +50,7 @@ export function SourceFolderSection({
 
   return (
     <Collapsible onOpenChange={setOpen} open={searchActive || open}>
-      <div className="flex min-w-0 items-center gap-1 px-3">
+      <div className="sticky top-0 z-10 flex min-w-0 items-center gap-1 bg-card px-3 py-1">
         <CollapsibleTrigger asChild>
           <Button
             aria-label={folderPath}
@@ -75,7 +75,7 @@ export function SourceFolderSection({
 
       <CollapsibleContent>
         <div
-          className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,16rem),1fr))] gap-2 px-3 pt-1 pb-3"
+          className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,16rem),1fr))] gap-2 px-3 py-1"
           data-source-folder={folderPath}
         >
           {sources.map((source) => (
@@ -101,8 +101,8 @@ function SourceFolderActions({
         <DropdownMenuTrigger asChild>
           <Button
             aria-label={`${t("source.actions.folderActions")}: ${folderPath}`}
-            size="icon-xs"
-            variant="ghost"
+            size="icon-sm"
+            variant="secondary"
           >
             <MoreHorizontal aria-hidden="true" />
           </Button>
