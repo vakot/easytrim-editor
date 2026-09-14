@@ -43,8 +43,20 @@ export function ImportedSources() {
   const instances = useAppSelector(selectEditingInstances);
   const importedPreviews = useAppSelector(selectImportedSourcePreviews);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedSourceIds, setSelectedSourceIds] = useState<Set<string>>(() => new Set());
+  const [selectedSourceIds, setSelectedSourceIds] = useState<Set<string>>(
+    () => new Set(activeInstanceId ? [activeInstanceId] : []),
+  );
+
   const deferredSearchQuery = useDeferredValue(searchQuery);
+
+  const effectiveSelectedSourceIds = useMemo(() => {
+    if (!activeInstanceId || !instances.some((instance) => instance.id === activeInstanceId)) {
+      return selectedSourceIds;
+    }
+    if (selectedSourceIds.has(activeInstanceId)) return selectedSourceIds;
+
+    return new Set(selectedSourceIds).add(activeInstanceId);
+  }, [activeInstanceId, instances, selectedSourceIds]);
 
   useEffect(() => {
     const instancesWithoutPreview = instances.filter(
@@ -91,7 +103,10 @@ export function ImportedSources() {
 
   if (instances.length === 0) return <ImportedSourcesEmptyState />;
 
-  const selectedInstances = instances.filter((instance) => selectedSourceIds.has(instance.id));
+  const selectedInstances = instances.filter((instance) =>
+    effectiveSelectedSourceIds.has(instance.id),
+  );
+
   const selectedIds = selectedInstances.map((instance) => instance.id);
 
   return (
@@ -106,7 +121,9 @@ export function ImportedSources() {
         />
         {selectedIds.length > 1 ? (
           <SourceSelectionActions
-            onClearSelection={() => setSelectedSourceIds(new Set())}
+            onClearSelection={() =>
+              setSelectedSourceIds(activeInstanceId ? new Set([activeInstanceId]) : new Set())
+            }
             sourceIds={selectedIds}
           />
         ) : null}
@@ -119,9 +136,10 @@ export function ImportedSources() {
           </p>
         ) : (
           <SourceSelectionProvider
+            activeSourceId={activeInstanceId}
             initialAnchorId={initialAnchorId}
             onSelectedSourceIdsChange={setSelectedSourceIds}
-            selectedSourceIds={selectedSourceIds}
+            selectedSourceIds={effectiveSelectedSourceIds}
             sourceIds={visibleSourceIds}
           >
             <div className="grid gap-3 pt-1 pb-3" data-slot="imported-sources-grid">

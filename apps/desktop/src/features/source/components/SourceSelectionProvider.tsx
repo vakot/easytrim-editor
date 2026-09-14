@@ -3,6 +3,7 @@ import { type ReactNode, useCallback, useEffect, useRef } from "react";
 import { SourceSelectionContext, type SourceSelectionModifiers } from "./SourceSelectionContext";
 
 interface SourceSelectionProviderProps {
+  activeSourceId?: string | null;
   children: ReactNode;
   initialAnchorId?: string | null;
   onSelectedSourceIdsChange: (sourceIds: Set<string>) => void;
@@ -11,6 +12,7 @@ interface SourceSelectionProviderProps {
 }
 
 export function SourceSelectionProvider({
+  activeSourceId = null,
   children,
   initialAnchorId = null,
   onSelectedSourceIdsChange,
@@ -58,10 +60,11 @@ export function SourceSelectionProvider({
         nextSelection = new Set([sourceId]);
       }
 
+      if (activeSourceId) nextSelection.add(activeSourceId);
       selectionAnchorId.current = sourceId;
       onSelectedSourceIdsChange(nextSelection);
     },
-    [onSelectedSourceIdsChange, selectedSourceIds, sourceIds],
+    [activeSourceId, onSelectedSourceIdsChange, selectedSourceIds, sourceIds],
   );
 
   return (

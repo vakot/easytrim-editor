@@ -197,6 +197,10 @@ describe("ImportedSources", () => {
     );
 
     const cards = screen.getAllByRole("checkbox");
+    expect(cards[0]).toHaveAttribute("aria-checked", "false");
+    expect(cards[1]).toHaveAttribute("aria-checked", "true");
+    expect(cards[2]).toHaveAttribute("aria-checked", "false");
+
     fireEvent.click(cards[2]!, { shiftKey: true });
     fireEvent.click(cards[2]!, { shiftKey: true });
 
@@ -204,6 +208,35 @@ describe("ImportedSources", () => {
     expect(cards[1]).toHaveAttribute("aria-checked", "true");
     expect(cards[2]).toHaveAttribute("aria-checked", "false");
     expect(selectActiveInstanceId(store.getState())).toBe("second");
+  });
+
+  it("does not allow the active source to be deselected", () => {
+    const store = createAppStore();
+    store.dispatch(
+      editingInstancesAdded([
+        instance("first", "first.mp4"),
+        instance("second", "second.mp4"),
+        instance("third", "third.mp4"),
+      ]),
+    );
+    store.dispatch(activeEditingInstanceChanged("second"));
+
+    render(
+      <Provider store={store}>
+        <TooltipProvider>
+          <ImportedSources />
+        </TooltipProvider>
+      </Provider>,
+    );
+
+    const cards = screen.getAllByRole("checkbox");
+    fireEvent.click(cards[1]!, { ctrlKey: true });
+    expect(cards[1]).toHaveAttribute("aria-checked", "true");
+
+    fireEvent.click(cards[0]!, { shiftKey: true });
+    fireEvent.click(cards[0]!, { shiftKey: true });
+    expect(cards[0]).toHaveAttribute("aria-checked", "false");
+    expect(cards[1]).toHaveAttribute("aria-checked", "true");
   });
 
   it("keeps the last clicked anchor after a range is deselected", async () => {
