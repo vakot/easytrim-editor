@@ -43,6 +43,7 @@ import { formatSourcePath } from "../lib/media-formatters.utils";
 import { getRevealLabel } from "../lib/source-tree.utils";
 
 import { DeleteSourceDialog, DeleteSourceDialogTrigger } from "./DeleteSourceDialog";
+import { useSourceSelection } from "./SourceSelectionContext";
 
 type SourceCardStatus =
   | "canceled"
@@ -87,9 +88,11 @@ export function SourceCard({ source }: SourceCardProps) {
   const sourceStatus = useAppSelector(selectSourceStatus);
   const importedPreviews = useAppSelector(selectImportedSourcePreviews);
   const activePreview = useAppSelector(selectPreview);
+  const { selectedSourceIds, selectSource } = useSourceSelection();
 
   const id = source.id;
   const active = id === activeInstanceId;
+  const selected = selectedSourceIds.has(id);
   const { displayName, sourcePath } = source.snapshot.source;
   const status = getSourceCardStatus(source, active, sourceStatus);
   const statusLabel = getSourceCardStatusLabel(t, status);
@@ -109,9 +112,37 @@ export function SourceCard({ source }: SourceCardProps) {
 
   return (
     <Card
-      className={cn("pt-0", active ? "ring-primary" : undefined)}
+      aria-checked={selected}
+      aria-label={displayName}
+      className={cn(
+        "cursor-pointer pt-0",
+        active ? "ring-primary" : undefined,
+        selected ? "ring-2 ring-primary" : undefined,
+      )}
       data-active={active ? "true" : "false"}
+      data-selected={selected ? "true" : "false"}
       data-source-id={id}
+      onClick={(event) =>
+        selectSource(id, {
+          ctrlKey: event.ctrlKey,
+          metaKey: event.metaKey,
+          shiftKey: event.shiftKey,
+        })
+      }
+      onKeyDown={(event) => {
+        if (event.target !== event.currentTarget || (event.key !== " " && event.key !== "Enter")) {
+          return;
+        }
+
+        event.preventDefault();
+        selectSource(id, {
+          ctrlKey: event.ctrlKey,
+          metaKey: event.metaKey,
+          shiftKey: event.shiftKey,
+        });
+      }}
+      role="checkbox"
+      tabIndex={0}
       variant={variant}
     >
       <button
@@ -169,7 +200,10 @@ export function SourceCard({ source }: SourceCardProps) {
         <CardDescription className="truncate" title={sourcePath}>
           {formatSourcePath(sourcePath)}
         </CardDescription>
-        <CardAction>
+        <CardAction
+          className="flex items-center gap-1"
+          onClick={(event) => event.stopPropagation()}
+        >
           <SourceCardActions source={source} />
         </CardAction>
       </CardHeader>

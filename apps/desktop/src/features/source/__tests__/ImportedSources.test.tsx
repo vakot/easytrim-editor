@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -79,6 +80,67 @@ describe("ImportedSources", () => {
 
     expect(screen.queryByText("holiday.mp4")).not.toBeInTheDocument();
     expect(screen.getByText("screen-recording.mp4")).toBeInTheDocument();
+  });
+
+  it("selects cards as a single item, toggle set, or range", async () => {
+    const user = userEvent.setup();
+    const store = createAppStore();
+    store.dispatch(
+      editingInstancesAdded([
+        instance("first", "first.mp4"),
+        instance("second", "second.mp4"),
+        instance("third", "third.mp4"),
+      ]),
+    );
+
+    render(
+      <Provider store={store}>
+        <TooltipProvider>
+          <ImportedSources />
+        </TooltipProvider>
+      </Provider>,
+    );
+
+    const cards = screen.getAllByRole("checkbox");
+    await user.click(cards[0]!);
+    expect(cards[0]).toHaveAttribute("aria-checked", "true");
+    expect(cards[1]).toHaveAttribute("aria-checked", "false");
+
+    fireEvent.click(cards[2]!, { ctrlKey: true });
+    expect(cards[0]).toHaveAttribute("aria-checked", "true");
+    expect(cards[2]).toHaveAttribute("aria-checked", "true");
+
+    await user.click(cards[0]!);
+    fireEvent.click(cards[2]!, { shiftKey: true });
+    expect(cards).toHaveLength(3);
+    for (const card of cards) expect(card).toHaveAttribute("aria-checked", "true");
+  });
+
+  it("shows bulk close and delete actions without reveal", async () => {
+    const user = userEvent.setup();
+    const store = createAppStore();
+    store.dispatch(
+      editingInstancesAdded([instance("first", "first.mp4"), instance("second", "second.mp4")]),
+    );
+
+    render(
+      <Provider store={store}>
+        <TooltipProvider>
+          <ImportedSources />
+        </TooltipProvider>
+      </Provider>,
+    );
+
+    const cards = screen.getAllByRole("checkbox");
+    await user.click(cards[0]!);
+    expect(screen.queryByRole("button", { name: /Source actions: 2/ })).not.toBeInTheDocument();
+    fireEvent.click(cards[1]!, { ctrlKey: true });
+
+    await user.click(screen.getByRole("button", { name: "Source actions: 2" }));
+
+    expect(screen.getByRole("menuitem", { name: "Close File" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Delete File" })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: /Reveal in/ })).not.toBeInTheDocument();
   });
 
   it("restores the source explorer empty view when no sources are open", () => {

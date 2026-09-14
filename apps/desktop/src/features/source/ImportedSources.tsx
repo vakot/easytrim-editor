@@ -1,8 +1,15 @@
-import { FileVideo2, FolderOpen, Upload } from "lucide-react";
+import { FileVideo2, FolderOpen, MoreHorizontal, Trash2, Upload, X } from "lucide-react";
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuIcon,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SearchBar } from "@/components/ui/search-bar";
@@ -13,11 +20,14 @@ import { selectEditingInstances } from "@/app/store/slices/editing-instances-sli
 import { selectImportedSourcePreviews } from "@/app/store/slices/preview-slice";
 import {
   chooseSourceRequested,
+  closeEditingInstancesRequested,
   prepareImportedSourcePreviewsRequested,
 } from "@/app/store/thunks/source-media-thunks";
 import { normalizeSearchValue } from "@/lib/search.utils";
 
+import { DeleteSourceDialog, DeleteSourceDialogTrigger } from "./components/DeleteSourceDialog";
 import { SourceCard } from "./components/SourceCard";
+import { SourceSelectionProvider } from "./components/SourceSelectionProvider";
 
 export function ImportedSources() {
   const { t } = useTranslation();
@@ -25,6 +35,7 @@ export function ImportedSources() {
   const instances = useAppSelector(selectEditingInstances);
   const importedPreviews = useAppSelector(selectImportedSourcePreviews);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedSourceIds, setSelectedSourceIds] = useState<Set<string>>(() => new Set());
   const deferredSearchQuery = useDeferredValue(searchQuery);
 
   useEffect(() => {
@@ -53,15 +64,26 @@ export function ImportedSources() {
 
   if (instances.length === 0) return <ImportedSourcesEmptyState />;
 
+  const selectedInstances = instances.filter((instance) => selectedSourceIds.has(instance.id));
+  const selectedIds = selectedInstances.map((instance) => instance.id);
+
   return (
     <>
-      <SearchBar
-        aria-label={t("common.labels.search")}
-        className="mx-3 mb-2"
-        onValueChange={setSearchQuery}
-        placeholder={t("source.messages.searchPlaceholder")}
-        value={searchQuery}
-      />
+      <div className="mx-3 mb-2 flex items-center gap-2">
+        <SearchBar
+          aria-label={t("common.labels.search")}
+          className="min-w-0 flex-1"
+          onValueChange={setSearchQuery}
+          placeholder={t("source.messages.searchPlaceholder")}
+          value={searchQuery}
+        />
+        {selectedIds.length > 1 ? (
+          <SourceSelectionActions
+            onClearSelection={() => setSelectedSourceIds(new Set())}
+            sourceIds={selectedIds}
+          />
+        ) : null}
+      </div>
 
       <ScrollArea className="min-h-0 flex-1">
         {filteredInstances.length === 0 ? (
@@ -69,17 +91,81 @@ export function ImportedSources() {
             {t("source.messages.noSearchResults")}
           </p>
         ) : (
-          <div
-            className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,16rem),1fr))] gap-2 px-3 pt-1 pb-3"
-            data-slot="imported-sources-grid"
+          <SourceSelectionProvider
+            onSelectedSourceIdsChange={setSelectedSourceIds}
+            selectedSourceIds={selectedSourceIds}
+            sourceIds={filteredInstances.map((instance) => instance.id)}
           >
-            {filteredInstances.map((instance) => (
-              <SourceCard key={instance.id} source={instance} />
-            ))}
-          </div>
+            <div
+              className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,16rem),1fr))] gap-2 px-3 pt-1 pb-3"
+              data-slot="imported-sources-grid"
+            >
+              {filteredInstances.map((instance) => (
+                <SourceCard key={instance.id} source={instance} />
+              ))}
+            </div>
+          </SourceSelectionProvider>
         )}
       </ScrollArea>
     </>
+  );
+}
+
+function SourceSelectionActions({
+  onClearSelection,
+  sourceIds,
+}: {
+  onClearSelection: () => void;
+  sourceIds: string[];
+}) {
+  const { t } = useTranslation();
+  const dispatch = useAppDispatch();
+
+  return (
+    <DeleteSourceDialog
+      onOpenChange={(open) => {
+        if (!open) onClearSelection();
+      }}
+      sourceIds={sourceIds}
+    >
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            aria-label={`${t("source.actions.sourceActions")}: ${sourceIds.length}`}
+            size="icon-sm"
+            variant="outline"
+          >
+            <MoreHorizontal aria-hidden="true" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem
+            inset
+            onSelect={() => {
+              void dispatch(closeEditingInstancesRequested(sourceIds));
+              onClearSelection();
+            }}
+          >
+            <DropdownMenuIcon>
+              <X aria-hidden="true" />
+            </DropdownMenuIcon>
+            {t("app.actions.closeFile")}
+          </DropdownMenuItem>
+          <DeleteSourceDialogTrigger asChild>
+            <DropdownMenuItem
+              inset
+              onSelect={(event) => event.preventDefault()}
+              variant="destructive"
+            >
+              <DropdownMenuIcon>
+                <Trash2 aria-hidden="true" />
+              </DropdownMenuIcon>
+              {t("app.actions.deleteFile")}
+            </DropdownMenuItem>
+          </DeleteSourceDialogTrigger>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </DeleteSourceDialog>
   );
 }
 

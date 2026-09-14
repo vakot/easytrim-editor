@@ -197,9 +197,7 @@ export const sk = {
     },
     labels: {
       drop: "Pustením otvoríte video",
-      active: "Aktívny zdroj",
       explorer: "Prieskumník zdrojov",
-      imported: "Importovaný zdroj",
       importedSources: "Importované zdroje",
       metadata: {
         bitrate: "Dátový tok",
