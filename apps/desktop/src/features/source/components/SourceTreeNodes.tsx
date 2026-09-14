@@ -17,14 +17,11 @@ import { selectEditingInstanceStatusById } from "@/app/store/slices/editing-inst
 import { navigateToEditingInstance } from "@/app/store/thunks/source-media-thunks";
 import { cn } from "@/lib/class-names.utils";
 
-import { formatSourcePath } from "../lib/media-formatters.utils";
 import {
   getSourceTreeInstanceIds,
   type SourceTreeFolderNode,
   type SourceTreeNode,
 } from "../lib/source-tree.utils";
-
-import { SourceTreeContextMenu } from "./SourceTreeContextMenu";
 
 const treeNodeClassName =
   "min-w-0 flex-1 text-xs justify-between overflow-hidden transition-none group-hover:bg-muted! dark:group-hover:bg-muted/50 pr-1";
@@ -66,7 +63,6 @@ export function SourceTreeNodes({
         level={level}
         searchQuery={searchQuery}
         selected={value === node.instanceId}
-        sourcePath={node.sourcePath}
       />
     );
   });
@@ -89,47 +85,45 @@ const SourceTreeFolder = memo(function SourceTreeFolder({
 
   return (
     <Collapsible className="w-full" open={searchQuery.trim().length > 0 ? true : undefined}>
-      <SourceTreeContextMenu kind="folder" revealPath={node.path} sourceIds={sourceIds}>
-        <div
-          className="group group-line sticky flex min-w-0 items-center gap-1 bg-(--source-tree-background)"
-          style={
-            {
-              "--source-tree-background": `var(--${background})`,
-              top: level * 28,
-              zIndex: 10 - level,
-            } as CSSProperties
-          }
-        >
-          <CollapsibleTrigger asChild>
-            <Button
-              aria-label={node.name}
-              className={cn(
-                treeNodeClassName,
-                "group text-secondary-foreground! data-open:bg-transparent!",
-              )}
-              size="sm"
-              variant="ghost"
+      <div
+        className="group group-line sticky flex min-w-0 items-center gap-1 bg-(--source-tree-background)"
+        style={
+          {
+            "--source-tree-background": `var(--${background})`,
+            top: level * 28,
+            zIndex: 10 - level,
+          } as CSSProperties
+        }
+      >
+        <CollapsibleTrigger asChild>
+          <Button
+            aria-label={node.name}
+            className={cn(
+              treeNodeClassName,
+              "group text-secondary-foreground! data-open:bg-transparent!",
+            )}
+            size="sm"
+            variant="ghost"
+          >
+            <div
+              className="flex w-full min-w-0 items-center gap-1"
+              style={{ paddingLeft: level * 8 }}
             >
-              <div
-                className="flex w-full min-w-0 items-center gap-1"
-                style={{ paddingLeft: level * 8 }}
-              >
-                <ChevronRightIcon className="shrink-0 group-data-[state=open]:rotate-90" />
-                <Folder className="shrink-0 group-data-[state=open]:hidden" />
-                <FolderOpen className="hidden shrink-0 group-data-[state=open]:block" />
+              <ChevronRightIcon className="shrink-0 group-data-[state=open]:rotate-90" />
+              <Folder className="shrink-0 group-data-[state=open]:hidden" />
+              <FolderOpen className="hidden shrink-0 group-data-[state=open]:block" />
 
-                <span className="truncate">
-                  <HighlightedText query={searchQuery} text={node.name} />
-                </span>
-              </div>
+              <span className="truncate">
+                <HighlightedText query={searchQuery} text={node.name} />
+              </span>
+            </div>
 
-              <SourceTreeStatus title={String(sourceIds.length)}>
-                <Badge variant="ghost">{sourceIds.length}</Badge>
-              </SourceTreeStatus>
-            </Button>
-          </CollapsibleTrigger>
-        </div>
-      </SourceTreeContextMenu>
+            <SourceTreeStatus title={String(sourceIds.length)}>
+              <Badge variant="ghost">{sourceIds.length}</Badge>
+            </SourceTreeStatus>
+          </Button>
+        </CollapsibleTrigger>
+      </div>
 
       <CollapsibleContent>
         <SourceTreeNodes
@@ -150,14 +144,12 @@ const SourceTreeInstance = memo(function SourceTreeInstance({
   level,
   searchQuery,
   selected,
-  sourcePath,
 }: {
   displayName: string;
   instanceId: string;
   level: number;
   searchQuery: string;
   selected: boolean;
-  sourcePath: string;
 }) {
   const dispatch = useAppDispatch();
   const status = useAppSelector((state) => selectEditingInstanceStatusById(state, instanceId));
@@ -165,46 +157,40 @@ const SourceTreeInstance = memo(function SourceTreeInstance({
   const isLoading = status === "rendering";
 
   return (
-    <SourceTreeContextMenu
-      kind="file"
-      revealPath={formatSourcePath(sourcePath)}
-      sourceIds={[instanceId]}
+    <div
+      className="group group-line relative flex min-w-0 items-center gap-1 rounded-md"
+      data-open={selected}
     >
-      <div
-        className="group group-line relative flex min-w-0 items-center gap-1 rounded-md"
-        data-open={selected}
+      <Button
+        aria-current={selected ? "true" : undefined}
+        aria-label={displayName}
+        className={cn(treeNodeClassName, "text-muted-foreground!")}
+        data-open={selected ? "true" : undefined}
+        onClick={() => void dispatch(navigateToEditingInstance(instanceId))}
+        size="xs"
+        variant="ghost"
       >
-        <Button
-          aria-current={selected ? "true" : undefined}
-          aria-label={displayName}
-          className={cn(treeNodeClassName, "text-muted-foreground!")}
-          data-open={selected ? "true" : undefined}
-          onClick={() => void dispatch(navigateToEditingInstance(instanceId))}
-          size="xs"
-          variant="ghost"
-        >
-          <span className="flex min-w-0 items-center gap-1" style={{ paddingLeft: level * 8 + 16 }}>
-            <FileVideo className="shrink-0" />
+        <span className="flex min-w-0 items-center gap-1" style={{ paddingLeft: level * 8 + 16 }}>
+          <FileVideo className="shrink-0" />
 
-            <span className="truncate">
-              <HighlightedText query={searchQuery} text={displayName} />
-            </span>
+          <span className="truncate">
+            <HighlightedText query={searchQuery} text={displayName} />
           </span>
+        </span>
 
-          {status ? (
-            <SourceTreeStatus className={isLoading ? "shimmer" : undefined} title={status}>
-              <Badge
-                className="text-muted-foreground transition-none"
-                size="xs"
-                variant={getStatusVariant(status)}
-              >
-                {status}
-              </Badge>
-            </SourceTreeStatus>
-          ) : null}
-        </Button>
-      </div>
-    </SourceTreeContextMenu>
+        {status ? (
+          <SourceTreeStatus className={isLoading ? "shimmer" : undefined} title={status}>
+            <Badge
+              className="text-muted-foreground transition-none"
+              size="xs"
+              variant={getStatusVariant(status)}
+            >
+              {status}
+            </Badge>
+          </SourceTreeStatus>
+        ) : null}
+      </Button>
+    </div>
   );
 });
 

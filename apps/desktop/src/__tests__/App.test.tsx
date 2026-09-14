@@ -284,7 +284,7 @@ describe("App", () => {
     render(<App />);
 
     expect(screen.queryByText("Start a new clip")).not.toBeInTheDocument();
-    expect(screen.getByRole("complementary", { name: "Source" })).toBeInTheDocument();
+    expect(screen.getByRole("complementary", { name: "Imported sources" })).toBeInTheDocument();
     expect(screen.getByRole("list", { name: "Keyboard shortcuts" })).toHaveTextContent("Open File");
     expect(screen.getByRole("list", { name: "Keyboard shortcuts" })).toHaveTextContent(
       "Save Lossless Cut",
@@ -441,18 +441,19 @@ describe("App", () => {
     const timelinePanel = document.getElementById("editor-stage-timeline");
     const audioPanel = document.getElementById("editor-stage-audio");
 
-    await user.click(screen.getByRole("button", { name: "Explorer" }));
-    await user.click(screen.getByRole("button", { name: "C:\\Media" }));
-    await user.click(screen.getByRole("button", { name: replacementSelection.displayName }));
+    await user.click(
+      screen.getByRole("button", { name: `Open: ${replacementSelection.displayName}` }),
+    );
 
     expect(document.getElementById("workspace-sidebar")).toBe(sourcePanel);
     expect(document.getElementById("editor-stage-preview")).toBe(previewPanel);
     expect(document.getElementById("editor-stage-timeline")).toBe(timelinePanel);
     expect(document.getElementById("editor-stage-audio")).toBe(audioPanel);
-    expect(screen.getByRole("button", { name: replacementSelection.displayName })).toHaveAttribute(
-      "aria-current",
-      "true",
-    );
+    const replacementCard = screen
+      .getAllByText(replacementSelection.displayName)[0]!
+      .closest('[data-slot="card"]');
+
+    expect(replacementCard).toHaveAttribute("data-active", "true");
     expect(screen.getByRole("heading", { name: "Selected Segment" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /^Audio tracks/ })).toBeInTheDocument();
 
@@ -869,8 +870,8 @@ describe("App", () => {
     await openSourcePicker(user);
 
     await waitForSourcePresence(true);
-    expect(screen.getByRole("button", { name: "Active sources" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Explorer" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Imported sources" })).toBeInTheDocument();
+    expect(screen.getAllByText(selection.displayName)[0]).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Activity Feed" })).toBeInTheDocument();
     expect(screen.getByLabelText("Source video preview")).toHaveAttribute(
       "src",

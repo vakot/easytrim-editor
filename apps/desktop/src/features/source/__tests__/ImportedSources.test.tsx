@@ -2,6 +2,8 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { describe, expect, it } from "vitest";
 
+import { TooltipProvider } from "@/components/ui/tooltip";
+
 import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";
 import {
   activeEditingInstanceChanged,
@@ -10,7 +12,7 @@ import {
 import { createAppStore } from "@/app/store/store";
 import type { EditingInstance } from "@/domain/editing-instance";
 
-import { SourceTree } from "../SourceTree";
+import { ImportedSources } from "../ImportedSources";
 
 function instance(id: string, displayName: string): EditingInstance {
   return {
@@ -25,8 +27,8 @@ function instance(id: string, displayName: string): EditingInstance {
   };
 }
 
-describe("SourceTree", () => {
-  it("filters Explorer sources and highlights the contained query", () => {
+describe("ImportedSources", () => {
+  it("renders imported source cards and filters by filename or path", () => {
     const store = createAppStore();
     store.dispatch(
       editingInstancesAdded([
@@ -38,31 +40,36 @@ describe("SourceTree", () => {
 
     render(
       <Provider store={store}>
-        <SourceTree />
+        <TooltipProvider>
+          <ImportedSources />
+        </TooltipProvider>
       </Provider>,
     );
+
+    expect(screen.getByRole("complementary", { name: "Imported sources" })).toBeInTheDocument();
+    expect(screen.getByText("holiday.mp4")).toBeInTheDocument();
+    expect(screen.getByText("C:/Media/screen-recording.mp4")).toBeInTheDocument();
+    expect(document.querySelector('[data-slot="imported-sources-grid"]')).toBeInTheDocument();
 
     fireEvent.change(screen.getByRole("searchbox", { name: "Search" }), {
-      target: { value: "record" },
+      target: { value: "recording" },
     });
 
-    expect(screen.queryByRole("button", { name: "holiday.mp4" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "screen-recording.mp4" })).toBeInTheDocument();
-    expect(screen.getByText("record").tagName).toBe("MARK");
+    expect(screen.queryByText("holiday.mp4")).not.toBeInTheDocument();
+    expect(screen.getByText("screen-recording.mp4")).toBeInTheDocument();
   });
 
-  it("renders the Explorer empty state with file, folder, and drop actions", () => {
+  it("shows the import actions when no sources are open", () => {
     render(
       <Provider store={createAppStore()}>
-        <SourceTree />
+        <TooltipProvider>
+          <ImportedSources />
+        </TooltipProvider>
       </Provider>,
     );
 
-    expect(screen.getByRole("form", { name: "Explorer" })).toBeInTheDocument();
-    expect(screen.getByRole("searchbox", { name: "Search" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Open File/ })).toHaveTextContent("CtrlO");
-    expect(screen.getByRole("button", { name: /Open Folder/ })).toHaveTextContent("CtrlK");
-    expect(screen.getByText("Drag and drop videos here")).toBeInTheDocument();
-    expect(screen.getByText("MP4 · MOV · MKV · WebM · AVI")).toBeInTheDocument();
+    expect(screen.getByText("No imported sources yet.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Open File" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Open Folder" })).toBeInTheDocument();
   });
 });

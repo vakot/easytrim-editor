@@ -44,3 +44,18 @@ export const Small: Story = {
     </Card>
   ),
 };
+
+export const Variants: Story = {
+  render: () => (
+    <div className="grid w-lg gap-3 sm:grid-cols-2">
+      {(["default", "warning", "destructive", "success"] as const).map((variant) => (
+        <Card key={variant} variant={variant}>
+          <CardHeader>
+            <CardTitle className="capitalize">{variant}</CardTitle>
+            <CardDescription>Card state styling.</CardDescription>
+          </CardHeader>
+        </Card>
+      ))}
+    </div>
+  ),
+};

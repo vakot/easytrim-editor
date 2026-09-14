@@ -1,8 +1,5 @@
-import type { TFunction } from "i18next";
-
 import type { EditingInstance } from "@/domain/editing-instance";
 import { normalizeSearchValue } from "@/lib/search.utils";
-import { isWindowsRuntime } from "@/lib/tauri/updates.utils";
 
 import { formatSourcePath } from "./media-formatters.utils";
 
@@ -27,11 +24,6 @@ export interface SourceTreeEntry {
   displayName: string;
   id: string;
   sourcePath: string;
-}
-
-export interface SourceTreeRevealTarget {
-  displayName: string;
-  path: string;
 }
 
 type SourceTreeBuildFolderNode = {
@@ -126,23 +118,6 @@ export function getSourceTreeInstanceIds(nodes: SourceTreeNode[]): string[] {
   return sourceIds;
 }
 
-export function getSourceTreeRevealTargets(
-  instance: EditingInstance | undefined,
-): SourceTreeRevealTarget[] {
-  return (
-    instance?.exportAttempts.flatMap((attempt) =>
-      attempt.state.status === "completed"
-        ? [
-            {
-              displayName: attempt.state.result.displayName,
-              path: attempt.state.result.displayPath,
-            },
-          ]
-        : [],
-    ) ?? []
-  );
-}
-
 export function getSourceTreeSiblings(
   nodes: SourceTreeNode[],
   target: { kind: "folder"; path: string } | { id: string; kind: "instance" },
@@ -174,26 +149,6 @@ export function filterSourceTreeNodes(nodes: SourceTreeNode[], query: string): S
   }
 
   return filteredNodes;
-}
-
-export function getSourceAction(instances: EditingInstance[]): "delete" | "restore" {
-  return instances.length > 0 &&
-    instances.every((instance) => instance.sourceAvailability === "deleted")
-    ? "restore"
-    : "delete";
-}
-
-export function getRevealLabel(t: TFunction): string {
-  if (isMacOSRuntime()) return t("source.actions.revealInFinder");
-  if (isWindowsRuntime()) return t("source.actions.revealInFileExplorer");
-  return t("source.actions.revealInFileManager");
-}
-
-function isMacOSRuntime(): boolean {
-  return (
-    typeof navigator !== "undefined" &&
-    (/Mac/i.test(navigator.userAgent) || /Mac/i.test(navigator.platform))
-  );
 }
 
 function findSourceTreeSiblings(

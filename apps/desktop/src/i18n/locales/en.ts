@@ -85,8 +85,6 @@ export const en = {
       windowActionFailed: "The window control could not be completed.",
     },
     tooltips: {
-      activityFeedPrivacy:
-        "Activity history is stored only on this device as part of local diagnostic logs. It is not uploaded or sent anywhere.",
       customizeLayout: "Customize layout",
       togglePanel: "Toggle {{panel}}",
     },
@@ -191,14 +189,17 @@ export const en = {
   },
   source: {
     actions: {
-      revealInFileExplorer: "Reveal in File Explorer",
-      revealInFileManager: "Reveal in File Manager",
-      revealInFinder: "Reveal in Finder",
+      close: "Close source",
+      deleteSource: "Delete source file",
+      reveal: "Reveal in file manager",
+      restoreSource: "Restore source",
+      sourceActions: "Source actions",
     },
     labels: {
       drop: "Drop video to open",
-      activeSources: "Active sources",
-      explorer: "Explorer",
+      active: "Active source",
+      imported: "Imported source",
+      importedSources: "Imported sources",
       metadata: {
         bitrate: "Bitrate",
         container: "Container",
@@ -212,9 +213,16 @@ export const en = {
         videoCodec: "Video codec",
       },
       technicalDetails: "Technical details",
-      title: "Source",
     },
     status: {
+      canceled: "Canceled",
+      completed: "Completed",
+      deleted: "Deleted",
+      failed: "Failed",
+      loading: "Loading…",
+      queued: "Queued",
+      ready: "Ready",
+      rendering: "Rendering…",
       checkingTools: "Checking media tools…",
       installed: "Installed",
       missing: "Missing",
@@ -227,23 +235,15 @@ export const en = {
       dependencyMissing: "not available.",
       dropDescription: "Open one or more supported video files from your computer.",
       dropReset: "The current edit will be reset.",
-      dropTitle: "Drag and drop videos here",
-      extensions: "MP4 · MOV · MKV · WebM · AVI",
       noSearchResults: "No matching sources.",
+      noImportedSources: "No imported sources yet.",
       noSource: "No source",
-      openFileDescription: "Choose a single video file to start editing.",
-      openFolderDescription: "Import all supported videos from a folder.",
+      previewUnavailable: "Preview unavailable",
       searchPlaceholder: "Search sources...",
       toolsReady: "All required media dependencies are installed and ready to use.",
       toolsUnavailable: "Some required media dependencies are unavailable.",
     },
-    tooltips: { sidebarControls: "Choose visible source panels" },
     dialogs: {
-      closeFolder: {
-        description:
-          "Close all {{count}} sources in this folder? Their unsaved edits will be lost.",
-        title: "Close folder sources?",
-      },
       delete: {
         description: "This deletes {{name}} from your computer. This action can be undone.",
         title: "Delete source file?",
