@@ -1,9 +1,10 @@
-import { type ReactNode, useCallback, useRef } from "react";
+import { type ReactNode, useCallback, useEffect, useRef } from "react";
 
 import { SourceSelectionContext, type SourceSelectionModifiers } from "./SourceSelectionContext";
 
 interface SourceSelectionProviderProps {
   children: ReactNode;
+  initialAnchorId?: string | null;
   onSelectedSourceIdsChange: (sourceIds: Set<string>) => void;
   selectedSourceIds: ReadonlySet<string>;
   sourceIds: readonly string[];
@@ -11,11 +12,22 @@ interface SourceSelectionProviderProps {
 
 export function SourceSelectionProvider({
   children,
+  initialAnchorId = null,
   onSelectedSourceIdsChange,
   selectedSourceIds,
   sourceIds,
 }: SourceSelectionProviderProps) {
-  const selectionAnchorId = useRef<string | null>(null);
+  const selectionAnchorId = useRef<string | null>(resolveInitialAnchor(initialAnchorId, sourceIds));
+
+  const appliedInitialAnchorId = useRef(initialAnchorId);
+
+  useEffect(() => {
+    if (appliedInitialAnchorId.current === initialAnchorId) return;
+    appliedInitialAnchorId.current = initialAnchorId;
+    if (initialAnchorId && sourceIds.includes(initialAnchorId)) {
+      selectionAnchorId.current = initialAnchorId;
+    }
+  }, [initialAnchorId, sourceIds]);
 
   const selectSource = useCallback(
     (sourceId: string, modifiers: SourceSelectionModifiers) => {
@@ -46,7 +58,7 @@ export function SourceSelectionProvider({
         nextSelection = new Set([sourceId]);
       }
 
-      if (!modifiers.shiftKey || anchorIndex === -1) selectionAnchorId.current = sourceId;
+      selectionAnchorId.current = sourceId;
       onSelectedSourceIdsChange(nextSelection);
     },
     [onSelectedSourceIdsChange, selectedSourceIds, sourceIds],
@@ -57,4 +69,9 @@ export function SourceSelectionProvider({
       {children}
     </SourceSelectionContext.Provider>
   );
+}
+
+function resolveInitialAnchor(initialAnchorId: string | null, sourceIds: readonly string[]) {
+  if (initialAnchorId && sourceIds.includes(initialAnchorId)) return initialAnchorId;
+  return sourceIds[0] ?? null;
 }

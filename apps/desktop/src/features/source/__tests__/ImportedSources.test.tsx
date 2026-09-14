@@ -167,13 +167,42 @@ describe("ImportedSources", () => {
 
     fireEvent.click(cards[2]!, { shiftKey: true });
     expect(cards[0]).toHaveAttribute("aria-checked", "true");
-    expect(cards[1]).toHaveAttribute("aria-checked", "false");
+    expect(cards[1]).toHaveAttribute("aria-checked", "true");
     expect(cards[2]).toHaveAttribute("aria-checked", "false");
 
     expect(selectActiveInstanceId(store.getState())).toBe("first");
 
     await user.click(cards[1]!);
     expect(cards[1]).toHaveAttribute("aria-checked", "true");
+    expect(selectActiveInstanceId(store.getState())).toBe("second");
+  });
+
+  it("starts a Shift range from the active source and updates its anchor after Shift", () => {
+    const store = createAppStore();
+    store.dispatch(
+      editingInstancesAdded([
+        instance("first", "first.mp4"),
+        instance("second", "second.mp4"),
+        instance("third", "third.mp4"),
+      ]),
+    );
+    store.dispatch(activeEditingInstanceChanged("second"));
+
+    render(
+      <Provider store={store}>
+        <TooltipProvider>
+          <ImportedSources />
+        </TooltipProvider>
+      </Provider>,
+    );
+
+    const cards = screen.getAllByRole("checkbox");
+    fireEvent.click(cards[2]!, { shiftKey: true });
+    fireEvent.click(cards[2]!, { shiftKey: true });
+
+    expect(cards[0]).toHaveAttribute("aria-checked", "false");
+    expect(cards[1]).toHaveAttribute("aria-checked", "true");
+    expect(cards[2]).toHaveAttribute("aria-checked", "false");
     expect(selectActiveInstanceId(store.getState())).toBe("second");
   });
 
@@ -198,13 +227,10 @@ describe("ImportedSources", () => {
 
     const cards = screen.getAllByRole("checkbox");
     await user.click(cards[0]!);
+    fireEvent.click(cards[0]!, { shiftKey: true });
     fireEvent.click(cards[2]!, { shiftKey: true });
-    fireEvent.click(cards[2]!, { shiftKey: true });
-    fireEvent.click(cards[1]!, { shiftKey: true });
 
-    expect(cards[0]).toHaveAttribute("aria-checked", "true");
-    expect(cards[1]).toHaveAttribute("aria-checked", "true");
-    expect(cards[2]).toHaveAttribute("aria-checked", "false");
+    for (const card of cards) expect(card).toHaveAttribute("aria-checked", "true");
   });
 
   it("shows bulk close and delete actions without reveal", async () => {

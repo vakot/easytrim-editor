@@ -17,7 +17,10 @@ import { SearchBar } from "@/components/ui/search-bar";
 import { Separator } from "@/components/ui/separator";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
-import { selectEditingInstances } from "@/app/store/slices/editing-instances-slice";
+import {
+  selectActiveInstanceId,
+  selectEditingInstances,
+} from "@/app/store/slices/editing-instances-slice";
 import { selectImportedSourcePreviews } from "@/app/store/slices/preview-slice";
 import {
   chooseSourceRequested,
@@ -36,6 +39,7 @@ import { getSourceFolderPath } from "./lib/media-formatters.utils";
 export function ImportedSources() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
+  const activeInstanceId = useAppSelector(selectActiveInstanceId);
   const instances = useAppSelector(selectEditingInstances);
   const importedPreviews = useAppSelector(selectImportedSourcePreviews);
   const [searchQuery, setSearchQuery] = useState("");
@@ -78,7 +82,12 @@ export function ImportedSources() {
       .filter((folder) => folder.sources.length > 0);
   }, [filteredInstances, sourceFolders]);
 
-  const visibleInstances = visibleSourceFolders.flatMap((folder) => folder.sources);
+  const visibleSourceIds = useMemo(
+    () => visibleSourceFolders.flatMap((folder) => folder.sources.map((instance) => instance.id)),
+    [visibleSourceFolders],
+  );
+
+  const initialAnchorId = activeInstanceId ?? visibleSourceIds[0] ?? null;
 
   if (instances.length === 0) return <ImportedSourcesEmptyState />;
 
@@ -110,9 +119,10 @@ export function ImportedSources() {
           </p>
         ) : (
           <SourceSelectionProvider
+            initialAnchorId={initialAnchorId}
             onSelectedSourceIdsChange={setSelectedSourceIds}
             selectedSourceIds={selectedSourceIds}
-            sourceIds={visibleInstances.map((instance) => instance.id)}
+            sourceIds={visibleSourceIds}
           >
             <div className="grid gap-3 pt-1 pb-3" data-slot="imported-sources-grid">
               {visibleSourceFolders.map((folder) => (
