@@ -199,6 +199,7 @@ export const sk = {
     labels: {
       drop: "Pustením otvoríte video",
       active: "Aktívny zdroj",
+      explorer: "Prieskumník zdrojov",
       imported: "Importovaný zdroj",
       importedSources: "Importované zdroje",
       metadata: {
@@ -236,9 +237,12 @@ export const sk = {
       dependencyMissing: "nie je dostupné.",
       dropDescription: "Otvorte jeden alebo viac podporovaných videosúborov z počítača.",
       dropReset: "Aktuálne úpravy sa obnovia.",
+      dropTitle: "Presuňte videá sem",
+      extensions: "MP4 · MOV · MKV · WebM · AVI",
       noSource: "Žiadny zdroj",
       noSearchResults: "Nenašli sa žiadne zodpovedajúce zdroje.",
-      noImportedSources: "Zatiaľ nie sú importované žiadne zdroje.",
+      openFileDescription: "Vyberte jeden videosúbor a začnite upravovať.",
+      openFolderDescription: "Importujte všetky podporované videá z priečinka.",
       previewUnavailable: "Náhľad nie je dostupný",
       searchPlaceholder: "Hľadať zdroje...",
       toolsReady:

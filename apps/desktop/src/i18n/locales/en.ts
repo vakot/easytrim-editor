@@ -198,6 +198,7 @@ export const en = {
     labels: {
       drop: "Drop video to open",
       active: "Active source",
+      explorer: "Source explorer",
       imported: "Imported source",
       importedSources: "Imported sources",
       metadata: {
@@ -235,9 +236,12 @@ export const en = {
       dependencyMissing: "not available.",
       dropDescription: "Open one or more supported video files from your computer.",
       dropReset: "The current edit will be reset.",
+      dropTitle: "Drag and drop videos here",
+      extensions: "MP4 · MOV · MKV · WebM · AVI",
       noSearchResults: "No matching sources.",
-      noImportedSources: "No imported sources yet.",
       noSource: "No source",
+      openFileDescription: "Choose a single video file to start editing.",
+      openFolderDescription: "Import all supported videos from a folder.",
       previewUnavailable: "Preview unavailable",
       searchPlaceholder: "Search sources...",
       toolsReady: "All required media dependencies are installed and ready to use.",

@@ -31,6 +31,7 @@ const mocks = vi.hoisted(() => ({
   inspectMedia: vi.fn(),
   listenForSourceDrops: vi.fn(),
   prepareAudioPreviews: vi.fn(),
+  prepareImportedSourcePreview: vi.fn(),
   prepareProxyPreview: vi.fn(),
   prepareSourcePreview: vi.fn(),
   prepareWaveforms: vi.fn(),
@@ -47,6 +48,7 @@ vi.mock("../lib/tauri/media", async (importOriginal) => {
     inspectMedia: mocks.inspectMedia,
     listenForSourceDrops: mocks.listenForSourceDrops,
     prepareAudioPreviews: mocks.prepareAudioPreviews,
+    prepareImportedSourcePreview: mocks.prepareImportedSourcePreview,
     prepareProxyPreview: mocks.prepareProxyPreview,
     prepareSourcePreview: mocks.prepareSourcePreview,
     prepareWaveforms: mocks.prepareWaveforms,
@@ -209,6 +211,11 @@ beforeEach(() => {
     url: "http://easytrim-media.localhost/source-1?variant=source",
     kind: "source",
   });
+  mocks.prepareImportedSourcePreview.mockImplementation(async (sourcePath: string) => ({
+    mediaToken: 9,
+    url: `http://easytrim-media.localhost/9?variant=source&path=${encodeURIComponent(sourcePath)}`,
+    kind: "source" as const,
+  }));
   mocks.prepareProxyPreview.mockResolvedValue({
     mediaToken: 1,
     url: "http://easytrim-media.localhost/source-1?variant=proxy",
@@ -284,7 +291,7 @@ describe("App", () => {
     render(<App />);
 
     expect(screen.queryByText("Start a new clip")).not.toBeInTheDocument();
-    expect(screen.getByRole("complementary", { name: "Imported sources" })).toBeInTheDocument();
+    expect(screen.getByRole("form", { name: "Source explorer" })).toBeInTheDocument();
     expect(screen.getByRole("list", { name: "Keyboard shortcuts" })).toHaveTextContent("Open File");
     expect(screen.getByRole("list", { name: "Keyboard shortcuts" })).toHaveTextContent(
       "Save Lossless Cut",

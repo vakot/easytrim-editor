@@ -133,10 +133,12 @@ pub struct AppState {
     next_generation: AtomicU64,
     next_output: AtomicU64,
     next_operation: AtomicU64,
+    next_imported_preview: AtomicU64,
     session: Mutex<SessionState>,
     outputs: Mutex<HashMap<String, PathBuf>>,
     operations: Mutex<HashMap<String, Arc<AtomicBool>>>,
     export_sources: Mutex<HashMap<PathBuf, RetainedExportSource>>,
+    imported_preview_paths: Mutex<HashMap<u64, PathBuf>>,
 }
 
 #[derive(Clone, Debug)]
@@ -501,15 +503,34 @@ impl AppState {
 
     pub fn resolve_preview_path(&self, load_token: u64) -> Result<PathBuf, AppError> {
         let session = self.lock_session()?;
-        let source = session
+        if let Some(source) = session
             .active_source
             .as_ref()
             .filter(|source| source.load_token == load_token)
-            .ok_or_else(AppError::source_replaced)?;
-        Ok(source
-            .preview
-            .as_ref()
-            .map_or_else(|| source.path.clone(), |preview| preview.path().to_owned()))
+        {
+            return Ok(source
+                .preview
+                .as_ref()
+                .map_or_else(|| source.path.clone(), |preview| preview.path().to_owned()));
+        }
+        drop(session);
+
+        self.imported_preview_paths
+            .lock()
+            .map_err(|_| AppError::internal("The imported preview registry is unavailable."))?
+            .get(&load_token)
+            .cloned()
+            .ok_or_else(AppError::source_replaced)
+    }
+
+    pub fn register_imported_preview(&self, path: PathBuf) -> Result<u64, AppError> {
+        let token =
+            (1_u64 << 63) | (self.next_imported_preview.fetch_add(1, Ordering::Relaxed) + 1);
+        self.imported_preview_paths
+            .lock()
+            .map_err(|_| AppError::internal("The imported preview registry is unavailable."))?
+            .insert(token, path);
+        Ok(token)
     }
 
     pub fn preview_is_ready(&self, load_token: u64) -> Result<bool, AppError> {
@@ -631,6 +652,26 @@ mod tests {
             .expect("replacement import starts");
 
         assert!(cancellation.load(Ordering::Acquire));
+    }
+
+    #[test]
+    fn imported_preview_survives_active_source_replacement() {
+        let state = AppState::default();
+        let preview_token = state
+            .register_imported_preview(PathBuf::from("imported.mp4"))
+            .expect("preview registers");
+
+        state
+            .begin_source_replacement()
+            .expect("active source replacement starts");
+
+        assert_eq!(
+            state
+                .resolve_preview_path(preview_token)
+                .expect("retained preview resolves"),
+            PathBuf::from("imported.mp4")
+        );
+        assert!(preview_token & (1_u64 << 63) != 0);
     }
 
     #[test]

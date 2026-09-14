@@ -22,6 +22,7 @@ import {
   listenForSourceDrops,
   moveSourceToTrash,
   planOptimizedExport,
+  prepareImportedSourcePreview,
   prepareProxyPreview,
   prepareSourcePreview,
   prepareWaveforms,
@@ -227,11 +228,16 @@ describe("media IPC adapter", () => {
     );
   });
 
-  it("parses direct and proxy preview descriptors through narrow commands", async () => {
+  it("parses direct, imported, and proxy preview descriptors through narrow commands", async () => {
     mocks.invoke
       .mockResolvedValueOnce({
         mediaToken: 3,
         url: "http://easytrim-media.localhost/source-3?variant=source",
+        kind: "source",
+      })
+      .mockResolvedValueOnce({
+        mediaToken: 9,
+        url: "http://easytrim-media.localhost/9223372036854775809?variant=source",
         kind: "source",
       })
       .mockResolvedValueOnce({
@@ -243,13 +249,19 @@ describe("media IPC adapter", () => {
     await expect(prepareSourcePreview("C:/Media/clip.mp4")).resolves.toMatchObject({
       kind: "source",
     });
+    await expect(prepareImportedSourcePreview("C:/Media/clip.mp4")).resolves.toMatchObject({
+      kind: "source",
+    });
     await expect(prepareProxyPreview("C:/Media/clip.mp4")).resolves.toMatchObject({
       kind: "proxy",
     });
     expect(mocks.invoke).toHaveBeenNthCalledWith(1, "prepare_source_preview", {
       sourcePath: "C:/Media/clip.mp4",
     });
-    expect(mocks.invoke).toHaveBeenNthCalledWith(2, "prepare_proxy_preview", {
+    expect(mocks.invoke).toHaveBeenNthCalledWith(2, "prepare_imported_source_preview", {
+      sourcePath: "C:/Media/clip.mp4",
+    });
+    expect(mocks.invoke).toHaveBeenNthCalledWith(3, "prepare_proxy_preview", {
       sourcePath: "C:/Media/clip.mp4",
     });
   });

@@ -129,6 +129,20 @@ pub async fn inspect_imported_media(source_path: PathBuf) -> Result<MediaInfo, A
         .map_err(|_| AppError::internal("Video inspection stopped unexpectedly."))?
 }
 
+#[tauri::command]
+pub async fn prepare_imported_source_preview(
+    source_path: PathBuf,
+    state: State<'_, AppState>,
+) -> Result<PreviewDescriptor, AppError> {
+    let source = validate_source(&source_path)?;
+    let media_token = state.register_imported_preview(source.path)?;
+    Ok(PreviewDescriptor {
+        media_token,
+        url: preview_url(media_token, PreviewKind::Source),
+        kind: PreviewKind::Source,
+    })
+}
+
 fn record_ffprobe_event(
     diagnostics: &DiagnosticsState,
     event: &str,

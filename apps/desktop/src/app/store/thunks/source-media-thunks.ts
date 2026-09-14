@@ -43,7 +43,14 @@ import {
   sourceChoiceStarted,
 } from "@/app/store/slices/import-workflow-slice";
 import { selectMergeAudioEnabledDefault } from "@/app/store/slices/preferences-slice";
-import { previewFailed, previewLoading, previewReady } from "@/app/store/slices/preview-slice";
+import {
+  importedPreviewFailed,
+  importedPreviewLoading,
+  importedPreviewReady,
+  previewFailed,
+  previewLoading,
+  previewReady,
+} from "@/app/store/slices/preview-slice";
 import {
   capabilitiesFailed,
   capabilitiesReady,
@@ -65,6 +72,7 @@ import {
   inspectMedia,
   moveSourceToTrash,
   prepareAudioPreviews,
+  prepareImportedSourcePreview,
   prepareProxyPreview,
   prepareSourcePreview,
   prepareWaveforms,
@@ -154,8 +162,46 @@ export const ingestSources =
 
     dispatch(dropListenerErrorCleared());
     dispatch(editingInstancesAdded(instances));
+    void dispatch(prepareImportedSourcePreviewsRequested(instances));
     dispatch(navigateToEditingInstance(instances[0]!.id, origin));
     operation.complete(importResultData(result));
+  };
+
+export const prepareImportedSourcePreviewsRequested =
+  (instances: EditingInstance[]): AppThunk<Promise<void>> =>
+  async (dispatch, getState) => {
+    await Promise.all(
+      instances.map(async (instance) => {
+        const sourcePath = instance.snapshot.source.sourcePath;
+        dispatch(importedPreviewLoading({ instanceId: instance.id }));
+
+        try {
+          const preview = await prepareImportedSourcePreview(sourcePath);
+          const current = selectEditingInstanceById(getState(), instance.id);
+          if (
+            current &&
+            normalizeSourceKey(current.snapshot.source.sourcePath) ===
+              normalizeSourceKey(sourcePath)
+          ) {
+            dispatch(importedPreviewReady({ instanceId: instance.id, preview }));
+          }
+        } catch (error: unknown) {
+          const current = selectEditingInstanceById(getState(), instance.id);
+          if (
+            current &&
+            normalizeSourceKey(current.snapshot.source.sourcePath) ===
+              normalizeSourceKey(sourcePath)
+          ) {
+            dispatch(
+              importedPreviewFailed({
+                error: normalizeAppError(error),
+                instanceId: instance.id,
+              }),
+            );
+          }
+        }
+      }),
+    );
   };
 
 function normalizeSourceImportResult(input: SourceImportResult | SourceRef[]): SourceImportResult {

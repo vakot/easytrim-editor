@@ -215,6 +215,18 @@ export async function prepareSourcePreview(sourcePath: string): Promise<PreviewD
   }
 }
 
+export async function prepareImportedSourcePreview(sourcePath: string): Promise<PreviewDescriptor> {
+  try {
+    return parsePreviewDescriptor(
+      await invoke<unknown>("prepare_imported_source_preview", {
+        sourcePath,
+      }),
+    );
+  } catch (error: unknown) {
+    throw normalizeAppError(error);
+  }
+}
+
 export async function prepareAudioPreviews(
   sourcePath: string,
   streamIndexes: number[],

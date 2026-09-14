@@ -36,13 +36,13 @@ describe("SourceCard", () => {
           sourcePath="C:/Media/holiday.mp4"
           status="ready"
           statusLabel="Ready"
-          variant="success"
+          variant="default"
         />
       </TooltipProvider>,
     );
 
     const card = document.querySelector('[data-slot="card"]');
-    expect(card).toHaveAttribute("data-variant", "success");
+    expect(card).toHaveAttribute("data-variant", "default");
     expect(screen.getByText("holiday.mp4")).toBeInTheDocument();
     expect(screen.getByText("C:/Media/holiday.mp4")).toBeInTheDocument();
     expect(screen.getByText("Ready")).toBeInTheDocument();
@@ -68,7 +68,7 @@ describe("SourceCard", () => {
           sourcePath="C:/Media/holiday.mp4"
           status="ready"
           statusLabel="Ready"
-          variant="success"
+          variant="default"
         />
       </TooltipProvider>,
     );

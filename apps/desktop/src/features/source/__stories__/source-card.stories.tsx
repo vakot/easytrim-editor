@@ -46,7 +46,7 @@ const baseArgs: SourceCardProps = {
   sourcePath: "C:/Media/2026/travel-highlights.mp4",
   status: "ready",
   statusLabel: "Ready",
-  variant: "success",
+  variant: "default",
 };
 
 export const Ready: Story = {

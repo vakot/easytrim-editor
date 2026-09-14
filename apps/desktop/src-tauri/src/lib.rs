@@ -90,6 +90,7 @@ pub fn run() {
             commands::media::inspect_media,
             commands::media::inspect_imported_media,
             commands::media::prepare_audio_previews,
+            commands::media::prepare_imported_source_preview,
             commands::media::prepare_proxy_preview,
             commands::media::prepare_source_preview,
             commands::media::prepare_waveforms,
