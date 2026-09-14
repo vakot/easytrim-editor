@@ -60,7 +60,9 @@ export function SourceSelectionProvider({
         nextSelection = new Set([sourceId]);
       }
 
-      if (activeSourceId) nextSelection.add(activeSourceId);
+      if (activeSourceId && (toggleSelection || modifiers.shiftKey)) {
+        nextSelection.add(activeSourceId);
+      }
       selectionAnchorId.current = sourceId;
       onSelectedSourceIdsChange(nextSelection);
     },

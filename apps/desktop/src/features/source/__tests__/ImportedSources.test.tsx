@@ -173,6 +173,7 @@ describe("ImportedSources", () => {
     expect(selectActiveInstanceId(store.getState())).toBe("first");
 
     await user.click(cards[1]!);
+    expect(cards[0]).toHaveAttribute("aria-checked", "false");
     expect(cards[1]).toHaveAttribute("aria-checked", "true");
     expect(selectActiveInstanceId(store.getState())).toBe("second");
   });

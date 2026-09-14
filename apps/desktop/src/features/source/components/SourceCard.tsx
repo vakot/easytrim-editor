@@ -150,7 +150,7 @@ export function SourceCard({ source }: SourceCardProps) {
     setContextSourceIds(sourceIsSelected ? [...selectedSourceIds] : [id]);
 
     if (!sourceIsSelected) {
-      selectSource(id, { ctrlKey: false, metaKey: false, shiftKey: false });
+      selectSource(id, { ctrlKey: true, metaKey: false, shiftKey: false });
     }
   };
 
