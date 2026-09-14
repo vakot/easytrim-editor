@@ -108,6 +108,7 @@ describe("ImportedSources", () => {
     expect(screen.getByText("C:/Media/Second")).toBeInTheDocument();
 
     const firstFolderTrigger = screen.getByRole("button", { name: "C:/Media/First" });
+    expect(firstFolderTrigger).toHaveClass("group");
     await user.click(firstFolderTrigger);
     expect(screen.queryByText("first.mp4")).not.toBeInTheDocument();
 

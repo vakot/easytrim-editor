@@ -54,7 +54,7 @@ export function SourceFolderSection({
         <CollapsibleTrigger asChild>
           <Button
             aria-label={folderPath}
-            className="min-w-0 flex-1 justify-start"
+            className="group min-w-0 flex-1 justify-start"
             size="sm"
             variant="ghost"
           >
@@ -101,7 +101,7 @@ function SourceFolderActions({
         <DropdownMenuTrigger asChild>
           <Button
             aria-label={`${t("source.actions.folderActions")}: ${folderPath}`}
-            size="icon-xs"
+            size="icon-sm"
             variant="ghost"
           >
             <MoreHorizontal aria-hidden="true" />
