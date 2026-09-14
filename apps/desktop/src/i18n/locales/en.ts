@@ -189,6 +189,9 @@ export const en = {
   },
   source: {
     actions: {
+      closeFolder: "Close folder",
+      deleteFolder: "Delete folder",
+      folderActions: "Folder actions",
       revealInFileExplorer: "Reveal in File Explorer",
       revealInFileManager: "Reveal in File Manager",
       revealInFinder: "Reveal in Finder",
@@ -247,6 +250,9 @@ export const en = {
     dialogs: {
       delete: {
         description: "This deletes {{name}} from your computer. This action can be undone.",
+        folderDescription:
+          "This moves all imported source files in {{name}} to the trash. This action can be undone.",
+        folderTitle: "Delete folder?",
         title: "Delete source file?",
       },
     },

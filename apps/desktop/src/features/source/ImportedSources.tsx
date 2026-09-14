@@ -23,11 +23,14 @@ import {
   closeEditingInstancesRequested,
   prepareImportedSourcePreviewsRequested,
 } from "@/app/store/thunks/source-media-thunks";
+import type { EditingInstance } from "@/domain/editing-instance";
+import { normalizeSourceKey } from "@/domain/source";
 import { normalizeSearchValue } from "@/lib/search.utils";
 
 import { DeleteSourceDialog, DeleteSourceDialogTrigger } from "./components/DeleteSourceDialog";
-import { SourceCard } from "./components/SourceCard";
+import { SourceFolderSection } from "./components/SourceFolderSection";
 import { SourceSelectionProvider } from "./components/SourceSelectionProvider";
+import { getSourceFolderPath } from "./lib/media-formatters.utils";
 
 export function ImportedSources() {
   const { t } = useTranslation();
@@ -62,6 +65,20 @@ export function ImportedSources() {
     });
   }, [deferredSearchQuery, instances]);
 
+  const sourceFolders = useMemo(() => groupSourcesByFolder(instances), [instances]);
+  const visibleSourceFolders = useMemo(() => {
+    const visibleSourceIds = new Set(filteredInstances.map((instance) => instance.id));
+
+    return sourceFolders
+      .map((folder) => ({
+        ...folder,
+        sources: folder.sources.filter((source) => visibleSourceIds.has(source.id)),
+      }))
+      .filter((folder) => folder.sources.length > 0);
+  }, [filteredInstances, sourceFolders]);
+
+  const visibleInstances = visibleSourceFolders.flatMap((folder) => folder.sources);
+
   if (instances.length === 0) return <ImportedSourcesEmptyState />;
 
   const selectedInstances = instances.filter((instance) => selectedSourceIds.has(instance.id));
@@ -86,7 +103,7 @@ export function ImportedSources() {
       </div>
 
       <ScrollArea className="min-h-0 flex-1">
-        {filteredInstances.length === 0 ? (
+        {visibleSourceFolders.length === 0 ? (
           <p className="px-3 py-8 text-center text-xs text-muted-foreground">
             {t("source.messages.noSearchResults")}
           </p>
@@ -94,20 +111,59 @@ export function ImportedSources() {
           <SourceSelectionProvider
             onSelectedSourceIdsChange={setSelectedSourceIds}
             selectedSourceIds={selectedSourceIds}
-            sourceIds={filteredInstances.map((instance) => instance.id)}
+            sourceIds={visibleInstances.map((instance) => instance.id)}
           >
-            <div
-              className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,16rem),1fr))] gap-2 px-3 pt-1 pb-3"
-              data-slot="imported-sources-grid"
-            >
-              {filteredInstances.map((instance) => (
-                <SourceCard key={instance.id} source={instance} />
+            <div className="grid gap-3 pt-1 pb-3" data-slot="imported-sources-grid">
+              {visibleSourceFolders.map((folder) => (
+                <SourceFolderSection
+                  folderPath={folder.path}
+                  key={folder.id}
+                  searchQuery={deferredSearchQuery}
+                  sourceIds={folder.sourceIds}
+                  sources={folder.sources}
+                />
               ))}
             </div>
           </SourceSelectionProvider>
         )}
       </ScrollArea>
     </>
+  );
+}
+
+interface ImportedSourceFolder {
+  id: string;
+  path: string;
+  sourceIds: string[];
+  sources: EditingInstance[];
+}
+
+const sourceFolderCollator = new Intl.Collator(undefined, { sensitivity: "base" });
+
+function groupSourcesByFolder(instances: readonly EditingInstance[]): ImportedSourceFolder[] {
+  const foldersByKey = new Map<string, ImportedSourceFolder>();
+
+  for (const source of instances) {
+    const path = getSourceFolderPath(source.snapshot.source.sourcePath);
+    const key = normalizeSourceKey(path);
+    const folder = foldersByKey.get(key);
+
+    if (folder) {
+      folder.sourceIds.push(source.id);
+      folder.sources.push(source);
+      continue;
+    }
+
+    foldersByKey.set(key, {
+      id: `source-folder:${key}`,
+      path,
+      sourceIds: [source.id],
+      sources: [source],
+    });
+  }
+
+  return [...foldersByKey.values()].sort((left, right) =>
+    sourceFolderCollator.compare(left.path, right.path),
   );
 }
 

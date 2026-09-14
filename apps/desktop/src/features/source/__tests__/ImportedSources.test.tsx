@@ -33,15 +33,16 @@ import type { EditingInstance } from "@/domain/editing-instance";
 
 import { ImportedSources } from "../ImportedSources";
 
-function instance(id: string, displayName: string): EditingInstance {
+function instance(
+  id: string,
+  displayName: string,
+  sourcePath = `C:/Media/${displayName}`,
+): EditingInstance {
   return {
     exportAttempts: [],
     id,
     origin: "source-import",
-    snapshot: createDefaultEditorSnapshot(
-      { displayName, sourcePath: `C:/Media/${displayName}` },
-      false,
-    ),
+    snapshot: createDefaultEditorSnapshot({ displayName, sourcePath }, false),
     sourceAvailability: "available",
   };
 }
@@ -80,6 +81,50 @@ describe("ImportedSources", () => {
 
     expect(screen.queryByText("holiday.mp4")).not.toBeInTheDocument();
     expect(screen.getByText("screen-recording.mp4")).toBeInTheDocument();
+  });
+
+  it("groups sources by folder and provides folder actions", async () => {
+    const user = userEvent.setup();
+    const store = createAppStore();
+    store.dispatch(
+      editingInstancesAdded([
+        instance("first", "first.mp4", "C:/Media/First/first.mp4"),
+        instance("second", "second.mp4", "C:/Media/First/second.mp4"),
+        instance("third", "third.mp4", "C:/Media/Second/third.mp4"),
+      ]),
+    );
+
+    render(
+      <Provider store={store}>
+        <TooltipProvider>
+          <ImportedSources />
+        </TooltipProvider>
+      </Provider>,
+    );
+
+    expect(document.querySelectorAll("[data-source-folder]")).toHaveLength(2);
+    expect(screen.getByText("C:/Media/First")).toBeInTheDocument();
+    expect(screen.getByText("C:/Media/Second")).toBeInTheDocument();
+
+    const firstFolderTrigger = screen.getByRole("button", { name: "C:/Media/First" });
+    await user.click(firstFolderTrigger);
+    expect(screen.queryByText("first.mp4")).not.toBeInTheDocument();
+
+    await user.click(firstFolderTrigger);
+    await user.click(screen.getByRole("button", { name: "Folder actions: C:/Media/First" }));
+
+    expect(screen.getByRole("menuitem", { name: "Close folder" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Delete folder" })).toHaveAttribute(
+      "data-variant",
+      "destructive",
+    );
+    expect(
+      screen.getByRole("menuitem", { name: /Reveal in (File Manager|File Explorer|Finder)/ }),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("menuitem", { name: "Delete folder" }));
+    expect(screen.getByRole("alertdialog")).toBeInTheDocument();
+    expect(screen.getByText("Delete folder?")).toBeInTheDocument();
   });
 
   it("selects cards as a single item, toggle set, or range", async () => {

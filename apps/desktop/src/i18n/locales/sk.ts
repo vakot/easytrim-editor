@@ -190,6 +190,9 @@ export const sk = {
   },
   source: {
     actions: {
+      closeFolder: "Zavrieť priečinok",
+      deleteFolder: "Odstrániť priečinok",
+      folderActions: "Akcie priečinka",
       revealInFileExplorer: "Zobraziť v Prieskumníkovi súborov",
       revealInFileManager: "Zobraziť v správcovi súborov",
       revealInFinder: "Zobraziť vo Finderi",
@@ -249,6 +252,9 @@ export const sk = {
     dialogs: {
       delete: {
         description: "Týmto odstránite {{name}} z počítača. Túto akciu možno vrátiť späť.",
+        folderDescription:
+          "Týmto presuniete všetky importované zdrojové súbory v priečinku {{name}} do koša. Túto akciu možno vrátiť späť.",
+        folderTitle: "Odstrániť priečinok?",
         title: "Odstrániť zdrojový súbor?",
       },
     },

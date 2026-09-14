@@ -24,6 +24,8 @@ interface DeleteSourceDialogProps {
   open?: boolean;
   sourceId?: string | null;
   sourceIds?: string[];
+  target?: "file" | "folder";
+  targetName?: string;
 }
 
 export function DeleteSourceDialog({
@@ -32,6 +34,8 @@ export function DeleteSourceDialog({
   open,
   sourceId,
   sourceIds,
+  target = "file",
+  targetName,
 }: DeleteSourceDialogProps) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
@@ -40,6 +44,7 @@ export function DeleteSourceDialog({
   const targetIdSet = new Set(targetIds);
   const items = instances.filter((instance) => targetIdSet.has(instance.id));
   const item = items[0];
+  const isFolder = target === "folder";
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -68,14 +73,18 @@ export function DeleteSourceDialog({
       {children}
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>{t("source.dialogs.delete.title")}</AlertDialogTitle>
+          <AlertDialogTitle>
+            {isFolder ? t("source.dialogs.delete.folderTitle") : t("source.dialogs.delete.title")}
+          </AlertDialogTitle>
           <AlertDialogDescription>
-            {t("source.dialogs.delete.description", {
-              name:
-                items.length > 1
-                  ? `${item?.snapshot.source.displayName} and ${items.length - 1} more sources`
-                  : item?.snapshot.source.displayName,
-            })}
+            {isFolder
+              ? t("source.dialogs.delete.folderDescription", { name: targetName })
+              : t("source.dialogs.delete.description", {
+                  name:
+                    items.length > 1
+                      ? `${item?.snapshot.source.displayName} and ${items.length - 1} more sources`
+                      : item?.snapshot.source.displayName,
+                })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         {error ? <p className="text-sm text-destructive">{error}</p> : null}
