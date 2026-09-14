@@ -276,7 +276,7 @@ function SourceCardContextMenu({
   return (
     <ContextMenuContent>
       <ContextMenuSub>
-        <ContextMenuSubTrigger>
+        <ContextMenuSubTrigger inset>
           <ContextMenuIcon>
             <ExternalLink aria-hidden="true" />
           </ContextMenuIcon>
@@ -295,7 +295,10 @@ function SourceCardContextMenu({
         </ContextMenuSubContent>
       </ContextMenuSub>
 
-      <ContextMenuItem onSelect={() => void dispatch(closeEditingInstancesRequested(sourceIds))}>
+      <ContextMenuItem
+        inset
+        onSelect={() => void dispatch(closeEditingInstancesRequested(sourceIds))}
+      >
         <ContextMenuIcon>
           <X aria-hidden="true" />
         </ContextMenuIcon>
@@ -305,7 +308,7 @@ function SourceCardContextMenu({
       <ContextMenuSeparator />
 
       <DeleteSourceDialogTrigger asChild>
-        <ContextMenuItem onSelect={(event) => event.preventDefault()} variant="destructive">
+        <ContextMenuItem inset onSelect={(event) => event.preventDefault()} variant="destructive">
           <ContextMenuIcon>
             <Trash2 aria-hidden="true" />
           </ContextMenuIcon>
