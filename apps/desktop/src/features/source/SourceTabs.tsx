@@ -7,9 +7,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
   selectActiveInstanceId,
-  selectEditingInstanceStatusById,
   selectEditingInstanceTopologyEntries,
-  selectHasReadyEditingInstances,
 } from "@/app/store/slices/editing-instances-slice";
 import {
   closeActiveEditingInstanceRequested,
@@ -31,12 +29,11 @@ export function SourceTabs({
   const dispatch = useAppDispatch();
   const activeInstanceId = useAppSelector(selectActiveInstanceId);
   const entries = useAppSelector(selectEditingInstanceTopologyEntries);
-  const hasReadyInstances = useAppSelector(selectHasReadyEditingInstances);
   const closeInstance = (id: string) => {
     void dispatch(closeActiveEditingInstanceRequested(id));
   };
 
-  if (!hasReadyInstances) return null;
+  if (entries.length === 0) return null;
 
   return (
     <Tabs
@@ -68,9 +65,6 @@ const SourceTabsEntry = memo(function SourceTabsEntry({
   onClose: (id: string) => void;
   orientation: "vertical" | "horizontal";
 }) {
-  const status = useAppSelector((state) => selectEditingInstanceStatusById(state, entry.id));
-  if (!status) return null;
-
   return (
     <div
       className={cn("relative flex shrink-0 items-center", orientation === "vertical" && "w-full")}

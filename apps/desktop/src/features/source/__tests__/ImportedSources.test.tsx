@@ -1,6 +1,23 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { Provider } from "react-redux";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const prepareImportedSourcePreview = vi.hoisted(() =>
+  vi.fn(async (sourcePath: string) => ({
+    kind: "source" as const,
+    mediaToken: 1,
+    url: `http://easytrim-media.localhost/${encodeURIComponent(sourcePath)}?variant=source`,
+  })),
+);
+
+vi.mock("@/lib/tauri/media", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/tauri/media")>()),
+  prepareImportedSourcePreview,
+}));
+
+beforeEach(() => {
+  prepareImportedSourcePreview.mockClear();
+});
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 
@@ -47,7 +64,6 @@ describe("ImportedSources", () => {
       </Provider>,
     );
 
-    expect(screen.getByRole("complementary", { name: "Imported sources" })).toBeInTheDocument();
     expect(screen.getByText("holiday.mp4")).toBeInTheDocument();
     expect(screen.getByText("C:/Media/screen-recording.mp4")).toBeInTheDocument();
     expect(document.querySelector('[data-slot="imported-sources-grid"]')).toBeInTheDocument();
@@ -107,5 +123,27 @@ describe("ImportedSources", () => {
       "src",
       "http://easytrim-media.localhost/9223372036854775809?variant=source",
     );
+  });
+
+  it("requests previews for every imported source", async () => {
+    const store = createAppStore();
+    store.dispatch(
+      editingInstancesAdded([
+        instance("first", "holiday.mp4"),
+        instance("second", "screen-recording.mp4"),
+      ]),
+    );
+
+    render(
+      <Provider store={store}>
+        <TooltipProvider>
+          <ImportedSources />
+        </TooltipProvider>
+      </Provider>,
+    );
+
+    await waitFor(() => expect(prepareImportedSourcePreview).toHaveBeenCalledTimes(2));
+    expect(screen.getByLabelText("holiday.mp4 preview")).toBeInTheDocument();
+    expect(screen.getByLabelText("screen-recording.mp4 preview")).toBeInTheDocument();
   });
 });

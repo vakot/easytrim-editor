@@ -1,9 +1,8 @@
-import { ChevronRight, FileVideo2, FolderOpen, Upload } from "lucide-react";
-import { type ReactNode, useDeferredValue, useMemo, useState } from "react";
+import { FileVideo2, FolderOpen, Upload } from "lucide-react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SearchBar } from "@/components/ui/search-bar";
@@ -11,16 +10,33 @@ import { Separator } from "@/components/ui/separator";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectEditingInstances } from "@/app/store/slices/editing-instances-slice";
-import { chooseSourceRequested } from "@/app/store/thunks/source-media-thunks";
+import { selectImportedSourcePreviews } from "@/app/store/slices/preview-slice";
+import {
+  chooseSourceRequested,
+  prepareImportedSourcePreviewsRequested,
+} from "@/app/store/thunks/source-media-thunks";
 import { normalizeSearchValue } from "@/lib/search.utils";
 
-import { SourceCard } from "./SourceCard";
+import { SourceCard } from "./components/SourceCard";
 
-export function ImportedSources({ activityFeed }: { activityFeed?: ReactNode }) {
+export function ImportedSources() {
   const { t } = useTranslation();
+  const dispatch = useAppDispatch();
   const instances = useAppSelector(selectEditingInstances);
+  const importedPreviews = useAppSelector(selectImportedSourcePreviews);
   const [searchQuery, setSearchQuery] = useState("");
   const deferredSearchQuery = useDeferredValue(searchQuery);
+
+  useEffect(() => {
+    const instancesWithoutPreview = instances.filter(
+      (instance) =>
+        instance.sourceAvailability === "available" && importedPreviews[instance.id] === undefined,
+    );
+
+    if (instancesWithoutPreview.length === 0) return;
+
+    void dispatch(prepareImportedSourcePreviewsRequested(instancesWithoutPreview));
+  }, [dispatch, importedPreviews, instances]);
 
   const filteredInstances = useMemo(() => {
     const query = normalizeSearchValue(deferredSearchQuery);
@@ -35,67 +51,35 @@ export function ImportedSources({ activityFeed }: { activityFeed?: ReactNode }) 
     });
   }, [deferredSearchQuery, instances]);
 
+  if (instances.length === 0) return <ImportedSourcesEmptyState />;
+
   return (
-    <aside
-      aria-label={t("source.labels.importedSources")}
-      className="@container relative flex size-full min-h-0 flex-col pt-3"
-    >
-      {instances.length === 0 ? (
-        <ImportedSourcesEmptyState />
-      ) : (
-        <>
-          <h3
-            className="mx-3 mb-3 font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
-            id="source-panel-title"
+    <>
+      <SearchBar
+        aria-label={t("common.labels.search")}
+        className="mx-3 mb-2"
+        onValueChange={setSearchQuery}
+        placeholder={t("source.messages.searchPlaceholder")}
+        value={searchQuery}
+      />
+
+      <ScrollArea className="min-h-0 flex-1">
+        {filteredInstances.length === 0 ? (
+          <p className="px-3 py-8 text-center text-xs text-muted-foreground">
+            {t("source.messages.noSearchResults")}
+          </p>
+        ) : (
+          <div
+            className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,16rem),1fr))] gap-2 px-3 pt-1 pb-3"
+            data-slot="imported-sources-grid"
           >
-            {t("source.labels.importedSources")}
-          </h3>
-
-          <SearchBar
-            aria-label={t("common.labels.search")}
-            className="mx-3 mb-2"
-            onValueChange={setSearchQuery}
-            placeholder={t("source.messages.searchPlaceholder")}
-            value={searchQuery}
-          />
-
-          <ScrollArea className="min-h-0 flex-1">
-            {filteredInstances.length === 0 ? (
-              <p className="px-3 py-8 text-center text-xs text-muted-foreground">
-                {t("source.messages.noSearchResults")}
-              </p>
-            ) : (
-              <div
-                className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,16rem),1fr))] gap-2 px-3 pt-1 pb-3"
-                data-slot="imported-sources-grid"
-              >
-                {filteredInstances.map((instance) => (
-                  <SourceCard key={instance.id} source={instance} />
-                ))}
-              </div>
-            )}
-          </ScrollArea>
-        </>
-      )}
-
-      {activityFeed && instances.length > 0 ? (
-        <Collapsible className="shrink-0 border-t border-foreground/10 p-1" defaultOpen={false}>
-          <CollapsibleTrigger asChild>
-            <Button
-              className="group w-full justify-baseline px-2 text-secondary-foreground"
-              size="sm"
-              variant="ghost"
-            >
-              <ChevronRight className="shrink-0 transition-transform group-data-[state=open]:rotate-90" />
-              {t("app.labels.activityFeed")}
-            </Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent className="max-h-64 min-h-0">
-            <ScrollArea className="h-64 px-2 before:top-2">{activityFeed}</ScrollArea>
-          </CollapsibleContent>
-        </Collapsible>
-      ) : null}
-    </aside>
+            {filteredInstances.map((instance) => (
+              <SourceCard key={instance.id} source={instance} />
+            ))}
+          </div>
+        )}
+      </ScrollArea>
+    </>
   );
 }
 

@@ -45,18 +45,18 @@ function renderSourceCard(source = createSource()) {
 }
 
 describe("SourceCard", () => {
-  it("derives the title, path, ready status, and default variant from its source", () => {
+  it("derives the title, path, and default variant from its ready source", () => {
     renderSourceCard();
 
     const card = document.querySelector('[data-slot="card"]');
     expect(card).toHaveAttribute("data-variant", "default");
     expect(screen.getByText("holiday.mp4")).toBeInTheDocument();
     expect(screen.getByText("C:/Media/holiday.mp4")).toBeInTheDocument();
-    expect(screen.getByText("Ready")).toBeInTheDocument();
+    expect(screen.queryByText("Ready")).not.toBeInTheDocument();
     expect(screen.getByLabelText("Source actions: holiday.mp4")).toBeInTheDocument();
   });
 
-  it("derives the deleted state and restore action from its source", () => {
+  it("derives the deleted state and restore action from its source", async () => {
     renderSourceCard(createSource("deleted"));
 
     expect(document.querySelector('[data-slot="card"]')).toHaveAttribute(
@@ -64,7 +64,10 @@ describe("SourceCard", () => {
       "destructive",
     );
     expect(screen.getByText("Deleted")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Restore" })).toBeInTheDocument();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Source actions: holiday.mp4" }));
+
+    expect(screen.getByRole("menuitem", { name: "Restore source" })).toBeInTheDocument();
   });
 
   it("owns its delete dialog behavior", async () => {
