@@ -23,7 +23,7 @@ export const en = {
     actions: {
       checkForUpdates: "Check for Updates…",
       closeFile: "Close File",
-      deleteSource: "Delete Source",
+      deleteFile: "Delete File",
       maximize: "Maximize",
       minimize: "Minimize",
       open: "Open",

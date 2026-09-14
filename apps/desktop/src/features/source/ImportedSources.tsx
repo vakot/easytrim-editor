@@ -90,7 +90,7 @@ function ImportedSourcesEmptyState() {
   return (
     <form
       aria-label={t("source.labels.explorer")}
-      className="flex min-h-full w-full items-center justify-center px-3 py-8"
+      className="flex size-full items-start justify-center px-3 py-8"
       onSubmit={(event) => event.preventDefault()}
     >
       <div className="grid w-full gap-5">

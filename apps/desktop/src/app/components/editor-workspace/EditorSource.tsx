@@ -36,6 +36,7 @@ export function EditorSource() {
             {t("app.labels.activityFeed")}
           </Button>
         </CollapsibleTrigger>
+
         <CollapsibleContent className="max-h-64 min-h-0">
           <ScrollArea className="h-64 px-2 before:top-2">
             <ActivityFeed />

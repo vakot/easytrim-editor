@@ -15,14 +15,7 @@ import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardAction,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardAction, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -111,7 +104,7 @@ export function SourceCard({ source }: SourceCardProps) {
 
   return (
     <Card
-      className={cn("py-0", active ? "ring-primary" : undefined)}
+      className={cn("pt-0", active ? "ring-primary" : undefined)}
       data-active={active ? "true" : "false"}
       data-source-id={id}
       variant={variant}
@@ -167,12 +160,6 @@ export function SourceCard({ source }: SourceCardProps) {
           <SourceCardActions source={source} />
         </CardAction>
       </CardHeader>
-
-      <CardFooter className="justify-between gap-2 px-3 py-2.5">
-        <Button onClick={() => void dispatch(navigateToEditingInstance(id))} size="xs">
-          {t("app.actions.open")}
-        </Button>
-      </CardFooter>
     </Card>
   );
 }
@@ -282,7 +269,7 @@ function SourceCardActions({ source }: { source: EditingInstance }) {
             <X aria-hidden="true" />
           </DropdownMenuIcon>
 
-          {t("source.actions.close")}
+          {t("app.actions.closeFile")}
         </DropdownMenuItem>
 
         <DropdownMenuSeparator />
@@ -311,7 +298,7 @@ function SourceCardActions({ source }: { source: EditingInstance }) {
                   <Trash2 aria-hidden="true" />
                 </DropdownMenuIcon>
 
-                {t("source.actions.deleteSource")}
+                {t("app.actions.deleteFile")}
               </DropdownMenuItem>
             </DeleteSourceDialogTrigger>
           </DeleteSourceDialog>
