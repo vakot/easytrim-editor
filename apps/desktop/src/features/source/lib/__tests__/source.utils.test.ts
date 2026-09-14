@@ -12,8 +12,6 @@ describe("getPathDirectories", () => {
   });
 
   it("returns the root directory for a Unix source path", () => {
-    expect(getPathDirectories("/Media/video.mp4")).toEqual([
-      { name: "Media", path: "/Media" },
-    ]);
+    expect(getPathDirectories("/Media/video.mp4")).toEqual([{ name: "Media", path: "/Media" }]);
   });
 });

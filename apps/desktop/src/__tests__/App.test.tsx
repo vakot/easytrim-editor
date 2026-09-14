@@ -273,6 +273,12 @@ describe("App", () => {
 
     fireEvent.keyDown(window, { key: "o", code: "KeyO", ctrlKey: true });
     await waitFor(() =>
+      expect(
+        screen.getByRole("checkbox", { name: replacementSelection.displayName }),
+      ).toBeInTheDocument(),
+    );
+    await user.click(screen.getByRole("checkbox", { name: replacementSelection.displayName }));
+    await waitFor(() =>
       expect(selectSourceSelection(store.getState())).toEqual(replacementSelection),
     );
 
@@ -447,17 +453,17 @@ describe("App", () => {
     const timelinePanel = document.getElementById("editor-stage-timeline");
     const audioPanel = document.getElementById("editor-stage-audio");
 
-    const replacementCard = screen
-      .getAllByText(replacementSelection.displayName)[0]!
-      .closest('[data-slot="card"]');
-
-    await user.click(replacementCard!);
+    await user.click(screen.getByRole("checkbox", { name: replacementSelection.displayName }));
 
     expect(document.getElementById("workspace-sidebar")).toBe(sourcePanel);
     expect(document.getElementById("editor-stage-preview")).toBe(previewPanel);
     expect(document.getElementById("editor-stage-timeline")).toBe(timelinePanel);
     expect(document.getElementById("editor-stage-audio")).toBe(audioPanel);
-    expect(replacementCard).toHaveAttribute("data-active", "true");
+    await waitFor(() =>
+      expect(
+        screen.getByRole("checkbox", { name: replacementSelection.displayName }),
+      ).toHaveAttribute("data-active", "true"),
+    );
     expect(screen.getByRole("heading", { name: "Selected Segment" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /^Audio tracks/ })).toBeInTheDocument();
 
