@@ -1044,6 +1044,7 @@ describe("App", () => {
 
     await openSourcePicker(user);
     await waitFor(() => expect(selectEditingInstances(store.getState())).toHaveLength(2));
+    await waitFor(() => expect(mocks.prepareImportedSourceThumbnail).toHaveBeenCalledTimes(2));
 
     expect(selectActiveInstanceId(store.getState())).toBe(initiallyActiveId);
     expect(

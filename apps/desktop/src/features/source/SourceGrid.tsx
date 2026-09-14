@@ -1,5 +1,5 @@
 import { FileVideo2, FolderOpen, MoreHorizontal, Trash2, Upload, X } from "lucide-react";
-import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -42,6 +42,7 @@ export function SourceGrid() {
   const activeInstanceId = useAppSelector(selectActiveInstanceId);
   const instances = useAppSelector(selectEditingInstances);
   const importedThumbnails = useAppSelector(selectImportedSourceThumbnails);
+  const thumbnailRequestIds = useRef(new Set<string>());
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSourceIds, setSelectedSourceIds] = useState<Set<string>>(
     () => new Set(activeInstanceId ? [activeInstanceId] : []),
@@ -62,10 +63,15 @@ export function SourceGrid() {
     const instancesWithoutThumbnail = instances.filter(
       (instance) =>
         instance.sourceAvailability === "available" &&
-        importedThumbnails[instance.id] === undefined,
+        importedThumbnails[instance.id] === undefined &&
+        !thumbnailRequestIds.current.has(instance.id),
     );
 
     if (instancesWithoutThumbnail.length === 0) return;
+
+    for (const instance of instancesWithoutThumbnail) {
+      thumbnailRequestIds.current.add(instance.id);
+    }
 
     void dispatch(prepareImportedSourceThumbnailsRequested(instancesWithoutThumbnail));
   }, [dispatch, importedThumbnails, instances]);

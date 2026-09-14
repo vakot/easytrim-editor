@@ -50,6 +50,7 @@ import {
   previewFailed,
   previewLoading,
   previewReady,
+  selectImportedSourceThumbnails,
 } from "@/app/store/slices/preview-slice";
 import {
   capabilitiesFailed,
@@ -163,7 +164,6 @@ export const ingestSources =
 
     dispatch(dropListenerErrorCleared());
     dispatch(editingInstancesAdded(instances));
-    void dispatch(prepareImportedSourceThumbnailsRequested(instances));
     if (shouldActivateFirstImportedSource) {
       dispatch(navigateToEditingInstance(instances[0]!.id, origin));
     }
@@ -181,6 +181,9 @@ export const prepareImportedSourceThumbnailsRequested =
         const instance = instances[nextIndex++];
         if (!instance) return;
         const sourcePath = instance.snapshot.source.sourcePath;
+        const thumbnailState = selectImportedSourceThumbnails(getState())[instance.id];
+        if (thumbnailState !== undefined) continue;
+
         dispatch(importedThumbnailLoading({ instanceId: instance.id }));
 
         try {
