@@ -2,7 +2,17 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 import { editingInstanceActivated } from "@/app/store/actions/editing-instance-actions";
 import { sourceCleared, sourceFailed, sourceSelected } from "@/app/store/actions/source-actions";
-import type { AppError, PreviewDescriptor, PreviewKind } from "@/lib/tauri/media.types";
+import {
+  editingInstanceClosed,
+  editingInstancesClosed,
+} from "@/app/store/slices/editing-instances-slice";
+import type { EditingInstanceId } from "@/domain/editing-instance";
+import type {
+  AppError,
+  PreviewDescriptor,
+  PreviewKind,
+  ThumbnailDescriptor,
+} from "@/lib/tauri/media.types";
 
 import type { RootState } from "../store";
 
@@ -13,10 +23,18 @@ export type PreviewState =
   | { error: AppError; status: "failed" };
 
 interface PreviewSliceState {
+  importedThumbnails: Record<EditingInstanceId, ImportedThumbnailState>;
   value: PreviewState;
 }
 
+export type ImportedThumbnailState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "ready"; value: ThumbnailDescriptor }
+  | { error: AppError; status: "failed" };
+
 export const initialPreviewState: PreviewSliceState = {
+  importedThumbnails: {},
   value: { status: "idle" },
 };
 
@@ -32,6 +50,27 @@ const previewSlice = createSlice({
     },
     previewFailed: (state, action: PayloadAction<{ error: AppError }>) => {
       state.value = { status: "failed", error: action.payload.error };
+    },
+    importedThumbnailLoading: (state, action: PayloadAction<{ instanceId: EditingInstanceId }>) => {
+      state.importedThumbnails[action.payload.instanceId] = { status: "loading" };
+    },
+    importedThumbnailReady: (
+      state,
+      action: PayloadAction<{ instanceId: EditingInstanceId; thumbnail: ThumbnailDescriptor }>,
+    ) => {
+      state.importedThumbnails[action.payload.instanceId] = {
+        status: "ready",
+        value: action.payload.thumbnail,
+      };
+    },
+    importedThumbnailFailed: (
+      state,
+      action: PayloadAction<{ error: AppError; instanceId: EditingInstanceId }>,
+    ) => {
+      state.importedThumbnails[action.payload.instanceId] = {
+        error: action.payload.error,
+        status: "failed",
+      };
     },
   },
   extraReducers: (builder) => {
@@ -50,11 +89,27 @@ const previewSlice = createSlice({
           action.payload.loadToken === undefined
             ? { status: "idle" }
             : { status: "failed", error: action.payload.error };
+      })
+      .addCase(editingInstanceClosed, (state, action) => {
+        delete state.importedThumbnails[action.payload];
+      })
+      .addCase(editingInstancesClosed, (state, action) => {
+        for (const instanceId of action.payload) delete state.importedThumbnails[instanceId];
       });
   },
 });
 
-export const { previewFailed, previewLoading, previewReady } = previewSlice.actions;
+export const {
+  importedThumbnailFailed,
+  importedThumbnailLoading,
+  importedThumbnailReady,
+  previewFailed,
+  previewLoading,
+  previewReady,
+} = previewSlice.actions;
 export const previewReducer = previewSlice.reducer;
 
 export const selectPreview = (state: RootState): PreviewState => state.preview.value;
+export const selectImportedSourceThumbnails = (
+  state: RootState,
+): Record<EditingInstanceId, ImportedThumbnailState> => state.preview.importedThumbnails;

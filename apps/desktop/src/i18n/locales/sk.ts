@@ -23,9 +23,13 @@ export const sk = {
   },
   app: {
     actions: {
-      deleteSource: "Odstrániť zdroj",
       checkForUpdates: "Skontrolovať aktualizácie…",
       closeFile: "Zavrieť súbor",
+      closeFiles_one: "Zavrieť súbor ({{count}})",
+      closeFiles_other: "Zavrieť súbory ({{count}})",
+      deleteFile: "Odstrániť súbor",
+      deleteFiles_one: "Odstrániť súbor ({{count}})",
+      deleteFiles_other: "Odstrániť súbory ({{count}})",
       maximize: "Maximalizovať",
       minimize: "Minimalizovať",
       open: "Otvoriť",
@@ -87,8 +91,6 @@ export const sk = {
       windowActionFailed: "Ovládanie okna sa nepodarilo dokončiť.",
     },
     tooltips: {
-      activityFeedPrivacy:
-        "História aktivít sa ukladá iba v tomto zariadení ako súčasť miestnych diagnostických záznamov. Nikam sa nenahráva ani neposiela.",
       customizeLayout: "Prispôsobiť rozloženie",
       togglePanel: "Prepnúť {{panel}}",
     },
@@ -192,14 +194,18 @@ export const sk = {
   },
   source: {
     actions: {
+      closeFolder: "Zavrieť priečinok",
+      deleteFolder: "Odstrániť priečinok",
+      folderActions: "Akcie priečinka",
       revealInFileExplorer: "Zobraziť v Prieskumníkovi súborov",
       revealInFileManager: "Zobraziť v správcovi súborov",
       revealInFinder: "Zobraziť vo Finderi",
+      sourceActions: "Akcie zdroja",
     },
     labels: {
       drop: "Pustením otvoríte video",
-      activeSources: "Aktívne zdroje",
-      explorer: "Prieskumník",
+      explorer: "Prieskumník zdrojov",
+      importedSources: "Importované zdroje",
       metadata: {
         bitrate: "Dátový tok",
         container: "Kontajner",
@@ -213,9 +219,16 @@ export const sk = {
         videoCodec: "Video kodek",
       },
       technicalDetails: "Technické podrobnosti",
-      title: "Zdroj",
     },
     status: {
+      canceled: "Zrušené",
+      completed: "Dokončené",
+      deleted: "Odstránené",
+      failed: "Zlyhalo",
+      loading: "Načítava sa…",
+      queued: "Vo fronte",
+      ready: "Pripravené",
+      rendering: "Vykresľuje sa…",
       checkingTools: "Kontrolujú sa multimediálne nástroje…",
       installed: "Nainštalované",
       missing: "Chýba",
@@ -231,23 +244,21 @@ export const sk = {
       dropTitle: "Presuňte videá sem",
       extensions: "MP4 · MOV · MKV · WebM · AVI",
       noSource: "Žiadny zdroj",
+      noSearchResults: "Nenašli sa žiadne zodpovedajúce zdroje.",
       openFileDescription: "Vyberte jeden videosúbor a začnite upravovať.",
       openFolderDescription: "Importujte všetky podporované videá z priečinka.",
-      noSearchResults: "Nenašli sa žiadne zodpovedajúce zdroje.",
+      previewUnavailable: "Náhľad nie je dostupný",
       searchPlaceholder: "Hľadať zdroje...",
       toolsReady:
         "Všetky požadované multimediálne závislosti sú nainštalované a pripravené na použitie.",
       toolsUnavailable: "Niektoré požadované multimediálne závislosti nie sú dostupné.",
     },
-    tooltips: { sidebarControls: "Vybrať viditeľné panely zdroja" },
     dialogs: {
-      closeFolder: {
-        description:
-          "Zavrieť všetky {{count}} zdroje v tomto priečinku? Ich neuložené úpravy sa stratia.",
-        title: "Zavrieť zdroje priečinka?",
-      },
       delete: {
         description: "Týmto odstránite {{name}} z počítača. Túto akciu možno vrátiť späť.",
+        folderDescription:
+          "Týmto presuniete všetky importované zdrojové súbory v priečinku {{name}} do koša. Túto akciu možno vrátiť späť.",
+        folderTitle: "Odstrániť priečinok?",
         title: "Odstrániť zdrojový súbor?",
       },
     },

@@ -653,7 +653,7 @@ describe("MenuBarTest", () => {
     expect(openFolderItem).toHaveTextContent("CtrlK");
     const closeFileItem = screen.getByRole("menuitem", { name: /Close File/ });
     expect(closeFileItem).toHaveTextContent("CtrlQ");
-    const deleteSourceItem = screen.getByRole("menuitem", { name: /Delete Source/ });
+    const deleteSourceItem = screen.getByRole("menuitem", { name: /Delete File/ });
     expect(deleteSourceItem).toHaveTextContent("CtrlD");
     await user.click(closeFileItem);
     expect(menuState.dispatch).toHaveBeenCalledTimes(2);
@@ -670,7 +670,7 @@ describe("MenuBarTest", () => {
     );
 
     await user.click(getMenuTrigger("File"));
-    const deleteSourceItem = screen.getByRole("menuitem", { name: /Delete Source/ });
+    const deleteSourceItem = screen.getByRole("menuitem", { name: /Delete File/ });
     expect(deleteSourceItem).toHaveAttribute("data-variant", "destructive");
 
     await user.click(deleteSourceItem);

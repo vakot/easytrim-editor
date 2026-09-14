@@ -27,7 +27,9 @@ pub fn respond<R: Runtime>(app: &AppHandle<R>, request: Request<Vec<u8>>) -> Res
     };
 
     let state = app.state::<AppState>();
-    let path = if query_parameter(request.uri().query(), "variant") == Some("waveform") {
+    let path = if query_parameter(request.uri().query(), "variant") == Some("thumbnail") {
+        state.resolve_thumbnail_path(media_token)
+    } else if query_parameter(request.uri().query(), "variant") == Some("waveform") {
         let Some(stream_index) = query_parameter(request.uri().query(), "stream")
             .and_then(|value| value.parse::<u32>().ok())
         else {
@@ -199,6 +201,7 @@ fn content_type(path: &Path) -> &'static str {
         Some("flv") => "video/x-flv",
         Some("mkv") => "video/x-matroska",
         Some("mov") => "video/quicktime",
+        Some("jpg" | "jpeg") => "image/jpeg",
         Some("png") => "image/png",
         Some("m4a") => "audio/mp4",
         Some("ts" | "mts" | "m2ts") => "video/mp2t",
@@ -254,7 +257,9 @@ fn insert_owned_header(
 
 #[cfg(test)]
 mod tests {
-    use super::{ByteRange, MAX_RESPONSE_BYTES, parse_range, query_parameter};
+    use std::path::Path;
+
+    use super::{ByteRange, MAX_RESPONSE_BYTES, content_type, parse_range, query_parameter};
 
     #[test]
     fn parses_bounded_open_and_suffix_ranges() {
@@ -292,6 +297,12 @@ mod tests {
     #[test]
     fn response_chunks_remain_memory_bounded() {
         assert_eq!(MAX_RESPONSE_BYTES, 4 * 1024 * 1024);
+    }
+
+    #[test]
+    fn serves_jpeg_thumbnails_with_an_image_content_type() {
+        assert_eq!(content_type(Path::new("thumbnail.jpg")), "image/jpeg");
+        assert_eq!(content_type(Path::new("thumbnail.jpeg")), "image/jpeg");
     }
 
     #[test]

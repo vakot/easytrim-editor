@@ -1,4 +1,4 @@
-import { FileVideo, X } from "lucide-react";
+import { X } from "lucide-react";
 import { memo } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -7,9 +7,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
   selectActiveInstanceId,
-  selectEditingInstanceStatusById,
   selectEditingInstanceTopologyEntries,
-  selectHasReadyEditingInstances,
 } from "@/app/store/slices/editing-instances-slice";
 import {
   closeActiveEditingInstanceRequested,
@@ -31,12 +29,11 @@ export function SourceTabs({
   const dispatch = useAppDispatch();
   const activeInstanceId = useAppSelector(selectActiveInstanceId);
   const entries = useAppSelector(selectEditingInstanceTopologyEntries);
-  const hasReadyInstances = useAppSelector(selectHasReadyEditingInstances);
   const closeInstance = (id: string) => {
     void dispatch(closeActiveEditingInstanceRequested(id));
   };
 
-  if (!hasReadyInstances) return null;
+  if (entries.length === 0) return null;
 
   return (
     <Tabs
@@ -68,14 +65,13 @@ const SourceTabsEntry = memo(function SourceTabsEntry({
   onClose: (id: string) => void;
   orientation: "vertical" | "horizontal";
 }) {
-  const status = useAppSelector((state) => selectEditingInstanceStatusById(state, entry.id));
-  if (!status) return null;
-
   return (
     <div
       className={cn("relative flex shrink-0 items-center", orientation === "vertical" && "w-full")}
     >
-      <SourceTabsTrigger displayName={entry.displayName} id={entry.id} />
+      <TabsTrigger className="h-6 pr-7 text-xs" value={entry.id}>
+        <span className="truncate">{entry.displayName}</span>
+      </TabsTrigger>
       <Button
         aria-label={`Close ${entry.displayName}`}
         className="absolute right-0.5"
@@ -89,12 +85,3 @@ const SourceTabsEntry = memo(function SourceTabsEntry({
     </div>
   );
 });
-
-function SourceTabsTrigger({ displayName, id }: { displayName: string; id: string }) {
-  return (
-    <TabsTrigger className="h-6 pr-7 text-xs" value={id}>
-      <FileVideo aria-hidden="true" />
-      <span className="truncate">{displayName}</span>
-    </TabsTrigger>
-  );
-}

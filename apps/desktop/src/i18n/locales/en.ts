@@ -23,7 +23,11 @@ export const en = {
     actions: {
       checkForUpdates: "Check for Updates…",
       closeFile: "Close File",
-      deleteSource: "Delete Source",
+      closeFiles_one: "Close File ({{count}})",
+      closeFiles_other: "Close Files ({{count}})",
+      deleteFile: "Delete File",
+      deleteFiles_one: "Delete File ({{count}})",
+      deleteFiles_other: "Delete Files ({{count}})",
       maximize: "Maximize",
       minimize: "Minimize",
       open: "Open",
@@ -85,8 +89,6 @@ export const en = {
       windowActionFailed: "The window control could not be completed.",
     },
     tooltips: {
-      activityFeedPrivacy:
-        "Activity history is stored only on this device as part of local diagnostic logs. It is not uploaded or sent anywhere.",
       customizeLayout: "Customize layout",
       togglePanel: "Toggle {{panel}}",
     },
@@ -191,14 +193,18 @@ export const en = {
   },
   source: {
     actions: {
+      closeFolder: "Close folder",
+      deleteFolder: "Delete folder",
+      folderActions: "Folder actions",
       revealInFileExplorer: "Reveal in File Explorer",
       revealInFileManager: "Reveal in File Manager",
       revealInFinder: "Reveal in Finder",
+      sourceActions: "Source actions",
     },
     labels: {
       drop: "Drop video to open",
-      activeSources: "Active sources",
-      explorer: "Explorer",
+      explorer: "Source explorer",
+      importedSources: "Imported sources",
       metadata: {
         bitrate: "Bitrate",
         container: "Container",
@@ -212,9 +218,16 @@ export const en = {
         videoCodec: "Video codec",
       },
       technicalDetails: "Technical details",
-      title: "Source",
     },
     status: {
+      canceled: "Canceled",
+      completed: "Completed",
+      deleted: "Deleted",
+      failed: "Failed",
+      loading: "Loading…",
+      queued: "Queued",
+      ready: "Ready",
+      rendering: "Rendering…",
       checkingTools: "Checking media tools…",
       installed: "Installed",
       missing: "Missing",
@@ -233,19 +246,17 @@ export const en = {
       noSource: "No source",
       openFileDescription: "Choose a single video file to start editing.",
       openFolderDescription: "Import all supported videos from a folder.",
+      previewUnavailable: "Preview unavailable",
       searchPlaceholder: "Search sources...",
       toolsReady: "All required media dependencies are installed and ready to use.",
       toolsUnavailable: "Some required media dependencies are unavailable.",
     },
-    tooltips: { sidebarControls: "Choose visible source panels" },
     dialogs: {
-      closeFolder: {
-        description:
-          "Close all {{count}} sources in this folder? Their unsaved edits will be lost.",
-        title: "Close folder sources?",
-      },
       delete: {
         description: "This deletes {{name}} from your computer. This action can be undone.",
+        folderDescription:
+          "This moves all imported source files in {{name}} to the trash. This action can be undone.",
+        folderTitle: "Delete folder?",
         title: "Delete source file?",
       },
     },

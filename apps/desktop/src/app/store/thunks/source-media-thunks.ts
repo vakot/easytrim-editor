@@ -43,7 +43,15 @@ import {
   sourceChoiceStarted,
 } from "@/app/store/slices/import-workflow-slice";
 import { selectMergeAudioEnabledDefault } from "@/app/store/slices/preferences-slice";
-import { previewFailed, previewLoading, previewReady } from "@/app/store/slices/preview-slice";
+import {
+  importedThumbnailFailed,
+  importedThumbnailLoading,
+  importedThumbnailReady,
+  previewFailed,
+  previewLoading,
+  previewReady,
+  selectImportedSourceThumbnails,
+} from "@/app/store/slices/preview-slice";
 import {
   capabilitiesFailed,
   capabilitiesReady,
@@ -65,6 +73,7 @@ import {
   inspectMedia,
   moveSourceToTrash,
   prepareAudioPreviews,
+  prepareImportedSourceThumbnail,
   prepareProxyPreview,
   prepareSourcePreview,
   prepareWaveforms,
@@ -143,6 +152,7 @@ export const ingestSources =
       return;
     }
 
+    const shouldActivateFirstImportedSource = selectEditingInstances(getState()).length === 0;
     const mergeAudio = selectMergeAudioEnabledDefault(getState());
     const instances: EditingInstance[] = result.sources.map((source) => ({
       exportAttempts: [],
@@ -154,8 +164,59 @@ export const ingestSources =
 
     dispatch(dropListenerErrorCleared());
     dispatch(editingInstancesAdded(instances));
-    dispatch(navigateToEditingInstance(instances[0]!.id, origin));
+    if (shouldActivateFirstImportedSource) {
+      dispatch(navigateToEditingInstance(instances[0]!.id, origin));
+    }
     operation.complete(importResultData(result));
+  };
+
+const THUMBNAIL_CONCURRENCY = 2;
+
+export const prepareImportedSourceThumbnailsRequested =
+  (instances: EditingInstance[]): AppThunk<Promise<void>> =>
+  async (dispatch, getState) => {
+    let nextIndex = 0;
+    const worker = async () => {
+      while (nextIndex < instances.length) {
+        const instance = instances[nextIndex++];
+        if (!instance) return;
+        const sourcePath = instance.snapshot.source.sourcePath;
+        const thumbnailState = selectImportedSourceThumbnails(getState())[instance.id];
+        if (thumbnailState !== undefined) continue;
+
+        dispatch(importedThumbnailLoading({ instanceId: instance.id }));
+
+        try {
+          const thumbnail = await prepareImportedSourceThumbnail(sourcePath);
+          const current = selectEditingInstanceById(getState(), instance.id);
+          if (
+            current &&
+            normalizeSourceKey(current.snapshot.source.sourcePath) ===
+              normalizeSourceKey(sourcePath)
+          ) {
+            dispatch(importedThumbnailReady({ instanceId: instance.id, thumbnail }));
+          }
+        } catch (error: unknown) {
+          const current = selectEditingInstanceById(getState(), instance.id);
+          if (
+            current &&
+            normalizeSourceKey(current.snapshot.source.sourcePath) ===
+              normalizeSourceKey(sourcePath)
+          ) {
+            dispatch(
+              importedThumbnailFailed({
+                error: normalizeAppError(error),
+                instanceId: instance.id,
+              }),
+            );
+          }
+        }
+      }
+    };
+
+    await Promise.all(
+      Array.from({ length: Math.min(THUMBNAIL_CONCURRENCY, instances.length) }, worker),
+    );
   };
 
 function normalizeSourceImportResult(input: SourceImportResult | SourceRef[]): SourceImportResult {

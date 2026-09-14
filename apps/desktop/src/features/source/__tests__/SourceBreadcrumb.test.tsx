@@ -1,6 +1,13 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+const openFileLocation = vi.hoisted(() => vi.fn());
+
+vi.mock("@/lib/tauri/media", () => ({ openFileLocation }));
+
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";
 import {
@@ -26,7 +33,8 @@ function instance(id: string, displayName: string): EditingInstance {
 }
 
 describe("SourceBreadcrumb", () => {
-  it("searches and highlights sources in a breadcrumb popover", () => {
+  it("opens source locations and shows the source details tooltip", async () => {
+    const user = userEvent.setup();
     const store = createAppStore();
     store.dispatch(
       editingInstancesAdded([
@@ -38,17 +46,21 @@ describe("SourceBreadcrumb", () => {
 
     render(
       <Provider store={store}>
-        <SourceBreadcrumb />
+        <TooltipProvider delayDuration={0}>
+          <SourceBreadcrumb />
+        </TooltipProvider>
       </Provider>,
     );
 
-    fireEvent.click(screen.getByTitle("C:/Media"));
-    fireEvent.change(screen.getByRole("searchbox", { name: "Search" }), {
-      target: { value: "record" },
-    });
+    await user.click(screen.getByRole("button", { name: "Media" }));
+    await user.click(screen.getByRole("button", { name: "holiday.mp4" }));
 
-    expect(screen.queryByRole("button", { name: "holiday.mp4" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "screen-recording.mp4" })).toBeInTheDocument();
-    expect(screen.getByText("record").tagName).toBe("MARK");
+    expect(openFileLocation).toHaveBeenNthCalledWith(1, "C:/Media");
+    expect(openFileLocation).toHaveBeenNthCalledWith(2, "C:/Media/holiday.mp4");
+
+    const detailsTrigger = screen.getByRole("button", { name: "Technical details" });
+    await user.hover(detailsTrigger);
+
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("Technical details");
   });
 });

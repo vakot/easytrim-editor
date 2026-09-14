@@ -27,6 +27,7 @@ pub fn cleanup_stale_media_artifacts() {
         let name = name.to_string_lossy();
         let is_easytrim_artifact = name.starts_with("easytrim-preview-")
             || name.starts_with("easytrim-audio-preview-")
+            || name.starts_with("easytrim-thumbnail-")
             || name.starts_with("easytrim-waveform-");
         if !is_easytrim_artifact || !entry.file_type().is_ok_and(|file_type| file_type.is_dir()) {
             continue;
@@ -133,10 +134,12 @@ pub struct AppState {
     next_generation: AtomicU64,
     next_output: AtomicU64,
     next_operation: AtomicU64,
+    next_imported_thumbnail: AtomicU64,
     session: Mutex<SessionState>,
     outputs: Mutex<HashMap<String, PathBuf>>,
     operations: Mutex<HashMap<String, Arc<AtomicBool>>>,
     export_sources: Mutex<HashMap<PathBuf, RetainedExportSource>>,
+    imported_thumbnail_artifacts: Mutex<HashMap<u64, PreviewArtifact>>,
 }
 
 #[derive(Clone, Debug)]
@@ -501,15 +504,37 @@ impl AppState {
 
     pub fn resolve_preview_path(&self, load_token: u64) -> Result<PathBuf, AppError> {
         let session = self.lock_session()?;
-        let source = session
+        if let Some(source) = session
             .active_source
             .as_ref()
             .filter(|source| source.load_token == load_token)
-            .ok_or_else(AppError::source_replaced)?;
-        Ok(source
-            .preview
-            .as_ref()
-            .map_or_else(|| source.path.clone(), |preview| preview.path().to_owned()))
+        {
+            return Ok(source
+                .preview
+                .as_ref()
+                .map_or_else(|| source.path.clone(), |preview| preview.path().to_owned()));
+        }
+        Err(AppError::source_replaced())
+    }
+
+    pub fn register_imported_thumbnail(&self, artifact: PreviewArtifact) -> Result<u64, AppError> {
+        // Thumbnail tokens use their own namespace and are only resolved for the
+        // thumbnail variant, so they can remain within JavaScript's safe integer range.
+        let token = self.next_imported_thumbnail.fetch_add(1, Ordering::Relaxed) + 1;
+        self.imported_thumbnail_artifacts
+            .lock()
+            .map_err(|_| AppError::internal("The imported thumbnail registry is unavailable."))?
+            .insert(token, artifact);
+        Ok(token)
+    }
+
+    pub fn resolve_thumbnail_path(&self, media_token: u64) -> Result<PathBuf, AppError> {
+        self.imported_thumbnail_artifacts
+            .lock()
+            .map_err(|_| AppError::internal("The imported thumbnail registry is unavailable."))?
+            .get(&media_token)
+            .map(|artifact| artifact.path().to_owned())
+            .ok_or_else(AppError::source_replaced)
     }
 
     pub fn preview_is_ready(&self, load_token: u64) -> Result<bool, AppError> {
@@ -568,7 +593,7 @@ mod tests {
 
     use crate::domain::source::ValidatedSource;
 
-    use super::AppState;
+    use super::{AppState, PreviewArtifact};
 
     fn source(name: &str) -> ValidatedSource {
         ValidatedSource {
@@ -631,6 +656,34 @@ mod tests {
             .expect("replacement import starts");
 
         assert!(cancellation.load(Ordering::Acquire));
+    }
+
+    #[test]
+    fn imported_thumbnail_survives_active_source_replacement() {
+        let state = AppState::default();
+        let directory = std::env::temp_dir().join(format!(
+            "easytrim-state-thumbnail-test-{}",
+            std::process::id()
+        ));
+        std::fs::create_dir_all(&directory).expect("test artifact directory creates");
+        let thumbnail_path = directory.join("thumbnail.jpg");
+        let artifact = PreviewArtifact::new(directory, thumbnail_path.clone())
+            .expect("thumbnail artifact creates");
+        let thumbnail_token = state
+            .register_imported_thumbnail(artifact)
+            .expect("thumbnail registers");
+
+        state
+            .begin_source_replacement()
+            .expect("active source replacement starts");
+
+        assert_eq!(
+            state
+                .resolve_thumbnail_path(thumbnail_token)
+                .expect("retained thumbnail resolves"),
+            thumbnail_path
+        );
+        assert!(thumbnail_token > 0);
     }
 
     #[test]

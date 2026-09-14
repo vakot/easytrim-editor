@@ -336,18 +336,6 @@ export const selectLastExportAttemptByInstanceId = (
   state: RootState,
   id: EditingInstanceId,
 ): ExportAttempt | undefined => selectEditingInstanceById(state, id)?.exportAttempts.at(-1);
-export const selectEditingInstanceStatusById = (
-  state: RootState,
-  id: EditingInstanceId,
-): ExportAttempt["state"]["status"] | "deleted" | "ready" | undefined => {
-  const instance = selectEditingInstanceById(state, id);
-  if (!instance) return undefined;
-  if (instance.sourceAvailability === "deleted") return "deleted";
-  return (
-    selectLastExportAttemptByInstanceId(state, id)?.state.status ??
-    (instance.media ? "ready" : undefined)
-  );
-};
 export const selectHasQueuedOrRenderingExportByInstanceId = (
   state: RootState,
   id: EditingInstanceId,
@@ -355,23 +343,12 @@ export const selectHasQueuedOrRenderingExportByInstanceId = (
   const attempt = selectLastExportAttemptByInstanceId(state, id);
   return attempt?.state.status === "queued" || attempt?.state.status === "rendering";
 };
-export const selectHasReadyEditingInstances = createSelector(
-  [selectEditingInstanceEntities, selectEditingInstanceIds],
-  (entities, ids) =>
-    ids.some((id) => {
-      const instance = entities[id];
-      return Boolean(
-        instance?.sourceAvailability === "deleted" ||
-        instance?.media ||
-        instance?.exportAttempts.at(-1),
-      );
-    }),
-);
-export const selectProcessableExportCount = createSelector(
+const selectProcessableExportCount = createSelector(
   [selectEditingInstanceEntities, selectEditingInstanceIds],
   (entities, ids) =>
     ids.reduce((count, id) => count + (hasProcessableExport(entities[id]) ? 1 : 0), 0),
 );
+
 export const selectQueuedExportCount = createSelector(
   [selectEditingInstanceEntities, selectEditingInstanceIds],
   (entities, ids) =>

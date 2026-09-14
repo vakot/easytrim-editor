@@ -1,35 +1,27 @@
-import { Children, type PropsWithChildren, useDeferredValue, useMemo, useState } from "react";
+import { Children, type PropsWithChildren } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
   Breadcrumb,
   BreadcrumbEllipsis,
   BreadcrumbItem,
-  BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { SearchBar } from "@/components/ui/search-bar";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
 import {
   selectActiveInstanceId,
   selectEditingInstanceTopologyEntries,
 } from "@/app/store/slices/editing-instances-slice";
+import { openFileLocation } from "@/lib/tauri/media";
 
 import { SourceDetails } from "./components/SourceDetails";
-import { SourceTreeNodes } from "./components/SourceTreeNodes";
 import { formatSourcePath } from "./lib/media-formatters.utils";
-import {
-  filterSourceTreeNodes,
-  getPathDirectories,
-  getSourceTreeNodes,
-  getSourceTreeSiblings,
-  type SourceTreeNode,
-} from "./lib/source-tree.utils";
+import { getPathDirectories, getRevealLabel } from "./lib/source.utils";
 
 export function SourceBreadcrumb() {
   const activeInstanceId = useAppSelector(selectActiveInstanceId);
@@ -40,21 +32,16 @@ export function SourceBreadcrumb() {
 
   const sourcePath = formatSourcePath(instance.sourcePath);
   const directories = getPathDirectories(sourcePath);
-  const nodes = getSourceTreeNodes(entries, { compact: false });
+
   return (
     <Breadcrumb className="min-w-0 px-2 pb-1">
       <BreadcrumbList className="min-w-0 flex-nowrap overflow-hidden text-xs">
         <SourceBreadcrumbList>
           {directories.map((directory) => (
-            <SourceBreadcrumbDirectory
-              directory={directory}
-              key={directory.path}
-              nodes={nodes}
-              value={instance.id}
-            />
+            <SourceBreadcrumbDirectory directory={directory} key={directory.path} />
           ))}
 
-          <SourceBreadcrumbPage instance={instance} nodes={nodes} />
+          <SourceBreadcrumbPage instance={instance} />
           <SourceBreadcrumbMore />
         </SourceBreadcrumbList>
       </BreadcrumbList>
@@ -62,108 +49,86 @@ export function SourceBreadcrumb() {
   );
 }
 
-function SourceBreadcrumbDirectory({
-  directory,
-  nodes,
-  value,
-}: {
-  directory: { name: string; path: string };
-  nodes: SourceTreeNode[];
-  value: string;
-}) {
+function SourceBreadcrumbDirectory({ directory }: { directory: { name: string; path: string } }) {
   return (
     <BreadcrumbItem className="min-w-0">
-      <SourceBreadcrumbPopover
-        nodes={getSourceTreeSiblings(nodes, { kind: "folder", path: directory.path })}
-        value={value}
+      <SourceBreadcrumbAction
+        className="max-w-32 truncate"
+        path={directory.path}
+        title={directory.path}
       >
-        <BreadcrumbLink className="max-w-32 truncate" title={directory.path}>
-          {directory.name}
-        </BreadcrumbLink>
-      </SourceBreadcrumbPopover>
+        {directory.name}
+      </SourceBreadcrumbAction>
     </BreadcrumbItem>
   );
 }
 
 function SourceBreadcrumbPage({
   instance,
-  nodes,
 }: {
   instance: { displayName: string; id: string; sourcePath: string };
-  nodes: SourceTreeNode[];
 }) {
   const { displayName } = instance;
   const sourcePath = formatSourcePath(instance.sourcePath);
 
   return (
     <BreadcrumbItem className="min-w-0">
-      <SourceBreadcrumbPopover
-        nodes={getSourceTreeSiblings(nodes, { id: instance.id, kind: "instance" })}
-        value={instance.id}
-      >
-        <BreadcrumbLink className="max-w-56 truncate" title={sourcePath}>
-          {displayName}
-        </BreadcrumbLink>
-      </SourceBreadcrumbPopover>
+      <SourceBreadcrumbAction className="max-w-56" path={instance.sourcePath} title={sourcePath}>
+        {displayName}
+      </SourceBreadcrumbAction>
     </BreadcrumbItem>
   );
 }
 
-function SourceBreadcrumbPopover({
+function SourceBreadcrumbAction({
   children,
-  nodes,
-  value,
-}: PropsWithChildren<{ nodes: SourceTreeNode[]; value: string }>) {
+  className,
+  path,
+  title,
+}: PropsWithChildren<{ className: string; path: string; title: string }>) {
   const { t } = useTranslation();
-  const [searchQuery, setSearchQuery] = useState("");
-  const deferredSearchQuery = useDeferredValue(searchQuery);
-  const filteredNodes = useMemo(
-    () => filterSourceTreeNodes(nodes, deferredSearchQuery),
-    [deferredSearchQuery, nodes],
-  );
+  const revealLabel = getRevealLabel(t);
 
   return (
-    <Popover>
-      <PopoverTrigger asChild>{children}</PopoverTrigger>
-      <PopoverContent
-        align="start"
-        className="flex h-96 max-h-(--radix-popover-content-available-height) w-80 flex-col gap-2 overflow-hidden p-1 pb-2.5"
-        side="bottom"
-      >
-        <SearchBar
-          aria-label={t("common.labels.search")}
-          onValueChange={setSearchQuery}
-          placeholder={t("source.messages.searchPlaceholder")}
-          value={searchQuery}
-        />
-        {filteredNodes.length > 0 ? (
-          <ScrollArea className="min-h-0 flex-1">
-            <SourceTreeNodes
-              background="popover"
-              nodes={filteredNodes}
-              searchQuery={deferredSearchQuery}
-              value={value}
-            />
-          </ScrollArea>
-        ) : (
-          <p className="px-2 py-4 text-center text-xs text-muted-foreground">
-            {t("source.messages.noSearchResults")}
-          </p>
-        )}
-      </PopoverContent>
-    </Popover>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          className={`text-foreground-muted h-auto min-w-0 justify-baseline rounded-none p-0 font-normal hover:text-foreground ${className}`}
+          onClick={() => void openFileLocation(path)}
+          size="xs"
+          title={title}
+          type="button"
+          variant="link"
+        >
+          <span className="truncate">{children}</span>
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{revealLabel}</TooltipContent>
+    </Tooltip>
   );
 }
 
 function SourceBreadcrumbMore() {
+  const { t } = useTranslation();
+
   return (
     <BreadcrumbItem>
       <Popover>
-        <PopoverTrigger asChild>
-          <Button className="h-auto max-w-56 min-w-0 gap-0 p-0" size="xs" variant="link">
-            <BreadcrumbEllipsis />
-          </Button>
-        </PopoverTrigger>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <PopoverTrigger asChild>
+              <Button
+                aria-label={t("source.labels.technicalDetails")}
+                className="h-auto max-w-56 min-w-0 gap-0 p-0"
+                size="xs"
+                variant="link"
+              >
+                <BreadcrumbEllipsis />
+              </Button>
+            </PopoverTrigger>
+          </TooltipTrigger>
+          <TooltipContent>{t("source.labels.technicalDetails")}</TooltipContent>
+        </Tooltip>
 
         <PopoverContent align="start" className="w-80 p-2.5" side="bottom" sideOffset={5}>
           <SourceDetails />

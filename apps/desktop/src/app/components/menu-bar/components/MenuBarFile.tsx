@@ -181,7 +181,7 @@ export function MenuBarFile() {
                 onSelect={(event) => event.preventDefault()}
                 variant="destructive"
               >
-                {t("app.actions.deleteSource")}
+                {t("app.actions.deleteFile")}
                 <MenubarShortcut>
                   <KbdGroup>
                     <Kbd>Ctrl</Kbd>

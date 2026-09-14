@@ -1,7 +1,8 @@
 import { Card } from "@/components/ui/card";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 
-import { EditorSource } from "./EditorSource";
+import { EditorSource } from "@/app/components/editor-workspace/EditorSource";
+
 import { EditorStage } from "./EditorStage";
 
 export function EditorWorkspace() {
@@ -13,7 +14,7 @@ export function EditorWorkspace() {
         defaultSize="20rem"
         groupResizeBehavior="preserve-pixel-size"
         id="workspace-sidebar"
-        maxSize="30rem"
+        maxSize="45rem"
         minSize={294}
       >
         <div className="size-full pb-1.5 pl-1.5">

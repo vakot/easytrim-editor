@@ -31,6 +31,7 @@ const mocks = vi.hoisted(() => ({
   inspectMedia: vi.fn(),
   listenForSourceDrops: vi.fn(),
   prepareAudioPreviews: vi.fn(),
+  prepareImportedSourceThumbnail: vi.fn(),
   prepareProxyPreview: vi.fn(),
   prepareSourcePreview: vi.fn(),
   prepareWaveforms: vi.fn(),
@@ -47,6 +48,7 @@ vi.mock("../lib/tauri/media", async (importOriginal) => {
     inspectMedia: mocks.inspectMedia,
     listenForSourceDrops: mocks.listenForSourceDrops,
     prepareAudioPreviews: mocks.prepareAudioPreviews,
+    prepareImportedSourceThumbnail: mocks.prepareImportedSourceThumbnail,
     prepareProxyPreview: mocks.prepareProxyPreview,
     prepareSourcePreview: mocks.prepareSourcePreview,
     prepareWaveforms: mocks.prepareWaveforms,
@@ -209,6 +211,10 @@ beforeEach(() => {
     url: "http://easytrim-media.localhost/source-1?variant=source",
     kind: "source",
   });
+  mocks.prepareImportedSourceThumbnail.mockImplementation(async (sourcePath: string) => ({
+    mediaToken: 9,
+    url: `http://easytrim-media.localhost/9?variant=thumbnail&path=${encodeURIComponent(sourcePath)}`,
+  }));
   mocks.prepareProxyPreview.mockResolvedValue({
     mediaToken: 1,
     url: "http://easytrim-media.localhost/source-1?variant=proxy",
@@ -267,6 +273,12 @@ describe("App", () => {
 
     fireEvent.keyDown(window, { key: "o", code: "KeyO", ctrlKey: true });
     await waitFor(() =>
+      expect(
+        screen.getByRole("checkbox", { name: replacementSelection.displayName }),
+      ).toBeInTheDocument(),
+    );
+    await user.click(screen.getByRole("checkbox", { name: replacementSelection.displayName }));
+    await waitFor(() =>
       expect(selectSourceSelection(store.getState())).toEqual(replacementSelection),
     );
 
@@ -284,7 +296,7 @@ describe("App", () => {
     render(<App />);
 
     expect(screen.queryByText("Start a new clip")).not.toBeInTheDocument();
-    expect(screen.getByRole("complementary", { name: "Source" })).toBeInTheDocument();
+    expect(screen.getByRole("form", { name: "Source explorer" })).toBeInTheDocument();
     expect(screen.getByRole("list", { name: "Keyboard shortcuts" })).toHaveTextContent("Open File");
     expect(screen.getByRole("list", { name: "Keyboard shortcuts" })).toHaveTextContent(
       "Save Lossless Cut",
@@ -441,17 +453,16 @@ describe("App", () => {
     const timelinePanel = document.getElementById("editor-stage-timeline");
     const audioPanel = document.getElementById("editor-stage-audio");
 
-    await user.click(screen.getByRole("button", { name: "Explorer" }));
-    await user.click(screen.getByRole("button", { name: "C:\\Media" }));
-    await user.click(screen.getByRole("button", { name: replacementSelection.displayName }));
+    await user.click(screen.getByRole("checkbox", { name: replacementSelection.displayName }));
 
     expect(document.getElementById("workspace-sidebar")).toBe(sourcePanel);
     expect(document.getElementById("editor-stage-preview")).toBe(previewPanel);
     expect(document.getElementById("editor-stage-timeline")).toBe(timelinePanel);
     expect(document.getElementById("editor-stage-audio")).toBe(audioPanel);
-    expect(screen.getByRole("button", { name: replacementSelection.displayName })).toHaveAttribute(
-      "aria-current",
-      "true",
+    await waitFor(() =>
+      expect(
+        screen.getByRole("checkbox", { name: replacementSelection.displayName }),
+      ).toHaveAttribute("data-active", "true"),
     );
     expect(screen.getByRole("heading", { name: "Selected Segment" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /^Audio tracks/ })).toBeInTheDocument();
@@ -869,8 +880,8 @@ describe("App", () => {
     await openSourcePicker(user);
 
     await waitForSourcePresence(true);
-    expect(screen.getByRole("button", { name: "Active sources" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Explorer" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Imported sources" })).toBeInTheDocument();
+    expect(screen.getAllByText(selection.displayName)[0]).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Activity Feed" })).toBeInTheDocument();
     expect(screen.getByLabelText("Source video preview")).toHaveAttribute(
       "src",
@@ -1024,6 +1035,27 @@ describe("App", () => {
     expect(getMenuTrigger("File")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument();
     expect(getMenuTrigger("View")).toBeInTheDocument();
+  });
+
+  it("keeps the current source active when importing another batch", async () => {
+    mocks.chooseSource
+      .mockResolvedValueOnce([selection])
+      .mockResolvedValueOnce([replacementSelection]);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await openSourcePicker(user);
+    await waitForSourcePresence(true);
+    const initiallyActiveId = selectActiveInstanceId(store.getState());
+
+    await openSourcePicker(user);
+    await waitFor(() => expect(selectEditingInstances(store.getState())).toHaveLength(2));
+    await waitFor(() => expect(mocks.prepareImportedSourceThumbnail).toHaveBeenCalledTimes(2));
+
+    expect(selectActiveInstanceId(store.getState())).toBe(initiallyActiveId);
+    expect(
+      selectEditingInstances(store.getState()).map((instance) => instance.snapshot.source),
+    ).toEqual([selection, replacementSelection]);
   });
 
   it("renders only the timeline panel when the source has no audio tracks", async () => {
