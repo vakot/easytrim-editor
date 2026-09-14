@@ -1031,6 +1031,26 @@ describe("App", () => {
     expect(getMenuTrigger("View")).toBeInTheDocument();
   });
 
+  it("keeps the current source active when importing another batch", async () => {
+    mocks.chooseSource
+      .mockResolvedValueOnce([selection])
+      .mockResolvedValueOnce([replacementSelection]);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await openSourcePicker(user);
+    await waitForSourcePresence(true);
+    const initiallyActiveId = selectActiveInstanceId(store.getState());
+
+    await openSourcePicker(user);
+    await waitFor(() => expect(selectEditingInstances(store.getState())).toHaveLength(2));
+
+    expect(selectActiveInstanceId(store.getState())).toBe(initiallyActiveId);
+    expect(
+      selectEditingInstances(store.getState()).map((instance) => instance.snapshot.source),
+    ).toEqual([selection, replacementSelection]);
+  });
+
   it("renders only the timeline panel when the source has no audio tracks", async () => {
     mocks.chooseSource.mockResolvedValue([selection]);
     mocks.inspectMedia.mockResolvedValue({ ...media, audioStreams: [] });
