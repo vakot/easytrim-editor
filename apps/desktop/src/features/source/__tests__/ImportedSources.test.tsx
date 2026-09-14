@@ -260,7 +260,7 @@ describe("ImportedSources", () => {
     );
   });
 
-  it("requests previews for every imported source", async () => {
+  it("requests and displays a preview for every imported source", async () => {
     const store = createAppStore();
     store.dispatch(
       editingInstancesAdded([
@@ -278,7 +278,20 @@ describe("ImportedSources", () => {
     );
 
     await waitFor(() => expect(prepareImportedSourcePreview).toHaveBeenCalledTimes(2));
-    expect(screen.getByLabelText("holiday.mp4 preview")).toBeInTheDocument();
-    expect(screen.getByLabelText("screen-recording.mp4 preview")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByLabelText("holiday.mp4 preview")).toHaveAttribute(
+        "src",
+        "http://easytrim-media.localhost/C%3A%2FMedia%2Fholiday.mp4?variant=source",
+      );
+      expect(screen.getByLabelText("holiday.mp4 preview")).toHaveAttribute("preload", "auto");
+      expect(screen.getByLabelText("screen-recording.mp4 preview")).toHaveAttribute(
+        "src",
+        "http://easytrim-media.localhost/C%3A%2FMedia%2Fscreen-recording.mp4?variant=source",
+      );
+      expect(screen.getByLabelText("screen-recording.mp4 preview")).toHaveAttribute(
+        "preload",
+        "auto",
+      );
+    });
   });
 });

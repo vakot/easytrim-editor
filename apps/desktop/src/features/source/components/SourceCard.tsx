@@ -195,7 +195,7 @@ export function SourceCard({ source }: SourceCardProps) {
                     className="group-hover:scale-1.02 size-full object-cover transition-transform"
                     muted
                     playsInline
-                    preload="metadata"
+                    preload="auto"
                     src={previewUrl}
                   />
                 ) : previewLoading ? (
