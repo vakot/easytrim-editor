@@ -323,6 +323,33 @@ describe("ImportedSources", () => {
     expect(screen.getByRole("menuitem", { name: "second.mp4" })).toBeInTheDocument();
   });
 
+  it("shows individual context actions for a non-selected card", async () => {
+    const user = userEvent.setup();
+    const store = createAppStore();
+    store.dispatch(
+      editingInstancesAdded([instance("first", "first.mp4"), instance("second", "second.mp4")]),
+    );
+
+    render(
+      <Provider store={store}>
+        <TooltipProvider>
+          <ImportedSources />
+        </TooltipProvider>
+      </Provider>,
+    );
+
+    const cards = screen.getAllByRole("checkbox");
+    await user.click(cards[0]!);
+    fireEvent.contextMenu(cards[1]!);
+
+    expect(screen.getByRole("menuitem", { name: "Close File" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Delete File" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("menuitem", { name: /Reveal in (File Manager|File Explorer|Finder)/ }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "Close Files (2)" })).not.toBeInTheDocument();
+  });
+
   it("restores the source explorer empty view when no sources are open", () => {
     render(
       <Provider store={createAppStore()}>

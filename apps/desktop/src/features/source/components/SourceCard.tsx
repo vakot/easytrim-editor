@@ -108,6 +108,7 @@ export function SourceCard({ source }: SourceCardProps) {
 
   const id = source.id;
   const [contextSourceIds, setContextSourceIds] = useState<string[]>([id]);
+  const [contextMenuIsSelection, setContextMenuIsSelection] = useState(false);
   const active = id === activeInstanceId;
   const selected = selectedSourceIds.has(id);
   const { displayName, sourcePath } = source.snapshot.source;
@@ -147,6 +148,7 @@ export function SourceCard({ source }: SourceCardProps) {
 
   const handleContextMenu = () => {
     const sourceIsSelected = selectedSourceIds.has(id);
+    setContextMenuIsSelection(sourceIsSelected);
     setContextSourceIds(sourceIsSelected ? [...selectedSourceIds] : [id]);
 
     if (!sourceIsSelected) {
@@ -255,9 +257,72 @@ export function SourceCard({ source }: SourceCardProps) {
           </div>
         </ContextMenuTrigger>
 
-        <SourceCardContextMenu sourceIds={contextSourceIds} sources={contextSources} />
+        {contextMenuIsSelection ? (
+          <SourceCardContextMenu sourceIds={contextSourceIds} sources={contextSources} />
+        ) : (
+          <SourceCardIndividualContextMenu source={source} />
+        )}
       </ContextMenu>
     </DeleteSourceDialog>
+  );
+}
+
+function SourceCardIndividualContextMenu({ source }: { source: EditingInstance }) {
+  const { t } = useTranslation();
+  const dispatch = useAppDispatch();
+  const { sourcePath } = source.snapshot.source;
+  const showRestore = source.sourceAvailability === "deleted";
+  const revealLabel = getRevealLabel(t);
+
+  return (
+    <ContextMenuContent>
+      <ContextMenuItem
+        disabled={showRestore}
+        inset
+        onSelect={() => void openFileLocation(sourcePath)}
+      >
+        <ContextMenuIcon>
+          <ExternalLink aria-hidden="true" />
+        </ContextMenuIcon>
+        {revealLabel}
+      </ContextMenuItem>
+
+      <ContextMenuItem
+        inset
+        onSelect={() => void dispatch(closeEditingInstancesRequested([source.id]))}
+      >
+        <ContextMenuIcon>
+          <X aria-hidden="true" />
+        </ContextMenuIcon>
+        {t("app.actions.closeFile")}
+      </ContextMenuItem>
+
+      <ContextMenuSeparator />
+
+      {showRestore ? (
+        <ContextMenuItem
+          inset
+          onSelect={() =>
+            void dispatch(restoreSourceFileRequested({ itemId: source.id, sourcePath }))
+          }
+          variant="success"
+        >
+          <ContextMenuIcon>
+            <RotateCcw aria-hidden="true" />
+          </ContextMenuIcon>
+          {t("app.actions.restore")}
+        </ContextMenuItem>
+      ) : (
+        <DeleteSourceDialogTrigger asChild>
+          <ContextMenuItem inset onSelect={(event) => event.preventDefault()} variant="destructive">
+            <ContextMenuIcon>
+              <Trash2 aria-hidden="true" />
+            </ContextMenuIcon>
+            {t("app.actions.deleteFile")}
+          </ContextMenuItem>
+        </DeleteSourceDialogTrigger>
+      )}
+    </ContextMenuContent>
   );
 }
 

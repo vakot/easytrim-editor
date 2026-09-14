@@ -85,18 +85,16 @@ describe("SourceCard", () => {
     expect(screen.getByText("Delete source file?")).toBeInTheDocument();
   });
 
-  it("shows ordered context actions and reveals the selected file", async () => {
+  it("shows individual context actions for a non-selected card", () => {
     renderSourceCard();
 
     fireEvent.contextMenu(screen.getByRole("checkbox", { name: "holiday.mp4" }));
 
     const menuItems = screen.getAllByRole("menuitem");
     expect(menuItems[0]).toHaveTextContent(/Reveal in (File Manager|File Explorer|Finder)/);
-    expect(menuItems[1]).toHaveTextContent("Close File (1)");
-    expect(menuItems[2]).toHaveTextContent("Delete File (1)");
+    expect(menuItems[1]).toHaveTextContent("Close File");
+    expect(menuItems[2]).toHaveTextContent("Delete File");
 
-    const user = userEvent.setup();
-    await user.click(menuItems[0]!);
-    expect(screen.getByRole("menuitem", { name: "holiday.mp4" })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "holiday.mp4" })).not.toBeInTheDocument();
   });
 });
