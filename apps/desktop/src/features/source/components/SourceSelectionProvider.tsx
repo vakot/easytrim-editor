@@ -1,4 +1,4 @@
-import { type ReactNode, useCallback, useEffect, useRef } from "react";
+import { type ReactNode, useCallback, useRef } from "react";
 
 import { SourceSelectionContext, type SourceSelectionModifiers } from "./SourceSelectionContext";
 
@@ -16,10 +16,6 @@ export function SourceSelectionProvider({
   sourceIds,
 }: SourceSelectionProviderProps) {
   const selectionAnchorId = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (selectedSourceIds.size === 0) selectionAnchorId.current = null;
-  }, [selectedSourceIds.size]);
 
   const selectSource = useCallback(
     (sourceId: string, modifiers: SourceSelectionModifiers) => {
@@ -50,7 +46,7 @@ export function SourceSelectionProvider({
         nextSelection = new Set([sourceId]);
       }
 
-      if (!modifiers.shiftKey) selectionAnchorId.current = sourceId;
+      if (!modifiers.shiftKey || anchorIndex === -1) selectionAnchorId.current = sourceId;
       onSelectedSourceIdsChange(nextSelection);
     },
     [onSelectedSourceIdsChange, selectedSourceIds, sourceIds],

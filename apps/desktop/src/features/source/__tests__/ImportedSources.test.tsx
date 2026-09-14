@@ -177,6 +177,36 @@ describe("ImportedSources", () => {
     expect(selectActiveInstanceId(store.getState())).toBe("second");
   });
 
+  it("keeps the last clicked anchor after a range is deselected", async () => {
+    const user = userEvent.setup();
+    const store = createAppStore();
+    store.dispatch(
+      editingInstancesAdded([
+        instance("first", "first.mp4"),
+        instance("second", "second.mp4"),
+        instance("third", "third.mp4"),
+      ]),
+    );
+
+    render(
+      <Provider store={store}>
+        <TooltipProvider>
+          <ImportedSources />
+        </TooltipProvider>
+      </Provider>,
+    );
+
+    const cards = screen.getAllByRole("checkbox");
+    await user.click(cards[0]!);
+    fireEvent.click(cards[2]!, { shiftKey: true });
+    fireEvent.click(cards[2]!, { shiftKey: true });
+    fireEvent.click(cards[1]!, { shiftKey: true });
+
+    expect(cards[0]).toHaveAttribute("aria-checked", "true");
+    expect(cards[1]).toHaveAttribute("aria-checked", "true");
+    expect(cards[2]).toHaveAttribute("aria-checked", "false");
+  });
+
   it("shows bulk close and delete actions without reveal", async () => {
     const user = userEvent.setup();
     const store = createAppStore();
