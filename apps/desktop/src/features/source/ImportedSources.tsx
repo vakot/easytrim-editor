@@ -8,6 +8,7 @@ import {
   DropdownMenuContent,
   DropdownMenuIcon,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
@@ -207,6 +208,9 @@ function SourceSelectionActions({
             </DropdownMenuIcon>
             {t("app.actions.closeFile")}
           </DropdownMenuItem>
+
+          <DropdownMenuSeparator />
+
           <DeleteSourceDialogTrigger asChild>
             <DropdownMenuItem
               inset

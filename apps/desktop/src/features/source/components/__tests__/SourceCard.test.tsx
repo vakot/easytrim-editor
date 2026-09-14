@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
 import { describe, expect, it } from "vitest";
@@ -48,7 +48,7 @@ describe("SourceCard", () => {
   it("derives the title, path, and default variant from its ready source", () => {
     renderSourceCard();
 
-    const card = document.querySelector('[data-slot="card"]');
+    const card = screen.getByRole("checkbox", { name: "holiday.mp4" });
     expect(card).toHaveAttribute("data-variant", "default");
     expect(screen.getByText("holiday.mp4")).toBeInTheDocument();
     expect(screen.getByText("C:/Media/holiday.mp4")).toBeInTheDocument();
@@ -60,7 +60,7 @@ describe("SourceCard", () => {
   it("derives the deleted state and restore action from its source", async () => {
     renderSourceCard(createSource("deleted"));
 
-    expect(document.querySelector('[data-slot="card"]')).toHaveAttribute(
+    expect(screen.getByRole("checkbox", { name: "holiday.mp4" })).toHaveAttribute(
       "data-variant",
       "destructive",
     );
@@ -83,5 +83,20 @@ describe("SourceCard", () => {
 
     expect(screen.getByRole("alertdialog")).toBeInTheDocument();
     expect(screen.getByText("Delete source file?")).toBeInTheDocument();
+  });
+
+  it("shows ordered context actions and reveals the selected file", async () => {
+    renderSourceCard();
+
+    fireEvent.contextMenu(screen.getByRole("checkbox", { name: "holiday.mp4" }));
+
+    const menuItems = screen.getAllByRole("menuitem");
+    expect(menuItems[0]).toHaveTextContent(/Reveal in (File Manager|File Explorer|Finder)/);
+    expect(menuItems[1]).toHaveTextContent("Close File (1)");
+    expect(menuItems[2]).toHaveTextContent("Delete File (1)");
+
+    const user = userEvent.setup();
+    await user.click(menuItems[0]!);
+    expect(screen.getByRole("menuitem", { name: "holiday.mp4" })).toBeInTheDocument();
   });
 });

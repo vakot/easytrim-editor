@@ -25,7 +25,11 @@ export const sk = {
     actions: {
       checkForUpdates: "Skontrolovať aktualizácie…",
       closeFile: "Zavrieť súbor",
+      closeFiles_one: "Zavrieť súbor ({{count}})",
+      closeFiles_other: "Zavrieť súbory ({{count}})",
       deleteFile: "Odstrániť súbor",
+      deleteFiles_one: "Odstrániť súbor ({{count}})",
+      deleteFiles_other: "Odstrániť súbory ({{count}})",
       maximize: "Maximalizovať",
       minimize: "Minimalizovať",
       open: "Otvoriť",

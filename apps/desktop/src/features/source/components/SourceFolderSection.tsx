@@ -109,6 +109,13 @@ function SourceFolderActions({
         </DropdownMenuTrigger>
 
         <DropdownMenuContent align="end">
+          <DropdownMenuItem inset onSelect={() => void openFileLocation(folderPath)}>
+            <DropdownMenuIcon>
+              <ExternalLink aria-hidden="true" />
+            </DropdownMenuIcon>
+            {revealLabel}
+          </DropdownMenuItem>
+
           <DropdownMenuItem
             inset
             onSelect={() => void dispatch(closeEditingInstancesRequested(sourceIds))}
@@ -118,6 +125,8 @@ function SourceFolderActions({
             </DropdownMenuIcon>
             {t("source.actions.closeFolder")}
           </DropdownMenuItem>
+
+          <DropdownMenuSeparator />
 
           <DeleteSourceDialogTrigger asChild>
             <DropdownMenuItem
@@ -131,15 +140,6 @@ function SourceFolderActions({
               {t("source.actions.deleteFolder")}
             </DropdownMenuItem>
           </DeleteSourceDialogTrigger>
-
-          <DropdownMenuSeparator />
-
-          <DropdownMenuItem inset onSelect={() => void openFileLocation(folderPath)}>
-            <DropdownMenuIcon>
-              <ExternalLink aria-hidden="true" />
-            </DropdownMenuIcon>
-            {revealLabel}
-          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </DeleteSourceDialog>
