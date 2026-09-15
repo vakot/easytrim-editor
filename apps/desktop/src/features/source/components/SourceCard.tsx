@@ -12,8 +12,8 @@ import {
   X,
 } from "lucide-react";
 import { memo, type MouseEvent, useState } from "react";
-import { shallowEqual } from "react-redux";
 import { useTranslation } from "react-i18next";
+import { shallowEqual } from "react-redux";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -44,7 +44,7 @@ import {
   selectActiveInstanceId,
   selectEditingInstanceById,
 } from "@/app/store/slices/editing-instances-slice";
-import { selectImportedSourceThumbnails } from "@/app/store/slices/preview-slice";
+import { selectImportedSourceThumbnail } from "@/app/store/slices/preview-slice";
 import { selectSourceStatus } from "@/app/store/slices/source-slice";
 import {
   closeEditingInstancesRequested,
@@ -102,7 +102,6 @@ export const SourceCard = memo(function SourceCard({ source }: SourceCardProps) 
   const dispatch = useAppDispatch();
   const activeInstanceId = useAppSelector(selectActiveInstanceId);
   const sourceStatus = useAppSelector(selectSourceStatus);
-  const importedThumbnails = useAppSelector(selectImportedSourceThumbnails);
   const { selectedSourceIds, selectSource } = useSourceSelection();
 
   const id = source.id;
@@ -114,7 +113,7 @@ export const SourceCard = memo(function SourceCard({ source }: SourceCardProps) 
   const status = getSourceCardStatus(source, active, sourceStatus);
   const statusLabel = getSourceCardStatusLabel(t, status);
   const variant = getSourceCardVariant(status);
-  const thumbnail = importedThumbnails[source.id];
+  const thumbnail = useAppSelector((state) => selectImportedSourceThumbnail(state, id));
   const thumbnailUrl = thumbnail?.status === "ready" ? thumbnail.value.url : undefined;
   const thumbnailLoading =
     !thumbnailUrl &&

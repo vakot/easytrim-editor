@@ -72,17 +72,19 @@ function ExportActionButton({
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button
-          aria-keyshortcuts={shortcut}
-          className="h-7 max-w-44 gap-1.5 px-2 text-xs"
-          disabled={disabled}
-          onClick={onClick}
-          type="button"
-          variant="secondary"
-        >
-          {icon}
-          <span className="truncate">{label}</span>
-        </Button>
+        <span className="inline-flex" tabIndex={disabled ? 0 : undefined}>
+          <Button
+            aria-keyshortcuts={shortcut}
+            className="h-7 max-w-44 gap-1.5 px-2 text-xs"
+            disabled={disabled}
+            onClick={onClick}
+            type="button"
+            variant="secondary"
+          >
+            {icon}
+            <span className="truncate">{label}</span>
+          </Button>
+        </span>
       </TooltipTrigger>
       <TooltipContent>{tooltip}</TooltipContent>
     </Tooltip>

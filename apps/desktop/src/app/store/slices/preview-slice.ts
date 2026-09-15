@@ -113,3 +113,5 @@ export const selectPreview = (state: RootState): PreviewState => state.preview.v
 export const selectImportedSourceThumbnails = (
   state: RootState,
 ): Record<EditingInstanceId, ImportedThumbnailState> => state.preview.importedThumbnails;
+export const selectImportedSourceThumbnail = (state: RootState, id: EditingInstanceId) =>
+  state.preview.importedThumbnails[id];

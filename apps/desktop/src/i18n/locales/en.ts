@@ -10,7 +10,7 @@ export const en = {
       retry: "Retry",
       save: "Save",
     },
-    labels: { brand: "EasyTrim Editor", search: "Search" },
+    labels: { brand: "EasyTrim Editor", or: "or", search: "Search" },
     status: {
       disabled: "Disabled",
       enabled: "Enabled",
