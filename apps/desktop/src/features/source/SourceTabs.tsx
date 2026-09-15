@@ -42,7 +42,7 @@ export function SourceTabs({
       orientation={orientation}
       value={activeInstanceId ?? ""}
     >
-      <TabsList className={`w-max min-w-full justify-baseline bg-${background} p-0`}>
+      <TabsList className={`w-max min-w-full justify-baseline gap-0.5 bg-${background} p-0`}>
         {entries.map((entry) => (
           <SourceTabsEntry
             entry={entry}
