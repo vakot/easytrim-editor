@@ -8,6 +8,7 @@ import {
   selectAudioTracks,
   selectMasterAudio,
 } from "@/app/store/slices/audio-slice";
+import { selectActiveInstanceId } from "@/app/store/slices/editing-instances-slice";
 import {
   selectLoopPlaybackEnabled,
   selectPlaybackSpeed,
@@ -108,6 +109,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const snapPlaybackEnabled = useAppSelector(selectSnapPlaybackEnabled);
+  const activeInstanceId = useAppSelector(selectActiveInstanceId);
   const loopPlaybackEnabled = useAppSelector(selectLoopPlaybackEnabled);
   const segmentPlaybackEnabled = useAppSelector(selectSegmentPlaybackEnabled);
   const playbackSpeed = useAppSelector(selectPlaybackSpeed);
@@ -312,7 +314,6 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     playbackStartSequenceRef.current += 1;
     playbackRequestedRef.current = false;
     isPlayingRef.current = false;
-    currentPlayheadMicrosRef.current = 0;
     videoRef.current?.pause();
     cancelPlaybackFrame(playbackFrameRef);
     cancelFrame(reverseShuttleFrameRef);
@@ -334,8 +335,10 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     setShuttleDirection(0);
     setIsPlaying(false);
     setTransportError(null);
-    setPlayheadMicros(0);
-  }, [cleanupAudioRuntime, previewKey, sourcePath]);
+    // Snapshot activation restores the selected segment, so preview should begin at its boundary.
+    currentPlayheadMicrosRef.current = trimRef.current.startMicros;
+    setPlayheadMicros(trimRef.current.startMicros);
+  }, [activeInstanceId, cleanupAudioRuntime, previewKey, sourcePath]);
 
   useEffect(() => {
     const activePlaybackRate = shuttleDirection === 1 ? FRAME_SHUTTLE_PLAYBACK_RATE : playbackSpeed;

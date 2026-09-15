@@ -471,6 +471,10 @@ describe("App", () => {
       expect(screen.queryByTestId("preview-loading-overlay")).not.toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Play" })).not.toBeDisabled();
     });
+    expect(screen.getByRole("slider", { name: "Playback position" })).toHaveAttribute(
+      "aria-valuenow",
+      "1000000",
+    );
   });
 
   it("closes into the next source without publishing an empty transition", async () => {
