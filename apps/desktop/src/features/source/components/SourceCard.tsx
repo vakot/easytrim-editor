@@ -11,7 +11,8 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { type MouseEvent, useState } from "react";
+import { memo, type MouseEvent, useState } from "react";
+import { shallowEqual } from "react-redux";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
@@ -41,7 +42,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
   selectActiveInstanceId,
-  selectEditingInstances,
+  selectEditingInstanceById,
 } from "@/app/store/slices/editing-instances-slice";
 import { selectImportedSourceThumbnails } from "@/app/store/slices/preview-slice";
 import { selectSourceStatus } from "@/app/store/slices/source-slice";
@@ -96,13 +97,12 @@ const statusBadgeClassNames: Record<SourceCardVariant, string> = {
   warning: "border-warning/40 bg-warning/10 text-warning",
 };
 
-export function SourceCard({ source }: SourceCardProps) {
+export const SourceCard = memo(function SourceCard({ source }: SourceCardProps) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const activeInstanceId = useAppSelector(selectActiveInstanceId);
   const sourceStatus = useAppSelector(selectSourceStatus);
   const importedThumbnails = useAppSelector(selectImportedSourceThumbnails);
-  const editingInstances = useAppSelector(selectEditingInstances);
   const { selectedSourceIds, selectSource } = useSourceSelection();
 
   const id = source.id;
@@ -122,11 +122,15 @@ export function SourceCard({ source }: SourceCardProps) {
     (thumbnail === undefined || thumbnail.status === "loading");
 
   const StatusIcon = statusIcons[status];
-  const contextSources = contextSourceIds.flatMap((sourceId) => {
-    const contextSource = editingInstances.find((instance) => instance.id === sourceId);
-    if (contextSource) return [contextSource];
-    return sourceId === id ? [source] : [];
-  });
+  const contextSources = useAppSelector(
+    (state) =>
+      contextSourceIds.flatMap((sourceId) => {
+        const contextSource = selectEditingInstanceById(state, sourceId);
+        if (contextSource) return [contextSource];
+        return sourceId === id ? [source] : [];
+      }),
+    shallowEqual,
+  );
 
   const handleCardClick = (event: MouseEvent<HTMLDivElement>) => {
     const modifiers = {
@@ -248,7 +252,7 @@ export function SourceCard({ source }: SourceCardProps) {
       </ContextMenu>
     </DeleteSourceDialog>
   );
-}
+});
 
 function SourceCardIndividualContextMenu({ source }: { source: EditingInstance }) {
   const { t } = useTranslation();
