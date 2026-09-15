@@ -63,6 +63,10 @@ pub struct OptimizedExportRequest {
     pub rotation_degrees: u16,
     pub resolution: ResolutionSelection,
     pub crop: Option<CropSelection>,
+    #[serde(default)]
+    pub flip_horizontal: bool,
+    #[serde(default)]
+    pub flip_vertical: bool,
     pub frame_rate: Option<FrameRateSelection>,
     pub arguments: String,
 }
@@ -211,6 +215,12 @@ pub fn build_optimized_arguments(
             "crop=iw*{}:ih*{}:iw*{}:ih*{}",
             crop.width, crop.height, crop.x, crop.y
         ));
+    }
+    if request.flip_horizontal {
+        video_filters.push("hflip".to_owned());
+    }
+    if request.flip_vertical {
+        video_filters.push("vflip".to_owned());
     }
     video_filters.push(format!(
         "scale={}:{},setsar=1",
@@ -506,9 +516,9 @@ mod tests {
     use std::path::Path;
 
     use super::{
-        AudioTrackSelection, FastExportRequest, FrameRateSelection, OptimizedExportRequest,
-        ResolutionSelection, TrimSelection, build_fast_arguments, build_optimized_arguments,
-        optimized_command_preview,
+        AudioTrackSelection, CropSelection, FastExportRequest, FrameRateSelection,
+        OptimizedExportRequest, ResolutionSelection, TrimSelection, build_fast_arguments,
+        build_optimized_arguments, optimized_command_preview,
     };
     use crate::media::probe::{AudioStream, MediaInfo, VideoStream};
 
@@ -581,6 +591,8 @@ mod tests {
                 height: 1080,
             },
             crop: None,
+            flip_horizontal: false,
+            flip_vertical: false,
             frame_rate: None,
             arguments: arguments.to_owned(),
         }
@@ -760,6 +772,8 @@ mod tests {
                     height: 1080,
                 },
                 crop: None,
+                flip_horizontal: false,
+                flip_vertical: false,
                 frame_rate: Some(FrameRateSelection {
                     numerator: 30,
                     denominator: 1,
@@ -786,7 +800,12 @@ mod tests {
 
     #[test]
     fn optimized_route_uses_the_four_supported_rotation_filters() {
-        for (rotation, filter) in [(0, ""), (90, "transpose=1,"), (180, "hflip,vflip,"), (270, "transpose=2,")] {
+        for (rotation, filter) in [
+            (0, ""),
+            (90, "transpose=1,"),
+            (180, "hflip,vflip,"),
+            (270, "transpose=2,"),
+        ] {
             let mut request = optimized_request("-c:v libx264 -crf 20");
             request.rotation_degrees = rotation;
             let values = build_optimized_arguments(
@@ -801,10 +820,43 @@ mod tests {
             .collect::<Vec<_>>();
 
             let expected_filter = format!("{filter}scale=1920:1080,setsar=1");
-            assert!(values.windows(2).any(|pair| {
-                pair[0] == "-vf" && pair[1] == expected_filter
-            }));
+            assert!(
+                values
+                    .windows(2)
+                    .any(|pair| { pair[0] == "-vf" && pair[1] == expected_filter })
+            );
         }
+    }
+
+    #[test]
+    fn optimized_route_appends_requested_flip_filters_after_crop() {
+        let mut request = optimized_request("-c:v libx264 -crf 20");
+        request.crop = Some(CropSelection {
+            x: 0.1,
+            y: 0.2,
+            width: 0.5,
+            height: 0.6,
+        });
+        request.flip_horizontal = true;
+        request.flip_vertical = true;
+
+        let values = build_optimized_arguments(
+            &media(),
+            &request,
+            Path::new("source.mkv"),
+            Path::new("out.mp4"),
+        )
+        .expect("flip request is valid")
+        .into_iter()
+        .map(|value| value.to_string_lossy().to_string())
+        .collect::<Vec<_>>();
+
+        assert!(values.windows(2).any(|pair| {
+            pair == [
+                "-vf",
+                "crop=iw*0.5:ih*0.6:iw*0.1:ih*0.2,hflip,vflip,scale=1920:1080,setsar=1",
+            ]
+        }));
     }
 
     #[test]

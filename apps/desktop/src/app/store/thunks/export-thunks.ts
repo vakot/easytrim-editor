@@ -14,8 +14,10 @@ import {
   selectCrop,
   selectCropApplied,
   selectCropResolution,
-  selectRotationApplied,
+  selectFlipHorizontal,
+  selectFlipVertical,
   selectRotationDegrees,
+  selectTransformApplied,
 } from "@/app/store/slices/crop-slice";
 import {
   editingInstanceExportAttemptQueued,
@@ -157,7 +159,7 @@ export const refreshOptimizedExportPlan = (): AppThunk => async (dispatch, getSt
 export const startFastCutRequested =
   (origin: DiagnosticOrigin = { id: "fast-cut", type: "button" }): AppThunk =>
   (dispatch, getState) => {
-    if (selectCropApplied(getState()) || selectRotationApplied(getState())) return;
+    if (selectCropApplied(getState()) || selectTransformApplied(getState())) return;
     void startEditingInstanceExport("fast", dispatch, getState, origin);
   };
 
@@ -187,6 +189,8 @@ async function startEditingInstanceExport(
     source,
     trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
     crop: selectCropApplied(state) ? selectCrop(state) : null,
+    flipHorizontal: selectFlipHorizontal(state),
+    flipVertical: selectFlipVertical(state),
     rotation: selectRotationDegrees(state),
     masterAudio: selectMasterAudio(state),
     audioTracks: selectAudioTracks(state).map(({ enabled, streamIndex, volumePercent }) => ({
@@ -293,7 +297,9 @@ function getOptimizedRequest(
     mergeAudio: selectMergeAudio(state),
     rotationDegrees: selectRotationDegrees(state),
     resolution: settings.resolution,
-    crop: selectCrop(state),
+    crop: selectCropApplied(state) ? selectCrop(state) : undefined,
+    flipHorizontal: selectFlipHorizontal(state),
+    flipVertical: selectFlipVertical(state),
     frameRate: settings.frameRate
       ? { numerator: settings.frameRate.numerator, denominator: settings.frameRate.denominator }
       : undefined,

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
-import { selectCropApplied, selectRotationApplied } from "@/app/store/slices/crop-slice";
+import { selectCropApplied, selectTransformApplied } from "@/app/store/slices/crop-slice";
 import { selectSourceReady } from "@/app/store/slices/source-slice";
 import { openOptimizedExportDialog, startFastCutRequested } from "@/app/store/thunks/export-thunks";
 
@@ -15,8 +15,8 @@ export function ExportActions() {
   const dispatch = useAppDispatch();
   const sourceReady = useAppSelector(selectSourceReady);
   const cropApplied = useAppSelector(selectCropApplied);
-  const rotationApplied = useAppSelector(selectRotationApplied);
-  const fastCutAvailable = sourceReady && !cropApplied && !rotationApplied;
+  const transformApplied = useAppSelector(selectTransformApplied);
+  const fastCutAvailable = sourceReady && !cropApplied && !transformApplied;
 
   return (
     <div
