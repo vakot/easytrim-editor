@@ -286,7 +286,6 @@ export function useTrimTimelineInteractions({
   }
 
   function startSegmentDrag(event: PointerEvent<HTMLButtonElement>) {
-    event.preventDefault();
     event.stopPropagation();
     const bounds = trackRef.current?.getBoundingClientRect();
     if (!bounds) return;
@@ -370,7 +369,6 @@ export function useTrimTimelineInteractions({
   }
 
   function startScrub(event: PointerEvent<HTMLElement>, captureTarget: HTMLElement) {
-    event.preventDefault();
     event.stopPropagation();
     const bounds = trackRef.current?.getBoundingClientRect();
     if (!bounds) return;

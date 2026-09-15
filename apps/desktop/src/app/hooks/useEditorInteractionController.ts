@@ -49,11 +49,11 @@ import {
   editorShortcutFromEvent,
   FRAME_SHUTTLE_PLAYBACK_RATE,
   type FrameShuttleDirection,
-  isShortcutBlockedTarget,
+  shortcutDispositionFromEvent,
   syncPlayheadElements,
 } from "@/features/timeline";
 import { diagnostics } from "@/lib/diagnostics";
-import { isApplicationDialogOpen } from "@/lib/hotkeys.utils";
+import { isApplicationInteractionBlocked } from "@/lib/hotkeys.utils";
 import type { DiagnosticOrigin } from "@/lib/tauri/diagnostics.types";
 
 const EMPTY_TRIM: TrimRange = {
@@ -468,11 +468,11 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     }
 
     function handleEditorShortcut(event: globalThis.KeyboardEvent) {
-      if (isApplicationDialogOpen() || timelineInteractionActiveRef.current) return;
+      if (isApplicationInteractionBlocked() || timelineInteractionActiveRef.current) return;
       const actions = shortcutActionsRef.current;
       const shortcut = editorShortcutFromEvent(event);
       if (!actions?.enabled || !shortcut) return;
-      if (event.defaultPrevented || isShortcutBlockedTarget(event.target)) return;
+      if (event.defaultPrevented || shortcutDispositionFromEvent(event) !== "timeline") return;
       event.preventDefault();
       event.stopPropagation();
       const origin = { type: "hotkey" as const, id: event.key };
