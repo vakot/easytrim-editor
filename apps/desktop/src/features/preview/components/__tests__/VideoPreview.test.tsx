@@ -400,7 +400,8 @@ describe("VideoPreview", () => {
     });
   });
 
-  it("does not open crop on a left click but supports the context menu", () => {
+  it("toggles playback on a left click and supports the context menu", () => {
+    callbacks.onTogglePlayback.mockClear();
     const videoRef = createRef<HTMLVideoElement>();
     const { container } = renderPreview(
       <VideoPreview
@@ -415,6 +416,10 @@ describe("VideoPreview", () => {
     expect(viewport).not.toBeNull();
 
     fireEvent.click(viewport!);
+    expect(callbacks.onTogglePlayback).toHaveBeenCalledWith({
+      type: "button",
+      id: "preview.click",
+    });
     expect(
       screen.queryByRole("button", { name: "Resize crop from top left" }),
     ).not.toBeInTheDocument();

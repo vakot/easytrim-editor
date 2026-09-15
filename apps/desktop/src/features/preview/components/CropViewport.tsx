@@ -228,11 +228,11 @@ export function CropViewport({
               if (!event.currentTarget.contains(event.relatedTarget)) cropSelection.close();
             }}
             onClick={() => {
-              if (cropSelection.isOpen) cropSelection.close();
-            }}
-            onDoubleClick={() => {
-              if (!cropSelection.isOpen)
-                onTogglePlayback({ type: "button", id: "preview.double-click" });
+              if (cropSelection.isOpen) {
+                cropSelection.close();
+                return;
+              }
+              onTogglePlayback({ type: "button", id: "preview.click" });
             }}
             onPointerCancel={cropSelection.finishDrag}
             onPointerMove={(event) => cropSelection.moveDrag(event, viewport)}
