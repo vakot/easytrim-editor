@@ -71,10 +71,10 @@ export function EditorStage() {
         <ResizablePanel id="editor-stage-preview" minSize="14rem">
           <div className="size-full p-px">
             <Card className="size-full gap-0 bg-preview-surface p-0">
-              <div className="grid h-14 min-w-0 grid-rows-[2rem_2rem]">
-                <div className="flex min-w-0 items-center gap-1">
+              <div className="grid h-14 min-w-0 shrink-0 grid-rows-[2rem_1.5rem]">
+                <div className="flex min-w-0 items-center gap-1 px-1">
                   <ScrollArea
-                    className="h-8 min-w-0 flex-1 px-1"
+                    className="h-8 min-w-0 flex-1"
                     fadeColor="var(--preview-surface)"
                     orientation="horizontal"
                     scrollbarClassName="data-horizontal:h-1.25"
