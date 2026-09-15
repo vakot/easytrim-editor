@@ -284,7 +284,7 @@ export const sk = {
         rotate90Clockwise: "Otočiť o 90° vpravo",
         rotate90Counterclockwise: "Otočiť o 90° vľavo",
         reset: "Obnoviť",
-        title: "Transhorm",
+        title: "Transform",
       },
     },
     labels: {
