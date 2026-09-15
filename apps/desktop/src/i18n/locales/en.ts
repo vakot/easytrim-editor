@@ -274,6 +274,15 @@ export const en = {
       resetTools: "Reset tools",
       setEnd: "Set segment end to current position",
       setStart: "Set segment start to current position",
+      transform: {
+        crop: "Crop",
+        flipHorizontal: "Flip horizontally",
+        flipVertical: "Flip vertically",
+        rotate180: "Rotate 180",
+        rotate90Clockwise: "Rotate 90 CW",
+        rotate90Counterclockwise: "Rotate 90 CCW",
+        title: "Transhorm",
+      },
     },
     labels: {
       compatible: "Compatible preview",
@@ -299,7 +308,7 @@ export const en = {
       setStartUnavailable: "Move before the source end to set segment start",
     },
     tooltips: {
-      crop: "Click preview to crop",
+      crop: "Right-click preview to transform",
       loopDisabled: "Stop when playback reaches its end",
       loopEnabled: "Restart when playback reaches its end",
       nextFrame: "Next frame (Right Arrow; hold to play 2×)",
@@ -322,8 +331,6 @@ export const en = {
         bottomRight: "Resize crop from bottom right",
         left: "Resize crop from left",
         preview: "Video crop preview",
-        rotateClockwise: "Rotate clockwise",
-        rotateCounterclockwise: "Rotate counterclockwise",
         right: "Resize crop from right",
         top: "Resize crop from top",
         topLeft: "Resize crop from top left",
@@ -425,7 +432,7 @@ export const en = {
       commandPreparing: "Preparing command preview…",
     },
     messages: {
-      fastUnavailable: "Lossless cut is unavailable after cropping or rotating the video.",
+      fastUnavailable: "Lossless cut is unavailable after transforming the video.",
       presetNameDuplicate: "Preset names must be unique.",
       presetNameRequired: "A preset name is required.",
       presetNameTooLong: "Preset names must be 64 characters or fewer.",

@@ -276,6 +276,15 @@ export const sk = {
       resetTools: "Obnoviť nástroje",
       setEnd: "Nastaviť koniec segmentu na aktuálnu pozíciu",
       setStart: "Nastaviť začiatok segmentu na aktuálnu pozíciu",
+      transform: {
+        crop: "Orezať",
+        flipHorizontal: "Prevrátiť vodorovne",
+        flipVertical: "Prevrátiť zvisle",
+        rotate180: "Otočiť o 180°",
+        rotate90Clockwise: "Otočiť o 90° vpravo",
+        rotate90Counterclockwise: "Otočiť o 90° vľavo",
+        title: "Transhorm",
+      },
     },
     labels: {
       compatible: "Kompatibilný náhľad",
@@ -301,7 +310,7 @@ export const sk = {
       setStartUnavailable: "Začiatok segmentu nastavíte presunutím pred koniec zdroja",
     },
     tooltips: {
-      crop: "Kliknutím na náhľad orežete video",
+      crop: "Kliknite pravým tlačidlom na náhľad pre transformácie",
       loopDisabled: "Po dosiahnutí konca sa prehrávanie zastaví",
       loopEnabled: "Po dosiahnutí konca sa prehrávanie reštartuje",
       nextFrame: "Nasledujúca snímka (šípka doprava; podržaním prehrať 2×)",
@@ -324,8 +333,6 @@ export const sk = {
         bottomRight: "Zmeniť orezanie sprava odspodu",
         left: "Zmeniť orezanie zľava",
         preview: "Náhľad orezania videa",
-        rotateClockwise: "Otočiť v smere hodinových ručičiek",
-        rotateCounterclockwise: "Otočiť proti smeru hodinových ručičiek",
         right: "Zmeniť orezanie sprava",
         top: "Zmeniť orezanie zhora",
         topLeft: "Zmeniť orezanie zľava zhora",
@@ -427,7 +434,7 @@ export const sk = {
       commandPreparing: "Pripravuje sa náhľad príkazu…",
     },
     messages: {
-      fastUnavailable: "Strih bez prekódovania nie je dostupný po orezaní alebo otočení videa.",
+      fastUnavailable: "Strih bez prekódovania nie je dostupný po transformácii videa.",
       presetNameDuplicate: "Názvy predvolieb musia byť jedinečné.",
       presetNameRequired: "Názov predvoľby je povinný.",
       presetNameTooLong: "Názov predvoľby môže mať najviac 64 znakov.",
