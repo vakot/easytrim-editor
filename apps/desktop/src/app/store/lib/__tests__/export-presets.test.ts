@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { STORAGE_KEYS } from "@/lib/storage.consts";
 import {
   exportArgumentsChanged,
   exportPresetCreated,
@@ -59,6 +60,23 @@ describe("export presets", () => {
     expect(initialExportPresetState.presets[0]?.argumentsText).toContain("-preset p1");
     expect(initialExportPresetState.presets[4]?.argumentsText).toContain("-preset p5");
     expect(initialExportPresetState.presets[6]?.argumentsText).toContain("-preset p7");
+    expect(initialExportPresetState.presets[2]?.argumentsText).toContain("-spatial-aq 1");
+    expect(initialExportPresetState.presets[2]?.argumentsText).toContain("-temporal-aq 1");
+    expect(initialExportPresetState.presets[2]?.argumentsText).not.toContain("_aq");
+  });
+
+  it("repairs unchanged built-in presets saved with legacy NVENC option names", () => {
+    const legacy = structuredClone(initialExportPresetState);
+    legacy.presets[2]!.argumentsText = legacy.presets[2]!.argumentsText
+      .replace("-spatial-aq", "-spatial_aq")
+      .replace("-temporal-aq", "-temporal_aq");
+    legacy.argumentsText = legacy.presets[2]!.argumentsText;
+    localStorage.setItem(STORAGE_KEYS.exportPresets, JSON.stringify(legacy));
+
+    const loaded = loadExportPresetState();
+
+    expect(loaded.presets[2]?.argumentsText).toContain("-spatial-aq 1");
+    expect(loaded.presets[2]?.argumentsText).toContain("-temporal-aq 1");
   });
 
   it("round-trips presets through versioned storage", () => {
