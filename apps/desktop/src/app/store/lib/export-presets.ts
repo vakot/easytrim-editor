@@ -107,6 +107,7 @@ export function loadExportPresetState(): ExportPresetState {
     presets.length > 0
       ? presets.map((preset) => migrateLegacyNvencPreset(preset))
       : initialExportPresetState.presets;
+
   const selectedPresetId = availablePresets.some((preset) => preset.id === stored.selectedPresetId)
     ? stored.selectedPresetId
     : (availablePresets[0]?.id ?? null);

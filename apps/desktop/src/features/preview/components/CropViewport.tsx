@@ -22,7 +22,6 @@ import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
-  ContextMenuLabel,
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
@@ -356,7 +355,6 @@ export function CropViewport({
           </CursorTooltip>
         </ContextMenuTrigger>
         <ContextMenuContent>
-          <ContextMenuLabel>{t("preview.actions.transform.title")}</ContextMenuLabel>
           <ContextMenuItem onSelect={() => cropSelection.open(viewportFrame)}>
             {t("preview.actions.transform.crop")}
           </ContextMenuItem>

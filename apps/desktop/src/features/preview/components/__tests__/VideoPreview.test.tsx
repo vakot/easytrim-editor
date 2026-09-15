@@ -304,7 +304,7 @@ describe("VideoPreview", () => {
     const viewport = container.querySelector("[aria-label='Video crop preview']");
     openTransformMenu(viewport!);
     expect(screen.getByRole("menu")).toHaveTextContent(
-      "TransformCropRotate 90 CWRotate 90 CCWRotate 180Flip horizontallyFlip verticallyReset",
+      "CropRotate 90 CWRotate 90 CCWRotate 180Flip horizontallyFlip verticallyReset",
     );
     expect(screen.getAllByRole("separator")).toHaveLength(3);
 

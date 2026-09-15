@@ -282,7 +282,6 @@ export const en = {
         rotate90Clockwise: "Rotate 90 CW",
         rotate90Counterclockwise: "Rotate 90 CCW",
         reset: "Reset",
-        title: "Transform",
       },
     },
     labels: {
