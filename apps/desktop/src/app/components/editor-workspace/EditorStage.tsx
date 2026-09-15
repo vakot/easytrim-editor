@@ -24,7 +24,7 @@ type PanelSizes = {
 const TIMELINE_PANEL_DEFAULT_SIZE = 160;
 
 const AUDIO_PANEL_SIZE_LINE = 58;
-const AUDIO_PANEL_SIZE_MIN = 126;
+const AUDIO_PANEL_SIZE_MIN = 127;
 
 const getTimelinePanelSize = (lines: number = 0): PanelSizes => {
   if (lines === 0) {
