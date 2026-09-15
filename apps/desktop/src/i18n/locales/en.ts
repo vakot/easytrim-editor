@@ -281,6 +281,7 @@ export const en = {
         rotate180: "Rotate 180",
         rotate90Clockwise: "Rotate 90 CW",
         rotate90Counterclockwise: "Rotate 90 CCW",
+        reset: "Reset",
         title: "Transhorm",
       },
     },
@@ -322,6 +323,12 @@ export const en = {
       setStart: "Set segment start to current position (I)",
       snapDisabled: "Playhead stays in place",
       snapEnabled: "Playhead follows a trim border once caught",
+    },
+    dialogs: {
+      reset: {
+        description: "This resets the crop, rotation, and flips for the current video.",
+        title: "Reset video transformations?",
+      },
     },
     accessibility: {
       controls: "Preview playback controls",

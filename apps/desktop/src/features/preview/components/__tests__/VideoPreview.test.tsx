@@ -304,9 +304,9 @@ describe("VideoPreview", () => {
     const viewport = container.querySelector("[aria-label='Video crop preview']");
     openTransformMenu(viewport!);
     expect(screen.getByRole("menu")).toHaveTextContent(
-      "TranshormCropRotate 90 CWRotate 90 CCWRotate 180Flip horizontallyFlip vertically",
+      "TranshormCropRotate 90 CWRotate 90 CCWRotate 180Flip horizontallyFlip verticallyReset",
     );
-    expect(screen.getAllByRole("separator")).toHaveLength(2);
+    expect(screen.getAllByRole("separator")).toHaveLength(3);
 
     fireEvent.click(screen.getByRole("menuitem", { name: "Rotate 90 CW" }));
     expect(store.getState().crop.rotationDegrees).toBe(90);
@@ -329,7 +329,7 @@ describe("VideoPreview", () => {
     expect(container.querySelector("video")).toHaveStyle({ transform: "rotate(450deg)" });
   });
 
-  it("applies flips to the preview and normalizes a full-turn equivalent", () => {
+  it("applies flips to the preview and keeps a full-turn equivalent in UI state", () => {
     const store = createAppStore();
     const videoRef = createRef<HTMLVideoElement>();
     const { container } = renderPreview(
@@ -361,6 +361,42 @@ describe("VideoPreview", () => {
     });
     expect(container.querySelector("video")).toHaveStyle({
       transform: "rotate(180deg) scaleX(-1) scaleY(-1)",
+    });
+  });
+
+  it("confirms before resetting preview transformations", () => {
+    const store = createAppStore();
+    const videoRef = createRef<HTMLVideoElement>();
+    const { container } = renderPreview(
+      <VideoPreview
+        muted
+        preview={readyPreview("easytrim-media://preview-1")}
+        videoRef={videoRef}
+        {...callbacks}
+      />,
+      store,
+    );
+
+    const viewport = container.querySelector("[aria-label='Video crop preview']")!;
+    selectTransformAction(viewport, "Flip horizontally");
+    selectTransformAction(viewport, "Rotate 180");
+    selectTransformAction(viewport, "Flip vertically");
+    selectTransformAction(viewport, "Reset");
+
+    expect(screen.getByRole("alertdialog")).toHaveTextContent("Reset video transformations?");
+    expect(store.getState().crop).toMatchObject({
+      flipHorizontal: true,
+      flipVertical: true,
+      rotationDegrees: 180,
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+
+    expect(store.getState().crop).toMatchObject({
+      flipHorizontal: false,
+      flipVertical: false,
+      rotationDegrees: 0,
+      value: { x: 0, y: 0, width: 1, height: 1 },
     });
   });
 

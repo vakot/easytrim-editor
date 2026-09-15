@@ -10,6 +10,7 @@ import {
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
   cropChanged,
+  cropReset,
   cropResolutionFor,
   flipToggled,
   rotationChanged,
@@ -172,6 +173,12 @@ export function useCropSelection(previewRef: RefObject<HTMLDivElement | null>) {
     [dispatch],
   );
 
+  const reset = useCallback(() => {
+    setDrag(null);
+    dispatch(cropReset());
+    dispatch(commitActiveEditingInstanceDraft());
+  }, [dispatch]);
+
   return {
     crop,
     flipHorizontal,
@@ -190,6 +197,7 @@ export function useCropSelection(previewRef: RefObject<HTMLDivElement | null>) {
     rotateHalfTurn: () => rotate(180),
     flipHorizontalAxis: () => flip("horizontal"),
     flipVerticalAxis: () => flip("vertical"),
+    reset,
     startDrag,
     moveDrag,
     finishDrag,

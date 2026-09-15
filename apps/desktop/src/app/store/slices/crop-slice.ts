@@ -44,6 +44,7 @@ const cropSlice = createSlice({
       if (action.payload === "horizontal") state.flipHorizontal = !state.flipHorizontal;
       else state.flipVertical = !state.flipVertical;
     },
+    cropReset: () => initialCropState,
   },
   extraReducers: (builder) => {
     builder
@@ -76,7 +77,7 @@ const cropSlice = createSlice({
   },
 });
 
-export const { cropChanged, flipToggled, rotationChanged } = cropSlice.actions;
+export const { cropChanged, cropReset, flipToggled, rotationChanged } = cropSlice.actions;
 export const cropReducer = cropSlice.reducer;
 
 const EMPTY_RESOLUTION: CropResolution = { width: 1, height: 1 };

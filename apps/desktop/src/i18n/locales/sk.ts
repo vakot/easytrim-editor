@@ -283,6 +283,7 @@ export const sk = {
         rotate180: "Otočiť o 180°",
         rotate90Clockwise: "Otočiť o 90° vpravo",
         rotate90Counterclockwise: "Otočiť o 90° vľavo",
+        reset: "Obnoviť",
         title: "Transhorm",
       },
     },
@@ -324,6 +325,12 @@ export const sk = {
       setStart: "Nastaviť začiatok segmentu na aktuálnu pozíciu (I)",
       snapDisabled: "Prehrávacia hlava zostáva na mieste",
       snapEnabled: "Prehrávacia hlava po prichytení sleduje hranicu strihu",
+    },
+    dialogs: {
+      reset: {
+        description: "Týmto sa obnoví orezanie, otočenie a prevrátenie aktuálneho videa.",
+        title: "Obnoviť transformácie videa?",
+      },
     },
     accessibility: {
       controls: "Ovládanie prehrávania náhľadu",
