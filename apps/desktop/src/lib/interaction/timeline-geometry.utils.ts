@@ -27,6 +27,8 @@ export function syncTimelineGeometry(element: HTMLElement | null, range: TrimRan
   if (!element) return;
   const variables = timelineGeometryVariables(range);
   for (const [property, value] of Object.entries(variables)) {
-    element.style.setProperty(property, value);
+    if (element.style.getPropertyValue(property) !== value) {
+      element.style.setProperty(property, value);
+    }
   }
 }

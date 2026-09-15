@@ -2022,11 +2022,11 @@ describe("App", () => {
       pointerId: 1,
     });
 
+    await flushAnimationFrame();
+
     expect(document.querySelector("[data-slot='timeline-pane']")).toHaveStyle({
       "--timeline-trim-start": "25%",
     });
-
-    await flushAnimationFrame();
 
     expect(screen.getByRole("slider", { name: "Trim start" })).toHaveAttribute(
       "aria-valuenow",
@@ -2898,6 +2898,70 @@ describe("App", () => {
       "true",
     );
     expect(playhead).toHaveAttribute("aria-valuenow", "30000000");
+  });
+
+  it("keeps scrub visuals current, throttles timecode renders, and releases with one exact seek", async () => {
+    mocks.chooseSource.mockResolvedValue([selection]);
+    const user = userEvent.setup();
+    render(<App />);
+    await openSourcePicker(user);
+    const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
+    const timeline = screen.getByLabelText("Video trim timeline");
+    vi.spyOn(timeline, "getBoundingClientRect").mockReturnValue({
+      left: 0,
+      width: 1000,
+    } as DOMRect);
+    let position = 0;
+    const exactSeek = vi.fn((seconds: number) => {
+      position = seconds;
+    });
+
+    const fastSeek = vi.fn((seconds: number) => {
+      position = seconds;
+    });
+
+    Object.defineProperties(video, {
+      currentTime: { configurable: true, get: () => position, set: exactSeek },
+      fastSeek: { configurable: true, value: fastSeek },
+    });
+    const frames = new Map<number, FrameRequestCallback>();
+    let frameId = 0;
+    const request = vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
+      frames.set(++frameId, callback);
+      return frameId;
+    });
+
+    const cancel = vi.spyOn(window, "cancelAnimationFrame").mockImplementation((id) => {
+      frames.delete(id);
+    });
+
+    const flush = (timestamp: number) =>
+      act(() => {
+        const pending = [...frames.values()];
+        frames.clear();
+        pending.forEach((callback) => callback(timestamp));
+      });
+
+    try {
+      const playhead = screen.getByRole("slider", { name: "Playback position" });
+      fireEvent.pointerDown(playhead, { clientX: 200, pointerId: 71 });
+      flush(1000);
+      const firstTimecode = screen.getByLabelText("Current playback time").textContent;
+      fireEvent.pointerMove(playhead, { clientX: 400, pointerId: 71 });
+      flush(1016);
+      expect(playhead).toHaveAttribute("aria-valuenow", "26000000");
+      expect(screen.getByLabelText("Current playback time").textContent).toBe(firstTimecode);
+      fireEvent.pointerUp(playhead, { clientX: 600, pointerId: 71 });
+      expect(fastSeek).toHaveBeenCalledTimes(2);
+      expect(exactSeek).toHaveBeenCalledExactlyOnceWith(39);
+      expect(playhead).toHaveAttribute("aria-valuenow", "39000000");
+      expect(screen.getByLabelText("Current playback time").textContent).not.toBe(firstTimecode);
+      flush(1032);
+      expect(exactSeek).toHaveBeenCalledTimes(1);
+    } finally {
+      request.mockRestore();
+      cancel.mockRestore();
+    }
   });
 
   it("resumes playback only after the browser settles the final scrub seek", async () => {
