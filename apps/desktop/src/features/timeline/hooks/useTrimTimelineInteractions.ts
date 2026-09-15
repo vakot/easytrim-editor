@@ -77,6 +77,7 @@ export function useTrimTimelineInteractions({
   } | null>(null);
 
   const rangeRef = useRef(range);
+  const geometryFrameRef = useRef<number | null>(null);
   const [scrubDragging, setScrubDragging] = useState(false);
   const [segmentDragging, setSegmentDragging] = useState(false);
   const [segmentSnapPoint, setSegmentSnapPoint] = useState<SegmentSnapPoint | null>(null);
@@ -88,12 +89,26 @@ export function useTrimTimelineInteractions({
     }
   }, [range]);
 
-  function syncRange(nextRange: TrimRange) {
-    rangeRef.current = nextRange;
+  useEffect(
+    () => () => {
+      if (geometryFrameRef.current !== null) cancelAnimationFrame(geometryFrameRef.current);
+    },
+    [],
+  );
+
+  function flushGeometry() {
+    if (geometryFrameRef.current !== null) cancelAnimationFrame(geometryFrameRef.current);
+    geometryFrameRef.current = null;
     syncTimelineGeometry(
       trackRef.current?.closest<HTMLElement>("[data-slot='timeline-pane']") ?? null,
-      nextRange,
+      rangeRef.current,
     );
+  }
+
+  function syncRange(nextRange: TrimRange) {
+    rangeRef.current = nextRange;
+    if (geometryFrameRef.current !== null) return;
+    geometryFrameRef.current = requestAnimationFrame(flushGeometry);
   }
 
   function pointerMicros(clientX: number, bounds: DOMRect) {
@@ -196,6 +211,7 @@ export function useTrimTimelineInteractions({
     }
     setTrimDragState((current) => (current?.boundary === boundary ? null : current));
     if (wasActive) {
+      flushGeometry();
       onTrimDragEnd();
     }
   }
@@ -326,6 +342,7 @@ export function useTrimTimelineInteractions({
       updateSegmentFromPointer(pointer.pointerMicros, pointer.snapReachMicros, event.shiftKey);
     }
     segmentDragRef.current = null;
+    flushGeometry();
     setSegmentDragging(false);
     setSegmentSnapPoint(null);
     onSegmentDragEnd();

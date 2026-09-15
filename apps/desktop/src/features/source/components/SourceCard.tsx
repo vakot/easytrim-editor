@@ -11,8 +11,9 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { type MouseEvent, useState } from "react";
+import { memo, type MouseEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { shallowEqual } from "react-redux";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -41,9 +42,9 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
   selectActiveInstanceId,
-  selectEditingInstances,
+  selectEditingInstanceById,
 } from "@/app/store/slices/editing-instances-slice";
-import { selectImportedSourceThumbnails } from "@/app/store/slices/preview-slice";
+import { selectImportedSourceThumbnail } from "@/app/store/slices/preview-slice";
 import { selectSourceStatus } from "@/app/store/slices/source-slice";
 import {
   closeEditingInstancesRequested,
@@ -96,13 +97,11 @@ const statusBadgeClassNames: Record<SourceCardVariant, string> = {
   warning: "border-warning/40 bg-warning/10 text-warning",
 };
 
-export function SourceCard({ source }: SourceCardProps) {
+export const SourceCard = memo(function SourceCard({ source }: SourceCardProps) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const activeInstanceId = useAppSelector(selectActiveInstanceId);
   const sourceStatus = useAppSelector(selectSourceStatus);
-  const importedThumbnails = useAppSelector(selectImportedSourceThumbnails);
-  const editingInstances = useAppSelector(selectEditingInstances);
   const { selectedSourceIds, selectSource } = useSourceSelection();
 
   const id = source.id;
@@ -114,7 +113,7 @@ export function SourceCard({ source }: SourceCardProps) {
   const status = getSourceCardStatus(source, active, sourceStatus);
   const statusLabel = getSourceCardStatusLabel(t, status);
   const variant = getSourceCardVariant(status);
-  const thumbnail = importedThumbnails[source.id];
+  const thumbnail = useAppSelector((state) => selectImportedSourceThumbnail(state, id));
   const thumbnailUrl = thumbnail?.status === "ready" ? thumbnail.value.url : undefined;
   const thumbnailLoading =
     !thumbnailUrl &&
@@ -122,11 +121,15 @@ export function SourceCard({ source }: SourceCardProps) {
     (thumbnail === undefined || thumbnail.status === "loading");
 
   const StatusIcon = statusIcons[status];
-  const contextSources = contextSourceIds.flatMap((sourceId) => {
-    const contextSource = editingInstances.find((instance) => instance.id === sourceId);
-    if (contextSource) return [contextSource];
-    return sourceId === id ? [source] : [];
-  });
+  const contextSources = useAppSelector(
+    (state) =>
+      contextSourceIds.flatMap((sourceId) => {
+        const contextSource = selectEditingInstanceById(state, sourceId);
+        if (contextSource) return [contextSource];
+        return sourceId === id ? [source] : [];
+      }),
+    shallowEqual,
+  );
 
   const handleCardClick = (event: MouseEvent<HTMLDivElement>) => {
     const modifiers = {
@@ -177,6 +180,9 @@ export function SourceCard({ source }: SourceCardProps) {
                 metaKey: event.metaKey,
                 shiftKey: event.shiftKey,
               });
+              if (event.key === "Enter" && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
+                void dispatch(navigateToEditingInstance(id));
+              }
             }}
             role="checkbox"
             tabIndex={0}
@@ -248,7 +254,7 @@ export function SourceCard({ source }: SourceCardProps) {
       </ContextMenu>
     </DeleteSourceDialog>
   );
-}
+});
 
 function SourceCardIndividualContextMenu({ source }: { source: EditingInstance }) {
   const { t } = useTranslation();

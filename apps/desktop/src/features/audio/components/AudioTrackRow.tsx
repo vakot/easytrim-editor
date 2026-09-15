@@ -39,7 +39,9 @@ export const AudioTrackRow = memo(function AudioTrackRow({
   track,
 }: AudioTrackRowProps) {
   const { t } = useTranslation();
-  const [controlsVisible, setControlsVisible] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const controlsVisible = hovered || focused;
 
   return (
     <div
@@ -50,11 +52,11 @@ export const AudioTrackRow = memo(function AudioTrackRow({
         className="relative flex flex-row items-center gap-2 bg-transparent p-1 pr-2 ring-transparent transition-[background-color,box-shadow] duration-150 ring-inset data-[controls-visible=true]:bg-card data-[controls-visible=true]:ring-foreground/10"
         data-controls-visible={controlsVisible}
         onBlurCapture={(event) => {
-          if (!event.currentTarget.contains(event.relatedTarget)) setControlsVisible(false);
+          if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false);
         }}
-        onFocusCapture={() => setControlsVisible(true)}
-        onPointerEnter={() => setControlsVisible(true)}
-        onPointerLeave={() => setControlsVisible(false)}
+        onFocusCapture={() => setFocused(true)}
+        onPointerEnter={() => setHovered(true)}
+        onPointerLeave={() => setHovered(false)}
       >
         <VolumeButton
           enabled={track.enabled}

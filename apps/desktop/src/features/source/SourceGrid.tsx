@@ -300,7 +300,7 @@ function SourceGridEmptyState() {
 
         <div className="flex items-center gap-2">
           <Separator className="flex-1" />
-          <span className="text-muted-foreground">or</span>
+          <span className="text-muted-foreground">{t("common.labels.or")}</span>
           <Separator className="flex-1" />
         </div>
 

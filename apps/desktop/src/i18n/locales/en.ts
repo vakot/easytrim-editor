@@ -10,7 +10,7 @@ export const en = {
       retry: "Retry",
       save: "Save",
     },
-    labels: { brand: "EasyTrim Editor", search: "Search" },
+    labels: { brand: "EasyTrim Editor", or: "or", search: "Search" },
     status: {
       disabled: "Disabled",
       enabled: "Enabled",
@@ -425,6 +425,7 @@ export const en = {
       commandPreparing: "Preparing command preview…",
     },
     messages: {
+      fastUnavailable: "Lossless cut is unavailable after cropping or rotating the video.",
       presetNameDuplicate: "Preset names must be unique.",
       presetNameRequired: "A preset name is required.",
       presetNameTooLong: "Preset names must be 64 characters or fewer.",
@@ -432,6 +433,8 @@ export const en = {
     tooltips: {
       aspectRatioLocked: "Aspect ratio locked",
       aspectRatioUnlocked: "Aspect ratio unlocked",
+      fast: "Save a lossless cut (Ctrl+S)",
+      optimized: "Configure and export an optimized video (Ctrl+E)",
     },
     dialogs: {
       optimized: {
@@ -451,6 +454,7 @@ export const en = {
       },
     },
     accessibility: {
+      actions: "Export actions",
       lockAspectRatio: "Lock aspect ratio",
       presetActions: "Preset actions",
       unlockAspectRatio: "Unlock aspect ratio",

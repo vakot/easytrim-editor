@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { syncTimelineGeometry, timelineGeometryVariables } from "../timeline-geometry.utils";
 
@@ -9,6 +9,14 @@ const range = {
 };
 
 describe("timelineGeometryVariables", () => {
+  it("does not rewrite geometry when Redux catches up with the drag position", () => {
+    const element = document.createElement("section");
+    const write = vi.spyOn(element.style, "setProperty");
+    syncTimelineGeometry(element, range);
+    expect(write).toHaveBeenCalledTimes(4);
+    syncTimelineGeometry(element, { ...range });
+    expect(write).toHaveBeenCalledTimes(4);
+  });
   it("derives shared trim positions from the selected range", () => {
     expect(timelineGeometryVariables(range)).toEqual({
       "--timeline-trim-start": "10%",

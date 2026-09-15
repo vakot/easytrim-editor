@@ -9,6 +9,7 @@ import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectAudioPanelStreamCount, selectSourceMedia } from "@/app/store/slices/source-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
 import { AudioPanel } from "@/features/audio";
+import { ExportActions } from "@/features/export";
 import { Preview } from "@/features/preview";
 import { SourceBreadcrumb, SourceTabs } from "@/features/source";
 import { TimelinePanel } from "@/features/timeline";
@@ -70,15 +71,18 @@ export function EditorStage() {
         <ResizablePanel id="editor-stage-preview" minSize="14rem">
           <div className="size-full p-px">
             <Card className="size-full gap-0 bg-preview-surface p-0">
-              <div className="h-14">
-                <ScrollArea
-                  className="h-8 w-full min-w-0 px-1"
-                  fadeColor="var(--preview-surface)"
-                  orientation="horizontal"
-                  scrollbarClassName="data-horizontal:h-1.25"
-                >
-                  <SourceTabs />
-                </ScrollArea>
+              <div className="grid h-14 min-w-0 shrink-0 grid-rows-[2rem_1.5rem]">
+                <div className="flex min-w-0 items-center gap-1 px-1">
+                  <ScrollArea
+                    className="h-8 min-w-0 flex-1"
+                    fadeColor="var(--preview-surface)"
+                    orientation="horizontal"
+                    scrollbarClassName="data-horizontal:h-1.25"
+                  >
+                    <SourceTabs />
+                  </ScrollArea>
+                  <ExportActions />
+                </div>
                 <SourceBreadcrumb />
               </div>
               <Separator className="bg-foreground/10" />

@@ -48,6 +48,26 @@ function instance(
 }
 
 describe("SourceGrid", () => {
+  it("opens a source with Enter while Space only selects it", () => {
+    const store = createAppStore();
+    store.dispatch(
+      editingInstancesAdded([instance("first", "first.mp4"), instance("second", "second.mp4")]),
+    );
+    store.dispatch(activeEditingInstanceChanged("first"));
+    render(
+      <Provider store={store}>
+        <TooltipProvider>
+          <SourceGrid />
+        </TooltipProvider>
+      </Provider>,
+    );
+    const card = screen.getByRole("checkbox", { name: "second.mp4" });
+    fireEvent.keyDown(card, { key: " " });
+    expect(selectActiveInstanceId(store.getState())).toBe("first");
+    fireEvent.keyDown(card, { key: "Enter" });
+    expect(selectActiveInstanceId(store.getState())).toBe("second");
+  });
+
   it("renders imported source cards and filters by filename or path", () => {
     const store = createAppStore();
     store.dispatch(

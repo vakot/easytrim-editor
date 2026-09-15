@@ -8,6 +8,7 @@ import {
   selectAudioTracks,
   selectMasterAudio,
 } from "@/app/store/slices/audio-slice";
+import { selectActiveInstanceId } from "@/app/store/slices/editing-instances-slice";
 import {
   selectLoopPlaybackEnabled,
   selectPlaybackSpeed,
@@ -108,6 +109,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const snapPlaybackEnabled = useAppSelector(selectSnapPlaybackEnabled);
+  const activeInstanceId = useAppSelector(selectActiveInstanceId);
   const loopPlaybackEnabled = useAppSelector(selectLoopPlaybackEnabled);
   const segmentPlaybackEnabled = useAppSelector(selectSegmentPlaybackEnabled);
   const playbackSpeed = useAppSelector(selectPlaybackSpeed);
@@ -198,6 +200,8 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
   const shuttleDirectionRef = useRef<FrameShuttleDirection | 0>(0);
   const resumeAfterCropRef = useRef(false);
   const lastPlaybackCommitAtRef = useRef(0);
+  const lastScrubCommitAtRef = useRef(-Infinity);
+  const trimInteractionActiveRef = useRef(false);
   const lastAudioSyncAtRef = useRef(0);
   const trimRef = useRef(trim);
   const currentPlayheadMicrosRef = useRef(trim.startMicros);
@@ -310,7 +314,6 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     playbackStartSequenceRef.current += 1;
     playbackRequestedRef.current = false;
     isPlayingRef.current = false;
-    currentPlayheadMicrosRef.current = 0;
     videoRef.current?.pause();
     cancelPlaybackFrame(playbackFrameRef);
     cancelFrame(reverseShuttleFrameRef);
@@ -321,6 +324,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     pendingFrameStepSeekMicrosRef.current = null;
     pendingTrimCommitRef.current = null;
     timelineInteractionActiveRef.current = false;
+    trimInteractionActiveRef.current = false;
     resumeAfterScrubRef.current = false;
     seekSchedulerRef.current?.dispose();
     seekSchedulerRef.current = null;
@@ -331,8 +335,10 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     setShuttleDirection(0);
     setIsPlaying(false);
     setTransportError(null);
-    setPlayheadMicros(0);
-  }, [cleanupAudioRuntime, previewKey, sourcePath]);
+    // Snapshot activation restores the selected segment, so preview should begin at its boundary.
+    currentPlayheadMicrosRef.current = trimRef.current.startMicros;
+    setPlayheadMicros(trimRef.current.startMicros);
+  }, [activeInstanceId, cleanupAudioRuntime, previewKey, sourcePath]);
 
   useEffect(() => {
     const activePlaybackRate = shuttleDirection === 1 ? FRAME_SHUTTLE_PLAYBACK_RATE : playbackSpeed;
@@ -625,14 +631,10 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
       );
       setPlayheadMicros(clamped);
 
-      const shouldDeferSeek =
-        pendingFrameStepSeekMicrosRef.current !== null || frameStepSeekFrameRef.current !== null;
-
-      if (!shouldDeferSeek) {
+      if (!seekSchedulerRef.current?.isPending && frameStepSeekFrameRef.current === null) {
         applyMediaSeek(clamped);
         return;
       }
-
       pendingFrameStepSeekMicrosRef.current = clamped;
       if (frameStepSeekFrameRef.current !== null) return;
       frameStepSeekFrameRef.current = requestAnimationFrame(() => {
@@ -646,7 +648,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
   );
 
   const commitSeek = useCallback(
-    (micros: number) => {
+    (micros: number, seekMedia = true, publish = true) => {
       flushFrameStepSeek();
       const clamped = clampPlaybackMicros(micros, trimRef.current.sourceDurationMicros);
       currentPlayheadMicrosRef.current = clamped;
@@ -656,8 +658,8 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
         clamped,
         trimRef.current.sourceDurationMicros,
       );
-      setPlayheadMicros(clamped);
-      applyMediaSeek(clamped);
+      if (publish) setPlayheadMicros(clamped);
+      if (seekMedia) applyMediaSeek(clamped);
     },
     [applyMediaSeek, flushFrameStepSeek],
   );
@@ -944,11 +946,17 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
         trimRef.current.sourceDurationMicros,
       );
       if (scrubFrameRef.current !== null) return;
-      scrubFrameRef.current = requestAnimationFrame(() => {
+      scrubFrameRef.current = requestAnimationFrame((timestamp) => {
         scrubFrameRef.current = null;
         const pendingMicros = pendingScrubMicrosRef.current;
         pendingScrubMicrosRef.current = null;
-        if (pendingMicros !== null) commitSeek(pendingMicros);
+        if (pendingMicros !== null) {
+          const publish =
+            trimInteractionActiveRef.current || timestamp - lastScrubCommitAtRef.current >= 100;
+
+          if (publish) lastScrubCommitAtRef.current = timestamp;
+          commitSeek(pendingMicros, true, publish);
+        }
       });
     },
     [commitSeek],
@@ -958,7 +966,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     cancelFrame(scrubFrameRef);
     const pendingMicros = pendingScrubMicrosRef.current;
     pendingScrubMicrosRef.current = null;
-    if (pendingMicros !== null) commitSeek(pendingMicros);
+    commitSeek(pendingMicros ?? currentPlayheadMicrosRef.current, false);
   }, [commitSeek]);
 
   const handleScrubStart = useCallback(() => {
@@ -969,6 +977,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
       origin: { type: "timeline", id: "timeline.scrub" },
     });
     timelineInteractionActiveRef.current = true;
+    lastScrubCommitAtRef.current = -Infinity;
     playbackStartSequenceRef.current += 1;
     resumeAfterScrubRef.current = playbackRequestedRef.current || isPlayingRef.current;
     playbackRequestedRef.current = false;
@@ -986,13 +995,15 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
       origin: { type: "timeline", id: "timeline.scrub" },
     });
     timelineInteractionActiveRef.current = false;
+    trimInteractionActiveRef.current = false;
     // A fast/keyframe seek is only for dragging; release always lands precisely.
-    applyMediaSeek(currentPlayheadMicrosRef.current);
     if (resumeAfterScrubRef.current) {
       resumeAfterScrubRef.current = false;
       playbackModes.startMicros(currentPlayheadMicrosRef.current, trimRef.current);
       playbackModes.resetBoundary();
       startMediaPlayback();
+    } else {
+      applyMediaSeek(currentPlayheadMicrosRef.current);
     }
   }, [applyMediaSeek, flushScrubSeek, playbackModes, startMediaPlayback]);
 
@@ -1120,6 +1131,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
   );
 
   const handleSegmentDragStart = useCallback(() => {
+    trimInteractionActiveRef.current = true;
     segmentDragActiveRef.current = true;
     segmentFollowBoundaryRef.current = null;
     handleScrubStart();
@@ -1138,6 +1150,11 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     dispatch(commitActiveEditingInstanceDraft());
     handleScrubEnd();
   }, [dispatch, flushTrimCommit, handleScrubEnd]);
+
+  const handleTrimDragStart = useCallback(() => {
+    trimInteractionActiveRef.current = true;
+    handleScrubStart();
+  }, [handleScrubStart]);
 
   const onTimeUpdate = useCallback(
     (seconds: number) => {
@@ -1306,7 +1323,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     onSetSegmentBoundary: handleSetSegmentBoundary,
     onTrimBoundaryChange: handleTrimBoundaryChange,
     onSegmentMove: handleSegmentMove,
-    onTrimDragStart: handleScrubStart,
+    onTrimDragStart: handleTrimDragStart,
     onTrimDragEnd: handleTrimDragEnd,
     onSegmentDragStart: handleSegmentDragStart,
     onSegmentDragEnd: handleSegmentDragEnd,

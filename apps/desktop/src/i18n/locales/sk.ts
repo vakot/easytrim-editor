@@ -12,7 +12,7 @@ export const sk = {
       retry: "Skúsiť znova",
       save: "Uložiť",
     },
-    labels: { brand: "EasyTrim Editor", search: "Hľadať" },
+    labels: { brand: "EasyTrim Editor", or: "alebo", search: "Hľadať" },
     status: {
       disabled: "Vypnuté",
       enabled: "Zapnuté",
@@ -427,6 +427,7 @@ export const sk = {
       commandPreparing: "Pripravuje sa náhľad príkazu…",
     },
     messages: {
+      fastUnavailable: "Strih bez prekódovania nie je dostupný po orezaní alebo otočení videa.",
       presetNameDuplicate: "Názvy predvolieb musia byť jedinečné.",
       presetNameRequired: "Názov predvoľby je povinný.",
       presetNameTooLong: "Názov predvoľby môže mať najviac 64 znakov.",
@@ -434,6 +435,8 @@ export const sk = {
     tooltips: {
       aspectRatioLocked: "Pomer strán je uzamknutý",
       aspectRatioUnlocked: "Pomer strán je odomknutý",
+      fast: "Uložiť bez prekódovania (Ctrl+S)",
+      optimized: "Nastaviť a exportovať optimalizované video (Ctrl+E)",
     },
     dialogs: {
       optimized: {
@@ -453,6 +456,7 @@ export const sk = {
       },
     },
     accessibility: {
+      actions: "Akcie exportu",
       lockAspectRatio: "Uzamknúť pomer strán",
       presetActions: "Akcie predvoľby",
       unlockAspectRatio: "Odomknúť pomer strán",
