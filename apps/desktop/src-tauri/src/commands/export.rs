@@ -9,6 +9,7 @@ use std::{
 };
 
 use serde::Serialize;
+use serde_json::{Map, Value};
 use tauri::{AppHandle, State, ipc::Channel};
 use tauri_plugin_dialog::DialogExt;
 
@@ -19,7 +20,7 @@ use crate::{
         FastExportRequest, OptimizedExportRequest, build_fast_arguments, build_optimized_arguments,
         optimized_command_preview,
     },
-    process::run_progress_cancellable,
+    process::{ProcessOutput, run_progress_cancellable},
     state::AppState,
 };
 
@@ -138,6 +139,7 @@ pub async fn render_fast(
         run_export(
             state.clone(),
             Arc::clone(&diagnostics),
+            source.path,
             output_path,
             display_name,
             arguments,
@@ -176,6 +178,7 @@ pub async fn render_optimized(
         run_export(
             state.clone(),
             Arc::clone(&diagnostics),
+            source.path,
             output_path,
             display_name,
             arguments,
@@ -271,6 +274,7 @@ pub fn open_file_location(path: String) -> Result<(), AppError> {
 async fn run_export(
     state: State<'_, AppState>,
     diagnostics: Arc<DiagnosticsState>,
+    source_path: PathBuf,
     output_path: PathBuf,
     display_name: String,
     arguments: Vec<std::ffi::OsString>,
@@ -282,13 +286,15 @@ async fn run_export(
         snapshot_id: diagnostic_snapshot_id,
     } = diagnostic;
     let (operation_id, cancellation) = state.begin_operation()?;
-    record_ffmpeg_event(
+    record_ffmpeg_event_with_data(
         &diagnostics,
         "ffmpeg.process.spawned",
         &operation_id,
         None,
         diagnostic_parent_operation_id.as_deref(),
         diagnostic_snapshot_id.as_deref(),
+        Some(ffmpeg_arguments_data(&arguments, &source_path, &output_path)),
+        "info",
     );
     let _ = on_progress.send(ExportProgress {
         operation_id: operation_id.clone(),
@@ -353,15 +359,12 @@ async fn run_export(
     })
     .await;
     match &task_result {
-        Ok(Ok(status)) => record_ffmpeg_event(
+        Ok(Ok(process)) => record_ffmpeg_process_exit(
             &diagnostics,
-            "ffmpeg.process.exited",
             &operation_id,
-            Some(if status.status.success() {
-                "success"
-            } else {
-                "failed"
-            }),
+            process,
+            &source_path,
+            &output_path,
             diagnostic_parent_operation_id.as_deref(),
             diagnostic_snapshot_id.as_deref(),
         ),
@@ -442,8 +445,9 @@ async fn run_export(
             diagnostic_parent_operation_id.as_deref(),
             diagnostic_snapshot_id.as_deref(),
         );
-        return Err(AppError::render_failed(
+        return Err(AppError::render_failed_with_diagnostics(
             "FFmpeg could not render the selected segment.",
+            export_diagnostics(&result, &source_path, &output_path),
         ));
     }
     let output_size = match fs::metadata(&output_path) {
@@ -498,11 +502,33 @@ fn record_ffmpeg_event(
     parent_operation_id: Option<&str>,
     snapshot_id: Option<&str>,
 ) {
+    record_ffmpeg_event_with_data(
+        diagnostics,
+        event,
+        operation_id,
+        result,
+        parent_operation_id,
+        snapshot_id,
+        None,
+        if event.ends_with(".failed") { "error" } else { "info" },
+    );
+}
+
+fn record_ffmpeg_event_with_data(
+    diagnostics: &DiagnosticsState,
+    event: &str,
+    operation_id: &str,
+    result: Option<&str>,
+    parent_operation_id: Option<&str>,
+    snapshot_id: Option<&str>,
+    data: Option<Map<String, Value>>,
+    level: &str,
+) {
     let _ = diagnostics.record(DiagnosticEventInput {
         category: "ffmpeg".to_owned(),
-        data: None,
+        data,
         event: event.to_owned(),
-        level: "info".to_owned(),
+        level: level.to_owned(),
         operation_id: Some(operation_id.to_owned()),
         origin: None,
         parent_operation_id: parent_operation_id.map(str::to_owned),
@@ -510,6 +536,123 @@ fn record_ffmpeg_event(
         snapshot_id: snapshot_id.map(str::to_owned),
         duration_ms: None,
     });
+}
+
+fn record_ffmpeg_process_exit(
+    diagnostics: &DiagnosticsState,
+    operation_id: &str,
+    process: &ProcessOutput,
+    source_path: &std::path::Path,
+    output_path: &std::path::Path,
+    parent_operation_id: Option<&str>,
+    snapshot_id: Option<&str>,
+) {
+    let failed = !process.status.success();
+    let mut data = Map::from_iter([
+        (
+            "exitCode".to_owned(),
+            process.status.code().map_or(Value::Null, Value::from),
+        ),
+        (
+            "stderrTruncated".to_owned(),
+            Value::from(process.stderr_truncated),
+        ),
+    ]);
+    if failed {
+        if let Some(stderr) = export_diagnostics(process, source_path, output_path) {
+            data.insert("stderr".to_owned(), Value::String(stderr));
+        }
+    }
+    record_ffmpeg_event_with_data(
+        diagnostics,
+        "ffmpeg.process.exited",
+        operation_id,
+        Some(if failed { "failed" } else { "success" }),
+        parent_operation_id,
+        snapshot_id,
+        Some(data),
+        if failed { "error" } else { "info" },
+    );
+}
+
+fn ffmpeg_arguments_data(
+    arguments: &[std::ffi::OsString],
+    source_path: &std::path::Path,
+    output_path: &std::path::Path,
+) -> Map<String, Value> {
+    Map::from_iter([
+        (
+            "argumentCount".to_owned(),
+            Value::from(arguments.len() as u64),
+        ),
+        (
+            "arguments".to_owned(),
+            Value::Array(
+                arguments
+                    .iter()
+                    .map(|argument| {
+                        let argument = redact_export_text(
+                            &argument.to_string_lossy(),
+                            source_path,
+                            output_path,
+                        );
+                        let diagnostic_argument = argument
+                            .split_once('=')
+                            .map(|(option, _)| option)
+                            .filter(|option| option.starts_with('-'))
+                            .map_or_else(
+                                || {
+                                    if argument.starts_with('-') {
+                                        argument.clone()
+                                    } else {
+                                        "<value>".to_owned()
+                                    }
+                                },
+                                |option| option.to_owned(),
+                            );
+                        Value::String(diagnostic_argument)
+                    })
+                    .collect(),
+            ),
+        ),
+    ])
+}
+
+fn export_diagnostics(
+    process: &ProcessOutput,
+    source_path: &std::path::Path,
+    output_path: &std::path::Path,
+) -> Option<String> {
+    const MAX_EXPORT_DIAGNOSTICS: usize = 8 * 1024;
+    let value = String::from_utf8_lossy(&process.stderr);
+    let value = redact_export_text(&value, source_path, output_path);
+    let value = value.trim();
+    if value.is_empty() {
+        return None;
+    }
+    let mut diagnostics = if value.chars().count() > MAX_EXPORT_DIAGNOSTICS {
+        let start = value
+            .char_indices()
+            .nth(value.chars().count() - MAX_EXPORT_DIAGNOSTICS)
+            .map_or(0, |(index, _)| index);
+        format!("[diagnostics truncated]\n{}", &value[start..])
+    } else {
+        value.to_owned()
+    };
+    if process.stderr_truncated && !diagnostics.starts_with("[diagnostics truncated]") {
+        diagnostics.push_str("\n[diagnostics truncated]");
+    }
+    Some(diagnostics)
+}
+
+fn redact_export_text(
+    value: &str,
+    source_path: &std::path::Path,
+    output_path: &std::path::Path,
+) -> String {
+    value
+        .replace(&source_path.to_string_lossy().to_string(), "<source>")
+        .replace(&output_path.to_string_lossy().to_string(), "<output>")
 }
 
 fn remove_partial_output(path: &std::path::Path) {
@@ -521,4 +664,33 @@ fn output_display_name(path: &std::path::Path) -> Result<String, AppError> {
         .and_then(|value| value.to_str())
         .map(ToOwned::to_owned)
         .ok_or_else(|| AppError::invalid_request("The output name is required."))
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{ffi::OsString, path::Path};
+
+    use super::ffmpeg_arguments_data;
+
+    #[test]
+    fn ffmpeg_diagnostic_arguments_redact_source_and_output_paths() {
+        let data = ffmpeg_arguments_data(
+            &[
+                OsString::from("-i"),
+                OsString::from(r"C:\private\source.mkv"),
+                OsString::from("-spatial_aq"),
+                OsString::from(r"C:\private\output.mp4"),
+            ],
+            Path::new(r"C:\private\source.mkv"),
+            Path::new(r"C:\private\output.mp4"),
+        );
+        let arguments = data
+            .get("arguments")
+            .and_then(serde_json::Value::as_array)
+            .expect("argument diagnostics are an array");
+
+        assert_eq!(arguments[1], "<value>");
+        assert_eq!(arguments[3], "<value>");
+        assert_eq!(arguments[2], "-spatial_aq");
+    }
 }

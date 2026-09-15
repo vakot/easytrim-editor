@@ -76,10 +76,17 @@ impl AppError {
     }
 
     pub fn render_failed(message: impl Into<String>) -> Self {
+        Self::render_failed_with_diagnostics(message, None::<String>)
+    }
+
+    pub fn render_failed_with_diagnostics(
+        message: impl Into<String>,
+        diagnostics: Option<impl Into<String>>,
+    ) -> Self {
         Self {
             code: "render_failed",
             message: message.into(),
-            diagnostics: None,
+            diagnostics: diagnostics.map(Into::into),
         }
     }
 
