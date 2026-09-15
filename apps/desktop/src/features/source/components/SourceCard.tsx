@@ -180,6 +180,9 @@ export const SourceCard = memo(function SourceCard({ source }: SourceCardProps) 
                 metaKey: event.metaKey,
                 shiftKey: event.shiftKey,
               });
+              if (event.key === "Enter" && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
+                void dispatch(navigateToEditingInstance(id));
+              }
             }}
             role="checkbox"
             tabIndex={0}
