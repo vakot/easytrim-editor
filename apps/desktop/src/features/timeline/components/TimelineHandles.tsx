@@ -60,6 +60,7 @@ export function SegmentDragHandle({
             disabled && ["cursor-not-allowed", styles.segmentDisabled],
           )}
           data-dragging={dragging ? "true" : undefined}
+          data-editor-keyboard="timeline-slider"
           data-snap-active={snapPoint ? "true" : undefined}
           data-snap-point={snapPoint ?? undefined}
           disabled={disabled}
@@ -137,6 +138,7 @@ export function TrimHandle({
             disabled && cn("cursor-not-allowed", styles.trimDisabled),
           )}
           data-dragging={dragging ? "true" : undefined}
+          data-editor-keyboard="timeline-slider"
           data-snap-active={snapActive ? "true" : undefined}
           disabled={disabled}
           onDoubleClick={onDoubleClick}
@@ -203,6 +205,7 @@ export function Playhead({
           })}
           className={cn("playhead", disabled && "opacity-30", styles.playhead)}
           data-dragging={dragging ? "true" : undefined}
+          data-editor-keyboard="timeline-slider"
           disabled={disabled}
           onKeyDown={onKeyDown}
           onLostPointerCapture={onLostPointerCapture}

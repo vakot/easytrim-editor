@@ -217,7 +217,7 @@ function TransportButton({
             hold && "touch-none",
             hold?.active && "bg-accent text-accent-foreground",
           )}
-          data-editor-shortcut="true"
+          data-editor-keyboard="timeline-transport"
           disabled={disabled}
           onClick={() => {
             if (suppressClickRef.current) {

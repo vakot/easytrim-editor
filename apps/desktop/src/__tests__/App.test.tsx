@@ -1080,10 +1080,20 @@ describe("App", () => {
 
     await openSourcePicker(user);
     await waitForSourcePresence(true);
+    const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
+    const play = vi.spyOn(video, "play").mockResolvedValue();
+    const startHandle = screen.getByRole("slider", { name: "Trim start" });
+    video.currentTime = 10;
+    fireEvent.timeUpdate(video);
     getMenuTrigger("File").focus();
     await user.keyboard("{Enter}");
+    fireEvent.keyDown(window, { key: "i", code: "KeyI" });
+    expect(startHandle).toHaveAttribute("aria-valuenow", "0");
     await user.click(screen.getByRole("menuitem", { name: /Optimize & Export/ }));
     expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+    fireEvent.keyDown(window, { key: " ", code: "Space" });
+    expect(play).not.toHaveBeenCalled();
 
     await user.keyboard("{Escape}");
 
@@ -1885,6 +1895,7 @@ describe("App", () => {
     await openSourcePicker(user);
     const startHandle = await screen.findByRole("slider", { name: "Trim start" });
     const endHandle = screen.getByRole("slider", { name: "Trim end" });
+    const playhead = screen.getByRole("slider", { name: "Playback position" });
 
     expect(startHandle).toHaveAttribute("aria-valuenow", "0");
     expect(endHandle).toHaveAttribute("aria-valuenow", "65000000");
@@ -1894,6 +1905,97 @@ describe("App", () => {
 
     expect(startHandle).toHaveAttribute("aria-valuenow", "16683");
     expect(screen.getAllByText("00:00:00:01f")).not.toHaveLength(0);
+
+    const playheadBeforeStep = Number(playhead.getAttribute("aria-valuenow"));
+    playhead.focus();
+    await user.keyboard("{ArrowRight}");
+    expect(playhead).toHaveAttribute("aria-valuenow", `${playheadBeforeStep + 16683}`);
+  });
+
+  it("runs segment-boundary shortcuts while focus remains on timeline sliders", async () => {
+    mocks.chooseSource.mockResolvedValue([selection]);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await openSourcePicker(user);
+    const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
+    const startHandle = screen.getByRole("slider", { name: "Trim start" });
+    const endHandle = screen.getByRole("slider", { name: "Trim end" });
+
+    video.currentTime = 10;
+    fireEvent.timeUpdate(video);
+    startHandle.focus();
+    fireEvent.keyDown(startHandle, { key: "i", code: "KeyI", repeat: true });
+    expect(startHandle).toHaveAttribute("aria-valuenow", "0");
+    fireEvent.keyDown(startHandle, { key: "i", code: "KeyI" });
+    expect(startHandle).toHaveAttribute("aria-valuenow", "10000000");
+
+    video.currentTime = 20;
+    fireEvent.timeUpdate(video);
+    endHandle.focus();
+    fireEvent.keyDown(endHandle, { key: "o", code: "KeyO" });
+    expect(endHandle).toHaveAttribute("aria-valuenow", "20000000");
+  });
+
+  it("keeps focus on a trim handle and toggles playback with Space after dragging", async () => {
+    mocks.chooseSource.mockResolvedValue([selection]);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await openSourcePicker(user);
+    const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
+    const play = vi.spyOn(video, "play").mockResolvedValue();
+    const pause = vi.spyOn(video, "pause").mockImplementation(() => undefined);
+    const trimStart = screen.getByRole("slider", { name: "Trim start" });
+
+    trimStart.focus();
+    fireEvent.pointerDown(trimStart, { clientX: 100, pointerId: 1 });
+    fireEvent.pointerUp(trimStart, { clientX: 100, pointerId: 1 });
+
+    expect(document.activeElement).toBe(trimStart);
+    pause.mockClear();
+    fireEvent.keyDown(trimStart, { key: " ", code: "Space" });
+    expect(play).toHaveBeenCalledOnce();
+    fireEvent.play(video);
+    fireEvent.keyDown(trimStart, { key: " ", code: "Space", repeat: true });
+    expect(pause).not.toHaveBeenCalled();
+  });
+
+  it("keeps focus on the segment handle and toggles playback with Space after dragging", async () => {
+    mocks.chooseSource.mockResolvedValue([selection]);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await openSourcePicker(user);
+    const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
+    const play = vi.spyOn(video, "play").mockResolvedValue();
+    vi.spyOn(video, "pause").mockImplementation(() => undefined);
+    const segmentHandle = screen.getByRole("slider", { name: "Move selected segment" });
+
+    segmentHandle.focus();
+    fireEvent.pointerDown(segmentHandle, { clientX: 100, pointerId: 1 });
+    fireEvent.pointerUp(segmentHandle, { clientX: 100, pointerId: 1 });
+
+    expect(document.activeElement).toBe(segmentHandle);
+    fireEvent.keyDown(segmentHandle, { key: " ", code: "Space" });
+    expect(play).toHaveBeenCalledOnce();
+  });
+
+  it("uses timeline shortcuts from focused playback controls", async () => {
+    mocks.chooseSource.mockResolvedValue([selection]);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await openSourcePicker(user);
+    const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
+    const play = vi.spyOn(video, "play").mockResolvedValue();
+    vi.spyOn(video, "pause").mockImplementation(() => undefined);
+    const playButton = screen.getByRole("button", { name: "Play" });
+
+    playButton.focus();
+    fireEvent.keyDown(playButton, { key: " ", code: "Space" });
+
+    expect(play).toHaveBeenCalledOnce();
   });
 
   it("maps pointer movement on a trim handle to source time", async () => {
