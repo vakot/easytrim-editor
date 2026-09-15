@@ -12,6 +12,7 @@ import {
   rotationChanged,
   selectCropApplied,
   selectCropResolution,
+  selectTransformApplied,
 } from "../crop-slice";
 
 describe("crop slice", () => {
@@ -61,7 +62,7 @@ describe("crop slice", () => {
     expect(cleared.rotationDegrees).toBe(0);
   });
 
-  it("normalizes 180 degrees plus both flips back to the source transform", () => {
+  it("preserves 180 degrees plus both flips in UI state", () => {
     let state = cropReducer(
       initialCropState,
       cropChanged({
@@ -75,12 +76,13 @@ describe("crop slice", () => {
     state = cropReducer(state, flipToggled("vertical"));
 
     expect(state).toMatchObject({
-      flipHorizontal: false,
-      flipVertical: false,
-      rotationDegrees: 0,
+      flipHorizontal: true,
+      flipVertical: true,
+      rotationDegrees: 180,
       value: { width: 0.5, height: 0.6 },
     });
-    expect(state.value.x).toBeCloseTo(0.1);
+    expect(state.value.x).toBeCloseTo(0.4);
     expect(state.value.y).toBeCloseTo(0.2);
+    expect(selectTransformApplied({ crop: state } as never)).toBe(false);
   });
 });

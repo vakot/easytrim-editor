@@ -206,20 +206,21 @@ pub fn build_optimized_arguments(
     if request.audio_tracks.is_empty() {
         arguments.push(OsString::from("-an"));
     }
+    let (rotation_degrees, flip_horizontal, flip_vertical, crop) = effective_transform(request);
     let mut video_filters = Vec::new();
-    if request.rotation_degrees != 0 {
-        video_filters.push(rotation_filter(request.rotation_degrees));
+    if rotation_degrees != 0 {
+        video_filters.push(rotation_filter(rotation_degrees));
     }
-    if let Some(crop) = request.crop.as_ref() {
+    if let Some(crop) = crop.as_ref() {
         video_filters.push(format!(
             "crop=iw*{}:ih*{}:iw*{}:ih*{}",
             crop.width, crop.height, crop.x, crop.y
         ));
     }
-    if request.flip_horizontal {
+    if flip_horizontal {
         video_filters.push("hflip".to_owned());
     }
-    if request.flip_vertical {
+    if flip_vertical {
         video_filters.push("vflip".to_owned());
     }
     video_filters.push(format!(
@@ -354,6 +355,31 @@ fn rotation_filter(rotation_degrees: u16) -> String {
         270 => "transpose=2".to_owned(),
         _ => String::new(),
     }
+}
+
+fn effective_transform(
+    request: &OptimizedExportRequest,
+) -> (u16, bool, bool, Option<CropSelection>) {
+    if request.rotation_degrees != 180 || !request.flip_horizontal || !request.flip_vertical {
+        return (
+            request.rotation_degrees,
+            request.flip_horizontal,
+            request.flip_vertical,
+            request.crop.clone(),
+        );
+    }
+
+    (
+        0,
+        false,
+        false,
+        request.crop.as_ref().map(|crop| CropSelection {
+            x: 1.0 - crop.x - crop.width,
+            y: 1.0 - crop.y - crop.height,
+            width: crop.width,
+            height: crop.height,
+        }),
+    )
 }
 
 fn audio_tracks_need_reencode(audio_tracks: &[AudioTrackSelection]) -> bool {
@@ -857,6 +883,40 @@ mod tests {
                 "crop=iw*0.5:ih*0.6:iw*0.1:ih*0.2,hflip,vflip,scale=1920:1080,setsar=1",
             ]
         }));
+    }
+
+    #[test]
+    fn optimized_route_normalizes_an_identity_transform_before_building_filters() {
+        let mut request = optimized_request("-c:v libx264 -crf 20");
+        request.crop = Some(CropSelection {
+            x: 0.1,
+            y: 0.2,
+            width: 0.5,
+            height: 0.6,
+        });
+        request.rotation_degrees = 180;
+        request.flip_horizontal = true;
+        request.flip_vertical = true;
+
+        let values = build_optimized_arguments(
+            &media(),
+            &request,
+            Path::new("source.mkv"),
+            Path::new("out.mp4"),
+        )
+        .expect("identity transform is valid")
+        .into_iter()
+        .map(|value| value.to_string_lossy().to_string())
+        .collect::<Vec<_>>();
+
+        let video_filter = values
+            .windows(2)
+            .find_map(|pair| (pair[0] == "-vf").then_some(pair[1].as_str()))
+            .expect("optimized request includes a video filter");
+        assert!(video_filter.starts_with("crop=iw*0.5:ih*0.6:iw*0.4:ih*0.2"));
+        assert!(video_filter.ends_with(",scale=1920:1080,setsar=1"));
+        assert!(!video_filter.contains("hflip"));
+        assert!(!video_filter.contains("vflip"));
     }
 
     #[test]

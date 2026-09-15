@@ -155,31 +155,21 @@ export function useCropSelection(previewRef: RefObject<HTMLDivElement | null>) {
   const rotate = useCallback(
     (delta: -90 | 90 | 180) => {
       const nextRotation = ((rotationDegrees + delta + 360) % 360) as RotationDegrees;
-      const normalizesIdentity = nextRotation === 180 && flipHorizontal && flipVertical;
-      const nextPreviewRotation = previewRotationRef.current + (normalizesIdentity ? 360 : delta);
+      const nextPreviewRotation = previewRotationRef.current + delta;
       previewRotationRef.current = nextPreviewRotation;
       setPreviewRotationDegrees(nextPreviewRotation);
       dispatch(rotationChanged(nextRotation));
       dispatch(commitActiveEditingInstanceDraft());
     },
-    [dispatch, flipHorizontal, flipVertical, rotationDegrees],
+    [dispatch, rotationDegrees],
   );
 
   const flip = useCallback(
     (axis: "horizontal" | "vertical") => {
-      const normalizesIdentity =
-        rotationDegrees === 180 &&
-        ((axis === "horizontal" && flipVertical) || (axis === "vertical" && flipHorizontal));
-
-      if (normalizesIdentity) {
-        const nextPreviewRotation = previewRotationRef.current + 180;
-        previewRotationRef.current = nextPreviewRotation;
-        setPreviewRotationDegrees(nextPreviewRotation);
-      }
       dispatch(flipToggled(axis));
       dispatch(commitActiveEditingInstanceDraft());
     },
-    [dispatch, flipHorizontal, flipVertical, rotationDegrees],
+    [dispatch],
   );
 
   return {

@@ -355,11 +355,13 @@ describe("VideoPreview", () => {
 
     selectTransformAction(viewport, "Rotate 180");
     expect(store.getState().crop).toMatchObject({
-      flipHorizontal: false,
-      flipVertical: false,
-      rotationDegrees: 0,
+      flipHorizontal: true,
+      flipVertical: true,
+      rotationDegrees: 180,
     });
-    expect(container.querySelector("video")).toHaveStyle({ transform: "rotate(360deg)" });
+    expect(container.querySelector("video")).toHaveStyle({
+      transform: "rotate(180deg) scaleX(-1) scaleY(-1)",
+    });
   });
 
   it("does not open crop on a left click but supports the context menu", () => {

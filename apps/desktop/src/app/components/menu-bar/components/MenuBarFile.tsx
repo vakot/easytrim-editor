@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/menubar";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
-import { selectCropApplied, selectRotationApplied } from "@/app/store/slices/crop-slice";
+import { selectCropApplied, selectTransformApplied } from "@/app/store/slices/crop-slice";
 import { selectActiveInstanceId } from "@/app/store/slices/editing-instances-slice";
 import {
   selectIsChoosingSource,
@@ -41,8 +41,8 @@ export function MenuBarFile() {
   const isChoosingSource = useAppSelector(selectIsChoosingSource);
   const isNativeDialogOpen = useAppSelector(selectIsNativeDialogOpen);
   const cropApplied = useAppSelector(selectCropApplied);
-  const rotationApplied = useAppSelector(selectRotationApplied);
-  const canSave = canExport && !cropApplied && !rotationApplied;
+  const transformApplied = useAppSelector(selectTransformApplied);
+  const canSave = canExport && !cropApplied && !transformApplied;
 
   useKeyboardShortcut(
     (event) =>

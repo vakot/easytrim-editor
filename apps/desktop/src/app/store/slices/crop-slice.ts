@@ -4,7 +4,7 @@ import { editingInstanceActivated } from "@/app/store/actions/editing-instance-a
 import { sourceCleared, sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
 import { selectSourceMedia } from "@/app/store/slices/source-slice";
 import { type CropRect, FULL_CROP } from "@/domain/crop";
-import { rotateCrop, type RotationDegrees } from "@/domain/rotation";
+import { isIdentityTransform, rotateCrop, type RotationDegrees } from "@/domain/rotation";
 
 import type { RootState } from "../store";
 
@@ -39,12 +39,10 @@ const cropSlice = createSlice({
       const delta = ((action.payload - currentRotation + 360) % 360) as RotationDegrees;
       state.value = rotateCrop(state.value, delta);
       state.rotationDegrees = action.payload;
-      normalizeIdentityTransform(state);
     },
     flipToggled: (state, action: PayloadAction<"horizontal" | "vertical">) => {
       if (action.payload === "horizontal") state.flipHorizontal = !state.flipHorizontal;
       else state.flipVertical = !state.flipVertical;
-      normalizeIdentityTransform(state);
     },
   },
   extraReducers: (builder) => {
@@ -60,7 +58,6 @@ const cropSlice = createSlice({
         state.flipVertical = action.payload.snapshot.flipVertical ?? false;
         state.rotationDegrees = action.payload.snapshot.rotation ?? 0;
         state.value = action.payload.snapshot.crop ?? FULL_CROP;
-        normalizeIdentityTransform(state);
       })
       .addCase(sourceCleared, (state) => {
         state.flipHorizontal = false;
@@ -74,7 +71,6 @@ const cropSlice = createSlice({
           state.flipVertical = action.payload.snapshot.flipVertical ?? false;
           state.rotationDegrees = action.payload.snapshot.rotation ?? 0;
           state.value = action.payload.snapshot.crop ?? FULL_CROP;
-          normalizeIdentityTransform(state);
         }
       });
   },
@@ -118,15 +114,9 @@ export const selectCropResolution = createSelector(
     cropResolutionFor(media?.video ?? null, crop, rotation),
 );
 
-export const selectRotationApplied = (state: RootState): boolean =>
-  selectRotationDegrees(state) !== 0;
 export const selectTransformApplied = (state: RootState): boolean =>
-  selectRotationApplied(state) || selectFlipHorizontal(state) || selectFlipVertical(state);
-
-function normalizeIdentityTransform(state: CropState) {
-  if (state.rotationDegrees !== 180 || !state.flipHorizontal || !state.flipVertical) return;
-  state.value = rotateCrop(state.value, 180);
-  state.flipHorizontal = false;
-  state.flipVertical = false;
-  state.rotationDegrees = 0;
-}
+  !isIdentityTransform(
+    selectRotationDegrees(state),
+    selectFlipHorizontal(state),
+    selectFlipVertical(state),
+  );

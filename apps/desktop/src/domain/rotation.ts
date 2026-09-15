@@ -8,6 +8,35 @@ export function isQuarterTurn(rotation: RotationDegrees): boolean {
   return rotation === 90 || rotation === 270;
 }
 
+export function isIdentityTransform(
+  rotationDegrees: RotationDegrees,
+  flipHorizontal: boolean,
+  flipVertical: boolean,
+): boolean {
+  return (
+    (rotationDegrees === 0 && !flipHorizontal && !flipVertical) ||
+    (rotationDegrees === 180 && flipHorizontal && flipVertical)
+  );
+}
+
+export function normalizeTransformForExport(
+  crop: CropRect,
+  rotationDegrees: RotationDegrees,
+  flipHorizontal: boolean,
+  flipVertical: boolean,
+) {
+  if (!isIdentityTransform(rotationDegrees, flipHorizontal, flipVertical)) {
+    return { crop, flipHorizontal, flipVertical, rotationDegrees };
+  }
+
+  return {
+    crop: rotationDegrees === 180 ? rotateCrop(crop, 180) : crop,
+    flipHorizontal: false,
+    flipVertical: false,
+    rotationDegrees: 0 as const,
+  };
+}
+
 export function rotateCrop(crop: CropRect, rotation: RotationDegrees): CropRect {
   switch (rotation) {
     case 90:
