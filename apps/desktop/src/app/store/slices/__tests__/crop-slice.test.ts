@@ -7,6 +7,7 @@ import { createAppStore } from "../../store";
 import {
   cropChanged,
   cropReducer,
+  flipToggled,
   initialCropState,
   rotationChanged,
   selectCropApplied,
@@ -58,5 +59,28 @@ describe("crop slice", () => {
 
     const cleared = cropReducer(rotated, sourceCleared());
     expect(cleared.rotationDegrees).toBe(0);
+  });
+
+  it("normalizes 180 degrees plus both flips back to the source transform", () => {
+    let state = cropReducer(
+      initialCropState,
+      cropChanged({
+        crop: { x: 0.1, y: 0.2, width: 0.5, height: 0.6 },
+        resolution: { width: 960, height: 648 },
+      }),
+    );
+
+    state = cropReducer(state, rotationChanged(180));
+    state = cropReducer(state, flipToggled("horizontal"));
+    state = cropReducer(state, flipToggled("vertical"));
+
+    expect(state).toMatchObject({
+      flipHorizontal: false,
+      flipVertical: false,
+      rotationDegrees: 0,
+      value: { width: 0.5, height: 0.6 },
+    });
+    expect(state.value.x).toBeCloseTo(0.1);
+    expect(state.value.y).toBeCloseTo(0.2);
   });
 });

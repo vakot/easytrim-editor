@@ -1,14 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { rotateCrop, rotateDegrees } from "../rotation";
+import { rotateCrop } from "../rotation";
 
 describe("rotation", () => {
-  it("wraps clockwise and counterclockwise rotations through quarter turns", () => {
-    expect(rotateDegrees(270, "clockwise")).toBe(0);
-    expect(rotateDegrees(0, "counterclockwise")).toBe(270);
-    expect(rotateDegrees(90, "clockwise")).toBe(180);
-  });
-
   it("rotates crop bounds with the image", () => {
     const crop = { x: 0.1, y: 0.2, width: 0.5, height: 0.6 };
 

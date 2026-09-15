@@ -9,6 +9,8 @@ import { rotateCrop, type RotationDegrees } from "@/domain/rotation";
 import type { RootState } from "../store";
 
 interface CropState {
+  flipHorizontal: boolean;
+  flipVertical: boolean;
   rotationDegrees: RotationDegrees;
   value: CropRect;
 }
@@ -18,7 +20,12 @@ interface CropResolution {
   width: number;
 }
 
-export const initialCropState: CropState = { rotationDegrees: 0, value: FULL_CROP };
+export const initialCropState: CropState = {
+  flipHorizontal: false,
+  flipVertical: false,
+  rotationDegrees: 0,
+  value: FULL_CROP,
+};
 
 const cropSlice = createSlice({
   name: "crop",
@@ -32,32 +39,48 @@ const cropSlice = createSlice({
       const delta = ((action.payload - currentRotation + 360) % 360) as RotationDegrees;
       state.value = rotateCrop(state.value, delta);
       state.rotationDegrees = action.payload;
+      normalizeIdentityTransform(state);
+    },
+    flipToggled: (state, action: PayloadAction<"horizontal" | "vertical">) => {
+      if (action.payload === "horizontal") state.flipHorizontal = !state.flipHorizontal;
+      else state.flipVertical = !state.flipVertical;
+      normalizeIdentityTransform(state);
     },
   },
   extraReducers: (builder) => {
     builder
       .addCase(sourceSelected, (state) => {
+        state.flipHorizontal = false;
+        state.flipVertical = false;
         state.rotationDegrees = 0;
         state.value = FULL_CROP;
       })
       .addCase(editingInstanceActivated, (state, action) => {
+        state.flipHorizontal = action.payload.snapshot.flipHorizontal ?? false;
+        state.flipVertical = action.payload.snapshot.flipVertical ?? false;
         state.rotationDegrees = action.payload.snapshot.rotation ?? 0;
         state.value = action.payload.snapshot.crop ?? FULL_CROP;
+        normalizeIdentityTransform(state);
       })
       .addCase(sourceCleared, (state) => {
+        state.flipHorizontal = false;
+        state.flipVertical = false;
         state.rotationDegrees = 0;
         state.value = FULL_CROP;
       })
       .addCase(sourceReady, (state, action) => {
         if (action.payload.snapshot) {
+          state.flipHorizontal = action.payload.snapshot.flipHorizontal ?? false;
+          state.flipVertical = action.payload.snapshot.flipVertical ?? false;
           state.rotationDegrees = action.payload.snapshot.rotation ?? 0;
           state.value = action.payload.snapshot.crop ?? FULL_CROP;
+          normalizeIdentityTransform(state);
         }
       });
   },
 });
 
-export const { cropChanged, rotationChanged } = cropSlice.actions;
+export const { cropChanged, flipToggled, rotationChanged } = cropSlice.actions;
 export const cropReducer = cropSlice.reducer;
 
 const EMPTY_RESOLUTION: CropResolution = { width: 1, height: 1 };
@@ -65,6 +88,8 @@ const EMPTY_RESOLUTION: CropResolution = { width: 1, height: 1 };
 export const selectCrop = (state: RootState): CropRect => state.crop.value;
 export const selectRotationDegrees = (state: RootState): RotationDegrees =>
   state.crop.rotationDegrees ?? 0;
+export const selectFlipHorizontal = (state: RootState): boolean => state.crop.flipHorizontal;
+export const selectFlipVertical = (state: RootState): boolean => state.crop.flipVertical;
 export function cropResolutionFor(
   sourceDimensions: CropResolution | null,
   crop: CropRect,
@@ -95,3 +120,13 @@ export const selectCropResolution = createSelector(
 
 export const selectRotationApplied = (state: RootState): boolean =>
   selectRotationDegrees(state) !== 0;
+export const selectTransformApplied = (state: RootState): boolean =>
+  selectRotationApplied(state) || selectFlipHorizontal(state) || selectFlipVertical(state);
+
+function normalizeIdentityTransform(state: CropState) {
+  if (state.rotationDegrees !== 180 || !state.flipHorizontal || !state.flipVertical) return;
+  state.value = rotateCrop(state.value, 180);
+  state.flipHorizontal = false;
+  state.flipVertical = false;
+  state.rotationDegrees = 0;
+}
