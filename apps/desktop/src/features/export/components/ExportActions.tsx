@@ -21,7 +21,7 @@ export function ExportActions() {
   return (
     <div
       aria-label={t("export.accessibility.actions")}
-      className="flex shrink-0 items-center gap-0.5"
+      className="flex shrink-0 items-center gap-1"
       role="toolbar"
     >
       <ExportActionButton
