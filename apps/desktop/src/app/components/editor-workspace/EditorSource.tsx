@@ -38,8 +38,8 @@ export function EditorSource() {
           </Button>
         </CollapsibleTrigger>
 
-        <CollapsibleContent className="max-h-64 min-h-0">
-          <ExportQueueWidget layout="vertical" />
+        <CollapsibleContent className="min-h-0">
+          <ExportQueueWidget />
         </CollapsibleContent>
       </Collapsible>
 

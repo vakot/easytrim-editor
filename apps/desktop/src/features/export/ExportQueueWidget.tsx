@@ -1,4 +1,4 @@
-import { FileVideo, LoaderCircle, Trash2, X } from "lucide-react";
+import { FileVideo, LoaderCircle, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -28,22 +28,16 @@ export function ExportQueueWidget({ className, layout = "horizontal" }: ExportQu
   const featuredItem = active ?? pending[0];
   const pendingItems = active ? pending : pending.slice(1);
 
-  if (!featuredItem) {
-    return (
-      <p className={cn("px-2 py-4 text-center text-xs text-muted-foreground", className)}>
-        {t("source.messages.noSource")}
-      </p>
-    );
-  }
+  if (!featuredItem) return null;
 
   return (
-    <div className={cn("flex min-h-0 gap-2 p-2", vertical ? "flex-col" : "flex-row", className)}>
+    <div className={cn("flex min-h-0", vertical ? "flex-col" : "flex-row", className)}>
       <ExportQueueActiveItem
-        className={vertical ? undefined : "min-w-48 flex-1"}
+        className={vertical ? undefined : "h-full min-w-48"}
         item={featuredItem}
       />
       {pendingItems.length > 0 ? (
-        <ScrollArea className={cn("min-h-0", vertical ? "flex-1" : "w-64")}>
+        <ScrollArea className="min-w-48 flex-1">
           <ul aria-label={t("app.labels.exportQueue")} className="grid gap-1">
             {pendingItems.map((item) => (
               <ExportQueuePendingItem item={item} key={item.attempt.id} />
@@ -57,14 +51,13 @@ export function ExportQueueWidget({ className, layout = "horizontal" }: ExportQu
 
 function ExportQueueActiveItem({ className, item }: { className?: string; item: ExportQueueItem }) {
   const { t } = useTranslation();
-  const dispatch = useAppDispatch();
   const progress = Math.min(100, Math.max(0, Math.round(item.attempt.metrics.progressPercent)));
   const sourceName = item.instance.snapshot.source.displayName;
 
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-lg border border-foreground/10 bg-muted",
+        "relative aspect-video overflow-hidden border border-foreground/10 bg-muted",
         className,
       )}
     >
@@ -102,20 +95,8 @@ function ExportQueueActiveItem({ className, item }: { className?: string; item: 
           <span className="w-8 shrink-0 text-right text-[10px] text-muted-foreground tabular-nums">
             {progress}%
           </span>
-          <Button
-            aria-label={`${t("queue.actions.cancel")}: ${sourceName}`}
-            onClick={() =>
-              void dispatch(
-                cancelExportRequested({ attemptId: item.attempt.id, instanceId: item.instance.id }),
-              )
-            }
-            size="icon-2xs"
-            title={t("queue.actions.cancel")}
-            type="button"
-            variant="destructive"
-          >
-            <X aria-hidden="true" />
-          </Button>
+
+          <ExportQueueItemCancel item={item} />
         </div>
       </div>
     </div>
@@ -124,11 +105,10 @@ function ExportQueueActiveItem({ className, item }: { className?: string; item: 
 
 function ExportQueuePendingItem({ item }: { item: ExportQueueItem }) {
   const { t } = useTranslation();
-  const dispatch = useAppDispatch();
   const sourceName = item.instance.snapshot.source.displayName;
 
   return (
-    <li className="flex min-w-0 items-center gap-2 rounded-md p-1 text-xs text-foreground/80">
+    <li className="flex min-w-0 items-center gap-2 p-1 text-xs text-foreground/80">
       <ExportQueueThumbnail
         alt={t("queue.accessibility.pending", { name: sourceName })}
         className="size-10 shrink-0 rounded"
@@ -144,21 +124,33 @@ function ExportQueuePendingItem({ item }: { item: ExportQueueItem }) {
         </span>
       </div>
 
-      <Button
-        aria-label={`${t("common.actions.delete")}: ${item.attempt.output.displayName}`}
-        onClick={() =>
-          void dispatch(
-            cancelExportRequested({ attemptId: item.attempt.id, instanceId: item.instance.id }),
-          )
-        }
-        size="icon-2xs"
-        title={t("common.actions.delete")}
-        type="button"
-        variant="ghost"
-      >
-        <Trash2 aria-hidden="true" />
-      </Button>
+      <ExportQueueItemCancel item={item} />
     </li>
+  );
+}
+
+function ExportQueueItemCancel({ item }: { item: ExportQueueItem }) {
+  const { t } = useTranslation();
+
+  const dispatch = useAppDispatch();
+
+  const sourceName = item.instance.snapshot.source.displayName;
+
+  return (
+    <Button
+      aria-label={`${t("queue.actions.cancel")}: ${sourceName}`}
+      onClick={() =>
+        void dispatch(
+          cancelExportRequested({ attemptId: item.attempt.id, instanceId: item.instance.id }),
+        )
+      }
+      size="icon-2xs"
+      title={t("queue.actions.cancel")}
+      type="button"
+      variant="destructive"
+    >
+      <X aria-hidden="true" />
+    </Button>
   );
 }
 
