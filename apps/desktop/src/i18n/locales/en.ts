@@ -212,6 +212,7 @@ export const en = {
     labels: {
       drop: "Drop video to open",
       explorer: "Source explorer",
+      importedSources: "Imported Sources",
       metadata: {
         bitrate: "Bitrate",
         container: "Container",

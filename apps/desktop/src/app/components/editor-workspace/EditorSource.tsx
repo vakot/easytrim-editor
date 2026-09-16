@@ -74,11 +74,11 @@ export function EditorSource({ collapsibleState, onCollapsibleStateChange }: Edi
             variant="ghost"
           >
             <ChevronRight className="shrink-0 transition-transform group-data-[state=open]:rotate-90" />
-            {t("source.labels.explorer")}
+            {t("source.labels.importedSources")}
           </Button>
         </CollapsibleTrigger>
 
-        <CollapsibleContent>
+        <CollapsibleContent className="flex min-h-0 flex-1 flex-col pt-2">
           <SourceGrid />
         </CollapsibleContent>
       </Collapsible>
@@ -101,13 +101,13 @@ export function EditorSource({ collapsibleState, onCollapsibleStateChange }: Edi
           </Tooltip>
         )}
 
-        <CollapsibleContent className="min-h-0 p-2 pt-1">
-          <Card className="max-h-96 min-h-0 rounded-lg p-0">
+        <CollapsibleContent className="h-96 min-h-0 p-2 pt-1">
+          <Card className="size-full min-h-0 rounded-lg p-0">
             <ExportQueueWidget className="flex h-full min-h-0 flex-col">
               <ExportQueueWidgetActive className="aspect-video max-h-48 shrink-0">
                 <ExportQueueWidgetActiveDetails className="pr-2.5" />
               </ExportQueueWidgetActive>
-              <ScrollArea className="h-48 pr-0.5" type="always">
+              <ScrollArea className="min-h-0 flex-1 pr-0.5" type="always">
                 <ExportQueueWidgetPendingList className="py-1" />
               </ScrollArea>
             </ExportQueueWidget>
@@ -131,8 +131,8 @@ export function EditorSource({ collapsibleState, onCollapsibleStateChange }: Edi
           </Button>
         </CollapsibleTrigger>
 
-        <CollapsibleContent className="max-h-64 min-h-0">
-          <ScrollArea className="h-64 px-2 before:top-2">
+        <CollapsibleContent className="h-64 min-h-0">
+          <ScrollArea className="size-full px-2 before:top-2">
             <ActivityFeed />
           </ScrollArea>
         </CollapsibleContent>

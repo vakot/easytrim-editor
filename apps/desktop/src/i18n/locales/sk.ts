@@ -213,6 +213,7 @@ export const sk = {
     labels: {
       drop: "Pustením otvoríte video",
       explorer: "Prieskumník zdrojov",
+      importedSources: "Importované zdroje",
       metadata: {
         bitrate: "Dátový tok",
         container: "Kontajner",
