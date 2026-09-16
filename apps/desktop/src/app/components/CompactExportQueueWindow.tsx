@@ -93,20 +93,23 @@ export function CompactExportQueueWindow({ disabled, onRestore }: CompactExportQ
         onClick={onRestore}
       />
 
-      <ExportQueueWidget className="flex size-full">
-        <ExportQueueWidgetActive className="aspect-video min-w-0 flex-1 shrink-0">
+      <ExportQueueWidget className="grid size-full grid-cols-2">
+        <ExportQueueWidgetActive className="min-h-0 min-w-0">
           <ExportQueueWidgetActiveDetails />
         </ExportQueueWidgetActive>
-        <ExportQueueWidgetPendingListEmpty className="aspect-video" />
-        <ExportQueueWidgetPendingList className="py-3">
-          {({ items }) => (
-            <ScrollArea className="aspect-video min-w-0 flex-1 pr-0.5" type="always">
-              {items.map((item) => (
-                <ExportQueueWidgetPendingItem compact item={item} key={item.attempt.id} />
-              ))}
-            </ScrollArea>
-          )}
-        </ExportQueueWidgetPendingList>
+
+        <div className="relative min-h-0 min-w-0">
+          <ExportQueueWidgetPendingListEmpty className="size-full" />
+          <ScrollArea className="absolute inset-0 pr-0.5" type="always">
+            <ExportQueueWidgetPendingList className="py-3">
+              {({ items }) =>
+                items.map((item) => (
+                  <ExportQueueWidgetPendingItem compact item={item} key={item.attempt.id} />
+                ))
+              }
+            </ExportQueueWidgetPendingList>
+          </ScrollArea>
+        </div>
       </ExportQueueWidget>
 
       {windowActionError ? (
