@@ -884,7 +884,7 @@ describe("App", () => {
     await openSourcePicker(user);
 
     await waitForSourcePresence(true);
-    expect(screen.getByRole("heading", { name: "Imported sources" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Explorer" })).toBeInTheDocument();
     expect(screen.getAllByText(selection.displayName)[0]).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Activity Feed" })).toBeInTheDocument();
     expect(screen.getByLabelText("Source video preview")).toHaveAttribute(
