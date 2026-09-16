@@ -1,63 +1,50 @@
 # Editing instance lifecycle
 
-EasyTrim has one canonical in-memory collection of editing instances. An instance is created at
-import (or by an explicit duplicate operation), receives a stable `instanceId`, and remains the
-owner of its current editor snapshot and export-attempt history until it is explicitly closed.
-Exporting never promotes, replaces, or creates another instance.
+`editingInstances` owns the session's editing drafts and captured export attempts. Each imported
+or restored draft receives a generated ID. Multiple drafts may reference the same source path;
+the path identifies a shared file for native reservations and availability, not an editing draft.
 
-## Migration contract table
+## State ownership
 
-| Current contract                                           | New responsibility                                                                        | Required change                                                                   |
-| ---------------------------------------------------------- | ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| Imported items and export queue items are separate records | `EditingInstance` owns source, current snapshot, media descriptor, settings, and attempts | Remove the imported/exported union and promotion path                             |
-| Queue item ID is reused as a UI/runtime identity           | `instanceId`, `attemptId`, native `operationId`, and `outputId` are distinct tracing keys | Carry all keys through Redux, runtime jobs, diagnostics, and callbacks            |
-| Export request reads mutable editor state while work runs  | `ExportAttempt` captures an immutable request and `EditorSnapshot` at launch              | Render only from the captured attempt                                             |
-| History restore forks a new imported item                  | Restore hydrates the selected instance                                                    | Do not create a history fork or change the instance ID                            |
-| Source deletion is attached to one queue record            | Source availability is keyed by canonical source path                                     | Update every instance sharing that path; keep instances open                      |
-| Close means clearing the currently loaded source           | Close is instance lifecycle                                                               | Cancel that instance's native jobs, await cleanup, then remove only that instance |
-| Imported and export queues are navigation surfaces         | SourceTree is the primary instance navigator; SourceTabs is only a transitional shortcut  | Render folders by source path and leaves by `instanceId`; keep actions separate   |
-| Runtime jobs are Redux queue records                       | Runtime owns native handles and job cleanup; Redux owns serializable status               | Keep runtime maps keyed by `attemptId` and make cancellation idempotent           |
-| Redux persistence can be confused with session recovery    | Editing instances, attempts, media descriptors, and runtime state are session-only        | Keep them outside the persistence allow-list                                      |
+An editing instance holds its current snapshot, media descriptor, optimized settings and arguments,
+source availability, and export attempts. `draftAvailable` controls whether it appears in Imported
+Sources; an omitted value means the draft is available. Queuing an export sets it to `false`.
+The entity remains in Redux so queued work and historical results retain stable identities.
 
-## Canonical state
+Each export attempt captures a cloned request, snapshot, output selection, route, metrics, and
+lifecycle state. An instance may own multiple attempts, and queue selectors inspect all attempts.
+The runtime indexes jobs by `attemptId`, carries `instanceId` for Redux updates, and executes one
+native export at a time. Each queued job holds its own source reservation.
 
-`editingInstances.ids/entities` is the only collection of open instances. Each entity contains:
+## Queue and restore transitions
 
-- `id` and `origin` (`source-import` or `duplicate`);
-- the current `EditorSnapshot`, which may continue changing while an export runs;
-- optional inspected media and optimized settings;
-- source availability (`available`, `deleted`, or `missing`);
-- append-only export attempts until terminal history is cleared.
+1. Import a source to create an editable draft with a generated ID.
+2. Capture its snapshot and export request, choose an output, and reserve the source.
+3. Enqueue the attempt, hide the draft from Imported Sources, and clear the active editor.
+4. Render the captured request independently of other drafts referencing the same file.
+5. Retain terminal attempts as session history; completion does not reopen the draft.
 
-An attempt contains its own cloned request, snapshot, output selection, route, metrics, and
-discriminated lifecycle state. A single instance may have at most one queued or rendering attempt.
-Terminal attempts remain addressable for status, retry, and output history. Clearing history removes
-terminal attempts only; it never removes the instance.
+Clicking a pending export removes that job from the runtime before asynchronous source activation.
+Its queued attempt is consumed, and a new editing instance receives the captured snapshot and
+optimized settings. Existing drafts remain intact. Failure to activate the source leaves the
+restored draft available with its error rather than losing the snapshot.
 
-## Lifecycle and async guards
+Rendering attempts cannot be restored. Historical restoration uses the same thunk but retains the
+original terminal attempt, allowing repeated restoration into independent drafts. History has no
+dedicated UI yet. Re-exporting a restored draft creates a new attempt and repeats the queue flow.
+Restoration from the compact queue window returns to the main editor.
 
-The launch flow is:
+## Resources and concurrency
 
-1. Read the active instance and transient working editor state.
-2. Capture the request and snapshot before opening the output picker.
-3. Re-check the active instance, source path, and readiness after the picker returns.
-4. Reserve the source, create a new `attemptId`, and enqueue the captured attempt.
-5. Runtime assigns/observes the native `operationId`, reports progress by `(instanceId, attemptId)`,
-   and stores the terminal `ExportResult` with its `outputId`.
+Source/operation IDs and load tokens reject stale callbacks. Restoration removes pending jobs
+synchronously so a concurrent queue start cannot render the consumed attempt. Pending withdrawal
+releases only that job's reservation and does not run a queue-finish action when it empties the queue.
+Closing an instance cancels its jobs and awaits cleanup before removing the entity.
 
-The active instance does not change during launch or rendering. A later edit updates only the
-instance's current snapshot, never the captured attempt. A retry or re-export creates a new
-`attemptId`; stale progress, completion, failure, and `finally` paths cannot mutate that new
-attempt. Closing an instance awaits runtime cancellation and source-release cleanup before its
-entity is removed.
+Source deletion and restoration update every instance referencing the same canonical file path.
+Manual deletion is blocked while any attempt uses the file. Automatic deletion after export also
+respects editable drafts, including newly restored drafts. Successful outputs are never removed by
+snapshot restoration or job cleanup.
 
-## Source and navigation rules
-
-Deleting a source moves the file to the native trash/recovery boundary and marks all matching
-instances unavailable. Restoring the source marks all matching instances available again. Closing
-one instance does not delete its source, close another instance, or erase their histories. SourceTree
-uses `instanceId` as the leaf key, so two instances of the same source remain distinct.
-
-The native wire contracts remain unchanged by this frontend migration: FFmpeg/FFprobe adapters
-still receive the existing task-specific request DTOs. The new instance and attempt IDs are
-frontend/runtime correlation keys passed only through the existing operation-aware adapter calls.
+The existing native request DTOs and source reservation counter are unchanged. Editing instances,
+attempts, history, and runtime jobs remain session-only and are excluded from persisted preferences.

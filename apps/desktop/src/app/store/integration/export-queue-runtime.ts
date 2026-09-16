@@ -6,6 +6,7 @@ import {
   editingInstanceExportStarted,
   editingInstancesSourceAvailabilityChanged,
   selectEditingInstanceAttempts,
+  selectImportedEditingInstances,
 } from "@/app/store/slices/editing-instances-slice";
 import type { AppDispatch, RootState } from "@/app/store/store";
 import type { EditingInstanceId, ExportAttempt } from "@/domain/editing-instance";
@@ -397,7 +398,7 @@ async function finishQueueCycle(
   dispatch: AppDispatch,
   getState: () => RootState,
 ) {
-  await flushDeferredSourceDeletes(runtime, dispatch);
+  await flushDeferredSourceDeletes(runtime, dispatch, getState);
   if (runtime.pendingJobs.length > 0 || runtime.jobsByAttemptId.size > 0) {
     runtime.queueCycle = "running";
     return;
@@ -420,6 +421,10 @@ async function finishQueueCycle(
 
 async function deleteSourceWhenUnused(job: RuntimeExportJob, sourcePath: string) {
   const runtime = runtimeFor(job.getState);
+  if (hasEditableDraftForSource(sourcePath, job.getState)) {
+    runtime.deferredSourceDeletes.delete(normalizeSourceKey(sourcePath));
+    return;
+  }
   const sourceJobs = runtime.jobsBySourceKey.get(normalizeSourceKey(sourcePath));
   const hasDependentJob = sourceJobs
     ? [...sourceJobs].some((candidate) => candidate !== job)
@@ -433,11 +438,24 @@ async function deleteSourceWhenUnused(job: RuntimeExportJob, sourcePath: string)
   await moveSourceToTrashAndMarkDeleted(job.dispatch, sourcePath, job.instanceId);
 }
 
-async function flushDeferredSourceDeletes(runtime: RuntimeState, dispatch: AppDispatch) {
+function hasEditableDraftForSource(sourcePath: string, getState: () => RootState) {
+  return selectImportedEditingInstances(getState()).some(
+    (instance) =>
+      normalizeSourceKey(instance.snapshot.source.sourcePath) === normalizeSourceKey(sourcePath),
+  );
+}
+
+async function flushDeferredSourceDeletes(
+  runtime: RuntimeState,
+  dispatch: AppDispatch,
+  getState: () => RootState,
+) {
   const sourcePaths = [...runtime.deferredSourceDeletes.values()];
   runtime.deferredSourceDeletes.clear();
   await Promise.all(
-    sourcePaths.map((sourcePath) => moveSourceToTrashAndMarkDeleted(dispatch, sourcePath)),
+    sourcePaths
+      .filter((sourcePath) => !hasEditableDraftForSource(sourcePath, getState))
+      .map((sourcePath) => moveSourceToTrashAndMarkDeleted(dispatch, sourcePath)),
   );
 }
 

@@ -9,6 +9,7 @@ import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snap
 import {
   cancelInstanceExports,
   hasActiveExportForSource,
+  withdrawPendingExport,
 } from "@/app/store/integration/export-queue-runtime";
 import { getReplacementEditingInstance } from "@/app/store/lib/editing-instances";
 import {
@@ -31,6 +32,7 @@ import {
 import {
   activeEditingInstanceChanged,
   editingInstanceClosed,
+  editingInstanceExportRestored,
   editingInstancesAdded,
   editingInstancesClosed,
   editingInstanceSnapshotUpdated,
@@ -38,9 +40,11 @@ import {
   selectActiveEditingInstance,
   selectActiveInstanceId,
   selectEditingInstanceById,
-  selectEditingInstances,
+  selectHasQueuedOrRenderingExportByInstanceId,
+  selectImportedEditingInstances,
   selectInstanceIdsBySourceKey,
 } from "@/app/store/slices/editing-instances-slice";
+import { exportArgumentsChanged } from "@/app/store/slices/export-presets-slice";
 import {
   dropListenerErrorCleared,
   nativeDialogStateChanged,
@@ -100,7 +104,6 @@ export type AppThunk<ReturnValue = void | Promise<unknown>> = (
 
 let waveformJobSequence = 0;
 let sourceLoadSequence = 0;
-let editingInstanceSequence = 0;
 let queueRestoreSequence = 0;
 
 function isCurrentSource(state: RootState, sourcePath: string, loadToken: number): boolean {
@@ -157,11 +160,13 @@ export const ingestSources =
       return;
     }
 
-    const shouldActivateFirstImportedSource = selectEditingInstances(getState()).length === 0;
+    const shouldActivateFirstImportedSource =
+      selectImportedEditingInstances(getState()).length === 0;
+
     const mergeAudio = selectMergeAudioEnabledDefault(getState());
     const instances: EditingInstance[] = result.sources.map((source) => ({
       exportAttempts: [],
-      id: `instance-${++editingInstanceSequence}`,
+      id: crypto.randomUUID(),
       origin: "source-import",
       snapshot: createDefaultEditorSnapshot(source, mergeAudio),
       sourceAvailability: "available",
@@ -413,6 +418,7 @@ function captureActiveEditingInstanceDraft(
   dispatch(
     editingInstanceSnapshotUpdated({
       id: activeInstance.id,
+      optimizedArguments: state.exportPresets.argumentsText,
       media: state.source.media,
       snapshot: createEditorSnapshot({
         source,
@@ -511,7 +517,10 @@ export const restoreActiveEditingInstanceRequested =
 
 export const activateEditingInstanceRequested =
   (instance: EditingInstance): AppThunk<Promise<boolean>> =>
-  async (dispatch) => {
+  async (dispatch, getState) => {
+    if (selectEditingInstanceById(getState(), instance.id)?.draftAvailable === false) return false;
+    if (instance.optimizedArguments !== undefined)
+      dispatch(exportArgumentsChanged(instance.optimizedArguments));
     const loadToken = ++sourceLoadSequence;
     queueRestoreSequence += 1;
     dispatch(
@@ -534,7 +543,7 @@ export const navigateToEditingInstance =
     const state = getState();
     const target = id ? selectEditingInstanceById(state, id) : null;
 
-    if (id !== null && !target) {
+    if (id !== null && (!target || target.draftAvailable === false)) {
       diagnostics.event("snapshot.select.ignored", {
         data: { reason: "snapshot_not_found", snapshotId: id },
         origin,
@@ -575,6 +584,36 @@ export const navigateToEditingInstance =
       operation.complete({ reason: "cleared" });
     }
     return true;
+  };
+
+export const restoreExportAttemptRequested =
+  ({
+    attemptId,
+    instanceId,
+  }: {
+    attemptId: string;
+    instanceId: string;
+  }): AppThunk<Promise<boolean>> =>
+  async (dispatch, getState) => {
+    const instance = selectEditingInstanceById(getState(), instanceId);
+    const attempt = instance?.exportAttempts.find(({ id }) => id === attemptId);
+    if (
+      !instance ||
+      !attempt ||
+      attempt.state.status === "rendering" ||
+      instance.sourceAvailability !== "available"
+    )
+      return false;
+    if (
+      attempt.state.status === "queued" &&
+      !withdrawPendingExport(instanceId, attemptId, getState)
+    )
+      return false;
+    dispatch(commitActiveEditingInstanceDraft());
+    const restoredId = crypto.randomUUID();
+    dispatch(editingInstanceExportRestored({ id: instanceId, attemptId, restoredId }));
+    const restored = selectEditingInstanceById(getState(), restoredId);
+    return restored ? dispatch(activateEditingInstanceRequested(restored)) : false;
   };
 
 export const chooseSourceRequested =
@@ -660,7 +699,7 @@ export const closeActiveEditingInstanceRequested =
     }
 
     dispatch(commitActiveEditingInstanceDraft());
-    const instances = selectEditingInstances(getState());
+    const instances = selectImportedEditingInstances(getState());
     const activeIndex = instances.findIndex((instance) => instance.id === activeInstance.id);
     const replacement = getReplacementEditingInstance(instances, activeIndex);
 
@@ -689,7 +728,7 @@ export const closeEditingInstancesRequested =
     const activeInstanceId = selectActiveInstanceId(state);
     const activeInstanceWillClose = activeInstanceId !== null && closingIds.has(activeInstanceId);
 
-    const instances = selectEditingInstances(state);
+    const instances = selectImportedEditingInstances(state);
     const activeIndex = activeInstanceId
       ? instances.findIndex((instance) => instance.id === activeInstanceId)
       : -1;
@@ -740,9 +779,7 @@ export const deleteActiveEditingInstanceSourceRequested =
     const hasActiveExport =
       hasActiveExportForSource(sourcePath, getState) ||
       sourceInstanceIds.some((id) => {
-        const instance = state.editingInstances.entities[id];
-        const attempt = instance?.exportAttempts.at(-1);
-        return attempt?.state.status === "queued" || attempt?.state.status === "rendering";
+        return selectHasQueuedOrRenderingExportByInstanceId(state, id);
       });
 
     if (hasActiveExport) {

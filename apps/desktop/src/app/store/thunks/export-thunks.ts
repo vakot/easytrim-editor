@@ -27,7 +27,6 @@ import {
   selectActiveInstanceId,
   selectEditingInstanceById,
   selectHasProcessableExports,
-  selectHasQueuedOrRenderingExportByInstanceId,
 } from "@/app/store/slices/editing-instances-slice";
 import {
   exportLaunchFailed,
@@ -65,7 +64,7 @@ import { normalizeAppError } from "@/lib/tauri/media.utils";
 import { availableQueueFinishActions } from "@/lib/tauri/queue";
 
 import type { AppThunk } from "./source-media-thunks";
-import { commitActiveEditingInstanceDraft } from "./source-media-thunks";
+import { commitActiveEditingInstanceDraft, navigateToEditingInstance } from "./source-media-thunks";
 
 let optimizedPlanRequestSequence = 0;
 let exportAttemptSequence = 0;
@@ -191,7 +190,7 @@ async function startEditingInstanceExport(
   const trim = selectTrim(state);
   const request = route === "fast" ? getFastRequest(state) : getOptimizedRequest(state);
   if (!instance || !source || !media || !trim || !request || !selectSourceReady(state)) return;
-  if (selectHasQueuedOrRenderingExportByInstanceId(state, instance.id)) return;
+  if (instance.draftAvailable === false || state.importWorkflow.isNativeDialogOpen) return;
 
   const snapshot = createEditorSnapshot({
     source,
@@ -256,6 +255,7 @@ async function startEditingInstanceExport(
 
     if (current) {
       if (!enqueueExport(instance.id, current, dispatch, getState)) await releaseIfNeeded();
+      dispatch(navigateToEditingInstance(null));
     } else await releaseIfNeeded();
     void origin;
   } catch (error: unknown) {

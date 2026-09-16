@@ -62,11 +62,18 @@ const editingInstancesSlice = createSlice({
     },
     editingInstanceSnapshotUpdated: (
       state,
-      action: PayloadAction<{ id: EditingInstanceId; media?: MediaInfo; snapshot: EditorSnapshot }>,
+      action: PayloadAction<{
+        id: EditingInstanceId;
+        media?: MediaInfo;
+        optimizedArguments?: string;
+        snapshot: EditorSnapshot;
+      }>,
     ) => {
       const instance = getInstance(state, action.payload.id);
       if (!instance) return;
       instance.snapshot = action.payload.snapshot;
+      if (action.payload.optimizedArguments !== undefined)
+        instance.optimizedArguments = action.payload.optimizedArguments;
       if (action.payload.media) instance.media = action.payload.media;
     },
     activeEditingInstanceChanged: (state, action: PayloadAction<EditingInstanceId | null>) => {
@@ -118,6 +125,7 @@ const editingInstancesSlice = createSlice({
       };
 
       if ("resolution" in attempt.request) {
+        restored.optimizedArguments = attempt.request.arguments;
         restored.optimizedSettings = {
           resolution: attempt.request.resolution,
           frameRate: attempt.request.frameRate,
@@ -373,10 +381,6 @@ export const selectActiveEditingInstance = createSelector([selectEditingInstance
 export const selectEditingInstanceAttempts = createSelector([selectEditingInstances], (instances) =>
   instances.flatMap((instance) => instancesToAttempts(instance)),
 );
-export const selectLastExportAttemptByInstanceId = (
-  state: RootState,
-  id: EditingInstanceId,
-): ExportAttempt | undefined => selectEditingInstanceById(state, id)?.exportAttempts.at(-1);
 export const selectHasQueuedOrRenderingExportByInstanceId = (
   state: RootState,
   id: EditingInstanceId,
