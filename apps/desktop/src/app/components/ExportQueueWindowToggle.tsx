@@ -3,8 +3,6 @@ import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 
-import { cn } from "@/lib/class-names.utils";
-
 interface ExportQueueWindowToggleProps {
   active: boolean;
   className?: string;
@@ -22,16 +20,17 @@ export function ExportQueueWindowToggle({
 
   return (
     <Button
+      aria-label={t("app.labels.exportQueue")}
       aria-pressed={active}
-      className={cn("h-7 px-2 text-xs", className)}
+      className={className}
       disabled={disabled}
       onClick={onClick}
-      size="sm"
+      size="icon-sm"
+      title={t("app.labels.exportQueue")}
       type="button"
       variant="ghost"
     >
       <CornerDownLeft aria-hidden="true" />
-      {t("app.labels.exportQueue")}
     </Button>
   );
 }
