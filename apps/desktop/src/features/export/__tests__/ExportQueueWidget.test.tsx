@@ -130,4 +130,42 @@ describe("ExportQueueWidget", () => {
       "blob:pending",
     );
   });
+
+  it("features the first pending export when nothing is rendering", () => {
+    const pendingSource = createSource("pending-only", "pending-only-source.mp4");
+    const store = createAppStore();
+
+    store.dispatch(editingInstancesAdded([pendingSource]));
+    store.dispatch(
+      editingInstanceExportAttemptQueued({
+        id: pendingSource.id,
+        attempt: createAttempt("pending-only-attempt", pendingSource),
+      }),
+    );
+    store.dispatch(
+      importedThumbnailReady({
+        instanceId: pendingSource.id,
+        thumbnail: { mediaToken: 3, url: "blob:pending-only" },
+      }),
+    );
+
+    render(
+      <Provider store={store}>
+        <TooltipProvider>
+          <ExportQueueWidget layout="vertical" />
+        </TooltipProvider>
+      </Provider>,
+    );
+
+    expect(screen.getAllByText("pending-only-source.mp4")).toHaveLength(1);
+    expect(screen.getAllByText("pending-only-attempt.mp4")).toHaveLength(1);
+    expect(screen.getByRole("progressbar", { name: "Export progress" })).toHaveAttribute(
+      "aria-valuenow",
+      "0",
+    );
+    expect(screen.getByAltText("Queued export: pending-only-source.mp4")).toHaveAttribute(
+      "src",
+      "blob:pending-only",
+    );
+  });
 });

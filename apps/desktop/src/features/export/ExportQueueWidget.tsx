@@ -25,8 +25,10 @@ export function ExportQueueWidget({ className, layout = "horizontal" }: ExportQu
   const { t } = useTranslation();
   const { active, pending } = useAppSelector(selectExportQueue);
   const vertical = layout === "vertical";
+  const featuredItem = active ?? pending[0];
+  const pendingItems = active ? pending : pending.slice(1);
 
-  if (!active && pending.length === 0) {
+  if (!featuredItem) {
     return (
       <p className={cn("px-2 py-4 text-center text-xs text-muted-foreground", className)}>
         {t("source.messages.noSource")}
@@ -36,13 +38,14 @@ export function ExportQueueWidget({ className, layout = "horizontal" }: ExportQu
 
   return (
     <div className={cn("flex min-h-0 gap-2 p-2", vertical ? "flex-col" : "flex-row", className)}>
-      {active ? (
-        <ExportQueueActiveItem className={vertical ? undefined : "min-w-48 flex-1"} item={active} />
-      ) : null}
-      {pending.length > 0 ? (
+      <ExportQueueActiveItem
+        className={vertical ? undefined : "min-w-48 flex-1"}
+        item={featuredItem}
+      />
+      {pendingItems.length > 0 ? (
         <ScrollArea className={cn("min-h-0", vertical ? "flex-1" : "w-64")}>
           <ul aria-label={t("app.labels.exportQueue")} className="grid gap-1">
-            {pending.map((item) => (
+            {pendingItems.map((item) => (
               <ExportQueuePendingItem item={item} key={item.attempt.id} />
             ))}
           </ul>
@@ -66,7 +69,12 @@ function ExportQueueActiveItem({ className, item }: { className?: string; item: 
       )}
     >
       <ExportQueueThumbnail
-        alt={t("queue.accessibility.active", { name: sourceName })}
+        alt={t(
+          item.attempt.state.status === "rendering"
+            ? "queue.accessibility.active"
+            : "queue.accessibility.pending",
+          { name: sourceName },
+        )}
         instanceId={item.instance.id}
       />
       <div className="absolute inset-x-0 bottom-0 grid gap-2 bg-background/85 p-2 backdrop-blur-sm">
