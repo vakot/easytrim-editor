@@ -167,10 +167,23 @@ function createQueueStore({
 export const ActiveWithPending: Story = {
   args: {
     pendingCount: 8,
-    className: "h-48",
+    className: "w-96",
     layout: "horizontal",
   },
 
+  render: ({ pendingCount, ...args }) => (
+    <Provider store={createQueueStore({ pendingCount, rendering: true })}>
+      <ExportQueueWidget {...args} />
+    </Provider>
+  ),
+};
+
+export const WidthControlled: Story = {
+  args: {
+    className: "w-full",
+    layout: "horizontal",
+    pendingCount: 8,
+  },
   render: ({ pendingCount, ...args }) => (
     <Provider store={createQueueStore({ pendingCount, rendering: true })}>
       <ExportQueueWidget {...args} />

@@ -33,11 +33,11 @@ export function ExportQueueWidget({ className, layout = "horizontal" }: ExportQu
   return (
     <div className={cn("flex min-h-0", vertical ? "flex-col" : "flex-row", className)}>
       <ExportQueueActiveItem
-        className={vertical ? undefined : "h-full min-w-48"}
+        className={vertical ? undefined : "h-full min-w-48 flex-1"}
         item={featuredItem}
       />
       {pendingItems.length > 0 ? (
-        <ScrollArea className="min-w-48 flex-1">
+        <ScrollArea className={cn("min-h-0 min-w-48 flex-1", !vertical && "h-full")} type="always">
           <ul aria-label={t("app.labels.exportQueue")} className="grid gap-1">
             {pendingItems.map((item) => (
               <ExportQueuePendingItem item={item} key={item.attempt.id} />
