@@ -15,7 +15,7 @@ export function EditorWorkspace() {
         groupResizeBehavior="preserve-pixel-size"
         id="workspace-sidebar"
         maxSize="45rem"
-        minSize={294}
+        minSize={380}
       >
         <div className="size-full pb-1.5 pl-1.5">
           <div className="size-full p-px">

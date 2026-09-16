@@ -3,5 +3,7 @@ export { ExportDialog } from "./ExportDialog";
 export {
   ExportQueueWidget,
   ExportQueueWidgetActive,
+  ExportQueueWidgetActiveDetails,
+  // ExportQueueWidgetPendingItem,
   ExportQueueWidgetPendingList,
 } from "./ExportQueueWidget";

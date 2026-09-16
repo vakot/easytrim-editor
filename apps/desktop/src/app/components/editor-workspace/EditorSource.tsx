@@ -10,6 +10,7 @@ import { ActivityFeed } from "@/features/activity";
 import {
   ExportQueueWidget,
   ExportQueueWidgetActive,
+  ExportQueueWidgetActiveDetails,
   ExportQueueWidgetPendingList,
 } from "@/features/export";
 import { SourceGrid } from "@/features/source";
@@ -29,12 +30,27 @@ export function EditorSource() {
         {t("app.labels.explorer")}
       </h3>
 
-      <SourceGrid />
+      <Collapsible className="flex flex-1 flex-col p-1 data-[state=closed]:flex-none" defaultOpen>
+        <CollapsibleTrigger asChild>
+          <Button
+            className="group w-full justify-baseline px-2 text-secondary-foreground data-open:bg-transparent data-open:text-secondary-foreground!"
+            size="sm"
+            variant="ghost"
+          >
+            <ChevronRight className="shrink-0 transition-transform group-data-[state=open]:rotate-90" />
+            {t("source.labels.explorer")}
+          </Button>
+        </CollapsibleTrigger>
+
+        <CollapsibleContent>
+          <SourceGrid />
+        </CollapsibleContent>
+      </Collapsible>
 
       <Collapsible className="shrink-0 border-t border-foreground/10 p-1" defaultOpen={false}>
         <CollapsibleTrigger asChild>
           <Button
-            className="group w-full justify-baseline px-2 text-secondary-foreground"
+            className="group w-full justify-baseline px-2 text-secondary-foreground data-open:bg-transparent data-open:text-secondary-foreground!"
             size="sm"
             variant="ghost"
           >
@@ -44,24 +60,15 @@ export function EditorSource() {
         </CollapsibleTrigger>
 
         <CollapsibleContent className="min-h-0 p-2 pt-1">
-          <Card className="max-h-96 rounded-lg p-0">
-            <div className="block @min-[40rem]:hidden">
-              <ExportQueueWidget className="flex flex-col">
-                <ExportQueueWidgetActive className="max-h-48 flex-1" />
-                <ScrollArea className="aspect-video flex-1 pr-0.5" type="always">
-                  <ExportQueueWidgetPendingList />
-                </ScrollArea>
-              </ExportQueueWidget>
-            </div>
-
-            <div className="hidden @min-[40rem]:block">
-              <ExportQueueWidget className="flex">
-                <ExportQueueWidgetActive className="aspect-video flex-1 shrink-0" />
-                <ScrollArea className="aspect-video flex-1 pr-0.5" type="always">
-                  <ExportQueueWidgetPendingList />
-                </ScrollArea>
-              </ExportQueueWidget>
-            </div>
+          <Card className="max-h-96 min-h-0 rounded-lg p-0">
+            <ExportQueueWidget className="flex h-full min-h-0 flex-col">
+              <ExportQueueWidgetActive className="aspect-video max-h-48 shrink-0">
+                <ExportQueueWidgetActiveDetails className="pr-2.5" />
+              </ExportQueueWidgetActive>
+              <ScrollArea className="h-48 pr-0.5" type="always">
+                <ExportQueueWidgetPendingList className="py-1" />
+              </ScrollArea>
+            </ExportQueueWidget>
           </Card>
         </CollapsibleContent>
       </Collapsible>
@@ -69,7 +76,7 @@ export function EditorSource() {
       <Collapsible className="shrink-0 border-t border-foreground/10 p-1" defaultOpen={false}>
         <CollapsibleTrigger asChild>
           <Button
-            className="group w-full justify-baseline px-2 text-secondary-foreground"
+            className="group w-full justify-baseline px-2 text-secondary-foreground data-open:bg-transparent data-open:text-secondary-foreground!"
             size="sm"
             variant="ghost"
           >

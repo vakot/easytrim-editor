@@ -5,16 +5,11 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 
-import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectExportQueue } from "@/app/store/slices/editing-instances-slice";
 import { selectImportedSourceThumbnail } from "@/app/store/slices/preview-slice";
 import { cancelExportRequested } from "@/app/store/thunks/export-thunks";
-import {
-  createExportAttempt,
-  type EditingInstance,
-  type ExportAttempt,
-} from "@/domain/editing-instance";
+import type { EditingInstance, ExportAttempt } from "@/domain/editing-instance";
 import { cn } from "@/lib/class-names.utils";
 
 interface ExportQueueWidgetProps {
@@ -24,48 +19,6 @@ interface ExportQueueWidgetProps {
 
 type ExportQueueItem = { attempt: ExportAttempt; instance: EditingInstance };
 
-// TEMP: replace with selectExportQueue once the live layout testing is complete.
-const TEMPORARY_MOCK_EXPORT_QUEUE = {
-  active: createMockQueueItem({
-    capturedAt: 1,
-    displayName: "mock-active-source.mp4",
-    id: "mock-active",
-    status: "rendering",
-  }),
-  pending: [
-    createMockQueueItem({
-      capturedAt: 2,
-      displayName: "mock-pending-one.mov",
-      id: "mock-pending-one",
-      status: "queued",
-    }),
-    createMockQueueItem({
-      capturedAt: 3,
-      displayName: "mock-pending-two.webm",
-      id: "mock-pending-two",
-      status: "queued",
-    }),
-    createMockQueueItem({
-      capturedAt: 4,
-      displayName: "mock-pending-four.mp4",
-      id: "mock-pending-four",
-      status: "queued",
-    }),
-    createMockQueueItem({
-      capturedAt: 5,
-      displayName: "mock-pending-five.mp4",
-      id: "mock-pending-five",
-      status: "queued",
-    }),
-    createMockQueueItem({
-      capturedAt: 6,
-      displayName: "mock-pending-six.mp4",
-      id: "mock-pending-six",
-      status: "queued",
-    }),
-  ],
-} satisfies { active: ExportQueueItem; pending: ExportQueueItem[] };
-
 function ExportQueueWidget({ children, className }: ExportQueueWidgetProps) {
   return (
     <ExportQueueWidgetProvider>
@@ -74,61 +27,36 @@ function ExportQueueWidget({ children, className }: ExportQueueWidgetProps) {
   );
 }
 
-function createMockQueueItem({
-  capturedAt,
-  displayName,
-  id,
-  status,
+function ExportQueueWidgetActive({
+  children,
+  className,
 }: {
-  capturedAt: number;
-  displayName: string;
-  id: string;
-  status: "queued" | "rendering";
-}): ExportQueueItem {
-  const sourcePath = `C:/Mock/${displayName}`;
-  const snapshot = createDefaultEditorSnapshot({ displayName, sourcePath }, false);
-  const instance: EditingInstance = {
-    exportAttempts: [],
-    id: `instance-${id}`,
-    origin: "source-import",
-    snapshot,
-    sourceAvailability: "available",
+  children?: React.ReactNode;
+  className?: string;
+}) {
+  const { t } = useTranslation();
+
+  const { active: item } = useExportQueueWidgetData();
+  const sourceName = item.instance.snapshot.source.displayName;
+
+  const labels = {
+    rendering: t("queue.accessibility.active", { name: sourceName }),
+    pending: t("queue.accessibility.pending", { name: sourceName }),
   };
 
-  const queuedAttempt = createExportAttempt({
-    capturedAt,
-    id: `attempt-${id}`,
-    output: {
-      displayName: `export-${displayName}`,
-      displayPath: `C:/Mock/Exports/export-${displayName}`,
-      outputId: `output-${id}`,
-    },
-    request: {
-      audioTracks: [],
-      mergeAudio: false,
-      rotationDegrees: 0,
-      sourcePath,
-      trim: { endMicros: 12_000_000, startMicros: 0 },
-    },
-    route: "optimized",
-    snapshot,
-    totalFrames: 288,
-  });
+  return (
+    <div className={cn("relative overflow-hidden bg-muted", className)}>
+      <ExportQueueThumbnail
+        alt={item.attempt.state.status === "rendering" ? labels.rendering : labels.pending}
+        instanceId={item.instance.id}
+      />
 
-  return {
-    attempt:
-      status === "rendering"
-        ? {
-            ...queuedAttempt,
-            metrics: { ...queuedAttempt.metrics, progressPercent: 64 },
-            state: { operationId: "mock-operation", startedAt: capturedAt, status },
-          }
-        : queuedAttempt,
-    instance,
-  };
+      {children}
+    </div>
+  );
 }
 
-function ExportQueueWidgetActive({ className }: { className?: string }) {
+function ExportQueueWidgetActiveDetails({ className }: { className?: string }) {
   const { t } = useTranslation();
 
   const { active: item } = useExportQueueWidgetData();
@@ -136,44 +64,38 @@ function ExportQueueWidgetActive({ className }: { className?: string }) {
   const sourceName = item.instance.snapshot.source.displayName;
 
   return (
-    <div className={cn("relative overflow-hidden bg-muted", className)}>
-      <ExportQueueThumbnail
-        alt={t(
-          item.attempt.state.status === "rendering"
-            ? "queue.accessibility.active"
-            : "queue.accessibility.pending",
-          { name: sourceName },
-        )}
-        instanceId={item.instance.id}
-      />
-      <div className="absolute inset-x-0 bottom-0 grid gap-2 bg-background/85 p-2 backdrop-blur-sm">
-        <div className="min-w-0">
-          <p className="truncate text-xs font-medium text-foreground" title={sourceName}>
-            {sourceName}
-          </p>
-          <p
-            className="truncate text-[10px] text-muted-foreground"
-            title={item.attempt.output.displayName}
-          >
-            {item.attempt.output.displayName}
-          </p>
-        </div>
+    <div
+      className={cn(
+        "absolute inset-x-0 bottom-0 grid gap-2 bg-background/85 p-2 backdrop-blur-sm",
+        className,
+      )}
+    >
+      <div className="min-w-0">
+        <p className="truncate text-xs font-medium text-foreground" title={sourceName}>
+          {sourceName}
+        </p>
+        <p
+          className="truncate text-[10px] text-muted-foreground"
+          title={item.attempt.output.displayName}
+        >
+          {item.attempt.output.displayName}
+        </p>
+      </div>
 
-        <div className="flex items-center gap-2">
-          <Progress
-            aria-label={t("queue.accessibility.progress")}
-            aria-valuemax={100}
-            aria-valuemin={0}
-            aria-valuenow={progress}
-            className="h-1.5"
-            value={progress}
-          />
-          <span className="w-8 shrink-0 text-right text-[10px] text-muted-foreground tabular-nums">
-            {progress}%
-          </span>
+      <div className="flex items-center gap-2">
+        <Progress
+          aria-label={t("queue.accessibility.progress")}
+          aria-valuemax={100}
+          aria-valuemin={0}
+          aria-valuenow={progress}
+          className="h-1.5"
+          value={progress}
+        />
+        <span className="w-8 shrink-0 text-right text-[10px] text-muted-foreground tabular-nums">
+          {progress}%
+        </span>
 
-          <ExportQueueItemCancel item={item} />
-        </div>
+        <ExportQueueItemCancel item={item} />
       </div>
     </div>
   );
@@ -184,7 +106,7 @@ function ExportQueueWidgetPendingList({
   render,
 }: {
   className?: string;
-  render?: () => React.ReactNode;
+  render?: (item: ExportQueueItem) => React.ReactNode;
 }) {
   const { pending } = useExportQueueWidgetData();
 
@@ -193,7 +115,7 @@ function ExportQueueWidgetPendingList({
   return (
     <ul className={className}>
       {pending.map((item) =>
-        render ? render() : <ExportQueueWidgetPendingItem item={item} key={item.attempt.id} />,
+        render ? render(item) : <ExportQueueWidgetPendingItem item={item} key={item.attempt.id} />,
       )}
     </ul>
   );
@@ -213,7 +135,7 @@ function ExportQueueWidgetPendingItem({
   return (
     <li
       className={cn(
-        "flex min-w-0 items-center gap-2 p-2 text-xs text-foreground/80",
+        "flex min-w-0 items-center gap-2 px-2 py-1 text-xs text-foreground/80",
         compact && "px-2 py-0.5",
       )}
     >
@@ -276,15 +198,18 @@ function ExportQueueThumbnail({
   const thumbnailUrl = thumbnail?.status === "ready" ? thumbnail.value.url : undefined;
 
   return (
-    <div className={cn("relative aspect-video overflow-hidden bg-muted", className)}>
+    <div className={cn("relative size-full overflow-hidden bg-muted", className)}>
       {thumbnailUrl ? (
         <img alt={alt} className="size-full object-cover" src={thumbnailUrl} />
       ) : thumbnail?.status === "loading" ? (
-        <span aria-label={t("source.status.loading")} className="grid size-full place-items-center">
+        <span
+          aria-label={t("source.status.loading")}
+          className="absolute inset-0 grid place-items-center"
+        >
           <LoaderCircle aria-hidden="true" className="size-4 animate-spin text-primary" />
         </span>
       ) : (
-        <span className="grid size-full place-items-center">
+        <span className="absolute inset-0 grid place-items-center">
           <FileVideo aria-hidden="true" className="size-4 text-muted-foreground" />
         </span>
       )}
@@ -292,14 +217,8 @@ function ExportQueueThumbnail({
   );
 }
 
-function useExportQueue(mocked: boolean = false) {
-  const queue = useAppSelector(selectExportQueue);
-  if (mocked) return TEMPORARY_MOCK_EXPORT_QUEUE;
-  return queue;
-}
-
 function ExportQueueWidgetProvider({ children }: { children?: React.ReactNode }) {
-  const { active, pending } = useExportQueue(true);
+  const { active, pending } = useAppSelector(selectExportQueue);
 
   const featuredItem = active ?? pending[0];
   const pendingItems = active ? pending : pending.slice(1);
@@ -331,6 +250,7 @@ const ExportQueueWidgetContext = React.createContext<{
 export {
   ExportQueueWidget,
   ExportQueueWidgetActive,
+  ExportQueueWidgetActiveDetails,
   ExportQueueWidgetPendingItem,
   ExportQueueWidgetPendingList,
 };
