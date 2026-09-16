@@ -12,7 +12,7 @@ export const sk = {
       retry: "Skúsiť znova",
       save: "Uložiť",
     },
-    labels: { brand: "EasyTrim Editor", or: "alebo", search: "Hľadať" },
+    labels: { brand: "EasyTrim Editor", from: "z", or: "alebo", search: "Hľadať" },
     status: {
       disabled: "Vypnuté",
       enabled: "Zapnuté",

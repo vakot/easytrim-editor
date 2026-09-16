@@ -90,7 +90,7 @@ function ExportQueueWidgetActiveDetails({ className }: { className?: string }) {
           {item.attempt.output.displayName}
         </p>
         <p className="truncate text-xs text-muted-foreground" title={sourcePath}>
-          from: {sourcePath}
+          {t("common.labels.from")}: {sourcePath}
         </p>
       </div>
 
