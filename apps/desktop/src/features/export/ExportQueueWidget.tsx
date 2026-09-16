@@ -16,12 +16,17 @@ import { cn } from "@/lib/class-names.utils";
 
 interface ExportQueueWidgetProps {
   className?: string;
+  compact?: boolean;
   layout?: "horizontal" | "vertical";
 }
 
 type ExportQueueItem = Exclude<ReturnType<typeof selectRenderingAttempt>, undefined>;
 
-export function ExportQueueWidget({ className, layout = "horizontal" }: ExportQueueWidgetProps) {
+export function ExportQueueWidget({
+  className,
+  compact,
+  layout = "horizontal",
+}: ExportQueueWidgetProps) {
   const { t } = useTranslation();
   const { active, pending } = useAppSelector(selectExportQueue);
   const vertical = layout === "vertical";
@@ -41,9 +46,9 @@ export function ExportQueueWidget({ className, layout = "horizontal" }: ExportQu
           className={cn("min-h-0 min-w-48 flex-1", !vertical && "aspect-video")}
           type="always"
         >
-          <ul aria-label={t("app.labels.exportQueue")} className="grid gap-1">
+          <ul aria-label={t("app.labels.exportQueue")} className="grid">
             {pendingItems.map((item) => (
-              <ExportQueuePendingItem item={item} key={item.attempt.id} />
+              <ExportQueuePendingItem compact={compact} item={item} key={item.attempt.id} />
             ))}
           </ul>
         </ScrollArea>
@@ -106,15 +111,20 @@ function ExportQueueActiveItem({ className, item }: { className?: string; item: 
   );
 }
 
-function ExportQueuePendingItem({ item }: { item: ExportQueueItem }) {
+function ExportQueuePendingItem({ compact, item }: { compact?: boolean; item: ExportQueueItem }) {
   const { t } = useTranslation();
   const sourceName = item.instance.snapshot.source.displayName;
 
   return (
-    <li className="flex min-w-0 items-center gap-2 p-1 text-xs text-foreground/80">
+    <li
+      className={cn(
+        "flex min-w-0 items-center gap-2 p-2 text-xs text-foreground/80",
+        compact && "px-2 py-0.5",
+      )}
+    >
       <ExportQueueThumbnail
         alt={t("queue.accessibility.pending", { name: sourceName })}
-        className="size-10 shrink-0 rounded"
+        className={cn("size-10 shrink-0 rounded", compact && "size-8")}
         instanceId={item.instance.id}
       />
 
