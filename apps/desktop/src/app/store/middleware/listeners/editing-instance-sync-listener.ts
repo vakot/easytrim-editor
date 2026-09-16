@@ -1,6 +1,12 @@
 import { editingInstanceActivated } from "@/app/store/actions/editing-instance-actions";
 import { sourceReady } from "@/app/store/actions/source-actions";
-import { cropChanged, rotationChanged, selectCropResolution } from "@/app/store/slices/crop-slice";
+import {
+  cropChanged,
+  rotationChanged,
+  selectCropResolution,
+  selectFlipHorizontal,
+  selectFlipVertical,
+} from "@/app/store/slices/crop-slice";
 import {
   editingInstanceOptimizedSettingsChanged,
   editingInstanceSnapshotUpdated,
@@ -29,6 +35,8 @@ listenerMiddleware.startListening({
           source,
           trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
           crop: state.crop.value,
+          flipHorizontal: selectFlipHorizontal(state),
+          flipVertical: selectFlipVertical(state),
           rotation: state.crop.rotationDegrees,
           masterAudio: {
             enabled: state.audio.masterEnabled,

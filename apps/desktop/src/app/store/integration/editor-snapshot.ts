@@ -10,6 +10,8 @@ export function createDefaultEditorSnapshot(
     source,
     trim: { kind: "full-source" },
     crop: null,
+    flipHorizontal: false,
+    flipVertical: false,
     rotation: 0,
     masterAudio: {
       enabled: initialAudioState.masterEnabled,

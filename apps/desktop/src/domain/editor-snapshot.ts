@@ -12,6 +12,8 @@ export interface EditorSnapshot {
     tracks: Array<{ enabled: boolean; streamIndex: number; volumePercent: number }>;
   };
   crop: CropRect | null;
+  flipHorizontal?: boolean;
+  flipVertical?: boolean;
   rotation?: RotationDegrees;
   source: SourceRef;
   trim: EditorSnapshotTrim;
@@ -20,6 +22,8 @@ export interface EditorSnapshot {
 export function createEditorSnapshot(input: {
   audioTracks: EditorSnapshot["audio"]["tracks"];
   crop: CropRect | null;
+  flipHorizontal?: boolean;
+  flipVertical?: boolean;
   masterAudio: EditorSnapshot["audio"]["master"];
   mergeAudio: boolean;
   rotation?: RotationDegrees;
@@ -30,6 +34,8 @@ export function createEditorSnapshot(input: {
     source: { ...input.source },
     trim: "kind" in input.trim ? { kind: input.trim.kind } : { ...input.trim },
     crop: input.crop ? { ...input.crop } : null,
+    flipHorizontal: input.flipHorizontal ?? false,
+    flipVertical: input.flipVertical ?? false,
     rotation: input.rotation ?? 0,
     audio: {
       master: { ...input.masterAudio },

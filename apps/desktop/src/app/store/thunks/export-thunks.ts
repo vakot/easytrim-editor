@@ -14,8 +14,10 @@ import {
   selectCrop,
   selectCropApplied,
   selectCropResolution,
-  selectRotationApplied,
+  selectFlipHorizontal,
+  selectFlipVertical,
   selectRotationDegrees,
+  selectTransformApplied,
 } from "@/app/store/slices/crop-slice";
 import {
   editingInstanceExportAttemptQueued,
@@ -47,6 +49,7 @@ import { selectTrim } from "@/app/store/slices/trim-slice";
 import type { ExportRoute, ExportSettings } from "@/domain/editing-instance";
 import { createExportAttempt } from "@/domain/editing-instance";
 import { createEditorSnapshot } from "@/domain/editor-snapshot";
+import { normalizeTransformForExport } from "@/domain/rotation";
 import { normalizeSourceKey } from "@/domain/source";
 import { diagnostics } from "@/lib/diagnostics";
 import type { DiagnosticOrigin } from "@/lib/tauri/diagnostics.types";
@@ -157,7 +160,7 @@ export const refreshOptimizedExportPlan = (): AppThunk => async (dispatch, getSt
 export const startFastCutRequested =
   (origin: DiagnosticOrigin = { id: "fast-cut", type: "button" }): AppThunk =>
   (dispatch, getState) => {
-    if (selectCropApplied(getState()) || selectRotationApplied(getState())) return;
+    if (selectCropApplied(getState()) || selectTransformApplied(getState())) return;
     void startEditingInstanceExport("fast", dispatch, getState, origin);
   };
 
@@ -187,6 +190,8 @@ async function startEditingInstanceExport(
     source,
     trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
     crop: selectCropApplied(state) ? selectCrop(state) : null,
+    flipHorizontal: selectFlipHorizontal(state),
+    flipVertical: selectFlipVertical(state),
     rotation: selectRotationDegrees(state),
     masterAudio: selectMasterAudio(state),
     audioTracks: selectAudioTracks(state).map(({ enabled, streamIndex, volumePercent }) => ({
@@ -269,12 +274,13 @@ function getFastRequest(state: ReturnType<Parameters<AppThunk>[1]>): FastExportR
   const source = selectSourceSelection(state);
   const trim = selectTrim(state);
   if (!source || !trim) return null;
+  const transform = exportTransform(state);
   return {
     sourcePath: source.sourcePath,
     trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
     audioTracks: selectedAudioTracks(state),
     mergeAudio: selectMergeAudio(state),
-    rotationDegrees: selectRotationDegrees(state),
+    rotationDegrees: transform.rotationDegrees,
   };
 }
 
@@ -286,19 +292,31 @@ function getOptimizedRequest(
   const media = selectSourceMedia(state);
   const settings = getInitialSettings(state);
   if (!source || !trim || !media || !settings) return null;
+  const transform = exportTransform(state);
   return {
     sourcePath: source.sourcePath,
     trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
     audioTracks: selectedAudioTracks(state),
     mergeAudio: selectMergeAudio(state),
-    rotationDegrees: selectRotationDegrees(state),
+    rotationDegrees: transform.rotationDegrees,
     resolution: settings.resolution,
-    crop: selectCrop(state),
+    crop: selectCropApplied(state) ? transform.crop : undefined,
+    flipHorizontal: transform.flipHorizontal,
+    flipVertical: transform.flipVertical,
     frameRate: settings.frameRate
       ? { numerator: settings.frameRate.numerator, denominator: settings.frameRate.denominator }
       : undefined,
     arguments: state.exportPresets.argumentsText,
   };
+}
+
+function exportTransform(state: ReturnType<Parameters<AppThunk>[1]>) {
+  return normalizeTransformForExport(
+    selectCrop(state),
+    selectRotationDegrees(state),
+    selectFlipHorizontal(state),
+    selectFlipVertical(state),
+  );
 }
 
 function selectedAudioTracks(state: ReturnType<Parameters<AppThunk>[1]>) {

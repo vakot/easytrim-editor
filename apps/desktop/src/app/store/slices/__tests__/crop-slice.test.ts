@@ -7,10 +7,12 @@ import { createAppStore } from "../../store";
 import {
   cropChanged,
   cropReducer,
+  flipToggled,
   initialCropState,
   rotationChanged,
   selectCropApplied,
   selectCropResolution,
+  selectTransformApplied,
 } from "../crop-slice";
 
 describe("crop slice", () => {
@@ -58,5 +60,29 @@ describe("crop slice", () => {
 
     const cleared = cropReducer(rotated, sourceCleared());
     expect(cleared.rotationDegrees).toBe(0);
+  });
+
+  it("preserves 180 degrees plus both flips in UI state", () => {
+    let state = cropReducer(
+      initialCropState,
+      cropChanged({
+        crop: { x: 0.1, y: 0.2, width: 0.5, height: 0.6 },
+        resolution: { width: 960, height: 648 },
+      }),
+    );
+
+    state = cropReducer(state, rotationChanged(180));
+    state = cropReducer(state, flipToggled("horizontal"));
+    state = cropReducer(state, flipToggled("vertical"));
+
+    expect(state).toMatchObject({
+      flipHorizontal: true,
+      flipVertical: true,
+      rotationDegrees: 180,
+      value: { width: 0.5, height: 0.6 },
+    });
+    expect(state.value.x).toBeCloseTo(0.4);
+    expect(state.value.y).toBeCloseTo(0.2);
+    expect(selectTransformApplied({ crop: state } as never)).toBe(false);
   });
 });

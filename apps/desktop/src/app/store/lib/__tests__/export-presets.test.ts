@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-import { STORAGE_KEYS } from "@/lib/storage.consts";
 import {
   exportArgumentsChanged,
   exportPresetCreated,
@@ -9,6 +8,7 @@ import {
   exportPresetsReducer,
   exportPresetUpdated,
 } from "@/app/store/slices/export-presets-slice";
+import { STORAGE_KEYS } from "@/lib/storage.consts";
 
 import {
   initialExportPresetState,
@@ -67,9 +67,10 @@ describe("export presets", () => {
 
   it("repairs unchanged built-in presets saved with legacy NVENC option names", () => {
     const legacy = structuredClone(initialExportPresetState);
-    legacy.presets[2]!.argumentsText = legacy.presets[2]!.argumentsText
-      .replace("-spatial-aq", "-spatial_aq")
-      .replace("-temporal-aq", "-temporal_aq");
+    legacy.presets[2]!.argumentsText = legacy.presets[2]!.argumentsText.replace(
+      "-spatial-aq",
+      "-spatial_aq",
+    ).replace("-temporal-aq", "-temporal_aq");
     legacy.argumentsText = legacy.presets[2]!.argumentsText;
     localStorage.setItem(STORAGE_KEYS.exportPresets, JSON.stringify(legacy));
 

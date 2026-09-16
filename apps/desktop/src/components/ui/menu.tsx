@@ -6,7 +6,7 @@ import { cn } from "@/lib/class-names.utils";
 const menuContentClassName =
   "z-50 min-w-42 overflow-hidden rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:fade-out-0 data-closed:zoom-out-95";
 
-const menuLabelClassName = "px-1.5 py-1 text-xs font-medium data-inset:px-7";
+const menuLabelClassName = "px-1.5 py-1 text-xs text-muted-foreground font-medium data-inset:px-7";
 const menuSeparatorClassName = "-mx-1 my-1 h-px bg-border";
 const menuShortcutClassName = "ml-auto pl-5 text-xs text-muted-foreground";
 

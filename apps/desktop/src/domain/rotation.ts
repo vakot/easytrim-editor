@@ -4,20 +4,37 @@ export const ROTATION_DEGREES = [0, 90, 180, 270] as const;
 
 export type RotationDegrees = (typeof ROTATION_DEGREES)[number];
 
-export function rotateDegrees(
-  current: RotationDegrees,
-  direction: "clockwise" | "counterclockwise",
-): RotationDegrees {
-  const offset = direction === "clockwise" ? 1 : -1;
-  const nextIndex =
-    (ROTATION_DEGREES.indexOf(current) + offset + ROTATION_DEGREES.length) %
-    ROTATION_DEGREES.length;
-
-  return ROTATION_DEGREES[nextIndex] ?? 0;
-}
-
 export function isQuarterTurn(rotation: RotationDegrees): boolean {
   return rotation === 90 || rotation === 270;
+}
+
+export function isIdentityTransform(
+  rotationDegrees: RotationDegrees,
+  flipHorizontal: boolean,
+  flipVertical: boolean,
+): boolean {
+  return (
+    (rotationDegrees === 0 && !flipHorizontal && !flipVertical) ||
+    (rotationDegrees === 180 && flipHorizontal && flipVertical)
+  );
+}
+
+export function normalizeTransformForExport(
+  crop: CropRect,
+  rotationDegrees: RotationDegrees,
+  flipHorizontal: boolean,
+  flipVertical: boolean,
+) {
+  if (!isIdentityTransform(rotationDegrees, flipHorizontal, flipVertical)) {
+    return { crop, flipHorizontal, flipVertical, rotationDegrees };
+  }
+
+  return {
+    crop: rotationDegrees === 180 ? rotateCrop(crop, 180) : crop,
+    flipHorizontal: false,
+    flipVertical: false,
+    rotationDegrees: 0 as const,
+  };
 }
 
 export function rotateCrop(crop: CropRect, rotation: RotationDegrees): CropRect {

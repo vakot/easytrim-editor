@@ -22,7 +22,12 @@ import {
   waveformsFailed,
   waveformsLoading,
 } from "@/app/store/slices/audio-slice";
-import { selectCrop } from "@/app/store/slices/crop-slice";
+import {
+  selectCrop,
+  selectFlipHorizontal,
+  selectFlipVertical,
+  selectRotationDegrees,
+} from "@/app/store/slices/crop-slice";
 import {
   activeEditingInstanceChanged,
   editingInstanceClosed,
@@ -292,6 +297,8 @@ async function prepareSelectedSource(
         source,
         trim: snapshot.trim,
         crop: snapshot.crop,
+        flipHorizontal: snapshot.flipHorizontal,
+        flipVertical: snapshot.flipVertical,
         rotation: snapshot.rotation,
         masterAudio: snapshot.audio.master,
         audioTracks: snapshot.audio.tracks,
@@ -411,7 +418,9 @@ function captureActiveEditingInstanceDraft(
         source,
         trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
         crop: selectCrop(state),
-        rotation: state.crop.rotationDegrees,
+        flipHorizontal: selectFlipHorizontal(state),
+        flipVertical: selectFlipVertical(state),
+        rotation: selectRotationDegrees(state),
         masterAudio: selectMasterAudio(state),
         audioTracks: selectAudioTracks(state).map(({ enabled, streamIndex, volumePercent }) => ({
           streamIndex,

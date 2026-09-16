@@ -44,6 +44,20 @@ function renderPreview(element: ReactElement, store = createAppStore()) {
   });
 }
 
+function openTransformMenu(viewport: Element) {
+  fireEvent.contextMenu(viewport);
+}
+
+function openCropTool(viewport: Element) {
+  openTransformMenu(viewport);
+  fireEvent.click(screen.getByRole("menuitem", { name: "Crop" }));
+}
+
+function selectTransformAction(viewport: Element, name: string) {
+  openTransformMenu(viewport);
+  fireEvent.click(screen.getByRole("menuitem", { name }));
+}
+
 beforeAll(() => {
   vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => undefined);
 });
@@ -103,7 +117,7 @@ describe("VideoPreview", () => {
     expect(screen.queryByRole("button", { name: /resize crop/i })).not.toBeInTheDocument();
   });
 
-  it("shows the delayed crop hint at the pointer position and hides it when crop opens", () => {
+  it("shows the delayed crop hint and opens crop from the transform menu", () => {
     vi.useFakeTimers();
     try {
       const videoRef = createRef<HTMLVideoElement>();
@@ -127,7 +141,7 @@ describe("VideoPreview", () => {
       act(() => vi.advanceTimersByTime(500));
       expect(screen.getByRole("tooltip")).toHaveStyle({ left: "42px", top: "62px" });
 
-      fireEvent.click(viewport!);
+      openCropTool(viewport!);
       expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
       expect(container.querySelector("[data-crop-preview-affordance]")).not.toBeInTheDocument();
     } finally {
@@ -152,8 +166,7 @@ describe("VideoPreview", () => {
     expect(
       screen.queryByRole("button", { name: "Resize crop from top left" }),
     ).not.toBeInTheDocument();
-    fireEvent.pointerDown(viewport!);
-    fireEvent.click(viewport!);
+    openCropTool(viewport!);
     expect(viewport).toHaveClass("overflow-hidden");
     const handle = screen.getByRole("button", { name: "Resize crop from top left" });
     expect(handle).toBeVisible();
@@ -188,7 +201,6 @@ describe("VideoPreview", () => {
     expect(container.querySelector("[data-crop-rule-of-thirds]")).not.toBeInTheDocument();
     expect(handle).toBeVisible();
 
-    fireEvent.pointerDown(viewport!);
     fireEvent.click(viewport!);
     expect(container.querySelector("[data-crop-snap-markers]")).toHaveAttribute(
       "data-visible",
@@ -221,13 +233,13 @@ describe("VideoPreview", () => {
       expect(videoFrame).not.toBeNull();
       expect(videoFrame).toHaveStyle({ height: "225px", left: "0px", width: "400px" });
 
-      fireEvent.click(viewport!);
+      openCropTool(viewport!);
 
       expect(videoFrame).toHaveStyle({
-        height: "173.25px",
+        height: "193.5px",
         left: "28px",
-        top: "63.375px",
-        width: "308px",
+        top: "53.25px",
+        width: "344px",
       });
 
       const videoFrameStyle = (videoFrame as HTMLElement).style;
@@ -236,12 +248,12 @@ describe("VideoPreview", () => {
       const width = Number.parseFloat(videoFrameStyle.width);
       const height = Number.parseFloat(videoFrameStyle.height);
 
-      expect(left).toBeCloseTo(400 - 36 - left - width);
+      expect(left).toBeCloseTo(400 - left - width);
       expect(top).toBeCloseTo(300 - top - height);
       expect(left).toBeGreaterThanOrEqual(28);
       expect(top).toBeGreaterThanOrEqual(28);
       expect(container.querySelector('[data-crop-snap-marker="top"]')).toHaveStyle({
-        top: "51.375px",
+        top: "41.25px",
       });
       expect(container.querySelector('[data-crop-snap-marker="left"]')).toHaveStyle({
         left: "16px",
@@ -269,14 +281,14 @@ describe("VideoPreview", () => {
     const pause = vi.spyOn(video!, "pause").mockImplementation(() => undefined);
     pause.mockClear();
 
-    fireEvent.click(viewport!);
+    openCropTool(viewport!);
     expect(pause).toHaveBeenCalledTimes(1);
 
     fireEvent.play(video!);
     expect(pause).toHaveBeenCalledTimes(2);
   });
 
-  it("shows rotation controls and rotates the CSS preview in quarter turns", () => {
+  it("shows the transform menu and applies rotation to the CSS preview", () => {
     const store = createAppStore();
     const videoRef = createRef<HTMLVideoElement>();
     const { container } = renderPreview(
@@ -290,30 +302,106 @@ describe("VideoPreview", () => {
     );
 
     const viewport = container.querySelector("[aria-label='Video crop preview']");
-    fireEvent.click(viewport!);
+    openTransformMenu(viewport!);
+    expect(screen.getByRole("menu")).toHaveTextContent(
+      "CropRotate 90 CWRotate 90 CCWRotate 180Flip horizontallyFlip verticallyReset",
+    );
+    expect(screen.getAllByRole("separator")).toHaveLength(3);
 
-    fireEvent.click(screen.getByRole("button", { name: "Rotate clockwise" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Rotate 90 CW" }));
     expect(store.getState().crop.rotationDegrees).toBe(90);
     expect(container.querySelector("video")).toHaveStyle({ transform: "rotate(90deg)" });
 
-    fireEvent.click(screen.getByRole("button", { name: "Rotate clockwise" }));
-    fireEvent.click(screen.getByRole("button", { name: "Rotate clockwise" }));
+    selectTransformAction(viewport!, "Rotate 90 CW");
+    selectTransformAction(viewport!, "Rotate 90 CW");
     expect(store.getState().crop.rotationDegrees).toBe(270);
 
-    fireEvent.click(screen.getByRole("button", { name: "Rotate clockwise" }));
+    selectTransformAction(viewport!, "Rotate 90 CW");
     expect(store.getState().crop.rotationDegrees).toBe(0);
     expect(container.querySelector("video")).toHaveStyle({ transform: "rotate(360deg)" });
 
-    fireEvent.click(screen.getByRole("button", { name: "Rotate counterclockwise" }));
+    selectTransformAction(viewport!, "Rotate 90 CCW");
     expect(store.getState().crop.rotationDegrees).toBe(270);
     expect(container.querySelector("video")).toHaveStyle({ transform: "rotate(270deg)" });
 
-    const controls = container.querySelector("[data-crop-rotation-controls]");
-    expect(controls).toHaveClass("flex-col", "gap-1");
-    expect(controls).not.toHaveClass("bg-background/85");
+    selectTransformAction(viewport!, "Rotate 180");
+    expect(store.getState().crop.rotationDegrees).toBe(90);
+    expect(container.querySelector("video")).toHaveStyle({ transform: "rotate(450deg)" });
   });
 
-  it("opens and closes crop controls with Enter or Space when the preview is focused", () => {
+  it("applies flips to the preview and keeps a full-turn equivalent in UI state", () => {
+    const store = createAppStore();
+    const videoRef = createRef<HTMLVideoElement>();
+    const { container } = renderPreview(
+      <VideoPreview
+        muted
+        preview={readyPreview("easytrim-media://preview-1")}
+        videoRef={videoRef}
+        {...callbacks}
+      />,
+      store,
+    );
+
+    const viewport = container.querySelector("[aria-label='Video crop preview']")!;
+    selectTransformAction(viewport, "Flip horizontally");
+    expect(store.getState().crop.flipHorizontal).toBe(true);
+    expect(container.querySelector("video")).toHaveStyle({ transform: "rotate(0deg) scaleX(-1)" });
+
+    selectTransformAction(viewport, "Flip vertically");
+    expect(store.getState().crop.flipVertical).toBe(true);
+    expect(container.querySelector("video")).toHaveStyle({
+      transform: "rotate(0deg) scaleX(-1) scaleY(-1)",
+    });
+
+    selectTransformAction(viewport, "Rotate 180");
+    expect(store.getState().crop).toMatchObject({
+      flipHorizontal: true,
+      flipVertical: true,
+      rotationDegrees: 180,
+    });
+    expect(container.querySelector("video")).toHaveStyle({
+      transform: "rotate(180deg) scaleX(-1) scaleY(-1)",
+    });
+  });
+
+  it("confirms before resetting preview transformations", () => {
+    const store = createAppStore();
+    const videoRef = createRef<HTMLVideoElement>();
+    const { container } = renderPreview(
+      <VideoPreview
+        muted
+        preview={readyPreview("easytrim-media://preview-1")}
+        videoRef={videoRef}
+        {...callbacks}
+      />,
+      store,
+    );
+
+    const viewport = container.querySelector("[aria-label='Video crop preview']")!;
+    selectTransformAction(viewport, "Flip horizontally");
+    selectTransformAction(viewport, "Rotate 180");
+    selectTransformAction(viewport, "Flip vertically");
+    selectTransformAction(viewport, "Reset");
+
+    expect(screen.getByRole("alertdialog")).toHaveTextContent("Reset video transformations?");
+    expect(store.getState().crop).toMatchObject({
+      flipHorizontal: true,
+      flipVertical: true,
+      rotationDegrees: 180,
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+
+    expect(store.getState().crop).toMatchObject({
+      flipHorizontal: false,
+      flipVertical: false,
+      rotationDegrees: 0,
+      value: { x: 0, y: 0, width: 1, height: 1 },
+    });
+  });
+
+  it("toggles playback on a left click and supports the context menu", () => {
+    callbacks.onTogglePlayback.mockClear();
     const videoRef = createRef<HTMLVideoElement>();
     const { container } = renderPreview(
       <VideoPreview
@@ -327,13 +415,17 @@ describe("VideoPreview", () => {
     const viewport = container.querySelector("[aria-label='Video crop preview']");
     expect(viewport).not.toBeNull();
 
-    fireEvent.keyDown(viewport!, { key: "Enter" });
-    expect(screen.getByRole("button", { name: "Resize crop from top left" })).toBeVisible();
-
-    fireEvent.keyDown(viewport!, { key: " " });
+    fireEvent.click(viewport!);
+    expect(callbacks.onTogglePlayback).toHaveBeenCalledWith({
+      type: "button",
+      id: "preview.click",
+    });
     expect(
       screen.queryByRole("button", { name: "Resize crop from top left" }),
     ).not.toBeInTheDocument();
+
+    openCropTool(viewport!);
+    expect(screen.getByRole("button", { name: "Resize crop from top left" })).toBeVisible();
   });
 
   it("closes crop controls with Escape or when focus leaves the preview", () => {
@@ -350,13 +442,13 @@ describe("VideoPreview", () => {
     const viewport = container.querySelector("[data-preview-kind]")?.parentElement?.parentElement;
     expect(viewport).not.toBeNull();
 
-    fireEvent.click(viewport!);
+    openCropTool(viewport!);
     fireEvent.keyDown(viewport!, { key: "Escape" });
     expect(
       screen.queryByRole("button", { name: "Resize crop from top left" }),
     ).not.toBeInTheDocument();
 
-    fireEvent.click(viewport!);
+    openCropTool(viewport!);
     fireEvent.blur(viewport!, { relatedTarget: document.body });
     expect(
       screen.queryByRole("button", { name: "Resize crop from top left" }),
