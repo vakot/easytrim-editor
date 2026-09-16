@@ -25,6 +25,7 @@ import {
   selectEditingInstanceAttempts,
   selectEditingInstanceIds,
   selectEditingInstanceTopologyEntries,
+  selectExportQueue,
   selectHasProcessableExports,
   selectHasQueuedOrRenderingExportByInstanceId,
 } from "../editing-instances-slice";
@@ -41,9 +42,9 @@ function instance(id: string, snapshot = baseSnapshot): EditingInstance {
   };
 }
 
-function attempt(id: string, snapshot = baseSnapshot) {
+function attempt(id: string, snapshot = baseSnapshot, capturedAt = 10) {
   return createExportAttempt({
-    capturedAt: 10,
+    capturedAt,
     id,
     output: {
       displayName: `${id}.mp4`,
@@ -63,6 +64,40 @@ function attempt(id: string, snapshot = baseSnapshot) {
 }
 
 describe("editing instances slice", () => {
+  it("projects the active export and pending exports in queue order", () => {
+    const first = instance("instance-1");
+    const second = instance("instance-2", { ...baseSnapshot, source: secondSource });
+    let state = editingInstancesReducer(
+      initialEditingInstancesState,
+      editingInstancesAdded([first, second]),
+    );
+
+    state = editingInstancesReducer(
+      state,
+      editingInstanceExportAttemptQueued({
+        id: "instance-1",
+        attempt: attempt("attempt-1", baseSnapshot, 20),
+      }),
+    );
+    state = editingInstancesReducer(
+      state,
+      editingInstanceExportAttemptQueued({
+        id: "instance-2",
+        attempt: attempt("attempt-2", { ...baseSnapshot, source: secondSource }, 10),
+      }),
+    );
+    state = editingInstancesReducer(
+      state,
+      editingInstanceExportStarted({ attemptId: "attempt-1", id: "instance-1", startedAt: 30 }),
+    );
+
+    const queue = selectExportQueue({ editingInstances: state } as never);
+    expect(queue.active?.attempt.id).toBe("attempt-1");
+    expect(queue.pending.map(({ attempt: queuedAttempt }) => queuedAttempt.id)).toEqual([
+      "attempt-2",
+    ]);
+  });
+
   it("keeps imported and duplicated instances as stable independent identities", () => {
     const first = instance("instance-1");
     const duplicate = instance("instance-2", {
