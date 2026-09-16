@@ -80,7 +80,7 @@ describe("editing instances slice", () => {
       editingInstanceExportStarted({ id: "source", attemptId: "one", startedAt: 20 }),
     );
     const root = { editingInstances: state } as never;
-    expect(selectImportedEditingInstances(root)).toEqual([]);
+    expect(selectImportedEditingInstances(root).map(({ id }) => id)).toEqual(["source"]);
     expect(selectExportQueue(root).active?.attempt.id).toBe("one");
     expect(selectExportQueue(root).pending.map(({ attempt }) => attempt.id)).toEqual([
       "two",
@@ -116,7 +116,7 @@ describe("editing instances slice", () => {
     expect(state.entities.source?.exportAttempts.map(({ id }) => id)).toEqual(["two"]);
     expect(
       selectImportedEditingInstances({ editingInstances: state } as never).map(({ id }) => id),
-    ).toEqual(["other-draft", "restored"]);
+    ).toEqual(["source", "other-draft", "restored"]);
     expect(
       editingInstancesReducer(
         state,
@@ -151,7 +151,7 @@ describe("editing instances slice", () => {
       );
     }
     expect(state.entities.source?.exportAttempts[0]?.state.status).toBe("completed");
-    expect(selectImportedEditingInstances({ editingInstances: state } as never)).toHaveLength(2);
+    expect(selectImportedEditingInstances({ editingInstances: state } as never)).toHaveLength(3);
   });
   it("projects the active export and pending exports in queue order", () => {
     const first = instance("instance-1");
@@ -424,7 +424,7 @@ describe("editing instances slice", () => {
       editingInstanceExportAttemptQueued({ id: "instance-1", attempt: queuedAttempt }),
     );
     const topology = selectEditingInstanceTopologyEntries(root());
-    expect(topology.map(({ id }) => id)).toEqual(["instance-2"]);
+    expect(topology.map(({ id }) => id)).toEqual(["instance-1", "instance-2"]);
     state = editingInstancesReducer(
       state,
       editingInstanceExportStarted({ attemptId: "attempt-1", id: "instance-1", startedAt: 20 }),

@@ -95,7 +95,6 @@ const editingInstancesSlice = createSlice({
       if (instance.exportAttempts.some((attempt) => attempt.id === action.payload.attempt.id))
         return;
       instance.exportAttempts.push(action.payload.attempt);
-      instance.draftAvailable = false;
     },
     editingInstanceExportRestored: (
       state,

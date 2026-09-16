@@ -64,7 +64,7 @@ import { normalizeAppError } from "@/lib/tauri/media.utils";
 import { availableQueueFinishActions } from "@/lib/tauri/queue";
 
 import type { AppThunk } from "./source-media-thunks";
-import { commitActiveEditingInstanceDraft, navigateToEditingInstance } from "./source-media-thunks";
+import { commitActiveEditingInstanceDraft } from "./source-media-thunks";
 
 let optimizedPlanRequestSequence = 0;
 let exportAttemptSequence = 0;
@@ -255,7 +255,6 @@ async function startEditingInstanceExport(
 
     if (current) {
       if (!enqueueExport(instance.id, current, dispatch, getState)) await releaseIfNeeded();
-      dispatch(navigateToEditingInstance(null));
     } else await releaseIfNeeded();
     void origin;
   } catch (error: unknown) {
