@@ -4,6 +4,6 @@ export {
   ExportQueueWidget,
   ExportQueueWidgetActive,
   ExportQueueWidgetActiveDetails,
-  // ExportQueueWidgetPendingItem,
+  ExportQueueWidgetPendingItem,
   ExportQueueWidgetPendingList,
 } from "./ExportQueueWidget";

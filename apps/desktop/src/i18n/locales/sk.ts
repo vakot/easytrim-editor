@@ -94,6 +94,7 @@ export const sk = {
     },
     tooltips: {
       customizeLayout: "Prispôsobiť rozloženie",
+      exportQueueEmpty: "Fronta exportov je prázdna.",
       togglePanel: "Prepnúť {{panel}}",
     },
     dialogs: {

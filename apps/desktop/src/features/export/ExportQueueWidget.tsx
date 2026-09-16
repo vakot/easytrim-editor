@@ -1,4 +1,4 @@
-import { FileVideo, LoaderCircle, X } from "lucide-react";
+import { FileVideo, LoaderCircle, Play, X } from "lucide-react";
 import * as React from "react";
 import { useTranslation } from "react-i18next";
 
@@ -6,10 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
-import { selectExportQueue } from "@/app/store/slices/editing-instances-slice";
+import {
+  selectExportQueue,
+  selectQueuedExportCount,
+} from "@/app/store/slices/editing-instances-slice";
+import { selectQueueStarted } from "@/app/store/slices/export-slice";
 import { selectImportedSourceThumbnail } from "@/app/store/slices/preview-slice";
-import { cancelExportRequested } from "@/app/store/thunks/export-thunks";
+import { cancelExportRequested, startExportQueue } from "@/app/store/thunks/export-thunks";
 import type { EditingInstance, ExportAttempt } from "@/domain/editing-instance";
+import { formatSourcePath } from "@/features/source";
 import { cn } from "@/lib/class-names.utils";
 
 interface ExportQueueWidgetProps {
@@ -61,7 +66,7 @@ function ExportQueueWidgetActiveDetails({ className }: { className?: string }) {
 
   const { active: item } = useExportQueueWidgetData();
   const progress = Math.min(100, Math.max(0, Math.round(item.attempt.metrics.progressPercent)));
-  const sourceName = item.instance.snapshot.source.displayName;
+  const sourcePath = formatSourcePath(item.instance.snapshot.source.sourcePath);
 
   return (
     <div
@@ -70,15 +75,15 @@ function ExportQueueWidgetActiveDetails({ className }: { className?: string }) {
         className,
       )}
     >
-      <div className="min-w-0">
-        <p className="truncate text-xs font-medium text-foreground" title={sourceName}>
-          {sourceName}
-        </p>
+      <div className="grid min-w-0 gap-1">
         <p
-          className="truncate text-[10px] text-muted-foreground"
+          className="truncate font-heading text-sm leading-snug font-medium text-foreground"
           title={item.attempt.output.displayName}
         >
           {item.attempt.output.displayName}
+        </p>
+        <p className="truncate text-xs text-muted-foreground" title={sourcePath}>
+          from: {sourcePath}
         </p>
       </div>
 
@@ -95,7 +100,10 @@ function ExportQueueWidgetActiveDetails({ className }: { className?: string }) {
           {progress}%
         </span>
 
-        <ExportQueueItemCancel item={item} />
+        <div className="flex gap-1">
+          <ExportQueueItemStart />
+          <ExportQueueItemCancel item={item} />
+        </div>
       </div>
     </div>
   );
@@ -159,7 +167,7 @@ function ExportQueueWidgetPendingItem({
   );
 }
 
-function ExportQueueItemCancel({ item }: { item: ExportQueueItem }) {
+function ExportQueueItemCancel({ compact, item }: { compact?: boolean; item: ExportQueueItem }) {
   const { t } = useTranslation();
 
   const dispatch = useAppDispatch();
@@ -174,12 +182,33 @@ function ExportQueueItemCancel({ item }: { item: ExportQueueItem }) {
           cancelExportRequested({ attemptId: item.attempt.id, instanceId: item.instance.id }),
         )
       }
-      size="icon-2xs"
+      size={compact ? "icon-2xs" : "icon-xs"}
       title={t("queue.actions.cancel")}
       type="button"
       variant="destructive"
     >
       <X aria-hidden="true" />
+    </Button>
+  );
+}
+
+function ExportQueueItemStart({ compact }: { compact?: boolean }) {
+  const { t } = useTranslation();
+
+  const dispatch = useAppDispatch();
+  const queuedExportCount = useAppSelector(selectQueuedExportCount);
+  const queueStarted = useAppSelector(selectQueueStarted);
+
+  return (
+    <Button
+      aria-label={t("queue.actions.start")}
+      disabled={queuedExportCount === 0 || queueStarted}
+      onClick={() => void dispatch(startExportQueue({ id: "queue.start", type: "button" }))}
+      size={compact ? "icon-2xs" : "icon-xs"}
+      title={t("queue.actions.start")}
+      type="button"
+    >
+      <Play aria-hidden="true" />
     </Button>
   );
 }

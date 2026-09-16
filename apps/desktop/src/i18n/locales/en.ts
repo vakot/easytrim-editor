@@ -92,6 +92,7 @@ export const en = {
     },
     tooltips: {
       customizeLayout: "Customize layout",
+      exportQueueEmpty: "Export queue is empty.",
       togglePanel: "Toggle {{panel}}",
     },
     dialogs: {

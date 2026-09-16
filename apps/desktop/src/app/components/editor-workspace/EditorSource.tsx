@@ -5,7 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
+import { useAppSelector } from "@/app/store/redux-hooks";
+import { selectExportQueue } from "@/app/store/slices/editing-instances-slice";
 import { ActivityFeed } from "@/features/activity";
 import {
   ExportQueueWidget,
@@ -17,6 +20,22 @@ import { SourceGrid } from "@/features/source";
 
 export function EditorSource() {
   const { t } = useTranslation();
+  const { active, pending } = useAppSelector(selectExportQueue);
+  const hasExportQueueItems = active !== undefined || pending.length > 0;
+
+  const exportQueueTrigger = (
+    <CollapsibleTrigger asChild disabled={!hasExportQueueItems}>
+      <Button
+        className="group w-full justify-baseline px-2 text-secondary-foreground data-open:bg-transparent data-open:text-secondary-foreground!"
+        disabled={!hasExportQueueItems}
+        size="sm"
+        variant="ghost"
+      >
+        <ChevronRight className="shrink-0 transition-transform group-data-[state=open]:rotate-90" />
+        {t("app.labels.exportQueue")}
+      </Button>
+    </CollapsibleTrigger>
+  );
 
   return (
     <aside
@@ -48,16 +67,18 @@ export function EditorSource() {
       </Collapsible>
 
       <Collapsible className="shrink-0 border-t border-foreground/10 p-1" defaultOpen={false}>
-        <CollapsibleTrigger asChild>
-          <Button
-            className="group w-full justify-baseline px-2 text-secondary-foreground data-open:bg-transparent data-open:text-secondary-foreground!"
-            size="sm"
-            variant="ghost"
-          >
-            <ChevronRight className="shrink-0 transition-transform group-data-[state=open]:rotate-90" />
-            {t("app.labels.exportQueue")}
-          </Button>
-        </CollapsibleTrigger>
+        {hasExportQueueItems ? (
+          exportQueueTrigger
+        ) : (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="block" tabIndex={0}>
+                {exportQueueTrigger}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>{t("app.tooltips.exportQueueEmpty")}</TooltipContent>
+          </Tooltip>
+        )}
 
         <CollapsibleContent className="min-h-0 p-2 pt-1">
           <Card className="max-h-96 min-h-0 rounded-lg p-0">
