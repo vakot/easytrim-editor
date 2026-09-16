@@ -37,7 +37,10 @@ export function ExportQueueWidget({ className, layout = "horizontal" }: ExportQu
         item={featuredItem}
       />
       {pendingItems.length > 0 ? (
-        <ScrollArea className={cn("min-h-0 min-w-48 flex-1", !vertical && "h-full")} type="always">
+        <ScrollArea
+          className={cn("min-h-0 min-w-48 flex-1", !vertical && "aspect-video")}
+          type="always"
+        >
           <ul aria-label={t("app.labels.exportQueue")} className="grid gap-1">
             {pendingItems.map((item) => (
               <ExportQueuePendingItem item={item} key={item.attempt.id} />
