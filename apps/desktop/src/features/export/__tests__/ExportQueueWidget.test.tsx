@@ -14,6 +14,7 @@ import {
   ExportQueueWidgetActive,
   ExportQueueWidgetActiveDetails,
   ExportQueueWidgetPendingList,
+  ExportQueueWidgetPendingListEmpty,
 } from "../ExportQueueWidget";
 
 function createQueuedInstance(): EditingInstance {
@@ -57,6 +58,7 @@ function renderWidget() {
         <ExportQueueWidgetActive>
           <ExportQueueWidgetActiveDetails />
         </ExportQueueWidgetActive>
+        <ExportQueueWidgetPendingListEmpty />
         <ExportQueueWidgetPendingList />
       </ExportQueueWidget>
     </Provider>,
