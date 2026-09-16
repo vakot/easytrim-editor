@@ -45,21 +45,23 @@ export function EditorSource() {
 
         <CollapsibleContent className="min-h-0 p-2 pt-1">
           <Card className="max-h-96 rounded-lg p-0">
-            {/* TODO: show when panel size <= 50% */}
-            <ExportQueueWidget className="flex flex-col">
-              <ExportQueueWidgetActive className="max-h-48 flex-1" />
-              <ScrollArea className="aspect-video flex-1 pr-0.5" type="always">
-                <ExportQueueWidgetPendingList />
-              </ScrollArea>
-            </ExportQueueWidget>
+            <div className="block @min-[40rem]:hidden">
+              <ExportQueueWidget className="flex flex-col">
+                <ExportQueueWidgetActive className="max-h-48 flex-1" />
+                <ScrollArea className="aspect-video flex-1 pr-0.5" type="always">
+                  <ExportQueueWidgetPendingList />
+                </ScrollArea>
+              </ExportQueueWidget>
+            </div>
 
-            {/* TODO: show when panel size > 50% */}
-            <ExportQueueWidget className="flex">
-              <ExportQueueWidgetActive className="aspect-video flex-1 shrink-0" />
-              <ScrollArea className="aspect-video flex-1 pr-0.5" type="always">
-                <ExportQueueWidgetPendingList />
-              </ScrollArea>
-            </ExportQueueWidget>
+            <div className="hidden @min-[40rem]:block">
+              <ExportQueueWidget className="flex">
+                <ExportQueueWidgetActive className="aspect-video flex-1 shrink-0" />
+                <ScrollArea className="aspect-video flex-1 pr-0.5" type="always">
+                  <ExportQueueWidgetPendingList />
+                </ScrollArea>
+              </ExportQueueWidget>
+            </div>
           </Card>
         </CollapsibleContent>
       </Collapsible>
