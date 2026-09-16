@@ -11,10 +11,6 @@ import { AppShutdownGuard } from "@/app/components/AppShutdownGuard";
 import { CompactExportQueueWindow } from "@/app/components/CompactExportQueueWindow";
 import { CustomTitleBar } from "@/app/components/CustomTitleBar";
 import { DiagnosticsRecoveryDialog } from "@/app/components/DiagnosticsRecoveryDialog";
-import type {
-  EditorSourceCollapsibleSection,
-  EditorSourceCollapsibleState,
-} from "@/app/components/editor-workspace/EditorSource";
 import { EditorWorkspace } from "@/app/components/editor-workspace/EditorWorkspace";
 import { ExportQueueWindowToggle } from "@/app/components/ExportQueueWindowToggle";
 import { MenuBar } from "@/app/components/menu-bar";
@@ -45,26 +41,9 @@ function EasyTrimEditorApp() {
   const [isCompact, setIsCompact] = useState(false);
   const [isChangingWindowMode, setIsChangingWindowMode] = useState(false);
   const [windowModeError, setWindowModeError] = useState(false);
-  const [editorSourceCollapsibleState, setEditorSourceCollapsibleState] =
-    useState<EditorSourceCollapsibleState>({
-      activityFeed: false,
-      exportQueue: false,
-      sourceExplorer: true,
-    });
-
   const editorWindowSnapshot = useRef<WindowLayoutSnapshot | null>(null);
   const emptyQueueRestoreRequested = useRef(false);
   const hasExportQueueItems = active !== undefined || pending.length > 0;
-
-  const handleEditorSourceCollapsibleStateChange = useCallback(
-    (section: EditorSourceCollapsibleSection, open: boolean) => {
-      setEditorSourceCollapsibleState((currentState) => ({
-        ...currentState,
-        [section]: open,
-      }));
-    },
-    [],
-  );
 
   useEffect(() => {
     void dispatch(loadQueueFinishActions());
@@ -173,10 +152,7 @@ function EasyTrimEditorApp() {
                   </Alert>
                 ) : null}
 
-                <EditorWorkspace
-                  editorSourceCollapsibleState={editorSourceCollapsibleState}
-                  onEditorSourceCollapsibleStateChange={handleEditorSourceCollapsibleStateChange}
-                />
+                <EditorWorkspace />
                 <StatusBar />
 
                 {windowModeError ? (

@@ -7,8 +7,12 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-import { useAppSelector } from "@/app/store/redux-hooks";
+import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectExportQueue } from "@/app/store/slices/editing-instances-slice";
+import {
+  editorSourceCollapsibleStateChanged,
+  selectEditorSourceCollapsibleState,
+} from "@/app/store/slices/preferences-slice";
 import { ActivityFeed } from "@/features/activity";
 import {
   ExportQueueWidget,
@@ -18,23 +22,16 @@ import {
 } from "@/features/export";
 import { SourceGrid } from "@/features/source";
 
-export type EditorSourceCollapsibleSection = "activityFeed" | "exportQueue" | "sourceExplorer";
-
-export interface EditorSourceCollapsibleState {
-  activityFeed: boolean;
-  exportQueue: boolean;
-  sourceExplorer: boolean;
-}
-
-interface EditorSourceProps {
-  collapsibleState: EditorSourceCollapsibleState;
-  onCollapsibleStateChange: (section: EditorSourceCollapsibleSection, open: boolean) => void;
-}
-
-export function EditorSource({ collapsibleState, onCollapsibleStateChange }: EditorSourceProps) {
+export function EditorSource() {
   const { t } = useTranslation();
+  const dispatch = useAppDispatch();
   const { active, pending } = useAppSelector(selectExportQueue);
+  const collapsibleState = useAppSelector(selectEditorSourceCollapsibleState);
   const hasExportQueueItems = active !== undefined || pending.length > 0;
+
+  const onCollapsibleStateChange = (section: keyof typeof collapsibleState, open: boolean) => {
+    dispatch(editorSourceCollapsibleStateChanged({ open, section }));
+  };
 
   const exportQueueTrigger = (
     <CollapsibleTrigger asChild disabled={!hasExportQueueItems}>
@@ -63,7 +60,7 @@ export function EditorSource({ collapsibleState, onCollapsibleStateChange }: Edi
       </h3>
 
       <Collapsible
-        className="flex flex-1 flex-col p-1 data-[state=closed]:flex-none"
+        className="flex min-h-0 flex-1 flex-col p-1 data-[state=closed]:flex-none"
         onOpenChange={(open) => onCollapsibleStateChange("sourceExplorer", open)}
         open={collapsibleState.sourceExplorer}
       >
@@ -78,13 +75,13 @@ export function EditorSource({ collapsibleState, onCollapsibleStateChange }: Edi
           </Button>
         </CollapsibleTrigger>
 
-        <CollapsibleContent className="flex min-h-0 flex-1 flex-col pt-2">
+        <CollapsibleContent className="mt-2 flex min-h-0 flex-1 flex-col">
           <SourceGrid />
         </CollapsibleContent>
       </Collapsible>
 
       <Collapsible
-        className="shrink-0 border-t border-foreground/10 p-1"
+        className="shrink-0 border-t border-foreground/10 p-1 data-[state=open]:h-96"
         onOpenChange={(open) => onCollapsibleStateChange("exportQueue", open)}
         open={hasExportQueueItems && collapsibleState.exportQueue}
       >
@@ -101,7 +98,7 @@ export function EditorSource({ collapsibleState, onCollapsibleStateChange }: Edi
           </Tooltip>
         )}
 
-        <CollapsibleContent className="h-96 min-h-0 p-2 pt-1">
+        <CollapsibleContent className="flex min-h-0 flex-1 flex-col p-2">
           <Card className="size-full min-h-0 rounded-lg p-0">
             <ExportQueueWidget className="flex h-full min-h-0 flex-col">
               <ExportQueueWidgetActive className="aspect-video max-h-48 shrink-0">
@@ -116,7 +113,7 @@ export function EditorSource({ collapsibleState, onCollapsibleStateChange }: Edi
       </Collapsible>
 
       <Collapsible
-        className="shrink-0 border-t border-foreground/10 p-1"
+        className="shrink-0 border-t border-foreground/10 p-1 data-[state=open]:h-64"
         onOpenChange={(open) => onCollapsibleStateChange("activityFeed", open)}
         open={collapsibleState.activityFeed}
       >
@@ -131,7 +128,7 @@ export function EditorSource({ collapsibleState, onCollapsibleStateChange }: Edi
           </Button>
         </CollapsibleTrigger>
 
-        <CollapsibleContent className="h-64 min-h-0">
+        <CollapsibleContent className="mt-2 min-h-0 flex-1">
           <ScrollArea className="size-full px-2 before:top-2">
             <ActivityFeed />
           </ScrollArea>
