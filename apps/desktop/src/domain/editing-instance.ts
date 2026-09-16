@@ -52,9 +52,11 @@ export interface ExportAttempt {
 }
 
 export interface EditingInstance {
+  draftAvailable?: boolean;
   exportAttempts: ExportAttempt[];
   id: EditingInstanceId;
   media?: MediaInfo;
+  optimizedArguments?: string;
   optimizedSettings?: ExportSettings;
   origin: InstanceOrigin;
   snapshot: import("@/domain/editor-snapshot").EditorSnapshot;

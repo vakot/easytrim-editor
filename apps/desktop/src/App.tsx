@@ -20,7 +20,10 @@ import { AppUpdatesProvider } from "@/app/components/providers/AppUpdatesProvide
 import { EditorContractsProvider } from "@/app/components/providers/EditorContractsProvider";
 import { StatusBar } from "@/app/components/status-bar";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
-import { selectExportQueue } from "@/app/store/slices/editing-instances-slice";
+import {
+  selectActiveInstanceId,
+  selectExportQueue,
+} from "@/app/store/slices/editing-instances-slice";
 import { selectDropListenerError } from "@/app/store/slices/import-workflow-slice";
 import { persistor, store } from "@/app/store/store";
 import { loadQueueFinishActions } from "@/app/store/thunks/export-thunks";
@@ -37,6 +40,8 @@ function EasyTrimEditorApp() {
   const dispatch = useAppDispatch();
   const dropListenerError = useAppSelector(selectDropListenerError);
   const { active, pending } = useAppSelector(selectExportQueue);
+  const activeInstanceId = useAppSelector(selectActiveInstanceId);
+  const compactInstanceId = useRef<string | null>(null);
   const { t } = useTranslation();
   const [isCompact, setIsCompact] = useState(false);
   const [isChangingWindowMode, setIsChangingWindowMode] = useState(false);
@@ -68,7 +73,7 @@ function EasyTrimEditorApp() {
 
     if (
       isChangingWindowMode ||
-      hasExportQueueItems ||
+      (hasExportQueueItems && activeInstanceId === compactInstanceId.current) ||
       editorWindowSnapshot.current === null ||
       emptyQueueRestoreRequested.current
     ) {
@@ -78,13 +83,14 @@ function EasyTrimEditorApp() {
     emptyQueueRestoreRequested.current = true;
     setWindowModeError(false);
     showEditorWindow();
-  }, [hasExportQueueItems, isChangingWindowMode, isCompact, showEditorWindow]);
+  }, [activeInstanceId, hasExportQueueItems, isChangingWindowMode, isCompact, showEditorWindow]);
 
   const showCompactWindow = () => {
     if (isChangingWindowMode) return;
 
     setIsChangingWindowMode(true);
     setWindowModeError(false);
+    compactInstanceId.current = activeInstanceId;
     setIsCompact(true);
     void enterCompactWindow()
       .then((snapshot) => {

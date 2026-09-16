@@ -5,6 +5,7 @@ import {
   editingInstanceExportCanceled,
   editingInstanceExportCompleted,
   editingInstanceExportFailed,
+  editingInstanceExportRestored,
   selectHasProcessableExports,
 } from "@/app/store/slices/editing-instances-slice";
 import { selectAutoStartQueueEnabled } from "@/app/store/slices/preferences-slice";
@@ -28,6 +29,7 @@ listenerMiddleware.startListening({
     editingInstanceExportCompleted,
     editingInstanceExportFailed,
     editingInstanceExportCanceled,
+    editingInstanceExportRestored,
   ),
   effect: (_, listenerApi) => {
     if (!selectHasProcessableExports(listenerApi.getState())) {

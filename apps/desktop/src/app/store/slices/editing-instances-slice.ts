@@ -62,11 +62,18 @@ const editingInstancesSlice = createSlice({
     },
     editingInstanceSnapshotUpdated: (
       state,
-      action: PayloadAction<{ id: EditingInstanceId; media?: MediaInfo; snapshot: EditorSnapshot }>,
+      action: PayloadAction<{
+        id: EditingInstanceId;
+        media?: MediaInfo;
+        optimizedArguments?: string;
+        snapshot: EditorSnapshot;
+      }>,
     ) => {
       const instance = getInstance(state, action.payload.id);
       if (!instance) return;
       instance.snapshot = action.payload.snapshot;
+      if (action.payload.optimizedArguments !== undefined)
+        instance.optimizedArguments = action.payload.optimizedArguments;
       if (action.payload.media) instance.media = action.payload.media;
     },
     activeEditingInstanceChanged: (state, action: PayloadAction<EditingInstanceId | null>) => {
@@ -85,13 +92,50 @@ const editingInstancesSlice = createSlice({
     ) => {
       const instance = getInstance(state, action.payload.id);
       if (!instance) return;
-      if (
-        instance.exportAttempts.some(
-          (attempt) => attempt.state.status === "queued" || attempt.state.status === "rendering",
-        )
-      )
+      if (instance.exportAttempts.some((attempt) => attempt.id === action.payload.attempt.id))
         return;
       instance.exportAttempts.push(action.payload.attempt);
+      instance.draftAvailable = false;
+    },
+    editingInstanceExportRestored: (
+      state,
+      action: PayloadAction<{
+        attemptId: string;
+        id: EditingInstanceId;
+        restoredId: EditingInstanceId;
+      }>,
+    ) => {
+      const instance = getInstance(state, action.payload.id);
+      const attempt = instance && getAttempt(instance, action.payload.attemptId);
+      if (
+        !instance ||
+        !attempt ||
+        attempt.state.status === "rendering" ||
+        state.entities[action.payload.restoredId]
+      )
+        return;
+      const restored: EditingInstance = {
+        id: action.payload.restoredId,
+        origin: "duplicate",
+        snapshot: attempt.snapshot,
+        media: instance.media,
+        exportAttempts: [],
+        sourceAvailability: instance.sourceAvailability,
+        draftAvailable: true,
+      };
+
+      if ("resolution" in attempt.request) {
+        restored.optimizedArguments = attempt.request.arguments;
+        restored.optimizedSettings = {
+          resolution: attempt.request.resolution,
+          frameRate: attempt.request.frameRate,
+        };
+      }
+      state.ids.push(restored.id);
+      state.entities[restored.id] = restored;
+      if (attempt.state.status === "queued") {
+        instance.exportAttempts = instance.exportAttempts.filter(({ id }) => id !== attempt.id);
+      }
     },
     editingInstanceExportStarted: (
       state,
@@ -263,6 +307,7 @@ export const {
   editingInstanceExportFailed,
   editingInstanceExportHistoryCleared,
   editingInstanceExportProgressReceived,
+  editingInstanceExportRestored,
   editingInstanceExportStarted,
   editingInstanceMediaUpdated,
   editingInstanceOptimizedSettingsChanged,
@@ -284,7 +329,7 @@ let lastTopologyEntries: EditingInstanceTopologyEntry[] = [];
 export const selectEditingInstanceTopologyEntries = (
   state: RootState,
 ): EditingInstanceTopologyEntry[] => {
-  const ids = selectEditingInstanceIds(state);
+  const ids = selectImportedEditingInstances(state).map(({ id }) => id);
   const entities = selectEditingInstanceEntities(state);
   if (
     lastTopologyEntries.length === ids.length &&
@@ -322,6 +367,10 @@ export const selectEditingInstances = createSelector([selectEditingInstancesStat
     .map((id) => state.entities[id])
     .filter((value): value is EditingInstance => Boolean(value)),
 );
+export const selectImportedEditingInstances = createSelector(
+  [selectEditingInstances],
+  (instances) => instances.filter((instance) => instance.draftAvailable !== false),
+);
 export const selectActiveInstanceId = (state: RootState): EditingInstanceId | null =>
   selectEditingInstancesState(state).activeInstanceId;
 export const selectEditingInstanceById = (state: RootState, id: EditingInstanceId) =>
@@ -332,16 +381,15 @@ export const selectActiveEditingInstance = createSelector([selectEditingInstance
 export const selectEditingInstanceAttempts = createSelector([selectEditingInstances], (instances) =>
   instances.flatMap((instance) => instancesToAttempts(instance)),
 );
-export const selectLastExportAttemptByInstanceId = (
-  state: RootState,
-  id: EditingInstanceId,
-): ExportAttempt | undefined => selectEditingInstanceById(state, id)?.exportAttempts.at(-1);
 export const selectHasQueuedOrRenderingExportByInstanceId = (
   state: RootState,
   id: EditingInstanceId,
 ): boolean => {
-  const attempt = selectLastExportAttemptByInstanceId(state, id);
-  return attempt?.state.status === "queued" || attempt?.state.status === "rendering";
+  return (
+    selectEditingInstanceById(state, id)?.exportAttempts.some(
+      ({ state }) => state.status === "queued" || state.status === "rendering",
+    ) ?? false
+  );
 };
 const selectProcessableExportCount = createSelector(
   [selectEditingInstanceEntities, selectEditingInstanceIds],
@@ -354,7 +402,8 @@ export const selectQueuedExportCount = createSelector(
   (entities, ids) =>
     ids.reduce(
       (count, id) =>
-        count + (entities[id]?.exportAttempts.at(-1)?.state.status === "queued" ? 1 : 0),
+        count +
+        (entities[id]?.exportAttempts.filter(({ state }) => state.status === "queued").length ?? 0),
       0,
     ),
 );
@@ -381,13 +430,13 @@ export const selectExportQueue = createSelector(
 
     for (const id of ids) {
       const instance = entities[id];
-      const attempt = instance?.exportAttempts.at(-1);
-      if (!instance || !attempt) continue;
-
-      if (attempt.state.status === "rendering") {
-        active ??= { attempt, instance };
-      } else if (attempt.state.status === "queued") {
-        pending.push({ attempt, instance });
+      if (!instance) continue;
+      for (const attempt of instance.exportAttempts) {
+        if (attempt.state.status === "rendering") {
+          active ??= { attempt, instance };
+        } else if (attempt.state.status === "queued") {
+          pending.push({ attempt, instance });
+        }
       }
     }
 
@@ -412,8 +461,11 @@ export const selectInstanceIdsBySourceKey = createSelector(
 );
 
 function hasProcessableExport(instance: EditingInstance | undefined): boolean {
-  const status = instance?.exportAttempts.at(-1)?.state.status;
-  return status === "queued" || status === "rendering";
+  return (
+    instance?.exportAttempts.some(
+      ({ state }) => state.status === "queued" || state.status === "rendering",
+    ) ?? false
+  );
 }
 
 function instancesToAttempts(instance: EditingInstance) {

@@ -19,7 +19,7 @@ import { Separator } from "@/components/ui/separator";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
   selectActiveInstanceId,
-  selectEditingInstances,
+  selectImportedEditingInstances,
 } from "@/app/store/slices/editing-instances-slice";
 import { selectImportedSourceThumbnails } from "@/app/store/slices/preview-slice";
 import {
@@ -40,7 +40,7 @@ export function SourceGrid() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const activeInstanceId = useAppSelector(selectActiveInstanceId);
-  const instances = useAppSelector(selectEditingInstances);
+  const instances = useAppSelector(selectImportedEditingInstances);
   const importedThumbnails = useAppSelector(selectImportedSourceThumbnails);
   const thumbnailRequestIds = useRef(new Set<string>());
   const [searchQuery, setSearchQuery] = useState("");

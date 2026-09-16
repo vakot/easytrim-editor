@@ -47,6 +47,7 @@ import {
   cancelQueuedExport,
   enqueueExport,
   setExportQueueExecutionEnabled,
+  withdrawPendingExport,
 } from "../export-queue-runtime";
 
 function createAttempt(id: string, sourcePath: string = firstSource.sourcePath) {
@@ -95,6 +96,32 @@ beforeEach(() => {
 });
 
 describe("export queue runtime", () => {
+  it("withdraws only the selected pending job while another export of the same instance runs", async () => {
+    const store = createAppStore();
+    store.dispatch(editingInstancesAdded([createInstance("source")]));
+    const attempts = [createAttempt("one"), createAttempt("two"), createAttempt("three")];
+    for (const attempt of attempts) {
+      store.dispatch(editingInstanceExportAttemptQueued({ id: "source", attempt }));
+      expect(enqueueExport("source", attempt, store.dispatch, store.getState)).toBe(true);
+    }
+    let finish: () => void = () => undefined;
+    mocks.renderFast
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            finish = () =>
+              resolve({ displayName: "one", displayPath: "one", operationId: "op-one" });
+          }),
+      )
+      .mockResolvedValue({ displayName: "three", displayPath: "three", operationId: "op-three" });
+    setExportQueueExecutionEnabled(true, store.dispatch, store.getState);
+    expect(withdrawPendingExport("source", "one", store.getState)).toBe(false);
+    expect(withdrawPendingExport("source", "two", store.getState)).toBe(true);
+    finish();
+    await vi.waitFor(() => expect(mocks.renderFast).toHaveBeenCalledTimes(2));
+    expect(mocks.renderFast.mock.calls.map((call) => call[1])).toEqual(["one", "three"]);
+    expect(mocks.releaseExportSource).toHaveBeenCalledTimes(1);
+  });
   it("runs pending exports in order and keeps one active job per instance", async () => {
     const store = createAppStore();
     const getState = store.getState;

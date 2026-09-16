@@ -13,6 +13,7 @@ import {
 import { selectQueueStarted } from "@/app/store/slices/export-slice";
 import { selectImportedSourceThumbnail } from "@/app/store/slices/preview-slice";
 import { cancelExportRequested, startExportQueue } from "@/app/store/thunks/export-thunks";
+import { restoreExportAttemptRequested } from "@/app/store/thunks/source-media-thunks";
 import type { EditingInstance, ExportAttempt } from "@/domain/editing-instance";
 import { formatSourcePath } from "@/features/source";
 import { cn } from "@/lib/class-names.utils";
@@ -63,6 +64,7 @@ function ExportQueueWidgetActive({
 
 function ExportQueueWidgetActiveDetails({ className }: { className?: string }) {
   const { t } = useTranslation();
+  const dispatch = useAppDispatch();
 
   const { active: item } = useExportQueueWidgetData();
   const progress = Math.min(100, Math.max(0, Math.round(item.attempt.metrics.progressPercent)));
@@ -82,7 +84,22 @@ function ExportQueueWidgetActiveDetails({ className }: { className?: string }) {
         </div>
       </div>
 
-      <div className="grid min-h-0 min-w-0 flex-1 content-center gap-1 px-2">
+      <button
+        aria-label={`${t("common.actions.edit")}: ${item.attempt.output.displayName}`}
+        className="grid min-h-0 min-w-0 flex-1 content-center gap-1 px-2 text-left disabled:cursor-default"
+        disabled={
+          item.attempt.state.status !== "queued" || item.instance.sourceAvailability !== "available"
+        }
+        onClick={() =>
+          void dispatch(
+            restoreExportAttemptRequested({
+              instanceId: item.instance.id,
+              attemptId: item.attempt.id,
+            }),
+          )
+        }
+        type="button"
+      >
         <p
           className="truncate font-heading text-sm leading-snug font-medium text-foreground"
           title={item.attempt.output.displayName}
@@ -92,7 +109,7 @@ function ExportQueueWidgetActiveDetails({ className }: { className?: string }) {
         <p className="truncate text-xs text-muted-foreground" title={sourcePath}>
           {t("common.labels.from")}: {sourcePath}
         </p>
-      </div>
+      </button>
 
       <div className="flex w-full min-w-0 shrink-0 items-center gap-2">
         <Progress
@@ -165,6 +182,7 @@ function ExportQueueWidgetPendingItem({
   item: ExportQueueItem;
 }) {
   const { t } = useTranslation();
+  const dispatch = useAppDispatch();
 
   const sourceName = item.instance.snapshot.source.displayName;
 
@@ -175,20 +193,37 @@ function ExportQueueWidgetPendingItem({
         compact && "px-2 py-0.5",
       )}
     >
-      <ExportQueueThumbnail
-        alt={t("queue.accessibility.pending", { name: sourceName })}
-        className={cn("size-10 shrink-0 rounded", compact && "size-8")}
-        instanceId={item.instance.id}
-      />
+      <button
+        aria-label={`${t("common.actions.edit")}: ${item.attempt.output.displayName}`}
+        className="flex min-w-0 flex-1 items-center gap-2 text-left disabled:cursor-default"
+        disabled={
+          item.attempt.state.status !== "queued" || item.instance.sourceAvailability !== "available"
+        }
+        onClick={() =>
+          void dispatch(
+            restoreExportAttemptRequested({
+              instanceId: item.instance.id,
+              attemptId: item.attempt.id,
+            }),
+          )
+        }
+        type="button"
+      >
+        <ExportQueueThumbnail
+          alt={t("queue.accessibility.pending", { name: sourceName })}
+          className={cn("size-10 shrink-0 rounded", compact && "size-8")}
+          instanceId={item.instance.id}
+        />
 
-      <div className="min-w-0 flex-1">
-        <span className="block truncate" title={item.attempt.output.displayName}>
-          {item.attempt.output.displayName}
-        </span>
-        <span className="block truncate text-muted-foreground" title={sourceName}>
-          {sourceName}
-        </span>
-      </div>
+        <div className="min-w-0 flex-1">
+          <span className="block truncate" title={item.attempt.output.displayName}>
+            {item.attempt.output.displayName}
+          </span>
+          <span className="block truncate text-muted-foreground" title={sourceName}>
+            {sourceName}
+          </span>
+        </div>
+      </button>
 
       <ExportQueueItemCancel item={item} />
     </li>

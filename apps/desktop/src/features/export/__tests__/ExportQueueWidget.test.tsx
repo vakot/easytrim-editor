@@ -1,9 +1,13 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { describe, expect, it } from "vitest";
 
 import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";
-import { editingInstancesAdded } from "@/app/store/slices/editing-instances-slice";
+import {
+  editingInstanceExportStarted,
+  editingInstancesAdded,
+  selectImportedEditingInstances,
+} from "@/app/store/slices/editing-instances-slice";
 import { queueStarted } from "@/app/store/slices/export-slice";
 import { createAppStore } from "@/app/store/store";
 import { createExportAttempt, type EditingInstance } from "@/domain/editing-instance";
@@ -68,6 +72,25 @@ function renderWidget() {
 }
 
 describe("ExportQueueWidget", () => {
+  it("restores the featured pending item into a new draft", async () => {
+    const store = renderWidget();
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Edit: export.mp4" }));
+    });
+    expect(store.getState().editingInstances.entities["instance-1"]?.exportAttempts).toEqual([]);
+    expect(selectImportedEditingInstances(store.getState())).toHaveLength(2);
+    expect(store.getState().editingInstances.activeInstanceId).not.toBe("instance-1");
+  });
+
+  it("disables restoration when the featured export is rendering", () => {
+    const store = renderWidget();
+    act(() =>
+      store.dispatch(
+        editingInstanceExportStarted({ id: "instance-1", attemptId: "attempt-1", startedAt: 1 }),
+      ),
+    );
+    expect(screen.getByRole("button", { name: "Edit: export.mp4" })).toBeDisabled();
+  });
   it("enables starting a paused queue from the featured item", () => {
     renderWidget();
 
