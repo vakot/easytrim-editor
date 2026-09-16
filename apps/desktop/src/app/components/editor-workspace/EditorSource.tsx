@@ -2,11 +2,16 @@ import { ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { ActivityFeed } from "@/features/activity";
-import { ExportQueueWidget } from "@/features/export";
+import {
+  ExportQueueWidget,
+  ExportQueueWidgetActive,
+  ExportQueueWidgetPendingList,
+} from "@/features/export";
 import { SourceGrid } from "@/features/source";
 
 export function EditorSource() {
@@ -38,8 +43,24 @@ export function EditorSource() {
           </Button>
         </CollapsibleTrigger>
 
-        <CollapsibleContent className="min-h-0">
-          <ExportQueueWidget />
+        <CollapsibleContent className="min-h-0 p-2 pt-1">
+          <Card className="max-h-96 rounded-lg p-0">
+            {/* TODO: show when panel size <= 50% */}
+            <ExportQueueWidget className="flex flex-col">
+              <ExportQueueWidgetActive className="max-h-48 flex-1" />
+              <ScrollArea className="aspect-video flex-1 pr-0.5" type="always">
+                <ExportQueueWidgetPendingList />
+              </ScrollArea>
+            </ExportQueueWidget>
+
+            {/* TODO: show when panel size > 50% */}
+            <ExportQueueWidget className="flex">
+              <ExportQueueWidgetActive className="aspect-video flex-1 shrink-0" />
+              <ScrollArea className="aspect-video flex-1 pr-0.5" type="always">
+                <ExportQueueWidgetPendingList />
+              </ScrollArea>
+            </ExportQueueWidget>
+          </Card>
         </CollapsibleContent>
       </Collapsible>
 
