@@ -116,9 +116,21 @@ function ExportQueueWidgetPendingList({
   className?: string;
   render?: (item: ExportQueueItem) => React.ReactNode;
 }) {
+  const { t } = useTranslation();
   const { pending } = useExportQueueWidgetData();
 
-  if (pending.length === 0) return null;
+  if (pending.length === 0) {
+    return (
+      <div
+        className={cn(
+          "grid size-full place-items-center px-2 py-4 text-center text-xs text-muted-foreground",
+          className,
+        )}
+      >
+        {t("queue.messages.pendingEmpty")}
+      </div>
+    );
+  }
 
   return (
     <ul className={className}>

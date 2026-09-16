@@ -169,6 +169,9 @@ export const sk = {
       onFinish: "Po dokončení frontu",
       title: "Front",
     },
+    messages: {
+      pendingEmpty: "Žiadne exporty vo fronte.",
+    },
     tooltips: {
       deleteSourceOnRenderFinish: "Po úspešnom vykreslení odstráni zdroj",
     },

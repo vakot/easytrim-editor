@@ -18,7 +18,20 @@ import {
 } from "@/features/export";
 import { SourceGrid } from "@/features/source";
 
-export function EditorSource() {
+export type EditorSourceCollapsibleSection = "activityFeed" | "exportQueue" | "sourceExplorer";
+
+export interface EditorSourceCollapsibleState {
+  activityFeed: boolean;
+  exportQueue: boolean;
+  sourceExplorer: boolean;
+}
+
+interface EditorSourceProps {
+  collapsibleState: EditorSourceCollapsibleState;
+  onCollapsibleStateChange: (section: EditorSourceCollapsibleSection, open: boolean) => void;
+}
+
+export function EditorSource({ collapsibleState, onCollapsibleStateChange }: EditorSourceProps) {
   const { t } = useTranslation();
   const { active, pending } = useAppSelector(selectExportQueue);
   const hasExportQueueItems = active !== undefined || pending.length > 0;
@@ -49,7 +62,11 @@ export function EditorSource() {
         {t("app.labels.explorer")}
       </h3>
 
-      <Collapsible className="flex flex-1 flex-col p-1 data-[state=closed]:flex-none" defaultOpen>
+      <Collapsible
+        className="flex flex-1 flex-col p-1 data-[state=closed]:flex-none"
+        onOpenChange={(open) => onCollapsibleStateChange("sourceExplorer", open)}
+        open={collapsibleState.sourceExplorer}
+      >
         <CollapsibleTrigger asChild>
           <Button
             className="group w-full justify-baseline px-2 text-secondary-foreground data-open:bg-transparent data-open:text-secondary-foreground!"
@@ -66,7 +83,11 @@ export function EditorSource() {
         </CollapsibleContent>
       </Collapsible>
 
-      <Collapsible className="shrink-0 border-t border-foreground/10 p-1" defaultOpen={false}>
+      <Collapsible
+        className="shrink-0 border-t border-foreground/10 p-1"
+        onOpenChange={(open) => onCollapsibleStateChange("exportQueue", open)}
+        open={hasExportQueueItems && collapsibleState.exportQueue}
+      >
         {hasExportQueueItems ? (
           exportQueueTrigger
         ) : (
@@ -94,7 +115,11 @@ export function EditorSource() {
         </CollapsibleContent>
       </Collapsible>
 
-      <Collapsible className="shrink-0 border-t border-foreground/10 p-1" defaultOpen={false}>
+      <Collapsible
+        className="shrink-0 border-t border-foreground/10 p-1"
+        onOpenChange={(open) => onCollapsibleStateChange("activityFeed", open)}
+        open={collapsibleState.activityFeed}
+      >
         <CollapsibleTrigger asChild>
           <Button
             className="group w-full justify-baseline px-2 text-secondary-foreground data-open:bg-transparent data-open:text-secondary-foreground!"

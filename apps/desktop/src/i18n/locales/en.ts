@@ -168,6 +168,9 @@ export const en = {
       onFinish: "On queue finished",
       title: "Queue",
     },
+    messages: {
+      pendingEmpty: "No pending exports.",
+    },
     tooltips: {
       deleteSourceOnRenderFinish: "Delete the source after a successful render",
     },

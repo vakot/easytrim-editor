@@ -1,3 +1,4 @@
+import { CornerDownLeft } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,7 @@ export function ExportQueueWindowToggle({
       type="button"
       variant="ghost"
     >
+      <CornerDownLeft aria-hidden="true" />
       {t("app.labels.exportQueue")}
     </Button>
   );

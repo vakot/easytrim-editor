@@ -13,6 +13,7 @@ import {
   ExportQueueWidget,
   ExportQueueWidgetActive,
   ExportQueueWidgetActiveDetails,
+  ExportQueueWidgetPendingList,
 } from "../ExportQueueWidget";
 
 function createQueuedInstance(): EditingInstance {
@@ -56,6 +57,7 @@ function renderWidget() {
         <ExportQueueWidgetActive>
           <ExportQueueWidgetActiveDetails />
         </ExportQueueWidgetActive>
+        <ExportQueueWidgetPendingList />
       </ExportQueueWidget>
     </Provider>,
   );
@@ -68,6 +70,12 @@ describe("ExportQueueWidget", () => {
     renderWidget();
 
     expect(screen.getByRole("button", { name: "Start queue" })).toBeEnabled();
+  });
+
+  it("shows an empty state when no pending exports remain", () => {
+    renderWidget();
+
+    expect(screen.getByText("No pending exports.")).toBeInTheDocument();
   });
 
   it("disables starting when the queue is already running", async () => {
