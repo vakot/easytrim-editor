@@ -14,6 +14,7 @@ import {
   editingInstanceExportFailed,
   editingInstanceExportHistoryCleared,
   editingInstanceExportProgressReceived,
+  editingInstanceExportRestored,
   editingInstanceExportStarted,
   editingInstancesAdded,
   editingInstancesClosed,
@@ -28,6 +29,8 @@ import {
   selectExportQueue,
   selectHasProcessableExports,
   selectHasQueuedOrRenderingExportByInstanceId,
+  selectImportedEditingInstances,
+  selectQueuedExportCount,
 } from "../editing-instances-slice";
 
 const baseSnapshot = createDefaultEditorSnapshot(firstSource, false);
@@ -64,6 +67,92 @@ function attempt(id: string, snapshot = baseSnapshot, capturedAt = 10) {
 }
 
 describe("editing instances slice", () => {
+  it("keeps all attempts for one instance visible and counts pending attempts", () => {
+    let state = editingInstancesReducer(undefined, editingInstancesAdded([instance("source")]));
+    for (const id of ["one", "two", "three"]) {
+      state = editingInstancesReducer(
+        state,
+        editingInstanceExportAttemptQueued({ id: "source", attempt: attempt(id) }),
+      );
+    }
+    state = editingInstancesReducer(
+      state,
+      editingInstanceExportStarted({ id: "source", attemptId: "one", startedAt: 20 }),
+    );
+    const root = { editingInstances: state } as never;
+    expect(selectImportedEditingInstances(root)).toEqual([]);
+    expect(selectExportQueue(root).active?.attempt.id).toBe("one");
+    expect(selectExportQueue(root).pending.map(({ attempt }) => attempt.id)).toEqual([
+      "two",
+      "three",
+    ]);
+    expect(selectQueuedExportCount(root)).toBe(2);
+  });
+
+  it("restores a pending snapshot as an independent draft and refuses active exports", () => {
+    const snapshot = { ...baseSnapshot, trim: { startMicros: 100, endMicros: 900 } };
+    let state = editingInstancesReducer(
+      undefined,
+      editingInstancesAdded([instance("source"), instance("other-draft")]),
+    );
+
+    state = editingInstancesReducer(
+      state,
+      editingInstanceExportAttemptQueued({ id: "source", attempt: attempt("one", snapshot) }),
+    );
+    state = editingInstancesReducer(
+      state,
+      editingInstanceExportAttemptQueued({ id: "source", attempt: attempt("two") }),
+    );
+    state = editingInstancesReducer(
+      state,
+      editingInstanceExportStarted({ id: "source", attemptId: "two", startedAt: 20 }),
+    );
+    state = editingInstancesReducer(
+      state,
+      editingInstanceExportRestored({ id: "source", attemptId: "one", restoredId: "restored" }),
+    );
+    expect(state.entities.restored?.snapshot).toEqual(snapshot);
+    expect(state.entities.source?.exportAttempts.map(({ id }) => id)).toEqual(["two"]);
+    expect(
+      selectImportedEditingInstances({ editingInstances: state } as never).map(({ id }) => id),
+    ).toEqual(["other-draft", "restored"]);
+    expect(
+      editingInstancesReducer(
+        state,
+        editingInstanceExportRestored({ id: "source", attemptId: "two", restoredId: "blocked" }),
+      ),
+    ).toBe(state);
+  });
+
+  it("restores history repeatedly without consuming or mutating the completed attempt", () => {
+    let state = editingInstancesReducer(undefined, editingInstancesAdded([instance("source")]));
+    state = editingInstancesReducer(
+      state,
+      editingInstanceExportAttemptQueued({ id: "source", attempt: attempt("done") }),
+    );
+    state = editingInstancesReducer(
+      state,
+      editingInstanceExportStarted({ id: "source", attemptId: "done", startedAt: 20 }),
+    );
+    state = editingInstancesReducer(
+      state,
+      editingInstanceExportCompleted({
+        id: "source",
+        attemptId: "done",
+        durationMs: 1,
+        result: { displayName: "out", displayPath: "out", operationId: "op" },
+      }),
+    );
+    for (const restoredId of ["restored-one", "restored-two"]) {
+      state = editingInstancesReducer(
+        state,
+        editingInstanceExportRestored({ id: "source", attemptId: "done", restoredId }),
+      );
+    }
+    expect(state.entities.source?.exportAttempts[0]?.state.status).toBe("completed");
+    expect(selectImportedEditingInstances({ editingInstances: state } as never)).toHaveLength(2);
+  });
   it("projects the active export and pending exports in queue order", () => {
     const first = instance("instance-1");
     const second = instance("instance-2", { ...baseSnapshot, source: secondSource });
@@ -328,13 +417,14 @@ describe("editing instances slice", () => {
 
     const root = () => ({ editingInstances: state }) as never;
     const ids = selectEditingInstanceIds(root());
-    const topology = selectEditingInstanceTopologyEntries(root());
 
     const queuedAttempt = attempt("attempt-1");
     state = editingInstancesReducer(
       state,
       editingInstanceExportAttemptQueued({ id: "instance-1", attempt: queuedAttempt }),
     );
+    const topology = selectEditingInstanceTopologyEntries(root());
+    expect(topology.map(({ id }) => id)).toEqual(["instance-2"]);
     state = editingInstancesReducer(
       state,
       editingInstanceExportStarted({ attemptId: "attempt-1", id: "instance-1", startedAt: 20 }),

@@ -52,6 +52,7 @@ export interface ExportAttempt {
 }
 
 export interface EditingInstance {
+  draftAvailable?: boolean;
   exportAttempts: ExportAttempt[];
   id: EditingInstanceId;
   media?: MediaInfo;
