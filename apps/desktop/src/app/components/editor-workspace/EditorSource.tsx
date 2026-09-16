@@ -6,6 +6,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { ActivityFeed } from "@/features/activity";
+import { ExportQueueWidget } from "@/features/export";
 import { SourceGrid } from "@/features/source";
 
 export function EditorSource() {
@@ -13,17 +14,34 @@ export function EditorSource() {
 
   return (
     <aside
-      aria-label={t("source.labels.importedSources")}
+      aria-label={t("app.labels.explorer")}
       className="@container relative flex size-full min-h-0 flex-col pt-3"
     >
       <h3
         className="mx-3 mb-3 font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
         id="source-panel-title"
       >
-        {t("source.labels.importedSources")}
+        {t("app.labels.explorer")}
       </h3>
 
       <SourceGrid />
+
+      <Collapsible className="shrink-0 border-t border-foreground/10 p-1" defaultOpen={false}>
+        <CollapsibleTrigger asChild>
+          <Button
+            className="group w-full justify-baseline px-2 text-secondary-foreground"
+            size="sm"
+            variant="ghost"
+          >
+            <ChevronRight className="shrink-0 transition-transform group-data-[state=open]:rotate-90" />
+            {t("app.labels.exportQueue")}
+          </Button>
+        </CollapsibleTrigger>
+
+        <CollapsibleContent className="max-h-64 min-h-0">
+          <ExportQueueWidget layout="vertical" />
+        </CollapsibleContent>
+      </Collapsible>
 
       <Collapsible className="shrink-0 border-t border-foreground/10 p-1" defaultOpen={false}>
         <CollapsibleTrigger asChild>

@@ -40,7 +40,9 @@ export const en = {
       update: "Update",
     },
     labels: {
+      explorer: "Explorer",
       activityFeed: "Activity Feed",
+      exportQueue: "Export Queue",
       bottomPanel: "Bottom panel",
       file: "File",
       help: "Help",
@@ -180,6 +182,8 @@ export const en = {
       },
     },
     accessibility: {
+      active: "Active export: {{name}}",
+      pending: "Queued export: {{name}}",
       progress: "Export progress",
     },
     options: {
@@ -204,7 +208,6 @@ export const en = {
     labels: {
       drop: "Drop video to open",
       explorer: "Source explorer",
-      importedSources: "Imported sources",
       metadata: {
         bitrate: "Bitrate",
         container: "Container",

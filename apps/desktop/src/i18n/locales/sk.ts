@@ -42,8 +42,10 @@ export const sk = {
       update: "Aktualizovať",
     },
     labels: {
+      explorer: "Prieskumník",
       activityFeed: "Prehľad aktivít",
       bottomPanel: "Spodný panel",
+      exportQueue: "Front exportov",
       file: "Súbor",
       help: "Pomocník",
       leftPanel: "Ľavý panel",
@@ -181,6 +183,8 @@ export const sk = {
       },
     },
     accessibility: {
+      active: "Aktívny export: {{name}}",
+      pending: "Export vo fronte: {{name}}",
       progress: "Priebeh exportu",
     },
     options: {
@@ -205,7 +209,6 @@ export const sk = {
     labels: {
       drop: "Pustením otvoríte video",
       explorer: "Prieskumník zdrojov",
-      importedSources: "Importované zdroje",
       metadata: {
         bitrate: "Dátový tok",
         container: "Kontajner",
