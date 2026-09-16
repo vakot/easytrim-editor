@@ -18,7 +18,9 @@ import {
   ExportQueueWidget,
   ExportQueueWidgetActive,
   ExportQueueWidgetActiveDetails,
+  ExportQueueWidgetPendingItem,
   ExportQueueWidgetPendingList,
+  ExportQueueWidgetPendingListEmpty,
 } from "@/features/export";
 import { SourceGrid } from "@/features/source";
 
@@ -81,7 +83,7 @@ export function EditorSource() {
       </Collapsible>
 
       <Collapsible
-        className="shrink-0 border-t border-foreground/10 p-1 data-[state=open]:h-96"
+        className="shrink-0 border-t border-foreground/10 p-1"
         onOpenChange={(open) => onCollapsibleStateChange("exportQueue", open)}
         open={hasExportQueueItems && collapsibleState.exportQueue}
       >
@@ -104,16 +106,26 @@ export function EditorSource() {
               <ExportQueueWidgetActive className="aspect-video max-h-48 shrink-0">
                 <ExportQueueWidgetActiveDetails className="pr-2.5" />
               </ExportQueueWidgetActive>
-              <ScrollArea className="min-h-0 flex-1 pr-0.5" type="always">
-                <ExportQueueWidgetPendingList className="py-1" />
-              </ScrollArea>
+
+              <div className="h-48 py-1">
+                <ExportQueueWidgetPendingListEmpty className="size-full" />
+                <ExportQueueWidgetPendingList className="h-48 py-1">
+                  {({ items }) => (
+                    <ScrollArea className="pr-0.5">
+                      {items.map((item) => (
+                        <ExportQueueWidgetPendingItem item={item} key={item.attempt.id} />
+                      ))}
+                    </ScrollArea>
+                  )}
+                </ExportQueueWidgetPendingList>
+              </div>
             </ExportQueueWidget>
           </Card>
         </CollapsibleContent>
       </Collapsible>
 
       <Collapsible
-        className="shrink-0 border-t border-foreground/10 p-1 data-[state=open]:h-64"
+        className="shrink-0 border-t border-foreground/10 p-1"
         onOpenChange={(open) => onCollapsibleStateChange("activityFeed", open)}
         open={collapsibleState.activityFeed}
       >
@@ -129,7 +141,7 @@ export function EditorSource() {
         </CollapsibleTrigger>
 
         <CollapsibleContent className="mt-2 min-h-0 flex-1">
-          <ScrollArea className="size-full px-2 before:top-2">
+          <ScrollArea className="h-72 px-2 before:top-2">
             <ActivityFeed />
           </ScrollArea>
         </CollapsibleContent>

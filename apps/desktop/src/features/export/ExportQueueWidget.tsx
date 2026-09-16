@@ -71,11 +71,18 @@ function ExportQueueWidgetActiveDetails({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "absolute inset-x-0 bottom-0 grid gap-2 bg-background/85 p-2 backdrop-blur-sm",
+        "bg- absolute inset-0 flex flex-col gap-2 bg-background/30 p-2 shadow-[inset_0_0_96px_rgb(0_0_0)]",
         className,
       )}
     >
-      <div className="grid min-w-0 gap-1">
+      <div className="relative">
+        <div className="absolute top-0 right-0 flex gap-1">
+          <ExportQueueItemStart />
+          <ExportQueueItemCancel item={item} />
+        </div>
+      </div>
+
+      <div className="grid min-h-0 min-w-0 flex-1 content-center gap-1 px-2">
         <p
           className="truncate font-heading text-sm leading-snug font-medium text-foreground"
           title={item.attempt.output.displayName}
@@ -87,57 +94,66 @@ function ExportQueueWidgetActiveDetails({ className }: { className?: string }) {
         </p>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex w-full min-w-0 shrink-0 items-center gap-2">
         <Progress
           aria-label={t("queue.accessibility.progress")}
           aria-valuemax={100}
           aria-valuemin={0}
           aria-valuenow={progress}
-          className="h-1.5"
+          className="h-1.5 min-w-0 flex-1 bg-foreground/15"
           value={progress}
         />
         <span className="w-8 shrink-0 text-right text-[10px] text-muted-foreground tabular-nums">
           {progress}%
         </span>
-
-        <div className="flex gap-1">
-          <ExportQueueItemStart />
-          <ExportQueueItemCancel item={item} />
-        </div>
       </div>
     </div>
   );
 }
 
 function ExportQueueWidgetPendingList({
+  children,
   className,
-  render,
 }: {
+  children?: React.ReactNode | (({ items }: { items: ExportQueueItem[] }) => React.ReactNode);
   className?: string;
-  render?: (item: ExportQueueItem) => React.ReactNode;
 }) {
+  const { pending } = useExportQueueWidgetData();
+
+  if (pending.length === 0) return null;
+
+  const content =
+    typeof children === "function"
+      ? children({ items: pending })
+      : (children ??
+        pending.map((item) => <ExportQueueWidgetPendingItem item={item} key={item.attempt.id} />));
+
+  return <ul className={className}>{content}</ul>;
+}
+
+function ExportQueueWidgetPendingListItems({ compact }: { compact?: boolean }) {
+  const { pending } = useExportQueueWidgetData();
+
+  return pending.map((item) => (
+    <ExportQueueWidgetPendingItem compact={compact} item={item} key={item.attempt.id} />
+  ));
+}
+
+function ExportQueueWidgetPendingListEmpty({ className }: { className?: string }) {
   const { t } = useTranslation();
   const { pending } = useExportQueueWidgetData();
 
-  if (pending.length === 0) {
-    return (
-      <div
-        className={cn(
-          "grid size-full place-items-center px-2 py-4 text-center text-xs text-muted-foreground",
-          className,
-        )}
-      >
-        {t("queue.messages.pendingEmpty")}
-      </div>
-    );
-  }
+  if (pending.length !== 0) return null;
 
   return (
-    <ul className={className}>
-      {pending.map((item) =>
-        render ? render(item) : <ExportQueueWidgetPendingItem item={item} key={item.attempt.id} />,
+    <div
+      className={cn(
+        "grid place-items-center px-2 py-4 text-center text-xs text-muted-foreground",
+        className,
       )}
-    </ul>
+    >
+      {t("queue.messages.pendingEmpty")}
+    </div>
   );
 }
 
@@ -294,4 +310,6 @@ export {
   ExportQueueWidgetActiveDetails,
   ExportQueueWidgetPendingItem,
   ExportQueueWidgetPendingList,
+  ExportQueueWidgetPendingListEmpty,
+  ExportQueueWidgetPendingListItems,
 };

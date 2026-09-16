@@ -10,6 +10,7 @@ import {
   ExportQueueWidgetActiveDetails,
   ExportQueueWidgetPendingItem,
   ExportQueueWidgetPendingList,
+  ExportQueueWidgetPendingListEmpty,
 } from "@/features/export";
 import { startWindowDragging } from "@/lib/tauri/window";
 
@@ -96,13 +97,16 @@ export function CompactExportQueueWindow({ disabled, onRestore }: CompactExportQ
         <ExportQueueWidgetActive className="aspect-video min-w-0 flex-1 shrink-0">
           <ExportQueueWidgetActiveDetails />
         </ExportQueueWidgetActive>
-        <ScrollArea className="aspect-video min-w-0 flex-1 pr-0.5" type="always">
-          <ExportQueueWidgetPendingList
-            render={(item) => (
-              <ExportQueueWidgetPendingItem compact item={item} key={item.attempt.id} />
-            )}
-          />
-        </ScrollArea>
+        <ExportQueueWidgetPendingListEmpty className="aspect-video" />
+        <ExportQueueWidgetPendingList className="py-3">
+          {({ items }) => (
+            <ScrollArea className="aspect-video min-w-0 flex-1 pr-0.5" type="always">
+              {items.map((item) => (
+                <ExportQueueWidgetPendingItem compact item={item} key={item.attempt.id} />
+              ))}
+            </ScrollArea>
+          )}
+        </ExportQueueWidgetPendingList>
       </ExportQueueWidget>
 
       {windowActionError ? (
