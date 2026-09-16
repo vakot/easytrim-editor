@@ -169,6 +169,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
   const audioElementsRef = useRef(new Map<number, HTMLAudioElement>());
   const audioReadyListenersRef = useRef(new Map<number, () => void>());
   const audioContextRef = useRef<AudioContext | null>(null);
+  const deferredAudioCleanupRef = useRef<number | null>(null);
   const audioNodesRef = useRef(
     new Map<number, { gain: GainNode; source: MediaElementAudioSourceNode }>(),
   );
@@ -756,23 +757,32 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     if (video) playbackFrameRef.current = requestPlaybackFrame(video, update);
   }, [handlePlaybackBoundary, stopPlayheadAnimation, syncAudioPlayback]);
 
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    if (deferredAudioCleanupRef.current !== null) {
+      window.clearTimeout(deferredAudioCleanupRef.current);
+      deferredAudioCleanupRef.current = null;
+    }
+
+    return () => {
       playbackStartSequenceRef.current += 1;
       cancelPlaybackFrame(playbackFrameRef);
       cancelFrame(reverseShuttleFrameRef);
       cancelFrame(scrubFrameRef);
-      cancelFrame(frameStepSeekFrameRef);
       cancelFrame(trimCommitFrameRef);
       pendingFrameStepSeekMicrosRef.current = null;
       seekSchedulerRef.current?.dispose();
       seekSchedulerRef.current = null;
-      cleanupAudioRuntime();
-      cleanupAllNativeAudioBindings();
-      void audioContextRef.current?.close();
-    },
-    [cleanupAllNativeAudioBindings, cleanupAudioRuntime],
-  );
+
+      deferredAudioCleanupRef.current = window.setTimeout(() => {
+        deferredAudioCleanupRef.current = null;
+        cleanupAudioRuntime();
+        cleanupAllNativeAudioBindings();
+        const audioContext = audioContextRef.current;
+        audioContextRef.current = null;
+        void audioContext?.close().catch(() => undefined);
+      }, 0);
+    };
+  }, [cleanupAllNativeAudioBindings, cleanupAudioRuntime]);
 
   const setMediaPlaybackRate = useCallback((rate: number) => {
     playbackRateRef.current = rate;

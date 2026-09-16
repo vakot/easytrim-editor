@@ -373,6 +373,28 @@ export const selectRenderingAttempt = createSelector(
     return undefined;
   },
 );
+export const selectExportQueue = createSelector(
+  [selectEditingInstanceEntities, selectEditingInstanceIds],
+  (entities, ids) => {
+    let active: { attempt: ExportAttempt; instance: EditingInstance } | undefined;
+    const pending: { attempt: ExportAttempt; instance: EditingInstance }[] = [];
+
+    for (const id of ids) {
+      const instance = entities[id];
+      const attempt = instance?.exportAttempts.at(-1);
+      if (!instance || !attempt) continue;
+
+      if (attempt.state.status === "rendering") {
+        active ??= { attempt, instance };
+      } else if (attempt.state.status === "queued") {
+        pending.push({ attempt, instance });
+      }
+    }
+
+    pending.sort((left, right) => left.attempt.capturedAt - right.attempt.capturedAt);
+    return { active, pending };
+  },
+);
 export const selectInstanceIdsBySourceKey = createSelector(
   [selectEditingInstanceEntities, selectEditingInstanceIds],
   (entities, ids) => {

@@ -1,6 +1,7 @@
 import {
   cancelActiveExport,
   cancelAllQueuedExports,
+  cancelQueuedExport,
   enqueueExport,
   setExportQueueExecutionEnabled,
 } from "@/app/store/integration/export-queue-runtime";
@@ -108,6 +109,12 @@ export const pauseExportQueue =
 export const cancelActiveExportRequested = (): AppThunk => (_dispatch, getState) => {
   void cancelActiveExport(getState);
 };
+
+export const cancelExportRequested =
+  (payload: { attemptId: string; instanceId: string }): AppThunk =>
+  (_dispatch, getState) => {
+    void cancelQueuedExport(payload.instanceId, payload.attemptId, getState);
+  };
 
 export const cancelAllExportsRequested = (): AppThunk => (_dispatch, getState) => {
   void cancelAllQueuedExports(getState);

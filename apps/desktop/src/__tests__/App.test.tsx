@@ -245,6 +245,32 @@ afterEach(() => {
 });
 
 describe("App", () => {
+  it("disables export queue entry points when the queue is empty", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    const titleBar = screen.getByRole("banner", { name: "Window title bar" });
+    const exportQueueButtons = screen.getAllByRole("button", { name: "Export Queue" });
+    const titleBarExportQueueButton = exportQueueButtons[0];
+    const editorSourceExportQueueButton = exportQueueButtons[1];
+
+    if (!titleBarExportQueueButton || !editorSourceExportQueueButton) {
+      throw new Error("Expected title-bar and editor-source export queue buttons");
+    }
+
+    expect(exportQueueButtons).toHaveLength(2);
+    for (const button of exportQueueButtons) expect(button).toBeDisabled();
+
+    await user.hover(titleBarExportQueueButton.parentElement as HTMLElement);
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("Export queue is empty.");
+
+    await user.unhover(titleBarExportQueueButton.parentElement as HTMLElement);
+    await user.hover(editorSourceExportQueueButton.parentElement as HTMLElement);
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("Export queue is empty.");
+
+    expect(titleBar).toBeInTheDocument();
+  });
+
   it("preserves editor tools across source replacement", async () => {
     mocks.chooseSource
       .mockResolvedValueOnce([selection])
@@ -884,7 +910,7 @@ describe("App", () => {
     await openSourcePicker(user);
 
     await waitForSourcePresence(true);
-    expect(screen.getByRole("heading", { name: "Imported sources" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Explorer" })).toBeInTheDocument();
     expect(screen.getAllByText(selection.displayName)[0]).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Activity Feed" })).toBeInTheDocument();
     expect(screen.getByLabelText("Source video preview")).toHaveAttribute(
