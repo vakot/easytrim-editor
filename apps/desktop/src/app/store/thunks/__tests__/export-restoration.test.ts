@@ -173,7 +173,7 @@ describe("export snapshot restoration", () => {
     expect(store.getState().editingInstances.activeInstanceId).toBe("original");
   });
 
-  it("keeps a same-file draft safe when another export completes with automatic deletion enabled", async () => {
+  it("marks retained same-file drafts deleted after the last export with automatic deletion enabled", async () => {
     const { snapshot, store } = setup();
     store.dispatch(
       editingInstancesAdded([
@@ -194,7 +194,9 @@ describe("export snapshot restoration", () => {
         store.getState().editingInstances.entities.original?.exportAttempts[0]?.state.status,
       ).toBe("completed"),
     );
-    expect(native.moveSourceToTrash).not.toHaveBeenCalled();
+    expect(native.moveSourceToTrash).toHaveBeenCalledExactlyOnceWith(firstSource.sourcePath);
+    expect(store.getState().editingInstances.entities.original?.sourceAvailability).toBe("deleted");
+    expect(store.getState().editingInstances.entities.other?.sourceAvailability).toBe("deleted");
     expect(selectImportedEditingInstances(store.getState()).map(({ id }) => id)).toEqual([
       "original",
       "other",
@@ -216,6 +218,7 @@ describe("export snapshot restoration", () => {
     const restored = selectImportedEditingInstances(store.getState()).find(
       ({ id }) => id !== "original",
     )!;
+
     expect(restored.id).not.toBe("original");
     expect(restored.snapshot.trim).toEqual(snapshot.trim);
     expect(selectExportQueue(store.getState()).pending).toEqual([]);

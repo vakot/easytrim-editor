@@ -43,8 +43,10 @@ releases only that job's reservation and does not run a queue-finish action when
 Closing an instance cancels its jobs and awaits cleanup before removing the entity.
 
 Source deletion and restoration update every instance referencing the same canonical file path.
-Manual deletion is blocked while any attempt uses the file. Automatic deletion after export also
-respects editable drafts, including newly restored drafts. Successful outputs are never removed by
+Manual deletion is blocked while any attempt uses the file. Automatic deletion after a successful
+export waits until no queued or running export still needs that source, across all editing instances.
+Retained imported drafts do not block automatic deletion and are marked deleted along with history.
+Successful outputs are never removed by
 snapshot restoration or job cleanup.
 
 The existing native request DTOs and source reservation counter are unchanged. Editing instances,
