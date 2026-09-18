@@ -16,23 +16,29 @@ type MenuItemElement = ReactElement<{
 
 interface MenuSourceActionProps {
   children: MenuItemElement;
-  source: EditingInstance;
+  onOpenChange?: (open: boolean) => void;
+  open?: boolean;
+  source?: EditingInstance;
 }
 
 interface MenuSourcesActionProps {
   children: MenuItemElement;
+  onOpenChange?: (open: boolean) => void;
+  open?: boolean;
   sources: EditingInstance[];
+  target?: "file" | "folder";
+  targetName?: string;
 }
 
 /**
  * @name MenuDeleteSource
  * @description Wraps a menu item with source deletion behavior and disables it when the source is already deleted.
  */
-export function MenuDeleteSource({ children, source }: MenuSourceActionProps) {
-  const item = withDisabled(children, source.sourceAvailability === "deleted");
+export function MenuDeleteSource({ children, onOpenChange, open, source }: MenuSourceActionProps) {
+  const item = withDisabled(children, !source || source.sourceAvailability === "deleted");
 
   return (
-    <DeleteSourceDialog sourceId={source.id}>
+    <DeleteSourceDialog onOpenChange={onOpenChange} open={open} sourceId={source?.id}>
       <DeleteSourceDialogTrigger asChild>{withPreventedSelect(item)}</DeleteSourceDialogTrigger>
     </DeleteSourceDialog>
   );
@@ -42,12 +48,25 @@ export function MenuDeleteSource({ children, source }: MenuSourceActionProps) {
  * @name MenuDeleteSources
  * @description Wraps a menu item with deletion behavior for a source range and disables it when every source is already deleted.
  */
-export function MenuDeleteSources({ children, sources }: MenuSourcesActionProps) {
+export function MenuDeleteSources({
+  children,
+  onOpenChange,
+  open,
+  sources,
+  target,
+  targetName,
+}: MenuSourcesActionProps) {
   const canDelete = sources.some((source) => source.sourceAvailability !== "deleted");
   const item = withDisabled(children, !canDelete);
 
   return (
-    <DeleteSourceDialog sourceIds={sources.map(({ id }) => id)}>
+    <DeleteSourceDialog
+      onOpenChange={onOpenChange}
+      open={open}
+      sourceIds={sources.map(({ id }) => id)}
+      target={target}
+      targetName={targetName}
+    >
       <DeleteSourceDialogTrigger asChild>{withPreventedSelect(item)}</DeleteSourceDialogTrigger>
     </DeleteSourceDialog>
   );
@@ -60,8 +79,8 @@ export function MenuDeleteSources({ children, sources }: MenuSourcesActionProps)
 export function MenuCloseSource({ children, source }: MenuSourceActionProps) {
   const dispatch = useAppDispatch();
 
-  return withSelectAction(children, () => {
-    void dispatch(closeEditingInstancesRequested([source.id]));
+  return withSelectAction(withDisabled(children, !source), () => {
+    if (source) void dispatch(closeEditingInstancesRequested([source.id]));
   });
 }
 
@@ -72,7 +91,7 @@ export function MenuCloseSource({ children, source }: MenuSourceActionProps) {
 export function MenuCloseSources({ children, sources }: MenuSourcesActionProps) {
   const dispatch = useAppDispatch();
 
-  return withSelectAction(children, () => {
+  return withSelectAction(withDisabled(children, sources.length === 0), () => {
     void dispatch(closeEditingInstancesRequested(sources.map(({ id }) => id)));
   });
 }
@@ -83,7 +102,7 @@ export function MenuCloseSources({ children, sources }: MenuSourcesActionProps) 
  */
 export function MenuRestoreSource({ children, source }: MenuSourceActionProps) {
   const dispatch = useAppDispatch();
-  if (source.sourceAvailability !== "deleted") return null;
+  if (!source || source.sourceAvailability !== "deleted") return null;
 
   return withSelectAction(children, () => {
     void dispatch(
@@ -119,7 +138,7 @@ export function MenuRestoreSources({ children, sources }: MenuSourcesActionProps
 }
 
 function withDisabled(children: MenuItemElement, disabled: boolean) {
-  return cloneElement(children, { disabled });
+  return cloneElement(children, { disabled: disabled || Boolean(children.props.disabled) });
 }
 
 function withSelectAction(children: MenuItemElement, action: () => void) {

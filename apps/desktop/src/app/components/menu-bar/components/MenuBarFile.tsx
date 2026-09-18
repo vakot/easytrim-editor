@@ -15,7 +15,7 @@ import {
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectCropApplied, selectTransformApplied } from "@/app/store/slices/crop-slice";
-import { selectActiveInstanceId } from "@/app/store/slices/editing-instances-slice";
+import { selectActiveEditingInstance } from "@/app/store/slices/editing-instances-slice";
 import {
   selectIsChoosingSource,
   selectIsNativeDialogOpen,
@@ -26,14 +26,14 @@ import {
   chooseSourceRequested,
   closeActiveEditingInstanceRequested,
 } from "@/app/store/thunks/source-media-thunks";
-import { DeleteSourceDialog, DeleteSourceDialogTrigger } from "@/features/source";
+import { DeleteSourceDialog, MenuCloseSource, MenuDeleteSource } from "@/features/source";
 import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
 
 export function MenuBarFile() {
   const { t } = useTranslation();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
-  const activeItemId = useAppSelector(selectActiveInstanceId);
+  const activeSource = useAppSelector(selectActiveEditingInstance);
 
   const dispatch = useAppDispatch();
   const canExport = useAppSelector(selectSourceReady);
@@ -63,12 +63,12 @@ export function MenuBarFile() {
   );
   useKeyboardShortcut(
     (event) =>
-      event.code === "KeyQ" &&
+      event.code === "KeyC" &&
       event.ctrlKey &&
       hasSource &&
       !isChoosingSource &&
       !isNativeDialogOpen,
-    () => void dispatch(closeActiveEditingInstanceRequested({ id: "Ctrl+Q", type: "hotkey" })),
+    () => void dispatch(closeActiveEditingInstanceRequested({ id: "Ctrl+C", type: "hotkey" })),
   );
   useKeyboardShortcut(
     (event) => event.code === "KeyS" && event.ctrlKey && canSave,
@@ -83,7 +83,7 @@ export function MenuBarFile() {
     <DeleteSourceDialog
       onOpenChange={setDeleteDialogOpen}
       open={deleteDialogOpen}
-      sourceId={activeItemId}
+      sourceId={activeSource?.id}
     >
       <MenubarMenu value="file">
         <MenubarTrigger asChild>
@@ -123,22 +123,17 @@ export function MenuBarFile() {
                 </KbdGroup>
               </MenubarShortcut>
             </MenubarItem>
-            <MenubarItem
-              disabled={!hasSource}
-              onSelect={() =>
-                void dispatch(
-                  closeActiveEditingInstanceRequested({ id: "file.close", type: "menu" }),
-                )
-              }
-            >
-              {t("app.actions.closeFile")}
-              <MenubarShortcut>
-                <KbdGroup>
-                  <Kbd>Ctrl</Kbd>
-                  <Kbd>Q</Kbd>
-                </KbdGroup>
-              </MenubarShortcut>
-            </MenubarItem>
+            <MenuCloseSource source={activeSource}>
+              <MenubarItem disabled={!hasSource}>
+                {t("app.actions.closeFile")}
+                <MenubarShortcut>
+                  <KbdGroup>
+                    <Kbd>Ctrl</Kbd>
+                    <Kbd>C</Kbd>
+                  </KbdGroup>
+                </MenubarShortcut>
+              </MenubarItem>
+            </MenuCloseSource>
           </MenubarGroup>
           <MenubarSeparator />
           <MenubarGroup>
@@ -175,12 +170,8 @@ export function MenuBarFile() {
           </MenubarGroup>
           <MenubarSeparator />
           <MenubarGroup>
-            <DeleteSourceDialogTrigger asChild>
-              <MenubarItem
-                disabled={!hasSource}
-                onSelect={(event) => event.preventDefault()}
-                variant="destructive"
-              >
+            <MenuDeleteSource source={activeSource}>
+              <MenubarItem disabled={!hasSource} variant="destructive">
                 {t("app.actions.deleteFile")}
                 <MenubarShortcut>
                   <KbdGroup>
@@ -189,7 +180,7 @@ export function MenuBarFile() {
                   </KbdGroup>
                 </MenubarShortcut>
               </MenubarItem>
-            </DeleteSourceDialogTrigger>
+            </MenuDeleteSource>
           </MenubarGroup>
         </MenubarContent>
       </MenubarMenu>

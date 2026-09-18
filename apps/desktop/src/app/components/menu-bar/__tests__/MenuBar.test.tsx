@@ -52,7 +52,11 @@ const menuState = vi.hoisted(() => ({
     segmentPlaybackEnabledDefault: true,
     autoStartQueueEnabled: true,
     deleteSourceOnRenderFinish: false,
-    editorSourceCollapsibleState: { ...DEFAULT_PREFERENCES.editorSourceCollapsibleState },
+    editorSourceCollapsibleState: {
+      activityFeed: false,
+      exportQueue: false,
+      sourceExplorer: true,
+    },
     mergeAudioEnabledDefault: false,
     theme: "system",
     primaryColor: "amber",
@@ -110,17 +114,32 @@ vi.mock("@/app/store/redux-hooks", () => ({
         launchError: null,
       },
       editingInstances: {
-        ids: menuState.export.queue.map((_, index) => `instance-${index}`),
-        entities: Object.fromEntries(
-          menuState.export.queue.map((item, index) => [
-            `instance-${index}`,
-            {
-              id: `instance-${index}`,
-              exportAttempts: [{ id: `attempt-${index}`, state: { status: item.status } }],
-            },
-          ]),
-        ),
-        activeInstanceId: null,
+        ids: [
+          ...menuState.export.queue.map((_, index) => `instance-${index}`),
+          ...(menuState.source.selection ? ["source"] : []),
+        ],
+        entities: {
+          ...Object.fromEntries(
+            menuState.export.queue.map((item, index) => [
+              `instance-${index}`,
+              {
+                id: `instance-${index}`,
+                exportAttempts: [{ id: `attempt-${index}`, state: { status: item.status } }],
+              },
+            ]),
+          ),
+          ...(menuState.source.selection
+            ? {
+                source: {
+                  id: "source",
+                  exportAttempts: [],
+                  snapshot: { source: menuState.source.selection },
+                  sourceAvailability: "available",
+                },
+              }
+            : {}),
+        },
+        activeInstanceId: menuState.source.selection ? "source" : null,
       },
     }),
 }));
@@ -656,7 +675,7 @@ describe("MenuBarTest", () => {
     const openFolderItem = screen.getByRole("menuitem", { name: /Open Folder/ });
     expect(openFolderItem).toHaveTextContent("CtrlK");
     const closeFileItem = screen.getByRole("menuitem", { name: /Close File/ });
-    expect(closeFileItem).toHaveTextContent("CtrlQ");
+    expect(closeFileItem).toHaveTextContent("CtrlC");
     const deleteSourceItem = screen.getByRole("menuitem", { name: /Delete File/ });
     expect(deleteSourceItem).toHaveTextContent("CtrlD");
     await user.click(closeFileItem);
