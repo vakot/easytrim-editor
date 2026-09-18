@@ -1759,6 +1759,13 @@ describe("App", () => {
       "aria-pressed",
       "true",
     );
+    video.currentTime = 10;
+    fireEvent.timeUpdate(video);
+    fireEvent.keyDown(window, { key: "i", code: "KeyI" });
+    video.currentTime = 20;
+    fireEvent.timeUpdate(video);
+    fireEvent.keyDown(window, { key: "o", code: "KeyO" });
+
     fireEvent.keyDown(window, { key: "ArrowRight", code: "ArrowRight" });
     fireEvent.keyDown(window, { key: "ArrowRight", code: "ArrowRight", repeat: true });
     fireEvent.play(video);
@@ -1783,6 +1790,12 @@ describe("App", () => {
 
     await openSourcePicker(user);
     const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
+    video.currentTime = 10;
+    fireEvent.timeUpdate(video);
+    fireEvent.keyDown(window, { key: "i", code: "KeyI" });
+    video.currentTime = 20;
+    fireEvent.timeUpdate(video);
+    fireEvent.keyDown(window, { key: "o", code: "KeyO" });
     video.currentTime = 0.1;
     fireEvent.timeUpdate(video);
 

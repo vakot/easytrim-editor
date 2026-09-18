@@ -851,7 +851,11 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
         0,
         currentPlayheadMicrosRef.current - elapsedMs * FRAME_SHUTTLE_PLAYBACK_RATE * 1_000,
       );
-      const boundary = playbackModes.consumeBoundary(currentMicros, trimRef.current, -1);
+      const boundary = playbackModes.consumeSourceBoundary(
+        currentMicros,
+        trimRef.current.sourceDurationMicros,
+        -1,
+      );
       const boundaryAction = boundary.reached ? boundary.action : null;
       const shuttleRestarted = boundaryAction?.type === "restart";
       if (boundaryAction) {
@@ -907,7 +911,6 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
       stopPlayheadAnimation();
       shuttleDirectionRef.current = direction;
       setShuttleDirection(direction);
-      playbackModes.startMicros(currentPlayheadMicrosRef.current, trimRef.current);
       playbackModes.resetBoundary();
       diagnostics.action("timeline.shuttle.started", origin, {
         direction,
@@ -1299,9 +1302,10 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     });
     if (shuttleDirectionRef.current !== 0) {
       if (shuttleDirectionRef.current === 1) {
-        const boundary = playbackModes.consumeBoundary(
+        const boundary = playbackModes.consumeSourceBoundary(
           trimRef.current.sourceDurationMicros,
-          trimRef.current,
+          trimRef.current.sourceDurationMicros,
+          1,
         );
         const boundaryAction = boundary.reached ? boundary.action : null;
         if (boundaryAction?.type === "restart") {
