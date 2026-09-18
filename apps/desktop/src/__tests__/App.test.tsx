@@ -1822,6 +1822,21 @@ describe("App", () => {
       );
       expect(video.currentTime).toBeCloseTo(9.883317, 6);
 
+      let mediaPosition = 10;
+      Object.defineProperty(video, "currentTime", {
+        configurable: true,
+        get: () => mediaPosition,
+        set: (seconds: number) => {
+          mediaPosition = seconds;
+        },
+      });
+      fireEvent.timeUpdate(video);
+
+      expect(screen.getByRole("slider", { name: "Playback position" })).toHaveAttribute(
+        "aria-valuenow",
+        "9883317",
+      );
+
       fireEvent.keyUp(window, { key: "ArrowLeft", code: "ArrowLeft" });
       expect(cancelFrame).toHaveBeenCalled();
       expect(screen.getByRole("button", { name: "Previous frame" })).toHaveAttribute(

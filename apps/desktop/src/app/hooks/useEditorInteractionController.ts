@@ -43,7 +43,6 @@ import {
   createSeekScheduler,
   type PlaybackFrameHandle,
   requestPlaybackFrame,
-  seekVideo,
 } from "@/features/preview";
 import {
   cancelFrame,
@@ -872,7 +871,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
         timestamp - reverseShuttleLastSeekAtRef.current >= REVERSE_SHUTTLE_SEEK_INTERVAL_MS
       ) {
         reverseShuttleLastSeekAtRef.current = timestamp;
-        seekVideo(video, currentMicros);
+        scheduleVideoSeek(currentMicros, true);
       }
 
       if (currentMicros <= 0) {
@@ -883,7 +882,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     };
 
     reverseShuttleFrameRef.current = requestAnimationFrame(update);
-  }, [handleShuttleEnd]);
+  }, [handleShuttleEnd, scheduleVideoSeek]);
 
   const handleShuttleStart = useCallback(
     (direction: FrameShuttleDirection, origin: DiagnosticOrigin = { type: "internal" }) => {
@@ -1169,6 +1168,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
   const onTimeUpdate = useCallback(
     (seconds: number) => {
       if (
+        shuttleDirectionRef.current !== 0 ||
         timelineInteractionActiveRef.current ||
         pendingFrameStepSeekMicrosRef.current !== null ||
         seekSchedulerRef.current?.isPending ||
