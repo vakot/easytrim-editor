@@ -37,13 +37,14 @@ function instance(
   id: string,
   displayName: string,
   sourcePath = `C:/Media/${displayName}`,
+  sourceAvailability: EditingInstance["sourceAvailability"] = "available",
 ): EditingInstance {
   return {
     exportAttempts: [],
     id,
     origin: "source-import",
     snapshot: createDefaultEditorSnapshot({ displayName, sourcePath }, false),
-    sourceAvailability: "available",
+    sourceAvailability,
   };
 }
 
@@ -342,6 +343,63 @@ describe("SourceGrid", () => {
     expect(screen.getByRole("menuitem", { name: "second.mp4" })).toBeInTheDocument();
   });
 
+  it("shows applicable delete and restore actions for mixed source selections", async () => {
+    const user = userEvent.setup();
+    const store = createAppStore();
+    store.dispatch(
+      editingInstancesAdded([
+        instance("first", "first.mp4"),
+        instance("second", "second.mp4", undefined, "deleted"),
+      ]),
+    );
+
+    render(
+      <Provider store={store}>
+        <TooltipProvider>
+          <SourceGrid />
+        </TooltipProvider>
+      </Provider>,
+    );
+
+    const cards = screen.getAllByRole("checkbox");
+    await user.click(cards[0]!);
+    fireEvent.click(cards[1]!, { ctrlKey: true });
+    fireEvent.contextMenu(cards[0]!);
+
+    expect(screen.getByRole("menuitem", { name: "Delete Files (2)" })).toBeEnabled();
+    expect(screen.getByRole("menuitem", { name: "Restore" })).toBeInTheDocument();
+  });
+
+  it("disables delete and keeps restore for an all-deleted selection", async () => {
+    const user = userEvent.setup();
+    const store = createAppStore();
+    store.dispatch(
+      editingInstancesAdded([
+        instance("first", "first.mp4", undefined, "deleted"),
+        instance("second", "second.mp4", undefined, "deleted"),
+      ]),
+    );
+
+    render(
+      <Provider store={store}>
+        <TooltipProvider>
+          <SourceGrid />
+        </TooltipProvider>
+      </Provider>,
+    );
+
+    const cards = screen.getAllByRole("checkbox");
+    await user.click(cards[0]!);
+    fireEvent.click(cards[1]!, { ctrlKey: true });
+    fireEvent.contextMenu(cards[0]!);
+
+    expect(screen.getByRole("menuitem", { name: "Delete Files (2)" })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+    expect(screen.getByRole("menuitem", { name: "Restore" })).toBeInTheDocument();
+  });
+
   it("shows individual context actions for a non-selected card", async () => {
     const user = userEvent.setup();
     const store = createAppStore();
@@ -368,6 +426,30 @@ describe("SourceGrid", () => {
     expect(
       screen.getByRole("menuitem", { name: /Reveal in (File Manager|File Explorer|Finder)/ }),
     ).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "Close Files (2)" })).not.toBeInTheDocument();
+  });
+
+  it("shows individual context actions when only the selected card is targeted", async () => {
+    const user = userEvent.setup();
+    const store = createAppStore();
+    store.dispatch(
+      editingInstancesAdded([instance("first", "first.mp4"), instance("second", "second.mp4")]),
+    );
+
+    render(
+      <Provider store={store}>
+        <TooltipProvider>
+          <SourceGrid />
+        </TooltipProvider>
+      </Provider>,
+    );
+
+    const cards = screen.getAllByRole("checkbox");
+    await user.click(cards[0]!);
+    fireEvent.contextMenu(cards[0]!);
+
+    expect(screen.getByRole("menuitem", { name: "Close File" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Delete File" })).toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: "Close Files (2)" })).not.toBeInTheDocument();
   });
 

@@ -131,7 +131,7 @@ export const SourceCard = memo(function SourceCard({ source }: SourceCardProps) 
 
   const handleContextMenu = () => {
     const sourceIsSelected = selectedSourceIds.has(id);
-    setContextMenuIsSelection(sourceIsSelected);
+    setContextMenuIsSelection(sourceIsSelected && selectedSourceIds.size > 1);
     setContextSourceIds(sourceIsSelected ? [...selectedSourceIds] : [id]);
   };
 
@@ -309,6 +309,8 @@ function SourceCardContextMenu({
   const dispatch = useAppDispatch();
   const revealLabel = getRevealLabel(t);
   const count = sources.length;
+  const deletableSources = sources.filter((source) => source.sourceAvailability !== "deleted");
+  const restorableSources = sources.filter((source) => source.sourceAvailability === "deleted");
 
   return (
     <ContextMenuContent>
@@ -345,13 +347,42 @@ function SourceCardContextMenu({
       <ContextMenuSeparator />
 
       <DeleteSourceDialogTrigger asChild>
-        <ContextMenuItem inset onSelect={(event) => event.preventDefault()} variant="destructive">
+        <ContextMenuItem
+          disabled={deletableSources.length === 0}
+          inset
+          onSelect={(event) => event.preventDefault()}
+          variant="destructive"
+        >
           <ContextMenuIcon>
             <Trash2 aria-hidden="true" />
           </ContextMenuIcon>
           {t("app.actions.deleteFiles", { count })}
         </ContextMenuItem>
       </DeleteSourceDialogTrigger>
+
+      {restorableSources.length > 0 ? (
+        <ContextMenuItem
+          inset
+          onSelect={() =>
+            void Promise.all(
+              restorableSources.map(({ id, snapshot }) =>
+                dispatch(
+                  restoreSourceFileRequested({
+                    itemId: id,
+                    sourcePath: snapshot.source.sourcePath,
+                  }),
+                ),
+              ),
+            )
+          }
+          variant="success"
+        >
+          <ContextMenuIcon>
+            <RotateCcw aria-hidden="true" />
+          </ContextMenuIcon>
+          {t("app.actions.restore")}
+        </ContextMenuItem>
+      ) : null}
     </ContextMenuContent>
   );
 }
