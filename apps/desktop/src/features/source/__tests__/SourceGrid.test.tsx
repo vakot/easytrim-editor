@@ -364,7 +364,9 @@ describe("SourceGrid", () => {
     fireEvent.contextMenu(cards[0]!);
 
     expect(screen.getByRole("menuitem", { name: "Close Files (2)" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Close File" })).toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: "Delete Files (2)" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Delete File" })).toBeInTheDocument();
 
     await user.click(screen.getByRole("menuitem", { name: /Reveal in/ }));
     expect(screen.getByRole("menuitem", { name: "first.mp4" })).toBeInTheDocument();
@@ -395,7 +397,19 @@ describe("SourceGrid", () => {
     fireEvent.contextMenu(cards[0]!);
 
     expect(screen.getByRole("menuitem", { name: "Delete Files (2)" })).toBeEnabled();
+    expect(screen.getByRole("menuitem", { name: "Delete File" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Restore File (1)" })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "Restore" })).not.toBeInTheDocument();
+
+    fireEvent.contextMenu(cards[1]!);
+
+    expect(screen.getByRole("menuitem", { name: "Restore File (1)" })).toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: "Restore" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Delete Files (2)" })).toBeEnabled();
+    expect(screen.getByRole("menuitem", { name: "Delete File" })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
   });
 
   it("disables delete and keeps restore for an all-deleted selection", async () => {
@@ -425,6 +439,11 @@ describe("SourceGrid", () => {
       "aria-disabled",
       "true",
     );
+    expect(screen.getByRole("menuitem", { name: "Delete File" })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+    expect(screen.getByRole("menuitem", { name: "Restore Files (2)" })).toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: "Restore" })).toBeInTheDocument();
   });
 

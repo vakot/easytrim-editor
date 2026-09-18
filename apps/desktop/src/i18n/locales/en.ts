@@ -36,6 +36,8 @@ export const en = {
       resetLayout: "Reset layout",
       restart: "Restart application",
       restore: "Restore",
+      restoreFiles_one: "Restore File ({{count}})",
+      restoreFiles_other: "Restore Files ({{count}})",
       showPanel: "Show {{panel}}",
       update: "Update",
     },

@@ -38,6 +38,8 @@ export const sk = {
       resetLayout: "Obnoviť rozloženie",
       restart: "Reštartovať aplikáciu",
       restore: "Obnoviť",
+      restoreFiles_one: "Obnoviť súbor ({{count}})",
+      restoreFiles_other: "Obnoviť súbory ({{count}})",
       showPanel: "Zobraziť {{panel}}",
       update: "Aktualizovať",
     },

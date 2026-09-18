@@ -45,11 +45,7 @@ import {
 } from "@/app/store/slices/editing-instances-slice";
 import { selectImportedSourceThumbnail } from "@/app/store/slices/preview-slice";
 import { selectSourceStatus } from "@/app/store/slices/source-slice";
-import {
-  closeEditingInstancesRequested,
-  navigateToEditingInstance,
-  restoreSourceFileRequested,
-} from "@/app/store/thunks/source-media-thunks";
+import { navigateToEditingInstance } from "@/app/store/thunks/source-media-thunks";
 import type { EditingInstance } from "@/domain/editing-instance";
 import { cn } from "@/lib/class-names.utils";
 import { openFileLocation } from "@/lib/tauri/media";
@@ -57,7 +53,14 @@ import { openFileLocation } from "@/lib/tauri/media";
 import { formatSourcePath } from "../lib/media-formatters.utils";
 import { getRevealLabel } from "../lib/source.utils";
 
-import { DeleteSourceDialog, DeleteSourceDialogTrigger } from "./DeleteSourceDialog";
+import {
+  MenuCloseSource,
+  MenuCloseSources,
+  MenuDeleteSource,
+  MenuDeleteSources,
+  MenuRestoreSource,
+  MenuRestoreSources,
+} from "./SourceMenuActions";
 import { useSourceSelection } from "./SourceSelectionContext";
 
 type SourceCardStatus = "deleted" | "failed" | "loading" | "missing" | "ready";
@@ -136,112 +139,113 @@ export const SourceCard = memo(function SourceCard({ source }: SourceCardProps) 
   };
 
   return (
-    <DeleteSourceDialog sourceIds={contextSourceIds}>
-      <ContextMenu>
-        <ContextMenuTrigger asChild onContextMenu={handleContextMenu}>
-          <Card
-            aria-checked={selected}
-            aria-label={displayName}
-            className={cn(
-              "cursor-pointer pt-0",
-              selected ? "ring-2 ring-primary/70" : undefined,
-              active ? "ring-2 ring-primary" : undefined,
-            )}
-            data-active={active ? "true" : "false"}
-            data-selected={selected ? "true" : "false"}
-            data-source-id={id}
-            onClick={handleCardClick}
-            onKeyDown={(event) => {
-              if (
-                event.target !== event.currentTarget ||
-                (event.key !== " " && event.key !== "Enter")
-              ) {
-                return;
-              }
+    <ContextMenu>
+      <ContextMenuTrigger asChild onContextMenu={handleContextMenu}>
+        <Card
+          aria-checked={selected}
+          aria-label={displayName}
+          className={cn(
+            "cursor-pointer pt-0",
+            selected ? "ring-2 ring-primary/70" : undefined,
+            active ? "ring-2 ring-primary" : undefined,
+          )}
+          data-active={active ? "true" : "false"}
+          data-selected={selected ? "true" : "false"}
+          data-source-id={id}
+          onClick={handleCardClick}
+          onKeyDown={(event) => {
+            if (
+              event.target !== event.currentTarget ||
+              (event.key !== " " && event.key !== "Enter")
+            ) {
+              return;
+            }
 
-              event.preventDefault();
-              selectSource(id, {
-                ctrlKey: event.ctrlKey,
-                metaKey: event.metaKey,
-                shiftKey: event.shiftKey,
-              });
-              if (event.key === "Enter" && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
-                void dispatch(navigateToEditingInstance(id));
-              }
-            }}
-            role="checkbox"
-            tabIndex={0}
-            variant={variant}
-          >
-            <div className="group relative aspect-video w-full overflow-hidden bg-muted text-muted-foreground">
-              {thumbnailUrl ? (
-                <img
-                  alt={`${displayName} thumbnail`}
-                  aria-label={`${displayName} thumbnail`}
-                  className="group-hover:scale-1.02 size-full object-cover transition-transform"
-                  src={thumbnailUrl}
-                />
-              ) : thumbnailLoading ? (
-                <span
-                  aria-label={t("source.status.loading")}
-                  className="grid size-full place-items-center bg-linear-to-br from-muted to-background"
-                  role="status"
-                >
-                  <LoaderCircle aria-hidden="true" className="size-8 animate-spin text-primary" />
-                </span>
-              ) : (
-                <span className="grid size-full place-items-center bg-linear-to-br from-muted to-background">
-                  <span className="grid justify-items-center gap-2">
-                    <FileVideo aria-hidden="true" className="size-8 opacity-40" />
-                    <span className="text-[10px]">{t("source.messages.previewUnavailable")}</span>
-                  </span>
-                </span>
-              )}
-              {status !== "ready" ? (
-                <Badge
-                  className={`absolute top-2 left-2 gap-1 backdrop-blur-sm ${statusBadgeClassNames[variant]}`}
-                  size="xs"
-                  variant="outline"
-                >
-                  <StatusIcon
-                    aria-hidden="true"
-                    className={status === "loading" ? "animate-spin" : undefined}
-                  />
-                  {statusLabel}
-                </Badge>
-              ) : null}
-            </div>
-
-            <CardHeader>
-              <CardTitle className="truncate text-sm" title={displayName}>
-                {displayName}
-              </CardTitle>
-              <CardDescription className="truncate" title={sourcePath}>
-                {formatSourcePath(sourcePath)}
-              </CardDescription>
-              <CardAction
-                className="flex items-center gap-1"
-                onClick={(event) => event.stopPropagation()}
+            event.preventDefault();
+            selectSource(id, {
+              ctrlKey: event.ctrlKey,
+              metaKey: event.metaKey,
+              shiftKey: event.shiftKey,
+            });
+            if (event.key === "Enter" && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
+              void dispatch(navigateToEditingInstance(id));
+            }
+          }}
+          role="checkbox"
+          tabIndex={0}
+          variant={variant}
+        >
+          <div className="group relative aspect-video w-full overflow-hidden bg-muted text-muted-foreground">
+            {thumbnailUrl ? (
+              <img
+                alt={`${displayName} thumbnail`}
+                aria-label={`${displayName} thumbnail`}
+                className="group-hover:scale-1.02 size-full object-cover transition-transform"
+                src={thumbnailUrl}
+              />
+            ) : thumbnailLoading ? (
+              <span
+                aria-label={t("source.status.loading")}
+                className="grid size-full place-items-center bg-linear-to-br from-muted to-background"
+                role="status"
               >
-                <SourceCardActions source={source} />
-              </CardAction>
-            </CardHeader>
-          </Card>
-        </ContextMenuTrigger>
+                <LoaderCircle aria-hidden="true" className="size-8 animate-spin text-primary" />
+              </span>
+            ) : (
+              <span className="grid size-full place-items-center bg-linear-to-br from-muted to-background">
+                <span className="grid justify-items-center gap-2">
+                  <FileVideo aria-hidden="true" className="size-8 opacity-40" />
+                  <span className="text-[10px]">{t("source.messages.previewUnavailable")}</span>
+                </span>
+              </span>
+            )}
+            {status !== "ready" ? (
+              <Badge
+                className={`absolute top-2 left-2 gap-1 backdrop-blur-sm ${statusBadgeClassNames[variant]}`}
+                size="xs"
+                variant="outline"
+              >
+                <StatusIcon
+                  aria-hidden="true"
+                  className={status === "loading" ? "animate-spin" : undefined}
+                />
+                {statusLabel}
+              </Badge>
+            ) : null}
+          </div>
 
-        {contextMenuIsSelection ? (
-          <SourceCardContextMenu sourceIds={contextSourceIds} sources={contextSources} />
-        ) : (
-          <SourceCardIndividualContextMenu source={source} />
-        )}
-      </ContextMenu>
-    </DeleteSourceDialog>
+          <CardHeader>
+            <CardTitle className="truncate text-sm" title={displayName}>
+              {displayName}
+            </CardTitle>
+            <CardDescription className="truncate" title={sourcePath}>
+              {formatSourcePath(sourcePath)}
+            </CardDescription>
+            <CardAction
+              className="flex items-center gap-1"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <SourceCardActions source={source} />
+            </CardAction>
+          </CardHeader>
+        </Card>
+      </ContextMenuTrigger>
+
+      {contextMenuIsSelection ? (
+        <SourceCardContextMenu source={source} sources={contextSources} />
+      ) : (
+        <SourceCardIndividualContextMenu source={source} />
+      )}
+    </ContextMenu>
   );
 });
 
+/**
+ * @name SourceCardIndividualContextMenu
+ * @description Builds the context menu for one source card, including its file lifecycle actions.
+ */
 function SourceCardIndividualContextMenu({ source }: { source: EditingInstance }) {
   const { t } = useTranslation();
-  const dispatch = useAppDispatch();
   const { sourcePath } = source.snapshot.source;
   const showRestore = source.sourceAvailability === "deleted";
   const revealLabel = getRevealLabel(t);
@@ -259,58 +263,57 @@ function SourceCardIndividualContextMenu({ source }: { source: EditingInstance }
         {revealLabel}
       </ContextMenuItem>
 
-      <ContextMenuItem
-        inset
-        onSelect={() => void dispatch(closeEditingInstancesRequested([source.id]))}
-      >
-        <ContextMenuIcon>
-          <X aria-hidden="true" />
-        </ContextMenuIcon>
-        {t("app.actions.closeFile")}
-      </ContextMenuItem>
+      <MenuCloseSource source={source}>
+        <ContextMenuItem inset>
+          <ContextMenuIcon>
+            <X aria-hidden="true" />
+          </ContextMenuIcon>
+          {t("app.actions.closeFile")}
+        </ContextMenuItem>
+      </MenuCloseSource>
 
       <ContextMenuSeparator />
 
       {showRestore ? (
-        <ContextMenuItem
-          inset
-          onSelect={() =>
-            void dispatch(restoreSourceFileRequested({ itemId: source.id, sourcePath }))
-          }
-          variant="success"
-        >
-          <ContextMenuIcon>
-            <RotateCcw aria-hidden="true" />
-          </ContextMenuIcon>
-          {t("app.actions.restore")}
-        </ContextMenuItem>
+        <MenuRestoreSource source={source}>
+          <ContextMenuItem inset variant="success">
+            <ContextMenuIcon>
+              <RotateCcw aria-hidden="true" />
+            </ContextMenuIcon>
+            {t("app.actions.restore")}
+          </ContextMenuItem>
+        </MenuRestoreSource>
       ) : (
-        <DeleteSourceDialogTrigger asChild>
-          <ContextMenuItem inset onSelect={(event) => event.preventDefault()} variant="destructive">
+        <MenuDeleteSource source={source}>
+          <ContextMenuItem inset variant="destructive">
             <ContextMenuIcon>
               <Trash2 aria-hidden="true" />
             </ContextMenuIcon>
             {t("app.actions.deleteFile")}
           </ContextMenuItem>
-        </DeleteSourceDialogTrigger>
+        </MenuDeleteSource>
       )}
     </ContextMenuContent>
   );
 }
 
+/**
+ * @name SourceCardContextMenu
+ * @description Builds the selected-range context menu with aggregate and current-file actions.
+ */
 function SourceCardContextMenu({
-  sourceIds,
+  source,
   sources,
 }: {
-  sourceIds: string[];
+  source: EditingInstance;
   sources: EditingInstance[];
 }) {
   const { t } = useTranslation();
-  const dispatch = useAppDispatch();
   const revealLabel = getRevealLabel(t);
   const count = sources.length;
-  const deletableSources = sources.filter((source) => source.sourceAvailability !== "deleted");
-  const restorableSources = sources.filter((source) => source.sourceAvailability === "deleted");
+  const restorableCount = sources.filter(
+    (source) => source.sourceAvailability === "deleted",
+  ).length;
 
   return (
     <ContextMenuContent>
@@ -334,54 +337,64 @@ function SourceCardContextMenu({
         </ContextMenuSubContent>
       </ContextMenuSub>
 
-      <ContextMenuItem
-        inset
-        onSelect={() => void dispatch(closeEditingInstancesRequested(sourceIds))}
-      >
-        <ContextMenuIcon>
-          <X aria-hidden="true" />
-        </ContextMenuIcon>
-        {t("app.actions.closeFiles", { count })}
-      </ContextMenuItem>
+      <MenuCloseSources sources={sources}>
+        <ContextMenuItem inset>
+          <ContextMenuIcon>
+            <X aria-hidden="true" />
+          </ContextMenuIcon>
+          {t("app.actions.closeFiles", { count })}
+        </ContextMenuItem>
+      </MenuCloseSources>
+
+      <MenuCloseSource source={source}>
+        <ContextMenuItem inset>
+          <ContextMenuIcon>
+            <X aria-hidden="true" />
+          </ContextMenuIcon>
+          {t("app.actions.closeFile")}
+        </ContextMenuItem>
+      </MenuCloseSource>
 
       <ContextMenuSeparator />
 
-      <DeleteSourceDialogTrigger asChild>
-        <ContextMenuItem
-          disabled={deletableSources.length === 0}
-          inset
-          onSelect={(event) => event.preventDefault()}
-          variant="destructive"
-        >
+      <MenuDeleteSources sources={sources}>
+        <ContextMenuItem inset variant="destructive">
           <ContextMenuIcon>
             <Trash2 aria-hidden="true" />
           </ContextMenuIcon>
           {t("app.actions.deleteFiles", { count })}
         </ContextMenuItem>
-      </DeleteSourceDialogTrigger>
+      </MenuDeleteSources>
 
-      {restorableSources.length > 0 ? (
-        <ContextMenuItem
-          inset
-          onSelect={() =>
-            void Promise.all(
-              restorableSources.map(({ id, snapshot }) =>
-                dispatch(
-                  restoreSourceFileRequested({
-                    itemId: id,
-                    sourcePath: snapshot.source.sourcePath,
-                  }),
-                ),
-              ),
-            )
-          }
-          variant="success"
-        >
+      <MenuDeleteSource source={source}>
+        <ContextMenuItem inset variant="destructive">
           <ContextMenuIcon>
-            <RotateCcw aria-hidden="true" />
+            <Trash2 aria-hidden="true" />
           </ContextMenuIcon>
-          {t("app.actions.restore")}
+          {t("app.actions.deleteFile")}
         </ContextMenuItem>
+      </MenuDeleteSource>
+
+      {restorableCount > 0 ? (
+        <MenuRestoreSources sources={sources}>
+          <ContextMenuItem inset variant="success">
+            <ContextMenuIcon>
+              <RotateCcw aria-hidden="true" />
+            </ContextMenuIcon>
+            {t("app.actions.restoreFiles", { count: restorableCount })}
+          </ContextMenuItem>
+        </MenuRestoreSources>
+      ) : null}
+
+      {source.sourceAvailability === "deleted" ? (
+        <MenuRestoreSource source={source}>
+          <ContextMenuItem inset variant="success">
+            <ContextMenuIcon>
+              <RotateCcw aria-hidden="true" />
+            </ContextMenuIcon>
+            {t("app.actions.restore")}
+          </ContextMenuItem>
+        </MenuRestoreSource>
       ) : null}
     </ContextMenuContent>
   );
@@ -428,11 +441,13 @@ function getSourceCardStatusLabel(t: TFunction, status: SourceCardStatus): strin
   }
 }
 
+/**
+ * @name SourceCardActions
+ * @description Builds the dropdown menu for one source card using the shared source menu actions.
+ */
 function SourceCardActions({ source }: { source: EditingInstance }) {
   const { t } = useTranslation();
-  const dispatch = useAppDispatch();
 
-  const id = source.id;
   const { displayName, sourcePath } = source.snapshot.source;
   const showRestore = source.sourceAvailability === "deleted";
   const revealLabel = getRevealLabel(t);
@@ -467,47 +482,38 @@ function SourceCardActions({ source }: { source: EditingInstance }) {
           {revealLabel}
         </DropdownMenuItem>
 
-        <DropdownMenuItem
-          inset
-          onSelect={() => void dispatch(closeEditingInstancesRequested([id]))}
-        >
-          <DropdownMenuIcon>
-            <X aria-hidden="true" />
-          </DropdownMenuIcon>
+        <MenuCloseSource source={source}>
+          <DropdownMenuItem inset>
+            <DropdownMenuIcon>
+              <X aria-hidden="true" />
+            </DropdownMenuIcon>
 
-          {t("app.actions.closeFile")}
-        </DropdownMenuItem>
+            {t("app.actions.closeFile")}
+          </DropdownMenuItem>
+        </MenuCloseSource>
 
         <DropdownMenuSeparator />
 
         {showRestore ? (
-          <DropdownMenuItem
-            inset
-            onSelect={() => void dispatch(restoreSourceFileRequested({ itemId: id, sourcePath }))}
-            variant="success"
-          >
-            <DropdownMenuIcon>
-              <RotateCcw aria-hidden="true" />
-            </DropdownMenuIcon>
+          <MenuRestoreSource source={source}>
+            <DropdownMenuItem inset variant="success">
+              <DropdownMenuIcon>
+                <RotateCcw aria-hidden="true" />
+              </DropdownMenuIcon>
 
-            {t("app.actions.restore")}
-          </DropdownMenuItem>
+              {t("app.actions.restore")}
+            </DropdownMenuItem>
+          </MenuRestoreSource>
         ) : (
-          <DeleteSourceDialog sourceId={id}>
-            <DeleteSourceDialogTrigger asChild>
-              <DropdownMenuItem
-                inset
-                onSelect={(event) => event.preventDefault()}
-                variant="destructive"
-              >
-                <DropdownMenuIcon>
-                  <Trash2 aria-hidden="true" />
-                </DropdownMenuIcon>
+          <MenuDeleteSource source={source}>
+            <DropdownMenuItem inset variant="destructive">
+              <DropdownMenuIcon>
+                <Trash2 aria-hidden="true" />
+              </DropdownMenuIcon>
 
-                {t("app.actions.deleteFile")}
-              </DropdownMenuItem>
-            </DeleteSourceDialogTrigger>
-          </DeleteSourceDialog>
+              {t("app.actions.deleteFile")}
+            </DropdownMenuItem>
+          </MenuDeleteSource>
         )}
       </DropdownMenuContent>
     </DropdownMenu>
