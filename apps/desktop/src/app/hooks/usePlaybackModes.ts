@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 
 import {
   type PlaybackBoundaryAction,
+  type PlaybackDirection,
   playbackBoundaryAction,
   type PlaybackRange,
   playbackRange,
@@ -46,11 +47,16 @@ export function usePlaybackModes({
     return currentMicros;
   }
 
-  function consumeBoundary(currentMicros: number, trim: TrimRange): PlaybackBoundaryResult {
+  function consumeBoundary(
+    currentMicros: number,
+    trim: TrimRange,
+    direction: PlaybackDirection = 1,
+  ): PlaybackBoundaryResult {
     const action = playbackBoundaryAction(
       currentMicros,
       playbackRangeRef.current ?? activeRange(trim, trim.startMicros),
       loopEnabledRef.current,
+      direction,
     );
 
     if (action.type === "continue") {

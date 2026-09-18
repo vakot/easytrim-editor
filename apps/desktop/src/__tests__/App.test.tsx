@@ -1745,6 +1745,74 @@ describe("App", () => {
     );
   });
 
+  it("loops a forward frame shuttle from the source end when looping is enabled", async () => {
+    mocks.chooseSource.mockResolvedValue([selection]);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await openSourcePicker(user);
+    const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
+    const play = vi.spyOn(video, "play").mockResolvedValue();
+    vi.spyOn(video, "pause").mockImplementation(() => undefined);
+
+    expect(screen.getByRole("button", { name: "Loop playback" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    fireEvent.keyDown(window, { key: "ArrowRight", code: "ArrowRight" });
+    fireEvent.keyDown(window, { key: "ArrowRight", code: "ArrowRight", repeat: true });
+    fireEvent.play(video);
+
+    video.currentTime = media.durationMicros / 1_000_000;
+    fireEvent.ended(video);
+
+    expect(video.currentTime).toBe(0);
+    expect(screen.getByRole("slider", { name: "Playback position" })).toHaveAttribute(
+      "aria-valuenow",
+      "0",
+    );
+    await waitFor(() => expect(play).toHaveBeenCalledTimes(2));
+
+    fireEvent.keyUp(window, { key: "ArrowRight", code: "ArrowRight" });
+  });
+
+  it("loops a reverse frame shuttle from the source start when looping is enabled", async () => {
+    mocks.chooseSource.mockResolvedValue([selection]);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await openSourcePicker(user);
+    const video = (await screen.findByLabelText("Source video preview")) as HTMLVideoElement;
+    video.currentTime = 0.1;
+    fireEvent.timeUpdate(video);
+
+    const scheduledFrames: FrameRequestCallback[] = [];
+    const requestFrame = vi
+      .spyOn(window, "requestAnimationFrame")
+      .mockImplementation((callback) => scheduledFrames.push(callback));
+    const cancelFrame = vi.spyOn(window, "cancelAnimationFrame").mockImplementation(() => {});
+
+    try {
+      fireEvent.keyDown(window, { key: "ArrowLeft", code: "ArrowLeft" });
+      fireEvent.keyDown(window, { key: "ArrowLeft", code: "ArrowLeft", repeat: true });
+
+      act(() => scheduledFrames.shift()?.(1_000));
+      act(() => scheduledFrames.shift()?.(1_100));
+
+      expect(screen.getByRole("slider", { name: "Playback position" })).toHaveAttribute(
+        "aria-valuenow",
+        `${media.durationMicros}`,
+      );
+      expect(video.currentTime).toBeCloseTo(media.durationMicros / 1_000_000, 6);
+
+      fireEvent.keyUp(window, { key: "ArrowLeft", code: "ArrowLeft" });
+      expect(cancelFrame).toHaveBeenCalled();
+    } finally {
+      requestFrame.mockRestore();
+      cancelFrame.mockRestore();
+    }
+  });
+
   it("preserves queued frame steps when forward shuttle ends before the decoder settles", async () => {
     mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();

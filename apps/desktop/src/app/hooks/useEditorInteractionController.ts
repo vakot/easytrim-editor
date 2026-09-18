@@ -847,10 +847,17 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
           ? 0
           : Math.min(timestamp - previousTimestamp, SHUTTLE_MAX_FRAME_DELTA_MS);
 
-      const currentMicros = Math.max(
+      let currentMicros = Math.max(
         0,
         currentPlayheadMicrosRef.current - elapsedMs * FRAME_SHUTTLE_PLAYBACK_RATE * 1_000,
       );
+      const boundary = playbackModes.consumeBoundary(currentMicros, trimRef.current, -1);
+      const boundaryAction = boundary.reached ? boundary.action : null;
+      const shuttleRestarted = boundaryAction?.type === "restart";
+      if (boundaryAction) {
+        currentMicros = boundaryAction.positionMicros;
+        if (shuttleRestarted) playbackModes.resetBoundary();
+      }
 
       currentPlayheadMicrosRef.current = currentMicros;
       syncPlayheadElements(
@@ -867,14 +874,15 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
       const video = videoRef.current;
       if (
         video &&
-        !video.seeking &&
-        timestamp - reverseShuttleLastSeekAtRef.current >= REVERSE_SHUTTLE_SEEK_INTERVAL_MS
+        (shuttleRestarted ||
+          (!video.seeking &&
+            timestamp - reverseShuttleLastSeekAtRef.current >= REVERSE_SHUTTLE_SEEK_INTERVAL_MS))
       ) {
         reverseShuttleLastSeekAtRef.current = timestamp;
         scheduleVideoSeek(currentMicros, true);
       }
 
-      if (currentMicros <= 0) {
+      if (boundary.reached && !shuttleRestarted) {
         handleShuttleEnd({ type: "internal", id: "source-start" });
         return;
       }
@@ -882,7 +890,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     };
 
     reverseShuttleFrameRef.current = requestAnimationFrame(update);
-  }, [handleShuttleEnd, scheduleVideoSeek]);
+  }, [handleShuttleEnd, playbackModes, scheduleVideoSeek]);
 
   const handleShuttleStart = useCallback(
     (direction: FrameShuttleDirection, origin: DiagnosticOrigin = { type: "internal" }) => {
@@ -899,6 +907,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
       stopPlayheadAnimation();
       shuttleDirectionRef.current = direction;
       setShuttleDirection(direction);
+      playbackModes.startMicros(currentPlayheadMicrosRef.current, trimRef.current);
       playbackModes.resetBoundary();
       diagnostics.action("timeline.shuttle.started", origin, {
         direction,
@@ -1289,11 +1298,24 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
       origin: { type: "internal" },
     });
     if (shuttleDirectionRef.current !== 0) {
+      if (shuttleDirectionRef.current === 1) {
+        const boundary = playbackModes.consumeBoundary(
+          trimRef.current.sourceDurationMicros,
+          trimRef.current,
+        );
+        const boundaryAction = boundary.reached ? boundary.action : null;
+        if (boundaryAction?.type === "restart") {
+          commitSeek(boundaryAction.positionMicros);
+          playbackModes.resetBoundary();
+          startMediaPlayback();
+          return;
+        }
+      }
       handleShuttleEnd({ type: "internal", id: "source-end" });
       return;
     }
     if (videoRef.current) handlePlaybackBoundary(videoRef.current.currentTime * 1_000_000);
-  }, [handlePlaybackBoundary, handleShuttleEnd]);
+  }, [commitSeek, handlePlaybackBoundary, handleShuttleEnd, playbackModes, startMediaPlayback]);
 
   useEffect(() => {
     shortcutActionsRef.current = {
