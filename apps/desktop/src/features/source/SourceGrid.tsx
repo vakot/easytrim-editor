@@ -43,12 +43,30 @@ export function SourceGrid() {
   const instances = useAppSelector(selectImportedEditingInstances);
   const importedThumbnails = useAppSelector(selectImportedSourceThumbnails);
   const thumbnailRequestIds = useRef(new Set<string>());
+  const knownSourceIds = useRef(new Set<string>());
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSourceIds, setSelectedSourceIds] = useState<Set<string>>(
     () => new Set(activeInstanceId ? [activeInstanceId] : []),
   );
 
   const deferredSearchQuery = useDeferredValue(searchQuery);
+
+  useEffect(() => {
+    const currentSourceIds = new Set(instances.map(({ id }) => id));
+    const newSourceIds = instances
+      .map(({ id }) => id)
+      .filter((id) => !knownSourceIds.current.has(id));
+
+    if (knownSourceIds.current.size > 0 && newSourceIds.length > 0) {
+      setSelectedSourceIds((currentSelection) => {
+        const nextSelection = new Set(currentSelection);
+        for (const id of newSourceIds) nextSelection.add(id);
+        return nextSelection;
+      });
+    }
+
+    knownSourceIds.current = currentSourceIds;
+  }, [instances]);
 
   const effectiveSelectedSourceIds = useMemo(() => {
     if (!activeInstanceId || !instances.some((instance) => instance.id === activeInstanceId)) {

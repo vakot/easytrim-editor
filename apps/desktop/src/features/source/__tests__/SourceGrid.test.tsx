@@ -199,6 +199,34 @@ describe("SourceGrid", () => {
     expect(selectActiveInstanceId(store.getState())).toBe("second");
   });
 
+  it("selects newly imported sources without replacing the active editor", async () => {
+    const store = createAppStore();
+    store.dispatch(editingInstancesAdded([instance("first", "first.mp4")]));
+    store.dispatch(activeEditingInstanceChanged("first"));
+
+    render(
+      <Provider store={store}>
+        <TooltipProvider>
+          <SourceGrid />
+        </TooltipProvider>
+      </Provider>,
+    );
+
+    store.dispatch(editingInstancesAdded([instance("second", "second.mp4")]));
+
+    await waitFor(() => {
+      expect(screen.getByRole("checkbox", { name: "second.mp4" })).toHaveAttribute(
+        "aria-checked",
+        "true",
+      );
+    });
+    expect(selectActiveInstanceId(store.getState())).toBe("first");
+    expect(screen.getByRole("checkbox", { name: "first.mp4" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+  });
+
   it("starts a Shift range from the active source and updates its anchor after Shift", () => {
     const store = createAppStore();
     store.dispatch(
