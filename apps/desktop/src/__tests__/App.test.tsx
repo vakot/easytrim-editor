@@ -1731,6 +1731,8 @@ describe("App", () => {
     expect(nextFrame).toHaveAttribute("aria-pressed", "true");
 
     fireEvent.play(video);
+    expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Pause" })).not.toBeInTheDocument();
     video.currentTime = 2.5;
     fireEvent.keyUp(window, { key: "ArrowRight", code: "ArrowRight" });
 

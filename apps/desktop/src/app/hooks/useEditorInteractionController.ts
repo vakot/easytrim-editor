@@ -1270,6 +1270,10 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
 
   const onPlay = useCallback(() => {
     playbackRequestedRef.current = true;
+    if (shuttleDirectionRef.current !== 0) {
+      if (shuttleDirectionRef.current === 1) startPlayheadAnimation();
+      return;
+    }
     isPlayingRef.current = true;
     setIsPlaying(true);
     startPlayheadAnimation();
