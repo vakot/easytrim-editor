@@ -6,6 +6,7 @@ import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snap
 import {
   enqueueExport,
   setExportQueueExecutionEnabled,
+  withdrawPendingExport,
 } from "@/app/store/integration/export-queue-runtime";
 import {
   editingInstanceExportAttemptQueued,
@@ -22,7 +23,10 @@ import { createExportAttempt } from "@/domain/editing-instance";
 import { firstSource, media } from "@/test/source.fixtures";
 
 import { startFastCutRequested } from "../export-thunks";
-import { restoreExportAttemptRequested } from "../source-media-thunks";
+import {
+  closeActiveEditingInstanceRequested,
+  restoreExportAttemptRequested,
+} from "../source-media-thunks";
 
 const native = vi.hoisted(() => ({
   activateSourcePath: vi.fn(),
@@ -171,6 +175,23 @@ describe("export snapshot restoration", () => {
       "original",
     );
     expect(store.getState().editingInstances.activeInstanceId).toBe("original");
+  });
+
+  it("keeps a queued export visible when its source draft is closed", async () => {
+    const { store } = setup();
+    store.dispatch(startFastCutRequested());
+    await vi.waitFor(() => expect(selectExportQueue(store.getState()).pending).toHaveLength(1));
+    const attempt = selectExportQueue(store.getState()).pending[0]!.attempt;
+
+    await store.dispatch(closeActiveEditingInstanceRequested());
+
+    expect(selectImportedEditingInstances(store.getState())).toEqual([]);
+    expect(selectExportQueue(store.getState()).pending).toEqual([
+      expect.objectContaining({ attempt: expect.objectContaining({ id: attempt.id }) }),
+    ]);
+    expect(store.getState().editingInstances.entities.original?.draftAvailable).toBe(false);
+
+    withdrawPendingExport("original", attempt.id, store.getState);
   });
 
   it("marks retained same-file drafts deleted after the last export with automatic deletion enabled", async () => {

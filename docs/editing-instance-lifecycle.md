@@ -40,7 +40,9 @@ Restoration from the compact queue window returns to the main editor.
 Source/operation IDs and load tokens reject stale callbacks. Restoration removes pending jobs
 synchronously so a concurrent queue start cannot render the consumed attempt. Pending withdrawal
 releases only that job's reservation and does not run a queue-finish action when it empties the queue.
-Closing an instance cancels its jobs and awaits cleanup before removing the entity.
+Closing an instance without queued or rendering exports removes the entity. If it owns queued or
+rendering exports, closing only hides the draft; the queue owner remains available to the independent
+export runtime until those jobs reach a terminal state.
 
 Source deletion and restoration update every instance referencing the same canonical file path.
 Manual deletion is blocked while any attempt uses the file. Automatic deletion after a successful

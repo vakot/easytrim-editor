@@ -372,7 +372,7 @@ describe("editing instances slice", () => {
     expect(state.entities["instance-3"]?.sourceAvailability).toBe("available");
   });
 
-  it("closes one instance without deleting another instance or its history", () => {
+  it("hides a closed instance while preserving its processable export", () => {
     const first = instance("instance-1");
     first.exportAttempts.push(attempt("attempt-1"));
     let state = editingInstancesReducer(
@@ -384,7 +384,9 @@ describe("editing instances slice", () => {
     state = editingInstancesReducer(state, editingInstanceClosed("instance-1"));
 
     expect(selectActiveEditingInstance({ editingInstances: state } as never)).toBeUndefined();
-    expect(selectEditingInstanceAttempts({ editingInstances: state } as never)).toHaveLength(0);
+    expect(selectEditingInstanceAttempts({ editingInstances: state } as never)).toHaveLength(1);
+    expect(selectImportedEditingInstances({ editingInstances: state } as never)).toHaveLength(1);
+    expect(state.entities["instance-1"]?.draftAvailable).toBe(false);
     expect(state.entities["instance-2"]?.snapshot.source).toEqual(firstSource);
   });
 

@@ -2,7 +2,6 @@ import type { TFunction } from "i18next";
 import {
   CheckCircle2,
   CircleAlert,
-  Clock3,
   ExternalLink,
   FileVideo,
   LoaderCircle,
@@ -61,39 +60,25 @@ import { getRevealLabel } from "../lib/source.utils";
 import { DeleteSourceDialog, DeleteSourceDialogTrigger } from "./DeleteSourceDialog";
 import { useSourceSelection } from "./SourceSelectionContext";
 
-type SourceCardStatus =
-  | "canceled"
-  | "completed"
-  | "deleted"
-  | "failed"
-  | "loading"
-  | "missing"
-  | "queued"
-  | "ready"
-  | "rendering";
+type SourceCardStatus = "deleted" | "failed" | "loading" | "missing" | "ready";
 
-type SourceCardVariant = "default" | "destructive" | "success" | "warning";
+type SourceCardVariant = "default" | "destructive" | "warning";
 
 export interface SourceCardProps {
   source: EditingInstance;
 }
 
 const statusIcons: Record<SourceCardStatus, typeof CheckCircle2> = {
-  canceled: CircleAlert,
-  completed: CheckCircle2,
   deleted: CircleAlert,
   failed: CircleAlert,
   loading: LoaderCircle,
   missing: CircleAlert,
-  queued: Clock3,
   ready: CheckCircle2,
-  rendering: LoaderCircle,
 };
 
 const statusBadgeClassNames: Record<SourceCardVariant, string> = {
   default: "bg-card/90 text-muted-foreground",
   destructive: "border-destructive/40 bg-destructive/10 text-destructive",
-  success: "border-success/40 bg-success/10 text-success",
   warning: "border-warning/40 bg-warning/10 text-warning",
 };
 
@@ -220,9 +205,7 @@ export const SourceCard = memo(function SourceCard({ source }: SourceCardProps) 
                 >
                   <StatusIcon
                     aria-hidden="true"
-                    className={
-                      status === "loading" || status === "rendering" ? "animate-spin" : undefined
-                    }
+                    className={status === "loading" ? "animate-spin" : undefined}
                   />
                   {statusLabel}
                 </Badge>
@@ -381,11 +364,6 @@ function getSourceCardStatus(
   if (instance.sourceAvailability === "deleted") return "deleted";
   if (instance.sourceAvailability === "missing") return "missing";
 
-  const latestAttempt = instance.exportAttempts.at(-1)?.state.status;
-  if (latestAttempt === "queued" || latestAttempt === "rendering") return latestAttempt;
-  if (latestAttempt === "completed") return "completed";
-  if (latestAttempt === "failed") return "failed";
-  if (latestAttempt === "canceled") return "canceled";
   if (active && sourceStatus === "failed") return "failed";
   if (active && sourceStatus === "loading-source") return "loading";
   return "ready";
@@ -393,28 +371,19 @@ function getSourceCardStatus(
 
 function getSourceCardVariant(status: SourceCardStatus): SourceCardVariant {
   switch (status) {
-    case "canceled":
     case "deleted":
     case "failed":
       return "destructive";
-    case "completed":
-      return "success";
     case "ready":
       return "default";
     case "loading":
     case "missing":
-    case "queued":
-    case "rendering":
       return "warning";
   }
 }
 
 function getSourceCardStatusLabel(t: TFunction, status: SourceCardStatus): string {
   switch (status) {
-    case "canceled":
-      return t("source.status.canceled");
-    case "completed":
-      return t("source.status.completed");
     case "deleted":
       return t("source.status.deleted");
     case "failed":
@@ -423,12 +392,8 @@ function getSourceCardStatusLabel(t: TFunction, status: SourceCardStatus): strin
       return t("source.status.loading");
     case "missing":
       return t("source.status.missing");
-    case "queued":
-      return t("source.status.queued");
     case "ready":
       return t("source.status.ready");
-    case "rendering":
-      return t("source.status.rendering");
   }
 }
 

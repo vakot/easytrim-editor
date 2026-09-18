@@ -167,15 +167,6 @@ export function cancelQueuedExport(
   return job.completion;
 }
 
-export function cancelInstanceExports(instanceId: EditingInstanceId, getState: () => RootState) {
-  const runtime = runtimeFor(getState);
-  return Promise.all(
-    [...runtime.jobsByAttemptId.values()]
-      .filter((job) => job.instanceId === instanceId)
-      .map((job) => cancelQueuedExport(instanceId, job.attempt.id, getState)),
-  ).then(() => undefined);
-}
-
 export function cancelActiveExport(getState: () => RootState) {
   const runtime = runtimeFor(getState);
   const activeJob = [...runtime.jobsByAttemptId.values()].find((job) => job.startedAt !== null);

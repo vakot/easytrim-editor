@@ -7,7 +7,6 @@ import {
 } from "@/app/store/actions/source-actions";
 import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";
 import {
-  cancelInstanceExports,
   hasActiveExportForSource,
   withdrawPendingExport,
 } from "@/app/store/integration/export-queue-runtime";
@@ -693,7 +692,6 @@ export const closeActiveEditingInstanceRequested =
     }
 
     if (activeInstance.id !== selectActiveInstanceId(state)) {
-      await cancelInstanceExports(activeInstance.id, getState);
       dispatch(editingInstanceClosed(activeInstance.id));
       return;
     }
@@ -703,7 +701,6 @@ export const closeActiveEditingInstanceRequested =
     const activeIndex = instances.findIndex((instance) => instance.id === activeInstance.id);
     const replacement = getReplacementEditingInstance(instances, activeIndex);
 
-    await cancelInstanceExports(activeInstance.id, getState);
     dispatch(editingInstanceClosed(activeInstance.id));
     if (replacement) {
       // A replacement activation resets source-bound domains and keeps the
@@ -743,8 +740,6 @@ export const closeEditingInstancesRequested =
         : undefined;
 
     if (activeInstanceWillClose) dispatch(commitActiveEditingInstanceDraft());
-
-    await Promise.all(idsToClose.map((id) => cancelInstanceExports(id, getState)));
 
     dispatch(editingInstancesClosed(idsToClose));
 

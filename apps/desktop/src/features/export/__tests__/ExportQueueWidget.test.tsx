@@ -72,10 +72,14 @@ function renderWidget() {
 }
 
 describe("ExportQueueWidget", () => {
-  it("restores the featured pending item into a new draft", async () => {
+  it("restores a pending item into a new draft", async () => {
     const store = renderWidget();
+    const pendingList = screen.getByRole("list");
+    const pendingItem = screen.getByRole("button", { name: "Edit: export.mp4" });
+    expect(pendingList).toContainElement(pendingItem);
+
     await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: "Edit: export.mp4" }));
+      fireEvent.click(pendingItem);
     });
     expect(store.getState().editingInstances.entities["instance-1"]?.exportAttempts).toEqual([]);
     expect(selectImportedEditingInstances(store.getState())).toHaveLength(2);
@@ -91,16 +95,13 @@ describe("ExportQueueWidget", () => {
     );
     expect(screen.getByRole("button", { name: "Edit: export.mp4" })).toBeDisabled();
   });
-  it("enables starting a paused queue from the featured item", () => {
+  it("shows a text start button in the empty active placeholder", () => {
     renderWidget();
 
-    expect(screen.getByRole("button", { name: "Start queue" })).toBeEnabled();
-  });
-
-  it("shows an empty state when no pending exports remain", () => {
-    renderWidget();
-
-    expect(screen.getByText("No pending exports.")).toBeInTheDocument();
+    const startButton = screen.getByRole("button", { name: "Start queue" });
+    expect(startButton).toBeEnabled();
+    expect(startButton).toHaveTextContent("Start queue");
+    expect(startButton.querySelector("svg")).toBeNull();
   });
 
   it("disables starting when the queue is already running", async () => {
