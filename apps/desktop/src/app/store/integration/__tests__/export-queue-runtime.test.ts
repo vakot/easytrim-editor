@@ -41,6 +41,7 @@ import {
   editingInstanceExportAttemptQueued,
   editingInstancesAdded,
 } from "../../slices/editing-instances-slice";
+import { preferenceChanged } from "../../slices/preferences-slice";
 import { createAppStore } from "../../store";
 import { createDefaultEditorSnapshot } from "../editor-snapshot";
 import {
@@ -96,6 +97,49 @@ beforeEach(() => {
 });
 
 describe("export queue runtime", () => {
+  it.each([false, true])(
+    "deletes only after the last same-source export (separate draft: %s)",
+    async (separateDraft) => {
+      const store = createAppStore();
+      store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
+      store.dispatch(preferenceChanged({ key: "deleteSourceOnRenderFinish", enabled: true }));
+      store.dispatch(editingInstancesAdded([createInstance("first"), createInstance("second")]));
+      const finish: Array<() => void> = [];
+      mocks.renderFast.mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            finish.push(() =>
+              resolve({ displayName: "out", displayPath: "out", operationId: "op" }),
+            );
+          }),
+      );
+      for (const [index, attempt] of [createAttempt("one"), createAttempt("two")].entries()) {
+        const id = separateDraft && index === 1 ? "second" : "first";
+        store.dispatch(editingInstanceExportAttemptQueued({ id, attempt }));
+        enqueueExport(id, attempt, store.dispatch, store.getState);
+      }
+      setExportQueueExecutionEnabled(true, store.dispatch, store.getState);
+      setExportQueueExecutionEnabled(false, store.dispatch, store.getState);
+      finish[0]!();
+      await vi.waitFor(() =>
+        expect(
+          store.getState().editingInstances.entities.first?.exportAttempts[0]?.state.status,
+        ).toBe("completed"),
+      );
+      expect(mocks.moveSourceToTrash).not.toHaveBeenCalled();
+      expect(mocks.renderFast).toHaveBeenCalledTimes(1);
+      setExportQueueExecutionEnabled(true, store.dispatch, store.getState);
+      await vi.waitFor(() => expect(finish).toHaveLength(2));
+      expect(mocks.moveSourceToTrash).not.toHaveBeenCalled();
+      finish[1]!();
+      await vi.waitFor(() =>
+        expect(mocks.moveSourceToTrash).toHaveBeenCalledExactlyOnceWith(firstSource.sourcePath),
+      );
+      expect(store.getState().editingInstances.entities.first?.sourceAvailability).toBe("deleted");
+      expect(store.getState().editingInstances.entities.second?.sourceAvailability).toBe("deleted");
+    },
+  );
+
   it("withdraws only the selected pending job while another export of the same instance runs", async () => {
     const store = createAppStore();
     store.dispatch(editingInstancesAdded([createInstance("source")]));

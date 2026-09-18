@@ -22,15 +22,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-import { useAppDispatch } from "@/app/store/redux-hooks";
-import { closeEditingInstancesRequested } from "@/app/store/thunks/source-media-thunks";
 import type { EditingInstance } from "@/domain/editing-instance";
 import { openFileLocation } from "@/lib/tauri/media";
 
 import { getRevealLabel } from "../lib/source.utils";
 
-import { DeleteSourceDialog, DeleteSourceDialogTrigger } from "./DeleteSourceDialog";
 import { SourceCard } from "./SourceCard";
+import { MenuCloseSources, MenuDeleteSources } from "./SourceMenuActions";
 
 interface SourceFolderSectionProps {
   folderPath: string;
@@ -70,7 +68,7 @@ export function SourceFolderSection({
           </Button>
         </CollapsibleTrigger>
 
-        <SourceFolderActions folderPath={folderPath} sourceIds={sourceIds} />
+        <SourceFolderActions folderPath={folderPath} sources={sources} />
       </div>
 
       <CollapsibleContent>
@@ -89,59 +87,51 @@ export function SourceFolderSection({
 
 function SourceFolderActions({
   folderPath,
-  sourceIds,
-}: Omit<SourceFolderSectionProps, "searchQuery" | "sources">) {
+  sources,
+}: Pick<SourceFolderSectionProps, "folderPath" | "sources">) {
   const { t } = useTranslation();
-  const dispatch = useAppDispatch();
   const revealLabel = getRevealLabel(t);
 
   return (
-    <DeleteSourceDialog sourceIds={sourceIds} target="folder" targetName={folderPath}>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            aria-label={`${t("source.actions.folderActions")}: ${folderPath}`}
-            size="icon-sm"
-            variant="secondary"
-          >
-            <MoreHorizontal aria-hidden="true" />
-          </Button>
-        </DropdownMenuTrigger>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          aria-label={`${t("source.actions.folderActions")}: ${folderPath}`}
+          size="icon-sm"
+          variant="secondary"
+        >
+          <MoreHorizontal aria-hidden="true" />
+        </Button>
+      </DropdownMenuTrigger>
 
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem inset onSelect={() => void openFileLocation(folderPath)}>
-            <DropdownMenuIcon>
-              <ExternalLink aria-hidden="true" />
-            </DropdownMenuIcon>
-            {revealLabel}
-          </DropdownMenuItem>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem inset onSelect={() => void openFileLocation(folderPath)}>
+          <DropdownMenuIcon>
+            <ExternalLink aria-hidden="true" />
+          </DropdownMenuIcon>
+          {revealLabel}
+        </DropdownMenuItem>
 
-          <DropdownMenuItem
-            inset
-            onSelect={() => void dispatch(closeEditingInstancesRequested(sourceIds))}
-          >
+        <MenuCloseSources sources={sources}>
+          <DropdownMenuItem inset>
             <DropdownMenuIcon>
               <X aria-hidden="true" />
             </DropdownMenuIcon>
             {t("source.actions.closeFolder")}
           </DropdownMenuItem>
+        </MenuCloseSources>
 
-          <DropdownMenuSeparator />
+        <DropdownMenuSeparator />
 
-          <DeleteSourceDialogTrigger asChild>
-            <DropdownMenuItem
-              inset
-              onSelect={(event) => event.preventDefault()}
-              variant="destructive"
-            >
-              <DropdownMenuIcon>
-                <Trash2 aria-hidden="true" />
-              </DropdownMenuIcon>
-              {t("source.actions.deleteFolder")}
-            </DropdownMenuItem>
-          </DeleteSourceDialogTrigger>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </DeleteSourceDialog>
+        <MenuDeleteSources sources={sources} target="folder" targetName={folderPath}>
+          <DropdownMenuItem inset variant="destructive">
+            <DropdownMenuIcon>
+              <Trash2 aria-hidden="true" />
+            </DropdownMenuIcon>
+            {t("source.actions.deleteFolder")}
+          </DropdownMenuItem>
+        </MenuDeleteSources>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

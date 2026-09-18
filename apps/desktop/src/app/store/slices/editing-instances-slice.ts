@@ -95,7 +95,6 @@ const editingInstancesSlice = createSlice({
       if (instance.exportAttempts.some((attempt) => attempt.id === action.payload.attempt.id))
         return;
       instance.exportAttempts.push(action.payload.attempt);
-      instance.draftAvailable = false;
     },
     editingInstanceExportRestored: (
       state,
@@ -265,8 +264,14 @@ const editingInstancesSlice = createSlice({
       }
     },
     editingInstanceClosed: (state, action: PayloadAction<EditingInstanceId>) => {
+      const instance = state.entities[action.payload];
       const index = state.ids.indexOf(action.payload);
-      if (index < 0) return;
+      if (index < 0 || !instance) return;
+      if (hasProcessableExport(instance)) {
+        instance.draftAvailable = false;
+        if (state.activeInstanceId === action.payload) state.activeInstanceId = null;
+        return;
+      }
       state.ids.splice(index, 1);
       delete state.entities[action.payload];
       if (state.activeInstanceId === action.payload) {
@@ -275,8 +280,17 @@ const editingInstancesSlice = createSlice({
     },
     editingInstancesClosed: (state, action: PayloadAction<EditingInstanceId[]>) => {
       const closingIds = new Set(action.payload);
-      state.ids = state.ids.filter((id) => !closingIds.has(id));
-      for (const id of closingIds) delete state.entities[id];
+      const retainedQueueOwners = new Set<EditingInstanceId>();
+      for (const id of closingIds) {
+        const instance = state.entities[id];
+        if (instance && hasProcessableExport(instance)) {
+          instance.draftAvailable = false;
+          retainedQueueOwners.add(id);
+        } else {
+          delete state.entities[id];
+        }
+      }
+      state.ids = state.ids.filter((id) => !closingIds.has(id) || retainedQueueOwners.has(id));
       if (state.activeInstanceId && closingIds.has(state.activeInstanceId)) {
         state.activeInstanceId = null;
       }

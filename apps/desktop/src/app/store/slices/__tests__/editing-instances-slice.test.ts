@@ -80,7 +80,7 @@ describe("editing instances slice", () => {
       editingInstanceExportStarted({ id: "source", attemptId: "one", startedAt: 20 }),
     );
     const root = { editingInstances: state } as never;
-    expect(selectImportedEditingInstances(root)).toEqual([]);
+    expect(selectImportedEditingInstances(root).map(({ id }) => id)).toEqual(["source"]);
     expect(selectExportQueue(root).active?.attempt.id).toBe("one");
     expect(selectExportQueue(root).pending.map(({ attempt }) => attempt.id)).toEqual([
       "two",
@@ -116,7 +116,7 @@ describe("editing instances slice", () => {
     expect(state.entities.source?.exportAttempts.map(({ id }) => id)).toEqual(["two"]);
     expect(
       selectImportedEditingInstances({ editingInstances: state } as never).map(({ id }) => id),
-    ).toEqual(["other-draft", "restored"]);
+    ).toEqual(["source", "other-draft", "restored"]);
     expect(
       editingInstancesReducer(
         state,
@@ -151,7 +151,7 @@ describe("editing instances slice", () => {
       );
     }
     expect(state.entities.source?.exportAttempts[0]?.state.status).toBe("completed");
-    expect(selectImportedEditingInstances({ editingInstances: state } as never)).toHaveLength(2);
+    expect(selectImportedEditingInstances({ editingInstances: state } as never)).toHaveLength(3);
   });
   it("projects the active export and pending exports in queue order", () => {
     const first = instance("instance-1");
@@ -372,7 +372,7 @@ describe("editing instances slice", () => {
     expect(state.entities["instance-3"]?.sourceAvailability).toBe("available");
   });
 
-  it("closes one instance without deleting another instance or its history", () => {
+  it("hides a closed instance while preserving its processable export", () => {
     const first = instance("instance-1");
     first.exportAttempts.push(attempt("attempt-1"));
     let state = editingInstancesReducer(
@@ -384,7 +384,9 @@ describe("editing instances slice", () => {
     state = editingInstancesReducer(state, editingInstanceClosed("instance-1"));
 
     expect(selectActiveEditingInstance({ editingInstances: state } as never)).toBeUndefined();
-    expect(selectEditingInstanceAttempts({ editingInstances: state } as never)).toHaveLength(0);
+    expect(selectEditingInstanceAttempts({ editingInstances: state } as never)).toHaveLength(1);
+    expect(selectImportedEditingInstances({ editingInstances: state } as never)).toHaveLength(1);
+    expect(state.entities["instance-1"]?.draftAvailable).toBe(false);
     expect(state.entities["instance-2"]?.snapshot.source).toEqual(firstSource);
   });
 
@@ -424,7 +426,7 @@ describe("editing instances slice", () => {
       editingInstanceExportAttemptQueued({ id: "instance-1", attempt: queuedAttempt }),
     );
     const topology = selectEditingInstanceTopologyEntries(root());
-    expect(topology.map(({ id }) => id)).toEqual(["instance-2"]);
+    expect(topology.map(({ id }) => id)).toEqual(["instance-1", "instance-2"]);
     state = editingInstancesReducer(
       state,
       editingInstanceExportStarted({ attemptId: "attempt-1", id: "instance-1", startedAt: 20 }),

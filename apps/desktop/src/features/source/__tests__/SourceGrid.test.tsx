@@ -37,13 +37,14 @@ function instance(
   id: string,
   displayName: string,
   sourcePath = `C:/Media/${displayName}`,
+  sourceAvailability: EditingInstance["sourceAvailability"] = "available",
 ): EditingInstance {
   return {
     exportAttempts: [],
     id,
     origin: "source-import",
     snapshot: createDefaultEditorSnapshot({ displayName, sourcePath }, false),
-    sourceAvailability: "available",
+    sourceAvailability,
   };
 }
 
@@ -198,6 +199,34 @@ describe("SourceGrid", () => {
     expect(selectActiveInstanceId(store.getState())).toBe("second");
   });
 
+  it("selects newly imported sources without replacing the active editor", async () => {
+    const store = createAppStore();
+    store.dispatch(editingInstancesAdded([instance("first", "first.mp4")]));
+    store.dispatch(activeEditingInstanceChanged("first"));
+
+    render(
+      <Provider store={store}>
+        <TooltipProvider>
+          <SourceGrid />
+        </TooltipProvider>
+      </Provider>,
+    );
+
+    store.dispatch(editingInstancesAdded([instance("second", "second.mp4")]));
+
+    await waitFor(() => {
+      expect(screen.getByRole("checkbox", { name: "second.mp4" })).toHaveAttribute(
+        "aria-checked",
+        "true",
+      );
+    });
+    expect(selectActiveInstanceId(store.getState())).toBe("first");
+    expect(screen.getByRole("checkbox", { name: "first.mp4" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+  });
+
   it("starts a Shift range from the active source and updates its anchor after Shift", () => {
     const store = createAppStore();
     store.dispatch(
@@ -335,11 +364,87 @@ describe("SourceGrid", () => {
     fireEvent.contextMenu(cards[0]!);
 
     expect(screen.getByRole("menuitem", { name: "Close Files (2)" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Close File" })).toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: "Delete Files (2)" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Delete File" })).toBeInTheDocument();
 
     await user.click(screen.getByRole("menuitem", { name: /Reveal in/ }));
     expect(screen.getByRole("menuitem", { name: "first.mp4" })).toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: "second.mp4" })).toBeInTheDocument();
+  });
+
+  it("shows applicable delete and restore actions for mixed source selections", async () => {
+    const user = userEvent.setup();
+    const store = createAppStore();
+    store.dispatch(
+      editingInstancesAdded([
+        instance("first", "first.mp4"),
+        instance("second", "second.mp4", undefined, "deleted"),
+      ]),
+    );
+
+    render(
+      <Provider store={store}>
+        <TooltipProvider>
+          <SourceGrid />
+        </TooltipProvider>
+      </Provider>,
+    );
+
+    const cards = screen.getAllByRole("checkbox");
+    await user.click(cards[0]!);
+    fireEvent.click(cards[1]!, { ctrlKey: true });
+    fireEvent.contextMenu(cards[0]!);
+
+    expect(screen.getByRole("menuitem", { name: "Delete Files (2)" })).toBeEnabled();
+    expect(screen.getByRole("menuitem", { name: "Delete File" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Restore File (1)" })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "Restore" })).not.toBeInTheDocument();
+
+    fireEvent.contextMenu(cards[1]!);
+
+    expect(screen.getByRole("menuitem", { name: "Restore File (1)" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Restore" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Delete Files (2)" })).toBeEnabled();
+    expect(screen.getByRole("menuitem", { name: "Delete File" })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+  });
+
+  it("disables delete and keeps restore for an all-deleted selection", async () => {
+    const user = userEvent.setup();
+    const store = createAppStore();
+    store.dispatch(
+      editingInstancesAdded([
+        instance("first", "first.mp4", undefined, "deleted"),
+        instance("second", "second.mp4", undefined, "deleted"),
+      ]),
+    );
+
+    render(
+      <Provider store={store}>
+        <TooltipProvider>
+          <SourceGrid />
+        </TooltipProvider>
+      </Provider>,
+    );
+
+    const cards = screen.getAllByRole("checkbox");
+    await user.click(cards[0]!);
+    fireEvent.click(cards[1]!, { ctrlKey: true });
+    fireEvent.contextMenu(cards[0]!);
+
+    expect(screen.getByRole("menuitem", { name: "Delete Files (2)" })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+    expect(screen.getByRole("menuitem", { name: "Delete File" })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+    expect(screen.getByRole("menuitem", { name: "Restore Files (2)" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Restore" })).toBeInTheDocument();
   });
 
   it("shows individual context actions for a non-selected card", async () => {
@@ -368,6 +473,30 @@ describe("SourceGrid", () => {
     expect(
       screen.getByRole("menuitem", { name: /Reveal in (File Manager|File Explorer|Finder)/ }),
     ).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "Close Files (2)" })).not.toBeInTheDocument();
+  });
+
+  it("shows individual context actions when only the selected card is targeted", async () => {
+    const user = userEvent.setup();
+    const store = createAppStore();
+    store.dispatch(
+      editingInstancesAdded([instance("first", "first.mp4"), instance("second", "second.mp4")]),
+    );
+
+    render(
+      <Provider store={store}>
+        <TooltipProvider>
+          <SourceGrid />
+        </TooltipProvider>
+      </Provider>,
+    );
+
+    const cards = screen.getAllByRole("checkbox");
+    await user.click(cards[0]!);
+    fireEvent.contextMenu(cards[0]!);
+
+    expect(screen.getByRole("menuitem", { name: "Close File" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Delete File" })).toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: "Close Files (2)" })).not.toBeInTheDocument();
   });
 

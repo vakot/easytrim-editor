@@ -24,15 +24,14 @@ import {
 import { selectImportedSourceThumbnails } from "@/app/store/slices/preview-slice";
 import {
   chooseSourceRequested,
-  closeEditingInstancesRequested,
   prepareImportedSourceThumbnailsRequested,
 } from "@/app/store/thunks/source-media-thunks";
 import type { EditingInstance } from "@/domain/editing-instance";
 import { normalizeSourceKey } from "@/domain/source";
 import { normalizeSearchValue } from "@/lib/search.utils";
 
-import { DeleteSourceDialog, DeleteSourceDialogTrigger } from "./components/DeleteSourceDialog";
 import { SourceFolderSection } from "./components/SourceFolderSection";
+import { MenuCloseSources, MenuDeleteSources } from "./components/SourceMenuActions";
 import { SourceSelectionProvider } from "./components/SourceSelectionProvider";
 import { getSourceFolderPath } from "./lib/media-formatters.utils";
 
@@ -43,12 +42,30 @@ export function SourceGrid() {
   const instances = useAppSelector(selectImportedEditingInstances);
   const importedThumbnails = useAppSelector(selectImportedSourceThumbnails);
   const thumbnailRequestIds = useRef(new Set<string>());
+  const knownSourceIds = useRef(new Set<string>());
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSourceIds, setSelectedSourceIds] = useState<Set<string>>(
     () => new Set(activeInstanceId ? [activeInstanceId] : []),
   );
 
   const deferredSearchQuery = useDeferredValue(searchQuery);
+
+  useEffect(() => {
+    const currentSourceIds = new Set(instances.map(({ id }) => id));
+    const newSourceIds = instances
+      .map(({ id }) => id)
+      .filter((id) => !knownSourceIds.current.has(id));
+
+    if (knownSourceIds.current.size > 0 && newSourceIds.length > 0) {
+      setSelectedSourceIds((currentSelection) => {
+        const nextSelection = new Set(currentSelection);
+        for (const id of newSourceIds) nextSelection.add(id);
+        return nextSelection;
+      });
+    }
+
+    knownSourceIds.current = currentSourceIds;
+  }, [instances]);
 
   const effectiveSelectedSourceIds = useMemo(() => {
     if (!activeInstanceId || !instances.some((instance) => instance.id === activeInstanceId)) {
@@ -131,7 +148,7 @@ export function SourceGrid() {
             onClearSelection={() =>
               setSelectedSourceIds(activeInstanceId ? new Set([activeInstanceId]) : new Set())
             }
-            sourceIds={selectedIds}
+            sources={selectedInstances}
           />
         ) : null}
       </div>
@@ -205,62 +222,52 @@ function groupSourcesByFolder(instances: readonly EditingInstance[]): ImportedSo
 
 function SourceSelectionActions({
   onClearSelection,
-  sourceIds,
+  sources,
 }: {
   onClearSelection: () => void;
-  sourceIds: string[];
+  sources: EditingInstance[];
 }) {
   const { t } = useTranslation();
-  const dispatch = useAppDispatch();
+  const count = sources.length;
 
   return (
-    <DeleteSourceDialog
-      onOpenChange={(open) => {
-        if (!open) onClearSelection();
-      }}
-      sourceIds={sourceIds}
-    >
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            aria-label={`${t("source.actions.sourceActions")}: ${sourceIds.length}`}
-            size="icon-sm"
-            variant="outline"
-          >
-            <MoreHorizontal aria-hidden="true" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem
-            inset
-            onSelect={() => {
-              void dispatch(closeEditingInstancesRequested(sourceIds));
-              onClearSelection();
-            }}
-          >
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          aria-label={`${t("source.actions.sourceActions")}: ${count}`}
+          size="icon-sm"
+          variant="outline"
+        >
+          <MoreHorizontal aria-hidden="true" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <MenuCloseSources sources={sources}>
+          <DropdownMenuItem inset onSelect={onClearSelection}>
             <DropdownMenuIcon>
               <X aria-hidden="true" />
             </DropdownMenuIcon>
-            {t("app.actions.closeFiles", { count: sourceIds.length })}
+            {t("app.actions.closeFiles", { count })}
           </DropdownMenuItem>
+        </MenuCloseSources>
 
-          <DropdownMenuSeparator />
+        <DropdownMenuSeparator />
 
-          <DeleteSourceDialogTrigger asChild>
-            <DropdownMenuItem
-              inset
-              onSelect={(event) => event.preventDefault()}
-              variant="destructive"
-            >
-              <DropdownMenuIcon>
-                <Trash2 aria-hidden="true" />
-              </DropdownMenuIcon>
-              {t("app.actions.deleteFiles", { count: sourceIds.length })}
-            </DropdownMenuItem>
-          </DeleteSourceDialogTrigger>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </DeleteSourceDialog>
+        <MenuDeleteSources
+          onOpenChange={(open) => {
+            if (!open) onClearSelection();
+          }}
+          sources={sources}
+        >
+          <DropdownMenuItem inset variant="destructive">
+            <DropdownMenuIcon>
+              <Trash2 aria-hidden="true" />
+            </DropdownMenuIcon>
+            {t("app.actions.deleteFiles", { count })}
+          </DropdownMenuItem>
+        </MenuDeleteSources>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 

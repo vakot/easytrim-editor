@@ -11,7 +11,7 @@ import {
   editingInstancesAdded,
 } from "@/app/store/slices/editing-instances-slice";
 import { createAppStore } from "@/app/store/store";
-import type { EditingInstance } from "@/domain/editing-instance";
+import { createExportAttempt, type EditingInstance } from "@/domain/editing-instance";
 
 import { SourceCard } from "../SourceCard";
 
@@ -69,6 +69,39 @@ describe("SourceCard", () => {
     await user.click(screen.getByRole("button", { name: "Source actions: holiday.mp4" }));
 
     expect(screen.getByRole("menuitem", { name: "Restore" })).toBeInTheDocument();
+  });
+
+  it("does not expose export progress on the original source card", () => {
+    const source = createSource();
+    source.exportAttempts.push(
+      createExportAttempt({
+        capturedAt: 1,
+        id: "attempt-1",
+        output: {
+          displayName: "export.mp4",
+          displayPath: "C:/Media/export.mp4",
+          outputId: "output-1",
+        },
+        request: {
+          audioTracks: [],
+          mergeAudio: false,
+          rotationDegrees: 0,
+          sourcePath: source.snapshot.source.sourcePath,
+          trim: { endMicros: 1_000_000, startMicros: 0 },
+        },
+        route: "fast",
+        snapshot: source.snapshot,
+      }),
+    );
+    renderSourceCard(source);
+
+    expect(screen.getByRole("checkbox", { name: "holiday.mp4" })).toHaveAttribute(
+      "data-variant",
+      "default",
+    );
+    expect(screen.queryByText("Queued")).not.toBeInTheDocument();
+    expect(screen.queryByText("Rendering…")).not.toBeInTheDocument();
+    expect(screen.queryByText("Completed")).not.toBeInTheDocument();
   });
 
   it("owns its delete dialog behavior", async () => {

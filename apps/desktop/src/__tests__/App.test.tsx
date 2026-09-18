@@ -861,7 +861,7 @@ describe("App", () => {
     expect(mocks.chooseSource).toHaveBeenCalledWith("folders");
   });
 
-  it("closes the active source with the File menu and Ctrl+Q", async () => {
+  it("closes the active source with the File menu and Ctrl+C", async () => {
     mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
     render(<App />);
@@ -871,10 +871,10 @@ describe("App", () => {
 
     getMenuTrigger("File").focus();
     await user.keyboard("{Enter}");
-    expect(screen.getByRole("menuitem", { name: /Close File/ })).toHaveTextContent("CtrlQ");
+    expect(screen.getByRole("menuitem", { name: /Close File/ })).toHaveTextContent("CtrlC");
     await user.keyboard("{Escape}");
 
-    fireEvent.keyDown(window, { key: "й", code: "KeyQ", ctrlKey: true });
+    fireEvent.keyDown(window, { key: "c", code: "KeyC", ctrlKey: true });
 
     await waitForSourcePresence(false);
   });

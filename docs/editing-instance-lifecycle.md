@@ -8,8 +8,9 @@ the path identifies a shared file for native reservations and availability, not 
 
 An editing instance holds its current snapshot, media descriptor, optimized settings and arguments,
 source availability, and export attempts. `draftAvailable` controls whether it appears in Imported
-Sources; an omitted value means the draft is available. Queuing an export sets it to `false`.
-The entity remains in Redux so queued work and historical results retain stable identities.
+Sources; an omitted value means the draft is available. Queuing an export keeps the draft available
+and active, with all current transformations intact. Later edits affect only the draft, while queued
+work and historical results retain their captured snapshots and stable identities.
 
 Each export attempt captures a cloned request, snapshot, output selection, route, metrics, and
 lifecycle state. An instance may own multiple attempts, and queue selectors inspect all attempts.
@@ -20,9 +21,9 @@ native export at a time. Each queued job holds its own source reservation.
 
 1. Import a source to create an editable draft with a generated ID.
 2. Capture its snapshot and export request, choose an output, and reserve the source.
-3. Enqueue the attempt, hide the draft from Imported Sources, and clear the active editor.
+3. Enqueue the attempt while keeping the draft in Imported Sources and the active editor.
 4. Render the captured request independently of other drafts referencing the same file.
-5. Retain terminal attempts as session history; completion does not reopen the draft.
+5. Retain terminal attempts as session history; completion leaves the editable draft in place.
 
 Clicking a pending export removes that job from the runtime before asynchronous source activation.
 Its queued attempt is consumed, and a new editing instance receives the captured snapshot and
@@ -39,11 +40,15 @@ Restoration from the compact queue window returns to the main editor.
 Source/operation IDs and load tokens reject stale callbacks. Restoration removes pending jobs
 synchronously so a concurrent queue start cannot render the consumed attempt. Pending withdrawal
 releases only that job's reservation and does not run a queue-finish action when it empties the queue.
-Closing an instance cancels its jobs and awaits cleanup before removing the entity.
+Closing an instance without queued or rendering exports removes the entity. If it owns queued or
+rendering exports, closing only hides the draft; the queue owner remains available to the independent
+export runtime until those jobs reach a terminal state.
 
 Source deletion and restoration update every instance referencing the same canonical file path.
-Manual deletion is blocked while any attempt uses the file. Automatic deletion after export also
-respects editable drafts, including newly restored drafts. Successful outputs are never removed by
+Manual deletion is blocked while any attempt uses the file. Automatic deletion after a successful
+export waits until no queued or running export still needs that source, across all editing instances.
+Retained imported drafts do not block automatic deletion and are marked deleted along with history.
+Successful outputs are never removed by
 snapshot restoration or job cleanup.
 
 The existing native request DTOs and source reservation counter are unchanged. Editing instances,

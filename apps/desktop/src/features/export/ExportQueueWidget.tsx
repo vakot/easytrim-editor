@@ -1,4 +1,4 @@
-import { FileVideo, LoaderCircle, Play, X } from "lucide-react";
+import { FileVideo, LoaderCircle, X } from "lucide-react";
 import * as React from "react";
 import { useTranslation } from "react-i18next";
 
@@ -43,6 +43,15 @@ function ExportQueueWidgetActive({
   const { t } = useTranslation();
 
   const { active: item } = useExportQueueWidgetData();
+
+  if (!item) {
+    return (
+      <div className={cn("grid place-items-center bg-muted p-2", className)}>
+        <ExportQueueItemStart />
+      </div>
+    );
+  }
+
   const sourceName = item.instance.snapshot.source.displayName;
 
   const labels = {
@@ -67,6 +76,8 @@ function ExportQueueWidgetActiveDetails({ className }: { className?: string }) {
   const dispatch = useAppDispatch();
 
   const { active: item } = useExportQueueWidgetData();
+  if (!item) return null;
+
   const progress = Math.min(100, Math.max(0, Math.round(item.attempt.metrics.progressPercent)));
   const sourcePath = formatSourcePath(item.instance.snapshot.source.sourcePath);
 
@@ -79,7 +90,6 @@ function ExportQueueWidgetActiveDetails({ className }: { className?: string }) {
     >
       <div className="relative">
         <div className="absolute top-0 right-0 flex gap-1">
-          <ExportQueueItemStart />
           <ExportQueueItemCancel item={item} />
         </div>
       </div>
@@ -255,7 +265,7 @@ function ExportQueueItemCancel({ compact, item }: { compact?: boolean; item: Exp
   );
 }
 
-function ExportQueueItemStart({ compact }: { compact?: boolean }) {
+function ExportQueueItemStart() {
   const { t } = useTranslation();
 
   const dispatch = useAppDispatch();
@@ -267,11 +277,10 @@ function ExportQueueItemStart({ compact }: { compact?: boolean }) {
       aria-label={t("queue.actions.start")}
       disabled={queuedExportCount === 0 || queueStarted}
       onClick={() => void dispatch(startExportQueue({ id: "queue.start", type: "button" }))}
-      size={compact ? "icon-2xs" : "icon-xs"}
-      title={t("queue.actions.start")}
+      size="sm"
       type="button"
     >
-      <Play aria-hidden="true" />
+      {t("queue.actions.start")}
     </Button>
   );
 }
@@ -312,13 +321,8 @@ function ExportQueueThumbnail({
 function ExportQueueWidgetProvider({ children }: { children?: React.ReactNode }) {
   const { active, pending } = useAppSelector(selectExportQueue);
 
-  const featuredItem = active ?? pending[0];
-  const pendingItems = active ? pending : pending.slice(1);
-
-  if (!featuredItem) return null;
-
   return (
-    <ExportQueueWidgetContext.Provider value={{ active: featuredItem, pending: pendingItems }}>
+    <ExportQueueWidgetContext.Provider value={{ active, pending }}>
       {children}
     </ExportQueueWidgetContext.Provider>
   );
@@ -335,7 +339,7 @@ function useExportQueueWidgetData() {
 }
 
 const ExportQueueWidgetContext = React.createContext<{
-  active: ExportQueueItem;
+  active: ExportQueueItem | undefined;
   pending: ExportQueueItem[];
 } | null>(null);
 
