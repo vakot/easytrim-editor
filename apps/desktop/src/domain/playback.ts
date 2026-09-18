@@ -8,6 +8,8 @@ export interface PlaybackRange {
   startMicros: number;
 }
 
+export type PlaybackDirection = -1 | 1;
+
 export type PlaybackBoundaryAction =
   | { type: "continue" }
   | { positionMicros: number; type: "restart" }
@@ -46,13 +48,20 @@ export function playbackBoundaryAction(
   currentMicros: number,
   range: PlaybackRange,
   loopEnabled: boolean,
+  direction: PlaybackDirection = 1,
 ): PlaybackBoundaryAction {
-  if (currentMicros < range.endMicros) {
+  const reachedBoundary =
+    direction === -1 ? currentMicros <= range.startMicros : currentMicros >= range.endMicros;
+  if (!reachedBoundary) {
     return { type: "continue" };
   }
+  const restartPositionMicros = direction === -1 ? range.endMicros : range.startMicros;
   return loopEnabled
-    ? { type: "restart", positionMicros: range.startMicros }
-    : { type: "stop", positionMicros: range.endMicros };
+    ? { type: "restart", positionMicros: restartPositionMicros }
+    : {
+        type: "stop",
+        positionMicros: direction === -1 ? range.startMicros : range.endMicros,
+      };
 }
 
 export function formatPlaybackTime(

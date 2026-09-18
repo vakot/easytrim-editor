@@ -51,5 +51,13 @@ describe("playback domain", () => {
       type: "restart",
       positionMicros: 10_000_000,
     });
+    expect(playbackBoundaryAction(10_000_000, range, true, -1)).toEqual({
+      type: "restart",
+      positionMicros: 20_000_000,
+    });
+    expect(playbackBoundaryAction(10_000_000, range, false, -1)).toEqual({
+      type: "stop",
+      positionMicros: 10_000_000,
+    });
   });
 });
