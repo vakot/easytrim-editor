@@ -12,8 +12,20 @@ const cardVariants = cva(
         destructive: "bg-destructive/5 ring-destructive/45",
         success: "bg-success/5 ring-success/45",
         warning: "bg-warning/5 ring-warning/45",
+        active: "bg-primary/5 ring-2 ring-primary/45",
+      },
+      hoverable: {
+        false: "",
+        true: "",
       },
     },
+    compoundVariants: [
+      { class: "hover:bg-foreground/10", hoverable: true, variant: "default" },
+      { class: "hover:bg-destructive/10", hoverable: true, variant: "destructive" },
+      { class: "hover:bg-success/10", hoverable: true, variant: "success" },
+      { class: "hover:bg-warning/10", hoverable: true, variant: "warning" },
+      { class: "hover:bg-primary/10", hoverable: true, variant: "active" },
+    ],
     defaultVariants: {
       variant: "default",
     },
@@ -22,15 +34,17 @@ const cardVariants = cva(
 
 function Card({
   className,
+  hoverable = false,
   size = "default",
   variant,
   ...props
-}: React.ComponentProps<"div"> & VariantProps<typeof cardVariants> & { size?: "default" | "sm" }) {
+}: React.ComponentProps<"div"> &
+  VariantProps<typeof cardVariants> & { hoverable?: boolean; size?: "default" | "sm" }) {
   const resolvedVariant = variant ?? "default";
 
   return (
     <div
-      className={cn(cardVariants({ variant: resolvedVariant }), className)}
+      className={cn(cardVariants({ variant: resolvedVariant, hoverable }), className)}
       data-size={size}
       data-slot="card"
       data-variant={resolvedVariant}

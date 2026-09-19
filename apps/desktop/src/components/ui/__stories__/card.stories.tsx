@@ -48,11 +48,26 @@ export const Small: Story = {
 export const Variants: Story = {
   render: () => (
     <div className="grid w-lg gap-3 sm:grid-cols-2">
-      {(["default", "warning", "destructive", "success"] as const).map((variant) => (
+      {(["default", "warning", "destructive", "success", "active"] as const).map((variant) => (
         <Card key={variant} variant={variant}>
           <CardHeader>
             <CardTitle className="capitalize">{variant}</CardTitle>
             <CardDescription>Card state styling.</CardDescription>
+          </CardHeader>
+        </Card>
+      ))}
+    </div>
+  ),
+};
+
+export const HoverableVariants: Story = {
+  render: () => (
+    <div className="grid w-lg gap-3 sm:grid-cols-2">
+      {(["default", "warning", "destructive", "success", "active"] as const).map((variant) => (
+        <Card hoverable key={variant} variant={variant}>
+          <CardHeader>
+            <CardTitle className="capitalize">{variant}</CardTitle>
+            <CardDescription>Hover to preview the interactive state.</CardDescription>
           </CardHeader>
         </Card>
       ))}
