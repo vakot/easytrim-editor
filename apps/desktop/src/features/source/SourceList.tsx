@@ -9,6 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
+  selectEditingInstanceById,
   selectExportQueueById,
   selectImportedEditingInstances,
 } from "@/app/store/slices/editing-instances-slice";
@@ -18,6 +19,7 @@ import { cancelSourceExportQueue, startSourceExportQueue } from "@/app/store/thu
 import {
   closeEditingInstancesRequested,
   prepareImportedSourceThumbnailsRequested,
+  restoreExportAttemptRequested,
   restoreSourceFileRequested,
 } from "@/app/store/thunks/source-media-thunks";
 import type { EditingInstance, ExportAttempt, ExportAttemptState } from "@/domain/editing-instance";
@@ -112,21 +114,39 @@ function SourceListItemExports({ sourceId }: { sourceId: string }) {
     <li>
       <ul>
         {items.map(({ attempt }) => (
-          <SourceListItemExport attempt={attempt} key={attempt.id} />
+          <SourceListItemExport attempt={attempt} instanceId={sourceId} key={attempt.id} />
         ))}
       </ul>
     </li>
   );
 }
 
-function SourceListItemExport({ attempt }: { attempt: ExportAttempt }) {
+function SourceListItemExport({
+  attempt,
+  instanceId,
+}: {
+  attempt: ExportAttempt;
+  instanceId: string;
+}) {
   const { t } = useTranslation();
+  const dispatch = useAppDispatch();
+  const sourceAvailable = useAppSelector(
+    (state) => selectEditingInstanceById(state, instanceId)?.sourceAvailability === "available",
+  );
 
   const statusLabel = getExportQueueItemStatusLabel(t, attempt.state.status);
 
   return (
     <li className={sourceListItemExtraClassName}>
-      <Button className="w-full min-w-0 justify-between gap-2" size="xs" variant="ghost">
+      <Button
+        className="w-full min-w-0 justify-between gap-2 disabled:opacity-100"
+        disabled={!sourceAvailable || attempt.state.status !== "queued"}
+        onClick={() =>
+          void dispatch(restoreExportAttemptRequested({ instanceId, attemptId: attempt.id }))
+        }
+        size="xs"
+        variant="ghost"
+      >
         <div className="flex min-w-0 flex-1 items-center gap-2">
           {attempt.route === "fast" ? (
             <Scissors aria-hidden="true" className="shrink-0" />
