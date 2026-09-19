@@ -1,4 +1,4 @@
-import { MoreHorizontal, Scissors, Settings2 } from "lucide-react";
+import { MoreHorizontal, Play, RotateCcw, Scissors, Settings2, Trash2 } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -11,10 +11,16 @@ import {
   selectExportQueue,
   selectImportedEditingInstances,
 } from "@/app/store/slices/editing-instances-slice";
+import { selectQueueStarted } from "@/app/store/slices/export-slice";
 import { selectImportedSourceThumbnails } from "@/app/store/slices/preview-slice";
-import { prepareImportedSourceThumbnailsRequested } from "@/app/store/thunks/source-media-thunks";
+import { startExportQueue } from "@/app/store/thunks/export-thunks";
+import {
+  prepareImportedSourceThumbnailsRequested,
+  restoreSourceFileRequested,
+} from "@/app/store/thunks/source-media-thunks";
 import type { EditingInstance, ExportAttempt } from "@/domain/editing-instance";
 
+import { DeleteSourceDialog, DeleteSourceDialogTrigger } from "./components/DeleteSourceDialog";
 import {
   SourceCard,
   SourceCardActions,
@@ -90,17 +96,25 @@ interface SourceListItemExtraItemProps {
 }
 
 function SourceListItemExtra({ source }: { source: EditingInstance }) {
-  const pending = useAppSelector(selectExportQueue).pending.filter(
-    ({ instance }) => instance.id === source.id,
-  );
+  const { active, pending: queuePending } = useAppSelector(selectExportQueue);
+  const queueStarted = useAppSelector(selectQueueStarted);
+  const pending = queuePending.filter(({ instance }) => instance.id === source.id);
+  const queueBusy = queueStarted || active !== undefined || queuePending.length > 0;
+  const showTerminalAction =
+    source.sourceAvailability === "deleted" || (!queueBusy && source.exportAttempts.length > 0);
 
-  if (pending.length === 0) return null;
+  if (pending.length === 0 && !showTerminalAction) return null;
 
   return (
     <div className="w-full px-3">
       <ul className="flex flex-col ring-1 ring-foreground/10">
-        <SourceListItemExports pending={pending} />
-        <SourceListItemActions pending={pending} />
+        {pending.length > 0 ? <SourceListItemExports pending={pending} /> : null}
+        <SourceListItemActions
+          active={active}
+          pending={pending}
+          queueBusy={queueBusy}
+          source={source}
+        />
       </ul>
     </div>
   );
@@ -158,14 +172,76 @@ function SourceListItemExport({ attempt }: { attempt: ExportAttempt }) {
   );
 }
 
-function SourceListItemActions({ pending }: SourceListItemExtraItemProps) {
-  // TODO: early exit if already exporting
-  // TODO: show "restore" if deleted
-  // TODO: show "delete" if queue ended and no more items
+function SourceListItemActions({
+  active,
+  pending,
+  queueBusy,
+  source,
+}: SourceListItemExtraItemProps & {
+  active?: PendingInstance;
+  queueBusy: boolean;
+  source: EditingInstance;
+}) {
+  const { t } = useTranslation();
+  const dispatch = useAppDispatch();
+  const queueStarted = useAppSelector(selectQueueStarted);
+
+  if (active) return null;
+
+  if (source.sourceAvailability === "deleted") {
+    return (
+      <li className={sourceListItemExtraClassName}>
+        <Button
+          onClick={() =>
+            void dispatch(
+              restoreSourceFileRequested({
+                itemId: source.id,
+                sourcePath: source.snapshot.source.sourcePath,
+              }),
+            )
+          }
+          size="xs"
+          variant="success"
+        >
+          <RotateCcw aria-hidden="true" />
+          {t("app.actions.restore")}
+        </Button>
+      </li>
+    );
+  }
+
+  if (pending.length > 0) {
+    if (queueStarted) return null;
+
+    return (
+      <li className={sourceListItemExtraClassName}>
+        <Button
+          onClick={() =>
+            void dispatch(
+              startExportQueue({ id: `source-list.start.${source.id}`, type: "button" }),
+            )
+          }
+          size="xs"
+        >
+          <Play aria-hidden="true" />
+          {t("queue.actions.start")}
+        </Button>
+      </li>
+    );
+  }
+
+  if (queueBusy || source.exportAttempts.length === 0) return null;
 
   return (
     <li className={sourceListItemExtraClassName}>
-      <Button size="xs">Start</Button>
+      <DeleteSourceDialog sourceId={source.id}>
+        <DeleteSourceDialogTrigger asChild>
+          <Button size="xs" variant="destructive">
+            <Trash2 aria-hidden="true" />
+            {t("app.actions.deleteFile")}
+          </Button>
+        </DeleteSourceDialogTrigger>
+      </DeleteSourceDialog>
     </li>
   );
 }
