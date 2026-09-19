@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 
 import {
   type PlaybackBoundaryAction,
+  type PlaybackDirection,
   playbackBoundaryAction,
   type PlaybackRange,
   playbackRange,
@@ -46,12 +47,36 @@ export function usePlaybackModes({
     return currentMicros;
   }
 
-  function consumeBoundary(currentMicros: number, trim: TrimRange): PlaybackBoundaryResult {
-    const action = playbackBoundaryAction(
+  function consumeBoundary(
+    currentMicros: number,
+    trim: TrimRange,
+    direction: PlaybackDirection = 1,
+  ): PlaybackBoundaryResult {
+    return consumeBoundaryInRange(
       currentMicros,
       playbackRangeRef.current ?? activeRange(trim, trim.startMicros),
-      loopEnabledRef.current,
+      direction,
     );
+  }
+
+  function consumeSourceBoundary(
+    currentMicros: number,
+    sourceDurationMicros: number,
+    direction: PlaybackDirection,
+  ): PlaybackBoundaryResult {
+    return consumeBoundaryInRange(
+      currentMicros,
+      playbackRange(sourceDurationMicros, 0, sourceDurationMicros, false),
+      direction,
+    );
+  }
+
+  function consumeBoundaryInRange(
+    currentMicros: number,
+    range: PlaybackRange,
+    direction: PlaybackDirection,
+  ): PlaybackBoundaryResult {
+    const action = playbackBoundaryAction(currentMicros, range, loopEnabledRef.current, direction);
 
     if (action.type === "continue") {
       boundaryHandledRef.current = false;
@@ -61,9 +86,7 @@ export function usePlaybackModes({
       return { reached: true, action: null };
     }
     boundaryHandledRef.current = true;
-    if (action.type === "restart") {
-      playbackRangeRef.current = activeRange(trim, trim.startMicros);
-    }
+    if (action.type === "restart") playbackRangeRef.current = range;
     return { reached: true, action };
   }
 
@@ -74,6 +97,7 @@ export function usePlaybackModes({
   return {
     startMicros,
     consumeBoundary,
+    consumeSourceBoundary,
     resetBoundary,
   };
 }
