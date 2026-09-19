@@ -55,7 +55,7 @@ export function EditorSource() {
 
           <div className="mt-2 min-h-0 flex-1">
             <ScrollArea className="size-full">
-              <div className="px-2 pt-0.5">
+              <div className="px-2 pt-0.5 pb-2">
                 <SourceList />
               </div>
             </ScrollArea>
