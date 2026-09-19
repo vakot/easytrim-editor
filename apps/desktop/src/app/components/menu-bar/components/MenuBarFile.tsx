@@ -26,7 +26,7 @@ import {
   chooseSourceRequested,
   closeActiveEditingInstanceRequested,
 } from "@/app/store/thunks/source-media-thunks";
-import { DeleteSourceDialog, MenuCloseSource, MenuDeleteSource } from "@/features/source";
+import { CloseSource, DeleteSource, DeleteSourceDialog } from "@/features/source";
 import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
 
 export function MenuBarFile() {
@@ -123,7 +123,7 @@ export function MenuBarFile() {
                 </KbdGroup>
               </MenubarShortcut>
             </MenubarItem>
-            <MenuCloseSource source={activeSource}>
+            <CloseSource source={activeSource}>
               <MenubarItem disabled={!hasSource}>
                 {t("app.actions.closeFile")}
                 <MenubarShortcut>
@@ -133,7 +133,7 @@ export function MenuBarFile() {
                   </KbdGroup>
                 </MenubarShortcut>
               </MenubarItem>
-            </MenuCloseSource>
+            </CloseSource>
           </MenubarGroup>
           <MenubarSeparator />
           <MenubarGroup>
@@ -170,7 +170,7 @@ export function MenuBarFile() {
           </MenubarGroup>
           <MenubarSeparator />
           <MenubarGroup>
-            <MenuDeleteSource source={activeSource}>
+            <DeleteSource source={activeSource}>
               <MenubarItem disabled={!hasSource} variant="destructive">
                 {t("app.actions.deleteFile")}
                 <MenubarShortcut>
@@ -180,7 +180,7 @@ export function MenuBarFile() {
                   </KbdGroup>
                 </MenubarShortcut>
               </MenubarItem>
-            </MenuDeleteSource>
+            </DeleteSource>
           </MenubarGroup>
         </MenubarContent>
       </MenubarMenu>
