@@ -1,20 +1,26 @@
 import type { TFunction } from "i18next";
 import {
   ExternalLink,
+  FileVideo2,
+  FolderOpen,
   MoreHorizontal,
   Play,
   RotateCcw,
   Scissors,
   Settings2,
   Trash2,
+  Upload,
   X,
 } from "lucide-react";
+import type { ReactNode } from "react";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
@@ -25,6 +31,7 @@ import {
 import { selectSourceExportQueueState } from "@/app/store/slices/export-slice";
 import { cancelExportAttemptRequested } from "@/app/store/thunks/export-thunks";
 import {
+  chooseSourceRequested,
   prepareImportedSourceMetadataRequested,
   prepareImportedSourceThumbnailsRequested,
   restoreExportAttemptRequested,
@@ -53,6 +60,8 @@ import { getRevealLabel } from "./lib/source.utils";
 function SourceList() {
   const sources = usePrepareSources();
 
+  if (sources.length === 0) return <SourceListEmptyState />;
+
   return (
     <ScrollArea className="min-h-0 flex-1">
       <ul className="flex flex-col gap-3 px-3 pt-0.5 pb-2" data-slot="imported-sources-grid">
@@ -61,6 +70,94 @@ function SourceList() {
         ))}
       </ul>
     </ScrollArea>
+  );
+}
+
+function SourceListEmptyState() {
+  const { t } = useTranslation();
+  const dispatch = useAppDispatch();
+
+  return (
+    <form
+      aria-label={t("source.labels.explorer")}
+      className="flex min-h-full w-full items-baseline justify-center px-3 py-8"
+      onSubmit={(event) => event.preventDefault()}
+    >
+      <div className="grid w-full gap-5">
+        <div className="grid gap-3">
+          <SourceListEmptyStateAction
+            description={t("source.messages.openFileDescription")}
+            icon={<FileVideo2 aria-hidden="true" />}
+            keys={["Ctrl", "O"]}
+            label={t("app.actions.openFile")}
+            onClick={() =>
+              void dispatch(chooseSourceRequested({ id: "explorer.open-file", type: "button" }))
+            }
+          />
+          <SourceListEmptyStateAction
+            description={t("source.messages.openFolderDescription")}
+            icon={<FolderOpen aria-hidden="true" />}
+            keys={["Ctrl", "K"]}
+            label={t("app.actions.openFolder")}
+            onClick={() =>
+              void dispatch(
+                chooseSourceRequested({ id: "explorer.open-folder", type: "button" }, "folders"),
+              )
+            }
+          />
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Separator className="flex-1" />
+          <span className="text-muted-foreground">{t("common.labels.or")}</span>
+          <Separator className="flex-1" />
+        </div>
+
+        <div className="grid justify-items-center gap-2 rounded-lg border border-dashed border-border/80 bg-muted/20 px-4 py-6 text-center">
+          <span className="grid size-10 place-items-center rounded-full bg-primary/12 text-primary">
+            <Upload aria-hidden="true" className="size-5" />
+          </span>
+          <strong className="text-sm">{t("source.messages.dropTitle")}</strong>
+          <span className="text-xs font-medium text-primary">
+            {t("source.messages.extensions")}
+          </span>
+          <span className="text-xs text-muted-foreground">
+            {t("source.messages.dropDescription")}
+          </span>
+        </div>
+      </div>
+    </form>
+  );
+}
+
+function SourceListEmptyStateAction({
+  description,
+  icon,
+  keys,
+  label,
+  onClick,
+}: {
+  description: string;
+  icon: ReactNode;
+  keys: readonly string[];
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <div className="grid gap-1">
+      <span className="text-xs text-muted-foreground">{description}</span>
+      <Button className="w-full justify-between" onClick={onClick} type="button">
+        <span className="flex items-center gap-2">
+          {icon}
+          {label}
+        </span>
+        <KbdGroup aria-label={keys.join(" + ")}>
+          {keys.map((key) => (
+            <Kbd key={key}>{key}</Kbd>
+          ))}
+        </KbdGroup>
+      </Button>
+    </div>
   );
 }
 

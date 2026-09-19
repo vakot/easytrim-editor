@@ -44,6 +44,20 @@ vi.mock("../components/SourceCard", () => {
 });
 
 describe("source queue controls", () => {
+  it("renders file, folder, and drag-and-drop actions when no sources are imported", () => {
+    render(
+      <Provider store={createAppStore()}>
+        <SourceList />
+      </Provider>,
+    );
+
+    expect(screen.getByRole("form", { name: "Source explorer" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Open File/ })).toHaveTextContent("CtrlO");
+    expect(screen.getByRole("button", { name: /Open Folder/ })).toHaveTextContent("CtrlK");
+    expect(screen.getByText("Drag and drop videos here")).toBeInTheDocument();
+    expect(screen.getByText("MP4 · MOV · MKV · WebM · AVI")).toBeInTheDocument();
+  });
+
   it("starts and cancels only the chosen source without removing pending attempts", async () => {
     const user = userEvent.setup();
     const store = createAppStore();
