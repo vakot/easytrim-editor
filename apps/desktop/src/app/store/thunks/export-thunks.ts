@@ -1,6 +1,4 @@
 import {
-  cancelActiveExport,
-  cancelAllQueuedExports,
   cancelAndRequeueExport,
   cancelQueuedExport,
   enqueueExport,
@@ -28,7 +26,6 @@ import {
   selectActiveInstanceId,
   selectEditingInstanceById,
   selectExportQueueById,
-  selectHasProcessableExports,
 } from "@/app/store/slices/editing-instances-slice";
 import {
   exportLaunchFailed,
@@ -88,14 +85,6 @@ export const loadQueueFinishActions = (): AppThunk => async (dispatch) => {
   }
 };
 
-export const startExportQueue =
-  (origin: DiagnosticOrigin = { type: "internal" }): AppThunk =>
-  (dispatch, getState) => {
-    diagnostics.action("export.queue.start.requested", origin);
-    if (!selectHasProcessableExports(getState())) return;
-    setExportQueueExecutionEnabled(true, dispatch, getState);
-  };
-
 export const startSourceExportQueue =
   (instanceId: string): AppThunk =>
   (dispatch, getState) => {
@@ -122,14 +111,6 @@ export const cancelExportAttemptRequested =
   async (_dispatch, getState) => {
     await cancelQueuedExport(instanceId, attemptId, getState);
   };
-
-export const cancelActiveExportRequested = (): AppThunk => (_dispatch, getState) => {
-  void cancelActiveExport(getState);
-};
-
-export const cancelAllExportsRequested = (): AppThunk => (_dispatch, getState) => {
-  void cancelAllQueuedExports(getState);
-};
 
 export const openOptimizedExportDialog =
   (origin: DiagnosticOrigin = { id: "optimized", type: "button" }): AppThunk =>

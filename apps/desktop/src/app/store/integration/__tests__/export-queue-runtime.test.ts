@@ -42,14 +42,10 @@ import {
   editingInstanceExportAttemptQueued,
   editingInstancesAdded,
 } from "../../slices/editing-instances-slice";
-import { selectQueueStarted, selectSourceQueueStarted } from "../../slices/export-slice";
+import { selectSourceQueueStarted } from "../../slices/export-slice";
 import { preferenceChanged } from "../../slices/preferences-slice";
 import { createAppStore } from "../../store";
-import {
-  cancelAllExportsRequested,
-  cancelSourceExportQueue,
-  startSourceExportQueue,
-} from "../../thunks/export-thunks";
+import { cancelSourceExportQueue, startSourceExportQueue } from "../../thunks/export-thunks";
 import { createDefaultEditorSnapshot } from "../editor-snapshot";
 import {
   cancelAndRequeueExport,
@@ -238,40 +234,6 @@ describe("export queue runtime", () => {
     await vi.waitFor(() => expect(mocks.renderFast).toHaveBeenCalledTimes(4));
     expect(mocks.renderFast.mock.calls.map((call) => call[1])).toEqual(["a1", "b1", "a1", "a2"]);
     await vi.waitFor(() => expect(mocks.releaseExportSource).toHaveBeenCalledTimes(3));
-  });
-
-  it("global cancellation overrides an in-flight source requeue", async () => {
-    const store = createAppStore();
-    store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
-    store.dispatch(editingInstancesAdded([createInstance("a"), createInstance("b")]));
-    for (const id of ["a", "b"]) {
-      const attempt = createAttempt(id);
-      store.dispatch(editingInstanceExportAttemptQueued({ id, attempt }));
-      enqueueExport(id, attempt, store.dispatch, store.getState);
-    }
-    let finish = () => {};
-    mocks.renderFast.mockImplementationOnce(
-      () =>
-        new Promise((resolve) => {
-          finish = () => resolve({ displayName: "out", displayPath: "out", operationId: "op" });
-        }),
-    );
-    store.dispatch(startSourceExportQueue("a"));
-    const stopping = store.dispatch(cancelSourceExportQueue("a"));
-    store.dispatch(cancelAllExportsRequested());
-    finish();
-    await stopping;
-    await vi.waitFor(() => expect(mocks.releaseExportSource).toHaveBeenCalledTimes(2));
-    expect(selectQueueStarted(store.getState())).toBe(false);
-    expect(store.getState().editingInstances.entities.a?.exportAttempts[0]?.state.status).toBe(
-      "canceled",
-    );
-    expect(store.getState().editingInstances.entities.b?.exportAttempts[0]?.state.status).toBe(
-      "canceled",
-    );
-    store.dispatch(startSourceExportQueue("a"));
-    expect(mocks.renderFast).toHaveBeenCalledTimes(1);
-    expect(mocks.performQueueFinishAction).not.toHaveBeenCalled();
   });
 
   it.each([false, true])(
