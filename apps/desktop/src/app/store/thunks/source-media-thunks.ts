@@ -680,9 +680,30 @@ export const restoreExportAttemptRequested =
     )
       return false;
     dispatch(commitActiveEditingInstanceDraft());
-    const restoredId = crypto.randomUUID();
-    dispatch(editingInstanceExportRestored({ id: instanceId, attemptId, restoredId }));
-    const restored = selectEditingInstanceById(getState(), restoredId);
+    if (attempt.state.status === "queued") {
+      dispatch(editingInstanceExportAttemptRemoved({ id: instanceId, attemptId }));
+    }
+    dispatch(
+      editingInstanceSnapshotUpdated({
+        id: instanceId,
+        ...("resolution" in attempt.request
+          ? { optimizedArguments: attempt.request.arguments }
+          : {}),
+        snapshot: attempt.snapshot,
+      }),
+    );
+    if ("resolution" in attempt.request) {
+      dispatch(
+        editingInstanceOptimizedSettingsChanged({
+          id: instanceId,
+          settings: {
+            frameRate: attempt.request.frameRate,
+            resolution: attempt.request.resolution,
+          },
+        }),
+      );
+    }
+    const restored = selectEditingInstanceById(getState(), instanceId);
     return restored ? dispatch(activateEditingInstanceRequested(restored)) : false;
   };
 

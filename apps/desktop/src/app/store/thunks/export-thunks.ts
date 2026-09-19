@@ -2,6 +2,7 @@ import {
   cancelActiveExport,
   cancelAllQueuedExports,
   cancelAndRequeueExport,
+  cancelQueuedExport,
   enqueueExport,
   setExportQueueExecutionEnabled,
 } from "@/app/store/integration/export-queue-runtime";
@@ -114,6 +115,12 @@ export const cancelSourceExportQueue =
     );
 
     if (active) await cancelAndRequeueExport(instanceId, active.attempt.id, getState);
+  };
+
+export const cancelExportAttemptRequested =
+  ({ attemptId, instanceId }: { attemptId: string; instanceId: string }): AppThunk =>
+  async (_dispatch, getState) => {
+    await cancelQueuedExport(instanceId, attemptId, getState);
   };
 
 export const cancelActiveExportRequested = (): AppThunk => (_dispatch, getState) => {
