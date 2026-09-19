@@ -14,6 +14,7 @@ use crate::{
 use serde::Serialize;
 use std::{path::PathBuf, sync::Arc};
 use tauri::State;
+use uuid::Uuid;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
@@ -127,6 +128,41 @@ pub async fn inspect_media(
         audio_stream_indexes,
     )?;
     Ok(result)
+}
+
+#[tauri::command]
+pub async fn inspect_imported_source(
+    source_path: PathBuf,
+    diagnostics: State<'_, Arc<DiagnosticsState>>,
+) -> Result<MediaInfo, AppError> {
+    let source = validate_source(&source_path)?;
+    let operation_id = format!("ffprobe-imported-{}", Uuid::new_v4());
+    record_ffprobe_event(&diagnostics, "ffprobe.process.spawned", &operation_id, None);
+
+    let result = tauri::async_runtime::spawn_blocking(move || probe_media(&source.path, || false))
+    .await
+    .map_err(|_| AppError::internal("Video inspection stopped unexpectedly."))?;
+
+    match result {
+        Ok(media) => {
+            record_ffprobe_event(
+                &diagnostics,
+                "ffprobe.process.exited",
+                &operation_id,
+                Some("success"),
+            );
+            Ok(media)
+        }
+        Err(error) => {
+            record_ffprobe_event(
+                &diagnostics,
+                "ffprobe.process.exited",
+                &operation_id,
+                Some("failed"),
+            );
+            Err(error)
+        }
+    }
 }
 
 #[tauri::command]

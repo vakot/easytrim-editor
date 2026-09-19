@@ -31,7 +31,9 @@ import {
 import {
   activeEditingInstanceChanged,
   editingInstanceClosed,
-  editingInstanceExportRestored,
+  editingInstanceExportAttemptRemoved,
+  editingInstanceMediaUpdated,
+  editingInstanceOptimizedSettingsChanged,
   editingInstancesAdded,
   editingInstancesClosed,
   editingInstanceSnapshotUpdated,
@@ -78,6 +80,7 @@ import {
   activateSourcePath,
   checkMediaCapabilities,
   chooseSource as chooseSourceDialog,
+  inspectImportedSource,
   inspectMedia,
   moveSourceToTrash,
   prepareAudioPreviews,
@@ -176,22 +179,88 @@ export const ingestSources =
     if (shouldActivateFirstImportedSource) {
       dispatch(navigateToEditingInstance(instances[0]!.id, origin));
     }
+    void dispatch(prepareImportedSourceMetadataRequested(instances));
     operation.complete(importResultData(result));
   };
 
+const METADATA_CONCURRENCY = 2;
+const metadataRequestsInFlight = new Set<string>();
+
+export const prepareImportedSourceMetadataRequested =
+  (instances: EditingInstance[]): AppThunk<Promise<void>> =>
+  async (dispatch, getState) => {
+    const activeInstanceId = selectActiveInstanceId(getState());
+    const instancesToPrepare = instances.filter((instance) => {
+      const current = selectEditingInstanceById(getState(), instance.id);
+      return (
+        current?.sourceAvailability === "available" &&
+        current.id !== activeInstanceId &&
+        current.media === undefined &&
+        !metadataRequestsInFlight.has(instance.id)
+      );
+    });
+
+    for (const instance of instancesToPrepare) {
+      metadataRequestsInFlight.add(instance.id);
+    }
+
+    let nextIndex = 0;
+
+    const worker = async () => {
+      while (nextIndex < instancesToPrepare.length) {
+        const instance = instancesToPrepare[nextIndex++];
+        if (!instance) continue;
+
+        const sourcePath = instance.snapshot.source.sourcePath;
+
+        try {
+          const media = await inspectImportedSource(sourcePath);
+          const current = selectEditingInstanceById(getState(), instance.id);
+          if (
+            current &&
+            current.media === undefined &&
+            normalizeSourceKey(current.snapshot.source.sourcePath) ===
+              normalizeSourceKey(sourcePath)
+          ) {
+            dispatch(editingInstanceMediaUpdated({ id: instance.id, media }));
+          }
+        } catch {
+          // Metadata is supplementary to the imported card and may be unavailable.
+        } finally {
+          metadataRequestsInFlight.delete(instance.id);
+        }
+      }
+    };
+
+    await Promise.all(
+      Array.from({ length: Math.min(METADATA_CONCURRENCY, instancesToPrepare.length) }, worker),
+    );
+  };
+
 const THUMBNAIL_CONCURRENCY = 2;
+const thumbnailRequestsInFlight = new Set<string>();
 
 export const prepareImportedSourceThumbnailsRequested =
   (instances: EditingInstance[]): AppThunk<Promise<void>> =>
   async (dispatch, getState) => {
+    const importedThumbnails = selectImportedSourceThumbnails(getState());
+    const instancesToPrepare = instances.filter(
+      (instance) =>
+        selectEditingInstanceById(getState(), instance.id)?.sourceAvailability === "available" &&
+        importedThumbnails[instance.id] === undefined &&
+        !thumbnailRequestsInFlight.has(instance.id),
+    );
+
+    for (const instance of instancesToPrepare) {
+      thumbnailRequestsInFlight.add(instance.id);
+    }
+
     let nextIndex = 0;
     const worker = async () => {
-      while (nextIndex < instances.length) {
-        const instance = instances[nextIndex++];
+      while (nextIndex < instancesToPrepare.length) {
+        const instance = instancesToPrepare[nextIndex++];
         if (!instance) return;
         const sourcePath = instance.snapshot.source.sourcePath;
-        const thumbnailState = selectImportedSourceThumbnails(getState())[instance.id];
-        if (thumbnailState !== undefined) continue;
 
         dispatch(importedThumbnailLoading({ instanceId: instance.id }));
 
@@ -219,12 +288,14 @@ export const prepareImportedSourceThumbnailsRequested =
               }),
             );
           }
+        } finally {
+          thumbnailRequestsInFlight.delete(instance.id);
         }
       }
     };
 
     await Promise.all(
-      Array.from({ length: Math.min(THUMBNAIL_CONCURRENCY, instances.length) }, worker),
+      Array.from({ length: Math.min(THUMBNAIL_CONCURRENCY, instancesToPrepare.length) }, worker),
     );
   };
 
