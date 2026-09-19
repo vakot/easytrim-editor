@@ -21,6 +21,7 @@ type ActivityToast = {
 };
 
 type PendingActivityToast = {
+  entry: ActivityEntry;
   id: string | number;
   reject: (reason?: ActivityToast) => void;
   resolve: (value: ActivityToast) => void;
@@ -82,6 +83,7 @@ export function ActivityToasts() {
           const resolvedToastId = getToastId(toastId);
           if (resolvedToastId !== undefined) {
             pendingToasts.current.set(entry.id, {
+              entry,
               id: resolvedToastId,
               reject: deferred.reject,
               resolve: deferred.resolve,
@@ -91,13 +93,14 @@ export function ActivityToasts() {
         continue;
       }
 
-      const pendingToast = pendingToasts.current.get(entry.id);
-      if (pendingToast === undefined) {
+      const pendingToastMatch = findPendingToast(entry, pendingToasts.current);
+      if (pendingToastMatch === undefined) {
         showActivityToast(activityToast);
         continue;
       }
 
-      pendingToasts.current.delete(entry.id);
+      const [pendingToastKey, pendingToast] = pendingToastMatch;
+      pendingToasts.current.delete(pendingToastKey);
       if (entry.status === "cancelled") {
         pendingToast.resolve(activityToast);
         setTimeout(() => showActivityToast(activityToast, pendingToast.id), 0);
@@ -134,6 +137,27 @@ function getPromiseToastResult(activityToast: ActivityToast) {
   };
 }
 
+function findPendingToast(
+  entry: ActivityEntry,
+  pendingToasts: Map<string, PendingActivityToast>,
+): [string, PendingActivityToast] | undefined {
+  const directMatch = pendingToasts.get(entry.id);
+  if (directMatch !== undefined) return [entry.id, directMatch];
+  if (!isExportActivity(entry) || entry.path === undefined) return undefined;
+
+  for (const [key, pendingToast] of pendingToasts) {
+    if (
+      pendingToast.entry.kind === entry.kind &&
+      pendingToast.entry.path === entry.path &&
+      pendingToast.entry.snapshotId === entry.snapshotId
+    ) {
+      return [key, pendingToast];
+    }
+  }
+
+  return undefined;
+}
+
 function createDeferred<T>(): {
   promise: Promise<T>;
   reject: (reason?: T) => void;
@@ -156,6 +180,10 @@ function isPromiseActivity(entry: ActivityEntry): boolean {
     entry.kind === "file-deleted" ||
     entry.kind === "file-restored"
   );
+}
+
+function isExportActivity(entry: ActivityEntry): boolean {
+  return entry.kind === "fast-cut" || entry.kind === "render";
 }
 
 function createActivityToast(
