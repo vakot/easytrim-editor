@@ -19,7 +19,6 @@ import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
@@ -63,13 +62,11 @@ function SourceList() {
   if (sources.length === 0) return <SourceListEmptyState />;
 
   return (
-    <ScrollArea className="min-h-0 flex-1">
-      <ul className="flex flex-col gap-3 px-3 pt-0.5 pb-2" data-slot="imported-sources-grid">
-        {sources.map((source) => (
-          <SourceListItem key={source.id} source={source} />
-        ))}
-      </ul>
-    </ScrollArea>
+    <ul className="flex flex-col gap-3" data-slot="imported-sources-grid">
+      {sources.map((source) => (
+        <SourceListItem key={source.id} source={source} />
+      ))}
+    </ul>
   );
 }
 
