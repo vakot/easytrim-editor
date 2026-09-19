@@ -99,7 +99,9 @@ export function ExportDialog() {
             <DialogTitle>{t("export.actions.start")}</DialogTitle>
             <DialogDescription>{t("export.dialogs.optimized.description")}</DialogDescription>
           </DialogHeader>
+
           <PresetManager />
+
           <div className="grid gap-3">
             <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-end gap-3">
               <div className="grid gap-1.5">
@@ -134,6 +136,7 @@ export function ExportDialog() {
                   </SelectContent>
                 </Select>
               </div>
+
               <div className="flex items-center gap-1.5">
                 <Label className="sr-only" htmlFor="export-width">
                   {t("export.labels.width")}
@@ -184,7 +187,7 @@ export function ExportDialog() {
                     type="number"
                     value={settings.resolution.height}
                   />
-                  <Tooltip>
+                  <Tooltip preserveOnTrigger>
                     <TooltipTrigger asChild>
                       <Button
                         aria-label={
@@ -211,6 +214,7 @@ export function ExportDialog() {
                 </div>
               </div>
             </div>
+
             <div className="grid gap-1.5">
               <Label htmlFor="export-frame-rate">{t("export.dialogs.optimized.frameRate")}</Label>
               <Select
@@ -240,20 +244,25 @@ export function ExportDialog() {
               </Select>
             </div>
           </div>
+
           <CommandPreview command={commandPreview} error={commandPreviewError?.message} />
-          <p className="text-xs text-muted-foreground">
-            {t("export.dialogs.optimized.saveNotice")}
-          </p>
-          <DialogFooter>
-            <Button onClick={() => onOpenChange(false)} variant="outline">
-              {t("common.actions.cancel")}
-            </Button>
-            <Button onClick={() => void dispatch(startOptimizedExportRequested())}>
-              {t("export.actions.start")}
-            </Button>
+
+          <DialogFooter className="items-center sm:justify-between">
+            <p className="text-xs text-muted-foreground">
+              {t("export.dialogs.optimized.saveNotice")}
+            </p>
+            <div className="flex shrink-0 flex-col-reverse gap-2 sm:flex-row">
+              <Button onClick={() => onOpenChange(false)} variant="outline">
+                {t("common.actions.cancel")}
+              </Button>
+              <Button onClick={() => void dispatch(startOptimizedExportRequested())}>
+                {t("export.actions.start")}
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
       {launchError ? (
         <Alert className="absolute top-full right-5 z-40 mt-2 w-80" variant="destructive">
           <AlertDescription>{launchError.message}</AlertDescription>
