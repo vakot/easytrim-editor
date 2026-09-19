@@ -241,16 +241,18 @@ export function ExportDialog() {
             </div>
           </div>
           <CommandPreview command={commandPreview} error={commandPreviewError?.message} />
-          <p className="text-xs text-muted-foreground">
-            {t("export.dialogs.optimized.saveNotice")}
-          </p>
-          <DialogFooter>
-            <Button onClick={() => onOpenChange(false)} variant="outline">
-              {t("common.actions.cancel")}
-            </Button>
-            <Button onClick={() => void dispatch(startOptimizedExportRequested())}>
-              {t("export.actions.start")}
-            </Button>
+          <DialogFooter className="sm:justify-between">
+            <p className="text-xs text-muted-foreground">
+              {t("export.dialogs.optimized.saveNotice")}
+            </p>
+            <div className="flex shrink-0 flex-col-reverse gap-2 sm:flex-row">
+              <Button onClick={() => onOpenChange(false)} variant="outline">
+                {t("common.actions.cancel")}
+              </Button>
+              <Button onClick={() => void dispatch(startOptimizedExportRequested())}>
+                {t("export.actions.start")}
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
