@@ -8,6 +8,9 @@ import {
 import { useEffect, useState } from "react";
 import { Toaster as Sonner, type ToasterProps } from "sonner";
 
+const appTopOffset = 90;
+const sonnerDefaultOffset = 24;
+
 const Toaster = ({ ...props }: ToasterProps) => {
   const [theme, setTheme] = useState<ToasterProps["theme"]>(() =>
     document.documentElement.dataset.theme === "dark" ? "dark" : "light",
@@ -33,6 +36,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
         error: <OctagonXIcon className="size-4" />,
         loading: <Loader2Icon className="size-4 animate-spin" />,
       }}
+      mobileOffset={{ top: appTopOffset + sonnerDefaultOffset }}
+      offset={{ top: appTopOffset + sonnerDefaultOffset }}
+      position="top-right"
       style={
         {
           "--normal-bg": "var(--popover)",
