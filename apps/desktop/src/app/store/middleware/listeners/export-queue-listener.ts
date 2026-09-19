@@ -25,14 +25,17 @@ listenerMiddleware.startListening({
   },
 });
 
+const exportAttemptSettled = isAnyOf(
+  editingInstanceExportCompleted,
+  editingInstanceExportFailed,
+  editingInstanceExportCanceled,
+  editingInstanceExportRestored,
+);
+
 listenerMiddleware.startListening({
-  matcher: isAnyOf(
-    editingInstanceExportCompleted,
-    editingInstanceExportFailed,
-    editingInstanceExportCanceled,
-    editingInstanceExportRestored,
-  ),
+  matcher: exportAttemptSettled,
   effect: (action, listenerApi) => {
+    if (!exportAttemptSettled(action)) return;
     if (!selectHasQueuedOrRenderingExportByInstanceId(listenerApi.getState(), action.payload.id)) {
       const dispatch = listenerApi.dispatch as unknown as AppDispatch;
       setExportQueueExecutionEnabled(false, dispatch, listenerApi.getState, action.payload.id);

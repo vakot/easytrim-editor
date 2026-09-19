@@ -108,6 +108,7 @@ describe("export queue runtime", () => {
   it("starts only the requested instance, even when drafts share the same path", async () => {
     const store = createAppStore();
     store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
+    store.dispatch(preferenceChanged({ key: "deleteSourceOnRenderFinish", enabled: true }));
     store.dispatch(editingInstancesAdded([createInstance("a"), createInstance("b")]));
     for (const id of ["a", "b"]) {
       const attempt = createAttempt(id);
@@ -127,9 +128,67 @@ describe("export queue runtime", () => {
     );
     expect(selectSourceQueueStarted(store.getState(), "a")).toBe(false);
     expect(selectSourceQueueStarted(store.getState(), "b")).toBe(false);
+    expect(mocks.moveSourceToTrash).not.toHaveBeenCalled();
     store.dispatch(startSourceExportQueue("a"));
     await vi.waitFor(() => expect(mocks.releaseExportSource).toHaveBeenCalledTimes(2));
     expect(mocks.renderFast.mock.calls.map((call) => call[1])).toEqual(["b", "a"]);
+    await vi.waitFor(() =>
+      expect(mocks.moveSourceToTrash).toHaveBeenCalledExactlyOnceWith(firstSource.sourcePath),
+    );
+  });
+
+  it("auto-starts only the source receiving a new export", async () => {
+    const store = createAppStore();
+    store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
+    store.dispatch(editingInstancesAdded([createInstance("a"), createInstance("b")]));
+    const first = createAttempt("a");
+    store.dispatch(editingInstanceExportAttemptQueued({ id: "a", attempt: first }));
+    enqueueExport("a", first, store.dispatch, store.getState);
+    store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: true }));
+    mocks.renderFast.mockResolvedValue({
+      displayName: "out",
+      displayPath: "out",
+      operationId: "op",
+    });
+    const second = createAttempt("b");
+    store.dispatch(editingInstanceExportAttemptQueued({ id: "b", attempt: second }));
+    enqueueExport("b", second, store.dispatch, store.getState);
+    await vi.waitFor(() => expect(mocks.releaseExportSource).toHaveBeenCalledTimes(1));
+    expect(mocks.renderFast.mock.calls.map((call) => call[1])).toEqual(["b"]);
+    expect(selectSourceQueueStarted(store.getState(), "a")).toBe(false);
+    expect(store.getState().editingInstances.entities.a?.exportAttempts[0]?.state.status).toBe(
+      "queued",
+    );
+  });
+
+  it("cancels a waiting source without interrupting another source's render", async () => {
+    const store = createAppStore();
+    store.dispatch(preferenceChanged({ key: "autoStartQueueEnabled", enabled: false }));
+    store.dispatch(editingInstancesAdded([createInstance("a"), createInstance("b")]));
+    for (const id of ["a", "b"]) {
+      const attempt = createAttempt(id);
+      store.dispatch(editingInstanceExportAttemptQueued({ id, attempt }));
+      enqueueExport(id, attempt, store.dispatch, store.getState);
+    }
+    let finish = () => {};
+    mocks.renderFast.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = () => resolve({ displayName: "out", displayPath: "out", operationId: "op" });
+        }),
+    );
+    store.dispatch(startSourceExportQueue("a"));
+    store.dispatch(startSourceExportQueue("b"));
+    await store.dispatch(cancelSourceExportQueue("b"));
+    expect(mocks.cancelOperation).not.toHaveBeenCalled();
+    expect(selectSourceQueueStarted(store.getState(), "a")).toBe(true);
+    expect(selectSourceQueueStarted(store.getState(), "b")).toBe(false);
+    finish();
+    await vi.waitFor(() => expect(mocks.releaseExportSource).toHaveBeenCalledTimes(1));
+    expect(mocks.renderFast).toHaveBeenCalledTimes(1);
+    expect(store.getState().editingInstances.entities.b?.exportAttempts[0]?.state.status).toBe(
+      "queued",
+    );
   });
 
   it("stops one source in place while another started source continues", async () => {
