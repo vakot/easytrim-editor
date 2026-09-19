@@ -5,18 +5,18 @@ import {
   ExternalLink,
   FileVideo,
   LoaderCircle,
-  MoreHorizontal,
+  Play,
   RotateCcw,
   Trash2,
   X,
 } from "lucide-react";
-import { memo, type MouseEvent, useState } from "react";
+import { createContext, memo, type MouseEvent, useContext, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { shallowEqual } from "react-redux";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardAction, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardAction, CardDescription, CardTitle } from "@/components/ui/card";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -50,7 +50,13 @@ import type { EditingInstance } from "@/domain/editing-instance";
 import { cn } from "@/lib/class-names.utils";
 import { openFileLocation } from "@/lib/tauri/media";
 
-import { formatSourcePath } from "../lib/media-formatters.utils";
+import {
+  formatBytes,
+  formatDateTime,
+  formatDuration,
+  formatRelativeTime,
+  formatSourcePath,
+} from "../lib/media-formatters.utils";
 import { getRevealLabel } from "../lib/source.utils";
 
 import {
@@ -68,6 +74,8 @@ type SourceCardStatus = "deleted" | "failed" | "loading" | "missing" | "ready";
 type SourceCardVariant = "default" | "destructive" | "warning";
 
 export interface SourceCardProps {
+  children: React.ReactNode;
+  className?: string;
   source: EditingInstance;
 }
 
@@ -85,39 +93,18 @@ const statusBadgeClassNames: Record<SourceCardVariant, string> = {
   warning: "border-warning/40 bg-warning/10 text-warning",
 };
 
-export const SourceCard = memo(function SourceCard({ source }: SourceCardProps) {
-  const { t } = useTranslation();
+const SourceCard = memo(function SourceCard({ children, className, source }: SourceCardProps) {
   const dispatch = useAppDispatch();
   const activeInstanceId = useAppSelector(selectActiveInstanceId);
   const sourceStatus = useAppSelector(selectSourceStatus);
   const { selectedSourceIds, selectSource } = useSourceSelection();
 
   const id = source.id;
-  const [contextSourceIds, setContextSourceIds] = useState<string[]>([id]);
-  const [contextMenuIsSelection, setContextMenuIsSelection] = useState(false);
   const active = id === activeInstanceId;
   const selected = selectedSourceIds.has(id);
-  const { displayName, sourcePath } = source.snapshot.source;
+  const { displayName } = source.snapshot.source;
   const status = getSourceCardStatus(source, active, sourceStatus);
-  const statusLabel = getSourceCardStatusLabel(t, status);
   const variant = getSourceCardVariant(status);
-  const thumbnail = useAppSelector((state) => selectImportedSourceThumbnail(state, id));
-  const thumbnailUrl = thumbnail?.status === "ready" ? thumbnail.value.url : undefined;
-  const thumbnailLoading =
-    !thumbnailUrl &&
-    source.sourceAvailability === "available" &&
-    (thumbnail === undefined || thumbnail.status === "loading");
-
-  const StatusIcon = statusIcons[status];
-  const contextSources = useAppSelector(
-    (state) =>
-      contextSourceIds.flatMap((sourceId) => {
-        const contextSource = selectEditingInstanceById(state, sourceId);
-        if (contextSource) return [contextSource];
-        return sourceId === id ? [source] : [];
-      }),
-    shallowEqual,
-  );
 
   const handleCardClick = (event: MouseEvent<HTMLDivElement>) => {
     const modifiers = {
@@ -132,22 +119,17 @@ export const SourceCard = memo(function SourceCard({ source }: SourceCardProps) 
     }
   };
 
-  const handleContextMenu = () => {
-    const sourceIsSelected = selectedSourceIds.has(id);
-    setContextMenuIsSelection(sourceIsSelected && selectedSourceIds.size > 1);
-    setContextSourceIds(sourceIsSelected ? [...selectedSourceIds] : [id]);
-  };
-
   return (
-    <ContextMenu>
-      <ContextMenuTrigger asChild onContextMenu={handleContextMenu}>
+    <SourceCardContext.Provider value={source}>
+      <SourceCardContextMenu>
         <Card
           aria-checked={selected}
           aria-label={displayName}
           className={cn(
-            "cursor-pointer pt-0",
+            "group/source-card cursor-pointer",
             selected ? "ring-2 ring-primary/70" : undefined,
-            active ? "ring-2 ring-primary" : undefined,
+            active ? "bg-primary/10 ring-2 ring-primary hover:bg-primary/20!" : undefined,
+            className,
           )}
           data-active={active ? "true" : "false"}
           data-selected={selected ? "true" : "false"}
@@ -175,70 +157,297 @@ export const SourceCard = memo(function SourceCard({ source }: SourceCardProps) 
           tabIndex={0}
           variant={variant}
         >
-          <div className="group relative aspect-video w-full overflow-hidden bg-muted text-muted-foreground">
-            {thumbnailUrl ? (
-              <img
-                alt={`${displayName} thumbnail`}
-                aria-label={`${displayName} thumbnail`}
-                className="group-hover:scale-1.02 size-full object-cover transition-transform"
-                src={thumbnailUrl}
-              />
-            ) : thumbnailLoading ? (
-              <span
-                aria-label={t("source.status.loading")}
-                className="grid size-full place-items-center bg-linear-to-br from-muted to-background"
-                role="status"
-              >
-                <LoaderCircle aria-hidden="true" className="size-8 animate-spin text-primary" />
-              </span>
-            ) : (
-              <span className="grid size-full place-items-center bg-linear-to-br from-muted to-background">
-                <span className="grid justify-items-center gap-2">
-                  <FileVideo aria-hidden="true" className="size-8 opacity-40" />
-                  <span className="text-[10px]">{t("source.messages.previewUnavailable")}</span>
-                </span>
-              </span>
-            )}
-            {status !== "ready" ? (
-              <Badge
-                className={`absolute top-2 left-2 gap-1 backdrop-blur-sm ${statusBadgeClassNames[variant]}`}
-                size="xs"
-                variant="outline"
-              >
-                <StatusIcon
-                  aria-hidden="true"
-                  className={status === "loading" ? "animate-spin" : undefined}
-                />
-                {statusLabel}
-              </Badge>
-            ) : null}
-          </div>
-
-          <CardHeader>
-            <CardTitle className="truncate text-sm" title={displayName}>
-              {displayName}
-            </CardTitle>
-            <CardDescription className="truncate" title={sourcePath}>
-              {formatSourcePath(sourcePath)}
-            </CardDescription>
-            <CardAction
-              className="flex items-center gap-1"
-              onClick={(event) => event.stopPropagation()}
-            >
-              <SourceCardActions source={source} />
-            </CardAction>
-          </CardHeader>
+          {children}
         </Card>
+      </SourceCardContextMenu>
+    </SourceCardContext.Provider>
+  );
+});
+
+function SourceCardContextMenu({ children }: { children: React.ReactNode }) {
+  const source = useSourceCardSource();
+
+  const { selectedSourceIds } = useSourceSelection();
+
+  const id = source.id;
+  const [contextSourceIds, setContextSourceIds] = useState<string[]>([id]);
+  const [contextMenuIsSelection, setContextMenuIsSelection] = useState(false);
+
+  const contextSources = useAppSelector(
+    (state) =>
+      contextSourceIds.flatMap((sourceId) => {
+        const contextSource = selectEditingInstanceById(state, sourceId);
+        if (contextSource) return [contextSource];
+        return sourceId === id ? [source] : [];
+      }),
+    shallowEqual,
+  );
+
+  const handleContextMenu = () => {
+    const sourceIsSelected = selectedSourceIds.has(id);
+    setContextMenuIsSelection(sourceIsSelected && selectedSourceIds.size > 1);
+    setContextSourceIds(sourceIsSelected ? [...selectedSourceIds] : [id]);
+  };
+
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger asChild onContextMenu={handleContextMenu}>
+        {children}
       </ContextMenuTrigger>
 
       {contextMenuIsSelection ? (
-        <SourceCardContextMenu source={source} sources={contextSources} />
+        <SourceCardMultipleContextMenu source={source} sources={contextSources} />
       ) : (
         <SourceCardIndividualContextMenu source={source} />
       )}
     </ContextMenu>
   );
-});
+}
+
+function SourceCardThumbnail({ className }: { className?: string }) {
+  const source = useSourceCardSource();
+
+  const { t } = useTranslation();
+
+  const id = source.id;
+  const { displayName } = source.snapshot.source;
+  const thumbnail = useAppSelector((state) => selectImportedSourceThumbnail(state, id));
+  const thumbnailUrl = thumbnail?.status === "ready" ? thumbnail.value.url : undefined;
+  const thumbnailLoading =
+    !thumbnailUrl &&
+    source.sourceAvailability === "available" &&
+    (thumbnail === undefined || thumbnail.status === "loading");
+
+  const durationMicros = source.media?.durationMicros;
+
+  return (
+    <div
+      className={cn(
+        "relative aspect-video overflow-hidden bg-muted text-muted-foreground",
+        className,
+      )}
+    >
+      {thumbnailUrl ? (
+        <>
+          <img
+            alt={`${displayName} thumbnail`}
+            aria-label={`${displayName} thumbnail`}
+            className="size-full object-cover transition-transform"
+            src={thumbnailUrl}
+          />
+          <Button
+            className="invisible absolute top-1/2 left-1/2 -translate-1/2 rounded-full transition-none group-hover/source-card:visible"
+            size="icon-lg"
+            variant="outline"
+          >
+            <Play aria-hidden="true" />
+          </Button>
+        </>
+      ) : thumbnailLoading ? (
+        <span
+          aria-label={t("source.status.loading")}
+          className="grid size-full place-items-center bg-linear-to-br from-muted to-background"
+          role="status"
+        >
+          <LoaderCircle aria-hidden="true" className="size-8 animate-spin text-primary" />
+        </span>
+      ) : (
+        <span className="grid size-full place-items-center bg-linear-to-br from-muted to-background">
+          <span className="grid justify-items-center gap-2">
+            <FileVideo aria-hidden="true" className="size-8 opacity-40" />
+            <span className="text-[10px]">{t("source.messages.previewUnavailable")}</span>
+          </span>
+        </span>
+      )}
+
+      {durationMicros !== undefined ? (
+        <Badge
+          className="absolute right-2 bottom-2 border-0 bg-black/75 px-1.5 font-medium text-white"
+          size="sm"
+        >
+          {formatDuration(durationMicros)}
+        </Badge>
+      ) : null}
+    </div>
+  );
+}
+
+function SourceCardStatusBadge({ className }: { className?: string }) {
+  const source = useSourceCardSource();
+
+  const { t } = useTranslation();
+  const activeInstanceId = useAppSelector(selectActiveInstanceId);
+  const sourceStatus = useAppSelector(selectSourceStatus);
+
+  const id = source.id;
+  const active = id === activeInstanceId;
+  const status = getSourceCardStatus(source, active, sourceStatus);
+  const statusLabel = getSourceCardStatusLabel(t, status);
+  const variant = getSourceCardVariant(status);
+
+  const StatusIcon = statusIcons[status];
+
+  if (status === "ready") return;
+
+  return (
+    <Badge
+      className={cn("gap-1 backdrop-blur-sm", statusBadgeClassNames[variant], className)}
+      size="xs"
+      variant="outline"
+    >
+      <StatusIcon
+        aria-hidden="true"
+        className={status === "loading" ? "animate-spin" : undefined}
+      />
+      {statusLabel}
+    </Badge>
+  );
+}
+
+function SourceCardTitle({ className }: { className?: string }) {
+  const source = useSourceCardSource();
+
+  const { displayName } = source.snapshot.source;
+
+  return (
+    <CardTitle className={cn("truncate text-sm", className)} title={displayName}>
+      {displayName}
+    </CardTitle>
+  );
+}
+
+function SourceCardDescription({ className }: { className?: string }) {
+  const source = useSourceCardSource();
+
+  const { sourcePath } = source.snapshot.source;
+
+  return (
+    <CardDescription className={cn("truncate", className)} title={sourcePath}>
+      {formatSourcePath(sourcePath)}
+    </CardDescription>
+  );
+}
+
+function SourceCardMetadata({ className }: { className?: string }) {
+  const source = useSourceCardSource();
+  const { i18n, t } = useTranslation();
+  const locale = i18n.resolvedLanguage ?? i18n.language;
+  const unknown = t("common.status.unknown");
+  const fileSize = formatBytes(source.media?.sizeBytes, unknown);
+  const updatedAt = formatRelativeTime(source.snapshot.source.updatedAtMicros, locale, unknown);
+  const updatedAtExact = formatDateTime(source.snapshot.source.updatedAtMicros, locale, unknown);
+
+  return (
+    <div className={cn("flex items-center gap-1 text-xs text-muted-foreground", className)}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="cursor-help truncate focus-visible:outline-none" tabIndex={0}>
+            {fileSize}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>
+          {t("source.labels.metadata.fileSize")}: {fileSize}
+        </TooltipContent>
+      </Tooltip>
+      <span aria-hidden="true">·</span>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="cursor-help truncate focus-visible:outline-none" tabIndex={0}>
+            {updatedAt}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>
+          {t("source.labels.metadata.updatedAt")}: {updatedAtExact}
+        </TooltipContent>
+      </Tooltip>
+    </div>
+  );
+}
+
+/**
+ * @name SourceCardActions
+ * @description Builds the dropdown menu for one source card using the shared source menu actions.
+ */
+function SourceCardActions({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  const source = useSourceCardSource();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const { t } = useTranslation();
+
+  const { sourcePath } = source.snapshot.source;
+  const showRestore = source.sourceAvailability === "deleted";
+  const revealLabel = getRevealLabel(t);
+
+  return (
+    <CardAction
+      className={cn(className, menuOpen ? "visible" : undefined)}
+      onClick={(event) => event.stopPropagation()}
+    >
+      <DropdownMenu onOpenChange={setMenuOpen}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
+          </TooltipTrigger>
+          <TooltipContent>{t("source.actions.sourceActions")}</TooltipContent>
+        </Tooltip>
+
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem
+            disabled={showRestore}
+            inset
+            onSelect={() => void openFileLocation(sourcePath)}
+          >
+            <DropdownMenuIcon>
+              <ExternalLink aria-hidden="true" />
+            </DropdownMenuIcon>
+
+            {revealLabel}
+          </DropdownMenuItem>
+
+          <MenuCloseSource source={source}>
+            <DropdownMenuItem inset>
+              <DropdownMenuIcon>
+                <X aria-hidden="true" />
+              </DropdownMenuIcon>
+
+              {t("app.actions.closeFile")}
+            </DropdownMenuItem>
+          </MenuCloseSource>
+
+          <DropdownMenuSeparator />
+
+          {showRestore ? (
+            <MenuRestoreSource source={source}>
+              <DropdownMenuItem inset variant="success">
+                <DropdownMenuIcon>
+                  <RotateCcw aria-hidden="true" />
+                </DropdownMenuIcon>
+
+                {t("app.actions.restore")}
+              </DropdownMenuItem>
+            </MenuRestoreSource>
+          ) : (
+            <MenuDeleteSource source={source}>
+              <DropdownMenuItem inset variant="destructive">
+                <DropdownMenuIcon>
+                  <Trash2 aria-hidden="true" />
+                </DropdownMenuIcon>
+
+                {t("app.actions.deleteFile")}
+              </DropdownMenuItem>
+            </MenuDeleteSource>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </CardAction>
+  );
+}
 
 /**
  * @name SourceCardIndividualContextMenu
@@ -301,7 +510,7 @@ function SourceCardIndividualContextMenu({ source }: { source: EditingInstance }
  * @name SourceCardContextMenu
  * @description Builds the selected-range context menu with aggregate and current-file actions.
  */
-function SourceCardContextMenu({
+function SourceCardMultipleContextMenu({
   source,
   sources,
 }: {
@@ -441,81 +650,26 @@ function getSourceCardStatusLabel(t: TFunction, status: SourceCardStatus): strin
   }
 }
 
-/**
- * @name SourceCardActions
- * @description Builds the dropdown menu for one source card using the shared source menu actions.
- */
-function SourceCardActions({ source }: { source: EditingInstance }) {
-  const { t } = useTranslation();
+const SourceCardContext = createContext<EditingInstance | null>(null);
 
-  const { displayName, sourcePath } = source.snapshot.source;
-  const showRestore = source.sourceAvailability === "deleted";
-  const revealLabel = getRevealLabel(t);
+function useSourceCardSource() {
+  const context = useContext(SourceCardContext);
 
-  return (
-    <DropdownMenu>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <DropdownMenuTrigger asChild>
-            <Button
-              aria-label={`${t("source.actions.sourceActions")}: ${displayName}`}
-              size="icon-xs"
-              variant="ghost"
-            >
-              <MoreHorizontal aria-hidden="true" />
-            </Button>
-          </DropdownMenuTrigger>
-        </TooltipTrigger>
-        <TooltipContent>{t("source.actions.sourceActions")}</TooltipContent>
-      </Tooltip>
+  if (!context) {
+    throw new Error(
+      "SourceCardThumbnail, SourceCardDetails, SourceCardTitle, SourceCardDescription and SourceCardMetadata must be used within SourceCard",
+    );
+  }
 
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem
-          disabled={showRestore}
-          inset
-          onSelect={() => void openFileLocation(sourcePath)}
-        >
-          <DropdownMenuIcon>
-            <ExternalLink aria-hidden="true" />
-          </DropdownMenuIcon>
-
-          {revealLabel}
-        </DropdownMenuItem>
-
-        <MenuCloseSource source={source}>
-          <DropdownMenuItem inset>
-            <DropdownMenuIcon>
-              <X aria-hidden="true" />
-            </DropdownMenuIcon>
-
-            {t("app.actions.closeFile")}
-          </DropdownMenuItem>
-        </MenuCloseSource>
-
-        <DropdownMenuSeparator />
-
-        {showRestore ? (
-          <MenuRestoreSource source={source}>
-            <DropdownMenuItem inset variant="success">
-              <DropdownMenuIcon>
-                <RotateCcw aria-hidden="true" />
-              </DropdownMenuIcon>
-
-              {t("app.actions.restore")}
-            </DropdownMenuItem>
-          </MenuRestoreSource>
-        ) : (
-          <MenuDeleteSource source={source}>
-            <DropdownMenuItem inset variant="destructive">
-              <DropdownMenuIcon>
-                <Trash2 aria-hidden="true" />
-              </DropdownMenuIcon>
-
-              {t("app.actions.deleteFile")}
-            </DropdownMenuItem>
-          </MenuDeleteSource>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
+  return context;
 }
+
+export {
+  SourceCard,
+  SourceCardActions,
+  SourceCardDescription,
+  SourceCardMetadata,
+  SourceCardStatusBadge,
+  SourceCardThumbnail,
+  SourceCardTitle,
+};
