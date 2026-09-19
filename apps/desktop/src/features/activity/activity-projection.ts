@@ -5,7 +5,13 @@ import type {
 } from "@/lib/tauri/diagnostics.types";
 
 export type ActivityKind =
-  "fast-cut" | "file-deleted" | "file-restored" | "files-imported" | "folders-imported" | "render";
+  | "fast-cut"
+  | "file-deleted"
+  | "file-restored"
+  | "files-closed"
+  | "files-imported"
+  | "folders-imported"
+  | "render";
 export type ActivityStatus = "cancelled" | "completed" | "failed" | "interrupted" | "pending";
 export type ActivityAction =
   { kind: "open"; path: string } | { kind: "restore"; path: string; targetId: string };
@@ -34,6 +40,7 @@ export interface ActivityProjectionLabels {
   fastCutInterrupted: string;
   fastCutStarted: string;
   fastCutting: string;
+  fileCloseCompleted: (count: number) => string;
   fileDeleteCancelled: string;
   fileDeleted: string;
   fileDeleteFailed: string;
@@ -77,6 +84,7 @@ type ActivityEventProjector = (
 ) => ActivityEntry | null;
 const ACTIVITY_EVENT_CONFIG = {
   "export.prepare.started": (event, labels) => projectExportStart(event, labels),
+  "source.file-close.completed": (event, labels) => projectFileClose(event, labels),
   "source.file-delete.completed": (event, labels) => projectFileTerminal(event, "delete", labels),
   "source.file-delete.failed": (event, labels) => projectFileTerminal(event, "delete", labels),
   "source.file-delete.cancelled": (event, labels) => projectFileTerminal(event, "delete", labels),
@@ -375,7 +383,7 @@ function projectFileOperation(
   const snapshotId = activitySnapshotId(started) ?? activitySnapshotId(terminal);
 
   return {
-    ...(started.data ? { data: started.data } : {}),
+    ...(started.data || terminal?.data ? { data: { ...started.data, ...terminal?.data } } : {}),
     ...(operation === "delete" && status === "completed" && path && targetId
       ? { action: { kind: "restore", path, targetId } as const }
       : {}),
@@ -412,7 +420,7 @@ function projectExportOperation(
     diagnosticString(started.data?.sourcePath) ?? diagnosticString(terminal?.data?.sourcePath);
 
   return {
-    ...(started.data ? { data: started.data } : {}),
+    ...(started.data || terminal?.data ? { data: { ...started.data, ...terminal?.data } } : {}),
     ...(path && status === "completed" ? { action: { kind: "open", path } as const } : {}),
     id: `${started.sessionId}:${started.operationId}:ffmpeg.export`,
     kind: metadata.kind,
@@ -524,6 +532,15 @@ function projectFileTerminal(
       status,
     },
   );
+}
+
+function projectFileClose(
+  event: DiagnosticEvent,
+  labels: ActivityProjectionLabels,
+): ActivityEntry | null {
+  const count = diagnosticNumber(event.data?.count) ?? 1;
+
+  return createActivityEntry(event, "files-closed", labels.fileCloseCompleted(count));
 }
 
 function projectLegacyFileTerminal(

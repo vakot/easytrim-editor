@@ -20,6 +20,7 @@ const labels: ActivityProjectionLabels = {
   fastCutInterrupted: "Fast cut interrupted",
   fastCutStarted: "Started fast cut",
   fastCutting: "Fast cutting…",
+  fileCloseCompleted: (count) => `Closed ${count} file${count === 1 ? "" : "s"}`,
   fileDeleteCancelled: "File deletion cancelled",
   fileDeleteFailed: "File deletion failed",
   fileDeleteInterrupted: "File deletion interrupted",
@@ -70,6 +71,28 @@ function session(
 }
 
 describe("activity projection", () => {
+  it("projects a completed close action for multiple files", () => {
+    const entry = projectActivityEvent(
+      diagnosticEvent("source.file-close.completed", {
+        data: {
+          count: 2,
+          sourcePaths: ["C:/Media/first.mp4", "C:/Media/second.mp4"],
+        },
+      }),
+      labels,
+    );
+
+    expect(entry).toMatchObject({
+      data: {
+        count: 2,
+        sourcePaths: ["C:/Media/first.mp4", "C:/Media/second.mp4"],
+      },
+      kind: "files-closed",
+      status: "completed",
+      title: "Closed 2 files",
+    });
+  });
+
   it("projects one completed file import from its correlated diagnostics", () => {
     const entries = projectActivityEvents(
       [
