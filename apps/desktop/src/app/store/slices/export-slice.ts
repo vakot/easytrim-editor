@@ -108,8 +108,6 @@ export const {
 } = exportSlice.actions;
 export const exportReducer = exportSlice.reducer;
 
-export const selectQueueStarted = (state: RootState): boolean =>
-  state.export.startedSourceIds.length > 0;
 export const selectSourceQueueStarted = (state: RootState, instanceId: string): boolean =>
   state.export.startedSourceIds.includes(instanceId);
 export const selectSourceExportQueueState = createSelector(

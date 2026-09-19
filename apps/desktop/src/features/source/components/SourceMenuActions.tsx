@@ -25,16 +25,6 @@ interface SourceActionProps {
   source?: EditingInstance;
 }
 
-interface SourcesActionProps {
-  children: ActionElement;
-  event?: "click" | "select";
-  onOpenChange?: (open: boolean) => void;
-  open?: boolean;
-  sources: EditingInstance[];
-  target?: "file" | "folder";
-  targetName?: string;
-}
-
 /**
  * @name DeleteSource
  * @description Wraps an action trigger with source deletion behavior and disables it when the source is already deleted.
@@ -58,37 +48,6 @@ export function DeleteSource({
 }
 
 /**
- * @name DeleteSources
- * @description Wraps an action trigger with deletion behavior for a source range and disables it when every source is already deleted.
- */
-export function DeleteSources({
-  children,
-  event = "select",
-  onOpenChange,
-  open,
-  sources,
-  target,
-  targetName,
-}: SourcesActionProps) {
-  const canDelete = sources.some((source) => source.sourceAvailability !== "deleted");
-  const item = withDisabled(children, !canDelete);
-
-  return (
-    <DeleteSourceDialog
-      onOpenChange={onOpenChange}
-      open={open}
-      sourceIds={sources.map(({ id }) => id)}
-      target={target}
-      targetName={targetName}
-    >
-      <DeleteSourceDialogTrigger asChild>
-        {event === "select" ? withPreventedSelect(item) : item}
-      </DeleteSourceDialogTrigger>
-    </DeleteSourceDialog>
-  );
-}
-
-/**
  * @name CloseSource
  * @description Adds the action that closes one source editing instance to a compatible action trigger.
  */
@@ -97,18 +56,6 @@ export function CloseSource({ children, event = "select", source }: SourceAction
 
   return withAction(withDisabled(children, !source), event, () => {
     if (source) void dispatch(closeEditingInstancesRequested([source.id]));
-  });
-}
-
-/**
- * @name CloseSources
- * @description Adds the action that closes every source editing instance in a range to a compatible action trigger.
- */
-export function CloseSources({ children, event = "select", sources }: SourcesActionProps) {
-  const dispatch = useAppDispatch();
-
-  return withAction(withDisabled(children, sources.length === 0), event, () => {
-    void dispatch(closeEditingInstancesRequested(sources.map(({ id }) => id)));
   });
 }
 
@@ -156,29 +103,6 @@ export function RestoreSource({ children, event = "select", source }: SourceActi
         itemId: source.id,
         sourcePath: source.snapshot.source.sourcePath,
       }),
-    );
-  });
-}
-
-/**
- * @name RestoreSources
- * @description Adds source restoration behavior to a compatible action trigger for every deleted source in a range.
- */
-export function RestoreSources({ children, event = "select", sources }: SourcesActionProps) {
-  const dispatch = useAppDispatch();
-  const restorableSources = sources.filter((source) => source.sourceAvailability === "deleted");
-  if (restorableSources.length === 0) return null;
-
-  return withAction(children, event, () => {
-    void Promise.all(
-      restorableSources.map((source) =>
-        dispatch(
-          restoreSourceFileRequested({
-            itemId: source.id,
-            sourcePath: source.snapshot.source.sourcePath,
-          }),
-        ),
-      ),
     );
   });
 }

@@ -445,16 +445,6 @@ const selectProcessableExportCount = createSelector(
     ids.reduce((count, id) => count + (hasProcessableExport(entities[id]) ? 1 : 0), 0),
 );
 
-export const selectQueuedExportCount = createSelector(
-  [selectEditingInstanceEntities, selectEditingInstanceIds],
-  (entities, ids) =>
-    ids.reduce(
-      (count, id) =>
-        count +
-        (entities[id]?.exportAttempts.filter(({ state }) => state.status === "queued").length ?? 0),
-      0,
-    ),
-);
 export const selectHasProcessableExports = createSelector(
   [selectProcessableExportCount],
   (count) => count > 0,

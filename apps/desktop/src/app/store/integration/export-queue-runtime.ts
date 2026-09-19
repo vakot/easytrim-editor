@@ -204,25 +204,6 @@ export async function cancelAndRequeueExport(
   await job.completion;
 }
 
-export function cancelActiveExport(getState: () => RootState) {
-  const runtime = runtimeFor(getState);
-  const activeJob = [...runtime.jobsByAttemptId.values()].find((job) => job.startedAt !== null);
-  if (activeJob) return cancelQueuedExport(activeJob.instanceId, activeJob.attempt.id, getState);
-  return Promise.resolve();
-}
-
-export function cancelAllQueuedExports(getState: () => RootState) {
-  const runtime = runtimeFor(getState);
-  runtime.suppressQueueFinishAction = true;
-  const firstJob = runtime.jobsByAttemptId.values().next().value;
-  firstJob?.dispatch(queuePaused());
-  return Promise.all(
-    [...runtime.jobsByAttemptId.values()].map((job) =>
-      cancelQueuedExport(job.instanceId, job.attempt.id, getState),
-    ),
-  ).then(() => undefined);
-}
-
 export function hasActiveExportForSource(sourcePath: string, getState: () => RootState): boolean {
   return (runtimeFor(getState).jobsBySourceKey.get(normalizeSourceKey(sourcePath))?.size ?? 0) > 0;
 }

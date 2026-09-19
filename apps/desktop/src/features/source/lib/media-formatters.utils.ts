@@ -74,6 +74,7 @@ export function formatRelativeTime(
     { seconds: 60, unit: "minute" as const },
     { seconds: 1, unit: "second" as const },
   ];
+
   const unit = units.find(({ seconds }) => Math.abs(elapsedSeconds) >= seconds) ?? units.at(-1)!;
 
   return new Intl.RelativeTimeFormat(locale, { numeric: "always" }).format(
@@ -87,17 +88,4 @@ export function formatSourcePath(sourcePath: string): string {
   return sourcePath.startsWith(extendedPathPrefix)
     ? sourcePath.slice(extendedPathPrefix.length)
     : sourcePath;
-}
-
-export function getSourceFolderPath(sourcePath: string): string {
-  const formattedPath = formatSourcePath(sourcePath);
-  const separatorIndex = Math.max(formattedPath.lastIndexOf("/"), formattedPath.lastIndexOf("\\"));
-
-  if (separatorIndex < 0) return "";
-  if (separatorIndex === 0) return formattedPath[0]!;
-
-  const folderPath = formattedPath.slice(0, separatorIndex);
-  return /^[A-Za-z]:$/.test(folderPath)
-    ? `${folderPath}${formattedPath[separatorIndex]}`
-    : folderPath;
 }

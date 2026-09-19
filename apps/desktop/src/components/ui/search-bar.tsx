@@ -5,7 +5,10 @@ import * as React from "react";
 import { Input } from "@/components/ui/input";
 
 import { cn } from "@/lib/class-names.utils";
-import { normalizeSearchValue } from "@/lib/search.utils";
+
+function normalizeSearchValue(value: string): string {
+  return value.trim().toLocaleLowerCase();
+}
 
 const searchBarInputVariants = cva("", {
   variants: {

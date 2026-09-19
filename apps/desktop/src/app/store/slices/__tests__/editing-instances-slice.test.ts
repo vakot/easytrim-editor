@@ -32,7 +32,6 @@ import {
   selectHasProcessableExports,
   selectHasQueuedOrRenderingExportByInstanceId,
   selectImportedEditingInstances,
-  selectQueuedExportCount,
 } from "../editing-instances-slice";
 
 const baseSnapshot = createDefaultEditorSnapshot(firstSource, false);
@@ -69,7 +68,7 @@ function attempt(id: string, snapshot = baseSnapshot, capturedAt = 10) {
 }
 
 describe("editing instances slice", () => {
-  it("keeps all attempts for one instance visible and counts pending attempts", () => {
+  it("keeps all attempts for one instance visible", () => {
     let state = editingInstancesReducer(undefined, editingInstancesAdded([instance("source")]));
     for (const id of ["one", "two", "three"]) {
       state = editingInstancesReducer(
@@ -93,7 +92,6 @@ describe("editing instances slice", () => {
         .map(({ attempt }) => attempt.id),
     ).toEqual(["two", "three"]);
     expect(selectExportQueueById(root, "source")).toEqual(queue);
-    expect(selectQueuedExportCount(root)).toBe(2);
   });
 
   it("returns a rendering attempt to queued state without changing its position", () => {
