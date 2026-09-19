@@ -11,11 +11,11 @@ export function EditorWorkspace() {
       <ResizablePanel
         collapsedSize={0}
         collapsible
-        defaultSize="32rem"
+        defaultSize="30.75rem" // matches 16x9 preview perfectly
         groupResizeBehavior="preserve-pixel-size"
         id="workspace-sidebar"
         maxSize="48rem"
-        minSize="32rem"
+        minSize="30.75rem" // matches 16x9 preview perfectly
       >
         <div className="size-full pb-1.5 pl-1.5">
           <div className="size-full p-px">
