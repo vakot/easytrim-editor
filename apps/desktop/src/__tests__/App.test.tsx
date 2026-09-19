@@ -245,30 +245,11 @@ afterEach(() => {
 });
 
 describe("App", () => {
-  it("disables export queue entry points when the queue is empty", async () => {
-    const user = userEvent.setup();
+  it("keeps the editor visible without deprecated queue widgets", () => {
     render(<App />);
-
-    const titleBar = screen.getByRole("banner", { name: "Window title bar" });
-    const exportQueueButtons = screen.getAllByRole("button", { name: "Export Queue" });
-    const titleBarExportQueueButton = exportQueueButtons[0];
-    const editorSourceExportQueueButton = exportQueueButtons[1];
-
-    if (!titleBarExportQueueButton || !editorSourceExportQueueButton) {
-      throw new Error("Expected title-bar and editor-source export queue buttons");
-    }
-
-    expect(exportQueueButtons).toHaveLength(2);
-    for (const button of exportQueueButtons) expect(button).toBeDisabled();
-
-    await user.hover(titleBarExportQueueButton.parentElement as HTMLElement);
-    expect(await screen.findByRole("tooltip")).toHaveTextContent("Export queue is empty.");
-
-    await user.unhover(titleBarExportQueueButton.parentElement as HTMLElement);
-    await user.hover(editorSourceExportQueueButton.parentElement as HTMLElement);
-    expect(await screen.findByRole("tooltip")).toHaveTextContent("Export queue is empty.");
-
-    expect(titleBar).toBeInTheDocument();
+    expect(screen.getByRole("banner", { name: "Window title bar" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Export Queue" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Imported Sources" })).toBeInTheDocument();
   });
 
   it("preserves editor tools across source replacement", async () => {
@@ -1803,6 +1784,7 @@ describe("App", () => {
     const requestFrame = vi
       .spyOn(window, "requestAnimationFrame")
       .mockImplementation((callback) => scheduledFrames.push(callback));
+
     const cancelFrame = vi.spyOn(window, "cancelAnimationFrame").mockImplementation(() => {});
 
     try {

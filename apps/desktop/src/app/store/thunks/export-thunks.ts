@@ -2,7 +2,6 @@ import {
   cancelActiveExport,
   cancelAllQueuedExports,
   cancelAndRequeueExport,
-  cancelQueuedExport,
   enqueueExport,
   setExportQueueExecutionEnabled,
 } from "@/app/store/integration/export-queue-runtime";
@@ -96,13 +95,6 @@ export const startExportQueue =
     setExportQueueExecutionEnabled(true, dispatch, getState);
   };
 
-export const pauseExportQueue =
-  (origin: DiagnosticOrigin = { type: "internal" }): AppThunk =>
-  (dispatch, getState) => {
-    diagnostics.action("export.queue.pause.requested", origin);
-    setExportQueueExecutionEnabled(false, dispatch, getState);
-  };
-
 export const startSourceExportQueue =
   (instanceId: string): AppThunk =>
   (dispatch, getState) => {
@@ -127,19 +119,6 @@ export const cancelSourceExportQueue =
 export const cancelActiveExportRequested = (): AppThunk => (_dispatch, getState) => {
   void cancelActiveExport(getState);
 };
-
-export const cancelExportRequested =
-  (payload: { attemptId: string; instanceId: string }): AppThunk =>
-  (_dispatch, getState) => {
-    void cancelQueuedExport(payload.instanceId, payload.attemptId, getState);
-  };
-
-export const cancelExportAndRequeueRequested =
-  (payload: { attemptId: string; instanceId: string }): AppThunk =>
-  async (dispatch, getState) => {
-    setExportQueueExecutionEnabled(false, dispatch, getState, payload.instanceId);
-    await cancelAndRequeueExport(payload.instanceId, payload.attemptId, getState);
-  };
 
 export const cancelAllExportsRequested = (): AppThunk => (_dispatch, getState) => {
   void cancelAllQueuedExports(getState);
