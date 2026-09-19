@@ -110,29 +110,48 @@ function SourceListItemExports({ pending }: SourceListItemExtraItemProps) {
   return (
     <li>
       <ul>
-        {pending.map(({ attempt, instance }) => (
-          <SourceListItemExport attempt={attempt} instance={instance} key={attempt.id} />
+        {pending.map(({ attempt }) => (
+          <SourceListItemExport attempt={attempt} key={attempt.id} />
         ))}
       </ul>
     </li>
   );
 }
 
-function SourceListItemExport({ attempt, instance }: PendingInstance) {
+function SourceListItemExport({ attempt }: { attempt: ExportAttempt }) {
+  const { t } = useTranslation();
+
+  const statusLabel =
+    attempt.state.status === "queued"
+      ? t("source.status.queued")
+      : attempt.state.status === "rendering"
+        ? t("source.status.rendering")
+        : attempt.state.status === "completed"
+          ? t("source.status.completed")
+          : attempt.state.status === "failed"
+            ? t("source.status.failed")
+            : t("source.status.canceled");
+
   return (
     <li className={sourceListItemExtraClassName}>
       <Button className="w-full justify-between" size="xs" variant="ghost">
         <div className="flex items-center gap-2">
-          {/* TODO: show icon when fast-cut */}
-          <Scissors aria-hidden="true" />
-          {/* TODO: show icon when optimized export */}
-          <Settings2 aria-hidden="true" />
-          {/* TODO: show exporting filename */}
-          <span className="truncate text-xs text-muted-foreground">New cool file.mp4</span>
+          {attempt.route === "fast" ? (
+            <Scissors aria-hidden="true" />
+          ) : (
+            <Settings2 aria-hidden="true" />
+          )}
+          <span
+            className="truncate text-xs text-muted-foreground"
+            title={attempt.output.displayName}
+          >
+            {attempt.output.displayName}
+          </span>
         </div>
-        {/* TODO: show correct status */}
         <Badge variant="outline">
-          <span className="shimmer">rendering</span>
+          <span className={attempt.state.status === "rendering" ? "shimmer" : undefined}>
+            {statusLabel}
+          </span>
         </Badge>
       </Button>
     </li>
