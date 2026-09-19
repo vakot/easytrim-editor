@@ -55,6 +55,33 @@ export function formatDateTime(
     : new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 
+export function formatRelativeTime(
+  micros: number | undefined,
+  locale: string,
+  unknownLabel: string,
+): string {
+  if (micros === undefined) return unknownLabel;
+
+  const elapsedSeconds = micros / 1_000_000 - Date.now() / 1_000;
+  if (!Number.isFinite(elapsedSeconds)) return unknownLabel;
+
+  const units = [
+    { seconds: 31_536_000, unit: "year" as const },
+    { seconds: 2_592_000, unit: "month" as const },
+    { seconds: 604_800, unit: "week" as const },
+    { seconds: 86_400, unit: "day" as const },
+    { seconds: 3_600, unit: "hour" as const },
+    { seconds: 60, unit: "minute" as const },
+    { seconds: 1, unit: "second" as const },
+  ];
+  const unit = units.find(({ seconds }) => Math.abs(elapsedSeconds) >= seconds) ?? units.at(-1)!;
+
+  return new Intl.RelativeTimeFormat(locale, { numeric: "always" }).format(
+    Math.round(elapsedSeconds / unit.seconds),
+    unit.unit,
+  );
+}
+
 export function formatSourcePath(sourcePath: string): string {
   const extendedPathPrefix = "\\\\?\\";
   return sourcePath.startsWith(extendedPathPrefix)

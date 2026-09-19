@@ -22,7 +22,7 @@ import {
   ExportQueueWidgetPendingList,
   ExportQueueWidgetPendingListEmpty,
 } from "@/features/export";
-import { SourceGrid } from "@/features/source";
+import { SourceGrid, SourceList } from "@/features/source";
 
 export function EditorSource() {
   const { t } = useTranslation();
@@ -78,7 +78,8 @@ export function EditorSource() {
         </CollapsibleTrigger>
 
         <CollapsibleContent className="mt-2 flex min-h-0 flex-1 flex-col">
-          <SourceGrid />
+          {/* <SourceGrid /> */}
+          <SourceList />
         </CollapsibleContent>
       </Collapsible>
 

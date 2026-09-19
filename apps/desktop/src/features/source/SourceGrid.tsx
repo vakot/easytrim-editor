@@ -184,6 +184,8 @@ export function SourceGrid() {
   );
 }
 
+function SourceGridCard() {}
+
 interface ImportedSourceFolder {
   id: string;
   path: string;
