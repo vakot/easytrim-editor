@@ -3,6 +3,7 @@ import {
   editingInstanceExportCompleted,
   editingInstanceExportFailed,
   editingInstanceExportProgressReceived,
+  editingInstanceExportRequeued,
   editingInstanceExportStarted,
   editingInstancesSourceAvailabilityChanged,
   selectEditingInstanceAttempts,
@@ -54,6 +55,10 @@ interface RuntimeState {
   suppressQueueFinishAction: boolean;
 }
 
+interface EnqueueExportOptions {
+  prepend?: boolean;
+}
+
 const runtimeByStore = new WeakMap<() => RootState, RuntimeState>();
 
 function runtimeFor(getState: () => RootState): RuntimeState {
@@ -89,6 +94,7 @@ export function enqueueExport(
   attempt: ExportAttempt,
   dispatch: AppDispatch,
   getState: () => RootState,
+  options: EnqueueExportOptions = {},
 ) {
   const runtime = runtimeFor(getState);
   if (runtime.jobsByAttemptId.has(attempt.id)) return false;
@@ -111,7 +117,8 @@ export function enqueueExport(
   job.completion = new Promise<void>((resolve) => {
     job.resolveCompletion = resolve;
   });
-  runtime.pendingJobs.push(job);
+  if (options.prepend) runtime.pendingJobs.unshift(job);
+  else runtime.pendingJobs.push(job);
   runtime.jobsByAttemptId.set(attempt.id, job);
   const sourceKey = normalizeSourceKey(attempt.request.sourcePath);
   const sourceJobs = runtime.jobsBySourceKey.get(sourceKey);
@@ -165,6 +172,37 @@ export function cancelQueuedExport(
   }
   if (job.operationId) void cancelOperation(job.operationId).catch(() => undefined);
   return job.completion;
+}
+
+export async function cancelAndRequeueExport(
+  instanceId: EditingInstanceId,
+  attemptId: string,
+  getState: () => RootState,
+) {
+  const runtime = runtimeFor(getState);
+  const job = runtime.jobsByAttemptId.get(attemptId);
+  if (!job || job.instanceId !== instanceId || job.canceled || job.startedAt === null) return;
+
+  job.canceled = true;
+  job.diagnosticsOperation?.cancel({ reason: "user_requested" });
+  if (job.operationId) void cancelOperation(job.operationId).catch(() => undefined);
+  await job.completion;
+
+  const attempt = selectEditingInstanceAttempts(getState()).find(
+    ({ attempt: candidate, instance }) => instance.id === instanceId && candidate.id === attemptId,
+  )?.attempt;
+
+  if (!attempt || attempt.state.status !== "rendering") return;
+
+  job.dispatch(editingInstanceExportRequeued({ id: instanceId, attemptId }));
+
+  const requeuedAttempt = selectEditingInstanceAttempts(getState()).find(
+    ({ attempt: candidate, instance }) => instance.id === instanceId && candidate.id === attemptId,
+  )?.attempt;
+
+  if (requeuedAttempt?.state.status === "queued") {
+    enqueueExport(instanceId, requeuedAttempt, job.dispatch, getState, { prepend: true });
+  }
 }
 
 export function cancelActiveExport(getState: () => RootState) {

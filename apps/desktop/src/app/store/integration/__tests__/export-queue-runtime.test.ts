@@ -45,6 +45,7 @@ import { preferenceChanged } from "../../slices/preferences-slice";
 import { createAppStore } from "../../store";
 import { createDefaultEditorSnapshot } from "../editor-snapshot";
 import {
+  cancelAndRequeueExport,
   cancelQueuedExport,
   enqueueExport,
   setExportQueueExecutionEnabled,
@@ -225,6 +226,56 @@ describe("export queue runtime", () => {
       store.getState().editingInstances.entities["instance-cancel"]?.exportAttempts[0]?.state
         .status,
     ).toBe("canceled");
+  });
+
+  it("requeues the active attempt after cancellation without removing its reservation", async () => {
+    const store = createAppStore();
+    const getState = store.getState;
+    const attempt = createAttempt("attempt-requeue");
+    let resolveRender: (result: {
+      displayName: string;
+      displayPath: string;
+      operationId: string;
+    }) => void = () => undefined;
+
+    let onProgress: ((value: ExportProgress) => void) | undefined;
+
+    mocks.renderFast
+      .mockImplementationOnce(
+        async (
+          _request: unknown,
+          _outputId: string,
+          progressCallback: (value: ExportProgress) => void,
+        ) => {
+          onProgress = progressCallback;
+          return new Promise((resolve) => {
+            resolveRender = resolve;
+          });
+        },
+      )
+      .mockResolvedValueOnce({ displayName: "output", displayPath: "output", operationId: "op-2" });
+    store.dispatch(editingInstancesAdded([createInstance("instance-requeue")]));
+    store.dispatch(editingInstanceExportAttemptQueued({ id: "instance-requeue", attempt }));
+    setExportQueueExecutionEnabled(true, store.dispatch, getState);
+    enqueueExport("instance-requeue", attempt, store.dispatch, getState);
+
+    await vi.waitFor(() => expect(onProgress).toBeDefined());
+    onProgress!(progress("op-1", 1));
+    setExportQueueExecutionEnabled(false, store.dispatch, getState);
+    const requeue = cancelAndRequeueExport("instance-requeue", attempt.id, getState);
+    resolveRender({ displayName: "output", displayPath: "output", operationId: "op-1" });
+    await requeue;
+
+    expect(mocks.cancelOperation).toHaveBeenCalledWith("op-1");
+    expect(mocks.renderFast).toHaveBeenCalledTimes(1);
+    expect(
+      store.getState().editingInstances.entities["instance-requeue"]?.exportAttempts[0]?.state
+        .status,
+    ).toBe("queued");
+    expect(mocks.releaseExportSource).not.toHaveBeenCalled();
+
+    setExportQueueExecutionEnabled(true, store.dispatch, getState);
+    await vi.waitFor(() => expect(mocks.renderFast).toHaveBeenCalledTimes(2));
   });
 
   it("ignores a late progress callback with a different native operation id", async () => {

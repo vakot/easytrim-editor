@@ -2,14 +2,15 @@ import { createSelector, createSlice, type PayloadAction } from "@reduxjs/toolki
 
 import { editingInstanceActivated } from "@/app/store/actions/editing-instance-actions";
 import { sourceCleared } from "@/app/store/actions/source-actions";
-import type {
-  EditingInstance,
-  EditingInstanceId,
-  EditingInstancesState,
-  ExportAttempt,
-  ExportAttemptMetrics,
-  ExportSettings,
-  SourceAvailability,
+import {
+  type EditingInstance,
+  type EditingInstanceId,
+  type EditingInstancesState,
+  EMPTY_EXPORT_METRICS,
+  type ExportAttempt,
+  type ExportAttemptMetrics,
+  type ExportSettings,
+  type SourceAvailability,
 } from "@/domain/editing-instance";
 import type { EditorSnapshot } from "@/domain/editor-snapshot";
 import { normalizeSourceKey } from "@/domain/source";
@@ -22,6 +23,11 @@ export interface EditingInstanceTopologyEntry {
   id: EditingInstanceId;
   sourcePath: string;
 }
+
+export type ExportQueueItem = {
+  attempt: ExportAttempt;
+  instance: EditingInstance;
+};
 
 export const initialEditingInstancesState: EditingInstancesState = {
   activeInstanceId: null,
@@ -148,6 +154,21 @@ const editingInstancesSlice = createSlice({
         operationId: null,
         status: "rendering",
       };
+    },
+    editingInstanceExportRequeued: (
+      state,
+      action: PayloadAction<{ attemptId: string; id: EditingInstanceId }>,
+    ) => {
+      const instance = getInstance(state, action.payload.id);
+      const attempt = instance && getAttempt(instance, action.payload.attemptId);
+      if (!attempt || attempt.state.status !== "rendering") return;
+      attempt.metrics = {
+        ...EMPTY_EXPORT_METRICS,
+        ...(attempt.metrics.totalFrames === undefined
+          ? {}
+          : { totalFrames: attempt.metrics.totalFrames }),
+      };
+      attempt.state = { queuedAt: Date.now(), status: "queued" };
     },
     editingInstanceExportProgressReceived: (
       state,
@@ -321,6 +342,7 @@ export const {
   editingInstanceExportFailed,
   editingInstanceExportHistoryCleared,
   editingInstanceExportProgressReceived,
+  editingInstanceExportRequeued,
   editingInstanceExportRestored,
   editingInstanceExportStarted,
   editingInstanceMediaUpdated,
@@ -437,26 +459,15 @@ export const selectRenderingAttempt = createSelector(
   },
 );
 export const selectExportQueue = createSelector(
-  [selectEditingInstanceEntities, selectEditingInstanceIds],
-  (entities, ids) => {
-    let active: { attempt: ExportAttempt; instance: EditingInstance } | undefined;
-    const pending: { attempt: ExportAttempt; instance: EditingInstance }[] = [];
-
-    for (const id of ids) {
-      const instance = entities[id];
-      if (!instance) continue;
-      for (const attempt of instance.exportAttempts) {
-        if (attempt.state.status === "rendering") {
-          active ??= { attempt, instance };
-        } else if (attempt.state.status === "queued") {
-          pending.push({ attempt, instance });
-        }
-      }
-    }
-
-    pending.sort((left, right) => left.attempt.capturedAt - right.attempt.capturedAt);
-    return { active, pending };
-  },
+  [selectEditingInstances],
+  (instances): ExportQueueItem[] =>
+    instances
+      .flatMap((instance) => instancesToAttempts(instance))
+      .sort((left, right) => left.attempt.capturedAt - right.attempt.capturedAt),
+);
+export const selectExportQueueById = createSelector(
+  [selectExportQueue, (_state: RootState, id: EditingInstanceId) => id],
+  (queue, id) => queue.filter(({ instance }) => instance.id === id),
 );
 export const selectInstanceIdsBySourceKey = createSelector(
   [selectEditingInstanceEntities, selectEditingInstanceIds],

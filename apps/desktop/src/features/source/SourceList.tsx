@@ -1,4 +1,5 @@
-import { MoreHorizontal, Play, RotateCcw, Scissors, Settings2, Trash2 } from "lucide-react";
+import type { TFunction } from "i18next";
+import { MoreHorizontal, Play, RotateCcw, Scissors, Settings2, Trash2, X } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -9,16 +10,21 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
   selectExportQueue,
+  selectExportQueueById,
   selectImportedEditingInstances,
 } from "@/app/store/slices/editing-instances-slice";
 import { selectQueueStarted } from "@/app/store/slices/export-slice";
 import { selectImportedSourceThumbnails } from "@/app/store/slices/preview-slice";
-import { startExportQueue } from "@/app/store/thunks/export-thunks";
 import {
+  cancelExportAndRequeueRequested,
+  startExportQueue,
+} from "@/app/store/thunks/export-thunks";
+import {
+  closeEditingInstancesRequested,
   prepareImportedSourceThumbnailsRequested,
   restoreSourceFileRequested,
 } from "@/app/store/thunks/source-media-thunks";
-import type { EditingInstance, ExportAttempt } from "@/domain/editing-instance";
+import type { EditingInstance, ExportAttempt, ExportAttemptState } from "@/domain/editing-instance";
 
 import { DeleteSourceDialog, DeleteSourceDialogTrigger } from "./components/DeleteSourceDialog";
 import {
@@ -26,6 +32,7 @@ import {
   SourceCardActions,
   SourceCardDescription,
   SourceCardMetadata,
+  SourceCardStatusBadge,
   SourceCardThumbnail,
   SourceCardTitle,
 } from "./components/SourceCard";
@@ -58,7 +65,9 @@ function SourceListItemCard({ source }: { source: EditingInstance }) {
 
   return (
     <SourceCard className="z-1 flex flex-row gap-2 p-2 hover:bg-card-foreground/10" source={source}>
-      <SourceCardThumbnail className="w-6/11 shrink-0 rounded-md shadow" />
+      <SourceCardThumbnail className="w-6/11 shrink-0 rounded-md shadow">
+        <SourceCardStatusBadge className="absolute top-2 left-2" />
+      </SourceCardThumbnail>
 
       <div className="relative flex min-w-0 flex-1 flex-col gap-2">
         <div className="flex min-w-0 flex-col gap-1" data-slot="card-header">
@@ -83,48 +92,30 @@ function SourceListItemCard({ source }: { source: EditingInstance }) {
   );
 }
 
-const sourceListItemExtraClassName =
-  "min-h-8 border-t bg-muted/50 p-1 first:border-t-0 last:rounded-b-md";
-
-type PendingInstance = {
-  attempt: ExportAttempt;
-  instance: EditingInstance;
-};
-
-interface SourceListItemExtraItemProps {
-  pending: PendingInstance[];
-}
+const sourceListItemExtraClassName = "min-h-8 border-t bg-muted/50 p-1 first:border-t-0";
 
 function SourceListItemExtra({ source }: { source: EditingInstance }) {
-  const { active, pending: queuePending } = useAppSelector(selectExportQueue);
-  const queueStarted = useAppSelector(selectQueueStarted);
-  const pending = queuePending.filter(({ instance }) => instance.id === source.id);
-  const queueBusy = queueStarted || active !== undefined || queuePending.length > 0;
-  const showTerminalAction =
-    source.sourceAvailability === "deleted" || (!queueBusy && source.exportAttempts.length > 0);
-
-  if (pending.length === 0 && !showTerminalAction) return null;
+  if (source.sourceAvailability !== "deleted" && source.exportAttempts.length === 0) return null;
 
   return (
-    <div className="w-full px-3">
-      <ul className="flex flex-col ring-1 ring-foreground/10">
-        {pending.length > 0 ? <SourceListItemExports pending={pending} /> : null}
-        <SourceListItemActions
-          active={active}
-          pending={pending}
-          queueBusy={queueBusy}
-          source={source}
-        />
+    <div className="mt-px w-full px-3">
+      <ul className="flex flex-col overflow-hidden rounded-b-lg border border-t-0">
+        <SourceListItemExports sourceId={source.id} />
+        <SourceListItemActions source={source} />
       </ul>
     </div>
   );
 }
 
-function SourceListItemExports({ pending }: SourceListItemExtraItemProps) {
+function SourceListItemExports({ sourceId }: { sourceId: string }) {
+  const items = useAppSelector((state) => selectExportQueueById(state, sourceId));
+
+  if (items.length === 0) return null;
+
   return (
     <li>
       <ul>
-        {pending.map(({ attempt }) => (
+        {items.map(({ attempt }) => (
           <SourceListItemExport attempt={attempt} key={attempt.id} />
         ))}
       </ul>
@@ -135,34 +126,25 @@ function SourceListItemExports({ pending }: SourceListItemExtraItemProps) {
 function SourceListItemExport({ attempt }: { attempt: ExportAttempt }) {
   const { t } = useTranslation();
 
-  const statusLabel =
-    attempt.state.status === "queued"
-      ? t("source.status.queued")
-      : attempt.state.status === "rendering"
-        ? t("source.status.rendering")
-        : attempt.state.status === "completed"
-          ? t("source.status.completed")
-          : attempt.state.status === "failed"
-            ? t("source.status.failed")
-            : t("source.status.canceled");
+  const statusLabel = getExportQueueItemStatusLabel(t, attempt.state.status);
 
   return (
     <li className={sourceListItemExtraClassName}>
-      <Button className="w-full justify-between" size="xs" variant="ghost">
-        <div className="flex items-center gap-2">
+      <Button className="w-full min-w-0 justify-between gap-2" size="xs" variant="ghost">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
           {attempt.route === "fast" ? (
-            <Scissors aria-hidden="true" />
+            <Scissors aria-hidden="true" className="shrink-0" />
           ) : (
-            <Settings2 aria-hidden="true" />
+            <Settings2 aria-hidden="true" className="shrink-0" />
           )}
           <span
-            className="truncate text-xs text-muted-foreground"
+            className="min-w-0 truncate text-xs text-muted-foreground"
             title={attempt.output.displayName}
           >
             {attempt.output.displayName}
           </span>
         </div>
-        <Badge variant="outline">
+        <Badge className="shrink-0 whitespace-nowrap" variant="outline">
           <span className={attempt.state.status === "rendering" ? "shimmer" : undefined}>
             {statusLabel}
           </span>
@@ -172,25 +154,26 @@ function SourceListItemExport({ attempt }: { attempt: ExportAttempt }) {
   );
 }
 
-function SourceListItemActions({
-  active,
-  pending,
-  queueBusy,
-  source,
-}: SourceListItemExtraItemProps & {
-  active?: PendingInstance;
-  queueBusy: boolean;
-  source: EditingInstance;
-}) {
+function SourceListItemActions({ source }: { source: EditingInstance }) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
+  const queueItems = useAppSelector(selectExportQueue);
+  const items = useAppSelector((state) => selectExportQueueById(state, source.id));
   const queueStarted = useAppSelector(selectQueueStarted);
 
-  if (active) return null;
+  const queueBusy =
+    queueStarted ||
+    queueItems.some(
+      ({ attempt }) => attempt.state.status === "queued" || attempt.state.status === "rendering",
+    );
+
+  const hasRenderingExport = queueItems.some(({ attempt }) => attempt.state.status === "rendering");
+  const queuedItems = items.filter(({ attempt }) => attempt.state.status === "queued");
+  const renderingItem = items.find(({ attempt }) => attempt.state.status === "rendering");
 
   if (source.sourceAvailability === "deleted") {
     return (
-      <li className={sourceListItemExtraClassName}>
+      <li className={`${sourceListItemExtraClassName} flex gap-1`}>
         <Button
           onClick={() =>
             void dispatch(
@@ -206,13 +189,41 @@ function SourceListItemActions({
           <RotateCcw aria-hidden="true" />
           {t("app.actions.restore")}
         </Button>
+        <Button
+          onClick={() => void dispatch(closeEditingInstancesRequested([source.id]))}
+          size="xs"
+          variant="ghost"
+        >
+          <X aria-hidden="true" />
+          {t("app.actions.closeFile")}
+        </Button>
       </li>
     );
   }
 
-  if (pending.length > 0) {
-    if (queueStarted) return null;
+  if (renderingItem) {
+    return (
+      <li className={sourceListItemExtraClassName}>
+        <Button
+          onClick={() =>
+            void dispatch(
+              cancelExportAndRequeueRequested({
+                attemptId: renderingItem.attempt.id,
+                instanceId: renderingItem.instance.id,
+              }),
+            )
+          }
+          size="xs"
+          variant="destructive"
+        >
+          <X aria-hidden="true" />
+          {t("queue.actions.cancel")}
+        </Button>
+      </li>
+    );
+  }
 
+  if (queuedItems.length > 0 && !queueStarted && !hasRenderingExport) {
     return (
       <li className={sourceListItemExtraClassName}>
         <Button
@@ -230,7 +241,7 @@ function SourceListItemActions({
     );
   }
 
-  if (queueBusy || source.exportAttempts.length === 0) return null;
+  if (queueBusy || items.length === 0) return null;
 
   return (
     <li className={sourceListItemExtraClassName}>
@@ -271,6 +282,21 @@ function usePrepareSources() {
   }, [dispatch, importedThumbnails, instances]);
 
   return instances;
+}
+
+function getExportQueueItemStatusLabel(t: TFunction, status: ExportAttemptState["status"]): string {
+  switch (status) {
+    case "completed":
+      return t("source.status.completed");
+    case "failed":
+      return t("source.status.failed");
+    case "canceled":
+      return t("source.status.loading");
+    case "rendering":
+      return t("source.status.rendering");
+    case "queued":
+      return t("source.status.queued");
+  }
 }
 
 export { SourceList };

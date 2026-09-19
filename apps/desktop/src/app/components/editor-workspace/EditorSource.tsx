@@ -8,7 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
-import { selectExportQueue } from "@/app/store/slices/editing-instances-slice";
+import { selectHasProcessableExports } from "@/app/store/slices/editing-instances-slice";
 import {
   editorSourceCollapsibleStateChanged,
   selectEditorSourceCollapsibleState,
@@ -27,9 +27,8 @@ import { SourceList } from "@/features/source";
 export function EditorSource() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const { active, pending } = useAppSelector(selectExportQueue);
   const collapsibleState = useAppSelector(selectEditorSourceCollapsibleState);
-  const hasExportQueueItems = active !== undefined || pending.length > 0;
+  const hasExportQueueItems = useAppSelector(selectHasProcessableExports);
 
   const onCollapsibleStateChange = (section: keyof typeof collapsibleState, open: boolean) => {
     dispatch(editorSourceCollapsibleStateChanged({ open, section }));

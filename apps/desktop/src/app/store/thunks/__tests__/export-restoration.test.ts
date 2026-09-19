@@ -98,8 +98,17 @@ describe("export snapshot restoration", () => {
   it("queues successive edits of the retained draft without changing earlier snapshots", async () => {
     const { snapshot, store } = setup();
     store.dispatch(startFastCutRequested());
-    await vi.waitFor(() => expect(selectExportQueue(store.getState()).pending).toHaveLength(1));
-    const first = selectExportQueue(store.getState()).pending[0]!;
+    await vi.waitFor(() =>
+      expect(
+        selectExportQueue(store.getState()).filter(
+          ({ attempt }) => attempt.state.status === "queued",
+        ),
+      ).toHaveLength(1),
+    );
+    const first = selectExportQueue(store.getState()).find(
+      ({ attempt }) => attempt.state.status === "queued",
+    )!;
+
     expect(store.getState().editingInstances.activeInstanceId).toBe("original");
     expect(store.getState().source.status).toBe("ready");
     expect(store.getState().trim.value).toMatchObject(snapshot.trim);
@@ -110,8 +119,17 @@ describe("export snapshot restoration", () => {
       }),
     );
     store.dispatch(startFastCutRequested());
-    await vi.waitFor(() => expect(selectExportQueue(store.getState()).pending).toHaveLength(2));
-    const queue = selectExportQueue(store.getState()).pending;
+    await vi.waitFor(() =>
+      expect(
+        selectExportQueue(store.getState()).filter(
+          ({ attempt }) => attempt.state.status === "queued",
+        ),
+      ).toHaveLength(2),
+    );
+    const queue = selectExportQueue(store.getState()).filter(
+      ({ attempt }) => attempt.state.status === "queued",
+    );
+
     expect(queue[0]?.attempt.id).toBe(first.attempt.id);
     expect(queue[0]?.attempt.snapshot.trim).toEqual(snapshot.trim);
     expect(queue[0]?.attempt.request.trim).toEqual(snapshot.trim);
@@ -180,15 +198,25 @@ describe("export snapshot restoration", () => {
   it("keeps a queued export visible when its source draft is closed", async () => {
     const { store } = setup();
     store.dispatch(startFastCutRequested());
-    await vi.waitFor(() => expect(selectExportQueue(store.getState()).pending).toHaveLength(1));
-    const attempt = selectExportQueue(store.getState()).pending[0]!.attempt;
+    await vi.waitFor(() =>
+      expect(
+        selectExportQueue(store.getState()).filter(
+          ({ attempt }) => attempt.state.status === "queued",
+        ),
+      ).toHaveLength(1),
+    );
+    const attempt = selectExportQueue(store.getState()).find(
+      ({ attempt }) => attempt.state.status === "queued",
+    )!.attempt;
 
     await store.dispatch(closeActiveEditingInstanceRequested());
 
     expect(selectImportedEditingInstances(store.getState())).toEqual([]);
-    expect(selectExportQueue(store.getState()).pending).toEqual([
-      expect.objectContaining({ attempt: expect.objectContaining({ id: attempt.id }) }),
-    ]);
+    expect(
+      selectExportQueue(store.getState()).filter(
+        ({ attempt }) => attempt.state.status === "queued",
+      ),
+    ).toEqual([expect.objectContaining({ attempt: expect.objectContaining({ id: attempt.id }) })]);
     expect(store.getState().editingInstances.entities.original?.draftAvailable).toBe(false);
 
     withdrawPendingExport("original", attempt.id, store.getState);
@@ -227,12 +255,21 @@ describe("export snapshot restoration", () => {
   it("queues a draft, restores a separate draft by ID, and requeues the edited snapshot", async () => {
     const { snapshot, store } = setup();
     store.dispatch(startFastCutRequested());
-    await vi.waitFor(() => expect(selectExportQueue(store.getState()).pending).toHaveLength(1));
+    await vi.waitFor(() =>
+      expect(
+        selectExportQueue(store.getState()).filter(
+          ({ attempt }) => attempt.state.status === "queued",
+        ),
+      ).toHaveLength(1),
+    );
     expect(selectImportedEditingInstances(store.getState()).map(({ id }) => id)).toContain(
       "original",
     );
     expect(store.getState().editingInstances.activeInstanceId).toBe("original");
-    const first = selectExportQueue(store.getState()).pending[0]!;
+    const first = selectExportQueue(store.getState()).find(
+      ({ attempt }) => attempt.state.status === "queued",
+    )!;
+
     await store.dispatch(
       restoreExportAttemptRequested({ instanceId: "original", attemptId: first.attempt.id }),
     );
@@ -242,7 +279,11 @@ describe("export snapshot restoration", () => {
 
     expect(restored.id).not.toBe("original");
     expect(restored.snapshot.trim).toEqual(snapshot.trim);
-    expect(selectExportQueue(store.getState()).pending).toEqual([]);
+    expect(
+      selectExportQueue(store.getState()).filter(
+        ({ attempt }) => attempt.state.status === "queued",
+      ),
+    ).toEqual([]);
     expect(native.releaseExportSource).toHaveBeenCalledOnce();
     store.dispatch(
       trimChanged({
@@ -250,8 +291,17 @@ describe("export snapshot restoration", () => {
       }),
     );
     store.dispatch(startFastCutRequested());
-    await vi.waitFor(() => expect(selectExportQueue(store.getState()).pending).toHaveLength(1));
-    const next = selectExportQueue(store.getState()).pending[0]!;
+    await vi.waitFor(() =>
+      expect(
+        selectExportQueue(store.getState()).filter(
+          ({ attempt }) => attempt.state.status === "queued",
+        ),
+      ).toHaveLength(1),
+    );
+    const next = selectExportQueue(store.getState()).find(
+      ({ attempt }) => attempt.state.status === "queued",
+    )!;
+
     expect(next.attempt.id).not.toBe(first.attempt.id);
     expect(next.attempt.request.trim).toEqual({ startMicros: 500_000, endMicros: 3_000_000 });
     setExportQueueExecutionEnabled(true, store.dispatch, store.getState);
@@ -342,6 +392,10 @@ describe("export snapshot restoration", () => {
     expect(await restoration).toBe(false);
     expect(native.renderFast).not.toHaveBeenCalled();
     expect(selectImportedEditingInstances(store.getState())).toHaveLength(2);
-    expect(selectExportQueue(store.getState()).pending).toEqual([]);
+    expect(
+      selectExportQueue(store.getState()).filter(
+        ({ attempt }) => attempt.state.status === "queued",
+      ),
+    ).toEqual([]);
   });
 });

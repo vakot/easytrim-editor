@@ -22,7 +22,7 @@ import { StatusBar } from "@/app/components/status-bar";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
   selectActiveInstanceId,
-  selectExportQueue,
+  selectHasProcessableExports,
 } from "@/app/store/slices/editing-instances-slice";
 import { selectDropListenerError } from "@/app/store/slices/import-workflow-slice";
 import { persistor, store } from "@/app/store/store";
@@ -39,7 +39,6 @@ import {
 function EasyTrimEditorApp() {
   const dispatch = useAppDispatch();
   const dropListenerError = useAppSelector(selectDropListenerError);
-  const { active, pending } = useAppSelector(selectExportQueue);
   const activeInstanceId = useAppSelector(selectActiveInstanceId);
   const compactInstanceId = useRef<string | null>(null);
   const { t } = useTranslation();
@@ -48,7 +47,7 @@ function EasyTrimEditorApp() {
   const [windowModeError, setWindowModeError] = useState(false);
   const editorWindowSnapshot = useRef<WindowLayoutSnapshot | null>(null);
   const emptyQueueRestoreRequested = useRef(false);
-  const hasExportQueueItems = active !== undefined || pending.length > 0;
+  const hasExportQueueItems = useAppSelector(selectHasProcessableExports);
 
   useEffect(() => {
     void dispatch(loadQueueFinishActions());
