@@ -14,6 +14,7 @@ import {
   editingInstanceExportFailed,
   editingInstanceExportHistoryCleared,
   editingInstanceExportProgressReceived,
+  editingInstanceExportRequeued,
   editingInstanceExportRestored,
   editingInstanceExportStarted,
   editingInstancesAdded,
@@ -27,6 +28,7 @@ import {
   selectEditingInstanceIds,
   selectEditingInstanceTopologyEntries,
   selectExportQueue,
+  selectExportQueueById,
   selectHasProcessableExports,
   selectHasQueuedOrRenderingExportByInstanceId,
   selectImportedEditingInstances,
@@ -81,12 +83,53 @@ describe("editing instances slice", () => {
     );
     const root = { editingInstances: state } as never;
     expect(selectImportedEditingInstances(root).map(({ id }) => id)).toEqual(["source"]);
-    expect(selectExportQueue(root).active?.attempt.id).toBe("one");
-    expect(selectExportQueue(root).pending.map(({ attempt }) => attempt.id)).toEqual([
-      "two",
-      "three",
-    ]);
+    const queue = selectExportQueue(root);
+    expect(queue.find(({ attempt }) => attempt.state.status === "rendering")?.attempt.id).toBe(
+      "one",
+    );
+    expect(
+      queue
+        .filter(({ attempt }) => attempt.state.status === "queued")
+        .map(({ attempt }) => attempt.id),
+    ).toEqual(["two", "three"]);
+    expect(selectExportQueueById(root, "source")).toEqual(queue);
     expect(selectQueuedExportCount(root)).toBe(2);
+  });
+
+  it("returns a rendering attempt to queued state without changing its position", () => {
+    let state = editingInstancesReducer(undefined, editingInstancesAdded([instance("source")]));
+    const first = attempt("first", baseSnapshot, 10);
+    const second = attempt("second", baseSnapshot, 20);
+    state = editingInstancesReducer(
+      state,
+      editingInstanceExportAttemptQueued({ id: "source", attempt: first }),
+    );
+    state = editingInstancesReducer(
+      state,
+      editingInstanceExportAttemptQueued({ id: "source", attempt: second }),
+    );
+    state = editingInstancesReducer(
+      state,
+      editingInstanceExportStarted({ id: "source", attemptId: "first", startedAt: 30 }),
+    );
+    state = editingInstancesReducer(
+      state,
+      editingInstanceExportProgressReceived({
+        attemptId: "first",
+        id: "source",
+        metrics: { progressPercent: 42 },
+        progress: { elapsedMicros: 100, frame: 1, operationId: "operation-1", phase: "running" },
+      }),
+    );
+
+    state = editingInstancesReducer(
+      state,
+      editingInstanceExportRequeued({ id: "source", attemptId: "first" }),
+    );
+
+    expect(state.entities.source?.exportAttempts.map(({ id }) => id)).toEqual(["first", "second"]);
+    expect(state.entities.source?.exportAttempts[0]?.state.status).toBe("queued");
+    expect(state.entities.source?.exportAttempts[0]?.metrics.progressPercent).toBe(0);
   });
 
   it("restores a pending snapshot as an independent draft and refuses active exports", () => {
@@ -153,7 +196,7 @@ describe("editing instances slice", () => {
     expect(state.entities.source?.exportAttempts[0]?.state.status).toBe("completed");
     expect(selectImportedEditingInstances({ editingInstances: state } as never)).toHaveLength(3);
   });
-  it("projects the active export and pending exports in queue order", () => {
+  it("projects the full export history in queue order", () => {
     const first = instance("instance-1");
     const second = instance("instance-2", { ...baseSnapshot, source: secondSource });
     let state = editingInstancesReducer(
@@ -181,10 +224,12 @@ describe("editing instances slice", () => {
     );
 
     const queue = selectExportQueue({ editingInstances: state } as never);
-    expect(queue.active?.attempt.id).toBe("attempt-1");
-    expect(queue.pending.map(({ attempt: queuedAttempt }) => queuedAttempt.id)).toEqual([
-      "attempt-2",
-    ]);
+    expect(queue.map(({ attempt }) => attempt.id)).toEqual(["attempt-2", "attempt-1"]);
+    expect(
+      queue
+        .filter(({ attempt }) => attempt.state.status === "queued")
+        .map(({ attempt: queuedAttempt }) => queuedAttempt.id),
+    ).toEqual(["attempt-2"]);
   });
 
   it("keeps imported and duplicated instances as stable independent identities", () => {

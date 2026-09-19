@@ -1,6 +1,7 @@
 import {
   cancelActiveExport,
   cancelAllQueuedExports,
+  cancelAndRequeueExport,
   cancelQueuedExport,
   enqueueExport,
   setExportQueueExecutionEnabled,
@@ -113,6 +114,14 @@ export const cancelExportRequested =
   (payload: { attemptId: string; instanceId: string }): AppThunk =>
   (_dispatch, getState) => {
     void cancelQueuedExport(payload.instanceId, payload.attemptId, getState);
+  };
+
+export const cancelExportAndRequeueRequested =
+  (payload: { attemptId: string; instanceId: string }): AppThunk =>
+  async (dispatch, getState) => {
+    dispatch(queuePaused());
+    setExportQueueExecutionEnabled(false, dispatch, getState);
+    await cancelAndRequeueExport(payload.instanceId, payload.attemptId, getState);
   };
 
 export const cancelAllExportsRequested = (): AppThunk => (_dispatch, getState) => {

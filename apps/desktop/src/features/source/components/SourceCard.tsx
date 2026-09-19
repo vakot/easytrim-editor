@@ -15,7 +15,6 @@ import { useTranslation } from "react-i18next";
 import { shallowEqual } from "react-redux";
 
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardDescription, CardTitle } from "@/components/ui/card";
 import {
   ContextMenu,
@@ -204,7 +203,13 @@ function SourceCardContextMenu({ children }: { children: React.ReactNode }) {
   );
 }
 
-function SourceCardThumbnail({ className }: { className?: string }) {
+function SourceCardThumbnail({
+  children,
+  className,
+}: {
+  children?: React.ReactNode;
+  className?: string;
+}) {
   const source = useSourceCardSource();
 
   const { t } = useTranslation();
@@ -235,13 +240,12 @@ function SourceCardThumbnail({ className }: { className?: string }) {
             className="size-full object-cover transition-transform"
             src={thumbnailUrl}
           />
-          <Button
-            className="invisible absolute top-1/2 left-1/2 -translate-1/2 rounded-full transition-none group-hover/source-card:visible"
-            size="icon-lg"
-            variant="outline"
+          <span
+            aria-hidden="true"
+            className="pointer-events-none invisible absolute top-1/2 left-1/2 grid size-9 -translate-1/2 place-items-center rounded-full border border-input bg-background text-foreground group-hover/source-card:visible"
           >
-            <Play aria-hidden="true" />
-          </Button>
+            <Play aria-hidden="true" className="size-4" />
+          </span>
         </>
       ) : thumbnailLoading ? (
         <span
@@ -268,6 +272,8 @@ function SourceCardThumbnail({ className }: { className?: string }) {
           {formatDuration(durationMicros)}
         </Badge>
       ) : null}
+
+      {children}
     </div>
   );
 }
