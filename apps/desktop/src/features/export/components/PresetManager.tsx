@@ -146,7 +146,7 @@ export function PresetManager() {
                   <DropdownMenuSub>
                     <DropdownMenuSubTrigger
                       aria-label={t("export.accessibility.presetActions")}
-                      className="size-8 min-w-0 shrink-0 justify-center p-0"
+                      className="size-8 min-w-0 shrink-0 justify-center p-0 [&>span:last-child]:hidden"
                     >
                       <MoreHorizontal className="size-4" />
                     </DropdownMenuSubTrigger>
