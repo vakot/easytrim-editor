@@ -9,16 +9,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
-  selectExportQueue,
   selectExportQueueById,
   selectImportedEditingInstances,
 } from "@/app/store/slices/editing-instances-slice";
-import { selectQueueStarted } from "@/app/store/slices/export-slice";
+import { selectSourceExportQueueState } from "@/app/store/slices/export-slice";
 import { selectImportedSourceThumbnails } from "@/app/store/slices/preview-slice";
-import {
-  cancelExportAndRequeueRequested,
-  startExportQueue,
-} from "@/app/store/thunks/export-thunks";
+import { cancelSourceExportQueue, startSourceExportQueue } from "@/app/store/thunks/export-thunks";
 import {
   closeEditingInstancesRequested,
   prepareImportedSourceThumbnailsRequested,
@@ -157,19 +153,9 @@ function SourceListItemExport({ attempt }: { attempt: ExportAttempt }) {
 function SourceListItemActions({ source }: { source: EditingInstance }) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const queueItems = useAppSelector(selectExportQueue);
-  const items = useAppSelector((state) => selectExportQueueById(state, source.id));
-  const queueStarted = useAppSelector(selectQueueStarted);
-
-  const queueBusy =
-    queueStarted ||
-    queueItems.some(
-      ({ attempt }) => attempt.state.status === "queued" || attempt.state.status === "rendering",
-    );
-
-  const hasRenderingExport = queueItems.some(({ attempt }) => attempt.state.status === "rendering");
-  const queuedItems = items.filter(({ attempt }) => attempt.state.status === "queued");
-  const renderingItem = items.find(({ attempt }) => attempt.state.status === "rendering");
+  const { hasExports, hasQueuedExports, isRunning } = useAppSelector((state) =>
+    selectSourceExportQueueState(state, source.id),
+  );
 
   if (source.sourceAvailability === "deleted") {
     return (
@@ -201,18 +187,11 @@ function SourceListItemActions({ source }: { source: EditingInstance }) {
     );
   }
 
-  if (renderingItem) {
+  if (isRunning) {
     return (
       <li className={sourceListItemExtraClassName}>
         <Button
-          onClick={() =>
-            void dispatch(
-              cancelExportAndRequeueRequested({
-                attemptId: renderingItem.attempt.id,
-                instanceId: renderingItem.instance.id,
-              }),
-            )
-          }
+          onClick={() => void dispatch(cancelSourceExportQueue(source.id))}
           size="xs"
           variant="destructive"
         >
@@ -223,17 +202,10 @@ function SourceListItemActions({ source }: { source: EditingInstance }) {
     );
   }
 
-  if (queuedItems.length > 0 && !queueStarted && !hasRenderingExport) {
+  if (hasQueuedExports) {
     return (
       <li className={sourceListItemExtraClassName}>
-        <Button
-          onClick={() =>
-            void dispatch(
-              startExportQueue({ id: `source-list.start.${source.id}`, type: "button" }),
-            )
-          }
-          size="xs"
-        >
+        <Button onClick={() => void dispatch(startSourceExportQueue(source.id))} size="xs">
           <Play aria-hidden="true" />
           {t("queue.actions.start")}
         </Button>
@@ -241,7 +213,7 @@ function SourceListItemActions({ source }: { source: EditingInstance }) {
     );
   }
 
-  if (queueBusy || items.length === 0) return null;
+  if (!hasExports) return null;
 
   return (
     <li className={sourceListItemExtraClassName}>

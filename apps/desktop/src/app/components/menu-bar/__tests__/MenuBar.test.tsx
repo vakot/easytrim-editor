@@ -103,7 +103,9 @@ vi.mock("@/app/store/redux-hooks", () => ({
       crop: menuState.crop,
       export: {
         queue: menuState.export.queue,
-        queueStarted: menuState.export.queueStarted,
+        startedSourceIds: menuState.export.queueStarted
+          ? menuState.export.queue.map((_, index) => `instance-${index}`)
+          : [],
         queueFinishAction: menuState.export.queueFinishAction,
         availableQueueFinishActions: menuState.export.availableQueueFinishActions,
         optimizedDialogOpen: false,
