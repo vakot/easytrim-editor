@@ -3,7 +3,6 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import {
   type ActivityFeedView,
   DEFAULT_PREFERENCES,
-  type EditorSourceCollapsibleState,
   type PreferenceKey,
   type Preferences,
 } from "@/app/preferences";
@@ -33,15 +32,6 @@ const preferencesSlice = createSlice({
     activityFeedViewChanged: (state, action: PayloadAction<ActivityFeedView>) => {
       state.activityFeedView = action.payload;
     },
-    editorSourceCollapsibleStateChanged: (
-      state,
-      action: PayloadAction<{
-        open: boolean;
-        section: keyof EditorSourceCollapsibleState;
-      }>,
-    ) => {
-      state.editorSourceCollapsibleState[action.payload.section] = action.payload.open;
-    },
     themePreferenceChanged: (state, action: PayloadAction<ThemePreference>) => {
       state.theme = action.payload;
     },
@@ -64,7 +54,6 @@ const preferencesSlice = createSlice({
 export const {
   activityFeedViewChanged,
   customPrimaryColorChanged,
-  editorSourceCollapsibleStateChanged,
   preferenceChanged,
   preferencesReset,
   primaryColorChanged,
@@ -85,9 +74,6 @@ export const selectActivityFeedView = (state: RootState): ActivityFeedView => {
     ? activityFeedView
     : "default";
 };
-export const selectEditorSourceCollapsibleState = (
-  state: RootState,
-): EditorSourceCollapsibleState => state.preferences.editorSourceCollapsibleState;
 export const selectThemePreference = (state: RootState): ThemePreference =>
   selectPreferences(state).theme;
 export const selectPrimaryColor = (state: RootState): PrimaryColor =>

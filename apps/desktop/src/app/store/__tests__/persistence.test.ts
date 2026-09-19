@@ -12,7 +12,6 @@ import { optimizedExportDialogOpened } from "@/app/store/slices/export-slice";
 import {
   activityFeedViewChanged,
   customPrimaryColorChanged,
-  editorSourceCollapsibleStateChanged,
   preferenceChanged,
   preferencesReset,
   primaryColorChanged,
@@ -289,22 +288,6 @@ describe("Redux Persist store integration", () => {
     const persistedRoot = await readPersistedRoot(storage);
     expect(JSON.parse(String(persistedRoot.preferences))).toMatchObject({
       activityFeedView: "compact",
-    });
-  });
-
-  it("persists editor source collapsible state through preferences", async () => {
-    const { persistor, storage, store } = await createPersistedTestStore();
-
-    store.dispatch(editorSourceCollapsibleStateChanged({ open: true, section: "activityFeed" }));
-    await persistor.flush();
-
-    const persistedRoot = await readPersistedRoot(storage);
-    expect(JSON.parse(String(persistedRoot.preferences))).toMatchObject({
-      editorSourceCollapsibleState: {
-        activityFeed: true,
-        exportQueue: false,
-        sourceExplorer: true,
-      },
     });
   });
 

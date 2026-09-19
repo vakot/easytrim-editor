@@ -27,10 +27,9 @@ import {
 } from "@/components/ui/marker";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
+import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectActivityFeedView } from "@/app/store/slices/preferences-slice";
-import { restoreSourceFileRequested } from "@/app/store/thunks/source-media-thunks";
-import { formatSourcePath } from "@/features/source";
+import { formatSourcePath, RestoreSource } from "@/features/source";
 import { getCurrentVersion } from "@/lib/app-version.utils";
 import { cn } from "@/lib/class-names.utils";
 import type { DiagnosticSessionMetadata } from "@/lib/tauri/diagnostics.types";
@@ -92,7 +91,6 @@ const sessionSeparatorClassNames = {
 } satisfies Record<"current" | "default" | "warning", string | undefined>;
 
 export function ActivityFeed() {
-  const dispatch = useAppDispatch();
   const [currentTime, setCurrentTime] = useState(() => Date.now());
   const { currentSessionId, entries, sessions } = useActivityFeed();
 
@@ -101,21 +99,10 @@ export function ActivityFeed() {
     return () => window.clearInterval(interval);
   }, []);
 
-  const handleAction = useCallback(
-    (action: ActivityAction) => {
-      if (action.kind === "restore") {
-        void dispatch(
-          restoreSourceFileRequested({
-            itemId: action.targetId,
-            sourcePath: action.path,
-          }),
-        );
-        return;
-      }
-      void openFileLocation(action.path).catch(() => undefined);
-    },
-    [dispatch],
-  );
+  const handleAction = useCallback((action: ActivityAction) => {
+    if (action.kind !== "open") return;
+    void openFileLocation(action.path).catch(() => undefined);
+  }, []);
 
   return (
     <ActivityFeedView
@@ -288,7 +275,8 @@ function ActivityFeedMarkerGroupItem({
 }) {
   const action = entry.action;
 
-  const showAction = !!action && onAction;
+  const showAction = !!action && (action.kind === "restore" || onAction);
+  const handleAction = action?.kind === "open" && onAction ? () => onAction(action) : undefined;
 
   return (
     <Marker className="items-center text-xs">
@@ -299,9 +287,7 @@ function ActivityFeedMarkerGroupItem({
           timeFormatter={timeFormatter}
         />
 
-        {showAction && (
-          <ActivityFeedEntryButton compact entry={entry} onClick={() => onAction(action)} />
-        )}
+        {showAction && <ActivityFeedEntryButton compact entry={entry} onClick={handleAction} />}
       </MarkerContent>
     </Marker>
   );
@@ -321,7 +307,8 @@ function ActivityFeedEntry({
   const action = entry.action;
   const normalizedSourcePath = formatSourcePath(entry.path ?? "");
 
-  const showAction = !!action && onAction;
+  const showAction = !!action && (action.kind === "restore" || onAction);
+  const handleAction = action?.kind === "open" && onAction ? () => onAction(action) : undefined;
 
   if (compact) {
     return (
@@ -336,11 +323,7 @@ function ActivityFeedEntry({
           />
 
           {showAction && (
-            <ActivityFeedEntryButton
-              compact={compact}
-              entry={entry}
-              onClick={() => onAction(action)}
-            />
+            <ActivityFeedEntryButton compact={compact} entry={entry} onClick={handleAction} />
           )}
         </MarkerContent>
       </Marker>
@@ -369,11 +352,7 @@ function ActivityFeedEntry({
 
       {showAction && (
         <MarkerAction>
-          <ActivityFeedEntryButton
-            compact={compact}
-            entry={entry}
-            onClick={() => onAction(action)}
-          />
+          <ActivityFeedEntryButton compact={compact} entry={entry} onClick={handleAction} />
         </MarkerAction>
       )}
     </Marker>
@@ -432,23 +411,35 @@ function ActivityFeedEntryButton({
   const actionLabel = actionPresentation?.getLabel(t);
   const ActionIcon = actionPresentation?.icon;
 
-  const isValidAction = action && actionLabel && ActionIcon && onClick;
+  const isValidAction =
+    action && actionLabel && ActionIcon && (action.kind === "restore" || onClick);
 
   if (!isValidAction) return null;
 
+  const button = (
+    <Button
+      aria-label={actionLabel}
+      className={cn(compact && "-mt-1")}
+      onClick={action.kind === "open" ? onClick : undefined}
+      size="icon-xs"
+      variant={compact ? "ghost" : "outline"}
+    >
+      <ActionIcon aria-hidden="true" />
+    </Button>
+  );
+
+  const actionButton =
+    action.kind === "restore" ? (
+      <RestoreSource event="click" itemId={action.targetId} sourcePath={action.path}>
+        {button}
+      </RestoreSource>
+    ) : (
+      button
+    );
+
   return (
     <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          aria-label={actionLabel}
-          className={cn(compact && "-mt-1")}
-          onClick={onClick}
-          size="icon-xs"
-          variant={compact ? "ghost" : "outline"}
-        >
-          <ActionIcon aria-hidden="true" />
-        </Button>
-      </TooltipTrigger>
+      <TooltipTrigger asChild>{actionButton}</TooltipTrigger>
       <TooltipContent>{actionLabel}</TooltipContent>
     </Tooltip>
   );

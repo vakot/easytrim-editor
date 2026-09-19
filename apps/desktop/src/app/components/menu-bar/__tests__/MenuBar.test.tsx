@@ -52,11 +52,6 @@ const menuState = vi.hoisted(() => ({
     segmentPlaybackEnabledDefault: true,
     autoStartQueueEnabled: true,
     deleteSourceOnRenderFinish: false,
-    editorSourceCollapsibleState: {
-      activityFeed: false,
-      exportQueue: false,
-      sourceExplorer: true,
-    },
     mergeAudioEnabledDefault: false,
     theme: "system",
     primaryColor: "amber",
@@ -583,9 +578,6 @@ describe("MenuBarTest", () => {
               autoStartQueueEnabled: false,
               mergeAudioEnabledDefault: false,
               deleteSourceOnRenderFinish: false,
-              editorSourceCollapsibleState: {
-                ...DEFAULT_PREFERENCES.editorSourceCollapsibleState,
-              },
             }}
           />
         </ThemeProvider>

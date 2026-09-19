@@ -10,11 +10,7 @@ import {
 } from "redux-persist";
 import reduxStorageModule from "redux-persist/lib/storage";
 
-import {
-  DEFAULT_PREFERENCES,
-  type EditorSourceCollapsibleState,
-  type Preferences,
-} from "@/app/preferences";
+import { DEFAULT_PREFERENCES, type Preferences } from "@/app/preferences";
 import { isCustomPrimaryColor, isPrimaryColor, isThemePreference } from "@/app/theme/theme";
 
 interface LegacyThemeState {
@@ -28,28 +24,6 @@ interface PersistedRootState {
   _persist?: PersistState;
   preferences?: Partial<Preferences>;
   theme?: LegacyThemeState;
-}
-
-function normalizeEditorSourceCollapsibleState(value: unknown): EditorSourceCollapsibleState {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    return DEFAULT_PREFERENCES.editorSourceCollapsibleState;
-  }
-
-  const persistedState = value as Partial<EditorSourceCollapsibleState>;
-  return {
-    activityFeed:
-      typeof persistedState.activityFeed === "boolean"
-        ? persistedState.activityFeed
-        : DEFAULT_PREFERENCES.editorSourceCollapsibleState.activityFeed,
-    exportQueue:
-      typeof persistedState.exportQueue === "boolean"
-        ? persistedState.exportQueue
-        : DEFAULT_PREFERENCES.editorSourceCollapsibleState.exportQueue,
-    sourceExplorer:
-      typeof persistedState.sourceExplorer === "boolean"
-        ? persistedState.sourceExplorer
-        : DEFAULT_PREFERENCES.editorSourceCollapsibleState.sourceExplorer,
-  };
 }
 
 function hasPersistStorageMethods(value: unknown): value is PersistStorage {
@@ -92,13 +66,13 @@ const preferencesTransform = createTransform(
       return DEFAULT_PREFERENCES;
     }
 
-    const persistedPreferences = state as Partial<Preferences>;
+    const persistedPreferences = Object.fromEntries(
+      Object.entries(state).filter(([key]) => key !== "editorSourceCollapsibleState"),
+    ) as Partial<Preferences>;
+
     return {
       ...DEFAULT_PREFERENCES,
       ...persistedPreferences,
-      editorSourceCollapsibleState: normalizeEditorSourceCollapsibleState(
-        persistedPreferences.editorSourceCollapsibleState,
-      ),
       activityFeedView:
         persistedPreferences.activityFeedView === "compact" ||
         persistedPreferences.activityFeedView === "branch"
