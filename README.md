@@ -3,7 +3,7 @@
 EasyTrim Editor is a fast, lightweight desktop video editor for making precise clips without
 project files.
 
-![EasyTrim Editor](apps/desktop/public/image.png)
+![EasyTrim Editor](apps/desktop/public/image.jpg)
 
 ## Features
 
