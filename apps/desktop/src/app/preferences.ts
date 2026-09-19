@@ -8,18 +8,11 @@ import {
 
 export type ActivityFeedView = "default" | "compact" | "branch";
 
-export interface EditorSourceCollapsibleState {
-  activityFeed: boolean;
-  exportQueue: boolean;
-  sourceExplorer: boolean;
-}
-
 export interface Preferences {
   activityFeedView: ActivityFeedView;
   autoStartQueueEnabled: boolean;
   customPrimaryColor: CustomPrimaryColor;
   deleteSourceOnRenderFinish: boolean;
-  editorSourceCollapsibleState: EditorSourceCollapsibleState;
   loopPlaybackEnabledDefault: boolean;
   mergeAudioEnabledDefault: boolean;
   primaryColor: PrimaryColor;
@@ -39,11 +32,6 @@ export const DEFAULT_PREFERENCES: Preferences = {
   segmentPlaybackEnabledDefault: true,
   autoStartQueueEnabled: true,
   deleteSourceOnRenderFinish: false,
-  editorSourceCollapsibleState: {
-    activityFeed: false,
-    exportQueue: false,
-    sourceExplorer: true,
-  },
   mergeAudioEnabledDefault: false,
   theme: "system",
   primaryColor: DEFAULT_PRIMARY_COLOR,

@@ -4,7 +4,6 @@ import { DEFAULT_PREFERENCES, type Preferences } from "@/app/preferences";
 import {
   activityFeedViewChanged,
   customPrimaryColorChanged,
-  editorSourceCollapsibleStateChanged,
   preferenceChanged,
   preferencesReducer,
   preferencesReset,
@@ -59,18 +58,6 @@ describe("preferences Redux domain", () => {
     expect(selectActivityFeedView({ preferences: nextState } as RootState)).toBe("branch");
   });
 
-  it("changes the editor source collapsible state through a focused action", () => {
-    const nextState = preferencesReducer(
-      undefined,
-      editorSourceCollapsibleStateChanged({ open: true, section: "activityFeed" }),
-    );
-
-    expect(nextState.editorSourceCollapsibleState).toEqual({
-      ...DEFAULT_PREFERENCES.editorSourceCollapsibleState,
-      activityFeed: true,
-    });
-  });
-
   it("changes theme and color preferences while retaining the custom value", () => {
     const themedState = preferencesReducer(undefined, themePreferenceChanged("dark"));
     const presetState = preferencesReducer(themedState, primaryColorChanged("blue"));
@@ -92,7 +79,6 @@ describe("preferences Redux domain", () => {
         autoStartQueueEnabled: false,
         mergeAudioEnabledDefault: true,
         deleteSourceOnRenderFinish: false,
-        editorSourceCollapsibleState: { ...DEFAULT_PREFERENCES.editorSourceCollapsibleState },
         activityFeedView: "default",
         theme: "system",
         primaryColor: "amber",
@@ -112,7 +98,6 @@ describe("preferences Redux domain", () => {
       autoStartQueueEnabled: true,
       mergeAudioEnabledDefault: true,
       deleteSourceOnRenderFinish: false,
-      editorSourceCollapsibleState: { ...DEFAULT_PREFERENCES.editorSourceCollapsibleState },
       activityFeedView: "default",
       theme: "system",
       primaryColor: "amber",
