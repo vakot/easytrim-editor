@@ -434,7 +434,12 @@ describe("export queue runtime", () => {
           });
         },
       )
-      .mockResolvedValueOnce({ displayName: "output", displayPath: "output", operationId: "op-2" });
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveRender = resolve;
+          }),
+      );
     store.dispatch(editingInstancesAdded([createInstance("instance-requeue")]));
     store.dispatch(editingInstanceExportAttemptQueued({ id: "instance-requeue", attempt }));
     setExportQueueExecutionEnabled(true, store.dispatch, getState);
@@ -457,6 +462,13 @@ describe("export queue runtime", () => {
 
     setExportQueueExecutionEnabled(true, store.dispatch, getState);
     await vi.waitFor(() => expect(mocks.renderFast).toHaveBeenCalledTimes(2));
+    onProgress!(progress("op-1", 9));
+    expect(
+      store.getState().editingInstances.entities["instance-requeue"]?.exportAttempts[0]?.metrics
+        .progressPercent,
+    ).toBe(0);
+    resolveRender({ displayName: "output", displayPath: "output", operationId: "op-2" });
+    await vi.waitFor(() => expect(mocks.releaseExportSource).toHaveBeenCalledTimes(1));
   });
 
   it("ignores a late progress callback with a different native operation id", async () => {

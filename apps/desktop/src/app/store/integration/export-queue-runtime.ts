@@ -287,7 +287,9 @@ async function drainQueue(runtime: RuntimeState, dispatch: AppDispatch, getState
 
 async function renderJob(job: RuntimeExportJob) {
   let deleteSourceOnFinish = false;
+  let settled = false;
   const onProgress = (progress: ExportProgress) => {
+    if (settled) return;
     if (job.canceled) {
       void cancelOperation(progress.operationId).catch(() => undefined);
       return;
@@ -399,6 +401,7 @@ async function renderJob(job: RuntimeExportJob) {
       );
     }
   } finally {
+    settled = true;
     const runtime = runtimeFor(job.getState);
     const resolveCompletion = job.resolveCompletion;
     if (job.requeueRequested) {
