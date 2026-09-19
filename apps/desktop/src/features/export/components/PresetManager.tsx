@@ -36,7 +36,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { selectTriggerVariants } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import { Textarea, TextareaInput } from "@/components/ui/textarea";
 
 import {
   type ExportPreset,
@@ -131,7 +131,7 @@ export function PresetManager() {
               {presets.map((preset) => (
                 <div className="flex items-center gap-1" key={preset.id}>
                   <DropdownMenuItem
-                    className="min-w-0 flex-1"
+                    className="h-auto min-w-0 flex-1 items-start"
                     onSelect={() => dispatch(exportPresetSelected(preset.id))}
                   >
                     <span className="min-w-0 flex-1">
@@ -146,11 +146,11 @@ export function PresetManager() {
                   <DropdownMenuSub>
                     <DropdownMenuSubTrigger
                       aria-label={t("export.accessibility.presetActions")}
-                      className="size-8 shrink-0 justify-center p-0"
+                      className="size-8 min-w-0 shrink-0 justify-center p-0 [&>span:last-child]:hidden"
                     >
                       <MoreHorizontal className="size-4" />
                     </DropdownMenuSubTrigger>
-                    <DropdownMenuSubContent className="min-w-32">
+                    <DropdownMenuSubContent className="min-w-32" sideOffset={4}>
                       <DropdownMenuGroup>
                         <DropdownMenuItem inset onSelect={() => openEditDialog(preset)}>
                           <DropdownMenuIcon>
@@ -204,12 +204,14 @@ export function PresetManager() {
             </div>
             <div className="grid gap-1.5">
               <Label htmlFor="preset-arguments">{t("export.dialogs.optimized.arguments")}</Label>
-              <Textarea
-                className="min-h-28 resize-y font-mono text-xs"
-                id="preset-arguments"
-                onChange={(event) => setDraftArguments(event.target.value)}
-                value={draftArguments}
-              />
+              <Textarea>
+                <TextareaInput
+                  className="min-h-28 resize-y font-mono text-xs"
+                  id="preset-arguments"
+                  onChange={(event) => setDraftArguments(event.target.value)}
+                  value={draftArguments}
+                />
+              </Textarea>
             </div>
             {presetError ? (
               <p className="text-xs text-destructive">{presetErrorMessages[presetError]}</p>

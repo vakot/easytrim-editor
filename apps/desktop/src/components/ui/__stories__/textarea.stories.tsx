@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
-import { Textarea } from "../textarea";
+import { Button } from "../button";
+import { Textarea, TextareaHeader, TextareaInput } from "../textarea";
 
 const meta = {
   component: Textarea,
@@ -13,9 +14,26 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-  args: { placeholder: "Add notes about this edit" },
+  render: () => (
+    <Textarea className="w-96">
+      <TextareaHeader>
+        <span className="text-sm font-medium">Notes</span>
+        <Button size="sm" type="button" variant="ghost">
+          Save
+        </Button>
+      </TextareaHeader>
+      <TextareaInput placeholder="Add notes about this edit" />
+    </Textarea>
+  ),
 };
 
 export const Invalid: Story = {
-  args: { "aria-invalid": true, defaultValue: "This value needs attention." },
+  render: () => (
+    <Textarea className="w-96">
+      <TextareaHeader>
+        <span className="text-sm font-medium">Notes</span>
+      </TextareaHeader>
+      <TextareaInput aria-invalid defaultValue="This value needs attention." />
+    </Textarea>
+  ),
 };
