@@ -26,7 +26,7 @@ export function CommandPreview({ command, error }: CommandPreviewProps) {
 
   return (
     <div className="grid gap-1.5">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex items-end justify-between gap-2">
         <span className="text-sm font-medium">{t("export.dialogs.optimized.arguments")}</span>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -36,7 +36,7 @@ export function CommandPreview({ command, error }: CommandPreviewProps) {
               }
               disabled={!command}
               onClick={() => void copyCommand()}
-              size="icon-sm"
+              size="icon-2xs"
               type="button"
               variant="ghost"
             >
