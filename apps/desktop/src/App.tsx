@@ -5,6 +5,7 @@ import { PersistGate } from "redux-persist/integration/react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ResizablePanelContextProvider } from "@/components/ui/resizable";
+import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { AppShutdownGuard } from "@/app/components/AppShutdownGuard";
@@ -22,6 +23,7 @@ import { selectDropListenerError } from "@/app/store/slices/import-workflow-slic
 import { persistor, store } from "@/app/store/store";
 import { loadQueueFinishActions } from "@/app/store/thunks/export-thunks";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
+import { ActivityToasts } from "@/features/activity";
 import { ExportDialog } from "@/features/export";
 import { SourceDropOverlay, SourceStatus } from "@/features/source";
 
@@ -66,6 +68,8 @@ function EasyTrimEditorApp() {
               <EditorWorkspace />
               <StatusBar />
             </main>
+            <Toaster />
+            <ActivityToasts />
           </ResizablePanelContextProvider>
         </EditorContractsProvider>
       </AppUpdatesProvider>

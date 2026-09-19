@@ -61,6 +61,8 @@ export const en = {
       fileDeleteInterrupted: "File deletion interrupted",
       fileDeleting: "Deleting file…",
       fileDeleted: "File deleted",
+      closedFiles_one: "Closed {{count}} file",
+      closedFiles_other: "Closed {{count}} files",
       fileRestoreCancelled: "File restoration cancelled",
       fileRestoreFailed: "File restoration failed",
       fileRestoreInterrupted: "File restoration interrupted",
@@ -83,6 +85,12 @@ export const en = {
       crash: "The application encountered an unexpected error. Restart it to continue.",
       crashTitle: "Something went wrong",
       dragUnavailable: "Drag and drop is unavailable: {{message}}",
+      notifications: {
+        fileSize: "File size: {{size}}",
+        outputPath: "Output: {{path}}",
+        renderTime: "Render time: {{duration}}",
+        sourcePath: "Source: {{path}}",
+      },
       windowActionFailed: "The window control could not be completed.",
     },
     tooltips: {

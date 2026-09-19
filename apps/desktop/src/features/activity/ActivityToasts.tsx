@@ -1,0 +1,165 @@
+import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
+
+import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
+import { selectEditingInstances } from "@/app/store/slices/editing-instances-slice";
+import { restoreSourceFileRequested } from "@/app/store/thunks/source-media-thunks";
+import { formatExportDuration } from "@/domain/export-metrics";
+import { formatBytes, formatSourcePath } from "@/features/source";
+import type { DiagnosticValue } from "@/lib/tauri/diagnostics.types";
+import { openFileLocation } from "@/lib/tauri/media";
+
+import type { ActivityEntry, ActivityStatus } from "./activity-projection";
+import { useActivityFeed } from "./useActivityFeed";
+
+export function ActivityToasts() {
+  const { currentSessionId, entries } = useActivityFeed();
+  const { t } = useTranslation();
+  const dispatch = useAppDispatch();
+  const instances = useAppSelector(selectEditingInstances);
+  const previousEntries = useRef<Map<string, ActivityStatus> | null>(null);
+
+  useEffect(() => {
+    const currentEntries = entries.filter((entry) => entry.sessionId === currentSessionId);
+    const previous = previousEntries.current;
+    const next = new Map(currentEntries.map((entry) => [entry.id, entry.status]));
+
+    if (!previous) {
+      previousEntries.current = next;
+      return;
+    }
+
+    for (const entry of currentEntries) {
+      const previousStatus = previous.get(entry.id);
+      if (!isToastable(entry.status) || previousStatus === entry.status) continue;
+
+      const activityToast = createActivityToast(entry, instances, t, (action) => {
+        if (action.kind === "open") {
+          void openFileLocation(action.path).catch(() => undefined);
+        } else {
+          void dispatch(
+            restoreSourceFileRequested({
+              itemId: action.targetId,
+              sourcePath: action.path,
+            }),
+          );
+        }
+      });
+
+      const { title, variant, ...options } = activityToast;
+      if (variant === "destructive") toast.error(title, options);
+      else if (variant === "success") toast.success(title, options);
+      else toast(title, options);
+    }
+
+    previousEntries.current = next;
+  }, [currentSessionId, dispatch, entries, instances, t]);
+
+  return null;
+}
+
+function createActivityToast(
+  entry: ActivityEntry,
+  instances: ReturnType<typeof selectEditingInstances>,
+  t: ReturnType<typeof useTranslation>["t"],
+  onAction: (action: NonNullable<ActivityEntry["action"]>) => void,
+): {
+  action?: { label: string; onClick: () => void };
+  description: React.ReactNode;
+  title: string;
+  variant: "default" | "destructive" | "success";
+} {
+  const instanceId = stringValue(entry.snapshotId) ?? stringValue(entry.data?.instanceId);
+  const instance = instances.find((candidate) => candidate.id === instanceId);
+  const attemptId = stringValue(entry.data?.attemptId);
+  const attempt = instance?.exportAttempts.find((candidate) => candidate.id === attemptId);
+  const variant =
+    entry.status === "failed" || entry.status === "interrupted"
+      ? "destructive"
+      : entry.status === "completed"
+        ? "success"
+        : "default";
+
+  return {
+    action: entry.action
+      ? {
+          label: entry.action.kind === "open" ? t("app.actions.open") : t("app.actions.restore"),
+          onClick: () => onAction(entry.action!),
+        }
+      : undefined,
+    description: <ActivityToastDescription attempt={attempt} entry={entry} />,
+    title: entry.title,
+    variant,
+  };
+}
+
+function ActivityToastDescription({
+  attempt,
+  entry,
+}: {
+  attempt: ReturnType<typeof selectEditingInstances>[number]["exportAttempts"][number] | undefined;
+  entry: ActivityEntry;
+}) {
+  const { t } = useTranslation();
+  const paths = stringArrayValue(entry.data?.sourcePaths);
+  const outputPath =
+    stringValue(entry.data?.outputPath) ??
+    (attempt?.state.status === "completed" ? attempt.state.result.displayPath : entry.path);
+
+  const sourcePath = stringValue(entry.data?.sourcePath) ?? attempt?.request.sourcePath;
+  const fileSize = numberValue(entry.data?.fileSizeBytes) ?? attempt?.metrics.fileSizeBytes;
+  const renderTime = numberValue(entry.data?.durationMs) ?? attempt?.metrics.durationMs;
+
+  return (
+    <div className="grid min-w-0 gap-0.5">
+      {sourcePath ? (
+        <span className="truncate" title={sourcePath}>
+          {t("app.messages.notifications.sourcePath", { path: formatSourcePath(sourcePath) })}
+        </span>
+      ) : null}
+      {outputPath ? (
+        <span className="truncate" title={outputPath}>
+          {t("app.messages.notifications.outputPath", { path: formatSourcePath(outputPath) })}
+        </span>
+      ) : null}
+      {paths.length > 0 ? (
+        <div className="grid gap-0.5">
+          {paths.map((path) => (
+            <span className="truncate" key={path} title={path}>
+              {formatSourcePath(path)}
+            </span>
+          ))}
+        </div>
+      ) : null}
+      {fileSize !== undefined ? (
+        <span>{t("app.messages.notifications.fileSize", { size: formatBytes(fileSize, "") })}</span>
+      ) : null}
+      {renderTime !== null && renderTime !== undefined ? (
+        <span>
+          {t("app.messages.notifications.renderTime", {
+            duration: formatExportDuration(renderTime),
+          })}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+function isToastable(status: ActivityStatus): boolean {
+  return status !== "interrupted";
+}
+
+function stringValue(value: DiagnosticValue | undefined): string | undefined {
+  return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
+function stringArrayValue(value: DiagnosticValue | undefined): string[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string")
+    : [];
+}
+
+function numberValue(value: DiagnosticValue | undefined): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
