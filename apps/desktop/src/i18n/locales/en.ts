@@ -172,10 +172,6 @@ export const en = {
       deleteSourceOnRenderFinish: "Delete the source after a successful render",
     },
     dialogs: {
-      cancel: {
-        description: "The active export and all remaining queued exports will be canceled.",
-        title: "Cancel export queue?",
-      },
       deleteSourceOnRenderFinish: {
         description:
           "The original source file will be deleted after a render finishes successfully. This action can be undone.",

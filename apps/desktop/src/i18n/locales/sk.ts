@@ -173,10 +173,6 @@ export const sk = {
       deleteSourceOnRenderFinish: "Po úspešnom vykreslení odstráni zdroj",
     },
     dialogs: {
-      cancel: {
-        description: "Aktívny export a všetky zostávajúce exporty vo fronte sa zrušia.",
-        title: "Zrušiť front exportov?",
-      },
       deleteSourceOnRenderFinish: {
         description:
           "Pôvodný zdrojový súbor sa po úspešnom dokončení vykreslenia odstráni. Túto akciu možno vrátiť späť.",

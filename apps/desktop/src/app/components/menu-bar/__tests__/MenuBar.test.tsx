@@ -291,39 +291,16 @@ describe("MenuBarTest", () => {
     expect(labels.indexOf("Queue")).toBeLessThan(labels.indexOf("Settings"));
   });
 
-  it("shows the opt-in queue start control only when queued work is waiting", async () => {
-    const user = userEvent.setup();
-    renderMenus({
-      hasQueuedItems: true,
-      preferences: { ...DEFAULT_PREFERENCES, autoStartQueueEnabled: false },
-    });
-
-    await user.click(getMenuTrigger("Queue"));
-    const startItem = screen.getByRole("menuitem", { name: /Start queue/ });
-    expect(startItem).toHaveAttribute("aria-keyshortcuts", "Enter");
-    expect(screen.getAllByRole("separator")).toHaveLength(2);
-
-    await user.click(startItem);
-    expect(menuState.dispatch).toHaveBeenCalledWith(expect.any(Function));
-  });
-
-  it("requires confirmation before canceling the queue", async () => {
+  it("keeps queue configuration separate from queue actions", async () => {
     const user = userEvent.setup();
     renderMenus({ hasQueuedItems: true, hasActiveItem: true });
 
     await user.click(getMenuTrigger("Queue"));
-    expect(screen.getByRole("menuitem", { name: "Skip" })).toBeInTheDocument();
-    expect(screen.getByRole("menuitem", { name: "Cancel" })).toBeInTheDocument();
-
-    await user.click(screen.getByRole("menuitem", { name: "Cancel" }));
-    expect(screen.getByRole("heading", { name: "Cancel export queue?" })).toBeInTheDocument();
-
-    await user.click(screen.getByRole("button", { name: "Back" }));
-    expect(screen.queryByRole("heading", { name: "Cancel export queue?" })).not.toBeInTheDocument();
-
-    await user.click(screen.getByRole("menuitem", { name: "Cancel" }));
-    await user.click(screen.getByRole("button", { name: "Cancel" }));
-    expect(menuState.dispatch).toHaveBeenCalledWith(expect.any(Function));
+    expect(screen.queryByRole("menuitem", { name: /Start queue/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "Skip" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "Cancel" })).not.toBeInTheDocument();
+    expect(screen.getByRole("menuitemcheckbox", { name: "Delete source" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: /On queue finished/ })).toBeInTheDocument();
   });
 
   it("selects an available queue finish action", async () => {
