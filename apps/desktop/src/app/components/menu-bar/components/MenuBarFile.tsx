@@ -63,12 +63,12 @@ export function MenuBarFile() {
   );
   useKeyboardShortcut(
     (event) =>
-      event.code === "KeyC" &&
+      event.code === "KeyQ" &&
       event.ctrlKey &&
       hasSource &&
       !isChoosingSource &&
       !isNativeDialogOpen,
-    () => void dispatch(closeActiveEditingInstanceRequested({ id: "Ctrl+C", type: "hotkey" })),
+    () => void dispatch(closeActiveEditingInstanceRequested({ id: "Ctrl+Q", type: "hotkey" })),
   );
   useKeyboardShortcut(
     (event) => event.code === "KeyS" && event.ctrlKey && canSave,
@@ -129,7 +129,7 @@ export function MenuBarFile() {
                 <MenubarShortcut>
                   <KbdGroup>
                     <Kbd>Ctrl</Kbd>
-                    <Kbd>C</Kbd>
+                    <Kbd>Q</Kbd>
                   </KbdGroup>
                 </MenubarShortcut>
               </MenubarItem>
