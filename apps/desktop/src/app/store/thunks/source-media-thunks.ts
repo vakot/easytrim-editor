@@ -162,9 +162,6 @@ export const ingestSources =
       return;
     }
 
-    const shouldActivateFirstImportedSource =
-      selectImportedEditingInstances(getState()).length === 0;
-
     const mergeAudio = selectMergeAudioEnabledDefault(getState());
     const instances: EditingInstance[] = result.sources.map((source) => ({
       exportAttempts: [],
@@ -176,9 +173,7 @@ export const ingestSources =
 
     dispatch(dropListenerErrorCleared());
     dispatch(editingInstancesAdded(instances));
-    if (shouldActivateFirstImportedSource) {
-      dispatch(navigateToEditingInstance(instances[0]!.id, origin));
-    }
+    dispatch(navigateToEditingInstance(instances[0]!.id, origin));
     void dispatch(prepareImportedSourceMetadataRequested(instances));
     operation.complete(importResultData(result));
   };
