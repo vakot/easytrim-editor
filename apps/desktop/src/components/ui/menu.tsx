@@ -6,18 +6,18 @@ import { cn } from "@/lib/class-names.utils";
 const menuContentClassName =
   "z-50 min-w-42 overflow-hidden rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:fade-out-0 data-closed:zoom-out-95";
 
-const menuLabelClassName = "px-1.5 py-1 text-xs text-muted-foreground font-medium data-inset:px-7";
+const menuLabelClassName = "px-2 py-1.5 text-sm text-muted-foreground font-medium data-inset:px-8";
 const menuSeparatorClassName = "-mx-1 my-1 h-px bg-border";
-const menuShortcutClassName = "ml-auto pl-5 text-xs text-muted-foreground";
+const menuShortcutClassName = "ml-auto pl-5 text-sm text-muted-foreground";
 
 const menuItemVariants = cva(
-  "group/menu-item relative flex h-6 min-w-42 cursor-default items-center rounded-md px-1.5 py-1 text-xs outline-hidden select-none focus:bg-accent focus:text-accent-foreground data-inset:px-7 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3",
+  "group/menu-item relative flex h-7 min-w-48 cursor-default items-center rounded-md px-2.5 py-1.5 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground data-inset:px-8 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
   {
     variants: {
       kind: {
         item: "",
-        checkbox: "pl-7",
-        radio: "pl-7",
+        checkbox: "pl-8",
+        radio: "pl-8",
         subTrigger: "data-open:bg-accent data-open:text-accent-foreground",
       },
       variant: {
@@ -60,8 +60,8 @@ function MenuIcon({
   return (
     <span
       className={cn(
-        "pointer-events-none absolute flex size-3 items-center justify-center text-muted-foreground [&_svg:not([class*='size-'])]:size-3",
-        side === "left" ? "left-1.5" : "right-1.5",
+        "pointer-events-none absolute flex size-3.5 items-center justify-center text-muted-foreground [&_svg:not([class*='size-'])]:size-3.5",
+        side === "left" ? "left-2" : "right-2",
         className,
       )}
       {...props}

@@ -638,15 +638,15 @@ describe("MenuBarTest", () => {
 
     const fileButton = getMenuTrigger("File");
     expect(fileButton).toHaveAttribute("data-slot", "menubar-trigger");
-    expect(fileButton).toHaveAttribute("data-size", "xs");
-    expect(fileButton).toHaveClass("h-6");
+    expect(fileButton).toHaveAttribute("data-size", "sm");
+    expect(fileButton).toHaveClass("h-7");
 
     await user.click(fileButton);
     expect(screen.getAllByRole("separator")).toHaveLength(2);
 
     const openFileItem = screen.getByRole("menuitem", { name: /Open File/ });
     expect(openFileItem).toHaveTextContent("CtrlO");
-    expect(openFileItem).toHaveClass("min-w-42");
+    expect(openFileItem).toHaveClass("min-w-48");
     await user.click(openFileItem);
     expect(screen.queryByRole("menuitem", { name: /Open File/ })).not.toBeInTheDocument();
 
@@ -696,7 +696,7 @@ describe("MenuBarTest", () => {
     await user.click(viewButton);
     const themeItem = screen.getByText("Theme").closest<HTMLElement>('[role="menuitem"]');
     expect(themeItem).not.toBeNull();
-    expect(themeItem).toHaveClass("min-w-42");
+    expect(themeItem).toHaveClass("min-w-48");
     themeItem?.focus();
     await user.keyboard("{ArrowRight}");
 

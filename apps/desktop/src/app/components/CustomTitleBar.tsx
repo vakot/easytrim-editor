@@ -114,7 +114,7 @@ export function CustomTitleBar({
     >
       <div className="flex h-full items-center gap-2 px-3 text-left">
         <img alt="" className="size-5" src="/logo-symbol.svg" />
-        <span className="text-xs font-semibold tracking-wide text-foreground/80">
+        <span className="text-sm font-semibold tracking-wide text-foreground/80">
           {t("common.labels.brand")}
         </span>
       </div>

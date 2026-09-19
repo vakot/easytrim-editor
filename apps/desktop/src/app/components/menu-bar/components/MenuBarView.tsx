@@ -102,7 +102,7 @@ export function MenuBarView({ onClose }: MenuBarViewProps) {
   return (
     <MenubarMenu value="view">
       <MenubarTrigger asChild>
-        <Button className="text-foreground/80" size="xs" type="button" variant="ghost">
+        <Button className="text-foreground/80" size="sm" type="button" variant="ghost">
           {t("app.labels.view")}
         </Button>
       </MenubarTrigger>
