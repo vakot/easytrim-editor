@@ -20,7 +20,7 @@ type ActivityToast = {
   variant: "default" | "destructive" | "success";
 };
 
-type RenderingToast = {
+type PendingActivityToast = {
   id: string | number;
   reject: (reason?: ActivityToast) => void;
   resolve: (value: ActivityToast) => void;
@@ -32,7 +32,7 @@ export function ActivityToasts() {
   const dispatch = useAppDispatch();
   const instances = useAppSelector(selectEditingInstances);
   const previousEntries = useRef<Map<string, ActivityStatus> | null>(null);
-  const renderingToasts = useRef<Map<string, RenderingToast>>(new Map());
+  const pendingToasts = useRef<Map<string, PendingActivityToast>>(new Map());
 
   useEffect(() => {
     const currentEntries = entries.filter((entry) => entry.sessionId === currentSessionId);
@@ -47,10 +47,10 @@ export function ActivityToasts() {
     for (const entry of currentEntries) {
       const previousStatus = previous.get(entry.id);
       if (!isToastable(entry.status)) {
-        const renderingToast = renderingToasts.current.get(entry.id);
-        if (renderingToast !== undefined) {
-          toast.dismiss(renderingToast.id);
-          renderingToasts.current.delete(entry.id);
+        const pendingToast = pendingToasts.current.get(entry.id);
+        if (pendingToast !== undefined) {
+          toast.dismiss(pendingToast.id);
+          pendingToasts.current.delete(entry.id);
         }
         continue;
       }
@@ -69,8 +69,8 @@ export function ActivityToasts() {
         }
       });
 
-      if (isExportActivity(entry) && entry.status === "pending") {
-        if (!renderingToasts.current.has(entry.id)) {
+      if (isPromiseActivity(entry) && entry.status === "pending") {
+        if (!pendingToasts.current.has(entry.id)) {
           const deferred = createDeferred<ActivityToast>();
           const toastId = toast.promise(deferred.promise, {
             description: activityToast.description,
@@ -81,7 +81,7 @@ export function ActivityToasts() {
 
           const resolvedToastId = getToastId(toastId);
           if (resolvedToastId !== undefined) {
-            renderingToasts.current.set(entry.id, {
+            pendingToasts.current.set(entry.id, {
               id: resolvedToastId,
               reject: deferred.reject,
               resolve: deferred.resolve,
@@ -91,20 +91,20 @@ export function ActivityToasts() {
         continue;
       }
 
-      const renderingToast = renderingToasts.current.get(entry.id);
-      if (renderingToast === undefined) {
+      const pendingToast = pendingToasts.current.get(entry.id);
+      if (pendingToast === undefined) {
         showActivityToast(activityToast);
         continue;
       }
 
-      renderingToasts.current.delete(entry.id);
+      pendingToasts.current.delete(entry.id);
       if (entry.status === "cancelled") {
-        renderingToast.resolve(activityToast);
-        setTimeout(() => showActivityToast(activityToast, renderingToast.id), 0);
+        pendingToast.resolve(activityToast);
+        setTimeout(() => showActivityToast(activityToast, pendingToast.id), 0);
       } else if (entry.status === "failed") {
-        renderingToast.reject(activityToast);
+        pendingToast.reject(activityToast);
       } else {
-        renderingToast.resolve(activityToast);
+        pendingToast.resolve(activityToast);
       }
     }
 
@@ -149,8 +149,13 @@ function createDeferred<T>(): {
   return { promise, reject: rejectPromise, resolve: resolvePromise };
 }
 
-function isExportActivity(entry: ActivityEntry): boolean {
-  return entry.kind === "fast-cut" || entry.kind === "render";
+function isPromiseActivity(entry: ActivityEntry): boolean {
+  return (
+    entry.kind === "fast-cut" ||
+    entry.kind === "render" ||
+    entry.kind === "file-deleted" ||
+    entry.kind === "file-restored"
+  );
 }
 
 function createActivityToast(
