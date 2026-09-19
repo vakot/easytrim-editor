@@ -54,8 +54,8 @@ function SourceList() {
   const sources = usePrepareSources();
 
   return (
-    <ScrollArea className="min-h-0 flex-1 pb-2">
-      <ul className="flex flex-col gap-3 px-3 py-1" data-slot="imported-sources-grid">
+    <ScrollArea className="min-h-0 flex-1">
+      <ul className="flex flex-col gap-3 px-3 pt-0.5 pb-2" data-slot="imported-sources-grid">
         {sources.map((source) => (
           <SourceListItem key={source.id} source={source} />
         ))}
