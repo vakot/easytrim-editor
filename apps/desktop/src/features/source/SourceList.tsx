@@ -42,13 +42,10 @@ function SourceListCard({ source }: { source: EditingInstance }) {
     <SourceCard className="flex flex-row gap-2 p-3" source={source}>
       <SourceCardThumbnail className="w-6/11 shrink-0 rounded-md" />
 
-      {/* TODO: take all space available after thumbnail */}
-      <div className="relative flex w-full flex-col gap-3">
-        <div className="flex flex-col gap-1" data-slot="card-header">
-          {/* TODO: make wrappable */}
-          <SourceCardTitle className="wrap-normal" />
-          {/* TODO: make wrappable */}
-          <SourceCardDescription />
+      <div className="relative flex min-w-0 flex-1 flex-col gap-3">
+        <div className="flex min-w-0 flex-col gap-1" data-slot="card-header">
+          <SourceCardTitle className="overflow-visible wrap-break-word text-clip whitespace-normal" />
+          <SourceCardDescription className="overflow-visible wrap-anywhere text-clip whitespace-normal" />
         </div>
         <SourceCardMetadata />
 
