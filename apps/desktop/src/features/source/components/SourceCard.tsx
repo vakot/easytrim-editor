@@ -5,6 +5,7 @@ import {
   ExternalLink,
   FileVideo,
   LoaderCircle,
+  Play,
   RotateCcw,
   Trash2,
   X,
@@ -14,7 +15,8 @@ import { useTranslation } from "react-i18next";
 import { shallowEqual } from "react-redux";
 
 import { Badge } from "@/components/ui/badge";
-import { Card, CardAction, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Card, CardAction, CardDescription, CardTitle } from "@/components/ui/card";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -124,9 +126,9 @@ const SourceCard = memo(function SourceCard({ children, className, source }: Sou
           aria-checked={selected}
           aria-label={displayName}
           className={cn(
-            "cursor-pointer",
+            "group/source-card cursor-pointer",
             selected ? "ring-2 ring-primary/70" : undefined,
-            active ? "ring-2 ring-primary" : undefined,
+            active ? "bg-primary/10 ring-2 ring-primary hover:bg-primary/20!" : undefined,
             className,
           )}
           data-active={active ? "true" : "false"}
@@ -226,12 +228,21 @@ function SourceCardThumbnail({ className }: { className?: string }) {
       )}
     >
       {thumbnailUrl ? (
-        <img
-          alt={`${displayName} thumbnail`}
-          aria-label={`${displayName} thumbnail`}
-          className="size-full object-cover transition-transform"
-          src={thumbnailUrl}
-        />
+        <>
+          <img
+            alt={`${displayName} thumbnail`}
+            aria-label={`${displayName} thumbnail`}
+            className="size-full object-cover transition-transform"
+            src={thumbnailUrl}
+          />
+          <Button
+            className="invisible absolute top-1/2 left-1/2 -translate-1/2 rounded-full transition-none group-hover/source-card:visible"
+            size="icon-lg"
+            variant="outline"
+          >
+            <Play aria-hidden="true" />
+          </Button>
+        </>
       ) : thumbnailLoading ? (
         <span
           aria-label={t("source.status.loading")}
@@ -291,16 +302,6 @@ function SourceCardStatusBadge({ className }: { className?: string }) {
       {statusLabel}
     </Badge>
   );
-}
-
-function SourceCardDetails({
-  children,
-  className,
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return <CardHeader className={cn("flex flex-col gap-1", className)}>{children}</CardHeader>;
 }
 
 function SourceCardTitle({ className }: { className?: string }) {
@@ -375,6 +376,7 @@ function SourceCardActions({
   className?: string;
 }) {
   const source = useSourceCardSource();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const { t } = useTranslation();
 
@@ -383,8 +385,11 @@ function SourceCardActions({
   const revealLabel = getRevealLabel(t);
 
   return (
-    <CardAction className={className} onClick={(event) => event.stopPropagation()}>
-      <DropdownMenu>
+    <CardAction
+      className={cn(className, menuOpen ? "visible" : undefined)}
+      onClick={(event) => event.stopPropagation()}
+    >
+      <DropdownMenu onOpenChange={setMenuOpen}>
         <Tooltip>
           <TooltipTrigger asChild>
             <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
@@ -663,7 +668,6 @@ export {
   SourceCard,
   SourceCardActions,
   SourceCardDescription,
-  SourceCardDetails,
   SourceCardMetadata,
   SourceCardStatusBadge,
   SourceCardThumbnail,

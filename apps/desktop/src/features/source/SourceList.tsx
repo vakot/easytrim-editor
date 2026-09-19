@@ -15,7 +15,6 @@ import {
   SourceCard,
   SourceCardActions,
   SourceCardDescription,
-  SourceCardDetails,
   SourceCardMetadata,
   SourceCardThumbnail,
   SourceCardTitle,
@@ -25,10 +24,10 @@ function SourceList() {
   const sources = usePrepareSources();
 
   return (
-    <ScrollArea className="min-h-0 flex-1">
-      <div className="flex flex-col gap-2 p-3" data-slot="imported-sources-grid">
+    <ScrollArea className="min-h-0 flex-1 pb-2">
+      <div className="flex flex-col gap-2 px-3 py-1" data-slot="imported-sources-grid">
         {sources.map((source) => (
-          <SourceListCard source={source} />
+          <SourceListCard key={source.id} source={source} />
         ))}
       </div>
     </ScrollArea>
@@ -39,21 +38,23 @@ function SourceListCard({ source }: { source: EditingInstance }) {
   const { t } = useTranslation();
 
   return (
-    <SourceCard className="flex flex-row gap-2 p-3" source={source}>
-      <SourceCardThumbnail className="w-6/11 shrink-0 rounded-md" />
+    <SourceCard className="flex flex-row gap-2 p-2 hover:bg-card-foreground/10" source={source}>
+      <SourceCardThumbnail className="w-6/11 shrink-0 rounded-md shadow" />
 
-      <div className="relative flex min-w-0 flex-1 flex-col gap-3">
+      <div className="relative flex min-w-0 flex-1 flex-col gap-2">
         <div className="flex min-w-0 flex-col gap-1" data-slot="card-header">
           <SourceCardTitle className="line-clamp-2 wrap-break-word whitespace-normal" />
           <SourceCardDescription className="line-clamp-2 wrap-anywhere whitespace-normal" />
         </div>
+
         <SourceCardMetadata />
 
-        <SourceCardActions className="absolute right-2 bottom-2">
+        <SourceCardActions className="invisible absolute right-0 bottom-0 transition-none group-hover/source-card:visible">
           <Button
             aria-label={`${t("source.actions.sourceActions")}: ${source.snapshot.source.displayName}`}
+            className="transition-none"
             size="icon-sm"
-            variant="ghost"
+            variant="secondary"
           >
             <MoreHorizontal aria-hidden="true" />
           </Button>
