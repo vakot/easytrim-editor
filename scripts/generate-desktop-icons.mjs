@@ -5,7 +5,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const source = resolve(repositoryRoot, "apps", "desktop", "public", "logo-symbol.svg");
+const source = resolve(repositoryRoot, "apps", "desktop", "public", "logo-icon.svg");
 const iconRoot = resolve(repositoryRoot, "apps", "desktop", "src-tauri", "icons");
 const temporaryDirectory = await mkdtemp(join(tmpdir(), "easytrim-desktop-icons-"));
 
