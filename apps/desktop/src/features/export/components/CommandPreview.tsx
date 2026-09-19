@@ -3,6 +3,8 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { Textarea, TextareaHeader, TextareaInput } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface CommandPreviewProps {
@@ -28,34 +30,40 @@ export function CommandPreview({ command, error }: CommandPreviewProps) {
     <div className="grid gap-1.5">
       <div className="flex items-end justify-between gap-2">
         <span className="text-sm font-medium">{t("export.dialogs.optimized.arguments")}</span>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              aria-label={
-                copied ? t("export.status.commandCopied") : t("export.actions.copyCommand")
-              }
-              disabled={!command}
-              onClick={() => void copyCommand()}
-              size="icon-2xs"
-              type="button"
-              variant="ghost"
-            >
-              {copied ? <Check /> : <Copy />}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            {copied ? t("export.status.commandCopied") : t("export.actions.copyCommand")}
-          </TooltipContent>
-        </Tooltip>
       </div>
-      <div
-        aria-label={t("export.dialogs.optimized.arguments")}
-        aria-readonly="true"
-        className="max-h-40 min-h-28 overflow-auto rounded-lg border bg-muted/30 p-3 font-mono text-xs leading-relaxed wrap-break-word whitespace-pre-wrap text-muted-foreground"
-        role="textbox"
-      >
-        {(error ?? command) || t("export.status.commandPreparing")}
-      </div>
+
+      <Textarea>
+        <TextareaHeader className="justify-end">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                aria-label={
+                  copied ? t("export.status.commandCopied") : t("export.actions.copyCommand")
+                }
+                disabled={!command}
+                onClick={() => void copyCommand()}
+                size="icon-sm"
+                type="button"
+                variant="ghost"
+              >
+                {copied ? <Check /> : <Copy />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {copied ? t("export.status.commandCopied") : t("export.actions.copyCommand")}
+            </TooltipContent>
+          </Tooltip>
+        </TextareaHeader>
+
+        <Separator />
+
+        <TextareaInput
+          aria-label={t("export.dialogs.optimized.arguments")}
+          className="max-h-40 min-h-28 overflow-auto bg-muted/30 p-3 font-mono text-xs leading-relaxed wrap-break-word whitespace-pre-wrap text-muted-foreground"
+          readOnly
+          value={(error ?? command) || t("export.status.commandPreparing")}
+        />
+      </Textarea>
     </div>
   );
 }

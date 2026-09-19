@@ -36,7 +36,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { selectTriggerVariants } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import { Textarea, TextareaInput } from "@/components/ui/textarea";
 
 import {
   type ExportPreset,
@@ -204,12 +204,14 @@ export function PresetManager() {
             </div>
             <div className="grid gap-1.5">
               <Label htmlFor="preset-arguments">{t("export.dialogs.optimized.arguments")}</Label>
-              <Textarea
-                className="min-h-28 resize-y font-mono text-xs"
-                id="preset-arguments"
-                onChange={(event) => setDraftArguments(event.target.value)}
-                value={draftArguments}
-              />
+              <Textarea>
+                <TextareaInput
+                  className="min-h-28 resize-y font-mono text-xs"
+                  id="preset-arguments"
+                  onChange={(event) => setDraftArguments(event.target.value)}
+                  value={draftArguments}
+                />
+              </Textarea>
             </div>
             {presetError ? (
               <p className="text-xs text-destructive">{presetErrorMessages[presetError]}</p>
