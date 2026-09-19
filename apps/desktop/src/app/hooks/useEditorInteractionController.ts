@@ -851,11 +851,13 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
         0,
         currentPlayheadMicrosRef.current - elapsedMs * FRAME_SHUTTLE_PLAYBACK_RATE * 1_000,
       );
+
       const boundary = playbackModes.consumeSourceBoundary(
         currentMicros,
         trimRef.current.sourceDurationMicros,
         -1,
       );
+
       const boundaryAction = boundary.reached ? boundary.action : null;
       const shuttleRestarted = boundaryAction?.type === "restart";
       if (boundaryAction) {
@@ -1307,6 +1309,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
           trimRef.current.sourceDurationMicros,
           1,
         );
+
         const boundaryAction = boundary.reached ? boundary.action : null;
         if (boundaryAction?.type === "restart") {
           commitSeek(boundaryAction.positionMicros);

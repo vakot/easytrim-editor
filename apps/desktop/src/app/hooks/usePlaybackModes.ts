@@ -2,8 +2,8 @@ import { useEffect, useRef } from "react";
 
 import {
   type PlaybackBoundaryAction,
-  type PlaybackDirection,
   playbackBoundaryAction,
+  type PlaybackDirection,
   type PlaybackRange,
   playbackRange,
 } from "@/domain/playback";

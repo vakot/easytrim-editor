@@ -74,6 +74,7 @@ export function formatRelativeTime(
     { seconds: 60, unit: "minute" as const },
     { seconds: 1, unit: "second" as const },
   ];
+
   const unit = units.find(({ seconds }) => Math.abs(elapsedSeconds) >= seconds) ?? units.at(-1)!;
 
   return new Intl.RelativeTimeFormat(locale, { numeric: "always" }).format(

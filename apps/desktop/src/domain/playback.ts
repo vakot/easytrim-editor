@@ -52,6 +52,7 @@ export function playbackBoundaryAction(
 ): PlaybackBoundaryAction {
   const reachedBoundary =
     direction === -1 ? currentMicros <= range.startMicros : currentMicros >= range.endMicros;
+
   if (!reachedBoundary) {
     return { type: "continue" };
   }
