@@ -69,7 +69,7 @@ const SourceTabsEntry = memo(function SourceTabsEntry({
     <div
       className={cn("relative flex shrink-0 items-center", orientation === "vertical" && "w-full")}
     >
-      <TabsTrigger className="h-6 pr-7 text-xs" value={entry.id}>
+      <TabsTrigger className="h-7 pr-7 text-sm" value={entry.id}>
         <span className="truncate">{entry.displayName}</span>
       </TabsTrigger>
       <Button
@@ -77,7 +77,7 @@ const SourceTabsEntry = memo(function SourceTabsEntry({
         className="absolute right-0.5"
         data-slot="source-tab-close"
         onClick={() => onClose(entry.id)}
-        size="icon-xs"
+        size="icon-sm"
         variant="ghost"
       >
         <X />

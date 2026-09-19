@@ -75,9 +75,10 @@ function ExportActionButton({
         <span className="inline-flex" tabIndex={disabled ? 0 : undefined}>
           <Button
             aria-keyshortcuts={shortcut}
-            className="h-7 max-w-44 gap-1.5 px-2 text-xs"
+            className="max-w-44"
             disabled={disabled}
             onClick={onClick}
+            size="sm"
             type="button"
             variant="secondary"
           >
