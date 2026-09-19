@@ -638,8 +638,8 @@ describe("MenuBarTest", () => {
 
     const fileButton = getMenuTrigger("File");
     expect(fileButton).toHaveAttribute("data-slot", "menubar-trigger");
-    expect(fileButton).toHaveAttribute("data-size", "xs");
-    expect(fileButton).toHaveClass("h-6");
+    expect(fileButton).toHaveAttribute("data-size", "sm");
+    expect(fileButton).toHaveClass("h-7");
 
     await user.click(fileButton);
     expect(screen.getAllByRole("separator")).toHaveLength(2);

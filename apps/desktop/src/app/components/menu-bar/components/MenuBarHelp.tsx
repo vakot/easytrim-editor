@@ -54,7 +54,7 @@ export function MenuBarHelp() {
   return (
     <MenubarMenu value="help">
       <MenubarTrigger asChild>
-        <Button className="text-foreground/80" size="xs" type="button" variant="ghost">
+        <Button className="text-foreground/80" size="sm" type="button" variant="ghost">
           {t("app.labels.help")}
         </Button>
       </MenubarTrigger>
