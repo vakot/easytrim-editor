@@ -1,25 +1,26 @@
 import { isAnyOf } from "@reduxjs/toolkit";
 
+import { setExportQueueExecutionEnabled } from "@/app/store/integration/export-queue-runtime";
 import {
   editingInstanceExportAttemptQueued,
   editingInstanceExportCanceled,
   editingInstanceExportCompleted,
   editingInstanceExportFailed,
   editingInstanceExportRestored,
-  selectHasProcessableExports,
+  selectHasQueuedOrRenderingExportByInstanceId,
 } from "@/app/store/slices/editing-instances-slice";
 import { selectAutoStartQueueEnabled } from "@/app/store/slices/preferences-slice";
 import type { AppDispatch } from "@/app/store/store";
-import { pauseExportQueue, startExportQueue } from "@/app/store/thunks/export-thunks";
+import { startSourceExportQueue } from "@/app/store/thunks/export-thunks";
 
 import { listenerMiddleware } from "../listener-middleware";
 
 listenerMiddleware.startListening({
   actionCreator: editingInstanceExportAttemptQueued,
-  effect: (_, listenerApi) => {
+  effect: (action, listenerApi) => {
     if (selectAutoStartQueueEnabled(listenerApi.getState())) {
       const dispatch = listenerApi.dispatch as unknown as AppDispatch;
-      dispatch(startExportQueue());
+      dispatch(startSourceExportQueue(action.payload.id));
     }
   },
 });
@@ -31,10 +32,10 @@ listenerMiddleware.startListening({
     editingInstanceExportCanceled,
     editingInstanceExportRestored,
   ),
-  effect: (_, listenerApi) => {
-    if (!selectHasProcessableExports(listenerApi.getState())) {
+  effect: (action, listenerApi) => {
+    if (!selectHasQueuedOrRenderingExportByInstanceId(listenerApi.getState(), action.payload.id)) {
       const dispatch = listenerApi.dispatch as unknown as AppDispatch;
-      dispatch(pauseExportQueue());
+      setExportQueueExecutionEnabled(false, dispatch, listenerApi.getState, action.payload.id);
     }
   },
 });

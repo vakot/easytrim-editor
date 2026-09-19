@@ -127,7 +127,8 @@ pub async fn render_fast(
     state: State<'_, AppState>,
     diagnostics: State<'_, Arc<DiagnosticsState>>,
 ) -> Result<ExportResult, AppError> {
-    let result = async {
+    // The queue retains the source across retries and explicitly releases it after terminal work.
+    async {
         let source = state.resolve_export_source(&request.source_path)?;
         let media = source
             .media
@@ -151,9 +152,7 @@ pub async fn render_fast(
         )
         .await
     }
-    .await;
-    state.release_export_source(&request.source_path)?;
-    result
+    .await
 }
 
 #[tauri::command]
@@ -166,7 +165,8 @@ pub async fn render_optimized(
     state: State<'_, AppState>,
     diagnostics: State<'_, Arc<DiagnosticsState>>,
 ) -> Result<ExportResult, AppError> {
-    let result = async {
+    // The queue retains the source across retries and explicitly releases it after terminal work.
+    async {
         let source = state.resolve_export_source(&request.source_path)?;
         let media = source
             .media
@@ -190,9 +190,7 @@ pub async fn render_optimized(
         )
         .await
     }
-    .await;
-    state.release_export_source(&request.source_path)?;
-    result
+    .await
 }
 
 #[tauri::command]
