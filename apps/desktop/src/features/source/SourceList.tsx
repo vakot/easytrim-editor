@@ -77,7 +77,8 @@ function SourceListItemCard({ source }: { source: EditingInstance }) {
   );
 }
 
-const sourceListItemExtraClassName = "border-t bg-muted/50 p-1 min-h-8";
+const sourceListItemExtraClassName =
+  "min-h-8 border-t bg-muted/50 p-1 first:border-t-0 last:rounded-b-md";
 
 type PendingInstance = {
   attempt: ExportAttempt;
@@ -89,15 +90,14 @@ interface SourceListItemExtraItemProps {
 }
 
 function SourceListItemExtra({ source }: { source: EditingInstance }) {
-  // TODO: load pending only for specific source
-  const { pending } = useAppSelector(selectExportQueue);
+  const pending = useAppSelector(selectExportQueue).pending.filter(
+    ({ instance }) => instance.id === source.id,
+  );
 
   if (pending.length === 0) return null;
 
   return (
     <div className="w-full px-3">
-      {/* TODO: last-child rounded-b */}
-      {/* TODO: remove top ring from first child */}
       <ul className="flex flex-col ring-1 ring-foreground/10">
         <SourceListItemExports pending={pending} />
         <SourceListItemActions pending={pending} />
@@ -111,7 +111,7 @@ function SourceListItemExports({ pending }: SourceListItemExtraItemProps) {
     <li>
       <ul>
         {pending.map(({ attempt, instance }) => (
-          <SourceListItemExport attempt={attempt} instance={instance} key={instance.id} />
+          <SourceListItemExport attempt={attempt} instance={instance} key={attempt.id} />
         ))}
       </ul>
     </li>
