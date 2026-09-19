@@ -171,7 +171,10 @@ export function cancelQueuedExport(
 
   job.requeueRequested = false;
   job.canceled = true;
-  job.diagnosticsOperation?.cancel({ reason: "user_requested" });
+  job.diagnosticsOperation?.cancel({
+    ...exportDiagnosticData(job),
+    reason: "user_requested",
+  });
   job.dispatch(
     editingInstanceExportCanceled({ id: instanceId, attemptId, durationMs: elapsedTime(job) }),
   );
@@ -199,7 +202,10 @@ export async function cancelAndRequeueExport(
 
   job.canceled = true;
   job.requeueRequested = true;
-  job.diagnosticsOperation?.cancel({ reason: "user_requested" });
+  job.diagnosticsOperation?.cancel({
+    ...exportDiagnosticData(job),
+    reason: "user_requested",
+  });
   if (job.operationId) void cancelOperation(job.operationId).catch(() => undefined);
   await job.completion;
 }
@@ -365,13 +371,16 @@ async function renderJob(job: RuntimeExportJob) {
           durationMs: elapsedTime(job),
         }),
       );
-      job.diagnosticsOperation?.complete({ outputType: job.attempt.route });
+      job.diagnosticsOperation?.complete({
+        ...exportDiagnosticData(job),
+        outputPath: result.displayPath,
+      });
       deleteSourceOnFinish = job.getState().preferences.deleteSourceOnRenderFinish;
     }
   } catch (error: unknown) {
     if (!job.canceled) {
       const normalized = normalizeAppError(error);
-      job.diagnosticsOperation?.fail(normalized);
+      job.diagnosticsOperation?.fail(normalized, exportDiagnosticData(job));
       job.dispatch(
         editingInstanceExportFailed({
           id: job.instanceId,
@@ -413,6 +422,22 @@ async function renderJob(job: RuntimeExportJob) {
 
 function elapsedTime(job: RuntimeExportJob) {
   return job.startedAt ? Date.now() - job.startedAt : null;
+}
+
+function exportDiagnosticData(job: RuntimeExportJob): Record<string, string | number> {
+  const durationMs = elapsedTime(job);
+
+  return {
+    attemptId: job.attempt.id,
+    instanceId: job.instanceId,
+    outputPath: job.attempt.output.displayPath,
+    outputType: job.attempt.route,
+    sourcePath: job.attempt.request.sourcePath,
+    ...(durationMs === null ? {} : { durationMs }),
+    ...(job.attempt.metrics.fileSizeBytes === undefined
+      ? {}
+      : { fileSizeBytes: job.attempt.metrics.fileSizeBytes }),
+  };
 }
 
 function maybePerformQueueFinishAction(
