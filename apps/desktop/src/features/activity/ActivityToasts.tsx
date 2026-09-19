@@ -13,12 +13,26 @@ import { openFileLocation } from "@/lib/tauri/media";
 import type { ActivityEntry, ActivityStatus } from "./activity-projection";
 import { useActivityFeed } from "./useActivityFeed";
 
+type ActivityToast = {
+  action?: { label: string; onClick: () => void };
+  description: React.ReactNode;
+  title: string;
+  variant: "default" | "destructive" | "success";
+};
+
+type RenderingToast = {
+  id: string | number;
+  reject: (reason?: ActivityToast) => void;
+  resolve: (value: ActivityToast) => void;
+};
+
 export function ActivityToasts() {
   const { currentSessionId, entries } = useActivityFeed();
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const instances = useAppSelector(selectEditingInstances);
   const previousEntries = useRef<Map<string, ActivityStatus> | null>(null);
+  const renderingToasts = useRef<Map<string, RenderingToast>>(new Map());
 
   useEffect(() => {
     const currentEntries = entries.filter((entry) => entry.sessionId === currentSessionId);
@@ -32,7 +46,15 @@ export function ActivityToasts() {
 
     for (const entry of currentEntries) {
       const previousStatus = previous.get(entry.id);
-      if (!isToastable(entry.status) || previousStatus === entry.status) continue;
+      if (!isToastable(entry.status)) {
+        const renderingToast = renderingToasts.current.get(entry.id);
+        if (renderingToast !== undefined) {
+          toast.dismiss(renderingToast.id);
+          renderingToasts.current.delete(entry.id);
+        }
+        continue;
+      }
+      if (previousStatus === entry.status) continue;
 
       const activityToast = createActivityToast(entry, instances, t, (action) => {
         if (action.kind === "open") {
@@ -47,10 +69,43 @@ export function ActivityToasts() {
         }
       });
 
-      const { title, variant, ...options } = activityToast;
-      if (variant === "destructive") toast.error(title, options);
-      else if (variant === "success") toast.success(title, options);
-      else toast(title, options);
+      if (isExportActivity(entry) && entry.status === "pending") {
+        if (!renderingToasts.current.has(entry.id)) {
+          const deferred = createDeferred<ActivityToast>();
+          const toastId = toast.promise(deferred.promise, {
+            description: activityToast.description,
+            error: (terminalToast) => getPromiseToastResult(terminalToast),
+            loading: activityToast.title,
+            success: (terminalToast) => getPromiseToastResult(terminalToast),
+          });
+
+          const resolvedToastId = getToastId(toastId);
+          if (resolvedToastId !== undefined) {
+            renderingToasts.current.set(entry.id, {
+              id: resolvedToastId,
+              reject: deferred.reject,
+              resolve: deferred.resolve,
+            });
+          }
+        }
+        continue;
+      }
+
+      const renderingToast = renderingToasts.current.get(entry.id);
+      if (renderingToast === undefined) {
+        showActivityToast(activityToast);
+        continue;
+      }
+
+      renderingToasts.current.delete(entry.id);
+      if (entry.status === "cancelled") {
+        renderingToast.resolve(activityToast);
+        setTimeout(() => showActivityToast(activityToast, renderingToast.id), 0);
+      } else if (entry.status === "failed") {
+        renderingToast.reject(activityToast);
+      } else {
+        renderingToast.resolve(activityToast);
+      }
     }
 
     previousEntries.current = next;
@@ -59,17 +114,51 @@ export function ActivityToasts() {
   return null;
 }
 
+function showActivityToast(activityToast: ActivityToast, id?: string | number): void {
+  const { title, variant, ...options } = activityToast;
+  const toastOptions = id === undefined ? options : { ...options, id };
+  if (variant === "destructive") toast.error(title, toastOptions);
+  else if (variant === "success") toast.success(title, toastOptions);
+  else toast(title, toastOptions);
+}
+
+function getToastId(value: ReturnType<typeof toast.promise>): string | number | undefined {
+  return typeof value === "string" || typeof value === "number" ? value : undefined;
+}
+
+function getPromiseToastResult(activityToast: ActivityToast) {
+  return {
+    ...(activityToast.action ? { action: activityToast.action } : {}),
+    description: activityToast.description,
+    message: activityToast.title,
+  };
+}
+
+function createDeferred<T>(): {
+  promise: Promise<T>;
+  reject: (reason?: T) => void;
+  resolve: (value: T) => void;
+} {
+  let rejectPromise!: (reason?: T) => void;
+  let resolvePromise!: (value: T) => void;
+  const promise = new Promise<T>((resolve, reject) => {
+    resolvePromise = resolve;
+    rejectPromise = reject;
+  });
+
+  return { promise, reject: rejectPromise, resolve: resolvePromise };
+}
+
+function isExportActivity(entry: ActivityEntry): boolean {
+  return entry.kind === "fast-cut" || entry.kind === "render";
+}
+
 function createActivityToast(
   entry: ActivityEntry,
   instances: ReturnType<typeof selectEditingInstances>,
   t: ReturnType<typeof useTranslation>["t"],
   onAction: (action: NonNullable<ActivityEntry["action"]>) => void,
-): {
-  action?: { label: string; onClick: () => void };
-  description: React.ReactNode;
-  title: string;
-  variant: "default" | "destructive" | "success";
-} {
+): ActivityToast {
   const instanceId = stringValue(entry.snapshotId) ?? stringValue(entry.data?.instanceId);
   const instance = instances.find((candidate) => candidate.id === instanceId);
   const attemptId = stringValue(entry.data?.attemptId);
