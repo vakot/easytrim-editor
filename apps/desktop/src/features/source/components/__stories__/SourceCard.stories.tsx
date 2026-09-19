@@ -9,7 +9,14 @@ import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snap
 import { createAppStore } from "@/app/store/store";
 import type { EditingInstance } from "@/domain/editing-instance";
 
-import { SourceCard, type SourceCardProps } from "../SourceCard";
+import {
+  SourceCard,
+  SourceCardDescription,
+  SourceCardMetadata,
+  type SourceCardProps,
+  SourceCardStatusBadge,
+  SourceCardTitle,
+} from "../SourceCard";
 
 const meta = {
   component: SourceCard,
@@ -58,12 +65,25 @@ const deletedSource: EditingInstance = {
   sourceAvailability: "deleted",
 };
 
-export const Ready: Story = { args: { source: baseSource } satisfies SourceCardProps };
+const children = (
+  <>
+    <div className="flex flex-col gap-1 p-3">
+      <SourceCardTitle />
+      <SourceCardDescription />
+      <SourceCardMetadata />
+    </div>
+    <SourceCardStatusBadge className="absolute top-2 right-2" />
+  </>
+);
+
+export const Ready: Story = {
+  args: { children, source: baseSource } satisfies SourceCardProps,
+};
 
 export const Missing: Story = {
-  args: { source: missingSource } satisfies SourceCardProps,
+  args: { children, source: missingSource } satisfies SourceCardProps,
 };
 
 export const Deleted: Story = {
-  args: { source: deletedSource } satisfies SourceCardProps,
+  args: { children, source: deletedSource } satisfies SourceCardProps,
 };

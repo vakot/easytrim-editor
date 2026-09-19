@@ -13,7 +13,14 @@ import {
 import { createAppStore } from "@/app/store/store";
 import { createExportAttempt, type EditingInstance } from "@/domain/editing-instance";
 
-import { SourceCard } from "../SourceCard";
+import {
+  SourceCard,
+  SourceCardActions,
+  SourceCardDescription,
+  SourceCardMetadata,
+  SourceCardStatusBadge,
+  SourceCardTitle,
+} from "../SourceCard";
 
 function createSource(
   sourceAvailability: EditingInstance["sourceAvailability"] = "available",
@@ -38,22 +45,29 @@ function renderSourceCard(source = createSource()) {
   return render(
     <Provider store={store}>
       <TooltipProvider>
-        <SourceCard source={source} />
+        <SourceCard source={source}>
+          <SourceCardTitle />
+          <SourceCardDescription />
+          <SourceCardMetadata />
+          <SourceCardStatusBadge />
+          <SourceCardActions>
+            <button aria-label="Source actions: holiday.mp4" type="button" />
+          </SourceCardActions>
+        </SourceCard>
       </TooltipProvider>
     </Provider>,
   );
 }
 
 describe("SourceCard", () => {
-  it("derives the title, path, and default variant from its ready source", () => {
+  it("derives the title, path, and active variant from its ready source", () => {
     renderSourceCard();
 
     const card = screen.getByRole("checkbox", { name: "holiday.mp4" });
-    expect(card).toHaveAttribute("data-variant", "default");
+    expect(card).toHaveAttribute("data-variant", "active");
     expect(screen.getByText("holiday.mp4")).toBeInTheDocument();
     expect(screen.getByText("C:/Media/holiday.mp4")).toBeInTheDocument();
     expect(screen.queryByText("Ready")).not.toBeInTheDocument();
-    expect(screen.getByRole("status")).toBeInTheDocument();
     expect(screen.getByLabelText("Source actions: holiday.mp4")).toBeInTheDocument();
   });
 
@@ -62,7 +76,7 @@ describe("SourceCard", () => {
 
     expect(screen.getByRole("checkbox", { name: "holiday.mp4" })).toHaveAttribute(
       "data-variant",
-      "destructive",
+      "active",
     );
     expect(screen.getByText("Deleted")).toBeInTheDocument();
     const user = userEvent.setup();
@@ -97,7 +111,7 @@ describe("SourceCard", () => {
 
     expect(screen.getByRole("checkbox", { name: "holiday.mp4" })).toHaveAttribute(
       "data-variant",
-      "default",
+      "active",
     );
     expect(screen.queryByText("Queued")).not.toBeInTheDocument();
     expect(screen.queryByText("Rendering…")).not.toBeInTheDocument();

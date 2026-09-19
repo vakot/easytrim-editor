@@ -1051,7 +1051,7 @@ describe("App", () => {
     expect(getMenuTrigger("View")).toBeInTheDocument();
   });
 
-  it("keeps the current source active when importing another batch", async () => {
+  it("activates the first source when importing another batch", async () => {
     mocks.chooseSource
       .mockResolvedValueOnce([selection])
       .mockResolvedValueOnce([replacementSelection]);
@@ -1066,13 +1066,16 @@ describe("App", () => {
     await waitFor(() => expect(selectEditingInstances(store.getState())).toHaveLength(2));
     await waitFor(() => expect(mocks.prepareImportedSourceThumbnail).toHaveBeenCalledTimes(2));
     await waitFor(() =>
-      expect(mocks.inspectImportedSource).toHaveBeenCalledWith(replacementSelection.sourcePath),
+      expect(mocks.inspectMedia).toHaveBeenCalledWith(replacementSelection.sourcePath),
     );
 
-    expect(selectActiveInstanceId(store.getState())).toBe(initiallyActiveId);
-    expect(
-      selectEditingInstances(store.getState()).map((instance) => instance.snapshot.source),
-    ).toEqual([selection, replacementSelection]);
+    const instances = selectEditingInstances(store.getState());
+    expect(selectActiveInstanceId(store.getState())).not.toBe(initiallyActiveId);
+    expect(selectActiveInstanceId(store.getState())).toBe(instances[1]?.id);
+    expect(instances.map((instance) => instance.snapshot.source)).toEqual([
+      selection,
+      replacementSelection,
+    ]);
   });
 
   it("renders only the timeline panel when the source has no audio tracks", async () => {
