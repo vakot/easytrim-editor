@@ -44,8 +44,8 @@ function SourceListCard({ source }: { source: EditingInstance }) {
 
       <div className="relative flex min-w-0 flex-1 flex-col gap-3">
         <div className="flex min-w-0 flex-col gap-1" data-slot="card-header">
-          <SourceCardTitle className="overflow-visible wrap-break-word text-clip whitespace-normal" />
-          <SourceCardDescription className="overflow-visible wrap-anywhere text-clip whitespace-normal" />
+          <SourceCardTitle className="line-clamp-2 wrap-break-word whitespace-normal" />
+          <SourceCardDescription className="line-clamp-2 wrap-anywhere whitespace-normal" />
         </div>
         <SourceCardMetadata />
 
