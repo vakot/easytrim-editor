@@ -48,10 +48,11 @@ export function ActivityToasts() {
     for (const entry of currentEntries) {
       const previousStatus = previous.get(entry.id);
       if (!isToastable(entry.status)) {
-        const pendingToast = pendingToasts.current.get(entry.id);
-        if (pendingToast !== undefined) {
+        const pendingToastMatch = findPendingToast(entry, pendingToasts.current);
+        if (pendingToastMatch !== undefined) {
+          const [pendingToastKey, pendingToast] = pendingToastMatch;
           toast.dismiss(pendingToast.id);
-          pendingToasts.current.delete(entry.id);
+          pendingToasts.current.delete(pendingToastKey);
         }
         continue;
       }
@@ -71,18 +72,20 @@ export function ActivityToasts() {
       });
 
       if (isPromiseActivity(entry) && entry.status === "pending") {
-        if (!pendingToasts.current.has(entry.id)) {
+        const promiseKey = getPromiseKey(entry);
+        if (!pendingToasts.current.has(promiseKey)) {
           const deferred = createDeferred<ActivityToast>();
           const toastId = toast.promise(deferred.promise, {
             description: activityToast.description,
             error: (terminalToast) => getPromiseToastResult(terminalToast),
+            id: promiseKey,
             loading: activityToast.title,
             success: (terminalToast) => getPromiseToastResult(terminalToast),
           });
 
           const resolvedToastId = getToastId(toastId);
           if (resolvedToastId !== undefined) {
-            pendingToasts.current.set(entry.id, {
+            pendingToasts.current.set(promiseKey, {
               entry,
               id: resolvedToastId,
               reject: deferred.reject,
@@ -95,7 +98,10 @@ export function ActivityToasts() {
 
       const pendingToastMatch = findPendingToast(entry, pendingToasts.current);
       if (pendingToastMatch === undefined) {
-        showActivityToast(activityToast);
+        showActivityToast(
+          activityToast,
+          isPromiseActivity(entry) ? getPromiseKey(entry) : undefined,
+        );
         continue;
       }
 
@@ -106,8 +112,10 @@ export function ActivityToasts() {
         setTimeout(() => showActivityToast(activityToast, pendingToast.id), 0);
       } else if (entry.status === "failed") {
         pendingToast.reject(activityToast);
+        showActivityToast(activityToast, pendingToast.id);
       } else {
         pendingToast.resolve(activityToast);
+        showActivityToast(activityToast, pendingToast.id);
       }
     }
 
@@ -141,8 +149,9 @@ function findPendingToast(
   entry: ActivityEntry,
   pendingToasts: Map<string, PendingActivityToast>,
 ): [string, PendingActivityToast] | undefined {
-  const directMatch = pendingToasts.get(entry.id);
-  if (directMatch !== undefined) return [entry.id, directMatch];
+  const promiseKey = getPromiseKey(entry);
+  const directMatch = pendingToasts.get(promiseKey);
+  if (directMatch !== undefined) return [promiseKey, directMatch];
   if (!isExportActivity(entry) || entry.path === undefined) return undefined;
 
   for (const [key, pendingToast] of pendingToasts) {
@@ -156,6 +165,15 @@ function findPendingToast(
   }
 
   return undefined;
+}
+
+function getPromiseKey(entry: ActivityEntry): string {
+  if (!isExportActivity(entry)) return entry.id;
+
+  const attemptId = stringValue(entry.data?.attemptId);
+  if (attemptId) return `activity:${entry.kind}:attempt:${attemptId}`;
+
+  return `activity:${entry.kind}:source:${entry.snapshotId ?? ""}:${entry.path ?? entry.sourcePath ?? entry.id}`;
 }
 
 function createDeferred<T>(): {
