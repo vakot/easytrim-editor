@@ -150,7 +150,7 @@ export function PresetManager() {
                     >
                       <MoreHorizontal className="size-4" />
                     </DropdownMenuSubTrigger>
-                    <DropdownMenuSubContent className="min-w-32">
+                    <DropdownMenuSubContent className="min-w-32" sideOffset={4}>
                       <DropdownMenuGroup>
                         <DropdownMenuItem inset onSelect={() => openEditDialog(preset)}>
                           <DropdownMenuIcon>
