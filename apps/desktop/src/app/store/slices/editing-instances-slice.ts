@@ -102,6 +102,17 @@ const editingInstancesSlice = createSlice({
         return;
       instance.exportAttempts.push(action.payload.attempt);
     },
+    editingInstanceExportAttemptRemoved: (
+      state,
+      action: PayloadAction<{ attemptId: string; id: EditingInstanceId }>,
+    ) => {
+      const instance = getInstance(state, action.payload.id);
+      if (instance) {
+        instance.exportAttempts = instance.exportAttempts.filter(
+          ({ id }) => id !== action.payload.attemptId,
+        );
+      }
+    },
     editingInstanceExportRestored: (
       state,
       action: PayloadAction<{
@@ -337,6 +348,7 @@ export const {
   editingInstanceClosed,
   editingInstanceDuplicated,
   editingInstanceExportAttemptQueued,
+  editingInstanceExportAttemptRemoved,
   editingInstanceExportCanceled,
   editingInstanceExportCompleted,
   editingInstanceExportFailed,

@@ -1,6 +1,15 @@
 import type { TFunction } from "i18next";
-import { MoreHorizontal, Play, RotateCcw, Scissors, Settings2, Trash2, X } from "lucide-react";
-import { useEffect, useRef } from "react";
+import {
+  ExternalLink,
+  MoreHorizontal,
+  Play,
+  RotateCcw,
+  Scissors,
+  Settings2,
+  Trash2,
+  X,
+} from "lucide-react";
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
@@ -9,24 +18,20 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
-  selectExportQueue,
+  selectEditingInstanceById,
   selectExportQueueById,
   selectImportedEditingInstances,
 } from "@/app/store/slices/editing-instances-slice";
-import { selectQueueStarted } from "@/app/store/slices/export-slice";
-import { selectImportedSourceThumbnails } from "@/app/store/slices/preview-slice";
+import { selectSourceExportQueueState } from "@/app/store/slices/export-slice";
+import { cancelExportAttemptRequested } from "@/app/store/thunks/export-thunks";
 import {
-  cancelExportAndRequeueRequested,
-  startExportQueue,
-} from "@/app/store/thunks/export-thunks";
-import {
-  closeEditingInstancesRequested,
+  prepareImportedSourceMetadataRequested,
   prepareImportedSourceThumbnailsRequested,
-  restoreSourceFileRequested,
+  restoreExportAttemptRequested,
 } from "@/app/store/thunks/source-media-thunks";
 import type { EditingInstance, ExportAttempt, ExportAttemptState } from "@/domain/editing-instance";
+import { openFileLocation } from "@/lib/tauri/media";
 
-import { DeleteSourceDialog, DeleteSourceDialogTrigger } from "./components/DeleteSourceDialog";
 import {
   SourceCard,
   SourceCardActions,
@@ -36,13 +41,21 @@ import {
   SourceCardThumbnail,
   SourceCardTitle,
 } from "./components/SourceCard";
+import {
+  CancelSourceExport,
+  CloseSource,
+  DeleteSource,
+  RestoreSource,
+  StartSourceExport,
+} from "./components/SourceMenuActions";
+import { getRevealLabel } from "./lib/source.utils";
 
 function SourceList() {
   const sources = usePrepareSources();
 
   return (
-    <ScrollArea className="min-h-0 flex-1 pb-2">
-      <ul className="flex flex-col gap-3 px-3 py-1" data-slot="imported-sources-grid">
+    <ScrollArea className="min-h-0 flex-1">
+      <ul className="flex flex-col gap-3 px-3 pt-0.5 pb-2" data-slot="imported-sources-grid">
         {sources.map((source) => (
           <SourceListItem key={source.id} source={source} />
         ))}
@@ -64,7 +77,7 @@ function SourceListItemCard({ source }: { source: EditingInstance }) {
   const { t } = useTranslation();
 
   return (
-    <SourceCard className="z-1 flex flex-row gap-2 p-2 hover:bg-card-foreground/10" source={source}>
+    <SourceCard className="z-1 flex flex-row gap-2 p-2" source={source}>
       <SourceCardThumbnail className="w-6/11 shrink-0 rounded-md shadow">
         <SourceCardStatusBadge className="absolute top-2 left-2" />
       </SourceCardThumbnail>
@@ -101,7 +114,9 @@ function SourceListItemExtra({ source }: { source: EditingInstance }) {
     <div className="mt-px w-full px-3">
       <ul className="flex flex-col overflow-hidden rounded-b-lg border border-t-0">
         <SourceListItemExports sourceId={source.id} />
-        <SourceListItemActions source={source} />
+        <li className={`${sourceListItemExtraClassName} flex gap-1`}>
+          <SourceListItemActions source={source} />
+        </li>
       </ul>
     </div>
   );
@@ -112,25 +127,39 @@ function SourceListItemExports({ sourceId }: { sourceId: string }) {
 
   if (items.length === 0) return null;
 
-  return (
-    <li>
-      <ul>
-        {items.map(({ attempt }) => (
-          <SourceListItemExport attempt={attempt} key={attempt.id} />
-        ))}
-      </ul>
+  return items.map(({ attempt }) => (
+    <li className={sourceListItemExtraClassName} key={attempt.id}>
+      <SourceListItemExport attempt={attempt} instanceId={sourceId} />
     </li>
-  );
+  ));
 }
 
-function SourceListItemExport({ attempt }: { attempt: ExportAttempt }) {
+function SourceListItemExport({
+  attempt,
+  instanceId,
+}: {
+  attempt: ExportAttempt;
+  instanceId: string;
+}) {
   const { t } = useTranslation();
+  const dispatch = useAppDispatch();
+  const sourceAvailable = useAppSelector(
+    (state) => selectEditingInstanceById(state, instanceId)?.sourceAvailability === "available",
+  );
 
   const statusLabel = getExportQueueItemStatusLabel(t, attempt.state.status);
 
   return (
-    <li className={sourceListItemExtraClassName}>
-      <Button className="w-full min-w-0 justify-between gap-2" size="xs" variant="ghost">
+    <div className="flex min-w-0 items-center gap-1">
+      <Button
+        className="min-w-0 flex-1 justify-between gap-2 disabled:opacity-100"
+        disabled={!sourceAvailable || attempt.state.status === "rendering"}
+        onClick={() =>
+          void dispatch(restoreExportAttemptRequested({ instanceId, attemptId: attempt.id }))
+        }
+        size="xs"
+        variant="ghost"
+      >
         <div className="flex min-w-0 flex-1 items-center gap-2">
           {attempt.route === "fast" ? (
             <Scissors aria-hidden="true" className="shrink-0" />
@@ -144,142 +173,141 @@ function SourceListItemExport({ attempt }: { attempt: ExportAttempt }) {
             {attempt.output.displayName}
           </span>
         </div>
-        <Badge className="shrink-0 whitespace-nowrap" variant="outline">
+
+        <Badge className="shrink-0 whitespace-nowrap text-muted-foreground" variant="outline">
           <span className={attempt.state.status === "rendering" ? "shimmer" : undefined}>
             {statusLabel}
           </span>
         </Badge>
       </Button>
-    </li>
+
+      <SourceListItemExportAction attempt={attempt} instanceId={instanceId} />
+    </div>
   );
+}
+
+function SourceListItemExportAction({
+  attempt,
+  instanceId,
+}: {
+  attempt: ExportAttempt;
+  instanceId: string;
+}) {
+  const { t } = useTranslation();
+  const dispatch = useAppDispatch();
+  const state = attempt.state;
+
+  if (state.status === "completed") {
+    return (
+      <Button
+        aria-label={getRevealLabel(t)}
+        onClick={() => void openFileLocation(state.result.displayPath)}
+        size="icon-xs"
+        title={getRevealLabel(t)}
+        variant="secondary"
+      >
+        <ExternalLink aria-hidden="true" />
+      </Button>
+    );
+  }
+
+  if (state.status === "queued" || state.status === "rendering") {
+    return (
+      <Button
+        aria-label={t("queue.actions.cancel")}
+        onClick={() =>
+          void dispatch(cancelExportAttemptRequested({ attemptId: attempt.id, instanceId }))
+        }
+        size="icon-xs"
+        title={t("queue.actions.cancel")}
+        variant="destructive"
+      >
+        <X aria-hidden="true" />
+      </Button>
+    );
+  }
+
+  return null;
 }
 
 function SourceListItemActions({ source }: { source: EditingInstance }) {
   const { t } = useTranslation();
-  const dispatch = useAppDispatch();
-  const queueItems = useAppSelector(selectExportQueue);
-  const items = useAppSelector((state) => selectExportQueueById(state, source.id));
-  const queueStarted = useAppSelector(selectQueueStarted);
-
-  const queueBusy =
-    queueStarted ||
-    queueItems.some(
-      ({ attempt }) => attempt.state.status === "queued" || attempt.state.status === "rendering",
-    );
-
-  const hasRenderingExport = queueItems.some(({ attempt }) => attempt.state.status === "rendering");
-  const queuedItems = items.filter(({ attempt }) => attempt.state.status === "queued");
-  const renderingItem = items.find(({ attempt }) => attempt.state.status === "rendering");
+  const { hasExports, hasQueuedExports, isRunning } = useAppSelector((state) =>
+    selectSourceExportQueueState(state, source.id),
+  );
 
   if (source.sourceAvailability === "deleted") {
     return (
-      <li className={`${sourceListItemExtraClassName} flex gap-1`}>
-        <Button
-          onClick={() =>
-            void dispatch(
-              restoreSourceFileRequested({
-                itemId: source.id,
-                sourcePath: source.snapshot.source.sourcePath,
-              }),
-            )
-          }
-          size="xs"
-          variant="success"
-        >
-          <RotateCcw aria-hidden="true" />
-          {t("app.actions.restore")}
-        </Button>
-        <Button
-          onClick={() => void dispatch(closeEditingInstancesRequested([source.id]))}
-          size="xs"
-          variant="ghost"
-        >
-          <X aria-hidden="true" />
-          {t("app.actions.closeFile")}
-        </Button>
-      </li>
+      <>
+        <RestoreSource event="click" source={source}>
+          <Button size="xs" variant="success">
+            <RotateCcw aria-hidden="true" />
+            {t("app.actions.restore")}
+          </Button>
+        </RestoreSource>
+        <CloseSource event="click" source={source}>
+          <Button size="xs" variant="ghost">
+            <X aria-hidden="true" />
+            {t("app.actions.closeFile")}
+          </Button>
+        </CloseSource>
+      </>
     );
   }
 
-  if (renderingItem) {
+  if (isRunning) {
     return (
-      <li className={sourceListItemExtraClassName}>
-        <Button
-          onClick={() =>
-            void dispatch(
-              cancelExportAndRequeueRequested({
-                attemptId: renderingItem.attempt.id,
-                instanceId: renderingItem.instance.id,
-              }),
-            )
-          }
-          size="xs"
-          variant="destructive"
-        >
+      <CancelSourceExport event="click" source={source}>
+        <Button size="xs" variant="destructive">
           <X aria-hidden="true" />
           {t("queue.actions.cancel")}
         </Button>
-      </li>
+      </CancelSourceExport>
     );
   }
 
-  if (queuedItems.length > 0 && !queueStarted && !hasRenderingExport) {
+  if (hasQueuedExports) {
     return (
-      <li className={sourceListItemExtraClassName}>
-        <Button
-          onClick={() =>
-            void dispatch(
-              startExportQueue({ id: `source-list.start.${source.id}`, type: "button" }),
-            )
-          }
-          size="xs"
-        >
+      <StartSourceExport event="click" source={source}>
+        <Button size="xs">
           <Play aria-hidden="true" />
           {t("queue.actions.start")}
         </Button>
-      </li>
+      </StartSourceExport>
     );
   }
 
-  if (queueBusy || items.length === 0) return null;
-
-  return (
-    <li className={sourceListItemExtraClassName}>
-      <DeleteSourceDialog sourceId={source.id}>
-        <DeleteSourceDialogTrigger asChild>
+  if (hasExports) {
+    return (
+      <>
+        <DeleteSource event="click" source={source}>
           <Button size="xs" variant="destructive">
             <Trash2 aria-hidden="true" />
             {t("app.actions.deleteFile")}
           </Button>
-        </DeleteSourceDialogTrigger>
-      </DeleteSourceDialog>
-    </li>
-  );
+        </DeleteSource>
+        <CloseSource event="click" source={source}>
+          <Button size="xs" variant="ghost">
+            <X aria-hidden="true" />
+            {t("app.actions.closeFile")}
+          </Button>
+        </CloseSource>
+      </>
+    );
+  }
+
+  return null;
 }
 
 function usePrepareSources() {
   const dispatch = useAppDispatch();
 
   const instances = useAppSelector(selectImportedEditingInstances);
-  const importedThumbnails = useAppSelector(selectImportedSourceThumbnails);
-  const thumbnailRequestIds = useRef(new Set<string>());
 
   useEffect(() => {
-    const instancesWithoutThumbnail = instances.filter(
-      (instance) =>
-        instance.sourceAvailability === "available" &&
-        importedThumbnails[instance.id] === undefined &&
-        !thumbnailRequestIds.current.has(instance.id),
-    );
-
-    if (instancesWithoutThumbnail.length === 0) return;
-
-    for (const instance of instancesWithoutThumbnail) {
-      thumbnailRequestIds.current.add(instance.id);
-    }
-
-    void dispatch(prepareImportedSourceThumbnailsRequested(instancesWithoutThumbnail));
-  }, [dispatch, importedThumbnails, instances]);
+    void dispatch(prepareImportedSourceMetadataRequested(instances));
+    void dispatch(prepareImportedSourceThumbnailsRequested(instances));
+  }, [dispatch, instances]);
 
   return instances;
 }
@@ -291,7 +319,7 @@ function getExportQueueItemStatusLabel(t: TFunction, status: ExportAttemptState[
     case "failed":
       return t("source.status.failed");
     case "canceled":
-      return t("source.status.loading");
+      return t("source.status.canceled");
     case "rendering":
       return t("source.status.rendering");
     case "queued":

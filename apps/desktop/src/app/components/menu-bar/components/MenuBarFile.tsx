@@ -26,7 +26,7 @@ import {
   chooseSourceRequested,
   closeActiveEditingInstanceRequested,
 } from "@/app/store/thunks/source-media-thunks";
-import { DeleteSourceDialog, MenuCloseSource, MenuDeleteSource } from "@/features/source";
+import { CloseSource, DeleteSource, DeleteSourceDialog } from "@/features/source";
 import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
 
 export function MenuBarFile() {
@@ -63,12 +63,12 @@ export function MenuBarFile() {
   );
   useKeyboardShortcut(
     (event) =>
-      event.code === "KeyC" &&
+      event.code === "KeyQ" &&
       event.ctrlKey &&
       hasSource &&
       !isChoosingSource &&
       !isNativeDialogOpen,
-    () => void dispatch(closeActiveEditingInstanceRequested({ id: "Ctrl+C", type: "hotkey" })),
+    () => void dispatch(closeActiveEditingInstanceRequested({ id: "Ctrl+Q", type: "hotkey" })),
   );
   useKeyboardShortcut(
     (event) => event.code === "KeyS" && event.ctrlKey && canSave,
@@ -123,17 +123,17 @@ export function MenuBarFile() {
                 </KbdGroup>
               </MenubarShortcut>
             </MenubarItem>
-            <MenuCloseSource source={activeSource}>
+            <CloseSource source={activeSource}>
               <MenubarItem disabled={!hasSource}>
                 {t("app.actions.closeFile")}
                 <MenubarShortcut>
                   <KbdGroup>
                     <Kbd>Ctrl</Kbd>
-                    <Kbd>C</Kbd>
+                    <Kbd>Q</Kbd>
                   </KbdGroup>
                 </MenubarShortcut>
               </MenubarItem>
-            </MenuCloseSource>
+            </CloseSource>
           </MenubarGroup>
           <MenubarSeparator />
           <MenubarGroup>
@@ -170,7 +170,7 @@ export function MenuBarFile() {
           </MenubarGroup>
           <MenubarSeparator />
           <MenubarGroup>
-            <MenuDeleteSource source={activeSource}>
+            <DeleteSource source={activeSource}>
               <MenubarItem disabled={!hasSource} variant="destructive">
                 {t("app.actions.deleteFile")}
                 <MenubarShortcut>
@@ -180,7 +180,7 @@ export function MenuBarFile() {
                   </KbdGroup>
                 </MenubarShortcut>
               </MenubarItem>
-            </MenuDeleteSource>
+            </DeleteSource>
           </MenubarGroup>
         </MenubarContent>
       </MenubarMenu>

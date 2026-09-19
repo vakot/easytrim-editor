@@ -1,6 +1,7 @@
-import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import { createSelector, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 import { sourceCleared } from "@/app/store/actions/source-actions";
+import { selectExportQueueById } from "@/app/store/slices/editing-instances-slice";
 import type { AppError } from "@/lib/tauri/media.types";
 import type { QueueFinishAction } from "@/lib/tauri/queue.types";
 
@@ -14,7 +15,7 @@ interface ExportUiState {
   optimizedDialogOpen: boolean;
   optimizedPlanRequestId: number | null;
   queueFinishAction: QueueFinishAction;
-  queueStarted: boolean;
+  startedSourceIds: string[];
 }
 
 export const initialExportState: ExportUiState = {
@@ -25,7 +26,7 @@ export const initialExportState: ExportUiState = {
   optimizedDialogOpen: false,
   optimizedPlanRequestId: null,
   queueFinishAction: "nothing",
-  queueStarted: false,
+  startedSourceIds: [],
 };
 
 const exportSlice = createSlice({
@@ -61,11 +62,14 @@ const exportSlice = createSlice({
     exportLaunchFailed: (state, action: PayloadAction<AppError>) => {
       state.launchError = action.payload;
     },
-    queueStarted: (state) => {
-      state.queueStarted = true;
+    queueStarted: (state, action: PayloadAction<string[]>) => {
+      state.startedSourceIds = [...new Set([...state.startedSourceIds, ...action.payload])];
     },
-    queuePaused: (state) => {
-      state.queueStarted = false;
+    queuePaused: (state, action: PayloadAction<string | undefined>) => {
+      state.startedSourceIds =
+        action.payload === undefined
+          ? []
+          : state.startedSourceIds.filter((id) => id !== action.payload);
     },
     queueFinishActionChanged: (state, action: PayloadAction<QueueFinishAction>) => {
       state.queueFinishAction = action.payload;
@@ -104,7 +108,18 @@ export const {
 } = exportSlice.actions;
 export const exportReducer = exportSlice.reducer;
 
-export const selectQueueStarted = (state: RootState): boolean => state.export.queueStarted;
+export const selectQueueStarted = (state: RootState): boolean =>
+  state.export.startedSourceIds.length > 0;
+export const selectSourceQueueStarted = (state: RootState, instanceId: string): boolean =>
+  state.export.startedSourceIds.includes(instanceId);
+export const selectSourceExportQueueState = createSelector(
+  [selectExportQueueById, selectSourceQueueStarted],
+  (items, started) => ({
+    hasExports: items.length > 0,
+    hasQueuedExports: items.some(({ attempt }) => attempt.state.status === "queued"),
+    isRunning: started || items.some(({ attempt }) => attempt.state.status === "rendering"),
+  }),
+);
 export const selectQueueFinishAction = (state: RootState): QueueFinishAction =>
   state.export.queueFinishAction;
 export const selectAvailableQueueFinishActions = (state: RootState): QueueFinishAction[] =>

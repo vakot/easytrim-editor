@@ -10,7 +10,7 @@ export const en = {
       retry: "Retry",
       save: "Save",
     },
-    labels: { brand: "EasyTrim Editor", from: "from", or: "or", search: "Search" },
+    labels: { brand: "EasyTrim Editor", or: "or", search: "Search" },
     status: {
       disabled: "Disabled",
       enabled: "Enabled",
@@ -44,7 +44,6 @@ export const en = {
     labels: {
       explorer: "Explorer",
       activityFeed: "Activity Feed",
-      exportQueue: "Export Queue",
       bottomPanel: "Bottom panel",
       file: "File",
       help: "Help",
@@ -94,7 +93,6 @@ export const en = {
     },
     tooltips: {
       customizeLayout: "Customize layout",
-      exportQueueEmpty: "Export queue is empty.",
       togglePanel: "Toggle {{panel}}",
     },
     dialogs: {
@@ -170,17 +168,10 @@ export const en = {
       onFinish: "On queue finished",
       title: "Queue",
     },
-    messages: {
-      pendingEmpty: "No pending exports.",
-    },
     tooltips: {
       deleteSourceOnRenderFinish: "Delete the source after a successful render",
     },
     dialogs: {
-      cancel: {
-        description: "The active export and all remaining queued exports will be canceled.",
-        title: "Cancel export queue?",
-      },
       deleteSourceOnRenderFinish: {
         description:
           "The original source file will be deleted after a render finishes successfully. This action can be undone.",
@@ -188,8 +179,6 @@ export const en = {
       },
     },
     accessibility: {
-      active: "Active export: {{name}}",
-      pending: "Queued export: {{name}}",
       progress: "Export progress",
     },
     options: {

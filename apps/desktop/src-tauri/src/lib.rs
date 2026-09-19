@@ -88,6 +88,7 @@ pub fn run() {
             commands::export::render_fast,
             commands::export::render_optimized,
             commands::media::inspect_media,
+            commands::media::inspect_imported_source,
             commands::media::prepare_audio_previews,
             commands::media::prepare_imported_source_thumbnail,
             commands::media::prepare_proxy_preview,

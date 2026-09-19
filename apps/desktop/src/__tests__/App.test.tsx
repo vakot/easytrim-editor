@@ -28,6 +28,7 @@ const mocks = vi.hoisted(() => ({
   checkMediaCapabilities: vi.fn(),
   chooseSource: vi.fn(),
   activateSourcePath: vi.fn(),
+  inspectImportedSource: vi.fn(),
   inspectMedia: vi.fn(),
   listenForSourceDrops: vi.fn(),
   prepareAudioPreviews: vi.fn(),
@@ -45,6 +46,7 @@ vi.mock("../lib/tauri/media", async (importOriginal) => {
     checkMediaCapabilities: mocks.checkMediaCapabilities,
     chooseSource: mocks.chooseSource,
     activateSourcePath: mocks.activateSourcePath,
+    inspectImportedSource: mocks.inspectImportedSource,
     inspectMedia: mocks.inspectMedia,
     listenForSourceDrops: mocks.listenForSourceDrops,
     prepareAudioPreviews: mocks.prepareAudioPreviews,
@@ -199,6 +201,7 @@ beforeEach(() => {
     sourcePath === replacementSelection.sourcePath ? replacementSelection : selection,
   );
   mocks.inspectMedia.mockResolvedValue(media);
+  mocks.inspectImportedSource.mockResolvedValue(media);
   mocks.prepareAudioPreviews.mockResolvedValue([
     {
       mediaToken: 1,
@@ -245,30 +248,11 @@ afterEach(() => {
 });
 
 describe("App", () => {
-  it("disables export queue entry points when the queue is empty", async () => {
-    const user = userEvent.setup();
+  it("keeps the editor visible without deprecated queue widgets", () => {
     render(<App />);
-
-    const titleBar = screen.getByRole("banner", { name: "Window title bar" });
-    const exportQueueButtons = screen.getAllByRole("button", { name: "Export Queue" });
-    const titleBarExportQueueButton = exportQueueButtons[0];
-    const editorSourceExportQueueButton = exportQueueButtons[1];
-
-    if (!titleBarExportQueueButton || !editorSourceExportQueueButton) {
-      throw new Error("Expected title-bar and editor-source export queue buttons");
-    }
-
-    expect(exportQueueButtons).toHaveLength(2);
-    for (const button of exportQueueButtons) expect(button).toBeDisabled();
-
-    await user.hover(titleBarExportQueueButton.parentElement as HTMLElement);
-    expect(await screen.findByRole("tooltip")).toHaveTextContent("Export queue is empty.");
-
-    await user.unhover(titleBarExportQueueButton.parentElement as HTMLElement);
-    await user.hover(editorSourceExportQueueButton.parentElement as HTMLElement);
-    expect(await screen.findByRole("tooltip")).toHaveTextContent("Export queue is empty.");
-
-    expect(titleBar).toBeInTheDocument();
+    expect(screen.getByRole("banner", { name: "Window title bar" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Export Queue" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Imported Sources" })).toBeInTheDocument();
   });
 
   it("preserves editor tools across source replacement", async () => {
@@ -861,7 +845,7 @@ describe("App", () => {
     expect(mocks.chooseSource).toHaveBeenCalledWith("folders");
   });
 
-  it("closes the active source with the File menu and Ctrl+C", async () => {
+  it("closes the active source with the File menu and Ctrl+Q", async () => {
     mocks.chooseSource.mockResolvedValue([selection]);
     const user = userEvent.setup();
     render(<App />);
@@ -871,10 +855,10 @@ describe("App", () => {
 
     getMenuTrigger("File").focus();
     await user.keyboard("{Enter}");
-    expect(screen.getByRole("menuitem", { name: /Close File/ })).toHaveTextContent("CtrlC");
+    expect(screen.getByRole("menuitem", { name: /Close File/ })).toHaveTextContent("CtrlQ");
     await user.keyboard("{Escape}");
 
-    fireEvent.keyDown(window, { key: "c", code: "KeyC", ctrlKey: true });
+    fireEvent.keyDown(window, { key: "q", code: "KeyQ", ctrlKey: true });
 
     await waitForSourcePresence(false);
   });
@@ -1081,6 +1065,9 @@ describe("App", () => {
     await openSourcePicker(user);
     await waitFor(() => expect(selectEditingInstances(store.getState())).toHaveLength(2));
     await waitFor(() => expect(mocks.prepareImportedSourceThumbnail).toHaveBeenCalledTimes(2));
+    await waitFor(() =>
+      expect(mocks.inspectImportedSource).toHaveBeenCalledWith(replacementSelection.sourcePath),
+    );
 
     expect(selectActiveInstanceId(store.getState())).toBe(initiallyActiveId);
     expect(
@@ -1803,6 +1790,7 @@ describe("App", () => {
     const requestFrame = vi
       .spyOn(window, "requestAnimationFrame")
       .mockImplementation((callback) => scheduledFrames.push(callback));
+
     const cancelFrame = vi.spyOn(window, "cancelAnimationFrame").mockImplementation(() => {});
 
     try {

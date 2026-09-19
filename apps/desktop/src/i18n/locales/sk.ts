@@ -12,7 +12,7 @@ export const sk = {
       retry: "Skúsiť znova",
       save: "Uložiť",
     },
-    labels: { brand: "EasyTrim Editor", from: "z", or: "alebo", search: "Hľadať" },
+    labels: { brand: "EasyTrim Editor", or: "alebo", search: "Hľadať" },
     status: {
       disabled: "Vypnuté",
       enabled: "Zapnuté",
@@ -47,7 +47,6 @@ export const sk = {
       explorer: "Prieskumník",
       activityFeed: "Prehľad aktivít",
       bottomPanel: "Spodný panel",
-      exportQueue: "Front exportov",
       file: "Súbor",
       help: "Pomocník",
       leftPanel: "Ľavý panel",
@@ -96,7 +95,6 @@ export const sk = {
     },
     tooltips: {
       customizeLayout: "Prispôsobiť rozloženie",
-      exportQueueEmpty: "Fronta exportov je prázdna.",
       togglePanel: "Prepnúť {{panel}}",
     },
     dialogs: {
@@ -171,17 +169,10 @@ export const sk = {
       onFinish: "Po dokončení frontu",
       title: "Front",
     },
-    messages: {
-      pendingEmpty: "Žiadne exporty vo fronte.",
-    },
     tooltips: {
       deleteSourceOnRenderFinish: "Po úspešnom vykreslení odstráni zdroj",
     },
     dialogs: {
-      cancel: {
-        description: "Aktívny export a všetky zostávajúce exporty vo fronte sa zrušia.",
-        title: "Zrušiť front exportov?",
-      },
       deleteSourceOnRenderFinish: {
         description:
           "Pôvodný zdrojový súbor sa po úspešnom dokončení vykreslenia odstráni. Túto akciu možno vrátiť späť.",
@@ -189,8 +180,6 @@ export const sk = {
       },
     },
     accessibility: {
-      active: "Aktívny export: {{name}}",
-      pending: "Export vo fronte: {{name}}",
       progress: "Priebeh exportu",
     },
     options: {

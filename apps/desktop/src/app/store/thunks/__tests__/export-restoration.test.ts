@@ -170,10 +170,7 @@ describe("export snapshot restoration", () => {
         restoreExportAttemptRequested({ instanceId: "original", attemptId: "optimized" }),
       ),
     ).toBe(true);
-    expect(
-      selectImportedEditingInstances(store.getState()).find(({ id }) => id !== "original")
-        ?.optimizedSettings,
-    ).toEqual({
+    expect(store.getState().editingInstances.entities.original?.optimizedSettings).toEqual({
       resolution,
       frameRate,
     });
@@ -252,7 +249,7 @@ describe("export snapshot restoration", () => {
     ]);
   });
 
-  it("queues a draft, restores a separate draft by ID, and requeues the edited snapshot", async () => {
+  it("reopens a queued export in the same draft and requeues the edited snapshot", async () => {
     const { snapshot, store } = setup();
     store.dispatch(startFastCutRequested());
     await vi.waitFor(() =>
@@ -274,10 +271,10 @@ describe("export snapshot restoration", () => {
       restoreExportAttemptRequested({ instanceId: "original", attemptId: first.attempt.id }),
     );
     const restored = selectImportedEditingInstances(store.getState()).find(
-      ({ id }) => id !== "original",
+      ({ id }) => id === "original",
     )!;
 
-    expect(restored.id).not.toBe("original");
+    expect(restored.id).toBe("original");
     expect(restored.snapshot.trim).toEqual(snapshot.trim);
     expect(
       selectExportQueue(store.getState()).filter(
@@ -357,8 +354,8 @@ describe("export snapshot restoration", () => {
     await store.dispatch(
       restoreExportAttemptRequested({ instanceId: "original", attemptId: "history" }),
     );
-    expect(store.getState().editingInstances.activeInstanceId).not.toBe(firstId);
-    expect(selectImportedEditingInstances(store.getState())).toHaveLength(3);
+    expect(store.getState().editingInstances.activeInstanceId).toBe(firstId);
+    expect(selectImportedEditingInstances(store.getState())).toHaveLength(1);
     expect(
       store.getState().editingInstances.entities.original?.exportAttempts[0]?.state.status,
     ).toBe("completed");
@@ -391,7 +388,7 @@ describe("export snapshot restoration", () => {
     setExportQueueExecutionEnabled(true, store.dispatch, store.getState);
     expect(await restoration).toBe(false);
     expect(native.renderFast).not.toHaveBeenCalled();
-    expect(selectImportedEditingInstances(store.getState())).toHaveLength(2);
+    expect(selectImportedEditingInstances(store.getState())).toHaveLength(1);
     expect(
       selectExportQueue(store.getState()).filter(
         ({ attempt }) => attempt.state.status === "queued",

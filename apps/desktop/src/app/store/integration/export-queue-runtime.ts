@@ -8,6 +8,11 @@ import {
   editingInstancesSourceAvailabilityChanged,
   selectEditingInstanceAttempts,
 } from "@/app/store/slices/editing-instances-slice";
+import {
+  queuePaused,
+  queueStarted,
+  selectSourceQueueStarted,
+} from "@/app/store/slices/export-slice";
 import type { AppDispatch, RootState } from "@/app/store/store";
 import type { EditingInstanceId, ExportAttempt } from "@/domain/editing-instance";
 import {
@@ -40,13 +45,13 @@ interface RuntimeExportJob {
   lastDiagnosticProgress: number;
   lastReduxProgressAt: number;
   operationId: string | null;
+  requeueRequested: boolean;
   resolveCompletion: () => void;
   startedAt: number | null;
 }
 
 interface RuntimeState {
   deferredSourceDeletes: Map<string, string>;
-  executionEnabled: boolean;
   isDraining: boolean;
   jobsByAttemptId: Map<string, RuntimeExportJob>;
   jobsBySourceKey: Map<string, Set<RuntimeExportJob>>;
@@ -55,17 +60,12 @@ interface RuntimeState {
   suppressQueueFinishAction: boolean;
 }
 
-interface EnqueueExportOptions {
-  prepend?: boolean;
-}
-
 const runtimeByStore = new WeakMap<() => RootState, RuntimeState>();
 
 function runtimeFor(getState: () => RootState): RuntimeState {
   const existing = runtimeByStore.get(getState);
   if (existing) return existing;
   const runtime: RuntimeState = {
-    executionEnabled: false,
     isDraining: false,
     jobsByAttemptId: new Map(),
     jobsBySourceKey: new Map(),
@@ -83,9 +83,22 @@ export function setExportQueueExecutionEnabled(
   enabled: boolean,
   dispatch: AppDispatch,
   getState: () => RootState,
+  instanceId?: EditingInstanceId,
 ) {
   const runtime = runtimeFor(getState);
-  runtime.executionEnabled = enabled;
+  if (enabled) {
+    const ids = selectEditingInstanceAttempts(getState())
+      .filter(
+        ({ attempt, instance }) =>
+          (instanceId === undefined || instance.id === instanceId) &&
+          (attempt.state.status === "queued" || attempt.state.status === "rendering"),
+      )
+      .map(({ instance }) => instance.id);
+
+    dispatch(queueStarted(ids));
+  } else {
+    dispatch(queuePaused(instanceId));
+  }
   if (enabled) void drainQueue(runtime, dispatch, getState);
 }
 
@@ -94,7 +107,6 @@ export function enqueueExport(
   attempt: ExportAttempt,
   dispatch: AppDispatch,
   getState: () => RootState,
-  options: EnqueueExportOptions = {},
 ) {
   const runtime = runtimeFor(getState);
   if (runtime.jobsByAttemptId.has(attempt.id)) return false;
@@ -109,6 +121,7 @@ export function enqueueExport(
     lastDiagnosticProgress: -1,
     lastReduxProgressAt: 0,
     operationId: null,
+    requeueRequested: false,
     startedAt: null,
     completion: Promise.resolve(),
     resolveCompletion: () => undefined,
@@ -117,8 +130,7 @@ export function enqueueExport(
   job.completion = new Promise<void>((resolve) => {
     job.resolveCompletion = resolve;
   });
-  if (options.prepend) runtime.pendingJobs.unshift(job);
-  else runtime.pendingJobs.push(job);
+  runtime.pendingJobs.push(job);
   runtime.jobsByAttemptId.set(attempt.id, job);
   const sourceKey = normalizeSourceKey(attempt.request.sourcePath);
   const sourceJobs = runtime.jobsBySourceKey.get(sourceKey);
@@ -154,8 +166,10 @@ export function cancelQueuedExport(
 ) {
   const runtime = runtimeFor(getState);
   const job = runtime.jobsByAttemptId.get(attemptId);
-  if (!job || job.instanceId !== instanceId || job.canceled) return Promise.resolve();
+  if (!job || job.instanceId !== instanceId) return Promise.resolve();
+  if (job.canceled && !job.requeueRequested) return job.completion;
 
+  job.requeueRequested = false;
   job.canceled = true;
   job.diagnosticsOperation?.cancel({ reason: "user_requested" });
   job.dispatch(
@@ -184,25 +198,10 @@ export async function cancelAndRequeueExport(
   if (!job || job.instanceId !== instanceId || job.canceled || job.startedAt === null) return;
 
   job.canceled = true;
+  job.requeueRequested = true;
   job.diagnosticsOperation?.cancel({ reason: "user_requested" });
   if (job.operationId) void cancelOperation(job.operationId).catch(() => undefined);
   await job.completion;
-
-  const attempt = selectEditingInstanceAttempts(getState()).find(
-    ({ attempt: candidate, instance }) => instance.id === instanceId && candidate.id === attemptId,
-  )?.attempt;
-
-  if (!attempt || attempt.state.status !== "rendering") return;
-
-  job.dispatch(editingInstanceExportRequeued({ id: instanceId, attemptId }));
-
-  const requeuedAttempt = selectEditingInstanceAttempts(getState()).find(
-    ({ attempt: candidate, instance }) => instance.id === instanceId && candidate.id === attemptId,
-  )?.attempt;
-
-  if (requeuedAttempt?.state.status === "queued") {
-    enqueueExport(instanceId, requeuedAttempt, job.dispatch, getState, { prepend: true });
-  }
 }
 
 export function cancelActiveExport(getState: () => RootState) {
@@ -215,6 +214,8 @@ export function cancelActiveExport(getState: () => RootState) {
 export function cancelAllQueuedExports(getState: () => RootState) {
   const runtime = runtimeFor(getState);
   runtime.suppressQueueFinishAction = true;
+  const firstJob = runtime.jobsByAttemptId.values().next().value;
+  firstJob?.dispatch(queuePaused());
   return Promise.all(
     [...runtime.jobsByAttemptId.values()].map((job) =>
       cancelQueuedExport(job.instanceId, job.attempt.id, getState),
@@ -241,11 +242,16 @@ function unregisterJob(runtime: RuntimeState, job: RuntimeExportJob) {
 }
 
 async function drainQueue(runtime: RuntimeState, dispatch: AppDispatch, getState: () => RootState) {
-  if (runtime.isDraining || !runtime.executionEnabled) return;
+  if (runtime.isDraining) return;
   runtime.isDraining = true;
   try {
-    while (runtime.executionEnabled && runtime.pendingJobs.length > 0) {
-      const job = runtime.pendingJobs.shift();
+    while (runtime.pendingJobs.length > 0) {
+      const index = runtime.pendingJobs.findIndex((job) =>
+        selectSourceQueueStarted(getState(), job.instanceId),
+      );
+
+      if (index < 0) break;
+      const [job] = runtime.pendingJobs.splice(index, 1);
       if (!job) continue;
       if (job.canceled) {
         unregisterJob(runtime, job);
@@ -276,13 +282,14 @@ async function drainQueue(runtime: RuntimeState, dispatch: AppDispatch, getState
   } finally {
     runtime.isDraining = false;
     maybePerformQueueFinishAction(runtime, dispatch, getState);
-    if (runtime.executionEnabled && runtime.pendingJobs.length > 0)
-      void drainQueue(runtime, dispatch, getState);
   }
 }
 
 async function renderJob(job: RuntimeExportJob) {
+  let deleteSourceOnFinish = false;
+  let settled = false;
   const onProgress = (progress: ExportProgress) => {
+    if (settled) return;
     if (job.canceled) {
       void cancelOperation(progress.operationId).catch(() => undefined);
       return;
@@ -378,9 +385,7 @@ async function renderJob(job: RuntimeExportJob) {
         }),
       );
       job.diagnosticsOperation?.complete({ outputType: job.attempt.route });
-      if (job.getState().preferences.deleteSourceOnRenderFinish) {
-        await deleteSourceWhenUnused(job, job.attempt.request.sourcePath);
-      }
+      deleteSourceOnFinish = job.getState().preferences.deleteSourceOnRenderFinish;
     }
   } catch (error: unknown) {
     if (!job.canceled) {
@@ -396,8 +401,32 @@ async function renderJob(job: RuntimeExportJob) {
       );
     }
   } finally {
-    unregisterJob(runtimeFor(job.getState), job);
-    job.resolveCompletion();
+    settled = true;
+    const runtime = runtimeFor(job.getState);
+    const resolveCompletion = job.resolveCompletion;
+    if (job.requeueRequested) {
+      job.dispatch(
+        editingInstanceExportRequeued({ id: job.instanceId, attemptId: job.attempt.id }),
+      );
+      job.canceled = false;
+      job.requeueRequested = false;
+      job.startedAt = null;
+      job.operationId = null;
+      job.diagnosticsOperation = null;
+      job.lastDiagnosticProgress = -1;
+      job.lastReduxProgressAt = 0;
+      job.completion = new Promise<void>((resolve) => {
+        job.resolveCompletion = resolve;
+      });
+      runtime.pendingJobs.unshift(job);
+    } else {
+      await releaseExportSource(job.attempt.request.sourcePath).catch((error: unknown) =>
+        diagnostics.error("export.source-release.failed", error),
+      );
+      unregisterJob(runtime, job);
+      if (deleteSourceOnFinish) await deleteSourceWhenUnused(job, job.attempt.request.sourcePath);
+    }
+    resolveCompletion();
   }
 }
 

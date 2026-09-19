@@ -1,6 +1,8 @@
-import { cloneElement, type ReactElement } from "react";
+import { cloneElement, type MouseEventHandler, type ReactElement } from "react";
 
-import { useAppDispatch } from "@/app/store/redux-hooks";
+import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
+import { selectSourceExportQueueState } from "@/app/store/slices/export-slice";
+import { cancelSourceExportQueue, startSourceExportQueue } from "@/app/store/thunks/export-thunks";
 import {
   closeEditingInstancesRequested,
   restoreSourceFileRequested,
@@ -9,20 +11,23 @@ import type { EditingInstance } from "@/domain/editing-instance";
 
 import { DeleteSourceDialog, DeleteSourceDialogTrigger } from "./DeleteSourceDialog";
 
-type MenuItemElement = ReactElement<{
+type ActionElement = ReactElement<{
   disabled?: boolean;
+  onClick?: MouseEventHandler;
   onSelect?: (event: Event) => void;
 }>;
 
-interface MenuSourceActionProps {
-  children: MenuItemElement;
+interface SourceActionProps {
+  children: ActionElement;
+  event?: "click" | "select";
   onOpenChange?: (open: boolean) => void;
   open?: boolean;
   source?: EditingInstance;
 }
 
-interface MenuSourcesActionProps {
-  children: MenuItemElement;
+interface SourcesActionProps {
+  children: ActionElement;
+  event?: "click" | "select";
   onOpenChange?: (open: boolean) => void;
   open?: boolean;
   sources: EditingInstance[];
@@ -31,31 +36,40 @@ interface MenuSourcesActionProps {
 }
 
 /**
- * @name MenuDeleteSource
- * @description Wraps a menu item with source deletion behavior and disables it when the source is already deleted.
+ * @name DeleteSource
+ * @description Wraps an action trigger with source deletion behavior and disables it when the source is already deleted.
  */
-export function MenuDeleteSource({ children, onOpenChange, open, source }: MenuSourceActionProps) {
+export function DeleteSource({
+  children,
+  event = "select",
+  onOpenChange,
+  open,
+  source,
+}: SourceActionProps) {
   const item = withDisabled(children, !source || source.sourceAvailability === "deleted");
 
   return (
     <DeleteSourceDialog onOpenChange={onOpenChange} open={open} sourceId={source?.id}>
-      <DeleteSourceDialogTrigger asChild>{withPreventedSelect(item)}</DeleteSourceDialogTrigger>
+      <DeleteSourceDialogTrigger asChild>
+        {event === "select" ? withPreventedSelect(item) : item}
+      </DeleteSourceDialogTrigger>
     </DeleteSourceDialog>
   );
 }
 
 /**
- * @name MenuDeleteSources
- * @description Wraps a menu item with deletion behavior for a source range and disables it when every source is already deleted.
+ * @name DeleteSources
+ * @description Wraps an action trigger with deletion behavior for a source range and disables it when every source is already deleted.
  */
-export function MenuDeleteSources({
+export function DeleteSources({
   children,
+  event = "select",
   onOpenChange,
   open,
   sources,
   target,
   targetName,
-}: MenuSourcesActionProps) {
+}: SourcesActionProps) {
   const canDelete = sources.some((source) => source.sourceAvailability !== "deleted");
   const item = withDisabled(children, !canDelete);
 
@@ -67,44 +81,76 @@ export function MenuDeleteSources({
       target={target}
       targetName={targetName}
     >
-      <DeleteSourceDialogTrigger asChild>{withPreventedSelect(item)}</DeleteSourceDialogTrigger>
+      <DeleteSourceDialogTrigger asChild>
+        {event === "select" ? withPreventedSelect(item) : item}
+      </DeleteSourceDialogTrigger>
     </DeleteSourceDialog>
   );
 }
 
 /**
- * @name MenuCloseSource
- * @description Adds the action that closes one source editing instance to a compatible menu item.
+ * @name CloseSource
+ * @description Adds the action that closes one source editing instance to a compatible action trigger.
  */
-export function MenuCloseSource({ children, source }: MenuSourceActionProps) {
+export function CloseSource({ children, event = "select", source }: SourceActionProps) {
   const dispatch = useAppDispatch();
 
-  return withSelectAction(withDisabled(children, !source), () => {
+  return withAction(withDisabled(children, !source), event, () => {
     if (source) void dispatch(closeEditingInstancesRequested([source.id]));
   });
 }
 
 /**
- * @name MenuCloseSources
- * @description Adds the action that closes every source editing instance in a range to a compatible menu item.
+ * @name CloseSources
+ * @description Adds the action that closes every source editing instance in a range to a compatible action trigger.
  */
-export function MenuCloseSources({ children, sources }: MenuSourcesActionProps) {
+export function CloseSources({ children, event = "select", sources }: SourcesActionProps) {
   const dispatch = useAppDispatch();
 
-  return withSelectAction(withDisabled(children, sources.length === 0), () => {
+  return withAction(withDisabled(children, sources.length === 0), event, () => {
     void dispatch(closeEditingInstancesRequested(sources.map(({ id }) => id)));
   });
 }
 
 /**
- * @name MenuRestoreSource
- * @description Adds source restoration behavior to a compatible menu item for a deleted source.
+ * @name StartSourceExport
+ * @description Adds per-source queue start behavior and disables the trigger when no export is queued.
  */
-export function MenuRestoreSource({ children, source }: MenuSourceActionProps) {
+export function StartSourceExport({ children, event = "select", source }: SourceActionProps) {
+  const dispatch = useAppDispatch();
+  const queue = useAppSelector((state) => selectSourceExportQueueState(state, source?.id ?? ""));
+
+  return withAction(
+    withDisabled(children, !source || !queue.hasQueuedExports || queue.isRunning),
+    event,
+    () => {
+      if (source) void dispatch(startSourceExportQueue(source.id));
+    },
+  );
+}
+
+/**
+ * @name CancelSourceExport
+ * @description Adds per-source queue cancellation behavior and disables the trigger when the source is idle.
+ */
+export function CancelSourceExport({ children, event = "select", source }: SourceActionProps) {
+  const dispatch = useAppDispatch();
+  const queue = useAppSelector((state) => selectSourceExportQueueState(state, source?.id ?? ""));
+
+  return withAction(withDisabled(children, !source || !queue.isRunning), event, () => {
+    if (source) void dispatch(cancelSourceExportQueue(source.id));
+  });
+}
+
+/**
+ * @name RestoreSource
+ * @description Adds source restoration behavior to a compatible action trigger for a deleted source.
+ */
+export function RestoreSource({ children, event = "select", source }: SourceActionProps) {
   const dispatch = useAppDispatch();
   if (!source || source.sourceAvailability !== "deleted") return null;
 
-  return withSelectAction(children, () => {
+  return withAction(children, event, () => {
     void dispatch(
       restoreSourceFileRequested({
         itemId: source.id,
@@ -115,15 +161,15 @@ export function MenuRestoreSource({ children, source }: MenuSourceActionProps) {
 }
 
 /**
- * @name MenuRestoreSources
- * @description Adds source restoration behavior to a compatible menu item for every deleted source in a range.
+ * @name RestoreSources
+ * @description Adds source restoration behavior to a compatible action trigger for every deleted source in a range.
  */
-export function MenuRestoreSources({ children, sources }: MenuSourcesActionProps) {
+export function RestoreSources({ children, event = "select", sources }: SourcesActionProps) {
   const dispatch = useAppDispatch();
   const restorableSources = sources.filter((source) => source.sourceAvailability === "deleted");
   if (restorableSources.length === 0) return null;
 
-  return withSelectAction(children, () => {
+  return withAction(children, event, () => {
     void Promise.all(
       restorableSources.map((source) =>
         dispatch(
@@ -137,20 +183,29 @@ export function MenuRestoreSources({ children, sources }: MenuSourcesActionProps
   });
 }
 
-function withDisabled(children: MenuItemElement, disabled: boolean) {
+function withDisabled(children: ActionElement, disabled: boolean) {
   return cloneElement(children, { disabled: disabled || Boolean(children.props.disabled) });
 }
 
-function withSelectAction(children: MenuItemElement, action: () => void) {
+function withAction(children: ActionElement, event: "click" | "select", action: () => void) {
+  if (event === "click") {
+    return cloneElement(children, {
+      onClick: (clickEvent) => {
+        children.props.onClick?.(clickEvent);
+        if (!clickEvent.defaultPrevented) action();
+      },
+    });
+  }
+
   return cloneElement(children, {
-    onSelect: (event: Event) => {
-      children.props.onSelect?.(event);
-      if (!event.defaultPrevented) action();
+    onSelect: (selectEvent: Event) => {
+      children.props.onSelect?.(selectEvent);
+      if (!selectEvent.defaultPrevented) action();
     },
   });
 }
 
-function withPreventedSelect(children: MenuItemElement) {
+function withPreventedSelect(children: ActionElement) {
   return cloneElement(children, {
     onSelect: (event: Event) => {
       children.props.onSelect?.(event);

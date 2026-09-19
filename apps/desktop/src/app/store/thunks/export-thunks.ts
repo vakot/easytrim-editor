@@ -27,6 +27,7 @@ import {
   selectActiveEditingInstance,
   selectActiveInstanceId,
   selectEditingInstanceById,
+  selectExportQueueById,
   selectHasProcessableExports,
 } from "@/app/store/slices/editing-instances-slice";
 import {
@@ -37,8 +38,6 @@ import {
   optimizedExportPlanReceived,
   optimizedExportPlanRequested,
   queueFinishActionsAvailable,
-  queuePaused,
-  queueStarted,
 } from "@/app/store/slices/export-slice";
 import { nativeDialogStateChanged } from "@/app/store/slices/import-workflow-slice";
 import {
@@ -94,35 +93,39 @@ export const startExportQueue =
   (dispatch, getState) => {
     diagnostics.action("export.queue.start.requested", origin);
     if (!selectHasProcessableExports(getState())) return;
-    dispatch(queueStarted());
     setExportQueueExecutionEnabled(true, dispatch, getState);
   };
 
-export const pauseExportQueue =
-  (origin: DiagnosticOrigin = { type: "internal" }): AppThunk =>
+export const startSourceExportQueue =
+  (instanceId: string): AppThunk =>
   (dispatch, getState) => {
-    diagnostics.action("export.queue.pause.requested", origin);
-    dispatch(queuePaused());
-    setExportQueueExecutionEnabled(false, dispatch, getState);
+    diagnostics.action("export.queue.start.requested", {
+      id: `source-list.start.${instanceId}`,
+      type: "button",
+    });
+    setExportQueueExecutionEnabled(true, dispatch, getState, instanceId);
+  };
+
+export const cancelSourceExportQueue =
+  (instanceId: string): AppThunk =>
+  async (dispatch, getState) => {
+    setExportQueueExecutionEnabled(false, dispatch, getState, instanceId);
+    const active = selectExportQueueById(getState(), instanceId).find(
+      ({ attempt }) => attempt.state.status === "rendering",
+    );
+
+    if (active) await cancelAndRequeueExport(instanceId, active.attempt.id, getState);
+  };
+
+export const cancelExportAttemptRequested =
+  ({ attemptId, instanceId }: { attemptId: string; instanceId: string }): AppThunk =>
+  async (_dispatch, getState) => {
+    await cancelQueuedExport(instanceId, attemptId, getState);
   };
 
 export const cancelActiveExportRequested = (): AppThunk => (_dispatch, getState) => {
   void cancelActiveExport(getState);
 };
-
-export const cancelExportRequested =
-  (payload: { attemptId: string; instanceId: string }): AppThunk =>
-  (_dispatch, getState) => {
-    void cancelQueuedExport(payload.instanceId, payload.attemptId, getState);
-  };
-
-export const cancelExportAndRequeueRequested =
-  (payload: { attemptId: string; instanceId: string }): AppThunk =>
-  async (dispatch, getState) => {
-    dispatch(queuePaused());
-    setExportQueueExecutionEnabled(false, dispatch, getState);
-    await cancelAndRequeueExport(payload.instanceId, payload.attemptId, getState);
-  };
 
 export const cancelAllExportsRequested = (): AppThunk => (_dispatch, getState) => {
   void cancelAllQueuedExports(getState);
