@@ -21,6 +21,20 @@ const sourcePath = "C:\\Users\\Editor\\Videos\\Client Projects\\Summer Campaign\
 const outputPath =
   "C:\\Users\\Editor\\Videos\\Client Projects\\Summer Campaign\\Exports\\summer-campaign-final.mp4";
 
+const manyOpenedPaths = [
+  "C:\\Users\\vakot\\Videos\\6-optimized.mp4",
+  "C:\\Users\\vakot\\Videos\\6.mkv",
+  "C:\\Users\\vakot\\Videos\\5.mp4",
+  "C:\\Users\\vakot\\Videos\\3.mp4",
+  "C:\\Users\\vakot\\Videos\\2.mp4",
+  "C:\\Users\\vakot\\Videos\\1.mp4",
+  "C:\\Users\\vakot\\Videos\\6453846231.mp4",
+  "C:\\Users\\vakot\\Videos\\2352135.mp4",
+  "C:\\Users\\vakot\\Videos\\1231235151.mp4",
+  "C:\\Users\\vakot\\Videos\\2436236342346.mp4",
+  "C:\\Users\\vakot\\Videos\\12515125125.mp4",
+];
+
 function ToastDetails({ children }: { children: ReactNode }) {
   return <div className="grid min-w-0 gap-0.5">{children}</div>;
 }
@@ -32,6 +46,7 @@ type ScenarioName =
   | "fileClosed"
   | "fileDeleted"
   | "fileRestored"
+  | "filesOpenedMany"
   | "filesOpened";
 
 const scenarios: Record<ScenarioName, ActivityToastScenario> = {
@@ -47,6 +62,20 @@ const scenarios: Record<ScenarioName, ActivityToastScenario> = {
       </ToastDetails>
     ),
     title: "Opened 2 files",
+    variant: "success",
+  },
+  filesOpenedMany: {
+    description: (
+      <ToastDetails>
+        {manyOpenedPaths.slice(0, 2).map((path) => (
+          <span className="truncate" key={path} title={path}>
+            {path}
+          </span>
+        ))}
+        <span>+{manyOpenedPaths.length - 2} more files</span>
+      </ToastDetails>
+    ),
+    title: "Opened 11 files",
     variant: "success",
   },
   fileClosed: {
@@ -171,6 +200,10 @@ function ActivityToastDemo({ name }: { name: ScenarioName }) {
 
 export const FilesOpened: Story = {
   render: () => <ActivityToastDemo name="filesOpened" />,
+};
+
+export const FilesOpenedMany: Story = {
+  render: () => <ActivityToastDemo name="filesOpenedMany" />,
 };
 
 export const FileClosed: Story = {

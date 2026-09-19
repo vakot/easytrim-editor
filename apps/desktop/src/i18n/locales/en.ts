@@ -87,6 +87,7 @@ export const en = {
       dragUnavailable: "Drag and drop is unavailable: {{message}}",
       notifications: {
         fileSize: "File size: {{size}}",
+        moreFiles: "+{{count}} more files",
         outputPath: "Output: {{path}}",
         renderTime: "Render time: {{duration}}",
         sourcePath: "Source: {{path}}",

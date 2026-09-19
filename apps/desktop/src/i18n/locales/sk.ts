@@ -89,6 +89,7 @@ export const sk = {
       dragUnavailable: "Presunutie súboru nie je dostupné: {{message}}",
       notifications: {
         fileSize: "Veľkosť súboru: {{size}}",
+        moreFiles: "+{{count}} ďalších súborov",
         outputPath: "Výstup: {{path}}",
         renderTime: "Čas vykresľovania: {{duration}}",
         sourcePath: "Zdroj: {{path}}",

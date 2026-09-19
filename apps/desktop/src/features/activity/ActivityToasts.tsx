@@ -108,6 +108,8 @@ function ActivityToastDescription({
     (attempt?.state.status === "completed" ? attempt.state.result.displayPath : entry.path);
 
   const sourcePath = stringValue(entry.data?.sourcePath) ?? attempt?.request.sourcePath;
+  const visiblePaths = paths.slice(0, 2);
+  const remainingPathCount = paths.length - visiblePaths.length;
   const fileSize = numberValue(entry.data?.fileSizeBytes) ?? attempt?.metrics.fileSizeBytes;
   const renderTime = numberValue(entry.data?.durationMs) ?? attempt?.metrics.durationMs;
   const metrics = [
@@ -133,11 +135,14 @@ function ActivityToastDescription({
       ) : null}
       {paths.length > 0 ? (
         <div className="grid gap-0.5">
-          {paths.map((path) => (
+          {visiblePaths.map((path) => (
             <span className="truncate" key={path} title={path}>
               {formatSourcePath(path)}
             </span>
           ))}
+          {remainingPathCount > 0 ? (
+            <span>{t("app.messages.notifications.moreFiles", { count: remainingPathCount })}</span>
+          ) : null}
         </div>
       ) : null}
       {metrics.length > 0 ? <span>{metrics.join(" · ")}</span> : null}
