@@ -283,7 +283,7 @@ function getExportQueueItemStatusLabel(t: TFunction, status: ExportAttemptState[
     case "failed":
       return t("source.status.failed");
     case "canceled":
-      return t("source.status.loading");
+      return t("source.status.canceled");
     case "rendering":
       return t("source.status.rendering");
     case "queued":
