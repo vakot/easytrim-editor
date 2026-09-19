@@ -184,7 +184,7 @@ export function ExportDialog() {
                     type="number"
                     value={settings.resolution.height}
                   />
-                  <Tooltip>
+                  <Tooltip preserveOnTrigger>
                     <TooltipTrigger asChild>
                       <Button
                         aria-label={
