@@ -5,7 +5,6 @@ import {
   ExternalLink,
   FileVideo,
   LoaderCircle,
-  MoreHorizontal,
   RotateCcw,
   Trash2,
   X,
@@ -15,7 +14,6 @@ import { useTranslation } from "react-i18next";
 import { shallowEqual } from "react-redux";
 
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ContextMenu,
@@ -254,7 +252,7 @@ function SourceCardThumbnail({ className }: { className?: string }) {
       {durationMicros !== undefined ? (
         <Badge
           className="absolute right-2 bottom-2 border-0 bg-black/75 px-1.5 font-medium text-white"
-          size="md"
+          size="sm"
         >
           {formatDuration(durationMicros)}
         </Badge>

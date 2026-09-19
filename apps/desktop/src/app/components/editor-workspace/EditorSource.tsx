@@ -22,7 +22,7 @@ import {
   ExportQueueWidgetPendingList,
   ExportQueueWidgetPendingListEmpty,
 } from "@/features/export";
-import { SourceGrid, SourceList } from "@/features/source";
+import { SourceList } from "@/features/source";
 
 export function EditorSource() {
   const { t } = useTranslation();
