@@ -12,7 +12,7 @@ export const sk = {
       retry: "Skúsiť znova",
       save: "Uložiť",
     },
-    labels: { brand: "EasyTrim Editor", or: "alebo", search: "Hľadať" },
+    labels: { brand: "EasyTrim Editor", or: "alebo" },
     status: {
       disabled: "Vypnuté",
       enabled: "Zapnuté",
@@ -25,11 +25,7 @@ export const sk = {
     actions: {
       checkForUpdates: "Skontrolovať aktualizácie…",
       closeFile: "Zavrieť súbor",
-      closeFiles_one: "Zavrieť súbor ({{count}})",
-      closeFiles_other: "Zavrieť súbory ({{count}})",
       deleteFile: "Odstrániť súbor",
-      deleteFiles_one: "Odstrániť súbor ({{count}})",
-      deleteFiles_other: "Odstrániť súbory ({{count}})",
       maximize: "Maximalizovať",
       minimize: "Minimalizovať",
       open: "Otvoriť",
@@ -38,8 +34,6 @@ export const sk = {
       resetLayout: "Obnoviť rozloženie",
       restart: "Reštartovať aplikáciu",
       restore: "Obnoviť",
-      restoreFiles_one: "Obnoviť súbor ({{count}})",
-      restoreFiles_other: "Obnoviť súbory ({{count}})",
       showPanel: "Zobraziť {{panel}}",
       update: "Aktualizovať",
     },
@@ -193,9 +187,6 @@ export const sk = {
   },
   source: {
     actions: {
-      closeFolder: "Zavrieť priečinok",
-      deleteFolder: "Odstrániť priečinok",
-      folderActions: "Akcie priečinka",
       revealInFileExplorer: "Zobraziť v Prieskumníkovi súborov",
       revealInFileManager: "Zobraziť v správcovi súborov",
       revealInFinder: "Zobraziť vo Finderi",
@@ -243,11 +234,9 @@ export const sk = {
       dropTitle: "Presuňte videá sem",
       extensions: "MP4 · MOV · MKV · WebM · AVI",
       noSource: "Žiadny zdroj",
-      noSearchResults: "Nenašli sa žiadne zodpovedajúce zdroje.",
       openFileDescription: "Vyberte jeden videosúbor a začnite upravovať.",
       openFolderDescription: "Importujte všetky podporované videá z priečinka.",
       previewUnavailable: "Náhľad nie je dostupný",
-      searchPlaceholder: "Hľadať zdroje...",
       toolsReady:
         "Všetky požadované multimediálne závislosti sú nainštalované a pripravené na použitie.",
       toolsUnavailable: "Niektoré požadované multimediálne závislosti nie sú dostupné.",
