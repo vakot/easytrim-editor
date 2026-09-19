@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Textarea, TextareaHeader, TextareaInput } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -28,9 +29,7 @@ export function CommandPreview({ command, error }: CommandPreviewProps) {
 
   return (
     <div className="grid gap-1.5">
-      <div className="flex items-end justify-between gap-2">
-        <span className="text-sm font-medium">{t("export.dialogs.optimized.arguments")}</span>
-      </div>
+      <Label htmlFor="ffmpeg-arguments">{t("export.dialogs.optimized.arguments")}</Label>
 
       <Textarea>
         <TextareaHeader className="justify-end">
@@ -58,8 +57,8 @@ export function CommandPreview({ command, error }: CommandPreviewProps) {
         <Separator />
 
         <TextareaInput
-          aria-label={t("export.dialogs.optimized.arguments")}
-          className="max-h-40 min-h-28 overflow-auto bg-muted/30 p-3 font-mono text-xs leading-relaxed wrap-break-word whitespace-pre-wrap text-muted-foreground"
+          className="max-h-48 min-h-30 font-mono text-muted-foreground"
+          id="ffmpeg-arguments"
           readOnly
           value={(error ?? command) || t("export.status.commandPreparing")}
         />

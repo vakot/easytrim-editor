@@ -99,7 +99,9 @@ export function ExportDialog() {
             <DialogTitle>{t("export.actions.start")}</DialogTitle>
             <DialogDescription>{t("export.dialogs.optimized.description")}</DialogDescription>
           </DialogHeader>
+
           <PresetManager />
+
           <div className="grid gap-3">
             <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-end gap-3">
               <div className="grid gap-1.5">
@@ -134,6 +136,7 @@ export function ExportDialog() {
                   </SelectContent>
                 </Select>
               </div>
+
               <div className="flex items-center gap-1.5">
                 <Label className="sr-only" htmlFor="export-width">
                   {t("export.labels.width")}
@@ -211,6 +214,7 @@ export function ExportDialog() {
                 </div>
               </div>
             </div>
+
             <div className="grid gap-1.5">
               <Label htmlFor="export-frame-rate">{t("export.dialogs.optimized.frameRate")}</Label>
               <Select
@@ -240,7 +244,9 @@ export function ExportDialog() {
               </Select>
             </div>
           </div>
+
           <CommandPreview command={commandPreview} error={commandPreviewError?.message} />
+
           <DialogFooter className="sm:justify-between">
             <p className="text-xs text-muted-foreground">
               {t("export.dialogs.optimized.saveNotice")}
@@ -256,6 +262,7 @@ export function ExportDialog() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
       {launchError ? (
         <Alert className="absolute top-full right-5 z-40 mt-2 w-80" variant="destructive">
           <AlertDescription>{launchError.message}</AlertDescription>
