@@ -239,9 +239,10 @@ function projectExportLifecycleEvents(
       if (entry) entries.push(entry);
       continue;
     }
-    const operationEvents = eventsByOperation.get(event.operationId) ?? [];
+    const operationId = event.parentOperationId ?? event.operationId;
+    const operationEvents = eventsByOperation.get(operationId) ?? [];
     operationEvents.push(event);
-    eventsByOperation.set(event.operationId, operationEvents);
+    eventsByOperation.set(operationId, operationEvents);
   }
   for (const operationEvents of eventsByOperation.values()) {
     const entry = projectExportOperation(operationEvents, labels, currentSessionId);
@@ -445,12 +446,13 @@ function projectLegacyExportTerminal(
   const path = diagnosticString(event.data?.outputPath) ?? metadata.path;
   const snapshotId = activitySnapshotId(event);
   const sourcePath = diagnosticString(event.data?.sourcePath);
+  const operationId = event.parentOperationId ?? event.operationId;
   return {
     ...(event.data ? { data: event.data } : {}),
     ...(path && status === "completed" ? { action: { kind: "open", path } as const } : {}),
-    id: `${event.sessionId}:${event.operationId ?? event.timestamp}:ffmpeg.export`,
+    id: `${event.sessionId}:${operationId ?? event.timestamp}:ffmpeg.export`,
     kind: metadata.kind,
-    ...(event.operationId ? { operationId: event.operationId } : {}),
+    ...(operationId ? { operationId } : {}),
     path,
     sessionId: event.sessionId,
     ...(snapshotId ? { snapshotId } : {}),

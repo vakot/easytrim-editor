@@ -268,6 +268,35 @@ describe("activity projection", () => {
     expect(completed?.title).toBe("Optimized render completed");
   });
 
+  it("correlates native export terminals with their frontend parent operation", () => {
+    const started = diagnosticEvent("ffmpeg.export.started", {
+      data: { outputPath, outputType: "optimized", sourcePath },
+      operationId: "frontend-export-1",
+      sessionId: "current-session",
+      snapshotId: "snapshot-1",
+      timestamp: "2026-08-31T08:01:00.000Z",
+    });
+
+    const terminal = diagnosticEvent("ffmpeg.export.completed", {
+      data: { outputPath, outputType: "optimized" },
+      operationId: "native-export-1",
+      parentOperationId: "frontend-export-1",
+      sessionId: "current-session",
+      snapshotId: "snapshot-1",
+      timestamp: "2026-08-31T08:02:00.000Z",
+    });
+
+    const pending = projectActivityEvents([started], labels, "current-session")[0];
+    const completed = projectActivityEvents([started, terminal], labels, "current-session")[0];
+
+    expect(completed).toMatchObject({
+      id: pending?.id,
+      operationId: "frontend-export-1",
+      status: "completed",
+      title: "Optimized render completed",
+    });
+  });
+
   it("keeps historical optimized render output actions separate from source branch identity", () => {
     const entries = projectActivityEvents(
       [
