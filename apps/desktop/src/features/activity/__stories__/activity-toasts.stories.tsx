@@ -99,8 +99,7 @@ const scenarios: Record<ScenarioName, ActivityToastScenario> = {
         <span className="truncate" title={outputPath}>
           Output: {outputPath}
         </span>
-        <span>File size: 248 MB</span>
-        <span>Render time: 00:01:42</span>
+        <span>File size: 248 MB · Render time: 00:01:42</span>
       </ToastDetails>
     ),
     title: "Optimized render completed",

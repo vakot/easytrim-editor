@@ -110,6 +110,14 @@ function ActivityToastDescription({
   const sourcePath = stringValue(entry.data?.sourcePath) ?? attempt?.request.sourcePath;
   const fileSize = numberValue(entry.data?.fileSizeBytes) ?? attempt?.metrics.fileSizeBytes;
   const renderTime = numberValue(entry.data?.durationMs) ?? attempt?.metrics.durationMs;
+  const metrics = [
+    fileSize !== undefined
+      ? t("app.messages.notifications.fileSize", { size: formatBytes(fileSize, "") })
+      : null,
+    renderTime !== null && renderTime !== undefined
+      ? t("app.messages.notifications.renderTime", { duration: formatExportDuration(renderTime) })
+      : null,
+  ].filter((metric): metric is string => metric !== null);
 
   return (
     <div className="grid min-w-0 gap-0.5">
@@ -132,16 +140,7 @@ function ActivityToastDescription({
           ))}
         </div>
       ) : null}
-      {fileSize !== undefined ? (
-        <span>{t("app.messages.notifications.fileSize", { size: formatBytes(fileSize, "") })}</span>
-      ) : null}
-      {renderTime !== null && renderTime !== undefined ? (
-        <span>
-          {t("app.messages.notifications.renderTime", {
-            duration: formatExportDuration(renderTime),
-          })}
-        </span>
-      ) : null}
+      {metrics.length > 0 ? <span>{metrics.join(" · ")}</span> : null}
     </div>
   );
 }
