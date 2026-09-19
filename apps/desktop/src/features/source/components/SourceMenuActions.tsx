@@ -20,9 +20,11 @@ type ActionElement = ReactElement<{
 interface SourceActionProps {
   children: ActionElement;
   event?: "click" | "select";
+  itemId?: string;
   onOpenChange?: (open: boolean) => void;
   open?: boolean;
   source?: EditingInstance;
+  sourcePath?: string;
 }
 
 /**
@@ -91,17 +93,26 @@ export function CancelSourceExport({ children, event = "select", source }: Sourc
 
 /**
  * @name RestoreSource
- * @description Adds source restoration behavior to a compatible action trigger for a deleted source.
+ * @description Adds source restoration behavior to a compatible action trigger for a deleted source or a source path without an open instance.
  */
-export function RestoreSource({ children, event = "select", source }: SourceActionProps) {
+export function RestoreSource({
+  children,
+  event = "select",
+  itemId,
+  source,
+  sourcePath,
+}: SourceActionProps) {
   const dispatch = useAppDispatch();
-  if (!source || source.sourceAvailability !== "deleted") return null;
+  const targetId = source?.id ?? itemId;
+  const targetPath = source?.snapshot.source.sourcePath ?? sourcePath;
+
+  if (!targetPath || (source && source.sourceAvailability !== "deleted")) return null;
 
   return withAction(children, event, () => {
     void dispatch(
       restoreSourceFileRequested({
-        itemId: source.id,
-        sourcePath: source.snapshot.source.sourcePath,
+        ...(targetId ? { itemId: targetId } : {}),
+        sourcePath: targetPath,
       }),
     );
   });

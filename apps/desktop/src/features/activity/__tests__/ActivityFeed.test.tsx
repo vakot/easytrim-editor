@@ -3,6 +3,13 @@ import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
 import { describe, expect, it, vi } from "vitest";
 
+const restoreSourceFromTrash = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+
+vi.mock("@/lib/tauri/media", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/tauri/media")>()),
+  restoreSourceFromTrash,
+}));
+
 import { ResizablePanelContextProvider } from "@/components/ui/resizable";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
@@ -145,18 +152,15 @@ describe("ActivityFeedView file lifecycle entries", () => {
     expect(container.querySelector("svg.lucide-film")).toBeInTheDocument();
   });
 
-  it("shows restore only after a completed deletion", async () => {
+  it("uses the shared restore action after a completed deletion", async () => {
     const onAction = vi.fn();
     const user = userEvent.setup();
     renderActivity(fileEntry("completed"), onAction);
 
     await user.click(screen.getByRole("button", { name: "Restore" }));
 
-    expect(onAction).toHaveBeenCalledWith({
-      kind: "restore",
-      path: "C:/Media/source.mp4",
-      targetId: "source-1",
-    });
+    expect(onAction).not.toHaveBeenCalled();
+    expect(restoreSourceFromTrash).toHaveBeenCalledWith("C:/Media/source.mp4");
   });
 
   it.each(["failed", "cancelled", "interrupted"] as const)(
