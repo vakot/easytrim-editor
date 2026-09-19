@@ -75,7 +75,7 @@ import { createEditorSnapshot, type EditorSnapshot } from "@/domain/editor-snaps
 import type { SourceRef } from "@/domain/source";
 import { normalizeSourceKey } from "@/domain/source";
 import { type DiagnosticOperation, diagnostics } from "@/lib/diagnostics";
-import type { DiagnosticOrigin } from "@/lib/tauri/diagnostics.types";
+import type { DiagnosticOrigin, DiagnosticValue } from "@/lib/tauri/diagnostics.types";
 import {
   activateSourcePath,
   checkMediaCapabilities,
@@ -311,7 +311,7 @@ function normalizeSourceImportResult(input: SourceImportResult | SourceRef[]): S
   return input;
 }
 
-function importResultData(result: SourceImportResult): Record<string, boolean | number | string> {
+function importResultData(result: SourceImportResult): Record<string, DiagnosticValue> {
   return {
     acceptedFileCount: result.acceptedFileCount,
     directFileCount: result.directFileCount,
@@ -320,6 +320,7 @@ function importResultData(result: SourceImportResult): Record<string, boolean | 
     readErrorCount: result.readErrorCount,
     recursive: result.recursive,
     skippedFileCount: result.skippedFileCount,
+    sourcePaths: result.sources.map((source) => source.sourcePath),
     truncated: result.truncated,
     ...(result.truncationReason ? { truncationReason: result.truncationReason } : {}),
   };
@@ -779,10 +780,12 @@ export const closeActiveEditingInstanceRequested =
     }
 
     if (activeInstance.id !== selectActiveInstanceId(state)) {
+      reportClosedSources([activeInstance], origin);
       dispatch(editingInstanceClosed(activeInstance.id));
       return;
     }
 
+    reportClosedSources([activeInstance], origin);
     dispatch(commitActiveEditingInstanceDraft());
     const instances = selectImportedEditingInstances(getState());
     const activeIndex = instances.findIndex((instance) => instance.id === activeInstance.id);
@@ -807,6 +810,11 @@ export const closeEditingInstancesRequested =
     const state = getState();
     const idsToClose = [...new Set(ids)].filter((id) => selectEditingInstanceById(state, id));
     if (idsToClose.length === 0) return;
+
+    reportClosedSources(
+      idsToClose.map((id) => selectEditingInstanceById(state, id)).filter(isEditingInstance),
+      { id: "source.close", type: "button" },
+    );
 
     const closingIds = new Set(idsToClose);
     const activeInstanceId = selectActiveInstanceId(state);
@@ -836,6 +844,24 @@ export const closeEditingInstancesRequested =
       dispatch(nativeDialogStateChanged(false));
     }
   };
+
+function reportClosedSources(instances: EditingInstance[], origin: DiagnosticOrigin): void {
+  if (instances.length === 0) return;
+
+  diagnostics.event("source.file-close.completed", {
+    data: {
+      count: instances.length,
+      sourcePaths: instances.map((instance) => instance.snapshot.source.sourcePath),
+    },
+    origin,
+    result: "success",
+    ...(instances.length === 1 ? { snapshotId: instances[0]!.id } : {}),
+  });
+}
+
+function isEditingInstance(instance: EditingInstance | undefined): instance is EditingInstance {
+  return instance !== undefined;
+}
 
 export const deleteActiveEditingInstanceSourceRequested =
   (itemId?: string): AppThunk<Promise<AppError | null>> =>

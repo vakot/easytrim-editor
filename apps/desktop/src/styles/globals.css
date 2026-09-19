@@ -8,6 +8,10 @@
 @import "@fontsource/inter/800.css";
 @import "@fontsource/inter/900.css";
 
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-description] {
+  color: var(--muted-foreground);
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {

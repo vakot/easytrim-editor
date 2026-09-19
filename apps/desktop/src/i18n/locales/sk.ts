@@ -63,6 +63,8 @@ export const sk = {
       fileDeleteInterrupted: "Odstraňovanie súboru bolo prerušené",
       fileDeleting: "Súbor sa odstraňuje…",
       fileDeleted: "Súbor bol odstránený",
+      closedFiles_one: "Zavretý {{count}} súbor",
+      closedFiles_other: "Zavretých {{count}} súborov",
       fileRestoreCancelled: "Obnovenie súboru bolo zrušené",
       fileRestoreFailed: "Obnovenie súboru zlyhalo",
       fileRestoreInterrupted: "Obnovenie súboru bolo prerušené",
@@ -85,6 +87,13 @@ export const sk = {
       crash: "V aplikácii sa vyskytla neočakávaná chyba. Reštartujte ju a pokračujte.",
       crashTitle: "Vyskytla sa chyba",
       dragUnavailable: "Presunutie súboru nie je dostupné: {{message}}",
+      notifications: {
+        fileSize: "Veľkosť súboru: {{size}}",
+        moreFiles: "+{{count}} ďalších súborov",
+        outputPath: "Výstup: {{path}}",
+        renderTime: "Čas vykresľovania: {{duration}}",
+        sourcePath: "Zdroj: {{path}}",
+      },
       windowActionFailed: "Ovládanie okna sa nepodarilo dokončiť.",
     },
     tooltips: {

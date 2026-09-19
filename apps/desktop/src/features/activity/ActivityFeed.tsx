@@ -12,7 +12,7 @@ import {
   Scissors,
   Trash2,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -33,17 +33,6 @@ import { restoreSourceFileRequested } from "@/app/store/thunks/source-media-thun
 import { formatSourcePath } from "@/features/source";
 import { getCurrentVersion } from "@/lib/app-version.utils";
 import { cn } from "@/lib/class-names.utils";
-import {
-  getCurrentDiagnosticSessionId,
-  getCurrentDiagnosticSessionMetadata,
-  getCurrentSessionDiagnosticsSnapshot,
-  subscribeToCurrentSessionDiagnostics,
-} from "@/lib/diagnostics";
-import {
-  getPersistedDiagnosticsHistorySnapshot,
-  loadPersistedDiagnosticsHistory,
-  subscribeToPersistedDiagnosticsHistory,
-} from "@/lib/diagnostics-history";
 import type { DiagnosticSessionMetadata } from "@/lib/tauri/diagnostics.types";
 import { openFileLocation } from "@/lib/tauri/media";
 
@@ -52,19 +41,18 @@ import {
   type ActivityBranch,
   type ActivityEntry,
   type ActivityKind,
-  type ActivityProjectionLabels,
   type ActivitySessionLabels,
   type ActivityStatus,
   getActivitySessionPresentation,
   groupActivityEntriesByBranch,
   groupActivityEntriesBySession,
-  projectActivityEvents,
-  resolveAvailableActivityActions,
 } from "./activity-projection";
+import { useActivityFeed } from "./useActivityFeed";
 
 const activityIcons: Record<ActivityKind, LucideIcon> = {
   "fast-cut": Scissors,
   "file-deleted": Trash2,
+  "files-closed": CircleX,
   "file-restored": RotateCcw,
   "files-imported": FileVideo,
   "folders-imported": FolderOpen,
@@ -104,78 +92,14 @@ const sessionSeparatorClassNames = {
 } satisfies Record<"current" | "default" | "warning", string | undefined>;
 
 export function ActivityFeed() {
-  const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const [currentTime, setCurrentTime] = useState(() => Date.now());
-  const diagnosticSnapshot = useSyncExternalStore(
-    subscribeToCurrentSessionDiagnostics,
-    getCurrentSessionDiagnosticsSnapshot,
-    getCurrentSessionDiagnosticsSnapshot,
-  );
-
-  const historySnapshot = useSyncExternalStore(
-    subscribeToPersistedDiagnosticsHistory,
-    getPersistedDiagnosticsHistorySnapshot,
-    getPersistedDiagnosticsHistorySnapshot,
-  );
+  const { currentSessionId, entries, sessions } = useActivityFeed();
 
   useEffect(() => {
     const interval = window.setInterval(() => setCurrentTime(Date.now()), 60_000);
     return () => window.clearInterval(interval);
   }, []);
-
-  useEffect(() => {
-    void loadPersistedDiagnosticsHistory();
-  }, []);
-
-  const labels = useMemo<ActivityProjectionLabels>(
-    () => ({
-      fastCutCompleted: t("app.status.fastCutCompleted"),
-      fastCutCancelled: t("app.status.fastCutCancelled"),
-      fastCutFailed: t("app.status.fastCutFailed"),
-      fastCutInterrupted: t("app.status.fastCutInterrupted"),
-      fastCutStarted: t("app.status.fastCutStarted"),
-      fastCutting: t("app.status.fastCutting"),
-      fileDeleteCancelled: t("app.status.fileDeleteCancelled"),
-      fileDeleteFailed: t("app.status.fileDeleteFailed"),
-      fileDeleteInterrupted: t("app.status.fileDeleteInterrupted"),
-      fileDeleting: t("app.status.fileDeleting"),
-      fileDeleted: t("app.status.fileDeleted"),
-      fileRestoreCancelled: t("app.status.fileRestoreCancelled"),
-      fileRestoreFailed: t("app.status.fileRestoreFailed"),
-      fileRestoreInterrupted: t("app.status.fileRestoreInterrupted"),
-      fileRestoring: t("app.status.fileRestoring"),
-      fileRestored: t("app.status.fileRestored"),
-      importOpenedFiles: (count) => t("app.status.openedFiles", { count }),
-      importOpenedFilesFromFolders: (fileCount, folderCount) =>
-        `${t("app.status.openedFiles", { count: fileCount })} ${t("app.status.fromFolders", { count: folderCount })}`,
-      renderCompleted: t("app.status.renderCompleted"),
-      renderCancelled: t("app.status.renderCancelled"),
-      renderFailed: t("app.status.renderFailed"),
-      renderInterrupted: t("app.status.renderInterrupted"),
-      renderStarted: t("app.status.renderStarted"),
-      rendering: t("app.status.rendering"),
-    }),
-    [t],
-  );
-
-  const entries = useMemo(
-    () =>
-      resolveAvailableActivityActions(
-        projectActivityEvents(
-          [...historySnapshot.events, ...diagnosticSnapshot.events],
-          labels,
-          getCurrentDiagnosticSessionId(),
-        ),
-        getCurrentDiagnosticSessionId(),
-      ),
-    [diagnosticSnapshot, historySnapshot, labels],
-  );
-
-  const currentSession = getCurrentDiagnosticSessionMetadata();
-  const sessions = currentSession
-    ? [currentSession, ...historySnapshot.sessions]
-    : historySnapshot.sessions;
 
   const handleAction = useCallback(
     (action: ActivityAction) => {
@@ -196,7 +120,7 @@ export function ActivityFeed() {
   return (
     <ActivityFeedView
       currentAppVersion={getCurrentVersion()}
-      currentSessionId={currentSession?.sessionId ?? null}
+      currentSessionId={currentSessionId}
       entries={entries}
       now={currentTime}
       onAction={handleAction}

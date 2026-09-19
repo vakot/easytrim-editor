@@ -20,6 +20,7 @@ const labels: ActivityProjectionLabels = {
   fastCutInterrupted: "Fast cut interrupted",
   fastCutStarted: "Started fast cut",
   fastCutting: "Fast cutting…",
+  fileCloseCompleted: (count) => `Closed ${count} file${count === 1 ? "" : "s"}`,
   fileDeleteCancelled: "File deletion cancelled",
   fileDeleteFailed: "File deletion failed",
   fileDeleteInterrupted: "File deletion interrupted",
@@ -70,6 +71,28 @@ function session(
 }
 
 describe("activity projection", () => {
+  it("projects a completed close action for multiple files", () => {
+    const entry = projectActivityEvent(
+      diagnosticEvent("source.file-close.completed", {
+        data: {
+          count: 2,
+          sourcePaths: ["C:/Media/first.mp4", "C:/Media/second.mp4"],
+        },
+      }),
+      labels,
+    );
+
+    expect(entry).toMatchObject({
+      data: {
+        count: 2,
+        sourcePaths: ["C:/Media/first.mp4", "C:/Media/second.mp4"],
+      },
+      kind: "files-closed",
+      status: "completed",
+      title: "Closed 2 files",
+    });
+  });
+
   it("projects one completed file import from its correlated diagnostics", () => {
     const entries = projectActivityEvents(
       [
@@ -243,6 +266,35 @@ describe("activity projection", () => {
     expect(pending?.id).toBe(completed?.id);
     expect(completed?.startedAt).toBe("2026-08-31T08:01:00.000Z");
     expect(completed?.title).toBe("Optimized render completed");
+  });
+
+  it("correlates native export terminals with their frontend parent operation", () => {
+    const started = diagnosticEvent("ffmpeg.export.started", {
+      data: { outputPath, outputType: "optimized", sourcePath },
+      operationId: "frontend-export-1",
+      sessionId: "current-session",
+      snapshotId: "snapshot-1",
+      timestamp: "2026-08-31T08:01:00.000Z",
+    });
+
+    const terminal = diagnosticEvent("ffmpeg.export.completed", {
+      data: { outputPath, outputType: "optimized" },
+      operationId: "native-export-1",
+      parentOperationId: "frontend-export-1",
+      sessionId: "current-session",
+      snapshotId: "snapshot-1",
+      timestamp: "2026-08-31T08:02:00.000Z",
+    });
+
+    const pending = projectActivityEvents([started], labels, "current-session")[0];
+    const completed = projectActivityEvents([started, terminal], labels, "current-session")[0];
+
+    expect(completed).toMatchObject({
+      id: pending?.id,
+      operationId: "frontend-export-1",
+      status: "completed",
+      title: "Optimized render completed",
+    });
   });
 
   it("keeps historical optimized render output actions separate from source branch identity", () => {
