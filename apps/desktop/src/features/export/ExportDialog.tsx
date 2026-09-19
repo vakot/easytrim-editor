@@ -247,7 +247,7 @@ export function ExportDialog() {
 
           <CommandPreview command={commandPreview} error={commandPreviewError?.message} />
 
-          <DialogFooter className="sm:justify-between">
+          <DialogFooter className="items-center sm:justify-between">
             <p className="text-xs text-muted-foreground">
               {t("export.dialogs.optimized.saveNotice")}
             </p>
