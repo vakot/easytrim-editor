@@ -131,7 +131,7 @@ export function PresetManager() {
               {presets.map((preset) => (
                 <div className="flex items-center gap-1" key={preset.id}>
                   <DropdownMenuItem
-                    className="min-w-0 flex-1"
+                    className="h-auto min-w-0 flex-1 items-start"
                     onSelect={() => dispatch(exportPresetSelected(preset.id))}
                   >
                     <span className="min-w-0 flex-1">
@@ -146,7 +146,7 @@ export function PresetManager() {
                   <DropdownMenuSub>
                     <DropdownMenuSubTrigger
                       aria-label={t("export.accessibility.presetActions")}
-                      className="size-8 shrink-0 justify-center p-0"
+                      className="size-8 min-w-0 shrink-0 justify-center p-0"
                     >
                       <MoreHorizontal className="size-4" />
                     </DropdownMenuSubTrigger>
