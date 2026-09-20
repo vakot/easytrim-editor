@@ -18,7 +18,7 @@ import { selectEditingInstances } from "@/app/store/slices/editing-instances-sli
 import { deleteActiveEditingInstanceSourceRequested } from "@/app/store/thunks/source-media-thunks";
 import { normalizeSourceKey } from "@/domain/source";
 
-interface DeleteSourceDialogProps {
+interface SourceDeleteDialogProps {
   children: ReactNode;
   onOpenChange?: (open: boolean) => void;
   open?: boolean;
@@ -28,7 +28,7 @@ interface DeleteSourceDialogProps {
   targetName?: string;
 }
 
-export function DeleteSourceDialog({
+export function SourceDeleteDialog({
   children,
   onOpenChange,
   open,
@@ -36,7 +36,7 @@ export function DeleteSourceDialog({
   sourceIds,
   target = "file",
   targetName,
-}: DeleteSourceDialogProps) {
+}: SourceDeleteDialogProps) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const instances = useAppSelector(selectEditingInstances);
@@ -103,4 +103,4 @@ export function DeleteSourceDialog({
   );
 }
 
-export { AlertDialogTrigger as DeleteSourceDialogTrigger };
+export { AlertDialogTrigger as SourceDeleteDialogTrigger };
