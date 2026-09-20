@@ -11,6 +11,7 @@ import {
   Play,
   RotateCcw,
   Scissors,
+  Search,
   Settings2,
   Trash2,
   Upload,
@@ -24,9 +25,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Highlight } from "@/components/ui/highlight";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { RelativeTimestamp } from "@/components/ui/relative-timestamp";
-import { SearchBar } from "@/components/ui/search-bar";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -121,9 +122,11 @@ function SourceListTabs() {
 }
 
 function SourceListSearch() {
-  const { search, setSearch } = useSourceListData();
+  const { debouncedSearch, search, setSearch, sources } = useSourceListData();
   const { t } = useTranslation();
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const isSearchEmpty = search.trim().length === 0;
+  const isFiltered = debouncedSearch.trim().length > 0;
 
   useKeyboardShortcut(
     (event) => event.code === "KeyK" && event.ctrlKey,
@@ -131,20 +134,29 @@ function SourceListSearch() {
   );
 
   return (
-    <SearchBar
-      aria-label={t("common.labels.search")}
-      endContent={
-        <KbdGroup aria-label="Ctrl + K">
-          <Kbd>Ctrl</Kbd>
-          <Kbd>K</Kbd>
-        </KbdGroup>
-      }
-      onValueChange={setSearch}
-      placeholder={t("common.labels.search")}
-      ref={searchInputRef}
-      size="sm"
-      value={search}
-    />
+    <InputGroup>
+      <InputGroupAddon>
+        <Search aria-hidden="true" />
+      </InputGroupAddon>
+      <InputGroupInput
+        aria-label={t("common.labels.search")}
+        onChange={(event) => setSearch(event.currentTarget.value)}
+        placeholder={t("common.labels.search")}
+        ref={searchInputRef}
+        type="search"
+        value={search}
+      />
+      {isFiltered ? (
+        <InputGroupAddon align="inline-end">{sources.length} Results</InputGroupAddon>
+      ) : isSearchEmpty ? (
+        <InputGroupAddon align="inline-end">
+          <KbdGroup aria-label="Ctrl + K">
+            <Kbd>Ctrl</Kbd>
+            <Kbd>K</Kbd>
+          </KbdGroup>
+        </InputGroupAddon>
+      ) : null}
+    </InputGroup>
   );
 }
 

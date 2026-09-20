@@ -39,34 +39,25 @@ const searchBarIconVariants = cva(
 
 interface SearchBarProps
   extends
-    Omit<React.ComponentProps<typeof Input>, "children" | "onChange" | "size" | "type" | "value">,
+    Omit<React.ComponentProps<typeof Input>, "onChange" | "size" | "type" | "value">,
     VariantProps<typeof searchBarInputVariants> {
-  endContent?: React.ReactNode;
   onValueChange: (value: string) => void;
   value: string;
 }
 
-const SearchBar = React.forwardRef<HTMLInputElement, SearchBarProps>(
-  function SearchBar({ className, endContent, onValueChange, size = "sm", value, ...props }, ref) {
-    return (
-      <div className={cn("relative", className)}>
-        <Search aria-hidden="true" className={searchBarIconVariants({ size })} />
-        <Input
-          {...props}
-          className={searchBarInputVariants({ size, className: endContent ? "pr-14" : undefined })}
-          onChange={(event) => onValueChange(event.currentTarget.value)}
-          ref={ref}
-          type="search"
-          value={value}
-        />
-        {endContent ? (
-          <div className="pointer-events-none absolute inset-y-0 right-1 flex items-center">
-            {endContent}
-          </div>
-        ) : null}
-      </div>
-    );
-  },
-);
+function SearchBar({ className, onValueChange, size = "sm", value, ...props }: SearchBarProps) {
+  return (
+    <div className={cn("relative", className)}>
+      <Search aria-hidden="true" className={searchBarIconVariants({ size })} />
+      <Input
+        {...props}
+        className={searchBarInputVariants({ size })}
+        onChange={(event) => onValueChange(event.currentTarget.value)}
+        type="search"
+        value={value}
+      />
+    </div>
+  );
+}
 
 export { SearchBar };
