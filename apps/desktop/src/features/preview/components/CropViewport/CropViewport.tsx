@@ -1,60 +1,29 @@
-import { useTranslation } from "react-i18next";
-
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-
 import { CropSelection } from "./components/CropSelection";
 import { CropSnapMarkers } from "./components/CropSnapMarkers";
 import { CropViewportContextMenu } from "./components/CropViewportContextMenu";
 import { CropViewportTooltip } from "./components/CropViewportTooltip";
 import { CropViewportVideo } from "./components/CropViewportVideo";
-import { useCropViewport } from "./hooks/useCropViewport";
 
 export function CropViewport() {
-  const { t } = useTranslation();
-  const viewportState = useCropViewport();
-  const {
-    containerRef,
-    cropSelection,
-    isPreviewReady,
-    onSourceMetadata,
-    onSurfaceBlur,
-    onSurfaceClick,
-    onSurfacePointerCancel,
-    onSurfacePointerMove,
-    onSurfacePointerUp,
-    previewTransform,
-    resetDialogOpen,
-    selectionFrame,
-    setResetDialogOpen,
-    sourceFrame,
-    transformOrigin,
-    viewport,
-    viewportFrame,
-    viewportTransition,
-  } = viewportState;
-
-  if (!isPreviewReady) return null;
-
   return (
-    <AlertDialog onOpenChange={setResetDialogOpen} open={resetDialogOpen}>
-      <CropViewportContextMenu
-        onCrop={() => cropSelection.open(viewportFrame)}
-        onFlipHorizontal={cropSelection.flipHorizontalAxis}
-        onFlipVertical={cropSelection.flipVerticalAxis}
-        onReset={() => setResetDialogOpen(true)}
-        onRotateClockwise={cropSelection.rotateClockwise}
-        onRotateCounterclockwise={cropSelection.rotateCounterclockwise}
-        onRotateHalfTurn={cropSelection.rotateHalfTurn}
-      >
+    <CropViewportContextMenu>
+      {({
+        containerRef,
+        cropSelection,
+        onSourceMetadata,
+        onSurfaceBlur,
+        onSurfaceClick,
+        onSurfacePointerCancel,
+        onSurfacePointerMove,
+        onSurfacePointerUp,
+        previewTransform,
+        selectionFrame,
+        sourceFrame,
+        transformOrigin,
+        viewport,
+        viewportFrame,
+        viewportTransition,
+      }) => (
         <CropViewportTooltip
           containerRef={containerRef}
           disabled={cropSelection.isOpen}
@@ -100,19 +69,7 @@ export function CropViewport() {
             />
           ) : null}
         </CropViewportTooltip>
-      </CropViewportContextMenu>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{t("preview.dialogs.reset.title")}</AlertDialogTitle>
-          <AlertDialogDescription>{t("preview.dialogs.reset.description")}</AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>{t("common.actions.cancel")}</AlertDialogCancel>
-          <AlertDialogAction onClick={cropSelection.reset} variant="destructive">
-            {t("preview.actions.transform.reset")}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+      )}
+    </CropViewportContextMenu>
   );
 }

@@ -32,7 +32,6 @@ export function useCropViewport() {
   const [containerBounds, setContainerBounds] = useState<Bounds>({ width: 0, height: 0 });
   const [sourceDimensions, setSourceDimensions] = useState<Bounds>({ width: 0, height: 0 });
   const [sourceAspectRatio, setSourceAspectRatio] = useState(16 / 9);
-  const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const cropSelection = useCropSelection(containerRef);
   const { close, finishDrag, isOpen, moveDrag } = cropSelection;
 
@@ -181,9 +180,7 @@ export function useCropViewport() {
     onSurfacePointerMove,
     onSurfacePointerUp: finishDrag,
     previewTransform,
-    resetDialogOpen,
     selectionFrame,
-    setResetDialogOpen,
     sourceFrame,
     transformOrigin,
     viewport,
