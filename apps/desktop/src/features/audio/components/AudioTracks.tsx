@@ -8,7 +8,7 @@ import { selectTrim } from "@/app/store/slices/trim-slice";
 import { timelinePercent, type TrimRange } from "@/domain/trim";
 import type { AudioStream } from "@/lib/tauri/media.types";
 
-import { useWaveformPreparation } from "../../../hooks/useWaveformPreparation";
+import { useWaveformPreparation } from "../hooks/useWaveformPreparation";
 
 import { AudioTrackRow } from "./AudioTrackRow";
 

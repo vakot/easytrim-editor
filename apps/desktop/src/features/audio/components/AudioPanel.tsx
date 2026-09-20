@@ -27,11 +27,11 @@ import {
 } from "@/app/store/thunks/source-media-thunks";
 import { diagnostics } from "@/lib/diagnostics";
 
-import { audioOutputSummary } from "../../lib/audio-level.utils";
+import { audioOutputSummary } from "../lib/audio-level.utils";
 
-import { AudioLevelControl } from "./components/AudioLevelControl";
-import { AudioTracks } from "./components/AudioTracks";
-import { VolumeButton } from "./components/VolumeButton";
+import { AudioLevelControl } from "./AudioLevelControl";
+import { AudioTracks } from "./AudioTracks";
+import { VolumeButton } from "./VolumeButton";
 
 export function AudioPanel() {
   const sourceSelection = useAppSelector(selectSourceSelection);
