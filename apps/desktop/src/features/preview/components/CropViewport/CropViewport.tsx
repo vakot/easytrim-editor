@@ -36,8 +36,8 @@ import {
   centerFrame,
   cropFrame,
   scaleFrameToSourceBounds,
-} from "../../../../lib/crop-frame.utils";
-import { isFullCrop } from "../../../../lib/crop-geometry.utils";
+} from "../../lib/crop-frame.utils";
+import { isFullCrop } from "../../lib/crop-geometry.utils";
 
 import { CropSelection } from "./components/CropSelection";
 import { CropSnapMarkers } from "./components/CropSnapMarkers";

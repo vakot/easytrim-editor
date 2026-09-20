@@ -4,11 +4,7 @@ import { selectPreview } from "@/app/store/slices/preview-slice";
 import { selectSourceSelection } from "@/app/store/slices/source-slice";
 import { closeActiveEditingInstanceRequested } from "@/app/store/thunks/source-media-thunks";
 
-import {
-  VideoPreview,
-  VideoPreviewEmpty,
-  VideoPreviewLoadingOverlay,
-} from "./components/VideoPreview";
+import { VideoPreview, VideoPreviewEmpty, VideoPreviewLoadingOverlay } from "./VideoPreview";
 
 export function Preview() {
   const dispatch = useAppDispatch();

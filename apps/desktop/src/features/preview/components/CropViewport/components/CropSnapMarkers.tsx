@@ -1,6 +1,6 @@
 import { QUARTER_SNAP_POINTS } from "@/lib/interaction/snap-points.consts";
 
-import type { CropFrame } from "../../../../../lib/crop-frame.utils";
+import type { CropFrame } from "../../../lib/crop-frame.utils";
 
 interface CropSnapMarkersProps {
   frame: CropFrame;
