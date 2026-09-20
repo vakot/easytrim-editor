@@ -8,7 +8,7 @@ import {
   MAX_SLIDER_DECIBELS,
   MIN_SLIDER_DECIBELS,
   volumePercentToDecibels,
-} from "../../../lib/audio-level.utils";
+} from "../lib/audio-level.utils";
 
 interface AudioLevelControlProps {
   className?: string;
