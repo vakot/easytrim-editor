@@ -258,7 +258,7 @@ function SourceCardMetadata({ className }: { className?: string }) {
       <span aria-hidden="true">·</span>
       <RelativeTimestamp
         label={t("source.labels.metadata.updatedAt")}
-        timestampMicros={source.snapshot.source.updatedAtMicros}
+        timestamp={source.snapshot.source.updatedAtMicros}
         unknownLabel={unknown}
       />
     </div>

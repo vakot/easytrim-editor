@@ -150,7 +150,7 @@ function SourceListGroup({
           </span>
         ) : (
           <RelativeTimestamp
-            timestampMicros={group.timestampMicros}
+            timestamp={group.timestampMicros}
             unknownLabel={t("common.status.unknown")}
           />
         )}

@@ -181,7 +181,7 @@ export function ActivityFeedView({
                           <RelativeTimestamp
                             className="text-muted-foreground"
                             dateTime={presentation.timestamp}
-                            timestampMicros={toTimestampMicros(presentation.timestamp)}
+                            timestamp={toTimestampMicros(presentation.timestamp)}
                             unknownLabel={t("common.status.unknown")}
                           />
                         </>
@@ -371,7 +371,7 @@ function ActivityFeedEntryTitle({
       <RelativeTimestamp
         className="shrink-0 text-muted-foreground"
         dateTime={entry.startedAt}
-        timestampMicros={toTimestampMicros(entry.startedAt)}
+        timestamp={toTimestampMicros(entry.startedAt)}
         unknownLabel={t("common.status.unknown")}
       />
     </MarkerTitle>

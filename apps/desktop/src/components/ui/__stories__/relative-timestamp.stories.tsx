@@ -42,29 +42,29 @@ const earlier = new Date(storyNow);
 earlier.setDate(earlier.getDate() - 2);
 
 export const JustNow: Story = {
-  args: { label: "Updated at", timestampMicros: timestampFromNow(0) },
+  args: { label: "Updated at", timestamp: timestampFromNow(0) },
 };
 
 export const Seconds: Story = {
-  args: { label: "Updated at", timestampMicros: timestampFromNow(5_000) },
+  args: { label: "Updated at", timestamp: timestampFromNow(5_000) },
 };
 
 export const Minutes: Story = {
-  args: { label: "Updated at", timestampMicros: timestampFromNow(5 * 60_000) },
+  args: { label: "Updated at", timestamp: timestampFromNow(5 * 60_000) },
 };
 
 export const Hours: Story = {
-  args: { label: "Updated at", timestampMicros: timestampFromNow(5 * 60 * 60_000) },
+  args: { label: "Updated at", timestamp: timestampFromNow(5 * 60 * 60_000) },
 };
 
 export const Yesterday: Story = {
-  args: { label: "Updated at", timestampMicros: yesterday.getTime() * 1_000 },
+  args: { label: "Updated at", timestamp: yesterday.getTime() * 1_000 },
 };
 
 export const Earlier: Story = {
-  args: { label: "Updated at", timestampMicros: earlier.getTime() * 1_000 },
+  args: { label: "Updated at", timestamp: earlier.getTime() * 1_000 },
 };
 
 export const Unknown: Story = {
-  args: { label: "Updated at", timestampMicros: undefined },
+  args: { label: "Updated at", timestamp: undefined },
 };

@@ -11,7 +11,7 @@ interface RelativeTimestampProps {
   className?: string;
   dateTime?: string;
   label?: ReactNode;
-  timestampMicros: number | undefined;
+  timestamp: number | undefined;
   unknownLabel: string;
 }
 
@@ -19,15 +19,15 @@ function RelativeTimestamp({
   className,
   dateTime,
   label,
-  timestampMicros,
+  timestamp,
   unknownLabel,
 }: RelativeTimestampProps) {
   const { i18n } = useTranslation();
   const now = useRelativeTimeNow();
   const locale = i18n.resolvedLanguage ?? i18n.language;
-  const relativeTime = formatRelativeTime(timestampMicros, locale, unknownLabel, now);
-  const exactTime = formatDateTime(timestampMicros, locale, unknownLabel);
-  const timestampMs = timestampMicros === undefined ? undefined : timestampMicros / 1_000;
+  const relativeTime = formatRelativeTime(timestamp, locale, unknownLabel, now);
+  const exactTime = formatDateTime(timestamp, locale, unknownLabel);
+  const timestampMs = timestamp === undefined ? undefined : timestamp / 1_000;
   const parsedTimestamp = timestampMs === undefined ? undefined : new Date(timestampMs);
   const semanticDateTime =
     dateTime ??

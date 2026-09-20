@@ -6,12 +6,12 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { RelativeTimestamp } from "../relative-timestamp";
 
-function renderRelativeTimestamp(timestampMicros: number | undefined) {
+function renderRelativeTimestamp(timestamp: number | undefined) {
   return render(
     <TooltipProvider>
       <RelativeTimestamp
         className="timestamp"
-        timestampMicros={timestampMicros}
+        timestamp={timestamp}
         unknownLabel="Unknown"
       />
     </TooltipProvider>,
