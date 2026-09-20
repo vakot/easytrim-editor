@@ -13,7 +13,10 @@ vi.mock("@/lib/tauri/media", async (importOriginal) => ({
 }));
 
 import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";
-import { selectActiveEditingInstance } from "@/app/store/slices/editing-instances-slice";
+import {
+  selectActiveEditingInstance,
+  selectImportedEditingInstances,
+} from "@/app/store/slices/editing-instances-slice";
 import { createAppStore } from "@/app/store/store";
 import { ingestSources } from "@/app/store/thunks/source-media-thunks";
 import { firstSource, media, secondSource } from "@/test/source.fixtures";
@@ -46,5 +49,17 @@ describe("source import workflow", () => {
     expect(selectActiveEditingInstance(store.getState())?.snapshot).toEqual(
       createDefaultEditorSnapshot(secondSource, false),
     );
+  });
+
+  it("stamps all sources in one import batch with the same import time", () => {
+    const store = createAppStore();
+
+    store.dispatch(ingestSources([firstSource, secondSource]));
+
+    const importedAtMicros = selectImportedEditingInstances(store.getState()).map(
+      ({ importedAtMicros }) => importedAtMicros,
+    );
+    expect(importedAtMicros[0]).toBeDefined();
+    expect(importedAtMicros[0]).toBe(importedAtMicros[1]);
   });
 });

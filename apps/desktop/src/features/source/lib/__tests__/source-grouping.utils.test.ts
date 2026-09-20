@@ -5,13 +5,20 @@ import type { EditingInstance } from "@/domain/editing-instance";
 import {
   getSourceFolderPath,
   groupSourcesByFolder,
+  groupSourcesByImportedTime,
   groupSourcesByUpdatedTime,
 } from "../source-grouping.utils";
 
-function source(id: string, sourcePath: string, updatedAtMicros?: number): EditingInstance {
+function source(
+  id: string,
+  sourcePath: string,
+  updatedAtMicros?: number,
+  importedAtMicros?: number,
+): EditingInstance {
   return {
     exportAttempts: [],
     id,
+    ...(importedAtMicros === undefined ? {} : { importedAtMicros }),
     origin: "source-import",
     snapshot: {
       audio: { master: { enabled: true, volumePercent: 100 }, mergeAudio: false, tracks: [] },
@@ -78,6 +85,31 @@ describe("source grouping utilities", () => {
       ["yesterday", ["yesterday"]],
       ["date:2026-8-18", ["older"]],
       ["unknown", ["unknown"]],
+    ]);
+  });
+
+  it("groups sources from the same import batch together", () => {
+    const now = new Date(2026, 8, 20, 12, 0);
+    const batchOne = now.getTime() * 1_000;
+    const batchOneOther = new Date(now.getTime() - 30_000).getTime() * 1_000;
+    const batchTwo = new Date(now.getTime() - 2 * 60 * 60_000).getTime() * 1_000;
+
+    const groups = groupSourcesByImportedTime(
+      [
+        source("first", "C:/Media/first.mp4", undefined, batchOne),
+        source("second", "C:/Media/second.mp4", undefined, batchOne),
+        source("other", "C:/Media/other.mp4", undefined, batchOneOther),
+        source("third", "C:/Media/third.mp4", undefined, batchTwo),
+      ],
+      "en-US",
+      "Unknown",
+      now,
+    );
+
+    expect(groups.map(({ key, items }) => [key, items.map(({ id }) => id)])).toEqual([
+      [`import:${batchOne}`, ["first", "second"]],
+      [`import:${batchOneOther}`, ["other"]],
+      [`import:${batchTwo}`, ["third"]],
     ]);
   });
 });

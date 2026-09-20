@@ -59,6 +59,7 @@ import {
 import { getRevealLabel } from "./lib/source.utils";
 import {
   groupSourcesByFolder,
+  groupSourcesByImportedTime,
   groupSourcesByUpdatedTime,
   type SourceGroup,
 } from "./lib/source-grouping.utils";
@@ -169,14 +170,15 @@ function SourceListTime({ sources }: { sources: EditingInstance[] }) {
 }
 
 function SourceListImported({ sources }: { sources: EditingInstance[] }) {
-  // TODO: group by time each batch was imported (relative in minutes;hours;yesterday;absolute)
-  // TODO: overall rendering structure can be populated from Folder path
+  const { i18n, t } = useTranslation();
+  const groups = groupSourcesByImportedTime(sources, i18n.language, t("common.status.unknown"));
+
   return (
-    <ul className="flex flex-col gap-3" data-slot="imported-sources-grid">
-      {sources.map((source) => (
-        <SourceListItem key={source.id} source={source} />
-      ))}
-    </ul>
+    <SourceListGroups
+      dataSlot="imported-sources-import-groups"
+      groups={groups}
+      icon={<Upload aria-hidden="true" className="size-3.5 shrink-0" />}
+    />
   );
 }
 

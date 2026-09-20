@@ -41,15 +41,50 @@ export function groupSourcesByUpdatedTime(
   unknownLabel: string,
   now = new Date(),
 ): SourceGroup<EditingInstance>[] {
+  return groupSourcesByTimestamp(
+    sources,
+    (source) => source.snapshot.source.updatedAtMicros,
+    locale,
+    unknownLabel,
+    now,
+  );
+}
+
+export function groupSourcesByImportedTime(
+  sources: readonly EditingInstance[],
+  locale: string,
+  unknownLabel: string,
+  now = new Date(),
+): SourceGroup<EditingInstance>[] {
   const groups = new Map<string, SourceGroup<EditingInstance>>();
 
   for (const source of sources) {
-    const group = getUpdatedTimeGroup(
-      source.snapshot.source.updatedAtMicros,
-      locale,
-      unknownLabel,
-      now,
-    );
+    const importedAtMicros = source.importedAtMicros;
+    const timeGroup = getUpdatedTimeGroup(importedAtMicros, locale, unknownLabel, now);
+    const key = importedAtMicros === undefined ? "unknown" : `import:${importedAtMicros}`;
+    const existing = groups.get(key);
+
+    if (existing) {
+      existing.items.push(source);
+    } else {
+      groups.set(key, { items: [source], key, label: timeGroup.label });
+    }
+  }
+
+  return [...groups.values()];
+}
+
+function groupSourcesByTimestamp(
+  sources: readonly EditingInstance[],
+  getTimestamp: (source: EditingInstance) => number | undefined,
+  locale: string,
+  unknownLabel: string,
+  now: Date,
+): SourceGroup<EditingInstance>[] {
+  const groups = new Map<string, SourceGroup<EditingInstance>>();
+
+  for (const source of sources) {
+    const group = getUpdatedTimeGroup(getTimestamp(source), locale, unknownLabel, now);
     const existing = groups.get(group.key);
 
     if (existing) {
