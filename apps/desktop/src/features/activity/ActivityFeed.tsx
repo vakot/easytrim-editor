@@ -29,7 +29,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectActivityFeedView } from "@/app/store/slices/preferences-slice";
-import { formatSourcePath, RestoreSource } from "@/features/source";
+import { formatSourcePath, RelativeTimestamp, RestoreSource } from "@/features/source";
 import { getCurrentVersion } from "@/lib/app-version.utils";
 import { cn } from "@/lib/class-names.utils";
 import type { DiagnosticSessionMetadata } from "@/lib/tauri/diagnostics.types";
@@ -145,11 +145,6 @@ export function ActivityFeedView({
     yesterday: t("app.labels.yesterday"),
   };
 
-  const timeFormatter = useMemo(
-    () => new Intl.DateTimeFormat(locale, { hour: "numeric", minute: "2-digit" }),
-    [locale],
-  );
-
   return (
     <>
       {groups.length === 0 ? (
@@ -177,8 +172,19 @@ export function ActivityFeedView({
                     className={sessionSeparatorClassNames[presentation.tone]}
                     variant="separator"
                   >
-                    <MarkerContent className="text-xs font-medium">
+                    <MarkerContent className="flex-row items-center gap-1 text-xs font-medium">
                       {presentation.label}
+                      {presentation.timestamp ? (
+                        <>
+                          <span>·</span>
+                          <RelativeTimestamp
+                            className="text-muted-foreground"
+                            dateTime={presentation.timestamp}
+                            timestampMicros={toTimestampMicros(presentation.timestamp)}
+                            unknownLabel={t("common.status.unknown")}
+                          />
+                        </>
+                      ) : null}
                     </MarkerContent>
                   </Marker>
                 </div>
@@ -190,14 +196,12 @@ export function ActivityFeedView({
                           branch={item.branch}
                           key={item.branch.id}
                           onAction={onAction}
-                          timeFormatter={timeFormatter}
                         />
                       ) : (
                         <ActivityFeedEntry
                           entry={item.entry}
                           key={item.entry.id}
                           onAction={onAction}
-                          timeFormatter={timeFormatter}
                         />
                       ),
                     )
@@ -207,7 +211,6 @@ export function ActivityFeedView({
                         entry={entry}
                         key={entry.id}
                         onAction={onAction}
-                        timeFormatter={timeFormatter}
                       />
                     ))}
               </div>
@@ -222,11 +225,9 @@ export function ActivityFeedView({
 function ActivityFeedBranch({
   branch,
   onAction,
-  timeFormatter,
 }: {
   branch: ActivityBranch;
   onAction?: (action: ActivityAction) => void;
-  timeFormatter: Intl.DateTimeFormat;
 }) {
   const { t } = useTranslation();
   const normalizedSourcePath = formatSourcePath(branch.path ?? "");
@@ -252,12 +253,7 @@ function ActivityFeedBranch({
 
       <MarkerGroup className="gap-2 pt-2">
         {branch.entries.map((entry) => (
-          <ActivityFeedMarkerGroupItem
-            entry={entry}
-            key={entry.id}
-            onAction={onAction}
-            timeFormatter={timeFormatter}
-          />
+          <ActivityFeedMarkerGroupItem entry={entry} key={entry.id} onAction={onAction} />
         ))}
       </MarkerGroup>
     </div>
@@ -267,11 +263,9 @@ function ActivityFeedBranch({
 function ActivityFeedMarkerGroupItem({
   entry,
   onAction,
-  timeFormatter,
 }: {
   entry: ActivityEntry;
   onAction?: (action: ActivityAction) => void;
-  timeFormatter: Intl.DateTimeFormat;
 }) {
   const action = entry.action;
 
@@ -281,11 +275,7 @@ function ActivityFeedMarkerGroupItem({
   return (
     <Marker className="items-center text-xs">
       <MarkerContent className="flex-row flex-nowrap items-center gap-1">
-        <ActivityFeedEntryTitle
-          className="text-muted-foreground"
-          entry={entry}
-          timeFormatter={timeFormatter}
-        />
+        <ActivityFeedEntryTitle className="text-muted-foreground" entry={entry} />
 
         {showAction && <ActivityFeedEntryButton compact entry={entry} onClick={handleAction} />}
       </MarkerContent>
@@ -297,12 +287,10 @@ function ActivityFeedEntry({
   compact = false,
   entry,
   onAction,
-  timeFormatter,
 }: {
   compact?: boolean;
   entry: ActivityEntry;
   onAction?: (action: ActivityAction) => void;
-  timeFormatter: Intl.DateTimeFormat;
 }) {
   const action = entry.action;
   const normalizedSourcePath = formatSourcePath(entry.path ?? "");
@@ -316,11 +304,7 @@ function ActivityFeedEntry({
         <ActivityEntryMarkerIcon entry={entry} />
 
         <MarkerContent className="flex-row flex-nowrap items-center gap-1">
-          <ActivityFeedEntryTitle
-            className="text-foreground"
-            entry={entry}
-            timeFormatter={timeFormatter}
-          />
+          <ActivityFeedEntryTitle className="text-foreground" entry={entry} />
 
           {showAction && (
             <ActivityFeedEntryButton compact={compact} entry={entry} onClick={handleAction} />
@@ -335,11 +319,7 @@ function ActivityFeedEntry({
       <ActivityEntryMarkerIcon entry={entry} />
 
       <MarkerContent>
-        <ActivityFeedEntryTitle
-          className="text-foreground"
-          entry={entry}
-          timeFormatter={timeFormatter}
-        />
+        <ActivityFeedEntryTitle className="text-foreground" entry={entry} />
 
         <MarkerDescription>
           {entry.path ? (
@@ -378,21 +358,28 @@ function ActivityEntryMarkerIcon({ entry }: { entry: ActivityEntry | undefined }
 function ActivityFeedEntryTitle({
   className,
   entry,
-  timeFormatter,
 }: {
   className?: string;
   entry: ActivityEntry;
-  timeFormatter: Intl.DateTimeFormat;
 }) {
+  const { t } = useTranslation();
   return (
     <MarkerTitle className={cn("flex min-w-0 flex-nowrap items-center gap-1", className)}>
       <span className={cn("truncate", entry.status === "pending" && "shimmer")}>{entry.title}</span>
       <span>·</span>
-      <time className="shrink-0 text-muted-foreground" dateTime={entry.startedAt}>
-        {timeFormatter.format(new Date(entry.startedAt))}
-      </time>
+      <RelativeTimestamp
+        className="shrink-0 text-muted-foreground"
+        dateTime={entry.startedAt}
+        timestampMicros={toTimestampMicros(entry.startedAt)}
+        unknownLabel={t("common.status.unknown")}
+      />
     </MarkerTitle>
   );
+}
+
+function toTimestampMicros(timestamp: string): number | undefined {
+  const timestampMs = Date.parse(timestamp);
+  return Number.isNaN(timestampMs) ? undefined : timestampMs * 1_000;
 }
 
 function ActivityFeedEntryButton({

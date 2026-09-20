@@ -67,6 +67,7 @@ export interface ActivitySessionLabels {
 }
 export interface ActivitySessionPresentation {
   label: string;
+  timestamp?: string;
   tone: "current" | "default" | "warning";
 }
 export interface ActivityBranch {
@@ -211,17 +212,14 @@ export function getActivitySessionPresentation(
   if (group.isCurrent) return { label: labels.now, tone: "current" };
   const startedAt = new Date(group.startedAt);
   const dateLabel = formatSessionDate(startedAt, now, locale, labels);
-  const timeLabel = new Intl.DateTimeFormat(locale, { hour: "numeric", minute: "2-digit" }).format(
-    startedAt,
-  );
-
   const versionLabel =
     group.appVersion !== null && group.appVersion !== currentAppVersion
       ? `v${group.appVersion} · `
       : "";
 
   return {
-    label: `${versionLabel}${dateLabel} · ${timeLabel}`,
+    label: `${versionLabel}${dateLabel}`,
+    timestamp: group.startedAt,
     tone: versionLabel ? "warning" : "default",
   };
 }
