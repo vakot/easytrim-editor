@@ -31,6 +31,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { RelativeTimestamp } from "@/components/ui/relative-timestamp";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
@@ -45,7 +46,6 @@ import { openFileLocation } from "@/lib/tauri/media";
 import { formatBytes, formatDuration, formatSourcePath } from "../lib/media-formatters.utils";
 import { getRevealLabel } from "../lib/source.utils";
 
-import { RelativeTimestamp } from "./RelativeTimestamp";
 import { CloseSource, DeleteSource, RestoreSource } from "./SourceMenuActions";
 
 type SourceCardStatus = "deleted" | "failed" | "loading" | "missing" | "ready";

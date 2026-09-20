@@ -4,7 +4,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 
-import { RelativeTimestamp } from "../RelativeTimestamp";
+import { RelativeTimestamp } from "../relative-timestamp";
 
 const meta = {
   args: {
@@ -23,7 +23,7 @@ const meta = {
   ],
   parameters: { layout: "centered" },
   tags: ["autodocs"],
-  title: "Source/Relative Timestamp",
+  title: "Design System/Relative Timestamp",
 } satisfies Meta<typeof RelativeTimestamp>;
 
 export default meta;

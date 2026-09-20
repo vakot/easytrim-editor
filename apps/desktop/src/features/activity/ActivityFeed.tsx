@@ -25,11 +25,12 @@ import {
   MarkerIcon,
   MarkerTitle,
 } from "@/components/ui/marker";
+import { RelativeTimestamp } from "@/components/ui/relative-timestamp";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectActivityFeedView } from "@/app/store/slices/preferences-slice";
-import { formatSourcePath, RelativeTimestamp, RestoreSource } from "@/features/source";
+import { formatSourcePath, RestoreSource } from "@/features/source";
 import { getCurrentVersion } from "@/lib/app-version.utils";
 import { cn } from "@/lib/class-names.utils";
 import type { DiagnosticSessionMetadata } from "@/lib/tauri/diagnostics.types";

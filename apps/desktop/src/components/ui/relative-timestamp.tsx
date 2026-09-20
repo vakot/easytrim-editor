@@ -4,9 +4,8 @@ import { useTranslation } from "react-i18next";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { cn } from "@/lib/class-names.utils";
-
-import { useRelativeTimeNow } from "../hooks/use-relative-time";
-import { formatDateTime, formatRelativeTime } from "../lib/media-formatters.utils";
+import { formatDateTime, formatRelativeTime } from "@/lib/date-time.utils";
+import { useRelativeTimeNow } from "@/lib/hooks/use-relative-time";
 
 interface RelativeTimestampProps {
   className?: string;

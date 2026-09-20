@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 
-import { RelativeTimestamp } from "../RelativeTimestamp";
+import { RelativeTimestamp } from "../relative-timestamp";
 
 function renderRelativeTimestamp(timestampMicros: number | undefined) {
   return render(

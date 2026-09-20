@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Fragment } from "react";
 import { useTranslation } from "react-i18next";
 
+import { RelativeTimestamp } from "@/components/ui/relative-timestamp";
 import { Separator } from "@/components/ui/separator";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
@@ -14,7 +15,6 @@ import {
   formatFrameRate,
 } from "../lib/media-formatters.utils";
 
-import { RelativeTimestamp } from "./RelativeTimestamp";
 
 export function SourceDetails() {
   const media = useAppSelector(selectSourceMedia);

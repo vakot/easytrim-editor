@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { formatDateTime, formatRelativeTime } from "../media-formatters.utils";
+import { formatDateTime, formatRelativeTime } from "../date-time.utils";
 
 describe("formatDateTime", () => {
-  it("formats source timestamps in the active locale", () => {
+  it("formats timestamps in the active locale", () => {
     const timestampMicros = Date.UTC(2026, 0, 2, 15, 4) * 1_000;
     const expected = new Intl.DateTimeFormat("en-US", {
       dateStyle: "medium",

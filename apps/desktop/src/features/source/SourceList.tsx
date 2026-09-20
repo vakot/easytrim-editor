@@ -20,6 +20,7 @@ import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
+import { RelativeTimestamp } from "@/components/ui/relative-timestamp";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -38,9 +39,9 @@ import {
   restoreExportAttemptRequested,
 } from "@/app/store/thunks/source-media-thunks";
 import type { EditingInstance, ExportAttempt, ExportAttemptState } from "@/domain/editing-instance";
+import { useRelativeTimeNow } from "@/lib/hooks/use-relative-time";
 import { openFileLocation } from "@/lib/tauri/media";
 
-import { RelativeTimestamp } from "./components/RelativeTimestamp";
 import {
   SourceCard,
   SourceCardActions,
@@ -57,7 +58,6 @@ import {
   RestoreSource,
   StartSourceExport,
 } from "./components/SourceMenuActions";
-import { useRelativeTimeNow } from "./hooks/use-relative-time";
 import { getRevealLabel } from "./lib/source.utils";
 import {
   groupSourcesByFolder,
