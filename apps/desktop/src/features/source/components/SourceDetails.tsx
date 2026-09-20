@@ -31,7 +31,6 @@ export function SourceDetails() {
         <RelativeTimestamp
           label={t("source.labels.metadata.createdAt")}
           timestamp={source.createdAtMicros}
-          unknownLabel={unknown}
         />
       ) : (
         noSource
@@ -43,7 +42,6 @@ export function SourceDetails() {
         <RelativeTimestamp
           label={t("source.labels.metadata.updatedAt")}
           timestamp={source.updatedAtMicros}
-          unknownLabel={unknown}
         />
       ) : (
         noSource

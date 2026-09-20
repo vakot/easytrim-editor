@@ -138,8 +138,6 @@ function SourceListGroup({
   group: SourceGroup<EditingInstance>;
   icon: ReactNode;
 }) {
-  const { t } = useTranslation();
-
   return (
     <li className="grid gap-2">
       <div className="flex min-w-0 items-center gap-2 px-1 text-sm">
@@ -151,7 +149,6 @@ function SourceListGroup({
         ) : (
           <RelativeTimestamp
             timestamp={group.timestampMicros}
-            unknownLabel={t("common.status.unknown")}
           />
         )}
       </div>

@@ -11,16 +11,15 @@ interface RelativeTimestampProps {
   className?: string;
   label?: ReactNode;
   timestamp: number | undefined;
-  unknownLabel: string;
 }
 
 function RelativeTimestamp({
   className,
   label,
   timestamp,
-  unknownLabel,
 }: RelativeTimestampProps) {
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
+  const unknownLabel = t("common.status.unknown");
   const now = useRelativeTimeNow();
   const locale = i18n.resolvedLanguage ?? i18n.language;
   const relativeTime = formatRelativeTime(timestamp, locale, unknownLabel, now);

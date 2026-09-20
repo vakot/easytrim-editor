@@ -9,7 +9,6 @@ import { RelativeTimestamp } from "../relative-timestamp";
 const meta = {
   args: {
     className: "text-sm text-muted-foreground",
-    unknownLabel: "Unknown",
   },
   component: RelativeTimestamp,
   decorators: [

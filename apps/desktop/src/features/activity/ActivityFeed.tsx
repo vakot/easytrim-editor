@@ -181,7 +181,6 @@ export function ActivityFeedView({
                           <RelativeTimestamp
                             className="text-muted-foreground"
                             timestamp={toTimestampMicros(presentation.timestamp)}
-                            unknownLabel={t("common.status.unknown")}
                           />
                         </>
                       ) : null}
@@ -362,7 +361,6 @@ function ActivityFeedEntryTitle({
   className?: string;
   entry: ActivityEntry;
 }) {
-  const { t } = useTranslation();
   return (
     <MarkerTitle className={cn("flex min-w-0 flex-nowrap items-center gap-1", className)}>
       <span className={cn("truncate", entry.status === "pending" && "shimmer")}>{entry.title}</span>
@@ -370,7 +368,6 @@ function ActivityFeedEntryTitle({
       <RelativeTimestamp
         className="shrink-0 text-muted-foreground"
         timestamp={toTimestampMicros(entry.startedAt)}
-        unknownLabel={t("common.status.unknown")}
       />
     </MarkerTitle>
   );

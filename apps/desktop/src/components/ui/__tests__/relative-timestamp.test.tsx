@@ -12,7 +12,6 @@ function renderRelativeTimestamp(timestamp: number | undefined) {
       <RelativeTimestamp
         className="timestamp"
         timestamp={timestamp}
-        unknownLabel="Unknown"
       />
     </TooltipProvider>,
   );
