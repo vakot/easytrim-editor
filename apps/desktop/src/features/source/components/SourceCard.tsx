@@ -215,7 +215,13 @@ function SourceCardStatusBadge({ className }: { className?: string }) {
 
 type SourceCardContent = (props: { source: EditingInstance }) => React.ReactNode;
 
-function SourceCardTitle({ children, className }: { children?: SourceCardContent; className?: string }) {
+function SourceCardTitle({
+  children,
+  className,
+}: {
+  children?: SourceCardContent;
+  className?: string;
+}) {
   const source = useSourceCardSource();
 
   const { displayName } = source.snapshot.source;

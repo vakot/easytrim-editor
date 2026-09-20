@@ -1,7 +1,9 @@
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Clock3, FolderOpen, Layers2, Upload } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -13,6 +15,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ActivityFeed } from "@/features/activity";
 import { SourceList, SourceListContent, SourceListSearch, SourceListTabs } from "@/features/source";
 import { cn } from "@/lib/class-names.utils";
+
+const groupByIcons = {
+  none: Layers2,
+  folder: FolderOpen,
+  time: Clock3,
+  imported: Upload,
+};
 
 export function EditorSource() {
   const { t } = useTranslation();
@@ -55,15 +64,33 @@ export function EditorSource() {
 
           <div className="mt-2 flex min-h-0 flex-1 flex-col">
             <SourceList>
-              <div className="grid gap-2 px-2">
-                <SourceListTabs />
-                <SourceListSearch />
-              </div>
-              <ScrollArea className="min-h-0 flex-1">
-                <div className="px-2 pt-0.5 pb-2">
-                  <SourceListContent />
-                </div>
-              </ScrollArea>
+              {({ tab }) => {
+                const Icon = groupByIcons[tab];
+
+                return (
+                  <>
+                    <div className="flex gap-2 px-2">
+                      <SourceListSearch />
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button size="icon-sm" variant="outline">
+                            <Icon />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent align="end" className="grid w-auto gap-1.5">
+                          <Label>{t("source.labels.groupBy")}</Label>
+                          <SourceListTabs />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    <ScrollArea className={cn("min-h-0 flex-1", tab !== "none" && "before:top-7")}>
+                      <div className="px-2 pb-2">
+                        <SourceListContent />
+                      </div>
+                    </ScrollArea>
+                  </>
+                );
+              }}
             </SourceList>
           </div>
         </ResizablePanel>
