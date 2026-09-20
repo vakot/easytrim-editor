@@ -78,7 +78,7 @@ function InputGroupInput({ className, ...props }: React.ComponentProps<typeof In
   return (
     <Input
       className={cn(
-        "flex h-7 min-w-0 flex-1 rounded-none border-0 bg-transparent px-2.5 py-1 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50",
+        "flex h-7 min-w-0 flex-1 rounded-none border-0 bg-transparent px-2.5 py-1 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50 [&::-webkit-search-cancel-button]:appearance-none",
         className,
       )}
       data-slot="input-group-control"

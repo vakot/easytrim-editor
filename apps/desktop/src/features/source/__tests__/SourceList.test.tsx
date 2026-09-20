@@ -90,6 +90,39 @@ describe("source queue controls", () => {
     expect(document.activeElement).toBe(search);
   });
 
+  it("clears the search with the Lucide clear action", async () => {
+    const user = userEvent.setup();
+    const store = createAppStore();
+    const snapshot = createDefaultEditorSnapshot(firstSource, false);
+    store.dispatch(
+      editingInstancesAdded([
+        {
+          id: "source",
+          origin: "source-import",
+          snapshot,
+          sourceAvailability: "available",
+          exportAttempts: [],
+        },
+      ]),
+    );
+
+    render(
+      <Provider store={store}>
+        <SourceList>
+          <SourceListSearch />
+          <SourceListContent />
+        </SourceList>
+      </Provider>,
+    );
+
+    const search = screen.getByRole("searchbox", { name: "Search" });
+    await user.type(search, "sample");
+    await user.click(screen.getByRole("button", { name: "Clear" }));
+
+    expect(search).toHaveValue("");
+    expect(screen.getByLabelText("Ctrl + K")).toBeInTheDocument();
+  });
+
   it("starts and cancels only the chosen source without removing pending attempts", async () => {
     const user = userEvent.setup();
     const store = createAppStore();

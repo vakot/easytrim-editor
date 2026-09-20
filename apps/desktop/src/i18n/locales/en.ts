@@ -3,6 +3,7 @@ export const en = {
     actions: {
       back: "Back",
       cancel: "Cancel",
+      clear: "Clear",
       close: "Close",
       delete: "Delete",
       edit: "Edit",

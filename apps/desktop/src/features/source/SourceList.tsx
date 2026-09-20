@@ -25,7 +25,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Highlight } from "@/components/ui/highlight";
-import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@/components/ui/input-group";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { RelativeTimestamp } from "@/components/ui/relative-timestamp";
 import { Separator } from "@/components/ui/separator";
@@ -146,16 +151,27 @@ function SourceListSearch() {
         type="search"
         value={search}
       />
-      {isFiltered ? (
-        <InputGroupAddon align="inline-end">{sources.length} Results</InputGroupAddon>
-      ) : isSearchEmpty ? (
+      {isSearchEmpty ? (
         <InputGroupAddon align="inline-end">
           <KbdGroup aria-label="Ctrl + K">
             <Kbd>Ctrl</Kbd>
             <Kbd>K</Kbd>
           </KbdGroup>
         </InputGroupAddon>
-      ) : null}
+      ) : (
+        <InputGroupAddon align="inline-end" className="gap-1 pr-1">
+          <InputGroupButton
+            aria-label={t("common.actions.clear")}
+            onClick={() => setSearch("")}
+            size="icon-xs"
+            type="button"
+            variant="ghost"
+          >
+            <X aria-hidden="true" />
+          </InputGroupButton>
+          {isFiltered ? <span className="pr-1">{sources.length} Results</span> : null}
+        </InputGroupAddon>
+      )}
     </InputGroup>
   );
 }

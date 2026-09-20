@@ -5,6 +5,7 @@ export const sk = {
     actions: {
       back: "Späť",
       cancel: "Zrušiť",
+      clear: "Vymazať",
       close: "Zavrieť",
       delete: "Odstrániť",
       edit: "Upraviť",
