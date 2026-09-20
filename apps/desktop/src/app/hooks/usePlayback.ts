@@ -23,6 +23,8 @@ export function usePlayback() {
     onTimeUpdate: interaction.onTimeUpdate,
     onEnded: interaction.onEnded,
     toggle: interaction.onTogglePlayback,
+    setMediaPlaybackRate: interaction.setMediaPlaybackRate,
+    setVideoElement: interaction.setVideoElement,
     stepFrame: interaction.onStepFrame,
     startShuttle: interaction.onShuttleStart,
     stopShuttle: interaction.onShuttleEnd,

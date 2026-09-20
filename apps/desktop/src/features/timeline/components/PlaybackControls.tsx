@@ -13,43 +13,17 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-import type { TrimBoundary } from "@/domain/trim";
+import { usePlayback } from "@/app/hooks/usePlayback";
+import { useTimeline } from "@/app/hooks/useTimeline";
 import { cn } from "@/lib/class-names.utils";
-import type { DiagnosticOrigin } from "@/lib/tauri/diagnostics.types";
 
-import {
-  FRAME_SHUTTLE_HOLD_DELAY_MS,
-  type FrameShuttleDirection,
-} from "../../../lib/editor-shortcuts";
+import { FRAME_SHUTTLE_HOLD_DELAY_MS } from "../lib/editor-shortcuts";
 
-interface PlaybackControlsProps {
-  canSetSegmentEnd: boolean;
-  canSetSegmentStart: boolean;
-  disabled?: boolean;
-  error: string | null;
-  isPlaying: boolean;
-  onSetSegmentBoundary: (boundary: TrimBoundary, origin?: DiagnosticOrigin) => void;
-  onShuttleEnd: (origin?: DiagnosticOrigin) => void;
-  onShuttleStart: (direction: FrameShuttleDirection, origin?: DiagnosticOrigin) => void;
-  onStepFrame: (direction: -1 | 1, origin?: DiagnosticOrigin) => void;
-  onTogglePlayback: (origin?: DiagnosticOrigin) => void;
-  shuttleDirection: FrameShuttleDirection | 0;
-}
-
-export function PlaybackControls({
-  canSetSegmentEnd,
-  canSetSegmentStart,
-  disabled = false,
-  error,
-  isPlaying,
-  onSetSegmentBoundary,
-  onShuttleEnd,
-  onShuttleStart,
-  onStepFrame,
-  onTogglePlayback,
-  shuttleDirection,
-}: PlaybackControlsProps) {
+export function PlaybackControls() {
   const { t } = useTranslation();
+  const playback = usePlayback();
+  const timeline = useTimeline();
+  const disabled = !playback.canInteract;
 
   return (
     <div
@@ -58,14 +32,14 @@ export function PlaybackControls({
     >
       <div className="flex items-center gap-1.5">
         <TransportButton
-          disabled={disabled || !canSetSegmentStart}
+          disabled={disabled || !timeline.canSetSegmentStart}
           label={t("preview.actions.setStart")}
           onClick={() => {
-            onSetSegmentBoundary("start", { type: "button", id: "set-start" });
+            playback.setSegmentBoundary("start", { type: "button", id: "set-start" });
           }}
           shortcut="I"
           title={
-            canSetSegmentStart
+            timeline.canSetSegmentStart
               ? t("preview.tooltips.setStart")
               : t("preview.messages.setStartUnavailable")
           }
@@ -75,13 +49,13 @@ export function PlaybackControls({
         <TransportButton
           disabled={disabled}
           hold={{
-            active: shuttleDirection === -1,
-            onEnd: () => onShuttleEnd({ type: "button", id: "previous-frame" }),
-            onStart: () => onShuttleStart(-1, { type: "button", id: "previous-frame" }),
+            active: playback.shuttleDirection === -1,
+            onEnd: () => playback.stopShuttle({ type: "button", id: "previous-frame" }),
+            onStart: () => playback.startShuttle(-1, { type: "button", id: "previous-frame" }),
           }}
           label={t("preview.actions.previousFrame")}
           onClick={() => {
-            onStepFrame(-1, { type: "button", id: "previous-frame" });
+            playback.stepFrame(-1, { type: "button", id: "previous-frame" });
           }}
           shortcut="ArrowLeft"
           title={t("preview.tooltips.previousFrame")}
@@ -90,26 +64,26 @@ export function PlaybackControls({
         </TransportButton>
         <TransportButton
           disabled={disabled}
-          label={isPlaying ? t("preview.actions.pause") : t("preview.actions.play")}
+          label={playback.isPlaying ? t("preview.actions.pause") : t("preview.actions.play")}
           onClick={() => {
-            onTogglePlayback({ type: "button", id: "playback" });
+            playback.toggle({ type: "button", id: "playback" });
           }}
           primary
           shortcut="Space"
-          title={isPlaying ? t("preview.tooltips.pause") : t("preview.tooltips.play")}
+          title={playback.isPlaying ? t("preview.tooltips.pause") : t("preview.tooltips.play")}
         >
-          {isPlaying ? <Pause /> : <Play />}
+          {playback.isPlaying ? <Pause /> : <Play />}
         </TransportButton>
         <TransportButton
           disabled={disabled}
           hold={{
-            active: shuttleDirection === 1,
-            onEnd: () => onShuttleEnd({ type: "button", id: "next-frame" }),
-            onStart: () => onShuttleStart(1, { type: "button", id: "next-frame" }),
+            active: playback.shuttleDirection === 1,
+            onEnd: () => playback.stopShuttle({ type: "button", id: "next-frame" }),
+            onStart: () => playback.startShuttle(1, { type: "button", id: "next-frame" }),
           }}
           label={t("preview.actions.nextFrame")}
           onClick={() => {
-            onStepFrame(1, { type: "button", id: "next-frame" });
+            playback.stepFrame(1, { type: "button", id: "next-frame" });
           }}
           shortcut="ArrowRight"
           title={t("preview.tooltips.nextFrame")}
@@ -117,14 +91,14 @@ export function PlaybackControls({
           <SkipForward />
         </TransportButton>
         <TransportButton
-          disabled={disabled || !canSetSegmentEnd}
+          disabled={disabled || !timeline.canSetSegmentEnd}
           label={t("preview.actions.setEnd")}
           onClick={() => {
-            onSetSegmentBoundary("end", { type: "button", id: "set-end" });
+            playback.setSegmentBoundary("end", { type: "button", id: "set-end" });
           }}
           shortcut="O"
           title={
-            canSetSegmentEnd
+            timeline.canSetSegmentEnd
               ? t("preview.tooltips.setEnd")
               : t("preview.messages.setEndUnavailable")
           }
@@ -132,9 +106,9 @@ export function PlaybackControls({
           <SquareArrowLeft />
         </TransportButton>
       </div>
-      {error ? (
+      {playback.transportError ? (
         <Alert className="absolute top-full z-10 mt-2 w-72" variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
+          <AlertDescription>{playback.transportError}</AlertDescription>
         </Alert>
       ) : null}
     </div>

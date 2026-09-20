@@ -1,43 +1,16 @@
-import { usePlayback } from "@/app/hooks/usePlayback";
-import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
-import { selectPreview } from "@/app/store/slices/preview-slice";
+import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectSourceSelection } from "@/app/store/slices/source-slice";
-import { closeActiveEditingInstanceRequested } from "@/app/store/thunks/source-media-thunks";
 
 import { VideoPreview, VideoPreviewEmpty, VideoPreviewLoadingOverlay } from "./VideoPreview";
 
 export function Preview() {
-  const dispatch = useAppDispatch();
-  const playback = usePlayback();
   const sourceSelection = useAppSelector(selectSourceSelection);
-  const preview = useAppSelector(selectPreview);
-
-  const skipCurrentSource = () => void dispatch(closeActiveEditingInstanceRequested());
 
   return (
     <div className="relative isolate flex-1" data-slot="preview-content">
-      {sourceSelection === null ? (
-        <VideoPreviewEmpty />
-      ) : (
-        <VideoPreview
-          muted={playback.videoMuted}
-          nativeLoopEnabled={playback.nativeLoopEnabled}
-          onCanPlay={playback.onCanPlay}
-          onCropToolOpenChange={playback.onCropToolOpenChange}
-          onEnded={playback.onEnded}
-          onLoadedMetadata={playback.onLoadedMetadata}
-          onPause={playback.onPause}
-          onPlay={playback.onPlay}
-          onPlaybackError={playback.onPreviewPlaybackError}
-          onSkip={skipCurrentSource}
-          onTimeUpdate={playback.onTimeUpdate}
-          onTogglePlayback={playback.toggle}
-          preview={preview}
-          videoRef={playback.videoRef}
-        />
-      )}
+      {sourceSelection === null ? <VideoPreviewEmpty /> : <VideoPreview />}
 
-      <VideoPreviewLoadingOverlay onSkip={skipCurrentSource} />
+      <VideoPreviewLoadingOverlay />
     </div>
   );
 }

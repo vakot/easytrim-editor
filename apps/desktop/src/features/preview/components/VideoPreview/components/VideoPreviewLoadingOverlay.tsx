@@ -6,18 +6,16 @@ import { Backdrop } from "@/components/ui/backdrop";
 import { Button } from "@/components/ui/button";
 
 import { usePlayback } from "@/app/hooks/usePlayback";
-import { useAppSelector } from "@/app/store/redux-hooks";
+import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectPreview } from "@/app/store/slices/preview-slice";
 import { selectSourceLoadToken, selectSourceSelection } from "@/app/store/slices/source-slice";
+import { closeActiveEditingInstanceRequested } from "@/app/store/thunks/source-media-thunks";
 
-interface VideoPreviewLoadingOverlayProps {
-  onSkip: () => void;
-}
-
-export function VideoPreviewLoadingOverlay({ onSkip }: VideoPreviewLoadingOverlayProps) {
+export function VideoPreviewLoadingOverlay() {
   const { t } = useTranslation();
 
   const playback = usePlayback();
+  const dispatch = useAppDispatch();
 
   const sourceSelection = useAppSelector(selectSourceSelection);
   const sourceLoadToken = useAppSelector(selectSourceLoadToken);
@@ -62,7 +60,11 @@ export function VideoPreviewLoadingOverlay({ onSkip }: VideoPreviewLoadingOverla
             : t("preview.status.opening")}
         </strong>
         {skipAvailableFor === transitionKey ? (
-          <Button onClick={onSkip} size="sm" variant="outline">
+          <Button
+            onClick={() => void dispatch(closeActiveEditingInstanceRequested())}
+            size="sm"
+            variant="outline"
+          >
             {t("queue.actions.skip")}
           </Button>
         ) : null}
