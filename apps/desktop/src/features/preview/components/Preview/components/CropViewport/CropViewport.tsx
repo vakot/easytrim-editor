@@ -36,12 +36,12 @@ import {
   centerFrame,
   cropFrame,
   scaleFrameToSourceBounds,
-} from "../../../lib/crop-frame.utils";
-import { isFullCrop } from "../../../lib/crop-geometry.utils";
-import { useCropSelection } from "../hooks/useCropSelection";
+} from "../../../../lib/crop-frame.utils";
+import { isFullCrop } from "../../../../lib/crop-geometry.utils";
 
-import { CropSelection } from "./CropSelection";
-import { CropSnapMarkers } from "./CropSnapMarkers";
+import { CropSelection } from "./components/CropSelection";
+import { CropSnapMarkers } from "./components/CropSnapMarkers";
+import { useCropSelection } from "./hooks/useCropSelection";
 
 // Covers the snap-marker offset, its labels, and a small buffer inside the clipped preview card.
 const CROP_TOOL_INSET_PX = 28;

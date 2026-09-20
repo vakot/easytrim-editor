@@ -1,8 +1,8 @@
 import type { PointerEvent, RefObject } from "react";
 import { useTranslation } from "react-i18next";
 
-import type { CropFrame } from "../../../lib/crop-frame.utils";
-import type { CropHandle } from "../../../lib/crop-geometry.utils";
+import type { CropFrame } from "../../../../../lib/crop-frame.utils";
+import type { CropHandle } from "../../../../../lib/crop-geometry.utils";
 
 interface CropSelectionProps {
   enterFrom: CropFrame | null;

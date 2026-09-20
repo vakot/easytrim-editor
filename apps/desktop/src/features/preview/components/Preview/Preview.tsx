@@ -4,9 +4,11 @@ import { selectPreview } from "@/app/store/slices/preview-slice";
 import { selectSourceSelection } from "@/app/store/slices/source-slice";
 import { closeActiveEditingInstanceRequested } from "@/app/store/thunks/source-media-thunks";
 
-import { VideoPreview } from "./components/VideoPreview";
-import { VideoPreviewEmpty } from "./components/VideoPreviewEmpty";
-import { VideoPreviewLoadingOverlay } from "./components/VideoPreviewLoadingOverlay";
+import {
+  VideoPreview,
+  VideoPreviewEmpty,
+  VideoPreviewLoadingOverlay,
+} from "./components/VideoPreview";
 
 export function Preview() {
   const dispatch = useAppDispatch();

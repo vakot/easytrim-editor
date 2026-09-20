@@ -8,8 +8,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import type { PreviewState } from "@/app/store/slices/preview-slice";
 import { type AppStore, createAppStore } from "@/app/store/store";
 
+import { VideoPreviewEmpty } from "../components/VideoPreviewEmpty";
 import { VideoPreview } from "../VideoPreview";
-import { VideoPreviewEmpty } from "../VideoPreviewEmpty";
 
 const callbacks = {
   onPlaybackError: vi.fn(),
