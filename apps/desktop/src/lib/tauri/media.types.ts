@@ -13,49 +13,35 @@ import type {
 } from "@/domain/media";
 import type { SourceRef } from "@/domain/source";
 
-export type {
-  AppError,
-  AudioStream,
-  ChapterInfo,
-  ExportProgress,
-  ExportResult,
-  FastExportRequest,
-  FrameRate,
-  MediaInfo,
-  OptimizedExportRequest,
-  OutputSelection,
-  VideoStream,
-};
-
-export interface OptimizedExportPlan {
+interface OptimizedExportPlan {
   commandPreview: string;
 }
 
-export interface BinaryCapability {
+interface BinaryCapability {
   available: boolean;
   error?: string;
   version?: string;
 }
 
-export interface MediaCapabilities {
+interface MediaCapabilities {
   ffmpeg: BinaryCapability;
   ffprobe: BinaryCapability;
 }
 
 export type PreviewKind = "source" | "proxy";
 
-export interface PreviewDescriptor {
+interface PreviewDescriptor {
   kind: PreviewKind;
   mediaToken: number;
   url: string;
 }
 
-export interface ThumbnailDescriptor {
+interface ThumbnailDescriptor {
   mediaToken: number;
   url: string;
 }
 
-export interface AudioPreviewDescriptor {
+interface AudioPreviewDescriptor {
   mediaToken: number;
   streamIndex: number;
   url: string;
@@ -78,7 +64,7 @@ export type WaveformResult =
       width: number;
     };
 
-export interface SourceImportResult {
+interface SourceImportResult {
   acceptedFileCount: number;
   directFileCount: number;
   discoveredFileCount: number;
@@ -99,3 +85,24 @@ type SourceImportEvent =
   | { error: AppError; operationId?: string; status: "failed" };
 
 export type SourceDropEvent = { active: boolean; status: "drag" } | SourceImportEvent;
+
+export type {
+  AppError,
+  AudioPreviewDescriptor,
+  AudioStream,
+  BinaryCapability,
+  ChapterInfo,
+  ExportProgress,
+  ExportResult,
+  FastExportRequest,
+  FrameRate,
+  MediaCapabilities,
+  MediaInfo,
+  OptimizedExportPlan,
+  OptimizedExportRequest,
+  OutputSelection,
+  PreviewDescriptor,
+  SourceImportResult,
+  ThumbnailDescriptor,
+  VideoStream,
+};

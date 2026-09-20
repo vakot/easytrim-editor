@@ -2,14 +2,14 @@ import type { EditingInstance } from "@/domain/editing-instance";
 
 import { formatSourcePath } from "./media-formatters.utils";
 
-export interface SourceGroup<T> {
+interface SourceGroup<T> {
   items: T[];
   key: string;
   label: string;
   timestampMicros?: number;
 }
 
-export function getSourceFolderPath(sourcePath: string): string {
+function getSourceFolderPath(sourcePath: string): string {
   const separatorIndex = Math.max(sourcePath.lastIndexOf("/"), sourcePath.lastIndexOf("\\"));
   if (separatorIndex < 0) return "";
 
@@ -18,9 +18,7 @@ export function getSourceFolderPath(sourcePath: string): string {
   return folderPath || sourcePath.slice(0, separatorIndex + 1);
 }
 
-export function groupSourcesByFolder(
-  sources: readonly EditingInstance[],
-): SourceGroup<EditingInstance>[] {
+function groupSourcesByFolder(sources: readonly EditingInstance[]): SourceGroup<EditingInstance>[] {
   const groups = new Map<string, SourceGroup<EditingInstance>>();
 
   for (const source of sources) {
@@ -38,7 +36,7 @@ export function groupSourcesByFolder(
   return [...groups.values()];
 }
 
-export function groupSourcesByUpdatedTime(
+function groupSourcesByUpdatedTime(
   sources: readonly EditingInstance[],
   locale: string,
   unknownLabel: string,
@@ -53,7 +51,7 @@ export function groupSourcesByUpdatedTime(
   );
 }
 
-export function groupSourcesByImportedTime(
+function groupSourcesByImportedTime(
   sources: readonly EditingInstance[],
   locale: string,
   unknownLabel: string,
@@ -191,3 +189,12 @@ function normalizeFolderKey(folderPath: string): string {
   const normalized = folderPath.replace(/[\\/]+/g, "/");
   return /^[A-Za-z]:\//.test(normalized) ? normalized.toLowerCase() : normalized;
 }
+
+export {
+  getSourceFolderPath,
+  groupSourcesByFolder,
+  groupSourcesByImportedTime,
+  groupSourcesByUpdatedTime,
+};
+
+export type { SourceGroup };

@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectIsNativeDialogOpen } from "@/app/store/slices/import-workflow-slice";
 
-export function NativeDialogOverlay() {
+function NativeDialogOverlay() {
   const { t } = useTranslation();
   const isNativeDialogOpen = useAppSelector(selectIsNativeDialogOpen);
 
@@ -27,3 +27,5 @@ export function NativeDialogOverlay() {
     </Backdrop>
   );
 }
+
+export { NativeDialogOverlay };

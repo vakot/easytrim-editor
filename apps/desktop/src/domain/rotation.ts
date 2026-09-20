@@ -4,11 +4,11 @@ export const ROTATION_DEGREES = [0, 90, 180, 270] as const;
 
 export type RotationDegrees = (typeof ROTATION_DEGREES)[number];
 
-export function isQuarterTurn(rotation: RotationDegrees): boolean {
+function isQuarterTurn(rotation: RotationDegrees): boolean {
   return rotation === 90 || rotation === 270;
 }
 
-export function isIdentityTransform(
+function isIdentityTransform(
   rotationDegrees: RotationDegrees,
   flipHorizontal: boolean,
   flipVertical: boolean,
@@ -19,7 +19,7 @@ export function isIdentityTransform(
   );
 }
 
-export function normalizeTransformForExport(
+function normalizeTransformForExport(
   crop: CropRect,
   rotationDegrees: RotationDegrees,
   flipHorizontal: boolean,
@@ -37,7 +37,7 @@ export function normalizeTransformForExport(
   };
 }
 
-export function rotateCrop(crop: CropRect, rotation: RotationDegrees): CropRect {
+function rotateCrop(crop: CropRect, rotation: RotationDegrees): CropRect {
   switch (rotation) {
     case 90:
       return {
@@ -64,3 +64,5 @@ export function rotateCrop(crop: CropRect, rotation: RotationDegrees): CropRect 
       return crop;
   }
 }
+
+export { isIdentityTransform, isQuarterTurn, normalizeTransformForExport, rotateCrop };

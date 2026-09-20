@@ -3,7 +3,7 @@ interface PlaybackFrameRate {
   numerator: number;
 }
 
-export interface PlaybackRange {
+interface PlaybackRange {
   endMicros: number;
   startMicros: number;
 }
@@ -15,19 +15,19 @@ export type PlaybackBoundaryAction =
   | { positionMicros: number; type: "restart" }
   | { positionMicros: number; type: "stop" };
 
-export function frameDurationMicros(frameRate: PlaybackFrameRate | undefined): number {
+function frameDurationMicros(frameRate: PlaybackFrameRate | undefined): number {
   if (!frameRate || frameRate.numerator <= 0 || frameRate.denominator <= 0) {
     return 100_000;
   }
   return Math.max(1, Math.round((frameRate.denominator / frameRate.numerator) * 1_000_000));
 }
 
-export function clampPlaybackMicros(micros: number, sourceDurationMicros: number): number {
+function clampPlaybackMicros(micros: number, sourceDurationMicros: number): number {
   const integer = Number.isFinite(micros) ? Math.round(micros) : 0;
   return Math.min(sourceDurationMicros, Math.max(0, integer));
 }
 
-export function playbackRange(
+function playbackRange(
   sourceDurationMicros: number,
   segmentStartMicros: number,
   segmentEndMicros: number,
@@ -44,7 +44,7 @@ export function playbackRange(
   };
 }
 
-export function playbackBoundaryAction(
+function playbackBoundaryAction(
   currentMicros: number,
   range: PlaybackRange,
   loopEnabled: boolean,
@@ -65,10 +65,7 @@ export function playbackBoundaryAction(
       };
 }
 
-export function formatPlaybackTime(
-  micros: number,
-  frameRate: PlaybackFrameRate | undefined,
-): string {
+function formatPlaybackTime(micros: number, frameRate: PlaybackFrameRate | undefined): string {
   const frameDuration = frameDurationMicros(frameRate);
   const totalFrames = Math.max(
     0,
@@ -95,3 +92,13 @@ export function formatPlaybackTime(
     .toString()
     .padStart(2, "0")}f`;
 }
+
+export {
+  clampPlaybackMicros,
+  formatPlaybackTime,
+  frameDurationMicros,
+  playbackBoundaryAction,
+  playbackRange,
+};
+
+export type { PlaybackRange };

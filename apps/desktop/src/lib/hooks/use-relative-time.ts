@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-export function useRelativeTimeNow(): number {
+function useRelativeTimeNow(): number {
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -10,3 +10,5 @@ export function useRelativeTimeNow(): number {
 
   return now;
 }
+
+export { useRelativeTimeNow };

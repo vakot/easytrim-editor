@@ -13,23 +13,23 @@ function getNativeWindow() {
   return getCurrentWindow();
 }
 
-export function startWindowDragging(): Promise<void> {
+function startWindowDragging(): Promise<void> {
   return getNativeWindow()?.startDragging() ?? Promise.resolve();
 }
 
-export function minimizeWindow(): Promise<void> {
+function minimizeWindow(): Promise<void> {
   return getNativeWindow()?.minimize() ?? Promise.resolve();
 }
 
-export function toggleWindowMaximize(): Promise<void> {
+function toggleWindowMaximize(): Promise<void> {
   return getNativeWindow()?.toggleMaximize() ?? Promise.resolve();
 }
 
-export function closeWindow(): Promise<void> {
+function closeWindow(): Promise<void> {
   return getNativeWindow()?.close() ?? Promise.resolve();
 }
 
-export function requestWindowShutdown(continuation?: WindowShutdownContinuation): Promise<void> {
+function requestWindowShutdown(continuation?: WindowShutdownContinuation): Promise<void> {
   if (typeof window !== "undefined") {
     const event = new CustomEvent(WINDOW_SHUTDOWN_REQUESTED, {
       cancelable: true,
@@ -44,7 +44,7 @@ export function requestWindowShutdown(continuation?: WindowShutdownContinuation)
   return closeWindow();
 }
 
-export function listenForWindowShutdownRequests(
+function listenForWindowShutdownRequests(
   onShutdownRequested: (continuation?: WindowShutdownContinuation) => void,
 ): () => void {
   if (typeof window === "undefined") return () => undefined;
@@ -64,7 +64,7 @@ export function listenForWindowShutdownRequests(
   return () => window.removeEventListener(WINDOW_SHUTDOWN_REQUESTED, handleShutdownRequested);
 }
 
-export function listenForWindowCloseRequests(
+function listenForWindowCloseRequests(
   shouldPreventClose: () => boolean,
   onCloseRequested: () => void,
 ): Promise<UnlistenFn> {
@@ -77,6 +77,17 @@ export function listenForWindowCloseRequests(
   );
 }
 
-export function isWindowMaximized(): Promise<boolean> {
+function isWindowMaximized(): Promise<boolean> {
   return getNativeWindow()?.isMaximized() ?? Promise.resolve(false);
 }
+
+export {
+  closeWindow,
+  isWindowMaximized,
+  listenForWindowCloseRequests,
+  listenForWindowShutdownRequests,
+  minimizeWindow,
+  requestWindowShutdown,
+  startWindowDragging,
+  toggleWindowMaximize,
+};

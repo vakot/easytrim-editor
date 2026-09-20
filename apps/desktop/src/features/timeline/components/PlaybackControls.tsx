@@ -19,7 +19,7 @@ import { cn } from "@/lib/class-names.utils";
 
 import { FRAME_SHUTTLE_HOLD_DELAY_MS } from "../lib/editor-shortcuts";
 
-export function PlaybackControls() {
+function PlaybackControls() {
   const { t } = useTranslation();
   const playback = usePlayback();
   const timeline = useTimeline();
@@ -234,3 +234,5 @@ function TransportButton({
     </Tooltip>
   );
 }
+
+export { PlaybackControls };

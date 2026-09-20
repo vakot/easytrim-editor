@@ -12,13 +12,13 @@ export const resources = {
   sk: { translation: sk },
 } as const satisfies Record<SupportedLanguage, { translation: TranslationSchema }>;
 
-export function resolveInitialLanguage(
+function resolveInitialLanguage(
   preferredLanguages: readonly string[] = browserLanguages(),
 ): SupportedLanguage {
   return findSupportedLanguage(preferredLanguages) ?? DEFAULT_LANGUAGE;
 }
 
-export function resolveLanguagePreference(
+function resolveLanguagePreference(
   storedLanguage: string | undefined,
   preferredLanguages: readonly string[] = browserLanguages(),
 ): SupportedLanguage {
@@ -35,7 +35,7 @@ function findSupportedLanguage(preferredLanguages: readonly string[]) {
   }
 }
 
-export function isSupportedLanguage(language: string | undefined): language is SupportedLanguage {
+function isSupportedLanguage(language: string | undefined): language is SupportedLanguage {
   return SUPPORTED_LANGUAGES.some((supported) => supported === language);
 }
 
@@ -43,3 +43,5 @@ function browserLanguages(): readonly string[] {
   if (typeof navigator === "undefined") return [];
   return navigator.languages.length > 0 ? navigator.languages : [navigator.language];
 }
+
+export { isSupportedLanguage, resolveInitialLanguage, resolveLanguagePreference };

@@ -28,7 +28,7 @@ interface AudioTrackRowProps {
   track: AudioTrackState;
 }
 
-export const AudioTrackRow = memo(function AudioTrackRow({
+const AudioTrackRow = memo(function AudioTrackRow({
   onCommit,
   onPrepareWaveform,
   onToggle,
@@ -125,3 +125,5 @@ export const AudioTrackRow = memo(function AudioTrackRow({
     </div>
   );
 });
+
+export { AudioTrackRow };

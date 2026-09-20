@@ -8,12 +8,12 @@ export type DiagnosticOperationName = `${string}.${string}`;
 export type DiagnosticValue =
   boolean | number | string | null | DiagnosticValue[] | { [key: string]: DiagnosticValue };
 
-export interface DiagnosticOrigin {
+interface DiagnosticOrigin {
   id?: string;
   type: DiagnosticOriginType;
 }
 
-export interface DiagnosticEventInput {
+interface DiagnosticEventInput {
   category: string;
   data?: Record<string, DiagnosticValue>;
   durationMs?: number;
@@ -26,25 +26,25 @@ export interface DiagnosticEventInput {
   snapshotId?: string;
 }
 
-export interface DiagnosticEvent extends DiagnosticEventInput {
+interface DiagnosticEvent extends DiagnosticEventInput {
   sessionId: string;
   timestamp: string;
 }
 
-export interface DiagnosticsBootstrap {
+interface DiagnosticsBootstrap {
   appVersion: string;
   recovery: StartupRecovery | null;
   sessionId: string;
   startedAt: string;
 }
 
-export interface DiagnosticSessionMetadata {
+interface DiagnosticSessionMetadata {
   appVersion: string | null;
   sessionId: string;
   startedAt: string;
 }
 
-export interface DiagnosticSessionSummary extends DiagnosticSessionMetadata {
+interface DiagnosticSessionSummary extends DiagnosticSessionMetadata {
   endedAt: string | null;
   gracefulShutdown: boolean;
 }
@@ -56,9 +56,19 @@ export type SerializedDiagnosticError = {
   stack?: string;
 };
 
-export interface StartupRecovery {
+interface StartupRecovery {
   classification: "abnormal_shutdown" | "frontend_fatal_error" | "native_panic";
   reportId: string;
   reportPath: string;
   sessionId: string;
 }
+
+export type {
+  DiagnosticEvent,
+  DiagnosticEventInput,
+  DiagnosticOrigin,
+  DiagnosticsBootstrap,
+  DiagnosticSessionMetadata,
+  DiagnosticSessionSummary,
+  StartupRecovery,
+};

@@ -16,7 +16,7 @@ interface ResolutionDimensionsProps {
   settings: ExportSettings;
 }
 
-export function ResolutionDimensions({
+function ResolutionDimensions({
   cropAspectRatio,
   isAspectRatioLocked,
   onAspectRatioLockChange,
@@ -94,3 +94,5 @@ export function ResolutionDimensions({
     </div>
   );
 }
+
+export { ResolutionDimensions };

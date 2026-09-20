@@ -35,11 +35,7 @@ interface CropViewportContextMenuProps {
   onReset: () => void;
 }
 
-export function CropViewportContextMenu({
-  children,
-  onCropOpen,
-  onReset,
-}: CropViewportContextMenuProps) {
+function CropViewportContextMenu({ children, onCropOpen, onReset }: CropViewportContextMenuProps) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const rotationDegrees = useAppSelector(selectRotationDegrees);
@@ -114,3 +110,5 @@ export function CropViewportContextMenu({
     </AlertDialog>
   );
 }
+
+export { CropViewportContextMenu };

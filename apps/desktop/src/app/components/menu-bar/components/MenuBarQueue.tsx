@@ -41,7 +41,7 @@ import {
 } from "@/app/store/slices/preferences-slice";
 import type { QueueFinishAction } from "@/lib/tauri/queue.types";
 
-export function MenuBarQueue() {
+function MenuBarQueue() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
 
@@ -157,3 +157,5 @@ export function MenuBarQueue() {
     </>
   );
 }
+
+export { MenuBarQueue };

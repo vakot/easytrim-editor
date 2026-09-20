@@ -1,4 +1,4 @@
-export function snapToNearestPoint(
+function snapToNearestPoint(
   value: number,
   points: readonly number[],
   maximumDistance: number,
@@ -16,3 +16,5 @@ export function snapToNearestPoint(
 
   return nearestPoint;
 }
+
+export { snapToNearestPoint };

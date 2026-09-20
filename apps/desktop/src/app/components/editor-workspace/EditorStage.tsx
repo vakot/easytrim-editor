@@ -53,7 +53,7 @@ const EMPTY_TIMELINE_RANGE = {
   sourceDurationMicros: 1_000_000,
 } as const;
 
-export function EditorStage() {
+function EditorStage() {
   const media = useAppSelector(selectSourceMedia);
   const audioStreamsCount = useAppSelector(selectAudioPanelStreamCount);
   const timelinePaneRef = useRef<HTMLDivElement>(null);
@@ -126,3 +126,5 @@ function TimelineGeometrySync({ targetRef }: { targetRef: RefObject<HTMLElement 
 
   return null;
 }
+
+export { EditorStage };

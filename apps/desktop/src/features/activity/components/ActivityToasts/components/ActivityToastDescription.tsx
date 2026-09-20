@@ -11,7 +11,7 @@ interface ActivityToastDescriptionProps {
   entry: ActivityEntry;
 }
 
-export function ActivityToastDescription({ attempt, entry }: ActivityToastDescriptionProps) {
+function ActivityToastDescription({ attempt, entry }: ActivityToastDescriptionProps) {
   const { t } = useTranslation();
   const paths = stringArrayValue(entry.data?.sourcePaths);
   const outputPath =
@@ -74,3 +74,5 @@ function stringArrayValue(value: unknown): string[] {
 function numberValue(value: unknown): number | undefined {
   return typeof value === "number" && Number.isFinite(value) ? value : undefined;
 }
+
+export { ActivityToastDescription };

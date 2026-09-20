@@ -6,7 +6,7 @@ import { checkForUpdates as checkForUpdatesNative } from "@/lib/tauri/updates";
 import type { AvailableUpdate } from "@/lib/tauri/updates.types";
 import { isTauriRuntime } from "@/lib/tauri/updates.utils";
 
-export function AppUpdatesProvider({ children }: { children: ReactNode }) {
+function AppUpdatesProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<UpdateStatus>("idle");
   const [availableVersion, setAvailableVersion] = useState<string | null>(null);
   const [isInstalling, setIsInstalling] = useState(false);
@@ -79,3 +79,5 @@ export function AppUpdatesProvider({ children }: { children: ReactNode }) {
     </AppUpdatesContext.Provider>
   );
 }
+
+export { AppUpdatesProvider };

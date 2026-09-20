@@ -31,5 +31,7 @@ function createBrandIcon(slug: string, svg: string) {
   return BrandIcon;
 }
 
-export const GithubIcon = createBrandIcon("github", githubSvg);
-export const KofiIcon = createBrandIcon("kofi", kofiSvg);
+const GithubIcon = createBrandIcon("github", githubSvg);
+const KofiIcon = createBrandIcon("kofi", kofiSvg);
+
+export { GithubIcon, KofiIcon };

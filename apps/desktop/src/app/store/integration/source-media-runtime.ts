@@ -16,7 +16,7 @@ import { normalizeAppError } from "@/lib/tauri/media.utils";
  * effects. The returned cleanup is intentionally runtime-only; unlisten handles
  * never enter Redux state.
  */
-export function startSourceMediaRuntime(dispatch: AppDispatch): () => void {
+function startSourceMediaRuntime(dispatch: AppDispatch): () => void {
   let stopped = false;
   let unlisten: UnlistenFn | undefined;
   const importOperations = new Map<string, DiagnosticOperation>();
@@ -90,3 +90,5 @@ export function startSourceMediaRuntime(dispatch: AppDispatch): () => void {
 
   return stop;
 }
+
+export { startSourceMediaRuntime };

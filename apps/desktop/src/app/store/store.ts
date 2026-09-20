@@ -62,7 +62,7 @@ const rootReducer = (state: RootState | undefined, action: UnknownAction): RootS
 
 const persistedReducer = createPersistedReducer(rootReducer);
 
-export function createAppStore(storage: PersistStorage = reduxStorage) {
+function createAppStore(storage: PersistStorage = reduxStorage) {
   const reducer =
     storage === reduxStorage ? persistedReducer : createPersistedReducer(rootReducer, storage);
 
@@ -82,7 +82,7 @@ export function createAppStore(storage: PersistStorage = reduxStorage) {
 export type AppStore = ReturnType<typeof createAppStore>;
 export type AppDispatch = AppStore["dispatch"];
 
-export function createAppPersistor(appStore: AppStore): Persistor {
+function createAppPersistor(appStore: AppStore): Persistor {
   return persistStore(appStore, undefined, () => {
     // Redux Persist invokes this only after Preferences has been rehydrated. The
     // one-time initialization keeps active tools independent from later preference edits.
@@ -96,3 +96,5 @@ export function createAppPersistor(appStore: AppStore): Persistor {
 
 export const store = createAppStore();
 export const persistor = createAppPersistor(store);
+
+export { createAppPersistor, createAppStore };

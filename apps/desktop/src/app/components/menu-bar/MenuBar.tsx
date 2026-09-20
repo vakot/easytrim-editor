@@ -11,7 +11,7 @@ import { MenuBarQueue } from "./components/MenuBarQueue";
 import { MenuBarSettings } from "./components/MenuBarSettings";
 import { MenuBarView } from "./components/MenuBarView";
 
-export function MenuBar() {
+function MenuBar() {
   const { t } = useTranslation();
   const [menuVersion, setMenuVersion] = useState(0);
 
@@ -35,3 +35,5 @@ export function MenuBar() {
     </Menubar>
   );
 }
+
+export { MenuBar };

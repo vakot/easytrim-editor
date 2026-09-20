@@ -8,7 +8,7 @@ import { getErrorMessage, isWindowsRuntime } from "./updates.utils";
 const updaterEndpoint =
   "https://github.com/vakot/easytrim-editor/releases/latest/download/latest.json";
 
-export async function checkForUpdates(): Promise<AvailableUpdate | null> {
+async function checkForUpdates(): Promise<AvailableUpdate | null> {
   try {
     const update = await check();
     if (!update) return null;
@@ -47,3 +47,5 @@ export async function checkForUpdates(): Promise<AvailableUpdate | null> {
     throw error;
   }
 }
+
+export { checkForUpdates };

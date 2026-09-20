@@ -14,7 +14,7 @@ import { CropViewportTooltip } from "./components/CropViewportTooltip";
 import { CropViewportVideo } from "./components/CropViewportVideo";
 import { useCropViewport } from "./hooks/useCropViewport";
 
-export function CropViewport() {
+function CropViewport() {
   const viewport = useCropViewport();
   const flipHorizontal = useAppSelector(selectFlipHorizontal);
   const flipVertical = useAppSelector(selectFlipVertical);
@@ -108,3 +108,5 @@ export function CropViewport() {
 function normalizeRotation(rotation: number): number {
   return ((rotation % 360) + 360) % 360;
 }
+
+export { CropViewport };

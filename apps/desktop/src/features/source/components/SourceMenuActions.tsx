@@ -31,7 +31,7 @@ interface SourceActionProps {
  * @name DeleteSource
  * @description Wraps an action trigger with source deletion behavior and disables it when the source is already deleted.
  */
-export function DeleteSource({
+function DeleteSource({
   children,
   event = "select",
   onOpenChange,
@@ -53,7 +53,7 @@ export function DeleteSource({
  * @name CloseSource
  * @description Adds the action that closes one source editing instance to a compatible action trigger.
  */
-export function CloseSource({ children, event = "select", source }: SourceActionProps) {
+function CloseSource({ children, event = "select", source }: SourceActionProps) {
   const dispatch = useAppDispatch();
 
   return withAction(withDisabled(children, !source), event, () => {
@@ -65,7 +65,7 @@ export function CloseSource({ children, event = "select", source }: SourceAction
  * @name StartSourceExport
  * @description Adds per-source queue start behavior and disables the trigger when no export is queued.
  */
-export function StartSourceExport({ children, event = "select", source }: SourceActionProps) {
+function StartSourceExport({ children, event = "select", source }: SourceActionProps) {
   const dispatch = useAppDispatch();
   const queue = useAppSelector((state) => selectSourceExportQueueState(state, source?.id ?? ""));
 
@@ -82,7 +82,7 @@ export function StartSourceExport({ children, event = "select", source }: Source
  * @name CancelSourceExport
  * @description Adds per-source queue cancellation behavior and disables the trigger when the source is idle.
  */
-export function CancelSourceExport({ children, event = "select", source }: SourceActionProps) {
+function CancelSourceExport({ children, event = "select", source }: SourceActionProps) {
   const dispatch = useAppDispatch();
   const queue = useAppSelector((state) => selectSourceExportQueueState(state, source?.id ?? ""));
 
@@ -95,7 +95,7 @@ export function CancelSourceExport({ children, event = "select", source }: Sourc
  * @name RestoreSource
  * @description Adds source restoration behavior to a compatible action trigger for a deleted source or a source path without an open instance.
  */
-export function RestoreSource({
+function RestoreSource({
   children,
   event = "select",
   itemId,
@@ -148,3 +148,5 @@ function withPreventedSelect(children: ActionElement) {
     },
   });
 }
+
+export { CancelSourceExport, CloseSource, DeleteSource, RestoreSource, StartSourceExport };

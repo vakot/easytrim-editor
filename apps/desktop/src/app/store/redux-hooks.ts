@@ -1,6 +1,19 @@
-import { useDispatch, useSelector } from "react-redux";
+import { type EqualityFn, useDispatch, useSelector } from "react-redux";
 
 import type { AppDispatch, RootState } from "./store";
 
-export const useAppDispatch = useDispatch.withTypes<AppDispatch>();
-export const useAppSelector = useSelector.withTypes<RootState>();
+const useTypedDispatch = useDispatch.withTypes<AppDispatch>();
+const useTypedSelector = useSelector.withTypes<RootState>();
+
+function useAppDispatch(): AppDispatch {
+  return useTypedDispatch();
+}
+
+function useAppSelector<TSelected>(
+  selector: (state: RootState) => TSelected,
+  equalityFn?: EqualityFn<TSelected>,
+): TSelected {
+  return useTypedSelector(selector, equalityFn);
+}
+
+export { useAppDispatch, useAppSelector };

@@ -5,7 +5,7 @@ import { isEditableTarget } from "@/lib/hotkeys.utils";
 type KeyboardPredicate = (event: KeyboardEvent) => boolean;
 type KeyboardHandler = (event: KeyboardEvent) => void | Promise<void>;
 
-export function useKeyboardShortcut(predicate: KeyboardPredicate, handler: KeyboardHandler) {
+function useKeyboardShortcut(predicate: KeyboardPredicate, handler: KeyboardHandler) {
   const predicateRef = useRef(predicate);
   const handlerRef = useRef(handler);
 
@@ -34,3 +34,5 @@ export function useKeyboardShortcut(predicate: KeyboardPredicate, handler: Keybo
     return () => window.removeEventListener("keydown", handleKeyDown, true);
   }, []);
 }
+
+export { useKeyboardShortcut };

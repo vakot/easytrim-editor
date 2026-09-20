@@ -4,7 +4,7 @@ import { persistExportPresetState } from "@/app/store/lib/export-presets";
 
 import type { RootState } from "../store";
 
-export const exportPresetPersistenceMiddleware: Middleware<unknown, RootState> =
+const exportPresetPersistenceMiddleware: Middleware<unknown, RootState> =
   ({ getState }) =>
   (next) =>
   (action) => {
@@ -20,3 +20,5 @@ export const exportPresetPersistenceMiddleware: Middleware<unknown, RootState> =
     }
     return result;
   };
+
+export { exportPresetPersistenceMiddleware };

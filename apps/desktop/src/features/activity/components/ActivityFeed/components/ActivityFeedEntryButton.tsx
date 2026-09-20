@@ -24,7 +24,7 @@ interface ActivityFeedEntryButtonProps {
   onClick?: () => void;
 }
 
-export function ActivityFeedEntryButton({
+function ActivityFeedEntryButton({
   compact = false,
   entry,
   onClick,
@@ -67,3 +67,5 @@ export function ActivityFeedEntryButton({
     </Tooltip>
   );
 }
+
+export { ActivityFeedEntryButton };

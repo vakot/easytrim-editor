@@ -123,7 +123,7 @@ function isCurrentSource(state: RootState, sourcePath: string, loadToken: number
   );
 }
 
-export const checkMediaCapabilitiesRequested = (): AppThunk => async (dispatch) => {
+const checkMediaCapabilitiesRequested = (): AppThunk => async (dispatch) => {
   const operation = diagnostics.startOperation("media.capabilities", {
     origin: { type: "system" },
   });
@@ -142,7 +142,7 @@ export const checkMediaCapabilitiesRequested = (): AppThunk => async (dispatch) 
   }
 };
 
-export const ingestSources =
+const ingestSources =
   (
     input: SourceImportResult | SourceRef[],
     origin: DiagnosticOrigin = { type: "internal" },
@@ -183,7 +183,7 @@ export const ingestSources =
 const METADATA_CONCURRENCY = 2;
 const metadataRequestsInFlight = new Set<string>();
 
-export const prepareImportedSourceMetadataRequested =
+const prepareImportedSourceMetadataRequested =
   (instances: EditingInstance[]): AppThunk<Promise<void>> =>
   async (dispatch, getState) => {
     const activeInstanceId = selectActiveInstanceId(getState());
@@ -237,7 +237,7 @@ export const prepareImportedSourceMetadataRequested =
 const THUMBNAIL_CONCURRENCY = 2;
 const thumbnailRequestsInFlight = new Set<string>();
 
-export const prepareImportedSourceThumbnailsRequested =
+const prepareImportedSourceThumbnailsRequested =
   (instances: EditingInstance[]): AppThunk<Promise<void>> =>
   async (dispatch, getState) => {
     const importedThumbnails = selectImportedSourceThumbnails(getState());
@@ -507,15 +507,15 @@ function captureActiveEditingInstanceDraft(
   );
 }
 
-export const commitActiveEditingInstanceDraft = (): AppThunk => (dispatch, getState) => {
+const commitActiveEditingInstanceDraft = (): AppThunk => (dispatch, getState) => {
   captureActiveEditingInstanceDraft(dispatch, getState);
 };
 
-export const leaveActiveEditingInstance = (): AppThunk => (dispatch) => {
+const leaveActiveEditingInstance = (): AppThunk => (dispatch) => {
   dispatch(commitActiveEditingInstanceDraft());
 };
 
-export const restoreActiveEditingInstanceRequested =
+const restoreActiveEditingInstanceRequested =
   (id: string, loadToken: number, snapshot: EditorSnapshot): AppThunk<Promise<boolean>> =>
   async (dispatch, getState) => {
     const instance = selectEditingInstanceById(getState(), id);
@@ -583,7 +583,7 @@ export const restoreActiveEditingInstanceRequested =
     return true;
   };
 
-export const activateEditingInstanceRequested =
+const activateEditingInstanceRequested =
   (instance: EditingInstance): AppThunk<Promise<boolean>> =>
   async (dispatch, getState) => {
     if (selectEditingInstanceById(getState(), instance.id)?.draftAvailable === false) return false;
@@ -604,7 +604,7 @@ export const activateEditingInstanceRequested =
     );
   };
 
-export const navigateToEditingInstance =
+const navigateToEditingInstance =
   (id: string | null, origin: DiagnosticOrigin = { type: "internal" }): AppThunk<boolean> =>
   (dispatch, getState) => {
     diagnostics.action("snapshot.select.requested", origin, id ? { snapshotId: id } : undefined);
@@ -654,7 +654,7 @@ export const navigateToEditingInstance =
     return true;
   };
 
-export const restoreExportAttemptRequested =
+const restoreExportAttemptRequested =
   ({
     attemptId,
     instanceId,
@@ -705,7 +705,7 @@ export const restoreExportAttemptRequested =
     return restored ? dispatch(activateEditingInstanceRequested(restored)) : false;
   };
 
-export const chooseSourceRequested =
+const chooseSourceRequested =
   (
     origin: DiagnosticOrigin = { type: "internal" },
     pickerMode: SourcePickerMode = "files",
@@ -752,7 +752,7 @@ export const chooseSourceRequested =
     }
   };
 
-export const closeActiveEditingInstanceRequested =
+const closeActiveEditingInstanceRequested =
   (request: DiagnosticOrigin | string = { type: "internal" }): AppThunk<Promise<void>> =>
   async (dispatch, getState) => {
     const origin =
@@ -806,7 +806,7 @@ export const closeActiveEditingInstanceRequested =
     dispatch(nativeDialogStateChanged(false));
   };
 
-export const closeEditingInstancesRequested =
+const closeEditingInstancesRequested =
   (ids: string[]): AppThunk<Promise<void>> =>
   async (dispatch, getState) => {
     const state = getState();
@@ -865,7 +865,7 @@ function isEditingInstance(instance: EditingInstance | undefined): instance is E
   return instance !== undefined;
 }
 
-export const deleteActiveEditingInstanceSourceRequested =
+const deleteActiveEditingInstanceSourceRequested =
   (itemId?: string): AppThunk<Promise<AppError | null>> =>
   async (dispatch, getState) => {
     const state = getState();
@@ -927,7 +927,7 @@ export const deleteActiveEditingInstanceSourceRequested =
     return null;
   };
 
-export const restoreSourceFileRequested =
+const restoreSourceFileRequested =
   (request: {
     itemId?: string;
     origin?: DiagnosticOrigin;
@@ -959,7 +959,7 @@ export const restoreSourceFileRequested =
     }
   };
 
-export const handlePreviewPlaybackError =
+const handlePreviewPlaybackError =
   (sourcePath: string, previewKind: PreviewKind): AppThunk =>
   async (dispatch, getState) => {
     const loadToken = getState().source.loadToken;
@@ -1003,7 +1003,7 @@ export const handlePreviewPlaybackError =
     }
   };
 
-export const prepareSourceWaveforms =
+const prepareSourceWaveforms =
   (sourcePath: string, streamIndexes: number[], width: number): AppThunk<Promise<string | null>> =>
   async (dispatch, getState) => {
     const loadToken = getState().source.loadToken;
@@ -1062,3 +1062,23 @@ export const prepareSourceWaveforms =
     }
     return jobId;
   };
+
+export {
+  activateEditingInstanceRequested,
+  checkMediaCapabilitiesRequested,
+  chooseSourceRequested,
+  closeActiveEditingInstanceRequested,
+  closeEditingInstancesRequested,
+  commitActiveEditingInstanceDraft,
+  deleteActiveEditingInstanceSourceRequested,
+  handlePreviewPlaybackError,
+  ingestSources,
+  leaveActiveEditingInstance,
+  navigateToEditingInstance,
+  prepareImportedSourceMetadataRequested,
+  prepareImportedSourceThumbnailsRequested,
+  prepareSourceWaveforms,
+  restoreActiveEditingInstanceRequested,
+  restoreExportAttemptRequested,
+  restoreSourceFileRequested,
+};

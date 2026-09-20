@@ -7,7 +7,7 @@ interface TimelineGeometryVariables {
   "--timeline-trim-start": string;
 }
 
-export function timelineGeometryVariables(range: TrimRange): TimelineGeometryVariables {
+function timelineGeometryVariables(range: TrimRange): TimelineGeometryVariables {
   const startPercent = timelinePercent(range.startMicros, range.sourceDurationMicros);
   const endPercent = timelinePercent(range.endMicros, range.sourceDurationMicros);
   const centerPercent = timelinePercent(
@@ -23,7 +23,7 @@ export function timelineGeometryVariables(range: TrimRange): TimelineGeometryVar
   };
 }
 
-export function syncTimelineGeometry(element: HTMLElement | null, range: TrimRange) {
+function syncTimelineGeometry(element: HTMLElement | null, range: TrimRange) {
   if (!element) return;
   const variables = timelineGeometryVariables(range);
   for (const [property, value] of Object.entries(variables)) {
@@ -32,3 +32,5 @@ export function syncTimelineGeometry(element: HTMLElement | null, range: TrimRan
     }
   }
 }
+
+export { syncTimelineGeometry, timelineGeometryVariables };

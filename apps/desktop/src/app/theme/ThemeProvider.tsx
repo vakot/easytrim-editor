@@ -12,7 +12,7 @@ import {
 } from "./theme";
 import { ThemeContext } from "./theme-context";
 
-export function ThemeProvider({ children }: { children: ReactNode }) {
+function ThemeProvider({ children }: { children: ReactNode }) {
   const preference = useAppSelector(selectThemePreference);
   const primaryColor = useAppSelector(selectPrimaryColor);
   const systemDark = useSyncExternalStore(subscribeToSystemTheme, systemPrefersDark, () => false);
@@ -65,3 +65,5 @@ function applyPrimaryColor(root: HTMLElement, primaryColor: PrimaryColor) {
   root.style.setProperty("--primary-dark", palette.dark);
   root.style.setProperty("--primary-foreground-dark", palette.darkForeground);
 }
+
+export { ThemeProvider };

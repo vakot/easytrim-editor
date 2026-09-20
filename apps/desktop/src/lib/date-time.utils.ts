@@ -1,8 +1,4 @@
-export function formatDateTime(
-  micros: number | undefined,
-  locale: string,
-  unknownLabel: string,
-): string {
+function formatDateTime(micros: number | undefined, locale: string, unknownLabel: string): string {
   if (micros === undefined) return unknownLabel;
 
   const date = new Date(micros / 1_000);
@@ -11,7 +7,7 @@ export function formatDateTime(
     : new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 
-export function formatRelativeTime(
+function formatRelativeTime(
   micros: number | undefined,
   locale: string,
   unknownLabel: string,
@@ -60,3 +56,5 @@ function isYesterday(date: Date, now: Date): boolean {
     date.getDate() === yesterday.getDate()
   );
 }
+
+export { formatDateTime, formatRelativeTime };

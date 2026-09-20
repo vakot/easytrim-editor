@@ -33,7 +33,7 @@ import { AudioLevelControl } from "./AudioLevelControl";
 import { AudioTracks } from "./AudioTracks";
 import { VolumeButton } from "./VolumeButton";
 
-export function AudioPanel() {
+function AudioPanel() {
   const sourceSelection = useAppSelector(selectSourceSelection);
   const media = useAppSelector(selectSourceMedia);
   const audioTracks = useAppSelector(selectAudioTracks);
@@ -152,3 +152,5 @@ export function AudioPanel() {
     </section>
   );
 }
+
+export { AudioPanel };

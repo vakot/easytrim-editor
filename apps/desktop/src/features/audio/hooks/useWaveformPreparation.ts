@@ -4,7 +4,7 @@ import type { AudioTrackState } from "@/app/store/slices/audio-slice";
 
 export const WAVEFORM_RENDER_WIDTH = 4096;
 
-export function useWaveformPreparation(
+function useWaveformPreparation(
   tracks: AudioTrackState[],
   enabled: boolean,
   prepare: (streamIndexes: number[], width: number) => void,
@@ -31,3 +31,5 @@ export function useWaveformPreparation(
     prepare(pending, WAVEFORM_RENDER_WIDTH);
   }, [enabled, prepare, tracks]);
 }
+
+export { useWaveformPreparation };

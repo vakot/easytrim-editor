@@ -5,7 +5,7 @@ import { EditorSource } from "@/app/components/editor-workspace/EditorSource";
 
 import { EditorStage } from "./EditorStage";
 
-export function EditorWorkspace() {
+function EditorWorkspace() {
   return (
     <ResizablePanelGroup className="px-1" id="workspace" persisted>
       <ResizablePanel
@@ -43,3 +43,5 @@ export function EditorWorkspace() {
     </ResizablePanelGroup>
   );
 }
+
+export { EditorWorkspace };

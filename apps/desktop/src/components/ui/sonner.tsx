@@ -13,7 +13,7 @@ import { Toaster as Sonner, type ToasterProps } from "sonner";
 const appTopOffset = 90;
 const sonnerDefaultOffset = 24;
 
-const Toaster = ({ ...props }: ToasterProps) => {
+function Toaster({ ...props }: ToasterProps) {
   const [theme, setTheme] = useState<ToasterProps["theme"]>(() =>
     document.documentElement.dataset.theme === "dark" ? "dark" : "light",
   );
@@ -58,6 +58,6 @@ const Toaster = ({ ...props }: ToasterProps) => {
       {...props}
     />
   );
-};
+}
 
 export { Toaster };

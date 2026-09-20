@@ -53,7 +53,7 @@ interface MenuBarViewProps {
   onClose: () => void;
 }
 
-export function MenuBarView({ onClose }: MenuBarViewProps) {
+function MenuBarView({ onClose }: MenuBarViewProps) {
   const { t } = useTranslation();
   const { previewPrimaryColor } = useTheme();
   const dispatch = useAppDispatch();
@@ -298,3 +298,5 @@ function CustomColorPickerPanel({
     </div>
   );
 }
+
+export { MenuBarView };

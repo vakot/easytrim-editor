@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectIsSourceDragActive } from "@/app/store/slices/import-workflow-slice";
 
-export function SourceDropOverlay() {
+function SourceDropOverlay() {
   const { t } = useTranslation();
   const isSourceDragActive = useAppSelector(selectIsSourceDragActive);
 
@@ -31,3 +31,5 @@ export function SourceDropOverlay() {
     </Backdrop>
   );
 }
+
+export { SourceDropOverlay };

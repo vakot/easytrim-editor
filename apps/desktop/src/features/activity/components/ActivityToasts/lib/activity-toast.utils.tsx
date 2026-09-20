@@ -21,7 +21,7 @@ export type PendingActivityToast = {
   resolve: (value: ActivityToast) => void;
 };
 
-export function showActivityToast(activityToast: ActivityToast, id?: string | number): void {
+function showActivityToast(activityToast: ActivityToast, id?: string | number): void {
   const { title, variant, ...options } = activityToast;
   const toastOptions = id === undefined ? options : { ...options, id };
   if (variant === "destructive") toast.error(title, toastOptions);
@@ -29,11 +29,11 @@ export function showActivityToast(activityToast: ActivityToast, id?: string | nu
   else toast(title, toastOptions);
 }
 
-export function getToastId(value: ReturnType<typeof toast.promise>): string | number | undefined {
+function getToastId(value: ReturnType<typeof toast.promise>): string | number | undefined {
   return typeof value === "string" || typeof value === "number" ? value : undefined;
 }
 
-export function getPromiseToastResult(activityToast: ActivityToast) {
+function getPromiseToastResult(activityToast: ActivityToast) {
   return {
     ...(activityToast.action ? { action: activityToast.action } : {}),
     description: activityToast.description,
@@ -41,7 +41,7 @@ export function getPromiseToastResult(activityToast: ActivityToast) {
   };
 }
 
-export function findPendingToast(
+function findPendingToast(
   entry: ActivityEntry,
   pendingToasts: Map<string, PendingActivityToast>,
 ): [string, PendingActivityToast] | undefined {
@@ -63,7 +63,7 @@ export function findPendingToast(
   return undefined;
 }
 
-export function getPromiseKey(entry: ActivityEntry): string {
+function getPromiseKey(entry: ActivityEntry): string {
   if (!isExportActivity(entry)) return entry.id;
 
   const attemptId = stringValue(entry.data?.attemptId);
@@ -72,7 +72,7 @@ export function getPromiseKey(entry: ActivityEntry): string {
   return `activity:${entry.kind}:source:${entry.snapshotId ?? ""}:${entry.path ?? entry.sourcePath ?? entry.id}`;
 }
 
-export function createDeferred<T>(): {
+function createDeferred<T>(): {
   promise: Promise<T>;
   reject: (reason?: T) => void;
   resolve: (value: T) => void;
@@ -87,7 +87,7 @@ export function createDeferred<T>(): {
   return { promise, reject: rejectPromise, resolve: resolvePromise };
 }
 
-export function isPromiseActivity(entry: ActivityEntry): boolean {
+function isPromiseActivity(entry: ActivityEntry): boolean {
   return (
     entry.kind === "fast-cut" ||
     entry.kind === "render" ||
@@ -96,11 +96,11 @@ export function isPromiseActivity(entry: ActivityEntry): boolean {
   );
 }
 
-export function isExportActivity(entry: ActivityEntry): boolean {
+function isExportActivity(entry: ActivityEntry): boolean {
   return entry.kind === "fast-cut" || entry.kind === "render";
 }
 
-export function createActivityToast(
+function createActivityToast(
   entry: ActivityEntry,
   instances: readonly EditingInstance[],
   t: TFunction,
@@ -130,10 +130,23 @@ export function createActivityToast(
   };
 }
 
-export function isToastable(status: ActivityStatus): boolean {
+function isToastable(status: ActivityStatus): boolean {
   return status !== "interrupted";
 }
 
 function stringValue(value: DiagnosticValue | undefined): string | undefined {
   return typeof value === "string" && value.length > 0 ? value : undefined;
 }
+
+export {
+  createActivityToast,
+  createDeferred,
+  findPendingToast,
+  getPromiseKey,
+  getPromiseToastResult,
+  getToastId,
+  isExportActivity,
+  isPromiseActivity,
+  isToastable,
+  showActivityToast,
+};

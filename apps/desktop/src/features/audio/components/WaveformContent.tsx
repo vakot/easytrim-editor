@@ -11,7 +11,7 @@ interface WaveformContentProps {
   track: AudioTrackState;
 }
 
-export function WaveformContent({ onImageError, onRetry, track }: WaveformContentProps) {
+function WaveformContent({ onImageError, onRetry, track }: WaveformContentProps) {
   const { t } = useTranslation();
 
   switch (track.waveform.status) {
@@ -52,3 +52,5 @@ export function WaveformContent({ onImageError, onRetry, track }: WaveformConten
       );
   }
 }
+
+export { WaveformContent };

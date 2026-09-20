@@ -51,7 +51,7 @@ const preferencesSlice = createSlice({
   },
 });
 
-export const {
+const {
   activityFeedViewChanged,
   customPrimaryColorChanged,
   preferenceChanged,
@@ -59,28 +59,53 @@ export const {
   primaryColorChanged,
   themePreferenceChanged,
 } = preferencesSlice.actions;
-export const preferencesReducer = preferencesSlice.reducer;
 
-export const selectPreferences = (state: RootState): Preferences => state.preferences;
-export const selectMergeAudioEnabledDefault = (state: RootState): boolean =>
+const preferencesReducer = preferencesSlice.reducer;
+
+const selectPreferences = (state: RootState): Preferences => state.preferences;
+const selectMergeAudioEnabledDefault = (state: RootState): boolean =>
   selectPreferences(state).mergeAudioEnabledDefault;
-export const selectAutoStartQueueEnabled = (state: RootState): boolean =>
+
+const selectAutoStartQueueEnabled = (state: RootState): boolean =>
   selectPreferences(state).autoStartQueueEnabled;
-export const selectDeleteSourceOnRenderFinish = (state: RootState): boolean =>
+
+const selectDeleteSourceOnRenderFinish = (state: RootState): boolean =>
   selectPreferences(state).deleteSourceOnRenderFinish;
-export const selectActivityFeedView = (state: RootState): ActivityFeedView => {
+
+const selectActivityFeedView = (state: RootState): ActivityFeedView => {
   const activityFeedView = selectPreferences(state).activityFeedView;
   return activityFeedView === "compact" || activityFeedView === "branch"
     ? activityFeedView
     : "default";
 };
-export const selectThemePreference = (state: RootState): ThemePreference =>
-  selectPreferences(state).theme;
-export const selectPrimaryColor = (state: RootState): PrimaryColor =>
+
+const selectThemePreference = (state: RootState): ThemePreference => selectPreferences(state).theme;
+const selectPrimaryColor = (state: RootState): PrimaryColor =>
   selectPreferences(state).primaryColor;
-export const selectPrimaryColorKey = (state: RootState): PrimaryColorKey => {
+
+const selectPrimaryColorKey = (state: RootState): PrimaryColorKey => {
   const primaryColor = selectPrimaryColor(state);
   return isCustomPrimaryColor(primaryColor) ? "custom" : primaryColor;
 };
-export const selectCustomPrimaryColor = (state: RootState): CustomPrimaryColor =>
+
+const selectCustomPrimaryColor = (state: RootState): CustomPrimaryColor =>
   selectPreferences(state).customPrimaryColor;
+
+export {
+  activityFeedViewChanged,
+  customPrimaryColorChanged,
+  preferenceChanged,
+  preferencesReducer,
+  preferencesReset,
+  primaryColorChanged,
+  selectActivityFeedView,
+  selectAutoStartQueueEnabled,
+  selectCustomPrimaryColor,
+  selectDeleteSourceOnRenderFinish,
+  selectMergeAudioEnabledDefault,
+  selectPreferences,
+  selectPrimaryColor,
+  selectPrimaryColorKey,
+  selectThemePreference,
+  themePreferenceChanged,
+};

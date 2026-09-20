@@ -1,4 +1,4 @@
-export interface CropRect {
+interface CropRect {
   height: number;
   width: number;
   x: number;
@@ -6,3 +6,5 @@ export interface CropRect {
 }
 
 export const FULL_CROP: CropRect = { x: 0, y: 0, width: 1, height: 1 };
+
+export type { CropRect };

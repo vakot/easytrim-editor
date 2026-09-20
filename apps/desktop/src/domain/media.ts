@@ -1,4 +1,4 @@
-export interface AppError {
+interface AppError {
   code: string;
   diagnostics?: string;
   message: string;
@@ -9,7 +9,7 @@ interface TrimSelection {
   startMicros: number;
 }
 
-export interface ExportProgress {
+interface ExportProgress {
   bitrate?: string;
   elapsedMicros: number;
   fps?: string;
@@ -20,19 +20,19 @@ export interface ExportProgress {
   totalSize?: number;
 }
 
-export interface OutputSelection {
+interface OutputSelection {
   displayName: string;
   displayPath: string;
   outputId: string;
 }
 
-export interface ExportResult {
+interface ExportResult {
   displayName: string;
   displayPath: string;
   operationId: string;
 }
 
-export interface FastExportRequest {
+interface FastExportRequest {
   audioTracks: AudioTrackSelection[];
   mergeAudio: boolean;
   rotationDegrees: import("./rotation").RotationDegrees;
@@ -45,7 +45,7 @@ interface AudioTrackSelection {
   volumePercent: number;
 }
 
-export interface OptimizedExportRequest extends FastExportRequest {
+interface OptimizedExportRequest extends FastExportRequest {
   arguments: string;
   crop?: { height: number; width: number; x: number; y: number };
   flipHorizontal?: boolean;
@@ -54,13 +54,13 @@ export interface OptimizedExportRequest extends FastExportRequest {
   resolution: { height: number; width: number };
 }
 
-export interface FrameRate {
+interface FrameRate {
   denominator: number;
   displayValue?: number;
   numerator: number;
 }
 
-export interface VideoStream {
+interface VideoStream {
   averageFrameRate?: FrameRate;
   codecName: string;
   codedHeight?: number;
@@ -78,7 +78,7 @@ export interface VideoStream {
   width: number;
 }
 
-export interface AudioStream {
+interface AudioStream {
   channelLayout?: string;
   channels?: number;
   codecName: string;
@@ -89,14 +89,14 @@ export interface AudioStream {
   title?: string;
 }
 
-export interface ChapterInfo {
+interface ChapterInfo {
   endMicros: number;
   id: number;
   startMicros: number;
   title?: string;
 }
 
-export interface MediaInfo {
+interface MediaInfo {
   audioStreams: AudioStream[];
   bitrate?: number;
   chapters: ChapterInfo[];
@@ -107,3 +107,17 @@ export interface MediaInfo {
   startTimeMicros?: number;
   video: VideoStream;
 }
+
+export type {
+  AppError,
+  AudioStream,
+  ChapterInfo,
+  ExportProgress,
+  ExportResult,
+  FastExportRequest,
+  FrameRate,
+  MediaInfo,
+  OptimizedExportRequest,
+  OutputSelection,
+  VideoStream,
+};

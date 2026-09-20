@@ -37,7 +37,7 @@ export type FrameShuttleDirection = -1 | 1;
 export const FRAME_SHUTTLE_HOLD_DELAY_MS = 250;
 export const FRAME_SHUTTLE_PLAYBACK_RATE = 2;
 
-export function editorShortcutFromEvent(event: globalThis.KeyboardEvent): EditorShortcut | null {
+function editorShortcutFromEvent(event: globalThis.KeyboardEvent): EditorShortcut | null {
   if (event.altKey || event.ctrlKey || event.metaKey) return null;
   switch (event.code) {
     case "Space":
@@ -55,7 +55,7 @@ export function editorShortcutFromEvent(event: globalThis.KeyboardEvent): Editor
   }
 }
 
-export function shortcutDispositionFromEvent(event: globalThis.KeyboardEvent): ShortcutDisposition {
+function shortcutDispositionFromEvent(event: globalThis.KeyboardEvent): ShortcutDisposition {
   const shortcut = editorShortcutFromEvent(event);
   if (!shortcut) return "ignored";
 
@@ -78,3 +78,5 @@ export function shortcutDispositionFromEvent(event: globalThis.KeyboardEvent): S
 
   return "timeline";
 }
+
+export { editorShortcutFromEvent, shortcutDispositionFromEvent };

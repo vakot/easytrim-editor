@@ -1,23 +1,23 @@
 import type { CropRect } from "./crop-geometry.utils";
 
-export interface Bounds {
+interface Bounds {
   height: number;
   width: number;
 }
 
-export interface CropFrame {
+interface CropFrame {
   height: number;
   left: number;
   top: number;
   width: number;
 }
 
-export interface ScaledFrame {
+interface ScaledFrame {
   frame: Bounds;
   scale: number;
 }
 
-export function centerFrame(bounds: Bounds, size: Bounds): CropFrame {
+function centerFrame(bounds: Bounds, size: Bounds): CropFrame {
   return {
     width: size.width,
     height: size.height,
@@ -26,7 +26,7 @@ export function centerFrame(bounds: Bounds, size: Bounds): CropFrame {
   };
 }
 
-export function cropFrame(viewport: CropFrame, crop: CropRect): CropFrame {
+function cropFrame(viewport: CropFrame, crop: CropRect): CropFrame {
   return {
     width: viewport.width * crop.width,
     height: viewport.height * crop.height,
@@ -40,7 +40,7 @@ export function cropFrame(viewport: CropFrame, crop: CropRect): CropFrame {
  * required enlargement is applied by the compositor instead of by laying out
  * an unnecessarily large video element.
  */
-export function scaleFrameToSourceBounds(frame: Bounds, source: Bounds): ScaledFrame {
+function scaleFrameToSourceBounds(frame: Bounds, source: Bounds): ScaledFrame {
   if (frame.width <= 0 || frame.height <= 0 || source.width <= 0 || source.height <= 0)
     return { frame, scale: 1 };
 
@@ -50,3 +50,7 @@ export function scaleFrameToSourceBounds(frame: Bounds, source: Bounds): ScaledF
     scale,
   };
 }
+
+export { centerFrame, cropFrame, scaleFrameToSourceBounds };
+
+export type { Bounds, CropFrame, ScaledFrame };

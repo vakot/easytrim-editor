@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 
-export function ActivityFeedEmptyState() {
+function ActivityFeedEmptyState() {
   const { t } = useTranslation();
 
   return (
@@ -9,3 +9,5 @@ export function ActivityFeedEmptyState() {
     </p>
   );
 }
+
+export { ActivityFeedEmptyState };

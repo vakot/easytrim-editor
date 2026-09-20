@@ -34,7 +34,7 @@ const CHANGELOG_URL = "https://github.com/vakot/easytrim-editor/releases";
 const PROJECT_PAGE_URL = "https://github.com/vakot/easytrim-editor";
 const SUPPORT_PROJECT_URL = "https://ko-fi.com/vakot";
 
-export function MenuBarHelp() {
+function MenuBarHelp() {
   const { t } = useTranslation();
   const currentVersion = getCurrentVersion();
   const {
@@ -166,3 +166,5 @@ function getUpdateDetails(
       };
   }
 }
+
+export { MenuBarHelp };

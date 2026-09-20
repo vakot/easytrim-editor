@@ -48,7 +48,9 @@ const trimSlice = createSlice({
   },
 });
 
-export const { trimChanged } = trimSlice.actions;
-export const trimReducer = trimSlice.reducer;
+const { trimChanged } = trimSlice.actions;
+const trimReducer = trimSlice.reducer;
 
-export const selectTrim = (state: RootState): TrimRange | null => state.trim.value;
+const selectTrim = (state: RootState): TrimRange | null => state.trim.value;
+
+export { selectTrim, trimChanged, trimReducer };

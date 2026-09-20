@@ -39,7 +39,7 @@ function hasPersistStorageMethods(value: unknown): value is PersistStorage {
   );
 }
 
-export function resolveReduxPersistStorage(value: unknown): PersistStorage {
+function resolveReduxPersistStorage(value: unknown): PersistStorage {
   if (hasPersistStorageMethods(value)) {
     return value;
   }
@@ -131,11 +131,13 @@ export const persistConfig: PersistConfig<unknown> = {
   whitelist: ["preferences"],
 };
 
-export function createPersistedReducer<RootState>(
+function createPersistedReducer<RootState>(
   rootReducer: Reducer<RootState>,
   storage: PersistStorage = reduxStorage,
 ): Reducer<RootState & { _persist: PersistState }> {
   return persistReducer({ ...persistConfig, storage } as PersistConfig<RootState>, rootReducer);
 }
+
+export { createPersistedReducer, resolveReduxPersistStorage };
 
 export type { PersistStorage };

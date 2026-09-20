@@ -21,7 +21,7 @@ interface SourceTabsProps {
   orientation?: "vertical" | "horizontal";
 }
 
-export function SourceTabs({
+function SourceTabs({
   background = "preview-surface",
   className,
   orientation = "horizontal",
@@ -85,3 +85,5 @@ const SourceTabsEntry = memo(function SourceTabsEntry({
     </div>
   );
 });
+
+export { SourceTabs };

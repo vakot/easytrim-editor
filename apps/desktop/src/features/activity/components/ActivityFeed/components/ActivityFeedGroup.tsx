@@ -32,7 +32,7 @@ const sessionSeparatorClassNames = {
   warning: "font-medium text-warning before:bg-warning after:bg-warning",
 } satisfies Record<"current" | "default" | "warning", string | undefined>;
 
-export function ActivityFeedGroup({
+function ActivityFeedGroup({
   currentAppVersion,
   currentDateTime,
   group,
@@ -88,3 +88,5 @@ export function ActivityFeedGroup({
     </div>
   );
 }
+
+export { ActivityFeedGroup };

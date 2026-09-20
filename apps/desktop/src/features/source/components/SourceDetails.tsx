@@ -15,7 +15,7 @@ import {
   formatFrameRate,
 } from "../lib/media-formatters.utils";
 
-export function SourceDetails() {
+function SourceDetails() {
   const media = useAppSelector(selectSourceMedia);
   const source = useAppSelector(selectSourceSelection);
   const { t } = useTranslation();
@@ -102,3 +102,5 @@ export function SourceDetails() {
     </dl>
   );
 }
+
+export { SourceDetails };

@@ -14,7 +14,7 @@ type ReachedBoundaryAction = Exclude<PlaybackBoundaryAction, { type: "continue" 
 type PlaybackBoundaryResult =
   { reached: false } | { action: ReachedBoundaryAction | null; reached: true };
 
-export function usePlaybackModes({
+function usePlaybackModes({
   loopEnabled,
   segmentEnabled,
 }: {
@@ -101,3 +101,5 @@ export function usePlaybackModes({
     resetBoundary,
   };
 }
+
+export { usePlaybackModes };

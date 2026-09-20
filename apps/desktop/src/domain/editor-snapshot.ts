@@ -5,7 +5,7 @@ import { createFullTrimRange, type TrimRange } from "./trim";
 
 type EditorSnapshotTrim = { kind: "full-source" } | { endMicros: number; startMicros: number };
 
-export interface EditorSnapshot {
+interface EditorSnapshot {
   audio: {
     master: { enabled: boolean; volumePercent: number };
     mergeAudio: boolean;
@@ -19,7 +19,7 @@ export interface EditorSnapshot {
   trim: EditorSnapshotTrim;
 }
 
-export function createEditorSnapshot(input: {
+function createEditorSnapshot(input: {
   audioTracks: EditorSnapshot["audio"]["tracks"];
   crop: CropRect | null;
   flipHorizontal?: boolean;
@@ -45,7 +45,7 @@ export function createEditorSnapshot(input: {
   };
 }
 
-export function resolveEditorSnapshotTrim(
+function resolveEditorSnapshotTrim(
   trim: EditorSnapshotTrim,
   sourceDurationMicros: number,
 ): TrimRange {
@@ -55,3 +55,7 @@ export function resolveEditorSnapshotTrim(
 
   return { ...trim, sourceDurationMicros };
 }
+
+export { createEditorSnapshot, resolveEditorSnapshotTrim };
+
+export type { EditorSnapshot };

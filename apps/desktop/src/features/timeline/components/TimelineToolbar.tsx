@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 
 import { TimelineTools } from "./TimelineTools";
 
-export function TimelineToolbar() {
+function TimelineToolbar() {
   const { t } = useTranslation();
 
   return (
@@ -16,3 +16,5 @@ export function TimelineToolbar() {
     </div>
   );
 }
+
+export { TimelineToolbar };

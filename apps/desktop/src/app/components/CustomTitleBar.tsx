@@ -26,11 +26,7 @@ interface PendingDrag {
 
 const DRAG_START_DISTANCE = 4;
 
-export function CustomTitleBar({
-  menuControls,
-  panelControls,
-  statusContent,
-}: CustomTitleBarProps) {
+function CustomTitleBar({ menuControls, panelControls, statusContent }: CustomTitleBarProps) {
   const { t } = useTranslation();
   const [isMaximized, setIsMaximized] = useState(false);
   const [windowActionError, setWindowActionError] = useState(false);
@@ -184,3 +180,5 @@ export function CustomTitleBar({
     </header>
   );
 }
+
+export { CustomTitleBar };

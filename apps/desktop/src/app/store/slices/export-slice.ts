@@ -94,7 +94,7 @@ const exportSlice = createSlice({
   },
 });
 
-export const {
+const {
   exportLaunchFailed,
   optimizedExportDialogClosed,
   optimizedExportDialogOpened,
@@ -106,11 +106,13 @@ export const {
   queuePaused,
   queueStarted,
 } = exportSlice.actions;
-export const exportReducer = exportSlice.reducer;
 
-export const selectSourceQueueStarted = (state: RootState, instanceId: string): boolean =>
+const exportReducer = exportSlice.reducer;
+
+const selectSourceQueueStarted = (state: RootState, instanceId: string): boolean =>
   state.export.startedSourceIds.includes(instanceId);
-export const selectSourceExportQueueState = createSelector(
+
+const selectSourceExportQueueState = createSelector(
   [selectExportQueueById, selectSourceQueueStarted],
   (items, started) => ({
     hasExports: items.length > 0,
@@ -118,14 +120,40 @@ export const selectSourceExportQueueState = createSelector(
     isRunning: started || items.some(({ attempt }) => attempt.state.status === "rendering"),
   }),
 );
-export const selectQueueFinishAction = (state: RootState): QueueFinishAction =>
+
+const selectQueueFinishAction = (state: RootState): QueueFinishAction =>
   state.export.queueFinishAction;
-export const selectAvailableQueueFinishActions = (state: RootState): QueueFinishAction[] =>
+
+const selectAvailableQueueFinishActions = (state: RootState): QueueFinishAction[] =>
   state.export.availableQueueFinishActions;
-export const selectOptimizedExportDialogOpen = (state: RootState): boolean =>
+
+const selectOptimizedExportDialogOpen = (state: RootState): boolean =>
   state.export.optimizedDialogOpen;
-export const selectExportCommandPreview = (state: RootState): string => state.export.commandPreview;
-export const selectExportCommandPreviewError = (state: RootState): AppError | null =>
+
+const selectExportCommandPreview = (state: RootState): string => state.export.commandPreview;
+const selectExportCommandPreviewError = (state: RootState): AppError | null =>
   state.export.commandPreviewError;
-export const selectExportLaunchError = (state: RootState): AppError | null =>
-  state.export.launchError;
+
+const selectExportLaunchError = (state: RootState): AppError | null => state.export.launchError;
+
+export {
+  exportLaunchFailed,
+  exportReducer,
+  optimizedExportDialogClosed,
+  optimizedExportDialogOpened,
+  optimizedExportPlanFailed,
+  optimizedExportPlanReceived,
+  optimizedExportPlanRequested,
+  queueFinishActionChanged,
+  queueFinishActionsAvailable,
+  queuePaused,
+  queueStarted,
+  selectAvailableQueueFinishActions,
+  selectExportCommandPreview,
+  selectExportCommandPreviewError,
+  selectExportLaunchError,
+  selectOptimizedExportDialogOpen,
+  selectQueueFinishAction,
+  selectSourceExportQueueState,
+  selectSourceQueueStarted,
+};

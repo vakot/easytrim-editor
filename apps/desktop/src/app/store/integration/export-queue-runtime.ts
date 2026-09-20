@@ -79,7 +79,7 @@ function runtimeFor(getState: () => RootState): RuntimeState {
   return runtime;
 }
 
-export function setExportQueueExecutionEnabled(
+function setExportQueueExecutionEnabled(
   enabled: boolean,
   dispatch: AppDispatch,
   getState: () => RootState,
@@ -102,7 +102,7 @@ export function setExportQueueExecutionEnabled(
   if (enabled) void drainQueue(runtime, dispatch, getState);
 }
 
-export function enqueueExport(
+function enqueueExport(
   instanceId: EditingInstanceId,
   attempt: ExportAttempt,
   dispatch: AppDispatch,
@@ -141,7 +141,7 @@ export function enqueueExport(
   return true;
 }
 
-export function withdrawPendingExport(
+function withdrawPendingExport(
   instanceId: EditingInstanceId,
   attemptId: string,
   getState: () => RootState,
@@ -159,7 +159,7 @@ export function withdrawPendingExport(
   return true;
 }
 
-export function cancelQueuedExport(
+function cancelQueuedExport(
   instanceId: EditingInstanceId,
   attemptId: string,
   getState: () => RootState,
@@ -191,7 +191,7 @@ export function cancelQueuedExport(
   return job.completion;
 }
 
-export async function cancelAndRequeueExport(
+async function cancelAndRequeueExport(
   instanceId: EditingInstanceId,
   attemptId: string,
   getState: () => RootState,
@@ -210,7 +210,7 @@ export async function cancelAndRequeueExport(
   await job.completion;
 }
 
-export function hasActiveExportForSource(sourcePath: string, getState: () => RootState): boolean {
+function hasActiveExportForSource(sourcePath: string, getState: () => RootState): boolean {
   return (runtimeFor(getState).jobsBySourceKey.get(normalizeSourceKey(sourcePath))?.size ?? 0) > 0;
 }
 
@@ -522,3 +522,12 @@ async function moveSourceToTrashAndMarkDeleted(
     });
   }
 }
+
+export {
+  cancelAndRequeueExport,
+  cancelQueuedExport,
+  enqueueExport,
+  hasActiveExportForSource,
+  setExportQueueExecutionEnabled,
+  withdrawPendingExport,
+};

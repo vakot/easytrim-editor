@@ -28,7 +28,7 @@ type AudioPreviewState =
       status: "unavailable";
     };
 
-export interface AudioTrackState {
+interface AudioTrackState {
   enabled: boolean;
   streamIndex: number;
   volumePercent: number;
@@ -246,7 +246,7 @@ function updateWaveformTracks(
   );
 }
 
-export const {
+const {
   audioMergeToggled,
   audioPreviewsLoading,
   audioPreviewsReady,
@@ -261,16 +261,39 @@ export const {
   waveformsLoading,
 } = audioSlice.actions;
 
-export const audioReducer = audioSlice.reducer;
+const audioReducer = audioSlice.reducer;
 
 const EMPTY_AUDIO_TRACKS: AudioTrackState[] = [];
 
-export const selectAudioTracks = (state: RootState): AudioTrackState[] =>
+const selectAudioTracks = (state: RootState): AudioTrackState[] =>
   state.audio.tracks.length > 0 ? state.audio.tracks : EMPTY_AUDIO_TRACKS;
-export const selectMasterAudio = createSelector([(state: RootState) => state.audio], (audio) => ({
+
+const selectMasterAudio = createSelector([(state: RootState) => state.audio], (audio) => ({
   enabled: audio.masterEnabled,
   volumePercent: audio.masterVolumePercent,
 }));
-export const selectMergeAudio = (state: RootState): boolean => state.audio.mergeAudio;
-export const selectAudioPreviews = (state: RootState): AudioPreviewState | null =>
-  state.audio.previews;
+
+const selectMergeAudio = (state: RootState): boolean => state.audio.mergeAudio;
+const selectAudioPreviews = (state: RootState): AudioPreviewState | null => state.audio.previews;
+
+export {
+  audioMergeToggled,
+  audioPreviewsLoading,
+  audioPreviewsReady,
+  audioPreviewsUnavailable,
+  audioReducer,
+  audioTrackToggled,
+  audioTrackVolumeChanged,
+  masterAudioToggled,
+  masterVolumeChanged,
+  selectAudioPreviews,
+  selectAudioTracks,
+  selectMasterAudio,
+  selectMergeAudio,
+  waveformDisplayFailed,
+  waveformReady,
+  waveformsFailed,
+  waveformsLoading,
+};
+
+export type { AudioTrackState };

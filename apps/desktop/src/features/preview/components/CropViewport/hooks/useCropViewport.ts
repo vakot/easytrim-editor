@@ -18,7 +18,7 @@ import { useCropSelection } from "./useCropSelection";
 
 const CROP_TOOL_INSET_PX = 28;
 
-export function useCropViewport() {
+function useCropViewport() {
   const { onCropToolOpenChange, videoRef } = usePlayback();
   const preview = useAppSelector(selectPreview);
   const rotationDegrees = useAppSelector(selectRotationDegrees);
@@ -155,3 +155,5 @@ function containBounds(container: Bounds, aspectRatio: number): Bounds {
     return { width: container.height * aspectRatio, height: container.height };
   return { width: container.width, height: container.width / aspectRatio };
 }
+
+export { useCropViewport };

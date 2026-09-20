@@ -1,4 +1,4 @@
-export function isApplicationInteractionBlocked(): boolean {
+function isApplicationInteractionBlocked(): boolean {
   return (
     typeof document !== "undefined" &&
     document.querySelector(
@@ -17,10 +17,12 @@ export function isApplicationInteractionBlocked(): boolean {
   );
 }
 
-export function isEditableTarget(target: EventTarget | null): boolean {
+function isEditableTarget(target: EventTarget | null): boolean {
   return (
     target instanceof Element &&
     target.closest("input, textarea, select, [contenteditable]:not([contenteditable='false'])") !==
       null
   );
 }
+
+export { isApplicationInteractionBlocked, isEditableTarget };

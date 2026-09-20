@@ -1,6 +1,6 @@
 import type { HexColor } from "./color.types";
 
-export function colorFromSpectrumPosition(x: number, y: number, size: number): HexColor {
+function colorFromSpectrumPosition(x: number, y: number, size: number): HexColor {
   const radius = size / 2;
   const horizontal = x - radius;
   const vertical = y - radius;
@@ -9,7 +9,7 @@ export function colorFromSpectrumPosition(x: number, y: number, size: number): H
   return hslToHex((hue + 360) % 360, distance * 100, 50);
 }
 
-export function hslToHex(hue: number, saturation: number, lightness: number): HexColor {
+function hslToHex(hue: number, saturation: number, lightness: number): HexColor {
   const chroma = (1 - Math.abs((2 * lightness) / 100 - 1)) * (saturation / 100);
   const segment = hue / 60;
   const secondary = chroma * (1 - Math.abs((segment % 2) - 1));
@@ -36,7 +36,7 @@ export function hslToHex(hue: number, saturation: number, lightness: number): He
     .join("")}`;
 }
 
-export function hexToHsl(hex: string) {
+function hexToHsl(hex: string) {
   const red = Number.parseInt(hex.slice(1, 3), 16) / 255;
   const green = Number.parseInt(hex.slice(3, 5), 16) / 255;
   const blue = Number.parseInt(hex.slice(5, 7), 16) / 255;
@@ -59,3 +59,5 @@ export function hexToHsl(hex: string) {
 
   return { hue, saturation: saturation * 100 };
 }
+
+export { colorFromSpectrumPosition, hexToHsl, hslToHex };

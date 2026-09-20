@@ -76,7 +76,7 @@ function nextAttemptId() {
   return `attempt-${++exportAttemptSequence}`;
 }
 
-export const loadQueueFinishActions = (): AppThunk => async (dispatch) => {
+const loadQueueFinishActions = (): AppThunk => async (dispatch) => {
   try {
     const actions = await availableQueueFinishActions();
     dispatch(queueFinishActionsAvailable(actions.includes("nothing") ? actions : ["nothing"]));
@@ -85,7 +85,7 @@ export const loadQueueFinishActions = (): AppThunk => async (dispatch) => {
   }
 };
 
-export const startSourceExportQueue =
+const startSourceExportQueue =
   (instanceId: string): AppThunk =>
   (dispatch, getState) => {
     diagnostics.action("export.queue.start.requested", {
@@ -95,7 +95,7 @@ export const startSourceExportQueue =
     setExportQueueExecutionEnabled(true, dispatch, getState, instanceId);
   };
 
-export const cancelSourceExportQueue =
+const cancelSourceExportQueue =
   (instanceId: string): AppThunk =>
   async (dispatch, getState) => {
     setExportQueueExecutionEnabled(false, dispatch, getState, instanceId);
@@ -106,13 +106,13 @@ export const cancelSourceExportQueue =
     if (active) await cancelAndRequeueExport(instanceId, active.attempt.id, getState);
   };
 
-export const cancelExportAttemptRequested =
+const cancelExportAttemptRequested =
   ({ attemptId, instanceId }: { attemptId: string; instanceId: string }): AppThunk =>
   async (_dispatch, getState) => {
     await cancelQueuedExport(instanceId, attemptId, getState);
   };
 
-export const openOptimizedExportDialog =
+const openOptimizedExportDialog =
   (origin: DiagnosticOrigin = { id: "optimized", type: "button" }): AppThunk =>
   async (dispatch, getState) => {
     const settings = getInitialSettings(getState());
@@ -122,7 +122,7 @@ export const openOptimizedExportDialog =
     diagnostics.action("export.dialog.opened", origin);
   };
 
-export const optimizedExportSettingsChangedRequested =
+const optimizedExportSettingsChangedRequested =
   (settings: ExportSettings): AppThunk =>
   async (dispatch, getState) => {
     const instanceId = selectActiveInstanceId(getState());
@@ -131,7 +131,7 @@ export const optimizedExportSettingsChangedRequested =
     await dispatch(refreshOptimizedExportPlan());
   };
 
-export const refreshOptimizedExportPlan = (): AppThunk => async (dispatch, getState) => {
+const refreshOptimizedExportPlan = (): AppThunk => async (dispatch, getState) => {
   const request = getOptimizedRequest(getState());
   const instanceId = selectActiveInstanceId(getState());
   if (!request || !instanceId) return;
@@ -156,14 +156,14 @@ export const refreshOptimizedExportPlan = (): AppThunk => async (dispatch, getSt
   }
 };
 
-export const startFastCutRequested =
+const startFastCutRequested =
   (origin: DiagnosticOrigin = { id: "fast-cut", type: "button" }): AppThunk =>
   (dispatch, getState) => {
     if (selectCropApplied(getState()) || selectTransformApplied(getState())) return;
     void startEditingInstanceExport("fast", dispatch, getState, origin);
   };
 
-export const startOptimizedExportRequested =
+const startOptimizedExportRequested =
   (origin: DiagnosticOrigin = { id: "optimized", type: "button" }): AppThunk =>
   (dispatch, getState) => {
     dispatch(optimizedExportDialogClosed());
@@ -351,3 +351,15 @@ function getTotalFrames(
     ),
   );
 }
+
+export {
+  cancelExportAttemptRequested,
+  cancelSourceExportQueue,
+  loadQueueFinishActions,
+  openOptimizedExportDialog,
+  optimizedExportSettingsChangedRequested,
+  refreshOptimizedExportPlan,
+  startFastCutRequested,
+  startOptimizedExportRequested,
+  startSourceExportQueue,
+};

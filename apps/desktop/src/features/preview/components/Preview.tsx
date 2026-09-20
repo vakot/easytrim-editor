@@ -3,7 +3,7 @@ import { selectSourceSelection } from "@/app/store/slices/source-slice";
 
 import { VideoPreview, VideoPreviewEmpty, VideoPreviewLoadingOverlay } from "./VideoPreview";
 
-export function Preview() {
+function Preview() {
   const sourceSelection = useAppSelector(selectSourceSelection);
 
   return (
@@ -14,3 +14,5 @@ export function Preview() {
     </div>
   );
 }
+
+export { Preview };

@@ -6,7 +6,7 @@ const MAX_RATE_CORRECTION = 0.05;
 
 type AudioSyncAction = "none" | "rate" | "seek";
 
-export function synchronizeAudioPosition(
+function synchronizeAudioPosition(
   audio: HTMLMediaElement,
   targetSeconds: number,
   playbackRate: number,
@@ -35,3 +35,5 @@ export function synchronizeAudioPosition(
   audio.playbackRate = playbackRate * (1 + correction);
   return "rate";
 }
+
+export { synchronizeAudioPosition };

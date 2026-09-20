@@ -14,7 +14,7 @@ interface ActivityFeedEntryProps {
   onAction?: (action: ActivityAction) => void;
 }
 
-export function ActivityFeedEntry({ compact = false, entry, onAction }: ActivityFeedEntryProps) {
+function ActivityFeedEntry({ compact = false, entry, onAction }: ActivityFeedEntryProps) {
   const action = entry.action;
   const normalizedSourcePath = formatSourcePath(entry.path ?? "");
   const showAction = !!action && (action.kind === "restore" || onAction);
@@ -60,3 +60,5 @@ export function ActivityFeedEntry({ compact = false, entry, onAction }: Activity
     </Marker>
   );
 }
+
+export { ActivityFeedEntry };

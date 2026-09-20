@@ -8,7 +8,7 @@ import { formatPlaybackTime } from "@/domain/playback";
 
 import { EMPTY_TIMELINE_RANGE } from "../lib/timeline-range";
 
-export function PlaybackTimecode() {
+function PlaybackTimecode() {
   const { t } = useTranslation();
   const media = useAppSelector(selectSourceMedia);
   const playback = usePlayback();
@@ -34,3 +34,5 @@ export function PlaybackTimecode() {
     </output>
   );
 }
+
+export { PlaybackTimecode };

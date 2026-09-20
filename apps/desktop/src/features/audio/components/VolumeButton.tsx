@@ -17,7 +17,7 @@ type VolumeButtonProps = Omit<
   onClick: () => void;
 };
 
-export const VolumeButton = forwardRef<HTMLButtonElement, VolumeButtonProps>(function VolumeButton(
+const VolumeButton = forwardRef<HTMLButtonElement, VolumeButtonProps>(function VolumeButton(
   { className, enabled, label, onClick, ...buttonProps },
   ref,
 ) {
@@ -45,3 +45,5 @@ export const VolumeButton = forwardRef<HTMLButtonElement, VolumeButtonProps>(fun
     </Tooltip>
   );
 });
+
+export { VolumeButton };

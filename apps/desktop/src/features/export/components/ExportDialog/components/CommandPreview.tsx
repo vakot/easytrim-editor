@@ -16,7 +16,7 @@ interface CommandPreviewProps {
   error?: string | null;
 }
 
-export function CommandPreview({ command, error }: CommandPreviewProps) {
+function CommandPreview({ command, error }: CommandPreviewProps) {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
 
@@ -67,3 +67,5 @@ export function CommandPreview({ command, error }: CommandPreviewProps) {
     </div>
   );
 }
+
+export { CommandPreview };

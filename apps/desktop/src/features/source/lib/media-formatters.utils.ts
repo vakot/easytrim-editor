@@ -1,6 +1,6 @@
 import type { FrameRate } from "@/lib/tauri/media.types";
 
-export function formatDuration(micros: number): string {
+function formatDuration(micros: number): string {
   const totalSeconds = Math.max(0, Math.floor(micros / 1_000_000));
   const hours = Math.floor(totalSeconds / 3_600);
   const minutes = Math.floor((totalSeconds % 3_600) / 60);
@@ -8,7 +8,7 @@ export function formatDuration(micros: number): string {
   return [hours, minutes, seconds].map((value) => value.toString().padStart(2, "0")).join(":");
 }
 
-export function formatFrameRate(
+function formatFrameRate(
   frameRate: FrameRate | undefined,
   unknownLabel: string,
   formatUnit: (value: string) => string,
@@ -20,7 +20,7 @@ export function formatFrameRate(
   return formatUnit(value.toFixed(value % 1 === 0 ? 0 : 2));
 }
 
-export function formatBytes(bytes: number | undefined, unknownLabel: string): string {
+function formatBytes(bytes: number | undefined, unknownLabel: string): string {
   if (bytes === undefined) {
     return unknownLabel;
   }
@@ -34,7 +34,7 @@ export function formatBytes(bytes: number | undefined, unknownLabel: string): st
   return `${value.toFixed(unit === 0 ? 0 : 1)} ${units[unit]}`;
 }
 
-export function formatBitrate(
+function formatBitrate(
   bitrate: number | undefined,
   unknownLabel: string,
   formatUnit: (value: string) => string,
@@ -42,9 +42,11 @@ export function formatBitrate(
   return bitrate === undefined ? unknownLabel : formatUnit((bitrate / 1_000_000).toFixed(2));
 }
 
-export function formatSourcePath(sourcePath: string): string {
+function formatSourcePath(sourcePath: string): string {
   const extendedPathPrefix = "\\\\?\\";
   return sourcePath.startsWith(extendedPathPrefix)
     ? sourcePath.slice(extendedPathPrefix.length)
     : sourcePath;
 }
+
+export { formatBitrate, formatBytes, formatDuration, formatFrameRate, formatSourcePath };

@@ -19,7 +19,7 @@ interface ExportFrameRateProps {
   settings: ExportSettings;
 }
 
-export function ExportFrameRate({ settings }: ExportFrameRateProps) {
+function ExportFrameRate({ settings }: ExportFrameRateProps) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const frameRateValue = settings.frameRate
@@ -55,3 +55,5 @@ export function ExportFrameRate({ settings }: ExportFrameRateProps) {
     </div>
   );
 }
+
+export { ExportFrameRate };
