@@ -1,6 +1,6 @@
-import { Slot } from "radix-ui";
-
-import { buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { TextareaInput } from "@/components/ui/textarea";
 
 import { cn } from "@/lib/class-names.utils";
 
@@ -8,7 +8,7 @@ function InputGroup({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       className={cn(
-        "group/input-group relative flex w-full flex-wrap items-center rounded-lg border border-input bg-transparent shadow-xs outline-none transition-[color,box-shadow] has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-3 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/50 has-[[data-slot=input-group-control][aria-invalid=true]]:border-destructive has-[[data-slot=input-group-control][aria-invalid=true]]:ring-3 has-[[data-slot=input-group-control][aria-invalid=true]]:ring-destructive/20 dark:bg-input/30 dark:has-[[data-slot=input-group-control]:focus-visible]:border-ring dark:has-[[data-slot=input-group-control][aria-invalid=true]]:border-destructive/50 dark:has-[[data-slot=input-group-control][aria-invalid=true]]:ring-destructive/40",
+        "group/input-group relative flex w-full flex-wrap items-center rounded-lg border border-input bg-transparent shadow-xs transition-[color,box-shadow] outline-none has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-3 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/50 has-[[data-slot=input-group-control][aria-invalid=true]]:border-destructive has-[[data-slot=input-group-control][aria-invalid=true]]:ring-3 has-[[data-slot=input-group-control][aria-invalid=true]]:ring-destructive/20 dark:bg-input/30 dark:has-[[data-slot=input-group-control]:focus-visible]:border-ring dark:has-[[data-slot=input-group-control][aria-invalid=true]]:border-destructive/50 dark:has-[[data-slot=input-group-control][aria-invalid=true]]:ring-destructive/40",
         className,
       )}
       data-slot="input-group"
@@ -45,24 +45,17 @@ function InputGroupAddon({
 }
 
 function InputGroupButton({
-  asChild = false,
   className,
   size = "sm",
   variant = "ghost",
   ...props
-}: React.ComponentProps<"button"> & {
-  asChild?: boolean;
-  size?: "xs" | "sm" | "icon-xs" | "icon-sm";
-  variant?: "default" | "outline" | "secondary" | "ghost" | "destructive" | "success" | "link";
-}) {
-  const Comp = asChild ? Slot.Root : "button";
-
+}: React.ComponentProps<typeof Button>) {
   return (
-    <Comp
-      className={cn(buttonVariants({ size, variant }), className)}
-      data-size={size}
+    <Button
+      className={className}
       data-slot="input-group-button"
-      data-variant={variant}
+      size={size}
+      variant={variant}
       {...props}
     />
   );
@@ -81,9 +74,9 @@ function InputGroupText({ className, ...props }: React.ComponentProps<"span">) {
   );
 }
 
-function InputGroupInput({ className, ...props }: React.ComponentProps<"input">) {
+function InputGroupInput({ className, ...props }: React.ComponentProps<typeof Input>) {
   return (
-    <input
+    <Input
       className={cn(
         "flex h-7 min-w-0 flex-1 rounded-none border-0 bg-transparent px-2.5 py-1 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50",
         className,
@@ -94,9 +87,9 @@ function InputGroupInput({ className, ...props }: React.ComponentProps<"input">)
   );
 }
 
-function InputGroupTextarea({ className, ...props }: React.ComponentProps<"textarea">) {
+function InputGroupTextarea({ className, ...props }: React.ComponentProps<typeof TextareaInput>) {
   return (
-    <textarea
+    <TextareaInput
       className={cn(
         "flex min-h-16 min-w-0 basis-full resize-none rounded-none border-0 bg-transparent px-2.5 py-1.5 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50",
         className,
