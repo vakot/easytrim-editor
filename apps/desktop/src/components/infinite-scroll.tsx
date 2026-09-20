@@ -1,5 +1,6 @@
 import type { ComponentProps, ReactNode } from "react";
 import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 
 import { cn } from "@/lib/class-names.utils";
 
@@ -46,6 +47,7 @@ function InfiniteScrollTrigger({
   next,
   rootMargin = DEFAULT_ROOT_MARGIN,
 }: InfiniteScrollTriggerProps) {
+  const { t } = useTranslation();
   const { sentinelRef } = useInfiniteScroll({
     hasMore,
     isLoading,
@@ -53,7 +55,11 @@ function InfiniteScrollTrigger({
     rootMargin,
   });
 
-  const loader = propsLoader ?? <span role="status">Loading…</span>;
+  const loader = propsLoader ?? (
+    <span className="shimmer" role="status">
+      {t("common.status.loading")}
+    </span>
+  );
 
   if (!hasMore) return null;
 
