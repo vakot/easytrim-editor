@@ -13,7 +13,7 @@ interface InfiniteScrollTriggerProps {
 
 type InfiniteScrollProps = ComponentProps<"div"> & InfiniteScrollTriggerProps;
 
-const DEFAULT_ROOT_MARGIN = "0px 0px 200px";
+const DEFAULT_ROOT_MARGIN = "0px 0px 1200px";
 
 function InfiniteScroll({
   children,
@@ -102,6 +102,7 @@ function useInfiniteScroll({
   useEffect(() => {
     const trigger = sentinelRef.current;
     if (!trigger || !hasMore || typeof IntersectionObserver === "undefined") return;
+    const root = trigger.closest<HTMLElement>("[data-slot='scroll-area-viewport']");
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -123,7 +124,7 @@ function useInfiniteScroll({
         nextRequestedRef.current = true;
         nextRef.current();
       },
-      { rootMargin },
+      { root, rootMargin },
     );
 
     observer.observe(trigger);

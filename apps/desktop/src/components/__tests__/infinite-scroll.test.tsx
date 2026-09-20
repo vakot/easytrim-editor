@@ -5,13 +5,20 @@ import { InfiniteScroll } from "../infinite-scroll";
 
 type ObserverCallback = (entries: Array<{ isIntersecting: boolean }>) => void;
 
+interface ObserverOptions {
+  root: Element | null;
+  rootMargin?: string;
+}
+
 class IntersectionObserverMock {
   static instances: IntersectionObserverMock[] = [];
 
   readonly callback: ObserverCallback;
+  readonly options: ObserverOptions;
 
-  constructor(callback: ObserverCallback) {
+  constructor(callback: ObserverCallback, options: ObserverOptions) {
     this.callback = callback;
+    this.options = options;
     IntersectionObserverMock.instances.push(this);
   }
 
@@ -83,5 +90,18 @@ describe("InfiniteScroll", () => {
     observer?.trigger(true);
 
     expect(next).toHaveBeenCalledTimes(2);
+  });
+
+  it("uses the nearest scroll area viewport as the observer root", () => {
+    const next = vi.fn();
+    const { container } = render(
+      <div data-slot="scroll-area-viewport">
+        <InfiniteScroll hasMore next={next}>
+          Items
+        </InfiniteScroll>
+      </div>,
+    );
+
+    expect(IntersectionObserverMock.instances[0]?.options.root).toBe(container.firstChild);
   });
 });
