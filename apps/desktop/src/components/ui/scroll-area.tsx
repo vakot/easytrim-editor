@@ -68,7 +68,13 @@ function ScrollArea({
     const content = viewport.firstElementChild;
     if (content) resizeObserver.observe(content);
 
-    return () => resizeObserver.disconnect();
+    const mutationObserver = new MutationObserver(updateScrollState);
+    mutationObserver.observe(viewport, { childList: true, subtree: true });
+
+    return () => {
+      resizeObserver.disconnect();
+      mutationObserver.disconnect();
+    };
   }, [updateScrollState]);
 
   return (
