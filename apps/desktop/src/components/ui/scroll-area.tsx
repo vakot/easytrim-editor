@@ -9,6 +9,8 @@ import styles from "./scroll-area.module.css";
 
 type ScrollAreaOrientation = "horizontal" | "vertical";
 
+const SCROLL_END_TOLERANCE_PX = 2;
+
 function ScrollArea({
   children,
   className,
@@ -36,12 +38,16 @@ function ScrollArea({
     const nextScrollState =
       orientation === "horizontal"
         ? {
-            canScrollDown: viewport.scrollWidth - viewport.clientWidth - viewport.scrollLeft > 1,
-            canScrollUp: viewport.scrollLeft > 1,
+            canScrollDown:
+              viewport.scrollWidth - viewport.clientWidth - viewport.scrollLeft >
+              SCROLL_END_TOLERANCE_PX,
+            canScrollUp: viewport.scrollLeft > SCROLL_END_TOLERANCE_PX,
           }
         : {
-            canScrollDown: viewport.scrollHeight - viewport.clientHeight - viewport.scrollTop > 1,
-            canScrollUp: viewport.scrollTop > 1,
+            canScrollDown:
+              viewport.scrollHeight - viewport.clientHeight - viewport.scrollTop >
+              SCROLL_END_TOLERANCE_PX,
+            canScrollUp: viewport.scrollTop > SCROLL_END_TOLERANCE_PX,
           };
 
     setScrollState((currentScrollState) => {
