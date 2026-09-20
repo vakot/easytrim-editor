@@ -213,26 +213,36 @@ function SourceCardStatusBadge({ className }: { className?: string }) {
   );
 }
 
-function SourceCardTitle({ className }: { className?: string }) {
+type SourceCardContent = (props: { source: EditingInstance }) => React.ReactNode;
+
+function SourceCardTitle({ children, className }: { children?: SourceCardContent; className?: string }) {
   const source = useSourceCardSource();
 
   const { displayName } = source.snapshot.source;
+  const content = children ? children({ source }) : displayName;
 
   return (
     <CardTitle className={cn("truncate text-sm", className)} title={displayName}>
-      {displayName}
+      {content}
     </CardTitle>
   );
 }
 
-function SourceCardDescription({ className }: { className?: string }) {
+function SourceCardDescription({
+  children,
+  className,
+}: {
+  children?: SourceCardContent;
+  className?: string;
+}) {
   const source = useSourceCardSource();
 
   const { sourcePath } = source.snapshot.source;
+  const content = children ? children({ source }) : formatSourcePath(sourcePath);
 
   return (
     <CardDescription className={cn("truncate", className)} title={sourcePath}>
-      {formatSourcePath(sourcePath)}
+      {content}
     </CardDescription>
   );
 }

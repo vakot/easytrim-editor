@@ -23,6 +23,7 @@ import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Highlight } from "@/components/ui/highlight";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { RelativeTimestamp } from "@/components/ui/relative-timestamp";
 import { SearchBar } from "@/components/ui/search-bar";
@@ -64,6 +65,7 @@ import {
   RestoreSource,
   StartSourceExport,
 } from "./components/SourceMenuActions";
+import { formatSourcePath } from "./lib/media-formatters.utils";
 import { getRevealLabel } from "./lib/source.utils";
 import {
   groupSourcesByFolder,
@@ -236,10 +238,12 @@ type SourceGroupIcon =
     };
 
 function SourceListGrid({ sources }: { sources: EditingInstance[] }) {
+  const { appliedSearch } = useSourceListData();
+
   return (
     <ul className="flex flex-col gap-2" data-slot="imported-sources-grid">
       {sources.map((source) => (
-        <SourceListItem key={source.id} source={source} />
+        <SourceListItem key={source.id} search={appliedSearch} source={source} />
       ))}
     </ul>
   );
@@ -361,16 +365,22 @@ function SourceListEmptyStateAction({
   );
 }
 
-function SourceListItem({ source }: { source: EditingInstance }) {
+function SourceListItem({ search, source }: { search: string; source: EditingInstance }) {
   return (
     <li className="flex w-full flex-col">
-      <SourceListItemCard source={source} />
+      <SourceListItemCard search={search} source={source} />
       <SourceListItemExtra source={source} />
     </li>
   );
 }
 
-function SourceListItemCard({ source }: { source: EditingInstance }) {
+function SourceListItemCard({
+  search,
+  source,
+}: {
+  search: string;
+  source: EditingInstance;
+}) {
   const { t } = useTranslation();
 
   return (
@@ -381,8 +391,18 @@ function SourceListItemCard({ source }: { source: EditingInstance }) {
 
       <div className="relative flex min-w-0 flex-1 flex-col gap-2">
         <div className="flex min-w-0 flex-col gap-1" data-slot="card-header">
-          <SourceCardTitle className="line-clamp-2 wrap-break-word whitespace-normal" />
-          <SourceCardDescription className="line-clamp-2 wrap-anywhere whitespace-normal" />
+          <SourceCardTitle className="line-clamp-2 wrap-break-word whitespace-normal">
+            {({ source: cardSource }) => (
+              <Highlight query={search}>{cardSource.snapshot.source.displayName}</Highlight>
+            )}
+          </SourceCardTitle>
+          <SourceCardDescription className="line-clamp-2 wrap-anywhere whitespace-normal">
+            {({ source: cardSource }) => (
+              <Highlight query={search}>
+                {formatSourcePath(cardSource.snapshot.source.sourcePath)}
+              </Highlight>
+            )}
+          </SourceCardDescription>
         </div>
 
         <SourceCardMetadata />
