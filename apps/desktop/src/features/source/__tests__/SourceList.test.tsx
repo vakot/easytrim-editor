@@ -51,7 +51,7 @@ describe("source queue controls", () => {
       </Provider>,
     );
 
-    expect(screen.getByRole("form", { name: "Source explorer" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Source explorer" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Open File/ })).toHaveTextContent("CtrlO");
     expect(screen.getByRole("button", { name: /Open Folder/ })).toHaveTextContent("CtrlK");
     expect(screen.getByText("Drag and drop videos here")).toBeInTheDocument();
