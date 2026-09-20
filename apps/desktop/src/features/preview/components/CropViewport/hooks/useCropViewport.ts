@@ -26,7 +26,7 @@ import { useCropSelection } from "./useCropSelection";
 const CROP_TOOL_INSET_PX = 28;
 
 export function useCropViewport() {
-  const playback = usePlayback();
+  const { onCropToolOpenChange, toggle, videoRef } = usePlayback();
   const preview = useAppSelector(selectPreview);
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerBounds, setContainerBounds] = useState<Bounds>({ width: 0, height: 0 });
@@ -34,14 +34,15 @@ export function useCropViewport() {
   const [sourceAspectRatio, setSourceAspectRatio] = useState(16 / 9);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const cropSelection = useCropSelection(containerRef);
+  const { close, finishDrag, isOpen, moveDrag } = cropSelection;
 
   useEffect(() => {
-    playback.onCropToolOpenChange?.(cropSelection.isOpen);
-  }, [cropSelection.isOpen, playback.onCropToolOpenChange]);
+    onCropToolOpenChange?.(isOpen);
+  }, [isOpen, onCropToolOpenChange]);
 
   useEffect(() => {
-    if (cropSelection.isOpen) playback.videoRef.current?.pause();
-  }, [cropSelection.isOpen, playback.videoRef]);
+    if (isOpen) videoRef.current?.pause();
+  }, [isOpen, videoRef]);
 
   useLayoutEffect(() => {
     const container = containerRef.current;
@@ -67,9 +68,11 @@ export function useCropViewport() {
   const displayedSourceAspectRatio = isQuarterTurn(cropSelection.rotationDegrees)
     ? 1 / sourceAspectRatio
     : sourceAspectRatio;
+
   const viewportAspectRatio = cropIsApplied
     ? (displayedSourceAspectRatio * cropSelection.crop.width) / cropSelection.crop.height
     : displayedSourceAspectRatio;
+
   const viewport = containBounds(viewportBounds, viewportAspectRatio);
   const centeredViewportFrame = centerFrame(viewportBounds, viewport);
   const viewportFrame = {
@@ -105,6 +108,7 @@ export function useCropViewport() {
   const rawSourceFrame = quarterTurn
     ? { width: displaySourceFrame.height, height: displaySourceFrame.width }
     : displaySourceFrame;
+
   const { frame: renderedRawSourceFrame, scale: sourceRenderScale } = scaleFrameToSourceBounds(
     rawSourceFrame,
     sourceDimensions,
@@ -126,9 +130,11 @@ export function useCropViewport() {
   const transformOrigin = cropIsApplied
     ? `${(rawCrop.x + rawCrop.width / 2) * 100}% ${(rawCrop.y + rawCrop.height / 2) * 100}%`
     : "center center";
+
   const viewportTransition = !cropSelection.isDragging
     ? "transition-[width,height,left,top,transform] duration-200 ease-out motion-reduce:transition-none"
     : "";
+
   const previewTransform = [
     sourceRenderScale < 1 ? `scale(${1 / sourceRenderScale})` : null,
     `rotate(${cropSelection.previewRotationDegrees}deg)`,
@@ -146,20 +152,22 @@ export function useCropViewport() {
 
   const onSurfaceBlur = useCallback(
     (event: FocusEvent<HTMLDivElement>) => {
-      if (!event.currentTarget.contains(event.relatedTarget)) cropSelection.close();
+      if (!event.currentTarget.contains(event.relatedTarget)) close();
     },
-    [cropSelection.close],
+    [close],
   );
+
   const onSurfaceClick = useCallback(() => {
-    if (cropSelection.isOpen) {
-      cropSelection.close();
+    if (isOpen) {
+      close();
       return;
     }
-    playback.toggle({ type: "button", id: "preview.click" });
-  }, [cropSelection.close, cropSelection.isOpen, playback.toggle]);
+    toggle({ type: "button", id: "preview.click" });
+  }, [close, isOpen, toggle]);
+
   const onSurfacePointerMove = useCallback(
-    (event: PointerEvent<HTMLDivElement>) => cropSelection.moveDrag(event, viewport),
-    [cropSelection.moveDrag, viewport],
+    (event: PointerEvent<HTMLDivElement>) => moveDrag(event, viewport),
+    [moveDrag, viewport],
   );
 
   return {
@@ -169,9 +177,9 @@ export function useCropViewport() {
     onSourceMetadata,
     onSurfaceBlur,
     onSurfaceClick,
-    onSurfacePointerCancel: cropSelection.finishDrag,
+    onSurfacePointerCancel: finishDrag,
     onSurfacePointerMove,
-    onSurfacePointerUp: cropSelection.finishDrag,
+    onSurfacePointerUp: finishDrag,
     previewTransform,
     resetDialogOpen,
     selectionFrame,

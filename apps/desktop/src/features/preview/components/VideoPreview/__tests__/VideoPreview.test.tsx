@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { type ReactElement, type ReactNode } from "react";
+import type { ReactElement, ReactNode } from "react";
 import { Provider } from "react-redux";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
@@ -18,20 +18,28 @@ import { type AppStore, createAppStore } from "@/app/store/store";
 import { VideoPreviewEmpty } from "../components/VideoPreviewEmpty";
 import { VideoPreview } from "../VideoPreview";
 
-const playback = vi.hoisted(() => ({
-  nativeLoopEnabled: false,
-  onCanPlay: vi.fn(),
-  onCropToolOpenChange: vi.fn(),
-  onEnded: vi.fn(),
-  onLoadedMetadata: vi.fn(),
-  onPause: vi.fn(),
-  onPlay: vi.fn(),
-  onPreviewPlaybackError: vi.fn(),
-  onTimeUpdate: vi.fn(),
-  toggle: vi.fn(),
-  videoMuted: true,
-  videoRef: { current: null },
-}));
+const playback = vi.hoisted(() => {
+  const videoRef = { current: null as HTMLVideoElement | null };
+
+  return {
+    nativeLoopEnabled: false,
+    onCanPlay: vi.fn(),
+    onCropToolOpenChange: vi.fn(),
+    onEnded: vi.fn(),
+    onLoadedMetadata: vi.fn(),
+    onPause: vi.fn(),
+    onPlay: vi.fn(),
+    onPreviewPlaybackError: vi.fn(),
+    onTimeUpdate: vi.fn(),
+    setMediaPlaybackRate: vi.fn(),
+    setVideoElement: vi.fn((element: HTMLVideoElement | null) => {
+      videoRef.current = element;
+    }),
+    toggle: vi.fn(),
+    videoMuted: true,
+    videoRef,
+  };
+});
 
 vi.mock("@/app/hooks/usePlayback", () => ({
   usePlayback: () => playback,

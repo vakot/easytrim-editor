@@ -98,6 +98,8 @@ export interface EditorInteractionRuntime {
   onTrimDragEnd: () => void;
   onTrimDragStart: () => void;
   playheadRef: React.RefObject<HTMLButtonElement | null>;
+  setMediaPlaybackRate: (rate: number) => void;
+  setVideoElement: (element: HTMLVideoElement | null) => void;
   shuttleDirection: FrameShuttleDirection | 0;
   transportError: string | null;
   videoMuted: boolean;
@@ -164,6 +166,10 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
   }>(() => ({ sourcePath: null, streamIndexes: new Set() }));
 
   const videoRef = useRef<HTMLVideoElement>(null);
+  const setVideoElement = useCallback((element: HTMLVideoElement | null) => {
+    videoRef.current = element;
+  }, []);
+
   const seekSchedulerRef = useRef<ReturnType<typeof createSeekScheduler> | null>(null);
   const audioElementsRef = useRef(new Map<number, HTMLAudioElement>());
   const audioReadyListenersRef = useRef(new Map<number, () => void>());
@@ -1376,6 +1382,8 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     onScrubEnd: handleScrubEnd,
     onCropToolOpenChange,
     onPreviewPlaybackError,
+    setMediaPlaybackRate,
+    setVideoElement,
     canSetSegmentStart: canSetTrimBoundaryAtPlayhead(trim, "start", displayedPlayheadMicros),
     canSetSegmentEnd: canSetTrimBoundaryAtPlayhead(trim, "end", displayedPlayheadMicros),
   };

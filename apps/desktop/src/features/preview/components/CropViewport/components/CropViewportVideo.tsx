@@ -1,4 +1,4 @@
-import { type CSSProperties } from "react";
+import type { CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useCropViewportVideo } from "../hooks/useCropViewportVideo";
@@ -21,34 +21,51 @@ export function CropViewportVideo({
   viewportTransition,
 }: CropViewportVideoProps) {
   const { t } = useTranslation();
-  const video = useCropViewportVideo({ cropIsOpen, onSourceMetadata });
+  const {
+    nativeLoopEnabled,
+    onCanPlay,
+    onEnded,
+    onError,
+    onLoadedMetadata,
+    onLoadStart,
+    onPause,
+    onPlay,
+    onStalled,
+    onTimeUpdate,
+    onWaiting,
+    playbackRate,
+    previewKind,
+    setVideoElement,
+    sourceUrl,
+    videoMuted,
+  } = useCropViewportVideo({ cropIsOpen, onSourceMetadata });
 
-  if (video.sourceUrl === null || video.previewKind === null) return null;
+  if (sourceUrl === null || previewKind === null) return null;
 
   return (
     <video
       aria-label={t("preview.accessibility.source")}
       className={`absolute max-w-none cursor-pointer ${viewportTransition}`}
       crossOrigin="anonymous"
-      data-playback-rate={video.playbackRate}
-      data-preview-kind={video.previewKind}
-      key={video.sourceUrl}
-      loop={video.nativeLoopEnabled}
-      muted={video.videoMuted}
-      onCanPlay={video.onCanPlay}
-      onEnded={video.onEnded}
-      onError={video.onError}
-      onLoadedMetadata={video.onLoadedMetadata}
-      onLoadStart={video.onLoadStart}
-      onPause={video.onPause}
-      onPlay={video.onPlay}
-      onStalled={video.onStalled}
-      onTimeUpdate={video.onTimeUpdate}
-      onWaiting={video.onWaiting}
+      data-playback-rate={playbackRate}
+      data-preview-kind={previewKind}
+      key={sourceUrl}
+      loop={nativeLoopEnabled}
+      muted={videoMuted}
+      onCanPlay={onCanPlay}
+      onEnded={onEnded}
+      onError={onError}
+      onLoadedMetadata={onLoadedMetadata}
+      onLoadStart={onLoadStart}
+      onPause={onPause}
+      onPlay={onPlay}
+      onStalled={onStalled}
+      onTimeUpdate={onTimeUpdate}
+      onWaiting={onWaiting}
       playsInline
       preload="auto"
-      ref={video.videoRef}
-      src={video.sourceUrl}
+      ref={setVideoElement}
+      src={sourceUrl}
       style={{
         ...sourceFrame,
         transform: previewTransform,

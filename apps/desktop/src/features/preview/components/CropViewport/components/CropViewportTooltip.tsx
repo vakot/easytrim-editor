@@ -1,11 +1,11 @@
 import {
   type FocusEventHandler,
+  forwardRef,
   type MouseEventHandler,
   type PointerEvent,
   type PointerEventHandler,
-  type RefObject,
   type ReactNode,
-  forwardRef,
+  type RefObject,
   useCallback,
 } from "react";
 import { useTranslation } from "react-i18next";
@@ -19,8 +19,8 @@ interface CropViewportTooltipProps {
   onBlur: FocusEventHandler<HTMLDivElement>;
   onClick: () => void;
   onContextMenu?: MouseEventHandler<HTMLDivElement>;
-  onPointerDown?: PointerEventHandler<HTMLDivElement>;
   onPointerCancel: PointerEventHandler<HTMLDivElement>;
+  onPointerDown?: PointerEventHandler<HTMLDivElement>;
   onPointerMove: PointerEventHandler<HTMLDivElement>;
   onPointerUp: PointerEventHandler<HTMLDivElement>;
 }
@@ -34,8 +34,8 @@ export const CropViewportTooltip = forwardRef<HTMLDivElement, CropViewportToolti
       onBlur,
       onClick,
       onContextMenu,
-      onPointerDown,
       onPointerCancel,
+      onPointerDown,
       onPointerMove,
       onPointerUp,
     },
@@ -50,12 +50,14 @@ export const CropViewportTooltip = forwardRef<HTMLDivElement, CropViewportToolti
       },
       [containerRef, forwardedRef],
     );
+
     const handlePointerCancel = useCallback(
       (event: PointerEvent<HTMLDivElement>) => {
         onPointerCancel(event);
       },
       [onPointerCancel],
     );
+
     const handlePointerMove = useCallback(
       (event: PointerEvent<HTMLDivElement>) => {
         onPointerMove(event);

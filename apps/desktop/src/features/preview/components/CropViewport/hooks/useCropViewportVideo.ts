@@ -15,7 +15,21 @@ export function useCropViewportVideo({
   cropIsOpen,
   onSourceMetadata,
 }: UseCropViewportVideoOptions) {
-  const playback = usePlayback();
+  const {
+    nativeLoopEnabled,
+    onCanPlay,
+    onEnded: onPlaybackEnded,
+    onLoadedMetadata: onPlaybackLoadedMetadata,
+    onPause: onPlaybackPause,
+    onPlay: onPlaybackPlay,
+    onPreviewPlaybackError,
+    onTimeUpdate: onPlaybackTimeUpdate,
+    setMediaPlaybackRate,
+    setVideoElement,
+    videoMuted,
+    videoRef,
+  } = usePlayback();
+
   const playbackRate = useAppSelector(selectPlaybackSpeed);
   const preview = useAppSelector(selectPreview);
   const reportedUrl = useRef<string | null>(null);
@@ -23,18 +37,19 @@ export function useCropViewportVideo({
   const previewKind = preview.status === "ready" ? preview.value.kind : null;
 
   useEffect(() => {
-    if (playback.videoRef.current) playback.videoRef.current.playbackRate = playbackRate;
-  }, [playback.videoRef, playbackRate, sourceUrl]);
+    setMediaPlaybackRate(playbackRate);
+  }, [playbackRate, setMediaPlaybackRate, sourceUrl]);
 
   useEffect(() => {
-    const video = playback.videoRef.current;
-    if (video && video.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) playback.onCanPlay();
-  }, [playback.onCanPlay, playback.videoRef, sourceUrl]);
+    const video = videoRef.current;
+    if (video && video.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) onCanPlay();
+  }, [onCanPlay, sourceUrl, videoRef]);
 
   useEffect(() => {
-    const video = playback.videoRef.current;
+    const video = videoRef.current;
+
     return () => video?.pause();
-  }, [playback.videoRef, sourceUrl]);
+  }, [sourceUrl, videoRef]);
 
   useEffect(() => {
     if (previewKind === null) return;
@@ -54,8 +69,8 @@ export function useCropViewportVideo({
       data: { kind: previewKind },
       origin: { type: "internal" },
     });
-    playback.onEnded();
-  }, [playback.onEnded, previewKind]);
+    onPlaybackEnded();
+  }, [onPlaybackEnded, previewKind]);
 
   const onError = useCallback(() => {
     if (previewKind === null || sourceUrl === null) return;
@@ -69,16 +84,16 @@ export function useCropViewportVideo({
     );
     if (reportedUrl.current === sourceUrl) return;
     reportedUrl.current = sourceUrl;
-    playback.onPreviewPlaybackError(previewKind);
-  }, [playback.onPreviewPlaybackError, previewKind, sourceUrl]);
+    onPreviewPlaybackError(previewKind);
+  }, [onPreviewPlaybackError, previewKind, sourceUrl]);
 
   const onLoadedMetadata = useCallback(
     (event: SyntheticEvent<HTMLVideoElement>) => {
       const { videoHeight, videoWidth } = event.currentTarget;
       onSourceMetadata(videoWidth, videoHeight);
-      playback.onLoadedMetadata();
+      onPlaybackLoadedMetadata();
     },
-    [onSourceMetadata, playback.onLoadedMetadata],
+    [onPlaybackLoadedMetadata, onSourceMetadata],
   );
 
   const onPlay = useCallback(
@@ -92,9 +107,9 @@ export function useCropViewportVideo({
         data: { kind: previewKind },
         origin: { type: "internal" },
       });
-      playback.onPlay();
+      onPlaybackPlay();
     },
-    [cropIsOpen, playback.onPlay, previewKind],
+    [cropIsOpen, onPlaybackPlay, previewKind],
   );
 
   const onPause = useCallback(() => {
@@ -103,44 +118,55 @@ export function useCropViewportVideo({
       data: { kind: previewKind },
       origin: { type: "internal" },
     });
-    playback.onPause();
-  }, [playback.onPause, previewKind]);
+    onPlaybackPause();
+  }, [onPlaybackPause, previewKind]);
+
+  const onLoadStart = useCallback(() => {
+    if (previewKind !== null)
+      diagnostics.event("media.load.started", {
+        data: { kind: previewKind },
+        origin: { type: "internal" },
+      });
+  }, [previewKind]);
+
+  const onStalled = useCallback(() => {
+    if (previewKind !== null)
+      diagnostics.warn("media.playback.stalled", {
+        data: { kind: previewKind },
+        origin: { type: "internal" },
+      });
+  }, [previewKind]);
+
+  const onTimeUpdate = useCallback(
+    (event: SyntheticEvent<HTMLVideoElement>) =>
+      onPlaybackTimeUpdate(event.currentTarget.currentTime),
+    [onPlaybackTimeUpdate],
+  );
+
+  const onWaiting = useCallback(() => {
+    if (previewKind !== null)
+      diagnostics.event("media.playback.waiting", {
+        data: { kind: previewKind },
+        origin: { type: "internal" },
+      });
+  }, [previewKind]);
 
   return {
-    onCanPlay: playback.onCanPlay,
+    nativeLoopEnabled,
+    onCanPlay,
     onEnded,
     onError,
     onLoadedMetadata,
-    onLoadStart: () => {
-      if (previewKind !== null)
-        diagnostics.event("media.load.started", {
-          data: { kind: previewKind },
-          origin: { type: "internal" },
-        });
-    },
+    onLoadStart,
     onPause,
     onPlay,
-    onStalled: () => {
-      if (previewKind !== null)
-        diagnostics.warn("media.playback.stalled", {
-          data: { kind: previewKind },
-          origin: { type: "internal" },
-        });
-    },
-    onTimeUpdate: (event: SyntheticEvent<HTMLVideoElement>) =>
-      playback.onTimeUpdate(event.currentTarget.currentTime),
-    onWaiting: () => {
-      if (previewKind !== null)
-        diagnostics.event("media.playback.waiting", {
-          data: { kind: previewKind },
-          origin: { type: "internal" },
-        });
-    },
+    onStalled,
+    onTimeUpdate,
+    onWaiting,
     playbackRate,
     previewKind,
+    setVideoElement,
     sourceUrl,
-    videoMuted: playback.videoMuted,
-    videoRef: playback.videoRef,
-    nativeLoopEnabled: playback.nativeLoopEnabled,
+    videoMuted,
   };
 }
