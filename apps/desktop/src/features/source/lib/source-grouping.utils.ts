@@ -1,5 +1,7 @@
 import type { EditingInstance } from "@/domain/editing-instance";
 
+import { formatSourcePath } from "./media-formatters.utils";
+
 export interface SourceGroup<T> {
   items: T[];
   key: string;
@@ -28,7 +30,7 @@ export function groupSourcesByFolder(
     if (group) {
       group.items.push(source);
     } else {
-      groups.set(key, { items: [source], key, label: folderPath || "." });
+      groups.set(key, { items: [source], key, label: formatSourcePath(folderPath || ".") });
     }
   }
 
