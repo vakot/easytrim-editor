@@ -1,9 +1,8 @@
 import {
-  type FocusEventHandler,
+  type FocusEvent,
   forwardRef,
   type MouseEventHandler,
   type PointerEvent,
-  type PointerEventHandler,
   type ReactNode,
   type RefObject,
   useCallback,
@@ -12,36 +11,33 @@ import { useTranslation } from "react-i18next";
 
 import { CursorTooltip } from "@/components/ui/cursor-tooltip";
 
+import { usePlayback } from "@/app/hooks/usePlayback";
+
+import type { Bounds } from "../../../lib/crop-frame.utils";
+
+interface CropSelectionInteraction {
+  close: () => void;
+  finishDrag: () => void;
+  isOpen: boolean;
+  moveDrag: (event: PointerEvent<HTMLDivElement>, viewport: Bounds) => void;
+}
+
 interface CropViewportTooltipProps {
   children: ReactNode;
   containerRef: RefObject<HTMLDivElement | null>;
-  disabled: boolean;
-  onBlur: FocusEventHandler<HTMLDivElement>;
-  onClick: () => void;
+  cropSelection: CropSelectionInteraction;
   onContextMenu?: MouseEventHandler<HTMLDivElement>;
-  onPointerCancel: PointerEventHandler<HTMLDivElement>;
-  onPointerDown?: PointerEventHandler<HTMLDivElement>;
-  onPointerMove: PointerEventHandler<HTMLDivElement>;
-  onPointerUp: PointerEventHandler<HTMLDivElement>;
+  viewport: Bounds;
 }
 
 export const CropViewportTooltip = forwardRef<HTMLDivElement, CropViewportTooltipProps>(
   function CropViewportTooltip(
-    {
-      children,
-      containerRef,
-      disabled,
-      onBlur,
-      onClick,
-      onContextMenu,
-      onPointerCancel,
-      onPointerDown,
-      onPointerMove,
-      onPointerUp,
-    },
+    { children, containerRef, cropSelection, onContextMenu, viewport },
     forwardedRef,
   ) {
     const { t } = useTranslation();
+    const { toggle } = usePlayback();
+    const { close, finishDrag, isOpen, moveDrag } = cropSelection;
     const setRefs = useCallback(
       (element: HTMLDivElement | null) => {
         containerRef.current = element;
@@ -51,32 +47,39 @@ export const CropViewportTooltip = forwardRef<HTMLDivElement, CropViewportToolti
       [containerRef, forwardedRef],
     );
 
-    const handlePointerCancel = useCallback(
-      (event: PointerEvent<HTMLDivElement>) => {
-        onPointerCancel(event);
+    const handleBlur = useCallback(
+      (event: FocusEvent<HTMLDivElement>) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) close();
       },
-      [onPointerCancel],
+      [close],
     );
+
+    const handleClick = useCallback(() => {
+      if (isOpen) {
+        close();
+        return;
+      }
+      toggle({ type: "button", id: "preview.click" });
+    }, [close, isOpen, toggle]);
 
     const handlePointerMove = useCallback(
       (event: PointerEvent<HTMLDivElement>) => {
-        onPointerMove(event);
+        moveDrag(event, viewport);
       },
-      [onPointerMove],
+      [moveDrag, viewport],
     );
 
     return (
       <CursorTooltip
         aria-label={t("preview.accessibility.crop.preview")}
         className="group relative size-full overflow-hidden bg-preview-surface focus-visible:outline-none"
-        disabled={disabled}
-        onBlur={onBlur}
-        onClick={onClick}
+        disabled={isOpen}
+        onBlur={handleBlur}
+        onClick={handleClick}
         onContextMenu={onContextMenu}
-        onPointerCancel={handlePointerCancel}
-        onPointerDown={onPointerDown}
+        onPointerCancel={finishDrag}
         onPointerMove={handlePointerMove}
-        onPointerUp={onPointerUp}
+        onPointerUp={finishDrag}
         ref={setRefs}
         tabIndex={0}
         tooltipContent={t("preview.tooltips.crop")}

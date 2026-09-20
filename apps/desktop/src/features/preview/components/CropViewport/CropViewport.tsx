@@ -11,11 +11,6 @@ export function CropViewport() {
         containerRef,
         cropSelection,
         onSourceMetadata,
-        onSurfaceBlur,
-        onSurfaceClick,
-        onSurfacePointerCancel,
-        onSurfacePointerMove,
-        onSurfacePointerUp,
         previewTransform,
         selectionFrame,
         sourceFrame,
@@ -26,12 +21,8 @@ export function CropViewport() {
       }) => (
         <CropViewportTooltip
           containerRef={containerRef}
-          disabled={cropSelection.isOpen}
-          onBlur={onSurfaceBlur}
-          onClick={onSurfaceClick}
-          onPointerCancel={onSurfacePointerCancel}
-          onPointerMove={onSurfacePointerMove}
-          onPointerUp={onSurfacePointerUp}
+          cropSelection={cropSelection}
+          viewport={viewport}
         >
           {!cropSelection.isOpen ? (
             <div

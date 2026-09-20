@@ -1,12 +1,4 @@
-import {
-  type FocusEvent,
-  type PointerEvent,
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { usePlayback } from "@/app/hooks/usePlayback";
 import { useAppSelector } from "@/app/store/redux-hooks";
@@ -27,7 +19,7 @@ import { useCropSelection } from "./useCropSelection";
 const CROP_TOOL_INSET_PX = 28;
 
 export function useCropViewport() {
-  const { onCropToolOpenChange, toggle, videoRef } = usePlayback();
+  const { onCropToolOpenChange, videoRef } = usePlayback();
   const preview = useAppSelector(selectPreview);
   const rotationDegrees = useAppSelector(selectRotationDegrees);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -35,7 +27,7 @@ export function useCropViewport() {
   const [sourceDimensions, setSourceDimensions] = useState<Bounds>({ width: 0, height: 0 });
   const [sourceAspectRatio, setSourceAspectRatio] = useState(16 / 9);
   const cropSelection = useCropSelection(containerRef, rotationDegrees);
-  const { close, finishDrag, isOpen, moveDrag } = cropSelection;
+  const { isOpen } = cropSelection;
 
   useEffect(() => {
     onCropToolOpenChange?.(isOpen);
@@ -142,36 +134,11 @@ export function useCropViewport() {
     setSourceDimensions({ width, height });
   }, []);
 
-  const onSurfaceBlur = useCallback(
-    (event: FocusEvent<HTMLDivElement>) => {
-      if (!event.currentTarget.contains(event.relatedTarget)) close();
-    },
-    [close],
-  );
-
-  const onSurfaceClick = useCallback(() => {
-    if (isOpen) {
-      close();
-      return;
-    }
-    toggle({ type: "button", id: "preview.click" });
-  }, [close, isOpen, toggle]);
-
-  const onSurfacePointerMove = useCallback(
-    (event: PointerEvent<HTMLDivElement>) => moveDrag(event, viewport),
-    [moveDrag, viewport],
-  );
-
   return {
     containerRef,
     cropSelection,
     isPreviewReady: preview.status === "ready",
     onSourceMetadata,
-    onSurfaceBlur,
-    onSurfaceClick,
-    onSurfacePointerCancel: finishDrag,
-    onSurfacePointerMove,
-    onSurfacePointerUp: finishDrag,
     selectionFrame,
     sourceRenderScale,
     sourceFrame,
