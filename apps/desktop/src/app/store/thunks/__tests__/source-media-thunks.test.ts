@@ -37,6 +37,14 @@ beforeEach(() => {
 });
 
 describe("source import workflow", () => {
+  it("defers imported metadata preparation until the source list requests it", () => {
+    const store = createAppStore();
+
+    store.dispatch(ingestSources([firstSource, secondSource]));
+
+    expect(native.inspectImportedSource).not.toHaveBeenCalled();
+  });
+
   it("activates the first source from every newly imported batch", () => {
     const store = createAppStore();
 

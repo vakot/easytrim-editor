@@ -176,7 +176,6 @@ const ingestSources =
     dispatch(dropListenerErrorCleared());
     dispatch(editingInstancesAdded(instances));
     dispatch(navigateToEditingInstance(instances[0]!.id, origin));
-    void dispatch(prepareImportedSourceMetadataRequested(instances));
     operation.complete(importResultData(result));
   };
 

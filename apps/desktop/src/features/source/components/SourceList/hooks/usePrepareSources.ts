@@ -1,22 +1,38 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
-import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
-import { selectImportedEditingInstances } from "@/app/store/slices/editing-instances-slice";
+import { useAppDispatch } from "@/app/store/redux-hooks";
+import type { EditingInstance } from "@/domain/editing-instance";
 import {
   prepareImportedSourceMetadataRequested,
   prepareImportedSourceThumbnailsRequested,
 } from "@/app/store/thunks/source-media-thunks";
 
-function usePrepareSources() {
+function usePrepareSources(instances: EditingInstance[]) {
   const dispatch = useAppDispatch();
-  const instances = useAppSelector(selectImportedEditingInstances);
+  const [isPreparing, setIsPreparing] = useState(instances.length > 0);
 
   useEffect(() => {
-    void dispatch(prepareImportedSourceMetadataRequested(instances));
-    void dispatch(prepareImportedSourceThumbnailsRequested(instances));
+    if (instances.length === 0) {
+      setIsPreparing(false);
+      return;
+    }
+
+    let isMounted = true;
+    setIsPreparing(true);
+
+    void Promise.all([
+      dispatch(prepareImportedSourceMetadataRequested(instances)),
+      dispatch(prepareImportedSourceThumbnailsRequested(instances)),
+    ]).finally(() => {
+      if (isMounted) setIsPreparing(false);
+    });
+
+    return () => {
+      isMounted = false;
+    };
   }, [dispatch, instances]);
 
-  return instances;
+  return isPreparing;
 }
 
 export { usePrepareSources };

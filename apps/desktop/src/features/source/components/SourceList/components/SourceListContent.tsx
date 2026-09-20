@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 
+import { InfiniteScroll } from "@/components/infinite-scroll";
 import { TabsContent } from "@/components/ui/tabs";
 
 import { useSourceListData } from "../contexts/SourceListContext";
@@ -12,7 +13,7 @@ import {
 } from "./SourceListGroups";
 
 function SourceListContent() {
-  const { search, sources } = useSourceListData();
+  const { hasMore, isPreparing, loadMore, search, sources, visibleSources } = useSourceListData();
   const { t } = useTranslation();
 
   if (search.trim() && sources.length === 0) {
@@ -24,20 +25,20 @@ function SourceListContent() {
   }
 
   return (
-    <>
+    <InfiniteScroll hasMore={hasMore} isLoading={isPreparing} onLoadMore={loadMore}>
       <TabsContent value="none">
-        <SourceListNone sources={sources} />
+        <SourceListNone sources={visibleSources} />
       </TabsContent>
       <TabsContent value="folder">
-        <SourceListFolder sources={sources} />
+        <SourceListFolder sources={visibleSources} />
       </TabsContent>
       <TabsContent value="time">
-        <SourceListTime sources={sources} />
+        <SourceListTime sources={visibleSources} />
       </TabsContent>
       <TabsContent value="imported">
-        <SourceListImported sources={sources} />
+        <SourceListImported sources={visibleSources} />
       </TabsContent>
-    </>
+    </InfiniteScroll>
   );
 }
 

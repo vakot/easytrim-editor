@@ -50,7 +50,7 @@ function InfiniteScrollTrigger({
 
   useEffect(() => {
     const trigger = triggerRef.current;
-    if (!trigger || !hasMore || isLoading) return;
+    if (!trigger || !hasMore || isLoading || typeof IntersectionObserver === "undefined") return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
