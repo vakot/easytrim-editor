@@ -1,4 +1,4 @@
-import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import { type ReactNode, useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -24,52 +24,30 @@ import {
   cropReset,
   flipToggled,
   rotationChanged,
-  selectFlipHorizontal,
-  selectFlipVertical,
   selectRotationDegrees,
 } from "@/app/store/slices/crop-slice";
 import { commitActiveEditingInstanceDraft } from "@/app/store/thunks/source-media-thunks";
 import type { RotationDegrees } from "@/domain/rotation";
 
-import { useCropViewport } from "../hooks/useCropViewport";
-
-type CropViewportState = ReturnType<typeof useCropViewport> & {
-  previewTransform: string;
-};
-
 interface CropViewportContextMenuProps {
-  children: (viewport: CropViewportState) => ReactNode;
+  children: ReactNode;
+  onCropOpen: () => void;
+  onReset: () => void;
 }
 
-export function CropViewportContextMenu({ children }: CropViewportContextMenuProps) {
+export function CropViewportContextMenu({
+  children,
+  onCropOpen,
+  onReset,
+}: CropViewportContextMenuProps) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const viewport = useCropViewport();
-  const flipHorizontal = useAppSelector(selectFlipHorizontal);
-  const flipVertical = useAppSelector(selectFlipVertical);
   const rotationDegrees = useAppSelector(selectRotationDegrees);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
-  const previewRotationRef = useRef<number>(rotationDegrees);
-  const [previewRotationDegrees, setPreviewRotationDegrees] = useState<number>(rotationDegrees);
-  const { clearDrag } = viewport.cropSelection;
-  const { cropSelection, viewportFrame } = viewport;
-
-  useEffect(() => {
-    const previousRotation = normalizeRotation(previewRotationRef.current);
-    if (previousRotation === rotationDegrees) return;
-    const clockwiseDelta = (rotationDegrees - previousRotation + 360) % 360;
-    const delta = clockwiseDelta === 270 ? -90 : clockwiseDelta;
-    const nextPreviewRotation = previewRotationRef.current + delta;
-    previewRotationRef.current = nextPreviewRotation;
-    setPreviewRotationDegrees(nextPreviewRotation);
-  }, [rotationDegrees]);
 
   const rotate = useCallback(
     (delta: -90 | 90 | 180) => {
       const nextRotation = ((rotationDegrees + delta + 360) % 360) as RotationDegrees;
-      const nextPreviewRotation = previewRotationRef.current + delta;
-      previewRotationRef.current = nextPreviewRotation;
-      setPreviewRotationDegrees(nextPreviewRotation);
       dispatch(rotationChanged(nextRotation));
       dispatch(commitActiveEditingInstanceDraft());
     },
@@ -85,30 +63,17 @@ export function CropViewportContextMenu({ children }: CropViewportContextMenuPro
   );
 
   const reset = useCallback(() => {
-    clearDrag();
+    onReset();
     dispatch(cropReset());
     dispatch(commitActiveEditingInstanceDraft());
-  }, [clearDrag, dispatch]);
-
-  if (!viewport.isPreviewReady) return null;
-
-  const previewTransform = [
-    viewport.sourceRenderScale < 1 ? `scale(${1 / viewport.sourceRenderScale})` : null,
-    `rotate(${previewRotationDegrees}deg)`,
-    flipHorizontal ? "scaleX(-1)" : null,
-    flipVertical ? "scaleY(-1)" : null,
-  ]
-    .filter(Boolean)
-    .join(" ");
-
-  const viewportState = { ...viewport, previewTransform };
+  }, [dispatch, onReset]);
 
   return (
     <AlertDialog onOpenChange={setResetDialogOpen} open={resetDialogOpen}>
       <ContextMenu>
-        <ContextMenuTrigger asChild>{children(viewportState)}</ContextMenuTrigger>
+        <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
         <ContextMenuContent>
-          <ContextMenuItem onSelect={() => cropSelection.open(viewportFrame)}>
+          <ContextMenuItem onSelect={onCropOpen}>
             {t("preview.actions.transform.crop")}
           </ContextMenuItem>
           <ContextMenuSeparator />
@@ -148,8 +113,4 @@ export function CropViewportContextMenu({ children }: CropViewportContextMenuPro
       </AlertDialogContent>
     </AlertDialog>
   );
-}
-
-function normalizeRotation(rotation: number): number {
-  return ((rotation % 360) + 360) % 360;
 }
