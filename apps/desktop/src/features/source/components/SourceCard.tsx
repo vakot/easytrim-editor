@@ -31,6 +31,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { RelativeTimestamp } from "@/components/ui/relative-timestamp";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
@@ -42,13 +43,7 @@ import type { EditingInstance } from "@/domain/editing-instance";
 import { cn } from "@/lib/class-names.utils";
 import { openFileLocation } from "@/lib/tauri/media";
 
-import {
-  formatBytes,
-  formatDateTime,
-  formatDuration,
-  formatRelativeTime,
-  formatSourcePath,
-} from "../lib/media-formatters.utils";
+import { formatBytes, formatDuration, formatSourcePath } from "../lib/media-formatters.utils";
 import { getRevealLabel } from "../lib/source.utils";
 
 import { CloseSource, DeleteSource, RestoreSource } from "./SourceMenuActions";
@@ -244,12 +239,9 @@ function SourceCardDescription({ className }: { className?: string }) {
 
 function SourceCardMetadata({ className }: { className?: string }) {
   const source = useSourceCardSource();
-  const { i18n, t } = useTranslation();
-  const locale = i18n.resolvedLanguage ?? i18n.language;
+  const { t } = useTranslation();
   const unknown = t("common.status.unknown");
   const fileSize = formatBytes(source.media?.sizeBytes, unknown);
-  const updatedAt = formatRelativeTime(source.snapshot.source.updatedAtMicros, locale, unknown);
-  const updatedAtExact = formatDateTime(source.snapshot.source.updatedAtMicros, locale, unknown);
 
   return (
     <div className={cn("flex items-center gap-1 text-xs text-muted-foreground", className)}>
@@ -264,16 +256,10 @@ function SourceCardMetadata({ className }: { className?: string }) {
         </TooltipContent>
       </Tooltip>
       <span aria-hidden="true">·</span>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span className="cursor-help truncate focus-visible:outline-none" tabIndex={0}>
-            {updatedAt}
-          </span>
-        </TooltipTrigger>
-        <TooltipContent>
-          {t("source.labels.metadata.updatedAt")}: {updatedAtExact}
-        </TooltipContent>
-      </Tooltip>
+      <RelativeTimestamp
+        label={t("source.labels.metadata.updatedAt")}
+        timestamp={source.snapshot.source.updatedAtMicros}
+      />
     </div>
   );
 }

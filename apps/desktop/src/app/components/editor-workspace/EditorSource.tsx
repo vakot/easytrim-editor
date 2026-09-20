@@ -11,7 +11,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { ActivityFeed } from "@/features/activity";
-import { SourceList } from "@/features/source";
+import { SourceList, SourceListTabs, SourceListTabsContent } from "@/features/source";
 import { cn } from "@/lib/class-names.utils";
 
 export function EditorSource() {
@@ -36,7 +36,7 @@ export function EditorSource() {
           collapsible
           defaultSize="50"
           id="editor-source-imported-sources"
-          minSize="150px"
+          minSize="300px"
         >
           <ResizablePanelControl panelId="editor-source-imported-sources">
             {({ isExpanded }) => (
@@ -53,16 +53,21 @@ export function EditorSource() {
             )}
           </ResizablePanelControl>
 
-          <div className="mt-2 min-h-0 flex-1">
-            <ScrollArea className="size-full">
-              <div className="px-2 pt-0.5 pb-2">
-                <SourceList />
+          <div className="mt-2 flex min-h-0 flex-1 flex-col">
+            <SourceList>
+              <div className="px-2">
+                <SourceListTabs />
               </div>
-            </ScrollArea>
+              <ScrollArea className="min-h-0 flex-1">
+                <div className="px-2 pt-0.5 pb-2">
+                  <SourceListTabsContent />
+                </div>
+              </ScrollArea>
+            </SourceList>
           </div>
         </ResizablePanel>
 
-        <ResizableHandle />
+        <ResizableHandle className="bg-foreground/10" />
 
         <ResizablePanel
           className="flex min-h-0 flex-col overflow-hidden! p-1"
@@ -70,7 +75,7 @@ export function EditorSource() {
           collapsible
           defaultSize="50"
           id="editor-source-activity-feed"
-          minSize="150px"
+          minSize="200px"
         >
           <ResizablePanelControl panelId="editor-source-activity-feed">
             {({ isExpanded }) => (

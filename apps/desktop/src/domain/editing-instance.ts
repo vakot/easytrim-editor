@@ -55,6 +55,7 @@ export interface EditingInstance {
   draftAvailable?: boolean;
   exportAttempts: ExportAttempt[];
   id: EditingInstanceId;
+  importedAtMicros?: number;
   media?: MediaInfo;
   optimizedArguments?: string;
   optimizedSettings?: ExportSettings;

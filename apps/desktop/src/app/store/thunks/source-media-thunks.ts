@@ -163,9 +163,11 @@ export const ingestSources =
     }
 
     const mergeAudio = selectMergeAudioEnabledDefault(getState());
+    const importedAtMicros = Date.now() * 1_000;
     const instances: EditingInstance[] = result.sources.map((source) => ({
       exportAttempts: [],
       id: crypto.randomUUID(),
+      importedAtMicros,
       origin: "source-import",
       snapshot: createDefaultEditorSnapshot(source, mergeAudio),
       sourceAvailability: "available",

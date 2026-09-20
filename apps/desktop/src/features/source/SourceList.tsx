@@ -1,7 +1,11 @@
 import type { TFunction } from "i18next";
+import type { LucideIcon } from "lucide-react";
 import {
+  ChevronRight,
+  Clock3,
   ExternalLink,
   FileVideo2,
+  Folder,
   FolderOpen,
   MoreHorizontal,
   Play,
@@ -13,13 +17,16 @@ import {
   X,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { useEffect } from "react";
+import React, { createContext, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
+import { RelativeTimestamp } from "@/components/ui/relative-timestamp";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
@@ -36,6 +43,7 @@ import {
   restoreExportAttemptRequested,
 } from "@/app/store/thunks/source-media-thunks";
 import type { EditingInstance, ExportAttempt, ExportAttemptState } from "@/domain/editing-instance";
+import { useRelativeTimeNow } from "@/lib/hooks/use-relative-time";
 import { openFileLocation } from "@/lib/tauri/media";
 
 import {
@@ -55,18 +63,177 @@ import {
   StartSourceExport,
 } from "./components/SourceMenuActions";
 import { getRevealLabel } from "./lib/source.utils";
+import {
+  groupSourcesByFolder,
+  groupSourcesByImportedTime,
+  groupSourcesByUpdatedTime,
+  type SourceGroup,
+} from "./lib/source-grouping.utils";
 
-function SourceList() {
+interface SourceListProps {
+  children?: React.ReactNode;
+}
+
+function SourceList({ children }: SourceListProps) {
   const sources = usePrepareSources();
 
   if (sources.length === 0) return <SourceListEmptyState />;
 
   return (
-    <ul className="flex flex-col gap-3" data-slot="imported-sources-grid">
+    <SourceListData.Provider value={{ sources }}>
+      <Tabs className="min-h-0 flex-1" defaultValue="none">
+        {children ?? (
+          <>
+            <SourceListTabs />
+            <SourceListTabsContent />
+          </>
+        )}
+      </Tabs>
+    </SourceListData.Provider>
+  );
+}
+
+function SourceListTabs() {
+  return (
+    <TabsList className="w-full" defaultValue="none">
+      <TabsTrigger value="none">None</TabsTrigger>
+      <TabsTrigger value="folder">Folder</TabsTrigger>
+      <TabsTrigger value="time">Time</TabsTrigger>
+      <TabsTrigger value="imported">Imported</TabsTrigger>
+    </TabsList>
+  );
+}
+
+function SourceListTabsContent() {
+  const { sources } = useSourceListData();
+
+  return (
+    <>
+      <TabsContent value="none">
+        <SourceListNone sources={sources} />
+      </TabsContent>
+      <TabsContent value="folder">
+        <SourceListFolder sources={sources} />
+      </TabsContent>
+      <TabsContent value="time">
+        <SourceListTime sources={sources} />
+      </TabsContent>
+      <TabsContent value="imported">
+        <SourceListImported sources={sources} />
+      </TabsContent>
+    </>
+  );
+}
+
+function SourceListNone({ sources }: { sources: EditingInstance[] }) {
+  return <SourceListGrid sources={sources} />;
+}
+
+function SourceListFolder({ sources }: { sources: EditingInstance[] }) {
+  const folders = groupSourcesByFolder(sources);
+
+  return <SourceListGroups dataSlot="imported-sources-folders" groups={folders} />;
+}
+
+function SourceListGroup({
+  group,
+  icon,
+}: {
+  group: SourceGroup<EditingInstance>;
+  icon: SourceGroupIcon;
+}) {
+  const [open, setOpen] = useState(true);
+  const Icon = "open" in icon ? (open ? icon.open : icon.closed) : icon;
+
+  return (
+    <li>
+      <Collapsible defaultOpen onOpenChange={setOpen}>
+        <CollapsibleTrigger asChild>
+          <Button className="w-full justify-baseline" variant="ghost">
+            <ChevronRight className="transition-transform group-data-open/button:rotate-90" />
+            <Icon className="size-3.5 shrink-0" />
+            {group.timestampMicros === undefined ? (
+              <span className="truncate" title={group.label}>
+                {group.label}
+              </span>
+            ) : (
+              <RelativeTimestamp timestamp={group.timestampMicros} />
+            )}
+          </Button>
+        </CollapsibleTrigger>
+
+        <CollapsibleContent className="mt-2">
+          <SourceListGrid sources={group.items} />
+        </CollapsibleContent>
+      </Collapsible>
+    </li>
+  );
+}
+
+function SourceListGroups({
+  dataSlot,
+  groups,
+  icon,
+}: {
+  dataSlot: string;
+  groups: SourceGroup<EditingInstance>[];
+  icon?: SourceGroupIcon;
+}) {
+  return (
+    <ul className="flex flex-col gap-2" data-slot={dataSlot}>
+      {groups.map((group) => (
+        <SourceListGroup
+          group={group}
+          icon={icon ?? { closed: Folder, open: FolderOpen }}
+          key={group.key}
+        />
+      ))}
+    </ul>
+  );
+}
+
+type SourceGroupIcon =
+  | LucideIcon
+  | {
+      closed: LucideIcon;
+      open: LucideIcon;
+    };
+
+function SourceListGrid({ sources }: { sources: EditingInstance[] }) {
+  return (
+    <ul className="flex flex-col gap-2" data-slot="imported-sources-grid">
       {sources.map((source) => (
         <SourceListItem key={source.id} source={source} />
       ))}
     </ul>
+  );
+}
+
+function SourceListTime({ sources }: { sources: EditingInstance[] }) {
+  const { i18n, t } = useTranslation();
+  const now = useRelativeTimeNow();
+  const groups = groupSourcesByUpdatedTime(
+    sources,
+    i18n.language,
+    t("common.status.unknown"),
+    new Date(now),
+  );
+
+  return <SourceListGroups dataSlot="imported-sources-time-groups" groups={groups} icon={Clock3} />;
+}
+
+function SourceListImported({ sources }: { sources: EditingInstance[] }) {
+  const { i18n, t } = useTranslation();
+  const now = useRelativeTimeNow();
+  const groups = groupSourcesByImportedTime(
+    sources,
+    i18n.language,
+    t("common.status.unknown"),
+    new Date(now),
+  );
+
+  return (
+    <SourceListGroups dataSlot="imported-sources-import-groups" groups={groups} icon={Upload} />
   );
 }
 
@@ -421,4 +588,14 @@ function getExportQueueItemStatusLabel(t: TFunction, status: ExportAttemptState[
   }
 }
 
-export { SourceList };
+const SourceListData = createContext<{ sources: EditingInstance[] } | null>(null);
+
+function useSourceListData() {
+  const context = React.useContext(SourceListData);
+  if (!context) {
+    throw new Error("SourceListTabsContent must be used within SourceList");
+  }
+  return context;
+}
+
+export { SourceList, SourceListTabs, SourceListTabsContent };

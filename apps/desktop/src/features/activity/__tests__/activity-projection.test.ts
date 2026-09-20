@@ -973,10 +973,10 @@ describe("activity projection", () => {
   });
 
   it.each([
-    ["2026-08-31T12:34:00", "Today · 12:34 PM"],
-    ["2026-08-30T20:14:00", "Yesterday · 8:14 PM"],
-    ["2026-08-29T10:03:00", "Aug 29 · 10:03 AM"],
-    ["2025-12-28T21:21:00", "Dec 28, 2025 · 9:21 PM"],
+    ["2026-08-31T12:34:00", "Today"],
+    ["2026-08-30T20:14:00", "Yesterday"],
+    ["2026-08-29T10:03:00", "Aug 29"],
+    ["2025-12-28T21:21:00", "Dec 28, 2025"],
   ])("formats historical session start %s from metadata", (startedAt, expected) => {
     const group = {
       ...session("history-session", startedAt),
@@ -992,7 +992,7 @@ describe("activity projection", () => {
         "en-US",
         sessionLabels,
       ),
-    ).toEqual({ label: expected, tone: "default" });
+    ).toEqual({ label: expected, timestamp: startedAt, tone: "default" });
   });
 
   it("labels the current session as Now", () => {
@@ -1044,7 +1044,11 @@ describe("activity projection", () => {
         "en-US",
         sessionLabels,
       ),
-    ).toEqual({ label: "v1.4.2 · Yesterday · 8:14 PM", tone: "warning" });
+    ).toEqual({
+      label: "v1.4.2 · Yesterday",
+      timestamp: "2026-08-30T20:14:00",
+      tone: "warning",
+    });
     expect(
       getActivitySessionPresentation(
         unknownVersion,
