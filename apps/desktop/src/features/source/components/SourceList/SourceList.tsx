@@ -65,16 +65,15 @@ import { useRelativeTimeNow } from "@/lib/hooks/use-relative-time";
 import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
 import { openFileLocation } from "@/lib/tauri/media";
 
-import { formatSourcePath } from "../lib/media-formatters.utils";
-import { getRevealLabel } from "../lib/source.utils";
+import { formatSourcePath } from "../../lib/media-formatters.utils";
+import { getRevealLabel } from "../../lib/source.utils";
 import {
   groupSourcesByFolder,
   groupSourcesByImportedTime,
   groupSourcesByUpdatedTime,
   type SourceGroup,
-} from "../lib/source-grouping.utils";
-import { filterSourcesByPath } from "../lib/source-search.utils";
-
+} from "../../lib/source-grouping.utils";
+import { filterSourcesByPath } from "../../lib/source-search.utils";
 import {
   SourceCard,
   SourceCardActions,
@@ -83,14 +82,14 @@ import {
   SourceCardStatusBadge,
   SourceCardThumbnail,
   SourceCardTitle,
-} from "./SourceCard";
+} from "../SourceCard";
 import {
   CancelSourceExport,
   CloseSource,
   DeleteSource,
   RestoreSource,
   StartSourceExport,
-} from "./SourceMenuActions";
+} from "../SourceMenuActions";
 
 interface SourceListProps {
   children?: React.ReactNode | ((state: Omit<SourceListState, "setSearch">) => React.ReactNode);
