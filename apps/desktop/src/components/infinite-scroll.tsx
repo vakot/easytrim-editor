@@ -13,7 +13,7 @@ interface InfiniteScrollTriggerProps {
 
 type InfiniteScrollProps = ComponentProps<"div"> & InfiniteScrollTriggerProps;
 
-const DEFAULT_ROOT_MARGIN = "0px 0px 1200px";
+const DEFAULT_ROOT_MARGIN = "0px 0px 600px";
 
 function InfiniteScroll({
   children,
@@ -82,9 +82,11 @@ function useInfiniteScroll({
   const pendingNextRef = useRef(false);
   const nextRef = useRef(next);
 
-  hasMoreRef.current = hasMore;
-  isLoadingRef.current = isLoading;
-  nextRef.current = next;
+  useEffect(() => {
+    hasMoreRef.current = hasMore;
+    isLoadingRef.current = isLoading;
+    nextRef.current = next;
+  }, [hasMore, isLoading, next]);
 
   useEffect(() => {
     if (isLoading) {
