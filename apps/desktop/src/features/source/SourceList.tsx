@@ -14,7 +14,7 @@ import {
   X,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { useEffect } from "react";
+import React, { createContext, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
@@ -64,20 +64,45 @@ import {
   type SourceGroup,
 } from "./lib/source-grouping.utils";
 
-function SourceList() {
+interface SourceListProps {
+  children?: React.ReactNode;
+}
+
+function SourceList({ children }: SourceListProps) {
   const sources = usePrepareSources();
 
   if (sources.length === 0) return <SourceListEmptyState />;
 
   return (
-    <Tabs defaultValue="none">
-      <TabsList>
-        <TabsTrigger value="none">None</TabsTrigger>
-        <TabsTrigger value="folder">Folder</TabsTrigger>
-        <TabsTrigger value="time">Time</TabsTrigger>
-        <TabsTrigger value="imported">Imported</TabsTrigger>
-      </TabsList>
+    <SourceListData.Provider value={{ sources }}>
+      <Tabs className="min-h-0 flex-1" defaultValue="none">
+        {children ?? (
+          <>
+            <SourceListTabs />
+            <SourceListTabsContent />
+          </>
+        )}
+      </Tabs>
+    </SourceListData.Provider>
+  );
+}
 
+function SourceListTabs() {
+  return (
+    <TabsList className="w-full" defaultValue="none">
+      <TabsTrigger value="none">None</TabsTrigger>
+      <TabsTrigger value="folder">Folder</TabsTrigger>
+      <TabsTrigger value="time">Time</TabsTrigger>
+      <TabsTrigger value="imported">Imported</TabsTrigger>
+    </TabsList>
+  );
+}
+
+function SourceListTabsContent() {
+  const { sources } = useSourceListData();
+
+  return (
+    <>
       <TabsContent value="none">
         <SourceListNone sources={sources} />
       </TabsContent>
@@ -90,7 +115,7 @@ function SourceList() {
       <TabsContent value="imported">
         <SourceListImported sources={sources} />
       </TabsContent>
-    </Tabs>
+    </>
   );
 }
 
@@ -113,7 +138,7 @@ function SourceListGroup({
 }) {
   return (
     <li className="grid gap-2">
-      <div className="flex min-w-0 items-center gap-2 px-1 text-xs text-muted-foreground">
+      <div className="flex min-w-0 items-center gap-2 px-1 text-sm">
         {icon}
         <span className="truncate" title={group.label}>
           {group.label}
@@ -533,4 +558,14 @@ function getExportQueueItemStatusLabel(t: TFunction, status: ExportAttemptState[
   }
 }
 
-export { SourceList };
+const SourceListData = createContext<{ sources: EditingInstance[] } | null>(null);
+
+function useSourceListData() {
+  const context = React.useContext(SourceListData);
+  if (!context) {
+    throw new Error("SourceListTabsContent must be used within SourceList");
+  }
+  return context;
+}
+
+export { SourceList, SourceListTabs, SourceListTabsContent };
