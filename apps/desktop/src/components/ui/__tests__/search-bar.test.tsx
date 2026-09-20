@@ -1,7 +1,8 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-import { HighlightedText, SearchBar } from "../search-bar";
+import { Highlight } from "../highlight";
+import { SearchBar } from "../search-bar";
 
 describe("SearchBar", () => {
   it.each([
@@ -43,7 +44,7 @@ describe("SearchBar", () => {
   });
 
   it("highlights every matching substring", () => {
-    render(<HighlightedText query="clip" text="clip-clip.mp4" />);
+    render(<Highlight query="clip">clip-clip.mp4</Highlight>);
 
     const matches = screen.getAllByText("clip");
     expect(matches).toHaveLength(2);
