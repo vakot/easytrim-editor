@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, type ReactNode } from "react";
 
 import { Card } from "@/components/ui/card";
 
@@ -6,6 +6,7 @@ import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectActiveInstanceId } from "@/app/store/slices/editing-instances-slice";
 import { selectSourceStatus } from "@/app/store/slices/source-slice";
 import { navigateToEditingInstance } from "@/app/store/thunks/source-media-thunks";
+import type { EditingInstance } from "@/domain/editing-instance";
 import { cn } from "@/lib/class-names.utils";
 
 import { SourceCardActions } from "./components/SourceCardActions";
@@ -20,7 +21,12 @@ import {
   getSourceCardStatus,
   getSourceCardVariant,
 } from "./lib/source-card.utils";
-import type { SourceCardProps } from "./types";
+
+interface SourceCardProps {
+  children: ReactNode;
+  className?: string;
+  source: EditingInstance;
+}
 
 const SourceCard = memo(function SourceCard({ children, className, source }: SourceCardProps) {
   const dispatch = useAppDispatch();

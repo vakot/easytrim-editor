@@ -4,9 +4,3 @@ export type SourceCardStatus = "deleted" | "failed" | "loading" | "missing" | "r
 export type SourceCardVariant = "active" | "default" | "destructive" | "warning";
 export type SourceCardBadgeVariant = "default" | "destructive" | "warning";
 export type SourceCardContent = (props: { source: EditingInstance }) => React.ReactNode;
-
-export interface SourceCardProps {
-  children: React.ReactNode;
-  className?: string;
-  source: EditingInstance;
-}
