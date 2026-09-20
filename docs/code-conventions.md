@@ -17,8 +17,9 @@ agent quality and scope policy remains in [`.agents/rules/code-quality.md`](../.
   reusable or intentionally shared primitives, with an owner in the basename. Avoid ownerless
   `utils.ts`, `helpers.ts`, `common.ts`, and `misc.ts` files.
 
-Keep single-consumer helpers, types, and constants with their owning module. Use a subsystem
-`types.ts` only for a deliberate shared contract, and keep component props in the component file.
+Keep single-consumer helpers, types, and constants with their owning module. Component props live
+in the same file as their component, immediately above the component declaration. Use a subsystem
+`types.ts` only for a deliberate shared contract, never for a component's props-only type.
 
 ## Imports and exports
 
