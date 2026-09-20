@@ -42,16 +42,10 @@ import type { EditingInstance } from "@/domain/editing-instance";
 import { cn } from "@/lib/class-names.utils";
 import { openFileLocation } from "@/lib/tauri/media";
 
-import { useRelativeTimeNow } from "../hooks/use-relative-time";
-import {
-  formatBytes,
-  formatDateTime,
-  formatDuration,
-  formatRelativeTime,
-  formatSourcePath,
-} from "../lib/media-formatters.utils";
+import { formatBytes, formatDuration, formatSourcePath } from "../lib/media-formatters.utils";
 import { getRevealLabel } from "../lib/source.utils";
 
+import { RelativeTimestamp } from "./RelativeTimestamp";
 import { CloseSource, DeleteSource, RestoreSource } from "./SourceMenuActions";
 
 type SourceCardStatus = "deleted" | "failed" | "loading" | "missing" | "ready";
@@ -245,19 +239,9 @@ function SourceCardDescription({ className }: { className?: string }) {
 
 function SourceCardMetadata({ className }: { className?: string }) {
   const source = useSourceCardSource();
-  const { i18n, t } = useTranslation();
-  const now = useRelativeTimeNow();
-  const locale = i18n.resolvedLanguage ?? i18n.language;
+  const { t } = useTranslation();
   const unknown = t("common.status.unknown");
   const fileSize = formatBytes(source.media?.sizeBytes, unknown);
-  const updatedAt = formatRelativeTime(
-    source.snapshot.source.updatedAtMicros,
-    locale,
-    unknown,
-    now,
-  );
-
-  const updatedAtExact = formatDateTime(source.snapshot.source.updatedAtMicros, locale, unknown);
 
   return (
     <div className={cn("flex items-center gap-1 text-xs text-muted-foreground", className)}>
@@ -272,16 +256,11 @@ function SourceCardMetadata({ className }: { className?: string }) {
         </TooltipContent>
       </Tooltip>
       <span aria-hidden="true">·</span>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span className="cursor-help truncate focus-visible:outline-none" tabIndex={0}>
-            {updatedAt}
-          </span>
-        </TooltipTrigger>
-        <TooltipContent>
-          {t("source.labels.metadata.updatedAt")}: {updatedAtExact}
-        </TooltipContent>
-      </Tooltip>
+      <RelativeTimestamp
+        label={t("source.labels.metadata.updatedAt")}
+        timestampMicros={source.snapshot.source.updatedAtMicros}
+        unknownLabel={unknown}
+      />
     </div>
   );
 }

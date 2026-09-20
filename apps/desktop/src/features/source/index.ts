@@ -1,4 +1,5 @@
 export { DeleteSourceDialog } from "./components/DeleteSourceDialog";
+export { RelativeTimestamp, type RelativeTimestampProps } from "./components/RelativeTimestamp";
 export { CloseSource, DeleteSource, RestoreSource } from "./components/SourceMenuActions";
 export { formatBytes, formatSourcePath } from "./lib/media-formatters.utils";
 export { SourceBreadcrumb } from "./SourceBreadcrumb";

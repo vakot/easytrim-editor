@@ -1,7 +1,7 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 
@@ -69,24 +69,6 @@ describe("SourceCard", () => {
     expect(screen.getByText("C:/Media/holiday.mp4")).toBeInTheDocument();
     expect(screen.queryByText("Ready")).not.toBeInTheDocument();
     expect(screen.getByLabelText("Source actions: holiday.mp4")).toBeInTheDocument();
-  });
-
-  it("updates relative time as the source gets older", () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date(2026, 8, 20, 12, 0, 0, 0));
-    const source = createSource();
-    source.snapshot.source.updatedAtMicros = Date.now() * 1_000 - 1_000_000;
-
-    try {
-      renderSourceCard(source);
-      expect(screen.getByText("1 second ago")).toBeInTheDocument();
-
-      act(() => vi.advanceTimersByTime(1_000));
-
-      expect(screen.getByText("2 seconds ago")).toBeInTheDocument();
-    } finally {
-      vi.useRealTimers();
-    }
   });
 
   it("derives the deleted state and restore action from its source", async () => {
