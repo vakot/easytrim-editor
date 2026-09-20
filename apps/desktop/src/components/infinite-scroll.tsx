@@ -1,33 +1,30 @@
 import type { ComponentProps, ReactNode } from "react";
-import { useCallback, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 
 import { cn } from "@/lib/class-names.utils";
 
 interface InfiniteScrollTriggerProps {
+  batchSize?: number;
   hasMore: boolean;
   isLoading?: boolean;
   loader?: ReactNode;
-  maxPendingRequests?: number;
   next: () => void;
-  requestDelayMs?: number;
   rootMargin?: string;
 }
 
 type InfiniteScrollProps = ComponentProps<"div"> & InfiniteScrollTriggerProps;
 
+const DEFAULT_BATCH_SIZE = 1;
 const DEFAULT_ROOT_MARGIN = "0px 0px 600px";
-const DEFAULT_MAX_PENDING_REQUESTS = 1;
-const DEFAULT_REQUEST_DELAY_MS = 300;
 
 function InfiniteScroll({
+  batchSize = DEFAULT_BATCH_SIZE,
   children,
   className,
   hasMore,
   isLoading = false,
   loader,
-  maxPendingRequests = DEFAULT_MAX_PENDING_REQUESTS,
   next,
-  requestDelayMs = DEFAULT_REQUEST_DELAY_MS,
   rootMargin = DEFAULT_ROOT_MARGIN,
   ...props
 }: InfiniteScrollProps) {
@@ -35,12 +32,11 @@ function InfiniteScroll({
     <div className={cn("min-w-0", className)} data-slot="infinite-scroll" {...props}>
       {children}
       <InfiniteScrollTrigger
+        batchSize={batchSize}
         hasMore={hasMore}
         isLoading={isLoading}
         loader={loader}
-        maxPendingRequests={maxPendingRequests}
         next={next}
-        requestDelayMs={requestDelayMs}
         rootMargin={rootMargin}
       />
     </div>
@@ -48,20 +44,18 @@ function InfiniteScroll({
 }
 
 function InfiniteScrollTrigger({
+  batchSize = DEFAULT_BATCH_SIZE,
   hasMore,
   isLoading = false,
   loader: propsLoader,
-  maxPendingRequests = DEFAULT_MAX_PENDING_REQUESTS,
   next,
-  requestDelayMs = DEFAULT_REQUEST_DELAY_MS,
   rootMargin = DEFAULT_ROOT_MARGIN,
 }: InfiniteScrollTriggerProps) {
   const { sentinelRef } = useInfiniteScroll({
+    batchSize,
     hasMore,
-    next,
     isLoading,
-    maxPendingRequests,
-    requestDelayMs,
+    next,
     rootMargin,
   });
 
@@ -82,49 +76,19 @@ function InfiniteScrollTrigger({
 }
 
 function useInfiniteScroll({
+  batchSize = DEFAULT_BATCH_SIZE,
   hasMore,
   isLoading,
-  maxPendingRequests = DEFAULT_MAX_PENDING_REQUESTS,
   next,
-  requestDelayMs = DEFAULT_REQUEST_DELAY_MS,
   rootMargin = DEFAULT_ROOT_MARGIN,
 }: Omit<InfiniteScrollTriggerProps, "loader">) {
   const sentinelRef = useRef<HTMLDivElement>(null);
   const hasMoreRef = useRef(hasMore);
   const isLoadingRef = useRef(isLoading);
-  const nextRequestedRef = useRef(false);
-  const pendingRequestsRef = useRef(0);
+  const activeBatchCountRef = useRef(isLoading ? 1 : 0);
+  const wasLoadingRef = useRef(isLoading);
   const nextRef = useRef(next);
-  const requestTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isIntersectingRef = useRef(false);
-  const pendingRequestLimit = Math.max(1, maxPendingRequests);
-
-  const scheduleNext = useCallback(() => {
-    if (!hasMoreRef.current || nextRequestedRef.current) return;
-
-    nextRequestedRef.current = true;
-
-    const request = () => {
-      requestTimerRef.current = null;
-
-      if (isLoadingRef.current) {
-        nextRequestedRef.current = false;
-        pendingRequestsRef.current = Math.min(
-          pendingRequestsRef.current + 1,
-          pendingRequestLimit,
-        );
-        return;
-      }
-
-      nextRef.current();
-    };
-
-    if (requestDelayMs > 0) {
-      requestTimerRef.current = setTimeout(request, requestDelayMs);
-    } else {
-      request();
-    }
-  }, [maxPendingRequests, requestDelayMs]);
+  const batchLimit = Math.max(1, batchSize);
 
   useEffect(() => {
     hasMoreRef.current = hasMore;
@@ -132,30 +96,27 @@ function useInfiniteScroll({
     nextRef.current = next;
 
     if (!hasMore) {
-      pendingRequestsRef.current = 0;
-      if (requestTimerRef.current) {
-        clearTimeout(requestTimerRef.current);
-        requestTimerRef.current = null;
-      }
+      activeBatchCountRef.current = 0;
+      wasLoadingRef.current = isLoading;
       return;
     }
+
+    activeBatchCountRef.current = Math.min(activeBatchCountRef.current, batchLimit);
 
     if (isLoading) {
-      nextRequestedRef.current = false;
-      if (isIntersectingRef.current) {
-        pendingRequestsRef.current = Math.min(
-          Math.max(pendingRequestsRef.current, 1),
-          pendingRequestLimit,
-        );
-      }
+      wasLoadingRef.current = true;
       return;
     }
 
-    if (pendingRequestsRef.current > 0) {
-      pendingRequestsRef.current -= 1;
-      scheduleNext();
-    }
-  }, [hasMore, isLoading, next, pendingRequestLimit, scheduleNext]);
+    const finishedBatch = wasLoadingRef.current;
+    wasLoadingRef.current = false;
+
+    if (!finishedBatch) return;
+
+    activeBatchCountRef.current = Math.max(0, activeBatchCountRef.current - 1);
+
+    if (activeBatchCountRef.current > 0) nextRef.current();
+  }, [batchLimit, hasMore, isLoading, next]);
 
   useEffect(() => {
     const trigger = sentinelRef.current;
@@ -165,29 +126,24 @@ function useInfiniteScroll({
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (!entry?.isIntersecting) {
-          isIntersectingRef.current = false;
-          pendingRequestsRef.current = 0;
-          nextRequestedRef.current = false;
-          if (requestTimerRef.current) {
-            clearTimeout(requestTimerRef.current);
-            requestTimerRef.current = null;
-          }
+          activeBatchCountRef.current = isLoadingRef.current ? 1 : 0;
           return;
         }
-
-        isIntersectingRef.current = true;
 
         if (!hasMoreRef.current) return;
 
         if (isLoadingRef.current) {
-          pendingRequestsRef.current = Math.min(
-            pendingRequestsRef.current + 1,
-            pendingRequestLimit,
-          );
+          activeBatchCountRef.current = batchLimit;
           return;
         }
 
-        scheduleNext();
+        if (activeBatchCountRef.current >= batchLimit) return;
+
+        activeBatchCountRef.current =
+          activeBatchCountRef.current === 0
+            ? batchLimit
+            : activeBatchCountRef.current + 1;
+        nextRef.current();
       },
       { root, rootMargin },
     );
@@ -195,14 +151,7 @@ function useInfiniteScroll({
     observer.observe(trigger);
 
     return () => observer.disconnect();
-  }, [hasMore, pendingRequestLimit, rootMargin, scheduleNext]);
-
-  useEffect(
-    () => () => {
-      if (requestTimerRef.current) clearTimeout(requestTimerRef.current);
-    },
-    [],
-  );
+  }, [batchLimit, hasMore, rootMargin]);
 
   return { sentinelRef };
 }
