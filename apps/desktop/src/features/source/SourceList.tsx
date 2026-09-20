@@ -127,7 +127,7 @@ function SourceListSearch() {
     <SearchBar
       aria-label={t("common.labels.search")}
       onValueChange={setSearch}
-      placeholder={t("source.messages.searchPlaceholder")}
+      placeholder={t("common.labels.search")}
       size="sm"
       value={search}
     />

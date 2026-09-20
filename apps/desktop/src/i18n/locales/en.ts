@@ -246,7 +246,6 @@ export const en = {
       openFileDescription: "Choose a single video file to start editing.",
       openFolderDescription: "Import all supported videos from a folder.",
       previewUnavailable: "Preview unavailable",
-      searchPlaceholder: "Search imported sources by path…",
       toolsReady: "All required media dependencies are installed and ready to use.",
       toolsUnavailable: "Some required media dependencies are unavailable.",
     },

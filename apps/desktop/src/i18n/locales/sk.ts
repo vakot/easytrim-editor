@@ -247,7 +247,6 @@ export const sk = {
       openFileDescription: "Vyberte jeden videosúbor a začnite upravovať.",
       openFolderDescription: "Importujte všetky podporované videá z priečinka.",
       previewUnavailable: "Náhľad nie je dostupný",
-      searchPlaceholder: "Hľadať importované zdroje podľa cesty…",
       toolsReady:
         "Všetky požadované multimediálne závislosti sú nainštalované a pripravené na použitie.",
       toolsUnavailable: "Niektoré požadované multimediálne závislosti nie sú dostupné.",
