@@ -20,7 +20,7 @@ import type { DiagnosticOrigin } from "@/lib/tauri/diagnostics.types";
 import {
   FRAME_SHUTTLE_HOLD_DELAY_MS,
   type FrameShuttleDirection,
-} from "../../../lib/editor-shortcuts";
+} from "../lib/editor-shortcuts";
 
 interface PlaybackControlsProps {
   canSetSegmentEnd: boolean;

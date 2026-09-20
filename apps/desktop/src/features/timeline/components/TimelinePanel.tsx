@@ -4,10 +4,10 @@ import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectSourceMedia } from "@/app/store/slices/source-slice";
 import { selectTrim } from "@/app/store/slices/trim-slice";
 
-import { PlaybackControls } from "./components/PlaybackControls";
-import { PlaybackTimecode } from "./components/PlaybackTimecode";
-import { TimelineTools } from "./components/TimelineTools";
-import { TrimTimeline } from "./components/TrimTimeline";
+import { PlaybackControls } from "./PlaybackControls";
+import { PlaybackTimecode } from "./PlaybackTimecode";
+import { TimelineTools } from "./TimelineTools";
+import { TrimTimeline } from "./TrimTimeline";
 
 const EMPTY_TIMELINE_RANGE = {
   startMicros: 0,
