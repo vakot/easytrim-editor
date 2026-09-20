@@ -31,14 +31,14 @@ import { isQuarterTurn } from "@/domain/rotation";
 import { diagnostics } from "@/lib/diagnostics";
 import type { DiagnosticOrigin } from "@/lib/tauri/diagnostics.types";
 
-import { useCropSelection } from "../hooks/useCropSelection";
 import {
   type Bounds,
   centerFrame,
   cropFrame,
   scaleFrameToSourceBounds,
-} from "../lib/crop-frame.utils";
-import { isFullCrop } from "../lib/crop-geometry.utils";
+} from "../../../lib/crop-frame.utils";
+import { isFullCrop } from "../../../lib/crop-geometry.utils";
+import { useCropSelection } from "../hooks/useCropSelection";
 
 import { CropSelection } from "./CropSelection";
 import { CropSnapMarkers } from "./CropSnapMarkers";
