@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Fragment } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -9,28 +10,44 @@ import { selectSourceMedia, selectSourceSelection } from "@/app/store/slices/sou
 import {
   formatBitrate,
   formatBytes,
-  formatDateTime,
   formatDuration,
   formatFrameRate,
 } from "../lib/media-formatters.utils";
 
+import { RelativeTimestamp } from "./RelativeTimestamp";
+
 export function SourceDetails() {
   const media = useAppSelector(selectSourceMedia);
   const source = useAppSelector(selectSourceSelection);
-  const { i18n, t } = useTranslation();
+  const { t } = useTranslation();
   const noSource = t("source.messages.noSource");
   const frameRate = media?.video.averageFrameRate ?? media?.video.realFrameRate;
   const unknown = media ? t("common.status.unknown") : noSource;
-  const locale = i18n.resolvedLanguage ?? i18n.language;
-  const metadata = [
+  const metadata: readonly [string, ReactNode][] = [
     [t("source.labels.metadata.filename"), source ? source.displayName : noSource],
     [
       t("source.labels.metadata.createdAt"),
-      formatDateTime(source?.createdAtMicros, locale, unknown),
+      source ? (
+        <RelativeTimestamp
+          label={t("source.labels.metadata.createdAt")}
+          timestampMicros={source.createdAtMicros}
+          unknownLabel={unknown}
+        />
+      ) : (
+        noSource
+      ),
     ],
     [
       t("source.labels.metadata.updatedAt"),
-      formatDateTime(source?.updatedAtMicros, locale, unknown),
+      source ? (
+        <RelativeTimestamp
+          label={t("source.labels.metadata.updatedAt")}
+          timestampMicros={source.updatedAtMicros}
+          unknownLabel={unknown}
+        />
+      ) : (
+        noSource
+      ),
     ],
     [
       t("source.labels.metadata.container"),
@@ -74,7 +91,10 @@ export function SourceDetails() {
           <div className="grid w-full grid-cols-[max-content_minmax(0,1fr)] items-baseline gap-3 py-2">
             <dt className="text-xs text-muted-foreground">{label}</dt>
 
-            <dd className="truncate text-right text-xs font-medium text-foreground" title={value}>
+            <dd
+              className="truncate text-right text-xs font-medium text-foreground"
+              title={typeof value === "string" ? value : undefined}
+            >
               {value}
             </dd>
           </div>

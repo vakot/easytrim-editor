@@ -40,6 +40,7 @@ import {
 import type { EditingInstance, ExportAttempt, ExportAttemptState } from "@/domain/editing-instance";
 import { openFileLocation } from "@/lib/tauri/media";
 
+import { RelativeTimestamp } from "./components/RelativeTimestamp";
 import {
   SourceCard,
   SourceCardActions,
@@ -137,13 +138,22 @@ function SourceListGroup({
   group: SourceGroup<EditingInstance>;
   icon: ReactNode;
 }) {
+  const { t } = useTranslation();
+
   return (
     <li className="grid gap-2">
       <div className="flex min-w-0 items-center gap-2 px-1 text-sm">
         {icon}
-        <span className="truncate" title={group.label}>
-          {group.label}
-        </span>
+        {group.timestampMicros === undefined ? (
+          <span className="truncate" title={group.label}>
+            {group.label}
+          </span>
+        ) : (
+          <RelativeTimestamp
+            timestampMicros={group.timestampMicros}
+            unknownLabel={t("common.status.unknown")}
+          />
+        )}
       </div>
       <SourceListGrid sources={group.items} />
     </li>

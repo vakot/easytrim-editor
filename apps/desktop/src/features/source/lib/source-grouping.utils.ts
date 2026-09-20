@@ -6,6 +6,7 @@ export interface SourceGroup<T> {
   items: T[];
   key: string;
   label: string;
+  timestampMicros?: number;
 }
 
 export function getSourceFolderPath(sourcePath: string): string {
@@ -69,7 +70,12 @@ export function groupSourcesByImportedTime(
     if (existing) {
       existing.items.push(source);
     } else {
-      groups.set(key, { items: [source], key, label: timeGroup.label });
+      groups.set(key, {
+        items: [source],
+        key,
+        label: timeGroup.label,
+        ...(Number.isFinite(importedAtMicros) ? { timestampMicros: importedAtMicros } : {}),
+      });
     }
   }
 
@@ -86,13 +92,18 @@ function groupSourcesByTimestamp(
   const groups = new Map<string, SourceGroup<EditingInstance>>();
 
   for (const source of sources) {
-    const group = getUpdatedTimeGroup(getTimestamp(source), locale, unknownLabel, now);
+    const timestampMicros = getTimestamp(source);
+    const group = getUpdatedTimeGroup(timestampMicros, locale, unknownLabel, now);
     const existing = groups.get(group.key);
 
     if (existing) {
       existing.items.push(source);
     } else {
-      groups.set(group.key, { items: [source], ...group });
+      groups.set(group.key, {
+        items: [source],
+        ...group,
+        ...(Number.isFinite(timestampMicros) ? { timestampMicros } : {}),
+      });
     }
   }
 

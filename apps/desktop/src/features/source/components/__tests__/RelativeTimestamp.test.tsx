@@ -11,7 +11,6 @@ function renderRelativeTimestamp(timestampMicros: number | undefined) {
     <TooltipProvider>
       <RelativeTimestamp
         className="timestamp"
-        label="Updated at"
         timestampMicros={timestampMicros}
         unknownLabel="Unknown"
       />
@@ -57,8 +56,6 @@ describe("RelativeTimestamp", () => {
       screen.getByText(new Intl.DateTimeFormat("en-US", { dateStyle: "medium" }).format(updatedAt)),
     );
 
-    expect(await screen.findByRole("tooltip")).toHaveTextContent(
-      `Updated at: ${expectedExactTime}`,
-    );
+    expect(await screen.findByRole("tooltip")).toHaveTextContent(expectedExactTime);
   });
 });

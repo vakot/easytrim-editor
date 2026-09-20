@@ -9,7 +9,6 @@ import { RelativeTimestamp } from "../RelativeTimestamp";
 const meta = {
   args: {
     className: "text-sm text-muted-foreground",
-    label: "Updated at",
     unknownLabel: "Unknown",
   },
   component: RelativeTimestamp,
@@ -43,29 +42,29 @@ const earlier = new Date(storyNow);
 earlier.setDate(earlier.getDate() - 2);
 
 export const JustNow: Story = {
-  args: { timestampMicros: timestampFromNow(0) },
+  args: { label: "Updated at", timestampMicros: timestampFromNow(0) },
 };
 
 export const Seconds: Story = {
-  args: { timestampMicros: timestampFromNow(5_000) },
+  args: { label: "Updated at", timestampMicros: timestampFromNow(5_000) },
 };
 
 export const Minutes: Story = {
-  args: { timestampMicros: timestampFromNow(5 * 60_000) },
+  args: { label: "Updated at", timestampMicros: timestampFromNow(5 * 60_000) },
 };
 
 export const Hours: Story = {
-  args: { timestampMicros: timestampFromNow(5 * 60 * 60_000) },
+  args: { label: "Updated at", timestampMicros: timestampFromNow(5 * 60 * 60_000) },
 };
 
 export const Yesterday: Story = {
-  args: { timestampMicros: yesterday.getTime() * 1_000 },
+  args: { label: "Updated at", timestampMicros: yesterday.getTime() * 1_000 },
 };
 
 export const Earlier: Story = {
-  args: { timestampMicros: earlier.getTime() * 1_000 },
+  args: { label: "Updated at", timestampMicros: earlier.getTime() * 1_000 },
 };
 
 export const Unknown: Story = {
-  args: { timestampMicros: undefined },
+  args: { label: "Updated at", timestampMicros: undefined },
 };

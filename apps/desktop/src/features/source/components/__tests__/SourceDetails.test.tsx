@@ -2,6 +2,8 @@ import { render, screen } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { describe, expect, it } from "vitest";
 
+import { TooltipProvider } from "@/components/ui/tooltip";
+
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
 import { createAppStore } from "@/app/store/store";
 import { media } from "@/test/source.fixtures";
@@ -23,7 +25,9 @@ describe("SourceDetails", () => {
 
     render(
       <Provider store={store}>
-        <SourceDetails />
+        <TooltipProvider>
+          <SourceDetails />
+        </TooltipProvider>
       </Provider>,
     );
 
@@ -31,7 +35,7 @@ describe("SourceDetails", () => {
     expect(screen.getByText("Updated at")).toBeInTheDocument();
     expect(
       screen.getByText(
-        new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(
+        new Intl.DateTimeFormat("en-US", { dateStyle: "medium" }).format(
           new Date(source.createdAtMicros / 1_000),
         ),
       ),
