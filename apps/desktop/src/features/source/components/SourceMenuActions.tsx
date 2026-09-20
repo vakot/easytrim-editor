@@ -9,7 +9,7 @@ import {
 } from "@/app/store/thunks/source-media-thunks";
 import type { EditingInstance } from "@/domain/editing-instance";
 
-import { SourceDeleteDialog, SourceDeleteDialogTrigger } from "../SourceDeleteDialog";
+import { SourceDeleteDialog, SourceDeleteDialogTrigger } from "./SourceDeleteDialog";
 
 type ActionElement = ReactElement<{
   disabled?: boolean;

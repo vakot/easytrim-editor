@@ -26,7 +26,7 @@ import { createAppStore } from "@/app/store/store";
 import { createExportAttempt, type EditingInstance } from "@/domain/editing-instance";
 import { firstSource } from "@/test/source.fixtures";
 
-import { SourceList, SourceListContent, SourceListSearch } from "../SourceList";
+import { SourceList, SourceListContent, SourceListSearch } from "../components/SourceList";
 
 vi.mock("../components/SourceCard", () => {
   const Container = ({ children }: PropsWithChildren) => <div>{children}</div>;

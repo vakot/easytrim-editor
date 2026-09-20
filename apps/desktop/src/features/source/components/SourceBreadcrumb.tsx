@@ -19,9 +19,10 @@ import {
 } from "@/app/store/slices/editing-instances-slice";
 import { openFileLocation } from "@/lib/tauri/media";
 
-import { SourceDetails } from "./components/SourceDetails";
-import { formatSourcePath } from "./lib/media-formatters.utils";
-import { getPathDirectories, getRevealLabel } from "./lib/source.utils";
+import { formatSourcePath } from "../lib/media-formatters.utils";
+import { getPathDirectories, getRevealLabel } from "../lib/source.utils";
+
+import { SourceDetails } from "./SourceDetails";
 
 export function SourceBreadcrumb() {
   const activeInstanceId = useAppSelector(selectActiveInstanceId);
