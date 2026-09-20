@@ -31,8 +31,8 @@ import {
 } from "@/app/store/thunks/export-thunks";
 
 import { CommandPreview } from "./components/CommandPreview";
-import { ExportFrameRateForm } from "./components/ExportFrameRateForm";
-import { ExportResolutionForm } from "./components/ExportResolutionForm";
+import { ExportFrameRate } from "./components/ExportFrameRate";
+import { ExportResolution } from "./components/ExportResolution";
 import { PresetManager } from "./components/PresetManager";
 
 export function ExportDialog() {
@@ -80,8 +80,8 @@ export function ExportDialog() {
           <PresetManager />
 
           <div className="grid gap-3">
-            <ExportResolutionForm cropResolution={cropResolution} settings={settings} />
-            <ExportFrameRateForm settings={settings} />
+            <ExportResolution cropResolution={cropResolution} settings={settings} />
+            <ExportFrameRate settings={settings} />
           </div>
 
           <CommandPreview command={commandPreview} error={commandPreviewError?.message} />

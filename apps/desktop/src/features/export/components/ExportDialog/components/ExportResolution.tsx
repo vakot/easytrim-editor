@@ -20,12 +20,12 @@ import type { ExportSettings } from "@/domain/editing-instance";
 
 import { resolutionOptions } from "../../../lib/export-options.utils";
 
-interface ExportResolutionFormProps {
+interface ExportResolutionProps {
   cropResolution: ExportSettings["resolution"];
   settings: ExportSettings;
 }
 
-export function ExportResolutionForm({ cropResolution, settings }: ExportResolutionFormProps) {
+export function ExportResolution({ cropResolution, settings }: ExportResolutionProps) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const [isAspectRatioLocked, setIsAspectRatioLocked] = useState(true);

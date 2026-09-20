@@ -15,11 +15,11 @@ import type { ExportSettings } from "@/domain/editing-instance";
 
 import { FRAME_RATE_OPTIONS, rateFromValue } from "../../../lib/export-options.utils";
 
-interface ExportFrameRateFormProps {
+interface ExportFrameRateProps {
   settings: ExportSettings;
 }
 
-export function ExportFrameRateForm({ settings }: ExportFrameRateFormProps) {
+export function ExportFrameRate({ settings }: ExportFrameRateProps) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const frameRateValue = settings.frameRate
