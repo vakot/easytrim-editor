@@ -17,7 +17,7 @@ import {
   X,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import React, { createContext, useEffect, useState } from "react";
+import React, { createContext, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
@@ -47,6 +47,7 @@ import {
 import type { EditingInstance, ExportAttempt, ExportAttemptState } from "@/domain/editing-instance";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { useRelativeTimeNow } from "@/lib/hooks/use-relative-time";
+import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
 import { openFileLocation } from "@/lib/tauri/media";
 
 import {
@@ -122,12 +123,25 @@ function SourceListTabs() {
 function SourceListSearch() {
   const { search, setSearch } = useSourceListData();
   const { t } = useTranslation();
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useKeyboardShortcut(
+    (event) => event.code === "KeyK" && event.ctrlKey,
+    () => searchInputRef.current?.focus(),
+  );
 
   return (
     <SearchBar
       aria-label={t("common.labels.search")}
+      endContent={
+        <KbdGroup aria-label="Ctrl + K">
+          <Kbd>Ctrl</Kbd>
+          <Kbd>K</Kbd>
+        </KbdGroup>
+      }
       onValueChange={setSearch}
       placeholder={t("common.labels.search")}
+      ref={searchInputRef}
       size="sm"
       value={search}
     />

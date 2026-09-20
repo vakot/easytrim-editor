@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { PropsWithChildren } from "react";
 import { Provider } from "react-redux";
@@ -26,7 +26,7 @@ import { createAppStore } from "@/app/store/store";
 import { createExportAttempt, type EditingInstance } from "@/domain/editing-instance";
 import { firstSource } from "@/test/source.fixtures";
 
-import { SourceList } from "../SourceList";
+import { SourceList, SourceListContent, SourceListSearch } from "../SourceList";
 
 vi.mock("../components/SourceCard", () => {
   const Container = ({ children }: PropsWithChildren) => <div>{children}</div>;
@@ -56,6 +56,38 @@ describe("source queue controls", () => {
     expect(screen.getByRole("button", { name: /Open Folder/ })).toHaveTextContent("CtrlK");
     expect(screen.getByText("Drag and drop videos here")).toBeInTheDocument();
     expect(screen.getByText("MP4 · MOV · MKV · WebM · AVI")).toBeInTheDocument();
+  });
+
+  it("focuses source search with Ctrl+K and shows its shortcut hint", () => {
+    const store = createAppStore();
+    const snapshot = createDefaultEditorSnapshot(firstSource, false);
+    store.dispatch(
+      editingInstancesAdded([
+        {
+          id: "source",
+          origin: "source-import",
+          snapshot,
+          sourceAvailability: "available",
+          exportAttempts: [],
+        },
+      ]),
+    );
+
+    render(
+      <Provider store={store}>
+        <SourceList>
+          <SourceListSearch />
+          <SourceListContent />
+        </SourceList>
+      </Provider>,
+    );
+
+    const search = screen.getByRole("searchbox", { name: "Search" });
+    expect(screen.getByLabelText("Ctrl + K")).toBeInTheDocument();
+
+    fireEvent.keyDown(window, { code: "KeyK", ctrlKey: true });
+
+    expect(document.activeElement).toBe(search);
   });
 
   it("starts and cancels only the chosen source without removing pending attempts", async () => {
