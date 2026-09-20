@@ -73,7 +73,7 @@ import {
   SourceCardStatusBadge,
   SourceCardThumbnail,
   SourceCardTitle,
-} from "./components/SourceCard";
+} from "./components/card";
 import {
   CancelSourceExport,
   CloseSource,

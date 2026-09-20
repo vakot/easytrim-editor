@@ -16,7 +16,7 @@ import {
   type SourceCardProps,
   SourceCardStatusBadge,
   SourceCardTitle,
-} from "../SourceCard";
+} from "../card";
 
 const meta = {
   component: SourceCard,
