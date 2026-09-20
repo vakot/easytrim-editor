@@ -1,69 +1,24 @@
-import { usePlayback } from "@/app/hooks/usePlayback";
-import { useTimeline } from "@/app/hooks/useTimeline";
-import { useAppSelector } from "@/app/store/redux-hooks";
-import { selectSourceMedia } from "@/app/store/slices/source-slice";
-import { selectTrim } from "@/app/store/slices/trim-slice";
-
-import { PlaybackControls } from "./PlaybackControls";
-import { PlaybackTimecode } from "./PlaybackTimecode";
-import { TimelineTools } from "./TimelineTools";
-import { TrimTimeline } from "./TrimTimeline";
-
-const EMPTY_TIMELINE_RANGE = {
-  startMicros: 0,
-  endMicros: 1_000_000,
-  sourceDurationMicros: 1_000_000,
-} as const;
+import { TimelineHeader } from "./TimelineHeader";
+import { TimelineScale } from "./TimelineScale";
+import { TimelineToolbar } from "./TimelineToolbar";
+import { TimelineTrack } from "./TimelineTrack";
 
 export function TimelinePanel() {
-  const media = useAppSelector(selectSourceMedia);
-  const trim = useAppSelector(selectTrim);
-  const playback = usePlayback();
-  const timeline = useTimeline();
-  const timelineRange = trim ?? EMPTY_TIMELINE_RANGE;
-  const controlsDisabled = !playback.canInteract;
-  const frameRate = media?.video.averageFrameRate ?? media?.video.realFrameRate;
-
   return (
-    <TrimTimeline
-      disabled={controlsDisabled}
-      frameRate={frameRate}
-      onChange={timeline.onChange}
-      onMoveSegment={timeline.onMoveSegment}
-      onScrub={timeline.onScrub}
-      onScrubEnd={timeline.onScrubEnd}
-      onScrubStart={timeline.onScrubStart}
-      onSeek={timeline.onSeek}
-      onSegmentDragEnd={timeline.onSegmentDragEnd}
-      onSegmentDragStart={timeline.onSegmentDragStart}
-      onTrimDragEnd={timeline.onTrimDragEnd}
-      onTrimDragStart={timeline.onTrimDragStart}
-      playbackControls={
-        <PlaybackControls
-          canSetSegmentEnd={timeline.canSetSegmentEnd}
-          canSetSegmentStart={timeline.canSetSegmentStart}
-          disabled={controlsDisabled}
-          error={playback.transportError}
-          isPlaying={playback.isPlaying}
-          onSetSegmentBoundary={playback.setSegmentBoundary}
-          onShuttleEnd={playback.stopShuttle}
-          onShuttleStart={playback.startShuttle}
-          onStepFrame={playback.stepFrame}
-          onTogglePlayback={playback.toggle}
-          shuttleDirection={playback.shuttleDirection}
-        />
-      }
-      playbackTimecode={
-        <PlaybackTimecode
-          currentMicros={controlsDisabled ? null : timeline.playheadMicros}
-          frameRate={frameRate}
-          sourceDurationMicros={controlsDisabled ? null : timelineRange.sourceDurationMicros}
-        />
-      }
-      playheadMicros={timeline.playheadMicros}
-      playheadRef={timeline.playheadRef}
-      range={timelineRange}
-      videoToolbar={<TimelineTools />}
-    />
+    <section
+      aria-labelledby="timeline-title"
+      className="min-w-0 p-3 select-none"
+      data-testid="timeline-fixed-content"
+    >
+      <TimelineHeader />
+      <TimelineScale />
+      <div
+        className="grid min-w-0 grid-cols-(--editor-timeline-track-grid-columns) items-center gap-3"
+        data-slot="timeline-row"
+      >
+        <TimelineToolbar />
+        <TimelineTrack />
+      </div>
+    </section>
   );
 }

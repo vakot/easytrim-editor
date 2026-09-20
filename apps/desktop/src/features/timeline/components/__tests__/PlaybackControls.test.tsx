@@ -7,44 +7,58 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { FRAME_SHUTTLE_HOLD_DELAY_MS } from "../../lib/editor-shortcuts";
 import { PlaybackControls } from "../PlaybackControls";
 
+const mocks = vi.hoisted(() => ({
+  playback: {
+    canInteract: true,
+    isPlaying: false,
+    setSegmentBoundary: vi.fn(),
+    shuttleDirection: 0 as -1 | 0 | 1,
+    startShuttle: vi.fn(),
+    stepFrame: vi.fn(),
+    stopShuttle: vi.fn(),
+    toggle: vi.fn(),
+    transportError: null as string | null,
+  },
+  timeline: {
+    canSetSegmentEnd: true,
+    canSetSegmentStart: true,
+  },
+}));
+
+vi.mock("@/app/hooks/usePlayback", () => ({
+  usePlayback: () => mocks.playback,
+}));
+
+vi.mock("@/app/hooks/useTimeline", () => ({
+  useTimeline: () => mocks.timeline,
+}));
+
 function TestProvider({ children }: { children: ReactNode }) {
   return <TooltipProvider delayDuration={0}>{children}</TooltipProvider>;
 }
 
-afterEach(() => vi.useRealTimers());
+afterEach(() => {
+  vi.clearAllMocks();
+  vi.useRealTimers();
+});
 
 describe("PlaybackControls", () => {
   it("steps once on press and starts a held shuttle without a duplicate click", () => {
     vi.useFakeTimers();
-    const onShuttleEnd = vi.fn();
-    const onShuttleStart = vi.fn();
-    const onStepFrame = vi.fn();
-
-    render(
-      <PlaybackControls
-        canSetSegmentEnd
-        canSetSegmentStart
-        error={null}
-        isPlaying={false}
-        onSetSegmentBoundary={vi.fn()}
-        onShuttleEnd={onShuttleEnd}
-        onShuttleStart={onShuttleStart}
-        onStepFrame={onStepFrame}
-        onTogglePlayback={vi.fn()}
-        shuttleDirection={0}
-      />,
-      { wrapper: TestProvider },
-    );
+    render(<PlaybackControls />, { wrapper: TestProvider });
 
     const nextFrame = screen.getByRole("button", { name: "Next frame" });
     Object.assign(nextFrame, { setPointerCapture: vi.fn() });
 
     fireEvent.pointerDown(nextFrame, { button: 0, isPrimary: true, pointerId: 7 });
-    expect(onStepFrame).toHaveBeenCalledOnce();
-    expect(onStepFrame).toHaveBeenCalledWith(1, { type: "button", id: "next-frame" });
+    expect(mocks.playback.stepFrame).toHaveBeenCalledOnce();
+    expect(mocks.playback.stepFrame).toHaveBeenCalledWith(1, {
+      type: "button",
+      id: "next-frame",
+    });
 
     act(() => vi.advanceTimersByTime(FRAME_SHUTTLE_HOLD_DELAY_MS));
-    expect(onShuttleStart).toHaveBeenCalledWith(1, {
+    expect(mocks.playback.startShuttle).toHaveBeenCalledWith(1, {
       type: "button",
       id: "next-frame",
     });
@@ -52,31 +66,16 @@ describe("PlaybackControls", () => {
     fireEvent.pointerUp(nextFrame, { button: 0, isPrimary: true, pointerId: 7 });
     fireEvent.click(nextFrame);
 
-    expect(onShuttleEnd).toHaveBeenCalledWith({ type: "button", id: "next-frame" });
-    expect(onStepFrame).toHaveBeenCalledOnce();
+    expect(mocks.playback.stopShuttle).toHaveBeenCalledWith({
+      type: "button",
+      id: "next-frame",
+    });
+    expect(mocks.playback.stepFrame).toHaveBeenCalledOnce();
   });
 
   it("keeps a quick pointer press as a single-frame step", () => {
     vi.useFakeTimers();
-    const onShuttleEnd = vi.fn();
-    const onShuttleStart = vi.fn();
-    const onStepFrame = vi.fn();
-
-    render(
-      <PlaybackControls
-        canSetSegmentEnd
-        canSetSegmentStart
-        error={null}
-        isPlaying={false}
-        onSetSegmentBoundary={vi.fn()}
-        onShuttleEnd={onShuttleEnd}
-        onShuttleStart={onShuttleStart}
-        onStepFrame={onStepFrame}
-        onTogglePlayback={vi.fn()}
-        shuttleDirection={0}
-      />,
-      { wrapper: TestProvider },
-    );
+    render(<PlaybackControls />, { wrapper: TestProvider });
 
     const previousFrame = screen.getByRole("button", { name: "Previous frame" });
     Object.assign(previousFrame, { setPointerCapture: vi.fn() });
@@ -86,9 +85,12 @@ describe("PlaybackControls", () => {
     fireEvent.click(previousFrame);
     act(() => vi.advanceTimersByTime(FRAME_SHUTTLE_HOLD_DELAY_MS));
 
-    expect(onStepFrame).toHaveBeenCalledOnce();
-    expect(onStepFrame).toHaveBeenCalledWith(-1, { type: "button", id: "previous-frame" });
-    expect(onShuttleStart).not.toHaveBeenCalled();
-    expect(onShuttleEnd).not.toHaveBeenCalled();
+    expect(mocks.playback.stepFrame).toHaveBeenCalledOnce();
+    expect(mocks.playback.stepFrame).toHaveBeenCalledWith(-1, {
+      type: "button",
+      id: "previous-frame",
+    });
+    expect(mocks.playback.startShuttle).not.toHaveBeenCalled();
+    expect(mocks.playback.stopShuttle).not.toHaveBeenCalled();
   });
 });
