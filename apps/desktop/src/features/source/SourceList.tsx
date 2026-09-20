@@ -44,6 +44,7 @@ import {
   restoreExportAttemptRequested,
 } from "@/app/store/thunks/source-media-thunks";
 import type { EditingInstance, ExportAttempt, ExportAttemptState } from "@/domain/editing-instance";
+import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { useRelativeTimeNow } from "@/lib/hooks/use-relative-time";
 import { openFileLocation } from "@/lib/tauri/media";
 
@@ -76,18 +77,23 @@ interface SourceListProps {
   children?: React.ReactNode;
 }
 
+const SOURCE_SEARCH_DEBOUNCE_MS = 250;
+
 function SourceList({ children }: SourceListProps) {
   const sources = usePrepareSources();
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search, SOURCE_SEARCH_DEBOUNCE_MS);
   const filteredSources = React.useMemo(
-    () => filterSourcesByPath(sources, search),
-    [search, sources],
+    () => filterSourcesByPath(sources, debouncedSearch),
+    [debouncedSearch, sources],
   );
 
   if (sources.length === 0) return <SourceListEmptyState />;
 
   return (
-    <SourceListData.Provider value={{ search, setSearch, sources: filteredSources }}>
+    <SourceListData.Provider
+      value={{ appliedSearch: debouncedSearch, search, setSearch, sources: filteredSources }}
+    >
       <Tabs className="min-h-0 flex-1" defaultValue="none">
         {children ?? (
           <>
@@ -126,10 +132,10 @@ function SourceListSearch() {
 }
 
 function SourceListContent() {
-  const { search, sources } = useSourceListData();
+  const { appliedSearch, sources } = useSourceListData();
   const { t } = useTranslation();
 
-  if (search.trim() && sources.length === 0) {
+  if (appliedSearch.trim() && sources.length === 0) {
     return (
       <div className="px-2 py-4 text-center text-sm text-muted-foreground" role="status">
         {t("source.messages.noSearchResults")}
@@ -619,6 +625,7 @@ function getExportQueueItemStatusLabel(t: TFunction, status: ExportAttemptState[
 }
 
 const SourceListData = createContext<{
+  appliedSearch: string;
   search: string;
   setSearch: (value: string) => void;
   sources: EditingInstance[];
