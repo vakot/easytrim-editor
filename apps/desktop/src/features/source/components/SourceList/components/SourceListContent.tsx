@@ -26,7 +26,7 @@ function SourceListContent() {
   }
 
   return (
-    <InfiniteScroll batchSize={3} hasMore={hasMore} isLoading={isLoading} next={next}>
+    <InfiniteScroll hasMore={hasMore} isLoading={isLoading} next={next}>
       <TabsContent value="none">
         <SourceListNone sources={visibleSources} />
       </TabsContent>

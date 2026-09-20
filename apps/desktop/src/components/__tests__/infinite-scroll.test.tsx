@@ -44,7 +44,7 @@ describe("InfiniteScroll", () => {
   it("replays a sentinel intersection captured while loading", () => {
     const next = vi.fn();
     const { rerender } = render(
-      <InfiniteScroll batchSize={2} hasMore isLoading next={next}>
+      <InfiniteScroll hasMore isLoading next={next}>
         Items
       </InfiniteScroll>,
     );
@@ -53,7 +53,7 @@ describe("InfiniteScroll", () => {
     expect(next).not.toHaveBeenCalled();
 
     rerender(
-      <InfiniteScroll batchSize={2} hasMore isLoading={false} next={next}>
+      <InfiniteScroll hasMore isLoading={false} next={next}>
         Items
       </InfiniteScroll>,
     );
@@ -61,10 +61,10 @@ describe("InfiniteScroll", () => {
     expect(next).toHaveBeenCalledOnce();
   });
 
-  it("keeps loading while the sentinel remains visible across a batch", () => {
+  it("allows only one request while a batch is loading", () => {
     const next = vi.fn();
     const { rerender } = render(
-      <InfiniteScroll batchSize={2} hasMore isLoading={false} next={next}>
+      <InfiniteScroll hasMore isLoading={false} next={next}>
         Items
       </InfiniteScroll>,
     );
@@ -74,12 +74,15 @@ describe("InfiniteScroll", () => {
     expect(next).toHaveBeenCalledOnce();
 
     rerender(
-      <InfiniteScroll batchSize={2} hasMore isLoading next={next}>
+      <InfiniteScroll hasMore isLoading next={next}>
         Items
       </InfiniteScroll>,
     );
+    observer?.trigger(true);
+    expect(next).toHaveBeenCalledOnce();
+
     rerender(
-      <InfiniteScroll batchSize={2} hasMore isLoading={false} next={next}>
+      <InfiniteScroll hasMore isLoading={false} next={next}>
         Items
       </InfiniteScroll>,
     );
@@ -105,7 +108,7 @@ describe("InfiniteScroll", () => {
   it("allows the next request after the sentinel leaves and re-enters", () => {
     const next = vi.fn();
     render(
-      <InfiniteScroll batchSize={2} hasMore isLoading={false} next={next}>
+      <InfiniteScroll hasMore isLoading={false} next={next}>
         Items
       </InfiniteScroll>,
     );
@@ -129,32 +132,5 @@ describe("InfiniteScroll", () => {
     );
 
     expect(IntersectionObserverMock.instances[0]?.options.root).toBe(container.firstChild);
-  });
-
-  it("limits the active preload window to the configured batch size", () => {
-    const next = vi.fn();
-    const { rerender } = render(
-      <InfiniteScroll batchSize={3} hasMore isLoading={false} next={next}>
-        Items
-      </InfiniteScroll>,
-    );
-
-    const observer = IntersectionObserverMock.instances[0];
-    observer?.trigger(true);
-    expect(next).toHaveBeenCalledOnce();
-
-    rerender(<InfiniteScroll batchSize={3} hasMore isLoading next={next} />);
-    rerender(<InfiniteScroll batchSize={3} hasMore isLoading={false} next={next} />);
-    expect(next).toHaveBeenCalledTimes(2);
-
-    rerender(<InfiniteScroll batchSize={3} hasMore isLoading next={next} />);
-    rerender(<InfiniteScroll batchSize={3} hasMore isLoading={false} next={next} />);
-
-    expect(next).toHaveBeenCalledTimes(3);
-
-    rerender(<InfiniteScroll batchSize={3} hasMore isLoading next={next} />);
-    rerender(<InfiniteScroll batchSize={3} hasMore isLoading={false} next={next} />);
-
-    expect(next).toHaveBeenCalledTimes(3);
   });
 });

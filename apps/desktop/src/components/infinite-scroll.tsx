@@ -4,7 +4,6 @@ import { useEffect, useRef } from "react";
 import { cn } from "@/lib/class-names.utils";
 
 interface InfiniteScrollTriggerProps {
-  batchSize?: number;
   hasMore: boolean;
   isLoading?: boolean;
   loader?: ReactNode;
@@ -14,11 +13,9 @@ interface InfiniteScrollTriggerProps {
 
 type InfiniteScrollProps = ComponentProps<"div"> & InfiniteScrollTriggerProps;
 
-const DEFAULT_BATCH_SIZE = 1;
 const DEFAULT_ROOT_MARGIN = "0px 0px 600px";
 
 function InfiniteScroll({
-  batchSize = DEFAULT_BATCH_SIZE,
   children,
   className,
   hasMore,
@@ -32,7 +29,6 @@ function InfiniteScroll({
     <div className={cn("min-w-0", className)} data-slot="infinite-scroll" {...props}>
       {children}
       <InfiniteScrollTrigger
-        batchSize={batchSize}
         hasMore={hasMore}
         isLoading={isLoading}
         loader={loader}
@@ -44,7 +40,6 @@ function InfiniteScroll({
 }
 
 function InfiniteScrollTrigger({
-  batchSize = DEFAULT_BATCH_SIZE,
   hasMore,
   isLoading = false,
   loader: propsLoader,
@@ -52,7 +47,6 @@ function InfiniteScrollTrigger({
   rootMargin = DEFAULT_ROOT_MARGIN,
 }: InfiniteScrollTriggerProps) {
   const { sentinelRef } = useInfiniteScroll({
-    batchSize,
     hasMore,
     isLoading,
     next,
@@ -76,7 +70,6 @@ function InfiniteScrollTrigger({
 }
 
 function useInfiniteScroll({
-  batchSize = DEFAULT_BATCH_SIZE,
   hasMore,
   isLoading,
   next,
@@ -85,38 +78,29 @@ function useInfiniteScroll({
   const sentinelRef = useRef<HTMLDivElement>(null);
   const hasMoreRef = useRef(hasMore);
   const isLoadingRef = useRef(isLoading);
-  const activeBatchCountRef = useRef(isLoading ? 1 : 0);
-  const wasLoadingRef = useRef(isLoading);
+  const isIntersectingRef = useRef(false);
+  const requestPendingRef = useRef(false);
   const nextRef = useRef(next);
-  const batchLimit = Math.max(1, batchSize);
 
   useEffect(() => {
     hasMoreRef.current = hasMore;
     isLoadingRef.current = isLoading;
     nextRef.current = next;
 
-    if (!hasMore) {
-      activeBatchCountRef.current = 0;
-      wasLoadingRef.current = isLoading;
-      return;
-    }
-
-    activeBatchCountRef.current = Math.min(activeBatchCountRef.current, batchLimit);
-
     if (isLoading) {
-      wasLoadingRef.current = true;
+      requestPendingRef.current = false;
+    }
+    if (!hasMore) requestPendingRef.current = false;
+  }, [hasMore, isLoading, next]);
+
+  useEffect(() => {
+    if (!hasMore || isLoading || !isIntersectingRef.current || requestPendingRef.current) {
       return;
     }
 
-    const finishedBatch = wasLoadingRef.current;
-    wasLoadingRef.current = false;
-
-    if (!finishedBatch) return;
-
-    activeBatchCountRef.current = Math.max(0, activeBatchCountRef.current - 1);
-
-    if (activeBatchCountRef.current > 0) nextRef.current();
-  }, [batchLimit, hasMore, isLoading, next]);
+    requestPendingRef.current = true;
+    nextRef.current();
+  }, [hasMore, isLoading]);
 
   useEffect(() => {
     const trigger = sentinelRef.current;
@@ -126,23 +110,17 @@ function useInfiniteScroll({
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (!entry?.isIntersecting) {
-          activeBatchCountRef.current = isLoadingRef.current ? 1 : 0;
+          isIntersectingRef.current = false;
+          requestPendingRef.current = false;
           return;
         }
+
+        isIntersectingRef.current = true;
 
         if (!hasMoreRef.current) return;
+        if (isLoadingRef.current || requestPendingRef.current) return;
 
-        if (isLoadingRef.current) {
-          activeBatchCountRef.current = batchLimit;
-          return;
-        }
-
-        if (activeBatchCountRef.current >= batchLimit) return;
-
-        activeBatchCountRef.current =
-          activeBatchCountRef.current === 0
-            ? batchLimit
-            : activeBatchCountRef.current + 1;
+        requestPendingRef.current = true;
         nextRef.current();
       },
       { root, rootMargin },
@@ -151,7 +129,7 @@ function useInfiniteScroll({
     observer.observe(trigger);
 
     return () => observer.disconnect();
-  }, [batchLimit, hasMore, rootMargin]);
+  }, [hasMore, rootMargin]);
 
   return { sentinelRef };
 }

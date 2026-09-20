@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { useAppDispatch } from "@/app/store/redux-hooks";
 import type { EditingInstance } from "@/domain/editing-instance";
@@ -9,28 +9,39 @@ import {
 
 function usePrepareSources(instances: EditingInstance[]) {
   const dispatch = useAppDispatch();
-  const [isLoading, setIsLoading] = useState(instances.length > 0);
+  const preparationKey = JSON.stringify(
+    instances.map(({ id, snapshot, sourceAvailability }) => [
+      id,
+      snapshot.source.sourcePath,
+      sourceAvailability,
+    ]),
+  );
+  const preparedInstances = useMemo(() => instances, [preparationKey]);
+  const [completedPreparationKey, setCompletedPreparationKey] = useState<string | null>(() =>
+    preparedInstances.length === 0 ? preparationKey : null,
+  );
+
+  const isLoading = preparedInstances.length > 0 && completedPreparationKey !== preparationKey;
 
   useEffect(() => {
-    if (instances.length === 0) {
-      setIsLoading(false);
+    if (preparedInstances.length === 0) {
+      setCompletedPreparationKey(preparationKey);
       return;
     }
 
     let isMounted = true;
-    setIsLoading(true);
 
     void Promise.all([
-      dispatch(prepareImportedSourceMetadataRequested(instances)),
-      dispatch(prepareImportedSourceThumbnailsRequested(instances)),
+      dispatch(prepareImportedSourceMetadataRequested(preparedInstances)),
+      dispatch(prepareImportedSourceThumbnailsRequested(preparedInstances)),
     ]).finally(() => {
-      if (isMounted) setIsLoading(false);
+      if (isMounted) setCompletedPreparationKey(preparationKey);
     });
 
     return () => {
       isMounted = false;
     };
-  }, [dispatch, instances]);
+  }, [dispatch, preparationKey, preparedInstances]);
 
   return isLoading;
 }
