@@ -10,6 +10,7 @@ import {
 
 import { usePlayback } from "@/app/hooks/usePlayback";
 import { useAppSelector } from "@/app/store/redux-hooks";
+import { selectRotationDegrees } from "@/app/store/slices/crop-slice";
 import { selectPreview } from "@/app/store/slices/preview-slice";
 import { isQuarterTurn } from "@/domain/rotation";
 
@@ -28,11 +29,12 @@ const CROP_TOOL_INSET_PX = 28;
 export function useCropViewport() {
   const { onCropToolOpenChange, toggle, videoRef } = usePlayback();
   const preview = useAppSelector(selectPreview);
+  const rotationDegrees = useAppSelector(selectRotationDegrees);
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerBounds, setContainerBounds] = useState<Bounds>({ width: 0, height: 0 });
   const [sourceDimensions, setSourceDimensions] = useState<Bounds>({ width: 0, height: 0 });
   const [sourceAspectRatio, setSourceAspectRatio] = useState(16 / 9);
-  const cropSelection = useCropSelection(containerRef);
+  const cropSelection = useCropSelection(containerRef, rotationDegrees);
   const { close, finishDrag, isOpen, moveDrag } = cropSelection;
 
   useEffect(() => {
@@ -64,7 +66,7 @@ export function useCropViewport() {
     height: Math.max(0, containerBounds.height - cropToolInset * 2),
   };
 
-  const displayedSourceAspectRatio = isQuarterTurn(cropSelection.rotationDegrees)
+  const displayedSourceAspectRatio = isQuarterTurn(rotationDegrees)
     ? 1 / sourceAspectRatio
     : sourceAspectRatio;
 
@@ -88,19 +90,19 @@ export function useCropViewport() {
       }
     : { width: viewport.width, height: viewport.height };
 
-  const quarterTurn = isQuarterTurn(cropSelection.rotationDegrees);
+  const quarterTurn = isQuarterTurn(rotationDegrees);
   const crop = cropSelection.crop;
   const rawCrop =
-    cropSelection.rotationDegrees === 90
+    rotationDegrees === 90
       ? { x: 1 - crop.y - crop.height, y: crop.x, width: crop.height, height: crop.width }
-      : cropSelection.rotationDegrees === 180
+      : rotationDegrees === 180
         ? {
             x: 1 - crop.x - crop.width,
             y: 1 - crop.y - crop.height,
             width: crop.width,
             height: crop.height,
           }
-        : cropSelection.rotationDegrees === 270
+        : rotationDegrees === 270
           ? { x: crop.y, y: 1 - crop.x - crop.width, width: crop.height, height: crop.width }
           : crop;
 
@@ -133,15 +135,6 @@ export function useCropViewport() {
   const viewportTransition = !cropSelection.isDragging
     ? "transition-[width,height,left,top,transform] duration-200 ease-out motion-reduce:transition-none"
     : "";
-
-  const previewTransform = [
-    sourceRenderScale < 1 ? `scale(${1 / sourceRenderScale})` : null,
-    `rotate(${cropSelection.previewRotationDegrees}deg)`,
-    cropSelection.flipHorizontal ? "scaleX(-1)" : null,
-    cropSelection.flipVertical ? "scaleY(-1)" : null,
-  ]
-    .filter(Boolean)
-    .join(" ");
 
   const onSourceMetadata = useCallback((width: number, height: number) => {
     if (width <= 0 || height <= 0) return;
@@ -179,8 +172,8 @@ export function useCropViewport() {
     onSurfacePointerCancel: finishDrag,
     onSurfacePointerMove,
     onSurfacePointerUp: finishDrag,
-    previewTransform,
     selectionFrame,
+    sourceRenderScale,
     sourceFrame,
     transformOrigin,
     viewport,

@@ -8,17 +8,7 @@ import {
 } from "react";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
-import {
-  cropChanged,
-  cropReset,
-  cropResolutionFor,
-  flipToggled,
-  rotationChanged,
-  selectCrop,
-  selectFlipHorizontal,
-  selectFlipVertical,
-  selectRotationDegrees,
-} from "@/app/store/slices/crop-slice";
+import { cropChanged, cropResolutionFor, selectCrop } from "@/app/store/slices/crop-slice";
 import { selectSourceMedia } from "@/app/store/slices/source-slice";
 import { commitActiveEditingInstanceDraft } from "@/app/store/thunks/source-media-thunks";
 import type { RotationDegrees } from "@/domain/rotation";
@@ -46,29 +36,17 @@ interface CropSelectionBounds {
   width: number;
 }
 
-export function useCropSelection(previewRef: RefObject<HTMLDivElement | null>) {
+export function useCropSelection(
+  previewRef: RefObject<HTMLDivElement | null>,
+  rotationDegrees: RotationDegrees,
+) {
   const dispatch = useAppDispatch();
   const sourceMedia = useAppSelector(selectSourceMedia);
   const crop = useAppSelector(selectCrop);
-  const flipHorizontal = useAppSelector(selectFlipHorizontal);
-  const flipVertical = useAppSelector(selectFlipVertical);
-  const rotationDegrees = useAppSelector(selectRotationDegrees);
-  const previewRotationRef = useRef<number>(rotationDegrees);
-  const [previewRotationDegrees, setPreviewRotationDegrees] = useState<number>(rotationDegrees);
   const [isOpen, setIsOpen] = useState(false);
   const [drag, setDrag] = useState<DragState | null>(null);
   const [enterFrom, setEnterFrom] = useState<CropFrame | null>(null);
   const selectionRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const previousRotation = normalizeRotation(previewRotationRef.current);
-    if (previousRotation === rotationDegrees) return;
-    const clockwiseDelta = (rotationDegrees - previousRotation + 360) % 360;
-    const delta = clockwiseDelta === 270 ? -90 : clockwiseDelta;
-    const nextPreviewRotation = previewRotationRef.current + delta;
-    previewRotationRef.current = nextPreviewRotation;
-    setPreviewRotationDegrees(nextPreviewRotation);
-  }, [rotationDegrees]);
 
   function open(frame: CropFrame) {
     setEnterFrom(frame);
@@ -123,7 +101,7 @@ export function useCropSelection(previewRef: RefObject<HTMLDivElement | null>) {
     event.preventDefault();
     event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);
-    setDrag({ handle, crop, startX: event.clientX, startY: event.clientY });
+    setDrag({ crop, handle, startX: event.clientX, startY: event.clientY });
   }
 
   function moveDrag(event: ReactPointerEvent<HTMLDivElement>, viewport: CropSelectionBounds) {
@@ -146,7 +124,7 @@ export function useCropSelection(previewRef: RefObject<HTMLDivElement | null>) {
       dispatch(
         cropChanged({
           crop: nextCrop,
-          resolution: cropResolutionFor(sourceMedia?.video ?? null, nextCrop, rotationDegrees),
+          resolution: cropResolutionFor(sourceMedia.video ?? null, nextCrop, rotationDegrees),
         }),
       );
     }
@@ -158,57 +136,22 @@ export function useCropSelection(previewRef: RefObject<HTMLDivElement | null>) {
     setDrag(null);
   }
 
-  const rotate = useCallback(
-    (delta: -90 | 90 | 180) => {
-      const nextRotation = ((rotationDegrees + delta + 360) % 360) as RotationDegrees;
-      const nextPreviewRotation = previewRotationRef.current + delta;
-      previewRotationRef.current = nextPreviewRotation;
-      setPreviewRotationDegrees(nextPreviewRotation);
-      dispatch(rotationChanged(nextRotation));
-      dispatch(commitActiveEditingInstanceDraft());
-    },
-    [dispatch, rotationDegrees],
-  );
-
-  const flip = useCallback(
-    (axis: "horizontal" | "vertical") => {
-      dispatch(flipToggled(axis));
-      dispatch(commitActiveEditingInstanceDraft());
-    },
-    [dispatch],
-  );
-
-  const reset = useCallback(() => {
+  const clearDrag = useCallback(() => {
     setDrag(null);
-    dispatch(cropReset());
-    dispatch(commitActiveEditingInstanceDraft());
-  }, [dispatch]);
+  }, []);
 
   return {
-    crop,
-    flipHorizontal,
-    flipVertical,
-    previewRotationDegrees,
-    rotationDegrees,
-    isEditing: isOpen || drag !== null,
-    isDragging: drag !== null,
-    isOpen,
-    enterFrom,
-    selectionRef,
-    open,
+    clearDrag,
     close,
-    rotateClockwise: () => rotate(90),
-    rotateCounterclockwise: () => rotate(-90),
-    rotateHalfTurn: () => rotate(180),
-    flipHorizontalAxis: () => flip("horizontal"),
-    flipVerticalAxis: () => flip("vertical"),
-    reset,
-    startDrag,
-    moveDrag,
+    crop,
+    enterFrom,
     finishDrag,
+    isDragging: drag !== null,
+    isEditing: isOpen || drag !== null,
+    isOpen,
+    moveDrag,
+    open,
+    selectionRef,
+    startDrag,
   };
-}
-
-function normalizeRotation(rotation: number): number {
-  return ((rotation % 360) + 360) % 360;
 }
