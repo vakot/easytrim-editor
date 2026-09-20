@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 
-import { FRAME_SHUTTLE_HOLD_DELAY_MS } from "../../lib/editor-shortcuts";
+import { FRAME_SHUTTLE_HOLD_DELAY_MS } from "../../../../lib/editor-shortcuts";
 import { PlaybackControls } from "../PlaybackControls";
 
 function TestProvider({ children }: { children: ReactNode }) {
