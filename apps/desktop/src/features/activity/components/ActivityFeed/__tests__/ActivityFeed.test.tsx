@@ -16,7 +16,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { activityFeedViewChanged } from "@/app/store/slices/preferences-slice";
 import { createAppStore } from "@/app/store/store";
 
-import type { ActivityEntry } from "../activity-projection";
+import type { ActivityEntry } from "../../../lib/activity-projection";
 import { ActivityFeedView } from "../ActivityFeed";
 
 const session = {

@@ -10,8 +10,8 @@ import { formatBytes, formatSourcePath } from "@/features/source";
 import type { DiagnosticValue } from "@/lib/tauri/diagnostics.types";
 import { openFileLocation } from "@/lib/tauri/media";
 
-import type { ActivityEntry, ActivityStatus } from "./activity-projection";
-import { useActivityFeed } from "./useActivityFeed";
+import { useActivityFeed } from "../hooks/useActivityFeed";
+import type { ActivityEntry, ActivityStatus } from "../lib/activity-projection";
 
 type ActivityToast = {
   action?: { label: string; onClick: () => void };

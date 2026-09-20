@@ -36,6 +36,7 @@ import { cn } from "@/lib/class-names.utils";
 import type { DiagnosticSessionMetadata } from "@/lib/tauri/diagnostics.types";
 import { openFileLocation } from "@/lib/tauri/media";
 
+import { useActivityFeed } from "../../hooks/useActivityFeed";
 import {
   type ActivityAction,
   type ActivityBranch,
@@ -46,8 +47,7 @@ import {
   getActivitySessionPresentation,
   groupActivityEntriesByBranch,
   groupActivityEntriesBySession,
-} from "./activity-projection";
-import { useActivityFeed } from "./useActivityFeed";
+} from "../../lib/activity-projection";
 
 const activityIcons: Record<ActivityKind, LucideIcon> = {
   "fast-cut": Scissors,

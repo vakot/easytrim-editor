@@ -19,7 +19,7 @@ import {
   type ActivityProjectionLabels,
   projectActivityEvents,
   resolveAvailableActivityActions,
-} from "./activity-projection";
+} from "../lib/activity-projection";
 
 export function useActivityFeed() {
   const { t } = useTranslation();

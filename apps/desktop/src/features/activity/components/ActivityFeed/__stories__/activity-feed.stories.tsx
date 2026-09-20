@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 
 import type { DiagnosticSessionMetadata } from "@/lib/tauri/diagnostics.types";
 
-import type { ActivityEntry } from "../activity-projection";
+import type { ActivityEntry } from "../../../lib/activity-projection";
 import { ActivityFeedView } from "../ActivityFeed";
 
 const now = new Date(2026, 7, 31, 18).getTime();
