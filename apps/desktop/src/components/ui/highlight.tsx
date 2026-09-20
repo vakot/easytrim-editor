@@ -1,14 +1,13 @@
-import type { ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 
 import { cn } from "@/lib/class-names.utils";
 
-interface HighlightProps {
-  children: string;
-  className?: string;
-  query: string;
-}
-
-function Highlight({ children, className, query }: HighlightProps) {
+function Highlight({
+  children,
+  className,
+  query,
+  ...props
+}: ComponentProps<"mark"> & { children: string; query: string }) {
   const normalizedQuery = query.trim().toLocaleLowerCase();
   if (!normalizedQuery) return children;
 
@@ -25,7 +24,11 @@ function Highlight({ children, className, query }: HighlightProps) {
 
     if (matchStart > start) parts.push(children.slice(start, matchStart));
     parts.push(
-      <mark className={cn("rounded-sm bg-primary/25 px-1 text-inherit", className)} key={matchStart}>
+      <mark
+        className={cn("rounded-xs bg-primary/25 text-inherit", className)}
+        key={matchStart}
+        {...props}
+      >
         {children.slice(matchStart, matchStart + normalizedQuery.length)}
       </mark>,
     );

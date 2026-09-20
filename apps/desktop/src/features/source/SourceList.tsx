@@ -94,7 +94,7 @@ function SourceList({ children }: SourceListProps) {
 
   return (
     <SourceListData.Provider
-      value={{ appliedSearch: debouncedSearch, search, setSearch, sources: filteredSources }}
+      value={{ debouncedSearch, search, setSearch, sources: filteredSources }}
     >
       <Tabs className="min-h-0 flex-1" defaultValue="none">
         {children ?? (
@@ -128,16 +128,17 @@ function SourceListSearch() {
       aria-label={t("common.labels.search")}
       onValueChange={setSearch}
       placeholder={t("source.messages.searchPlaceholder")}
+      size="sm"
       value={search}
     />
   );
 }
 
 function SourceListContent() {
-  const { appliedSearch, sources } = useSourceListData();
+  const { debouncedSearch, sources } = useSourceListData();
   const { t } = useTranslation();
 
-  if (appliedSearch.trim() && sources.length === 0) {
+  if (debouncedSearch.trim() && sources.length === 0) {
     return (
       <div className="px-2 py-4 text-center text-sm text-muted-foreground" role="status">
         {t("source.messages.noSearchResults")}
@@ -182,17 +183,18 @@ function SourceListGroup({
 }) {
   const [open, setOpen] = useState(true);
   const Icon = "open" in icon ? (open ? icon.open : icon.closed) : icon;
+  const { debouncedSearch } = useSourceListData();
 
   return (
     <li>
       <Collapsible defaultOpen onOpenChange={setOpen}>
         <CollapsibleTrigger asChild>
-          <Button className="w-full justify-baseline" variant="ghost">
+          <Button className="w-full justify-baseline" size="sm" variant="ghost">
             <ChevronRight className="transition-transform group-data-open/button:rotate-90" />
             <Icon className="size-3.5 shrink-0" />
             {group.timestampMicros === undefined ? (
               <span className="truncate" title={group.label}>
-                {group.label}
+                <Highlight query={debouncedSearch}>{group.label}</Highlight>
               </span>
             ) : (
               <RelativeTimestamp timestamp={group.timestampMicros} />
@@ -238,12 +240,12 @@ type SourceGroupIcon =
     };
 
 function SourceListGrid({ sources }: { sources: EditingInstance[] }) {
-  const { appliedSearch } = useSourceListData();
+  const { debouncedSearch } = useSourceListData();
 
   return (
     <ul className="flex flex-col gap-2" data-slot="imported-sources-grid">
       {sources.map((source) => (
-        <SourceListItem key={source.id} search={appliedSearch} source={source} />
+        <SourceListItem key={source.id} search={debouncedSearch} source={source} />
       ))}
     </ul>
   );
@@ -374,13 +376,7 @@ function SourceListItem({ search, source }: { search: string; source: EditingIns
   );
 }
 
-function SourceListItemCard({
-  search,
-  source,
-}: {
-  search: string;
-  source: EditingInstance;
-}) {
+function SourceListItemCard({ search, source }: { search: string; source: EditingInstance }) {
   const { t } = useTranslation();
 
   return (
@@ -645,7 +641,7 @@ function getExportQueueItemStatusLabel(t: TFunction, status: ExportAttemptState[
 }
 
 const SourceListData = createContext<{
-  appliedSearch: string;
+  debouncedSearch: string;
   search: string;
   setSearch: (value: string) => void;
   sources: EditingInstance[];
