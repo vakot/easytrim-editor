@@ -1,22 +1,16 @@
-import type { ComponentProps, ReactNode } from "react";
+import type { ComponentProps } from "react";
 import { useEffect, useRef } from "react";
 
 import { cn } from "@/lib/class-names.utils";
 
-interface InfiniteScrollProps extends ComponentProps<"div"> {
-  children?: ReactNode;
+interface InfiniteScrollTriggerProps {
   hasMore: boolean;
   isLoading?: boolean;
   onLoadMore: () => void;
   rootMargin?: string;
 }
 
-interface InfiniteScrollTriggerProps {
-  hasMore: boolean;
-  isLoading: boolean;
-  onLoadMore: () => void;
-  rootMargin: string;
-}
+type InfiniteScrollProps = ComponentProps<"div"> & InfiniteScrollTriggerProps;
 
 function InfiniteScroll({
   children,
@@ -42,9 +36,9 @@ function InfiniteScroll({
 
 function InfiniteScrollTrigger({
   hasMore,
-  isLoading,
+  isLoading = false,
   onLoadMore,
-  rootMargin,
+  rootMargin = "0px 0px 200px",
 }: InfiniteScrollTriggerProps) {
   const triggerRef = useRef<HTMLDivElement>(null);
 
