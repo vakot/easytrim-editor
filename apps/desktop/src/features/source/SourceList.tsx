@@ -12,13 +12,14 @@ import {
   Play,
   RotateCcw,
   Scissors,
+  Search,
   Settings2,
   Trash2,
   Upload,
   X,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import React, { createContext, useEffect, useState } from "react";
+import React, { createContext, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +33,13 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { Highlight } from "@/components/ui/highlight";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@/components/ui/input-group";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { RelativeTimestamp } from "@/components/ui/relative-timestamp";
 import { Separator } from "@/components/ui/separator";
@@ -52,7 +60,9 @@ import {
   restoreExportAttemptRequested,
 } from "@/app/store/thunks/source-media-thunks";
 import type { EditingInstance, ExportAttempt, ExportAttemptState } from "@/domain/editing-instance";
+import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { useRelativeTimeNow } from "@/lib/hooks/use-relative-time";
+import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
 import { openFileLocation } from "@/lib/tauri/media";
 
 import {
@@ -71,6 +81,7 @@ import {
   RestoreSource,
   StartSourceExport,
 } from "./components/SourceMenuActions";
+import { formatSourcePath } from "./lib/media-formatters.utils";
 import { getRevealLabel } from "./lib/source.utils";
 import {
   groupSourcesByFolder,
@@ -78,43 +89,129 @@ import {
   groupSourcesByUpdatedTime,
   type SourceGroup,
 } from "./lib/source-grouping.utils";
+import { filterSourcesByPath } from "./lib/source-search.utils";
 
 interface SourceListProps {
-  children?: React.ReactNode;
+  children?: React.ReactNode | ((state: Omit<SourceListState, "setSearch">) => React.ReactNode);
 }
+
+const SOURCE_SEARCH_DEBOUNCE_MS = 250;
+type SourceListTab = "none" | "folder" | "time" | "imported";
+type SourceListState = {
+  search: string;
+  setSearch: (value: string) => void;
+  sources: EditingInstance[];
+  tab: SourceListTab;
+};
 
 function SourceList({ children }: SourceListProps) {
   const sources = usePrepareSources();
+  const [search, setSearch] = useState("");
+  const [tab, setTab] = useState<SourceListTab>("none");
+
+  const filteredSources = React.useMemo(
+    () => filterSourcesByPath(sources, search),
+    [search, sources],
+  );
 
   if (sources.length === 0) return <SourceListEmptyState />;
 
+  const child =
+    typeof children === "function" ? children({ search, sources: filteredSources, tab }) : children;
+
   return (
-    <SourceListData.Provider value={{ sources }}>
-      <Tabs className="min-h-0 flex-1" defaultValue="none">
-        {children ?? (
-          <>
-            <SourceListTabs />
-            <SourceListTabsContent />
-          </>
-        )}
+    <SourceListData.Provider value={{ search, setSearch, sources: filteredSources, tab }}>
+      <Tabs
+        className="min-h-0 flex-1"
+        onValueChange={(value) => setTab(value as SourceListTab)}
+        value={tab}
+      >
+        {child ?? <SourceListContent />}
       </Tabs>
     </SourceListData.Provider>
   );
 }
 
 function SourceListTabs() {
+  const { t } = useTranslation();
+
   return (
-    <TabsList className="w-full" defaultValue="none">
-      <TabsTrigger value="none">None</TabsTrigger>
-      <TabsTrigger value="folder">Folder</TabsTrigger>
-      <TabsTrigger value="time">Time</TabsTrigger>
-      <TabsTrigger value="imported">Imported</TabsTrigger>
+    <TabsList className="min-w-0 flex-1" defaultValue="none">
+      <TabsTrigger value="none">{t("source.labels.groupByNone")}</TabsTrigger>
+      <TabsTrigger value="folder">{t("source.labels.groupByFolder")}</TabsTrigger>
+      <TabsTrigger value="time">{t("source.labels.groupByUpdatedAt")}</TabsTrigger>
+      <TabsTrigger value="imported">{t("source.labels.groupByImportedAt")}</TabsTrigger>
     </TabsList>
   );
 }
 
-function SourceListTabsContent() {
-  const { sources } = useSourceListData();
+function SourceListSearch() {
+  const { t } = useTranslation();
+  const { setSearch, sources } = useSourceListData();
+
+  const [searchInternal, setSearchInternal] = useState("");
+  const debouncedSearch = useDebouncedValue(searchInternal, SOURCE_SEARCH_DEBOUNCE_MS);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const isFiltered = debouncedSearch.trim().length > 0;
+
+  useEffect(() => {
+    setSearch(debouncedSearch);
+  }, [setSearch, debouncedSearch]);
+
+  useKeyboardShortcut(
+    (event) => event.code === "KeyK" && event.ctrlKey,
+    () => searchInputRef.current?.focus(),
+  );
+
+  return (
+    <InputGroup>
+      <InputGroupAddon>
+        <Search aria-hidden="true" />
+      </InputGroupAddon>
+      <InputGroupInput
+        aria-label={t("common.labels.search")}
+        onChange={(event) => setSearchInternal(event.currentTarget.value)}
+        placeholder={t("common.labels.search")}
+        ref={searchInputRef}
+        type="search"
+        value={searchInternal}
+      />
+      <InputGroupAddon align="inline-end" className="gap-1 py-0 pr-1">
+        {isFiltered ? (
+          <>
+            <InputGroupButton
+              aria-label={t("common.actions.clear")}
+              onClick={() => setSearchInternal("")}
+              size="icon-xs"
+              type="button"
+              variant="ghost"
+            >
+              <X aria-hidden="true" />
+            </InputGroupButton>
+            <span className="pr-1">{sources.length} Results</span>
+          </>
+        ) : (
+          <KbdGroup aria-label="Ctrl + K">
+            <Kbd>Ctrl</Kbd>
+            <Kbd>K</Kbd>
+          </KbdGroup>
+        )}
+      </InputGroupAddon>
+    </InputGroup>
+  );
+}
+
+function SourceListContent() {
+  const { search, sources } = useSourceListData();
+  const { t } = useTranslation();
+
+  if (search.trim() && sources.length === 0) {
+    return (
+      <div className="px-2 py-4 text-center text-sm text-muted-foreground" role="status">
+        {t("source.messages.noSearchResults")}
+      </div>
+    );
+  }
 
   return (
     <>
@@ -153,23 +250,26 @@ function SourceListGroup({
 }) {
   const [open, setOpen] = useState(true);
   const Icon = "open" in icon ? (open ? icon.open : icon.closed) : icon;
+  const { search } = useSourceListData();
 
   return (
     <li>
       <Collapsible defaultOpen onOpenChange={setOpen}>
-        <CollapsibleTrigger asChild>
-          <Button className="w-full justify-baseline" variant="ghost">
-            <ChevronRight className="transition-transform group-data-open/button:rotate-90" />
-            <Icon className="size-3.5 shrink-0" />
-            {group.timestampMicros === undefined ? (
-              <span className="truncate" title={group.label}>
-                {group.label}
-              </span>
-            ) : (
-              <RelativeTimestamp timestamp={group.timestampMicros} />
-            )}
-          </Button>
-        </CollapsibleTrigger>
+        <div className="sticky top-0 z-10 bg-card ring-2 ring-card">
+          <CollapsibleTrigger asChild>
+            <Button className="w-full justify-baseline" size="sm" variant="ghost">
+              <ChevronRight className="transition-transform group-data-open/button:rotate-90" />
+              <Icon className="size-3.5 shrink-0" />
+              {group.timestampMicros === undefined ? (
+                <span className="truncate" title={group.label}>
+                  <Highlight query={search}>{group.label}</Highlight>
+                </span>
+              ) : (
+                <RelativeTimestamp timestamp={group.timestampMicros} />
+              )}
+            </Button>
+          </CollapsibleTrigger>
+        </div>
 
         <CollapsibleContent className="mt-2">
           <SourceListGrid sources={group.items} />
@@ -209,10 +309,12 @@ type SourceGroupIcon =
     };
 
 function SourceListGrid({ sources }: { sources: EditingInstance[] }) {
+  const { search } = useSourceListData();
+
   return (
-    <ul className="flex flex-col gap-2" data-slot="imported-sources-grid">
+    <ul className="flex flex-col gap-2 py-0.5" data-slot="imported-sources-grid">
       {sources.map((source) => (
-        <SourceListItem key={source.id} source={source} />
+        <SourceListItem key={source.id} search={search} source={source} />
       ))}
     </ul>
   );
@@ -343,16 +445,16 @@ function SourceListEmptyStateAction({
   );
 }
 
-function SourceListItem({ source }: { source: EditingInstance }) {
+function SourceListItem({ search, source }: { search: string; source: EditingInstance }) {
   return (
     <li className="flex w-full flex-col">
-      <SourceListItemCard source={source} />
+      <SourceListItemCard search={search} source={source} />
       <SourceListItemExtra source={source} />
     </li>
   );
 }
 
-function SourceListItemCard({ source }: { source: EditingInstance }) {
+function SourceListItemCard({ search, source }: { search: string; source: EditingInstance }) {
   const { t } = useTranslation();
 
   return (
@@ -363,8 +465,18 @@ function SourceListItemCard({ source }: { source: EditingInstance }) {
 
       <div className="relative flex min-w-0 flex-1 flex-col gap-2">
         <div className="flex min-w-0 flex-col gap-1" data-slot="card-header">
-          <SourceCardTitle className="line-clamp-2 wrap-break-word whitespace-normal" />
-          <SourceCardDescription className="line-clamp-2 wrap-anywhere whitespace-normal" />
+          <SourceCardTitle className="line-clamp-2 wrap-break-word whitespace-normal">
+            {({ source: cardSource }) => (
+              <Highlight query={search}>{cardSource.snapshot.source.displayName}</Highlight>
+            )}
+          </SourceCardTitle>
+          <SourceCardDescription className="line-clamp-2 wrap-anywhere whitespace-normal">
+            {({ source: cardSource }) => (
+              <Highlight query={search}>
+                {formatSourcePath(cardSource.snapshot.source.sourcePath)}
+              </Highlight>
+            )}
+          </SourceCardDescription>
         </div>
 
         <SourceCardMetadata />
@@ -606,14 +718,14 @@ function getExportQueueItemStatusLabel(t: TFunction, status: ExportAttemptState[
   }
 }
 
-const SourceListData = createContext<{ sources: EditingInstance[] } | null>(null);
+const SourceListData = createContext<SourceListState | null>(null);
 
 function useSourceListData() {
   const context = React.useContext(SourceListData);
   if (!context) {
-    throw new Error("SourceListTabsContent must be used within SourceList");
+    throw new Error("SourceListContent must be used within SourceList");
   }
   return context;
 }
 
-export { SourceList, SourceListTabs, SourceListTabsContent };
+export { SourceList, SourceListContent, SourceListSearch, SourceListTabs };

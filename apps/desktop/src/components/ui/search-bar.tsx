@@ -6,10 +6,6 @@ import { Input } from "@/components/ui/input";
 
 import { cn } from "@/lib/class-names.utils";
 
-function normalizeSearchValue(value: string): string {
-  return value.trim().toLocaleLowerCase();
-}
-
 const searchBarInputVariants = cva("", {
   variants: {
     size: {
@@ -64,31 +60,4 @@ function SearchBar({ className, onValueChange, size = "sm", value, ...props }: S
   );
 }
 
-function HighlightedText({ query, text }: { query: string; text: string }) {
-  const normalizedQuery = normalizeSearchValue(query);
-  if (!normalizedQuery) return text;
-
-  const normalizedText = text.toLocaleLowerCase();
-  const parts: React.ReactNode[] = [];
-  let start = 0;
-
-  while (start < text.length) {
-    const matchStart = normalizedText.indexOf(normalizedQuery, start);
-    if (matchStart < 0) {
-      parts.push(text.slice(start));
-      break;
-    }
-
-    if (matchStart > start) parts.push(text.slice(start, matchStart));
-    parts.push(
-      <mark className="rounded-sm bg-primary/25 px-1 text-inherit" key={matchStart}>
-        {text.slice(matchStart, matchStart + normalizedQuery.length)}
-      </mark>,
-    );
-    start = matchStart + normalizedQuery.length;
-  }
-
-  return parts;
-}
-
-export { HighlightedText, SearchBar };
+export { SearchBar };

@@ -2,10 +2,13 @@ import { Check, Copy } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Button } from "@/components/ui/button";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupTextarea,
+} from "@/components/ui/input-group";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
-import { Textarea, TextareaHeader, TextareaInput } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface CommandPreviewProps {
@@ -31,14 +34,21 @@ export function CommandPreview({ command, error }: CommandPreviewProps) {
     <div className="grid gap-1.5">
       <Label htmlFor="ffmpeg-arguments">{t("export.dialogs.optimized.arguments")}</Label>
 
-      <Textarea>
-        <TextareaHeader className="justify-end">
+      <InputGroup>
+        <InputGroupTextarea
+          className="max-h-48 min-h-30 font-mono text-muted-foreground"
+          id="ffmpeg-arguments"
+          readOnly
+          value={(error ?? command) || t("export.status.commandPreparing")}
+        />
+        <InputGroupAddon align="block-start">
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
+              <InputGroupButton
                 aria-label={
                   copied ? t("export.status.commandCopied") : t("export.actions.copyCommand")
                 }
+                className="ml-auto"
                 disabled={!command}
                 onClick={() => void copyCommand()}
                 size="icon-sm"
@@ -46,23 +56,14 @@ export function CommandPreview({ command, error }: CommandPreviewProps) {
                 variant="ghost"
               >
                 {copied ? <Check /> : <Copy />}
-              </Button>
+              </InputGroupButton>
             </TooltipTrigger>
             <TooltipContent>
               {copied ? t("export.status.commandCopied") : t("export.actions.copyCommand")}
             </TooltipContent>
           </Tooltip>
-        </TextareaHeader>
-
-        <Separator />
-
-        <TextareaInput
-          className="max-h-48 min-h-30 font-mono text-muted-foreground"
-          id="ffmpeg-arguments"
-          readOnly
-          value={(error ?? command) || t("export.status.commandPreparing")}
-        />
-      </Textarea>
+        </InputGroupAddon>
+      </InputGroup>
     </div>
   );
 }

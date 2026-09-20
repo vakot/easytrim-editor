@@ -3,6 +3,7 @@ export const en = {
     actions: {
       back: "Back",
       cancel: "Cancel",
+      clear: "Clear",
       close: "Close",
       delete: "Delete",
       edit: "Edit",
@@ -10,7 +11,7 @@ export const en = {
       retry: "Retry",
       save: "Save",
     },
-    labels: { brand: "EasyTrim Editor", or: "or" },
+    labels: { brand: "EasyTrim Editor", or: "or", search: "Search" },
     status: {
       disabled: "Disabled",
       enabled: "Enabled",
@@ -203,6 +204,11 @@ export const en = {
     labels: {
       drop: "Drop video to open",
       explorer: "Source explorer",
+      groupBy: "Group by:",
+      groupByFolder: "Folder",
+      groupByImportedAt: "Imported at",
+      groupByNone: "None",
+      groupByUpdatedAt: "Updated at",
       importedSources: "Imported Sources",
       metadata: {
         bitrate: "Bitrate",
@@ -245,6 +251,7 @@ export const en = {
       emptyTitle: "No videos imported yet",
       extensions: "MP4 · MOV · MKV · WebM · AVI",
       noSource: "No source",
+      noSearchResults: "No imported sources match your search.",
       openFileDescription: "Choose a single video file to start editing.",
       openFolderDescription: "Import all supported videos from a folder.",
       previewUnavailable: "Preview unavailable",

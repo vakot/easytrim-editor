@@ -3,6 +3,6 @@ export { CloseSource, DeleteSource, RestoreSource } from "./components/SourceMen
 export { formatBytes, formatSourcePath } from "./lib/media-formatters.utils";
 export { SourceBreadcrumb } from "./SourceBreadcrumb";
 export { SourceDropOverlay } from "./SourceDropOverlay";
-export { SourceList, SourceListTabs, SourceListTabsContent } from "./SourceList";
+export { SourceList, SourceListContent, SourceListSearch, SourceListTabs } from "./SourceList";
 export { SourceStatus } from "./SourceStatus";
 export { SourceTabs } from "./SourceTabs";

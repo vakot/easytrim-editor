@@ -5,6 +5,7 @@ export const sk = {
     actions: {
       back: "Späť",
       cancel: "Zrušiť",
+      clear: "Vymazať",
       close: "Zavrieť",
       delete: "Odstrániť",
       edit: "Upraviť",
@@ -12,7 +13,7 @@ export const sk = {
       retry: "Skúsiť znova",
       save: "Uložiť",
     },
-    labels: { brand: "EasyTrim Editor", or: "alebo" },
+    labels: { brand: "EasyTrim Editor", or: "alebo", search: "Hľadať" },
     status: {
       disabled: "Vypnuté",
       enabled: "Zapnuté",
@@ -204,6 +205,11 @@ export const sk = {
     labels: {
       drop: "Pustením otvoríte video",
       explorer: "Prieskumník zdrojov",
+      groupBy: "Zoskupiť podľa:",
+      groupByFolder: "Priečinok",
+      groupByImportedAt: "Importované",
+      groupByNone: "Žiadne",
+      groupByUpdatedAt: "Aktualizované",
       importedSources: "Importované zdroje",
       metadata: {
         bitrate: "Dátový tok",
@@ -246,6 +252,7 @@ export const sk = {
       emptyTitle: "Zatiaľ neboli importované žiadne videá",
       extensions: "MP4 · MOV · MKV · WebM · AVI",
       noSource: "Žiadny zdroj",
+      noSearchResults: "Vyhľadávaniu nezodpovedajú žiadne importované zdroje.",
       openFileDescription: "Vyberte jeden videosúbor a začnite upravovať.",
       openFolderDescription: "Importujte všetky podporované videá z priečinka.",
       previewUnavailable: "Náhľad nie je dostupný",
