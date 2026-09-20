@@ -6,8 +6,8 @@ import { Card } from "@/components/ui/card";
 import type { AudioTrackState } from "@/app/store/slices/audio-slice";
 import type { AudioStream } from "@/lib/tauri/media.types";
 
-import { WAVEFORM_RENDER_WIDTH } from "../hooks/useWaveformPreparation";
-import { formatChannels } from "../lib/audio-level.utils";
+import { WAVEFORM_RENDER_WIDTH } from "../../../hooks/useWaveformPreparation";
+import { formatChannels } from "../../../lib/audio-level.utils";
 
 import { AudioLevelControl } from "./AudioLevelControl";
 import { VolumeButton } from "./VolumeButton";
