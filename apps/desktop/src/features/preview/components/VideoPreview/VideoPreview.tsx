@@ -1,5 +1,4 @@
 import { AlertCircle } from "lucide-react";
-import { type RefObject, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -7,59 +6,17 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-import { useAppSelector } from "@/app/store/redux-hooks";
-import { selectPlaybackSpeed } from "@/app/store/slices/editor-tools-slice";
-import type { PreviewState } from "@/app/store/slices/preview-slice";
-import type { DiagnosticOrigin } from "@/lib/tauri/diagnostics.types";
+import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
+import { selectPreview } from "@/app/store/slices/preview-slice";
+import { closeActiveEditingInstanceRequested } from "@/app/store/thunks/source-media-thunks";
 
 import { CropViewport } from "../CropViewport";
 
-interface VideoPreviewProps {
-  muted: boolean;
-  nativeLoopEnabled?: boolean;
-  onCanPlay: () => void;
-  onCropToolOpenChange?: (isOpen: boolean) => void;
-  onEnded: () => void;
-  onLoadedMetadata: () => void;
-  onPause: () => void;
-  onPlay: () => void;
-  onPlaybackError: (previewKind: "source" | "proxy") => void;
-  onSkip: () => void;
-  onTimeUpdate: (seconds: number) => void;
-  onTogglePlayback: (origin?: DiagnosticOrigin) => void;
-  preview: PreviewState;
-  videoRef: RefObject<HTMLVideoElement | null>;
-}
-
-export function VideoPreview({
-  muted,
-  nativeLoopEnabled = false,
-  onCanPlay,
-  onCropToolOpenChange,
-  onEnded,
-  onLoadedMetadata,
-  onPause,
-  onPlay,
-  onPlaybackError,
-  onSkip,
-  onTimeUpdate,
-  onTogglePlayback,
-  preview,
-  videoRef,
-}: VideoPreviewProps) {
+export function VideoPreview() {
   const { t } = useTranslation();
-  const playbackRate = useAppSelector(selectPlaybackSpeed);
-  const reportedUrl = useRef<string | null>(null);
-
-  const readyUrl = preview.status === "ready" ? preview.value.url : null;
-
-  useEffect(() => {
-    if (videoRef.current) videoRef.current.playbackRate = playbackRate;
-  }, [playbackRate, readyUrl, videoRef]);
-
-  useEffect(() => {
-    reportedUrl.current = null;
-  }, [readyUrl]);
+  const dispatch = useAppDispatch();
+  const preview = useAppSelector(selectPreview);
+  const skipCurrentSource = () => void dispatch(closeActiveEditingInstanceRequested());
 
   if (preview.status === "idle" || preview.status === "loading") {
     return <div aria-hidden="true" className="size-full bg-preview-surface" />;
@@ -83,7 +40,7 @@ export function VideoPreview({
             ) : null}
           </AlertDescription>
           <AlertAction>
-            <Button className="mt-3" onClick={onSkip} size="sm" variant="outline">
+            <Button className="mt-3" onClick={skipCurrentSource} size="sm" variant="outline">
               {t("queue.actions.skip")}
             </Button>
           </AlertAction>
@@ -97,29 +54,7 @@ export function VideoPreview({
   return (
     <section className="grid size-full min-h-0 place-items-center">
       <div className="relative size-full min-h-0 overflow-hidden bg-preview-surface">
-        <CropViewport
-          key={value.url}
-          muted={muted}
-          nativeLoopEnabled={nativeLoopEnabled}
-          onCanPlay={onCanPlay}
-          onCropToolOpenChange={onCropToolOpenChange}
-          onEnded={onEnded}
-          onError={() => {
-            if (reportedUrl.current === value.url) return;
-            reportedUrl.current = value.url;
-            onPlaybackError(value.kind);
-          }}
-          onLoadedMetadata={onLoadedMetadata}
-          onPause={onPause}
-          onPlay={onPlay}
-          onTimeUpdate={onTimeUpdate}
-          onTogglePlayback={onTogglePlayback}
-          playbackRate={playbackRate}
-          previewKind={value.kind}
-          sourceLabel={t("preview.accessibility.source")}
-          sourceUrl={value.url}
-          videoRef={videoRef}
-        />
+        <CropViewport key={value.url} />
         {value.kind === "proxy" ? (
           <Tooltip>
             <TooltipTrigger asChild>

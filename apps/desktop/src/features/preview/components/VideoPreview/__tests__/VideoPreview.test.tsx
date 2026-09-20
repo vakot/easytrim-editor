@@ -1,29 +1,43 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { createRef, type ReactElement, type ReactNode } from "react";
+import { type ReactElement, type ReactNode } from "react";
 import { Provider } from "react-redux";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 
-import type { PreviewState } from "@/app/store/slices/preview-slice";
+import { sourceSelected } from "@/app/store/actions/source-actions";
+import {
+  previewFailed,
+  previewLoading,
+  previewReady,
+  type PreviewState,
+} from "@/app/store/slices/preview-slice";
+import { selectSourceSelection } from "@/app/store/slices/source-slice";
 import { type AppStore, createAppStore } from "@/app/store/store";
 
 import { VideoPreviewEmpty } from "../components/VideoPreviewEmpty";
 import { VideoPreview } from "../VideoPreview";
 
-const callbacks = {
-  onPlaybackError: vi.fn(),
-  onLoadedMetadata: vi.fn(),
+const playback = vi.hoisted(() => ({
+  nativeLoopEnabled: false,
   onCanPlay: vi.fn(),
-  onTogglePlayback: vi.fn(),
-  onPlay: vi.fn(),
-  onPause: vi.fn(),
-  onSkip: vi.fn(),
-  onTimeUpdate: vi.fn(),
+  onCropToolOpenChange: vi.fn(),
   onEnded: vi.fn(),
-};
+  onLoadedMetadata: vi.fn(),
+  onPause: vi.fn(),
+  onPlay: vi.fn(),
+  onPreviewPlaybackError: vi.fn(),
+  onTimeUpdate: vi.fn(),
+  toggle: vi.fn(),
+  videoMuted: true,
+  videoRef: { current: null },
+}));
 
-function readyPreview(url: string): PreviewState {
+vi.mock("@/app/hooks/usePlayback", () => ({
+  usePlayback: () => playback,
+}));
+
+function readyPreview(url: string): Extract<PreviewState, { status: "ready" }> {
   return {
     status: "ready",
     value: { mediaToken: 1, url, kind: "proxy" },
@@ -42,6 +56,17 @@ function renderPreview(element: ReactElement, store = createAppStore()) {
   return render(element, {
     wrapper: ({ children }) => <TooltipTestProvider store={store}>{children}</TooltipTestProvider>,
   });
+}
+
+function setPreview(store: AppStore, preview: PreviewState) {
+  if (preview.status === "ready") store.dispatch(previewReady({ preview: preview.value }));
+  else if (preview.status === "loading") store.dispatch(previewLoading({ kind: preview.kind }));
+  else if (preview.status === "failed") store.dispatch(previewFailed({ error: preview.error }));
+}
+
+function renderVideoPreview(preview: PreviewState, store = createAppStore()) {
+  setPreview(store, preview);
+  return renderPreview(<VideoPreview />, store);
 }
 
 function openTransformMenu(viewport: Element) {
@@ -68,35 +93,28 @@ afterAll(() => {
 
 describe("VideoPreview", () => {
   it("keeps terminal preview failures inside the panel with a shared Skip action", () => {
-    callbacks.onSkip.mockClear();
-    const videoRef = createRef<HTMLVideoElement>();
-    renderPreview(
-      <VideoPreview
-        muted
-        preview={{
-          status: "failed",
-          error: { code: "unsupported_media", message: "This source cannot be opened." },
-        }}
-        videoRef={videoRef}
-        {...callbacks}
-      />,
+    const store = createAppStore();
+    store.dispatch(
+      sourceSelected({
+        loadToken: 1,
+        source: { displayName: "first.mp4", sourcePath: "C:/Media/first.mp4" },
+      }),
+    );
+    renderVideoPreview(
+      {
+        status: "failed",
+        error: { code: "unsupported_media", message: "This source cannot be opened." },
+      },
+      store,
     );
 
     expect(screen.getByRole("alert")).toHaveTextContent("This source cannot be opened.");
     fireEvent.click(screen.getByRole("button", { name: "Skip" }));
-    expect(callbacks.onSkip).toHaveBeenCalledOnce();
+    expect(selectSourceSelection(store.getState())).toBeNull();
   });
 
   it("explains why a compatible proxy is used from the keyboard", () => {
-    const videoRef = createRef<HTMLVideoElement>();
-    renderPreview(
-      <VideoPreview
-        muted
-        preview={readyPreview("easytrim-media://preview-1")}
-        videoRef={videoRef}
-        {...callbacks}
-      />,
-    );
+    renderVideoPreview(readyPreview("easytrim-media://preview-1"));
 
     const badge = screen.getByText("Compatible preview");
     expect(badge).toHaveAttribute("tabindex", "0");
@@ -120,15 +138,7 @@ describe("VideoPreview", () => {
   it("shows the delayed crop hint and opens crop from the transform menu", () => {
     vi.useFakeTimers();
     try {
-      const videoRef = createRef<HTMLVideoElement>();
-      const { container } = renderPreview(
-        <VideoPreview
-          muted
-          preview={readyPreview("easytrim-media://preview-1")}
-          videoRef={videoRef}
-          {...callbacks}
-        />,
-      );
+      const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"));
 
       const viewport = container.querySelector("[data-preview-kind]")?.parentElement?.parentElement;
       expect(viewport).not.toBeNull();
@@ -150,15 +160,7 @@ describe("VideoPreview", () => {
   });
 
   it("keeps crop controls open after a drag and closes them outside the selection", () => {
-    const videoRef = createRef<HTMLVideoElement>();
-    const { container } = renderPreview(
-      <VideoPreview
-        muted
-        preview={readyPreview("easytrim-media://preview-1")}
-        videoRef={videoRef}
-        {...callbacks}
-      />,
-    );
+    const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"));
 
     const viewport = container.querySelector("[data-preview-kind]")?.parentElement?.parentElement;
     expect(viewport).not.toBeNull();
@@ -217,15 +219,7 @@ describe("VideoPreview", () => {
       .mockReturnValue(new DOMRect(0, 0, 400, 300));
 
     try {
-      const videoRef = createRef<HTMLVideoElement>();
-      const { container } = renderPreview(
-        <VideoPreview
-          muted
-          preview={readyPreview("easytrim-media://preview-1")}
-          videoRef={videoRef}
-          {...callbacks}
-        />,
-      );
+      const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"));
 
       const viewport = container.querySelector("[aria-label='Video crop preview']");
       const videoFrame = container.querySelector("[data-preview-kind]")?.parentElement;
@@ -264,15 +258,7 @@ describe("VideoPreview", () => {
   });
 
   it("pauses playback while crop controls are open", () => {
-    const videoRef = createRef<HTMLVideoElement>();
-    const { container } = renderPreview(
-      <VideoPreview
-        muted
-        preview={readyPreview("easytrim-media://preview-1")}
-        videoRef={videoRef}
-        {...callbacks}
-      />,
-    );
+    const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"));
 
     const viewport = container.querySelector("[data-preview-kind]")?.parentElement?.parentElement;
     const video = container.querySelector("video");
@@ -290,16 +276,7 @@ describe("VideoPreview", () => {
 
   it("shows the transform menu and applies rotation to the CSS preview", () => {
     const store = createAppStore();
-    const videoRef = createRef<HTMLVideoElement>();
-    const { container } = renderPreview(
-      <VideoPreview
-        muted
-        preview={readyPreview("easytrim-media://preview-1")}
-        videoRef={videoRef}
-        {...callbacks}
-      />,
-      store,
-    );
+    const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"), store);
 
     const viewport = container.querySelector("[aria-label='Video crop preview']");
     openTransformMenu(viewport!);
@@ -331,16 +308,7 @@ describe("VideoPreview", () => {
 
   it("applies flips to the preview and keeps a full-turn equivalent in UI state", () => {
     const store = createAppStore();
-    const videoRef = createRef<HTMLVideoElement>();
-    const { container } = renderPreview(
-      <VideoPreview
-        muted
-        preview={readyPreview("easytrim-media://preview-1")}
-        videoRef={videoRef}
-        {...callbacks}
-      />,
-      store,
-    );
+    const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"), store);
 
     const viewport = container.querySelector("[aria-label='Video crop preview']")!;
     selectTransformAction(viewport, "Flip horizontally");
@@ -366,16 +334,7 @@ describe("VideoPreview", () => {
 
   it("confirms before resetting preview transformations", () => {
     const store = createAppStore();
-    const videoRef = createRef<HTMLVideoElement>();
-    const { container } = renderPreview(
-      <VideoPreview
-        muted
-        preview={readyPreview("easytrim-media://preview-1")}
-        videoRef={videoRef}
-        {...callbacks}
-      />,
-      store,
-    );
+    const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"), store);
 
     const viewport = container.querySelector("[aria-label='Video crop preview']")!;
     selectTransformAction(viewport, "Flip horizontally");
@@ -401,22 +360,14 @@ describe("VideoPreview", () => {
   });
 
   it("toggles playback on a left click and supports the context menu", () => {
-    callbacks.onTogglePlayback.mockClear();
-    const videoRef = createRef<HTMLVideoElement>();
-    const { container } = renderPreview(
-      <VideoPreview
-        muted
-        preview={readyPreview("easytrim-media://preview-1")}
-        videoRef={videoRef}
-        {...callbacks}
-      />,
-    );
+    playback.toggle.mockClear();
+    const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"));
 
     const viewport = container.querySelector("[aria-label='Video crop preview']");
     expect(viewport).not.toBeNull();
 
     fireEvent.click(viewport!);
-    expect(callbacks.onTogglePlayback).toHaveBeenCalledWith({
+    expect(playback.toggle).toHaveBeenCalledWith({
       type: "button",
       id: "preview.click",
     });
@@ -429,15 +380,7 @@ describe("VideoPreview", () => {
   });
 
   it("closes crop controls with Escape or when focus leaves the preview", () => {
-    const videoRef = createRef<HTMLVideoElement>();
-    const { container } = renderPreview(
-      <VideoPreview
-        muted
-        preview={readyPreview("easytrim-media://preview-1")}
-        videoRef={videoRef}
-        {...callbacks}
-      />,
-    );
+    const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"));
 
     const viewport = container.querySelector("[data-preview-kind]")?.parentElement?.parentElement;
     expect(viewport).not.toBeNull();
@@ -456,29 +399,21 @@ describe("VideoPreview", () => {
   });
 
   it("keeps native audio muted when the preview element is replaced", () => {
-    const videoRef = createRef<HTMLVideoElement>();
-    const { container, rerender } = renderPreview(
-      <VideoPreview
-        muted
-        preview={readyPreview("easytrim-media://preview-1")}
-        videoRef={videoRef}
-        {...callbacks}
-      />,
-    );
+    const store = createAppStore();
+    const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"), store);
 
     const firstVideo = container.querySelector("video");
     const firstVideoPause = vi.spyOn(firstVideo!, "pause").mockImplementation(() => undefined);
     expect(firstVideo).toHaveProperty("muted", true);
     expect(firstVideo).toHaveAttribute("crossorigin", "anonymous");
 
-    rerender(
-      <VideoPreview
-        muted
-        preview={readyPreview("easytrim-media://preview-2")}
-        videoRef={videoRef}
-        {...callbacks}
-      />,
-    );
+    act(() => {
+      store.dispatch(
+        previewReady({
+          preview: readyPreview("easytrim-media://preview-2").value,
+        }),
+      );
+    });
     const replacementVideo = container.querySelector("video");
     expect(replacementVideo).not.toBe(firstVideo);
     expect(firstVideoPause).toHaveBeenCalled();

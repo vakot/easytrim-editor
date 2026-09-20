@@ -1,11 +1,4 @@
-import {
-  type FocusEvent,
-  type RefObject,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { type FocusEvent, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -27,9 +20,12 @@ import {
 } from "@/components/ui/context-menu";
 import { CursorTooltip } from "@/components/ui/cursor-tooltip";
 
+import { usePlayback } from "@/app/hooks/usePlayback";
+import { useAppSelector } from "@/app/store/redux-hooks";
+import { selectPlaybackSpeed } from "@/app/store/slices/editor-tools-slice";
+import { selectPreview } from "@/app/store/slices/preview-slice";
 import { isQuarterTurn } from "@/domain/rotation";
 import { diagnostics } from "@/lib/diagnostics";
-import type { DiagnosticOrigin } from "@/lib/tauri/diagnostics.types";
 
 import {
   type Bounds,
@@ -45,75 +41,54 @@ import { useCropSelection } from "./hooks/useCropSelection";
 
 // Covers the snap-marker offset, its labels, and a small buffer inside the clipped preview card.
 const CROP_TOOL_INSET_PX = 28;
-interface CropViewportProps {
-  muted: boolean;
-  nativeLoopEnabled: boolean;
-  onCanPlay: () => void;
-  onCropToolOpenChange?: (isOpen: boolean) => void;
-  onEnded: () => void;
-  onError: () => void;
-  onLoadedMetadata: () => void;
-  onPause: () => void;
-  onPlay: () => void;
-  onTimeUpdate: (seconds: number) => void;
-  onTogglePlayback: (origin?: DiagnosticOrigin) => void;
-  playbackRate: number;
-  previewKind: "source" | "proxy";
-  sourceLabel: string;
-  sourceUrl: string;
-  videoRef: RefObject<HTMLVideoElement | null>;
-}
-
-export function CropViewport({
-  muted,
-  nativeLoopEnabled,
-  onCanPlay,
-  onCropToolOpenChange,
-  onEnded,
-  onError,
-  onLoadedMetadata,
-  onPause,
-  onPlay,
-  onTimeUpdate,
-  onTogglePlayback,
-  playbackRate,
-  previewKind,
-  sourceLabel,
-  sourceUrl,
-  videoRef,
-}: CropViewportProps) {
+export function CropViewport() {
   const { t } = useTranslation();
+  const playback = usePlayback();
+  const playbackRate = useAppSelector(selectPlaybackSpeed);
+  const preview = useAppSelector(selectPreview);
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerBounds, setContainerBounds] = useState<Bounds>({ width: 0, height: 0 });
   const [sourceDimensions, setSourceDimensions] = useState<Bounds>({ width: 0, height: 0 });
   const [sourceAspectRatio, setSourceAspectRatio] = useState(16 / 9);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const cropSelection = useCropSelection(containerRef);
+  const sourceUrl = preview.status === "ready" ? preview.value.url : null;
+  const previewKind = preview.status === "ready" ? preview.value.kind : null;
+  const reportedUrl = useRef<string | null>(null);
 
   useEffect(() => {
-    onCropToolOpenChange?.(cropSelection.isOpen);
-  }, [cropSelection.isOpen, onCropToolOpenChange]);
+    if (playback.videoRef.current) playback.videoRef.current.playbackRate = playbackRate;
+  }, [playback.videoRef, playbackRate, sourceUrl]);
 
   useEffect(() => {
-    if (cropSelection.isOpen) videoRef.current?.pause();
-  }, [cropSelection.isOpen, videoRef]);
+    playback.onCropToolOpenChange?.(cropSelection.isOpen);
+  }, [cropSelection.isOpen, playback.onCropToolOpenChange]);
 
   useEffect(() => {
-    const video = videoRef.current;
-    if (video && video.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) onCanPlay();
-  }, [onCanPlay, sourceUrl, videoRef]);
+    if (cropSelection.isOpen) playback.videoRef.current?.pause();
+  }, [cropSelection.isOpen, playback.videoRef]);
 
   useEffect(() => {
-    const video = videoRef.current;
+    const video = playback.videoRef.current;
+    if (video && video.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) playback.onCanPlay();
+  }, [playback.onCanPlay, playback.videoRef, sourceUrl]);
+
+  useEffect(() => {
+    const video = playback.videoRef.current;
     return () => video?.pause();
-  }, [sourceUrl, videoRef]);
+  }, [playback.videoRef, sourceUrl]);
 
   useEffect(() => {
+    if (previewKind === null) return;
     diagnostics.event("media.source.changed", {
       data: { kind: previewKind },
       origin: { type: "internal" },
     });
   }, [previewKind, sourceUrl]);
+
+  useEffect(() => {
+    reportedUrl.current = null;
+  }, [sourceUrl]);
 
   useLayoutEffect(() => {
     const container = containerRef.current;
@@ -215,6 +190,10 @@ export function CropViewport({
     .filter(Boolean)
     .join(" ");
 
+  if (preview.status !== "ready" || sourceUrl === null || previewKind === null) return null;
+
+  const { value } = preview;
+
   return (
     <AlertDialog onOpenChange={setResetDialogOpen} open={resetDialogOpen}>
       <ContextMenu>
@@ -231,7 +210,7 @@ export function CropViewport({
                 cropSelection.close();
                 return;
               }
-              onTogglePlayback({ type: "button", id: "preview.click" });
+              playback.toggle({ type: "button", id: "preview.click" });
             }}
             onPointerCancel={cropSelection.finishDrag}
             onPointerMove={(event) => cropSelection.moveDrag(event, viewport)}
@@ -257,21 +236,21 @@ export function CropViewport({
               }}
             >
               <video
-                aria-label={sourceLabel}
+                aria-label={t("preview.accessibility.source")}
                 className={`absolute max-w-none cursor-pointer ${viewportTransition}`}
                 crossOrigin="anonymous"
                 data-playback-rate={playbackRate}
                 data-preview-kind={previewKind}
                 key={sourceUrl}
-                loop={nativeLoopEnabled}
-                muted={muted}
-                onCanPlay={onCanPlay}
+                loop={playback.nativeLoopEnabled}
+                muted={playback.videoMuted}
+                onCanPlay={playback.onCanPlay}
                 onEnded={() => {
                   diagnostics.event("media.playback.ended", {
                     data: { kind: previewKind },
                     origin: { type: "internal" },
                   });
-                  onEnded();
+                  playback.onEnded();
                 }}
                 onError={() => {
                   diagnostics.error(
@@ -282,7 +261,9 @@ export function CropViewport({
                     },
                     { data: { kind: previewKind }, origin: { type: "internal" } },
                   );
-                  onError();
+                  if (reportedUrl.current === value.url) return;
+                  reportedUrl.current = value.url;
+                  playback.onPreviewPlaybackError(value.kind);
                 }}
                 onLoadedMetadata={(event) => {
                   const { videoHeight, videoWidth } = event.currentTarget;
@@ -290,7 +271,7 @@ export function CropViewport({
                     setSourceAspectRatio(videoWidth / videoHeight);
                     setSourceDimensions({ width: videoWidth, height: videoHeight });
                   }
-                  onLoadedMetadata();
+                  playback.onLoadedMetadata();
                 }}
                 onLoadStart={() =>
                   diagnostics.event("media.load.started", {
@@ -303,7 +284,7 @@ export function CropViewport({
                     data: { kind: previewKind },
                     origin: { type: "internal" },
                   });
-                  onPause();
+                  playback.onPause();
                 }}
                 onPlay={(event) => {
                   if (cropSelection.isOpen) {
@@ -314,7 +295,7 @@ export function CropViewport({
                     data: { kind: previewKind },
                     origin: { type: "internal" },
                   });
-                  onPlay();
+                  playback.onPlay();
                 }}
                 onStalled={() =>
                   diagnostics.warn("media.playback.stalled", {
@@ -322,7 +303,7 @@ export function CropViewport({
                     origin: { type: "internal" },
                   })
                 }
-                onTimeUpdate={(event) => onTimeUpdate(event.currentTarget.currentTime)}
+                onTimeUpdate={(event) => playback.onTimeUpdate(event.currentTarget.currentTime)}
                 onWaiting={() =>
                   diagnostics.event("media.playback.waiting", {
                     data: { kind: previewKind },
@@ -331,7 +312,7 @@ export function CropViewport({
                 }
                 playsInline
                 preload="auto"
-                ref={videoRef}
+                ref={playback.videoRef}
                 src={sourceUrl}
                 style={{
                   ...sourceFrame,
