@@ -23,9 +23,14 @@ import { selectSourceMedia } from "@/app/store/slices/source-slice";
 import { commitActiveEditingInstanceDraft } from "@/app/store/thunks/source-media-thunks";
 import type { RotationDegrees } from "@/domain/rotation";
 
-import type { CropFrame } from "../lib/crop-frame.utils";
-import { type CropHandle, type CropRect, moveCrop, resizeCrop } from "../lib/crop-geometry.utils";
-import { snapCropToGuides } from "../lib/crop-snapping.utils";
+import type { CropFrame } from "../../../lib/crop-frame.utils";
+import {
+  type CropHandle,
+  type CropRect,
+  moveCrop,
+  resizeCrop,
+} from "../../../lib/crop-geometry.utils";
+import { snapCropToGuides } from "../../../lib/crop-snapping.utils";
 
 const SNAP_REACH_PX = 12;
 

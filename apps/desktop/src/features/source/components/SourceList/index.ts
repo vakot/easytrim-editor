@@ -1,7 +1,1 @@
-export {
-  SourceList,
-  SourceListContent,
-  type SourceListProps,
-  SourceListSearch,
-  SourceListTabs,
-} from "./SourceList";
+export { SourceList, SourceListContent, SourceListSearch, SourceListTabs } from "./SourceList";

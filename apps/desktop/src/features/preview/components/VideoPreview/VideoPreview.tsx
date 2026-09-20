@@ -12,7 +12,7 @@ import { selectPlaybackSpeed } from "@/app/store/slices/editor-tools-slice";
 import type { PreviewState } from "@/app/store/slices/preview-slice";
 import type { DiagnosticOrigin } from "@/lib/tauri/diagnostics.types";
 
-import { CropViewport } from "./CropViewport";
+import { CropViewport } from "../CropViewport";
 
 interface VideoPreviewProps {
   muted: boolean;
