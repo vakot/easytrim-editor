@@ -34,11 +34,11 @@ const activityStatusPresentation: Record<ActivityStatus, { className: string; ic
     pending: { className: "text-primary", icon: LoaderCircle },
   };
 
-interface ActivityEntryMarkerIconProps {
+interface ActivityFeedEntryIconProps {
   entry: ActivityEntry | undefined;
 }
 
-export function ActivityEntryMarkerIcon({ entry }: ActivityEntryMarkerIconProps) {
+export function ActivityFeedEntryIcon({ entry }: ActivityFeedEntryIconProps) {
   if (!entry) return;
 
   const statusPresentation = activityStatusPresentation[entry.status];

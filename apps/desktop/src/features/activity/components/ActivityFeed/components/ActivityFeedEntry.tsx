@@ -4,8 +4,8 @@ import { formatSourcePath } from "@/features/source";
 
 import type { ActivityAction, ActivityEntry } from "../../../lib/activity-projection";
 
-import { ActivityEntryMarkerIcon } from "./ActivityEntryMarkerIcon";
 import { ActivityFeedEntryButton } from "./ActivityFeedEntryButton";
+import { ActivityFeedEntryIcon } from "./ActivityFeedEntryIcon";
 import { ActivityFeedEntryTitle } from "./ActivityFeedEntryTitle";
 
 interface ActivityFeedEntryProps {
@@ -23,7 +23,7 @@ export function ActivityFeedEntry({ compact = false, entry, onAction }: Activity
   if (compact) {
     return (
       <Marker className="h-6 items-center text-xs">
-        <ActivityEntryMarkerIcon entry={entry} />
+        <ActivityFeedEntryIcon entry={entry} />
 
         <MarkerContent className="flex-row flex-nowrap items-center gap-1">
           <ActivityFeedEntryTitle className="text-foreground" entry={entry} />
@@ -38,7 +38,7 @@ export function ActivityFeedEntry({ compact = false, entry, onAction }: Activity
 
   return (
     <Marker className="min-h-6 items-start text-xs">
-      <ActivityEntryMarkerIcon entry={entry} />
+      <ActivityFeedEntryIcon entry={entry} />
 
       <MarkerContent>
         <ActivityFeedEntryTitle className="text-foreground" entry={entry} />

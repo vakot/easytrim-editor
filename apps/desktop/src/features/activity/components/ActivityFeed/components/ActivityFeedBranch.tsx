@@ -16,8 +16,8 @@ import type {
   ActivityEntry,
 } from "../../../lib/activity-projection";
 
-import { ActivityEntryMarkerIcon } from "./ActivityEntryMarkerIcon";
 import { ActivityFeedEntryButton } from "./ActivityFeedEntryButton";
+import { ActivityFeedEntryIcon } from "./ActivityFeedEntryIcon";
 import { ActivityFeedEntryTitle } from "./ActivityFeedEntryTitle";
 
 interface ActivityFeedBranchProps {
@@ -34,7 +34,7 @@ export function ActivityFeedBranch({ branch, onAction }: ActivityFeedBranchProps
   return (
     <div>
       <Marker>
-        <ActivityEntryMarkerIcon entry={branch.entries[branch.entries.length - 1]} />
+        <ActivityFeedEntryIcon entry={branch.entries[branch.entries.length - 1]} />
 
         <MarkerContent>
           <MarkerTitle className="min-w-0 truncate text-xs text-foreground">{filename}</MarkerTitle>
