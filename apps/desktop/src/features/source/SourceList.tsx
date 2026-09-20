@@ -116,13 +116,20 @@ function SourceList({ children }: SourceListProps) {
 }
 
 function SourceListTabs() {
+  const { t } = useTranslation();
+
   return (
-    <TabsList className="w-full" defaultValue="none">
-      <TabsTrigger value="none">None</TabsTrigger>
-      <TabsTrigger value="folder">Folder</TabsTrigger>
-      <TabsTrigger value="time">Time</TabsTrigger>
-      <TabsTrigger value="imported">Imported</TabsTrigger>
-    </TabsList>
+    <div className="flex items-center gap-2">
+      <span className="shrink-0 text-sm font-medium text-muted-foreground">
+        {t("source.labels.groupBy")}
+      </span>
+      <TabsList className="min-w-0 flex-1" defaultValue="none">
+        <TabsTrigger value="none">None</TabsTrigger>
+        <TabsTrigger value="folder">Folder</TabsTrigger>
+        <TabsTrigger value="time">Time</TabsTrigger>
+        <TabsTrigger value="imported">Imported</TabsTrigger>
+      </TabsList>
+    </div>
   );
 }
 

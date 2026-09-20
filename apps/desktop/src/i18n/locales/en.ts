@@ -204,6 +204,7 @@ export const en = {
     labels: {
       drop: "Drop video to open",
       explorer: "Source explorer",
+      groupBy: "Group by:",
       importedSources: "Imported Sources",
       metadata: {
         bitrate: "Bitrate",
