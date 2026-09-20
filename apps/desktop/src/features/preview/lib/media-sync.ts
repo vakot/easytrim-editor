@@ -1,7 +1,7 @@
 export type PlaybackFrameHandle =
   { id: number; kind: "video"; video: HTMLVideoElement } | { id: number; kind: "animation" };
 
-export function requestPlaybackFrame(
+function requestPlaybackFrame(
   video: HTMLVideoElement,
   callback: (now: number, mediaTimeSeconds: number) => void,
 ): PlaybackFrameHandle {
@@ -17,10 +17,12 @@ export function requestPlaybackFrame(
   return { kind: "animation", id };
 }
 
-export function cancelPlaybackFrame(frameRef: { current: PlaybackFrameHandle | null }) {
+function cancelPlaybackFrame(frameRef: { current: PlaybackFrameHandle | null }) {
   const handle = frameRef.current;
   if (!handle) return;
   if (handle.kind === "video") handle.video.cancelVideoFrameCallback(handle.id);
   else cancelAnimationFrame(handle.id);
   frameRef.current = null;
 }
+
+export { cancelPlaybackFrame, requestPlaybackFrame };

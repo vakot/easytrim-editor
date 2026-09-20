@@ -11,7 +11,7 @@ import { selectPreview } from "@/app/store/slices/preview-slice";
 import { selectSourceLoadToken, selectSourceSelection } from "@/app/store/slices/source-slice";
 import { closeActiveEditingInstanceRequested } from "@/app/store/thunks/source-media-thunks";
 
-export function VideoPreviewLoadingOverlay() {
+function VideoPreviewLoadingOverlay() {
   const { t } = useTranslation();
 
   const playback = usePlayback();
@@ -72,3 +72,5 @@ export function VideoPreviewLoadingOverlay() {
     </Backdrop>
   );
 }
+
+export { VideoPreviewLoadingOverlay };

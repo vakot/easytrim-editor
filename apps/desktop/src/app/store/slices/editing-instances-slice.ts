@@ -18,7 +18,7 @@ import type { AppError, ExportProgress, ExportResult, MediaInfo } from "@/lib/ta
 
 import type { RootState } from "../store";
 
-export interface EditingInstanceTopologyEntry {
+interface EditingInstanceTopologyEntry {
   displayName: string;
   id: EditingInstanceId;
   sourcePath: string;
@@ -343,7 +343,7 @@ const editingInstancesSlice = createSlice({
   },
 });
 
-export const {
+const {
   activeEditingInstanceChanged,
   editingInstanceClosed,
   editingInstanceDuplicated,
@@ -364,19 +364,18 @@ export const {
   editingInstanceSnapshotUpdated,
   editingInstancesSourceAvailabilityChanged,
 } = editingInstancesSlice.actions;
-export const editingInstancesReducer = editingInstancesSlice.reducer;
+
+const editingInstancesReducer = editingInstancesSlice.reducer;
 
 const selectEditingInstancesState = (state: RootState) => state.editingInstances;
 const selectEditingInstanceEntities = (state: RootState) =>
   selectEditingInstancesState(state).entities;
 
-export const selectEditingInstanceIds = (state: RootState): EditingInstanceId[] =>
+const selectEditingInstanceIds = (state: RootState): EditingInstanceId[] =>
   selectEditingInstancesState(state).ids;
 
 let lastTopologyEntries: EditingInstanceTopologyEntry[] = [];
-export const selectEditingInstanceTopologyEntries = (
-  state: RootState,
-): EditingInstanceTopologyEntry[] => {
+const selectEditingInstanceTopologyEntries = (state: RootState): EditingInstanceTopologyEntry[] => {
   const ids = selectImportedEditingInstances(state).map(({ id }) => id);
   const entities = selectEditingInstanceEntities(state);
   if (
@@ -410,26 +409,31 @@ export const selectEditingInstanceTopologyEntries = (
   return lastTopologyEntries;
 };
 
-export const selectEditingInstances = createSelector([selectEditingInstancesState], (state) =>
+const selectEditingInstances = createSelector([selectEditingInstancesState], (state) =>
   state.ids
     .map((id) => state.entities[id])
     .filter((value): value is EditingInstance => Boolean(value)),
 );
-export const selectImportedEditingInstances = createSelector(
-  [selectEditingInstances],
-  (instances) => instances.filter((instance) => instance.draftAvailable !== false),
+
+const selectImportedEditingInstances = createSelector([selectEditingInstances], (instances) =>
+  instances.filter((instance) => instance.draftAvailable !== false),
 );
-export const selectActiveInstanceId = (state: RootState): EditingInstanceId | null =>
+
+const selectActiveInstanceId = (state: RootState): EditingInstanceId | null =>
   selectEditingInstancesState(state).activeInstanceId;
-export const selectEditingInstanceById = (state: RootState, id: EditingInstanceId) =>
+
+const selectEditingInstanceById = (state: RootState, id: EditingInstanceId) =>
   selectEditingInstancesState(state).entities[id];
-export const selectActiveEditingInstance = createSelector([selectEditingInstancesState], (state) =>
+
+const selectActiveEditingInstance = createSelector([selectEditingInstancesState], (state) =>
   state.activeInstanceId ? state.entities[state.activeInstanceId] : undefined,
 );
-export const selectEditingInstanceAttempts = createSelector([selectEditingInstances], (instances) =>
+
+const selectEditingInstanceAttempts = createSelector([selectEditingInstances], (instances) =>
   instances.flatMap((instance) => instancesToAttempts(instance)),
 );
-export const selectHasQueuedOrRenderingExportByInstanceId = (
+
+const selectHasQueuedOrRenderingExportByInstanceId = (
   state: RootState,
   id: EditingInstanceId,
 ): boolean => {
@@ -439,17 +443,19 @@ export const selectHasQueuedOrRenderingExportByInstanceId = (
     ) ?? false
   );
 };
+
 const selectProcessableExportCount = createSelector(
   [selectEditingInstanceEntities, selectEditingInstanceIds],
   (entities, ids) =>
     ids.reduce((count, id) => count + (hasProcessableExport(entities[id]) ? 1 : 0), 0),
 );
 
-export const selectHasProcessableExports = createSelector(
+const selectHasProcessableExports = createSelector(
   [selectProcessableExportCount],
   (count) => count > 0,
 );
-export const selectRenderingAttempt = createSelector(
+
+const selectRenderingAttempt = createSelector(
   [selectEditingInstanceEntities, selectEditingInstanceIds],
   (entities, ids) => {
     for (const id of ids) {
@@ -460,18 +466,19 @@ export const selectRenderingAttempt = createSelector(
     return undefined;
   },
 );
-export const selectExportQueue = createSelector(
-  [selectEditingInstances],
-  (instances): ExportQueueItem[] =>
-    instances
-      .flatMap((instance) => instancesToAttempts(instance))
-      .sort((left, right) => left.attempt.capturedAt - right.attempt.capturedAt),
+
+const selectExportQueue = createSelector([selectEditingInstances], (instances): ExportQueueItem[] =>
+  instances
+    .flatMap((instance) => instancesToAttempts(instance))
+    .sort((left, right) => left.attempt.capturedAt - right.attempt.capturedAt),
 );
-export const selectExportQueueById = createSelector(
+
+const selectExportQueueById = createSelector(
   [selectExportQueue, (_state: RootState, id: EditingInstanceId) => id],
   (queue, id) => queue.filter(({ instance }) => instance.id === id),
 );
-export const selectInstanceIdsBySourceKey = createSelector(
+
+const selectInstanceIdsBySourceKey = createSelector(
   [selectEditingInstanceEntities, selectEditingInstanceIds],
   (entities, ids) => {
     const sourceIds = new Map<string, EditingInstanceId[]>();
@@ -498,3 +505,42 @@ function hasProcessableExport(instance: EditingInstance | undefined): boolean {
 function instancesToAttempts(instance: EditingInstance) {
   return instance.exportAttempts.map((attempt) => ({ attempt, instance }));
 }
+
+export {
+  activeEditingInstanceChanged,
+  editingInstanceClosed,
+  editingInstanceDuplicated,
+  editingInstanceExportAttemptQueued,
+  editingInstanceExportAttemptRemoved,
+  editingInstanceExportCanceled,
+  editingInstanceExportCompleted,
+  editingInstanceExportFailed,
+  editingInstanceExportHistoryCleared,
+  editingInstanceExportProgressReceived,
+  editingInstanceExportRequeued,
+  editingInstanceExportRestored,
+  editingInstanceExportStarted,
+  editingInstanceMediaUpdated,
+  editingInstanceOptimizedSettingsChanged,
+  editingInstancesAdded,
+  editingInstancesClosed,
+  editingInstanceSnapshotUpdated,
+  editingInstancesReducer,
+  editingInstancesSourceAvailabilityChanged,
+  selectActiveEditingInstance,
+  selectActiveInstanceId,
+  selectEditingInstanceAttempts,
+  selectEditingInstanceById,
+  selectEditingInstanceIds,
+  selectEditingInstances,
+  selectEditingInstanceTopologyEntries,
+  selectExportQueue,
+  selectExportQueueById,
+  selectHasProcessableExports,
+  selectHasQueuedOrRenderingExportByInstanceId,
+  selectImportedEditingInstances,
+  selectInstanceIdsBySourceKey,
+  selectRenderingAttempt,
+};
+
+export type { EditingInstanceTopologyEntry };

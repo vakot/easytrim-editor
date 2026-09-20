@@ -16,7 +16,7 @@ interface CropViewportVideoProps {
   viewportTransition: string;
 }
 
-export function CropViewportVideo({
+function CropViewportVideo({
   cropIsOpen,
   onSourceMetadata,
   previewTransform,
@@ -195,3 +195,5 @@ export function CropViewportVideo({
     />
   );
 }
+
+export { CropViewportVideo };

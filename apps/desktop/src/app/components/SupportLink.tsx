@@ -5,7 +5,7 @@ import { openExternalUrl } from "@/lib/open-external-url.utils";
 
 const KOFI_URL = "https://ko-fi.com/vakot";
 
-export function SupportLink() {
+function SupportLink() {
   const { t } = useTranslation();
 
   return (
@@ -22,3 +22,5 @@ export function SupportLink() {
     </a>
   );
 }
+
+export { SupportLink };

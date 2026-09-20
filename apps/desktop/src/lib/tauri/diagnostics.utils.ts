@@ -36,7 +36,7 @@ const diagnosticOriginTypes = new Set<DiagnosticOriginType>([
   "internal",
 ]);
 
-export function parseDiagnosticSessionSummaries(value: unknown): DiagnosticSessionSummary[] {
+function parseDiagnosticSessionSummaries(value: unknown): DiagnosticSessionSummary[] {
   if (!Array.isArray(value)) return [];
   return value.flatMap((item) => {
     const summary = parseDiagnosticSessionSummary(item);
@@ -44,7 +44,7 @@ export function parseDiagnosticSessionSummaries(value: unknown): DiagnosticSessi
   });
 }
 
-export function parseDiagnosticEvents(value: unknown): DiagnosticEvent[] {
+function parseDiagnosticEvents(value: unknown): DiagnosticEvent[] {
   if (!Array.isArray(value)) return [];
   return value.flatMap((item) => {
     const event = parseDiagnosticEvent(item);
@@ -178,3 +178,5 @@ function validTimestamp(value: unknown): value is string {
 function isNonNegativeInteger(value: unknown): value is number {
   return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
 }
+
+export { parseDiagnosticEvents, parseDiagnosticSessionSummaries };

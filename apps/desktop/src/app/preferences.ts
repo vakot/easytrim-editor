@@ -8,7 +8,7 @@ import {
 
 export type ActivityFeedView = "default" | "compact" | "branch";
 
-export interface Preferences {
+interface Preferences {
   activityFeedView: ActivityFeedView;
   autoStartQueueEnabled: boolean;
   customPrimaryColor: CustomPrimaryColor;
@@ -37,3 +37,5 @@ export const DEFAULT_PREFERENCES: Preferences = {
   primaryColor: DEFAULT_PRIMARY_COLOR,
   customPrimaryColor: DEFAULT_CUSTOM_PRIMARY_COLOR,
 };
+
+export type { Preferences };

@@ -10,7 +10,7 @@ import { EMPTY_TIMELINE_RANGE } from "../lib/timeline-range";
 import styles from "./TimelinePanel.module.css";
 import { TimelineTimeValue } from "./TimelineTimeValue";
 
-export function TimelineValues() {
+function TimelineValues() {
   const { t } = useTranslation();
   const media = useAppSelector(selectSourceMedia);
   const playback = usePlayback();
@@ -43,3 +43,5 @@ export function TimelineValues() {
     </dl>
   );
 }
+
+export { TimelineValues };

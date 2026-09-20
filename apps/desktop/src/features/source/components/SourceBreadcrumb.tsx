@@ -24,7 +24,7 @@ import { getPathDirectories, getRevealLabel } from "../lib/source.utils";
 
 import { SourceDetails } from "./SourceDetails";
 
-export function SourceBreadcrumb() {
+function SourceBreadcrumb() {
   const activeInstanceId = useAppSelector(selectActiveInstanceId);
   const entries = useAppSelector(selectEditingInstanceTopologyEntries);
   const instance = entries.find((entry) => entry.id === activeInstanceId);
@@ -144,3 +144,5 @@ function SourceBreadcrumbList({ children }: PropsWithChildren) {
     index === 0 ? [child] : [<BreadcrumbSeparator key={`breadcrumb-separator-${index}`} />, child],
   );
 }
+
+export { SourceBreadcrumb };

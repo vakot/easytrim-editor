@@ -2,7 +2,7 @@ import { useContext } from "react";
 
 import { EditorPlaybackContext } from "@/app/contexts/editor-contracts-context";
 
-export function usePlayback() {
+function usePlayback() {
   const interaction = useContext(EditorPlaybackContext);
   if (!interaction) {
     throw new Error("Playback contracts must be used within EditorContractsProvider.");
@@ -34,3 +34,5 @@ export function usePlayback() {
     onPreviewPlaybackError: interaction.onPreviewPlaybackError,
   };
 }
+
+export { usePlayback };

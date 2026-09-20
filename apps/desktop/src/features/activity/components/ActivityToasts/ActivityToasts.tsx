@@ -1,6 +1,8 @@
 import { useActivityToasts } from "./hooks/useActivityToasts";
 
-export function ActivityToasts() {
+function ActivityToasts() {
   useActivityToasts();
   return null;
 }
+
+export { ActivityToasts };

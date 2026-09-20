@@ -28,7 +28,7 @@ interface SourceDeleteDialogProps {
   targetName?: string;
 }
 
-export function SourceDeleteDialog({
+function SourceDeleteDialog({
   children,
   onOpenChange,
   open,
@@ -103,4 +103,4 @@ export function SourceDeleteDialog({
   );
 }
 
-export { AlertDialogTrigger as SourceDeleteDialogTrigger };
+export { SourceDeleteDialog, AlertDialogTrigger as SourceDeleteDialogTrigger };

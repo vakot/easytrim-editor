@@ -21,7 +21,7 @@ import {
   type WindowShutdownContinuation,
 } from "@/lib/tauri/window";
 
-export function AppShutdownGuard() {
+function AppShutdownGuard() {
   const { t } = useTranslation();
   const hasProcessableExports = useAppSelector(selectHasProcessableExports);
   const [open, setOpen] = useState(false);
@@ -96,3 +96,5 @@ export function AppShutdownGuard() {
     </AlertDialog>
   );
 }
+
+export { AppShutdownGuard };

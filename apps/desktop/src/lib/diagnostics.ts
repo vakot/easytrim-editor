@@ -39,7 +39,7 @@ interface ActiveOperation {
   startedAt: number;
 }
 
-export interface DiagnosticOperation {
+interface DiagnosticOperation {
   cancel(data?: Record<string, DiagnosticValue>): boolean;
   child(event: DiagnosticOperationName, options?: OperationOptions): DiagnosticOperation;
   complete(data?: Record<string, DiagnosticValue>): boolean;
@@ -131,7 +131,7 @@ function terminalEvent(
   return true;
 }
 
-export function serializeDiagnosticError(
+function serializeDiagnosticError(
   value: unknown,
   seen = new WeakSet<object>(),
 ): SerializedDiagnosticError {
@@ -274,27 +274,27 @@ export const diagnostics = {
   },
 };
 
-export function getCurrentSessionDiagnosticsSnapshot(): {
+function getCurrentSessionDiagnosticsSnapshot(): {
   events: readonly DiagnosticEvent[];
   version: number;
 } {
   return currentSessionSnapshot;
 }
 
-export function getCurrentDiagnosticSessionId(): string | null {
+function getCurrentDiagnosticSessionId(): string | null {
   return currentSessionId;
 }
 
-export function getCurrentDiagnosticSessionMetadata(): DiagnosticSessionMetadata | null {
+function getCurrentDiagnosticSessionMetadata(): DiagnosticSessionMetadata | null {
   return currentSessionMetadata;
 }
 
-export function subscribeToCurrentSessionDiagnostics(listener: () => void): () => void {
+function subscribeToCurrentSessionDiagnostics(listener: () => void): () => void {
   currentSessionListeners.add(listener);
   return () => currentSessionListeners.delete(listener);
 }
 
-export function installGlobalDiagnostics(): () => void {
+function installGlobalDiagnostics(): () => void {
   const onError = (event: ErrorEvent) => {
     diagnostics.fatal("frontend.fatal.error", event.error ?? event.message, {
       data: { filename: event.filename, line: event.lineno, column: event.colno },
@@ -320,7 +320,7 @@ export function installGlobalDiagnostics(): () => void {
   };
 }
 
-export function reportDiagnosticsUnavailable(error: unknown): void {
+function reportDiagnosticsUnavailable(error: unknown): void {
   if (persistenceDegraded) return;
   persistenceDegraded = true;
   console.error(
@@ -328,3 +328,15 @@ export function reportDiagnosticsUnavailable(error: unknown): void {
     serializeDiagnosticError(error),
   );
 }
+
+export {
+  getCurrentDiagnosticSessionId,
+  getCurrentDiagnosticSessionMetadata,
+  getCurrentSessionDiagnosticsSnapshot,
+  installGlobalDiagnostics,
+  reportDiagnosticsUnavailable,
+  serializeDiagnosticError,
+  subscribeToCurrentSessionDiagnostics,
+};
+
+export type { DiagnosticOperation };

@@ -18,7 +18,7 @@ interface CursorTooltipProps extends ComponentProps<"div"> {
   tooltipContent: ReactNode;
 }
 
-export const CursorTooltip = forwardRef<HTMLDivElement, CursorTooltipProps>(function CursorTooltip(
+const CursorTooltip = forwardRef<HTMLDivElement, CursorTooltipProps>(function CursorTooltip(
   {
     children,
     className,
@@ -111,3 +111,5 @@ export const CursorTooltip = forwardRef<HTMLDivElement, CursorTooltipProps>(func
     </div>
   );
 });
+
+export { CursorTooltip };

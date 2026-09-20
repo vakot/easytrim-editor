@@ -22,7 +22,7 @@ import {
   showActivityToast,
 } from "../lib/activity-toast.utils";
 
-export function useActivityToasts() {
+function useActivityToasts() {
   const { currentSessionId, entries } = useActivityFeed();
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
@@ -117,3 +117,5 @@ export function useActivityToasts() {
     previousEntries.current = next;
   }, [currentSessionId, dispatch, entries, instances, t]);
 }
+
+export { useActivityToasts };

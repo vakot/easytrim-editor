@@ -17,7 +17,7 @@ interface ExportResolutionProps {
   settings: ExportSettings;
 }
 
-export function ExportResolution({ cropResolution, settings }: ExportResolutionProps) {
+function ExportResolution({ cropResolution, settings }: ExportResolutionProps) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const [isAspectRatioLocked, setIsAspectRatioLocked] = useState(true);
@@ -62,3 +62,5 @@ export function ExportResolution({ cropResolution, settings }: ExportResolutionP
     </div>
   );
 }
+
+export { ExportResolution };

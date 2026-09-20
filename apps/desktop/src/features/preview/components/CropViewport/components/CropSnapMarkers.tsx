@@ -7,7 +7,7 @@ interface CropSnapMarkersProps {
   visible: boolean;
 }
 
-export function CropSnapMarkers({ frame, visible }: CropSnapMarkersProps) {
+function CropSnapMarkers({ frame, visible }: CropSnapMarkersProps) {
   return (
     <div
       aria-hidden="true"
@@ -53,3 +53,5 @@ export function CropSnapMarkers({ frame, visible }: CropSnapMarkersProps) {
 function formatPercent(point: number): string {
   return `${point * 100}%`;
 }
+
+export { CropSnapMarkers };

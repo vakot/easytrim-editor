@@ -20,7 +20,7 @@ interface DiagnosticsRecoveryDialogProps {
   recovery?: StartupRecovery | null;
 }
 
-export function DiagnosticsRecoveryDialog({
+function DiagnosticsRecoveryDialog({
   recovery = diagnostics.getStartupRecovery(),
 }: DiagnosticsRecoveryDialogProps) {
   const [open, setOpen] = useState(recovery !== null);
@@ -71,3 +71,5 @@ export function DiagnosticsRecoveryDialog({
     </AlertDialog>
   );
 }
+
+export { DiagnosticsRecoveryDialog };

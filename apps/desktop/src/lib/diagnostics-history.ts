@@ -21,16 +21,16 @@ let snapshot: PersistedDiagnosticsHistorySnapshot = {
   version: 0,
 };
 
-export function getPersistedDiagnosticsHistorySnapshot(): PersistedDiagnosticsHistorySnapshot {
+function getPersistedDiagnosticsHistorySnapshot(): PersistedDiagnosticsHistorySnapshot {
   return snapshot;
 }
 
-export function subscribeToPersistedDiagnosticsHistory(listener: () => void): () => void {
+function subscribeToPersistedDiagnosticsHistory(listener: () => void): () => void {
   listeners.add(listener);
   return () => listeners.delete(listener);
 }
 
-export function loadPersistedDiagnosticsHistory(): Promise<void> {
+function loadPersistedDiagnosticsHistory(): Promise<void> {
   if (loadPromise) return loadPromise;
   loadPromise = loadHistory();
   return loadPromise;
@@ -78,3 +78,9 @@ function publish(
     }
   });
 }
+
+export {
+  getPersistedDiagnosticsHistorySnapshot,
+  loadPersistedDiagnosticsHistory,
+  subscribeToPersistedDiagnosticsHistory,
+};

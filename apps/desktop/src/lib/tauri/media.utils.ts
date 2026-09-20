@@ -20,7 +20,7 @@ import type {
   WaveformResult,
 } from "./media.types";
 
-export function normalizeAppError(error: unknown): AppError {
+function normalizeAppError(error: unknown): AppError {
   const value = asRecord(error);
   if (value && typeof value.code === "string" && typeof value.message === "string") {
     return {
@@ -34,7 +34,7 @@ export function normalizeAppError(error: unknown): AppError {
   return { code: "internal", message: "An unexpected application error occurred." };
 }
 
-export function parseSourceRef(value: unknown): SourceRef {
+function parseSourceRef(value: unknown): SourceRef {
   const source = requireRecord(value, "source reference");
   const createdAtMicros = optionalInteger(source.createdAtMicros, "source creation time");
   const updatedAtMicros = optionalInteger(source.updatedAtMicros, "source update time");
@@ -47,11 +47,11 @@ export function parseSourceRef(value: unknown): SourceRef {
   };
 }
 
-export function parseSourceRefs(value: unknown): SourceRef[] {
+function parseSourceRefs(value: unknown): SourceRef[] {
   return requireArray(value, "source references").map(parseSourceRef);
 }
 
-export function parseSourceImportResult(value: unknown): SourceImportResult | null {
+function parseSourceImportResult(value: unknown): SourceImportResult | null {
   if (value === null) return null;
   if (Array.isArray(value)) {
     const sources = parseSourceRefs(value);
@@ -84,7 +84,7 @@ export function parseSourceImportResult(value: unknown): SourceImportResult | nu
   };
 }
 
-export function parseOutputSelection(value: unknown): OutputSelection {
+function parseOutputSelection(value: unknown): OutputSelection {
   const output = requireRecord(value, "output selection");
   return {
     outputId: requireString(output.outputId, "output ID"),
@@ -93,7 +93,7 @@ export function parseOutputSelection(value: unknown): OutputSelection {
   };
 }
 
-export function parseExportProgress(value: unknown): ExportProgress {
+function parseExportProgress(value: unknown): ExportProgress {
   const progress = requireRecord(value, "export progress");
   const phase = progress.phase;
   if (phase !== "running" && phase !== "completed") {
@@ -112,7 +112,7 @@ export function parseExportProgress(value: unknown): ExportProgress {
   };
 }
 
-export function parseExportResult(value: unknown): ExportResult {
+function parseExportResult(value: unknown): ExportResult {
   const result = requireRecord(value, "export result");
   return {
     operationId: requireString(result.operationId, "operation ID"),
@@ -121,14 +121,14 @@ export function parseExportResult(value: unknown): ExportResult {
   };
 }
 
-export function parseOptimizedExportPlan(value: unknown): OptimizedExportPlan {
+function parseOptimizedExportPlan(value: unknown): OptimizedExportPlan {
   const plan = requireRecord(value, "optimized export plan");
   return {
     commandPreview: requireString(plan.commandPreview, "optimized command preview"),
   };
 }
 
-export function parseMediaCapabilities(value: unknown): MediaCapabilities {
+function parseMediaCapabilities(value: unknown): MediaCapabilities {
   const capabilities = requireRecord(value, "media capabilities");
   return {
     ffmpeg: parseBinaryCapability(capabilities.ffmpeg),
@@ -136,7 +136,7 @@ export function parseMediaCapabilities(value: unknown): MediaCapabilities {
   };
 }
 
-export function parseMediaInfo(value: unknown): MediaInfo {
+function parseMediaInfo(value: unknown): MediaInfo {
   const media = requireRecord(value, "media metadata");
   return {
     formatName: requireString(media.formatName, "format name"),
@@ -151,7 +151,7 @@ export function parseMediaInfo(value: unknown): MediaInfo {
   };
 }
 
-export function parsePreviewDescriptor(value: unknown): PreviewDescriptor {
+function parsePreviewDescriptor(value: unknown): PreviewDescriptor {
   const preview = requireRecord(value, "preview descriptor");
   const kind = preview.kind;
   if (kind !== "source" && kind !== "proxy") {
@@ -165,7 +165,7 @@ export function parsePreviewDescriptor(value: unknown): PreviewDescriptor {
   };
 }
 
-export function parseThumbnailDescriptor(value: unknown): ThumbnailDescriptor {
+function parseThumbnailDescriptor(value: unknown): ThumbnailDescriptor {
   const thumbnail = requireRecord(value, "thumbnail descriptor");
   return {
     mediaToken: requirePositiveInteger(thumbnail.mediaToken, "thumbnail media token"),
@@ -173,11 +173,11 @@ export function parseThumbnailDescriptor(value: unknown): ThumbnailDescriptor {
   };
 }
 
-export function parseAudioPreviewDescriptors(value: unknown): AudioPreviewDescriptor[] {
+function parseAudioPreviewDescriptors(value: unknown): AudioPreviewDescriptor[] {
   return requireArray(value, "audio preview descriptors").map(parseAudioPreviewDescriptor);
 }
 
-export function parseWaveformResults(value: unknown): WaveformResult[] {
+function parseWaveformResults(value: unknown): WaveformResult[] {
   return requireArray(value, "waveform results").map(parseWaveformResult);
 }
 
@@ -365,3 +365,20 @@ function invalidResponse(label: string): AppError {
     message: `The native application returned an invalid ${label}.`,
   };
 }
+
+export {
+  normalizeAppError,
+  parseAudioPreviewDescriptors,
+  parseExportProgress,
+  parseExportResult,
+  parseMediaCapabilities,
+  parseMediaInfo,
+  parseOptimizedExportPlan,
+  parseOutputSelection,
+  parsePreviewDescriptor,
+  parseSourceImportResult,
+  parseSourceRef,
+  parseSourceRefs,
+  parseThumbnailDescriptor,
+  parseWaveformResults,
+};

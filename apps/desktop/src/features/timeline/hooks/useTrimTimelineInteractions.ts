@@ -42,7 +42,7 @@ interface TrimDragState {
   snapActive: boolean;
 }
 
-export function useTrimTimelineInteractions({
+function useTrimTimelineInteractions({
   frameRate,
   onChange,
   onMoveSegment,
@@ -470,3 +470,5 @@ function keyboardStepMicros(frameRate: FrameRate | undefined, coarse: boolean): 
 function boundaryValue(range: TrimRange, boundary: TrimBoundary): number {
   return boundary === "start" ? range.startMicros : range.endMicros;
 }
+
+export { useTrimTimelineInteractions };

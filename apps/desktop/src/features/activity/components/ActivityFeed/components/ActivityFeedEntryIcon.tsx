@@ -38,7 +38,7 @@ interface ActivityFeedEntryIconProps {
   entry: ActivityEntry | undefined;
 }
 
-export function ActivityFeedEntryIcon({ entry }: ActivityFeedEntryIconProps) {
+function ActivityFeedEntryIcon({ entry }: ActivityFeedEntryIconProps) {
   if (!entry) return;
 
   const statusPresentation = activityStatusPresentation[entry.status];
@@ -53,3 +53,5 @@ export function ActivityFeedEntryIcon({ entry }: ActivityFeedEntryIconProps) {
     </MarkerIcon>
   );
 }
+
+export { ActivityFeedEntryIcon };

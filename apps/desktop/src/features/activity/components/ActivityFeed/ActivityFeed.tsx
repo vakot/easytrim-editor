@@ -8,7 +8,7 @@ import type { ActivityAction } from "../../lib/activity-projection";
 
 import { ActivityFeedView } from "./components/ActivityFeedView";
 
-export function ActivityFeed() {
+function ActivityFeed() {
   const [currentTime, setCurrentTime] = useState(() => Date.now());
   const { currentSessionId, entries, sessions } = useActivityFeed();
 
@@ -34,4 +34,4 @@ export function ActivityFeed() {
   );
 }
 
-export { ActivityFeedView };
+export { ActivityFeed, ActivityFeedView };

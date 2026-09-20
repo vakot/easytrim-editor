@@ -2,7 +2,7 @@ import type { TFunction } from "i18next";
 
 import { isWindowsRuntime } from "@/lib/tauri/updates.utils";
 
-export function getRevealLabel(t: TFunction): string {
+function getRevealLabel(t: TFunction): string {
   if (isMacOSRuntime()) return t("source.actions.revealInFinder");
   if (isWindowsRuntime()) return t("source.actions.revealInFileExplorer");
   return t("source.actions.revealInFileManager");
@@ -15,7 +15,7 @@ function isMacOSRuntime(): boolean {
   );
 }
 
-export function getPathDirectories(path: string): Array<{ name: string; path: string }> {
+function getPathDirectories(path: string): Array<{ name: string; path: string }> {
   const separator = path.includes("\\") ? "\\" : "/";
   const directoryPath = path.slice(0, Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\")));
   const driveRoot = directoryPath.match(/^[A-Za-z]:[\\/]/)?.[0];
@@ -40,3 +40,5 @@ export function getPathDirectories(path: string): Array<{ name: string; path: st
     return { name, path: currentPath };
   });
 }
+
+export { getPathDirectories, getRevealLabel };

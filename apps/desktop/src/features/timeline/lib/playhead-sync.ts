@@ -1,4 +1,4 @@
-export function syncPlayheadElements(
+function syncPlayheadElements(
   playhead: HTMLButtonElement | null,
   audioPlayhead: HTMLDivElement | null,
   micros: number,
@@ -13,9 +13,11 @@ export function syncPlayheadElements(
   if (audioPlayhead) audioPlayhead.style.left = `${percent}%`;
 }
 
-export function cancelFrame(frameRef: { current: number | null }) {
+function cancelFrame(frameRef: { current: number | null }) {
   if (frameRef.current !== null) {
     cancelAnimationFrame(frameRef.current);
     frameRef.current = null;
   }
 }
+
+export { cancelFrame, syncPlayheadElements };

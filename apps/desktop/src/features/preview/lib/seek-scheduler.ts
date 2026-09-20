@@ -5,7 +5,7 @@ interface SeekRequest {
 }
 
 /** One decoder seek at a time, plus the latest requested destination. */
-export function createSeekScheduler(video: HTMLVideoElement) {
+function createSeekScheduler(video: HTMLVideoElement) {
   let pending: SeekRequest | null = null;
   let active: SeekRequest | null = null;
   let approximatePosition = false;
@@ -70,3 +70,5 @@ export function createSeekScheduler(video: HTMLVideoElement) {
     },
   };
 }
+
+export { createSeekScheduler };

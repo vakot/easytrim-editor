@@ -25,7 +25,7 @@ interface ActivityFeedBranchProps {
   onAction?: (action: ActivityAction) => void;
 }
 
-export function ActivityFeedBranch({ branch, onAction }: ActivityFeedBranchProps) {
+function ActivityFeedBranch({ branch, onAction }: ActivityFeedBranchProps) {
   const { t } = useTranslation();
   const normalizedSourcePath = formatSourcePath(branch.path ?? "");
   const filename =
@@ -77,3 +77,5 @@ function ActivityFeedMarkerGroupItem({ entry, onAction }: ActivityFeedMarkerGrou
     </Marker>
   );
 }
+
+export { ActivityFeedBranch };

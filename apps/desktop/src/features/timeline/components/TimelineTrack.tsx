@@ -13,7 +13,7 @@ import { EMPTY_TIMELINE_RANGE } from "../lib/timeline-range";
 import { Playhead, SegmentDragHandle, TrimHandle } from "./TimelineHandles";
 import styles from "./TimelinePanel.module.css";
 
-export function TimelineTrack() {
+function TimelineTrack() {
   const { t } = useTranslation();
   const media = useAppSelector(selectSourceMedia);
   const playback = usePlayback();
@@ -138,3 +138,5 @@ export function TimelineTrack() {
     </div>
   );
 }
+
+export { TimelineTrack };

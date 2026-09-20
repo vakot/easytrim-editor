@@ -15,7 +15,7 @@ export type ActivityKind =
 export type ActivityStatus = "cancelled" | "completed" | "failed" | "interrupted" | "pending";
 export type ActivityAction =
   { kind: "open"; path: string } | { kind: "restore"; path: string; targetId: string };
-export interface ActivityEntry {
+interface ActivityEntry {
   action?: ActivityAction;
   data?: Record<string, DiagnosticValue>;
   id: string;
@@ -29,11 +29,11 @@ export interface ActivityEntry {
   status: ActivityStatus;
   title: string;
 }
-export interface ActivitySessionGroup extends DiagnosticSessionMetadata {
+interface ActivitySessionGroup extends DiagnosticSessionMetadata {
   entries: readonly ActivityEntry[];
   isCurrent: boolean;
 }
-export interface ActivityProjectionLabels {
+interface ActivityProjectionLabels {
   fastCutCancelled: string;
   fastCutCompleted: string;
   fastCutFailed: string;
@@ -60,17 +60,17 @@ export interface ActivityProjectionLabels {
   renderInterrupted: string;
   renderStarted: string;
 }
-export interface ActivitySessionLabels {
+interface ActivitySessionLabels {
   now: string;
   today: string;
   yesterday: string;
 }
-export interface ActivitySessionPresentation {
+interface ActivitySessionPresentation {
   label: string;
   timestamp?: string;
   tone: "current" | "default" | "warning";
 }
-export interface ActivityBranch {
+interface ActivityBranch {
   entries: readonly ActivityEntry[];
   id: string;
   path?: string;
@@ -97,7 +97,7 @@ const ACTIVITY_EVENT_CONFIG = {
   "source.import.cancelled": (event, labels) => projectImportTerminal(event, labels),
 } satisfies Record<string, ActivityEventProjector>;
 
-export function projectActivityEvent(
+function projectActivityEvent(
   event: DiagnosticEvent,
   labels: ActivityProjectionLabels,
 ): ActivityEntry | null {
@@ -105,7 +105,7 @@ export function projectActivityEvent(
   const projector = ACTIVITY_EVENT_CONFIG[event.event as keyof typeof ACTIVITY_EVENT_CONFIG];
   return projector?.(event, labels) ?? null;
 }
-export function projectActivityEvents(
+function projectActivityEvents(
   events: readonly DiagnosticEvent[],
   labels: ActivityProjectionLabels,
   currentSessionId: string | null = null,
@@ -126,7 +126,7 @@ export function projectActivityEvents(
   }
   return entries;
 }
-export function resolveAvailableActivityActions(
+function resolveAvailableActivityActions(
   entries: readonly ActivityEntry[],
   currentSessionId: string | null,
 ): ActivityEntry[] {
@@ -136,7 +136,7 @@ export function resolveAvailableActivityActions(
       : { ...entry, action: undefined },
   );
 }
-export function groupActivityEntriesBySession(
+function groupActivityEntriesBySession(
   entries: readonly ActivityEntry[],
   sessions: readonly DiagnosticSessionMetadata[],
   currentSessionId: string | null,
@@ -162,9 +162,7 @@ export function groupActivityEntriesBySession(
   }
   return groups.sort(compareActivitySessionGroups);
 }
-export function groupActivityEntriesByBranch(
-  entries: readonly ActivityEntry[],
-): ActivitySessionItem[] {
+function groupActivityEntriesByBranch(entries: readonly ActivityEntry[]): ActivitySessionItem[] {
   const branches = new Map<string, ActivityBranch>();
   const standalone: ActivitySessionItem[] = [];
 
@@ -202,7 +200,7 @@ export function groupActivityEntriesByBranch(
     compareActivityEntries(latestActivityEntry(left), latestActivityEntry(right)),
   );
 }
-export function getActivitySessionPresentation(
+function getActivitySessionPresentation(
   group: ActivitySessionGroup,
   currentAppVersion: string,
   now: Date,
@@ -720,3 +718,21 @@ function calendarDayDifference(later: Date, earlier: Date): number {
   const earlierUtc = Date.UTC(earlier.getFullYear(), earlier.getMonth(), earlier.getDate());
   return Math.round((laterUtc - earlierUtc) / 86_400_000);
 }
+
+export {
+  getActivitySessionPresentation,
+  groupActivityEntriesByBranch,
+  groupActivityEntriesBySession,
+  projectActivityEvent,
+  projectActivityEvents,
+  resolveAvailableActivityActions,
+};
+
+export type {
+  ActivityBranch,
+  ActivityEntry,
+  ActivityProjectionLabels,
+  ActivitySessionGroup,
+  ActivitySessionLabels,
+  ActivitySessionPresentation,
+};

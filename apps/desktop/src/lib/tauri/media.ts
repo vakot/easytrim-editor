@@ -37,9 +37,7 @@ import {
   parseWaveformResults,
 } from "./media.utils";
 
-export async function chooseSource(
-  mode: SourcePickerMode = "files",
-): Promise<SourceImportResult | null> {
+async function chooseSource(mode: SourcePickerMode = "files"): Promise<SourceImportResult | null> {
   try {
     const value = await invoke<unknown>("choose_source", { mode });
     return parseSourceImportResult(value);
@@ -48,7 +46,7 @@ export async function chooseSource(
   }
 }
 
-export async function checkMediaCapabilities(): Promise<MediaCapabilities> {
+async function checkMediaCapabilities(): Promise<MediaCapabilities> {
   try {
     return parseMediaCapabilities(await invoke<unknown>("check_media_capabilities"));
   } catch (error: unknown) {
@@ -56,7 +54,7 @@ export async function checkMediaCapabilities(): Promise<MediaCapabilities> {
   }
 }
 
-export async function inspectMedia(sourcePath: string): Promise<MediaInfo> {
+async function inspectMedia(sourcePath: string): Promise<MediaInfo> {
   try {
     return parseMediaInfo(await invoke<unknown>("inspect_media", { sourcePath }));
   } catch (error: unknown) {
@@ -64,7 +62,7 @@ export async function inspectMedia(sourcePath: string): Promise<MediaInfo> {
   }
 }
 
-export async function inspectImportedSource(sourcePath: string): Promise<MediaInfo> {
+async function inspectImportedSource(sourcePath: string): Promise<MediaInfo> {
   try {
     return parseMediaInfo(await invoke<unknown>("inspect_imported_source", { sourcePath }));
   } catch (error: unknown) {
@@ -72,10 +70,7 @@ export async function inspectImportedSource(sourcePath: string): Promise<MediaIn
   }
 }
 
-export async function activateSourcePath(
-  sourcePath: string,
-  media?: MediaInfo,
-): Promise<SourceRef> {
+async function activateSourcePath(sourcePath: string, media?: MediaInfo): Promise<SourceRef> {
   try {
     return parseSourceRef(
       await invoke<unknown>("activate_source_path", {
@@ -88,7 +83,7 @@ export async function activateSourcePath(
   }
 }
 
-export async function moveSourceToTrash(sourcePath: string): Promise<void> {
+async function moveSourceToTrash(sourcePath: string): Promise<void> {
   try {
     await invoke("delete_source_file", { sourcePath });
   } catch (error: unknown) {
@@ -96,7 +91,7 @@ export async function moveSourceToTrash(sourcePath: string): Promise<void> {
   }
 }
 
-export async function restoreSourceFromTrash(sourcePath: string): Promise<void> {
+async function restoreSourceFromTrash(sourcePath: string): Promise<void> {
   try {
     await invoke("restore_source_file", { sourcePath });
   } catch (error: unknown) {
@@ -104,7 +99,7 @@ export async function restoreSourceFromTrash(sourcePath: string): Promise<void> 
   }
 }
 
-export async function chooseOutputPath(defaultName: string): Promise<OutputSelection | null> {
+async function chooseOutputPath(defaultName: string): Promise<OutputSelection | null> {
   try {
     const value = await invoke<unknown>("choose_output_path", { defaultName });
     return value === null ? null : parseOutputSelection(value);
@@ -113,7 +108,7 @@ export async function chooseOutputPath(defaultName: string): Promise<OutputSelec
   }
 }
 
-export async function renderFast(
+async function renderFast(
   request: FastExportRequest,
   outputId: string,
   onProgress: (progress: ExportProgress) => void,
@@ -130,7 +125,7 @@ export async function renderFast(
   );
 }
 
-export async function renderOptimized(
+async function renderOptimized(
   request: OptimizedExportRequest,
   outputId: string,
   onProgress: (progress: ExportProgress) => void,
@@ -147,9 +142,7 @@ export async function renderOptimized(
   );
 }
 
-export async function planOptimizedExport(
-  request: OptimizedExportRequest,
-): Promise<OptimizedExportPlan> {
+async function planOptimizedExport(request: OptimizedExportRequest): Promise<OptimizedExportPlan> {
   try {
     return parseOptimizedExportPlan(await invoke<unknown>("plan_optimized_export", { request }));
   } catch (error: unknown) {
@@ -157,7 +150,7 @@ export async function planOptimizedExport(
   }
 }
 
-export async function cancelOperation(operationId: string): Promise<void> {
+async function cancelOperation(operationId: string): Promise<void> {
   try {
     await invoke("cancel_operation", { operationId });
   } catch (error: unknown) {
@@ -165,7 +158,7 @@ export async function cancelOperation(operationId: string): Promise<void> {
   }
 }
 
-export async function reserveExportSource(sourcePath: string): Promise<void> {
+async function reserveExportSource(sourcePath: string): Promise<void> {
   try {
     await invoke("reserve_export_source", { sourcePath });
   } catch (error: unknown) {
@@ -173,7 +166,7 @@ export async function reserveExportSource(sourcePath: string): Promise<void> {
   }
 }
 
-export async function releaseExportSource(sourcePath: string): Promise<void> {
+async function releaseExportSource(sourcePath: string): Promise<void> {
   try {
     await invoke("release_export_source", { sourcePath });
   } catch (error: unknown) {
@@ -181,7 +174,7 @@ export async function releaseExportSource(sourcePath: string): Promise<void> {
   }
 }
 
-export async function openFileLocation(path: string): Promise<void> {
+async function openFileLocation(path: string): Promise<void> {
   try {
     await invoke("open_file_location", { path });
   } catch (error: unknown) {
@@ -213,7 +206,7 @@ async function render(
   }
 }
 
-export async function prepareSourcePreview(sourcePath: string): Promise<PreviewDescriptor> {
+async function prepareSourcePreview(sourcePath: string): Promise<PreviewDescriptor> {
   try {
     return parsePreviewDescriptor(
       await invoke<unknown>("prepare_source_preview", {
@@ -225,9 +218,7 @@ export async function prepareSourcePreview(sourcePath: string): Promise<PreviewD
   }
 }
 
-export async function prepareImportedSourceThumbnail(
-  sourcePath: string,
-): Promise<ThumbnailDescriptor> {
+async function prepareImportedSourceThumbnail(sourcePath: string): Promise<ThumbnailDescriptor> {
   try {
     return parseThumbnailDescriptor(
       await invoke<unknown>("prepare_imported_source_thumbnail", {
@@ -239,7 +230,7 @@ export async function prepareImportedSourceThumbnail(
   }
 }
 
-export async function prepareAudioPreviews(
+async function prepareAudioPreviews(
   sourcePath: string,
   streamIndexes: number[],
 ): Promise<AudioPreviewDescriptor[]> {
@@ -252,7 +243,7 @@ export async function prepareAudioPreviews(
   }
 }
 
-export async function prepareProxyPreview(sourcePath: string): Promise<PreviewDescriptor> {
+async function prepareProxyPreview(sourcePath: string): Promise<PreviewDescriptor> {
   try {
     return parsePreviewDescriptor(
       await invoke<unknown>("prepare_proxy_preview", {
@@ -264,7 +255,7 @@ export async function prepareProxyPreview(sourcePath: string): Promise<PreviewDe
   }
 }
 
-export async function prepareWaveforms(
+async function prepareWaveforms(
   sourcePath: string,
   jobId: string,
   streamIndexes: number[],
@@ -284,7 +275,7 @@ export async function prepareWaveforms(
   }
 }
 
-export async function listenForSourceDrops(
+async function listenForSourceDrops(
   onEvent: (event: SourceDropEvent) => void,
   onImportRequested?: () => string,
 ): Promise<UnlistenFn> {
@@ -344,3 +335,27 @@ async function importDroppedSources(paths: string[]): Promise<SourceImportResult
     throw normalizeAppError(error);
   }
 }
+
+export {
+  activateSourcePath,
+  cancelOperation,
+  checkMediaCapabilities,
+  chooseOutputPath,
+  chooseSource,
+  inspectImportedSource,
+  inspectMedia,
+  listenForSourceDrops,
+  moveSourceToTrash,
+  openFileLocation,
+  planOptimizedExport,
+  prepareAudioPreviews,
+  prepareImportedSourceThumbnail,
+  prepareProxyPreview,
+  prepareSourcePreview,
+  prepareWaveforms,
+  releaseExportSource,
+  renderFast,
+  renderOptimized,
+  reserveExportSource,
+  restoreSourceFromTrash,
+};

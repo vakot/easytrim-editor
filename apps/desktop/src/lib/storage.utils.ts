@@ -1,4 +1,4 @@
-export function readStoredJson<T>(key: string): T | null {
+function readStoredJson<T>(key: string): T | null {
   if (typeof window === "undefined") return null;
   try {
     const value = window.localStorage.getItem(key);
@@ -8,7 +8,7 @@ export function readStoredJson<T>(key: string): T | null {
   }
 }
 
-export function writeStoredJson(key: string, value: unknown): void {
+function writeStoredJson(key: string, value: unknown): void {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(key, JSON.stringify(value));
@@ -16,3 +16,5 @@ export function writeStoredJson(key: string, value: unknown): void {
     // Storage may be unavailable or full. The app remains usable in memory.
   }
 }
+
+export { readStoredJson, writeStoredJson };

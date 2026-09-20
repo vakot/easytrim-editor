@@ -10,7 +10,7 @@ import { selectCropApplied, selectTransformApplied } from "@/app/store/slices/cr
 import { selectSourceReady } from "@/app/store/slices/source-slice";
 import { openOptimizedExportDialog, startFastCutRequested } from "@/app/store/thunks/export-thunks";
 
-export function ExportActions() {
+function ExportActions() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const sourceReady = useAppSelector(selectSourceReady);
@@ -91,3 +91,5 @@ function ExportActionButton({
     </Tooltip>
   );
 }
+
+export { ExportActions };

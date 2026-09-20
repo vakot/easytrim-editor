@@ -12,7 +12,7 @@ import { closeActiveEditingInstanceRequested } from "@/app/store/thunks/source-m
 
 import { CropViewport } from "../CropViewport";
 
-export function VideoPreview() {
+function VideoPreview() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const preview = useAppSelector(selectPreview);
@@ -76,3 +76,5 @@ export function VideoPreview() {
     </section>
   );
 }
+
+export { VideoPreview };

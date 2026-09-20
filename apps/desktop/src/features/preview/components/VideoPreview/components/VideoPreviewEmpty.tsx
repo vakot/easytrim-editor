@@ -7,7 +7,7 @@ import { SupportLink } from "@/app/components/SupportLink";
 
 import styles from "./VideoPreviewEmpty.module.css";
 
-export function VideoPreviewEmpty() {
+function VideoPreviewEmpty() {
   const { t } = useTranslation();
   const shortcuts = [
     {
@@ -94,3 +94,5 @@ export function VideoPreviewEmpty() {
     </section>
   );
 }
+
+export { VideoPreviewEmpty };

@@ -57,7 +57,7 @@ import {
 
 type PresetDialogMode = "create" | "edit";
 
-export function PresetManager() {
+function PresetManager() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const presets = useAppSelector(selectExportPresetList);
@@ -257,3 +257,5 @@ export function PresetManager() {
     </section>
   );
 }
+
+export { PresetManager };

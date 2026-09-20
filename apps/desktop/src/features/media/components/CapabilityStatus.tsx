@@ -43,7 +43,7 @@ function CapabilityTooltip({ children, content }: { children: ReactNode; content
   );
 }
 
-export function CapabilityStatus() {
+function CapabilityStatus() {
   const { t } = useTranslation();
   const capabilities = useAppSelector(selectCapabilities);
 
@@ -134,3 +134,5 @@ export function CapabilityStatus() {
     </CapabilityTooltip>
   );
 }
+
+export { CapabilityStatus };

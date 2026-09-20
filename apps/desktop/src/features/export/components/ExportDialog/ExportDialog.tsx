@@ -35,7 +35,7 @@ import { ExportFrameRate } from "./components/ExportFrameRate";
 import { ExportResolution } from "./components/ExportResolution";
 import { PresetManager } from "./components/PresetManager";
 
-export function ExportDialog() {
+function ExportDialog() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const open = useAppSelector(selectOptimizedExportDialogOpen);
@@ -110,3 +110,5 @@ export function ExportDialog() {
     </>
   );
 }
+
+export { ExportDialog };

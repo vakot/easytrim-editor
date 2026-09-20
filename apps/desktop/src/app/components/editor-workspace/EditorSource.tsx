@@ -23,7 +23,7 @@ const groupByIcons = {
   imported: Upload,
 };
 
-export function EditorSource() {
+function EditorSource() {
   const { t } = useTranslation();
 
   return (
@@ -130,3 +130,5 @@ export function EditorSource() {
     </aside>
   );
 }
+
+export { EditorSource };

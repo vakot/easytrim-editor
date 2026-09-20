@@ -24,7 +24,7 @@ interface ActivityFeedViewProps {
   sessions: readonly DiagnosticSessionMetadata[];
 }
 
-export function ActivityFeedView({
+function ActivityFeedView({
   currentAppVersion,
   currentSessionId,
   entries,
@@ -70,3 +70,5 @@ export function ActivityFeedView({
     </div>
   );
 }
+
+export { ActivityFeedView };

@@ -9,7 +9,7 @@ interface ResolutionDimensions {
   width: number;
 }
 
-export function resolutionOptions(dimensions: ResolutionDimensions, t: TFunction) {
+function resolutionOptions(dimensions: ResolutionDimensions, t: TFunction) {
   const options: { label: string; value: string }[] = [
     {
       label: t("export.options.sourceResolution", {
@@ -32,8 +32,10 @@ export function resolutionOptions(dimensions: ResolutionDimensions, t: TFunction
   return options;
 }
 
-export function rateFromValue(value: string): FrameRate | undefined {
+function rateFromValue(value: string): FrameRate | undefined {
   if (value === "source") return undefined;
   const [numerator, denominator] = value.split("/").map(Number);
   return numerator && denominator ? { numerator, denominator } : undefined;
 }
+
+export { rateFromValue, resolutionOptions };

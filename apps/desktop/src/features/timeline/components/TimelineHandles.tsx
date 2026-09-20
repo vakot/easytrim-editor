@@ -27,7 +27,7 @@ interface SegmentDragHandleProps {
   snapPoint: SegmentSnapPoint | null;
 }
 
-export function SegmentDragHandle({
+function SegmentDragHandle({
   disabled = false,
   dragging,
   onKeyDown,
@@ -99,7 +99,7 @@ interface TrimHandleProps {
   value: number;
 }
 
-export function TrimHandle({
+function TrimHandle({
   boundary,
   disabled = false,
   dragging,
@@ -162,7 +162,7 @@ export function TrimHandle({
   );
 }
 
-export function Playhead({
+function Playhead({
   disabled = false,
   dragging,
   frameRate,
@@ -223,3 +223,5 @@ export function Playhead({
     </Tooltip>
   );
 }
+
+export { Playhead, SegmentDragHandle, TrimHandle };

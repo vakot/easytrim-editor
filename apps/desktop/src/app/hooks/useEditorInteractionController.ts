@@ -66,7 +66,7 @@ const AUDIO_SYNC_INTERVAL_MS = 100;
 const REVERSE_SHUTTLE_SEEK_INTERVAL_MS = 50;
 const SHUTTLE_MAX_FRAME_DELTA_MS = 100;
 
-export interface EditorInteractionRuntime {
+interface EditorInteractionRuntime {
   audioPlayheadRef: React.RefObject<HTMLDivElement | null>;
   canSetSegmentEnd: boolean;
   canSetSegmentStart: boolean;
@@ -106,7 +106,7 @@ export interface EditorInteractionRuntime {
   videoRef: React.RefObject<HTMLVideoElement | null>;
 }
 
-export function useEditorInteractionController(): EditorInteractionRuntime {
+function useEditorInteractionController(): EditorInteractionRuntime {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const snapPlaybackEnabled = useAppSelector(selectSnapPlaybackEnabled);
@@ -1388,3 +1388,7 @@ export function useEditorInteractionController(): EditorInteractionRuntime {
     canSetSegmentEnd: canSetTrimBoundaryAtPlayhead(trim, "end", displayedPlayheadMicros),
   };
 }
+
+export { useEditorInteractionController };
+
+export type { EditorInteractionRuntime };

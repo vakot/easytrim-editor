@@ -78,7 +78,7 @@ function EasyTrimEditorApp() {
   );
 }
 
-export function App() {
+function App() {
   return (
     <ReduxProvider store={store}>
       <PersistGate loading={null} persistor={persistor}>
@@ -89,3 +89,5 @@ export function App() {
     </ReduxProvider>
   );
 }
+
+export { App };

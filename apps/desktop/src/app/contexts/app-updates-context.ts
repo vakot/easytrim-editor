@@ -2,7 +2,7 @@ import { createContext } from "react";
 
 export type UpdateStatus = "idle" | "checking" | "up-to-date" | "available" | "error";
 
-export interface AppUpdates {
+interface AppUpdates {
   availableVersion: string | null;
   checkForUpdates: () => Promise<void>;
   installUpdate: () => Promise<void>;
@@ -11,3 +11,5 @@ export interface AppUpdates {
 }
 
 export const AppUpdatesContext = createContext<AppUpdates | null>(null);
+
+export type { AppUpdates };

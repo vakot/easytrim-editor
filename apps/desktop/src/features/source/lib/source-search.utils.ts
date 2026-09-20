@@ -1,6 +1,6 @@
 import type { EditingInstance } from "@/domain/editing-instance";
 
-export function filterSourcesByPath(sources: EditingInstance[], search: string): EditingInstance[] {
+function filterSourcesByPath(sources: EditingInstance[], search: string): EditingInstance[] {
   const normalizedSearch = search.trim().toLocaleLowerCase();
   if (!normalizedSearch) return sources;
 
@@ -8,3 +8,5 @@ export function filterSourcesByPath(sources: EditingInstance[], search: string):
     snapshot.source.sourcePath.toLocaleLowerCase().includes(normalizedSearch),
   );
 }
+
+export { filterSourcesByPath };

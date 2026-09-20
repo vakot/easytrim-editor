@@ -7,7 +7,7 @@ import {
 } from "@/app/contexts/editor-contracts-context";
 import { useEditorInteractionController } from "@/app/hooks/useEditorInteractionController";
 
-export function EditorContractsProvider({ children }: { children: ReactNode }) {
+function EditorContractsProvider({ children }: { children: ReactNode }) {
   const interaction = useEditorInteractionController();
   const playback = useMemo(
     () => ({
@@ -114,3 +114,5 @@ export function EditorContractsProvider({ children }: { children: ReactNode }) {
     </EditorPlaybackContext.Provider>
   );
 }
+
+export { EditorContractsProvider };

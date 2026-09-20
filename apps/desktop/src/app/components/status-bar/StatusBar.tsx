@@ -26,7 +26,7 @@ function splitFilePath(path: string) {
   };
 }
 
-export function StatusBar() {
+function StatusBar() {
   const { t } = useTranslation();
   const activeExport = useAppSelector(selectRenderingAttempt);
   const activeExportPath = activeExport
@@ -202,3 +202,5 @@ function getUpdateButtonAction(
 
   return null;
 }
+
+export { StatusBar };

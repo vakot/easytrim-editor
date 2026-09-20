@@ -22,28 +22,28 @@ const primaryColorValues = {
   emerald: "#32a876",
 } as const;
 
-export function isCustomPrimaryColor(value: unknown): value is CustomPrimaryColor {
+function isCustomPrimaryColor(value: unknown): value is CustomPrimaryColor {
   return typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value);
 }
 
-export function isPrimaryColor(value: unknown): value is PrimaryColor {
+function isPrimaryColor(value: unknown): value is PrimaryColor {
   return (
     isCustomPrimaryColor(value) ||
     (typeof value === "string" && PRIMARY_COLORS.includes(value as (typeof PRIMARY_COLORS)[number]))
   );
 }
 
-export function isThemePreference(value: unknown): value is ThemePreference {
+function isThemePreference(value: unknown): value is ThemePreference {
   return value === "system" || value === "light" || value === "dark";
 }
 
-export function resolvePrimaryColor(color: PrimaryColor): string {
+function resolvePrimaryColor(color: PrimaryColor): string {
   return color.startsWith("#")
     ? color
     : primaryColorValues[color as (typeof PRIMARY_COLORS)[number]];
 }
 
-export function primaryColorPalette(color: PrimaryColor) {
+function primaryColorPalette(color: PrimaryColor) {
   const hex = resolvePrimaryColor(color);
   const { hue, saturation } = hexToHsl(hex);
   return {
@@ -55,14 +55,11 @@ export function primaryColorPalette(color: PrimaryColor) {
   };
 }
 
-export function resolveTheme(
-  preference: ThemePreference,
-  systemPrefersDark: boolean,
-): ResolvedTheme {
+function resolveTheme(preference: ThemePreference, systemPrefersDark: boolean): ResolvedTheme {
   return preference === "system" ? (systemPrefersDark ? "dark" : "light") : preference;
 }
 
-export function systemPrefersDark(): boolean {
+function systemPrefersDark(): boolean {
   return (
     typeof window !== "undefined" &&
     typeof window.matchMedia === "function" &&
@@ -70,7 +67,7 @@ export function systemPrefersDark(): boolean {
   );
 }
 
-export function subscribeToSystemTheme(onChange: () => void): () => void {
+function subscribeToSystemTheme(onChange: () => void): () => void {
   if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
     return () => undefined;
   }
@@ -78,3 +75,14 @@ export function subscribeToSystemTheme(onChange: () => void): () => void {
   mediaQuery.addEventListener("change", onChange);
   return () => mediaQuery.removeEventListener("change", onChange);
 }
+
+export {
+  isCustomPrimaryColor,
+  isPrimaryColor,
+  isThemePreference,
+  primaryColorPalette,
+  resolvePrimaryColor,
+  resolveTheme,
+  subscribeToSystemTheme,
+  systemPrefersDark,
+};

@@ -32,7 +32,7 @@ const PLAYBACK_SPEED_MARKERS = [0.5, 1, 1.5, 2, 3].map((speed) => ({
   label: `${speed}×`,
 }));
 
-export function TimelineTools() {
+function TimelineTools() {
   return (
     <>
       <div className="grid auto-cols-7 grid-flow-col grid-rows-[repeat(2,1.75rem)] gap-1">
@@ -208,3 +208,5 @@ function TimelineToolButton({
     </Tooltip>
   );
 }
+
+export { TimelineTools };

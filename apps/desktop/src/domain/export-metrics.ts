@@ -5,7 +5,7 @@ const BITRATE_UNITS: Record<string, number> = {
   gbits: 1_000_000_000,
 };
 
-export function parseFfmpegNumber(value: string | undefined): number | null {
+function parseFfmpegNumber(value: string | undefined): number | null {
   if (!value) return null;
   const normalized = value.trim();
   if (!/^[0-9]+(?:\.[0-9]+)?$/.test(normalized)) return null;
@@ -13,7 +13,7 @@ export function parseFfmpegNumber(value: string | undefined): number | null {
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
 }
 
-export function parseFfmpegSpeed(value: string | undefined): number | null {
+function parseFfmpegSpeed(value: string | undefined): number | null {
   if (!value) return null;
   const match = value.trim().match(/^([0-9]+(?:\.[0-9]+)?)x$/i);
   const valueText = match?.[1];
@@ -22,7 +22,7 @@ export function parseFfmpegSpeed(value: string | undefined): number | null {
   return Number.isFinite(speed) && speed > 0 ? speed : null;
 }
 
-export function parseFfmpegBitrate(value: string | undefined): number | null {
+function parseFfmpegBitrate(value: string | undefined): number | null {
   if (!value) return null;
   const match = value.trim().match(/^([0-9]+(?:\.[0-9]+)?)\s*(bits|kbits|mbits|gbits)\/s$/i);
   const valueText = match?.[1];
@@ -34,7 +34,7 @@ export function parseFfmpegBitrate(value: string | undefined): number | null {
   return Number.isFinite(bitrate) && bitrate > 0 ? bitrate : null;
 }
 
-export function estimateExportTime(
+function estimateExportTime(
   elapsedMicros: number,
   totalMicros: number,
   speed: string | undefined,
@@ -57,7 +57,7 @@ export function estimateExportTime(
   };
 }
 
-export function estimateExportSize(
+function estimateExportSize(
   totalSize: number | undefined,
   bitrate: string | undefined,
   elapsedMicros: number,
@@ -90,7 +90,7 @@ export function estimateExportSize(
   };
 }
 
-export function formatExportDuration(durationMs: number): string {
+function formatExportDuration(durationMs: number): string {
   const totalSeconds = Math.max(0, Math.floor(durationMs / 1_000));
   const hours = Math.floor(totalSeconds / 3_600);
   const minutes = Math.floor((totalSeconds % 3_600) / 60);
@@ -100,7 +100,7 @@ export function formatExportDuration(durationMs: number): string {
     : `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
-export function formatExportFileSize(bytes: number): string {
+function formatExportFileSize(bytes: number): string {
   if (bytes < 1_024) return `${bytes} B`;
   const units = ["KB", "MB", "GB", "TB"];
   let value = bytes;
@@ -111,3 +111,13 @@ export function formatExportFileSize(bytes: number): string {
   }
   return `${value.toFixed(value >= 10 ? 0 : 1)} ${units[unitIndex]}`;
 }
+
+export {
+  estimateExportSize,
+  estimateExportTime,
+  formatExportDuration,
+  formatExportFileSize,
+  parseFfmpegBitrate,
+  parseFfmpegNumber,
+  parseFfmpegSpeed,
+};

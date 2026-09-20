@@ -1,7 +1,7 @@
 import { formatPlaybackTime } from "@/domain/playback";
 import type { FrameRate } from "@/lib/tauri/media.types";
 
-export function TimelineTimeValue({
+function TimelineTimeValue({
   frameRate,
   label,
   micros,
@@ -21,3 +21,5 @@ export function TimelineTimeValue({
     </div>
   );
 }
+
+export { TimelineTimeValue };

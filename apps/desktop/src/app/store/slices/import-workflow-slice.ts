@@ -47,7 +47,7 @@ const importWorkflowSlice = createSlice({
   },
 });
 
-export const {
+const {
   dropListenerErrorCleared,
   dropListenerFailed,
   nativeDialogStateChanged,
@@ -56,13 +56,28 @@ export const {
   sourceDragChanged,
 } = importWorkflowSlice.actions;
 
-export const importWorkflowReducer = importWorkflowSlice.reducer;
+const importWorkflowReducer = importWorkflowSlice.reducer;
 
-export const selectIsChoosingSource = (state: RootState): boolean =>
-  state.importWorkflow.isChoosingSource;
-export const selectIsNativeDialogOpen = (state: RootState): boolean =>
+const selectIsChoosingSource = (state: RootState): boolean => state.importWorkflow.isChoosingSource;
+const selectIsNativeDialogOpen = (state: RootState): boolean =>
   state.importWorkflow.isNativeDialogOpen;
-export const selectIsSourceDragActive = (state: RootState): boolean =>
+
+const selectIsSourceDragActive = (state: RootState): boolean =>
   state.importWorkflow.isSourceDragActive;
-export const selectDropListenerError = (state: RootState): AppError | null =>
+
+const selectDropListenerError = (state: RootState): AppError | null =>
   state.importWorkflow.dropListenerError;
+
+export {
+  dropListenerErrorCleared,
+  dropListenerFailed,
+  importWorkflowReducer,
+  nativeDialogStateChanged,
+  selectDropListenerError,
+  selectIsChoosingSource,
+  selectIsNativeDialogOpen,
+  selectIsSourceDragActive,
+  sourceChoiceFinished,
+  sourceChoiceStarted,
+  sourceDragChanged,
+};

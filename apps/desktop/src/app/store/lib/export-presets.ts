@@ -7,7 +7,7 @@ const DEFAULT_OPTIMIZED_ARGUMENTS =
 const LEGACY_DEFAULT_OPTIMIZED_ARGUMENTS =
   "-c:v hevc_nvenc -preset p3 -tune hq -rc vbr -cq 24 -b:v 0 -spatial_aq 1 -temporal_aq 1 -aq-strength 8 -pix_fmt yuv420p -c:a aac -b:a 160k -movflags +faststart";
 
-export interface ExportPreset {
+interface ExportPreset {
   argumentsText: string;
   description?: string;
   id: string;
@@ -83,7 +83,7 @@ export const initialExportPresetState: ExportPresetState = {
   nextPresetSequence: 0,
 };
 
-export function loadExportPresetState(): ExportPresetState {
+function loadExportPresetState(): ExportPresetState {
   const stored = readStoredJson<Partial<ExportPresetState>>(STORAGE_KEYS.exportPresets);
   if (
     !stored ||
@@ -130,11 +130,11 @@ function migrateLegacyNvencPreset(preset: ExportPreset): ExportPreset {
   return { ...preset, argumentsText: DEFAULT_NVENC_ARGUMENTS(Number(match[1])) };
 }
 
-export function persistExportPresetState(state: ExportPresetState): void {
+function persistExportPresetState(state: ExportPresetState): void {
   writeStoredJson(STORAGE_KEYS.exportPresets, state);
 }
 
-export function presetNameError(
+function presetNameError(
   presets: ExportPreset[],
   name: string,
   excludedPresetId?: string,
@@ -157,3 +157,7 @@ export function presetNameError(
   }
   return null;
 }
+
+export { loadExportPresetState, persistExportPresetState, presetNameError };
+
+export type { ExportPreset };

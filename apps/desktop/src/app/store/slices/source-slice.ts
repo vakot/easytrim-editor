@@ -103,16 +103,32 @@ const sourceSlice = createSlice({
   },
 });
 
-export const { capabilitiesFailed, capabilitiesReady } = sourceSlice.actions;
-export const sourceReducer = sourceSlice.reducer;
+const { capabilitiesFailed, capabilitiesReady } = sourceSlice.actions;
+const sourceReducer = sourceSlice.reducer;
 
-export const selectSourceSelection = (state: RootState): SourceRef | null => state.source.source;
-export const selectSourceMedia = (state: RootState): MediaInfo | null => state.source.media;
-export const selectAudioPanelStreamCount = (state: RootState): number =>
+const selectSourceSelection = (state: RootState): SourceRef | null => state.source.source;
+const selectSourceMedia = (state: RootState): MediaInfo | null => state.source.media;
+const selectAudioPanelStreamCount = (state: RootState): number =>
   state.source.audioPanelStreamCount;
-export const selectCapabilities = (state: RootState): CapabilityState => state.source.capabilities;
-export const selectHasSource = (state: RootState): boolean => state.source.source !== null;
-export const selectSourceReady = (state: RootState): boolean =>
+
+const selectCapabilities = (state: RootState): CapabilityState => state.source.capabilities;
+const selectHasSource = (state: RootState): boolean => state.source.source !== null;
+const selectSourceReady = (state: RootState): boolean =>
   state.source.status === "ready" && state.source.media !== null;
-export const selectSourceLoadToken = (state: RootState): number => state.source.loadToken;
-export const selectSourceStatus = (state: RootState): SourceStatus => state.source.status;
+
+const selectSourceLoadToken = (state: RootState): number => state.source.loadToken;
+const selectSourceStatus = (state: RootState): SourceStatus => state.source.status;
+
+export {
+  capabilitiesFailed,
+  capabilitiesReady,
+  selectAudioPanelStreamCount,
+  selectCapabilities,
+  selectHasSource,
+  selectSourceLoadToken,
+  selectSourceMedia,
+  selectSourceReady,
+  selectSourceSelection,
+  selectSourceStatus,
+  sourceReducer,
+};

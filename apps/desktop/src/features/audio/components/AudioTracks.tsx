@@ -23,7 +23,7 @@ interface AudioTracksProps {
   waveformPreparationEnabled: boolean;
 }
 
-export function AudioTracks({
+function AudioTracks({
   onCommit,
   onPrepareWaveforms,
   onToggleTrack,
@@ -92,3 +92,5 @@ function AudioPlayhead() {
     </div>
   );
 }
+
+export { AudioTracks };

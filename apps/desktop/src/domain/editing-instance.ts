@@ -13,7 +13,7 @@ export type InstanceOrigin = "source-import" | "duplicate";
 export type ExportRoute = "fast" | "optimized";
 export type ExportRequest = FastExportRequest | OptimizedExportRequest;
 
-export interface ExportSettings {
+interface ExportSettings {
   frameRate: FrameRate | undefined;
   resolution: { height: number; width: number };
 }
@@ -27,7 +27,7 @@ export type ExportAttemptState =
   | { error: AppError; failedAt: number; status: "failed" }
   | { canceledAt: number; error?: AppError; status: "canceled" };
 
-export interface ExportAttemptMetrics {
+interface ExportAttemptMetrics {
   bitrate?: string;
   currentFrame?: number;
   durationMs: number | null;
@@ -40,7 +40,7 @@ export interface ExportAttemptMetrics {
   totalFrames?: number;
 }
 
-export interface ExportAttempt {
+interface ExportAttempt {
   capturedAt: number;
   id: string;
   metrics: ExportAttemptMetrics;
@@ -51,7 +51,7 @@ export interface ExportAttempt {
   state: ExportAttemptState;
 }
 
-export interface EditingInstance {
+interface EditingInstance {
   draftAvailable?: boolean;
   exportAttempts: ExportAttempt[];
   id: EditingInstanceId;
@@ -64,7 +64,7 @@ export interface EditingInstance {
   sourceAvailability: SourceAvailability;
 }
 
-export interface EditingInstancesState {
+interface EditingInstancesState {
   activeInstanceId: EditingInstanceId | null;
   entities: Record<EditingInstanceId, EditingInstance>;
   ids: EditingInstanceId[];
@@ -75,7 +75,7 @@ export const EMPTY_EXPORT_METRICS: ExportAttemptMetrics = {
   progressPercent: 0,
 };
 
-export function createExportAttempt(input: {
+function createExportAttempt(input: {
   capturedAt: number;
   id: string;
   output: OutputSelection;
@@ -98,3 +98,13 @@ export function createExportAttempt(input: {
     state: { queuedAt: input.capturedAt, status: "queued" },
   };
 }
+
+export { createExportAttempt };
+
+export type {
+  EditingInstance,
+  EditingInstancesState,
+  ExportAttempt,
+  ExportAttemptMetrics,
+  ExportSettings,
+};

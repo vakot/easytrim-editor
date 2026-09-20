@@ -1,10 +1,10 @@
-export interface NativeAudioBinding {
+interface NativeAudioBinding {
   connectedMaster: GainNode | null;
   gain: GainNode;
   source: MediaElementAudioSourceNode;
 }
 
-export function getOrCreateNativeAudioBinding(
+function getOrCreateNativeAudioBinding(
   bindings: Map<HTMLVideoElement, NativeAudioBinding>,
   context: AudioContext,
   element: HTMLVideoElement,
@@ -22,7 +22,7 @@ export function getOrCreateNativeAudioBinding(
   return binding;
 }
 
-export function connectNativeAudioBinding(binding: NativeAudioBinding, masterGain: GainNode): void {
+function connectNativeAudioBinding(binding: NativeAudioBinding, masterGain: GainNode): void {
   if (binding.connectedMaster === masterGain) return;
   binding.source.disconnect();
   binding.gain.disconnect();
@@ -30,8 +30,12 @@ export function connectNativeAudioBinding(binding: NativeAudioBinding, masterGai
   binding.connectedMaster = masterGain;
 }
 
-export function disconnectNativeAudioBinding(binding: NativeAudioBinding): void {
+function disconnectNativeAudioBinding(binding: NativeAudioBinding): void {
   binding.source.disconnect();
   binding.gain.disconnect();
   binding.connectedMaster = null;
 }
+
+export { connectNativeAudioBinding, disconnectNativeAudioBinding, getOrCreateNativeAudioBinding };
+
+export type { NativeAudioBinding };

@@ -84,7 +84,7 @@ function PreferenceMenuItem({ children, icon, preferenceKey }: PreferenceMenuIte
   );
 }
 
-export function MenuBarSettings() {
+function MenuBarSettings() {
   const { i18n, t } = useTranslation();
   const dispatch = useAppDispatch();
   const currentLanguage = isSupportedLanguage(i18n.resolvedLanguage) ? i18n.resolvedLanguage : "en";
@@ -183,3 +183,5 @@ export function MenuBarSettings() {
     </MenubarMenu>
   );
 }
+
+export { MenuBarSettings };

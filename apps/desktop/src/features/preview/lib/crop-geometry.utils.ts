@@ -1,7 +1,5 @@
 import type { CropRect } from "@/domain/crop";
 
-export type { CropRect };
-
 export type CropHandle =
   | "move"
   | "top-left"
@@ -15,7 +13,7 @@ export type CropHandle =
 
 export const MIN_CROP_SIZE = 0.1;
 
-export function moveCrop(crop: CropRect, deltaX: number, deltaY: number): CropRect {
+function moveCrop(crop: CropRect, deltaX: number, deltaY: number): CropRect {
   return {
     ...crop,
     x: clamp(crop.x + deltaX, 0, 1 - crop.width),
@@ -23,7 +21,7 @@ export function moveCrop(crop: CropRect, deltaX: number, deltaY: number): CropRe
   };
 }
 
-export function resizeCrop(
+function resizeCrop(
   crop: CropRect,
   handle: Exclude<CropHandle, "move">,
   deltaX: number,
@@ -42,10 +40,14 @@ export function resizeCrop(
   return { x: left, y: top, width: right - left, height: bottom - top };
 }
 
-export function isFullCrop(crop: CropRect): boolean {
+function isFullCrop(crop: CropRect): boolean {
   return crop.x === 0 && crop.y === 0 && crop.width === 1 && crop.height === 1;
 }
 
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.min(Math.max(value, minimum), maximum);
 }
+
+export { isFullCrop, moveCrop, resizeCrop };
+
+export type { CropRect };

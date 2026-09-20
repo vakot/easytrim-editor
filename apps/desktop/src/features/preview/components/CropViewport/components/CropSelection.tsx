@@ -47,7 +47,7 @@ const HANDLES: Array<{ className: string; handle: Exclude<CropHandle, "move"> }>
   },
 ];
 
-export function CropSelection({
+function CropSelection({
   enterFrom,
   frame,
   isDragging,
@@ -122,3 +122,5 @@ export function CropSelection({
     </div>
   );
 }
+
+export { CropSelection };

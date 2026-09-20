@@ -77,17 +77,18 @@ const cropSlice = createSlice({
   },
 });
 
-export const { cropChanged, cropReset, flipToggled, rotationChanged } = cropSlice.actions;
-export const cropReducer = cropSlice.reducer;
+const { cropChanged, cropReset, flipToggled, rotationChanged } = cropSlice.actions;
+const cropReducer = cropSlice.reducer;
 
 const EMPTY_RESOLUTION: CropResolution = { width: 1, height: 1 };
 
-export const selectCrop = (state: RootState): CropRect => state.crop.value;
-export const selectRotationDegrees = (state: RootState): RotationDegrees =>
+const selectCrop = (state: RootState): CropRect => state.crop.value;
+const selectRotationDegrees = (state: RootState): RotationDegrees =>
   state.crop.rotationDegrees ?? 0;
-export const selectFlipHorizontal = (state: RootState): boolean => state.crop.flipHorizontal;
-export const selectFlipVertical = (state: RootState): boolean => state.crop.flipVertical;
-export function cropResolutionFor(
+
+const selectFlipHorizontal = (state: RootState): boolean => state.crop.flipHorizontal;
+const selectFlipVertical = (state: RootState): boolean => state.crop.flipVertical;
+function cropResolutionFor(
   sourceDimensions: CropResolution | null,
   crop: CropRect,
   rotation: RotationDegrees = 0,
@@ -105,19 +106,36 @@ export function cropResolutionFor(
   };
 }
 
-export const selectCropApplied = (state: RootState): boolean => {
+const selectCropApplied = (state: RootState): boolean => {
   const crop = selectCrop(state);
   return crop.x !== 0 || crop.y !== 0 || crop.width !== 1 || crop.height !== 1;
 };
-export const selectCropResolution = createSelector(
+
+const selectCropResolution = createSelector(
   [selectSourceMedia, selectCrop, selectRotationDegrees],
   (media, crop, rotation): CropResolution =>
     cropResolutionFor(media?.video ?? null, crop, rotation),
 );
 
-export const selectTransformApplied = (state: RootState): boolean =>
+const selectTransformApplied = (state: RootState): boolean =>
   !isIdentityTransform(
     selectRotationDegrees(state),
     selectFlipHorizontal(state),
     selectFlipVertical(state),
   );
+
+export {
+  cropChanged,
+  cropReducer,
+  cropReset,
+  cropResolutionFor,
+  flipToggled,
+  rotationChanged,
+  selectCrop,
+  selectCropApplied,
+  selectCropResolution,
+  selectFlipHorizontal,
+  selectFlipVertical,
+  selectRotationDegrees,
+  selectTransformApplied,
+};

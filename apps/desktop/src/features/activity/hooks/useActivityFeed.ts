@@ -21,7 +21,7 @@ import {
   resolveAvailableActivityActions,
 } from "../lib/activity-projection";
 
-export function useActivityFeed() {
+function useActivityFeed() {
   const { t } = useTranslation();
   const diagnosticSnapshot = useSyncExternalStore(
     subscribeToCurrentSessionDiagnostics,
@@ -96,3 +96,5 @@ export function useActivityFeed() {
     sessions: readonly DiagnosticSessionMetadata[];
   };
 }
+
+export { useActivityFeed };

@@ -36,7 +36,7 @@ interface CropSelectionBounds {
   width: number;
 }
 
-export function useCropSelection(
+function useCropSelection(
   previewRef: RefObject<HTMLDivElement | null>,
   rotationDegrees: RotationDegrees,
 ) {
@@ -155,3 +155,5 @@ export function useCropSelection(
     startDrag,
   };
 }
+
+export { useCropSelection };

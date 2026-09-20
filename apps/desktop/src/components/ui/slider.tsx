@@ -3,7 +3,7 @@ import * as React from "react";
 
 import { cn } from "@/lib/class-names.utils";
 
-export interface SliderMarker {
+interface SliderMarker {
   label: React.ReactNode;
   value: number;
 }
@@ -80,3 +80,5 @@ function Slider({
 }
 
 export { Slider };
+
+export type { SliderMarker };

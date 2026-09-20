@@ -18,7 +18,7 @@ interface AudioLevelControlProps {
   volumePercent: number;
 }
 
-export function AudioLevelControl({
+function AudioLevelControl({
   className,
   label,
   onChange,
@@ -54,3 +54,5 @@ export function AudioLevelControl({
     </div>
   );
 }
+
+export { AudioLevelControl };

@@ -8,7 +8,7 @@ interface SnapThresholds {
   y: number;
 }
 
-export function snapCropToGuides(
+function snapCropToGuides(
   crop: CropRect,
   handle: CropHandle,
   thresholds: SnapThresholds,
@@ -85,3 +85,5 @@ function nearestGuide(
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.min(Math.max(value, minimum), maximum);
 }
+
+export { snapCropToGuides };

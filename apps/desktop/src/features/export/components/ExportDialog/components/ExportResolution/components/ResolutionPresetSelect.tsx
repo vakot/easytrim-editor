@@ -15,7 +15,7 @@ interface ResolutionPresetSelectProps {
   resolutionValue: string;
 }
 
-export function ResolutionPresetSelect({
+function ResolutionPresetSelect({
   hasMatchingResolutionPreset,
   onValueChange,
   options,
@@ -43,3 +43,5 @@ export function ResolutionPresetSelect({
     </Select>
   );
 }
+
+export { ResolutionPresetSelect };

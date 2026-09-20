@@ -99,7 +99,7 @@ const previewSlice = createSlice({
   },
 });
 
-export const {
+const {
   importedThumbnailFailed,
   importedThumbnailLoading,
   importedThumbnailReady,
@@ -107,11 +107,26 @@ export const {
   previewLoading,
   previewReady,
 } = previewSlice.actions;
-export const previewReducer = previewSlice.reducer;
 
-export const selectPreview = (state: RootState): PreviewState => state.preview.value;
-export const selectImportedSourceThumbnails = (
+const previewReducer = previewSlice.reducer;
+
+const selectPreview = (state: RootState): PreviewState => state.preview.value;
+const selectImportedSourceThumbnails = (
   state: RootState,
 ): Record<EditingInstanceId, ImportedThumbnailState> => state.preview.importedThumbnails;
-export const selectImportedSourceThumbnail = (state: RootState, id: EditingInstanceId) =>
+
+const selectImportedSourceThumbnail = (state: RootState, id: EditingInstanceId) =>
   state.preview.importedThumbnails[id];
+
+export {
+  importedThumbnailFailed,
+  importedThumbnailLoading,
+  importedThumbnailReady,
+  previewFailed,
+  previewLoading,
+  previewReady,
+  previewReducer,
+  selectImportedSourceThumbnail,
+  selectImportedSourceThumbnails,
+  selectPreview,
+};

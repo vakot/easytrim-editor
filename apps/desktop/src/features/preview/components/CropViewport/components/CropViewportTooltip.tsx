@@ -30,7 +30,7 @@ interface CropViewportTooltipProps {
   viewport: Bounds;
 }
 
-export const CropViewportTooltip = forwardRef<HTMLDivElement, CropViewportTooltipProps>(
+const CropViewportTooltip = forwardRef<HTMLDivElement, CropViewportTooltipProps>(
   function CropViewportTooltip(
     { children, containerRef, cropSelection, onContextMenu, viewport },
     forwardedRef,
@@ -89,3 +89,5 @@ export const CropViewportTooltip = forwardRef<HTMLDivElement, CropViewportToolti
     );
   },
 );
+
+export { CropViewportTooltip };

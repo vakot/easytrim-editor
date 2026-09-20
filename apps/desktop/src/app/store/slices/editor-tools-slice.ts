@@ -14,7 +14,7 @@ type EditorToolsState = {
 const createInitialState = (): EditorToolsState =>
   createEditorToolsStateFromPreferences(DEFAULT_PREFERENCES);
 
-export function createEditorToolsStateFromPreferences(defaults: Preferences): EditorToolsState {
+function createEditorToolsStateFromPreferences(defaults: Preferences): EditorToolsState {
   return {
     snapPlaybackEnabled: defaults.snapPlaybackEnabledDefault,
     loopPlaybackEnabled: defaults.loopPlaybackEnabledDefault,
@@ -47,7 +47,7 @@ const editorToolsSlice = createSlice({
   },
 });
 
-export const {
+const {
   editorToolsInitialized,
   editorToolsReset,
   loopPlaybackToggled,
@@ -56,14 +56,35 @@ export const {
   snapPlaybackChanged,
   snapPlaybackToggled,
 } = editorToolsSlice.actions;
-export const editorToolsReducer = editorToolsSlice.reducer;
 
-export const selectEditorTools = (state: RootState): EditorToolsState => state.editorTools;
-export const selectSnapPlaybackEnabled = (state: RootState): boolean =>
+const editorToolsReducer = editorToolsSlice.reducer;
+
+const selectEditorTools = (state: RootState): EditorToolsState => state.editorTools;
+const selectSnapPlaybackEnabled = (state: RootState): boolean =>
   selectEditorTools(state).snapPlaybackEnabled;
-export const selectLoopPlaybackEnabled = (state: RootState): boolean =>
+
+const selectLoopPlaybackEnabled = (state: RootState): boolean =>
   selectEditorTools(state).loopPlaybackEnabled;
-export const selectSegmentPlaybackEnabled = (state: RootState): boolean =>
+
+const selectSegmentPlaybackEnabled = (state: RootState): boolean =>
   selectEditorTools(state).segmentPlaybackEnabled;
-export const selectPlaybackSpeed = (state: RootState): PlaybackSpeed =>
+
+const selectPlaybackSpeed = (state: RootState): PlaybackSpeed =>
   selectEditorTools(state).playbackSpeed;
+
+export {
+  createEditorToolsStateFromPreferences,
+  editorToolsInitialized,
+  editorToolsReducer,
+  editorToolsReset,
+  loopPlaybackToggled,
+  playbackSpeedChanged,
+  segmentPlaybackToggled,
+  selectEditorTools,
+  selectLoopPlaybackEnabled,
+  selectPlaybackSpeed,
+  selectSegmentPlaybackEnabled,
+  selectSnapPlaybackEnabled,
+  snapPlaybackChanged,
+  snapPlaybackToggled,
+};

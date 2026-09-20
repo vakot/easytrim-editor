@@ -11,7 +11,7 @@ interface ActivityFeedEntryTitleProps {
   entry: ActivityEntry;
 }
 
-export function ActivityFeedEntryTitle({ className, entry }: ActivityFeedEntryTitleProps) {
+function ActivityFeedEntryTitle({ className, entry }: ActivityFeedEntryTitleProps) {
   return (
     <MarkerTitle className={cn("flex min-w-0 flex-nowrap items-center gap-1", className)}>
       <span className={cn("truncate", entry.status === "pending" && "shimmer")}>{entry.title}</span>
@@ -23,3 +23,5 @@ export function ActivityFeedEntryTitle({ className, entry }: ActivityFeedEntryTi
     </MarkerTitle>
   );
 }
+
+export { ActivityFeedEntryTitle };

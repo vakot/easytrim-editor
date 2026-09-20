@@ -23,7 +23,7 @@ function normalizeQueueError(error: unknown): Error {
   return new Error("The queue finish action could not be completed.");
 }
 
-export async function availableQueueFinishActions(): Promise<QueueFinishAction[]> {
+async function availableQueueFinishActions(): Promise<QueueFinishAction[]> {
   try {
     const value: unknown = await invoke("available_queue_finish_actions");
     if (!Array.isArray(value)) throw new Error("Invalid queue finish actions response.");
@@ -33,10 +33,12 @@ export async function availableQueueFinishActions(): Promise<QueueFinishAction[]
   }
 }
 
-export async function performQueueFinishAction(action: QueueFinishAction): Promise<void> {
+async function performQueueFinishAction(action: QueueFinishAction): Promise<void> {
   try {
     await invoke("perform_queue_finish_action", { action });
   } catch (error: unknown) {
     throw normalizeQueueError(error);
   }
 }
+
+export { availableQueueFinishActions, performQueueFinishAction };

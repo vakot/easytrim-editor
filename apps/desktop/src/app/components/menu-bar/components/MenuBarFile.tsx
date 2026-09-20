@@ -29,7 +29,7 @@ import {
 import { CloseSource, DeleteSource, SourceDeleteDialog } from "@/features/source";
 import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
 
-export function MenuBarFile() {
+function MenuBarFile() {
   const { t } = useTranslation();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
@@ -194,3 +194,5 @@ export function MenuBarFile() {
     </SourceDeleteDialog>
   );
 }
+
+export { MenuBarFile };

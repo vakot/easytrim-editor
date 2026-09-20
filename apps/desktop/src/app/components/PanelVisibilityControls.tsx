@@ -22,7 +22,7 @@ import {
 import { ResizablePanelControl } from "@/components/ui/resizable";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-export function PanelVisibilityControls() {
+function PanelVisibilityControls() {
   const { t } = useTranslation();
 
   return (
@@ -150,3 +150,5 @@ export function PanelVisibilityControls() {
     </div>
   );
 }
+
+export { PanelVisibilityControls };

@@ -7,7 +7,7 @@ import {
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectTrim } from "@/app/store/slices/trim-slice";
 
-export function useTimelineState() {
+function useTimelineState() {
   const state = useContext(EditorTimelineStateContext);
   if (!state) {
     throw new Error("Timeline state must be used within EditorContractsProvider.");
@@ -15,7 +15,7 @@ export function useTimelineState() {
   return state;
 }
 
-export function useTimelineCommands() {
+function useTimelineCommands() {
   const commands = useContext(EditorTimelineCommandsContext);
   if (!commands) {
     throw new Error("Timeline commands must be used within EditorContractsProvider.");
@@ -23,7 +23,7 @@ export function useTimelineCommands() {
   return commands;
 }
 
-export function useTimeline() {
+function useTimeline() {
   const state = useTimelineState();
   const commands = useTimelineCommands();
   const trim = useAppSelector(selectTrim);
@@ -45,3 +45,5 @@ export function useTimeline() {
     onScrubEnd: commands.onScrubEnd,
   };
 }
+
+export { useTimeline, useTimelineCommands, useTimelineState };
