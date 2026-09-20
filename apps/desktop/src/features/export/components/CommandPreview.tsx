@@ -6,9 +6,9 @@ import {
   InputGroup,
   InputGroupAddon,
   InputGroupButton,
-  InputGroupText,
   InputGroupTextarea,
 } from "@/components/ui/input-group";
+import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface CommandPreviewProps {
@@ -32,18 +32,16 @@ export function CommandPreview({ command, error }: CommandPreviewProps) {
 
   return (
     <div className="grid gap-1.5">
+      <Label htmlFor="ffmpeg-arguments">{t("export.dialogs.optimized.arguments")}</Label>
+
       <InputGroup>
         <InputGroupTextarea
-          aria-labelledby="ffmpeg-arguments-label"
           className="max-h-48 min-h-30 font-mono text-muted-foreground"
           id="ffmpeg-arguments"
           readOnly
           value={(error ?? command) || t("export.status.commandPreparing")}
         />
-        <InputGroupAddon align="block-start" className="border-b">
-          <InputGroupText className="font-medium" id="ffmpeg-arguments-label">
-            {t("export.dialogs.optimized.arguments")}
-          </InputGroupText>
+        <InputGroupAddon align="block-start">
           <Tooltip>
             <TooltipTrigger asChild>
               <InputGroupButton
