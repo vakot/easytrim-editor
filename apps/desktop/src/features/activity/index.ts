@@ -1,2 +1,2 @@
-export { ActivityFeed } from "./ActivityFeed";
-export { ActivityToasts } from "./ActivityToasts";
+export { ActivityFeed } from "./components/ActivityFeed";
+export { ActivityToasts } from "./components/ActivityToasts";
