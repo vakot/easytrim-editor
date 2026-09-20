@@ -1,1 +1,1 @@
-export { CapabilityStatus } from "./CapabilityStatus";
+export { CapabilityStatus } from "./components/CapabilityStatus";
