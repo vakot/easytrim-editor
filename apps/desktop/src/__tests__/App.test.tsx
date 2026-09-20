@@ -306,7 +306,7 @@ describe("App", () => {
     render(<App />);
 
     expect(screen.queryByText("Start a new clip")).not.toBeInTheDocument();
-    expect(screen.getByRole("form", { name: "Source explorer" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Source explorer" })).toBeInTheDocument();
     expect(screen.getByRole("list", { name: "Keyboard shortcuts" })).toHaveTextContent("Open File");
     expect(screen.getByRole("list", { name: "Keyboard shortcuts" })).toHaveTextContent(
       "Save Lossless Cut",

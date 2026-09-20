@@ -28,7 +28,7 @@ import { firstSource } from "@/test/source.fixtures";
 
 import { SourceList, SourceListContent, SourceListSearch } from "../SourceList";
 
-vi.mock("../components/SourceCard", () => {
+vi.mock("../SourceCard", () => {
   const Container = ({ children }: PropsWithChildren) => <div>{children}</div>;
   return {
     SourceCard: ({ children, source }: PropsWithChildren<{ source: EditingInstance }>) => (
