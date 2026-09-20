@@ -4,6 +4,7 @@ import { RelativeTimestamp } from "@/components/ui/relative-timestamp";
 import { cn } from "@/lib/class-names.utils";
 
 import type { ActivityEntry } from "../../../lib/activity-projection";
+import { toTimestampMicros } from "../lib/activity-feed.utils";
 
 interface ActivityFeedEntryTitleProps {
   className?: string;
@@ -21,9 +22,4 @@ export function ActivityFeedEntryTitle({ className, entry }: ActivityFeedEntryTi
       />
     </MarkerTitle>
   );
-}
-
-function toTimestampMicros(timestamp: string): number | undefined {
-  const timestampMs = Date.parse(timestamp);
-  return Number.isNaN(timestampMs) ? undefined : timestampMs * 1_000;
 }
