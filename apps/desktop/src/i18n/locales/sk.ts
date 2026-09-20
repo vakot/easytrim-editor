@@ -206,6 +206,10 @@ export const sk = {
       drop: "Pustením otvoríte video",
       explorer: "Prieskumník zdrojov",
       groupBy: "Zoskupiť podľa:",
+      groupByFolder: "Priečinok",
+      groupByImportedAt: "Importované",
+      groupByNone: "Žiadne",
+      groupByUpdatedAt: "Aktualizované",
       importedSources: "Importované zdroje",
       metadata: {
         bitrate: "Dátový tok",

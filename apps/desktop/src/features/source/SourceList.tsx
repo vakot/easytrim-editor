@@ -124,10 +124,10 @@ function SourceListTabs() {
         {t("source.labels.groupBy")}
       </span>
       <TabsList className="min-w-0 flex-1" defaultValue="none">
-        <TabsTrigger value="none">None</TabsTrigger>
-        <TabsTrigger value="folder">Folder</TabsTrigger>
-        <TabsTrigger value="time">Time</TabsTrigger>
-        <TabsTrigger value="imported">Imported</TabsTrigger>
+        <TabsTrigger value="none">{t("source.labels.groupByNone")}</TabsTrigger>
+        <TabsTrigger value="folder">{t("source.labels.groupByFolder")}</TabsTrigger>
+        <TabsTrigger value="time">{t("source.labels.groupByUpdatedAt")}</TabsTrigger>
+        <TabsTrigger value="imported">{t("source.labels.groupByImportedAt")}</TabsTrigger>
       </TabsList>
     </div>
   );
