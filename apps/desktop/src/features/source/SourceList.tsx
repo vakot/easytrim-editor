@@ -1,8 +1,11 @@
 import type { TFunction } from "i18next";
+import type { LucideIcon } from "lucide-react";
 import {
+  ChevronRight,
   Clock3,
   ExternalLink,
   FileVideo2,
+  Folder,
   FolderOpen,
   MoreHorizontal,
   Play,
@@ -14,11 +17,12 @@ import {
   X,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import React, { createContext, useEffect } from "react";
+import React, { createContext, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { RelativeTimestamp } from "@/components/ui/relative-timestamp";
 import { Separator } from "@/components/ui/separator";
@@ -136,23 +140,32 @@ function SourceListGroup({
   icon,
 }: {
   group: SourceGroup<EditingInstance>;
-  icon: ReactNode;
+  icon: SourceGroupIcon;
 }) {
+  const [open, setOpen] = useState(true);
+  const Icon = "open" in icon ? (open ? icon.open : icon.closed) : icon;
+
   return (
-    <li className="grid gap-2">
-      <div className="flex min-w-0 items-center gap-2 px-1 text-sm">
-        {icon}
-        {group.timestampMicros === undefined ? (
-          <span className="truncate" title={group.label}>
-            {group.label}
-          </span>
-        ) : (
-          <RelativeTimestamp
-            timestamp={group.timestampMicros}
-          />
-        )}
-      </div>
-      <SourceListGrid sources={group.items} />
+    <li>
+      <Collapsible defaultOpen onOpenChange={setOpen}>
+        <CollapsibleTrigger asChild>
+          <Button className="w-full justify-baseline" variant="ghost">
+            <ChevronRight className="transition-transform group-data-open/button:rotate-90" />
+            <Icon className="size-3.5 shrink-0" />
+            {group.timestampMicros === undefined ? (
+              <span className="truncate" title={group.label}>
+                {group.label}
+              </span>
+            ) : (
+              <RelativeTimestamp timestamp={group.timestampMicros} />
+            )}
+          </Button>
+        </CollapsibleTrigger>
+
+        <CollapsibleContent className="mt-2">
+          <SourceListGrid sources={group.items} />
+        </CollapsibleContent>
+      </Collapsible>
     </li>
   );
 }
@@ -164,14 +177,14 @@ function SourceListGroups({
 }: {
   dataSlot: string;
   groups: SourceGroup<EditingInstance>[];
-  icon?: ReactNode;
+  icon?: SourceGroupIcon;
 }) {
   return (
-    <ul className="flex flex-col gap-3" data-slot={dataSlot}>
+    <ul className="flex flex-col gap-2" data-slot={dataSlot}>
       {groups.map((group) => (
         <SourceListGroup
           group={group}
-          icon={icon ?? <FolderOpen aria-hidden="true" className="size-3.5 shrink-0" />}
+          icon={icon ?? { closed: Folder, open: FolderOpen }}
           key={group.key}
         />
       ))}
@@ -179,9 +192,16 @@ function SourceListGroups({
   );
 }
 
+type SourceGroupIcon =
+  | LucideIcon
+  | {
+      closed: LucideIcon;
+      open: LucideIcon;
+    };
+
 function SourceListGrid({ sources }: { sources: EditingInstance[] }) {
   return (
-    <ul className="flex flex-col gap-3" data-slot="imported-sources-grid">
+    <ul className="flex flex-col gap-2" data-slot="imported-sources-grid">
       {sources.map((source) => (
         <SourceListItem key={source.id} source={source} />
       ))}
@@ -199,13 +219,7 @@ function SourceListTime({ sources }: { sources: EditingInstance[] }) {
     new Date(now),
   );
 
-  return (
-    <SourceListGroups
-      dataSlot="imported-sources-time-groups"
-      groups={groups}
-      icon={<Clock3 aria-hidden="true" className="size-3.5 shrink-0" />}
-    />
-  );
+  return <SourceListGroups dataSlot="imported-sources-time-groups" groups={groups} icon={Clock3} />;
 }
 
 function SourceListImported({ sources }: { sources: EditingInstance[] }) {
@@ -219,11 +233,7 @@ function SourceListImported({ sources }: { sources: EditingInstance[] }) {
   );
 
   return (
-    <SourceListGroups
-      dataSlot="imported-sources-import-groups"
-      groups={groups}
-      icon={<Upload aria-hidden="true" className="size-3.5 shrink-0" />}
-    />
+    <SourceListGroups dataSlot="imported-sources-import-groups" groups={groups} icon={Upload} />
   );
 }
 
