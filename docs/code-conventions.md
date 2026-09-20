@@ -8,6 +8,9 @@ agent quality and scope policy remains in [`.agents/rules/code-quality.md`](../.
 - Frontend directories use `kebab-case`; `__tests__` is the reserved test-directory exception.
 - Application React component files use `PascalCase.tsx` and normally export the matching named
   component. `components/ui` keeps ecosystem `kebab-case.tsx` names for shadcn/Radix primitives.
+- Feature-owned components live under the feature's `components/` directory. Keep small components
+  as direct children; place a cohesive large component in a nested package with its internal
+  `components/`, `hooks/`, `contexts/`, `lib/`, optional container, and `index.ts` barrel.
 - Hook files use the hook symbol name, usually in `.ts`. Other first-class modules use semantic
   kebab-case names.
 - Use `.types.ts`, `.consts.ts`, `.utils.ts`, and similar role suffixes only for independently

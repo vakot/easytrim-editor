@@ -45,6 +45,31 @@ features use that API rather than importing another feature's internals. Shared 
 primitives live under `components/ui`; genuinely shared pure product logic belongs in `domain`;
 technical adapters belong in `lib`.
 
+Feature-owned React components live under the feature's `components/` directory. Small components
+are direct children of that directory. A cohesive large component may use a nested component
+package with its own `components/`, `hooks/`, `contexts/`, `lib/`, optional container, and
+`index.ts` barrel:
+
+```text
+features/<feature>/
+  components/
+    LargeComponent/
+      components/
+      hooks/
+      contexts/
+      lib/
+      LargeComponent.tsx
+      index.ts
+    SmallComponent.tsx
+  hooks/
+  contexts/
+  lib/
+  index.ts
+```
+
+The feature root is reserved for the public barrel and non-component feature modules such as
+feature hooks, contexts, and semantic libraries.
+
 Application-owned cross-feature workflows—such as source replacement, preview reset, timeline
 reset, audio refresh, and export invalidation—belong in application orchestration (listeners,
 middleware, thunks, services, or providers), not in visual components.
@@ -80,10 +105,11 @@ instead of bypassing the boundary.
 
 ## File placement and growth
 
-Use ownership to decide where a module belongs. Keep a feature flat until related components,
-hooks, or semantic internal modules justify grouping. Do not split code into global `domain` or
-`lib` merely to make a feature smaller, and do not add packages or abstractions for hypothetical
-future consumers.
+Use ownership to decide where a module belongs. Keep small components flat under a feature's
+`components/` directory, and group a cohesive large component only when its internal components,
+hooks, contexts, or semantic modules justify a nested package. Do not split code into global
+`domain` or `lib` merely to make a feature smaller, and do not add packages or abstractions for
+hypothetical future consumers.
 
 Keep runtime handles, DOM/media objects, timers, callbacks, and other non-serializable resources
 with their owning runtime or controller. Serializable status and descriptors may cross the state
