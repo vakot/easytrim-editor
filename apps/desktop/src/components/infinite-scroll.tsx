@@ -76,14 +76,52 @@ function useInfiniteScroll({
   rootMargin = DEFAULT_ROOT_MARGIN,
 }: Omit<InfiniteScrollTriggerProps, "loader">) {
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const hasMoreRef = useRef(hasMore);
+  const isLoadingRef = useRef(isLoading);
+  const nextRequestedRef = useRef(false);
+  const pendingNextRef = useRef(false);
+  const nextRef = useRef(next);
+
+  hasMoreRef.current = hasMore;
+  isLoadingRef.current = isLoading;
+  nextRef.current = next;
+
+  useEffect(() => {
+    if (isLoading) {
+      nextRequestedRef.current = false;
+      return;
+    }
+
+    if (pendingNextRef.current && hasMore) {
+      pendingNextRef.current = false;
+      nextRequestedRef.current = true;
+      next();
+    }
+  }, [hasMore, isLoading, next]);
 
   useEffect(() => {
     const trigger = sentinelRef.current;
-    if (!trigger || !hasMore || isLoading || typeof IntersectionObserver === "undefined") return;
+    if (!trigger || !hasMore || typeof IntersectionObserver === "undefined") return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry?.isIntersecting) next();
+        if (!entry?.isIntersecting) {
+          pendingNextRef.current = false;
+          nextRequestedRef.current = false;
+          return;
+        }
+
+        if (!hasMoreRef.current) return;
+
+        if (isLoadingRef.current) {
+          pendingNextRef.current = true;
+          return;
+        }
+
+        if (nextRequestedRef.current) return;
+
+        nextRequestedRef.current = true;
+        nextRef.current();
       },
       { rootMargin },
     );
@@ -91,7 +129,7 @@ function useInfiniteScroll({
     observer.observe(trigger);
 
     return () => observer.disconnect();
-  }, [hasMore, isLoading, next, rootMargin]);
+  }, [hasMore, rootMargin]);
 
   return { sentinelRef };
 }
