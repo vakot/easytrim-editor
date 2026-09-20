@@ -15,7 +15,6 @@ import {
   formatFrameRate,
 } from "../lib/media-formatters.utils";
 
-
 export function SourceDetails() {
   const media = useAppSelector(selectSourceMedia);
   const source = useAppSelector(selectSourceSelection);

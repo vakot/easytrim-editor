@@ -13,11 +13,7 @@ interface RelativeTimestampProps {
   timestamp: number | undefined;
 }
 
-function RelativeTimestamp({
-  className,
-  label,
-  timestamp,
-}: RelativeTimestampProps) {
+function RelativeTimestamp({ className, label, timestamp }: RelativeTimestampProps) {
   const { i18n, t } = useTranslation();
   const unknownLabel = t("common.status.unknown");
   const now = useRelativeTimeNow();

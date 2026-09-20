@@ -59,6 +59,7 @@ describe("source import workflow", () => {
     const importedAtMicros = selectImportedEditingInstances(store.getState()).map(
       ({ importedAtMicros }) => importedAtMicros,
     );
+
     expect(importedAtMicros[0]).toBeDefined();
     expect(importedAtMicros[0]).toBe(importedAtMicros[1]);
   });

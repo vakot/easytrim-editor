@@ -36,7 +36,7 @@ export function EditorSource() {
           collapsible
           defaultSize="50"
           id="editor-source-imported-sources"
-          minSize="150px"
+          minSize="300px"
         >
           <ResizablePanelControl panelId="editor-source-imported-sources">
             {({ isExpanded }) => (
@@ -55,7 +55,9 @@ export function EditorSource() {
 
           <div className="mt-2 flex min-h-0 flex-1 flex-col">
             <SourceList>
-              <SourceListTabs />
+              <div className="px-2">
+                <SourceListTabs />
+              </div>
               <ScrollArea className="min-h-0 flex-1">
                 <div className="px-2 pt-0.5 pb-2">
                   <SourceListTabsContent />
@@ -65,7 +67,7 @@ export function EditorSource() {
           </div>
         </ResizablePanel>
 
-        <ResizableHandle />
+        <ResizableHandle className="bg-foreground/10" />
 
         <ResizablePanel
           className="flex min-h-0 flex-col overflow-hidden! p-1"
@@ -73,7 +75,7 @@ export function EditorSource() {
           collapsible
           defaultSize="50"
           id="editor-source-activity-feed"
-          minSize="150px"
+          minSize="200px"
         >
           <ResizablePanelControl panelId="editor-source-activity-feed">
             {({ isExpanded }) => (

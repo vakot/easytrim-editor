@@ -50,7 +50,7 @@ describe("source grouping utilities", () => {
     ];
 
     expect(
-      groupSourcesByFolder(sources).map(({ label, items }) => [label, items.map(({ id }) => id)]),
+      groupSourcesByFolder(sources).map(({ items, label }) => [label, items.map(({ id }) => id)]),
     ).toEqual([
       ["C:/Media", ["first", "third"]],
       ["C:/Other", ["second"]],
@@ -79,7 +79,7 @@ describe("source grouping utilities", () => {
       now,
     );
 
-    expect(groups.map(({ key, items }) => [key, items.map(({ id }) => id)])).toEqual([
+    expect(groups.map(({ items, key }) => [key, items.map(({ id }) => id)])).toEqual([
       ["minute:5", ["minutes-1", "minutes-2"]],
       ["hour:2", ["hours"]],
       ["yesterday", ["yesterday"]],
@@ -106,7 +106,7 @@ describe("source grouping utilities", () => {
       now,
     );
 
-    expect(groups.map(({ key, items }) => [key, items.map(({ id }) => id)])).toEqual([
+    expect(groups.map(({ items, key }) => [key, items.map(({ id }) => id)])).toEqual([
       [`import:${batchOne}`, ["first", "second"]],
       [`import:${batchOneOther}`, ["other"]],
       [`import:${batchTwo}`, ["third"]],

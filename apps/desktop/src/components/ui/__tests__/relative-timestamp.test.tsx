@@ -9,10 +9,7 @@ import { RelativeTimestamp } from "../relative-timestamp";
 function renderRelativeTimestamp(timestamp: number | undefined) {
   return render(
     <TooltipProvider>
-      <RelativeTimestamp
-        className="timestamp"
-        timestamp={timestamp}
-      />
+      <RelativeTimestamp className="timestamp" timestamp={timestamp} />
     </TooltipProvider>,
   );
 }
