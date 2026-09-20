@@ -246,6 +246,9 @@ export const en = {
       dropDescription: "Open one or more supported video files from your computer.",
       dropReset: "The current edit will be reset.",
       dropTitle: "Drag and drop videos here",
+      emptyDescription:
+        "Choose a file or folder, or drag and drop videos here to get started.",
+      emptyTitle: "No videos imported yet",
       extensions: "MP4 · MOV · MKV · WebM · AVI",
       noSource: "No source",
       noSearchResults: "No imported sources match your search.",
