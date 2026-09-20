@@ -12,7 +12,7 @@ export const sk = {
       retry: "Skúsiť znova",
       save: "Uložiť",
     },
-    labels: { brand: "EasyTrim Editor", or: "alebo" },
+    labels: { brand: "EasyTrim Editor", or: "alebo", search: "Hľadať" },
     status: {
       disabled: "Vypnuté",
       enabled: "Zapnuté",
@@ -243,9 +243,11 @@ export const sk = {
       dropTitle: "Presuňte videá sem",
       extensions: "MP4 · MOV · MKV · WebM · AVI",
       noSource: "Žiadny zdroj",
+      noSearchResults: "Vyhľadávaniu nezodpovedajú žiadne importované zdroje.",
       openFileDescription: "Vyberte jeden videosúbor a začnite upravovať.",
       openFolderDescription: "Importujte všetky podporované videá z priečinka.",
       previewUnavailable: "Náhľad nie je dostupný",
+      searchPlaceholder: "Hľadať importované zdroje podľa cesty…",
       toolsReady:
         "Všetky požadované multimediálne závislosti sú nainštalované a pripravené na použitie.",
       toolsUnavailable: "Niektoré požadované multimediálne závislosti nie sú dostupné.",

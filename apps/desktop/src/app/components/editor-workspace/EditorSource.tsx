@@ -11,7 +11,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { ActivityFeed } from "@/features/activity";
-import { SourceList, SourceListTabs, SourceListTabsContent } from "@/features/source";
+import { SourceList, SourceListContent, SourceListSearch, SourceListTabs } from "@/features/source";
 import { cn } from "@/lib/class-names.utils";
 
 export function EditorSource() {
@@ -55,12 +55,13 @@ export function EditorSource() {
 
           <div className="mt-2 flex min-h-0 flex-1 flex-col">
             <SourceList>
-              <div className="px-2">
+              <div className="grid gap-2 px-2">
                 <SourceListTabs />
+                <SourceListSearch />
               </div>
               <ScrollArea className="min-h-0 flex-1">
                 <div className="px-2 pt-0.5 pb-2">
-                  <SourceListTabsContent />
+                  <SourceListContent />
                 </div>
               </ScrollArea>
             </SourceList>

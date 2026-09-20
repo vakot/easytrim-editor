@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { RelativeTimestamp } from "@/components/ui/relative-timestamp";
+import { SearchBar } from "@/components/ui/search-bar";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -69,6 +70,7 @@ import {
   groupSourcesByUpdatedTime,
   type SourceGroup,
 } from "./lib/source-grouping.utils";
+import { filterSourcesByPath } from "./lib/source-search.utils";
 
 interface SourceListProps {
   children?: React.ReactNode;
@@ -76,16 +78,21 @@ interface SourceListProps {
 
 function SourceList({ children }: SourceListProps) {
   const sources = usePrepareSources();
+  const [search, setSearch] = useState("");
+  const filteredSources = React.useMemo(
+    () => filterSourcesByPath(sources, search),
+    [search, sources],
+  );
 
   if (sources.length === 0) return <SourceListEmptyState />;
 
   return (
-    <SourceListData.Provider value={{ sources }}>
+    <SourceListData.Provider value={{ search, setSearch, sources: filteredSources }}>
       <Tabs className="min-h-0 flex-1" defaultValue="none">
         {children ?? (
           <>
             <SourceListTabs />
-            <SourceListTabsContent />
+            <SourceListContent />
           </>
         )}
       </Tabs>
@@ -104,8 +111,31 @@ function SourceListTabs() {
   );
 }
 
-function SourceListTabsContent() {
-  const { sources } = useSourceListData();
+function SourceListSearch() {
+  const { search, setSearch } = useSourceListData();
+  const { t } = useTranslation();
+
+  return (
+    <SearchBar
+      aria-label={t("common.labels.search")}
+      onValueChange={setSearch}
+      placeholder={t("source.messages.searchPlaceholder")}
+      value={search}
+    />
+  );
+}
+
+function SourceListContent() {
+  const { search, sources } = useSourceListData();
+  const { t } = useTranslation();
+
+  if (search.trim() && sources.length === 0) {
+    return (
+      <div className="px-2 py-4 text-center text-sm text-muted-foreground" role="status">
+        {t("source.messages.noSearchResults")}
+      </div>
+    );
+  }
 
   return (
     <>
@@ -588,14 +618,18 @@ function getExportQueueItemStatusLabel(t: TFunction, status: ExportAttemptState[
   }
 }
 
-const SourceListData = createContext<{ sources: EditingInstance[] } | null>(null);
+const SourceListData = createContext<{
+  search: string;
+  setSearch: (value: string) => void;
+  sources: EditingInstance[];
+} | null>(null);
 
 function useSourceListData() {
   const context = React.useContext(SourceListData);
   if (!context) {
-    throw new Error("SourceListTabsContent must be used within SourceList");
+    throw new Error("SourceListContent must be used within SourceList");
   }
   return context;
 }
 
-export { SourceList, SourceListTabs, SourceListTabsContent };
+export { SourceList, SourceListContent, SourceListSearch, SourceListTabs };
