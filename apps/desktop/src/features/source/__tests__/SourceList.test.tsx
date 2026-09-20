@@ -117,10 +117,10 @@ describe("source queue controls", () => {
 
     const search = screen.getByRole("searchbox", { name: "Search" });
     await user.type(search, "sample");
-    await user.click(screen.getByRole("button", { name: "Clear" }));
+    await user.click(await screen.findByRole("button", { name: "Clear" }));
 
     expect(search).toHaveValue("");
-    expect(screen.getByLabelText("Ctrl + K")).toBeInTheDocument();
+    expect(await screen.findByLabelText("Ctrl + K")).toBeInTheDocument();
   });
 
   it("starts and cancels only the chosen source without removing pending attempts", async () => {
