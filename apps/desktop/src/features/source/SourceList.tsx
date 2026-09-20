@@ -1,5 +1,6 @@
 import type { TFunction } from "i18next";
 import {
+  Clock3,
   ExternalLink,
   FileVideo2,
   FolderOpen,
@@ -56,7 +57,11 @@ import {
   StartSourceExport,
 } from "./components/SourceMenuActions";
 import { getRevealLabel } from "./lib/source.utils";
-import { groupSourcesByFolder, type SourceGroup } from "./lib/source-grouping.utils";
+import {
+  groupSourcesByFolder,
+  groupSourcesByUpdatedTime,
+  type SourceGroup,
+} from "./lib/source-grouping.utils";
 
 function SourceList() {
   const sources = usePrepareSources();
@@ -95,26 +100,48 @@ function SourceListNone({ sources }: { sources: EditingInstance[] }) {
 function SourceListFolder({ sources }: { sources: EditingInstance[] }) {
   const folders = groupSourcesByFolder(sources);
 
-  return (
-    <ul className="flex flex-col gap-3" data-slot="imported-sources-folders">
-      {folders.map((folder) => (
-        <SourceListGroup group={folder} key={folder.key} />
-      ))}
-    </ul>
-  );
+  return <SourceListGroups dataSlot="imported-sources-folders" groups={folders} />;
 }
 
-function SourceListGroup({ group }: { group: SourceGroup<EditingInstance> }) {
+function SourceListGroup({
+  group,
+  icon,
+}: {
+  group: SourceGroup<EditingInstance>;
+  icon: ReactNode;
+}) {
   return (
     <li className="grid gap-2">
       <div className="flex min-w-0 items-center gap-2 px-1 text-xs text-muted-foreground">
-        <FolderOpen aria-hidden="true" className="size-3.5 shrink-0" />
+        {icon}
         <span className="truncate" title={group.label}>
           {group.label}
         </span>
       </div>
       <SourceListGrid sources={group.items} />
     </li>
+  );
+}
+
+function SourceListGroups({
+  dataSlot,
+  groups,
+  icon,
+}: {
+  dataSlot: string;
+  groups: SourceGroup<EditingInstance>[];
+  icon?: ReactNode;
+}) {
+  return (
+    <ul className="flex flex-col gap-3" data-slot={dataSlot}>
+      {groups.map((group) => (
+        <SourceListGroup
+          group={group}
+          icon={icon ?? <FolderOpen aria-hidden="true" className="size-3.5 shrink-0" />}
+          key={group.key}
+        />
+      ))}
+    </ul>
   );
 }
 
@@ -129,14 +156,15 @@ function SourceListGrid({ sources }: { sources: EditingInstance[] }) {
 }
 
 function SourceListTime({ sources }: { sources: EditingInstance[] }) {
-  // TODO: group by last updated time in range (relative in minutes;hours;yesterday;absolute_day)
-  // TODO: overall rendering structure can be populated from Folder path
+  const { i18n, t } = useTranslation();
+  const groups = groupSourcesByUpdatedTime(sources, i18n.language, t("common.status.unknown"));
+
   return (
-    <ul className="flex flex-col gap-3" data-slot="imported-sources-grid">
-      {sources.map((source) => (
-        <SourceListItem key={source.id} source={source} />
-      ))}
-    </ul>
+    <SourceListGroups
+      dataSlot="imported-sources-time-groups"
+      groups={groups}
+      icon={<Clock3 aria-hidden="true" className="size-3.5 shrink-0" />}
+    />
   );
 }
 

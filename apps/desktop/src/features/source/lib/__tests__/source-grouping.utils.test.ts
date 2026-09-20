@@ -2,9 +2,13 @@ import { describe, expect, it } from "vitest";
 
 import type { EditingInstance } from "@/domain/editing-instance";
 
-import { getSourceFolderPath, groupSourcesByFolder } from "../source-grouping.utils";
+import {
+  getSourceFolderPath,
+  groupSourcesByFolder,
+  groupSourcesByUpdatedTime,
+} from "../source-grouping.utils";
 
-function source(id: string, sourcePath: string): EditingInstance {
+function source(id: string, sourcePath: string, updatedAtMicros?: number): EditingInstance {
   return {
     exportAttempts: [],
     id,
@@ -13,7 +17,7 @@ function source(id: string, sourcePath: string): EditingInstance {
       audio: { master: { enabled: true, volumePercent: 100 }, mergeAudio: false, tracks: [] },
       crop: null,
       rotation: 0,
-      source: { displayName: id, sourcePath },
+      source: { displayName: id, sourcePath, ...(updatedAtMicros ? { updatedAtMicros } : {}) },
       trim: { kind: "full-source" },
     },
     sourceAvailability: "available",
@@ -43,6 +47,37 @@ describe("source grouping utilities", () => {
     ).toEqual([
       ["C:/Media", ["first", "third"]],
       ["C:/Other", ["second"]],
+    ]);
+  });
+
+  it("groups updated sources by relative and absolute time ranges", () => {
+    const now = new Date(2026, 8, 20, 12, 0);
+    const micros = (date: Date) => date.getTime() * 1_000;
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const older = new Date(now);
+    older.setDate(older.getDate() - 2);
+
+    const groups = groupSourcesByUpdatedTime(
+      [
+        source("minutes-1", "C:/Media/1.mp4", micros(new Date(now.getTime() - 5 * 60_000))),
+        source("minutes-2", "C:/Media/2.mp4", micros(new Date(now.getTime() - 5 * 60_000))),
+        source("hours", "C:/Media/3.mp4", micros(new Date(now.getTime() - 2 * 60 * 60_000))),
+        source("yesterday", "C:/Media/4.mp4", micros(yesterday)),
+        source("older", "C:/Media/5.mp4", micros(older)),
+        source("unknown", "C:/Media/6.mp4"),
+      ],
+      "en-US",
+      "Unknown",
+      now,
+    );
+
+    expect(groups.map(({ key, items }) => [key, items.map(({ id }) => id)])).toEqual([
+      ["minute:5", ["minutes-1", "minutes-2"]],
+      ["hour:2", ["hours"]],
+      ["yesterday", ["yesterday"]],
+      ["date:2026-8-18", ["older"]],
+      ["unknown", ["unknown"]],
     ]);
   });
 });
