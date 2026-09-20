@@ -8,7 +8,7 @@ import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectCapabilities } from "@/app/store/slices/source-slice";
 import type { BinaryCapability } from "@/lib/tauri/media.types";
 
-import styles from "./SourceStatus.module.css";
+import styles from "./CapabilityStatus.module.css";
 
 function capabilityError(
   label: string,
@@ -43,7 +43,7 @@ function CapabilityTooltip({ children, content }: { children: ReactNode; content
   );
 }
 
-export function SourceStatus() {
+export function CapabilityStatus() {
   const { t } = useTranslation();
   const capabilities = useAppSelector(selectCapabilities);
 
