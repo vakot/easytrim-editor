@@ -25,7 +25,8 @@ import { loadQueueFinishActions } from "@/app/store/thunks/export-thunks";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import { ActivityToasts } from "@/features/activity";
 import { ExportDialog } from "@/features/export";
-import { SourceDropOverlay, SourceStatus } from "@/features/source";
+import { CapabilityStatus } from "@/features/media";
+import { SourceDropOverlay } from "@/features/source";
 
 function EasyTrimEditorApp() {
   const dispatch = useAppDispatch();
@@ -46,7 +47,7 @@ function EasyTrimEditorApp() {
               <CustomTitleBar
                 menuControls={<MenuBar />}
                 panelControls={<PanelVisibilityControls />}
-                statusContent={<SourceStatus />}
+                statusContent={<CapabilityStatus />}
               />
 
               <ExportDialog />

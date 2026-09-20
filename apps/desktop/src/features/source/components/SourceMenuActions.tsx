@@ -9,7 +9,7 @@ import {
 } from "@/app/store/thunks/source-media-thunks";
 import type { EditingInstance } from "@/domain/editing-instance";
 
-import { DeleteSourceDialog, DeleteSourceDialogTrigger } from "./DeleteSourceDialog";
+import { SourceDeleteDialog, SourceDeleteDialogTrigger } from "./SourceDeleteDialog";
 
 type ActionElement = ReactElement<{
   disabled?: boolean;
@@ -41,11 +41,11 @@ export function DeleteSource({
   const item = withDisabled(children, !source || source.sourceAvailability === "deleted");
 
   return (
-    <DeleteSourceDialog onOpenChange={onOpenChange} open={open} sourceId={source?.id}>
-      <DeleteSourceDialogTrigger asChild>
+    <SourceDeleteDialog onOpenChange={onOpenChange} open={open} sourceId={source?.id}>
+      <SourceDeleteDialogTrigger asChild>
         {event === "select" ? withPreventedSelect(item) : item}
-      </DeleteSourceDialogTrigger>
-    </DeleteSourceDialog>
+      </SourceDeleteDialogTrigger>
+    </SourceDeleteDialog>
   );
 }
 

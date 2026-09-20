@@ -26,7 +26,7 @@ import {
   chooseSourceRequested,
   closeActiveEditingInstanceRequested,
 } from "@/app/store/thunks/source-media-thunks";
-import { CloseSource, DeleteSource, DeleteSourceDialog } from "@/features/source";
+import { CloseSource, DeleteSource, SourceDeleteDialog } from "@/features/source";
 import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
 
 export function MenuBarFile() {
@@ -85,7 +85,7 @@ export function MenuBarFile() {
   );
 
   return (
-    <DeleteSourceDialog
+    <SourceDeleteDialog
       onOpenChange={setDeleteDialogOpen}
       open={deleteDialogOpen}
       sourceId={activeSource?.id}
@@ -191,6 +191,6 @@ export function MenuBarFile() {
           </MenubarGroup>
         </MenubarContent>
       </MenubarMenu>
-    </DeleteSourceDialog>
+    </SourceDeleteDialog>
   );
 }

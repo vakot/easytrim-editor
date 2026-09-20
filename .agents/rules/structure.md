@@ -12,6 +12,9 @@ Agents must enforce these boundaries:
   `features/`, shared primitives in `components/ui/`, pure shared product logic in `domain/`, and
   technical adapters in `lib/`.
 - Use the public `index.ts` API of another feature; never import its internals or create cycles.
+- Keep feature-owned React components under `features/<feature>/components/`; small components are
+  direct children and cohesive large components may be nested packages with their own internal
+  `components/`, `hooks/`, `contexts/`, `lib/`, and `index.ts`.
 - Keep Tauri runtime types at native command/entrypoint boundaries and use typed frontend adapters.
 - Grow directories and abstractions only when they own a real responsibility.
 
