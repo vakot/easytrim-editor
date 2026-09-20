@@ -1,2 +1,2 @@
 export { ExportActions } from "./components/ExportActions";
-export { ExportDialog } from "./ExportDialog";
+export { ExportDialog } from "./components/ExportDialog";

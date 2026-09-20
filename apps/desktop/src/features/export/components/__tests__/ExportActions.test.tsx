@@ -6,7 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { createAppStore } from "@/app/store/store";
 
-import { ExportActions } from "../components/ExportActions";
+import { ExportActions } from "../ExportActions";
 
 describe("ExportActions", () => {
   it("keeps both export routes visible while disabling them without a ready source", () => {
