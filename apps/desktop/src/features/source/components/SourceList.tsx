@@ -83,7 +83,7 @@ import {
   SourceCardStatusBadge,
   SourceCardThumbnail,
   SourceCardTitle,
-} from "./card";
+} from "./SourceCard";
 import {
   CancelSourceExport,
   CloseSource,

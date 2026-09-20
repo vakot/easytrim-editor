@@ -2,7 +2,7 @@ import { useContext } from "react";
 
 import { SourceCardContext } from "../contexts/SourceCardContext";
 
-function useSourceCardSource() {
+function useSourceCardData() {
   const context = useContext(SourceCardContext);
 
   if (!context) {
@@ -14,4 +14,4 @@ function useSourceCardSource() {
   return context;
 }
 
-export { useSourceCardSource };
+export { useSourceCardData };

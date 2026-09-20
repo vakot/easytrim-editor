@@ -10,7 +10,7 @@ import {
 import { createAppStore } from "@/app/store/store";
 import type { EditingInstance } from "@/domain/editing-instance";
 
-import { SourceTabs } from "../components/SourceTabs";
+import { SourceTabs } from "../SourceTabs";
 
 function createSource(id: string, displayName: string): EditingInstance {
   return {

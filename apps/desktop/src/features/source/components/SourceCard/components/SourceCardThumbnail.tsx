@@ -8,7 +8,7 @@ import { selectImportedSourceThumbnail } from "@/app/store/slices/preview-slice"
 import { cn } from "@/lib/class-names.utils";
 
 import { formatDuration } from "../../../lib/media-formatters.utils";
-import { useSourceCardSource } from "../hooks/useSourceCardSource";
+import { useSourceCardData } from "../hooks/useSourceCardData";
 
 function SourceCardThumbnail({
   children,
@@ -17,7 +17,7 @@ function SourceCardThumbnail({
   children?: React.ReactNode;
   className?: string;
 }) {
-  const source = useSourceCardSource();
+  const source = useSourceCardData();
   const { t } = useTranslation();
 
   const id = source.id;

@@ -20,7 +20,7 @@ import {
   SourceCardMetadata,
   SourceCardStatusBadge,
   SourceCardTitle,
-} from "../card";
+} from "../";
 
 function createSource(
   sourceAvailability: EditingInstance["sourceAvailability"] = "available",

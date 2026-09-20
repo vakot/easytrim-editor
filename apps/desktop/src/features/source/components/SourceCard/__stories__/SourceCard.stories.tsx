@@ -1,6 +1,7 @@
 import "@/i18n/config";
 
 import type { Meta, StoryObj } from "@storybook/react";
+import type { ComponentProps } from "react";
 import { Provider } from "react-redux";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,10 +14,11 @@ import {
   SourceCard,
   SourceCardDescription,
   SourceCardMetadata,
-  type SourceCardProps,
   SourceCardStatusBadge,
   SourceCardTitle,
-} from "../card";
+} from "../";
+
+type SourceCardProps = ComponentProps<typeof SourceCard>;
 
 const meta = {
   component: SourceCard,

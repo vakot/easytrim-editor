@@ -17,10 +17,7 @@ import { SourceCardStatusBadge } from "./components/SourceCardStatusBadge";
 import { SourceCardThumbnail } from "./components/SourceCardThumbnail";
 import { SourceCardTitle } from "./components/SourceCardTitle";
 import { SourceCardContext } from "./contexts/SourceCardContext";
-import {
-  getSourceCardStatus,
-  getSourceCardVariant,
-} from "./lib/source-card.utils";
+import { getSourceCardStatus, getSourceCardVariant } from "./lib/source-card.utils";
 
 interface SourceCardProps {
   children: ReactNode;

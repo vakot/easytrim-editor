@@ -6,10 +6,10 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { cn } from "@/lib/class-names.utils";
 
 import { formatBytes } from "../../../lib/media-formatters.utils";
-import { useSourceCardSource } from "../hooks/useSourceCardSource";
+import { useSourceCardData } from "../hooks/useSourceCardData";
 
 function SourceCardMetadata({ className }: { className?: string }) {
-  const source = useSourceCardSource();
+  const source = useSourceCardData();
   const { t } = useTranslation();
   const unknown = t("common.status.unknown");
   const fileSize = formatBytes(source.media?.sizeBytes, unknown);

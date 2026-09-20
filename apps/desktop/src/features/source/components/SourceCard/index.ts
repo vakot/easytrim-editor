@@ -1,4 +1,3 @@
-export type { SourceCardProps } from "./SourceCard";
 export {
   SourceCard,
   SourceCardActions,

@@ -14,7 +14,7 @@ import { openFileLocation } from "@/lib/tauri/media";
 
 import { getRevealLabel } from "../../../lib/source.utils";
 import { CloseSource, DeleteSource, RestoreSource } from "../../SourceMenuActions";
-import { useSourceCardSource } from "../hooks/useSourceCardSource";
+import { useSourceCardData } from "../hooks/useSourceCardData";
 
 /**
  * @name SourceCardContextMenu
@@ -22,7 +22,7 @@ import { useSourceCardSource } from "../hooks/useSourceCardSource";
  */
 function SourceCardContextMenu({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
-  const source = useSourceCardSource();
+  const source = useSourceCardData();
 
   const { sourcePath } = source.snapshot.source;
   const showRestore = source.sourceAvailability === "deleted";

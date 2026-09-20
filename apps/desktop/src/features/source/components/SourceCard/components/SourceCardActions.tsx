@@ -18,7 +18,7 @@ import { openFileLocation } from "@/lib/tauri/media";
 
 import { getRevealLabel } from "../../../lib/source.utils";
 import { CloseSource, DeleteSource, RestoreSource } from "../../SourceMenuActions";
-import { useSourceCardSource } from "../hooks/useSourceCardSource";
+import { useSourceCardData } from "../hooks/useSourceCardData";
 
 /**
  * @name SourceCardActions
@@ -31,7 +31,7 @@ function SourceCardActions({
   children: React.ReactNode;
   className?: string;
 }) {
-  const source = useSourceCardSource();
+  const source = useSourceCardData();
   const [menuOpen, setMenuOpen] = useState(false);
   const { t } = useTranslation();
 

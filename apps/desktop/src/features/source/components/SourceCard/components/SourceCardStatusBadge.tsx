@@ -7,13 +7,13 @@ import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectActiveInstanceId } from "@/app/store/slices/editing-instances-slice";
 import { selectSourceStatus } from "@/app/store/slices/source-slice";
 
-import { useSourceCardSource } from "../hooks/useSourceCardSource";
+import { useSourceCardData } from "../hooks/useSourceCardData";
 import {
   getSourceCardBadgeVariant,
   getSourceCardStatus,
   getSourceCardStatusLabel,
 } from "../lib/source-card.utils";
-import type { SourceCardBadgeVariant,SourceCardStatus } from "../types";
+import type { SourceCardBadgeVariant, SourceCardStatus } from "../types";
 
 const statusIcons: Record<SourceCardStatus, typeof CheckCircle2> = {
   deleted: CircleAlert,
@@ -30,7 +30,7 @@ const statusBadgeClassNames: Record<SourceCardBadgeVariant, string> = {
 };
 
 function SourceCardStatusBadge({ className }: { className?: string }) {
-  const source = useSourceCardSource();
+  const source = useSourceCardData();
   const { t } = useTranslation();
   const activeInstanceId = useAppSelector(selectActiveInstanceId);
   const sourceStatus = useAppSelector(selectSourceStatus);

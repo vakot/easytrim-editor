@@ -17,7 +17,7 @@ import {
 import { createAppStore } from "@/app/store/store";
 import type { EditingInstance } from "@/domain/editing-instance";
 
-import { SourceBreadcrumb } from "../components/SourceBreadcrumb";
+import { SourceBreadcrumb } from "../SourceBreadcrumb";
 
 function instance(id: string, displayName: string): EditingInstance {
   return {

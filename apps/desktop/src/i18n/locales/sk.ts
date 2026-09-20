@@ -247,8 +247,7 @@ export const sk = {
       dropDescription: "Otvorte jeden alebo viac podporovaných videosúborov z počítača.",
       dropReset: "Aktuálne úpravy sa obnovia.",
       dropTitle: "Presuňte videá sem",
-      emptyDescription:
-        "Vyberte súbor alebo priečinok, prípadne sem presuňte videá a začnite.",
+      emptyDescription: "Vyberte súbor alebo priečinok, prípadne sem presuňte videá a začnite.",
       emptyTitle: "Zatiaľ neboli importované žiadne videá",
       extensions: "MP4 · MOV · MKV · WebM · AVI",
       noSource: "Žiadny zdroj",
