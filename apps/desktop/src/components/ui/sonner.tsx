@@ -1,3 +1,5 @@
+import "sonner/dist/styles.css";
+
 import {
   CircleCheckIcon,
   InfoIcon,
