@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { TextareaInput } from "@/components/ui/textarea";
+import { Textarea } from "@/components/ui/textarea";
 
 import { cn } from "@/lib/class-names.utils";
 
@@ -87,9 +87,9 @@ function InputGroupInput({ className, ...props }: React.ComponentProps<typeof In
   );
 }
 
-function InputGroupTextarea({ className, ...props }: React.ComponentProps<typeof TextareaInput>) {
+function InputGroupTextarea({ className, ...props }: React.ComponentProps<typeof Textarea>) {
   return (
-    <TextareaInput
+    <Textarea
       className={cn(
         "flex min-h-16 min-w-0 basis-full resize-none rounded-none border-0 bg-transparent px-2.5 py-1.5 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50",
         className,
