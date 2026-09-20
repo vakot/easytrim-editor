@@ -23,7 +23,7 @@ function InfiniteScrollDemo() {
       <InfiniteScroll
         className="h-full overflow-y-auto"
         hasMore={itemCount < 30}
-        onLoadMore={() => setItemCount((count) => Math.min(count + 10, 30))}
+        next={() => setItemCount((count) => Math.min(count + 10, 30))}
       >
         <div className="flex flex-col gap-2">
           {Array.from({ length: itemCount }, (_, index) => (
@@ -40,7 +40,7 @@ function InfiniteScrollDemo() {
 export const Default: Story = {
   args: {
     hasMore: true,
-    onLoadMore: () => undefined,
+    next: () => undefined,
   },
   render: () => <InfiniteScrollDemo />,
 };

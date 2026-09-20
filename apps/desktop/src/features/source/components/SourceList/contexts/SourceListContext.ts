@@ -6,8 +6,8 @@ type SourceListTab = "none" | "folder" | "time" | "imported";
 
 type SourceListState = {
   hasMore: boolean;
-  isPreparing: boolean;
-  loadMore: () => void;
+  isLoading: boolean;
+  next: () => void;
   search: string;
   setSearch: (value: string) => void;
   sources: EditingInstance[];

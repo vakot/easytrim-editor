@@ -9,22 +9,22 @@ import {
 
 function usePrepareSources(instances: EditingInstance[]) {
   const dispatch = useAppDispatch();
-  const [isPreparing, setIsPreparing] = useState(instances.length > 0);
+  const [isLoading, setIsLoading] = useState(instances.length > 0);
 
   useEffect(() => {
     if (instances.length === 0) {
-      setIsPreparing(false);
+      setIsLoading(false);
       return;
     }
 
     let isMounted = true;
-    setIsPreparing(true);
+    setIsLoading(true);
 
     void Promise.all([
       dispatch(prepareImportedSourceMetadataRequested(instances)),
       dispatch(prepareImportedSourceThumbnailsRequested(instances)),
     ]).finally(() => {
-      if (isMounted) setIsPreparing(false);
+      if (isMounted) setIsLoading(false);
     });
 
     return () => {
@@ -32,7 +32,7 @@ function usePrepareSources(instances: EditingInstance[]) {
     };
   }, [dispatch, instances]);
 
-  return isPreparing;
+  return isLoading;
 }
 
 export { usePrepareSources };

@@ -1,4 +1,4 @@
-import type { ComponentProps } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { useEffect, useRef } from "react";
 
 import { cn } from "@/lib/class-names.utils";
@@ -6,19 +6,23 @@ import { cn } from "@/lib/class-names.utils";
 interface InfiniteScrollTriggerProps {
   hasMore: boolean;
   isLoading?: boolean;
-  onLoadMore: () => void;
+  loader?: ReactNode;
+  next: () => void;
   rootMargin?: string;
 }
 
 type InfiniteScrollProps = ComponentProps<"div"> & InfiniteScrollTriggerProps;
+
+const DEFAULT_ROOT_MARGIN = "0px 0px 200px";
 
 function InfiniteScroll({
   children,
   className,
   hasMore,
   isLoading = false,
-  onLoadMore,
-  rootMargin = "0px 0px 200px",
+  loader,
+  next,
+  rootMargin = DEFAULT_ROOT_MARGIN,
   ...props
 }: InfiniteScrollProps) {
   return (
@@ -27,7 +31,8 @@ function InfiniteScroll({
       <InfiniteScrollTrigger
         hasMore={hasMore}
         isLoading={isLoading}
-        onLoadMore={onLoadMore}
+        loader={loader}
+        next={next}
         rootMargin={rootMargin}
       />
     </div>
@@ -37,26 +42,18 @@ function InfiniteScroll({
 function InfiniteScrollTrigger({
   hasMore,
   isLoading = false,
-  onLoadMore,
-  rootMargin = "0px 0px 200px",
+  loader: propsLoader,
+  next,
+  rootMargin = DEFAULT_ROOT_MARGIN,
 }: InfiniteScrollTriggerProps) {
-  const triggerRef = useRef<HTMLDivElement>(null);
+  const { sentinelRef } = useInfiniteScroll({
+    hasMore,
+    next,
+    isLoading,
+    rootMargin,
+  });
 
-  useEffect(() => {
-    const trigger = triggerRef.current;
-    if (!trigger || !hasMore || isLoading || typeof IntersectionObserver === "undefined") return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry?.isIntersecting) onLoadMore();
-      },
-      { rootMargin },
-    );
-
-    observer.observe(trigger);
-
-    return () => observer.disconnect();
-  }, [hasMore, isLoading, onLoadMore, rootMargin]);
+  const loader = propsLoader ?? <span role="status">Loading…</span>;
 
   if (!hasMore) return null;
 
@@ -65,11 +62,38 @@ function InfiniteScrollTrigger({
       aria-busy={isLoading}
       className="flex min-h-4 items-center justify-center p-2 text-sm text-muted-foreground"
       data-slot="infinite-scroll-trigger"
-      ref={triggerRef}
+      ref={sentinelRef}
     >
-      {isLoading ? <span role="status">Loading…</span> : null}
+      {isLoading ? loader : null}
     </div>
   );
+}
+
+function useInfiniteScroll({
+  hasMore,
+  isLoading,
+  next,
+  rootMargin = DEFAULT_ROOT_MARGIN,
+}: Omit<InfiniteScrollTriggerProps, "loader">) {
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const trigger = sentinelRef.current;
+    if (!trigger || !hasMore || isLoading || typeof IntersectionObserver === "undefined") return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) next();
+      },
+      { rootMargin },
+    );
+
+    observer.observe(trigger);
+
+    return () => observer.disconnect();
+  }, [hasMore, isLoading, next, rootMargin]);
+
+  return { sentinelRef };
 }
 
 export { InfiniteScroll, InfiniteScrollTrigger };

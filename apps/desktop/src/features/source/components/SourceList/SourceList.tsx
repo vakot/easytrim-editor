@@ -17,7 +17,8 @@ import { usePrepareSources } from "./hooks/usePrepareSources";
 const SOURCE_LIST_PAGE_SIZE = 12;
 
 interface SourceListProps {
-  children?: ReactNode | ((state: Pick<SourceListState, "search" | "sources" | "tab">) => ReactNode);
+  children?:
+    ReactNode | ((state: Pick<SourceListState, "search" | "sources" | "tab">) => ReactNode);
 }
 
 function SourceList({ children }: SourceListProps) {
@@ -32,9 +33,9 @@ function SourceList({ children }: SourceListProps) {
     [filteredSources, visibleSourceCount],
   );
   const hasMore = visibleSources.length < filteredSources.length;
-  const isPreparing = usePrepareSources(visibleSources);
+  const isLoading = usePrepareSources(visibleSources);
 
-  const loadMore = useCallback(() => {
+  const next = useCallback(() => {
     setVisibleSourceCount((count) => count + SOURCE_LIST_PAGE_SIZE);
   }, []);
 
@@ -51,8 +52,8 @@ function SourceList({ children }: SourceListProps) {
     <SourceListContext.Provider
       value={{
         hasMore,
-        isPreparing,
-        loadMore,
+        isLoading,
+        next,
         search,
         setSearch,
         sources: filteredSources,
