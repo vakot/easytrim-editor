@@ -42,6 +42,7 @@ import type { EditingInstance } from "@/domain/editing-instance";
 import { cn } from "@/lib/class-names.utils";
 import { openFileLocation } from "@/lib/tauri/media";
 
+import { useRelativeTimeNow } from "../hooks/use-relative-time";
 import {
   formatBytes,
   formatDateTime,
@@ -245,10 +246,17 @@ function SourceCardDescription({ className }: { className?: string }) {
 function SourceCardMetadata({ className }: { className?: string }) {
   const source = useSourceCardSource();
   const { i18n, t } = useTranslation();
+  const now = useRelativeTimeNow();
   const locale = i18n.resolvedLanguage ?? i18n.language;
   const unknown = t("common.status.unknown");
   const fileSize = formatBytes(source.media?.sizeBytes, unknown);
-  const updatedAt = formatRelativeTime(source.snapshot.source.updatedAtMicros, locale, unknown);
+  const updatedAt = formatRelativeTime(
+    source.snapshot.source.updatedAtMicros,
+    locale,
+    unknown,
+    now,
+  );
+
   const updatedAtExact = formatDateTime(source.snapshot.source.updatedAtMicros, locale, unknown);
 
   return (

@@ -56,6 +56,7 @@ import {
   RestoreSource,
   StartSourceExport,
 } from "./components/SourceMenuActions";
+import { useRelativeTimeNow } from "./hooks/use-relative-time";
 import { getRevealLabel } from "./lib/source.utils";
 import {
   groupSourcesByFolder,
@@ -183,7 +184,13 @@ function SourceListGrid({ sources }: { sources: EditingInstance[] }) {
 
 function SourceListTime({ sources }: { sources: EditingInstance[] }) {
   const { i18n, t } = useTranslation();
-  const groups = groupSourcesByUpdatedTime(sources, i18n.language, t("common.status.unknown"));
+  const now = useRelativeTimeNow();
+  const groups = groupSourcesByUpdatedTime(
+    sources,
+    i18n.language,
+    t("common.status.unknown"),
+    new Date(now),
+  );
 
   return (
     <SourceListGroups
@@ -196,7 +203,13 @@ function SourceListTime({ sources }: { sources: EditingInstance[] }) {
 
 function SourceListImported({ sources }: { sources: EditingInstance[] }) {
   const { i18n, t } = useTranslation();
-  const groups = groupSourcesByImportedTime(sources, i18n.language, t("common.status.unknown"));
+  const now = useRelativeTimeNow();
+  const groups = groupSourcesByImportedTime(
+    sources,
+    i18n.language,
+    t("common.status.unknown"),
+    new Date(now),
+  );
 
   return (
     <SourceListGroups

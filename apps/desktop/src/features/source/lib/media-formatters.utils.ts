@@ -59,27 +59,49 @@ export function formatRelativeTime(
   micros: number | undefined,
   locale: string,
   unknownLabel: string,
+  nowMs = Date.now(),
 ): string {
   if (micros === undefined) return unknownLabel;
 
-  const elapsedSeconds = micros / 1_000_000 - Date.now() / 1_000;
-  if (!Number.isFinite(elapsedSeconds)) return unknownLabel;
+  const updatedAtMs = micros / 1_000;
+  const elapsedSeconds = Math.floor((nowMs - updatedAtMs) / 1_000);
+  if (!Number.isFinite(elapsedSeconds) || !Number.isFinite(updatedAtMs)) return unknownLabel;
 
-  const units = [
-    { seconds: 31_536_000, unit: "year" as const },
-    { seconds: 2_592_000, unit: "month" as const },
-    { seconds: 604_800, unit: "week" as const },
-    { seconds: 86_400, unit: "day" as const },
-    { seconds: 3_600, unit: "hour" as const },
-    { seconds: 60, unit: "minute" as const },
-    { seconds: 1, unit: "second" as const },
-  ];
+  if (elapsedSeconds < 0) return formatDateOnly(updatedAtMs, locale, unknownLabel);
 
-  const unit = units.find(({ seconds }) => Math.abs(elapsedSeconds) >= seconds) ?? units.at(-1)!;
+  const relativeTimeFormatter = new Intl.RelativeTimeFormat(locale, { numeric: "always" });
+  if (elapsedSeconds < 60) {
+    return relativeTimeFormatter.format(-Math.max(1, elapsedSeconds), "second");
+  }
+  if (elapsedSeconds < 3_600) {
+    return relativeTimeFormatter.format(-Math.floor(elapsedSeconds / 60), "minute");
+  }
+  if (elapsedSeconds < 86_400) {
+    return relativeTimeFormatter.format(-Math.floor(elapsedSeconds / 3_600), "hour");
+  }
 
-  return new Intl.RelativeTimeFormat(locale, { numeric: "always" }).format(
-    Math.round(elapsedSeconds / unit.seconds),
-    unit.unit,
+  const updatedAt = new Date(updatedAtMs);
+  const now = new Date(nowMs);
+  if (isYesterday(updatedAt, now)) {
+    return new Intl.RelativeTimeFormat(locale, { numeric: "auto" }).format(-1, "day");
+  }
+
+  return formatDateOnly(updatedAtMs, locale, unknownLabel);
+}
+
+function formatDateOnly(ms: number, locale: string, unknownLabel: string): string {
+  const date = new Date(ms);
+  return Number.isNaN(date.getTime())
+    ? unknownLabel
+    : new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(date);
+}
+
+function isYesterday(date: Date, now: Date): boolean {
+  const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+  return (
+    date.getFullYear() === yesterday.getFullYear() &&
+    date.getMonth() === yesterday.getMonth() &&
+    date.getDate() === yesterday.getDate()
   );
 }
 
