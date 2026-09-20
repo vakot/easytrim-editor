@@ -9,7 +9,6 @@ import { useRelativeTimeNow } from "@/lib/hooks/use-relative-time";
 
 interface RelativeTimestampProps {
   className?: string;
-  dateTime?: string;
   label?: ReactNode;
   timestamp: number | undefined;
   unknownLabel: string;
@@ -17,7 +16,6 @@ interface RelativeTimestampProps {
 
 function RelativeTimestamp({
   className,
-  dateTime,
   label,
   timestamp,
   unknownLabel,
@@ -30,10 +28,9 @@ function RelativeTimestamp({
   const timestampMs = timestamp === undefined ? undefined : timestamp / 1_000;
   const parsedTimestamp = timestampMs === undefined ? undefined : new Date(timestampMs);
   const semanticDateTime =
-    dateTime ??
-    (parsedTimestamp && !Number.isNaN(parsedTimestamp.getTime())
+    parsedTimestamp && !Number.isNaN(parsedTimestamp.getTime())
       ? parsedTimestamp.toISOString()
-      : undefined);
+      : undefined;
 
   return (
     <Tooltip>
