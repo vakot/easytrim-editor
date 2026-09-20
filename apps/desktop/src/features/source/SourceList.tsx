@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
@@ -55,12 +56,93 @@ import {
   StartSourceExport,
 } from "./components/SourceMenuActions";
 import { getRevealLabel } from "./lib/source.utils";
+import { groupSourcesByFolder, type SourceGroup } from "./lib/source-grouping.utils";
 
 function SourceList() {
   const sources = usePrepareSources();
 
   if (sources.length === 0) return <SourceListEmptyState />;
 
+  return (
+    <Tabs defaultValue="none">
+      <TabsList>
+        <TabsTrigger value="none">None</TabsTrigger>
+        <TabsTrigger value="folder">Folder</TabsTrigger>
+        <TabsTrigger value="time">Time</TabsTrigger>
+        <TabsTrigger value="imported">Imported</TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="none">
+        <SourceListNone sources={sources} />
+      </TabsContent>
+      <TabsContent value="folder">
+        <SourceListFolder sources={sources} />
+      </TabsContent>
+      <TabsContent value="time">
+        <SourceListTime sources={sources} />
+      </TabsContent>
+      <TabsContent value="imported">
+        <SourceListImported sources={sources} />
+      </TabsContent>
+    </Tabs>
+  );
+}
+
+function SourceListNone({ sources }: { sources: EditingInstance[] }) {
+  return <SourceListGrid sources={sources} />;
+}
+
+function SourceListFolder({ sources }: { sources: EditingInstance[] }) {
+  const folders = groupSourcesByFolder(sources);
+
+  return (
+    <ul className="flex flex-col gap-3" data-slot="imported-sources-folders">
+      {folders.map((folder) => (
+        <SourceListGroup group={folder} key={folder.key} />
+      ))}
+    </ul>
+  );
+}
+
+function SourceListGroup({ group }: { group: SourceGroup<EditingInstance> }) {
+  return (
+    <li className="grid gap-2">
+      <div className="flex min-w-0 items-center gap-2 px-1 text-xs text-muted-foreground">
+        <FolderOpen aria-hidden="true" className="size-3.5 shrink-0" />
+        <span className="truncate" title={group.label}>
+          {group.label}
+        </span>
+      </div>
+      <SourceListGrid sources={group.items} />
+    </li>
+  );
+}
+
+function SourceListGrid({ sources }: { sources: EditingInstance[] }) {
+  return (
+    <ul className="flex flex-col gap-3" data-slot="imported-sources-grid">
+      {sources.map((source) => (
+        <SourceListItem key={source.id} source={source} />
+      ))}
+    </ul>
+  );
+}
+
+function SourceListTime({ sources }: { sources: EditingInstance[] }) {
+  // TODO: group by last updated time in range (relative in minutes;hours;yesterday;absolute_day)
+  // TODO: overall rendering structure can be populated from Folder path
+  return (
+    <ul className="flex flex-col gap-3" data-slot="imported-sources-grid">
+      {sources.map((source) => (
+        <SourceListItem key={source.id} source={source} />
+      ))}
+    </ul>
+  );
+}
+
+function SourceListImported({ sources }: { sources: EditingInstance[] }) {
+  // TODO: group by time each batch was imported (relative in minutes;hours;yesterday;absolute)
+  // TODO: overall rendering structure can be populated from Folder path
   return (
     <ul className="flex flex-col gap-3" data-slot="imported-sources-grid">
       {sources.map((source) => (
