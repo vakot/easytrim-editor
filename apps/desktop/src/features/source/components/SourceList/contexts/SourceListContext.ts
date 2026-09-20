@@ -5,10 +5,14 @@ import type { EditingInstance } from "@/domain/editing-instance";
 type SourceListTab = "none" | "folder" | "time" | "imported";
 
 type SourceListState = {
+  hasMore: boolean;
+  isLoading: boolean;
+  next: () => void;
   search: string;
   setSearch: (value: string) => void;
   sources: EditingInstance[];
   tab: SourceListTab;
+  visibleSources: EditingInstance[];
 };
 
 const SourceListContext = createContext<SourceListState | null>(null);
