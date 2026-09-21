@@ -18,15 +18,23 @@ import {
   editingInstanceExportCompleted,
   editingInstanceExportStarted,
   editingInstancesAdded,
+  selectImportedEditingInstances,
 } from "@/app/store/slices/editing-instances-slice";
 import { selectSourceQueueStarted } from "@/app/store/slices/export-slice";
 import { preferenceChanged } from "@/app/store/slices/preferences-slice";
 import { importedThumbnailLoading } from "@/app/store/slices/preview-slice";
 import { createAppStore } from "@/app/store/store";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { createExportAttempt, type EditingInstance } from "@/domain/editing-instance";
-import { firstSource } from "@/test/source.fixtures";
+import { firstSource, secondSource } from "@/test/source.fixtures";
 
-import { SourceList, SourceListContent, SourceListSearch } from "../SourceList";
+import {
+  SourceList,
+  SourceListCloseAll,
+  SourceListContent,
+  SourceListSearch,
+  SourceListTabs,
+} from "../SourceList";
 
 vi.mock("../../SourceCard", () => {
   const Container = ({ children }: PropsWithChildren) => <div>{children}</div>;
@@ -121,6 +129,87 @@ describe("source queue controls", () => {
 
     expect(search).toHaveValue("");
     expect(await screen.findByLabelText("Ctrl + K")).toBeInTheDocument();
+  });
+
+  it("closes all imported sources from the source list action", async () => {
+    const user = userEvent.setup();
+    const store = createAppStore();
+    store.dispatch(
+      editingInstancesAdded(
+        [firstSource, secondSource].map((source, index) => ({
+          id: `source-${index}`,
+          origin: "source-import" as const,
+          snapshot: createDefaultEditorSnapshot(source, false),
+          sourceAvailability: "available" as const,
+          exportAttempts: [],
+        })),
+      ),
+    );
+
+    render(
+      <TooltipProvider>
+        <Provider store={store}>
+          <SourceList>
+            {() => (
+              <>
+                <SourceListCloseAll />
+                <SourceListContent />
+              </>
+            )}
+          </SourceList>
+        </Provider>
+      </TooltipProvider>,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Close all open sources" }));
+    expect(selectImportedEditingInstances(store.getState())).toHaveLength(2);
+
+    const dialog = screen.getByRole("alertdialog");
+    await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    expect(selectImportedEditingInstances(store.getState())).toHaveLength(2);
+
+    await user.click(screen.getByRole("button", { name: "Close all open sources" }));
+    await user.click(within(screen.getByRole("alertdialog")).getByRole("button", { name: "Close" }));
+
+    expect(selectImportedEditingInstances(store.getState())).toHaveLength(0);
+  });
+
+  it("closes every source in a grouped source list action", async () => {
+    const user = userEvent.setup();
+    const store = createAppStore();
+    store.dispatch(
+      editingInstancesAdded(
+        [firstSource, secondSource].map((source, index) => ({
+          id: `source-${index}`,
+          origin: "source-import" as const,
+          snapshot: createDefaultEditorSnapshot(source, false),
+          sourceAvailability: "available" as const,
+          exportAttempts: [],
+        })),
+      ),
+    );
+
+    render(
+      <TooltipProvider>
+        <Provider store={store}>
+          <SourceList>
+            {() => (
+              <>
+                <SourceListTabs />
+                <SourceListContent />
+              </>
+            )}
+          </SourceList>
+        </Provider>
+      </TooltipProvider>,
+    );
+
+    await user.click(screen.getByRole("tab", { name: "Folder" }));
+    await user.click(screen.getByRole("button", { name: "Close group" }));
+    expect(selectImportedEditingInstances(store.getState())).toHaveLength(2);
+    await user.click(within(screen.getByRole("alertdialog")).getByRole("button", { name: "Close" }));
+
+    expect(selectImportedEditingInstances(store.getState())).toHaveLength(0);
   });
 
   it("starts and cancels only the chosen source without removing pending attempts", async () => {

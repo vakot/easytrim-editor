@@ -196,6 +196,8 @@ export const en = {
   },
   source: {
     actions: {
+      closeAllSources: "Close all open sources",
+      closeGroup: "Close group",
       revealInFileExplorer: "Reveal in File Explorer",
       revealInFileManager: "Reveal in File Manager",
       revealInFinder: "Reveal in Finder",
@@ -258,6 +260,11 @@ export const en = {
       toolsUnavailable: "Some required media dependencies are unavailable.",
     },
     dialogs: {
+      close: {
+        description:
+          "This will close {{count}} imported source files. Queued and completed exports will remain available.",
+        title: "Close sources?",
+      },
       delete: {
         description: "This deletes {{name}} from your computer. This action can be undone.",
         folderDescription:

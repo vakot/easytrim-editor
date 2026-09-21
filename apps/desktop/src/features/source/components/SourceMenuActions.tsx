@@ -1,5 +1,19 @@
 import { cloneElement, type MouseEventHandler, type ReactElement } from "react";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
+import { useTranslation } from "react-i18next";
+
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectSourceExportQueueState } from "@/app/store/slices/export-slice";
 import { cancelSourceExportQueue, startSourceExportQueue } from "@/app/store/thunks/export-thunks";
@@ -24,6 +38,7 @@ interface SourceActionProps {
   onOpenChange?: (open: boolean) => void;
   open?: boolean;
   source?: EditingInstance;
+  sources?: EditingInstance[];
   sourcePath?: string;
 }
 
@@ -59,6 +74,40 @@ function CloseSource({ children, event = "select", source }: SourceActionProps) 
   return withAction(withDisabled(children, !source), event, () => {
     if (source) void dispatch(closeEditingInstancesRequested([source.id]));
   });
+}
+
+/**
+ * @name CloseSources
+ * @description Adds batch close behavior to a compatible action trigger for multiple source editing instances.
+ */
+function CloseSources({ children, sources = [] }: SourceActionProps) {
+  const { t } = useTranslation();
+  const dispatch = useAppDispatch();
+  const sourceIds = sources.map(({ id }) => id);
+  const trigger = withDisabled(children, sourceIds.length === 0);
+
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{t("source.dialogs.close.title")}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {t("source.dialogs.close.description", { count: sourceIds.length })}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>{t("common.actions.cancel")}</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => void dispatch(closeEditingInstancesRequested(sourceIds))}
+            variant="destructive"
+          >
+            {t("common.actions.close")}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
 }
 
 /**
@@ -149,4 +198,11 @@ function withPreventedSelect(children: ActionElement) {
   });
 }
 
-export { CancelSourceExport, CloseSource, DeleteSource, RestoreSource, StartSourceExport };
+export {
+  CancelSourceExport,
+  CloseSource,
+  CloseSources,
+  DeleteSource,
+  RestoreSource,
+  StartSourceExport,
+};

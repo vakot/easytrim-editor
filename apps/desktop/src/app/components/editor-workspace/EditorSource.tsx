@@ -13,7 +13,13 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { ActivityFeed } from "@/features/activity";
-import { SourceList, SourceListContent, SourceListSearch, SourceListTabs } from "@/features/source";
+import {
+  SourceList,
+  SourceListCloseAll,
+  SourceListContent,
+  SourceListSearch,
+  SourceListTabs,
+} from "@/features/source";
 import { cn } from "@/lib/class-names.utils";
 
 const groupByIcons = {
@@ -77,11 +83,14 @@ function EditorSource() {
                             <Icon />
                           </Button>
                         </PopoverTrigger>
+
                         <PopoverContent align="end" className="grid w-auto gap-1.5">
                           <Label>{t("source.labels.groupBy")}</Label>
                           <SourceListTabs />
                         </PopoverContent>
                       </Popover>
+
+                      <SourceListCloseAll />
                     </div>
                     <ScrollArea className={cn("min-h-0 flex-1", tab !== "none" && "before:top-7")}>
                       <div className="px-2 pb-2">

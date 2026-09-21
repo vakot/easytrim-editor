@@ -197,6 +197,8 @@ export const sk = {
   },
   source: {
     actions: {
+      closeAllSources: "Zavrieť všetky otvorené zdroje",
+      closeGroup: "Zavrieť skupinu",
       revealInFileExplorer: "Zobraziť v Prieskumníkovi súborov",
       revealInFileManager: "Zobraziť v správcovi súborov",
       revealInFinder: "Zobraziť vo Finderi",
@@ -260,6 +262,11 @@ export const sk = {
       toolsUnavailable: "Niektoré požadované multimediálne závislosti nie sú dostupné.",
     },
     dialogs: {
+      close: {
+        description:
+          "Týmto zavriete {{count}} importovaných zdrojových súborov. Úlohy vo fronte a dokončené exporty zostanú dostupné.",
+        title: "Zavrieť zdroje?",
+      },
       delete: {
         description: "Týmto odstránite {{name}} z počítača. Túto akciu možno vrátiť späť.",
         folderDescription:
