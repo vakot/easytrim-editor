@@ -30,8 +30,9 @@ function ResolutionDimensions({
       <Label className="sr-only" htmlFor="export-width">
         {t("export.labels.width")}
       </Label>
-      <div className="flex items-center gap-1.5">
+      <div className="flex flex-1 items-center gap-1.5">
         <Input
+          className="flex-1"
           id="export-width"
           inputMode="numeric"
           min={1}
@@ -51,6 +52,7 @@ function ResolutionDimensions({
         <span aria-hidden="true">×</span>
         <Input
           aria-label={t("export.labels.height")}
+          className="flex-1"
           inputMode="numeric"
           min={1}
           onChange={(event) => {

@@ -78,16 +78,12 @@ function ExportDialog() {
           </DialogHeader>
 
           <PresetManager />
-
-          <div className="grid gap-3">
-            <ExportResolution cropResolution={cropResolution} settings={settings} />
-            <ExportFrameRate settings={settings} />
-          </div>
-
+          <ExportResolution cropResolution={cropResolution} settings={settings} />
+          <ExportFrameRate settings={settings} />
           <CommandPreview command={commandPreview} error={commandPreviewError?.message} />
 
-          <DialogFooter className="items-center sm:justify-between">
-            <p className="text-xs text-muted-foreground">
+          <DialogFooter className="min-w-0 items-center sm:justify-between">
+            <p className="min-w-0 flex-1 text-xs text-muted-foreground">
               {t("export.dialogs.optimized.saveNotice")}
             </p>
             <div className="flex shrink-0 flex-col-reverse gap-2 sm:flex-row">

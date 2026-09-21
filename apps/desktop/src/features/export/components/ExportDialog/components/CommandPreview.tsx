@@ -31,10 +31,10 @@ function CommandPreview({ command, error }: CommandPreviewProps) {
   }
 
   return (
-    <div className="grid gap-1.5">
+    <section className="grid gap-1.5">
       <Label htmlFor="ffmpeg-arguments">{t("export.dialogs.optimized.arguments")}</Label>
 
-      <InputGroup>
+      <InputGroup className="grid">
         <InputGroupTextarea
           className="max-h-48 min-h-30 font-mono text-muted-foreground"
           id="ffmpeg-arguments"
@@ -64,7 +64,7 @@ function CommandPreview({ command, error }: CommandPreviewProps) {
           </Tooltip>
         </InputGroupAddon>
       </InputGroup>
-    </div>
+    </section>
   );
 }
 
