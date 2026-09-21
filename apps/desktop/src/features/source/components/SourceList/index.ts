@@ -1,1 +1,7 @@
-export { SourceList, SourceListContent, SourceListSearch, SourceListTabs } from "./SourceList";
+export {
+  SourceList,
+  SourceListCloseAll,
+  SourceListContent,
+  SourceListSearch,
+  SourceListTabs,
+} from "./SourceList";

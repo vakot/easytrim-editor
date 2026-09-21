@@ -24,6 +24,7 @@ interface SourceActionProps {
   onOpenChange?: (open: boolean) => void;
   open?: boolean;
   source?: EditingInstance;
+  sources?: EditingInstance[];
   sourcePath?: string;
 }
 
@@ -59,6 +60,21 @@ function CloseSource({ children, event = "select", source }: SourceActionProps) 
   return withAction(withDisabled(children, !source), event, () => {
     if (source) void dispatch(closeEditingInstancesRequested([source.id]));
   });
+}
+
+/**
+ * @name CloseSources
+ * @description Adds batch close behavior to a compatible action trigger for multiple source editing instances.
+ */
+function CloseSources({ children, event = "select", sources = [] }: SourceActionProps) {
+  const dispatch = useAppDispatch();
+  const sourceIds = sources.map(({ id }) => id);
+
+  return withAction(
+    withDisabled(children, sourceIds.length === 0),
+    event,
+    () => void dispatch(closeEditingInstancesRequested(sourceIds)),
+  );
 }
 
 /**
@@ -149,4 +165,11 @@ function withPreventedSelect(children: ActionElement) {
   });
 }
 
-export { CancelSourceExport, CloseSource, DeleteSource, RestoreSource, StartSourceExport };
+export {
+  CancelSourceExport,
+  CloseSource,
+  CloseSources,
+  DeleteSource,
+  RestoreSource,
+  StartSourceExport,
+};

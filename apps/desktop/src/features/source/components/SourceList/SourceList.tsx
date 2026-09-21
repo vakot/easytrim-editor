@@ -7,6 +7,7 @@ import { selectImportedEditingInstances } from "@/app/store/slices/editing-insta
 import { filterSourcesByPath } from "../../lib/source-search.utils";
 
 import { SourceListContent } from "./components/SourceListContent";
+import { SourceListCloseAll } from "./components/SourceListCloseAll";
 import { SourceListEmptyState } from "./components/SourceListEmptyState";
 import { SourceListSearch } from "./components/SourceListSearch";
 import { SourceListTabs } from "./components/SourceListTabs";
@@ -72,4 +73,11 @@ function SourceList({ children }: SourceListProps) {
   );
 }
 
-export { SourceList, SourceListContent, type SourceListProps, SourceListSearch, SourceListTabs };
+export {
+  SourceList,
+  SourceListCloseAll,
+  SourceListContent,
+  type SourceListProps,
+  SourceListSearch,
+  SourceListTabs,
+};

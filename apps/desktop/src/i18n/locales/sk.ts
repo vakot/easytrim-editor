@@ -197,6 +197,8 @@ export const sk = {
   },
   source: {
     actions: {
+      closeAllSources: "Zavrieť všetky otvorené zdroje",
+      closeGroup: "Zavrieť skupinu",
       revealInFileExplorer: "Zobraziť v Prieskumníkovi súborov",
       revealInFileManager: "Zobraziť v správcovi súborov",
       revealInFinder: "Zobraziť vo Finderi",

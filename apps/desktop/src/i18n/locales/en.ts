@@ -196,6 +196,8 @@ export const en = {
   },
   source: {
     actions: {
+      closeAllSources: "Close all open sources",
+      closeGroup: "Close group",
       revealInFileExplorer: "Reveal in File Explorer",
       revealInFileManager: "Reveal in File Manager",
       revealInFinder: "Reveal in Finder",
