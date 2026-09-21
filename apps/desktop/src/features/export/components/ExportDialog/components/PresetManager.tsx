@@ -110,82 +110,80 @@ function PresetManager() {
   }
 
   return (
-    <section className="grid min-w-0 gap-3">
-      <div className="grid gap-1.5">
-        <Label>{t("export.labels.preset")}</Label>
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            className={selectTriggerVariants({
-              variant: "primary",
-              className: "w-full min-w-0 font-normal",
-            })}
-            data-size="default"
-          >
-            <span className="truncate">
-              {selectedPreset?.name ?? t("export.options.selectPreset")}
-            </span>
-            <ChevronDownIcon className="pointer-events-none size-4 shrink-0" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="min-w-56" sideOffset={6}>
-            <DropdownMenuGroup>
-              {presets.map((preset) => (
-                <div className="flex items-center gap-1" key={preset.id}>
-                  <DropdownMenuItem
-                    className="h-auto min-w-0 flex-1 items-start"
-                    onSelect={() => dispatch(exportPresetSelected(preset.id))}
+    <section className="grid gap-1.5">
+      <Label>{t("export.labels.preset")}</Label>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          className={selectTriggerVariants({
+            variant: "primary",
+            className: "w-full min-w-0 font-normal",
+          })}
+          data-size="default"
+        >
+          <span className="truncate">
+            {selectedPreset?.name ?? t("export.options.selectPreset")}
+          </span>
+          <ChevronDownIcon className="pointer-events-none size-4 shrink-0" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="min-w-56" sideOffset={6}>
+          <DropdownMenuGroup>
+            {presets.map((preset) => (
+              <div className="flex items-center gap-1" key={preset.id}>
+                <DropdownMenuItem
+                  className="h-auto min-w-0 flex-1 items-start"
+                  onSelect={() => dispatch(exportPresetSelected(preset.id))}
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate">{preset.name}</span>
+                    {preset.description ? (
+                      <span className="block truncate text-xs text-muted-foreground">
+                        {preset.description}
+                      </span>
+                    ) : null}
+                  </span>
+                </DropdownMenuItem>
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger
+                    aria-label={t("export.accessibility.presetActions")}
+                    className="size-8 min-w-0 shrink-0 justify-center p-0 [&>span:last-child]:hidden"
                   >
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate">{preset.name}</span>
-                      {preset.description ? (
-                        <span className="block truncate text-xs text-muted-foreground">
-                          {preset.description}
-                        </span>
-                      ) : null}
-                    </span>
-                  </DropdownMenuItem>
-                  <DropdownMenuSub>
-                    <DropdownMenuSubTrigger
-                      aria-label={t("export.accessibility.presetActions")}
-                      className="size-8 min-w-0 shrink-0 justify-center p-0 [&>span:last-child]:hidden"
-                    >
-                      <MoreHorizontal className="size-4" />
-                    </DropdownMenuSubTrigger>
-                    <DropdownMenuSubContent className="min-w-32" sideOffset={4}>
-                      <DropdownMenuGroup>
-                        <DropdownMenuItem inset onSelect={() => openEditDialog(preset)}>
-                          <DropdownMenuIcon>
-                            <Pencil className="size-3.5" />
-                          </DropdownMenuIcon>
-                          {t("common.actions.edit")}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          inset
-                          onSelect={() => setPresetToDelete(preset)}
-                          variant="destructive"
-                        >
-                          <DropdownMenuIcon>
-                            <Trash2 className="size-3.5" />
-                          </DropdownMenuIcon>
-                          {t("common.actions.delete")}
-                        </DropdownMenuItem>
-                      </DropdownMenuGroup>
-                    </DropdownMenuSubContent>
-                  </DropdownMenuSub>
-                </div>
-              ))}
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem inset onSelect={openCreateDialog}>
-                <DropdownMenuIcon>
-                  <Plus className="size-3.5" />
-                </DropdownMenuIcon>
-                {t("export.actions.addPreset")}
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+                    <MoreHorizontal className="size-4" />
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent className="min-w-32" sideOffset={4}>
+                    <DropdownMenuGroup>
+                      <DropdownMenuItem inset onSelect={() => openEditDialog(preset)}>
+                        <DropdownMenuIcon>
+                          <Pencil className="size-3.5" />
+                        </DropdownMenuIcon>
+                        {t("common.actions.edit")}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        inset
+                        onSelect={() => setPresetToDelete(preset)}
+                        variant="destructive"
+                      >
+                        <DropdownMenuIcon>
+                          <Trash2 className="size-3.5" />
+                        </DropdownMenuIcon>
+                        {t("common.actions.delete")}
+                      </DropdownMenuItem>
+                    </DropdownMenuGroup>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+              </div>
+            ))}
+          </DropdownMenuGroup>
+          <DropdownMenuSeparator />
+          <DropdownMenuGroup>
+            <DropdownMenuItem inset onSelect={openCreateDialog}>
+              <DropdownMenuIcon>
+                <Plus className="size-3.5" />
+              </DropdownMenuIcon>
+              {t("export.actions.addPreset")}
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <Dialog onOpenChange={(open) => !open && setDialogMode(null)} open={dialogMode !== null}>
         <DialogContent className="sm:max-w-xl">

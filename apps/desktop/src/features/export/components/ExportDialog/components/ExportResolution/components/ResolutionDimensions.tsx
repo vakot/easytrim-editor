@@ -26,11 +26,11 @@ function ResolutionDimensions({
   const { t } = useTranslation();
 
   return (
-    <div className="flex min-w-0 items-center gap-1.5">
+    <div className="flex items-center gap-1.5">
       <Label className="sr-only" htmlFor="export-width">
         {t("export.labels.width")}
       </Label>
-      <div className="flex min-w-0 flex-1 items-center gap-1.5">
+      <div className="flex flex-1 items-center gap-1.5">
         <Input
           className="flex-1"
           id="export-width"

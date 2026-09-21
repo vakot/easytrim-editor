@@ -28,7 +28,7 @@ function ResolutionPresetSelect({
       onValueChange={onValueChange}
       value={hasMatchingResolutionPreset ? resolutionValue : "custom"}
     >
-      <SelectTrigger className="w-full min-w-0" id="export-resolution">
+      <SelectTrigger className="w-full" id="export-resolution">
         <SelectValue>
           {!hasMatchingResolutionPreset ? t("export.labels.customScaling") : undefined}
         </SelectValue>

@@ -27,7 +27,7 @@ function ExportFrameRate({ settings }: ExportFrameRateProps) {
     : "source";
 
   return (
-    <div className="grid gap-1.5">
+    <section className="grid gap-1.5">
       <Label htmlFor="export-frame-rate">{t("export.dialogs.optimized.frameRate")}</Label>
       <Select
         onValueChange={(value) =>
@@ -52,7 +52,7 @@ function ExportFrameRate({ settings }: ExportFrameRateProps) {
           ))}
         </SelectContent>
       </Select>
-    </div>
+    </section>
   );
 }
 

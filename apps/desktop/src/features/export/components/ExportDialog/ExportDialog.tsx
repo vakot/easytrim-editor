@@ -78,12 +78,8 @@ function ExportDialog() {
           </DialogHeader>
 
           <PresetManager />
-
-          <div>
-            <ExportResolution cropResolution={cropResolution} settings={settings} />
-            <ExportFrameRate settings={settings} />
-          </div>
-
+          <ExportResolution cropResolution={cropResolution} settings={settings} />
+          <ExportFrameRate settings={settings} />
           <CommandPreview command={commandPreview} error={commandPreviewError?.message} />
 
           <DialogFooter className="min-w-0 items-center sm:justify-between">

@@ -39,9 +39,9 @@ function ExportResolution({ cropResolution, settings }: ExportResolutionProps) {
   };
 
   return (
-    <div className="grid min-w-0 gap-1.5">
+    <section className="grid gap-1.5">
       <Label htmlFor="export-resolution">{t("export.dialogs.optimized.resolution")}</Label>
-      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-end gap-3">
+      <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-end gap-3">
         <ResolutionPresetSelect
           hasMatchingResolutionPreset={hasMatchingResolutionPreset}
           onValueChange={(value) => {
@@ -59,7 +59,7 @@ function ExportResolution({ cropResolution, settings }: ExportResolutionProps) {
           settings={settings}
         />
       </div>
-    </div>
+    </section>
   );
 }
 
