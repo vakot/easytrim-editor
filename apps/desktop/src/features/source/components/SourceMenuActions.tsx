@@ -1,5 +1,19 @@
 import { cloneElement, type MouseEventHandler, type ReactElement } from "react";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
+import { useTranslation } from "react-i18next";
+
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectSourceExportQueueState } from "@/app/store/slices/export-slice";
 import { cancelSourceExportQueue, startSourceExportQueue } from "@/app/store/thunks/export-thunks";
@@ -66,14 +80,33 @@ function CloseSource({ children, event = "select", source }: SourceActionProps) 
  * @name CloseSources
  * @description Adds batch close behavior to a compatible action trigger for multiple source editing instances.
  */
-function CloseSources({ children, event = "select", sources = [] }: SourceActionProps) {
+function CloseSources({ children, sources = [] }: SourceActionProps) {
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const sourceIds = sources.map(({ id }) => id);
+  const trigger = withDisabled(children, sourceIds.length === 0);
 
-  return withAction(
-    withDisabled(children, sourceIds.length === 0),
-    event,
-    () => void dispatch(closeEditingInstancesRequested(sourceIds)),
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{t("source.dialogs.close.title")}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {t("source.dialogs.close.description", { count: sourceIds.length })}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>{t("common.actions.cancel")}</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => void dispatch(closeEditingInstancesRequested(sourceIds))}
+            variant="destructive"
+          >
+            {t("common.actions.close")}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 

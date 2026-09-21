@@ -162,6 +162,14 @@ describe("source queue controls", () => {
     );
 
     await user.click(screen.getByRole("button", { name: "Close all open sources" }));
+    expect(selectImportedEditingInstances(store.getState())).toHaveLength(2);
+
+    const dialog = screen.getByRole("alertdialog");
+    await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    expect(selectImportedEditingInstances(store.getState())).toHaveLength(2);
+
+    await user.click(screen.getByRole("button", { name: "Close all open sources" }));
+    await user.click(within(screen.getByRole("alertdialog")).getByRole("button", { name: "Close" }));
 
     expect(selectImportedEditingInstances(store.getState())).toHaveLength(0);
   });
@@ -198,6 +206,8 @@ describe("source queue controls", () => {
 
     await user.click(screen.getByRole("tab", { name: "Folder" }));
     await user.click(screen.getByRole("button", { name: "Close group" }));
+    expect(selectImportedEditingInstances(store.getState())).toHaveLength(2);
+    await user.click(within(screen.getByRole("alertdialog")).getByRole("button", { name: "Close" }));
 
     expect(selectImportedEditingInstances(store.getState())).toHaveLength(0);
   });

@@ -74,11 +74,13 @@ function SourceListGroup({
 
           <Tooltip>
             <TooltipTrigger asChild>
-              <CloseSources event="click" sources={group.items}>
-                <Button aria-label={closeLabel} size="icon-sm" variant="destructive">
-                  <X aria-hidden="true" />
-                </Button>
-              </CloseSources>
+              <span className="inline-flex">
+                <CloseSources sources={group.items}>
+                  <Button aria-label={closeLabel} size="icon-sm" variant="destructive">
+                    <X aria-hidden="true" />
+                  </Button>
+                </CloseSources>
+              </span>
             </TooltipTrigger>
 
             <TooltipContent>{closeLabel}</TooltipContent>

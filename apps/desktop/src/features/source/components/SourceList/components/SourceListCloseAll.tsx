@@ -17,11 +17,13 @@ function SourceListCloseAll() {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <CloseSources event="click" sources={sources}>
-          <Button aria-label={label} size="icon-sm" variant="destructive">
-            <X aria-hidden="true" />
-          </Button>
-        </CloseSources>
+        <span className="inline-flex">
+          <CloseSources sources={sources}>
+            <Button aria-label={label} size="icon-sm" variant="destructive">
+              <X aria-hidden="true" />
+            </Button>
+          </CloseSources>
+        </span>
       </TooltipTrigger>
       <TooltipContent>{label}</TooltipContent>
     </Tooltip>
