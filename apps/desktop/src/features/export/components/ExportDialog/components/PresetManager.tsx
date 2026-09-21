@@ -110,14 +110,14 @@ function PresetManager() {
   }
 
   return (
-    <section className="grid gap-3">
+    <section className="grid min-w-0 gap-3">
       <div className="grid gap-1.5">
         <Label>{t("export.labels.preset")}</Label>
         <DropdownMenu>
           <DropdownMenuTrigger
             className={selectTriggerVariants({
               variant: "primary",
-              className: "w-full font-normal",
+              className: "w-full min-w-0 font-normal",
             })}
             data-size="default"
           >

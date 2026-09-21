@@ -31,7 +31,7 @@ function CommandPreview({ command, error }: CommandPreviewProps) {
   }
 
   return (
-    <div className="grid gap-1.5">
+    <div className="grid min-w-0 gap-1.5">
       <Label htmlFor="ffmpeg-arguments">{t("export.dialogs.optimized.arguments")}</Label>
 
       <InputGroup>
