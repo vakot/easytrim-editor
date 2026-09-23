@@ -57,10 +57,12 @@ both internal and user-facing effects, describe only the verified user-facing ef
 
 ## Evidence standard
 
-For every bullet, identify the final source evidence before writing it. Suitable evidence includes
-changed product code, visible strings, documented behavior, release-facing configuration, or a test
-that confirms a directly user-facing outcome. Commit history and merged PR descriptions can explain
-intent or group related changes, but cannot substitute for source evidence.
+For every bullet, identify the final source evidence before writing it. Suitable primary evidence
+includes changed product code, visible strings, documented behavior, or release-facing
+configuration. Tests are supporting evidence only: they may corroborate a user-facing behavior
+already verified in production code or release-facing configuration, but a test alone never
+justifies an entry. Commit history and merged PR descriptions can explain intent or group related
+changes, but cannot substitute for source evidence.
 
 Do not infer support, compatibility, bug fixes, security properties, or user benefits solely from
 names, conventional behavior, or an unverified commit message. When evidence is incomplete, omit
