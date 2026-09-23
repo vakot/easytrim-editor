@@ -17,7 +17,7 @@ function AppLayoutPanel({ children, className }: AppLayoutPanelProps) {
     <Card
       className={cn(
         "size-full gap-0 border border-border p-0 ring-0",
-        isCompact && "block rounded-none border-0 bg-card",
+        isCompact && "block rounded-none bg-card",
         className,
       )}
     >

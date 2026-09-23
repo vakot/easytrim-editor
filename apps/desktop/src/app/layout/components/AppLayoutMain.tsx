@@ -23,13 +23,13 @@ type PanelSizes = {
   minSize: number;
 };
 
-const TIMELINE_PANEL_DEFAULT_SIZE = 156;
+const TIMELINE_PANEL_DEFAULT_SIZE = 154;
 
 const AUDIO_PANEL_SIZE_LINE = 58;
 const AUDIO_PANEL_SIZE_MIN = 125;
 
 const getTimelinePanelSize = (lines: number = 0, isCompact = false): PanelSizes => {
-  const minSize = isCompact ? TIMELINE_PANEL_DEFAULT_SIZE - 4 : TIMELINE_PANEL_DEFAULT_SIZE;
+  const minSize = isCompact ? TIMELINE_PANEL_DEFAULT_SIZE - 1 : TIMELINE_PANEL_DEFAULT_SIZE;
 
   if (lines === 0) {
     return {
@@ -75,8 +75,8 @@ function AppLayoutMain() {
 
       <ResizablePanelGroup id="editor-stage" orientation="vertical" persisted>
         <ResizablePanel id="editor-stage-preview" minSize="14rem">
-          <AppLayoutPanel className="bg-preview-surface layout-compact:flex layout-compact:flex-col">
-            <div className="grid min-w-0 shrink-0 px-1">
+          <AppLayoutPanel className="flex flex-col bg-preview-surface layout-compact:rounded-tr-xl layout-compact:border-b-0 layout-compact:border-l-0">
+            <div className="grid h-16 min-w-0 shrink-0 px-1">
               <div className="flex h-9 min-w-0 items-center gap-1.5">
                 <ScrollArea
                   className="mt-0.5 min-w-0 flex-1 pb-0.5"
@@ -96,7 +96,7 @@ function AppLayoutMain() {
         </ResizablePanel>
 
         <ResizableHandle
-          className="layout-default:bg-transparent"
+          className="h-1.5 layout-default:bg-transparent"
           disabled={!media}
           style={isCompact ? undefined : { height: 6 }}
           withHandle={!!media}
@@ -108,7 +108,7 @@ function AppLayoutMain() {
           id="editor-stage-timeline"
           {...getTimelinePanelSize(audioStreamsCount, isCompact)}
         >
-          <AppLayoutPanel>
+          <AppLayoutPanel className="layout-compact:rounded-br-xl layout-compact:border-t-0 layout-compact:border-l-0">
             <TimelinePanel />
             {audioStreamsCount > 0 && <AudioPanel />}
           </AppLayoutPanel>

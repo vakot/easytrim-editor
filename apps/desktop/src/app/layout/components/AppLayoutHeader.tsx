@@ -10,7 +10,7 @@ function AppLayoutHeader() {
   const { t } = useTranslation();
 
   return (
-    <TitleBar className="w-full justify-between layout-compact:border-b">
+    <TitleBar className="w-full justify-between">
       <div className="flex h-full gap-2">
         <div className="flex h-full items-center gap-2 px-3 text-left">
           <img alt="" className="size-5" src="/logo-symbol.svg" />
