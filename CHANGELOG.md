@@ -52,10 +52,10 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - Made export actions more discoverable and improved source responsiveness while working with queued exports.
-- Corrected NVENC options and preserved FFmpeg diagnostics when exports fail.
 
 ### Fixed
 
+- Corrected NVENC options and preserved FFmpeg diagnostics when exports fail.
 - Stabilized held-frame and shuttle behavior while moving through the timeline.
 
 ## [1.8.1]
