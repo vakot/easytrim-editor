@@ -9,7 +9,7 @@ import { filterSourcesByPath } from "../../lib/source-search.utils";
 
 import { SourceListCloseAll } from "./components/SourceListCloseAll";
 import { SourceListContent } from "./components/SourceListContent";
-import { SourceListEmptyState } from "./components/SourceListEmptyState";
+import { SourceListEmpty } from "./components/SourceListEmpty";
 import { SourceListSearch } from "./components/SourceListSearch";
 import { SourceListTabs } from "./components/SourceListTabs";
 import type { SourceListState, SourceListTab } from "./contexts/SourceListContext";
@@ -47,7 +47,7 @@ function SourceList({ children }: SourceListProps) {
     setVisibleSourceCount(SOURCE_LIST_PAGE_SIZE);
   }, []);
 
-  if (sources.length === 0) return <SourceListEmptyState />;
+  if (sources.length === 0) return <SourceListEmpty />;
 
   const child =
     typeof children === "function" ? children({ search, sources: filteredSources, tab }) : children;

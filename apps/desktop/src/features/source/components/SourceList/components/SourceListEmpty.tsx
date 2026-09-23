@@ -18,9 +18,9 @@ import { useAppDispatch } from "@/app/store/redux-hooks";
 import { chooseSourceRequested } from "@/app/store/thunks/source-media-thunks";
 import { cn } from "@/lib/class-names.utils";
 
-import styles from "./SourceListEmptyState.module.css";
+import styles from "./SourceListEmpty.module.css";
 
-function SourceListEmptyState() {
+function SourceListEmpty() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
 
@@ -29,10 +29,10 @@ function SourceListEmptyState() {
       aria-label={t("source.labels.explorer")}
       className={cn(
         styles.container,
-        "flex min-h-full w-full items-center justify-center overflow-hidden px-3 py-8",
+        "flex min-h-full w-full items-center justify-center overflow-hidden py-8",
       )}
     >
-      <Empty className="w-full max-w-xl border-0 p-0">
+      <Empty className="w-full max-w-3xl border-0 p-0">
         <EmptyHeader>
           <EmptyMedia className={styles.hideOnShorterContainer} variant="icon">
             <FolderCode aria-hidden="true" />
@@ -43,7 +43,7 @@ function SourceListEmptyState() {
 
         <EmptyContent>
           <div className="grid w-full gap-3">
-            <SourceListEmptyStateAction
+            <SourceListEmptyAction
               description={t("source.messages.openFileDescription")}
               icon={<FileVideo2 aria-hidden="true" />}
               keys={["Ctrl", "O"]}
@@ -52,7 +52,7 @@ function SourceListEmptyState() {
                 void dispatch(chooseSourceRequested({ id: "explorer.open-file", type: "button" }))
               }
             />
-            <SourceListEmptyStateAction
+            <SourceListEmptyAction
               description={t("source.messages.openFolderDescription")}
               icon={<FolderOpen aria-hidden="true" />}
               keys={["Ctrl", "K"]}
@@ -94,7 +94,7 @@ function SourceListEmptyState() {
   );
 }
 
-function SourceListEmptyStateAction({
+function SourceListEmptyAction({
   description,
   icon,
   keys,
@@ -125,4 +125,4 @@ function SourceListEmptyStateAction({
   );
 }
 
-export { SourceListEmptyState };
+export { SourceListEmpty };
