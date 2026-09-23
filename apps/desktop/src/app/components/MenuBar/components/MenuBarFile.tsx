@@ -61,7 +61,6 @@ function MenuBarFile() {
     (event) =>
       event.code === "KeyK" &&
       event.ctrlKey &&
-      !hasSource &&
       !isChoosingSource &&
       !isNativeDialogOpen,
     () => void dispatch(chooseSourceRequested({ id: "Ctrl+K", type: "hotkey" }, "folders")),
@@ -121,14 +120,12 @@ function MenuBarFile() {
               }
             >
               {t("app.actions.openFolder")}
-              {!hasSource ? (
-                <MenubarShortcut>
-                  <KbdGroup>
-                    <Kbd>Ctrl</Kbd>
-                    <Kbd>K</Kbd>
-                  </KbdGroup>
-                </MenubarShortcut>
-              ) : null}
+              <MenubarShortcut>
+                <KbdGroup>
+                  <Kbd>Ctrl</Kbd>
+                  <Kbd>K</Kbd>
+                </KbdGroup>
+              </MenubarShortcut>
             </MenubarItem>
             <CloseSource source={activeSource}>
               <MenubarItem disabled={!hasSource}>

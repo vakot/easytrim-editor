@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { createEvent, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { PropsWithChildren } from "react";
 import { Provider } from "react-redux";
@@ -66,7 +66,7 @@ describe("source queue controls", () => {
     expect(screen.getByText("MP4 · MOV · MKV · WebM · AVI")).toBeInTheDocument();
   });
 
-  it("focuses source search with Ctrl+K and shows its shortcut hint", () => {
+  it("focuses source search with Ctrl+F and shows its shortcut hint", () => {
     const store = createAppStore();
     const snapshot = createDefaultEditorSnapshot(firstSource, false);
     store.dispatch(
@@ -91,11 +91,44 @@ describe("source queue controls", () => {
     );
 
     const search = screen.getByRole("searchbox", { name: "Search" });
-    expect(screen.getByLabelText("Ctrl + K")).toBeInTheDocument();
+    expect(screen.getByLabelText("Ctrl + F")).toBeInTheDocument();
 
-    fireEvent.keyDown(window, { code: "KeyK", ctrlKey: true });
+    fireEvent.keyDown(window, { code: "KeyF", ctrlKey: true });
 
     expect(document.activeElement).toBe(search);
+  });
+
+  it("leaves the browser find shortcut available while search is focused", () => {
+    const store = createAppStore();
+    const snapshot = createDefaultEditorSnapshot(firstSource, false);
+    store.dispatch(
+      editingInstancesAdded([
+        {
+          id: "source",
+          origin: "source-import",
+          snapshot,
+          sourceAvailability: "available",
+          exportAttempts: [],
+        },
+      ]),
+    );
+
+    render(
+      <Provider store={store}>
+        <SourceList>
+          <SourceListSearch />
+          <SourceListContent />
+        </SourceList>
+      </Provider>,
+    );
+
+    const search = screen.getByRole("searchbox", { name: "Search" });
+    search.focus();
+    const event = createEvent.keyDown(search, { code: "KeyF", ctrlKey: true });
+
+    fireEvent(search, event);
+
+    expect(event.defaultPrevented).toBe(false);
   });
 
   it("clears the search with the Lucide clear action", async () => {
@@ -128,7 +161,7 @@ describe("source queue controls", () => {
     await user.click(await screen.findByRole("button", { name: "Clear" }));
 
     expect(search).toHaveValue("");
-    expect(await screen.findByLabelText("Ctrl + K")).toBeInTheDocument();
+    expect(await screen.findByLabelText("Ctrl + F")).toBeInTheDocument();
   });
 
   it("closes all imported sources from the source list action", async () => {

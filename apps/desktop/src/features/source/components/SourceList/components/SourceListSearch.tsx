@@ -30,7 +30,7 @@ function SourceListSearch() {
   }, [setSearch, debouncedSearch]);
 
   useKeyboardShortcut(
-    (event) => event.code === "KeyK" && event.ctrlKey,
+    (event) => event.code === "KeyF" && event.ctrlKey,
     () => searchInputRef.current?.focus(),
   );
 
@@ -62,9 +62,9 @@ function SourceListSearch() {
             <span className="pr-1">{sources.length} Results</span>
           </>
         ) : (
-          <KbdGroup aria-label="Ctrl + K">
+          <KbdGroup aria-label="Ctrl + F">
             <Kbd>Ctrl</Kbd>
-            <Kbd>K</Kbd>
+            <Kbd>F</Kbd>
           </KbdGroup>
         )}
       </InputGroupAddon>
