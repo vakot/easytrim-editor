@@ -13,15 +13,20 @@ function ActivityFeedEmpty() {
   const { t } = useTranslation();
 
   return (
-    <Empty>
-      <EmptyHeader>
-        <EmptyMedia variant="icon">
-          <History aria-hidden="true" />
-        </EmptyMedia>
-        <EmptyTitle>{t("activity.labels.emptyTitle")}</EmptyTitle>
-        <EmptyDescription>{t("activity.labels.emptyDescription")}</EmptyDescription>
-      </EmptyHeader>
-    </Empty>
+    <section
+      aria-label={t("app.labels.activityFeed")}
+      className="flex items-center justify-center overflow-hidden"
+    >
+      <Empty className="w-full max-w-md">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <History aria-hidden="true" />
+          </EmptyMedia>
+          <EmptyTitle>{t("activity.labels.emptyTitle")}</EmptyTitle>
+          <EmptyDescription>{t("activity.labels.emptyDescription")}</EmptyDescription>
+        </EmptyHeader>
+      </Empty>
+    </section>
   );
 }
 
