@@ -84,7 +84,6 @@ export const en = {
       upToDate: "Up to Date",
     },
     messages: {
-      activityEmpty: "Completed actions will appear here.",
       crash: "The application encountered an unexpected error. Restart it to continue.",
       crashTitle: "Something went wrong",
       dragUnavailable: "Drag and drop is unavailable: {{message}}",
@@ -164,6 +163,12 @@ export const en = {
       languages: { english: "English", slovak: "Slovenčina" },
       activityFeedViews: { branch: "Branch", compact: "Compact", default: "Default" },
       themes: { dark: "Dark", light: "Light", system: "System" },
+    },
+  },
+  activity: {
+    labels: {
+      emptyDescription: "Completed actions will appear here.",
+      emptyTitle: "No activity yet",
     },
   },
   queue: {

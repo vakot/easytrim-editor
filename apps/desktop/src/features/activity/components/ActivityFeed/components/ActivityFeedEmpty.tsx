@@ -1,12 +1,27 @@
+import { History } from "lucide-react";
 import { useTranslation } from "react-i18next";
+
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 
 function ActivityFeedEmpty() {
   const { t } = useTranslation();
 
   return (
-    <p className="rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted-foreground">
-      {t("app.messages.activityEmpty")}
-    </p>
+    <Empty>
+      <EmptyHeader>
+        <EmptyMedia variant="icon">
+          <History aria-hidden="true" />
+        </EmptyMedia>
+        <EmptyTitle>{t("activity.labels.emptyTitle")}</EmptyTitle>
+        <EmptyDescription>{t("activity.labels.emptyDescription")}</EmptyDescription>
+      </EmptyHeader>
+    </Empty>
   );
 }
 

@@ -8,6 +8,7 @@ const CANONICAL_NAMESPACES = [
   "common",
   "app",
   "settings",
+  "activity",
   "queue",
   "source",
   "preview",
