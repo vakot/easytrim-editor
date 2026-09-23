@@ -251,6 +251,29 @@ function reportPanelResize(id: string, collapsed: boolean) {
   primitive.props.get(id)?.onResize?.({ asPercentage, inPixels: asPercentage * 10 }, id, undefined);
 }
 
+function CallbackHarness({
+  onCollapsed,
+  onExpanded,
+}: {
+  onCollapsed: () => void;
+  onExpanded: () => void;
+}) {
+  return (
+    <ResizablePanelContextProvider>
+      <ResizablePanelGroup>
+        <ResizablePanel
+          collapsedSize={0}
+          collapsible
+          defaultSize={50}
+          id="callback-panel"
+          onCollapsed={onCollapsed}
+          onExpanded={onExpanded}
+        />
+      </ResizablePanelGroup>
+    </ResizablePanelContextProvider>
+  );
+}
+
 describe("ResizablePanelControl", () => {
   it("reports mixed state when target panels differ", async () => {
     await renderControl("toggle");
@@ -327,5 +350,21 @@ describe("ResizablePanelControl", () => {
     expect(openPanel.collapse).not.toHaveBeenCalled();
     expect(collapsedPanel.collapse).toHaveBeenCalledOnce();
     expect(collapsedPanel.expand).not.toHaveBeenCalled();
+  });
+});
+
+describe("ResizablePanel callbacks", () => {
+  it("notifies once when a panel changes collapsed state", () => {
+    const onCollapsed = vi.fn();
+    const onExpanded = vi.fn();
+
+    render(<CallbackHarness onCollapsed={onCollapsed} onExpanded={onExpanded} />);
+
+    act(() => reportPanelResize("callback-panel", true));
+    act(() => reportPanelResize("callback-panel", true));
+    act(() => reportPanelResize("callback-panel", false));
+
+    expect(onCollapsed).toHaveBeenCalledOnce();
+    expect(onExpanded).toHaveBeenCalledOnce();
   });
 });

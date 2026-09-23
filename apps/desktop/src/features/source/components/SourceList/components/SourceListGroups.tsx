@@ -12,14 +12,13 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import type { EditingInstance } from "@/domain/editing-instance";
 import { useRelativeTimeNow } from "@/lib/hooks/use-relative-time";
 
-import { CloseSources } from "../../SourceMenuActions";
-
 import {
   groupSourcesByFolder,
   groupSourcesByImportedTime,
   groupSourcesByUpdatedTime,
   type SourceGroup,
 } from "../../../lib/source-grouping.utils";
+import { CloseSources } from "../../SourceMenuActions";
 import { useSourceListData } from "../contexts/SourceListContext";
 
 import { SourceListItem } from "./SourceListItem";
@@ -121,7 +120,7 @@ function SourceListGrid({ sources }: { sources: EditingInstance[] }) {
   const { search } = useSourceListData();
 
   return (
-    <ul className="flex flex-col gap-2 py-0.5" data-slot="imported-sources-grid">
+    <ul className="flex flex-col gap-2" data-slot="imported-sources-grid">
       {sources.map((source) => (
         <SourceListItem key={source.id} search={search} source={source} />
       ))}

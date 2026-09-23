@@ -1,3 +1,4 @@
+import { cva } from "class-variance-authority";
 import { memo, type ReactNode } from "react";
 
 import { Card } from "@/components/ui/card";
@@ -25,6 +26,21 @@ interface SourceCardProps {
   source: EditingInstance;
 }
 
+const sourceCardVariants = cva("group/source-card cursor-pointer border ring-0", {
+  variants: {
+    variant: {
+      default: "border-foreground/10",
+      destructive: "border-destructive/45",
+      success: "border-success/45",
+      warning: "border-warning/45",
+      active: "border-primary/45",
+    },
+  },
+  defaultVariants: {
+    variant: "default",
+  },
+});
+
 const SourceCard = memo(function SourceCard({ children, className, source }: SourceCardProps) {
   const dispatch = useAppDispatch();
   const activeInstanceId = useAppSelector(selectActiveInstanceId);
@@ -41,11 +57,12 @@ const SourceCard = memo(function SourceCard({ children, className, source }: Sou
         <Card
           aria-checked={active}
           aria-label={displayName}
-          className={cn("group/source-card cursor-pointer", className)}
+          className={cn(sourceCardVariants({ variant }), className)}
           data-active={active ? "true" : "false"}
           data-source-id={source.id}
           hoverable
           onClick={() => void dispatch(navigateToEditingInstance(source.id))}
+          // TODO: on button confirm (selected by Tab and Enter should also act as onClick)
           role="checkbox"
           tabIndex={0}
           variant={variant}

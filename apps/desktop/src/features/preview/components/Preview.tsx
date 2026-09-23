@@ -7,7 +7,7 @@ function Preview() {
   const sourceSelection = useAppSelector(selectSourceSelection);
 
   return (
-    <div className="relative isolate flex-1" data-slot="preview-content">
+    <div className="relative isolate flex-1 p-2" data-slot="preview-content">
       {sourceSelection === null ? <VideoPreviewEmpty /> : <VideoPreview />}
 
       <VideoPreviewLoadingOverlay />

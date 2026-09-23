@@ -12,12 +12,7 @@ import { describe, expect, it, vi } from "vitest";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { AppUpdatesContext } from "@/app/contexts/app-updates-context";
-import {
-  type ActivityFeedView,
-  DEFAULT_PREFERENCES,
-  type PreferenceKey,
-  type Preferences,
-} from "@/app/preferences";
+import { DEFAULT_PREFERENCES, type PreferenceKey, type Preferences } from "@/app/preferences";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import type { SourceRef } from "@/domain/source";
 import { getCurrentVersion } from "@/lib/app-version.utils";
@@ -47,6 +42,7 @@ const menuState = vi.hoisted(() => ({
   },
   preferences: {
     activityFeedView: "default",
+    layoutDensity: "default",
     snapPlaybackEnabledDefault: true,
     loopPlaybackEnabledDefault: true,
     segmentPlaybackEnabledDefault: true,
@@ -152,7 +148,6 @@ describe("MenuBarTest", () => {
   const versionMenuLabel = `Version ${currentVersion}`;
 
   type MenuTestOverrides = {
-    activityFeedView?: ActivityFeedView;
     availableQueueFinishActions?: QueueFinishAction[];
     canExport?: boolean;
     canSave?: boolean;
@@ -192,9 +187,6 @@ describe("MenuBarTest", () => {
       "nothing",
     ];
     menuState.preferences = overrides.preferences ?? { ...DEFAULT_PREFERENCES };
-    if (overrides.activityFeedView !== undefined) {
-      menuState.preferences.activityFeedView = overrides.activityFeedView;
-    }
     menuState.preferences.theme = overrides.themePreference ?? "system";
     menuState.preferences.primaryColor = overrides.primaryColor ?? "amber";
     menuState.preferences.customPrimaryColor = overrides.customPrimaryColor ?? "#efbf04";
@@ -236,9 +228,6 @@ describe("MenuBarTest", () => {
       if (action.type === "preferences/customPrimaryColorChanged") {
         menuState.preferences.primaryColor = action.payload as Preferences["primaryColor"];
         menuState.preferences.customPrimaryColor = action.payload as `#${string}`;
-      }
-      if (action.type === "preferences/activityFeedViewChanged") {
-        menuState.preferences.activityFeedView = action.payload as ActivityFeedView;
       }
       notify();
     });
@@ -572,6 +561,7 @@ describe("MenuBarTest", () => {
               primaryColor: "amber",
               customPrimaryColor: "#efbf04",
               activityFeedView: "default",
+              layoutDensity: "default",
               snapPlaybackEnabledDefault: false,
               loopPlaybackEnabledDefault: false,
               segmentPlaybackEnabledDefault: false,
@@ -644,13 +634,21 @@ describe("MenuBarTest", () => {
 
     await user.click(fileButton);
     const openFolderItem = screen.getByRole("menuitem", { name: /Open Folder/ });
-    expect(openFolderItem).not.toHaveTextContent("CtrlK");
+    expect(openFolderItem).toHaveTextContent("CtrlK");
     const closeFileItem = screen.getByRole("menuitem", { name: /Close File/ });
     expect(closeFileItem).toHaveTextContent("CtrlQ");
     const deleteSourceItem = screen.getByRole("menuitem", { name: /Delete File/ });
     expect(deleteSourceItem).toHaveTextContent("CtrlD");
     await user.click(closeFileItem);
     expect(menuState.dispatch).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps Ctrl+K available for opening a folder with an active source", () => {
+    renderMenus({ hasSource: true });
+
+    fireEvent.keyDown(window, { code: "KeyK", ctrlKey: true });
+
+    expect(menuState.dispatch).toHaveBeenCalledOnce();
   });
 
   it("requires confirmation before deleting the source from the File menu", async () => {
@@ -736,43 +734,6 @@ describe("MenuBarTest", () => {
     );
     await user.click(screen.getByRole("menuitemradio", { name: /English/ }));
     expect(screen.queryByRole("menuitemradio", { name: /English/ })).not.toBeInTheDocument();
-  });
-
-  it("synchronizes the Activity Feed View radio state", async () => {
-    const user = userEvent.setup();
-    renderMenus({ activityFeedView: "branch" });
-
-    await user.click(getMenuTrigger("View"));
-    const activityFeedViewItem = screen.getByRole("menuitem", { name: "Activity Feed View" });
-    activityFeedViewItem.focus();
-    await user.keyboard("{ArrowRight}");
-    await waitFor(() =>
-      expect(screen.getByRole("menuitemradio", { name: "Compact" })).toBeInTheDocument(),
-    );
-
-    expect(screen.getByRole("menuitemradio", { name: "Default" })).toHaveAttribute(
-      "aria-checked",
-      "false",
-    );
-    expect(screen.getByRole("menuitemradio", { name: "Compact" })).toHaveAttribute(
-      "aria-checked",
-      "false",
-    );
-    expect(screen.getByRole("menuitemradio", { name: "Branch" })).toHaveAttribute(
-      "aria-checked",
-      "true",
-    );
-
-    await user.click(screen.getByRole("menuitemradio", { name: "Default" }));
-
-    expect(menuState.dispatch).toHaveBeenCalledWith({
-      payload: "default",
-      type: "preferences/activityFeedViewChanged",
-    });
-    expect(screen.getByRole("menuitemradio", { name: "Default" })).toHaveAttribute(
-      "aria-checked",
-      "true",
-    );
   });
 
   it("shows hex values and accepts custom input as soon as it is valid", async () => {

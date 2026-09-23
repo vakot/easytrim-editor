@@ -9,15 +9,12 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { AppShutdownGuard } from "@/app/components/AppShutdownGuard";
-import { CustomTitleBar } from "@/app/components/CustomTitleBar";
 import { DiagnosticsRecoveryDialog } from "@/app/components/DiagnosticsRecoveryDialog";
-import { EditorWorkspace } from "@/app/components/editor-workspace/EditorWorkspace";
-import { MenuBar } from "@/app/components/menu-bar";
 import { NativeDialogOverlay } from "@/app/components/NativeDialogOverlay";
-import { PanelVisibilityControls } from "@/app/components/PanelVisibilityControls";
-import { AppUpdatesProvider } from "@/app/components/providers/AppUpdatesProvider";
-import { EditorContractsProvider } from "@/app/components/providers/EditorContractsProvider";
-import { StatusBar } from "@/app/components/status-bar";
+import { AppLayout } from "@/app/layout";
+import { AppUpdatesProvider } from "@/app/providers/AppUpdatesProvider";
+import { EditorContractsProvider } from "@/app/providers/EditorContractsProvider";
+import { LayoutDensityProvider } from "@/app/providers/LayoutDensityProvider";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectDropListenerError } from "@/app/store/slices/import-workflow-slice";
 import { persistor, store } from "@/app/store/store";
@@ -25,13 +22,14 @@ import { loadQueueFinishActions } from "@/app/store/thunks/export-thunks";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import { ActivityToasts } from "@/features/activity";
 import { ExportDialog } from "@/features/export";
-import { CapabilityStatus } from "@/features/media";
 import { SourceDropOverlay } from "@/features/source";
 
 function EasyTrimEditorApp() {
+  const { t } = useTranslation();
+
   const dispatch = useAppDispatch();
   const dropListenerError = useAppSelector(selectDropListenerError);
-  const { t } = useTranslation();
+
   useEffect(() => {
     void dispatch(loadQueueFinishActions());
   }, [dispatch]);
@@ -43,34 +41,25 @@ function EasyTrimEditorApp() {
       <AppUpdatesProvider>
         <EditorContractsProvider>
           <ResizablePanelContextProvider>
-            <main className="fixed inset-0 grid h-dvh w-screen min-w-80 grid-rows-[2.25rem_minmax(0,1fr)_auto] overflow-hidden bg-background">
-              <CustomTitleBar
-                menuControls={<MenuBar />}
-                panelControls={<PanelVisibilityControls />}
-                statusContent={<CapabilityStatus />}
-              />
+            <AppLayout />
 
-              <ExportDialog />
-              <DiagnosticsRecoveryDialog />
-              <SourceDropOverlay />
-              <NativeDialogOverlay />
-
-              {dropListenerError ? (
-                <Alert
-                  className="fixed top-20 left-1/2 z-50 w-auto -translate-x-1/2"
-                  variant="destructive"
-                >
-                  <AlertDescription>
-                    {t("app.messages.dragUnavailable", { message: dropListenerError.message })}
-                  </AlertDescription>
-                </Alert>
-              ) : null}
-
-              <EditorWorkspace />
-              <StatusBar />
-            </main>
             <Toaster />
             <ActivityToasts />
+            <ExportDialog />
+            <DiagnosticsRecoveryDialog />
+            <SourceDropOverlay />
+            <NativeDialogOverlay />
+
+            {dropListenerError ? (
+              <Alert
+                className="fixed top-20 left-1/2 z-50 w-auto -translate-x-1/2"
+                variant="destructive"
+              >
+                <AlertDescription>
+                  {t("app.messages.dragUnavailable", { message: dropListenerError.message })}
+                </AlertDescription>
+              </Alert>
+            ) : null}
           </ResizablePanelContextProvider>
         </EditorContractsProvider>
       </AppUpdatesProvider>
@@ -83,7 +72,9 @@ function App() {
     <ReduxProvider store={store}>
       <PersistGate loading={null} persistor={persistor}>
         <ThemeProvider>
-          <EasyTrimEditorApp />
+          <LayoutDensityProvider>
+            <EasyTrimEditorApp />
+          </LayoutDensityProvider>
         </ThemeProvider>
       </PersistGate>
     </ReduxProvider>

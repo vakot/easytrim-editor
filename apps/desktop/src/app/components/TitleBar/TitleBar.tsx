@@ -3,6 +3,7 @@ import type { MouseEvent, PointerEvent, ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { cn } from "@/lib/class-names.utils";
 import {
   isWindowMaximized,
   minimizeWindow,
@@ -11,10 +12,9 @@ import {
   toggleWindowMaximize,
 } from "@/lib/tauri/window";
 
-interface CustomTitleBarProps {
-  menuControls?: ReactNode;
-  panelControls?: ReactNode;
-  statusContent?: ReactNode;
+interface TitleBarProps {
+  children?: ReactNode;
+  className?: string;
 }
 
 interface PendingDrag {
@@ -25,44 +25,20 @@ interface PendingDrag {
 }
 
 const DRAG_START_DISTANCE = 4;
+const TITLE_BAR_INTERACTIVE_SELECTOR =
+  'button, a, input, select, textarea, summary, [contenteditable]:not([contenteditable="false"]), [role], [tabindex]:not([tabindex="-1"])';
 
-function CustomTitleBar({ menuControls, panelControls, statusContent }: CustomTitleBarProps) {
+function isTitleBarInteractiveTarget(target: EventTarget | null) {
+  return target instanceof Element && target.closest(TITLE_BAR_INTERACTIVE_SELECTOR) !== null;
+}
+
+function TitleBar({ children, className }: TitleBarProps) {
   const { t } = useTranslation();
-  const [isMaximized, setIsMaximized] = useState(false);
-  const [windowActionError, setWindowActionError] = useState(false);
+  const { handleToggleMaximize, runWindowAction } = useWindowActions();
   const pendingDrag = useRef<PendingDrag | null>(null);
 
-  useEffect(() => {
-    let active = true;
-
-    void isWindowMaximized().then((maximized) => {
-      if (active) setIsMaximized(maximized);
-    });
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const runWindowAction = (action: () => Promise<void>) => {
-    setWindowActionError(false);
-    void action().catch(() => setWindowActionError(true));
-  };
-
-  const handleToggleMaximize = () => {
-    runWindowAction(async () => {
-      await toggleWindowMaximize();
-      setIsMaximized((current) => !current);
-    });
-  };
-
-  const handleTitleBarDoubleClick = (event: MouseEvent<HTMLElement>) => {
-    if (
-      event.target instanceof Element &&
-      event.target.closest('button, [role="menu"], [role="menuitem"]')
-    ) {
-      return;
-    }
+  const handleDoubleClickCapture = (event: MouseEvent<HTMLElement>) => {
+    if (isTitleBarInteractiveTarget(event.target)) return;
 
     event.preventDefault();
     pendingDrag.current = null;
@@ -70,7 +46,7 @@ function CustomTitleBar({ menuControls, panelControls, statusContent }: CustomTi
   };
 
   const handleDragPointerDown = (event: PointerEvent<HTMLDivElement>) => {
-    if (event.button !== 0) return;
+    if (event.button !== 0 || isTitleBarInteractiveTarget(event.target)) return;
 
     event.currentTarget.setPointerCapture(event.pointerId);
     pendingDrag.current = {
@@ -105,38 +81,36 @@ function CustomTitleBar({ menuControls, panelControls, statusContent }: CustomTi
   return (
     <header
       aria-label={t("app.accessibility.titleBar")}
-      className="relative flex h-9 min-h-9 items-center bg-background/95 text-foreground select-none"
-      onDoubleClickCapture={handleTitleBarDoubleClick}
+      className={cn(
+        "relative flex h-9 min-h-9 items-center justify-between gap-3 bg-background/95 text-foreground select-none",
+        className,
+      )}
+      onDoubleClickCapture={handleDoubleClickCapture}
+      onPointerCancel={handleDragPointerEnd}
+      onPointerDown={handleDragPointerDown}
+      onPointerMove={handleDragPointerMove}
+      onPointerUp={handleDragPointerEnd}
     >
-      <div className="flex h-full items-center gap-2 px-3 text-left">
-        <img alt="" className="size-5" src="/logo-symbol.svg" />
-        <span className="text-sm font-semibold tracking-wide text-foreground/80">
-          {t("common.labels.brand")}
-        </span>
-      </div>
+      {children}
+    </header>
+  );
+}
 
-      {menuControls ? <div className="flex h-full items-center px-1">{menuControls}</div> : null}
+function TitleBarWindowActions() {
+  const { t } = useTranslation();
 
-      {statusContent ? (
-        <div className="absolute top-1/2 left-1/2 flex h-full -translate-1/2 items-center px-2">
-          {statusContent}
-        </div>
-      ) : null}
+  const {
+    handleToggleMaximize,
+    isError: windowActionError,
+    isMaximized,
+    runWindowAction,
+  } = useWindowActions();
 
-      <div
-        aria-hidden="true"
-        className="h-full min-w-0 flex-1 cursor-default"
-        onPointerCancel={handleDragPointerEnd}
-        onPointerDown={handleDragPointerDown}
-        onPointerMove={handleDragPointerMove}
-        onPointerUp={handleDragPointerEnd}
-      />
-
-      {panelControls ? <div className="flex h-full items-center px-1">{panelControls}</div> : null}
-
+  return (
+    <>
       <div
         aria-label={t("app.accessibility.windowControls")}
-        className="flex h-full items-stretch"
+        className="flex h-full shrink-0 items-stretch"
         role="group"
       >
         <button
@@ -177,8 +151,39 @@ function CustomTitleBar({ menuControls, panelControls, statusContent }: CustomTi
           {t("app.messages.windowActionFailed")}
         </span>
       ) : null}
-    </header>
+    </>
   );
 }
 
-export { CustomTitleBar };
+function useWindowActions() {
+  const [isMaximized, setIsMaximized] = useState(false);
+  const [isError, setIsError] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    void isWindowMaximized().then((maximized) => {
+      if (active) setIsMaximized(maximized);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const runWindowAction = (action: () => Promise<void>) => {
+    setIsError(false);
+    void action().catch(() => setIsError(true));
+  };
+
+  const handleToggleMaximize = () => {
+    runWindowAction(async () => {
+      await toggleWindowMaximize();
+      setIsMaximized((current) => !current);
+    });
+  };
+
+  return { isMaximized, isError, runWindowAction, handleToggleMaximize };
+}
+
+export { TitleBar, TitleBarWindowActions };

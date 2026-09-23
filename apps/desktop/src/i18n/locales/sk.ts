@@ -45,10 +45,12 @@ export const sk = {
       file: "Súbor",
       help: "Pomocník",
       leftPanel: "Ľavý panel",
+      layoutDensity: "Hustota rozloženia",
       now: "Teraz",
       today: "Dnes",
       version: "Verzia {{version}}",
       view: "Zobraziť",
+      panelsVisibility: "Viditeľnosť panelov",
       yesterday: "Včera",
     },
     status: {
@@ -124,6 +126,9 @@ export const sk = {
       panels: "Panely editora",
       titleBar: "Titulkový panel okna",
       windowControls: "Ovládanie okna",
+    },
+    options: {
+      layoutDensities: { compact: "Kompaktné", default: "Predvolené" },
     },
   },
   settings: {

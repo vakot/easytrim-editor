@@ -1,0 +1,55 @@
+@custom-variant layout-default (&:where([data-layout-density="default"] *));
+@custom-variant layout-compact (&:where([data-layout-density="compact"] *));
+
+:root {
+  --editor-track-controls-width: 13rem;
+  --editor-audio-track-grid-columns: var(--editor-track-controls-width) minmax(0, 1fr);
+  --editor-timeline-track-grid-columns: calc(var(--editor-track-controls-width) - 0.5rem)
+    minmax(0, 1fr);
+}
+
+#workspace .workspace-separator {
+  transition:
+    width 150ms ease-out,
+    height 150ms ease-out,
+    background-color 0s;
+}
+
+[data-layout-density="compact"] #workspace > .workspace-separator > div {
+  display: none;
+}
+
+[data-layout-density="compact"]
+  #workspace:has(> .workspace-separator[aria-valuenow="0"])
+  > .workspace-separator {
+  width: 6px;
+  background-color: transparent;
+}
+
+[data-layout-density="compact"]
+  #workspace:has(> .workspace-separator[aria-valuenow="0"])
+  > .workspace-separator
+  > div {
+  display: flex;
+}
+
+[data-layout-density="compact"]
+  #workspace:has(> .workspace-separator[aria-valuenow="0"])
+  [data-layout-region="workspace-preview"],
+[data-layout-density="compact"]
+  #workspace:has(> .workspace-separator[aria-valuenow="0"])
+  [data-layout-region="workspace-timeline"] {
+  border-left-width: 1px;
+}
+
+[data-layout-density="compact"]
+  #workspace:has(> .workspace-separator[aria-valuenow="0"])
+  [data-layout-region="workspace-preview"] {
+  border-top-left-radius: var(--radius-xl);
+}
+
+[data-layout-density="compact"]
+  #workspace:has(> .workspace-separator[aria-valuenow="0"])
+  [data-layout-region="workspace-timeline"] {
+  border-bottom-left-radius: var(--radius-xl);
+}

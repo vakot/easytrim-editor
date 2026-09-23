@@ -58,7 +58,7 @@ function SourceListItemCard({ search, source }: { search: string; source: Editin
   const { t } = useTranslation();
 
   return (
-    <SourceCard className="z-1 flex flex-row gap-2 p-2" source={source}>
+    <SourceCard className="flex flex-row gap-2 p-2" source={source}>
       <SourceCardThumbnail className="w-6/11 shrink-0 rounded-md shadow">
         <SourceCardStatusBadge className="absolute top-2 left-2" />
       </SourceCardThumbnail>
