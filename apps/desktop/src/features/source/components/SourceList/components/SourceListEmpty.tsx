@@ -32,7 +32,7 @@ function SourceListEmpty() {
         "flex min-h-full w-full items-center justify-center overflow-hidden py-8",
       )}
     >
-      <Empty className="w-full max-w-3xl border-0 p-0">
+      <Empty className="w-full border-0 p-0">
         <EmptyHeader>
           <EmptyMedia className={styles.hideOnShorterContainer} variant="icon">
             <FolderCode aria-hidden="true" />
