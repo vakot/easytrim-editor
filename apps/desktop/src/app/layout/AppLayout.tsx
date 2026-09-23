@@ -1,15 +1,22 @@
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+  usePanelState,
+} from "@/components/ui/resizable";
 
 import { AppLayoutFooter } from "@/app/layout/components/AppLayoutFooter";
 import { AppLayoutHeader } from "@/app/layout/components/AppLayoutHeader";
 import { AppLayoutPanel } from "@/app/layout/components/AppLayoutPanel";
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectLayoutDensity } from "@/app/store/slices/preferences-slice";
+import { cn } from "@/lib/class-names.utils";
 
 import { AppLayoutMain } from "./components/AppLayoutMain";
 import { AppLayoutSidebar } from "./components/AppLayoutSidebar";
 
 function AppLayout() {
+  const { isCollapsed } = usePanelState("workspace-sidebar");
   const layoutDensity = useAppSelector(selectLayoutDensity);
   const isCompact = layoutDensity === "compact";
 
@@ -19,14 +26,14 @@ function AppLayout() {
 
       <ResizablePanelGroup id="workspace" persisted>
         <ResizablePanel
-          className="overflow-hidden! pl-1.5"
+          className="ml-1.5 overflow-hidden!"
           collapsedSize={0}
           collapsible
-          defaultSize="30.75rem" // matches 16x9 preview perfectly
+          defaultSize="30.75rem"
           groupResizeBehavior="preserve-pixel-size"
           id="workspace-sidebar"
           maxSize="48rem"
-          minSize="30.75rem" // matches 16x9 preview perfectly
+          minSize="30.75rem"
         >
           <AppLayoutPanel className="layout-compact:rounded-l-xl layout-compact:border-r-0">
             <AppLayoutSidebar />
@@ -34,13 +41,16 @@ function AppLayout() {
         </ResizablePanel>
 
         <ResizableHandle
-          className="self-start layout-default:bg-transparent"
-          style={isCompact ? undefined : { width: 6 }}
-          withHandle
+          className={cn(
+            "self-start layout-default:bg-transparent",
+            isCollapsed && "bg-transparent",
+          )}
+          style={isCompact && !isCollapsed ? undefined : { width: 6 }}
+          withHandle={!isCompact || isCollapsed}
         />
 
         <ResizablePanel
-          className="overflow-hidden! pr-1.5"
+          className="mr-1.5 overflow-hidden!"
           groupResizeBehavior="preserve-relative-size"
           id="workspace-content"
           minSize="40rem"

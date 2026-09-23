@@ -351,7 +351,9 @@ function getPanelIds(children: React.ReactNode): PanelId[] {
 function useResizablePanelContext() {
   const context = React.useContext(ResizablePanelContext);
   if (!context) {
-    throw new Error("ResizablePanel must be used within ResizablePanelContextProvider");
+    throw new Error(
+      "ResizablePanel, usePanelState must be used within ResizablePanelContextProvider",
+    );
   }
   return context;
 }
@@ -368,6 +370,10 @@ function usePanelStates(panelIds: PanelId[]) {
   return panelStates;
 }
 
+function usePanelState(panelId: PanelId) {
+  return usePanelStates([panelId]).get(panelId)!;
+}
+
 const usePanelRef = ResizablePrimitive.usePanelRef;
 const useGroupRef = ResizablePrimitive.useGroupRef;
 const useDefaultLayout = ResizablePrimitive.useDefaultLayout;
@@ -381,5 +387,6 @@ export {
   useDefaultLayout,
   useGroupRef,
   usePanelRef,
+  usePanelState,
 };
 export type { ResizableLayoutStorage, ResizablePanelControlState };
