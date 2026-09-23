@@ -1,0 +1,15 @@
+.container {
+  container: source-list-empty / size;
+}
+
+@container source-list-empty (max-height: 20rem) {
+  .hideOnShorterContainer {
+    display: none;
+  }
+}
+
+@container source-list-empty (max-height: 30rem) {
+  .hideOnShortContainer {
+    display: none;
+  }
+}

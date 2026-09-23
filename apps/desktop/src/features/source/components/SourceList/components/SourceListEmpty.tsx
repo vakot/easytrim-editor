@@ -16,19 +16,25 @@ import { Separator } from "@/components/ui/separator";
 
 import { useAppDispatch } from "@/app/store/redux-hooks";
 import { chooseSourceRequested } from "@/app/store/thunks/source-media-thunks";
+import { cn } from "@/lib/class-names.utils";
 
-function SourceListEmptyState() {
+import styles from "./SourceListEmpty.module.css";
+
+function SourceListEmpty() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
 
   return (
     <section
       aria-label={t("source.labels.explorer")}
-      className="flex min-h-full w-full items-center justify-center px-3 py-8"
+      className={cn(
+        styles.container,
+        "flex min-h-full w-full items-center justify-center overflow-hidden py-8",
+      )}
     >
-      <Empty className="w-full max-w-xl border-0 p-0">
+      <Empty className="w-full border-0 p-0">
         <EmptyHeader>
-          <EmptyMedia variant="icon">
+          <EmptyMedia className={styles.hideOnShorterContainer} variant="icon">
             <FolderCode aria-hidden="true" />
           </EmptyMedia>
           <EmptyTitle>{t("source.messages.emptyTitle")}</EmptyTitle>
@@ -37,7 +43,7 @@ function SourceListEmptyState() {
 
         <EmptyContent>
           <div className="grid w-full gap-3">
-            <SourceListEmptyStateAction
+            <SourceListEmptyAction
               description={t("source.messages.openFileDescription")}
               icon={<FileVideo2 aria-hidden="true" />}
               keys={["Ctrl", "O"]}
@@ -46,7 +52,7 @@ function SourceListEmptyState() {
                 void dispatch(chooseSourceRequested({ id: "explorer.open-file", type: "button" }))
               }
             />
-            <SourceListEmptyStateAction
+            <SourceListEmptyAction
               description={t("source.messages.openFolderDescription")}
               icon={<FolderOpen aria-hidden="true" />}
               keys={["Ctrl", "K"]}
@@ -59,13 +65,18 @@ function SourceListEmptyState() {
             />
           </div>
 
-          <div className="flex w-full items-center gap-2">
+          <div className={cn(styles.hideOnShortContainer, "flex w-full items-center gap-2")}>
             <Separator className="flex-1" />
             <span className="text-muted-foreground">{t("common.labels.or")}</span>
             <Separator className="flex-1" />
           </div>
 
-          <div className="grid w-full justify-items-center gap-2 rounded-lg border border-dashed border-border/80 bg-muted/20 px-4 py-6 text-center">
+          <div
+            className={cn(
+              styles.hideOnShortContainer,
+              "grid w-full justify-items-center gap-2 rounded-lg border border-dashed border-border/80 bg-muted/20 px-4 py-6 text-center",
+            )}
+          >
             <span className="grid size-10 place-items-center rounded-full bg-primary/12 text-primary">
               <Upload aria-hidden="true" className="size-5" />
             </span>
@@ -83,7 +94,7 @@ function SourceListEmptyState() {
   );
 }
 
-function SourceListEmptyStateAction({
+function SourceListEmptyAction({
   description,
   icon,
   keys,
@@ -114,4 +125,4 @@ function SourceListEmptyStateAction({
   );
 }
 
-export { SourceListEmptyState };
+export { SourceListEmpty };

@@ -86,7 +86,6 @@ export const sk = {
       upToDate: "Aktuálna verzia",
     },
     messages: {
-      activityEmpty: "Dokončené akcie sa zobrazia tu.",
       crash: "V aplikácii sa vyskytla neočakávaná chyba. Reštartujte ju a pokračujte.",
       crashTitle: "Vyskytla sa chyba",
       dragUnavailable: "Presunutie súboru nie je dostupné: {{message}}",
@@ -165,6 +164,12 @@ export const sk = {
       languages: { english: "English", slovak: "Slovenčina" },
       activityFeedViews: { branch: "Vetvené", compact: "Kompaktné", default: "Predvolené" },
       themes: { dark: "Tmavá", light: "Svetlá", system: "Systémová" },
+    },
+  },
+  activity: {
+    labels: {
+      emptyDescription: "Dokončené akcie sa zobrazia tu.",
+      emptyTitle: "Zatiaľ žiadna aktivita",
     },
   },
   queue: {

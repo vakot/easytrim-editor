@@ -12,7 +12,7 @@ import {
   groupActivityEntriesBySession,
 } from "../../../lib/activity-projection";
 
-import { ActivityFeedEmptyState } from "./ActivityFeedEmptyState";
+import { ActivityFeedEmpty } from "./ActivityFeedEmpty";
 import { ActivityFeedGroup } from "./ActivityFeedGroup";
 
 interface ActivityFeedViewProps {
@@ -50,7 +50,7 @@ function ActivityFeedView({
 
   const currentDateTime = new Date(now);
 
-  if (groups.length === 0) return <ActivityFeedEmptyState />;
+  if (groups.length === 0) return <ActivityFeedEmpty />;
 
   return (
     <div className={cn("relative grid", isCompact ? "gap-1" : isBranch ? "gap-5" : "gap-3")}>

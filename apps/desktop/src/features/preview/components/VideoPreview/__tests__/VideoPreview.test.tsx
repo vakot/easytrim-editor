@@ -137,8 +137,9 @@ describe("VideoPreview", () => {
     renderPreview(<VideoPreviewEmpty />);
 
     expect(screen.getByRole("region", { name: "Empty preview" })).toBeInTheDocument();
-    expect(screen.getAllByRole("listitem")).toHaveLength(6);
+    expect(screen.getAllByRole("listitem")).toHaveLength(7);
     expect(screen.getByText("Open File")).toBeInTheDocument();
+    expect(screen.getByText("Open Folder")).toBeInTheDocument();
     expect(screen.getByText("Support on Ko-fi.com")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /resize crop/i })).not.toBeInTheDocument();
   });
