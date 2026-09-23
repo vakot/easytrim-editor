@@ -43,10 +43,12 @@ export const en = {
       file: "File",
       help: "Help",
       leftPanel: "Left panel",
+      layoutDensity: "Layout Density",
       now: "Now",
       today: "Today",
       version: "Version {{version}}",
       view: "View",
+      panelsVisibility: "Panels Visibility",
       yesterday: "Yesterday",
     },
     status: {
@@ -123,6 +125,9 @@ export const en = {
       panels: "Editor panels",
       titleBar: "Window title bar",
       windowControls: "Window controls",
+    },
+    options: {
+      layoutDensities: { compact: "Compact", default: "Default" },
     },
   },
   settings: {
