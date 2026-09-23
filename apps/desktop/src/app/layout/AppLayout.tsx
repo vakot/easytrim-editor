@@ -1,22 +1,15 @@
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-  usePanelState,
-} from "@/components/ui/resizable";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 
 import { AppLayoutFooter } from "@/app/layout/components/AppLayoutFooter";
 import { AppLayoutHeader } from "@/app/layout/components/AppLayoutHeader";
 import { AppLayoutPanel } from "@/app/layout/components/AppLayoutPanel";
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectLayoutDensity } from "@/app/store/slices/preferences-slice";
-import { cn } from "@/lib/class-names.utils";
 
 import { AppLayoutMain } from "./components/AppLayoutMain";
 import { AppLayoutSidebar } from "./components/AppLayoutSidebar";
 
 function AppLayout() {
-  const { isCollapsed } = usePanelState("workspace-sidebar");
   const layoutDensity = useAppSelector(selectLayoutDensity);
   const isCompact = layoutDensity === "compact";
 
@@ -41,12 +34,9 @@ function AppLayout() {
         </ResizablePanel>
 
         <ResizableHandle
-          className={cn(
-            "self-start layout-default:bg-transparent",
-            isCollapsed && "bg-transparent",
-          )}
-          style={isCompact && !isCollapsed ? undefined : { width: 6 }}
-          withHandle={!isCompact || isCollapsed}
+          className="workspace-separator self-start layout-default:bg-transparent"
+          style={isCompact ? undefined : { width: 6 }}
+          withHandle
         />
 
         <ResizablePanel

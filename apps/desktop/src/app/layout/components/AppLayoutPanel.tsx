@@ -7,9 +7,10 @@ import { cn } from "@/lib/class-names.utils";
 interface AppLayoutPanelProps {
   children?: React.ReactNode;
   className?: string;
+  layoutRegion?: string;
 }
 
-function AppLayoutPanel({ children, className }: AppLayoutPanelProps) {
+function AppLayoutPanel({ children, className, layoutRegion }: AppLayoutPanelProps) {
   const layoutDensity = useAppSelector(selectLayoutDensity);
   const isCompact = layoutDensity === "compact";
 
@@ -20,6 +21,7 @@ function AppLayoutPanel({ children, className }: AppLayoutPanelProps) {
         isCompact && "block rounded-none bg-card",
         className,
       )}
+      data-layout-region={layoutRegion}
     >
       {children}
     </Card>
