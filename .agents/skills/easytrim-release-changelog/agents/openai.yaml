@@ -1,0 +1,4 @@
+interface:
+  display_name: "EasyTrim Release Changelog"
+  short_description: "Prepare concise release changelogs from repository history"
+  default_prompt: "Use $easytrim-release-changelog to prepare the next release changelog from the applicable release tag to HEAD."
