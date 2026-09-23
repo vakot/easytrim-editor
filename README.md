@@ -62,3 +62,11 @@ FFmpeg and FFprobe are required at runtime and are not bundled.
 - [Development](docs/development.md)
 - [Diagnostics](docs/diagnostics.md)
 - [Storybook](docs/storybook.md)
+
+## License
+
+Copyright © 2026 Vadym Kotliar.
+
+EasyTrim Editor is licensed under the [Apache License 2.0 with the Commons Clause](LICENSE).
+The source code may be used, modified, and redistributed subject to the license terms, but the
+software itself may not be sold as defined by the Commons Clause.

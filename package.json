@@ -2,6 +2,7 @@
   "name": "easytrim-editor",
   "private": true,
   "version": "1.10.4",
+  "license": "SEE LICENSE IN LICENSE",
   "type": "module",
   "packageManager": "pnpm@11.18.0",
   "engines": {
