@@ -83,14 +83,24 @@ function ResizablePanelGroupBase({ className, ...props }: ResizablePrimitive.Gro
 }
 
 interface ResizablePanelProps extends Omit<ResizablePrimitive.PanelProps, "panelRef"> {
+  onCollapsed?: (panelRef: PanelRef) => void;
+  onExpanded?: (panelRef: PanelRef) => void;
   panelRef?: PanelRef;
 }
 
-function ResizablePanel({ id, onResize, panelRef: propsPanelRef, ...props }: ResizablePanelProps) {
+function ResizablePanel({
+  id,
+  onCollapsed,
+  onExpanded,
+  onResize,
+  panelRef: propsPanelRef,
+  ...props
+}: ResizablePanelProps) {
   const { registerPanel, unregisterPanel, updatePanelState } = useResizablePanelContext();
 
   const internalPanelRef = ResizablePrimitive.usePanelRef();
   const panelRef = propsPanelRef ?? internalPanelRef;
+  const previousCollapsedState = React.useRef<boolean | undefined>(undefined);
 
   React.useEffect(() => {
     if (!id) return;
@@ -103,9 +113,9 @@ function ResizablePanel({ id, onResize, panelRef: propsPanelRef, ...props }: Res
       data-slot="resizable-panel"
       id={id}
       onResize={(size, panelId, prevSize) => {
-        if (id) {
-          const isCollapsed = panelRef.current?.isCollapsed() ?? false;
+        const isCollapsed = panelRef.current?.isCollapsed() ?? false;
 
+        if (id) {
           updatePanelState(id, (currentPanel) => {
             if (currentPanel.isCollapsed === isCollapsed) return currentPanel;
             return { ...currentPanel, isCollapsed };
@@ -113,6 +123,13 @@ function ResizablePanel({ id, onResize, panelRef: propsPanelRef, ...props }: Res
         }
 
         onResize?.(size, panelId, prevSize);
+
+        if (previousCollapsedState.current !== isCollapsed) {
+          previousCollapsedState.current = isCollapsed;
+
+          if (isCollapsed) onCollapsed?.(panelRef);
+          else onExpanded?.(panelRef);
+        }
       }}
       panelRef={panelRef}
       {...props}

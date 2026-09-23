@@ -31,7 +31,8 @@ function AppLayout() {
           id="workspace-sidebar"
           maxSize="48rem"
           minSize="30.75rem" // matches 16x9 preview perfectly
-          onResize={(size) => setIsSidebarCollapsed(size.asPercentage === 0)}
+          onCollapsed={() => setIsSidebarCollapsed(true)}
+          onExpanded={() => setIsSidebarCollapsed(false)}
         >
           <AppLayoutPanel>
             <AppLayoutSidebar />
