@@ -510,6 +510,24 @@ export const sk = {
       projectPage: "Stránka projektu",
       projectSupport: "Podporte projekt",
       showLogs: "Zobraziť záznamy",
+      viewOnGitHub: "Zobraziť na GitHube",
+    },
+    labels: {
+      categories: {
+        added: "Pridané",
+        changed: "Zmenené",
+        deprecated: "Zastarané",
+        fixed: "Opravené",
+        removed: "Odstránené",
+        security: "Bezpečnosť",
+      },
+      historyTitle: "Zoznam zmien",
+      whatsNewTitle: "Čo je nové",
+    },
+    messages: {
+      emptyChangelog: "Zatiaľ nie sú dostupné žiadne vydané zmeny.",
+      historyDescription: "Vydané zmeny zahrnuté v tejto verzii EasyTrim.",
+      whatsNewDescription: "Tu sú zmeny od vášho posledného otvorenia EasyTrim.",
     },
   },
   units: {

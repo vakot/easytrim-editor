@@ -5,6 +5,7 @@ storybook-static/
 .vite/
 coverage/
 *.tsbuildinfo
+apps/desktop/src/generated/
 
 # Rust and Tauri
 target/

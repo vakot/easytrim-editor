@@ -7,6 +7,7 @@ import {
   FolderInput,
   LoaderCircle,
   RefreshCw,
+  ScrollText,
 } from "lucide-react";
 import React from "react";
 import { useTranslation } from "react-i18next";
@@ -25,17 +26,18 @@ import {
 import type { UpdateStatus } from "@/app/contexts/app-updates-context";
 import { useAppUpdates } from "@/app/hooks/useAppUpdates";
 import { GithubIcon, KofiIcon } from "@/components/brand-icons";
+import { useChangelogDialog } from "@/features/changelog";
 import { getCurrentVersion } from "@/lib/app-version.utils";
 import { openExternalUrl } from "@/lib/open-external-url.utils";
 import { revealDiagnosticLogs } from "@/lib/tauri/diagnostics";
 import { requestWindowShutdown } from "@/lib/tauri/window";
 
-const CHANGELOG_URL = "https://github.com/vakot/easytrim-editor/releases";
 const PROJECT_PAGE_URL = "https://github.com/vakot/easytrim-editor";
 const SUPPORT_PROJECT_URL = "https://ko-fi.com/vakot";
 
 function MenuBarHelp() {
   const { t } = useTranslation();
+  const { openChangelog } = useChangelogDialog();
   const currentVersion = getCurrentVersion();
   const {
     availableVersion,
@@ -60,9 +62,9 @@ function MenuBarHelp() {
       </MenubarTrigger>
       <MenubarContent>
         <MenubarGroup>
-          <MenubarItem inset onSelect={() => void openExternalUrl(CHANGELOG_URL)}>
+          <MenubarItem inset onSelect={openChangelog}>
             <MenubarIcon>
-              <ExternalLink aria-hidden="true" />
+              <ScrollText aria-hidden="true" />
             </MenubarIcon>
             {t("support.actions.changelog")}
           </MenubarItem>

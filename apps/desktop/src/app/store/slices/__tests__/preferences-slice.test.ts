@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { DEFAULT_PREFERENCES, type Preferences } from "@/app/preferences";
 import {
   activityFeedViewChanged,
+  changelogVersionSeen,
   customPrimaryColorChanged,
   layoutDensityChanged,
   preferenceChanged,
@@ -53,6 +54,14 @@ describe("preferences Redux domain", () => {
     );
   });
 
+  it("persists the changelog seen marker without resetting it with preferences", () => {
+    const seenState = preferencesReducer(undefined, changelogVersionSeen("1.10.4"));
+    const resetState = preferencesReducer(seenState, preferencesReset());
+
+    expect(seenState.lastSeenChangelogVersion).toBe("1.10.4");
+    expect(resetState.lastSeenChangelogVersion).toBe("1.10.4");
+  });
+
   it("supports the persisted branch activity feed view", () => {
     const nextState = preferencesReducer(undefined, activityFeedViewChanged("branch"));
 
@@ -87,6 +96,7 @@ describe("preferences Redux domain", () => {
         autoStartQueueEnabled: false,
         mergeAudioEnabledDefault: true,
         deleteSourceOnRenderFinish: false,
+        lastSeenChangelogVersion: null,
         activityFeedView: "default",
         layoutDensity: "default",
         theme: "system",
@@ -107,6 +117,7 @@ describe("preferences Redux domain", () => {
       autoStartQueueEnabled: true,
       mergeAudioEnabledDefault: true,
       deleteSourceOnRenderFinish: false,
+      lastSeenChangelogVersion: null,
       activityFeedView: "default",
       layoutDensity: "default",
       theme: "system",

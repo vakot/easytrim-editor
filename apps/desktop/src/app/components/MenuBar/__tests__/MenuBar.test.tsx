@@ -15,6 +15,7 @@ import { AppUpdatesContext } from "@/app/contexts/app-updates-context";
 import { DEFAULT_PREFERENCES, type PreferenceKey, type Preferences } from "@/app/preferences";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import type { SourceRef } from "@/domain/source";
+import { ChangelogProvider } from "@/features/changelog";
 import { getCurrentVersion } from "@/lib/app-version.utils";
 import { openExternalUrl } from "@/lib/open-external-url.utils";
 import type { QueueFinishAction } from "@/lib/tauri/queue.types";
@@ -48,6 +49,7 @@ const menuState = vi.hoisted(() => ({
     segmentPlaybackEnabledDefault: true,
     autoStartQueueEnabled: true,
     deleteSourceOnRenderFinish: false,
+    lastSeenChangelogVersion: "1.10.4",
     mergeAudioEnabledDefault: false,
     theme: "system",
     primaryColor: "amber",
@@ -186,7 +188,10 @@ describe("MenuBarTest", () => {
       "exit",
       "nothing",
     ];
-    menuState.preferences = overrides.preferences ?? { ...DEFAULT_PREFERENCES };
+    menuState.preferences = overrides.preferences ?? {
+      ...DEFAULT_PREFERENCES,
+      lastSeenChangelogVersion: "1.10.4",
+    };
     menuState.preferences.theme = overrides.themePreference ?? "system";
     menuState.preferences.primaryColor = overrides.primaryColor ?? "amber";
     menuState.preferences.customPrimaryColor = overrides.customPrimaryColor ?? "#efbf04";
@@ -241,9 +246,11 @@ describe("MenuBarTest", () => {
       initialized.current = true;
     }
     return (
-      <ThemeProvider>
-        <AppMenuBar />
-      </ThemeProvider>
+      <ChangelogProvider>
+        <ThemeProvider>
+          <AppMenuBar />
+        </ThemeProvider>
+      </ChangelogProvider>
     );
   }
 
@@ -406,6 +413,10 @@ describe("MenuBarTest", () => {
     expect(nativeDiagnostics.revealDiagnosticLogs).toHaveBeenCalledOnce();
     await user.click(getMenuTrigger("Help"));
     await user.click(screen.getByRole("menuitem", { name: "Changelog" }));
+    expect(screen.getByRole("heading", { name: "Changelog" })).toBeInTheDocument();
+    await user.click(
+      screen.getByRole("dialog").querySelector("button[data-variant='default']") as HTMLElement,
+    );
     await user.click(getMenuTrigger("Help"));
     await user.click(screen.getByRole("menuitem", { name: "Project Page" }));
     await user.click(getMenuTrigger("Help"));
@@ -414,7 +425,6 @@ describe("MenuBarTest", () => {
     await user.click(screen.getByRole("menuitem", { name: versionMenuLabel }));
 
     expect(vi.mocked(openExternalUrl).mock.calls).toEqual([
-      ["https://github.com/vakot/easytrim-editor/releases"],
       ["https://github.com/vakot/easytrim-editor"],
       ["https://ko-fi.com/vakot"],
       [`https://github.com/vakot/easytrim-editor/releases/tag/v${currentVersion}`],
@@ -568,6 +578,7 @@ describe("MenuBarTest", () => {
               autoStartQueueEnabled: false,
               mergeAudioEnabledDefault: false,
               deleteSourceOnRenderFinish: false,
+              lastSeenChangelogVersion: null,
             }}
           />
         </ThemeProvider>

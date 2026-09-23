@@ -21,6 +21,7 @@ import { persistor, store } from "@/app/store/store";
 import { loadQueueFinishActions } from "@/app/store/thunks/export-thunks";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import { ActivityToasts } from "@/features/activity";
+import { ChangelogProvider } from "@/features/changelog";
 import { ExportDialog } from "@/features/export";
 import { SourceDropOverlay } from "@/features/source";
 
@@ -36,33 +37,35 @@ function EasyTrimEditorApp() {
 
   return (
     <TooltipProvider>
-      <AppShutdownGuard />
+      <ChangelogProvider>
+        <AppShutdownGuard />
 
-      <AppUpdatesProvider>
-        <EditorContractsProvider>
-          <ResizablePanelContextProvider>
-            <AppLayout />
+        <AppUpdatesProvider>
+          <EditorContractsProvider>
+            <ResizablePanelContextProvider>
+              <AppLayout />
 
-            <Toaster />
-            <ActivityToasts />
-            <ExportDialog />
-            <DiagnosticsRecoveryDialog />
-            <SourceDropOverlay />
-            <NativeDialogOverlay />
+              <Toaster />
+              <ActivityToasts />
+              <ExportDialog />
+              <DiagnosticsRecoveryDialog />
+              <SourceDropOverlay />
+              <NativeDialogOverlay />
 
-            {dropListenerError ? (
-              <Alert
-                className="fixed top-20 left-1/2 z-50 w-auto -translate-x-1/2"
-                variant="destructive"
-              >
-                <AlertDescription>
-                  {t("app.messages.dragUnavailable", { message: dropListenerError.message })}
-                </AlertDescription>
-              </Alert>
-            ) : null}
-          </ResizablePanelContextProvider>
-        </EditorContractsProvider>
-      </AppUpdatesProvider>
+              {dropListenerError ? (
+                <Alert
+                  className="fixed top-20 left-1/2 z-50 w-auto -translate-x-1/2"
+                  variant="destructive"
+                >
+                  <AlertDescription>
+                    {t("app.messages.dragUnavailable", { message: dropListenerError.message })}
+                  </AlertDescription>
+                </Alert>
+              ) : null}
+            </ResizablePanelContextProvider>
+          </EditorContractsProvider>
+        </AppUpdatesProvider>
+      </ChangelogProvider>
     </TooltipProvider>
   );
 }
