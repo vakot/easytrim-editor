@@ -31,7 +31,8 @@ const CATEGORY_ORDER = [
 ];
 
 const PLURAL_SUFFIXES = ["zero", "one", "two", "few", "many", "other"];
-const SUSPICIOUS_MOJIBAKE = /[\u0400-\u04ff\ufffd]|Ã|Â/;
+const SUSPICIOUS_CYRILLIC = /[\u0400-\u04ff]/;
+const SUSPICIOUS_MOJIBAKE = /[\ufffd]|Ã|Â/;
 
 export async function validateI18n(repositoryRoot) {
   const report = await auditI18n(repositoryRoot);
@@ -119,7 +120,10 @@ export function parseLocaleSource(sourceText, localeName, fileName = `${localeNa
     if (ts.isStringLiteralLike(unwrapped)) {
       const key = path.join(".");
       if (leaves.has(key)) issues.push(`${fileName}: duplicate translation key ${key}`);
-      if (SUSPICIOUS_MOJIBAKE.test(unwrapped.text)) {
+      if (
+        SUSPICIOUS_MOJIBAKE.test(unwrapped.text) ||
+        (localeName !== "ru" && SUSPICIOUS_CYRILLIC.test(unwrapped.text))
+      ) {
         issues.push(`${fileName}: suspicious text encoding in ${key}`);
       }
       leaves.set(key, unwrapped.text);
