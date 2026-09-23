@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { useAppDispatch } from "@/app/store/redux-hooks";
-import type { EditingInstance } from "@/domain/editing-instance";
 import {
   prepareImportedSourceMetadataRequested,
   prepareImportedSourceThumbnailsRequested,
 } from "@/app/store/thunks/source-media-thunks";
+import type { EditingInstance } from "@/domain/editing-instance";
 
 function usePrepareSources(instances: EditingInstance[]) {
   const dispatch = useAppDispatch();
@@ -16,7 +16,8 @@ function usePrepareSources(instances: EditingInstance[]) {
       sourceAvailability,
     ]),
   );
-  const preparedInstances = useMemo(() => instances, [preparationKey]);
+
+  const preparedInstances = useMemo(() => instances, [instances]);
   const [completedPreparationKey, setCompletedPreparationKey] = useState<string | null>(() =>
     preparedInstances.length === 0 ? preparationKey : null,
   );
@@ -24,10 +25,7 @@ function usePrepareSources(instances: EditingInstance[]) {
   const isLoading = preparedInstances.length > 0 && completedPreparationKey !== preparationKey;
 
   useEffect(() => {
-    if (preparedInstances.length === 0) {
-      setCompletedPreparationKey(preparationKey);
-      return;
-    }
+    if (preparedInstances.length === 0) return;
 
     let isMounted = true;
 

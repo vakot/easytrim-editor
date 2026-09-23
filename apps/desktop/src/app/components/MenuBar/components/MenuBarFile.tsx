@@ -58,11 +58,7 @@ function MenuBarFile() {
     () => void dispatch(chooseSourceRequested({ id: "Ctrl+O", type: "hotkey" })),
   );
   useKeyboardShortcut(
-    (event) =>
-      event.code === "KeyK" &&
-      event.ctrlKey &&
-      !isChoosingSource &&
-      !isNativeDialogOpen,
+    (event) => event.code === "KeyK" && event.ctrlKey && !isChoosingSource && !isNativeDialogOpen,
     () => void dispatch(chooseSourceRequested({ id: "Ctrl+K", type: "hotkey" }, "folders")),
   );
   useKeyboardShortcut(

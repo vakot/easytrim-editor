@@ -1,4 +1,5 @@
 import { cloneElement, type MouseEventHandler, type ReactElement } from "react";
+import { useTranslation } from "react-i18next";
 
 import {
   AlertDialog,
@@ -11,8 +12,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-
-import { useTranslation } from "react-i18next";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectSourceExportQueueState } from "@/app/store/slices/export-slice";
@@ -38,8 +37,8 @@ interface SourceActionProps {
   onOpenChange?: (open: boolean) => void;
   open?: boolean;
   source?: EditingInstance;
-  sources?: EditingInstance[];
   sourcePath?: string;
+  sources?: EditingInstance[];
 }
 
 /**

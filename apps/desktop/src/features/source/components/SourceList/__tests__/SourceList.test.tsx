@@ -11,6 +11,8 @@ vi.mock("@/lib/tauri/media", async (importOriginal) => ({
   openFileLocation,
 }));
 
+import { TooltipProvider } from "@/components/ui/tooltip";
+
 import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";
 import { enqueueExport } from "@/app/store/integration/export-queue-runtime";
 import {
@@ -24,7 +26,6 @@ import { selectSourceQueueStarted } from "@/app/store/slices/export-slice";
 import { preferenceChanged } from "@/app/store/slices/preferences-slice";
 import { importedThumbnailLoading } from "@/app/store/slices/preview-slice";
 import { createAppStore } from "@/app/store/store";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { createExportAttempt, type EditingInstance } from "@/domain/editing-instance";
 import { firstSource, secondSource } from "@/test/source.fixtures";
 
@@ -202,7 +203,9 @@ describe("source queue controls", () => {
     expect(selectImportedEditingInstances(store.getState())).toHaveLength(2);
 
     await user.click(screen.getByRole("button", { name: "Close all open sources" }));
-    await user.click(within(screen.getByRole("alertdialog")).getByRole("button", { name: "Close" }));
+    await user.click(
+      within(screen.getByRole("alertdialog")).getByRole("button", { name: "Close" }),
+    );
 
     expect(selectImportedEditingInstances(store.getState())).toHaveLength(0);
   });
@@ -240,7 +243,9 @@ describe("source queue controls", () => {
     await user.click(screen.getByRole("tab", { name: "Folder" }));
     await user.click(screen.getByRole("button", { name: "Close group" }));
     expect(selectImportedEditingInstances(store.getState())).toHaveLength(2);
-    await user.click(within(screen.getByRole("alertdialog")).getByRole("button", { name: "Close" }));
+    await user.click(
+      within(screen.getByRole("alertdialog")).getByRole("button", { name: "Close" }),
+    );
 
     expect(selectImportedEditingInstances(store.getState())).toHaveLength(0);
   });
