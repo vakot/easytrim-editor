@@ -10,6 +10,7 @@ import {
 } from "redux-persist";
 import reduxStorageModule from "redux-persist/lib/storage";
 
+import { isLayoutDensity } from "@/app/layout/lib/layout-density";
 import { DEFAULT_PREFERENCES, type Preferences } from "@/app/preferences";
 import { isCustomPrimaryColor, isPrimaryColor, isThemePreference } from "@/app/theme/theme";
 
@@ -78,6 +79,9 @@ const preferencesTransform = createTransform(
         persistedPreferences.activityFeedView === "branch"
           ? persistedPreferences.activityFeedView
           : "default",
+      layoutDensity: isLayoutDensity(persistedPreferences.layoutDensity)
+        ? persistedPreferences.layoutDensity
+        : DEFAULT_PREFERENCES.layoutDensity,
       customPrimaryColor: isCustomPrimaryColor(persistedPreferences.customPrimaryColor)
         ? persistedPreferences.customPrimaryColor
         : DEFAULT_PREFERENCES.customPrimaryColor,

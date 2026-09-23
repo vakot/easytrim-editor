@@ -4,6 +4,7 @@ import { DEFAULT_PREFERENCES, type Preferences } from "@/app/preferences";
 import {
   activityFeedViewChanged,
   customPrimaryColorChanged,
+  layoutDensityChanged,
   preferenceChanged,
   preferencesReducer,
   preferencesReset,
@@ -11,6 +12,7 @@ import {
   selectActivityFeedView,
   selectCustomPrimaryColor,
   selectDeleteSourceOnRenderFinish,
+  selectLayoutDensity,
   selectMergeAudioEnabledDefault,
   selectPreferences,
   selectPrimaryColor,
@@ -58,6 +60,12 @@ describe("preferences Redux domain", () => {
     expect(selectActivityFeedView({ preferences: nextState } as RootState)).toBe("branch");
   });
 
+  it("changes and selects the layout density", () => {
+    const nextState = preferencesReducer(undefined, layoutDensityChanged("compact"));
+
+    expect(selectLayoutDensity({ preferences: nextState } as RootState)).toBe("compact");
+  });
+
   it("changes theme and color preferences while retaining the custom value", () => {
     const themedState = preferencesReducer(undefined, themePreferenceChanged("dark"));
     const presetState = preferencesReducer(themedState, primaryColorChanged("blue"));
@@ -80,6 +88,7 @@ describe("preferences Redux domain", () => {
         mergeAudioEnabledDefault: true,
         deleteSourceOnRenderFinish: false,
         activityFeedView: "default",
+        layoutDensity: "default",
         theme: "system",
         primaryColor: "amber",
         customPrimaryColor: "#efbf04",
@@ -99,6 +108,7 @@ describe("preferences Redux domain", () => {
       mergeAudioEnabledDefault: true,
       deleteSourceOnRenderFinish: false,
       activityFeedView: "default",
+      layoutDensity: "default",
       theme: "system",
       primaryColor: "amber",
       customPrimaryColor: "#efbf04",

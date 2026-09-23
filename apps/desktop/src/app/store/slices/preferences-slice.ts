@@ -1,6 +1,11 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 import {
+  DEFAULT_LAYOUT_DENSITY,
+  isLayoutDensity,
+  type LayoutDensity,
+} from "@/app/layout/lib/layout-density";
+import {
   type ActivityFeedView,
   DEFAULT_PREFERENCES,
   type PreferenceKey,
@@ -32,6 +37,9 @@ const preferencesSlice = createSlice({
     activityFeedViewChanged: (state, action: PayloadAction<ActivityFeedView>) => {
       state.activityFeedView = action.payload;
     },
+    layoutDensityChanged: (state, action: PayloadAction<LayoutDensity>) => {
+      state.layoutDensity = action.payload;
+    },
     themePreferenceChanged: (state, action: PayloadAction<ThemePreference>) => {
       state.theme = action.payload;
     },
@@ -54,6 +62,7 @@ const preferencesSlice = createSlice({
 const {
   activityFeedViewChanged,
   customPrimaryColorChanged,
+  layoutDensityChanged,
   preferenceChanged,
   preferencesReset,
   primaryColorChanged,
@@ -79,6 +88,11 @@ const selectActivityFeedView = (state: RootState): ActivityFeedView => {
     : "default";
 };
 
+const selectLayoutDensity = (state: RootState): LayoutDensity => {
+  const layoutDensity = selectPreferences(state).layoutDensity;
+  return isLayoutDensity(layoutDensity) ? layoutDensity : DEFAULT_LAYOUT_DENSITY;
+};
+
 const selectThemePreference = (state: RootState): ThemePreference => selectPreferences(state).theme;
 const selectPrimaryColor = (state: RootState): PrimaryColor =>
   selectPreferences(state).primaryColor;
@@ -94,6 +108,7 @@ const selectCustomPrimaryColor = (state: RootState): CustomPrimaryColor =>
 export {
   activityFeedViewChanged,
   customPrimaryColorChanged,
+  layoutDensityChanged,
   preferenceChanged,
   preferencesReducer,
   preferencesReset,
@@ -102,6 +117,7 @@ export {
   selectAutoStartQueueEnabled,
   selectCustomPrimaryColor,
   selectDeleteSourceOnRenderFinish,
+  selectLayoutDensity,
   selectMergeAudioEnabledDefault,
   selectPreferences,
   selectPrimaryColor,

@@ -11,6 +11,7 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 
 import { ActivityFeed } from "@/features/activity";
 import {
@@ -29,7 +30,7 @@ const groupByIcons = {
   imported: Upload,
 };
 
-function EditorSource() {
+function AppLayoutSidebar() {
   const { t } = useTranslation();
 
   return (
@@ -38,7 +39,7 @@ function EditorSource() {
       className="@container relative flex size-full flex-col pt-3"
     >
       <h3
-        className="mx-3 mb-3 font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
+        className="mx-3 mb-1 font-heading text-xs font-bold tracking-[0.16em] text-primary uppercase"
         id="source-panel-title"
       >
         {t("app.labels.explorer")}
@@ -46,7 +47,7 @@ function EditorSource() {
 
       <ResizablePanelGroup id="editor-source" orientation="vertical" persisted>
         <ResizablePanel
-          className="flex min-h-0 flex-col overflow-hidden! p-1"
+          className="flex min-h-0 flex-col overflow-hidden! py-1"
           collapsedSize="36px"
           collapsible
           defaultSize="50"
@@ -55,28 +56,30 @@ function EditorSource() {
         >
           <ResizablePanelControl panelId="editor-source-imported-sources">
             {({ isExpanded }) => (
-              <Button
-                className="w-full justify-baseline px-2 text-secondary-foreground"
-                size="sm"
-                variant="ghost"
-              >
-                <ChevronRight
-                  className={cn("shrink-0 transition-transform", isExpanded && "rotate-90")}
-                />
-                {t("source.labels.importedSources")}
-              </Button>
+              <div className="px-3">
+                <Button
+                  className="w-full justify-baseline px-2 text-secondary-foreground"
+                  size="sm"
+                  variant="ghost"
+                >
+                  <ChevronRight
+                    className={cn("shrink-0 transition-transform", isExpanded && "rotate-90")}
+                  />
+                  {t("source.labels.importedSources")}
+                </Button>
+              </div>
             )}
           </ResizablePanelControl>
-
-          <div className="mt-2 flex min-h-0 flex-1 flex-col">
+          <div className="mt-2 flex min-h-0 flex-1 px-3">
             <SourceList>
               {({ tab }) => {
                 const Icon = groupByIcons[tab];
 
                 return (
                   <>
-                    <div className="flex gap-2 px-2">
+                    <div className="flex gap-2">
                       <SourceListSearch />
+
                       <Popover>
                         <PopoverTrigger asChild>
                           <Button size="icon-sm" variant="outline">
@@ -92,10 +95,14 @@ function EditorSource() {
 
                       <SourceListCloseAll />
                     </div>
-                    <ScrollArea className={cn("min-h-0 flex-1", tab !== "none" && "before:top-7")}>
-                      <div className="px-2 pb-2">
-                        <SourceListContent />
-                      </div>
+
+                    <ScrollArea
+                      className={cn(
+                        "-mx-2.5 min-h-0 flex-1 px-2.5",
+                        tab !== "none" && "before:top-7",
+                      )}
+                    >
+                      <SourceListContent />
                     </ScrollArea>
                   </>
                 );
@@ -104,10 +111,12 @@ function EditorSource() {
           </div>
         </ResizablePanel>
 
-        <ResizableHandle className="bg-foreground/10" />
+        <ResizableHandle className="bg-transparent px-3">
+          <Separator />
+        </ResizableHandle>
 
         <ResizablePanel
-          className="flex min-h-0 flex-col overflow-hidden! p-1"
+          className="flex min-h-0 flex-col overflow-hidden! py-1"
           collapsedSize="36px"
           collapsible
           defaultSize="50"
@@ -116,21 +125,23 @@ function EditorSource() {
         >
           <ResizablePanelControl panelId="editor-source-activity-feed">
             {({ isExpanded }) => (
-              <Button
-                className="w-full justify-baseline px-2 text-secondary-foreground"
-                size="sm"
-                variant="ghost"
-              >
-                <ChevronRight
-                  className={cn("shrink-0 transition-transform", isExpanded && "rotate-90")}
-                />
-                {t("app.labels.activityFeed")}
-              </Button>
+              <div className="px-3">
+                <Button
+                  className="w-full justify-baseline px-2 text-secondary-foreground"
+                  size="sm"
+                  variant="ghost"
+                >
+                  <ChevronRight
+                    className={cn("shrink-0 transition-transform", isExpanded && "rotate-90")}
+                  />
+                  {t("app.labels.activityFeed")}
+                </Button>
+              </div>
             )}
           </ResizablePanelControl>
 
-          <div className="mt-2 min-h-0 flex-1">
-            <ScrollArea className="size-full px-2 before:top-2">
+          <div className="mt-2 flex min-h-0 flex-1 flex-col px-3">
+            <ScrollArea className="-mx-2.5 flex-1 px-2.5 before:top-2">
               <ActivityFeed />
             </ScrollArea>
           </div>
@@ -140,4 +151,4 @@ function EditorSource() {
   );
 }
 
-export { EditorSource };
+export { AppLayoutSidebar };

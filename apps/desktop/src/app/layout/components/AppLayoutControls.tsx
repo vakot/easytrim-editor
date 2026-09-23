@@ -1,10 +1,15 @@
 import {
   LayoutPanelLeft,
+  LayoutTemplate,
+  List,
+  ListTree,
   PanelBottom,
   PanelBottomDashed,
   PanelLeft,
   PanelLeftDashed,
+  PanelsLeftBottom,
   RotateCcw,
+  ScanText,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
@@ -16,14 +21,30 @@ import {
   DropdownMenuGroup,
   DropdownMenuIcon,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ResizablePanelControl } from "@/components/ui/resizable";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-function PanelVisibilityControls() {
+import { isLayoutDensity } from "@/app/layout/lib/layout-density";
+import type { ActivityFeedView } from "@/app/preferences";
+import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
+import {
+  activityFeedViewChanged,
+  layoutDensityChanged,
+  selectActivityFeedView,
+  selectLayoutDensity,
+} from "@/app/store/slices/preferences-slice";
+
+function AppLayoutControls() {
   const { t } = useTranslation();
+  const dispatch = useAppDispatch();
+  const layoutDensity = useAppSelector(selectLayoutDensity);
+  const activityFeedView = useAppSelector(selectActivityFeedView);
 
   return (
     <div
@@ -46,18 +67,22 @@ function PanelVisibilityControls() {
               </Button>
             </TooltipTrigger>
           </DropdownMenuTrigger>
+
           <DropdownMenuContent>
             <DropdownMenuGroup>
+              <DropdownMenuLabel>{t("app.labels.panelsVisibility")}</DropdownMenuLabel>
+
               <ResizablePanelControl panelId="workspace-sidebar">
                 {({ isAvailable, isCollapsed }) => (
                   <DropdownMenuCheckboxItem checked={isAvailable && !isCollapsed} inset keepOpen>
                     {t("app.actions.showPanel", { panel: t("app.labels.leftPanel") })}
                     <DropdownMenuIcon side="right">
-                      <PanelLeft aria-hidden="true" className="size-3" />
+                      <PanelLeft aria-hidden="true" />
                     </DropdownMenuIcon>
                   </DropdownMenuCheckboxItem>
                 )}
               </ResizablePanelControl>
+
               <ResizablePanelControl panelId="editor-stage-timeline">
                 {({ isAvailable, isCollapsed, isDisabled }) => (
                   <DropdownMenuCheckboxItem
@@ -68,13 +93,76 @@ function PanelVisibilityControls() {
                   >
                     {t("app.actions.showPanel", { panel: t("app.labels.bottomPanel") })}
                     <DropdownMenuIcon side="right">
-                      <PanelBottom aria-hidden="true" className="size-3" />
+                      <PanelBottom aria-hidden="true" />
                     </DropdownMenuIcon>
                   </DropdownMenuCheckboxItem>
                 )}
               </ResizablePanelControl>
             </DropdownMenuGroup>
+
             <DropdownMenuSeparator />
+
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>{t("app.labels.layoutDensity")}</DropdownMenuLabel>
+
+              <DropdownMenuRadioGroup
+                onValueChange={(value) => {
+                  if (isLayoutDensity(value)) dispatch(layoutDensityChanged(value));
+                }}
+                value={layoutDensity}
+              >
+                <DropdownMenuRadioItem inset keepOpen value="default">
+                  {t("app.options.layoutDensities.default")}
+                  <DropdownMenuIcon side="right">
+                    <LayoutTemplate aria-hidden="true" className="-scale-x-100 -rotate-90" />
+                  </DropdownMenuIcon>
+                </DropdownMenuRadioItem>
+
+                <DropdownMenuRadioItem inset keepOpen value="compact">
+                  {t("app.options.layoutDensities.compact")}
+                  <DropdownMenuIcon side="right">
+                    <PanelsLeftBottom aria-hidden="true" />
+                  </DropdownMenuIcon>
+                </DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
+            </DropdownMenuGroup>
+
+            <DropdownMenuSeparator />
+
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>{t("settings.labels.activityFeedView")}</DropdownMenuLabel>
+
+              <DropdownMenuRadioGroup
+                onValueChange={(value) =>
+                  void dispatch(activityFeedViewChanged(value as ActivityFeedView))
+                }
+                value={activityFeedView}
+              >
+                <DropdownMenuRadioItem inset keepOpen value="default">
+                  {t("settings.options.activityFeedViews.default")}
+                  <DropdownMenuIcon side="right">
+                    <List aria-hidden="true" />
+                  </DropdownMenuIcon>
+                </DropdownMenuRadioItem>
+
+                <DropdownMenuRadioItem inset keepOpen value="compact">
+                  {t("settings.options.activityFeedViews.compact")}
+                  <DropdownMenuIcon side="right">
+                    <ScanText aria-hidden="true" />
+                  </DropdownMenuIcon>
+                </DropdownMenuRadioItem>
+
+                <DropdownMenuRadioItem inset keepOpen value="branch">
+                  {t("settings.options.activityFeedViews.branch")}
+                  <DropdownMenuIcon side="right">
+                    <ListTree aria-hidden="true" />
+                  </DropdownMenuIcon>
+                </DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
+            </DropdownMenuGroup>
+
+            <DropdownMenuSeparator />
+
             <DropdownMenuGroup>
               <ResizablePanelControl
                 mode="reset"
@@ -151,4 +239,4 @@ function PanelVisibilityControls() {
   );
 }
 
-export { PanelVisibilityControls };
+export { AppLayoutControls };

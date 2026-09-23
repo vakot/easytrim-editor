@@ -47,6 +47,7 @@ const menuState = vi.hoisted(() => ({
   },
   preferences: {
     activityFeedView: "default",
+    layoutDensity: "default",
     snapPlaybackEnabledDefault: true,
     loopPlaybackEnabledDefault: true,
     segmentPlaybackEnabledDefault: true,
@@ -572,6 +573,7 @@ describe("MenuBarTest", () => {
               primaryColor: "amber",
               customPrimaryColor: "#efbf04",
               activityFeedView: "default",
+              layoutDensity: "default",
               snapPlaybackEnabledDefault: false,
               loopPlaybackEnabledDefault: false,
               segmentPlaybackEnabledDefault: false,

@@ -14,6 +14,7 @@ import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectRenderingAttempt } from "@/app/store/slices/editing-instances-slice";
 import { formatExportDuration, formatExportFileSize } from "@/domain/export-metrics";
 import { getCurrentVersion } from "@/lib/app-version.utils";
+import { cn } from "@/lib/class-names.utils";
 import { requestWindowShutdown } from "@/lib/tauri/window";
 
 function splitFilePath(path: string) {
@@ -26,9 +27,15 @@ function splitFilePath(path: string) {
   };
 }
 
-function StatusBar() {
+interface StatusBarProps {
+  className?: string;
+}
+
+function StatusBar({ className }: StatusBarProps) {
   const { t } = useTranslation();
+
   const activeExport = useAppSelector(selectRenderingAttempt);
+
   const activeExportPath = activeExport
     ? splitFilePath(activeExport.attempt.output.displayPath)
     : null;
@@ -38,63 +45,64 @@ function StatusBar() {
     : 0;
 
   return (
-    <div className="bg-card/30">
-      <footer
-        className="flex h-7 min-h-7 shrink-0 items-center px-4 pb-1 text-xs text-muted-foreground"
-        data-slot="status-bar"
-      >
-        <span className="flex min-w-0 items-center gap-1.5">
-          <span>v{getCurrentVersion()}</span>
-          <span className="text-primary">·</span>
-          <StatusBarUpdateButton />
-        </span>
-        {activeExport ? (
-          <div className="ml-auto flex min-w-0 items-center gap-3 pl-4 text-muted-foreground">
-            <span className="max-w-md truncate text-xs">
-              <span>{activeExportPath?.directory}</span>
-              <span className="font-medium text-foreground">
-                {activeExportPath?.filename ?? activeExport.attempt.output.displayName}
-              </span>
+    <footer
+      className={cn(
+        "flex h-9 min-h-9 shrink-0 items-center text-xs text-muted-foreground",
+        className,
+      )}
+      data-slot="status-bar"
+    >
+      <span className="flex min-w-0 items-center gap-1.5">
+        <span>v{getCurrentVersion()}</span>
+        <span className="text-primary">·</span>
+        <StatusBarUpdateButton />
+      </span>
+      {activeExport ? (
+        <div className="ml-auto flex min-w-0 items-center gap-3 pl-4 text-muted-foreground">
+          <span className="max-w-md truncate text-xs">
+            <span>{activeExportPath?.directory}</span>
+            <span className="font-medium text-foreground">
+              {activeExportPath?.filename ?? activeExport.attempt.output.displayName}
             </span>
-            <Separator className="mt-1 h-4 self-center" orientation="vertical" />
-            <div className="flex shrink-0 items-center gap-2">
-              <Progress
-                aria-label={t("queue.accessibility.progress")}
-                aria-valuemax={100}
-                aria-valuemin={0}
-                aria-valuenow={progressPercent}
-                className="h-1.5 w-28"
-                value={progressPercent}
-              />
-              <span className="w-10 text-right tabular-nums">{progressPercent}%</span>
-            </div>
-            <Separator className="mt-1 h-4 self-center" orientation="vertical" />
-            <StatusMetricTooltip label={t("export.labels.frames")}>
-              {activeExport.attempt.metrics.currentFrame ?? 0}f /{" "}
-              {activeExport.attempt.metrics.totalFrames ?? 0}f
-            </StatusMetricTooltip>
-            <Separator className="mt-1 h-4 self-center" orientation="vertical" />
-            <StatusMetricTooltip label={t("export.labels.fps")}>
-              {Math.round(activeExport.attempt.metrics.fps ?? 0)} FPS
-            </StatusMetricTooltip>
-            <Separator className="mt-1 h-4 self-center" orientation="vertical" />
-            <StatusMetricTooltip label={t("export.labels.bitrate")}>
-              {activeExport.attempt.metrics.bitrate ?? "0 kbits/s"}
-            </StatusMetricTooltip>
-            <Separator className="mt-1 h-4 self-center" orientation="vertical" />
-            <StatusMetricTooltip label={t("export.labels.estimateSize")}>
-              {formatStatusFileSize(activeExport.attempt.metrics.fileSizeBytes)} /{" "}
-              {formatStatusFileSize(activeExport.attempt.metrics.estimatedFileSizeBytes)}
-            </StatusMetricTooltip>
-            <Separator className="mt-1 h-4 self-center" orientation="vertical" />
-            <StatusMetricTooltip label={t("export.labels.estimateTime")}>
-              {formatExportDuration(activeExport.attempt.metrics.estimatedElapsedTimeMs ?? 0)} /{" "}
-              {formatExportDuration(activeExport.attempt.metrics.estimatedTotalTimeMs ?? 0)}
-            </StatusMetricTooltip>
+          </span>
+          <Separator className="mt-1 h-4 self-center" orientation="vertical" />
+          <div className="flex shrink-0 items-center gap-2">
+            <Progress
+              aria-label={t("queue.accessibility.progress")}
+              aria-valuemax={100}
+              aria-valuemin={0}
+              aria-valuenow={progressPercent}
+              className="h-1.5 w-28"
+              value={progressPercent}
+            />
+            <span className="w-10 text-right tabular-nums">{progressPercent}%</span>
           </div>
-        ) : null}
-      </footer>
-    </div>
+          <Separator className="mt-1 h-4 self-center" orientation="vertical" />
+          <StatusMetricTooltip label={t("export.labels.frames")}>
+            {activeExport.attempt.metrics.currentFrame ?? 0}f /{" "}
+            {activeExport.attempt.metrics.totalFrames ?? 0}f
+          </StatusMetricTooltip>
+          <Separator className="mt-1 h-4 self-center" orientation="vertical" />
+          <StatusMetricTooltip label={t("export.labels.fps")}>
+            {Math.round(activeExport.attempt.metrics.fps ?? 0)} FPS
+          </StatusMetricTooltip>
+          <Separator className="mt-1 h-4 self-center" orientation="vertical" />
+          <StatusMetricTooltip label={t("export.labels.bitrate")}>
+            {activeExport.attempt.metrics.bitrate ?? "0 kbits/s"}
+          </StatusMetricTooltip>
+          <Separator className="mt-1 h-4 self-center" orientation="vertical" />
+          <StatusMetricTooltip label={t("export.labels.estimateSize")}>
+            {formatStatusFileSize(activeExport.attempt.metrics.fileSizeBytes)} /{" "}
+            {formatStatusFileSize(activeExport.attempt.metrics.estimatedFileSizeBytes)}
+          </StatusMetricTooltip>
+          <Separator className="mt-1 h-4 self-center" orientation="vertical" />
+          <StatusMetricTooltip label={t("export.labels.estimateTime")}>
+            {formatExportDuration(activeExport.attempt.metrics.estimatedElapsedTimeMs ?? 0)} /{" "}
+            {formatExportDuration(activeExport.attempt.metrics.estimatedTotalTimeMs ?? 0)}
+          </StatusMetricTooltip>
+        </div>
+      ) : null}
+    </footer>
   );
 }
 

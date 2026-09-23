@@ -1,3 +1,4 @@
+import { DEFAULT_LAYOUT_DENSITY, type LayoutDensity } from "@/app/layout/lib/layout-density";
 import {
   type CustomPrimaryColor,
   DEFAULT_CUSTOM_PRIMARY_COLOR,
@@ -13,6 +14,7 @@ interface Preferences {
   autoStartQueueEnabled: boolean;
   customPrimaryColor: CustomPrimaryColor;
   deleteSourceOnRenderFinish: boolean;
+  layoutDensity: LayoutDensity;
   loopPlaybackEnabledDefault: boolean;
   mergeAudioEnabledDefault: boolean;
   primaryColor: PrimaryColor;
@@ -33,6 +35,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   autoStartQueueEnabled: true,
   deleteSourceOnRenderFinish: false,
   mergeAudioEnabledDefault: false,
+  layoutDensity: DEFAULT_LAYOUT_DENSITY,
   theme: "system",
   primaryColor: DEFAULT_PRIMARY_COLOR,
   customPrimaryColor: DEFAULT_CUSTOM_PRIMARY_COLOR,
