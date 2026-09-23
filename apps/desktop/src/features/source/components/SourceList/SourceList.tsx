@@ -1,13 +1,14 @@
-import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+import { type ReactNode, useCallback, useMemo, useState } from "react";
 
 import { Tabs } from "@/components/ui/tabs";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectImportedEditingInstances } from "@/app/store/slices/editing-instances-slice";
+
 import { filterSourcesByPath } from "../../lib/source-search.utils";
 
-import { SourceListContent } from "./components/SourceListContent";
 import { SourceListCloseAll } from "./components/SourceListCloseAll";
+import { SourceListContent } from "./components/SourceListContent";
 import { SourceListEmptyState } from "./components/SourceListEmptyState";
 import { SourceListSearch } from "./components/SourceListSearch";
 import { SourceListTabs } from "./components/SourceListTabs";
@@ -33,6 +34,7 @@ function SourceList({ children }: SourceListProps) {
     () => filteredSources.slice(0, visibleSourceCount),
     [filteredSources, visibleSourceCount],
   );
+
   const hasMore = visibleSources.length < filteredSources.length;
   const isLoading = usePrepareSources(visibleSources);
 
@@ -40,9 +42,10 @@ function SourceList({ children }: SourceListProps) {
     setVisibleSourceCount((count) => count + SOURCE_LIST_PAGE_SIZE);
   }, []);
 
-  useEffect(() => {
+  const handleSearchChange = useCallback((value: string) => {
+    setSearch(value);
     setVisibleSourceCount(SOURCE_LIST_PAGE_SIZE);
-  }, [search]);
+  }, []);
 
   if (sources.length === 0) return <SourceListEmptyState />;
 
@@ -56,7 +59,7 @@ function SourceList({ children }: SourceListProps) {
         isLoading,
         next,
         search,
-        setSearch,
+        setSearch: handleSearchChange,
         sources: filteredSources,
         tab,
         visibleSources,
