@@ -16,7 +16,7 @@ const repositoryRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 test("validates the repository translation graph", async () => {
   const report = await validateI18n(repositoryRoot);
 
-  assert.equal(report.localeCount, 2);
+  assert.equal(report.localeCount, 3);
   assert.equal(report.resourceLeafCount, report.usedResourceLeafCount);
 });
 

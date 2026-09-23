@@ -1,15 +1,17 @@
 import { en } from "./locales/en";
+import { ru } from "./locales/ru";
 import { sk } from "./locales/sk";
 import type { TranslationSchema } from "./schema";
 
 export const DEFAULT_LANGUAGE = "en";
-export const SUPPORTED_LANGUAGES = ["en", "sk"] as const;
+export const SUPPORTED_LANGUAGES = ["en", "sk", "ru"] as const;
 
 export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 
 export const resources = {
   en: { translation: en },
   sk: { translation: sk },
+  ru: { translation: ru },
 } as const satisfies Record<SupportedLanguage, { translation: TranslationSchema }>;
 
 function resolveInitialLanguage(

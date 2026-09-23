@@ -90,6 +90,7 @@ function MenuBarSettings() {
   const currentLanguage = isSupportedLanguage(i18n.resolvedLanguage) ? i18n.resolvedLanguage : "en";
   const languageLabels: Record<SupportedLanguage, string> = {
     en: t("settings.options.languages.english"),
+    ru: t("settings.options.languages.russian"),
     sk: t("settings.options.languages.slovak"),
   };
 
@@ -169,7 +170,7 @@ function MenuBarSettings() {
                 }
                 value={currentLanguage}
               >
-                {(["en", "sk"] as const).map((language) => (
+                {(["en", "sk", "ru"] as const).map((language) => (
                   <MenubarRadioItem key={language} value={language}>
                     {languageLabels[language]}
                     <MenubarShortcut>{language.toUpperCase()}</MenubarShortcut>

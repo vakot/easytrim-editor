@@ -160,7 +160,7 @@ export const en = {
         rose: "Rose",
         violet: "Violet",
       },
-      languages: { english: "English", slovak: "Slovenčina" },
+      languages: { english: "English", russian: "Russian", slovak: "Slovenčina" },
       activityFeedViews: { branch: "Branch", compact: "Compact", default: "Default" },
       themes: { dark: "Dark", light: "Light", system: "System" },
     },
