@@ -1,0 +1,4 @@
+interface:
+  display_name: "EasyTrim Release Changelog"
+  short_description: "Prepare concise changelogs from verified final repository diffs"
+  default_prompt: "Use $easytrim-release-changelog with explicit PR scope for current pull-request changes or release scope for stable-tag reconciliation."

@@ -197,14 +197,20 @@ Before creating the PR, verify that the branch contains only changes relevant to
 Before creating a pull request:
 
 1. inspect the final diff;
-2. verify that the branch contains only intended changes;
-3. run the relevant build, tests, and configured checks where possible;
-4. inspect the final repository state;
-5. confirm the correct head branch;
-6. confirm the correct base branch;
-7. push the required branch;
-8. read the current `.github` PR template;
-9. prepare the PR body from that template.
+2. inspect the current PR diff against its base branch for changelog-worthy user-facing changes
+   using `$easytrim-release-changelog`; do not reconcile unrelated changes already present on the
+   base branch;
+3. if such changes exist, ensure they are represented in the `## [Unreleased]` section of
+   `CHANGELOG.md`, adding or updating entries when necessary. Do not modify the changelog for
+   implementation-only changes that do not materially affect users;
+4. verify that the branch contains only intended changes;
+5. run the relevant build, tests, and configured checks where possible;
+6. inspect the final repository state;
+7. confirm the correct head branch;
+8. confirm the correct base branch;
+9. push the required branch;
+10. read the current `.github` PR template;
+11. prepare the PR body from that template.
 
 Do not claim verification that was not performed.
 
