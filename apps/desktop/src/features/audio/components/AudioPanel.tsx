@@ -114,7 +114,7 @@ function AudioPanel() {
         </div>
       </div>
 
-      <div className="relative mt-2 h-0">
+      <div className="relative mx-3 mt-2 h-0">
         <Separator className="absolute bg-foreground/10" />
       </div>
 

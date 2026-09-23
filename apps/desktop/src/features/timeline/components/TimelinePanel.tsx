@@ -1,5 +1,7 @@
 import { useTranslation } from "react-i18next";
 
+import { cn } from "@/lib/class-names.utils";
+
 import { PlaybackControls } from "./PlaybackControls";
 import { PlaybackTimecode } from "./PlaybackTimecode";
 import styles from "./TimelinePanel.module.css";
@@ -18,7 +20,10 @@ function TimelinePanel() {
       data-testid="timeline-fixed-content"
     >
       <div
-        className={`${styles.timelineHeader} grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-6`}
+        className={cn(
+          styles.timelineHeader,
+          "grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-6",
+        )}
       >
         <div className="min-w-0 justify-self-start">
           <h2
