@@ -171,15 +171,18 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
   const sections = useMemo(
     () =>
       ({
+        appearance: { id: "appearance", label: t("app.labels.commandSections.appearance") },
+        audio: { id: "audio", label: t("app.labels.commandSections.audio") },
         export: { id: "export", label: t("app.labels.commandSections.export") },
         file: { id: "file", label: t("app.labels.commandSections.file") },
         help: { id: "help", label: t("app.labels.commandSections.help") },
+        language: { id: "language", label: t("app.labels.commandSections.language") },
         layout: { id: "layout", label: t("app.labels.commandSections.layout") },
+        playback: { id: "playback", label: t("app.labels.commandSections.playback") },
+        preferences: { id: "preferences", label: t("app.labels.commandSections.preferences") },
         preview: { id: "preview", label: t("app.labels.commandSections.preview") },
         queue: { id: "queue", label: t("app.labels.commandSections.queue") },
-        settings: { id: "settings", label: t("app.labels.commandSections.settings") },
         source: { id: "source", label: t("app.labels.commandSections.source") },
-        view: { id: "view", label: t("app.labels.commandSections.view") },
       }) as const satisfies Record<string, ApplicationCommandSection>,
     [t],
   );
@@ -345,7 +348,7 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
         id: `theme-${theme}` as ApplicationCommandId,
         label: themeLabels[theme],
         searchTerms: commandSearchTerms(`${themeLabels[theme]}|theme|appearance`),
-        section: sections.view,
+        section: sections.appearance,
         variant: "default" as const,
       })),
       ...PRIMARY_COLORS.map((color) => ({
@@ -357,7 +360,7 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
         id: `primary-color-${color}` as ApplicationCommandId,
         label: colorLabels[color],
         searchTerms: commandSearchTerms(`${colorLabels[color]}|color|accent`),
-        section: sections.view,
+        section: sections.appearance,
         variant: "default" as const,
       })),
       ...(
@@ -377,7 +380,7 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
         id: `preference-${id}` as ApplicationCommandId,
         label: preferenceLabels[key],
         searchTerms: commandSearchTerms(`${preferenceLabels[key]}|preference|setting`),
-        section: sections.settings,
+        section: key === "mergeAudioEnabledDefault" ? sections.audio : sections.playback,
         variant: "default" as const,
       })),
       {
@@ -388,7 +391,7 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
         id: "reset-preferences",
         label: t("settings.actions.reset"),
         searchTerms: commandSearchTerms(`${t("settings.actions.reset")}|settings|preferences`),
-        section: sections.settings,
+        section: sections.preferences,
         variant: "destructive",
       },
       ...(["en", "sk", "ru"] as const).map((language) => ({
@@ -400,7 +403,7 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
         id: `language-${language}` as ApplicationCommandId,
         label: languageLabels[language],
         searchTerms: commandSearchTerms(`${languageLabels[language]}|language`),
-        section: sections.settings,
+        section: sections.language,
         variant: "default" as const,
       })),
       {

@@ -52,7 +52,18 @@ type ApplicationCommandId =
   | "toggle-left-panel";
 
 type ApplicationCommandSectionId =
-  "export" | "file" | "help" | "layout" | "preview" | "queue" | "settings" | "source" | "view";
+  | "appearance"
+  | "audio"
+  | "export"
+  | "file"
+  | "help"
+  | "language"
+  | "layout"
+  | "playback"
+  | "preferences"
+  | "preview"
+  | "queue"
+  | "source";
 type ApplicationCommandSurface = "button" | "hotkey" | "menu" | "palette";
 type ApplicationCommandVariant = "default" | "destructive" | "success";
 type MaybePromise<T> = T | Promise<T>;

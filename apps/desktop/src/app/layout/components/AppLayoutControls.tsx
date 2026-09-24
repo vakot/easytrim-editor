@@ -186,7 +186,7 @@ function AppLayoutControls() {
               panel: t("app.labels.leftPanel"),
             })}
             className="size-7 p-0 text-secondary-foreground"
-            onClick={() => void executeCommand("toggle-bottom-panel", "button")}
+            onClick={() => void executeCommand("toggle-left-panel", "button")}
             size="icon-sm"
             variant="ghost"
           >
@@ -210,6 +210,7 @@ function AppLayoutControls() {
             })}
             className="size-7 p-0 text-secondary-foreground"
             disabled={!bottomPanel.enabled || bottomPanel.pending}
+            onClick={() => void executeCommand("toggle-bottom-panel", "button")}
             size="icon-sm"
             variant="ghost"
           >
