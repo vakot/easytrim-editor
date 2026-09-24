@@ -1,15 +1,59 @@
 import type { DiagnosticOrigin } from "@/lib/tauri/diagnostics.types";
 
 type ApplicationCommandId =
+  | "activity-feed-view-branch"
+  | "activity-feed-view-compact"
+  | "activity-feed-view-default"
+  | "check-for-updates"
   | "close-file"
+  | "crop-preview"
+  | "delete-source-on-render-finish"
   | "delete-file"
+  | "flip-horizontal"
+  | "flip-vertical"
+  | "language-en"
+  | "language-ru"
+  | "language-sk"
+  | "layout-density-compact"
+  | "layout-density-default"
+  | "open-changelog"
   | "open-file"
   | "open-folder"
+  | "open-project-page"
+  | "open-release-page"
   | "optimized-export"
-  | "save-lossless-cut";
+  | "preference-auto-start-queue"
+  | "preference-loop-playback"
+  | "preference-merge-audio"
+  | "preference-segment-playback"
+  | "preference-snap-playback"
+  | "primary-color-amber"
+  | "primary-color-blue"
+  | "primary-color-emerald"
+  | "primary-color-rose"
+  | "primary-color-violet"
+  | "queue-finish-exit"
+  | "queue-finish-nothing"
+  | "queue-finish-system-shutdown"
+  | "queue-finish-system-sleep"
+  | "reset-layout"
+  | "reset-preferences"
+  | "reset-transform"
+  | "rotate-180"
+  | "rotate-90-ccw"
+  | "rotate-90-cw"
+  | "save-lossless-cut"
+  | "show-logs"
+  | "support-project"
+  | "theme-dark"
+  | "theme-light"
+  | "theme-system"
+  | "toggle-bottom-panel"
+  | "toggle-left-panel";
 
-type ApplicationCommandSectionId = "export" | "file" | "source";
-type ApplicationCommandSurface = "hotkey" | "menu" | "palette";
+type ApplicationCommandSectionId =
+  "export" | "file" | "help" | "layout" | "preview" | "queue" | "settings" | "source" | "view";
+type ApplicationCommandSurface = "button" | "hotkey" | "menu" | "palette";
 type ApplicationCommandVariant = "default" | "destructive" | "success";
 type MaybePromise<T> = T | Promise<T>;
 type ShortcutPlatform = "macos" | "other";
@@ -119,7 +163,9 @@ function isShortcutEvent(
 }
 
 function commandOrigin(commandId: ApplicationCommandId, surface: ApplicationCommandSurface) {
-  const type: DiagnosticOrigin["type"] = surface === "hotkey" ? "hotkey" : "menu";
+  const type: DiagnosticOrigin["type"] =
+    surface === "hotkey" ? "hotkey" : surface === "button" ? "button" : "menu";
+
   return { id: `${surface}.${commandId}`, type } satisfies DiagnosticOrigin;
 }
 

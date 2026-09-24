@@ -40,7 +40,17 @@ export const sk = {
     },
     labels: {
       commandPalette: "Paleta príkazov",
-      commandSections: { export: "Export", file: "Súbor", source: "Úpravy / Zdroj" },
+      commandSections: {
+        export: "Export",
+        file: "Súbor",
+        help: "Pomoc",
+        layout: "Rozloženie",
+        preview: "Náhľad",
+        queue: "Front",
+        settings: "Nastavenia",
+        source: "Úpravy / Zdroj",
+        view: "Zobrazenie",
+      },
       explorer: "Prieskumník",
       activityFeed: "Prehľad aktivít",
       bottomPanel: "Spodný panel",

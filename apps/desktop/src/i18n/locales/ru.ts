@@ -38,7 +38,17 @@ export const ru = {
     },
     labels: {
       commandPalette: "Палитра команд",
-      commandSections: { export: "Экспорт", file: "Файл", source: "Редактирование / Источник" },
+      commandSections: {
+        export: "Экспорт",
+        file: "Файл",
+        help: "Справка",
+        layout: "Макет",
+        preview: "Предпросмотр",
+        queue: "Очередь",
+        settings: "Настройки",
+        source: "Редактирование / Источник",
+        view: "Вид",
+      },
       explorer: "Проводник",
       activityFeed: "Лента активности",
       bottomPanel: "Нижняя панель",

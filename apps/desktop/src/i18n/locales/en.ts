@@ -38,7 +38,17 @@ export const en = {
     },
     labels: {
       commandPalette: "Command Palette",
-      commandSections: { export: "Export", file: "File", source: "Editing / Source" },
+      commandSections: {
+        export: "Export",
+        file: "File",
+        help: "Help",
+        layout: "Layout",
+        preview: "Preview",
+        queue: "Queue",
+        settings: "Settings",
+        source: "Editing / Source",
+        view: "View",
+      },
       explorer: "Explorer",
       activityFeed: "Activity Feed",
       bottomPanel: "Bottom panel",

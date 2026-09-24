@@ -44,6 +44,19 @@ const state = {
     ids: ["source-1"],
   },
   importWorkflow: { isChoosingSource: false, isNativeDialogOpen: false },
+  preferences: {
+    activityFeedView: "default",
+    autoStartQueueEnabled: true,
+    deleteSourceOnRenderFinish: false,
+    layoutDensity: "default",
+    loopPlaybackEnabledDefault: true,
+    mergeAudioEnabledDefault: false,
+    primaryColor: "amber",
+    segmentPlaybackEnabledDefault: true,
+    snapPlaybackEnabledDefault: true,
+    themePreference: "system",
+  },
+  export: { availableQueueFinishActions: ["exit", "nothing"], queueFinishAction: "nothing" },
   source: {
     media: {},
     source: { displayName: "source.mp4", sourcePath: "C:/source.mp4" },
@@ -66,6 +79,36 @@ vi.mock("@/app/store/thunks/source-media-thunks", () => ({
 vi.mock("@/features/source", () => ({
   useSourceDelete: () => ({ requestSourceDelete: mocks.requestSourceDelete }),
 }));
+vi.mock("@/features/changelog", () => ({ useChangelogDialog: () => ({ openChangelog: vi.fn() }) }));
+vi.mock("@/features/export", () => ({
+  useQueueDeleteSource: () => ({ requestEnableSourceDeletion: vi.fn() }),
+}));
+vi.mock("@/features/preview", () => ({
+  usePreviewTransform: () => ({ isAvailable: false, requestCrop: vi.fn(), requestReset: vi.fn() }),
+}));
+vi.mock("@/app/hooks/useAppUpdates", () => ({
+  useAppUpdates: () => ({
+    availableVersion: null,
+    checkForUpdates: vi.fn(),
+    installUpdate: vi.fn(),
+    isInstalling: false,
+    status: "idle",
+  }),
+}));
+vi.mock("@/components/ui/resizable", () => ({
+  usePanelCommand: () => ({
+    isAvailable: true,
+    isCollapsed: false,
+    isDisabled: false,
+    isReset: false,
+    toggle: vi.fn(),
+    reset: vi.fn(),
+  }),
+}));
+vi.mock("@/lib/open-external-url.utils", () => ({ openExternalUrl: vi.fn() }));
+vi.mock("@/lib/app-version.utils", () => ({ getCurrentVersion: () => "0.0.0" }));
+vi.mock("@/lib/tauri/diagnostics", () => ({ revealDiagnosticLogs: vi.fn() }));
+vi.mock("@/lib/tauri/window", () => ({ requestWindowShutdown: vi.fn() }));
 vi.mock("@/lib/diagnostics", () => ({
   diagnostics: { error: mocks.diagnosticsError },
 }));

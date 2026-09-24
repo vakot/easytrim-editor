@@ -81,6 +81,15 @@ const selectPreferences = (state: RootState): Preferences => state.preferences;
 const selectMergeAudioEnabledDefault = (state: RootState): boolean =>
   selectPreferences(state).mergeAudioEnabledDefault;
 
+const selectSnapPlaybackEnabledDefault = (state: RootState): boolean =>
+  selectPreferences(state).snapPlaybackEnabledDefault;
+
+const selectLoopPlaybackEnabledDefault = (state: RootState): boolean =>
+  selectPreferences(state).loopPlaybackEnabledDefault;
+
+const selectSegmentPlaybackEnabledDefault = (state: RootState): boolean =>
+  selectPreferences(state).segmentPlaybackEnabledDefault;
+
 const selectAutoStartQueueEnabled = (state: RootState): boolean =>
   selectPreferences(state).autoStartQueueEnabled;
 
@@ -129,10 +138,13 @@ export {
   selectDeleteSourceOnRenderFinish,
   selectLastSeenChangelogVersion,
   selectLayoutDensity,
+  selectLoopPlaybackEnabledDefault,
   selectMergeAudioEnabledDefault,
   selectPreferences,
   selectPrimaryColor,
   selectPrimaryColorKey,
+  selectSegmentPlaybackEnabledDefault,
+  selectSnapPlaybackEnabledDefault,
   selectThemePreference,
   themePreferenceChanged,
 };

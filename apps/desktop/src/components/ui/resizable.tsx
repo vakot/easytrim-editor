@@ -374,6 +374,39 @@ function usePanelState(panelId: PanelId) {
   return usePanelStates([panelId]).get(panelId)!;
 }
 
+function usePanelCommand(panelId: PanelId | PanelId[]) {
+  const panelIds = Array.isArray(panelId) ? panelId : [panelId];
+  const { panels } = useResizablePanelContext();
+  const panelStates = panelIds.flatMap((id) => {
+    const panel = panels[id];
+    return panel ? [{ panel }] : [];
+  });
+
+  const isAvailable = panelStates.length === panelIds.length;
+  const collapsedCount = panelStates.filter(({ panel }) => panel.isCollapsed).length;
+  const isCollapsed = isAvailable && collapsedCount === panelStates.length;
+  const isReset =
+    isAvailable &&
+    panelStates.every(({ panel }) => panel.isCollapsed === panel.isDefaultCollapsed);
+
+  const toggle = () => {
+    panelStates.forEach(({ panel }) => {
+      if (panel.isCollapsed) panel.ref.current?.expand();
+      else panel.ref.current?.collapse();
+    });
+  };
+
+  const reset = () => {
+    panelStates.forEach(({ panel }) => {
+      if (panel.isCollapsed === panel.isDefaultCollapsed) return;
+      if (panel.isDefaultCollapsed) panel.ref.current?.collapse();
+      else panel.ref.current?.expand();
+    });
+  };
+
+  return { isAvailable, isCollapsed, isDisabled: !isAvailable, isReset, reset, toggle };
+}
+
 const usePanelRef = ResizablePrimitive.usePanelRef;
 const useGroupRef = ResizablePrimitive.useGroupRef;
 const useDefaultLayout = ResizablePrimitive.useDefaultLayout;
@@ -386,6 +419,7 @@ export {
   ResizablePanelGroup,
   useDefaultLayout,
   useGroupRef,
+  usePanelCommand,
   usePanelRef,
   usePanelState,
 };
