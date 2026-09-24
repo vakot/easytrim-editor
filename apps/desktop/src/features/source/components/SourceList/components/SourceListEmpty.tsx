@@ -55,7 +55,6 @@ function SourceListEmpty() {
             <SourceListEmptyAction
               description={t("source.messages.openFolderDescription")}
               icon={<FolderOpen aria-hidden="true" />}
-              keys={["Ctrl", "K"]}
               label={t("app.actions.openFolder")}
               onClick={() =>
                 void dispatch(
@@ -103,7 +102,7 @@ function SourceListEmptyAction({
 }: {
   description: string;
   icon: ReactNode;
-  keys: readonly string[];
+  keys?: readonly string[];
   label: string;
   onClick: () => void;
 }) {
@@ -115,11 +114,13 @@ function SourceListEmptyAction({
           {icon}
           {label}
         </span>
-        <KbdGroup aria-label={keys.join(" + ")}>
-          {keys.map((key) => (
-            <Kbd key={key}>{key}</Kbd>
-          ))}
-        </KbdGroup>
+        {keys ? (
+          <KbdGroup aria-label={keys.join(" + ")}>
+            {keys.map((key) => (
+              <Kbd key={key}>{key}</Kbd>
+            ))}
+          </KbdGroup>
+        ) : null}
       </Button>
     </div>
   );

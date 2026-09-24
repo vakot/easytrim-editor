@@ -37,6 +37,8 @@ export const en = {
       update: "Update",
     },
     labels: {
+      commandPalette: "Command Palette",
+      commandSections: { export: "Export", file: "File", source: "Editing / Source" },
       explorer: "Explorer",
       activityFeed: "Activity Feed",
       bottomPanel: "Bottom panel",
@@ -49,6 +51,7 @@ export const en = {
       version: "Version {{version}}",
       view: "View",
       panelsVisibility: "Panels Visibility",
+      searchCommands: "Search commands",
       yesterday: "Yesterday",
     },
     status: {
@@ -84,6 +87,9 @@ export const en = {
       upToDate: "Up to Date",
     },
     messages: {
+      commandPaletteDescription: "Search for an EasyTrim action to run.",
+      commandPaletteEmpty: "No commands found.",
+      commandPalettePlaceholder: "Search commands…",
       crash: "The application encountered an unexpected error. Restart it to continue.",
       crashTitle: "Something went wrong",
       dragUnavailable: "Drag and drop is unavailable: {{message}}",
@@ -126,6 +132,14 @@ export const en = {
       windowControls: "Window controls",
     },
     options: {
+      commandSearchTerms: {
+        closeFile: "remove|source",
+        deleteFile: "remove|trash|source",
+        openFile: "import|video|source",
+        openFolder: "directory|import|source",
+        optimizedExport: "encode|render|transcode",
+        saveLosslessCut: "fast cut|lossless|render",
+      },
       layoutDensities: { compact: "Compact", default: "Default" },
     },
   },

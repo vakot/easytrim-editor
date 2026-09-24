@@ -255,6 +255,44 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "Imported Sources" })).toBeInTheDocument();
   });
 
+  it("opens, searches, and executes the shared file commands from the command palette", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    fireEvent.keyDown(window, { code: "KeyK", ctrlKey: true });
+    expect(screen.getByRole("dialog", { name: "Command Palette" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: /Close File/ })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+
+    const search = screen.getByRole("combobox", { name: "Search commands" });
+    await user.type(search, "direc");
+    expect(screen.getByRole("option", { name: "Open Folder" })).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: /Open File/ })).not.toBeInTheDocument();
+
+    await user.clear(search);
+    await user.type(search, "export");
+    expect(screen.getByRole("option", { name: /Save Lossless Cut/ })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: /Optimize & Export/ })).toBeInTheDocument();
+
+    await user.clear(search);
+    await user.type(search, "folder");
+    expect(
+      screen.getByRole("option", { name: "Open Folder" }).querySelector("mark"),
+    ).toHaveTextContent("Folder");
+    await user.keyboard("{Enter}");
+
+    await waitFor(() => expect(mocks.chooseSource).toHaveBeenCalledExactlyOnceWith("folders"));
+    expect(screen.queryByRole("dialog", { name: "Command Palette" })).not.toBeInTheDocument();
+
+    getMenuTrigger("File").focus();
+    await user.keyboard("{Enter}");
+    await user.click(screen.getByRole("menuitem", { name: "Open Folder" }));
+    await waitFor(() => expect(mocks.chooseSource).toHaveBeenCalledTimes(2));
+    expect(mocks.chooseSource).toHaveBeenLastCalledWith("folders");
+  });
+
   it("preserves editor tools across source replacement", async () => {
     mocks.chooseSource
       .mockResolvedValueOnce([selection])
@@ -837,12 +875,14 @@ describe("App", () => {
     expect(mocks.chooseSource).toHaveBeenCalledTimes(1);
   });
 
-  it("opens the folder picker with Ctrl+K", () => {
+  it("toggles the command palette with Ctrl+K", () => {
     render(<App />);
 
     fireEvent.keyDown(window, { key: "k", code: "KeyK", ctrlKey: true });
+    expect(screen.getByRole("dialog", { name: "Command Palette" })).toBeInTheDocument();
 
-    expect(mocks.chooseSource).toHaveBeenCalledWith("folders");
+    fireEvent.keyDown(window, { key: "k", code: "KeyK", ctrlKey: true });
+    expect(screen.queryByRole("dialog", { name: "Command Palette" })).not.toBeInTheDocument();
   });
 
   it("closes the active source with the File menu and Ctrl+Q", async () => {

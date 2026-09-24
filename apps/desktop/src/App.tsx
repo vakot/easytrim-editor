@@ -9,6 +9,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { AppShutdownGuard } from "@/app/components/AppShutdownGuard";
+import { CommandPalette } from "@/app/components/CommandPalette";
 import { DiagnosticsRecoveryDialog } from "@/app/components/DiagnosticsRecoveryDialog";
 import { NativeDialogOverlay } from "@/app/components/NativeDialogOverlay";
 import { AppLayout } from "@/app/layout";
@@ -44,6 +45,7 @@ function EasyTrimEditorApp() {
           <EditorContractsProvider>
             <ResizablePanelContextProvider>
               <AppLayout />
+              <CommandPalette />
 
               <Toaster />
               <ActivityToasts />

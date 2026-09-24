@@ -645,7 +645,7 @@ describe("MenuBarTest", () => {
 
     await user.click(fileButton);
     const openFolderItem = screen.getByRole("menuitem", { name: /Open Folder/ });
-    expect(openFolderItem).toHaveTextContent("CtrlK");
+    expect(openFolderItem).not.toHaveTextContent("CtrlK");
     const closeFileItem = screen.getByRole("menuitem", { name: /Close File/ });
     expect(closeFileItem).toHaveTextContent("CtrlQ");
     const deleteSourceItem = screen.getByRole("menuitem", { name: /Delete File/ });
@@ -654,12 +654,12 @@ describe("MenuBarTest", () => {
     expect(menuState.dispatch).toHaveBeenCalledTimes(2);
   });
 
-  it("keeps Ctrl+K available for opening a folder with an active source", () => {
+  it("reserves Ctrl+K for the global command palette", () => {
     renderMenus({ hasSource: true });
 
     fireEvent.keyDown(window, { code: "KeyK", ctrlKey: true });
 
-    expect(menuState.dispatch).toHaveBeenCalledOnce();
+    expect(menuState.dispatch).not.toHaveBeenCalled();
   });
 
   it("requires confirmation before deleting the source from the File menu", async () => {

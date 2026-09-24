@@ -17,12 +17,6 @@ function VideoPreviewEmpty() {
       separator: undefined,
     },
     {
-      id: "open-folder",
-      label: t("app.actions.openFolder"),
-      keys: ["Ctrl", "K"],
-      separator: undefined,
-    },
-    {
       id: "save-lossless-cut",
       label: t("export.actions.fast"),
       keys: ["Ctrl", "S"],

@@ -39,6 +39,8 @@ export const sk = {
       update: "Aktualizovať",
     },
     labels: {
+      commandPalette: "Paleta príkazov",
+      commandSections: { export: "Export", file: "Súbor", source: "Úpravy / Zdroj" },
       explorer: "Prieskumník",
       activityFeed: "Prehľad aktivít",
       bottomPanel: "Spodný panel",
@@ -51,6 +53,7 @@ export const sk = {
       version: "Verzia {{version}}",
       view: "Zobraziť",
       panelsVisibility: "Viditeľnosť panelov",
+      searchCommands: "Hľadať príkazy",
       yesterday: "Včera",
     },
     status: {
@@ -86,6 +89,9 @@ export const sk = {
       upToDate: "Aktuálna verzia",
     },
     messages: {
+      commandPaletteDescription: "Vyhľadajte akciu EasyTrim, ktorú chcete spustiť.",
+      commandPaletteEmpty: "Nenašli sa žiadne príkazy.",
+      commandPalettePlaceholder: "Hľadať príkazy…",
       crash: "V aplikácii sa vyskytla neočakávaná chyba. Reštartujte ju a pokračujte.",
       crashTitle: "Vyskytla sa chyba",
       dragUnavailable: "Presunutie súboru nie je dostupné: {{message}}",
@@ -127,6 +133,14 @@ export const sk = {
       windowControls: "Ovládanie okna",
     },
     options: {
+      commandSearchTerms: {
+        closeFile: "odstrániť|zdroj",
+        deleteFile: "odstrániť|kôš|zdroj",
+        openFile: "importovať|video|zdroj",
+        openFolder: "adresár|importovať|zdroj",
+        optimizedExport: "kódovať|vykresliť|prekódovať",
+        saveLosslessCut: "rýchly strih|bezstratový|vykresliť",
+      },
       layoutDensities: { compact: "Kompaktné", default: "Predvolené" },
     },
   },

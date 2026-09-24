@@ -37,6 +37,8 @@ export const ru = {
       update: "Обновить",
     },
     labels: {
+      commandPalette: "Палитра команд",
+      commandSections: { export: "Экспорт", file: "Файл", source: "Редактирование / Источник" },
       explorer: "Проводник",
       activityFeed: "Лента активности",
       bottomPanel: "Нижняя панель",
@@ -49,6 +51,7 @@ export const ru = {
       version: "Версия {{version}}",
       view: "Вид",
       panelsVisibility: "Видимость панелей",
+      searchCommands: "Поиск команд",
       yesterday: "Вчера",
     },
     status: {
@@ -84,6 +87,9 @@ export const ru = {
       upToDate: "Обновлений нет",
     },
     messages: {
+      commandPaletteDescription: "Найдите действие EasyTrim, которое нужно выполнить.",
+      commandPaletteEmpty: "Команды не найдены.",
+      commandPalettePlaceholder: "Поиск команд…",
       crash: "В приложении произошла непредвиденная ошибка. Перезапустите его, чтобы продолжить.",
       crashTitle: "Что-то пошло не так",
       dragUnavailable: "Перетаскивание недоступно: {{message}}",
@@ -126,6 +132,14 @@ export const ru = {
       windowControls: "Управление окном",
     },
     options: {
+      commandSearchTerms: {
+        closeFile: "убрать|источник",
+        deleteFile: "удалить|корзина|источник",
+        openFile: "импорт|видео|источник",
+        openFolder: "каталог|импорт|источник",
+        optimizedExport: "кодировать|рендер|перекодировать",
+        saveLosslessCut: "быстрая обрезка|без потерь|рендер",
+      },
       layoutDensities: { compact: "Компактная", default: "Обычная" },
     },
   },

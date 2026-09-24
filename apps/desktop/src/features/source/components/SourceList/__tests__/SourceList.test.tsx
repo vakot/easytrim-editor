@@ -62,7 +62,7 @@ describe("source queue controls", () => {
 
     expect(screen.getByRole("region", { name: "Source explorer" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Open File/ })).toHaveTextContent("CtrlO");
-    expect(screen.getByRole("button", { name: /Open Folder/ })).toHaveTextContent("CtrlK");
+    expect(screen.getByRole("button", { name: "Open Folder" })).not.toHaveTextContent("CtrlK");
     expect(screen.getByText("Drag and drop videos here")).toBeInTheDocument();
     expect(screen.getByText("MP4 · MOV · MKV · WebM · AVI")).toBeInTheDocument();
   });
