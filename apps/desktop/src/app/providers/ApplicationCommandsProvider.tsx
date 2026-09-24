@@ -185,10 +185,26 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
         help: { id: "help", label: t("app.labels.commandSections.help") },
         language: { id: "language", label: t("app.labels.commandSections.language") },
         layout: { id: "layout", label: t("app.labels.commandSections.layout") },
+        layoutActivityFeedView: {
+          id: "layout-activity-feed-view",
+          label: t("app.labels.commandSections.layoutActivityFeedView"),
+        },
+        layoutDensity: {
+          id: "layout-density",
+          label: t("app.labels.commandSections.layoutDensity"),
+        },
+        layoutPanelsVisibility: {
+          id: "layout-panels-visibility",
+          label: t("app.labels.commandSections.layoutPanelsVisibility"),
+        },
         playback: { id: "playback", label: t("app.labels.commandSections.playback") },
         preferences: { id: "preferences", label: t("app.labels.commandSections.preferences") },
         preview: { id: "preview", label: t("app.labels.commandSections.preview") },
         queue: { id: "queue", label: t("app.labels.commandSections.queue") },
+        queueOnFinished: {
+          id: "queue-on-finished",
+          label: t("app.labels.commandSections.queueOnFinished"),
+        },
         source: { id: "source", label: t("app.labels.commandSections.source") },
       }) as const satisfies Record<string, ApplicationCommandSection>,
     [t],
@@ -438,7 +454,7 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
         id: "queue-finish-exit",
         label: t("queue.options.finishActions.exit"),
         searchTerms: commandSearchTerms(`${t("queue.options.finishActions.exit")}|queue|finish`),
-        section: sections.queue,
+        section: sections.queueOnFinished,
         variant: "default",
       },
       {
@@ -450,7 +466,7 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
         id: "queue-finish-nothing",
         label: t("queue.options.finishActions.nothing"),
         searchTerms: commandSearchTerms(`${t("queue.options.finishActions.nothing")}|queue|finish`),
-        section: sections.queue,
+        section: sections.queueOnFinished,
         variant: "default",
       },
       {
@@ -464,7 +480,7 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
         searchTerms: commandSearchTerms(
           `${t("queue.options.finishActions.systemSleep")}|queue|finish`,
         ),
-        section: sections.queue,
+        section: sections.queueOnFinished,
         variant: "default",
       },
       {
@@ -478,7 +494,7 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
         searchTerms: commandSearchTerms(
           `${t("queue.options.finishActions.systemShutdown")}|queue|finish`,
         ),
-        section: sections.queue,
+        section: sections.queueOnFinished,
         variant: "default",
       },
       {
@@ -488,7 +504,7 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
         id: "toggle-left-panel",
         label: t("app.actions.showPanel", { panel: t("app.labels.leftPanel") }),
         searchTerms: commandSearchTerms(`${t("app.labels.leftPanel")}|panel|sidebar`),
-        section: sections.layout,
+        section: sections.layoutPanelsVisibility,
         variant: "default",
       },
       {
@@ -498,7 +514,7 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
         id: "toggle-bottom-panel",
         label: t("app.actions.showPanel", { panel: t("app.labels.bottomPanel") }),
         searchTerms: commandSearchTerms(`${t("app.labels.bottomPanel")}|panel|timeline`),
-        section: sections.layout,
+        section: sections.layoutPanelsVisibility,
         variant: "default",
       },
       ...(["default", "compact"] as const).map((density) => ({
@@ -510,7 +526,7 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
         id: `layout-density-${density}` as ApplicationCommandId,
         label: densityLabels[density],
         searchTerms: commandSearchTerms(`${densityLabels[density]}|layout|density`),
-        section: sections.layout,
+        section: sections.layoutDensity,
         variant: "default" as const,
       })),
       ...(["default", "compact", "branch"] as const).map((view) => ({
@@ -522,7 +538,7 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
         id: `activity-feed-view-${view}` as ApplicationCommandId,
         label: activityLabels[view],
         searchTerms: commandSearchTerms(`${activityLabels[view]}|activity|feed`),
-        section: sections.layout,
+        section: sections.layoutActivityFeedView,
         variant: "default" as const,
       })),
       {

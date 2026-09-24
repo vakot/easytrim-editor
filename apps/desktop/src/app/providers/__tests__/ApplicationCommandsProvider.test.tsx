@@ -180,6 +180,22 @@ describe("ApplicationCommandsProvider", () => {
       "data-section",
       "Appearance / Color",
     );
+    expect(screen.getByRole("button", { name: "queue-finish-exit" })).toHaveAttribute(
+      "data-section",
+      "Queue / On finished",
+    );
+    expect(screen.getByRole("button", { name: "toggle-left-panel" })).toHaveAttribute(
+      "data-section",
+      "Layout / Panels visibility",
+    );
+    expect(screen.getByRole("button", { name: "layout-density-default" })).toHaveAttribute(
+      "data-section",
+      "Layout / Density",
+    );
+    expect(screen.getByRole("button", { name: "activity-feed-view-default" })).toHaveAttribute(
+      "data-section",
+      "Layout / Activity Feed View",
+    );
 
     fireEvent.click(screen.getByRole("button", { name: "delete-file" }));
 

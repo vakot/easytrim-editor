@@ -60,10 +60,14 @@ type ApplicationCommandSectionId =
   | "help"
   | "language"
   | "layout"
+  | "layout-activity-feed-view"
+  | "layout-density"
+  | "layout-panels-visibility"
   | "playback"
   | "preferences"
   | "preview"
   | "queue"
+  | "queue-on-finished"
   | "source";
 type ApplicationCommandSurface = "button" | "hotkey" | "menu" | "palette";
 type ApplicationCommandVariant = "default" | "destructive" | "success";
