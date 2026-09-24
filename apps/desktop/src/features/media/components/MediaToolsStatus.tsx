@@ -18,6 +18,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Separator } from "@/components/ui/separator";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectCapabilities } from "@/app/store/slices/source-slice";
@@ -28,9 +29,7 @@ import type { BinaryCapability, MediaCapabilities } from "@/lib/tauri/media.type
 
 const INSTALL_COMMAND = "winget install --id Gyan.FFmpeg --exact";
 
-const MotionButton = motion.create(Button);
-
-const triggerButtonVariants = cva("gap-0 border-l! px-1", {
+const triggerButtonVariants = cva("shrink-0 gap-0 border-l! px-2 transition-colors", {
   variants: {
     variant: {
       outline: "",
@@ -44,20 +43,23 @@ const triggerButtonVariants = cva("gap-0 border-l! px-1", {
 });
 
 interface MediaToolsStatusProps {
-  presentation?: "compact" | "startup";
+  presentation?: "compact" | "default";
 }
 
-function MediaToolsStatus({ presentation = "compact" }: MediaToolsStatusProps) {
+function MediaToolsStatus({ presentation = "default" }: MediaToolsStatusProps) {
   const capabilities = useAppSelector(selectCapabilities);
   const state = getMediaToolsState(capabilities);
 
+  const [open, setOpen] = useState(false);
+
   return (
-    <Popover>
+    <Popover onOpenChange={setOpen} open={open}>
       <MediaToolsStatusTrigger
         capabilities={capabilities}
         presentation={presentation}
         state={state}
       />
+
       <PopoverContent align="center" className="w-88 max-w-[calc(100vw-1rem)]" sideOffset={4}>
         <MediaToolsStatusContent capabilities={capabilities} state={state} />
       </PopoverContent>
@@ -77,11 +79,12 @@ function MediaToolsStatusTrigger({
   const { t } = useTranslation();
   const { checking, partial, ready, unavailable } = state;
   const shouldReduceMotion = useReducedMotion();
+
   const iconOnly = presentation === "compact" && ready;
 
-  const statusText = state.checking
+  const statusText = checking
     ? t("app.status.checkingTools")
-    : presentation === "startup" && state.ready
+    : presentation === "default" && ready
       ? t("app.status.toolsReady")
       : getStatusText(state, t);
 
@@ -91,20 +94,15 @@ function MediaToolsStatusTrigger({
       ? "destructive"
       : "outline";
 
+  const duration = shouldReduceMotion ? 0 : 0.3;
+
   return (
     <PopoverTrigger asChild>
-      <MotionButton
-        animate={{
-          minWidth: iconOnly ? 24 : 0,
-          borderTopLeftRadius: presentation === "compact" ? 0 : "min(var(--radius-md),10px)",
-          borderBottomLeftRadius: presentation === "compact" ? 0 : "min(var(--radius-md),10px)",
-        }}
-        aria-label={ready && presentation === "compact" ? t("app.status.toolsReady") : statusText}
+      <Button
+        aria-label={iconOnly ? t("app.status.toolsReady") : statusText}
         className={triggerButtonVariants({ variant })}
         data-no-drag="true"
-        initial={false}
         size="xs"
-        transition={{ duration: shouldReduceMotion ? 0 : 0.3, ease: "easeOut" }}
         variant={variant}
       >
         {checking ? (
@@ -116,6 +114,7 @@ function MediaToolsStatusTrigger({
         ) : (
           <CircleX aria-hidden="true" className="size-3.5" />
         )}
+
         <motion.span
           animate={{
             opacity: iconOnly ? 0 : 1,
@@ -125,15 +124,11 @@ function MediaToolsStatusTrigger({
           aria-hidden={iconOnly}
           className="min-w-0 shrink-0 overflow-hidden whitespace-nowrap"
           initial={false}
-          transition={{
-            duration: shouldReduceMotion ? 0 : 0.3,
-            ease: "easeOut",
-            delay: presentation === "startup" && ready && !shouldReduceMotion ? 0.1 : 0,
-          }}
+          transition={{ duration, ease: "easeOut" }}
         >
           {statusText}
         </motion.span>
-      </MotionButton>
+      </Button>
     </PopoverTrigger>
   );
 }
@@ -218,11 +213,13 @@ function MediaToolsStatusContent({
         </section>
       ) : null}
 
-      <div className="flex items-center justify-between gap-2 border-t pt-3">
+      <Separator />
+
+      <div className="flex items-center justify-between gap-2">
         {unavailable ? (
           <Button
             onClick={() => void openExternalUrl("https://ffmpeg.org/download.html")}
-            size="sm"
+            size="xs"
             variant="link"
           >
             {t("app.actions.ffmpegDownloads")}
@@ -239,7 +236,7 @@ function MediaToolsStatusContent({
               checkMediaCapabilitiesRequested({ type: "button", id: "media-tools.recheck" }),
             );
           }}
-          size="sm"
+          size="xs"
           variant="outline"
         >
           <RotateCw aria-hidden="true" className={checking ? "animate-spin" : undefined} />
@@ -338,7 +335,7 @@ function getMediaToolsState(capabilities: ReturnType<typeof selectCapabilities>)
 
 function getStatusText(state: MediaToolsState, t: TFunction): string {
   if (state.checking) return t("app.status.checking");
-  if (state.ready) return t("source.status.ready");
+  if (state.ready) return t("app.status.toolsReady");
   if (state.partial) return t("app.status.toolsIssue");
   if (state.failed) return t("app.status.toolsFailed");
   return t("app.status.toolsUnavailable");

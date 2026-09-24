@@ -16,6 +16,7 @@ import { useCommandPalette } from "@/app/contexts/command-palette-context";
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectCapabilities } from "@/app/store/slices/source-slice";
 import { MediaToolsStatus } from "@/features/media";
+import { cn } from "@/lib/class-names.utils";
 
 const MotionButton = motion.create(Button);
 
@@ -36,61 +37,55 @@ function AppCommandCenter() {
   }, [capabilities.status, shouldReduceMotion, startupComplete]);
 
   return (
-    <ButtonGroup>
-      <AppCommandCenterTrigger expanded={startupComplete} />
-      <MediaToolsStatus presentation={startupComplete ? "compact" : "startup"} />
+    <ButtonGroup className="w-full max-w-lg justify-center">
+      {startupComplete && <AppCommandCenterTrigger />}
+      <MediaToolsStatus presentation={startupComplete ? "compact" : "default"} />
     </ButtonGroup>
   );
 }
 
-function AppCommandCenterTrigger({ expanded }: { expanded: boolean }) {
+function AppCommandCenterTrigger() {
   const { t } = useTranslation();
   const { openCommandPalette } = useCommandPalette();
   const shouldReduceMotion = useReducedMotion();
 
-  const duration = shouldReduceMotion ? 0 : 0.3;
-
   return (
     <MotionButton
       animate={{
-        width: expanded ? "auto" : 0,
-        paddingLeft: expanded ? 8 : 0,
-        paddingRight: expanded ? 8 : 0,
-        borderWidth: expanded ? 1 : 0,
+        flexGrow: 1,
+        opacity: 1,
+        borderWidth: 1,
       }}
-      aria-hidden={!expanded}
       aria-label={t("app.messages.commandPalettePlaceholder")}
-      className="min-w-0 shrink-0 overflow-hidden whitespace-nowrap text-muted-foreground"
+      className={cn(
+        "min-w-0 basis-0 overflow-hidden px-0 whitespace-nowrap text-muted-foreground",
+        "transition-colors",
+      )}
       data-no-drag="true"
-      initial={false}
+      initial={
+        shouldReduceMotion
+          ? false
+          : {
+              flexGrow: 0,
+              opacity: 0,
+              borderWidth: 0,
+            }
+      }
       onClick={openCommandPalette}
       size="xs"
-      tabIndex={expanded ? 0 : -1}
       transition={{
-        duration,
+        duration: shouldReduceMotion ? 0 : 0.3,
         ease: "easeOut",
-        delay: expanded && !shouldReduceMotion ? 0.1 : 0,
       }}
       variant="outline"
     >
-      <motion.span
-        animate={{
-          opacity: expanded ? 1 : 0,
-          x: expanded ? 0 : 6,
-        }}
-        className="flex shrink-0 items-center gap-1.5"
-        initial={false}
-        transition={{
-          duration: shouldReduceMotion ? 0 : 0.18,
-          ease: "easeOut",
-          delay: expanded && !shouldReduceMotion ? 0.16 : 0,
-        }}
-      >
-        <Search aria-hidden="true" className="size-3.5" />
+      <span className="flex min-w-max flex-1 items-center justify-between gap-3 px-2">
+        <span className="flex items-center gap-1.5">
+          <Search aria-hidden="true" className="size-3.5" />
+          <span>{t("app.messages.commandPalettePlaceholder")}</span>
+        </span>
 
-        <span>{t("app.messages.commandPalettePlaceholder")}</span>
-
-        <span aria-label={getShortcutAriaValue(COMMAND_PALETTE_SHORTCUT)} className="ml-0.5">
+        <span aria-label={getShortcutAriaValue(COMMAND_PALETTE_SHORTCUT)}>
           <KbdGroup>
             {getShortcutDisplayKeys(COMMAND_PALETTE_SHORTCUT).map((key) => (
               <Kbd className="h-4" key={key}>
@@ -99,7 +94,7 @@ function AppCommandCenterTrigger({ expanded }: { expanded: boolean }) {
             ))}
           </KbdGroup>
         </span>
-      </motion.span>
+      </span>
     </MotionButton>
   );
 }

@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Provider } from "react-redux";
 
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 import { AppCommandCenter } from "@/app/components/AppCommandCenter";
 import { CommandPaletteProvider } from "@/app/providers/CommandPaletteProvider";
@@ -93,14 +94,12 @@ function AppCommandCenterStory({ state }: AppCommandCenterStoryArgs) {
   return (
     <Provider store={store}>
       <CommandPaletteProvider>
-        <div className="grid justify-items-start gap-3">
-          <div className="flex h-10 items-center rounded-lg border bg-background px-1">
-            <AppCommandCenter key={animationRun} />
-          </div>
+        <Card className="w-xl items-center">
+          <AppCommandCenter key={animationRun} />
           <Button onClick={() => setAnimationRun((run) => run + 1)} size="sm" variant="outline">
             Replay startup animation
           </Button>
-        </div>
+        </Card>
       </CommandPaletteProvider>
     </Provider>
   );
