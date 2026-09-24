@@ -526,6 +526,8 @@ export const sk = {
     },
     messages: {
       emptyChangelog: "Zatiaľ nie sú dostupné žiadne vydané zmeny.",
+      emptyChangelogDescription:
+        "Vydané aktualizácie sa tu zobrazia, keď budú súčasťou nainštalovanej verzie.",
       historyDescription: "Vydané zmeny zahrnuté v tejto verzii EasyTrim.",
       whatsNewDescription: "Tu sú zmeny od vášho posledného otvorenia EasyTrim.",
     },

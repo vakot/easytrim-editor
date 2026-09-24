@@ -526,6 +526,8 @@ export const ru = {
     },
     messages: {
       emptyChangelog: "Выпущенных изменений пока нет.",
+      emptyChangelogDescription:
+        "Выпущенные обновления появятся здесь, когда войдут в установленную версию.",
       historyDescription: "Выпущенные изменения, включённые в эту версию EasyTrim.",
       whatsNewDescription: "Изменения с момента последнего открытия EasyTrim.",
     },

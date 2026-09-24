@@ -524,6 +524,8 @@ export const en = {
     },
     messages: {
       emptyChangelog: "No released changes are available yet.",
+      emptyChangelogDescription:
+        "Released updates will appear here when they are included in your installed version.",
       historyDescription: "Released changes included in this version of EasyTrim.",
       whatsNewDescription: "Here’s what changed since you last opened EasyTrim.",
     },
