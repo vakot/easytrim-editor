@@ -23,18 +23,6 @@ function VideoPreviewEmpty() {
       separator: undefined,
     },
     {
-      id: "save-lossless-cut",
-      label: t("export.actions.fast"),
-      keys: ["Ctrl", "S"],
-      separator: undefined,
-    },
-    {
-      id: "export-optimized",
-      label: t("export.actions.optimized"),
-      keys: ["Ctrl", "E"],
-      separator: undefined,
-    },
-    {
       id: "play-pause",
       label: t("preview.labels.shortcutPlayPause"),
       keys: ["Space"],
@@ -51,6 +39,12 @@ function VideoPreviewEmpty() {
       label: t("preview.labels.shortcutMarkInOut"),
       keys: ["I", "O"],
       separator: "/",
+    },
+    {
+      id: "command-palette",
+      label: t("app.labels.commandPalette"),
+      keys: ["Ctrl", "H"],
+      separator: undefined,
     },
   ] as const;
 

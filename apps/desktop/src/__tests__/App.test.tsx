@@ -345,22 +345,21 @@ describe("App", () => {
 
     expect(screen.queryByText("Start a new clip")).not.toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Source explorer" })).toBeInTheDocument();
-    expect(screen.getByRole("list", { name: "Keyboard shortcuts" })).toHaveTextContent("Open File");
-    expect(screen.getByRole("list", { name: "Keyboard shortcuts" })).toHaveTextContent(
-      "Save Lossless Cut",
-    );
-    expect(screen.getByRole("list", { name: "Keyboard shortcuts" })).toHaveTextContent(
-      "Optimize & Export",
-    );
-    expect(screen.getByRole("list", { name: "Keyboard shortcuts" })).toHaveTextContent(
+    const shortcutList = screen.getByRole("list", { name: "Keyboard shortcuts" });
+    expect(within(shortcutList).getAllByRole("listitem")).toHaveLength(6);
+    for (const label of [
+      "Open File",
+      "Open Folder",
       "Play / Pause",
-    );
-    expect(screen.getByRole("list", { name: "Keyboard shortcuts" })).toHaveTextContent(
       "Previous / Next Frame",
-    );
-    expect(screen.getByRole("list", { name: "Keyboard shortcuts" })).toHaveTextContent(
       "Mark In / Mark Out",
-    );
+      "Command Palette",
+    ]) {
+      expect(within(shortcutList).getByText(label)).toBeInTheDocument();
+    }
+    expect(within(shortcutList).getByLabelText("Ctrl H")).toBeInTheDocument();
+    expect(within(shortcutList).queryByText("Save Lossless Cut")).not.toBeInTheDocument();
+    expect(within(shortcutList).queryByText("Optimize & Export")).not.toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "Support on Ko-fi.com" })).not.toHaveLength(0);
     expect(
       screen
