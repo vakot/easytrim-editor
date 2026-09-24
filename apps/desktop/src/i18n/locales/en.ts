@@ -52,6 +52,8 @@ export const en = {
         layoutPanelsVisibility: "Layout / Panels visibility",
         playback: "Playback",
         preferences: "Preferences",
+        preferencesAudio: "Preferences / Audio",
+        preferencesPlayback: "Preferences / Playback",
         preview: "Preview",
         queue: "Queue",
         queueOnFinished: "Queue / On finished",

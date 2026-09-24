@@ -54,6 +54,8 @@ export const sk = {
         layoutPanelsVisibility: "Rozloženie / Viditeľnosť panelov",
         playback: "Prehrávanie",
         preferences: "Nastavenia",
+        preferencesAudio: "Nastavenia / Zvuk",
+        preferencesPlayback: "Nastavenia / Prehrávanie",
         preview: "Náhľad",
         queue: "Front",
         queueOnFinished: "Front / Po dokončení",

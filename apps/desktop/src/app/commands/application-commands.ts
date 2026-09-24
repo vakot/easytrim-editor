@@ -68,6 +68,8 @@ type ApplicationCommandSectionId =
   | "preview"
   | "queue"
   | "queue-on-finished"
+  | "preferences-audio"
+  | "preferences-playback"
   | "source";
 type ApplicationCommandSurface = "button" | "hotkey" | "menu" | "palette";
 type ApplicationCommandVariant = "default" | "destructive" | "success";

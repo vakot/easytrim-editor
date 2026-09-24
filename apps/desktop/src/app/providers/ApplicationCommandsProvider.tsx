@@ -199,6 +199,14 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
         },
         playback: { id: "playback", label: t("app.labels.commandSections.playback") },
         preferences: { id: "preferences", label: t("app.labels.commandSections.preferences") },
+        preferencesAudio: {
+          id: "preferences-audio",
+          label: t("app.labels.commandSections.preferencesAudio"),
+        },
+        preferencesPlayback: {
+          id: "preferences-playback",
+          label: t("app.labels.commandSections.preferencesPlayback"),
+        },
         preview: { id: "preview", label: t("app.labels.commandSections.preview") },
         queue: { id: "queue", label: t("app.labels.commandSections.queue") },
         queueOnFinished: {
@@ -403,7 +411,10 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
         id: `preference-${id}` as ApplicationCommandId,
         label: preferenceLabels[key],
         searchTerms: commandSearchTerms(`${preferenceLabels[key]}|preference|setting`),
-        section: key === "mergeAudioEnabledDefault" ? sections.audio : sections.playback,
+        section:
+          key === "mergeAudioEnabledDefault"
+            ? sections.preferencesAudio
+            : sections.preferencesPlayback,
         variant: "default" as const,
       })),
       {

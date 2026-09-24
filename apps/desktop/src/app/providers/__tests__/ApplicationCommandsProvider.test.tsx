@@ -200,6 +200,18 @@ describe("ApplicationCommandsProvider", () => {
       "data-section",
       "Layout / Activity Feed View",
     );
+    expect(screen.getByRole("button", { name: "preference-auto-start-queue" })).toHaveAttribute(
+      "data-section",
+      "Preferences / Playback",
+    );
+    expect(screen.getByRole("button", { name: "preference-merge-audio" })).toHaveAttribute(
+      "data-section",
+      "Preferences / Audio",
+    );
+    expect(screen.getByRole("button", { name: "reset-preferences" })).toHaveAttribute(
+      "data-section",
+      "Preferences",
+    );
 
     fireEvent.click(screen.getByRole("button", { name: "delete-file" }));
 

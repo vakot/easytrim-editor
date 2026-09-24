@@ -52,6 +52,8 @@ export const ru = {
         layoutPanelsVisibility: "Макет / Видимость панелей",
         playback: "Воспроизведение",
         preferences: "Параметры",
+        preferencesAudio: "Параметры / Аудио",
+        preferencesPlayback: "Параметры / Воспроизведение",
         preview: "Предпросмотр",
         queue: "Очередь",
         queueOnFinished: "Очередь / После завершения",
