@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 
 import { Kbd, KbdGroup, KbdSeparator } from "@/components/ui/kbd";
 
+import { COMMAND_PALETTE_SHORTCUT } from "@/app/commands/core/application-command.shortcuts";
+import { getShortcutDisplayKeys } from "@/app/commands/core/application-command.utils";
 import { SupportLink } from "@/app/components/SupportLink";
 import { cn } from "@/lib/class-names.utils";
 
@@ -21,7 +23,7 @@ function VideoPreviewEmpty() {
   const command: Shortcut = {
     id: "command-palette",
     label: t("app.labels.commandPalette"),
-    keys: ["Ctrl", "H"],
+    keys: [...getShortcutDisplayKeys(COMMAND_PALETTE_SHORTCUT)],
     separator: undefined,
   };
 

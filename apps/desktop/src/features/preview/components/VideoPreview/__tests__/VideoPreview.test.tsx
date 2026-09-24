@@ -6,6 +6,8 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { ResizablePanelContextProvider } from "@/components/ui/resizable";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
+import { COMMAND_PALETTE_SHORTCUT } from "@/app/commands/core/application-command.shortcuts";
+import { getShortcutDisplayKeys } from "@/app/commands/core/application-command.utils";
 import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";
 import { sourceSelected } from "@/app/store/actions/source-actions";
 import {
@@ -167,6 +169,9 @@ describe("VideoPreview", () => {
     expect(screen.getAllByRole("listitem")).toHaveLength(6);
     expect(screen.getByText("Open File")).toBeInTheDocument();
     expect(screen.getByText("Open Folder")).toBeInTheDocument();
+    expect(
+      screen.getByLabelText(getShortcutDisplayKeys(COMMAND_PALETTE_SHORTCUT).join(" + ")),
+    ).toBeInTheDocument();
     expect(screen.getByText("Support on Ko-fi.com")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /resize crop/i })).not.toBeInTheDocument();
   });
