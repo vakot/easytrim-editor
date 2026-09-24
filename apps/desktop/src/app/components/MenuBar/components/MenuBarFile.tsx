@@ -1,20 +1,20 @@
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
-import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import {
-  MenubarCheckboxItem,
   MenubarContent,
   MenubarGroup,
   MenubarItem,
   MenubarMenu,
   MenubarSeparator,
-  MenubarShortcut,
   MenubarTrigger,
 } from "@/components/ui/menubar";
 
-import { getShortcutAriaValue, getShortcutDisplayKeys } from "@/app/commands/application-commands";
-import { useApplicationCommand, useApplicationCommands } from "@/app/hooks/useApplicationCommands";
+import {
+  ApplicationCommandLabel,
+  ApplicationCommandMenuItem,
+  ApplicationCommandShortcut,
+} from "@/app/components/ApplicationCommandMenuItem";
 
 function MenuBarFile() {
   const { t } = useTranslation();
@@ -28,69 +28,51 @@ function MenuBarFile() {
       </MenubarTrigger>
       <MenubarContent>
         <MenubarGroup>
-          <ApplicationCommandMenuItem commandId="open-file" />
-          <ApplicationCommandMenuItem commandId="open-folder" />
-          <ApplicationCommandMenuItem commandId="close-file" />
+          <ApplicationCommandMenuItem asChild commandId="open-file">
+            <MenubarItem>
+              <ApplicationCommandLabel />
+              <ApplicationCommandShortcut />
+            </MenubarItem>
+          </ApplicationCommandMenuItem>
+          <ApplicationCommandMenuItem asChild commandId="open-folder">
+            <MenubarItem>
+              <ApplicationCommandLabel />
+              <ApplicationCommandShortcut />
+            </MenubarItem>
+          </ApplicationCommandMenuItem>
+          <ApplicationCommandMenuItem asChild commandId="close-file">
+            <MenubarItem>
+              <ApplicationCommandLabel />
+              <ApplicationCommandShortcut />
+            </MenubarItem>
+          </ApplicationCommandMenuItem>
         </MenubarGroup>
         <MenubarSeparator />
         <MenubarGroup>
-          <ApplicationCommandMenuItem commandId="save-lossless-cut" />
-          <ApplicationCommandMenuItem commandId="optimized-export" />
+          <ApplicationCommandMenuItem asChild commandId="save-lossless-cut">
+            <MenubarItem>
+              <ApplicationCommandLabel />
+              <ApplicationCommandShortcut />
+            </MenubarItem>
+          </ApplicationCommandMenuItem>
+          <ApplicationCommandMenuItem asChild commandId="optimized-export">
+            <MenubarItem>
+              <ApplicationCommandLabel />
+              <ApplicationCommandShortcut />
+            </MenubarItem>
+          </ApplicationCommandMenuItem>
         </MenubarGroup>
         <MenubarSeparator />
         <MenubarGroup>
-          <ApplicationCommandMenuItem commandId="delete-file" />
+          <ApplicationCommandMenuItem asChild commandId="delete-file">
+            <MenubarItem>
+              <ApplicationCommandLabel />
+              <ApplicationCommandShortcut />
+            </MenubarItem>
+          </ApplicationCommandMenuItem>
         </MenubarGroup>
       </MenubarContent>
     </MenubarMenu>
-  );
-}
-
-function ApplicationCommandMenuItem({
-  commandId,
-}: {
-  commandId: Parameters<typeof useApplicationCommand>[0];
-}) {
-  const command = useApplicationCommand(commandId);
-  const { executeCommand } = useApplicationCommands();
-  const content = (
-    <>
-      {command.label}
-      {command.shortcut ? (
-        <MenubarShortcut aria-label={getShortcutAriaValue(command.shortcut)}>
-          <KbdGroup>
-            {getShortcutDisplayKeys(command.shortcut).map((key) => (
-              <Kbd key={key}>{key}</Kbd>
-            ))}
-          </KbdGroup>
-        </MenubarShortcut>
-      ) : null}
-    </>
-  );
-
-  if (command.checked !== undefined) {
-    return (
-      <MenubarCheckboxItem
-        aria-busy={command.pending}
-        checked={command.checked}
-        disabled={!command.enabled || command.pending}
-        onSelect={() => void executeCommand(command.id, "menu")}
-        variant={command.variant}
-      >
-        {content}
-      </MenubarCheckboxItem>
-    );
-  }
-
-  return (
-    <MenubarItem
-      aria-busy={command.pending}
-      disabled={!command.enabled || command.pending}
-      onSelect={() => void executeCommand(command.id, "menu")}
-      variant={command.variant}
-    >
-      {content}
-    </MenubarItem>
   );
 }
 
