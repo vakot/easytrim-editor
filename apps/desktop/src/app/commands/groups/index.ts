@@ -27,4 +27,4 @@ type ApplicationCommandGroups = ReturnType<typeof useApplicationCommandGroups>;
 type ApplicationCommandId = ApplicationCommandGroups[number]["commands"][number]["id"];
 
 export { useApplicationCommandGroups };
-export type { ApplicationCommandId, ApplicationCommandGroups };
+export type { ApplicationCommandGroups, ApplicationCommandId };

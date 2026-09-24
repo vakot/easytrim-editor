@@ -9,14 +9,14 @@ import {
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
+import { commandOrigin } from "@/app/commands/application-command.types";
 import {
   commandSearchTerms,
   defineApplicationCommandGroup,
 } from "@/app/commands/application-command.utils";
-import { commandOrigin } from "@/app/commands/application-command.types";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
-import { selectActiveEditingInstance } from "@/app/store/slices/editing-instances-slice";
 import { selectCropApplied, selectTransformApplied } from "@/app/store/slices/crop-slice";
+import { selectActiveEditingInstance } from "@/app/store/slices/editing-instances-slice";
 import {
   selectIsChoosingSource,
   selectIsNativeDialogOpen,
@@ -52,10 +52,7 @@ function useFileCommandGroup() {
   const canChooseSource = !isChoosingSource && !isNativeDialogOpen;
   const canUseSource = hasSource && canChooseSource;
   const canSave = canExport && !cropApplied && !transformApplied;
-  const file = useMemo(
-    () => ({ id: "file", label: t("app.labels.commandSections.file") }),
-    [t],
-  );
+  const file = useMemo(() => ({ id: "file", label: t("app.labels.commandSections.file") }), [t]);
   const exportSection = useMemo(
     () => ({ id: "export", label: t("app.labels.commandSections.export") }),
     [t],

@@ -40,11 +40,18 @@ function useQueueCommandGroup() {
   const queueFinishAction = useAppSelector(selectQueueFinishAction);
   const availableQueueFinishActions = useAppSelector(selectAvailableQueueFinishActions);
   const sourceSection = useMemo(
-    () => ({ id: "queue-on-finished-source", label: t("app.labels.commandSections.queueOnFinishedSource") }),
+    () => ({
+      id: "queue-on-finished-source",
+      label: t("app.labels.commandSections.queueOnFinishedSource"),
+    }),
     [t],
   );
+
   const applicationSection = useMemo(
-    () => ({ id: "queue-on-finished-application", label: t("app.labels.commandSections.queueOnFinishedApplication") }),
+    () => ({
+      id: "queue-on-finished-application",
+      label: t("app.labels.commandSections.queueOnFinishedApplication"),
+    }),
     [t],
   );
 
@@ -70,12 +77,32 @@ function useQueueCommandGroup() {
         },
         ...(
           [
-            ["exit", "queue-finish-exit", <LogOut aria-hidden="true" />],
-            ["nothing", "queue-finish-nothing", <CircleStop aria-hidden="true" />],
-            ["systemSleep", "queue-finish-system-sleep", <Moon aria-hidden="true" />],
-            ["systemShutdown", "queue-finish-system-shutdown", <Power aria-hidden="true" />],
-          ] as const satisfies readonly (readonly [QueueFinishAction, string, React.ReactNode])[]
-        ).map(([action, id, icon]) => ({
+            {
+              action: "exit",
+              id: "queue-finish-exit",
+              icon: <LogOut aria-hidden="true" />,
+              label: t("queue.options.finishActions.exit"),
+            },
+            {
+              action: "nothing",
+              id: "queue-finish-nothing",
+              icon: <CircleStop aria-hidden="true" />,
+              label: t("queue.options.finishActions.nothing"),
+            },
+            {
+              action: "systemSleep",
+              id: "queue-finish-system-sleep",
+              icon: <Moon aria-hidden="true" />,
+              label: t("queue.options.finishActions.systemSleep"),
+            },
+            {
+              action: "systemShutdown",
+              id: "queue-finish-system-shutdown",
+              icon: <Power aria-hidden="true" />,
+              label: t("queue.options.finishActions.systemShutdown"),
+            },
+          ] as const
+        ).map(({ action, icon, id, label }) => ({
           checked: queueFinishAction === action,
           enabled: availableQueueFinishActions.includes(action),
           icon,
@@ -83,12 +110,8 @@ function useQueueCommandGroup() {
             dispatch(queueFinishActionChanged(action));
           },
           id,
-          label: t(
-            `queue.options.finishActions.${action === "systemSleep" ? "systemSleep" : action === "systemShutdown" ? "systemShutdown" : action}`,
-          ),
-          searchTerms: commandSearchTerms(
-            `${t(`queue.options.finishActions.${action === "systemSleep" ? "systemSleep" : action === "systemShutdown" ? "systemShutdown" : action}`)}|queue|finish`,
-          ),
+          label,
+          searchTerms: commandSearchTerms(`${label}|queue|finish`),
           section: applicationSection,
           variant: "default" as const,
         })),

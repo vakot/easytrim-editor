@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 
-import {
-  type ApplicationCommand,
-  type ApplicationCommandDefinition,
-} from "../application-command.types";
 import { COMMAND_PALETTE_SHORTCUT } from "../application-command.shortcuts";
+import type {
+  ApplicationCommand,
+  ApplicationCommandDefinition,
+} from "../application-command.types";
 import {
   assertUniqueCommandIds,
   filterApplicationCommands,

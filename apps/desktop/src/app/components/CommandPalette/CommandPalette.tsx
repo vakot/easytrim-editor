@@ -15,19 +15,19 @@ import {
 import { Highlight } from "@/components/ui/highlight";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 
+import { COMMAND_PALETTE_SHORTCUT } from "@/app/commands/application-command.shortcuts";
 import type {
   ApplicationCommand,
   ApplicationCommandMatch,
   ApplicationCommandVariant,
 } from "@/app/commands/application-command.types";
-import { COMMAND_PALETTE_SHORTCUT } from "@/app/commands/application-command.shortcuts";
-import type { ApplicationCommandId } from "@/app/commands/groups";
 import {
   filterApplicationCommands,
   getShortcutAriaValue,
   getShortcutDisplayKeys,
   isShortcutEvent,
 } from "@/app/commands/application-command.utils";
+import type { ApplicationCommandId } from "@/app/commands/groups";
 import { ApplicationCommandIcon } from "@/app/components/ApplicationCommandMenuItem";
 import { useApplicationCommands } from "@/app/hooks/useApplicationCommands";
 import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";

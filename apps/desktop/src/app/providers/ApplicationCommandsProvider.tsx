@@ -10,7 +10,7 @@ import {
   commandsById,
   materializeApplicationCommands,
 } from "@/app/commands/application-command.utils";
-import { useApplicationCommandGroups, type ApplicationCommandId } from "@/app/commands/groups";
+import { type ApplicationCommandId, useApplicationCommandGroups } from "@/app/commands/groups";
 import { ApplicationCommandsContext } from "@/app/contexts/application-commands-context";
 import { diagnostics } from "@/lib/diagnostics";
 
@@ -25,6 +25,7 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
       ),
     [groups],
   );
+
   const definitionsById = useMemo(() => commandsById(definitions), [definitions]);
 
   const executeCommand = useCallback(
@@ -55,6 +56,7 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
     () => materializeApplicationCommands(definitions, pendingIds),
     [definitions, pendingIds],
   );
+
   const runtime = useMemo(
     () => ({
       commands,

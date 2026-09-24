@@ -116,8 +116,8 @@ function getShortcutPlatform(): ShortcutPlatform {
 
 export {
   assertUniqueCommandIds,
-  commandSearchTerms,
   commandsById,
+  commandSearchTerms,
   defineApplicationCommandGroup,
   filterApplicationCommands,
   getShortcutAriaValue,

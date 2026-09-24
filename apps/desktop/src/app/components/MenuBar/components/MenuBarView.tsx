@@ -20,14 +20,14 @@ import {
 } from "@/components/ui/menubar";
 
 import {
+  getPrimaryColorCommandId,
+  getThemeCommandId,
+} from "@/app/commands/groups/appearance.commands";
+import {
   ApplicationCommandIcon,
   ApplicationCommandLabel,
   ApplicationCommandMenuItem,
 } from "@/app/components/ApplicationCommandMenuItem";
-import {
-  getPrimaryColorCommandId,
-  getThemeCommandId,
-} from "@/app/commands/groups/appearance.commands";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
   customPrimaryColorChanged,

@@ -47,6 +47,7 @@ function usePreferencesCommandGroup() {
     }),
     [t],
   );
+
   const languageLabels = useMemo(
     () => ({
       en: t("settings.options.languages.english"),
@@ -55,18 +56,25 @@ function usePreferencesCommandGroup() {
     }),
     [t],
   );
+
   const playbackSection = useMemo(
-    () => ({ id: "preferences-playback", label: t("app.labels.commandSections.preferencesPlayback") }),
+    () => ({
+      id: "preferences-playback",
+      label: t("app.labels.commandSections.preferencesPlayback"),
+    }),
     [t],
   );
+
   const audioSection = useMemo(
     () => ({ id: "preferences-audio", label: t("app.labels.commandSections.preferencesAudio") }),
     [t],
   );
+
   const preferenceSection = useMemo(
     () => ({ id: "preferences", label: t("app.labels.commandSections.preferences") }),
     [t],
   );
+
   const languageSection = useMemo(
     () => ({ id: "language", label: t("app.labels.commandSections.language") }),
     [t],

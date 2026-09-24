@@ -16,12 +16,12 @@ import {
 } from "@/components/ui/menubar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
+import { getQueueFinishCommandId } from "@/app/commands/groups/queue.commands";
 import {
   ApplicationCommandIcon,
   ApplicationCommandLabel,
   ApplicationCommandMenuItem,
 } from "@/app/components/ApplicationCommandMenuItem";
-import { getQueueFinishCommandId } from "@/app/commands/groups/queue.commands";
 import { useApplicationCommand } from "@/app/hooks/useApplicationCommands";
 import { useAppSelector } from "@/app/store/redux-hooks";
 import {

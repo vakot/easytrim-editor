@@ -33,22 +33,23 @@ function useHelpCommandGroup() {
     isInstalling,
     status: updateStatus,
   } = useAppUpdates();
-  const section = useMemo(
-    () => ({ id: "help", label: t("app.labels.commandSections.help") }),
-    [t],
+
+  const section = useMemo(() => ({ id: "help", label: t("app.labels.commandSections.help") }), [t]);
+  const updateIcon = useMemo(
+    () =>
+      updateStatus === "checking" || isInstalling ? (
+        <LoaderCircle aria-hidden="true" className="animate-spin" />
+      ) : availableVersion ? (
+        <Download aria-hidden="true" />
+      ) : updateStatus === "up-to-date" ? (
+        <CheckCircle2 aria-hidden="true" />
+      ) : updateStatus === "error" ? (
+        <CircleAlert aria-hidden="true" />
+      ) : (
+        <RefreshCw aria-hidden="true" />
+      ),
+    [availableVersion, isInstalling, updateStatus],
   );
-  const updateIcon =
-    updateStatus === "checking" || isInstalling ? (
-      <LoaderCircle aria-hidden="true" className="animate-spin" />
-    ) : availableVersion ? (
-      <Download aria-hidden="true" />
-    ) : updateStatus === "up-to-date" ? (
-      <CheckCircle2 aria-hidden="true" />
-    ) : updateStatus === "error" ? (
-      <CircleAlert aria-hidden="true" />
-    ) : (
-      <RefreshCw aria-hidden="true" />
-    );
 
   return useMemo(
     () =>

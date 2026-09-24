@@ -2,21 +2,22 @@ import {
   LayoutTemplate,
   List,
   ListTree,
-  PanelsLeftBottom,
   PanelBottom,
   PanelLeft,
+  PanelsLeftBottom,
   RotateCcw,
   ScanText,
 } from "lucide-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
+import { usePanelCommand } from "@/components/ui/resizable";
+
 import {
   commandSearchTerms,
   defineApplicationCommandGroup,
 } from "@/app/commands/application-command.utils";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
-import { usePanelCommand } from "@/components/ui/resizable";
 import {
   activityFeedViewChanged,
   layoutDensityChanged,
@@ -33,21 +34,31 @@ function useLayoutCommandGroup() {
   const bottomPanel = usePanelCommand("editor-stage-timeline");
   const layoutPanels = usePanelCommand(["workspace-sidebar", "editor-stage-timeline"]);
   const panelsSection = useMemo(
-    () => ({ id: "layout-panels-visibility", label: t("app.labels.commandSections.layoutPanelsVisibility") }),
+    () => ({
+      id: "layout-panels-visibility",
+      label: t("app.labels.commandSections.layoutPanelsVisibility"),
+    }),
     [t],
   );
+
   const densitySection = useMemo(
     () => ({ id: "layout-density", label: t("app.labels.commandSections.layoutDensity") }),
     [t],
   );
+
   const activitySection = useMemo(
-    () => ({ id: "layout-activity-feed-view", label: t("app.labels.commandSections.layoutActivityFeedView") }),
+    () => ({
+      id: "layout-activity-feed-view",
+      label: t("app.labels.commandSections.layoutActivityFeedView"),
+    }),
     [t],
   );
+
   const layoutSection = useMemo(
     () => ({ id: "layout", label: t("app.labels.commandSections.layout") }),
     [t],
   );
+
   const densityLabels = useMemo(
     () => ({
       compact: t("app.options.layoutDensities.compact"),
@@ -55,6 +66,7 @@ function useLayoutCommandGroup() {
     }),
     [t],
   );
+
   const activityLabels = useMemo(
     () => ({
       branch: t("settings.options.activityFeedViews.branch"),

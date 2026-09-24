@@ -32,6 +32,7 @@ function usePreviewCommandGroup() {
     () => ({ id: "preview-transform", label: t("app.labels.commandSections.previewTransform") }),
     [t],
   );
+
   const rotationLabels = useMemo(
     () => ({
       rotate180: t("preview.actions.transform.rotate180"),
@@ -67,6 +68,7 @@ function usePreviewCommandGroup() {
           run() {
             const nextRotation = ((rotationDegreesRef.current + delta + 360) % 360) as
               0 | 90 | 180 | 270;
+
             dispatch(rotationChanged(nextRotation));
             dispatch(commitActiveEditingInstanceDraft());
           },

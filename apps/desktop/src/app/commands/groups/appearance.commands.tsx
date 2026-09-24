@@ -2,6 +2,8 @@ import { Monitor, Moon, Sun } from "lucide-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
+import { ColorSample } from "@/components/ui/color";
+
 import {
   commandSearchTerms,
   defineApplicationCommandGroup,
@@ -12,7 +14,6 @@ import {
   selectThemePreference,
   themePreferenceChanged,
 } from "@/app/store/slices/preferences-slice";
-import { ColorSample } from "@/components/ui/color";
 import { PRIMARY_COLORS, resolvePrimaryColor } from "@/app/theme/theme";
 
 function getThemeCommandId(theme: "system" | "light" | "dark") {
@@ -36,6 +37,7 @@ function useAppearanceCommandGroup() {
     }),
     [t],
   );
+
   const colorLabels = useMemo(
     () => ({
       amber: t("settings.options.colors.amber"),
@@ -46,10 +48,12 @@ function useAppearanceCommandGroup() {
     }),
     [t],
   );
+
   const themeSection = useMemo(
     () => ({ id: "appearance-theme", label: t("app.labels.commandSections.appearanceTheme") }),
     [t],
   );
+
   const colorSection = useMemo(
     () => ({ id: "appearance-color", label: t("app.labels.commandSections.appearanceColor") }),
     [t],
