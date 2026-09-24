@@ -226,7 +226,10 @@ export const sk = {
     options: {
       finish: {
         exit: "Ukončiť",
-        nothing: "Nič",
+      },
+      finishActions: {
+        exit: "Ukončiť aplikáciu",
+        nothing: "Nevykonať nič",
         systemShutdown: "Vypnúť systém",
         systemSleep: "Uspať systém",
       },

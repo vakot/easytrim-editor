@@ -319,7 +319,7 @@ describe("MenuBarTest", () => {
     const finishItem = screen.getByRole("menuitem", { name: /On queue finished/ });
     finishItem.focus();
     await user.keyboard("{ArrowRight}");
-    await user.click(screen.getByRole("menuitemradio", { name: "Exit" }));
+    await user.click(screen.getByRole("menuitemradio", { name: "Exit application" }));
     expect(menuState.dispatch).toHaveBeenCalledWith(
       expect.objectContaining({ type: "export/queueFinishActionChanged", payload: "exit" }),
     );

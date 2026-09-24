@@ -429,8 +429,8 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
           dispatch(queueFinishActionChanged("exit"));
         },
         id: "queue-finish-exit",
-        label: t("queue.options.finish.exit"),
-        searchTerms: commandSearchTerms(`${t("queue.options.finish.exit")}|queue|finish`),
+        label: t("queue.options.finishActions.exit"),
+        searchTerms: commandSearchTerms(`${t("queue.options.finishActions.exit")}|queue|finish`),
         section: sections.queue,
         variant: "default",
       },
@@ -441,8 +441,8 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
           dispatch(queueFinishActionChanged("nothing"));
         },
         id: "queue-finish-nothing",
-        label: t("queue.options.finish.nothing"),
-        searchTerms: commandSearchTerms(`${t("queue.options.finish.nothing")}|queue|finish`),
+        label: t("queue.options.finishActions.nothing"),
+        searchTerms: commandSearchTerms(`${t("queue.options.finishActions.nothing")}|queue|finish`),
         section: sections.queue,
         variant: "default",
       },
@@ -453,8 +453,10 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
           dispatch(queueFinishActionChanged("systemSleep"));
         },
         id: "queue-finish-system-sleep",
-        label: t("queue.options.finish.systemSleep"),
-        searchTerms: commandSearchTerms(`${t("queue.options.finish.systemSleep")}|queue|finish`),
+        label: t("queue.options.finishActions.systemSleep"),
+        searchTerms: commandSearchTerms(
+          `${t("queue.options.finishActions.systemSleep")}|queue|finish`,
+        ),
         section: sections.queue,
         variant: "default",
       },
@@ -465,8 +467,10 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
           dispatch(queueFinishActionChanged("systemShutdown"));
         },
         id: "queue-finish-system-shutdown",
-        label: t("queue.options.finish.systemShutdown"),
-        searchTerms: commandSearchTerms(`${t("queue.options.finish.systemShutdown")}|queue|finish`),
+        label: t("queue.options.finishActions.systemShutdown"),
+        searchTerms: commandSearchTerms(
+          `${t("queue.options.finishActions.systemShutdown")}|queue|finish`,
+        ),
         section: sections.queue,
         variant: "default",
       },

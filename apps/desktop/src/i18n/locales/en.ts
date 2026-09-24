@@ -225,9 +225,12 @@ export const en = {
     options: {
       finish: {
         exit: "Exit",
-        nothing: "Nothing",
-        systemShutdown: "System shutdown",
-        systemSleep: "System sleep",
+      },
+      finishActions: {
+        exit: "Exit application",
+        nothing: "Do nothing",
+        systemShutdown: "Shut down system",
+        systemSleep: "Put system to sleep",
       },
     },
   },

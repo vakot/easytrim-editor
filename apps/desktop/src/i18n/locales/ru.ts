@@ -226,7 +226,10 @@ export const ru = {
     options: {
       finish: {
         exit: "Выйти",
-        nothing: "Ничего",
+      },
+      finishActions: {
+        exit: "Закрыть приложение",
+        nothing: "Ничего не делать",
         systemShutdown: "Выключить систему",
         systemSleep: "Перевести систему в спящий режим",
       },
