@@ -60,7 +60,7 @@ function MenuIcon({
   return (
     <span
       className={cn(
-        "pointer-events-none absolute flex size-3.5 items-center justify-center text-muted-foreground [&_svg:not([class*='size-'])]:size-3.5",
+        "pointer-events-none absolute flex size-3.5 items-center justify-center text-muted-foreground group-data-[variant=destructive]/menu-item:text-destructive group-data-[variant=success]/menu-item:text-success [&_svg:not([class*='size-'])]:size-3.5",
         side === "left" ? "left-2" : "right-2",
         className,
       )}
