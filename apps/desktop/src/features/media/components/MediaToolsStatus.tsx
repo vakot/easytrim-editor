@@ -105,7 +105,7 @@ function MediaToolsStatusTrigger({
         {checking ? (
           <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
         ) : ready ? (
-          <span aria-hidden="true" className="bg-success-foreground size-1.5 rounded-full" />
+          <span aria-hidden="true" className="size-2 rounded-full bg-success" />
         ) : partial ? (
           <CircleAlert aria-hidden="true" className="size-3.5" />
         ) : (

@@ -57,8 +57,10 @@ describe("MediaToolsStatus", () => {
 
   it("shows both versions and resolved paths when ready without recovery instructions", () => {
     renderStatus(readyCapabilities);
-    fireEvent.click(screen.getByRole("button", { name: "Media tools ready" }));
+    const trigger = screen.getByRole("button", { name: "Media tools ready" });
+    fireEvent.click(trigger);
 
+    expect(trigger.querySelector('[aria-hidden="true"]')).toHaveClass("bg-success", "size-2");
     expect(screen.getByText("ffmpeg version 7.1")).toBeInTheDocument();
     expect(screen.getByText("ffprobe version 7.1")).toBeInTheDocument();
     expect(screen.getByText("C:/Tools/ffmpeg.exe")).toBeInTheDocument();
