@@ -12,6 +12,7 @@ import { optimizedExportDialogOpened } from "@/app/store/slices/export-slice";
 import {
   activityFeedViewChanged,
   customPrimaryColorChanged,
+  layoutDensityChanged,
   preferenceChanged,
   preferencesReset,
   primaryColorChanged,
@@ -245,10 +246,12 @@ describe("Redux Persist store integration", () => {
     });
   });
 
-  it("persists reset state", async () => {
+  it("preserves layout settings when persisting a preferences reset", async () => {
     const { persistor, storage, store } = await createPersistedTestStore();
 
     store.dispatch(preferenceChanged({ key: "loopPlaybackEnabledDefault", enabled: false }));
+    store.dispatch(activityFeedViewChanged("branch"));
+    store.dispatch(layoutDensityChanged("compact"));
     await persistor.flush();
     store.dispatch(preferencesReset());
     await persistor.flush();
@@ -256,6 +259,8 @@ describe("Redux Persist store integration", () => {
     const persistedRoot = await readPersistedRoot(storage);
     expect(JSON.parse(String(persistedRoot.preferences))).toEqual({
       ...DEFAULT_PREFERENCES,
+      activityFeedView: "branch",
+      layoutDensity: "compact",
     });
   });
 

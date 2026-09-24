@@ -10,6 +10,10 @@ import { DEFAULT_PREFERENCES } from "@/app/preferences";
 import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";
 import { sourceSelected } from "@/app/store/actions/source-actions";
 import { selectMergeAudio } from "@/app/store/slices/audio-slice";
+import {
+  activityFeedViewChanged,
+  layoutDensityChanged,
+} from "@/app/store/slices/preferences-slice";
 import { createAppStore } from "@/app/store/store";
 
 import { MenuBarSettings } from "../MenuBarSettings";
@@ -127,6 +131,8 @@ describe("MenuBarSettings Redux integration", () => {
   it("resets preferences without rewriting active editor tools", async () => {
     const user = userEvent.setup();
     const store = renderSettings();
+    store.dispatch(activityFeedViewChanged("branch"));
+    store.dispatch(layoutDensityChanged("compact"));
 
     const loopItem = screen.getByRole("menuitemcheckbox", {
       name: "Loop",
@@ -137,7 +143,11 @@ describe("MenuBarSettings Redux integration", () => {
     expect(store.getState().editorTools.loopPlaybackEnabled).toBe(true);
     await user.click(screen.getByRole("menuitem", { name: "Reset to default" }));
 
-    expect(store.getState().preferences).toEqual(DEFAULT_PREFERENCES);
+    expect(store.getState().preferences).toEqual({
+      ...DEFAULT_PREFERENCES,
+      activityFeedView: "branch",
+      layoutDensity: "compact",
+    });
     expect(store.getState().editorTools.loopPlaybackEnabled).toBe(true);
   });
 

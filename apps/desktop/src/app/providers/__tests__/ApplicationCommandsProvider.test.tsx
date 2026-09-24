@@ -20,6 +20,8 @@ const mocks = vi.hoisted(() => ({
     type: "export/optimized",
   })),
   requestSourceDelete: vi.fn(),
+  resetPanels: vi.fn(),
+  panelsAreReset: false,
   startFastCutRequested: vi.fn((origin: unknown) => ({
     origin,
     type: "export/fast",
@@ -102,9 +104,9 @@ vi.mock("@/components/ui/resizable", () => ({
     isAvailable: true,
     isCollapsed: false,
     isDisabled: false,
-    isReset: false,
+    isReset: mocks.panelsAreReset,
     toggle: vi.fn(),
-    reset: vi.fn(),
+    reset: mocks.resetPanels,
   }),
 }));
 vi.mock("@/lib/open-external-url.utils", () => ({ openExternalUrl: vi.fn() }));
@@ -149,6 +151,9 @@ function RuntimeProbe() {
       >
         open-file-menu
       </button>
+      <button onClick={() => void executeCommand("reset-layout", "menu")} type="button">
+        reset-layout-menu
+      </button>
     </div>
   );
 }
@@ -165,11 +170,15 @@ describe("ApplicationCommandsProvider", () => {
   beforeEach(() => {
     mocks.dispatch.mockReset();
     mocks.dispatch.mockImplementation(() => undefined);
+    mocks.resetPanels.mockReset();
+    mocks.panelsAreReset = false;
     mocks.diagnosticsError.mockClear();
     mocks.requestSourceDelete.mockClear();
     mocks.availableVersion = null;
     mocks.updateStatus = "idle";
     state.importWorkflow.isNativeDialogOpen = false;
+    state.preferences.activityFeedView = "default";
+    state.preferences.layoutDensity = "default";
   });
 
   it("executes synchronous commands through the shared runtime and exposes semantic metadata", async () => {
@@ -346,5 +355,25 @@ describe("ApplicationCommandsProvider", () => {
     fireEvent.click(screen.getByRole("button", { name: "reset-preferences" }));
 
     expect(mocks.dispatch).not.toHaveBeenCalled();
+  });
+
+  it("resets layout preferences and panels from the menu surface", () => {
+    renderRuntime();
+
+    fireEvent.click(screen.getByRole("button", { name: "reset-layout-menu" }));
+
+    expect(mocks.dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "preferences/layoutReset" }),
+    );
+    expect(mocks.resetPanels).toHaveBeenCalledOnce();
+  });
+
+  it("enables layout reset when density or activity-feed view differs from its default", () => {
+    state.preferences.layoutDensity = "compact";
+    state.preferences.activityFeedView = "branch";
+    mocks.panelsAreReset = true;
+    renderRuntime();
+
+    expect(screen.getByRole("button", { name: "reset-layout" })).toBeEnabled();
   });
 });
