@@ -21,8 +21,8 @@ import {
 } from "@/components/ui/menubar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-import type { ApplicationCommandId } from "@/app/commands/groups";
-import { getLanguageCommandId } from "@/app/commands/groups/preferences.commands";
+import type { ApplicationCommandId } from "@/app/commands";
+import { getLanguageCommandId } from "@/app/commands/preferences";
 import {
   ApplicationCommandIcon,
   ApplicationCommandLabel,

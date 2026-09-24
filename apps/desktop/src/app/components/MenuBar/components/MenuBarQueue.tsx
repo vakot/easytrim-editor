@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/menubar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-import { getQueueFinishCommandId } from "@/app/commands/groups/queue.commands";
+import { getQueueFinishCommandId } from "@/app/commands/queue";
 import {
   ApplicationCommandIcon,
   ApplicationCommandLabel,

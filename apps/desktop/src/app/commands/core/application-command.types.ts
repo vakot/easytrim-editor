@@ -13,7 +13,7 @@ interface ApplicationShortcut {
   modifier: "control" | "primary";
 }
 
-interface ApplicationCommandSection {
+interface ApplicationCommandGroupMetadata {
   id: string;
   label: string;
 }
@@ -21,12 +21,12 @@ interface ApplicationCommandSection {
 interface ApplicationCommand<Id extends string = string> {
   checked?: boolean;
   enabled: boolean;
+  group: ApplicationCommandGroupMetadata;
   icon: ReactNode;
   id: Id;
   label: string;
   pending: boolean;
   searchTerms: readonly string[];
-  section: ApplicationCommandSection;
   shortcut?: ApplicationShortcut;
   variant: ApplicationCommandVariant;
 }
@@ -37,7 +37,7 @@ interface ApplicationCommandExecutionContext {
 
 interface ApplicationCommandDefinition<Id extends string = string> extends Omit<
   ApplicationCommand<Id>,
-  "pending"
+  "group" | "pending"
 > {
   run: (context: ApplicationCommandExecutionContext) => MaybePromise<void>;
 }
@@ -48,13 +48,14 @@ interface ApplicationCommandGroup<
 > {
   commands: Commands;
   id: string;
+  label: string;
 }
 
 interface ApplicationCommandMatch<Id extends string = string> {
   command: ApplicationCommand<Id>;
+  groupMatched: boolean;
   labelMatched: boolean;
   searchTermMatched: boolean;
-  sectionMatched: boolean;
 }
 
 function commandOrigin(commandId: string, surface: ApplicationCommandSurface) {
@@ -69,8 +70,8 @@ export type {
   ApplicationCommandDefinition,
   ApplicationCommandExecutionContext,
   ApplicationCommandGroup,
+  ApplicationCommandGroupMetadata,
   ApplicationCommandMatch,
-  ApplicationCommandSection,
   ApplicationCommandSurface,
   ApplicationCommandVariant,
   ApplicationShortcut,

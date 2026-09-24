@@ -127,10 +127,10 @@ function RuntimeProbe() {
       {commands.map((command) => (
         <button
           data-checked={command.checked}
+          data-group={command.group.label}
           data-has-icon={Boolean(command.icon)}
           data-label={command.label}
           data-pending={command.pending}
-          data-section={command.section.label}
           data-variant={command.variant}
           disabled={!command.enabled || command.pending}
           key={command.id}
@@ -175,12 +175,12 @@ describe("ApplicationCommandsProvider", () => {
     renderRuntime();
 
     expect(
-      screen.getAllByRole("button").filter((button) => button.hasAttribute("data-section")),
+      screen.getAllByRole("button").filter((button) => button.hasAttribute("data-group")),
     ).toHaveLength(49);
     expect(
       screen
         .getAllByRole("button")
-        .filter((button) => button.hasAttribute("data-section"))
+        .filter((button) => button.hasAttribute("data-group"))
         .every((button) => button.getAttribute("data-has-icon") === "true"),
     ).toBe(true);
 
@@ -189,13 +189,10 @@ describe("ApplicationCommandsProvider", () => {
       "destructive",
     );
     for (const commandId of ["open-file", "open-folder", "close-file", "delete-file"]) {
-      expect(screen.getByRole("button", { name: commandId })).toHaveAttribute(
-        "data-section",
-        "File",
-      );
+      expect(screen.getByRole("button", { name: commandId })).toHaveAttribute("data-group", "File");
     }
     expect(screen.getByRole("button", { name: "theme-system" })).toHaveAttribute(
-      "data-section",
+      "data-group",
       "Appearance / Theme",
     );
     expect(screen.getByRole("button", { name: "theme-system" })).toHaveAttribute(
@@ -203,43 +200,43 @@ describe("ApplicationCommandsProvider", () => {
       "true",
     );
     expect(screen.getByRole("button", { name: "primary-color-amber" })).toHaveAttribute(
-      "data-section",
+      "data-group",
       "Appearance / Color",
     );
     expect(screen.getByRole("button", { name: "queue-finish-exit" })).toHaveAttribute(
-      "data-section",
+      "data-group",
       "Queue / On finished / Application",
     );
     expect(screen.getByRole("button", { name: "delete-source-on-render-finish" })).toHaveAttribute(
-      "data-section",
+      "data-group",
       "Queue / On finished / Source",
     );
     expect(screen.getByRole("button", { name: "toggle-left-panel" })).toHaveAttribute(
-      "data-section",
+      "data-group",
       "Layout / Panels visibility",
     );
     expect(screen.getByRole("button", { name: "layout-density-default" })).toHaveAttribute(
-      "data-section",
+      "data-group",
       "Layout / Density",
     );
     expect(screen.getByRole("button", { name: "activity-feed-view-default" })).toHaveAttribute(
-      "data-section",
+      "data-group",
       "Layout / Activity Feed View",
     );
     expect(screen.getByRole("button", { name: "preference-auto-start-queue" })).toHaveAttribute(
-      "data-section",
+      "data-group",
       "Preferences / Playback",
     );
     expect(screen.getByRole("button", { name: "preference-merge-audio" })).toHaveAttribute(
-      "data-section",
+      "data-group",
       "Preferences / Audio",
     );
     expect(screen.getByRole("button", { name: "reset-preferences" })).toHaveAttribute(
-      "data-section",
+      "data-group",
       "Preferences",
     );
     expect(screen.getByRole("button", { name: "crop-preview" })).toHaveAttribute(
-      "data-section",
+      "data-group",
       "Preview / Transform",
     );
     expect(screen.getByRole("button", { name: "reset-layout" })).toHaveAttribute(

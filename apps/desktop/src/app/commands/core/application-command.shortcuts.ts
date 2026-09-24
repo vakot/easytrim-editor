@@ -1,4 +1,4 @@
-import type { ApplicationShortcut } from "@/app/commands/application-command.types";
+import type { ApplicationShortcut } from "@/app/commands/core/application-command.types";
 
 const COMMAND_PALETTE_SHORTCUT = {
   code: "KeyH",

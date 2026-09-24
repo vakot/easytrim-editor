@@ -11,12 +11,12 @@ import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { menuClassNames } from "@/components/ui/menu";
 import { Slot } from "@/components/ui/slot";
 
-import type { ApplicationCommand } from "@/app/commands/application-command.types";
+import type { ApplicationCommandId } from "@/app/commands";
+import type { ApplicationCommand } from "@/app/commands/core/application-command.types";
 import {
   getShortcutAriaValue,
   getShortcutDisplayKeys,
-} from "@/app/commands/application-command.utils";
-import type { ApplicationCommandId } from "@/app/commands/groups";
+} from "@/app/commands/core/application-command.utils";
 import { useApplicationCommand, useApplicationCommands } from "@/app/hooks/useApplicationCommands";
 import { cn } from "@/lib/class-names.utils";
 

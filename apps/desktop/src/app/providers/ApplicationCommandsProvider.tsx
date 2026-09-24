@@ -1,16 +1,16 @@
 import { type ReactNode, useCallback, useMemo, useRef, useState } from "react";
 
+import { type ApplicationCommandId, useApplicationCommandGroups } from "@/app/commands";
 import {
   type ApplicationCommand,
   type ApplicationCommandDefinition,
   type ApplicationCommandSurface,
   commandOrigin,
-} from "@/app/commands/application-command.types";
+} from "@/app/commands/core/application-command.types";
 import {
   commandsById,
   materializeApplicationCommands,
-} from "@/app/commands/application-command.utils";
-import { type ApplicationCommandId, useApplicationCommandGroups } from "@/app/commands/groups";
+} from "@/app/commands/core/application-command.utils";
 import { ApplicationCommandsContext } from "@/app/contexts/application-commands-context";
 import { diagnostics } from "@/lib/diagnostics";
 
@@ -18,7 +18,7 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
   const groups = useApplicationCommandGroups();
   const [pendingIds, setPendingIds] = useState<ReadonlySet<ApplicationCommandId>>(() => new Set());
   const pendingIdsRef = useRef(new Set<ApplicationCommandId>());
-  const definitions = useMemo<readonly ApplicationCommandDefinition<ApplicationCommandId>[]>(
+  const definitions = useMemo(
     () =>
       groups.flatMap(
         (group) => [...group.commands] as ApplicationCommandDefinition<ApplicationCommandId>[],
@@ -53,8 +53,8 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
   );
 
   const commands = useMemo<readonly ApplicationCommand<ApplicationCommandId>[]>(
-    () => materializeApplicationCommands(definitions, pendingIds),
-    [definitions, pendingIds],
+    () => materializeApplicationCommands(groups, pendingIds),
+    [groups, pendingIds],
   );
 
   const runtime = useMemo(

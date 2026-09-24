@@ -15,19 +15,19 @@ import {
 import { Highlight } from "@/components/ui/highlight";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 
-import { COMMAND_PALETTE_SHORTCUT } from "@/app/commands/application-command.shortcuts";
+import type { ApplicationCommandId } from "@/app/commands";
+import { COMMAND_PALETTE_SHORTCUT } from "@/app/commands/core/application-command.shortcuts";
 import type {
   ApplicationCommand,
   ApplicationCommandMatch,
   ApplicationCommandVariant,
-} from "@/app/commands/application-command.types";
+} from "@/app/commands/core/application-command.types";
 import {
   filterApplicationCommands,
   getShortcutAriaValue,
   getShortcutDisplayKeys,
   isShortcutEvent,
-} from "@/app/commands/application-command.utils";
-import type { ApplicationCommandId } from "@/app/commands/groups";
+} from "@/app/commands/core/application-command.utils";
 import { ApplicationCommandIcon } from "@/app/components/ApplicationCommandMenuItem";
 import { useApplicationCommands } from "@/app/hooks/useApplicationCommands";
 import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
@@ -41,10 +41,10 @@ const commandVariantClassNames = {
     "text-success data-selected:bg-success/10 data-selected:text-success dark:data-selected:bg-success/20",
 } satisfies Record<ApplicationCommandVariant, string | undefined>;
 
-type CommandPaletteSection = {
+type CommandPaletteGroupMatches = {
+  groupLabel: string;
+  groupMatched: boolean;
   matches: ApplicationCommandMatch<ApplicationCommandId>[];
-  sectionLabel: string;
-  sectionMatched: boolean;
 };
 
 function CommandPalette() {
@@ -125,10 +125,10 @@ function CommandPalette() {
 function CommandPaletteContent({
   groups,
 }: {
-  groups: Map<ApplicationCommand["section"]["id"], CommandPaletteSection>;
+  groups: Map<ApplicationCommand["group"]["id"], CommandPaletteGroupMatches>;
 }) {
-  return [...groups.entries()].map(([sectionId, group], index) => (
-    <div key={sectionId}>
+  return [...groups.entries()].map(([groupId, group], index) => (
+    <div key={groupId}>
       {index > 0 ? <CommandSeparator /> : null}
       <CommandPaletteGroup group={group} />
     </div>
@@ -141,15 +141,13 @@ function CommandPaletteEmpty() {
   return <CommandEmpty>{t("app.messages.commandPaletteEmpty")}</CommandEmpty>;
 }
 
-function CommandPaletteGroup({ group }: { group: CommandPaletteSection }) {
+function CommandPaletteGroup({ group }: { group: CommandPaletteGroupMatches }) {
   const { query } = useCommandPaletteState();
 
   return (
     <div>
       <CommandGroup
-        heading={
-          <Highlight query={group.sectionMatched ? query : ""}>{group.sectionLabel}</Highlight>
-        }
+        heading={<Highlight query={group.groupMatched ? query : ""}>{group.groupLabel}</Highlight>}
       >
         {group.matches.map((match) => (
           <CommandPaletteItem key={match.command.id} match={match} />
@@ -204,18 +202,18 @@ function useCommandPaletteState() {
 }
 
 function groupCommandMatches(matches: readonly ApplicationCommandMatch<ApplicationCommandId>[]) {
-  const groups = new Map<ApplicationCommand["section"]["id"], CommandPaletteSection>();
+  const groups = new Map<ApplicationCommand["group"]["id"], CommandPaletteGroupMatches>();
 
   for (const match of matches) {
-    const current = groups.get(match.command.section.id);
+    const current = groups.get(match.command.group.id);
     if (current) {
       current.matches.push(match);
-      current.sectionMatched ||= match.sectionMatched;
+      current.groupMatched ||= match.groupMatched;
     } else {
-      groups.set(match.command.section.id, {
+      groups.set(match.command.group.id, {
         matches: [match],
-        sectionLabel: match.command.section.label,
-        sectionMatched: match.sectionMatched,
+        groupLabel: match.command.group.label,
+        groupMatched: match.groupMatched,
       });
     }
   }

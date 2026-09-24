@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { type ComponentProps, forwardRef } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { ApplicationCommand } from "@/app/commands/application-command.types";
+import type { ApplicationCommand } from "@/app/commands/core/application-command.types";
 
 const mocks = vi.hoisted(() => ({
   command: null as ApplicationCommand | null,
@@ -48,7 +48,7 @@ function createCommand(overrides: Partial<ApplicationCommand> = {}): Application
     label: "Delete File",
     pending: false,
     searchTerms: [],
-    section: { id: "source", label: "Source" },
+    group: { id: "source", label: "Source" },
     shortcut: { code: "KeyD", key: "D", modifier: "control" },
     variant: "destructive",
     ...overrides,

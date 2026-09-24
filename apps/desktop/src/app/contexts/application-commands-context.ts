@@ -1,10 +1,10 @@
 import { createContext } from "react";
 
+import type { ApplicationCommandId } from "@/app/commands";
 import type {
   ApplicationCommand,
   ApplicationCommandSurface,
-} from "@/app/commands/application-command.types";
-import type { ApplicationCommandId } from "@/app/commands/groups";
+} from "@/app/commands/core/application-command.types";
 
 interface ApplicationCommandsContextValue {
   commands: readonly ApplicationCommand<ApplicationCommandId>[];

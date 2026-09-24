@@ -2,15 +2,16 @@ import type {
   ApplicationCommand,
   ApplicationCommandDefinition,
   ApplicationCommandGroup,
+  ApplicationCommandGroupMetadata,
   ApplicationCommandMatch,
   ApplicationShortcut,
   ShortcutPlatform,
-} from "@/app/commands/application-command.types";
+} from "@/app/commands/core/application-command.types";
 
 function defineApplicationCommandGroup<
   const Commands extends readonly ApplicationCommandDefinition[],
->(id: string, commands: Commands): ApplicationCommandGroup<Commands> {
-  return { commands, id };
+>(id: string, label: string, commands: Commands): ApplicationCommandGroup<Commands> {
+  return { commands, id, label };
 }
 
 function commandSearchTerms(value: string): string[] {
@@ -25,17 +26,17 @@ function filterApplicationCommands<Id extends string>(
 
   return commands.flatMap((command) => {
     if (!normalizedQuery) {
-      return [{ command, labelMatched: false, searchTermMatched: false, sectionMatched: false }];
+      return [{ command, labelMatched: false, searchTermMatched: false, groupMatched: false }];
     }
 
     const labelMatched = normalizeSearchValue(command.label).includes(normalizedQuery);
-    const sectionMatched = normalizeSearchValue(command.section.label).includes(normalizedQuery);
+    const groupMatched = normalizeSearchValue(command.group.label).includes(normalizedQuery);
     const searchTermMatched = command.searchTerms.some((term) =>
       normalizeSearchValue(term).includes(normalizedQuery),
     );
 
-    return labelMatched || sectionMatched || searchTermMatched
-      ? [{ command, labelMatched, searchTermMatched, sectionMatched }]
+    return labelMatched || groupMatched || searchTermMatched
+      ? [{ command, labelMatched, searchTermMatched, groupMatched }]
       : [];
   });
 }
@@ -74,19 +75,26 @@ function isShortcutEvent(
 }
 
 function materializeApplicationCommands<Id extends string>(
-  definitions: readonly ApplicationCommandDefinition<Id>[],
+  groups: readonly ApplicationCommandGroup<readonly ApplicationCommandDefinition<Id>[]>[],
   pendingIds: ReadonlySet<Id>,
 ): ApplicationCommand<Id>[] {
-  assertUniqueCommandIds(definitions);
-  return definitions.map((definition) => ({
+  const definitions = groups.flatMap((group) =>
+    group.commands.map((definition) => ({
+      definition,
+      group: { id: group.id, label: group.label } satisfies ApplicationCommandGroupMetadata,
+    })),
+  );
+
+  assertUniqueCommandIds(definitions.map(({ definition }) => definition));
+  return definitions.map(({ definition, group }) => ({
     checked: definition.checked,
     enabled: definition.enabled,
+    group,
     icon: definition.icon,
     id: definition.id,
     label: definition.label,
     pending: pendingIds.has(definition.id),
     searchTerms: definition.searchTerms,
-    section: definition.section,
     shortcut: definition.shortcut,
     variant: definition.variant,
   }));

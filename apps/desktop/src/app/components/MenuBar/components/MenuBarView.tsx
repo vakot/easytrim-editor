@@ -19,10 +19,7 @@ import {
   MenubarTrigger,
 } from "@/components/ui/menubar";
 
-import {
-  getPrimaryColorCommandId,
-  getThemeCommandId,
-} from "@/app/commands/groups/appearance.commands";
+import { getPrimaryColorCommandId, getThemeCommandId } from "@/app/commands/appearance";
 import {
   ApplicationCommandIcon,
   ApplicationCommandLabel,

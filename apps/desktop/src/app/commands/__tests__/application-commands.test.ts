@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { COMMAND_PALETTE_SHORTCUT } from "../application-command.shortcuts";
+import { COMMAND_PALETTE_SHORTCUT } from "../core/application-command.shortcuts";
 import type {
   ApplicationCommand,
   ApplicationCommandDefinition,
-} from "../application-command.types";
+} from "../core/application-command.types";
 import {
   assertUniqueCommandIds,
   filterApplicationCommands,
@@ -12,7 +12,7 @@ import {
   getShortcutDisplayKeys,
   isShortcutEvent,
   materializeApplicationCommands,
-} from "../application-command.utils";
+} from "../core/application-command.utils";
 
 const fileShortcuts = {
   openFolder: { code: "KeyK", key: "K", modifier: "control" },
@@ -27,7 +27,7 @@ const commands: ApplicationCommand[] = [
     label: "Open Folder",
     pending: false,
     searchTerms: ["directory", "import"],
-    section: { id: "file", label: "File" },
+    group: { id: "file", label: "File" },
     variant: "default",
   },
   {
@@ -37,7 +37,7 @@ const commands: ApplicationCommand[] = [
     label: "Save Lossless Cut",
     pending: false,
     searchTerms: ["fast cut", "render"],
-    section: { id: "export", label: "Export" },
+    group: { id: "export", label: "Export" },
     shortcut: fileShortcuts.saveLosslessCut,
     variant: "default",
   },
@@ -51,15 +51,15 @@ describe("application command search", () => {
     expect(match).toMatchObject({
       labelMatched: true,
       searchTermMatched: false,
-      sectionMatched: false,
+      groupMatched: false,
     });
   });
 
-  it("returns every applicable command when the section matches", () => {
+  it("returns every applicable command when the group matches", () => {
     const matches = filterApplicationCommands(commands, "file");
 
     expect(matches.map(({ command }) => command.id)).toEqual(["open-folder"]);
-    expect(matches[0]).toMatchObject({ labelMatched: false, sectionMatched: true });
+    expect(matches[0]).toMatchObject({ labelMatched: false, groupMatched: true });
   });
 
   it("matches explicit aliases without claiming a visible label match", () => {
@@ -69,7 +69,7 @@ describe("application command search", () => {
     expect(match).toMatchObject({
       labelMatched: false,
       searchTermMatched: true,
-      sectionMatched: false,
+      groupMatched: false,
     });
   });
 
@@ -90,12 +90,21 @@ describe("application command search", () => {
       label: "Delete File",
       run: vi.fn(),
       searchTerms: [],
-      section: { id: "source", label: "Source" },
       variant: "destructive",
     };
 
-    expect(materializeApplicationCommands([definition], new Set())).toEqual([
-      expect.objectContaining({ checked: true, pending: false, variant: "destructive" }),
+    expect(
+      materializeApplicationCommands(
+        [{ id: "source", label: "Source", commands: [definition] }],
+        new Set(),
+      ),
+    ).toEqual([
+      expect.objectContaining({
+        checked: true,
+        group: { id: "source", label: "Source" },
+        pending: false,
+        variant: "destructive",
+      }),
     ]);
   });
 });
