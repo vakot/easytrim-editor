@@ -1,18 +1,16 @@
 import { editingInstanceActivated } from "@/app/store/actions/editing-instance-actions";
+import { createEditorSnapshotFromState } from "@/app/store/integration/editor-snapshot";
 import { sourceReady } from "@/app/store/actions/source-actions";
 import {
   cropChanged,
   rotationChanged,
   selectCropResolution,
-  selectFlipHorizontal,
-  selectFlipVertical,
 } from "@/app/store/slices/crop-slice";
 import {
   editingInstanceOptimizedSettingsChanged,
   editingInstanceSnapshotUpdated,
   selectActiveEditingInstance,
 } from "@/app/store/slices/editing-instances-slice";
-import { createEditorSnapshot } from "@/domain/editor-snapshot";
 
 import { listenerMiddleware } from "../listener-middleware";
 
@@ -25,30 +23,14 @@ listenerMiddleware.startListening({
     const state = listenerApi.getState();
     const instance = selectActiveEditingInstance(state);
     const source = state.source.source;
-    const trim = state.trim.value;
-    if (!instance || !source || !trim || !state.source.media) return;
+    if (!instance || !source || !state.source.media) return;
+    const snapshot = createEditorSnapshotFromState(state, source);
+    if (!snapshot) return;
     listenerApi.dispatch(
       editingInstanceSnapshotUpdated({
         id: instance.id,
         media: state.source.media,
-        snapshot: createEditorSnapshot({
-          source,
-          trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
-          crop: state.crop.value,
-          flipHorizontal: selectFlipHorizontal(state),
-          flipVertical: selectFlipVertical(state),
-          rotation: state.crop.rotationDegrees,
-          masterAudio: {
-            enabled: state.audio.masterEnabled,
-            volumePercent: state.audio.masterVolumePercent,
-          },
-          audioTracks: state.audio.tracks.map(({ enabled, streamIndex, volumePercent }) => ({
-            enabled,
-            streamIndex,
-            volumePercent,
-          })),
-          mergeAudio: state.audio.mergeAudio,
-        }),
+        snapshot,
       }),
     );
   },

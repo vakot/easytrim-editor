@@ -5,7 +5,10 @@ import {
   sourceFailed,
   sourceReady,
 } from "@/app/store/actions/source-actions";
-import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";
+import {
+  createDefaultEditorSnapshot,
+  createEditorSnapshotFromState,
+} from "@/app/store/integration/editor-snapshot";
 import {
   hasActiveExportForSource,
   withdrawPendingExport,
@@ -22,12 +25,6 @@ import {
   waveformsFailed,
   waveformsLoading,
 } from "@/app/store/slices/audio-slice";
-import {
-  selectCrop,
-  selectFlipHorizontal,
-  selectFlipVertical,
-  selectRotationDegrees,
-} from "@/app/store/slices/crop-slice";
 import {
   activeEditingInstanceChanged,
   editingInstanceClosed,
@@ -69,7 +66,6 @@ import {
   selectHasSource,
   selectSourceSelection,
 } from "@/app/store/slices/source-slice";
-import { selectTrim } from "@/app/store/slices/trim-slice";
 import type { AppDispatch, RootState } from "@/app/store/store";
 import type { EditingInstance } from "@/domain/editing-instance";
 import { createEditorSnapshot, type EditorSnapshot } from "@/domain/editor-snapshot";
@@ -483,29 +479,16 @@ function captureActiveEditingInstanceDraft(
   const state = getState();
   const activeInstance = selectActiveEditingInstance(state);
   const source = selectSourceSelection(state);
-  const trim = selectTrim(state);
-  if (!activeInstance || !source || !trim || !state.source.media) return;
+  if (!activeInstance || !source || !state.source.media) return;
+  const snapshot = createEditorSnapshotFromState(state, source);
+  if (!snapshot) return;
 
   dispatch(
     editingInstanceSnapshotUpdated({
       id: activeInstance.id,
       optimizedArguments: state.exportPresets.argumentsText,
       media: state.source.media,
-      snapshot: createEditorSnapshot({
-        source,
-        trim: { startMicros: trim.startMicros, endMicros: trim.endMicros },
-        crop: selectCrop(state),
-        flipHorizontal: selectFlipHorizontal(state),
-        flipVertical: selectFlipVertical(state),
-        rotation: selectRotationDegrees(state),
-        masterAudio: selectMasterAudio(state),
-        audioTracks: selectAudioTracks(state).map(({ enabled, streamIndex, volumePercent }) => ({
-          streamIndex,
-          enabled,
-          volumePercent,
-        })),
-        mergeAudio: selectMergeAudio(state),
-      }),
+      snapshot,
     }),
   );
 }
