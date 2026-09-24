@@ -13,7 +13,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - Simplified the empty preview's keyboard hints and highlighted the Command Palette shortcut separately.
-- Kept the Command Palette open while asynchronous actions run, so update checks can refresh to the available update action.
+- Kept configuration choices and update checks in the Command Palette open, while dismissing it after action commands are selected.
 
 ### Fixed
 
