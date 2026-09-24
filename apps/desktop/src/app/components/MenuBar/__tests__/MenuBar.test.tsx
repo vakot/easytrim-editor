@@ -511,7 +511,13 @@ describe("MenuBarTest", () => {
     );
 
     await user.click(getMenuTrigger("Settings"));
-    for (const label of ["Snap", "Loop", "Follow segment", "Auto-start Queue", "Merge audio"]) {
+    for (const label of [
+      "Enable snap playback by default",
+      "Enable loop playback by default",
+      "Follow segment by default",
+      "Auto-start Queue by default",
+      "Merge audio by default",
+    ]) {
       expect(screen.getByRole("menuitemcheckbox", { name: label })).toBeInTheDocument();
     }
     const settingsMenu = screen.getAllByRole("menu").at(-1);
@@ -519,18 +525,18 @@ describe("MenuBarTest", () => {
     expect(within(settingsMenu!).getAllByRole("separator")).toHaveLength(4);
     expect(screen.queryByText("Timeline tools", { exact: true })).not.toBeInTheDocument();
     expect(screen.queryByText("Audio tools", { exact: true })).not.toBeInTheDocument();
-    expect(screen.getByRole("menuitemcheckbox", { name: "Snap" })).toContainElement(
-      settingsMenu!.querySelector(".lucide-magnet"),
-    );
-    expect(screen.getByRole("menuitemcheckbox", { name: "Loop" })).toContainElement(
-      settingsMenu!.querySelector(".lucide-repeat"),
-    );
-    expect(screen.getByRole("menuitemcheckbox", { name: "Follow segment" })).toContainElement(
-      settingsMenu!.querySelector(".lucide-between-vertical-start"),
-    );
-    expect(screen.getByRole("menuitemcheckbox", { name: "Auto-start Queue" })).toContainElement(
-      settingsMenu!.querySelector(".lucide-play"),
-    );
+    expect(
+      screen.getByRole("menuitemcheckbox", { name: "Enable snap playback by default" }),
+    ).toContainElement(settingsMenu!.querySelector(".lucide-magnet"));
+    expect(
+      screen.getByRole("menuitemcheckbox", { name: "Enable loop playback by default" }),
+    ).toContainElement(settingsMenu!.querySelector(".lucide-repeat"));
+    expect(
+      screen.getByRole("menuitemcheckbox", { name: "Follow segment by default" }),
+    ).toContainElement(settingsMenu!.querySelector(".lucide-between-vertical-start"));
+    expect(
+      screen.getByRole("menuitemcheckbox", { name: "Auto-start Queue by default" }),
+    ).toContainElement(settingsMenu!.querySelector(".lucide-play"));
   });
 
   it("resets preference defaults", async () => {
@@ -544,7 +550,10 @@ describe("MenuBarTest", () => {
     );
 
     await user.click(getMenuTrigger("Settings"));
-    const loopItem = screen.getByRole("menuitemcheckbox", { name: "Loop" });
+    const loopItem = screen.getByRole("menuitemcheckbox", {
+      name: "Enable loop playback by default",
+    });
+
     await user.click(loopItem);
     expect(loopItem).not.toBeChecked();
     await user.click(screen.getByRole("menuitem", { name: "Reset to default" }));
@@ -564,7 +573,10 @@ describe("MenuBarTest", () => {
     );
 
     await user.click(getMenuTrigger("Settings"));
-    const loopItem = screen.getByRole("menuitemcheckbox", { name: "Loop" });
+    const loopItem = screen.getByRole("menuitemcheckbox", {
+      name: "Enable loop playback by default",
+    });
+
     await user.hover(loopItem);
     await waitFor(() => {
       expect(screen.getByRole("tooltip")).toHaveTextContent("Enabled by default");
@@ -601,7 +613,10 @@ describe("MenuBarTest", () => {
     );
 
     await user.click(getMenuTrigger("Settings"));
-    const mergeItem = screen.getByRole("menuitemcheckbox", { name: "Merge audio" });
+    const mergeItem = screen.getByRole("menuitemcheckbox", {
+      name: "Merge audio by default",
+    });
+
     await user.hover(mergeItem);
     await waitFor(() => {
       expect(screen.getByRole("tooltip")).toHaveTextContent("Disabled by default");

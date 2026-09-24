@@ -180,6 +180,13 @@ export const sk = {
       customColorHex: "Hexadecimálna hodnota vlastnej farby",
     },
     options: {
+      commandLabels: {
+        autoStartQueue: "Automaticky spúšťať front predvolene",
+        followSegment: "Predvolene sledovať segment",
+        loop: "Predvolene zapnúť opakovanie",
+        mergeAudio: "Predvolene zlúčiť zvuk",
+        snap: "Predvolene zapnúť prichytenie",
+      },
       colors: {
         amber: "Jantárová",
         blue: "Modrá",

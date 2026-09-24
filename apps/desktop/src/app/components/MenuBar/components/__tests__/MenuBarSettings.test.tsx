@@ -70,7 +70,10 @@ describe("MenuBarSettings Redux integration", () => {
     const user = userEvent.setup();
     const store = renderSettings();
 
-    const loopItem = screen.getByRole("menuitemcheckbox", { name: "Loop" });
+    const loopItem = screen.getByRole("menuitemcheckbox", {
+      name: "Enable loop playback by default",
+    });
+
     await user.click(loopItem);
 
     expect(store.getState().preferences.loopPlaybackEnabledDefault).toBe(false);
@@ -80,7 +83,7 @@ describe("MenuBarSettings Redux integration", () => {
     const user = userEvent.setup();
     const store = renderSettings();
     const autoStartQueueItem = screen.getByRole("menuitemcheckbox", {
-      name: "Auto-start Queue",
+      name: "Auto-start Queue by default",
     });
 
     expect(autoStartQueueItem).toBeChecked();
@@ -93,7 +96,9 @@ describe("MenuBarSettings Redux integration", () => {
   it("keeps an open preference tooltip visible and updates its label after toggling", async () => {
     const user = userEvent.setup();
     renderSettings();
-    const loopItem = screen.getByRole("menuitemcheckbox", { name: "Loop" });
+    const loopItem = screen.getByRole("menuitemcheckbox", {
+      name: "Enable loop playback by default",
+    });
 
     await user.hover(loopItem);
     expect(await screen.findByRole("tooltip")).toHaveTextContent("Enabled by default");
@@ -106,7 +111,9 @@ describe("MenuBarSettings Redux integration", () => {
   it("allows a preference tooltip to close after the trigger interaction finishes", async () => {
     const user = userEvent.setup();
     renderSettings();
-    const loopItem = screen.getByRole("menuitemcheckbox", { name: "Loop" });
+    const loopItem = screen.getByRole("menuitemcheckbox", {
+      name: "Enable loop playback by default",
+    });
 
     await user.hover(loopItem);
     expect(await screen.findByRole("tooltip")).toHaveTextContent("Enabled by default");
@@ -121,7 +128,10 @@ describe("MenuBarSettings Redux integration", () => {
     const user = userEvent.setup();
     const store = renderSettings();
 
-    const loopItem = screen.getByRole("menuitemcheckbox", { name: "Loop" });
+    const loopItem = screen.getByRole("menuitemcheckbox", {
+      name: "Enable loop playback by default",
+    });
+
     await user.click(loopItem);
     expect(store.getState().preferences.loopPlaybackEnabledDefault).toBe(false);
     expect(store.getState().editorTools.loopPlaybackEnabled).toBe(true);
@@ -146,7 +156,9 @@ describe("MenuBarSettings Redux integration", () => {
 
     expect(selectMergeAudio(store.getState())).toBe(true);
 
-    const mergeItem = screen.getByRole("menuitemcheckbox", { name: "Merge audio" });
+    const mergeItem = screen.getByRole("menuitemcheckbox", {
+      name: "Merge audio by default",
+    });
 
     await user.click(mergeItem);
 

@@ -161,11 +161,11 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
   } as const;
 
   const preferenceLabels = {
-    autoStartQueueEnabled: t("settings.labels.autoStartQueue"),
-    loopPlaybackEnabledDefault: t("settings.labels.loop"),
-    mergeAudioEnabledDefault: t("settings.labels.mergeAudio"),
-    segmentPlaybackEnabledDefault: t("settings.labels.followSegment"),
-    snapPlaybackEnabledDefault: t("settings.labels.snap"),
+    autoStartQueueEnabled: t("settings.options.commandLabels.autoStartQueue"),
+    loopPlaybackEnabledDefault: t("settings.options.commandLabels.loop"),
+    mergeAudioEnabledDefault: t("settings.options.commandLabels.mergeAudio"),
+    segmentPlaybackEnabledDefault: t("settings.options.commandLabels.followSegment"),
+    snapPlaybackEnabledDefault: t("settings.options.commandLabels.snap"),
   } as const;
 
   const sections = useMemo(
