@@ -1,4 +1,4 @@
-import { createContext, type ReactElement, useContext } from "react";
+import { createContext, type ReactElement, type ReactNode, useContext } from "react";
 
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { menuClassNames } from "@/components/ui/menu";
@@ -63,9 +63,9 @@ function ApplicationCommandMenuItem({
   );
 }
 
-function ApplicationCommandLabel() {
+function ApplicationCommandLabel({ children }: { children?: ReactNode }) {
   const { command } = useApplicationCommandMenuContext();
-  return <>{command.label}</>;
+  return <>{children ?? command.label}</>;
 }
 
 function ApplicationCommandShortcut() {

@@ -43,7 +43,7 @@ interface PreferenceMenuItemProps {
   icon: ReactNode;
 }
 
-function PreferenceMenuItem({ commandId, icon }: PreferenceMenuItemProps) {
+function PreferenceMenuItem({ children, commandId, icon }: PreferenceMenuItemProps) {
   const { t } = useTranslation();
   const { checked: isEnabled } = useApplicationCommand(commandId);
   const isDefaultPreference = commandId !== "preference-auto-start-queue";
@@ -61,7 +61,7 @@ function PreferenceMenuItem({ commandId, icon }: PreferenceMenuItemProps) {
         <TooltipTrigger asChild>
           <MenubarCheckboxItem keepOpen>
             <MenubarIcon side="right">{icon}</MenubarIcon>
-            <ApplicationCommandLabel />
+            <ApplicationCommandLabel>{children}</ApplicationCommandLabel>
           </MenubarCheckboxItem>
         </TooltipTrigger>
       </ApplicationCommandMenuItem>

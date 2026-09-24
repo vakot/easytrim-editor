@@ -71,7 +71,7 @@ describe("MenuBarSettings Redux integration", () => {
     const store = renderSettings();
 
     const loopItem = screen.getByRole("menuitemcheckbox", {
-      name: "Enable loop playback by default",
+      name: "Loop",
     });
 
     await user.click(loopItem);
@@ -97,7 +97,7 @@ describe("MenuBarSettings Redux integration", () => {
     const user = userEvent.setup();
     renderSettings();
     const loopItem = screen.getByRole("menuitemcheckbox", {
-      name: "Enable loop playback by default",
+      name: "Loop",
     });
 
     await user.hover(loopItem);
@@ -112,7 +112,7 @@ describe("MenuBarSettings Redux integration", () => {
     const user = userEvent.setup();
     renderSettings();
     const loopItem = screen.getByRole("menuitemcheckbox", {
-      name: "Enable loop playback by default",
+      name: "Loop",
     });
 
     await user.hover(loopItem);
@@ -129,7 +129,7 @@ describe("MenuBarSettings Redux integration", () => {
     const store = renderSettings();
 
     const loopItem = screen.getByRole("menuitemcheckbox", {
-      name: "Enable loop playback by default",
+      name: "Loop",
     });
 
     await user.click(loopItem);
@@ -157,7 +157,7 @@ describe("MenuBarSettings Redux integration", () => {
     expect(selectMergeAudio(store.getState())).toBe(true);
 
     const mergeItem = screen.getByRole("menuitemcheckbox", {
-      name: "Merge audio by default",
+      name: "Merge audio",
     });
 
     await user.click(mergeItem);
