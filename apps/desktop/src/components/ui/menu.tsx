@@ -11,7 +11,7 @@ const menuSeparatorClassName = "-mx-1 my-1 h-px bg-border";
 const menuShortcutClassName = "ml-auto pl-5 text-sm text-muted-foreground";
 
 const menuItemVariants = cva(
-  "group/menu-item relative flex h-7 min-w-48 cursor-default items-center rounded-md px-2.5 py-1.5 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground data-inset:px-8 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
+  "group/menu-item relative flex h-7 min-w-48 cursor-default items-center rounded-md px-2.5 py-1.5 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground data-highlighted:bg-accent data-highlighted:text-accent-foreground data-inset:px-8 data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
   {
     variants: {
       kind: {
@@ -23,9 +23,9 @@ const menuItemVariants = cva(
       variant: {
         default: "",
         success:
-          "text-success focus:bg-success/10 focus:text-success dark:focus:bg-success/20 data-open:bg-success/10 data-open:text-success [&_svg]:text-success!",
+          "text-success focus:bg-success/10 focus:text-success data-highlighted:bg-success/10 data-highlighted:text-success dark:focus:bg-success/20 dark:data-highlighted:bg-success/20 data-open:bg-success/10 data-open:text-success [&_svg]:text-success!",
         destructive:
-          "text-destructive focus:bg-destructive/10 focus:text-destructive dark:focus:bg-destructive/20 data-open:bg-destructive/10 data-open:text-destructive [&_svg]:text-destructive!",
+          "text-destructive focus:bg-destructive/10 focus:text-destructive data-highlighted:bg-destructive/10 data-highlighted:text-destructive dark:focus:bg-destructive/20 dark:data-highlighted:bg-destructive/20 data-open:bg-destructive/10 data-open:text-destructive [&_svg]:text-destructive!",
       },
     },
     defaultVariants: {

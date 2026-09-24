@@ -28,6 +28,35 @@ function renderMenu(item: ReactNode) {
 }
 
 describe("Menubar selection items", () => {
+  it("propagates destructive variants to every item primitive", () => {
+    renderMenu(
+      <>
+        <MenubarItem variant="destructive">Item</MenubarItem>
+        <MenubarCheckboxItem checked keepOpen variant="destructive">
+          Checkbox
+        </MenubarCheckboxItem>
+        <MenubarRadioGroup value="radio">
+          <MenubarRadioItem keepOpen value="radio" variant="destructive">
+            Radio
+          </MenubarRadioItem>
+        </MenubarRadioGroup>
+      </>,
+    );
+
+    expect(screen.getByRole("menuitem", { name: "Item" })).toHaveAttribute(
+      "data-variant",
+      "destructive",
+    );
+    expect(screen.getByRole("menuitemcheckbox", { name: "Checkbox" })).toHaveAttribute(
+      "data-variant",
+      "destructive",
+    );
+    expect(screen.getByRole("menuitemradio", { name: "Radio" })).toHaveAttribute(
+      "data-variant",
+      "destructive",
+    );
+  });
+
   it("closes regular menu items by default", () => {
     const onSelect = vi.fn();
     renderMenu(<MenubarItem onSelect={onSelect}>Item</MenubarItem>);
