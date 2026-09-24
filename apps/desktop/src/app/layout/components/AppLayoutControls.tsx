@@ -162,7 +162,7 @@ function AppLayoutControls() {
               <ApplicationCommandMenuItem asChild commandId="reset-layout">
                 <DropdownMenuItem inset keepOpen>
                   <DropdownMenuIcon>
-                    <ApplicationCommandIcon />
+                    <ApplicationCommandIcon className="size-3" />
                   </DropdownMenuIcon>
                   <ApplicationCommandLabel />
                 </DropdownMenuItem>

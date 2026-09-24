@@ -103,11 +103,12 @@ describe("ApplicationCommandMenuItem", () => {
     render(
       <ApplicationCommandMenuItem asChild commandId="delete-file">
         <ProbeItem>
-          <ApplicationCommandIcon />
+          <ApplicationCommandIcon className="size-3" />
         </ProbeItem>
       </ApplicationCommandMenuItem>,
     );
 
     expect(screen.getByTestId("resolved-command-icon")).toBeInTheDocument();
+    expect(screen.getByTestId("resolved-command-icon")).toHaveClass("size-3");
   });
 });

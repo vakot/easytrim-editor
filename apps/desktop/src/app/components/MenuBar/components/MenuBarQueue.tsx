@@ -60,7 +60,7 @@ function MenuBarQueue() {
             <MenubarSub>
               <MenubarSubTrigger inset variant="destructive">
                 <MenubarIcon>
-                  <ApplicationCommandIcon command={selectedActionCommand} />
+                  <ApplicationCommandIcon className="size-3" command={selectedActionCommand} />
                 </MenubarIcon>
                 {t("queue.labels.onFinish")}
               </MenubarSubTrigger>
@@ -75,7 +75,7 @@ function MenuBarQueue() {
                       <MenubarRadioItem inset value={action}>
                         <ApplicationCommandLabel />
                         <MenubarIcon side="right">
-                          <ApplicationCommandIcon />
+                          <ApplicationCommandIcon className="size-3" />
                         </MenubarIcon>
                       </MenubarRadioItem>
                     </ApplicationCommandMenuItem>

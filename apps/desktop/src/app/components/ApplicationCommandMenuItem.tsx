@@ -1,4 +1,11 @@
-import { createContext, type ReactElement, type ReactNode, useContext } from "react";
+import {
+  cloneElement,
+  createContext,
+  isValidElement,
+  type ReactElement,
+  type ReactNode,
+  useContext,
+} from "react";
 
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { menuClassNames } from "@/components/ui/menu";
@@ -11,6 +18,7 @@ import {
 } from "@/app/commands/application-command.utils";
 import type { ApplicationCommandId } from "@/app/commands/groups";
 import { useApplicationCommand, useApplicationCommands } from "@/app/hooks/useApplicationCommands";
+import { cn } from "@/lib/class-names.utils";
 
 interface ApplicationCommandMenuContextValue {
   command: ApplicationCommand;
@@ -68,7 +76,13 @@ function ApplicationCommandLabel({ children }: { children?: ReactNode }) {
   return <>{children ?? command.label}</>;
 }
 
-function ApplicationCommandIcon({ command }: { command?: ApplicationCommand }) {
+function ApplicationCommandIcon({
+  className,
+  command,
+}: {
+  className?: string;
+  command?: ApplicationCommand;
+}) {
   const context = useContext(ApplicationCommandMenuContext);
   const resolvedCommand = command ?? context?.command;
   if (!resolvedCommand) {
@@ -76,7 +90,17 @@ function ApplicationCommandIcon({ command }: { command?: ApplicationCommand }) {
       "ApplicationCommandIcon must be used with a command or within ApplicationCommandMenuItem",
     );
   }
-  return <>{resolvedCommand.icon}</>;
+  if (!className || !isValidElement<{ className?: string }>(resolvedCommand.icon)) {
+    return <>{resolvedCommand.icon}</>;
+  }
+
+  return (
+    <>
+      {cloneElement(resolvedCommand.icon, {
+        className: cn(resolvedCommand.icon.props.className, className),
+      })}
+    </>
+  );
 }
 
 function ApplicationCommandShortcut() {
