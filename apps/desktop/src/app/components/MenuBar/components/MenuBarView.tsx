@@ -19,6 +19,10 @@ import {
   MenubarTrigger,
 } from "@/components/ui/menubar";
 
+import {
+  ApplicationCommandLabel,
+  ApplicationCommandMenuItem,
+} from "@/app/components/ApplicationCommandMenuItem";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
   customPrimaryColorChanged,
@@ -27,7 +31,6 @@ import {
   selectPrimaryColor,
   selectPrimaryColorKey,
   selectThemePreference,
-  themePreferenceChanged,
 } from "@/app/store/slices/preferences-slice";
 import {
   CUSTOM_PRIMARY_COLOR,
@@ -35,7 +38,6 @@ import {
   PRIMARY_COLORS,
   type PrimaryColor,
   resolvePrimaryColor,
-  type ThemePreference,
 } from "@/app/theme/theme";
 import { useTheme } from "@/app/theme/useTheme";
 
@@ -64,20 +66,6 @@ function MenuBarView({ onClose }: MenuBarViewProps) {
   const displayedPrimaryColor = previewColor ?? primaryColor;
   const displayedCustomColor = previewColor ?? customPrimaryColor;
 
-  const colorLabels: Record<(typeof PRIMARY_COLORS)[number], string> = {
-    amber: t("settings.options.colors.amber"),
-    blue: t("settings.options.colors.blue"),
-    emerald: t("settings.options.colors.emerald"),
-    rose: t("settings.options.colors.rose"),
-    violet: t("settings.options.colors.violet"),
-  };
-
-  const themeLabels: Record<keyof typeof themeIcons, string> = {
-    dark: t("settings.options.themes.dark"),
-    light: t("settings.options.themes.light"),
-    system: t("settings.options.themes.system"),
-  };
-
   const clearPreview = () => {
     setPreviewColor(null);
     previewPrimaryColor(null);
@@ -103,17 +91,14 @@ function MenuBarView({ onClose }: MenuBarViewProps) {
               {t("settings.labels.theme")}
             </MenubarSubTrigger>
             <MenubarSubContent>
-              <MenubarRadioGroup
-                onValueChange={(theme) =>
-                  dispatch(themePreferenceChanged(theme as ThemePreference))
-                }
-                value={preference}
-              >
+              <MenubarRadioGroup value={preference}>
                 {(["system", "light", "dark"] as const).map((theme) => (
-                  <MenubarRadioItem inset keepOpen key={theme} value={theme}>
-                    {themeLabels[theme]}
-                    <MenubarIcon side="right">{themeIcons[theme]}</MenubarIcon>
-                  </MenubarRadioItem>
+                  <ApplicationCommandMenuItem asChild commandId={`theme-${theme}`} key={theme}>
+                    <MenubarRadioItem inset keepOpen value={theme}>
+                      <ApplicationCommandLabel />
+                      <MenubarIcon side="right">{themeIcons[theme]}</MenubarIcon>
+                    </MenubarRadioItem>
+                  </ApplicationCommandMenuItem>
                 ))}
               </MenubarRadioGroup>
             </MenubarSubContent>
@@ -126,18 +111,23 @@ function MenuBarView({ onClose }: MenuBarViewProps) {
               {t("settings.labels.color")}
             </MenubarSubTrigger>
             <MenubarSubContent>
-              <MenubarRadioGroup
-                onValueChange={(color) => dispatch(primaryColorChanged(color as PrimaryColor))}
-                value={primaryColor}
-              >
+              <MenubarRadioGroup value={primaryColor}>
                 {PRIMARY_COLORS.map((color) => (
-                  <MenubarRadioItem inset keepOpen key={color} value={color}>
-                    {colorLabels[color]}
-                    <MenubarShortcut className="flex items-center gap-2">
-                      <span className="font-mono">{resolvePrimaryColor(color).toUpperCase()}</span>
-                      <ColorSample color={resolvePrimaryColor(color)} />
-                    </MenubarShortcut>
-                  </MenubarRadioItem>
+                  <ApplicationCommandMenuItem
+                    asChild
+                    commandId={`primary-color-${color}`}
+                    key={color}
+                  >
+                    <MenubarRadioItem inset keepOpen value={color}>
+                      <ApplicationCommandLabel />
+                      <MenubarShortcut className="flex items-center gap-2">
+                        <span className="font-mono">
+                          {resolvePrimaryColor(color).toUpperCase()}
+                        </span>
+                        <ColorSample color={resolvePrimaryColor(color)} />
+                      </MenubarShortcut>
+                    </MenubarRadioItem>
+                  </ApplicationCommandMenuItem>
                 ))}
                 <MenubarSub>
                   <MenubarSubTrigger

@@ -1,26 +1,64 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { Menubar } from "@/components/ui/menubar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { DEFAULT_PREFERENCES } from "@/app/preferences";
+import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";
 import { sourceSelected } from "@/app/store/actions/source-actions";
 import { selectMergeAudio } from "@/app/store/slices/audio-slice";
 import { createAppStore } from "@/app/store/store";
 
 import { MenuBarSettings } from "../MenuBarSettings";
 
+vi.mock("@/features/changelog", () => ({ useChangelogDialog: () => ({ openChangelog: vi.fn() }) }));
+vi.mock("@/features/export", () => ({
+  useQueueDeleteSource: () => ({ requestEnableSourceDeletion: vi.fn() }),
+}));
+vi.mock("@/features/preview", () => ({
+  usePreviewTransform: () => ({ isAvailable: false, requestCrop: vi.fn(), requestReset: vi.fn() }),
+}));
+vi.mock("@/features/source", () => ({ useSourceDelete: () => ({ requestSourceDelete: vi.fn() }) }));
+vi.mock("@/app/hooks/useAppUpdates", () => ({
+  useAppUpdates: () => ({
+    availableVersion: null,
+    checkForUpdates: vi.fn(),
+    installUpdate: vi.fn(),
+    isInstalling: false,
+    status: "idle",
+  }),
+}));
+vi.mock("@/components/ui/resizable", async () => {
+  const actual = await vi.importActual<typeof import("@/components/ui/resizable")>(
+    "@/components/ui/resizable",
+  );
+
+  return {
+    ...actual,
+    usePanelCommand: () => ({
+      isAvailable: true,
+      isCollapsed: false,
+      isDisabled: false,
+      isReset: false,
+      toggle: vi.fn(),
+      reset: vi.fn(),
+    }),
+  };
+});
+
 function renderSettings() {
   const store = createAppStore();
   render(
     <Provider store={store}>
       <TooltipProvider delayDuration={0}>
-        <Menubar value="settings">
-          <MenuBarSettings />
-        </Menubar>
+        <ApplicationCommandsProvider>
+          <Menubar value="settings">
+            <MenuBarSettings />
+          </Menubar>
+        </ApplicationCommandsProvider>
       </TooltipProvider>
     </Provider>,
   );
