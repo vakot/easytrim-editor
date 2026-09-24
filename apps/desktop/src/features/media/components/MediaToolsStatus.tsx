@@ -11,6 +11,7 @@ import {
   LoaderCircle,
   RotateCw,
 } from "lucide-react";
+import { motion, useReducedMotion } from "motion/react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -27,6 +28,8 @@ import type { BinaryCapability, MediaCapabilities } from "@/lib/tauri/media.type
 
 const INSTALL_COMMAND = "winget install --id Gyan.FFmpeg --exact";
 
+const MotionButton = motion.create(Button);
+
 const triggerButtonVariants = cva("", {
   variants: {
     variant: {
@@ -34,22 +37,18 @@ const triggerButtonVariants = cva("", {
       destructive: "border-destructive/40",
       success: "border-success/40",
     },
-    presentation: {
-      default: "h-7 gap-1.5 px-2 text-xs",
-      compact: "size-7 px-0",
-    },
   },
   defaultVariants: {
     variant: "outline",
-    presentation: "default",
   },
 });
 
 interface MediaToolsStatusProps {
+  grouped?: boolean;
   presentation?: "compact" | "startup";
 }
 
-function MediaToolsStatus({ presentation = "compact" }: MediaToolsStatusProps) {
+function MediaToolsStatus({ grouped = false, presentation = "compact" }: MediaToolsStatusProps) {
   const capabilities = useAppSelector(selectCapabilities);
   const state = getMediaToolsState(capabilities);
 
@@ -57,6 +56,7 @@ function MediaToolsStatus({ presentation = "compact" }: MediaToolsStatusProps) {
     <Popover>
       <MediaToolsStatusTrigger
         capabilities={capabilities}
+        grouped={grouped}
         presentation={presentation}
         state={state}
       />
@@ -69,15 +69,19 @@ function MediaToolsStatus({ presentation = "compact" }: MediaToolsStatusProps) {
 
 function MediaToolsStatusTrigger({
   capabilities,
+  grouped,
   presentation,
   state,
 }: {
   capabilities: ReturnType<typeof selectCapabilities>;
+  grouped: boolean;
   presentation: NonNullable<MediaToolsStatusProps["presentation"]>;
   state: MediaToolsState;
 }) {
   const { t } = useTranslation();
   const { checking, partial, ready, unavailable } = state;
+  const shouldReduceMotion = useReducedMotion();
+  const iconOnly = presentation === "compact" && ready;
 
   const statusText = state.checking
     ? t("app.status.checkingTools")
@@ -93,14 +97,21 @@ function MediaToolsStatusTrigger({
 
   return (
     <PopoverTrigger asChild>
-      <Button
+      <MotionButton
+        animate={{
+          borderBottomLeftRadius: grouped ? 0 : "var(--radius-lg)",
+          borderLeftWidth: grouped ? 0 : 1,
+          borderTopLeftRadius: grouped ? 0 : "var(--radius-lg)",
+          minWidth: iconOnly ? 24 : 0,
+          paddingLeft: iconOnly ? 4 : 8,
+          paddingRight: iconOnly ? 4 : 8,
+        }}
         aria-label={ready && presentation === "compact" ? t("app.status.toolsReady") : statusText}
-        className={triggerButtonVariants({
-          variant,
-          presentation: presentation === "compact" && ready ? "compact" : "default",
-        })}
+        className={`${triggerButtonVariants({ variant })} transition-none`}
         data-no-drag="true"
-        size="sm"
+        initial={false}
+        size="xs"
+        transition={{ duration: shouldReduceMotion ? 0 : 0.24, ease: "easeOut" }}
         variant={variant}
       >
         {checking ? (
@@ -112,8 +123,16 @@ function MediaToolsStatusTrigger({
         ) : (
           <CircleX aria-hidden="true" className="size-3.5" />
         )}
-        {presentation === "startup" || !ready ? <span>{statusText}</span> : null}
-      </Button>
+        <motion.span
+          animate={{ opacity: iconOnly ? 0 : 1, width: iconOnly ? 0 : "auto" }}
+          aria-hidden={iconOnly}
+          className="min-w-0 shrink-0 overflow-hidden whitespace-nowrap"
+          initial={false}
+          transition={{ duration: shouldReduceMotion ? 0 : 0.24, ease: "easeOut" }}
+        >
+          {statusText}
+        </motion.span>
+      </MotionButton>
     </PopoverTrigger>
   );
 }
