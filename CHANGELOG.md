@@ -14,6 +14,10 @@ All notable changes to this project will be documented in this file.
 
 - Simplified the empty preview's keyboard hints and highlighted the Command Palette shortcut separately.
 
+### Fixed
+
+- Matched destructive and success icon colors in the Command Palette to the shared menu styles.
+
 ## [1.10.4]
 
 ### Fixed
