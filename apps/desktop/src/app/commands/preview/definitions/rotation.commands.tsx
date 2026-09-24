@@ -1,4 +1,4 @@
-import { ScissorsIcon } from "lucide-react";
+import { RotateCcw, RotateCw, RotateCwSquare } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -35,7 +35,14 @@ function useRotationCommands() {
   ).map(([id, labelKey, delta]) => ({
     checked: degrees === (delta + 360) % 360,
     enabled: isAvailable,
-    icon: <ScissorsIcon aria-hidden="true" />,
+    icon:
+      id === "rotate-90-cw" ? (
+        <RotateCw aria-hidden="true" />
+      ) : id === "rotate-90-ccw" ? (
+        <RotateCcw aria-hidden="true" />
+      ) : (
+        <RotateCwSquare aria-hidden="true" />
+      ),
     run() {
       const next = ((degreesRef.current + delta + 360) % 360) as 0 | 90 | 180 | 270;
       dispatch(rotationChanged(next));

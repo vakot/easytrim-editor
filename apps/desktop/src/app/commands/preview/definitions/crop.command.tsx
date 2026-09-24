@@ -1,4 +1,4 @@
-import { ScissorsIcon } from "lucide-react";
+import { Crop } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { commandSearchTerms } from "@/app/commands/core/application-command.utils";
@@ -10,7 +10,7 @@ function useCropPreviewCommand() {
   const label = t("preview.actions.transform.crop");
   return {
     enabled: isAvailable,
-    icon: <ScissorsIcon aria-hidden="true" />,
+    icon: <Crop aria-hidden="true" />,
     run: requestCrop,
     id: "crop-preview" as const,
     label,

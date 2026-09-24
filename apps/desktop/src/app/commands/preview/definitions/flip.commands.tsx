@@ -1,4 +1,4 @@
-import { ScissorsIcon } from "lucide-react";
+import { FlipHorizontal2, FlipVertical2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { commandSearchTerms } from "@/app/commands/core/application-command.utils";
@@ -30,7 +30,12 @@ function useFlipCommands() {
   ).map(({ axis, checked, id }) => ({
     checked,
     enabled: isAvailable,
-    icon: <ScissorsIcon aria-hidden="true" />,
+    icon:
+      axis === "horizontal" ? (
+        <FlipHorizontal2 aria-hidden="true" />
+      ) : (
+        <FlipVertical2 aria-hidden="true" />
+      ),
     run() {
       dispatch(flipToggled(axis));
       dispatch(commitActiveEditingInstanceDraft());
