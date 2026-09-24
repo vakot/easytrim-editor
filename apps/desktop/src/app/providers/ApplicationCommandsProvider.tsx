@@ -1,4 +1,4 @@
-import { type ReactNode, useCallback, useMemo, useRef, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { usePanelCommand } from "@/components/ui/resizable";
