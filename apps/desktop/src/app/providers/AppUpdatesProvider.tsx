@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { AppUpdatesContext, type UpdateStatus } from "@/app/contexts/app-updates-context";
+import { clearWorkspaceRecoveryOnAcceptedShutdown } from "@/app/store/recovery/workspace-recovery";
 import { checkForUpdates as checkForUpdatesNative } from "@/lib/tauri/updates";
 import type { AvailableUpdate } from "@/lib/tauri/updates.types";
 import { isTauriRuntime } from "@/lib/tauri/updates.utils";
@@ -44,6 +45,7 @@ function AppUpdatesProvider({ children }: { children: ReactNode }) {
     setIsInstalling(true);
 
     try {
+      await clearWorkspaceRecoveryOnAcceptedShutdown();
       await update.install();
       updateRef.current = null;
       setAvailableVersion(null);

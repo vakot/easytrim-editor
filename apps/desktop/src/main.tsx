@@ -6,9 +6,11 @@ import ReactDOM from "react-dom/client";
 
 import { AppErrorBoundary } from "./app/components/AppErrorBoundary";
 import { startSourceMediaRuntime } from "./app/store/integration/source-media-runtime";
+import { initializeWorkspaceRecovery } from "./app/store/recovery/workspace-recovery";
 import { store } from "./app/store/store";
 import {
   diagnostics,
+  getCurrentDiagnosticSessionId,
   installGlobalDiagnostics,
   reportDiagnosticsUnavailable,
 } from "./lib/diagnostics";
@@ -30,6 +32,13 @@ async function startApplication() {
   } catch (error: unknown) {
     reportDiagnosticsUnavailable(error);
   }
+
+  const recovery = diagnostics.getStartupRecovery();
+  initializeWorkspaceRecovery(
+    store,
+    getCurrentDiagnosticSessionId() ?? "unknown-session",
+    recovery !== null,
+  );
 
   const stopGlobalDiagnostics = installGlobalDiagnostics();
   const stopSourceMediaRuntime = startSourceMediaRuntime(store.dispatch);

@@ -23,6 +23,7 @@ const activityIcons: Record<ActivityKind, LucideIcon> = {
   "files-imported": FileVideo,
   "folders-imported": FolderOpen,
   render: Film,
+  "workspace-restored": RotateCcw,
 };
 
 const activityStatusPresentation: Record<ActivityStatus, { className: string; icon?: LucideIcon }> =

@@ -40,6 +40,8 @@ const labels: ActivityProjectionLabels = {
   renderInterrupted: "Render interrupted",
   renderStarted: "Started rendering",
   rendering: "Rendering…",
+  workspaceRestored: (restored, total) =>
+    restored === total ? `Restored ${restored}` : `Restored ${restored} of ${total}`,
 };
 
 const outputPath = "C:/Exports/clip.mp4";
@@ -1058,5 +1060,28 @@ describe("activity projection", () => {
         sessionLabels,
       ).tone,
     ).toBe("default");
+  });
+
+  it("projects workspace recovery as one standalone full or partial entry", () => {
+    const full = projectActivityEvent(
+      diagnosticEvent("workspace.recovery.completed", {
+        data: { restoredSourceCount: 4, sourceCount: 4 },
+      }),
+      labels,
+    );
+    const partial = projectActivityEvent(
+      diagnosticEvent("workspace.recovery.completed", {
+        data: { restoredSourceCount: 3, sourceCount: 4 },
+      }),
+      labels,
+    );
+
+    expect(full).toMatchObject({
+      kind: "workspace-restored",
+      title: "Restored 4",
+      status: "completed",
+    });
+    expect(full).not.toHaveProperty("snapshotId");
+    expect(partial?.title).toBe("Restored 3 of 4");
   });
 });

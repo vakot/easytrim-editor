@@ -14,6 +14,7 @@ import {
 
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectHasProcessableExports } from "@/app/store/slices/editing-instances-slice";
+import { clearWorkspaceRecoveryOnAcceptedShutdown } from "@/app/store/recovery/workspace-recovery";
 import {
   closeWindow,
   listenForWindowCloseRequests,
@@ -28,6 +29,17 @@ function AppShutdownGuard() {
   const allowClose = useRef(false);
   const pendingContinuation = useRef<WindowShutdownContinuation | null>(null);
 
+  const acceptClose = useCallback(async () => {
+    await clearWorkspaceRecoveryOnAcceptedShutdown();
+    allowClose.current = true;
+    try {
+      await closeWindow();
+    } catch {
+      allowClose.current = false;
+      setOpen(true);
+    }
+  }, []);
+
   const handleShutdownRequest = useCallback(
     (continuation?: WindowShutdownContinuation) => {
       if (hasProcessableExports) {
@@ -36,9 +48,15 @@ function AppShutdownGuard() {
         return;
       }
 
-      void (continuation?.() ?? closeWindow());
+      if (continuation) {
+        void clearWorkspaceRecoveryOnAcceptedShutdown()
+          .then(continuation)
+          .catch(() => setOpen(true));
+      } else {
+        void acceptClose();
+      }
     },
-    [hasProcessableExports],
+    [acceptClose, hasProcessableExports],
   );
 
   useEffect(() => {
@@ -48,9 +66,12 @@ function AppShutdownGuard() {
           allowClose.current = false;
           return false;
         }
-        return hasProcessableExports;
+        return true;
       },
-      () => setOpen(true),
+      () => {
+        if (hasProcessableExports) setOpen(true);
+        else void acceptClose();
+      },
     );
 
     const unlistenShutdown = listenForWindowShutdownRequests(handleShutdownRequest);
@@ -59,7 +80,7 @@ function AppShutdownGuard() {
       unlistenShutdown();
       void unlistenPromise.then((unlisten) => unlisten());
     };
-  }, [handleShutdownRequest, hasProcessableExports]);
+  }, [acceptClose, handleShutdownRequest, hasProcessableExports]);
 
   const confirmClose = () => {
     const continuation = pendingContinuation.current;
@@ -67,16 +88,14 @@ function AppShutdownGuard() {
 
     if (continuation) {
       setOpen(false);
-      void Promise.resolve(continuation()).catch(() => setOpen(true));
+      void clearWorkspaceRecoveryOnAcceptedShutdown()
+        .then(continuation)
+        .catch(() => setOpen(true));
       return;
     }
 
-    allowClose.current = true;
     setOpen(false);
-    void closeWindow().catch(() => {
-      allowClose.current = false;
-      setOpen(true);
-    });
+    void acceptClose();
   };
 
   return (
