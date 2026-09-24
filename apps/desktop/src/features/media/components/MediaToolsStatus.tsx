@@ -79,7 +79,7 @@ function MediaToolsStatus({ presentation = "compact" }: { presentation?: "compac
     <Popover>
       <PopoverTrigger asChild>{trigger}</PopoverTrigger>
       <PopoverContent align="center" className="w-88 max-w-[calc(100vw-1rem)] p-4" sideOffset={7}>
-        <div className="grid gap-3">
+        <div className="grid min-w-0 gap-3">
           <div className="grid gap-1">
             <div className="flex items-center justify-between gap-3">
               <h2 className="font-semibold">{t("app.labels.mediaTools")}</h2>
@@ -113,7 +113,7 @@ function MediaToolsStatus({ presentation = "compact" }: { presentation?: "compac
           </div>
 
           {capabilities.status === "ready" ? (
-            <ul className="grid gap-2">
+            <ul className="grid min-w-0 gap-2">
               <BinaryRow capability={capabilities.value.ffmpeg} label="FFmpeg" />
               <BinaryRow capability={capabilities.value.ffprobe} label="FFprobe" />
             </ul>
@@ -200,14 +200,14 @@ function BinaryRow({ capability, label }: { capability: BinaryCapability; label:
 
   return (
     <li className="grid min-w-0 gap-0.5">
-      <div className="flex items-center gap-1.5 text-xs">
+      <div className="flex min-w-0 items-center gap-1.5 text-xs">
         {capability.available ? (
           <Check aria-hidden="true" className="size-3.5 text-success" />
         ) : (
           <CircleX aria-hidden="true" className="size-3.5 text-destructive" />
         )}
-        <span className="font-medium">{label}</span>
-        <span className="min-w-0 truncate text-muted-foreground">
+        <span className="shrink-0 font-medium">{label}</span>
+        <span className="min-w-0 flex-1 truncate text-muted-foreground" title={capability.version}>
           {capability.version ??
             (capability.available ? t("app.status.installed") : t("app.status.missing"))}
         </span>
