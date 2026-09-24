@@ -61,6 +61,7 @@ function useApplicationCommands(onDeleteRequested: (sourceId: string) => void) {
       label: t("app.actions.openFolder"),
       searchTerms: commandSearchTerms(t("app.options.commandSearchTerms.openFolder")),
       section: sections.file,
+      shortcut: APPLICATION_SHORTCUTS.openFolder,
     },
     {
       enabled: canUseSource,

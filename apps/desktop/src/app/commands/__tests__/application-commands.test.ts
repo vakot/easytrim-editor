@@ -72,14 +72,18 @@ describe("application command shortcuts", () => {
   it("formats the primary modifier for Windows/Linux and macOS", () => {
     expect(getShortcutDisplayKeys(APPLICATION_SHORTCUTS.commandPalette, "other")).toEqual([
       "Ctrl",
-      "K",
+      "H",
     ]);
-    expect(getShortcutAriaValue(APPLICATION_SHORTCUTS.commandPalette, "other")).toBe("Control+K");
+    expect(getShortcutAriaValue(APPLICATION_SHORTCUTS.commandPalette, "other")).toBe("Control+H");
     expect(getShortcutDisplayKeys(APPLICATION_SHORTCUTS.commandPalette, "macos")).toEqual([
       "Cmd",
+      "H",
+    ]);
+    expect(getShortcutAriaValue(APPLICATION_SHORTCUTS.commandPalette, "macos")).toBe("Meta+H");
+    expect(getShortcutDisplayKeys(APPLICATION_SHORTCUTS.openFolder, "macos")).toEqual([
+      "Ctrl",
       "K",
     ]);
-    expect(getShortcutAriaValue(APPLICATION_SHORTCUTS.commandPalette, "macos")).toBe("Meta+K");
     expect(getShortcutDisplayKeys(APPLICATION_SHORTCUTS.saveLosslessCut, "macos")).toEqual([
       "Ctrl",
       "S",
@@ -87,12 +91,12 @@ describe("application command shortcuts", () => {
   });
 
   it("matches only the platform primary modifier", () => {
-    const controlK = new KeyboardEvent("keydown", { code: "KeyK", ctrlKey: true });
-    const commandK = new KeyboardEvent("keydown", { code: "KeyK", metaKey: true });
+    const controlH = new KeyboardEvent("keydown", { code: "KeyH", ctrlKey: true });
+    const commandH = new KeyboardEvent("keydown", { code: "KeyH", metaKey: true });
 
-    expect(isShortcutEvent(controlK, APPLICATION_SHORTCUTS.commandPalette, "other")).toBe(true);
-    expect(isShortcutEvent(commandK, APPLICATION_SHORTCUTS.commandPalette, "other")).toBe(false);
-    expect(isShortcutEvent(commandK, APPLICATION_SHORTCUTS.commandPalette, "macos")).toBe(true);
-    expect(isShortcutEvent(controlK, APPLICATION_SHORTCUTS.commandPalette, "macos")).toBe(false);
+    expect(isShortcutEvent(controlH, APPLICATION_SHORTCUTS.commandPalette, "other")).toBe(true);
+    expect(isShortcutEvent(commandH, APPLICATION_SHORTCUTS.commandPalette, "other")).toBe(false);
+    expect(isShortcutEvent(commandH, APPLICATION_SHORTCUTS.commandPalette, "macos")).toBe(true);
+    expect(isShortcutEvent(controlH, APPLICATION_SHORTCUTS.commandPalette, "macos")).toBe(false);
   });
 });

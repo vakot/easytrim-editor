@@ -259,7 +259,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    fireEvent.keyDown(window, { code: "KeyK", ctrlKey: true });
+    fireEvent.keyDown(window, { code: "KeyH", ctrlKey: true });
     expect(screen.getByRole("dialog", { name: "Command Palette" })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: /Close File/ })).toHaveAttribute(
       "aria-disabled",
@@ -268,7 +268,7 @@ describe("App", () => {
 
     const search = screen.getByRole("combobox", { name: "Search commands" });
     await user.type(search, "direc");
-    expect(screen.getByRole("option", { name: "Open Folder" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: /Open Folder/ })).toBeInTheDocument();
     expect(screen.queryByRole("option", { name: /Open File/ })).not.toBeInTheDocument();
 
     await user.clear(search);
@@ -279,7 +279,7 @@ describe("App", () => {
     await user.clear(search);
     await user.type(search, "folder");
     expect(
-      screen.getByRole("option", { name: "Open Folder" }).querySelector("mark"),
+      screen.getByRole("option", { name: /Open Folder/ }).querySelector("mark"),
     ).toHaveTextContent("Folder");
     await user.keyboard("{Enter}");
 
@@ -288,7 +288,7 @@ describe("App", () => {
 
     getMenuTrigger("File").focus();
     await user.keyboard("{Enter}");
-    await user.click(screen.getByRole("menuitem", { name: "Open Folder" }));
+    await user.click(screen.getByRole("menuitem", { name: /Open Folder/ }));
     await waitFor(() => expect(mocks.chooseSource).toHaveBeenCalledTimes(2));
     expect(mocks.chooseSource).toHaveBeenLastCalledWith("folders");
   });
@@ -875,13 +875,21 @@ describe("App", () => {
     expect(mocks.chooseSource).toHaveBeenCalledTimes(1);
   });
 
-  it("toggles the command palette with Ctrl+K", () => {
+  it("opens the folder picker with Ctrl+K", () => {
     render(<App />);
 
     fireEvent.keyDown(window, { key: "k", code: "KeyK", ctrlKey: true });
+
+    expect(mocks.chooseSource).toHaveBeenCalledWith("folders");
+  });
+
+  it("toggles the command palette with Ctrl+H", () => {
+    render(<App />);
+
+    fireEvent.keyDown(window, { key: "h", code: "KeyH", ctrlKey: true });
     expect(screen.getByRole("dialog", { name: "Command Palette" })).toBeInTheDocument();
 
-    fireEvent.keyDown(window, { key: "k", code: "KeyK", ctrlKey: true });
+    fireEvent.keyDown(window, { key: "h", code: "KeyH", ctrlKey: true });
     expect(screen.queryByRole("dialog", { name: "Command Palette" })).not.toBeInTheDocument();
   });
 

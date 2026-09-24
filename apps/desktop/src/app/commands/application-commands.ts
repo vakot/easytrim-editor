@@ -42,9 +42,10 @@ interface ApplicationCommandMatch {
 
 const APPLICATION_SHORTCUTS = {
   closeFile: { code: "KeyQ", key: "Q", modifier: "control" },
-  commandPalette: { code: "KeyK", key: "K", modifier: "primary" },
+  commandPalette: { code: "KeyH", key: "H", modifier: "primary" },
   deleteFile: { code: "KeyD", key: "D", modifier: "control" },
   openFile: { code: "KeyO", key: "O", modifier: "control" },
+  openFolder: { code: "KeyK", key: "K", modifier: "control" },
   optimizedExport: { code: "KeyE", key: "E", modifier: "control" },
   saveLosslessCut: { code: "KeyS", key: "S", modifier: "control" },
 } as const satisfies Record<string, ApplicationShortcut>;

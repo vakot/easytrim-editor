@@ -55,6 +55,7 @@ function SourceListEmpty() {
             <SourceListEmptyAction
               description={t("source.messages.openFolderDescription")}
               icon={<FolderOpen aria-hidden="true" />}
+              keys={["Ctrl", "K"]}
               label={t("app.actions.openFolder")}
               onClick={() =>
                 void dispatch(
