@@ -6,7 +6,7 @@ import {
   Trash2Icon,
   XIcon,
 } from "lucide-react";
-import { useCallback, useState } from "react";
+import { createContext, useCallback, useContext, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -46,6 +46,12 @@ const commandIcons = {
   "optimized-export": FileOutputIcon,
   "save-lossless-cut": ScissorsIcon,
 } satisfies Record<ApplicationCommandId, typeof XIcon>;
+
+type CommandPaletteSection = {
+  matches: ApplicationCommandMatch[];
+  sectionLabel: string;
+  sectionMatched: boolean;
+};
 
 function CommandPalette() {
   const { t } = useTranslation();
@@ -98,7 +104,7 @@ function CommandPalette() {
   }
 
   return (
-    <>
+    <CommandPaletteContext.Provider value={{ query, executeCommand }}>
       <CommandDialog
         description={t("app.messages.commandPaletteDescription")}
         onOpenChange={handleOpenChange}
@@ -113,48 +119,8 @@ function CommandPalette() {
             value={query}
           />
           <CommandList>
-            <CommandEmpty>{t("app.messages.commandPaletteEmpty")}</CommandEmpty>
-            {[...groups.entries()].map(([sectionId, group], index) => (
-              <div key={sectionId}>
-                {index > 0 ? <CommandSeparator /> : null}
-                <CommandGroup
-                  heading={
-                    <Highlight query={group.sectionMatched ? query : ""}>
-                      {group.sectionLabel}
-                    </Highlight>
-                  }
-                >
-                  {group.matches.map((match) => {
-                    const { command } = match;
-                    const Icon = commandIcons[command.id];
-                    return (
-                      <CommandItem
-                        disabled={!command.enabled}
-                        key={command.id}
-                        onSelect={() => executeCommand(command)}
-                        value={command.id}
-                      >
-                        <Icon aria-hidden="true" />
-                        <span>
-                          <Highlight query={match.labelMatched ? query : ""}>
-                            {command.label}
-                          </Highlight>
-                        </span>
-                        {command.shortcut ? (
-                          <CommandShortcut aria-label={getShortcutAriaValue(command.shortcut)}>
-                            <KbdGroup>
-                              {getShortcutDisplayKeys(command.shortcut).map((key) => (
-                                <Kbd key={key}>{key}</Kbd>
-                              ))}
-                            </KbdGroup>
-                          </CommandShortcut>
-                        ) : null}
-                      </CommandItem>
-                    );
-                  })}
-                </CommandGroup>
-              </div>
-            ))}
+            <CommandPaletteEmpty />
+            <CommandPaletteContent groups={groups} />
           </CommandList>
         </Command>
       </CommandDialog>
@@ -168,15 +134,91 @@ function CommandPalette() {
       >
         {null}
       </SourceDeleteDialog>
-    </>
+    </CommandPaletteContext.Provider>
   );
 }
 
+function CommandPaletteContent({
+  groups,
+}: {
+  groups: Map<ApplicationCommand["section"]["id"], CommandPaletteSection>;
+}) {
+  return [...groups.entries()].map(([sectionId, group], index) => (
+    <div key={sectionId}>
+      {index > 0 ? <CommandSeparator /> : null}
+      <CommandPaletteGroup group={group} />
+    </div>
+  ));
+}
+
+function CommandPaletteEmpty() {
+  const { t } = useTranslation();
+
+  return <CommandEmpty>{t("app.messages.commandPaletteEmpty")}</CommandEmpty>;
+}
+
+function CommandPaletteGroup({ group }: { group: CommandPaletteSection }) {
+  const { query } = useCommandPaletteState();
+
+  return (
+    <div>
+      <CommandGroup
+        heading={
+          <Highlight query={group.sectionMatched ? query : ""}>{group.sectionLabel}</Highlight>
+        }
+      >
+        {group.matches.map((match) => (
+          <CommandPaletteItem key={match.command.id} match={match} />
+        ))}
+      </CommandGroup>
+    </div>
+  );
+}
+
+function CommandPaletteItem({ match }: { match: ApplicationCommandMatch }) {
+  const { command } = match;
+  const Icon = commandIcons[command.id];
+
+  const { executeCommand, query } = useCommandPaletteState();
+
+  return (
+    <CommandItem
+      disabled={!command.enabled}
+      onSelect={() => executeCommand(command)}
+      value={command.id}
+    >
+      <Icon aria-hidden="true" />
+      <span>
+        <Highlight query={match.labelMatched ? query : ""}>{command.label}</Highlight>
+      </span>
+      {command.shortcut ? (
+        <CommandShortcut aria-label={getShortcutAriaValue(command.shortcut)}>
+          <KbdGroup>
+            {getShortcutDisplayKeys(command.shortcut).map((key) => (
+              <Kbd key={key}>{key}</Kbd>
+            ))}
+          </KbdGroup>
+        </CommandShortcut>
+      ) : null}
+    </CommandItem>
+  );
+}
+
+const CommandPaletteContext = createContext<{
+  executeCommand: (command: ApplicationCommand) => void;
+  query: string;
+} | null>(null);
+
+function useCommandPaletteState() {
+  const context = useContext(CommandPaletteContext);
+  if (!context) {
+    throw new Error("useCommandPaletteState must be used within CommandPalette");
+  }
+  return context;
+}
+
 function groupCommandMatches(matches: readonly ApplicationCommandMatch[]) {
-  const groups = new Map<
-    ApplicationCommand["section"]["id"],
-    { matches: ApplicationCommandMatch[]; sectionLabel: string; sectionMatched: boolean }
-  >();
+  const groups = new Map<ApplicationCommand["section"]["id"], CommandPaletteSection>();
 
   for (const match of matches) {
     const current = groups.get(match.command.section.id);
