@@ -198,7 +198,6 @@ export const ru = {
         rose: "Розовый",
         violet: "Фиолетовый",
       },
-      languages: { english: "English", russian: "Русский", slovak: "Slovenčina" },
       activityFeedViews: { branch: "Ветвление", compact: "Компактный", default: "Обычный" },
       themes: { dark: "Тёмная", light: "Светлая", system: "Системная" },
     },

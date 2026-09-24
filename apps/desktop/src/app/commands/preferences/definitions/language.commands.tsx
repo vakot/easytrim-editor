@@ -16,12 +16,7 @@ function getLanguageCommandId(language: Language) {
 }
 
 function useLanguageCommands() {
-  const { i18n, t } = useTranslation();
-  const translatedLabels = {
-    en: t("settings.options.languages.english"),
-    sk: t("settings.options.languages.slovak"),
-    ru: t("settings.options.languages.russian"),
-  };
+  const { i18n } = useTranslation();
 
   return (["en", "sk", "ru"] as const).map((language) => ({
     checked: i18n.resolvedLanguage === language,
@@ -32,9 +27,7 @@ function useLanguageCommands() {
     },
     id: getLanguageCommandId(language),
     label: languageNames[language],
-    searchTerms: commandSearchTerms(
-      `${languageNames[language]}|${translatedLabels[language]}|language`,
-    ),
+    searchTerms: commandSearchTerms(`${languageNames[language]}|language`),
     variant: "default" as const,
   }));
 }

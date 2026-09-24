@@ -198,7 +198,6 @@ export const sk = {
         rose: "Ružová",
         violet: "Fialová",
       },
-      languages: { english: "English", russian: "Ruština", slovak: "Slovenčina" },
       activityFeedViews: { branch: "Vetvené", compact: "Kompaktné", default: "Predvolené" },
       themes: { dark: "Tmavá", light: "Svetlá", system: "Systémová" },
     },
