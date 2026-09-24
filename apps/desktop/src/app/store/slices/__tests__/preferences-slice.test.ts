@@ -88,7 +88,7 @@ describe("preferences Redux domain", () => {
     expect(nextPresetState).toMatchObject({ primaryColor: "rose", customPrimaryColor: "#123456" });
   });
 
-  it("resets non-layout preferences while preserving layout settings", () => {
+  it("resets defaults while preserving view and queue preferences", () => {
     const state = preferencesReducer(
       {
         snapPlaybackEnabledDefault: false,
@@ -96,13 +96,13 @@ describe("preferences Redux domain", () => {
         segmentPlaybackEnabledDefault: false,
         autoStartQueueEnabled: false,
         mergeAudioEnabledDefault: true,
-        deleteSourceOnRenderFinish: false,
+        deleteSourceOnRenderFinish: true,
         lastSeenChangelogVersion: null,
         activityFeedView: "branch",
         layoutDensity: "compact",
-        theme: "system",
-        primaryColor: "amber",
-        customPrimaryColor: "#efbf04",
+        theme: "dark",
+        primaryColor: "#123456",
+        customPrimaryColor: "#123456",
       },
       preferencesReset(),
     );
@@ -111,6 +111,10 @@ describe("preferences Redux domain", () => {
       ...DEFAULT_PREFERENCES,
       activityFeedView: "branch",
       layoutDensity: "compact",
+      theme: "dark",
+      primaryColor: "#123456",
+      customPrimaryColor: "#123456",
+      deleteSourceOnRenderFinish: true,
     });
   });
 

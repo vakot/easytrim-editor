@@ -8,7 +8,10 @@ import {
   editorToolsReset,
   playbackSpeedChanged,
 } from "@/app/store/slices/editor-tools-slice";
-import { optimizedExportDialogOpened } from "@/app/store/slices/export-slice";
+import {
+  optimizedExportDialogOpened,
+  queueFinishActionChanged,
+} from "@/app/store/slices/export-slice";
 import {
   activityFeedViewChanged,
   customPrimaryColorChanged,
@@ -246,21 +249,29 @@ describe("Redux Persist store integration", () => {
     });
   });
 
-  it("preserves layout settings when persisting a preferences reset", async () => {
+  it("preserves view and queue settings when persisting a preferences reset", async () => {
     const { persistor, storage, store } = await createPersistedTestStore();
 
     store.dispatch(preferenceChanged({ key: "loopPlaybackEnabledDefault", enabled: false }));
     store.dispatch(activityFeedViewChanged("branch"));
     store.dispatch(layoutDensityChanged("compact"));
+    store.dispatch(themePreferenceChanged("dark"));
+    store.dispatch(primaryColorChanged("blue"));
+    store.dispatch(preferenceChanged({ key: "deleteSourceOnRenderFinish", enabled: true }));
+    store.dispatch(queueFinishActionChanged("exit"));
     await persistor.flush();
     store.dispatch(preferencesReset());
     await persistor.flush();
 
+    expect(store.getState().export.queueFinishAction).toBe("exit");
     const persistedRoot = await readPersistedRoot(storage);
     expect(JSON.parse(String(persistedRoot.preferences))).toEqual({
       ...DEFAULT_PREFERENCES,
       activityFeedView: "branch",
       layoutDensity: "compact",
+      theme: "dark",
+      primaryColor: "blue",
+      deleteSourceOnRenderFinish: true,
     });
   });
 

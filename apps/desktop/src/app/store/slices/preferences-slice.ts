@@ -64,10 +64,18 @@ const preferencesSlice = createSlice({
       const activityFeedView = state.activityFeedView;
       const layoutDensity = state.layoutDensity;
       const lastSeenChangelogVersion = state.lastSeenChangelogVersion;
+      const theme = state.theme;
+      const primaryColor = state.primaryColor;
+      const customPrimaryColor = state.customPrimaryColor;
+      const deleteSourceOnRenderFinish = state.deleteSourceOnRenderFinish;
       Object.assign(state, DEFAULT_PREFERENCES);
       state.activityFeedView = activityFeedView;
       state.layoutDensity = layoutDensity;
       state.lastSeenChangelogVersion = lastSeenChangelogVersion;
+      state.theme = theme;
+      state.primaryColor = primaryColor;
+      state.customPrimaryColor = customPrimaryColor;
+      state.deleteSourceOnRenderFinish = deleteSourceOnRenderFinish;
     },
   },
 });
