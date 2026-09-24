@@ -13,9 +13,11 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { AppUpdatesContext } from "@/app/contexts/app-updates-context";
 import { DEFAULT_PREFERENCES, type PreferenceKey, type Preferences } from "@/app/preferences";
+import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import type { SourceRef } from "@/domain/source";
 import { ChangelogProvider } from "@/features/changelog";
+import { SourceDeleteProvider } from "@/features/source";
 import { getCurrentVersion } from "@/lib/app-version.utils";
 import { openExternalUrl } from "@/lib/open-external-url.utils";
 import type { QueueFinishAction } from "@/lib/tauri/queue.types";
@@ -246,11 +248,15 @@ describe("MenuBarTest", () => {
       initialized.current = true;
     }
     return (
-      <ChangelogProvider>
-        <ThemeProvider>
-          <AppMenuBar />
-        </ThemeProvider>
-      </ChangelogProvider>
+      <SourceDeleteProvider>
+        <ApplicationCommandsProvider>
+          <ChangelogProvider>
+            <ThemeProvider>
+              <AppMenuBar />
+            </ThemeProvider>
+          </ChangelogProvider>
+        </ApplicationCommandsProvider>
+      </SourceDeleteProvider>
     );
   }
 

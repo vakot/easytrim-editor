@@ -3,29 +3,33 @@ import { describe, expect, it, vi } from "vitest";
 import {
   APPLICATION_SHORTCUTS,
   type ApplicationCommand,
+  type ApplicationCommandDefinition,
   filterApplicationCommands,
   getShortcutAriaValue,
   getShortcutDisplayKeys,
   isShortcutEvent,
+  materializeApplicationCommands,
 } from "../application-commands";
 
 const commands: ApplicationCommand[] = [
   {
     enabled: true,
-    execute: vi.fn(),
     id: "open-folder",
     label: "Open Folder",
+    pending: false,
     searchTerms: ["directory", "import"],
     section: { id: "file", label: "File" },
+    variant: "default",
   },
   {
     enabled: false,
-    execute: vi.fn(),
     id: "save-lossless-cut",
     label: "Save Lossless Cut",
+    pending: false,
     searchTerms: ["fast cut", "render"],
     section: { id: "export", label: "Export" },
     shortcut: APPLICATION_SHORTCUTS.saveLosslessCut,
+    variant: "default",
   },
 ];
 
@@ -65,6 +69,23 @@ describe("application command search", () => {
     expect(matches[0]?.command.enabled).toBe(true);
     expect(matches[0]?.command.shortcut).toBeUndefined();
     expect(matches[1]?.command).toMatchObject({ enabled: false });
+  });
+
+  it("preserves semantic variants and checked state when materializing definitions", () => {
+    const definition: ApplicationCommandDefinition = {
+      checked: true,
+      enabled: true,
+      id: "delete-file",
+      label: "Delete File",
+      run: vi.fn(),
+      searchTerms: [],
+      section: { id: "source", label: "Source" },
+      variant: "destructive",
+    };
+
+    expect(materializeApplicationCommands([definition], new Set())).toEqual([
+      expect.objectContaining({ checked: true, pending: false, variant: "destructive" }),
+    ]);
   });
 });
 

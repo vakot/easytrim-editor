@@ -29,6 +29,7 @@ import { createAppStore } from "@/app/store/store";
 import { createExportAttempt, type EditingInstance } from "@/domain/editing-instance";
 import { firstSource, secondSource } from "@/test/source.fixtures";
 
+import { SourceDeleteProvider } from "../../../SourceDeleteProvider";
 import {
   SourceList,
   SourceListCloseAll,
@@ -290,7 +291,9 @@ describe("source queue controls", () => {
     }
     render(
       <Provider store={store}>
-        <SourceList />
+        <SourceDeleteProvider>
+          <SourceList />
+        </SourceDeleteProvider>
       </Provider>,
     );
     const sourceA = within(screen.getByTestId("a").closest("li")!);
@@ -344,7 +347,9 @@ describe("source queue controls", () => {
 
     render(
       <Provider store={store}>
-        <SourceList />
+        <SourceDeleteProvider>
+          <SourceList />
+        </SourceDeleteProvider>
       </Provider>,
     );
 
@@ -404,7 +409,9 @@ describe("source queue controls", () => {
 
     render(
       <Provider store={store}>
-        <SourceList />
+        <SourceDeleteProvider>
+          <SourceList />
+        </SourceDeleteProvider>
       </Provider>,
     );
 
