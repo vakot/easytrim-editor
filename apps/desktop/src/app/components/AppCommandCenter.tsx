@@ -69,6 +69,7 @@ function AppCommandCenterTrigger({ expanded }: { expanded: boolean }) {
       transition={{
         duration,
         ease: "easeOut",
+        delay: expanded && !shouldReduceMotion ? 0.1 : 0,
       }}
       variant="outline"
     >
@@ -80,9 +81,9 @@ function AppCommandCenterTrigger({ expanded }: { expanded: boolean }) {
         className="flex shrink-0 items-center gap-1.5"
         initial={false}
         transition={{
-          duration: shouldReduceMotion ? 0 : 0.2,
+          duration: shouldReduceMotion ? 0 : 0.18,
           ease: "easeOut",
-          delay: expanded && !shouldReduceMotion ? 0.08 : 0,
+          delay: expanded && !shouldReduceMotion ? 0.16 : 0,
         }}
       >
         <Search aria-hidden="true" className="size-3.5" />

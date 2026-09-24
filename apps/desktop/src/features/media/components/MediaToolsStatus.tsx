@@ -120,13 +120,16 @@ function MediaToolsStatusTrigger({
           animate={{
             opacity: iconOnly ? 0 : 1,
             width: iconOnly ? 0 : "auto",
-            visibility: iconOnly ? 0 : 1,
             marginLeft: iconOnly ? 0 : 6,
           }}
           aria-hidden={iconOnly}
           className="min-w-0 shrink-0 overflow-hidden whitespace-nowrap"
           initial={false}
-          transition={{ duration: shouldReduceMotion ? 0 : 0.3, ease: "easeOut" }}
+          transition={{
+            duration: shouldReduceMotion ? 0 : 0.3,
+            ease: "easeOut",
+            delay: presentation === "startup" && ready && !shouldReduceMotion ? 0.1 : 0,
+          }}
         >
           {statusText}
         </motion.span>
