@@ -18,7 +18,7 @@ import type { WorkspaceRecoveryInstance } from "./workspace-recovery.types";
 
 function toEditingInstance(instance: WorkspaceRecoveryInstance): EditingInstance {
   return {
-    exportAttempts: instance.exportAttempts,
+    exportAttempts: structuredClone(instance.exportAttempts),
     id: instance.id,
     ...(instance.importedAtMicros === undefined
       ? {}
@@ -28,9 +28,9 @@ function toEditingInstance(instance: WorkspaceRecoveryInstance): EditingInstance
       : { optimizedArguments: instance.optimizedArguments }),
     ...(instance.optimizedSettings === undefined
       ? {}
-      : { optimizedSettings: instance.optimizedSettings }),
+      : { optimizedSettings: structuredClone(instance.optimizedSettings) }),
     origin: instance.origin,
-    snapshot: instance.snapshot,
+    snapshot: structuredClone(instance.snapshot),
     sourceAvailability: instance.sourceAvailability,
   };
 }
@@ -68,7 +68,7 @@ const restorePreviousWorkspaceRequested =
       let missingSourceCount = 0;
       const missingSourceIds: string[] = [];
       for (const savedInstance of backup.instances) {
-        if (savedInstance.sourceAvailability !== "available") {
+        if (savedInstance.sourceAvailability === "deleted") {
           restored.push(toEditingInstance(savedInstance));
           continue;
         }
@@ -76,11 +76,16 @@ const restorePreviousWorkspaceRequested =
           const source = await activateSourcePath(savedInstance.snapshot.source.sourcePath);
           restored.push({
             ...toEditingInstance(savedInstance),
+            sourceAvailability: "available",
             snapshot: { ...savedInstance.snapshot, source },
           });
         } catch {
-          missingSourceCount += 1;
-          missingSourceIds.push(savedInstance.id);
+          if (savedInstance.sourceAvailability === "missing") {
+            restored.push(toEditingInstance(savedInstance));
+          } else {
+            missingSourceCount += 1;
+            missingSourceIds.push(savedInstance.id);
+          }
         }
       }
 

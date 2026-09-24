@@ -74,11 +74,14 @@ function toRecoveryInstance(
   instance: EditingInstance,
   state: RootState,
 ): WorkspaceRecoveryInstance {
-  const activeSnapshot =
+  const activeEditorMatches =
     state.editingInstances.activeInstanceId === instance.id &&
     state.source.source &&
     normalizeSourceKey(state.source.source.sourcePath) ===
-      normalizeSourceKey(instance.snapshot.source.sourcePath)
+      normalizeSourceKey(instance.snapshot.source.sourcePath);
+
+  const activeSnapshot =
+    activeEditorMatches && state.source.source
       ? createEditorSnapshotFromState(state, state.source.source)
       : null;
 
@@ -88,9 +91,11 @@ function toRecoveryInstance(
     ...(instance.importedAtMicros === undefined
       ? {}
       : { importedAtMicros: instance.importedAtMicros }),
-    ...(instance.optimizedArguments === undefined
-      ? {}
-      : { optimizedArguments: instance.optimizedArguments }),
+    ...(activeEditorMatches
+      ? { optimizedArguments: state.exportPresets.argumentsText }
+      : instance.optimizedArguments === undefined
+        ? {}
+        : { optimizedArguments: instance.optimizedArguments }),
     ...(instance.optimizedSettings === undefined
       ? {}
       : { optimizedSettings: structuredClone(instance.optimizedSettings) }),

@@ -13,6 +13,7 @@ import {
   editingInstanceExportAttemptQueued,
   editingInstancesAdded,
 } from "@/app/store/slices/editing-instances-slice";
+import { exportArgumentsChanged } from "@/app/store/slices/export-presets-slice";
 import { trimChanged } from "@/app/store/slices/trim-slice";
 import { createAppStore } from "@/app/store/store";
 import { createExportAttempt } from "@/domain/editing-instance";
@@ -85,6 +86,7 @@ describe("workspace recovery contract", () => {
     store.dispatch(masterVolumeChanged({ volumePercent: 64 }));
     store.dispatch(audioTrackVolumeChanged({ streamIndex: 2, volumePercent: 35 }));
     store.dispatch(audioMergeToggled());
+    store.dispatch(exportArgumentsChanged("-crf 18"));
 
     const completedAttempt = {
       ...createExportAttempt({
@@ -163,7 +165,7 @@ describe("workspace recovery contract", () => {
     });
     expect(backup.instances[1]).toMatchObject({
       importedAtMicros: 1234,
-      optimizedArguments: "-crf 22",
+      optimizedArguments: "-crf 18",
       optimizedSettings: { resolution: { height: 1344, width: 864 } },
     });
     expect(backup.instances[1]?.exportAttempts[0]).toMatchObject({
