@@ -2,13 +2,18 @@ import {
   FileInputIcon,
   FileOutputIcon,
   FolderOpenIcon,
+  Monitor,
+  Moon,
   ScissorsIcon,
+  Sun,
   Trash2Icon,
   XIcon,
 } from "lucide-react";
+import type { ComponentType } from "react";
 import { createContext, useContext, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { ColorSample } from "@/components/ui/color";
 import {
   Command,
   CommandDialog,
@@ -35,10 +40,31 @@ import {
   isShortcutEvent,
 } from "@/app/commands/application-commands";
 import { useApplicationCommands } from "@/app/hooks/useApplicationCommands";
+import { resolvePrimaryColor } from "@/app/theme/theme";
 import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
 import { isApplicationInteractionBlocked } from "@/lib/hotkeys.utils";
 
-const commandIcons: Record<ApplicationCommandId, typeof XIcon> = {
+type CommandIcon = ComponentType<{ "aria-hidden"?: boolean | "true" | "false" }>;
+
+const primaryColorIcons = {
+  amber: ({ "aria-hidden": ariaHidden }: { "aria-hidden"?: boolean | "true" | "false" }) => (
+    <ColorSample aria-hidden={ariaHidden} color={resolvePrimaryColor("amber")} />
+  ),
+  blue: ({ "aria-hidden": ariaHidden }: { "aria-hidden"?: boolean | "true" | "false" }) => (
+    <ColorSample aria-hidden={ariaHidden} color={resolvePrimaryColor("blue")} />
+  ),
+  emerald: ({ "aria-hidden": ariaHidden }: { "aria-hidden"?: boolean | "true" | "false" }) => (
+    <ColorSample aria-hidden={ariaHidden} color={resolvePrimaryColor("emerald")} />
+  ),
+  rose: ({ "aria-hidden": ariaHidden }: { "aria-hidden"?: boolean | "true" | "false" }) => (
+    <ColorSample aria-hidden={ariaHidden} color={resolvePrimaryColor("rose")} />
+  ),
+  violet: ({ "aria-hidden": ariaHidden }: { "aria-hidden"?: boolean | "true" | "false" }) => (
+    <ColorSample aria-hidden={ariaHidden} color={resolvePrimaryColor("violet")} />
+  ),
+} satisfies Record<string, CommandIcon>;
+
+const commandIcons: Record<ApplicationCommandId, CommandIcon> = {
   "activity-feed-view-branch": FileOutputIcon,
   "activity-feed-view-compact": FileOutputIcon,
   "activity-feed-view-default": FileOutputIcon,
@@ -65,11 +91,11 @@ const commandIcons: Record<ApplicationCommandId, typeof XIcon> = {
   "preference-merge-audio": FileOutputIcon,
   "preference-segment-playback": FileOutputIcon,
   "preference-snap-playback": FileOutputIcon,
-  "primary-color-amber": FileOutputIcon,
-  "primary-color-blue": FileOutputIcon,
-  "primary-color-emerald": FileOutputIcon,
-  "primary-color-rose": FileOutputIcon,
-  "primary-color-violet": FileOutputIcon,
+  "primary-color-amber": primaryColorIcons.amber,
+  "primary-color-blue": primaryColorIcons.blue,
+  "primary-color-emerald": primaryColorIcons.emerald,
+  "primary-color-rose": primaryColorIcons.rose,
+  "primary-color-violet": primaryColorIcons.violet,
   "queue-finish-exit": FileOutputIcon,
   "queue-finish-nothing": FileOutputIcon,
   "queue-finish-system-shutdown": FileOutputIcon,
@@ -83,9 +109,9 @@ const commandIcons: Record<ApplicationCommandId, typeof XIcon> = {
   "save-lossless-cut": ScissorsIcon,
   "show-logs": FileOutputIcon,
   "support-project": FileOutputIcon,
-  "theme-dark": FileOutputIcon,
-  "theme-light": FileOutputIcon,
-  "theme-system": FileOutputIcon,
+  "theme-dark": Moon,
+  "theme-light": Sun,
+  "theme-system": Monitor,
   "toggle-bottom-panel": FileOutputIcon,
   "toggle-left-panel": FileOutputIcon,
 };
