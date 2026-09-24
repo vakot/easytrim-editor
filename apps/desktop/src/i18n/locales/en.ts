@@ -36,7 +36,7 @@ export const en = {
       ffmpegDownloads: "FFmpeg downloads",
       recheck: "Recheck",
       showPathInFolder: "Show {{label}} in folder",
-      resetLayout: "Reset layout",
+      resetLayout: "Reset to default",
       restart: "Restart application",
       restore: "Restore",
       showPanel: "Show {{panel}}",

@@ -38,7 +38,7 @@ export const sk = {
       ffmpegDownloads: "Sťahovanie FFmpeg",
       recheck: "Znova skontrolovať",
       showPathInFolder: "Zobraziť {{label}} v priečinku",
-      resetLayout: "Obnoviť rozloženie",
+      resetLayout: "Obnoviť predvolené",
       restart: "Reštartovať aplikáciu",
       restore: "Obnoviť",
       showPanel: "Zobraziť {{panel}}",

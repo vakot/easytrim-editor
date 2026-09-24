@@ -291,6 +291,10 @@ describe("ApplicationCommandsProvider", () => {
       "data-variant",
       "destructive",
     );
+    expect(screen.getByRole("button", { name: "reset-layout" })).toHaveAttribute(
+      "data-label",
+      "Reset to default",
+    );
 
     fireEvent.click(screen.getByRole("button", { name: "delete-file" }));
 

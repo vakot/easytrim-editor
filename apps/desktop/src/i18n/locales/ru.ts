@@ -36,7 +36,7 @@ export const ru = {
       ffmpegDownloads: "Загрузки FFmpeg",
       recheck: "Проверить снова",
       showPathInFolder: "Показать {{label}} в папке",
-      resetLayout: "Сбросить расположение",
+      resetLayout: "Сбросить настройки",
       restart: "Перезапустить приложение",
       restore: "Восстановить",
       showPanel: "Показать: {{panel}}",
