@@ -320,7 +320,12 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
                 : t("app.actions.checkForUpdates"),
         searchTerms: commandSearchTerms(`${t("app.actions.checkForUpdates")}|update`),
         section: sections.help,
-        variant: updateStatus === "up-to-date" ? "success" : "default",
+        variant:
+          updateStatus === "up-to-date"
+            ? "success"
+            : updateStatus === "error"
+              ? "destructive"
+              : "default",
       },
       {
         enabled: true,

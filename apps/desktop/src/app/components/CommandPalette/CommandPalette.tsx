@@ -1,16 +1,24 @@
 import {
+  CheckCircle2,
+  CircleAlert,
+  Download,
+  ExternalLink,
   FileInputIcon,
   FileOutputIcon,
+  FolderInput,
   FolderOpenIcon,
+  LoaderCircle,
   Monitor,
   Moon,
+  RefreshCw,
   ScissorsIcon,
+  ScrollText,
   Sun,
   Trash2Icon,
   XIcon,
 } from "lucide-react";
 import type { ComponentType } from "react";
-import { createContext, useContext, useState } from "react";
+import { createContext, createElement, useContext, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { ColorSample } from "@/components/ui/color";
@@ -41,6 +49,7 @@ import {
 } from "@/app/commands/application-commands";
 import { useApplicationCommands } from "@/app/hooks/useApplicationCommands";
 import { resolvePrimaryColor } from "@/app/theme/theme";
+import { GithubIcon, KofiIcon } from "@/components/brand-icons";
 import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
 import { isApplicationInteractionBlocked } from "@/lib/hotkeys.utils";
 
@@ -68,7 +77,7 @@ const commandIcons: Record<ApplicationCommandId, CommandIcon> = {
   "activity-feed-view-branch": FileOutputIcon,
   "activity-feed-view-compact": FileOutputIcon,
   "activity-feed-view-default": FileOutputIcon,
-  "check-for-updates": FileOutputIcon,
+  "check-for-updates": RefreshCw,
   "close-file": XIcon,
   "crop-preview": ScissorsIcon,
   "delete-source-on-render-finish": Trash2Icon,
@@ -80,11 +89,11 @@ const commandIcons: Record<ApplicationCommandId, CommandIcon> = {
   "language-sk": FileOutputIcon,
   "layout-density-compact": FileOutputIcon,
   "layout-density-default": FileOutputIcon,
-  "open-changelog": FileOutputIcon,
+  "open-changelog": ScrollText,
   "open-file": FileInputIcon,
   "open-folder": FolderOpenIcon,
-  "open-project-page": FileOutputIcon,
-  "open-release-page": FileOutputIcon,
+  "open-project-page": GithubIcon,
+  "open-release-page": ExternalLink,
   "optimized-export": FileOutputIcon,
   "preference-auto-start-queue": FileOutputIcon,
   "preference-loop-playback": FileOutputIcon,
@@ -107,14 +116,30 @@ const commandIcons: Record<ApplicationCommandId, CommandIcon> = {
   "rotate-90-ccw": ScissorsIcon,
   "rotate-90-cw": ScissorsIcon,
   "save-lossless-cut": ScissorsIcon,
-  "show-logs": FileOutputIcon,
-  "support-project": FileOutputIcon,
+  "show-logs": FolderInput,
+  "support-project": KofiIcon,
   "theme-dark": Moon,
   "theme-light": Sun,
   "theme-system": Monitor,
   "toggle-bottom-panel": FileOutputIcon,
   "toggle-left-panel": FileOutputIcon,
 };
+
+const CheckingIcon: CommandIcon = ({ "aria-hidden": ariaHidden }) => (
+  <LoaderCircle aria-hidden={ariaHidden} className="animate-spin" />
+);
+
+function getCommandIcon(
+  command: ApplicationCommand,
+  updateLabels: { checking: string; update: string },
+): CommandIcon {
+  if (command.id !== "check-for-updates") return commandIcons[command.id];
+  if (command.variant === "success") return CheckCircle2;
+  if (command.variant === "destructive") return CircleAlert;
+  if (command.label === updateLabels.update) return Download;
+  if (command.label === updateLabels.checking) return CheckingIcon;
+  return RefreshCw;
+}
 
 const commandVariantClassNames = {
   default: undefined,
@@ -244,7 +269,11 @@ function CommandPaletteGroup({ group }: { group: CommandPaletteSection }) {
 
 function CommandPaletteItem({ match }: { match: ApplicationCommandMatch }) {
   const { command } = match;
-  const Icon = commandIcons[command.id];
+  const { t } = useTranslation();
+  const Icon = getCommandIcon(command, {
+    checking: t("app.status.checkingForUpdates"),
+    update: t("app.actions.update"),
+  });
 
   const { executeCommand, query } = useCommandPaletteState();
 
@@ -257,7 +286,7 @@ function CommandPaletteItem({ match }: { match: ApplicationCommandMatch }) {
       onSelect={() => executeCommand(command)}
       value={command.id}
     >
-      <Icon aria-hidden="true" />
+      {createElement(Icon, { "aria-hidden": "true" })}
       <span>
         <Highlight query={match.labelMatched ? query : ""}>{command.label}</Highlight>
       </span>
