@@ -72,6 +72,7 @@ function CommandPalette() {
       !open &&
       commands.some(
         (command) =>
+          isApplicationCommandAvailableOnSurface(command, "hotkey") &&
           command.enabled &&
           !command.pending &&
           command.shortcut !== undefined &&
@@ -80,6 +81,7 @@ function CommandPalette() {
     (event) => {
       const command = commands.find(
         (candidate) =>
+          isApplicationCommandAvailableOnSurface(candidate, "hotkey") &&
           candidate.enabled &&
           !candidate.pending &&
           candidate.shortcut !== undefined &&

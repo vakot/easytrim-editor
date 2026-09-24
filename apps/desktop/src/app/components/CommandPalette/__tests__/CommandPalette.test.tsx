@@ -23,7 +23,7 @@ function createCommand(
   label: string,
   variant: ApplicationCommand["variant"],
   icon: ApplicationCommand["icon"],
-  options: Pick<ApplicationCommand, "checked" | "keepOpen" | "surfaces"> = {},
+  options: Pick<ApplicationCommand, "checked" | "keepOpen" | "shortcut" | "surfaces"> = {},
 ): ApplicationCommand {
   return {
     enabled: true,
@@ -70,6 +70,57 @@ describe("CommandPalette semantic icons", () => {
     expect(dialog).toHaveClass("sm:max-w-md");
     expect(dialog).toHaveClass("h-[min(60dvh,32rem)]");
     expect(dialog.querySelector('[data-slot="scroll-area"]')).toHaveClass("min-h-0", "flex-1");
+  });
+
+  it("only intercepts shortcuts available on the hotkey surface", () => {
+    mocks.commands = [
+      createCommand("available-hotkey", "Available hotkey", "default", <CheckCircle2 />, {
+        shortcut: { code: "KeyJ", key: "J", modifier: "control" },
+        surfaces: ["hotkey"],
+      }),
+      createCommand("menu-only-shortcut", "Menu only", "default", <CheckCircle2 />, {
+        shortcut: { code: "KeyM", key: "M", modifier: "control" },
+        surfaces: ["menu"],
+      }),
+      createCommand("open-file", "Open File", "default", <CheckCircle2 />, {
+        shortcut: { code: "KeyO", key: "O", modifier: "control" },
+      }),
+    ];
+    render(<CommandPalette />);
+
+    const availableHotkeyEvent = new KeyboardEvent("keydown", {
+      bubbles: true,
+      cancelable: true,
+      code: "KeyJ",
+      ctrlKey: true,
+    });
+
+    window.dispatchEvent(availableHotkeyEvent);
+    expect(availableHotkeyEvent.defaultPrevented).toBe(true);
+
+    const menuOnlyEvent = new KeyboardEvent("keydown", {
+      bubbles: true,
+      cancelable: true,
+      code: "KeyM",
+      ctrlKey: true,
+    });
+
+    window.dispatchEvent(menuOnlyEvent);
+    expect(menuOnlyEvent.defaultPrevented).toBe(false);
+
+    const existingShortcutEvent = new KeyboardEvent("keydown", {
+      bubbles: true,
+      cancelable: true,
+      code: "KeyO",
+      ctrlKey: true,
+    });
+
+    window.dispatchEvent(existingShortcutEvent);
+    expect(existingShortcutEvent.defaultPrevented).toBe(true);
+
+    expect(mocks.executeCommand).toHaveBeenNthCalledWith(1, "available-hotkey", "hotkey");
+    expect(mocks.executeCommand).toHaveBeenNthCalledWith(2, "open-file", "hotkey");
+    expect(mocks.executeCommand).not.toHaveBeenCalledWith("menu-only-shortcut", "hotkey");
   });
 
   it("keeps the palette open for Promise actions so their state and label can update", async () => {
