@@ -295,6 +295,12 @@ describe("ApplicationCommandsProvider", () => {
       "data-label",
       "Reset to default",
     );
+    for (const commandId of ["reset-preferences", "reset-view-settings", "reset-queue-settings"]) {
+      expect(screen.getByRole("button", { name: commandId })).toHaveAttribute(
+        "data-label",
+        "Reset to default",
+      );
+    }
 
     fireEvent.click(screen.getByRole("button", { name: "delete-file" }));
 

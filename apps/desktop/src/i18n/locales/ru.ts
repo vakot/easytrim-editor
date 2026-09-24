@@ -36,7 +36,7 @@ export const ru = {
       ffmpegDownloads: "Загрузки FFmpeg",
       recheck: "Проверить снова",
       showPathInFolder: "Показать {{label}} в папке",
-      resetLayout: "Сбросить настройки",
+      resetToDefault: "Сбросить настройки",
       restart: "Перезапустить приложение",
       restore: "Восстановить",
       showPanel: "Показать: {{panel}}",
@@ -185,7 +185,6 @@ export const ru = {
     },
   },
   settings: {
-    actions: { reset: "Сбросить настройки" },
     labels: {
       activityFeedView: "Вид ленты активности",
       autoStartQueue: "Автозапуск очереди",

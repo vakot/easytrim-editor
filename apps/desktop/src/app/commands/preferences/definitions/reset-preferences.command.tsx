@@ -10,7 +10,7 @@ function useResetPreferencesCommand() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const preferences = useAppSelector(selectPreferences);
-  const label = t("settings.actions.reset");
+  const label = t("app.actions.resetToDefault");
 
   return {
     enabled:

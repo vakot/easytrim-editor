@@ -17,7 +17,7 @@ function useResetViewSettingsCommand() {
   const theme = useAppSelector(selectThemePreference);
   const primaryColor = useAppSelector(selectPrimaryColor);
   const customPrimaryColor = useAppSelector(selectCustomPrimaryColor);
-  const label = t("settings.actions.reset");
+  const label = t("app.actions.resetToDefault");
 
   return {
     enabled:

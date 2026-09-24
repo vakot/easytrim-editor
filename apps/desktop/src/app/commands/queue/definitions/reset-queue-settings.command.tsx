@@ -17,7 +17,7 @@ function useResetQueueSettingsCommand() {
   const queueFinishAction = useAppSelector(selectQueueFinishAction);
   const availableQueueFinishActions = useAppSelector(selectAvailableQueueFinishActions);
   const deleteSourceOnFinish = useAppSelector(selectDeleteSourceOnRenderFinish);
-  const label = t("settings.actions.reset");
+  const label = t("app.actions.resetToDefault");
   const defaultQueueFinishAction = availableQueueFinishActions.includes("nothing")
     ? "nothing"
     : (availableQueueFinishActions[0] ?? "nothing");
