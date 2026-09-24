@@ -117,7 +117,9 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
   const [pendingIds, setPendingIds] = useState<ReadonlySet<ApplicationCommandId>>(() => new Set());
   const pendingIdsRef = useRef(new Set<ApplicationCommandId>());
   const rotationDegreesRef = useRef(rotationDegrees);
-  rotationDegreesRef.current = rotationDegrees;
+  useEffect(() => {
+    rotationDegreesRef.current = rotationDegrees;
+  }, [rotationDegrees]);
   const canChooseSource = !isChoosingSource && !isNativeDialogOpen;
   const canUseSource = hasSource && canChooseSource;
   const canSave = canExport && !cropApplied && !transformApplied;
@@ -539,9 +541,11 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
         run() {
           const nextRotation = ((rotationDegreesRef.current + delta + 360) % 360) as
             0 | 90 | 180 | 270;
+
           dispatch(rotationChanged(nextRotation));
           dispatch(commitActiveEditingInstanceDraft());
         },
+
         id: id as ApplicationCommandId,
         label: rotationLabels[labelKey],
         searchTerms: commandSearchTerms(`${rotationLabels[labelKey]}|rotate|transform`),

@@ -3,9 +3,10 @@ import type { ReactElement, ReactNode } from "react";
 import { Provider } from "react-redux";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { ResizablePanelContextProvider } from "@/components/ui/resizable";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
+import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";
 import { sourceSelected } from "@/app/store/actions/source-actions";
 import {
   previewFailed,
@@ -15,7 +16,6 @@ import {
 } from "@/app/store/slices/preview-slice";
 import { selectSourceSelection } from "@/app/store/slices/source-slice";
 import { type AppStore, createAppStore } from "@/app/store/store";
-import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";
 import { ChangelogProvider } from "@/features/changelog";
 import { QueueDeleteSourceProvider } from "@/features/export";
 import { PreviewTransformProvider } from "@/features/preview";

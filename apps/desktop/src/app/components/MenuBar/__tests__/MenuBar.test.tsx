@@ -9,13 +9,13 @@ import userEvent from "@testing-library/user-event";
 import { type ReactElement, useRef, useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 
+import { ResizablePanelContextProvider } from "@/components/ui/resizable";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { AppUpdatesContext } from "@/app/contexts/app-updates-context";
 import { DEFAULT_PREFERENCES, type PreferenceKey, type Preferences } from "@/app/preferences";
 import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
-import { ResizablePanelContextProvider } from "@/components/ui/resizable";
 import type { SourceRef } from "@/domain/source";
 import { ChangelogProvider } from "@/features/changelog";
 import { QueueDeleteSourceProvider } from "@/features/export";
