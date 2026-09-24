@@ -182,11 +182,11 @@ describe("ApplicationCommandsProvider", () => {
     );
     expect(screen.getByRole("button", { name: "queue-finish-exit" })).toHaveAttribute(
       "data-section",
-      "Queue / On finished",
+      "Queue / On finished / Application",
     );
     expect(screen.getByRole("button", { name: "delete-source-on-render-finish" })).toHaveAttribute(
       "data-section",
-      "Queue / On finished",
+      "Queue / On finished / Source",
     );
     expect(screen.getByRole("button", { name: "toggle-left-panel" })).toHaveAttribute(
       "data-section",

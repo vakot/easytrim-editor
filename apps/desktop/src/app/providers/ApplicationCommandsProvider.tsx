@@ -212,9 +212,13 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
           label: t("app.labels.commandSections.previewTransform"),
         },
         queue: { id: "queue", label: t("app.labels.commandSections.queue") },
-        queueOnFinished: {
-          id: "queue-on-finished",
-          label: t("app.labels.commandSections.queueOnFinished"),
+        queueOnFinishedApplication: {
+          id: "queue-on-finished-application",
+          label: t("app.labels.commandSections.queueOnFinishedApplication"),
+        },
+        queueOnFinishedSource: {
+          id: "queue-on-finished-source",
+          label: t("app.labels.commandSections.queueOnFinishedSource"),
         },
         source: { id: "source", label: t("app.labels.commandSections.source") },
       }) as const satisfies Record<string, ApplicationCommandSection>,
@@ -461,7 +465,7 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
         id: "delete-source-on-render-finish",
         label: t("queue.labels.deleteSource"),
         searchTerms: commandSearchTerms(`${t("queue.labels.deleteSource")}|render|queue`),
-        section: sections.queueOnFinished,
+        section: sections.queueOnFinishedSource,
         variant: "destructive",
       },
       {
@@ -473,7 +477,7 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
         id: "queue-finish-exit",
         label: t("queue.options.finishActions.exit"),
         searchTerms: commandSearchTerms(`${t("queue.options.finishActions.exit")}|queue|finish`),
-        section: sections.queueOnFinished,
+        section: sections.queueOnFinishedApplication,
         variant: "default",
       },
       {
@@ -485,7 +489,7 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
         id: "queue-finish-nothing",
         label: t("queue.options.finishActions.nothing"),
         searchTerms: commandSearchTerms(`${t("queue.options.finishActions.nothing")}|queue|finish`),
-        section: sections.queueOnFinished,
+        section: sections.queueOnFinishedApplication,
         variant: "default",
       },
       {
@@ -499,7 +503,7 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
         searchTerms: commandSearchTerms(
           `${t("queue.options.finishActions.systemSleep")}|queue|finish`,
         ),
-        section: sections.queueOnFinished,
+        section: sections.queueOnFinishedApplication,
         variant: "default",
       },
       {
@@ -513,7 +517,7 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
         searchTerms: commandSearchTerms(
           `${t("queue.options.finishActions.systemShutdown")}|queue|finish`,
         ),
-        section: sections.queueOnFinished,
+        section: sections.queueOnFinishedApplication,
         variant: "default",
       },
       {

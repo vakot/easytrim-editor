@@ -67,7 +67,8 @@ type ApplicationCommandSectionId =
   | "preferences"
   | "preview-transform"
   | "queue"
-  | "queue-on-finished"
+  | "queue-on-finished-application"
+  | "queue-on-finished-source"
   | "preferences-audio"
   | "preferences-playback"
   | "source";
