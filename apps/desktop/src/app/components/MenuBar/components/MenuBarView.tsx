@@ -55,6 +55,23 @@ interface MenuBarViewProps {
 
 function MenuBarView({ onClose }: MenuBarViewProps) {
   const { t } = useTranslation();
+
+  return (
+    <MenubarMenu value="view">
+      <MenubarTrigger asChild>
+        <Button className="text-foreground/80" size="sm" type="button" variant="ghost">
+          {t("app.labels.view")}
+        </Button>
+      </MenubarTrigger>
+      <MenubarContent>
+        <MenuBarViewContent onClose={onClose} />
+      </MenubarContent>
+    </MenubarMenu>
+  );
+}
+
+function MenuBarViewContent({ onClose }: { onClose: MenuBarViewProps["onClose"] }) {
+  const { t } = useTranslation();
   const { previewPrimaryColor } = useTheme();
   const dispatch = useAppDispatch();
   const [previewColor, setPreviewColor] = useState<PrimaryColor | null>(null);
@@ -79,97 +96,88 @@ function MenuBarView({ onClose }: MenuBarViewProps) {
   };
 
   return (
-    <MenubarMenu value="view">
-      <MenubarTrigger asChild>
-        <Button className="text-foreground/80" size="sm" type="button" variant="ghost">
-          {t("app.labels.view")}
-        </Button>
-      </MenubarTrigger>
-      <MenubarContent>
-        <MenubarGroup>
-          <MenubarSub>
-            <MenubarSubTrigger inset>
-              <MenubarIcon>{currentThemeIcon}</MenubarIcon>
-              {t("settings.labels.theme")}
-            </MenubarSubTrigger>
-            <MenubarSubContent>
-              <MenubarRadioGroup value={preference}>
-                {(["system", "light", "dark"] as const).map((theme) => (
-                  <ApplicationCommandMenuItem
-                    asChild
-                    commandId={getThemeCommandId(theme)}
-                    key={theme}
-                  >
-                    <MenubarRadioItem inset keepOpen value={theme}>
-                      <ApplicationCommandLabel />
-                      <MenubarIcon side="right">
-                        <ApplicationCommandIcon />
-                      </MenubarIcon>
-                    </MenubarRadioItem>
-                  </ApplicationCommandMenuItem>
-                ))}
-              </MenubarRadioGroup>
-            </MenubarSubContent>
-          </MenubarSub>
-          <MenubarSub>
-            <MenubarSubTrigger inset>
-              <MenubarIcon>
-                <ColorSample color={resolvePrimaryColor(displayedPrimaryColor)} />
-              </MenubarIcon>
-              {t("settings.labels.color")}
-            </MenubarSubTrigger>
-            <MenubarSubContent>
-              <MenubarRadioGroup value={primaryColor}>
-                {PRIMARY_COLORS.map((color) => (
-                  <ApplicationCommandMenuItem
-                    asChild
-                    commandId={getPrimaryColorCommandId(color)}
-                    key={color}
-                  >
-                    <MenubarRadioItem inset keepOpen value={color}>
-                      <ApplicationCommandLabel />
-                      <MenubarShortcut className="flex items-center gap-2">
-                        <span className="font-mono">
-                          {resolvePrimaryColor(color).toUpperCase()}
-                        </span>
-                        <ApplicationCommandIcon />
-                      </MenubarShortcut>
-                    </MenubarRadioItem>
-                  </ApplicationCommandMenuItem>
-                ))}
-                <MenubarSub>
-                  <MenubarSubTrigger
-                    inset
-                    onClick={() => {
-                      setPreviewColor(null);
-                      dispatch(primaryColorChanged(customPrimaryColor));
-                    }}
-                  >
-                    {primaryColorKey === CUSTOM_PRIMARY_COLOR && (
-                      <MenubarIcon>
-                        <Check aria-hidden="true" />
-                      </MenubarIcon>
-                    )}
-                    {t("settings.options.colors.custom")}
+    <>
+      <MenubarGroup>
+        <MenubarSub>
+          <MenubarSubTrigger inset>
+            <MenubarIcon>{currentThemeIcon}</MenubarIcon>
+            {t("settings.labels.theme")}
+          </MenubarSubTrigger>
+          <MenubarSubContent>
+            <MenubarRadioGroup value={preference}>
+              {(["system", "light", "dark"] as const).map((theme) => (
+                <ApplicationCommandMenuItem
+                  asChild
+                  commandId={getThemeCommandId(theme)}
+                  key={theme}
+                >
+                  <MenubarRadioItem inset keepOpen value={theme}>
+                    <ApplicationCommandLabel />
+                    <MenubarIcon side="right">
+                      <ApplicationCommandIcon />
+                    </MenubarIcon>
+                  </MenubarRadioItem>
+                </ApplicationCommandMenuItem>
+              ))}
+            </MenubarRadioGroup>
+          </MenubarSubContent>
+        </MenubarSub>
+        <MenubarSub>
+          <MenubarSubTrigger inset>
+            <MenubarIcon>
+              <ColorSample color={resolvePrimaryColor(displayedPrimaryColor)} />
+            </MenubarIcon>
+            {t("settings.labels.color")}
+          </MenubarSubTrigger>
+          <MenubarSubContent>
+            <MenubarRadioGroup value={primaryColor}>
+              {PRIMARY_COLORS.map((color) => (
+                <ApplicationCommandMenuItem
+                  asChild
+                  commandId={getPrimaryColorCommandId(color)}
+                  key={color}
+                >
+                  <MenubarRadioItem inset keepOpen value={color}>
+                    <ApplicationCommandLabel />
                     <MenubarShortcut className="flex items-center gap-2">
-                      <span className="font-mono">{displayedCustomColor.toUpperCase()}</span>
-                      <ColorSample color={resolvePrimaryColor(displayedCustomColor)} />
+                      <span className="font-mono">{resolvePrimaryColor(color).toUpperCase()}</span>
+                      <ApplicationCommandIcon />
                     </MenubarShortcut>
-                  </MenubarSubTrigger>
-                  <MenubarSubContent>
-                    <CustomColorPickerPanel
-                      onClose={closeMenu}
-                      onPreviewChange={setPreviewColor}
-                      previewColor={previewColor}
-                    />
-                  </MenubarSubContent>
-                </MenubarSub>
-              </MenubarRadioGroup>
-            </MenubarSubContent>
-          </MenubarSub>
-        </MenubarGroup>
-      </MenubarContent>
-    </MenubarMenu>
+                  </MenubarRadioItem>
+                </ApplicationCommandMenuItem>
+              ))}
+              <MenubarSub>
+                <MenubarSubTrigger
+                  inset
+                  onClick={() => {
+                    setPreviewColor(null);
+                    dispatch(primaryColorChanged(customPrimaryColor));
+                  }}
+                >
+                  {primaryColorKey === CUSTOM_PRIMARY_COLOR && (
+                    <MenubarIcon>
+                      <Check aria-hidden="true" />
+                    </MenubarIcon>
+                  )}
+                  {t("settings.options.colors.custom")}
+                  <MenubarShortcut className="flex items-center gap-2">
+                    <span className="font-mono">{displayedCustomColor.toUpperCase()}</span>
+                    <ColorSample color={resolvePrimaryColor(displayedCustomColor)} />
+                  </MenubarShortcut>
+                </MenubarSubTrigger>
+                <MenubarSubContent>
+                  <CustomColorPickerPanel
+                    onClose={closeMenu}
+                    onPreviewChange={setPreviewColor}
+                    previewColor={previewColor}
+                  />
+                </MenubarSubContent>
+              </MenubarSub>
+            </MenubarRadioGroup>
+          </MenubarSubContent>
+        </MenubarSub>
+      </MenubarGroup>
+    </>
   );
 }
 
@@ -261,4 +269,4 @@ function CustomColorPickerPanel({
   );
 }
 
-export { MenuBarView };
+export { MenuBarView, MenuBarViewContent };
