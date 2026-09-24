@@ -24,6 +24,7 @@ import { selectSourceExportQueueState } from "@/app/store/slices/export-slice";
 import { cancelExportAttemptRequested } from "@/app/store/thunks/export-thunks";
 import { restoreExportAttemptRequested } from "@/app/store/thunks/source-media-thunks";
 import type { EditingInstance, ExportAttempt, ExportAttemptState } from "@/domain/editing-instance";
+import { cn } from "@/lib/class-names.utils";
 import { openFileLocation } from "@/lib/tauri/media";
 
 import { formatSourcePath } from "../../../lib/media-formatters.utils";
@@ -47,7 +48,7 @@ import {
 
 function SourceListItem({ search, source }: { search: string; source: EditingInstance }) {
   return (
-    <li className="flex w-full flex-col">
+    <li className="flex w-full min-w-0 flex-col">
       <SourceListItemCard search={search} source={source} />
       <SourceListItemExtra source={source} />
     </li>
@@ -58,7 +59,7 @@ function SourceListItemCard({ search, source }: { search: string; source: Editin
   const { t } = useTranslation();
 
   return (
-    <SourceCard className="flex flex-row gap-2 p-2" source={source}>
+    <SourceCard className="flex min-w-0 flex-row gap-2 p-2" source={source}>
       <SourceCardThumbnail className="w-6/11 shrink-0 rounded-md shadow">
         <SourceCardStatusBadge className="absolute top-2 left-2" />
       </SourceCardThumbnail>
@@ -96,16 +97,16 @@ function SourceListItemCard({ search, source }: { search: string; source: Editin
   );
 }
 
-const sourceListItemExtraClassName = "min-h-8 border-t bg-muted/50 p-1 first:border-t-0";
+const sourceListItemExtraClassName = "min-w-0 min-h-8 border-t bg-muted/50 p-1 first:border-t-0";
 
 function SourceListItemExtra({ source }: { source: EditingInstance }) {
   if (source.sourceAvailability !== "deleted" && source.exportAttempts.length === 0) return null;
 
   return (
-    <div className="mt-px w-full px-3">
-      <ul className="flex flex-col overflow-hidden rounded-b-lg border border-t-0">
+    <div className="mt-px w-full min-w-0 px-3">
+      <ul className="flex w-full min-w-0 flex-col overflow-hidden rounded-b-lg border border-t-0">
         <SourceListItemExports sourceId={source.id} />
-        <li className={`${sourceListItemExtraClassName} flex gap-1`}>
+        <li className={cn(sourceListItemExtraClassName, "flex gap-1")}>
           <SourceListItemActions source={source} />
         </li>
       </ul>
@@ -143,7 +144,7 @@ function SourceListItemExport({
   return (
     <div className="flex min-w-0 items-center gap-1">
       <Button
-        className="min-w-0 flex-1 justify-between gap-2 disabled:opacity-100"
+        className="min-w-0 flex-1 shrink justify-between gap-2 disabled:opacity-100"
         disabled={!sourceAvailable || attempt.state.status === "rendering"}
         onClick={() =>
           void dispatch(restoreExportAttemptRequested({ instanceId, attemptId: attempt.id }))
@@ -158,7 +159,7 @@ function SourceListItemExport({
             <Settings2 aria-hidden="true" className="shrink-0" />
           )}
           <span
-            className="min-w-0 truncate text-xs text-muted-foreground"
+            className="min-w-0 flex-1 truncate text-xs text-muted-foreground"
             title={attempt.output.displayName}
           >
             {attempt.output.displayName}
