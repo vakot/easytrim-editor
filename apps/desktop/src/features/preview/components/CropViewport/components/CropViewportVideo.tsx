@@ -9,21 +9,10 @@ import { diagnostics } from "@/lib/diagnostics";
 
 interface CropViewportVideoProps {
   cropIsOpen: boolean;
-  onSourceMetadata: (width: number, height: number) => void;
-  previewTransform: string;
-  sourceFrame: CSSProperties;
-  transformOrigin: string;
-  viewportTransition: string;
+  style: CSSProperties;
 }
 
-function CropViewportVideo({
-  cropIsOpen,
-  onSourceMetadata,
-  previewTransform,
-  sourceFrame,
-  transformOrigin,
-  viewportTransition,
-}: CropViewportVideoProps) {
+function CropViewportVideo({ cropIsOpen, style }: CropViewportVideoProps) {
   const { t } = useTranslation();
   const {
     nativeLoopEnabled,
@@ -98,12 +87,8 @@ function CropViewportVideo({
   }, [onPreviewPlaybackError, previewKind, sourceUrl]);
 
   const onLoadedMetadata = useCallback(
-    (event: SyntheticEvent<HTMLVideoElement>) => {
-      const { videoHeight, videoWidth } = event.currentTarget;
-      onSourceMetadata(videoWidth, videoHeight);
-      onPlaybackLoadedMetadata();
-    },
-    [onPlaybackLoadedMetadata, onSourceMetadata],
+    () => onPlaybackLoadedMetadata(),
+    [onPlaybackLoadedMetadata],
   );
 
   const onPlay = useCallback(
@@ -166,7 +151,7 @@ function CropViewportVideo({
   return (
     <video
       aria-label={t("preview.accessibility.source")}
-      className={`absolute max-w-none cursor-pointer ${viewportTransition}`}
+      className="absolute max-w-none cursor-pointer transition-transform duration-200 ease-out motion-reduce:transition-none"
       crossOrigin="anonymous"
       data-playback-rate={playbackRate}
       data-preview-kind={previewKind}
@@ -187,11 +172,7 @@ function CropViewportVideo({
       preload="auto"
       ref={setVideoElement}
       src={sourceUrl}
-      style={{
-        ...sourceFrame,
-        transform: previewTransform,
-        transformOrigin,
-      }}
+      style={{ ...style, transformOrigin: "center center" }}
     />
   );
 }

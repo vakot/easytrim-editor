@@ -13,7 +13,6 @@ import { selectSourceMedia } from "@/app/store/slices/source-slice";
 import { commitActiveEditingInstanceDraft } from "@/app/store/thunks/source-media-thunks";
 import type { RotationDegrees } from "@/domain/rotation";
 
-import type { CropFrame } from "../../../lib/crop-frame.utils";
 import {
   type CropHandle,
   type CropRect,
@@ -26,18 +25,16 @@ const SNAP_REACH_PX = 12;
 
 interface DragState {
   crop: CropRect;
+  frameHeight: number;
+  frameWidth: number;
   handle: CropHandle;
   startX: number;
   startY: number;
 }
 
-interface CropSelectionBounds {
-  height: number;
-  width: number;
-}
-
 function useCropSelection(
   previewRef: RefObject<HTMLDivElement | null>,
+  cropFrameRef: RefObject<HTMLDivElement | null>,
   rotationDegrees: RotationDegrees,
 ) {
   const dispatch = useAppDispatch();
@@ -45,37 +42,17 @@ function useCropSelection(
   const crop = useAppSelector(selectCrop);
   const [isOpen, setIsOpen] = useState(false);
   const [drag, setDrag] = useState<DragState | null>(null);
-  const [enterFrom, setEnterFrom] = useState<CropFrame | null>(null);
   const selectionRef = useRef<HTMLDivElement>(null);
 
-  function open(frame: CropFrame) {
-    setEnterFrom(frame);
+  const open = useCallback(() => {
     setIsOpen(true);
-  }
+  }, []);
 
   const close = useCallback(() => {
     dispatch(commitActiveEditingInstanceDraft());
     setDrag(null);
     setIsOpen(false);
-    setEnterFrom(null);
   }, [dispatch]);
-
-  useEffect(() => {
-    if (!isOpen || !enterFrom) return;
-
-    // Opening the tool also changes the viewport bounds to make room for its
-    // scale. Keep the selection at its previous frame for one committed paint,
-    // then release it to the crop frame calculated from those new bounds.
-    let releaseFrameId: number | undefined;
-    const layoutFrameId = window.requestAnimationFrame(() => {
-      releaseFrameId = window.requestAnimationFrame(() => setEnterFrom(null));
-    });
-
-    return () => {
-      window.cancelAnimationFrame(layoutFrameId);
-      if (releaseFrameId !== undefined) window.cancelAnimationFrame(releaseFrameId);
-    };
-  }, [enterFrom, isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -100,14 +77,23 @@ function useCropSelection(
   function startDrag(event: ReactPointerEvent<HTMLElement>, handle: CropHandle) {
     event.preventDefault();
     event.stopPropagation();
+    const frame = cropFrameRef.current?.getBoundingClientRect();
+    if (!frame || frame.width <= 0 || frame.height <= 0) return;
     event.currentTarget.setPointerCapture(event.pointerId);
-    setDrag({ crop, handle, startX: event.clientX, startY: event.clientY });
+    setDrag({
+      crop,
+      frameHeight: frame.height,
+      frameWidth: frame.width,
+      handle,
+      startX: event.clientX,
+      startY: event.clientY,
+    });
   }
 
-  function moveDrag(event: ReactPointerEvent<HTMLDivElement>, viewport: CropSelectionBounds) {
-    if (!drag || viewport.width <= 0 || viewport.height <= 0) return;
-    const deltaX = (event.clientX - drag.startX) / viewport.width;
-    const deltaY = (event.clientY - drag.startY) / viewport.height;
+  function moveDrag(event: ReactPointerEvent<HTMLDivElement>) {
+    if (!drag) return;
+    const deltaX = (event.clientX - drag.startX) / drag.frameWidth;
+    const deltaY = (event.clientY - drag.startY) / drag.frameHeight;
     const movedCrop =
       drag.handle === "move"
         ? moveCrop(drag.crop, deltaX, deltaY)
@@ -115,8 +101,8 @@ function useCropSelection(
 
     const nextCrop = event.shiftKey
       ? snapCropToGuides(movedCrop, drag.handle, {
-          x: SNAP_REACH_PX / viewport.width,
-          y: SNAP_REACH_PX / viewport.height,
+          x: SNAP_REACH_PX / drag.frameWidth,
+          y: SNAP_REACH_PX / drag.frameHeight,
         })
       : movedCrop;
 
@@ -144,7 +130,6 @@ function useCropSelection(
     clearDrag,
     close,
     crop,
-    enterFrom,
     finishDrag,
     isDragging: drag !== null,
     isEditing: isOpen || drag !== null,

@@ -13,13 +13,11 @@ import { CursorTooltip } from "@/components/ui/cursor-tooltip";
 
 import { usePlayback } from "@/app/hooks/usePlayback";
 
-import type { Bounds } from "../../../lib/crop-frame.utils";
-
 interface CropSelectionInteraction {
   close: () => void;
   finishDrag: () => void;
   isOpen: boolean;
-  moveDrag: (event: PointerEvent<HTMLDivElement>, viewport: Bounds) => void;
+  moveDrag: (event: PointerEvent<HTMLDivElement>) => void;
 }
 
 interface CropViewportTooltipProps {
@@ -27,12 +25,11 @@ interface CropViewportTooltipProps {
   containerRef: RefObject<HTMLDivElement | null>;
   cropSelection: CropSelectionInteraction;
   onContextMenu?: MouseEventHandler<HTMLDivElement>;
-  viewport: Bounds;
 }
 
 const CropViewportTooltip = forwardRef<HTMLDivElement, CropViewportTooltipProps>(
   function CropViewportTooltip(
-    { children, containerRef, cropSelection, onContextMenu, viewport },
+    { children, containerRef, cropSelection, onContextMenu },
     forwardedRef,
   ) {
     const { t } = useTranslation();
@@ -64,9 +61,9 @@ const CropViewportTooltip = forwardRef<HTMLDivElement, CropViewportTooltipProps>
 
     const handlePointerMove = useCallback(
       (event: PointerEvent<HTMLDivElement>) => {
-        moveDrag(event, viewport);
+        moveDrag(event);
       },
-      [moveDrag, viewport],
+      [moveDrag],
     );
 
     return (

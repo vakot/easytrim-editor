@@ -11,6 +11,10 @@ interface PreviewGeometry {
     top: string;
     width: string;
   };
+  unrotatedVideoSize: {
+    height: string;
+    width: string;
+  };
 }
 
 function previewGeometryFor(
@@ -34,6 +38,12 @@ function previewGeometryFor(
       left: `${((-crop.x / crop.width) * 100).toString()}%`,
       top: `${((-crop.y / crop.height) * 100).toString()}%`,
     },
+    unrotatedVideoSize: isQuarterTurn(rotation)
+      ? {
+          width: `${(sourceAspect * 100).toString()}%`,
+          height: `${(100 / sourceAspect).toString()}%`,
+        }
+      : { width: "100%", height: "100%" },
   };
 }
 

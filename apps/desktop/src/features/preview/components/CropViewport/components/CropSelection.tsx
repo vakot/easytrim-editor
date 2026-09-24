@@ -1,12 +1,12 @@
 import type { PointerEvent, RefObject } from "react";
 import { useTranslation } from "react-i18next";
 
-import type { CropFrame } from "../../../lib/crop-frame.utils";
+import type { CropRect } from "@/domain/crop";
+
 import type { CropHandle } from "../../../lib/crop-geometry.utils";
 
 interface CropSelectionProps {
-  enterFrom: CropFrame | null;
-  frame: CropFrame;
+  crop: CropRect;
   isDragging: boolean;
   onPointerDown: (event: PointerEvent<HTMLElement>, handle: CropHandle) => void;
   selectionRef: RefObject<HTMLDivElement | null>;
@@ -47,15 +47,8 @@ const HANDLES: Array<{ className: string; handle: Exclude<CropHandle, "move"> }>
   },
 ];
 
-function CropSelection({
-  enterFrom,
-  frame,
-  isDragging,
-  onPointerDown,
-  selectionRef,
-}: CropSelectionProps) {
+function CropSelection({ crop, isDragging, onPointerDown, selectionRef }: CropSelectionProps) {
   const { t } = useTranslation();
-  const displayedFrame = enterFrom ?? frame;
   const handleLabels: Record<Exclude<CropHandle, "move">, string> = {
     bottom: t("preview.accessibility.crop.bottom"),
     "bottom-left": t("preview.accessibility.crop.bottomLeft"),
@@ -74,14 +67,15 @@ function CropSelection({
   return (
     <div
       className={`absolute border-2 border-primary bg-primary/10 ${transition}`}
+      data-crop-selection
       onClick={(event) => event.stopPropagation()}
       onPointerDown={(event) => onPointerDown(event, "move")}
       ref={selectionRef}
       style={{
-        width: displayedFrame.width,
-        height: displayedFrame.height,
-        left: displayedFrame.left,
-        top: displayedFrame.top,
+        width: `${crop.width * 100}%`,
+        height: `${crop.height * 100}%`,
+        left: `${crop.x * 100}%`,
+        top: `${crop.y * 100}%`,
       }}
     >
       {isDragging ? (

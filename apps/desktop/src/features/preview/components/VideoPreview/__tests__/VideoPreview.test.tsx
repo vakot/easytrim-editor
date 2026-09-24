@@ -9,7 +9,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { COMMAND_PALETTE_SHORTCUT } from "@/app/commands/core/application-command.shortcuts";
 import { getShortcutDisplayKeys } from "@/app/commands/core/application-command.utils";
 import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";
-import { sourceSelected } from "@/app/store/actions/source-actions";
+import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
+import { cropChanged, flipToggled, rotationChanged } from "@/app/store/slices/crop-slice";
 import {
   previewFailed,
   previewLoading,
@@ -22,6 +23,7 @@ import { ChangelogProvider } from "@/features/changelog";
 import { QueueDeleteSourceProvider } from "@/features/export";
 import { PreviewTransformProvider } from "@/features/preview";
 import { SourceDeleteProvider } from "@/features/source";
+import { firstSource, media } from "@/test/source.fixtures";
 
 import { VideoPreviewEmpty } from "../components/VideoPreviewEmpty";
 import { VideoPreview } from "../VideoPreview";
@@ -181,7 +183,7 @@ describe("VideoPreview", () => {
     try {
       const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"));
 
-      const viewport = container.querySelector("[data-preview-kind]")?.parentElement?.parentElement;
+      const viewport = container.querySelector('[aria-label="Video crop preview"]');
       expect(viewport).not.toBeNull();
       const affordance = container.querySelector("[data-crop-preview-affordance]");
       expect(affordance).toBeInTheDocument();
@@ -203,14 +205,14 @@ describe("VideoPreview", () => {
   it("keeps crop controls open after a drag and closes them outside the selection", () => {
     const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"));
 
-    const viewport = container.querySelector("[data-preview-kind]")?.parentElement?.parentElement;
+    const viewport = container.querySelector('[aria-label="Video crop preview"]');
     expect(viewport).not.toBeNull();
-    expect(viewport).toHaveClass("overflow-hidden");
+    expect(container.querySelector("[data-crop-clip]")).toHaveClass("overflow-hidden");
     expect(
       screen.queryByRole("button", { name: "Resize crop from top left" }),
     ).not.toBeInTheDocument();
     openCropTool(viewport!);
-    expect(viewport).toHaveClass("overflow-hidden");
+    expect(container.querySelector("[data-crop-clip]")).toHaveClass("overflow-hidden");
     const handle = screen.getByRole("button", { name: "Resize crop from top left" });
     expect(handle).toBeVisible();
     expect(screen.getAllByRole("button", { name: /resize crop from/i })).toHaveLength(8);
@@ -228,9 +230,11 @@ describe("VideoPreview", () => {
     expect(container.querySelector('[data-crop-snap-marker="top"]')).toHaveClass(
       "transition-[left,top]",
     );
-    expect(container.querySelector("[data-preview-kind]")?.parentElement).toHaveClass(
-      "transition-[width,height,left,top,transform]",
-    );
+    expect(container.querySelector("[data-preview-frame]")).toHaveClass("transition-[width]");
+    const frameBounds = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockReturnValue(new DOMRect(0, 0, 400, 300));
+
     fireEvent.pointerDown(handle, { pointerId: 1, clientX: 0, clientY: 0 });
     expect(container.querySelector("[data-crop-rule-of-thirds]")?.parentElement).toHaveClass(
       "border-primary",
@@ -245,63 +249,70 @@ describe("VideoPreview", () => {
     expect(handle).toBeVisible();
 
     fireEvent.click(viewport!);
-    expect(container.querySelector("[data-crop-snap-markers]")).toHaveAttribute(
-      "data-visible",
-      "false",
-    );
+    frameBounds.mockRestore();
+    expect(container.querySelector("[data-crop-snap-markers]")).not.toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "Resize crop from top left" }),
     ).not.toBeInTheDocument();
   });
 
-  it("scales the crop viewport into an even inset for markers", () => {
-    const bounds = vi
+  it("contains with CSS and edits crop over the complete rotated source", () => {
+    const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"));
+
+    const viewport = container.querySelector('[aria-label="Video crop preview"]')!;
+    const frame = container.querySelector("[data-preview-frame]")!;
+    expect(frame).toHaveStyle({ aspectRatio: "1.7777777777777777" });
+    expect((frame as HTMLElement).style.width).toMatch(/^min\(100cqw, /);
+    expect(container.querySelector("[data-crop-clip]")).toBeInTheDocument();
+    expect(container.querySelector("[data-full-rotated-source]")).toHaveStyle({
+      width: "100%",
+      height: "100%",
+      left: "0%",
+      top: "0%",
+    });
+
+    openCropTool(viewport);
+
+    expect(container.querySelector("[data-preview-area]")).toHaveClass("inset-7");
+    expect(frame).toHaveStyle({ aspectRatio: "1.7777777777777777" });
+    expect(container.querySelector("[data-crop-selection]")).toHaveStyle({
+      left: "0%",
+      top: "0%",
+      width: "100%",
+      height: "100%",
+    });
+  });
+
+  it("converts crop drag deltas using only the measured interaction frame", () => {
+    const store = createAppStore();
+    store.dispatch(sourceSelected({ loadToken: 1, source: firstSource }));
+    store.dispatch(sourceReady({ loadToken: 1, media: media(firstSource.sourcePath) }));
+    store.dispatch(
+      cropChanged({
+        crop: { x: 0.1, y: 0.1, width: 0.5, height: 0.5 },
+        resolution: { width: 960, height: 540 },
+      }),
+    );
+    const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"), store);
+    const viewport = container.querySelector('[aria-label="Video crop preview"]')!;
+    openCropTool(viewport);
+    const selection = container.querySelector("[data-crop-selection]")!;
+    const frameBounds = vi
       .spyOn(HTMLElement.prototype, "getBoundingClientRect")
-      .mockReturnValue(new DOMRect(0, 0, 400, 300));
+      .mockReturnValue(new DOMRect(0, 0, 400, 200));
 
-    try {
-      const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"));
+    fireEvent.pointerDown(selection, { pointerId: 1, clientX: 100, clientY: 50 });
+    fireEvent.pointerMove(viewport, { pointerId: 1, clientX: 140, clientY: 70 });
+    fireEvent.pointerUp(viewport, { pointerId: 1, clientX: 140, clientY: 70 });
 
-      const viewport = container.querySelector("[aria-label='Video crop preview']");
-      const videoFrame = container.querySelector("[data-preview-kind]")?.parentElement;
-      expect(viewport).not.toBeNull();
-      expect(videoFrame).not.toBeNull();
-      expect(videoFrame).toHaveStyle({ height: "225px", left: "0px", width: "400px" });
-
-      openCropTool(viewport!);
-
-      expect(videoFrame).toHaveStyle({
-        height: "193.5px",
-        left: "28px",
-        top: "53.25px",
-        width: "344px",
-      });
-
-      const videoFrameStyle = (videoFrame as HTMLElement).style;
-      const left = Number.parseFloat(videoFrameStyle.left);
-      const top = Number.parseFloat(videoFrameStyle.top);
-      const width = Number.parseFloat(videoFrameStyle.width);
-      const height = Number.parseFloat(videoFrameStyle.height);
-
-      expect(left).toBeCloseTo(400 - left - width);
-      expect(top).toBeCloseTo(300 - top - height);
-      expect(left).toBeGreaterThanOrEqual(28);
-      expect(top).toBeGreaterThanOrEqual(28);
-      expect(container.querySelector('[data-crop-snap-marker="top"]')).toHaveStyle({
-        top: "41.25px",
-      });
-      expect(container.querySelector('[data-crop-snap-marker="left"]')).toHaveStyle({
-        left: "16px",
-      });
-    } finally {
-      bounds.mockRestore();
-    }
+    expect(store.getState().crop.value).toEqual({ x: 0.2, y: 0.2, width: 0.5, height: 0.5 });
+    frameBounds.mockRestore();
   });
 
   it("pauses playback while crop controls are open", () => {
     const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"));
 
-    const viewport = container.querySelector("[data-preview-kind]")?.parentElement?.parentElement;
+    const viewport = container.querySelector('[aria-label="Video crop preview"]');
     const video = container.querySelector("video");
     expect(viewport).not.toBeNull();
     expect(video).not.toBeNull();
@@ -319,7 +330,7 @@ describe("VideoPreview", () => {
     const store = createAppStore();
     const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"), store);
 
-    const viewport = container.querySelector("[aria-label='Video crop preview']");
+    const viewport = container.querySelector('[aria-label="Video crop preview"]');
     openTransformMenu(viewport!);
     expect(screen.getByRole("menu")).toHaveTextContent(
       "CropRotate 90 CWRotate 90 CCWRotate 180Flip horizontallyFlip verticallyReset",
@@ -328,7 +339,15 @@ describe("VideoPreview", () => {
 
     fireEvent.click(screen.getByRole("menuitem", { name: "Rotate 90 CW" }));
     expect(store.getState().crop.rotationDegrees).toBe(90);
-    expect(container.querySelector("video")).toHaveStyle({ transform: "rotate(90deg)" });
+    expect(container.querySelector("video")).toHaveStyle({
+      transform: "translate(-50%, -50%) rotate(90deg)",
+    });
+    expect(container.querySelector("[data-crop-clip]")).toContainElement(
+      container.querySelector("[data-flip-layer]"),
+    );
+    expect(container.querySelector("[data-flip-layer]")).toContainElement(
+      container.querySelector("[data-full-rotated-source]"),
+    );
 
     selectTransformAction(viewport!, "Rotate 90 CW");
     selectTransformAction(viewport!, "Rotate 90 CW");
@@ -336,30 +355,38 @@ describe("VideoPreview", () => {
 
     selectTransformAction(viewport!, "Rotate 90 CW");
     expect(store.getState().crop.rotationDegrees).toBe(0);
-    expect(container.querySelector("video")).toHaveStyle({ transform: "rotate(360deg)" });
+    expect(container.querySelector("video")).toHaveStyle({
+      transform: "translate(-50%, -50%) rotate(0deg)",
+    });
 
     selectTransformAction(viewport!, "Rotate 90 CCW");
     expect(store.getState().crop.rotationDegrees).toBe(270);
-    expect(container.querySelector("video")).toHaveStyle({ transform: "rotate(270deg)" });
+    expect(container.querySelector("video")).toHaveStyle({
+      transform: "translate(-50%, -50%) rotate(270deg)",
+    });
 
     selectTransformAction(viewport!, "Rotate 180");
     expect(store.getState().crop.rotationDegrees).toBe(90);
-    expect(container.querySelector("video")).toHaveStyle({ transform: "rotate(450deg)" });
+    expect(container.querySelector("video")).toHaveStyle({
+      transform: "translate(-50%, -50%) rotate(90deg)",
+    });
   });
 
   it("applies flips to the preview and keeps a full-turn equivalent in UI state", () => {
     const store = createAppStore();
     const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"), store);
 
-    const viewport = container.querySelector("[aria-label='Video crop preview']")!;
+    const viewport = container.querySelector('[aria-label="Video crop preview"]')!;
     selectTransformAction(viewport, "Flip horizontally");
     expect(store.getState().crop.flipHorizontal).toBe(true);
-    expect(container.querySelector("video")).toHaveStyle({ transform: "rotate(0deg) scaleX(-1)" });
+    expect(container.querySelector("[data-flip-layer]")).toHaveStyle({
+      transform: "scaleX(-1) scaleY(1)",
+    });
 
     selectTransformAction(viewport, "Flip vertically");
     expect(store.getState().crop.flipVertical).toBe(true);
-    expect(container.querySelector("video")).toHaveStyle({
-      transform: "rotate(0deg) scaleX(-1) scaleY(-1)",
+    expect(container.querySelector("[data-flip-layer]")).toHaveStyle({
+      transform: "scaleX(-1) scaleY(-1)",
     });
 
     selectTransformAction(viewport, "Rotate 180");
@@ -368,8 +395,39 @@ describe("VideoPreview", () => {
       flipVertical: true,
       rotationDegrees: 180,
     });
+    expect(container.querySelector("[data-flip-layer]")).toHaveStyle({
+      transform: "scaleX(-1) scaleY(-1)",
+    });
+  });
+
+  it("keeps the original right half visible after rotating the normalized crop", () => {
+    const store = createAppStore();
+    store.dispatch(
+      cropChanged({
+        crop: { x: 0.5, y: 0, width: 0.5, height: 1 },
+        resolution: { width: 960, height: 1080 },
+      }),
+    );
+    store.dispatch(rotationChanged(90));
+    store.dispatch(flipToggled("horizontal"));
+    store.dispatch(flipToggled("vertical"));
+    const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"), store);
+
+    expect(store.getState().crop.value).toEqual({ x: 0, y: 0.5, width: 1, height: 0.5 });
+    expect(container.querySelector("[data-preview-frame]")).toHaveStyle({
+      aspectRatio: "1.125",
+    });
+    expect(container.querySelector("[data-full-rotated-source]")).toHaveStyle({
+      width: "100%",
+      height: "200%",
+      left: "0%",
+      top: "-100%",
+    });
     expect(container.querySelector("video")).toHaveStyle({
-      transform: "rotate(180deg) scaleX(-1) scaleY(-1)",
+      transform: "translate(-50%, -50%) rotate(90deg)",
+    });
+    expect(container.querySelector("[data-flip-layer]")).toHaveStyle({
+      transform: "scaleX(-1) scaleY(-1)",
     });
   });
 
@@ -377,7 +435,7 @@ describe("VideoPreview", () => {
     const store = createAppStore();
     const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"), store);
 
-    const viewport = container.querySelector("[aria-label='Video crop preview']")!;
+    const viewport = container.querySelector('[aria-label="Video crop preview"]')!;
     selectTransformAction(viewport, "Flip horizontally");
     selectTransformAction(viewport, "Rotate 180");
     selectTransformAction(viewport, "Flip vertically");
@@ -423,7 +481,7 @@ describe("VideoPreview", () => {
   it("closes crop controls with Escape or when focus leaves the preview", () => {
     const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"));
 
-    const viewport = container.querySelector("[data-preview-kind]")?.parentElement?.parentElement;
+    const viewport = container.querySelector('[aria-label="Video crop preview"]');
     expect(viewport).not.toBeNull();
 
     openCropTool(viewport!);

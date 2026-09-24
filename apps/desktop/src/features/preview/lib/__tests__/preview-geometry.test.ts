@@ -16,6 +16,11 @@ describe("previewGeometryFor", () => {
     expect(geometry.sourceAspect).toBeCloseTo(16 / 9);
     expect(geometry.rotatedAspect).toBeCloseTo(quarterTurn ? 9 / 16 : 16 / 9);
     expect(geometry.outputAspect).toBeCloseTo(geometry.rotatedAspect);
+    expect(geometry.unrotatedVideoSize).toEqual(
+      quarterTurn
+        ? { width: `${(16 / 9) * 100}%`, height: `${(9 / 16) * 100}%` }
+        : { width: "100%", height: "100%" },
+    );
     expect(geometry.sourceWithinCrop).toEqual({
       width: "100%",
       height: "100%",
@@ -30,20 +35,23 @@ describe("previewGeometryFor", () => {
     ["top", { x: 0.25, y: 0, width: 0.5, height: 0.5 }],
     ["bottom", { x: 0.25, y: 0.5, width: 0.5, height: 0.5 }],
     ["arbitrary", { x: 0.2, y: 0.1, width: 0.6, height: 0.5 }],
-  ] as Array<[string, CropRect]>)("keeps %s crop in rotated-source coordinates for every rotation", (_, crop) => {
-    for (const rotation of ROTATIONS) {
-      const geometry = previewGeometryFor(1920, 1080, crop, rotation)!;
-      const rotatedAspect = rotation === 90 || rotation === 270 ? 9 / 16 : 16 / 9;
+  ] as Array<[string, CropRect]>)(
+    "keeps %s crop in rotated-source coordinates for every rotation",
+    (_, crop) => {
+      for (const rotation of ROTATIONS) {
+        const geometry = previewGeometryFor(1920, 1080, crop, rotation)!;
+        const rotatedAspect = rotation === 90 || rotation === 270 ? 9 / 16 : 16 / 9;
 
-      expect(geometry.outputAspect).toBeCloseTo(rotatedAspect * crop.width / crop.height);
-      expect(geometry.sourceWithinCrop).toEqual({
-        width: `${100 / crop.width}%`,
-        height: `${100 / crop.height}%`,
-        left: `${(-crop.x / crop.width) * 100}%`,
-        top: `${(-crop.y / crop.height) * 100}%`,
-      });
-    }
-  });
+        expect(geometry.outputAspect).toBeCloseTo((rotatedAspect * crop.width) / crop.height);
+        expect(geometry.sourceWithinCrop).toEqual({
+          width: `${100 / crop.width}%`,
+          height: `${100 / crop.height}%`,
+          left: `${(-crop.x / crop.width) * 100}%`,
+          top: `${(-crop.y / crop.height) * 100}%`,
+        });
+      }
+    },
+  );
 
   it("maps a rotated right-half crop to the right half of the original source", () => {
     const rightHalfAfterClockwiseRotation: CropRect = {
