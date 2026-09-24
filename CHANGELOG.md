@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Added a searchable global command palette for common file and export actions, available with Ctrl+K on Windows/Linux and Cmd+K on macOS.
 - Added an in-app changelog and What's New view for released EasyTrim updates.
 
 ## [1.10.4]
