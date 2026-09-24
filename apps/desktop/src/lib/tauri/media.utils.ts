@@ -190,6 +190,7 @@ function parseBinaryCapability(value: unknown): BinaryCapability {
   return {
     available: capability.available,
     version: optionalString(capability.version),
+    path: optionalString(capability.path),
     error: optionalString(capability.error),
   };
 }

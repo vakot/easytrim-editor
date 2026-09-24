@@ -5,6 +5,7 @@ use std::{
 };
 
 use serde::Serialize;
+use which::which;
 
 use crate::process::run_bounded;
 
@@ -15,6 +16,8 @@ const CAPABILITY_OUTPUT_LIMIT: usize = 16 * 1024;
 #[serde(rename_all = "camelCase")]
 pub struct BinaryCapability {
     pub available: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub path: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub version: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -52,11 +55,7 @@ fn check_binary(executable: &str) -> BinaryCapability {
                     version
                 }
             });
-            BinaryCapability {
-                available: true,
-                version,
-                error: None,
-            }
+            available_capability(version, resolved_path(executable))
         }
         Ok(output) => {
             let detail = first_non_empty_line(&output.stderr).map(|detail| {
@@ -68,6 +67,7 @@ fn check_binary(executable: &str) -> BinaryCapability {
             });
             BinaryCapability {
                 available: false,
+                path: None,
                 version: None,
                 error: Some(format!(
                     "{executable} did not start successfully.{}",
@@ -77,6 +77,7 @@ fn check_binary(executable: &str) -> BinaryCapability {
         }
         Err(error) if error.kind() == io::ErrorKind::NotFound => BinaryCapability {
             available: false,
+            path: None,
             version: None,
             error: Some(format!(
                 "{executable} is not installed or available on PATH."
@@ -84,14 +85,31 @@ fn check_binary(executable: &str) -> BinaryCapability {
         },
         Err(error) if error.kind() == io::ErrorKind::TimedOut => BinaryCapability {
             available: false,
+            path: None,
             version: None,
             error: Some(format!("{executable} did not respond within 3 seconds.")),
         },
         Err(_) => BinaryCapability {
             available: false,
+            path: None,
             version: None,
             error: Some(format!("{executable} could not be checked.")),
         },
+    }
+}
+
+fn resolved_path(executable: &str) -> Option<String> {
+    which(executable)
+        .ok()
+        .map(|path| path.to_string_lossy().into_owned())
+}
+
+fn available_capability(version: Option<String>, path: Option<String>) -> BinaryCapability {
+    BinaryCapability {
+        available: true,
+        path,
+        version,
+        error: None,
     }
 }
 
@@ -105,7 +123,7 @@ fn first_non_empty_line(output: &[u8]) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::{check_binary, first_non_empty_line};
+    use super::{BinaryCapability, available_capability, check_binary, first_non_empty_line};
 
     #[test]
     fn extracts_the_version_header() {
@@ -121,5 +139,35 @@ mod tests {
 
         assert!(!capability.available);
         assert!(capability.error.is_some());
+    }
+
+    #[test]
+    fn keeps_a_binary_available_when_path_metadata_is_missing() {
+        let capability = available_capability(Some("ffmpeg version 7.1".to_owned()), None);
+
+        assert!(capability.available);
+        assert_eq!(capability.path, None);
+    }
+
+    #[test]
+    fn serializes_path_only_when_it_was_resolved() {
+        let with_path = BinaryCapability {
+            available: true,
+            path: Some("C:/Tools/ffmpeg.exe".to_owned()),
+            version: Some("ffmpeg version 7.1".to_owned()),
+            error: None,
+        };
+        let without_path = available_capability(None, None);
+
+        assert_eq!(
+            serde_json::to_value(with_path).expect("capability serializes")["path"],
+            "C:/Tools/ffmpeg.exe"
+        );
+        assert!(
+            serde_json::to_value(without_path)
+                .expect("capability serializes")
+                .get("path")
+                .is_none()
+        );
     }
 }

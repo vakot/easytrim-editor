@@ -63,6 +63,7 @@ import {
   selectImportedSourceThumbnails,
 } from "@/app/store/slices/preview-slice";
 import {
+  capabilitiesChecking,
   capabilitiesFailed,
   capabilitiesReady,
   selectHasSource,
@@ -123,24 +124,27 @@ function isCurrentSource(state: RootState, sourcePath: string, loadToken: number
   );
 }
 
-const checkMediaCapabilitiesRequested = (): AppThunk => async (dispatch) => {
-  const operation = diagnostics.startOperation("media.capabilities", {
-    origin: { type: "system" },
-  });
-
-  try {
-    const capabilities = await checkMediaCapabilities();
-    dispatch(capabilitiesReady(capabilities));
-    operation.complete({
-      ffmpeg: capabilities.ffmpeg.available,
-      ffprobe: capabilities.ffprobe.available,
+const checkMediaCapabilitiesRequested =
+  (origin: DiagnosticOrigin = { type: "system" }): AppThunk =>
+  async (dispatch) => {
+    dispatch(capabilitiesChecking());
+    const operation = diagnostics.startOperation("media.capabilities", {
+      origin,
     });
-  } catch (error: unknown) {
-    const normalized = normalizeAppError(error);
-    operation.fail(normalized);
-    dispatch(capabilitiesFailed(normalized));
-  }
-};
+
+    try {
+      const capabilities = await checkMediaCapabilities();
+      dispatch(capabilitiesReady(capabilities));
+      operation.complete({
+        ffmpeg: capabilities.ffmpeg.available,
+        ffprobe: capabilities.ffprobe.available,
+      });
+    } catch (error: unknown) {
+      const normalized = normalizeAppError(error);
+      operation.fail(normalized);
+      dispatch(capabilitiesFailed(normalized));
+    }
+  };
 
 const ingestSources =
   (

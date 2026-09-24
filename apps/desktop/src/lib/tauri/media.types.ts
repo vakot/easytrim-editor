@@ -20,6 +20,7 @@ interface OptimizedExportPlan {
 interface BinaryCapability {
   available: boolean;
   error?: string;
+  path?: string;
   version?: string;
 }
 

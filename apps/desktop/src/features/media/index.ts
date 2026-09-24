@@ -1,1 +1,1 @@
-export { CapabilityStatus } from "./components/CapabilityStatus";
+export { MediaToolsStatus } from "./components/MediaToolsStatus";

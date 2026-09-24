@@ -2,9 +2,9 @@ import { useTranslation } from "react-i18next";
 
 import { MenuBar } from "@/app/components/MenuBar";
 import { TitleBar, TitleBarWindowActions } from "@/app/components/TitleBar";
-import { CapabilityStatus } from "@/features/media";
 
 import { AppLayoutControls } from "./AppLayoutControls";
+import { AppTitleBarCommandCenter } from "./AppTitleBarCommandCenter";
 
 function AppLayoutHeader() {
   const { t } = useTranslation();
@@ -23,7 +23,7 @@ function AppLayoutHeader() {
       </div>
 
       <div className="absolute top-1/2 left-1/2 flex h-full -translate-1/2 items-center px-2">
-        <CapabilityStatus />
+        <AppTitleBarCommandCenter />
       </div>
 
       <div className="flex h-full gap-3">

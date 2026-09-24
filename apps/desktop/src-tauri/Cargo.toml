@@ -25,6 +25,7 @@ trash = "5.2.2"
 time = { version = "0.3.47", features = ["formatting", "parsing", "serde"] }
 uuid = { version = "1.20.0", features = ["v4"] }
 wait-timeout = "0.2.1"
+which = "8.0.0"
 
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.61.2", features = ["Win32_Storage_FileSystem"] }
