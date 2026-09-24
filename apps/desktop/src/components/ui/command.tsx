@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { InputGroup, InputGroupAddon } from "@/components/ui/input-group";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { cn } from "@/lib/class-names.utils";
 
@@ -80,14 +81,13 @@ function CommandInput({
 
 function CommandList({ className, ...props }: React.ComponentProps<typeof CommandPrimitive.List>) {
   return (
-    <CommandPrimitive.List
-      className={cn(
-        "no-scrollbar max-h-72 scroll-py-1 overflow-x-hidden overflow-y-auto outline-none",
-        className,
-      )}
-      data-slot="command-list"
-      {...props}
-    />
+    <ScrollArea className="max-h-72">
+      <CommandPrimitive.List
+        className={cn("scroll-py-1 outline-none", className)}
+        data-slot="command-list"
+        {...props}
+      />
+    </ScrollArea>
   );
 }
 
