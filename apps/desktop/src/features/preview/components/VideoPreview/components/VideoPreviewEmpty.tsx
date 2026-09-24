@@ -72,7 +72,7 @@ function VideoPreviewEmpty() {
         <img
           alt=""
           aria-hidden="true"
-          className="pointer-events-none aspect-square w-full opacity-20 grayscale"
+          className="pointer-events-none aspect-square w-full opacity-30 grayscale invert-100 dark:opacity-20 dark:invert-0"
           src="/logo-symbol.svg"
         />
 
