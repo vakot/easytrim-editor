@@ -3,16 +3,16 @@ import { useTranslation } from "react-i18next";
 
 import { commandSearchTerms } from "@/app/commands/core/application-command.utils";
 
-type Language = "en" | "sk" | "ru";
+type LanguageCode = "en" | "sk" | "ru";
 
 // Always show each language's native name; never translate these labels for the active language.
 const languageOptions = [
   { code: "en", label: "English" },
   { code: "sk", label: "Slovenčina" },
   { code: "ru", label: "Русский" },
-] as const satisfies readonly { code: Language; label: string }[];
+] as const satisfies readonly { code: LanguageCode; label: string }[];
 
-function getLanguageCommandId(language: Language) {
+function getLanguageCommandId(language: LanguageCode) {
   return `language-${language}` as const;
 }
 
