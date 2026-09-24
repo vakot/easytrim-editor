@@ -20,6 +20,8 @@ interface ApplicationCommandGroupMetadata {
 
 interface ApplicationCommand<Id extends string = string> {
   checked?: boolean;
+  /** Overrides the default palette dismissal behavior based on whether this command is checked. */
+  closePaletteOnSelect?: boolean;
   enabled: boolean;
   group: ApplicationCommandGroupMetadata;
   icon: ReactNode;
@@ -33,11 +35,6 @@ interface ApplicationCommand<Id extends string = string> {
 
 interface ApplicationCommandExecutionContext {
   surface: ApplicationCommandSurface;
-}
-
-interface ApplicationCommandExecution {
-  completion: Promise<void>;
-  isPromise: boolean;
 }
 
 interface ApplicationCommandDefinition<Id extends string = string> extends Omit<
@@ -73,7 +70,6 @@ function commandOrigin(commandId: string, surface: ApplicationCommandSurface) {
 export type {
   ApplicationCommand,
   ApplicationCommandDefinition,
-  ApplicationCommandExecution,
   ApplicationCommandExecutionContext,
   ApplicationCommandGroup,
   ApplicationCommandGroupMetadata,

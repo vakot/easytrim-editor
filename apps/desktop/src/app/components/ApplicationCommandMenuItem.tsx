@@ -51,7 +51,7 @@ function ApplicationCommandMenuItem({
   const { executeCommand } = useApplicationCommands();
   const context = {
     command,
-    executeCommand: () => executeCommand(command.id, "menu").completion,
+    executeCommand: () => executeCommand(command.id, "menu"),
   } satisfies ApplicationCommandMenuContextValue;
 
   const commandProps = {

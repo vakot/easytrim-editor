@@ -284,8 +284,6 @@ describe("App", () => {
     await user.keyboard("{Enter}");
 
     await waitFor(() => expect(mocks.chooseSource).toHaveBeenCalledExactlyOnceWith("folders"));
-    expect(screen.getByRole("dialog", { name: "Command Palette" })).toBeInTheDocument();
-    await user.keyboard("{Escape}");
     expect(screen.queryByRole("dialog", { name: "Command Palette" })).not.toBeInTheDocument();
 
     getMenuTrigger("File").focus();

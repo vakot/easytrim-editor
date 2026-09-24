@@ -6,7 +6,7 @@ import type { ApplicationCommand } from "@/app/commands/core/application-command
 
 const mocks = vi.hoisted(() => ({
   commands: [] as ApplicationCommand[],
-  executeCommand: vi.fn(() => ({ completion: Promise.resolve(), isPromise: true })),
+  executeCommand: vi.fn(() => Promise.resolve()),
 }));
 
 vi.mock("@/app/hooks/useApplicationCommands", () => ({
@@ -23,6 +23,7 @@ function createCommand(
   label: string,
   variant: ApplicationCommand["variant"],
   icon: ApplicationCommand["icon"],
+  options: Pick<ApplicationCommand, "checked" | "closePaletteOnSelect"> = {},
 ): ApplicationCommand {
   return {
     enabled: true,
@@ -33,6 +34,7 @@ function createCommand(
     pending: false,
     searchTerms: [],
     variant,
+    ...options,
   };
 }
 
@@ -40,10 +42,12 @@ describe("CommandPalette semantic icons", () => {
   beforeEach(() => {
     mocks.commands = [
       createCommand("reset-preferences", "Reset to default", "destructive", <RotateCcw />),
-      createCommand("check-for-updates", "Up to date", "success", <CheckCircle2 />),
+      createCommand("check-for-updates", "Up to date", "success", <CheckCircle2 />, {
+        closePaletteOnSelect: false,
+      }),
     ];
     mocks.executeCommand.mockClear();
-    mocks.executeCommand.mockReturnValue({ completion: Promise.resolve(), isPromise: true });
+    mocks.executeCommand.mockReturnValue(Promise.resolve());
   });
 
   it("colors destructive and success icons with the shared menu variant styles", async () => {
@@ -68,15 +72,46 @@ describe("CommandPalette semantic icons", () => {
 
     mocks.commands = [
       ...mocks.commands.filter((command) => command.id !== "check-for-updates"),
-      createCommand("check-for-updates", "Update", "default", <CheckCircle2 />),
+      createCommand("check-for-updates", "Update", "default", <CheckCircle2 />, {
+        closePaletteOnSelect: false,
+      }),
     ];
     view.rerender(<CommandPalette />);
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "Update" })).toBeInTheDocument();
   });
 
+  it("keeps the palette open after checkbox and radio configuration changes", async () => {
+    mocks.commands = [
+      ...mocks.commands,
+      createCommand("preference-loop-playback", "Loop playback", "default", <CheckCircle2 />, {
+        checked: false,
+      }),
+      createCommand("theme-dark", "Dark", "default", <CheckCircle2 />, { checked: true }),
+    ];
+    render(<CommandPalette />);
+    fireEvent.keyDown(window, { code: "KeyH", ctrlKey: true });
+
+    fireEvent.click(await screen.findByRole("option", { name: "Loop playback" }));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("option", { name: "Dark" }));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(mocks.executeCommand).toHaveBeenCalledWith("preference-loop-playback", "palette");
+    expect(mocks.executeCommand).toHaveBeenCalledWith("theme-dark", "palette");
+  });
+
+  it("closes the palette after action clicks even when the action returns a Promise", async () => {
+    mocks.commands = [createCommand("open-folder", "Open Folder", "default", <CheckCircle2 />)];
+    render(<CommandPalette />);
+    fireEvent.keyDown(window, { code: "KeyH", ctrlKey: true });
+
+    fireEvent.click(await screen.findByRole("option", { name: "Open Folder" }));
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
   it("closes the palette after synchronous actions", async () => {
-    mocks.executeCommand.mockReturnValue({ completion: Promise.resolve(), isPromise: false });
     render(<CommandPalette />);
     fireEvent.keyDown(window, { code: "KeyH", ctrlKey: true });
 
