@@ -81,7 +81,7 @@ function CommandInput({
 
 function CommandList({ className, ...props }: React.ComponentProps<typeof CommandPrimitive.List>) {
   return (
-    <ScrollArea className="min-h-0 flex-1" fadeColor="var(--popover)">
+    <ScrollArea className="-mx-1 min-h-0 flex-1 px-1" fadeColor="var(--popover)">
       <CommandPrimitive.List
         className={cn("outline-none", className)}
         data-slot="command-list"
@@ -126,7 +126,7 @@ function CommandSeparator({
 }: React.ComponentProps<typeof CommandPrimitive.Separator>) {
   return (
     <CommandPrimitive.Separator
-      className={cn("-mx-1 h-px bg-border", className)}
+      className={cn("mx-1 h-px bg-border", className)}
       data-slot="command-separator"
       {...props}
     />
