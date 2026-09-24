@@ -61,6 +61,19 @@ describe("CommandPalette semantic icons", () => {
     expect(successItem).toHaveClass("[&_svg]:text-success!");
   });
 
+  it("uses an expanded responsive size for the dialog and command list", async () => {
+    render(<CommandPalette />);
+    fireEvent.keyDown(window, { code: "KeyH", ctrlKey: true });
+
+    const dialog = await screen.findByRole("dialog");
+
+    expect(dialog).toHaveClass("sm:max-w-2xl");
+    expect(dialog).toHaveClass("max-h-[min(80dvh,48rem)]");
+    expect(dialog.querySelector('[data-slot="scroll-area"]')).toHaveClass(
+      "max-h-[calc(80dvh_-_4rem)]",
+    );
+  });
+
   it("keeps the palette open for Promise actions so their state and label can update", async () => {
     const view = render(<CommandPalette />);
     fireEvent.keyDown(window, { code: "KeyH", ctrlKey: true });
