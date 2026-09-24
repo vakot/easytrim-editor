@@ -13,6 +13,8 @@ const mocks = vi.hoisted(() => ({
   })),
   dispatch: vi.fn(),
   diagnosticsError: vi.fn(),
+  availableVersion: null as string | null,
+  updateStatus: "idle" as "idle" | "checking" | "available" | "up-to-date" | "error",
   openOptimizedExportDialog: vi.fn((origin: unknown) => ({
     origin,
     type: "export/optimized",
@@ -54,7 +56,7 @@ const state = {
     primaryColor: "amber",
     segmentPlaybackEnabledDefault: true,
     snapPlaybackEnabledDefault: true,
-    themePreference: "system",
+    theme: "system",
   },
   export: { availableQueueFinishActions: ["exit", "nothing"], queueFinishAction: "nothing" },
   source: {
@@ -88,11 +90,11 @@ vi.mock("@/features/preview", () => ({
 }));
 vi.mock("@/app/hooks/useAppUpdates", () => ({
   useAppUpdates: () => ({
-    availableVersion: null,
+    availableVersion: mocks.availableVersion,
     checkForUpdates: vi.fn(),
     installUpdate: vi.fn(),
     isInstalling: false,
-    status: "idle",
+    status: mocks.updateStatus,
   }),
 }));
 vi.mock("@/components/ui/resizable", () => ({
@@ -125,6 +127,8 @@ function RuntimeProbe() {
       {commands.map((command) => (
         <button
           data-checked={command.checked}
+          data-has-icon={Boolean(command.icon)}
+          data-label={command.label}
           data-pending={command.pending}
           data-section={command.section.label}
           data-variant={command.variant}
@@ -161,12 +165,24 @@ describe("ApplicationCommandsProvider", () => {
     mocks.dispatch.mockImplementation(() => undefined);
     mocks.diagnosticsError.mockClear();
     mocks.requestSourceDelete.mockClear();
+    mocks.availableVersion = null;
+    mocks.updateStatus = "idle";
     state.importWorkflow.isNativeDialogOpen = false;
   });
 
   it("executes synchronous commands through the shared runtime and exposes semantic metadata", async () => {
     mocks.dispatch.mockImplementation(() => undefined);
     renderRuntime();
+
+    expect(
+      screen.getAllByRole("button").filter((button) => button.hasAttribute("data-section")),
+    ).toHaveLength(49);
+    expect(
+      screen
+        .getAllByRole("button")
+        .filter((button) => button.hasAttribute("data-section"))
+        .every((button) => button.getAttribute("data-has-icon") === "true"),
+    ).toBe(true);
 
     expect(screen.getByRole("button", { name: "delete-file" })).toHaveAttribute(
       "data-variant",
@@ -181,6 +197,10 @@ describe("ApplicationCommandsProvider", () => {
     expect(screen.getByRole("button", { name: "theme-system" })).toHaveAttribute(
       "data-section",
       "Appearance / Theme",
+    );
+    expect(screen.getByRole("button", { name: "theme-system" })).toHaveAttribute(
+      "data-checked",
+      "true",
     );
     expect(screen.getByRole("button", { name: "primary-color-amber" })).toHaveAttribute(
       "data-section",
@@ -230,6 +250,23 @@ describe("ApplicationCommandsProvider", () => {
     fireEvent.click(screen.getByRole("button", { name: "delete-file" }));
 
     expect(mocks.requestSourceDelete).toHaveBeenCalledWith({ sourceIds: ["source-1"] });
+  });
+
+  it("keeps update state label, variant, and icon synchronized in the owning command group", () => {
+    const view = renderRuntime();
+    const update = screen.getByRole("button", { name: "check-for-updates" });
+    expect(update).toHaveAttribute("data-variant", "default");
+
+    mocks.updateStatus = "up-to-date";
+    view.rerender(
+      <ApplicationCommandsProvider>
+        <RuntimeProbe />
+      </ApplicationCommandsProvider>,
+    );
+
+    expect(update).toHaveAttribute("data-variant", "success");
+    expect(update.getAttribute("data-label")).toBeTruthy();
+    expect(update).toHaveAttribute("data-has-icon", "true");
   });
 
   it("shares pending state and prevents duplicate async execution", async () => {

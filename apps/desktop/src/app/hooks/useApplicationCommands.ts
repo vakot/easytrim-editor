@@ -1,6 +1,6 @@
 import { useContext } from "react";
 
-import type { ApplicationCommandId } from "@/app/commands/application-commands";
+import type { ApplicationCommandId } from "@/app/commands/groups";
 import { ApplicationCommandsContext } from "@/app/contexts/application-commands-context";
 
 function useApplicationCommands() {

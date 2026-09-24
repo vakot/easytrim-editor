@@ -4,12 +4,12 @@ import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { menuClassNames } from "@/components/ui/menu";
 import { Slot } from "@/components/ui/slot";
 
+import type { ApplicationCommand } from "@/app/commands/application-command.types";
 import {
-  type ApplicationCommand,
-  type ApplicationCommandId,
   getShortcutAriaValue,
   getShortcutDisplayKeys,
-} from "@/app/commands/application-commands";
+} from "@/app/commands/application-command.utils";
+import type { ApplicationCommandId } from "@/app/commands/groups";
 import { useApplicationCommand, useApplicationCommands } from "@/app/hooks/useApplicationCommands";
 
 interface ApplicationCommandMenuContextValue {
@@ -25,7 +25,7 @@ function useApplicationCommandMenuContext() {
   const context = useContext(ApplicationCommandMenuContext);
   if (!context) {
     throw new Error(
-      "ApplicationCommandLabel and ApplicationCommandShortcut must be used within ApplicationCommandMenuItem",
+      "ApplicationCommand menu metadata components must be used within ApplicationCommandMenuItem",
     );
   }
   return context;
@@ -68,6 +68,17 @@ function ApplicationCommandLabel({ children }: { children?: ReactNode }) {
   return <>{children ?? command.label}</>;
 }
 
+function ApplicationCommandIcon({ command }: { command?: ApplicationCommand }) {
+  const context = useContext(ApplicationCommandMenuContext);
+  const resolvedCommand = command ?? context?.command;
+  if (!resolvedCommand) {
+    throw new Error(
+      "ApplicationCommandIcon must be used with a command or within ApplicationCommandMenuItem",
+    );
+  }
+  return <>{resolvedCommand.icon}</>;
+}
+
 function ApplicationCommandShortcut() {
   const { command } = useApplicationCommandMenuContext();
   if (!command.shortcut) return null;
@@ -83,4 +94,9 @@ function ApplicationCommandShortcut() {
   );
 }
 
-export { ApplicationCommandLabel, ApplicationCommandMenuItem, ApplicationCommandShortcut };
+export {
+  ApplicationCommandIcon,
+  ApplicationCommandLabel,
+  ApplicationCommandMenuItem,
+  ApplicationCommandShortcut,
+};

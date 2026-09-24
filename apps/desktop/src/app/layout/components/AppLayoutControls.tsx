@@ -1,15 +1,9 @@
 import {
   LayoutPanelLeft,
-  LayoutTemplate,
-  List,
-  ListTree,
   PanelBottom,
   PanelBottomDashed,
   PanelLeft,
   PanelLeftDashed,
-  PanelsLeftBottom,
-  RotateCcw,
-  ScanText,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
@@ -30,6 +24,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import {
+  ApplicationCommandIcon,
   ApplicationCommandLabel,
   ApplicationCommandMenuItem,
 } from "@/app/components/ApplicationCommandMenuItem";
@@ -85,7 +80,7 @@ function AppLayoutControls() {
                 <DropdownMenuCheckboxItem inset keepOpen>
                   <ApplicationCommandLabel />
                   <DropdownMenuIcon side="right">
-                    <PanelLeft aria-hidden="true" />
+                    <ApplicationCommandIcon />
                   </DropdownMenuIcon>
                 </DropdownMenuCheckboxItem>
               </ApplicationCommandMenuItem>
@@ -94,7 +89,7 @@ function AppLayoutControls() {
                 <DropdownMenuCheckboxItem inset keepOpen>
                   <ApplicationCommandLabel />
                   <DropdownMenuIcon side="right">
-                    <PanelBottom aria-hidden="true" />
+                    <ApplicationCommandIcon />
                   </DropdownMenuIcon>
                 </DropdownMenuCheckboxItem>
               </ApplicationCommandMenuItem>
@@ -110,7 +105,7 @@ function AppLayoutControls() {
                   <DropdownMenuRadioItem inset keepOpen value="default">
                     <ApplicationCommandLabel />
                     <DropdownMenuIcon side="right">
-                      <LayoutTemplate aria-hidden="true" className="-scale-x-100 -rotate-90" />
+                      <ApplicationCommandIcon />
                     </DropdownMenuIcon>
                   </DropdownMenuRadioItem>
                 </ApplicationCommandMenuItem>
@@ -119,7 +114,7 @@ function AppLayoutControls() {
                   <DropdownMenuRadioItem inset keepOpen value="compact">
                     <ApplicationCommandLabel />
                     <DropdownMenuIcon side="right">
-                      <PanelsLeftBottom aria-hidden="true" />
+                      <ApplicationCommandIcon />
                     </DropdownMenuIcon>
                   </DropdownMenuRadioItem>
                 </ApplicationCommandMenuItem>
@@ -136,7 +131,7 @@ function AppLayoutControls() {
                   <DropdownMenuRadioItem inset keepOpen value="default">
                     <ApplicationCommandLabel />
                     <DropdownMenuIcon side="right">
-                      <List aria-hidden="true" />
+                      <ApplicationCommandIcon />
                     </DropdownMenuIcon>
                   </DropdownMenuRadioItem>
                 </ApplicationCommandMenuItem>
@@ -145,7 +140,7 @@ function AppLayoutControls() {
                   <DropdownMenuRadioItem inset keepOpen value="compact">
                     <ApplicationCommandLabel />
                     <DropdownMenuIcon side="right">
-                      <ScanText aria-hidden="true" />
+                      <ApplicationCommandIcon />
                     </DropdownMenuIcon>
                   </DropdownMenuRadioItem>
                 </ApplicationCommandMenuItem>
@@ -154,7 +149,7 @@ function AppLayoutControls() {
                   <DropdownMenuRadioItem inset keepOpen value="branch">
                     <ApplicationCommandLabel />
                     <DropdownMenuIcon side="right">
-                      <ListTree aria-hidden="true" />
+                      <ApplicationCommandIcon />
                     </DropdownMenuIcon>
                   </DropdownMenuRadioItem>
                 </ApplicationCommandMenuItem>
@@ -167,7 +162,7 @@ function AppLayoutControls() {
               <ApplicationCommandMenuItem asChild commandId="reset-layout">
                 <DropdownMenuItem inset keepOpen>
                   <DropdownMenuIcon>
-                    <RotateCcw aria-hidden="true" className="size-3" />
+                    <ApplicationCommandIcon />
                   </DropdownMenuIcon>
                   <ApplicationCommandLabel />
                 </DropdownMenuItem>

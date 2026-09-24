@@ -1,44 +1,6 @@
-import {
-  BetweenVerticalStart,
-  CheckCircle2,
-  CircleAlert,
-  CircleStop,
-  Download,
-  ExternalLink,
-  FileInputIcon,
-  FileOutputIcon,
-  FolderInput,
-  FolderOpenIcon,
-  LayoutTemplate,
-  List,
-  ListTree,
-  LoaderCircle,
-  LogOut,
-  Magnet,
-  Merge,
-  Monitor,
-  Moon,
-  PanelBottom,
-  PanelLeft,
-  PanelsLeftBottom,
-  Play,
-  Power,
-  RefreshCw,
-  Repeat,
-  RotateCcw,
-  ScanText,
-  ScissorsIcon,
-  ScrollText,
-  Settings2,
-  Sun,
-  Trash2Icon,
-  XIcon,
-} from "lucide-react";
-import type { ComponentType } from "react";
-import { createContext, createElement, useContext, useState } from "react";
+import { createContext, useContext, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { ColorSample } from "@/components/ui/color";
 import {
   Command,
   CommandDialog,
@@ -53,114 +15,23 @@ import {
 import { Highlight } from "@/components/ui/highlight";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 
+import type {
+  ApplicationCommand,
+  ApplicationCommandMatch,
+  ApplicationCommandVariant,
+} from "@/app/commands/application-command.types";
+import { COMMAND_PALETTE_SHORTCUT } from "@/app/commands/application-command.shortcuts";
+import type { ApplicationCommandId } from "@/app/commands/groups";
 import {
-  APPLICATION_SHORTCUTS,
-  type ApplicationCommand,
-  type ApplicationCommandId,
-  type ApplicationCommandMatch,
-  type ApplicationCommandVariant,
   filterApplicationCommands,
   getShortcutAriaValue,
   getShortcutDisplayKeys,
   isShortcutEvent,
-} from "@/app/commands/application-commands";
+} from "@/app/commands/application-command.utils";
+import { ApplicationCommandIcon } from "@/app/components/ApplicationCommandMenuItem";
 import { useApplicationCommands } from "@/app/hooks/useApplicationCommands";
-import { resolvePrimaryColor } from "@/app/theme/theme";
-import { GithubIcon, KofiIcon } from "@/components/brand-icons";
 import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
 import { isApplicationInteractionBlocked } from "@/lib/hotkeys.utils";
-
-type CommandIcon = ComponentType<{ "aria-hidden"?: boolean | "true" | "false" }>;
-
-const primaryColorIcons = {
-  amber: ({ "aria-hidden": ariaHidden }: { "aria-hidden"?: boolean | "true" | "false" }) => (
-    <ColorSample aria-hidden={ariaHidden} color={resolvePrimaryColor("amber")} />
-  ),
-  blue: ({ "aria-hidden": ariaHidden }: { "aria-hidden"?: boolean | "true" | "false" }) => (
-    <ColorSample aria-hidden={ariaHidden} color={resolvePrimaryColor("blue")} />
-  ),
-  emerald: ({ "aria-hidden": ariaHidden }: { "aria-hidden"?: boolean | "true" | "false" }) => (
-    <ColorSample aria-hidden={ariaHidden} color={resolvePrimaryColor("emerald")} />
-  ),
-  rose: ({ "aria-hidden": ariaHidden }: { "aria-hidden"?: boolean | "true" | "false" }) => (
-    <ColorSample aria-hidden={ariaHidden} color={resolvePrimaryColor("rose")} />
-  ),
-  violet: ({ "aria-hidden": ariaHidden }: { "aria-hidden"?: boolean | "true" | "false" }) => (
-    <ColorSample aria-hidden={ariaHidden} color={resolvePrimaryColor("violet")} />
-  ),
-} satisfies Record<string, CommandIcon>;
-
-const LayoutDensityDefaultIcon: CommandIcon = ({ "aria-hidden": ariaHidden }) => (
-  <LayoutTemplate aria-hidden={ariaHidden} className="-scale-x-100 -rotate-90" />
-);
-
-const commandIcons: Record<ApplicationCommandId, CommandIcon> = {
-  "activity-feed-view-branch": ListTree,
-  "activity-feed-view-compact": ScanText,
-  "activity-feed-view-default": List,
-  "check-for-updates": RefreshCw,
-  "close-file": XIcon,
-  "crop-preview": ScissorsIcon,
-  "delete-source-on-render-finish": Trash2Icon,
-  "delete-file": Trash2Icon,
-  "flip-horizontal": ScissorsIcon,
-  "flip-vertical": ScissorsIcon,
-  "language-en": FileOutputIcon,
-  "language-ru": FileOutputIcon,
-  "language-sk": FileOutputIcon,
-  "layout-density-compact": PanelsLeftBottom,
-  "layout-density-default": LayoutDensityDefaultIcon,
-  "open-changelog": ScrollText,
-  "open-file": FileInputIcon,
-  "open-folder": FolderOpenIcon,
-  "open-project-page": GithubIcon,
-  "open-release-page": ExternalLink,
-  "optimized-export": Settings2,
-  "preference-auto-start-queue": Play,
-  "preference-loop-playback": Repeat,
-  "preference-merge-audio": Merge,
-  "preference-segment-playback": BetweenVerticalStart,
-  "preference-snap-playback": Magnet,
-  "primary-color-amber": primaryColorIcons.amber,
-  "primary-color-blue": primaryColorIcons.blue,
-  "primary-color-emerald": primaryColorIcons.emerald,
-  "primary-color-rose": primaryColorIcons.rose,
-  "primary-color-violet": primaryColorIcons.violet,
-  "queue-finish-exit": LogOut,
-  "queue-finish-nothing": CircleStop,
-  "queue-finish-system-shutdown": Power,
-  "queue-finish-system-sleep": Moon,
-  "reset-layout": RotateCcw,
-  "reset-preferences": RotateCcw,
-  "reset-transform": RotateCcw,
-  "rotate-180": ScissorsIcon,
-  "rotate-90-ccw": ScissorsIcon,
-  "rotate-90-cw": ScissorsIcon,
-  "save-lossless-cut": ScissorsIcon,
-  "show-logs": FolderInput,
-  "support-project": KofiIcon,
-  "theme-dark": Moon,
-  "theme-light": Sun,
-  "theme-system": Monitor,
-  "toggle-bottom-panel": PanelBottom,
-  "toggle-left-panel": PanelLeft,
-};
-
-const CheckingIcon: CommandIcon = ({ "aria-hidden": ariaHidden }) => (
-  <LoaderCircle aria-hidden={ariaHidden} className="animate-spin" />
-);
-
-function getCommandIcon(
-  command: ApplicationCommand,
-  updateLabels: { checking: string; update: string },
-): CommandIcon {
-  if (command.id !== "check-for-updates") return commandIcons[command.id];
-  if (command.variant === "success") return CheckCircle2;
-  if (command.variant === "destructive") return CircleAlert;
-  if (command.label === updateLabels.update) return Download;
-  if (command.label === updateLabels.checking) return CheckingIcon;
-  return RefreshCw;
-}
 
 const commandVariantClassNames = {
   default: undefined,
@@ -171,7 +42,7 @@ const commandVariantClassNames = {
 } satisfies Record<ApplicationCommandVariant, string | undefined>;
 
 type CommandPaletteSection = {
-  matches: ApplicationCommandMatch[];
+  matches: ApplicationCommandMatch<ApplicationCommandId>[];
   sectionLabel: string;
   sectionMatched: boolean;
 };
@@ -186,7 +57,7 @@ function CommandPalette() {
 
   useKeyboardShortcut(
     (event) =>
-      isShortcutEvent(event, APPLICATION_SHORTCUTS.commandPalette) &&
+      isShortcutEvent(event, COMMAND_PALETTE_SHORTCUT) &&
       (open || !isApplicationInteractionBlocked()),
     () => setOpen((current) => !current),
     { allowEditableTarget: true },
@@ -220,7 +91,7 @@ function CommandPalette() {
     if (!nextOpen) setQuery("");
   }
 
-  function executeCommand(command: ApplicationCommand) {
+  function executeCommand(command: ApplicationCommand<ApplicationCommandId>) {
     if (!command.enabled || command.pending) return;
     handleOpenChange(false);
     void executeApplicationCommand(command.id, "palette");
@@ -288,13 +159,8 @@ function CommandPaletteGroup({ group }: { group: CommandPaletteSection }) {
   );
 }
 
-function CommandPaletteItem({ match }: { match: ApplicationCommandMatch }) {
+function CommandPaletteItem({ match }: { match: ApplicationCommandMatch<ApplicationCommandId> }) {
   const { command } = match;
-  const { t } = useTranslation();
-  const Icon = getCommandIcon(command, {
-    checking: t("app.status.checkingForUpdates"),
-    update: t("app.actions.update"),
-  });
 
   const { executeCommand, query } = useCommandPaletteState();
 
@@ -307,7 +173,7 @@ function CommandPaletteItem({ match }: { match: ApplicationCommandMatch }) {
       onSelect={() => executeCommand(command)}
       value={command.id}
     >
-      {createElement(Icon, { "aria-hidden": "true" })}
+      <ApplicationCommandIcon command={command} />
       <span>
         <Highlight query={match.labelMatched ? query : ""}>{command.label}</Highlight>
       </span>
@@ -325,7 +191,7 @@ function CommandPaletteItem({ match }: { match: ApplicationCommandMatch }) {
 }
 
 const CommandPaletteContext = createContext<{
-  executeCommand: (command: ApplicationCommand) => void;
+  executeCommand: (command: ApplicationCommand<ApplicationCommandId>) => void;
   query: string;
 } | null>(null);
 
@@ -337,7 +203,7 @@ function useCommandPaletteState() {
   return context;
 }
 
-function groupCommandMatches(matches: readonly ApplicationCommandMatch[]) {
+function groupCommandMatches(matches: readonly ApplicationCommandMatch<ApplicationCommandId>[]) {
   const groups = new Map<ApplicationCommand["section"]["id"], CommandPaletteSection>();
 
   for (const match of matches) {
