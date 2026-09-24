@@ -224,12 +224,15 @@ describe("ApplicationCommandsProvider", () => {
       "data-label",
       "Русский",
     );
-    expect(screen.getByRole("button", { name: "language-en" }).querySelector("[data-icon]"))
-      .toHaveTextContent("EN");
-    expect(screen.getByRole("button", { name: "language-sk" }).querySelector("[data-icon]"))
-      .toHaveTextContent("SK");
-    expect(screen.getByRole("button", { name: "language-ru" }).querySelector("[data-icon]"))
-      .toHaveTextContent("RU");
+    expect(
+      screen.getByRole("button", { name: "language-en" }).querySelector("[data-icon]"),
+    ).toHaveTextContent("EN");
+    expect(
+      screen.getByRole("button", { name: "language-sk" }).querySelector("[data-icon]"),
+    ).toHaveTextContent("SK");
+    expect(
+      screen.getByRole("button", { name: "language-ru" }).querySelector("[data-icon]"),
+    ).toHaveTextContent("RU");
     expect(screen.getByRole("button", { name: "primary-color-amber" })).toHaveAttribute(
       "data-group",
       "Appearance / Color",

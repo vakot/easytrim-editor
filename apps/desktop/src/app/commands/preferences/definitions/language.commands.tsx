@@ -25,7 +25,7 @@ function useLanguageCommands() {
     icon: (
       <span
         aria-hidden="true"
-        className="inline-flex size-4 items-center justify-center font-mono text-[10px] font-semibold text-muted-foreground group-data-selected/command-item:text-foreground"
+        className="inline-flex size-3.5 items-center justify-center font-mono text-[10px] font-semibold text-muted-foreground group-data-selected/command-item:text-foreground"
       >
         {code.toUpperCase()}
       </span>

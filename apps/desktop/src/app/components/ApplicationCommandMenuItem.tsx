@@ -85,11 +85,13 @@ function ApplicationCommandIcon({
 }) {
   const context = useContext(ApplicationCommandMenuContext);
   const resolvedCommand = command ?? context?.command;
+
   if (!resolvedCommand) {
     throw new Error(
       "ApplicationCommandIcon must be used with a command or within ApplicationCommandMenuItem",
     );
   }
+
   if (!className || !isValidElement<{ className?: string }>(resolvedCommand.icon)) {
     return <>{resolvedCommand.icon}</>;
   }
