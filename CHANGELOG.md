@@ -12,7 +12,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
-- Simplified the empty preview's keyboard hints and highlighted the Command Palette shortcut separately.
+- Simplified the empty preview's keyboard hints and displayed the Command Palette shortcut separately with the correct platform modifier.
 - Kept configuration choices and update checks in the Command Palette open, while dismissing it after action commands are selected.
 - Displayed language options using each language's own name instead of translating them into the current app language.
 
