@@ -5,6 +5,7 @@ import { commandSearchTerms } from "@/app/commands/core/application-command.util
 
 type Language = "en" | "sk" | "ru";
 
+// Always show each language's native name; never translate these labels for the active language.
 const languageNames = {
   en: "English",
   sk: "Slovenčina",
