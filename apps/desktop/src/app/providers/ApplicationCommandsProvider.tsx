@@ -442,7 +442,7 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
         id: "delete-source-on-render-finish",
         label: t("queue.labels.deleteSource"),
         searchTerms: commandSearchTerms(`${t("queue.labels.deleteSource")}|render|queue`),
-        section: sections.queue,
+        section: sections.queueOnFinished,
         variant: "destructive",
       },
       {

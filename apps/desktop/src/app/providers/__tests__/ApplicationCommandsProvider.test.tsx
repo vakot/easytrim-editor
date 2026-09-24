@@ -184,6 +184,10 @@ describe("ApplicationCommandsProvider", () => {
       "data-section",
       "Queue / On finished",
     );
+    expect(screen.getByRole("button", { name: "delete-source-on-render-finish" })).toHaveAttribute(
+      "data-section",
+      "Queue / On finished",
+    );
     expect(screen.getByRole("button", { name: "toggle-left-panel" })).toHaveAttribute(
       "data-section",
       "Layout / Panels visibility",
