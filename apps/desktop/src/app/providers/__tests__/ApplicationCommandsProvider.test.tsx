@@ -212,6 +212,10 @@ describe("ApplicationCommandsProvider", () => {
       "data-section",
       "Preferences",
     );
+    expect(screen.getByRole("button", { name: "crop-preview" })).toHaveAttribute(
+      "data-section",
+      "Preview / Transform",
+    );
 
     fireEvent.click(screen.getByRole("button", { name: "delete-file" }));
 

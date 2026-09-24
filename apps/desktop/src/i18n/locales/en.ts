@@ -54,7 +54,7 @@ export const en = {
         preferences: "Preferences",
         preferencesAudio: "Preferences / Audio",
         preferencesPlayback: "Preferences / Playback",
-        preview: "Preview",
+        previewTransform: "Preview / Transform",
         queue: "Queue",
         queueOnFinished: "Queue / On finished",
         source: "Editing / Source",

@@ -56,7 +56,7 @@ export const sk = {
         preferences: "Nastavenia",
         preferencesAudio: "Nastavenia / Zvuk",
         preferencesPlayback: "Nastavenia / Prehrávanie",
-        preview: "Náhľad",
+        previewTransform: "Náhľad / Transformácia",
         queue: "Front",
         queueOnFinished: "Front / Po dokončení",
         source: "Úpravy / Zdroj",

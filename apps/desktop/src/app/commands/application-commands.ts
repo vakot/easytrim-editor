@@ -65,7 +65,7 @@ type ApplicationCommandSectionId =
   | "layout-panels-visibility"
   | "playback"
   | "preferences"
-  | "preview"
+  | "preview-transform"
   | "queue"
   | "queue-on-finished"
   | "preferences-audio"

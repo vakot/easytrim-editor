@@ -207,7 +207,10 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
           id: "preferences-playback",
           label: t("app.labels.commandSections.preferencesPlayback"),
         },
-        preview: { id: "preview", label: t("app.labels.commandSections.preview") },
+        previewTransform: {
+          id: "preview-transform",
+          label: t("app.labels.commandSections.previewTransform"),
+        },
         queue: { id: "queue", label: t("app.labels.commandSections.queue") },
         queueOnFinished: {
           id: "queue-on-finished",
@@ -572,7 +575,7 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
         id: "crop-preview",
         label: t("preview.actions.transform.crop"),
         searchTerms: commandSearchTerms(`${t("preview.actions.transform.crop")}|crop|transform`),
-        section: sections.preview,
+        section: sections.previewTransform,
         variant: "default",
       },
       ...(
@@ -595,7 +598,7 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
         id: id as ApplicationCommandId,
         label: rotationLabels[labelKey],
         searchTerms: commandSearchTerms(`${rotationLabels[labelKey]}|rotate|transform`),
-        section: sections.preview,
+        section: sections.previewTransform,
         variant: "default" as const,
       })),
       {
@@ -610,7 +613,7 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
         searchTerms: commandSearchTerms(
           `${t("preview.actions.transform.flipHorizontal")}|flip|transform`,
         ),
-        section: sections.preview,
+        section: sections.previewTransform,
         variant: "default",
       },
       {
@@ -625,7 +628,7 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
         searchTerms: commandSearchTerms(
           `${t("preview.actions.transform.flipVertical")}|flip|transform`,
         ),
-        section: sections.preview,
+        section: sections.previewTransform,
         variant: "default",
       },
       {
@@ -634,7 +637,7 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
         id: "reset-transform",
         label: t("preview.actions.transform.reset"),
         searchTerms: commandSearchTerms(`${t("preview.actions.transform.reset")}|reset|transform`),
-        section: sections.preview,
+        section: sections.previewTransform,
         variant: "destructive",
       },
     ],
