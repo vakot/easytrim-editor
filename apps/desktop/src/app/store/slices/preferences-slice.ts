@@ -40,6 +40,10 @@ const preferencesSlice = createSlice({
     layoutDensityChanged: (state, action: PayloadAction<LayoutDensity>) => {
       state.layoutDensity = action.payload;
     },
+    layoutReset: (state) => {
+      state.activityFeedView = DEFAULT_PREFERENCES.activityFeedView;
+      state.layoutDensity = DEFAULT_PREFERENCES.layoutDensity;
+    },
     themePreferenceChanged: (state, action: PayloadAction<ThemePreference>) => {
       state.theme = action.payload;
     },
@@ -57,8 +61,12 @@ const preferencesSlice = createSlice({
       state.lastSeenChangelogVersion = action.payload;
     },
     preferencesReset: (state) => {
+      const activityFeedView = state.activityFeedView;
+      const layoutDensity = state.layoutDensity;
       const lastSeenChangelogVersion = state.lastSeenChangelogVersion;
       Object.assign(state, DEFAULT_PREFERENCES);
+      state.activityFeedView = activityFeedView;
+      state.layoutDensity = layoutDensity;
       state.lastSeenChangelogVersion = lastSeenChangelogVersion;
     },
   },
@@ -69,6 +77,7 @@ const {
   changelogVersionSeen,
   customPrimaryColorChanged,
   layoutDensityChanged,
+  layoutReset,
   preferenceChanged,
   preferencesReset,
   primaryColorChanged,
@@ -128,6 +137,7 @@ export {
   changelogVersionSeen,
   customPrimaryColorChanged,
   layoutDensityChanged,
+  layoutReset,
   preferenceChanged,
   preferencesReducer,
   preferencesReset,

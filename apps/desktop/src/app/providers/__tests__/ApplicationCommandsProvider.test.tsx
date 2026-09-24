@@ -13,11 +13,15 @@ const mocks = vi.hoisted(() => ({
   })),
   dispatch: vi.fn(),
   diagnosticsError: vi.fn(),
+  availableVersion: null as string | null,
+  updateStatus: "idle" as "idle" | "checking" | "available" | "up-to-date" | "error",
   openOptimizedExportDialog: vi.fn((origin: unknown) => ({
     origin,
     type: "export/optimized",
   })),
   requestSourceDelete: vi.fn(),
+  resetPanels: vi.fn(),
+  panelsAreReset: false,
   startFastCutRequested: vi.fn((origin: unknown) => ({
     origin,
     type: "export/fast",
@@ -54,7 +58,7 @@ const state = {
     primaryColor: "amber",
     segmentPlaybackEnabledDefault: true,
     snapPlaybackEnabledDefault: true,
-    themePreference: "system",
+    theme: "system",
   },
   export: { availableQueueFinishActions: ["exit", "nothing"], queueFinishAction: "nothing" },
   source: {
@@ -88,11 +92,11 @@ vi.mock("@/features/preview", () => ({
 }));
 vi.mock("@/app/hooks/useAppUpdates", () => ({
   useAppUpdates: () => ({
-    availableVersion: null,
+    availableVersion: mocks.availableVersion,
     checkForUpdates: vi.fn(),
     installUpdate: vi.fn(),
     isInstalling: false,
-    status: "idle",
+    status: mocks.updateStatus,
   }),
 }));
 vi.mock("@/components/ui/resizable", () => ({
@@ -100,9 +104,9 @@ vi.mock("@/components/ui/resizable", () => ({
     isAvailable: true,
     isCollapsed: false,
     isDisabled: false,
-    isReset: false,
+    isReset: mocks.panelsAreReset,
     toggle: vi.fn(),
-    reset: vi.fn(),
+    reset: mocks.resetPanels,
   }),
 }));
 vi.mock("@/lib/open-external-url.utils", () => ({ openExternalUrl: vi.fn() }));
@@ -124,15 +128,21 @@ function RuntimeProbe() {
     <div>
       {commands.map((command) => (
         <button
+          aria-label={command.id}
           data-checked={command.checked}
+          data-group={command.group.label}
+          data-has-icon={Boolean(command.icon)}
+          data-keep-open={command.keepOpen}
+          data-label={command.label}
           data-pending={command.pending}
-          data-section={command.section.label}
+          data-surfaces={command.surfaces?.join(",")}
           data-variant={command.variant}
           disabled={!command.enabled || command.pending}
           key={command.id}
           onClick={() => void executeCommand(command.id, "palette")}
           type="button"
         >
+          <span data-icon>{command.icon}</span>
           {command.id}
         </button>
       ))}
@@ -142,6 +152,9 @@ function RuntimeProbe() {
         type="button"
       >
         open-file-menu
+      </button>
+      <button onClick={() => void executeCommand("reset-layout", "menu")} type="button">
+        reset-layout-menu
       </button>
     </div>
   );
@@ -159,67 +172,111 @@ describe("ApplicationCommandsProvider", () => {
   beforeEach(() => {
     mocks.dispatch.mockReset();
     mocks.dispatch.mockImplementation(() => undefined);
+    mocks.resetPanels.mockReset();
+    mocks.panelsAreReset = false;
     mocks.diagnosticsError.mockClear();
     mocks.requestSourceDelete.mockClear();
+    mocks.availableVersion = null;
+    mocks.updateStatus = "idle";
     state.importWorkflow.isNativeDialogOpen = false;
+    state.preferences.activityFeedView = "default";
+    state.preferences.layoutDensity = "default";
   });
 
   it("executes synchronous commands through the shared runtime and exposes semantic metadata", async () => {
     mocks.dispatch.mockImplementation(() => undefined);
     renderRuntime();
 
+    expect(
+      screen.getAllByRole("button").filter((button) => button.hasAttribute("data-group")),
+    ).toHaveLength(49);
+    expect(
+      screen
+        .getAllByRole("button")
+        .filter((button) => button.hasAttribute("data-group"))
+        .every((button) => button.getAttribute("data-has-icon") === "true"),
+    ).toBe(true);
+
     expect(screen.getByRole("button", { name: "delete-file" })).toHaveAttribute(
       "data-variant",
       "destructive",
     );
     for (const commandId of ["open-file", "open-folder", "close-file", "delete-file"]) {
-      expect(screen.getByRole("button", { name: commandId })).toHaveAttribute(
-        "data-section",
-        "File",
-      );
+      expect(screen.getByRole("button", { name: commandId })).toHaveAttribute("data-group", "File");
     }
     expect(screen.getByRole("button", { name: "theme-system" })).toHaveAttribute(
-      "data-section",
+      "data-group",
       "Appearance / Theme",
     );
+    expect(screen.getByRole("button", { name: "theme-system" })).toHaveAttribute(
+      "data-checked",
+      "true",
+    );
+    expect(screen.getByRole("button", { name: "language-en" })).toHaveAttribute(
+      "data-label",
+      "English",
+    );
+    expect(screen.getByRole("button", { name: "language-sk" })).toHaveAttribute(
+      "data-label",
+      "Slovenčina",
+    );
+    expect(screen.getByRole("button", { name: "language-ru" })).toHaveAttribute(
+      "data-label",
+      "Русский",
+    );
+    expect(
+      screen.getByRole("button", { name: "language-en" }).querySelector("[data-icon]"),
+    ).toHaveTextContent("EN");
+    expect(
+      screen.getByRole("button", { name: "language-sk" }).querySelector("[data-icon]"),
+    ).toHaveTextContent("SK");
+    expect(
+      screen.getByRole("button", { name: "language-ru" }).querySelector("[data-icon]"),
+    ).toHaveTextContent("RU");
     expect(screen.getByRole("button", { name: "primary-color-amber" })).toHaveAttribute(
-      "data-section",
+      "data-group",
       "Appearance / Color",
     );
     expect(screen.getByRole("button", { name: "queue-finish-exit" })).toHaveAttribute(
-      "data-section",
+      "data-group",
       "Queue / On finished / Application",
     );
     expect(screen.getByRole("button", { name: "delete-source-on-render-finish" })).toHaveAttribute(
-      "data-section",
+      "data-group",
       "Queue / On finished / Source",
     );
     expect(screen.getByRole("button", { name: "toggle-left-panel" })).toHaveAttribute(
-      "data-section",
+      "data-group",
       "Layout / Panels visibility",
     );
     expect(screen.getByRole("button", { name: "layout-density-default" })).toHaveAttribute(
-      "data-section",
+      "data-group",
       "Layout / Density",
     );
     expect(screen.getByRole("button", { name: "activity-feed-view-default" })).toHaveAttribute(
-      "data-section",
+      "data-group",
       "Layout / Activity Feed View",
     );
     expect(screen.getByRole("button", { name: "preference-auto-start-queue" })).toHaveAttribute(
-      "data-section",
+      "data-group",
       "Preferences / Playback",
     );
     expect(screen.getByRole("button", { name: "preference-merge-audio" })).toHaveAttribute(
-      "data-section",
+      "data-group",
       "Preferences / Audio",
     );
     expect(screen.getByRole("button", { name: "reset-preferences" })).toHaveAttribute(
-      "data-section",
+      "data-group",
       "Preferences",
     );
+    for (const commandId of ["reset-preferences", "reset-layout", "reset-transform"]) {
+      expect(screen.getByRole("button", { name: commandId })).toHaveAttribute(
+        "data-surfaces",
+        "menu",
+      );
+    }
     expect(screen.getByRole("button", { name: "crop-preview" })).toHaveAttribute(
-      "data-section",
+      "data-group",
       "Preview / Transform",
     );
     expect(screen.getByRole("button", { name: "reset-layout" })).toHaveAttribute(
@@ -230,6 +287,24 @@ describe("ApplicationCommandsProvider", () => {
     fireEvent.click(screen.getByRole("button", { name: "delete-file" }));
 
     expect(mocks.requestSourceDelete).toHaveBeenCalledWith({ sourceIds: ["source-1"] });
+  });
+
+  it("keeps update state label, variant, and icon synchronized in the owning command group", () => {
+    const view = renderRuntime();
+    const update = screen.getByRole("button", { name: "check-for-updates" });
+    expect(update).toHaveAttribute("data-variant", "default");
+    expect(update).toHaveAttribute("data-keep-open", "true");
+
+    mocks.updateStatus = "up-to-date";
+    view.rerender(
+      <ApplicationCommandsProvider>
+        <RuntimeProbe />
+      </ApplicationCommandsProvider>,
+    );
+
+    expect(update).toHaveAttribute("data-variant", "success");
+    expect(update.getAttribute("data-label")).toBeTruthy();
+    expect(update).toHaveAttribute("data-has-icon", "true");
   });
 
   it("shares pending state and prevents duplicate async execution", async () => {
@@ -283,5 +358,33 @@ describe("ApplicationCommandsProvider", () => {
     expect(mocks.dispatch).not.toHaveBeenCalled();
 
     state.importWorkflow.isNativeDialogOpen = false;
+  });
+
+  it("does not execute menu-only commands from the palette surface", () => {
+    renderRuntime();
+
+    fireEvent.click(screen.getByRole("button", { name: "reset-preferences" }));
+
+    expect(mocks.dispatch).not.toHaveBeenCalled();
+  });
+
+  it("resets layout preferences and panels from the menu surface", () => {
+    renderRuntime();
+
+    fireEvent.click(screen.getByRole("button", { name: "reset-layout-menu" }));
+
+    expect(mocks.dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "preferences/layoutReset" }),
+    );
+    expect(mocks.resetPanels).toHaveBeenCalledOnce();
+  });
+
+  it("enables layout reset when density or activity-feed view differs from its default", () => {
+    state.preferences.layoutDensity = "compact";
+    state.preferences.activityFeedView = "branch";
+    mocks.panelsAreReset = true;
+    renderRuntime();
+
+    expect(screen.getByRole("button", { name: "reset-layout" })).toBeEnabled();
   });
 });

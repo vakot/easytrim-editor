@@ -19,7 +19,9 @@ import {
   MenubarTrigger,
 } from "@/components/ui/menubar";
 
+import { getPrimaryColorCommandId, getThemeCommandId } from "@/app/commands/appearance";
 import {
+  ApplicationCommandIcon,
   ApplicationCommandLabel,
   ApplicationCommandMenuItem,
 } from "@/app/components/ApplicationCommandMenuItem";
@@ -93,10 +95,16 @@ function MenuBarView({ onClose }: MenuBarViewProps) {
             <MenubarSubContent>
               <MenubarRadioGroup value={preference}>
                 {(["system", "light", "dark"] as const).map((theme) => (
-                  <ApplicationCommandMenuItem asChild commandId={`theme-${theme}`} key={theme}>
+                  <ApplicationCommandMenuItem
+                    asChild
+                    commandId={getThemeCommandId(theme)}
+                    key={theme}
+                  >
                     <MenubarRadioItem inset keepOpen value={theme}>
                       <ApplicationCommandLabel />
-                      <MenubarIcon side="right">{themeIcons[theme]}</MenubarIcon>
+                      <MenubarIcon side="right">
+                        <ApplicationCommandIcon />
+                      </MenubarIcon>
                     </MenubarRadioItem>
                   </ApplicationCommandMenuItem>
                 ))}
@@ -115,7 +123,7 @@ function MenuBarView({ onClose }: MenuBarViewProps) {
                 {PRIMARY_COLORS.map((color) => (
                   <ApplicationCommandMenuItem
                     asChild
-                    commandId={`primary-color-${color}`}
+                    commandId={getPrimaryColorCommandId(color)}
                     key={color}
                   >
                     <MenubarRadioItem inset keepOpen value={color}>
@@ -124,7 +132,7 @@ function MenuBarView({ onClose }: MenuBarViewProps) {
                         <span className="font-mono">
                           {resolvePrimaryColor(color).toUpperCase()}
                         </span>
-                        <ColorSample color={resolvePrimaryColor(color)} />
+                        <ApplicationCommandIcon />
                       </MenubarShortcut>
                     </MenubarRadioItem>
                   </ApplicationCommandMenuItem>

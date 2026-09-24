@@ -10,6 +10,16 @@ All notable changes to this project will be documented in this file.
 - Expanded the command palette to include help, appearance, settings, queue, layout, and preview actions with shared menu and shortcut behavior.
 - Added an in-app changelog and What's New view for released EasyTrim updates.
 
+### Changed
+
+- Simplified the empty preview's keyboard hints and displayed the Command Palette shortcut separately with the correct platform modifier.
+- Kept configuration choices and update checks in the Command Palette open, while dismissing it after action commands are selected.
+- Displayed language options using each language's own name instead of translating them into the current app language.
+
+### Fixed
+
+- Matched destructive and success icon colors in the Command Palette to the shared menu styles.
+
 ## [1.10.4]
 
 ### Fixed

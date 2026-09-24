@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { type ComponentProps, forwardRef } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { ApplicationCommand } from "@/app/commands/application-commands";
+import type { ApplicationCommand } from "@/app/commands/core/application-command.types";
 
 const mocks = vi.hoisted(() => ({
   command: null as ApplicationCommand | null,
@@ -19,6 +19,7 @@ vi.mock("@/app/hooks/useApplicationCommands", () => ({
 }));
 
 import {
+  ApplicationCommandIcon,
   ApplicationCommandLabel,
   ApplicationCommandMenuItem,
   ApplicationCommandShortcut,
@@ -42,11 +43,12 @@ const ProbeItem = forwardRef<HTMLButtonElement, ProbeItemProps>(function ProbeIt
 function createCommand(overrides: Partial<ApplicationCommand> = {}): ApplicationCommand {
   return {
     enabled: true,
+    icon: <span data-testid="resolved-command-icon" />,
     id: "delete-file",
     label: "Delete File",
     pending: false,
     searchTerms: [],
-    section: { id: "source", label: "Source" },
+    group: { id: "source", label: "Source" },
     shortcut: { code: "KeyD", key: "D", modifier: "control" },
     variant: "destructive",
     ...overrides,
@@ -95,5 +97,18 @@ describe("ApplicationCommandMenuItem", () => {
     expect(item).toBeDisabled();
     fireEvent.click(item);
     expect(mocks.executeCommand).not.toHaveBeenCalled();
+  });
+
+  it("renders the icon supplied by the resolved command", () => {
+    render(
+      <ApplicationCommandMenuItem asChild commandId="delete-file">
+        <ProbeItem>
+          <ApplicationCommandIcon className="size-3" />
+        </ProbeItem>
+      </ApplicationCommandMenuItem>,
+    );
+
+    expect(screen.getByTestId("resolved-command-icon")).toBeInTheDocument();
+    expect(screen.getByTestId("resolved-command-icon")).toHaveClass("size-3");
   });
 });

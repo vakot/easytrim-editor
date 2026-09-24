@@ -1,12 +1,4 @@
-import {
-  BetweenVerticalStart,
-  Languages,
-  Magnet,
-  Merge,
-  Play,
-  Repeat,
-  RotateCcw,
-} from "lucide-react";
+import { Languages } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -29,8 +21,10 @@ import {
 } from "@/components/ui/menubar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-import type { ApplicationCommandId } from "@/app/commands/application-commands";
+import type { ApplicationCommandId } from "@/app/commands";
+import { getLanguageCommandId } from "@/app/commands/preferences";
 import {
+  ApplicationCommandIcon,
   ApplicationCommandLabel,
   ApplicationCommandMenuItem,
 } from "@/app/components/ApplicationCommandMenuItem";
@@ -40,10 +34,9 @@ import { isSupportedLanguage } from "@/i18n/resources";
 interface PreferenceMenuItemProps {
   children: ReactNode;
   commandId: ApplicationCommandId;
-  icon: ReactNode;
 }
 
-function PreferenceMenuItem({ children, commandId, icon }: PreferenceMenuItemProps) {
+function PreferenceMenuItem({ children, commandId }: PreferenceMenuItemProps) {
   const { t } = useTranslation();
   const { checked: isEnabled } = useApplicationCommand(commandId);
   const isDefaultPreference = commandId !== "preference-auto-start-queue";
@@ -60,7 +53,9 @@ function PreferenceMenuItem({ children, commandId, icon }: PreferenceMenuItemPro
       <ApplicationCommandMenuItem asChild commandId={commandId}>
         <TooltipTrigger asChild>
           <MenubarCheckboxItem inset keepOpen>
-            <MenubarIcon side="right">{icon}</MenubarIcon>
+            <MenubarIcon side="right">
+              <ApplicationCommandIcon className="size-3" />
+            </MenubarIcon>
             <ApplicationCommandLabel>{children}</ApplicationCommandLabel>
           </MenubarCheckboxItem>
         </TooltipTrigger>
@@ -82,40 +77,25 @@ function MenuBarSettings() {
       </MenubarTrigger>
       <MenubarContent>
         <MenubarGroup>
-          <PreferenceMenuItem
-            commandId="preference-auto-start-queue"
-            icon={<Play aria-hidden="true" className="size-3" />}
-          >
+          <PreferenceMenuItem commandId="preference-auto-start-queue">
             {t("settings.labels.autoStartQueue")}
           </PreferenceMenuItem>
         </MenubarGroup>
         <MenubarSeparator />
         <MenubarGroup>
-          <PreferenceMenuItem
-            commandId="preference-snap-playback"
-            icon={<Magnet aria-hidden="true" className="size-3" />}
-          >
+          <PreferenceMenuItem commandId="preference-snap-playback">
             {t("settings.labels.snap")}
           </PreferenceMenuItem>
-          <PreferenceMenuItem
-            commandId="preference-loop-playback"
-            icon={<Repeat aria-hidden="true" className="size-3" />}
-          >
+          <PreferenceMenuItem commandId="preference-loop-playback">
             {t("settings.labels.loop")}
           </PreferenceMenuItem>
-          <PreferenceMenuItem
-            commandId="preference-segment-playback"
-            icon={<BetweenVerticalStart aria-hidden="true" className="size-3" />}
-          >
+          <PreferenceMenuItem commandId="preference-segment-playback">
             {t("settings.labels.followSegment")}
           </PreferenceMenuItem>
         </MenubarGroup>
         <MenubarSeparator />
         <MenubarGroup>
-          <PreferenceMenuItem
-            commandId="preference-merge-audio"
-            icon={<Merge aria-hidden="true" className="size-3" />}
-          >
+          <PreferenceMenuItem commandId="preference-merge-audio">
             {t("settings.labels.mergeAudio")}
           </PreferenceMenuItem>
         </MenubarGroup>
@@ -124,7 +104,7 @@ function MenuBarSettings() {
           <ApplicationCommandMenuItem asChild commandId="reset-preferences">
             <MenubarItem inset keepOpen variant="destructive">
               <MenubarIcon>
-                <RotateCcw aria-hidden="true" />
+                <ApplicationCommandIcon />
               </MenubarIcon>
               <ApplicationCommandLabel />
             </MenubarItem>
@@ -145,7 +125,7 @@ function MenuBarSettings() {
                 {(["en", "sk", "ru"] as const).map((language) => (
                   <ApplicationCommandMenuItem
                     asChild
-                    commandId={`language-${language}`}
+                    commandId={getLanguageCommandId(language)}
                     key={language}
                   >
                     <MenubarRadioItem value={language}>

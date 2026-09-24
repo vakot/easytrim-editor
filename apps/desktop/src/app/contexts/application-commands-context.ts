@@ -1,14 +1,14 @@
 import { createContext } from "react";
 
+import type { ApplicationCommandId } from "@/app/commands";
 import type {
   ApplicationCommand,
-  ApplicationCommandId,
   ApplicationCommandSurface,
-} from "@/app/commands/application-commands";
+} from "@/app/commands/core/application-command.types";
 
 interface ApplicationCommandsContextValue {
-  commands: readonly ApplicationCommand[];
-  commandsById: Readonly<Record<ApplicationCommandId, ApplicationCommand>>;
+  commands: readonly ApplicationCommand<ApplicationCommandId>[];
+  commandsById: Readonly<Record<ApplicationCommandId, ApplicationCommand<ApplicationCommandId>>>;
   executeCommand: (id: ApplicationCommandId, surface: ApplicationCommandSurface) => Promise<void>;
 }
 

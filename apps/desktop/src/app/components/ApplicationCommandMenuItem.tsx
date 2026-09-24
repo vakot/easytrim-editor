@@ -1,16 +1,24 @@
-import { createContext, type ReactElement, type ReactNode, useContext } from "react";
+import {
+  cloneElement,
+  createContext,
+  isValidElement,
+  type ReactElement,
+  type ReactNode,
+  useContext,
+} from "react";
 
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { menuClassNames } from "@/components/ui/menu";
 import { Slot } from "@/components/ui/slot";
 
+import type { ApplicationCommandId } from "@/app/commands";
+import type { ApplicationCommand } from "@/app/commands/core/application-command.types";
 import {
-  type ApplicationCommand,
-  type ApplicationCommandId,
   getShortcutAriaValue,
   getShortcutDisplayKeys,
-} from "@/app/commands/application-commands";
+} from "@/app/commands/core/application-command.utils";
 import { useApplicationCommand, useApplicationCommands } from "@/app/hooks/useApplicationCommands";
+import { cn } from "@/lib/class-names.utils";
 
 interface ApplicationCommandMenuContextValue {
   command: ApplicationCommand;
@@ -25,7 +33,7 @@ function useApplicationCommandMenuContext() {
   const context = useContext(ApplicationCommandMenuContext);
   if (!context) {
     throw new Error(
-      "ApplicationCommandLabel and ApplicationCommandShortcut must be used within ApplicationCommandMenuItem",
+      "ApplicationCommand menu metadata components must be used within ApplicationCommandMenuItem",
     );
   }
   return context;
@@ -68,6 +76,35 @@ function ApplicationCommandLabel({ children }: { children?: ReactNode }) {
   return <>{children ?? command.label}</>;
 }
 
+function ApplicationCommandIcon({
+  className,
+  command,
+}: {
+  className?: string;
+  command?: ApplicationCommand;
+}) {
+  const context = useContext(ApplicationCommandMenuContext);
+  const resolvedCommand = command ?? context?.command;
+
+  if (!resolvedCommand) {
+    throw new Error(
+      "ApplicationCommandIcon must be used with a command or within ApplicationCommandMenuItem",
+    );
+  }
+
+  if (!className || !isValidElement<{ className?: string }>(resolvedCommand.icon)) {
+    return <>{resolvedCommand.icon}</>;
+  }
+
+  return (
+    <>
+      {cloneElement(resolvedCommand.icon, {
+        className: cn(resolvedCommand.icon.props.className, className),
+      })}
+    </>
+  );
+}
+
 function ApplicationCommandShortcut() {
   const { command } = useApplicationCommandMenuContext();
   if (!command.shortcut) return null;
@@ -83,4 +120,9 @@ function ApplicationCommandShortcut() {
   );
 }
 
-export { ApplicationCommandLabel, ApplicationCommandMenuItem, ApplicationCommandShortcut };
+export {
+  ApplicationCommandIcon,
+  ApplicationCommandLabel,
+  ApplicationCommandMenuItem,
+  ApplicationCommandShortcut,
+};

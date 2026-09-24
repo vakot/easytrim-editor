@@ -1,15 +1,33 @@
-import { Fragment } from "react";
+import { Fragment, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Kbd, KbdGroup, KbdSeparator } from "@/components/ui/kbd";
 
+import { COMMAND_PALETTE_SHORTCUT } from "@/app/commands/core/application-command.shortcuts";
+import { getShortcutDisplayKeys } from "@/app/commands/core/application-command.utils";
 import { SupportLink } from "@/app/components/SupportLink";
+import { cn } from "@/lib/class-names.utils";
 
 import styles from "./VideoPreviewEmpty.module.css";
 
+type Shortcut = {
+  id: string;
+  keys: string[];
+  label: string;
+  separator: ReactNode;
+};
+
 function VideoPreviewEmpty() {
   const { t } = useTranslation();
-  const shortcuts = [
+
+  const command: Shortcut = {
+    id: "command-palette",
+    label: t("app.labels.commandPalette"),
+    keys: [...getShortcutDisplayKeys(COMMAND_PALETTE_SHORTCUT)],
+    separator: undefined,
+  };
+
+  const shortcuts: Shortcut[] = [
     {
       id: "open-file",
       label: t("app.actions.openFile"),
@@ -40,18 +58,15 @@ function VideoPreviewEmpty() {
       keys: ["I", "O"],
       separator: "/",
     },
-    {
-      id: "command-palette",
-      label: t("app.labels.commandPalette"),
-      keys: ["Ctrl", "H"],
-      separator: undefined,
-    },
   ] as const;
 
   return (
     <section
       aria-label={t("preview.accessibility.empty")}
-      className={`${styles.preview} grid size-full min-h-0 place-items-center overflow-hidden px-6 py-8`}
+      className={cn(
+        styles.preview,
+        "grid size-full min-h-0 place-items-center overflow-hidden px-6 py-8",
+      )}
     >
       <div className="grid w-72 max-w-full justify-items-center gap-10">
         <img
@@ -64,34 +79,52 @@ function VideoPreviewEmpty() {
         <div className="grid w-full justify-items-center gap-4">
           <div
             aria-label={t("preview.labels.shortcuts")}
-            className={`${styles.hints} grid w-full gap-2 text-left text-sm text-muted-foreground`}
+            className={cn(
+              styles.hints,
+              "grid w-full gap-2 text-left text-sm text-muted-foreground",
+            )}
             role="list"
           >
             {shortcuts.map((shortcut) => (
-              <div className="flex min-w-0 items-center gap-3" key={shortcut.id} role="listitem">
-                <span className="shrink-0">{shortcut.label}</span>
-                <span
-                  aria-hidden="true"
-                  className="min-w-4 flex-1 border-b border-dotted border-muted-foreground/40"
-                />
-                <KbdGroup aria-label={shortcut.keys.join(` ${shortcut.separator ?? "+"} `)}>
-                  {shortcut.keys.map((key) => (
-                    <Fragment key={key}>
-                      {key !== shortcut.keys[0] && (
-                        <KbdSeparator>{shortcut.separator ?? "+"}</KbdSeparator>
-                      )}
-                      <Kbd>{key}</Kbd>
-                    </Fragment>
-                  ))}
-                </KbdGroup>
-              </div>
+              <VideoPreviewEmptyShortcut key={shortcut.id} shortcut={shortcut} />
             ))}
+
+            <VideoPreviewEmptyShortcut
+              className="-mx-2 rounded-xl border border-dashed p-2"
+              shortcut={command}
+            />
           </div>
 
           <SupportLink />
         </div>
       </div>
     </section>
+  );
+}
+
+function VideoPreviewEmptyShortcut({
+  className,
+  shortcut,
+}: {
+  className?: string;
+  shortcut: Shortcut;
+}) {
+  return (
+    <div className={cn("flex min-w-0 items-center gap-3", className)} role="listitem">
+      <span className="shrink-0">{shortcut.label}</span>
+      <span
+        aria-hidden="true"
+        className="min-w-4 flex-1 border-b border-dotted border-muted-foreground/40"
+      />
+      <KbdGroup aria-label={shortcut.keys.join(` ${shortcut.separator ?? "+"} `)}>
+        {shortcut.keys.map((key) => (
+          <Fragment key={key}>
+            {key !== shortcut.keys[0] && <KbdSeparator>{shortcut.separator ?? "+"}</KbdSeparator>}
+            <Kbd>{key}</Kbd>
+          </Fragment>
+        ))}
+      </KbdGroup>
+    </div>
   );
 }
 

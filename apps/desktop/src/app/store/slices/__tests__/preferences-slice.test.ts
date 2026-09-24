@@ -6,6 +6,7 @@ import {
   changelogVersionSeen,
   customPrimaryColorChanged,
   layoutDensityChanged,
+  layoutReset,
   preferenceChanged,
   preferencesReducer,
   preferencesReset,
@@ -87,7 +88,7 @@ describe("preferences Redux domain", () => {
     expect(nextPresetState).toMatchObject({ primaryColor: "rose", customPrimaryColor: "#123456" });
   });
 
-  it("resets all preferences to product defaults", () => {
+  it("resets non-layout preferences while preserving layout settings", () => {
     const state = preferencesReducer(
       {
         snapPlaybackEnabledDefault: false,
@@ -97,8 +98,8 @@ describe("preferences Redux domain", () => {
         mergeAudioEnabledDefault: true,
         deleteSourceOnRenderFinish: false,
         lastSeenChangelogVersion: null,
-        activityFeedView: "default",
-        layoutDensity: "default",
+        activityFeedView: "branch",
+        layoutDensity: "compact",
         theme: "system",
         primaryColor: "amber",
         customPrimaryColor: "#efbf04",
@@ -106,7 +107,28 @@ describe("preferences Redux domain", () => {
       preferencesReset(),
     );
 
-    expect(state).toEqual(DEFAULT_PREFERENCES);
+    expect(state).toEqual({
+      ...DEFAULT_PREFERENCES,
+      activityFeedView: "branch",
+      layoutDensity: "compact",
+    });
+  });
+
+  it("resets activity feed view and layout density without changing other preferences", () => {
+    const initialState: Preferences = {
+      ...DEFAULT_PREFERENCES,
+      activityFeedView: "branch",
+      layoutDensity: "compact",
+      theme: "dark",
+    };
+
+    const state = preferencesReducer(initialState, layoutReset());
+
+    expect(state).toEqual({
+      ...initialState,
+      activityFeedView: DEFAULT_PREFERENCES.activityFeedView,
+      layoutDensity: DEFAULT_PREFERENCES.layoutDensity,
+    });
   });
 
   it("selects focused preference values", () => {

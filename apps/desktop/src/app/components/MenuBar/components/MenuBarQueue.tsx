@@ -1,5 +1,3 @@
-import { CircleStop, LogOut, Moon, Power } from "lucide-react";
-import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -18,28 +16,24 @@ import {
 } from "@/components/ui/menubar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
+import { getQueueFinishCommandId } from "@/app/commands/queue";
 import {
+  ApplicationCommandIcon,
   ApplicationCommandLabel,
   ApplicationCommandMenuItem,
 } from "@/app/components/ApplicationCommandMenuItem";
+import { useApplicationCommand } from "@/app/hooks/useApplicationCommands";
 import { useAppSelector } from "@/app/store/redux-hooks";
 import {
   selectAvailableQueueFinishActions,
   selectQueueFinishAction,
 } from "@/app/store/slices/export-slice";
-import type { QueueFinishAction } from "@/lib/tauri/queue.types";
 
 function MenuBarQueue() {
   const { t } = useTranslation();
   const queueFinishAction = useAppSelector(selectQueueFinishAction);
   const availableQueueFinishActions = useAppSelector(selectAvailableQueueFinishActions);
-
-  const queueFinishIcons: Record<QueueFinishAction, ReactNode> = {
-    exit: <LogOut aria-hidden="true" className="size-3" />,
-    systemSleep: <Moon aria-hidden="true" className="size-3" />,
-    systemShutdown: <Power aria-hidden="true" className="size-3" />,
-    nothing: <CircleStop aria-hidden="true" className="size-3" />,
-  };
+  const selectedActionCommand = useApplicationCommand(getQueueFinishCommandId(queueFinishAction));
 
   return (
     <>
@@ -65,7 +59,9 @@ function MenuBarQueue() {
             </Tooltip>
             <MenubarSub>
               <MenubarSubTrigger inset variant="destructive">
-                <MenubarIcon>{queueFinishIcons[queueFinishAction]}</MenubarIcon>
+                <MenubarIcon>
+                  <ApplicationCommandIcon className="size-3" command={selectedActionCommand} />
+                </MenubarIcon>
                 {t("queue.labels.onFinish")}
               </MenubarSubTrigger>
               <MenubarSubContent>
@@ -73,12 +69,14 @@ function MenuBarQueue() {
                   {availableQueueFinishActions.map((action) => (
                     <ApplicationCommandMenuItem
                       asChild
-                      commandId={`queue-finish-${action === "systemSleep" ? "system-sleep" : action === "systemShutdown" ? "system-shutdown" : action}`}
+                      commandId={getQueueFinishCommandId(action)}
                       key={action}
                     >
                       <MenubarRadioItem inset value={action}>
                         <ApplicationCommandLabel />
-                        <MenubarIcon side="right">{queueFinishIcons[action]}</MenubarIcon>
+                        <MenubarIcon side="right">
+                          <ApplicationCommandIcon className="size-3" />
+                        </MenubarIcon>
                       </MenubarRadioItem>
                     </ApplicationCommandMenuItem>
                   ))}
