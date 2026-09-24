@@ -53,7 +53,7 @@ function VideoPreviewEmpty() {
       aria-label={t("preview.accessibility.empty")}
       className={`${styles.preview} grid size-full min-h-0 place-items-center overflow-hidden px-6 py-8`}
     >
-      <div className="grid w-[clamp(10rem,28vw,18rem)] max-w-full justify-items-center gap-10">
+      <div className="grid w-72 max-w-full justify-items-center gap-10">
         <img
           alt=""
           aria-hidden="true"

@@ -34,6 +34,22 @@ const PLURAL_SUFFIXES = ["zero", "one", "two", "few", "many", "other"];
 const SUSPICIOUS_CYRILLIC = /[\u0400-\u04ff]/;
 const SUSPICIOUS_MOJIBAKE = /[\ufffd]|Ã|Â/;
 
+// The hint list is at most 18rem (288px): reserve 24px for row gaps, 16px for
+// the dotted divider, and up to 68px for keycaps; the remaining 180px allows
+// 22 code points at about 8px each. Space uses fewer pixels, so allow 24 there.
+const SHORTCUT_HINT_LABEL_LIMITS = [
+  { key: "app.actions.openFile", maxSymbols: 22, row: "Open File" },
+  { key: "app.actions.openFolder", maxSymbols: 22, row: "Open Folder" },
+  { key: "preview.labels.shortcutPlayPause", maxSymbols: 24, row: "Play / Pause" },
+  {
+    key: "preview.labels.shortcutPreviousNextFrame",
+    maxSymbols: 22,
+    row: "Previous / Next Frame",
+  },
+  { key: "preview.labels.shortcutMarkInOut", maxSymbols: 22, row: "Mark In / Mark Out" },
+  { key: "app.labels.commandPalette", maxSymbols: 22, row: "Command Palette" },
+];
+
 export async function validateI18n(repositoryRoot) {
   const report = await auditI18n(repositoryRoot);
   if (report.issues.length > 0) {
@@ -73,6 +89,7 @@ export async function auditI18n(repositoryRoot) {
   }
 
   issues.push(...validateLocaleArchitecture(locales));
+  issues.push(...validateShortcutHintLabels(locales));
   const usageReport = validateResourceUsage(locales, usages);
   issues.push(...usageReport.issues);
 
@@ -82,6 +99,26 @@ export async function auditI18n(repositoryRoot) {
     resourceLeafCount: locales.get(CANONICAL_LOCALE)?.leaves.size ?? 0,
     usedResourceLeafCount: usageReport.usedResourceLeafCount,
   };
+}
+
+export function validateShortcutHintLabels(locales) {
+  const issues = [];
+
+  for (const [localeName, locale] of locales) {
+    for (const { key, maxSymbols, row } of SHORTCUT_HINT_LABEL_LIMITS) {
+      const label = locale.leaves.get(key);
+      if (label === undefined) continue;
+
+      const symbolCount = Array.from(label).length;
+      if (symbolCount > maxSymbols) {
+        issues.push(
+          `${localeName}: ${key} for the ${row} hint row must not exceed ${maxSymbols} symbols (found ${symbolCount})`,
+        );
+      }
+    }
+  }
+
+  return issues;
 }
 
 export function parseLocaleSource(sourceText, localeName, fileName = `${localeName}.ts`) {

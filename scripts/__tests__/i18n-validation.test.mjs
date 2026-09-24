@@ -9,6 +9,7 @@ import {
   validateI18n,
   validateLocaleArchitecture,
   validateResourceUsage,
+  validateShortcutHintLabels,
 } from "../i18n-validation.mjs";
 
 const repositoryRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -106,4 +107,50 @@ test("reports locale structure and interpolation mismatches", () => {
 
   assert.ok(issues.includes("sk has extra translation key common.labels.extra"));
   assert.ok(issues.includes("sk interpolation parameters differ for common.labels.greeting"));
+});
+
+test("enforces measured shortcut hint label limits for each locale and row", () => {
+  const locales = new Map([
+    [
+      "en",
+      parseLocaleSource(
+        `export const en = {
+          app: {
+            actions: { openFile: "Open File", openFolder: "Open Folder" },
+            labels: { commandPalette: "Command Palette" },
+          },
+          preview: { labels: {
+            shortcutPlayPause: "Play / Pause",
+            shortcutPreviousNextFrame: "Prev / Next Frame",
+            shortcutMarkInOut: "Mark In / Mark Out",
+          } },
+        } as const;`,
+        "en",
+      ),
+    ],
+    [
+      "ru",
+      parseLocaleSource(
+        `export const ru = {
+          app: {
+            actions: { openFile: "Открыть файл", openFolder: "Открыть папку" },
+            labels: { commandPalette: "Палитра команд" },
+          },
+          preview: { labels: {
+            shortcutPlayPause: "Пуск / Пауза",
+            shortcutPreviousNextFrame: "Предыдущий / Следующий кадр",
+            shortcutMarkInOut: "Начало / Конец",
+          } },
+        } as const;`,
+        "ru",
+      ),
+    ],
+  ]);
+
+  const issues = validateShortcutHintLabels(locales);
+  assert.equal(issues.length, 1);
+  assert.match(
+    issues[0],
+    /ru: preview\.labels\.shortcutPreviousNextFrame for the Previous \/ Next Frame hint row must not exceed 22 symbols/,
+  );
 });

@@ -357,7 +357,7 @@ export const en = {
       segmentPlayback: "Segment playback",
       shortcutMarkInOut: "Mark In / Mark Out",
       shortcutPlayPause: "Play / Pause",
-      shortcutPreviousNextFrame: "Previous / Next Frame",
+      shortcutPreviousNextFrame: "Prev / Next Frame",
       shortcuts: "Keyboard shortcuts",
       snapPlayback: "Snap playback",
     },
