@@ -189,7 +189,7 @@ describe("ApplicationCommandsProvider", () => {
 
     expect(
       screen.getAllByRole("button").filter((button) => button.hasAttribute("data-group")),
-    ).toHaveLength(49);
+    ).toHaveLength(51);
     expect(
       screen
         .getAllByRole("button")
@@ -211,6 +211,14 @@ describe("ApplicationCommandsProvider", () => {
     expect(screen.getByRole("button", { name: "theme-system" })).toHaveAttribute(
       "data-checked",
       "true",
+    );
+    expect(screen.getByRole("button", { name: "reset-view-settings" })).toHaveAttribute(
+      "data-group",
+      "Appearance / Theme",
+    );
+    expect(screen.getByRole("button", { name: "reset-queue-settings" })).toHaveAttribute(
+      "data-group",
+      "Queue",
     );
     expect(screen.getByRole("button", { name: "language-en" })).toHaveAttribute(
       "data-label",
@@ -283,6 +291,16 @@ describe("ApplicationCommandsProvider", () => {
       "data-variant",
       "destructive",
     );
+    expect(screen.getByRole("button", { name: "reset-layout" })).toHaveAttribute(
+      "data-label",
+      "Reset to default",
+    );
+    for (const commandId of ["reset-preferences", "reset-view-settings", "reset-queue-settings"]) {
+      expect(screen.getByRole("button", { name: commandId })).toHaveAttribute(
+        "data-label",
+        "Reset to default",
+      );
+    }
 
     fireEvent.click(screen.getByRole("button", { name: "delete-file" }));
 

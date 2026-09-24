@@ -6,9 +6,11 @@ import {
   MenubarContent,
   MenubarGroup,
   MenubarIcon,
+  MenubarItem,
   MenubarMenu,
   MenubarRadioGroup,
   MenubarRadioItem,
+  MenubarSeparator,
   MenubarSub,
   MenubarSubContent,
   MenubarSubTrigger,
@@ -96,6 +98,17 @@ function MenuBarQueueContent() {
             </MenubarRadioGroup>
           </MenubarSubContent>
         </MenubarSub>
+      </MenubarGroup>
+      <MenubarSeparator />
+      <MenubarGroup>
+        <ApplicationCommandMenuItem asChild commandId="reset-queue-settings">
+          <MenubarItem inset keepOpen variant="destructive">
+            <MenubarIcon>
+              <ApplicationCommandIcon />
+            </MenubarIcon>
+            <ApplicationCommandLabel />
+          </MenubarItem>
+        </ApplicationCommandMenuItem>
       </MenubarGroup>
     </>
   );

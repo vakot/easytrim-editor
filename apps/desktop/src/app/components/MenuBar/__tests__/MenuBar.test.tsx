@@ -226,6 +226,15 @@ describe("MenuBarTest", () => {
       if (action.type === "preferences/preferencesReset") {
         resetPreferences();
       }
+      if (action.type === "preferences/viewSettingsReset") {
+        menuState.preferences.theme = DEFAULT_PREFERENCES.theme;
+        menuState.preferences.primaryColor = DEFAULT_PREFERENCES.primaryColor;
+        menuState.preferences.customPrimaryColor = DEFAULT_PREFERENCES.customPrimaryColor;
+      }
+      if (action.type === "queue/settingsReset") {
+        menuState.export.queueFinishAction = "nothing";
+        menuState.preferences.deleteSourceOnRenderFinish = false;
+      }
       if (action.type === "preferences/themePreferenceChanged") {
         menuState.preferences.theme = action.payload as Preferences["theme"];
       }
@@ -307,6 +316,40 @@ describe("MenuBarTest", () => {
     expect(screen.queryByRole("menuitem", { name: "Cancel" })).not.toBeInTheDocument();
     expect(screen.getByRole("menuitemcheckbox", { name: "Delete source" })).toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: /On queue finished/ })).toBeInTheDocument();
+  });
+
+  it("resets view theme and color settings from the View menu", async () => {
+    const user = userEvent.setup();
+    renderMenus({ themePreference: "dark", primaryColor: "blue", customPrimaryColor: "#123456" });
+
+    await user.click(getMenuTrigger("View"));
+    await user.click(screen.getByRole("menuitem", { name: "Reset to default" }));
+
+    expect(menuState.dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "preferences/viewSettingsReset" }),
+    );
+    expect(menuState.preferences).toMatchObject({
+      theme: DEFAULT_PREFERENCES.theme,
+      primaryColor: DEFAULT_PREFERENCES.primaryColor,
+      customPrimaryColor: DEFAULT_PREFERENCES.customPrimaryColor,
+    });
+  });
+
+  it("resets queue finish and delete-source settings from the Queue menu", async () => {
+    const user = userEvent.setup();
+    renderMenus({
+      queueFinishAction: "exit",
+      preferences: { ...DEFAULT_PREFERENCES, deleteSourceOnRenderFinish: true },
+    });
+
+    await user.click(getMenuTrigger("Queue"));
+    await user.click(screen.getByRole("menuitem", { name: "Reset to default" }));
+
+    expect(menuState.dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "queue/settingsReset" }),
+    );
+    expect(menuState.export.queueFinishAction).toBe("nothing");
+    expect(menuState.preferences.deleteSourceOnRenderFinish).toBe(false);
   });
 
   it("selects an available queue finish action", async () => {

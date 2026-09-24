@@ -2,13 +2,17 @@ import type { Persistor, Storage as PersistStorage } from "redux-persist";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { DEFAULT_PREFERENCES } from "@/app/preferences";
+import { queueSettingsReset } from "@/app/store/actions/queue-actions";
 import { persistConfig, resolveReduxPersistStorage } from "@/app/store/persistence";
 import {
   createEditorToolsStateFromPreferences,
   editorToolsReset,
   playbackSpeedChanged,
 } from "@/app/store/slices/editor-tools-slice";
-import { optimizedExportDialogOpened } from "@/app/store/slices/export-slice";
+import {
+  optimizedExportDialogOpened,
+  queueFinishActionChanged,
+} from "@/app/store/slices/export-slice";
 import {
   activityFeedViewChanged,
   customPrimaryColorChanged,
@@ -246,21 +250,48 @@ describe("Redux Persist store integration", () => {
     });
   });
 
-  it("preserves layout settings when persisting a preferences reset", async () => {
+  it("preserves view and queue settings when persisting a preferences reset", async () => {
     const { persistor, storage, store } = await createPersistedTestStore();
 
     store.dispatch(preferenceChanged({ key: "loopPlaybackEnabledDefault", enabled: false }));
     store.dispatch(activityFeedViewChanged("branch"));
     store.dispatch(layoutDensityChanged("compact"));
+    store.dispatch(themePreferenceChanged("dark"));
+    store.dispatch(primaryColorChanged("blue"));
+    store.dispatch(preferenceChanged({ key: "deleteSourceOnRenderFinish", enabled: true }));
+    store.dispatch(queueFinishActionChanged("exit"));
     await persistor.flush();
     store.dispatch(preferencesReset());
     await persistor.flush();
 
+    expect(store.getState().export.queueFinishAction).toBe("exit");
     const persistedRoot = await readPersistedRoot(storage);
     expect(JSON.parse(String(persistedRoot.preferences))).toEqual({
       ...DEFAULT_PREFERENCES,
       activityFeedView: "branch",
       layoutDensity: "compact",
+      theme: "dark",
+      primaryColor: "blue",
+      deleteSourceOnRenderFinish: true,
+    });
+  });
+
+  it("resets both queue settings while preserving unrelated preferences", async () => {
+    const { persistor, storage, store } = await createPersistedTestStore();
+
+    store.dispatch(queueFinishActionChanged("exit"));
+    store.dispatch(preferenceChanged({ key: "deleteSourceOnRenderFinish", enabled: true }));
+    store.dispatch(preferenceChanged({ key: "loopPlaybackEnabledDefault", enabled: false }));
+    store.dispatch(queueSettingsReset());
+    await persistor.flush();
+
+    expect(store.getState().export.queueFinishAction).toBe("nothing");
+    expect(store.getState().preferences.deleteSourceOnRenderFinish).toBe(false);
+    expect(store.getState().preferences.loopPlaybackEnabledDefault).toBe(false);
+    const persistedRoot = await readPersistedRoot(storage);
+    expect(JSON.parse(String(persistedRoot.preferences))).toMatchObject({
+      deleteSourceOnRenderFinish: false,
+      loopPlaybackEnabledDefault: false,
     });
   });
 

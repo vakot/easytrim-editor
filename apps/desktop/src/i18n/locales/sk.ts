@@ -38,7 +38,7 @@ export const sk = {
       ffmpegDownloads: "Sťahovanie FFmpeg",
       recheck: "Znova skontrolovať",
       showPathInFolder: "Zobraziť {{label}} v priečinku",
-      resetLayout: "Obnoviť rozloženie",
+      resetToDefault: "Obnoviť predvolené",
       restart: "Reštartovať aplikáciu",
       restore: "Obnoviť",
       showPanel: "Zobraziť {{panel}}",
@@ -186,7 +186,6 @@ export const sk = {
     },
   },
   settings: {
-    actions: { reset: "Obnoviť predvolené" },
     labels: {
       activityFeedView: "Zobrazenie prehľadu aktivít",
       autoStartQueue: "Automatické spustenie frontu",

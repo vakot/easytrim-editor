@@ -36,7 +36,7 @@ export const en = {
       ffmpegDownloads: "FFmpeg downloads",
       recheck: "Recheck",
       showPathInFolder: "Show {{label}} in folder",
-      resetLayout: "Reset layout",
+      resetToDefault: "Reset to default",
       restart: "Restart application",
       restore: "Restore",
       showPanel: "Show {{panel}}",
@@ -186,7 +186,6 @@ export const en = {
     },
   },
   settings: {
-    actions: { reset: "Reset to default" },
     labels: {
       activityFeedView: "Activity Feed View",
       autoStartQueue: "Auto-start Queue",

@@ -1,4 +1,4 @@
-import { List, ListTree, ScanText } from "lucide-react";
+import { List, ListTree, Rows3 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { commandSearchTerms } from "@/app/commands/core/application-command.utils";
@@ -23,9 +23,9 @@ function useActivityFeedViewCommands() {
     enabled: true,
     icon:
       view === "default" ? (
-        <List aria-hidden="true" />
+        <Rows3 aria-hidden="true" />
       ) : view === "compact" ? (
-        <ScanText aria-hidden="true" />
+        <List aria-hidden="true" />
       ) : (
         <ListTree aria-hidden="true" />
       ),

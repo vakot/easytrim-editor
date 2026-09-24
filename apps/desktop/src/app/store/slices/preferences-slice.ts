@@ -11,6 +11,7 @@ import {
   type PreferenceKey,
   type Preferences,
 } from "@/app/preferences";
+import { queueSettingsReset } from "@/app/store/actions/queue-actions";
 import {
   type CustomPrimaryColor,
   isCustomPrimaryColor,
@@ -44,6 +45,11 @@ const preferencesSlice = createSlice({
       state.activityFeedView = DEFAULT_PREFERENCES.activityFeedView;
       state.layoutDensity = DEFAULT_PREFERENCES.layoutDensity;
     },
+    viewSettingsReset: (state) => {
+      state.theme = DEFAULT_PREFERENCES.theme;
+      state.primaryColor = DEFAULT_PREFERENCES.primaryColor;
+      state.customPrimaryColor = DEFAULT_PREFERENCES.customPrimaryColor;
+    },
     themePreferenceChanged: (state, action: PayloadAction<ThemePreference>) => {
       state.theme = action.payload;
     },
@@ -64,11 +70,24 @@ const preferencesSlice = createSlice({
       const activityFeedView = state.activityFeedView;
       const layoutDensity = state.layoutDensity;
       const lastSeenChangelogVersion = state.lastSeenChangelogVersion;
+      const theme = state.theme;
+      const primaryColor = state.primaryColor;
+      const customPrimaryColor = state.customPrimaryColor;
+      const deleteSourceOnRenderFinish = state.deleteSourceOnRenderFinish;
       Object.assign(state, DEFAULT_PREFERENCES);
       state.activityFeedView = activityFeedView;
       state.layoutDensity = layoutDensity;
       state.lastSeenChangelogVersion = lastSeenChangelogVersion;
+      state.theme = theme;
+      state.primaryColor = primaryColor;
+      state.customPrimaryColor = customPrimaryColor;
+      state.deleteSourceOnRenderFinish = deleteSourceOnRenderFinish;
     },
+  },
+  extraReducers: (builder) => {
+    builder.addCase(queueSettingsReset, (state) => {
+      state.deleteSourceOnRenderFinish = DEFAULT_PREFERENCES.deleteSourceOnRenderFinish;
+    });
   },
 });
 
@@ -82,6 +101,7 @@ const {
   preferencesReset,
   primaryColorChanged,
   themePreferenceChanged,
+  viewSettingsReset,
 } = preferencesSlice.actions;
 
 const preferencesReducer = preferencesSlice.reducer;
@@ -157,4 +177,5 @@ export {
   selectSnapPlaybackEnabledDefault,
   selectThemePreference,
   themePreferenceChanged,
+  viewSettingsReset,
 };

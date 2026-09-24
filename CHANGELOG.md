@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Added separate reset actions to the View and Queue menus, disabled reset actions when their settings are already at default, and kept View and Queue settings untouched by the general preferences reset.
 - Added a compact menu for accessing File, View, Queue, Settings, and Help at narrow window widths.
 - Added a title-bar Search commands button for opening the Command Palette.
 - Added a searchable global command palette for common file and export actions, available with Ctrl+H on Windows/Linux and Cmd+H on macOS.

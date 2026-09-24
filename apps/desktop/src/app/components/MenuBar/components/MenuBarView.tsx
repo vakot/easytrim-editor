@@ -9,9 +9,11 @@ import {
   MenubarContent,
   MenubarGroup,
   MenubarIcon,
+  MenubarItem,
   MenubarMenu,
   MenubarRadioGroup,
   MenubarRadioItem,
+  MenubarSeparator,
   MenubarShortcut,
   MenubarSub,
   MenubarSubContent,
@@ -176,6 +178,17 @@ function MenuBarViewContent({ onClose }: { onClose: MenuBarViewProps["onClose"] 
             </MenubarRadioGroup>
           </MenubarSubContent>
         </MenubarSub>
+      </MenubarGroup>
+      <MenubarSeparator />
+      <MenubarGroup>
+        <ApplicationCommandMenuItem asChild commandId="reset-view-settings">
+          <MenubarItem inset keepOpen variant="destructive">
+            <MenubarIcon>
+              <ApplicationCommandIcon />
+            </MenubarIcon>
+            <ApplicationCommandLabel />
+          </MenubarItem>
+        </ApplicationCommandMenuItem>
       </MenubarGroup>
     </>
   );
