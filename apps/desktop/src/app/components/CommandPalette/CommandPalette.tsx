@@ -6,7 +6,7 @@ import {
   Trash2Icon,
   XIcon,
 } from "lucide-react";
-import { createContext, useCallback, useContext, useState } from "react";
+import { createContext, useContext, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -28,13 +28,13 @@ import {
   type ApplicationCommand,
   type ApplicationCommandId,
   type ApplicationCommandMatch,
+  type ApplicationCommandVariant,
   filterApplicationCommands,
   getShortcutAriaValue,
   getShortcutDisplayKeys,
   isShortcutEvent,
 } from "@/app/commands/application-commands";
 import { useApplicationCommands } from "@/app/hooks/useApplicationCommands";
-import { SourceDeleteDialog } from "@/features/source";
 import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
 import { isApplicationInteractionBlocked } from "@/lib/hotkeys.utils";
 
@@ -47,6 +47,14 @@ const commandIcons = {
   "save-lossless-cut": ScissorsIcon,
 } satisfies Record<ApplicationCommandId, typeof XIcon>;
 
+const commandVariantClassNames = {
+  default: undefined,
+  destructive:
+    "text-destructive data-selected:bg-destructive/10 data-selected:text-destructive dark:data-selected:bg-destructive/20",
+  success:
+    "text-success data-selected:bg-success/10 data-selected:text-success dark:data-selected:bg-success/20",
+} satisfies Record<ApplicationCommandVariant, string | undefined>;
+
 type CommandPaletteSection = {
   matches: ApplicationCommandMatch[];
   sectionLabel: string;
@@ -57,9 +65,7 @@ function CommandPalette() {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [deleteSourceId, setDeleteSourceId] = useState<string | null>(null);
-  const requestDelete = useCallback((sourceId: string) => setDeleteSourceId(sourceId), []);
-  const commands = useApplicationCommands(requestDelete);
+  const { commands, executeCommand: executeApplicationCommand } = useApplicationCommands();
   const matches = filterApplicationCommands(commands, query);
   const groups = groupCommandMatches(matches);
 
@@ -77,6 +83,7 @@ function CommandPalette() {
       commands.some(
         (command) =>
           command.enabled &&
+          !command.pending &&
           command.shortcut !== undefined &&
           isShortcutEvent(event, command.shortcut),
       ),
@@ -84,11 +91,12 @@ function CommandPalette() {
       const command = commands.find(
         (candidate) =>
           candidate.enabled &&
+          !candidate.pending &&
           candidate.shortcut !== undefined &&
           isShortcutEvent(event, candidate.shortcut),
       );
 
-      command?.execute("hotkey");
+      if (command) void executeApplicationCommand(command.id, "hotkey");
     },
   );
 
@@ -98,9 +106,9 @@ function CommandPalette() {
   }
 
   function executeCommand(command: ApplicationCommand) {
-    if (!command.enabled) return;
+    if (!command.enabled || command.pending) return;
     handleOpenChange(false);
-    command.execute("palette");
+    void executeApplicationCommand(command.id, "palette");
   }
 
   return (
@@ -124,16 +132,6 @@ function CommandPalette() {
           </CommandList>
         </Command>
       </CommandDialog>
-
-      <SourceDeleteDialog
-        onOpenChange={(nextOpen) => {
-          if (!nextOpen) setDeleteSourceId(null);
-        }}
-        open={deleteSourceId !== null}
-        sourceId={deleteSourceId}
-      >
-        {null}
-      </SourceDeleteDialog>
     </CommandPaletteContext.Provider>
   );
 }
@@ -183,7 +181,10 @@ function CommandPaletteItem({ match }: { match: ApplicationCommandMatch }) {
 
   return (
     <CommandItem
-      disabled={!command.enabled}
+      aria-busy={command.pending}
+      className={commandVariantClassNames[command.variant]}
+      data-checked={command.checked}
+      disabled={!command.enabled || command.pending}
       onSelect={() => executeCommand(command)}
       value={command.id}
     >

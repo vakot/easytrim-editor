@@ -10,6 +10,8 @@ type ApplicationCommandId =
 
 type ApplicationCommandSectionId = "export" | "file" | "source";
 type ApplicationCommandSurface = "hotkey" | "menu" | "palette";
+type ApplicationCommandVariant = "default" | "destructive" | "success";
+type MaybePromise<T> = T | Promise<T>;
 type ShortcutPlatform = "macos" | "other";
 
 interface ApplicationShortcut {
@@ -24,13 +26,23 @@ interface ApplicationCommandSection {
 }
 
 interface ApplicationCommand {
+  checked?: boolean;
   enabled: boolean;
-  execute: (surface: ApplicationCommandSurface) => void;
   id: ApplicationCommandId;
   label: string;
+  pending: boolean;
   searchTerms: readonly string[];
   section: ApplicationCommandSection;
   shortcut?: ApplicationShortcut;
+  variant: ApplicationCommandVariant;
+}
+
+interface ApplicationCommandExecutionContext {
+  surface: ApplicationCommandSurface;
+}
+
+interface ApplicationCommandDefinition extends Omit<ApplicationCommand, "pending"> {
+  run: (context: ApplicationCommandExecutionContext) => MaybePromise<void>;
 }
 
 interface ApplicationCommandMatch {
@@ -111,6 +123,34 @@ function commandOrigin(commandId: ApplicationCommandId, surface: ApplicationComm
   return { id: `${surface}.${commandId}`, type } satisfies DiagnosticOrigin;
 }
 
+function commandSearchTerms(value: string): string[] {
+  return value.split("|").map((term) => term.trim());
+}
+
+function commandsById<T extends { id: ApplicationCommandId }>(commands: readonly T[]) {
+  return Object.fromEntries(commands.map((command) => [command.id, command])) as Record<
+    ApplicationCommandId,
+    T
+  >;
+}
+
+function materializeApplicationCommands(
+  definitions: readonly ApplicationCommandDefinition[],
+  pendingIds: ReadonlySet<ApplicationCommandId>,
+): ApplicationCommand[] {
+  return definitions.map((definition) => ({
+    checked: definition.checked,
+    enabled: definition.enabled,
+    id: definition.id,
+    label: definition.label,
+    pending: pendingIds.has(definition.id),
+    searchTerms: definition.searchTerms,
+    section: definition.section,
+    shortcut: definition.shortcut,
+    variant: definition.variant,
+  }));
+}
+
 function getShortcutPlatform(): ShortcutPlatform {
   if (typeof navigator === "undefined") return "other";
   return /Mac/i.test(navigator.userAgent) || /Mac/i.test(navigator.platform) ? "macos" : "other";
@@ -123,17 +163,24 @@ function normalizeSearchValue(value: string): string {
 export {
   APPLICATION_SHORTCUTS,
   commandOrigin,
+  commandsById,
+  commandSearchTerms,
   filterApplicationCommands,
   getShortcutAriaValue,
   getShortcutDisplayKeys,
   isShortcutEvent,
+  materializeApplicationCommands,
 };
 export type {
   ApplicationCommand,
+  ApplicationCommandDefinition,
+  ApplicationCommandExecutionContext,
   ApplicationCommandId,
   ApplicationCommandMatch,
   ApplicationCommandSection,
   ApplicationCommandSurface,
+  ApplicationCommandVariant,
   ApplicationShortcut,
+  MaybePromise,
   ShortcutPlatform,
 };

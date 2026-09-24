@@ -10,7 +10,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
@@ -19,7 +18,7 @@ import { deleteActiveEditingInstanceSourceRequested } from "@/app/store/thunks/s
 import { normalizeSourceKey } from "@/domain/source";
 
 interface SourceDeleteDialogProps {
-  children: ReactNode;
+  children?: ReactNode;
   onOpenChange?: (open: boolean) => void;
   open?: boolean;
   sourceId?: string | null;
@@ -103,4 +102,4 @@ function SourceDeleteDialog({
   );
 }
 
-export { SourceDeleteDialog, AlertDialogTrigger as SourceDeleteDialogTrigger };
+export { SourceDeleteDialog };

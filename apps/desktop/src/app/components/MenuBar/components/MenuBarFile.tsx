@@ -1,9 +1,9 @@
-import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import {
+  MenubarCheckboxItem,
   MenubarContent,
   MenubarGroup,
   MenubarItem,
@@ -13,68 +13,48 @@ import {
   MenubarTrigger,
 } from "@/components/ui/menubar";
 
-import {
-  type ApplicationCommand,
-  getShortcutAriaValue,
-  getShortcutDisplayKeys,
-} from "@/app/commands/application-commands";
-import { commandsById, useApplicationCommands } from "@/app/hooks/useApplicationCommands";
-import { SourceDeleteDialog } from "@/features/source";
+import { getShortcutAriaValue, getShortcutDisplayKeys } from "@/app/commands/application-commands";
+import { useApplicationCommand, useApplicationCommands } from "@/app/hooks/useApplicationCommands";
 
 function MenuBarFile() {
   const { t } = useTranslation();
-  const [deleteSourceId, setDeleteSourceId] = useState<string | null>(null);
-  const requestDelete = useCallback((sourceId: string) => setDeleteSourceId(sourceId), []);
-  const commands = commandsById(useApplicationCommands(requestDelete));
 
   return (
-    <SourceDeleteDialog
-      onOpenChange={(open) => {
-        if (!open) setDeleteSourceId(null);
-      }}
-      open={deleteSourceId !== null}
-      sourceId={deleteSourceId}
-    >
-      <MenubarMenu value="file">
-        <MenubarTrigger asChild>
-          <Button className="text-foreground/80" size="sm" type="button" variant="ghost">
-            {t("app.labels.file")}
-          </Button>
-        </MenubarTrigger>
-        <MenubarContent>
-          <MenubarGroup>
-            <ApplicationCommandMenuItem command={commands["open-file"]} />
-            <ApplicationCommandMenuItem command={commands["open-folder"]} />
-            <ApplicationCommandMenuItem command={commands["close-file"]} />
-          </MenubarGroup>
-          <MenubarSeparator />
-          <MenubarGroup>
-            <ApplicationCommandMenuItem command={commands["save-lossless-cut"]} />
-            <ApplicationCommandMenuItem command={commands["optimized-export"]} />
-          </MenubarGroup>
-          <MenubarSeparator />
-          <MenubarGroup>
-            <ApplicationCommandMenuItem command={commands["delete-file"]} destructive />
-          </MenubarGroup>
-        </MenubarContent>
-      </MenubarMenu>
-    </SourceDeleteDialog>
+    <MenubarMenu value="file">
+      <MenubarTrigger asChild>
+        <Button className="text-foreground/80" size="sm" type="button" variant="ghost">
+          {t("app.labels.file")}
+        </Button>
+      </MenubarTrigger>
+      <MenubarContent>
+        <MenubarGroup>
+          <ApplicationCommandMenuItem commandId="open-file" />
+          <ApplicationCommandMenuItem commandId="open-folder" />
+          <ApplicationCommandMenuItem commandId="close-file" />
+        </MenubarGroup>
+        <MenubarSeparator />
+        <MenubarGroup>
+          <ApplicationCommandMenuItem commandId="save-lossless-cut" />
+          <ApplicationCommandMenuItem commandId="optimized-export" />
+        </MenubarGroup>
+        <MenubarSeparator />
+        <MenubarGroup>
+          <ApplicationCommandMenuItem commandId="delete-file" />
+        </MenubarGroup>
+      </MenubarContent>
+    </MenubarMenu>
   );
 }
 
 function ApplicationCommandMenuItem({
-  command,
-  destructive = false,
+  commandId,
 }: {
-  command: ApplicationCommand;
-  destructive?: boolean;
+  commandId: Parameters<typeof useApplicationCommand>[0];
 }) {
-  return (
-    <MenubarItem
-      disabled={!command.enabled}
-      onSelect={() => command.execute("menu")}
-      variant={destructive ? "destructive" : "default"}
-    >
+  const command = useApplicationCommand(commandId);
+  const { executeCommand } = useApplicationCommands();
+  const content = (
+    <>
       {command.label}
       {command.shortcut ? (
         <MenubarShortcut aria-label={getShortcutAriaValue(command.shortcut)}>
@@ -85,6 +65,31 @@ function ApplicationCommandMenuItem({
           </KbdGroup>
         </MenubarShortcut>
       ) : null}
+    </>
+  );
+
+  if (command.checked !== undefined) {
+    return (
+      <MenubarCheckboxItem
+        aria-busy={command.pending}
+        checked={command.checked}
+        disabled={!command.enabled || command.pending}
+        onSelect={() => void executeCommand(command.id, "menu")}
+        variant={command.variant}
+      >
+        {content}
+      </MenubarCheckboxItem>
+    );
+  }
+
+  return (
+    <MenubarItem
+      aria-busy={command.pending}
+      disabled={!command.enabled || command.pending}
+      onSelect={() => void executeCommand(command.id, "menu")}
+      variant={command.variant}
+    >
+      {content}
     </MenubarItem>
   );
 }

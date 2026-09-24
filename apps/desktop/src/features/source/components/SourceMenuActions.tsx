@@ -22,7 +22,7 @@ import {
 } from "@/app/store/thunks/source-media-thunks";
 import type { EditingInstance } from "@/domain/editing-instance";
 
-import { SourceDeleteDialog, SourceDeleteDialogTrigger } from "./SourceDeleteDialog";
+import { useSourceDelete } from "../contexts/source-delete-context";
 
 type ActionElement = ReactElement<{
   disabled?: boolean;
@@ -45,22 +45,14 @@ interface SourceActionProps {
  * @name DeleteSource
  * @description Wraps an action trigger with source deletion behavior and disables it when the source is already deleted.
  */
-function DeleteSource({
-  children,
-  event = "select",
-  onOpenChange,
-  open,
-  source,
-}: SourceActionProps) {
+function DeleteSource({ children, event = "select", source }: SourceActionProps) {
+  const { requestSourceDelete } = useSourceDelete();
   const item = withDisabled(children, !source || source.sourceAvailability === "deleted");
+  const trigger = withAction(item, event, () => {
+    if (source) requestSourceDelete({ sourceIds: [source.id] });
+  });
 
-  return (
-    <SourceDeleteDialog onOpenChange={onOpenChange} open={open} sourceId={source?.id}>
-      <SourceDeleteDialogTrigger asChild>
-        {event === "select" ? withPreventedSelect(item) : item}
-      </SourceDeleteDialogTrigger>
-    </SourceDeleteDialog>
-  );
+  return event === "select" ? withPreventedSelect(trigger) : trigger;
 }
 
 /**
