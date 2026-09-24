@@ -133,6 +133,8 @@ describe("MenuBarSettings Redux integration", () => {
     const store = renderSettings();
     store.dispatch(activityFeedViewChanged("branch"));
     store.dispatch(layoutDensityChanged("compact"));
+    const resetItem = screen.getByRole("menuitem", { name: "Reset to default" });
+    expect(resetItem).toHaveAttribute("aria-disabled", "true");
 
     const loopItem = screen.getByRole("menuitemcheckbox", {
       name: "Loop",
@@ -141,7 +143,8 @@ describe("MenuBarSettings Redux integration", () => {
     await user.click(loopItem);
     expect(store.getState().preferences.loopPlaybackEnabledDefault).toBe(false);
     expect(store.getState().editorTools.loopPlaybackEnabled).toBe(true);
-    await user.click(screen.getByRole("menuitem", { name: "Reset to default" }));
+    expect(resetItem).not.toHaveAttribute("aria-disabled", "true");
+    await user.click(resetItem);
 
     expect(store.getState().preferences).toEqual({
       ...DEFAULT_PREFERENCES,
@@ -149,6 +152,7 @@ describe("MenuBarSettings Redux integration", () => {
       layoutDensity: "compact",
     });
     expect(store.getState().editorTools.loopPlaybackEnabled).toBe(true);
+    expect(resetItem).toHaveAttribute("aria-disabled", "true");
   });
 
   it("does not rewrite active audio tools when the merge default changes", async () => {
