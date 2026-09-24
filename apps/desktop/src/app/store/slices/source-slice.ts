@@ -45,6 +45,9 @@ const sourceSlice = createSlice({
   name: "source",
   initialState: initialSourceState,
   reducers: {
+    capabilitiesChecking: (state) => {
+      state.capabilities = { status: "checking" };
+    },
     capabilitiesReady: (state, action: PayloadAction<MediaCapabilities>) => {
       state.capabilities = { status: "ready", value: action.payload };
     },
@@ -103,7 +106,7 @@ const sourceSlice = createSlice({
   },
 });
 
-const { capabilitiesFailed, capabilitiesReady } = sourceSlice.actions;
+const { capabilitiesChecking, capabilitiesFailed, capabilitiesReady } = sourceSlice.actions;
 const sourceReducer = sourceSlice.reducer;
 
 const selectSourceSelection = (state: RootState): SourceRef | null => state.source.source;
@@ -120,6 +123,7 @@ const selectSourceLoadToken = (state: RootState): number => state.source.loadTok
 const selectSourceStatus = (state: RootState): SourceStatus => state.source.status;
 
 export {
+  capabilitiesChecking,
   capabilitiesFailed,
   capabilitiesReady,
   selectAudioPanelStreamCount,

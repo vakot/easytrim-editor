@@ -17,6 +17,7 @@ vi.mock("@tauri-apps/api/webview", () => ({
 
 import {
   activateSourcePath,
+  checkMediaCapabilities,
   chooseSource,
   inspectImportedSource,
   inspectMedia,
@@ -51,6 +52,18 @@ beforeEach(() => {
 });
 
 describe("media IPC adapter", () => {
+  it("parses resolved binary paths and accepts an omitted optional path", async () => {
+    mocks.invoke.mockResolvedValue({
+      ffmpeg: { available: true, path: "C:/Tools/ffmpeg.exe", version: "ffmpeg version 7.1" },
+      ffprobe: { available: true, version: "ffprobe version 7.1" },
+    });
+
+    await expect(checkMediaCapabilities()).resolves.toEqual({
+      ffmpeg: { available: true, path: "C:/Tools/ffmpeg.exe", version: "ffmpeg version 7.1" },
+      ffprobe: { available: true, path: undefined, version: "ffprobe version 7.1" },
+    });
+  });
+
   it("preserves source filesystem timestamps from native metadata", () => {
     expect(
       parseSourceRef({

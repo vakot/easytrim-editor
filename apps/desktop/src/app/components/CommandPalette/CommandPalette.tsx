@@ -17,7 +17,6 @@ import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { menuVariantIconClassNames } from "@/components/ui/menu";
 
 import type { ApplicationCommandId } from "@/app/commands";
-import { COMMAND_PALETTE_SHORTCUT } from "@/app/commands/core/application-command.shortcuts";
 import type {
   ApplicationCommand,
   ApplicationCommandMatch,
@@ -31,9 +30,9 @@ import {
   isShortcutEvent,
 } from "@/app/commands/core/application-command.utils";
 import { ApplicationCommandIcon } from "@/app/components/ApplicationCommandMenuItem";
+import { useCommandPalette } from "@/app/contexts/command-palette-context";
 import { useApplicationCommands } from "@/app/hooks/useApplicationCommands";
 import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
-import { isApplicationInteractionBlocked } from "@/lib/hotkeys.utils";
 
 const commandVariantClassNames = {
   default: undefined,
@@ -49,8 +48,12 @@ type CommandPaletteGroupMatches = {
 
 function CommandPalette() {
   const { t } = useTranslation();
-  const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState("");
+  const { closeCommandPalette, isCommandPaletteOpen, openCommandPalette, sessionId } =
+    useCommandPalette();
+
+  const [queryState, setQueryState] = useState({ sessionId, value: "" });
+  const query = queryState.sessionId === sessionId ? queryState.value : "";
+  const setQuery = (value: string) => setQueryState({ sessionId, value });
   const { commands, executeCommand: executeApplicationCommand } = useApplicationCommands();
   const paletteCommands = commands.filter((command) =>
     isApplicationCommandAvailableOnSurface(command, "palette"),
@@ -61,15 +64,7 @@ function CommandPalette() {
 
   useKeyboardShortcut(
     (event) =>
-      isShortcutEvent(event, COMMAND_PALETTE_SHORTCUT) &&
-      (open || !isApplicationInteractionBlocked()),
-    () => setOpen((current) => !current),
-    { allowEditableTarget: true },
-  );
-
-  useKeyboardShortcut(
-    (event) =>
-      !open &&
+      !isCommandPaletteOpen &&
       commands.some(
         (command) =>
           isApplicationCommandAvailableOnSurface(command, "hotkey") &&
@@ -93,7 +88,8 @@ function CommandPalette() {
   );
 
   function handleOpenChange(nextOpen: boolean) {
-    setOpen(nextOpen);
+    if (nextOpen) openCommandPalette();
+    else closeCommandPalette();
     if (!nextOpen) setQuery("");
   }
 
@@ -102,7 +98,8 @@ function CommandPalette() {
     void executeApplicationCommand(command.id, "palette");
     const keepOpen = command.keepOpen ?? command.checked !== undefined;
     if (!keepOpen) {
-      handleOpenChange(false);
+      closeCommandPalette();
+      setQuery("");
     }
   }
 
@@ -112,7 +109,7 @@ function CommandPalette() {
         className="top-1/2 h-[min(60dvh,32rem)] -translate-y-1/2 overflow-hidden rounded-xl! p-0 sm:max-w-md"
         description={t("app.messages.commandPaletteDescription")}
         onOpenChange={handleOpenChange}
-        open={open}
+        open={isCommandPaletteOpen}
         title={t("app.labels.commandPalette")}
       >
         <Command label={t("app.labels.searchCommands")} shouldFilter={false}>

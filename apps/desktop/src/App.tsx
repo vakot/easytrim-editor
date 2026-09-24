@@ -15,6 +15,7 @@ import { NativeDialogOverlay } from "@/app/components/NativeDialogOverlay";
 import { AppLayout } from "@/app/layout";
 import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";
 import { AppUpdatesProvider } from "@/app/providers/AppUpdatesProvider";
+import { CommandPaletteProvider } from "@/app/providers/CommandPaletteProvider";
 import { EditorContractsProvider } from "@/app/providers/EditorContractsProvider";
 import { LayoutDensityProvider } from "@/app/providers/LayoutDensityProvider";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
@@ -49,30 +50,32 @@ function EasyTrimEditorApp() {
               <AppUpdatesProvider>
                 <EditorContractsProvider>
                   <ResizablePanelContextProvider>
-                    <ApplicationCommandsProvider>
-                      <AppLayout />
-                      <CommandPalette />
+                    <CommandPaletteProvider>
+                      <ApplicationCommandsProvider>
+                        <AppLayout />
+                        <CommandPalette />
 
-                      <Toaster />
-                      <ActivityToasts />
-                      <ExportDialog />
-                      <DiagnosticsRecoveryDialog />
-                      <SourceDropOverlay />
-                      <NativeDialogOverlay />
+                        <Toaster />
+                        <ActivityToasts />
+                        <ExportDialog />
+                        <DiagnosticsRecoveryDialog />
+                        <SourceDropOverlay />
+                        <NativeDialogOverlay />
 
-                      {dropListenerError ? (
-                        <Alert
-                          className="fixed top-20 left-1/2 z-50 w-auto -translate-x-1/2"
-                          variant="destructive"
-                        >
-                          <AlertDescription>
-                            {t("app.messages.dragUnavailable", {
-                              message: dropListenerError.message,
-                            })}
-                          </AlertDescription>
-                        </Alert>
-                      ) : null}
-                    </ApplicationCommandsProvider>
+                        {dropListenerError ? (
+                          <Alert
+                            className="fixed top-20 left-1/2 z-50 w-auto -translate-x-1/2"
+                            variant="destructive"
+                          >
+                            <AlertDescription>
+                              {t("app.messages.dragUnavailable", {
+                                message: dropListenerError.message,
+                              })}
+                            </AlertDescription>
+                          </Alert>
+                        ) : null}
+                      </ApplicationCommandsProvider>
+                    </CommandPaletteProvider>
                   </ResizablePanelContextProvider>
                 </EditorContractsProvider>
               </AppUpdatesProvider>

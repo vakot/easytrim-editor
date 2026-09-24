@@ -6,12 +6,14 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Added a title-bar Search commands button for opening the Command Palette.
 - Added a searchable global command palette for common file and export actions, available with Ctrl+H on Windows/Linux and Cmd+H on macOS.
 - Expanded the command palette to include help, appearance, settings, queue, layout, and preview actions with shared menu and shortcut behavior.
 - Added an in-app changelog and What's New view for released EasyTrim updates.
 
 ### Changed
 
+- Expanded Media Tools details with FFmpeg and FFprobe versions, executable paths, and concise installation and recheck guidance when tools are unavailable.
 - Simplified the empty preview's keyboard hints and displayed the Command Palette shortcut separately with the correct platform modifier.
 - Kept configuration choices and update checks in the Command Palette open, while dismissing it after action commands are selected.
 - Displayed language options using each language's own name instead of translating them into the current app language.

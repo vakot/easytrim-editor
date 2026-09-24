@@ -255,6 +255,29 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "Imported Sources" })).toBeInTheDocument();
   });
 
+  it("opens the existing Command Palette from the centered title-bar search button", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    const searchButton = await screen.findByRole("button", { name: "Search commands…" });
+    await user.click(searchButton);
+
+    expect(screen.getByRole("dialog", { name: "Command Palette" })).toBeInTheDocument();
+  });
+
+  it("keeps the title-bar search trigger visible during a manual media recheck", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    const searchButton = await screen.findByRole("button", { name: "Search commands…" });
+    await user.click(screen.getByRole("button", { name: "Media tools ready" }));
+    await user.click(screen.getByRole("button", { name: "Recheck" }));
+
+    expect(searchButton).toBeInTheDocument();
+    await waitFor(() => expect(mocks.checkMediaCapabilities).toHaveBeenCalledTimes(2));
+    expect(screen.getByRole("button", { name: "Search commands…" })).toBeInTheDocument();
+  });
+
   it("opens, searches, and executes the shared file commands from the command palette", async () => {
     const user = userEvent.setup();
     render(<App />);
@@ -3351,10 +3374,11 @@ describe("App", () => {
     await store.dispatch(checkMediaCapabilitiesRequested());
     render(<App />);
 
-    expect(await screen.findByText("Media tools unavailable")).toBeInTheDocument();
-    expect(
-      screen.getByRole("status", { name: /FFprobe: ffprobe is not installed/ }),
-    ).toBeInTheDocument();
+    const status = await screen.findByRole("button", { name: "Media tools unavailable" });
+    await userEvent.setup().click(status);
+
+    expect(await screen.findByText(/ffprobe is not installed/)).toBeInTheDocument();
+    expect(screen.getByText("winget install --id Gyan.FFmpeg --exact")).toBeInTheDocument();
   });
 
   it("replaces the current source with a failed dropped import", async () => {

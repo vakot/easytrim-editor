@@ -3,6 +3,8 @@ import { CheckCircle2, RotateCcw } from "lucide-react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { ApplicationCommand } from "@/app/commands/core/application-command.types";
+import { useCommandPalette } from "@/app/contexts/command-palette-context";
+import { CommandPaletteProvider } from "@/app/providers/CommandPaletteProvider";
 
 const mocks = vi.hoisted(() => ({
   commands: [] as ApplicationCommand[],
@@ -16,7 +18,20 @@ vi.mock("@/app/hooks/useApplicationCommands", () => ({
   }),
 }));
 
-import { CommandPalette } from "../CommandPalette";
+import { CommandPalette as BaseCommandPalette } from "../CommandPalette";
+
+function CommandPalette() {
+  return (
+    <CommandPaletteProvider>
+      <BaseCommandPalette />
+    </CommandPaletteProvider>
+  );
+}
+
+function OpenPaletteControl() {
+  const { openCommandPalette } = useCommandPalette();
+  return <button onClick={openCommandPalette}>Open palette</button>;
+}
 
 function createCommand(
   id: string,
@@ -48,6 +63,24 @@ describe("CommandPalette semantic icons", () => {
     ];
     mocks.executeCommand.mockClear();
     mocks.executeCommand.mockReturnValue(Promise.resolve());
+  });
+
+  it("opens through the shared capability and resets its query when closed", async () => {
+    render(
+      <CommandPaletteProvider>
+        <OpenPaletteControl />
+        <BaseCommandPalette />
+      </CommandPaletteProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Open palette" }));
+    const search = await screen.findByRole("combobox", { name: "Search commands" });
+    fireEvent.change(search, { target: { value: "does not match" } });
+    expect(screen.getByText("No commands found.")).toBeInTheDocument();
+
+    fireEvent.keyDown(search, { key: "Escape", code: "Escape" });
+    fireEvent.click(screen.getByRole("button", { name: "Open palette" }));
+    expect(await screen.findByRole("combobox", { name: "Search commands" })).toHaveValue("");
   });
 
   it("colors destructive and success icons with the shared menu variant styles", async () => {
