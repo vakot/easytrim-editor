@@ -15,8 +15,9 @@ import { useCommandPalette } from "@/app/contexts/command-palette-context";
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectCapabilities } from "@/app/store/slices/source-slice";
 import { MediaToolsStatus } from "@/features/media";
+import { cn } from "@/lib/class-names.utils";
 
-function AppTitleBarCommandCenter() {
+function AppCommandCenter() {
   const { t } = useTranslation();
   const { openCommandPalette } = useCommandPalette();
   const capabilities = useAppSelector(selectCapabilities);
@@ -36,37 +37,56 @@ function AppTitleBarCommandCenter() {
     return () => window.clearTimeout(timeout);
   }, [capabilities.status, startupComplete]);
 
-  if (!startupComplete) {
-    return (
-      <div className="flex h-full items-center px-2 transition-[max-width,opacity,transform] duration-250 motion-reduce:transition-none">
-        <MediaToolsStatus presentation="startup" />
-      </div>
-    );
-  }
-
   return (
-    <ButtonGroup className="h-7 items-center rounded-lg transition-[max-width,opacity,transform] duration-250 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-1 motion-reduce:animate-none motion-reduce:transition-none">
+    <ButtonGroup
+      className={cn(
+        "h-7 items-center rounded-lg",
+        !startupComplete &&
+          "*:data-media-tools-trigger:rounded-lg! *:data-media-tools-trigger:border-l!",
+      )}
+    >
       <Button
+        aria-hidden={!startupComplete}
         aria-label={t("app.messages.commandPalettePlaceholder")}
-        className="h-7 gap-2 rounded-r-none border-border bg-muted px-2.5 text-xs font-normal text-muted-foreground hover:text-foreground"
+        className={cn(
+          "h-7 shrink-0 justify-start gap-2 overflow-hidden whitespace-nowrap",
+          "border-border bg-muted text-xs font-normal text-muted-foreground",
+          "transition-[width,padding,opacity,border-width] duration-300 ease-out",
+          "hover:text-foreground",
+          startupComplete
+            ? "w-64 border px-2.5 opacity-100"
+            : "pointer-events-none w-0 border-0 px-0 opacity-0",
+        )}
         onClick={openCommandPalette}
         size="sm"
+        tabIndex={startupComplete ? 0 : -1}
         variant="outline"
       >
-        <Search aria-hidden="true" className="size-3.5" />
-        <span>{t("app.messages.commandPalettePlaceholder")}</span>
-        <span aria-label={getShortcutAriaValue(COMMAND_PALETTE_SHORTCUT)} className="ml-1">
-          <KbdGroup>
-            {getShortcutDisplayKeys(COMMAND_PALETTE_SHORTCUT).map((key) => (
-              <Kbd key={key}>{key}</Kbd>
-            ))}
-          </KbdGroup>
-        </span>
+        <div className="flex w-full justify-between gap-3">
+          <span
+            className={cn(
+              "flex shrink-0 items-center gap-2 transition-opacity duration-150",
+              startupComplete ? "opacity-100 delay-75" : "opacity-0",
+            )}
+          >
+            <Search aria-hidden="true" className="size-3.5" />
+
+            <span>{t("app.messages.commandPalettePlaceholder")}</span>
+          </span>
+
+          <span aria-label={getShortcutAriaValue(COMMAND_PALETTE_SHORTCUT)} className="ml-1">
+            <KbdGroup>
+              {getShortcutDisplayKeys(COMMAND_PALETTE_SHORTCUT).map((key) => (
+                <Kbd key={key}>{key}</Kbd>
+              ))}
+            </KbdGroup>
+          </span>
+        </div>
       </Button>
 
-      <MediaToolsStatus />
+      <MediaToolsStatus presentation={startupComplete ? "compact" : "startup"} />
     </ButtonGroup>
   );
 }
 
-export { AppTitleBarCommandCenter };
+export { AppCommandCenter };

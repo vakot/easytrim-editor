@@ -7,14 +7,14 @@ import { capabilitiesChecking, capabilitiesReady } from "@/app/store/slices/sour
 import { createAppStore } from "@/app/store/store";
 import type { MediaCapabilities } from "@/lib/tauri/media.types";
 
-import { AppTitleBarCommandCenter } from "../AppTitleBarCommandCenter";
+import { AppCommandCenter } from "../AppCommandCenter";
 
 const capabilities: MediaCapabilities = {
   ffmpeg: { available: true, version: "ffmpeg version 7.1" },
   ffprobe: { available: true, version: "ffprobe version 7.1" },
 };
 
-describe("AppTitleBarCommandCenter", () => {
+describe("AppCommandCenter", () => {
   beforeEach(() => {
     vi.useFakeTimers();
   });
@@ -28,7 +28,7 @@ describe("AppTitleBarCommandCenter", () => {
     render(
       <Provider store={store}>
         <CommandPaletteProvider>
-          <AppTitleBarCommandCenter />
+          <AppCommandCenter />
         </CommandPaletteProvider>
       </Provider>,
     );

@@ -1,10 +1,13 @@
 import "@/i18n/config";
 
 import type { Meta, StoryObj } from "@storybook/react";
-import type { ComponentProps } from "react";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Provider } from "react-redux";
 
+import { Button } from "@/components/ui/button";
+
+import { AppCommandCenter } from "@/app/components/AppCommandCenter";
+import { CommandPaletteProvider } from "@/app/providers/CommandPaletteProvider";
 import {
   capabilitiesChecking,
   capabilitiesFailed,
@@ -13,35 +16,26 @@ import {
 import { createAppStore } from "@/app/store/store";
 import type { MediaCapabilities } from "@/lib/tauri/media.types";
 
-import { MediaToolsStatus } from "../MediaToolsStatus";
+type CommandCenterStoryState = "checking" | "ready" | "partial" | "unavailable" | "failed";
 
-type MediaToolsStoryState = "checking" | "ready" | "partial" | "unavailable" | "failed";
-
-type MediaToolsStatusStoryArgs = {
-  presentation: NonNullable<ComponentProps<typeof MediaToolsStatus>["presentation"]>;
-  state: MediaToolsStoryState;
+type AppCommandCenterStoryArgs = {
+  state: CommandCenterStoryState;
 };
 
 const meta = {
-  component: MediaToolsStatus,
-  args: { presentation: "compact", state: "ready" },
+  component: AppCommandCenter,
+  args: { state: "checking" },
   argTypes: {
-    presentation: {
-      control: "select",
-      options: ["compact", "startup"],
-    },
     state: {
       control: "select",
       options: ["checking", "ready", "partial", "unavailable", "failed"],
     },
   },
   parameters: { layout: "centered" },
-  render: ({ presentation, state }) => (
-    <MediaToolsStatusStory presentation={presentation} state={state} />
-  ),
+  render: ({ state }) => <AppCommandCenterStory state={state} />,
   tags: ["autodocs"],
-  title: "Media/Media Tools Status",
-} satisfies Meta<MediaToolsStatusStoryArgs>;
+  title: "App/Command Center",
+} satisfies Meta<AppCommandCenterStoryArgs>;
 
 export default meta;
 
@@ -60,8 +54,9 @@ const readyCapabilities: MediaCapabilities = {
   },
 };
 
-function MediaToolsStatusStory({ presentation, state }: MediaToolsStatusStoryArgs) {
+function AppCommandCenterStory({ state }: AppCommandCenterStoryArgs) {
   const store = useMemo(() => createAppStore(), []);
+  const [animationRun, setAnimationRun] = useState(0);
 
   useEffect(() => {
     switch (state) {
@@ -97,9 +92,16 @@ function MediaToolsStatusStory({ presentation, state }: MediaToolsStatusStoryArg
 
   return (
     <Provider store={store}>
-      <div className="flex h-10 items-center rounded-lg border bg-background px-1">
-        <MediaToolsStatus presentation={presentation} />
-      </div>
+      <CommandPaletteProvider>
+        <div className="grid justify-items-start gap-3">
+          <div className="flex h-10 items-center rounded-lg border bg-background px-1">
+            <AppCommandCenter key={animationRun} />
+          </div>
+          <Button onClick={() => setAnimationRun((run) => run + 1)} size="sm" variant="outline">
+            Replay startup animation
+          </Button>
+        </div>
+      </CommandPaletteProvider>
     </Provider>
   );
 }
