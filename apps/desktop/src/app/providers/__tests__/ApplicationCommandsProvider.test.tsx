@@ -128,6 +128,7 @@ function RuntimeProbe() {
     <div>
       {commands.map((command) => (
         <button
+          aria-label={command.id}
           data-checked={command.checked}
           data-group={command.group.label}
           data-has-icon={Boolean(command.icon)}
@@ -141,6 +142,7 @@ function RuntimeProbe() {
           onClick={() => void executeCommand(command.id, "palette")}
           type="button"
         >
+          <span data-icon>{command.icon}</span>
           {command.id}
         </button>
       ))}
@@ -222,6 +224,12 @@ describe("ApplicationCommandsProvider", () => {
       "data-label",
       "Русский",
     );
+    expect(screen.getByRole("button", { name: "language-en" }).querySelector("[data-icon]"))
+      .toHaveTextContent("EN");
+    expect(screen.getByRole("button", { name: "language-sk" }).querySelector("[data-icon]"))
+      .toHaveTextContent("SK");
+    expect(screen.getByRole("button", { name: "language-ru" }).querySelector("[data-icon]"))
+      .toHaveTextContent("RU");
     expect(screen.getByRole("button", { name: "primary-color-amber" })).toHaveAttribute(
       "data-group",
       "Appearance / Color",
