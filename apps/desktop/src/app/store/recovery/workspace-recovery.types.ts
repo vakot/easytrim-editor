@@ -13,8 +13,8 @@ export interface WorkspaceRecoveryInstance {
   optimizedArguments?: string;
   optimizedSettings?: ExportSettings;
   origin: InstanceOrigin;
-  sourceAvailability: "available" | "deleted" | "missing";
   snapshot: EditorSnapshot;
+  sourceAvailability: "available" | "deleted" | "missing";
 }
 
 export interface WorkspaceRecoveryBackup {

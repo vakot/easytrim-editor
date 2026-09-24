@@ -112,11 +112,11 @@ function createActivityToast(
     const complete = restored === total;
     return {
       description: complete
-        ? t("app.workspaceRecovery.toastDescription", { count: restored })
-        : t("app.workspaceRecovery.toastPartialDescription", { restored, total }),
-      title: t(
-        complete ? "app.workspaceRecovery.toastTitle" : "app.workspaceRecovery.toastPartialTitle",
-      ),
+        ? t("app.messages.workspaceRecovery.toastDescription", { count: restored })
+        : t("app.messages.workspaceRecovery.toastPartialDescription", { restored, total }),
+      title: complete
+        ? t("app.messages.workspaceRecovery.toastTitle")
+        : t("app.messages.workspaceRecovery.toastPartialTitle"),
       variant: "success",
     };
   }

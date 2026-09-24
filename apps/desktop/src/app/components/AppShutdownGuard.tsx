@@ -12,9 +12,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+import { clearWorkspaceRecoveryOnAcceptedShutdown } from "@/app/store/recovery/workspace-recovery";
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectHasProcessableExports } from "@/app/store/slices/editing-instances-slice";
-import { clearWorkspaceRecoveryOnAcceptedShutdown } from "@/app/store/recovery/workspace-recovery";
 import {
   closeWindow,
   listenForWindowCloseRequests,

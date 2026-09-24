@@ -60,6 +60,7 @@ describe("workspace recovery contract", () => {
         tracks: [{ enabled: true, streamIndex: 2, volumePercent: 75 }],
       },
     };
+
     store.dispatch(
       editingInstanceActivated({
         id: "second",
@@ -115,6 +116,7 @@ describe("workspace recovery contract", () => {
         status: "completed" as const,
       },
     };
+
     const renderingAttempt = {
       ...createExportAttempt({
         capturedAt: 500,
@@ -137,6 +139,7 @@ describe("workspace recovery contract", () => {
       metrics: { durationMs: null, progressPercent: 42, totalFrames: 100 },
       state: { operationId: "native-running", startedAt: 501, status: "rendering" as const },
     };
+
     store.dispatch(editingInstanceExportAttemptQueued({ attempt: completedAttempt, id: "second" }));
     store.dispatch(editingInstanceExportAttemptQueued({ attempt: renderingAttempt, id: "second" }));
 
@@ -182,6 +185,7 @@ describe("workspace recovery contract", () => {
     const oldBackup = createWorkspaceRecoveryBackup(store.getState(), {
       sessionId: "crashed-session",
     });
+
     localStorage.setItem(CURRENT_KEY, JSON.stringify(oldBackup));
 
     initializeWorkspaceRecovery(store, "new-session", true);

@@ -1,11 +1,7 @@
 import { editingInstanceActivated } from "@/app/store/actions/editing-instance-actions";
-import { createEditorSnapshotFromState } from "@/app/store/integration/editor-snapshot";
 import { sourceReady } from "@/app/store/actions/source-actions";
-import {
-  cropChanged,
-  rotationChanged,
-  selectCropResolution,
-} from "@/app/store/slices/crop-slice";
+import { createEditorSnapshotFromState } from "@/app/store/integration/editor-snapshot";
+import { cropChanged, rotationChanged, selectCropResolution } from "@/app/store/slices/crop-slice";
 import {
   editingInstanceOptimizedSettingsChanged,
   editingInstanceSnapshotUpdated,

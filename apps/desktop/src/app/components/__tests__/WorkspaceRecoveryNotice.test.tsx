@@ -1,21 +1,21 @@
-import { Provider } from "react-redux";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { Provider } from "react-redux";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { WorkspaceRecoveryNotice } from "@/app/components/WorkspaceRecoveryNotice";
 import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";
 import {
-  editingInstanceClosed,
-  editingInstancesAdded,
-} from "@/app/store/slices/editing-instances-slice";
-import { createAppStore } from "@/app/store/store";
-import {
   createWorkspaceRecoveryBackup,
   getWorkspaceRecoveryCandidate,
   initializeWorkspaceRecovery,
 } from "@/app/store/recovery/workspace-recovery";
-import { SourceListEmpty } from "@/features/source/components/SourceList/components/SourceListEmpty";
+import {
+  editingInstanceClosed,
+  editingInstancesAdded,
+} from "@/app/store/slices/editing-instances-slice";
+import { createAppStore } from "@/app/store/store";
+import { SourceList } from "@/features/source";
 import { firstSource } from "@/test/source.fixtures";
 
 const CURRENT_KEY = "easytrim:workspace-recovery:current";
@@ -53,7 +53,7 @@ describe("workspace recovery entry points", () => {
     render(
       <Provider store={store}>
         <WorkspaceRecoveryNotice />
-        <SourceListEmpty />
+        <SourceList>{() => <div />}</SourceList>
       </Provider>,
     );
 
@@ -70,7 +70,7 @@ describe("workspace recovery entry points", () => {
     const store = setup();
     render(
       <Provider store={store}>
-        <SourceListEmpty />
+        <SourceList>{() => <div />}</SourceList>
       </Provider>,
     );
 

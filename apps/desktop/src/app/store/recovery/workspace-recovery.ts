@@ -1,20 +1,21 @@
 import { createEditorSnapshotFromState } from "@/app/store/integration/editor-snapshot";
-import type { AppStore, RootState } from "@/app/store/store";
 import { selectEditingInstances } from "@/app/store/slices/editing-instances-slice";
+import type { AppStore, RootState } from "@/app/store/store";
 import type { EditingInstance, ExportAttempt } from "@/domain/editing-instance";
 import { EMPTY_EXPORT_METRICS } from "@/domain/editing-instance";
-import { diagnostics } from "@/lib/diagnostics";
 import { normalizeSourceKey } from "@/domain/source";
-import type {
-  WorkspaceRecoveryBackup,
-  WorkspaceRecoveryInstance,
-} from "./workspace-recovery.types";
+import { diagnostics } from "@/lib/diagnostics";
+
 import {
   clearWorkspaceRecovery,
   promoteCurrentBackupToCandidate,
   readRecoveryCandidate,
   writeCurrentBackup,
 } from "./workspace-recovery.storage";
+import type {
+  WorkspaceRecoveryBackup,
+  WorkspaceRecoveryInstance,
+} from "./workspace-recovery.types";
 
 let candidate: WorkspaceRecoveryBackup | null = null;
 const listeners = new Set<() => void>();
@@ -145,6 +146,7 @@ function initializeWorkspaceRecovery(
       id: previousBackup?.id,
       sessionId,
     });
+
     const content = JSON.stringify({ ...backup, updatedAt: "" });
     if (previousBackup && JSON.stringify({ ...previousBackup, updatedAt: "" }) === content) return;
     previousBackup = { ...backup, updatedAt: new Date().toISOString() };

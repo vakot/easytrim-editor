@@ -1069,6 +1069,7 @@ describe("activity projection", () => {
       }),
       labels,
     );
+
     const partial = projectActivityEvent(
       diagnosticEvent("workspace.recovery.completed", {
         data: { restoredSourceCount: 3, sourceCount: 4 },

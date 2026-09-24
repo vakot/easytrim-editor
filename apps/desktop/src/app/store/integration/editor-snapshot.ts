@@ -5,9 +5,9 @@ import {
   selectFlipVertical,
   selectRotationDegrees,
 } from "@/app/store/slices/crop-slice";
+import type { RootState } from "@/app/store/store";
 import { createEditorSnapshot, type EditorSnapshot } from "@/domain/editor-snapshot";
 import type { SourceRef } from "@/domain/source";
-import type { RootState } from "@/app/store/store";
 
 function createDefaultEditorSnapshot(source: SourceRef, mergeAudio: boolean): EditorSnapshot {
   return createEditorSnapshot({

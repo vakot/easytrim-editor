@@ -13,17 +13,17 @@ vi.mock("@/lib/tauri/media", async (importOriginal) => ({
 
 import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";
 import {
-  activeEditingInstanceChanged,
-  editingInstancesAdded,
-  selectEditingInstances,
-} from "@/app/store/slices/editing-instances-slice";
-import { createAppStore } from "@/app/store/store";
-import {
   createWorkspaceRecoveryBackup,
   getWorkspaceRecoveryCandidate,
   initializeWorkspaceRecovery,
 } from "@/app/store/recovery/workspace-recovery";
 import { restorePreviousWorkspaceRequested } from "@/app/store/recovery/workspace-recovery-thunks";
+import {
+  activeEditingInstanceChanged,
+  editingInstancesAdded,
+  selectEditingInstances,
+} from "@/app/store/slices/editing-instances-slice";
+import { createAppStore } from "@/app/store/store";
 import { firstSource, media, secondSource } from "@/test/source.fixtures";
 
 const CURRENT_KEY = "easytrim:workspace-recovery:current";

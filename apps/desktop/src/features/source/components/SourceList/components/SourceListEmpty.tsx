@@ -15,12 +15,12 @@ import {
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { Separator } from "@/components/ui/separator";
 
-import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
   getWorkspaceRecoveryCandidate,
   subscribeToWorkspaceRecovery,
 } from "@/app/store/recovery/workspace-recovery";
 import { restorePreviousWorkspaceRequested } from "@/app/store/recovery/workspace-recovery-thunks";
+import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectEditingInstances } from "@/app/store/slices/editing-instances-slice";
 import { chooseSourceRequested } from "@/app/store/thunks/source-media-thunks";
 import { cn } from "@/lib/class-names.utils";

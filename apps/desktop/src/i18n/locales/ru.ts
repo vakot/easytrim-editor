@@ -25,6 +25,7 @@ export const ru = {
       checkForUpdates: "Проверить обновления…",
       closeFile: "Закрыть файл",
       deleteFile: "Удалить файл",
+      dismiss: "Скрыть",
       maximize: "Развернуть",
       minimize: "Свернуть",
       open: "Открыть",
@@ -146,21 +147,18 @@ export const ru = {
         sourcePath: "Путь источника: {{path}}",
       },
       windowActionFailed: "Не удалось выполнить действие с окном.",
-    },
-    workspaceRecovery: {
-      description_one:
-        "EasyTrim завершил работу некорректно. Можно восстановить {{count}} источник.",
-      description_other:
-        "EasyTrim завершил работу некорректно. Можно восстановить источников: {{count}}.",
-      dismiss: "Скрыть",
-      restore: "Восстановить",
-      restorePreviousSession: "Восстановить предыдущий сеанс",
-      title: "Восстановить предыдущий сеанс?",
-      toastDescription_one: "Восстановлен {{count}} источник",
-      toastDescription_other: "Восстановлено источников: {{count}}",
-      toastPartialDescription: "Восстановлено {{restored}} из {{total}} источников",
-      toastPartialTitle: "Предыдущий сеанс восстановлен частично",
-      toastTitle: "Предыдущий сеанс восстановлен",
+      workspaceRecovery: {
+        description_one:
+          "EasyTrim завершил работу некорректно. Можно восстановить {{count}} источник.",
+        description_other:
+          "EasyTrim завершил работу некорректно. Можно восстановить источников: {{count}}.",
+        title: "Восстановить предыдущий сеанс?",
+        toastDescription_one: "Восстановлен {{count}} источник",
+        toastDescription_other: "Восстановлено источников: {{count}}",
+        toastPartialDescription: "Восстановлено {{restored}} из {{total}} источников",
+        toastPartialTitle: "Предыдущий сеанс восстановлен частично",
+        toastTitle: "Предыдущий сеанс восстановлен",
+      },
     },
     tooltips: {
       customizeLayout: "Настроить расположение",

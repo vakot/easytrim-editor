@@ -1,17 +1,18 @@
+import { sourceCleared } from "@/app/store/actions/source-actions";
 import {
   activeEditingInstanceChanged,
   editingInstancesAdded,
   editingInstancesSourceAvailabilityChanged,
   selectEditingInstances,
 } from "@/app/store/slices/editing-instances-slice";
-import { sourceCleared } from "@/app/store/actions/source-actions";
 import type { EditingInstance } from "@/domain/editing-instance";
 import { diagnostics } from "@/lib/diagnostics";
 import { activateSourcePath } from "@/lib/tauri/media";
 import { normalizeAppError } from "@/lib/tauri/media.utils";
 
-import { activateEditingInstanceRequested } from "../thunks/source-media-thunks";
 import type { AppThunk } from "../thunks/source-media-thunks";
+import { activateEditingInstanceRequested } from "../thunks/source-media-thunks";
+
 import { getWorkspaceRecoveryCandidateSnapshot } from "./workspace-recovery";
 import type { WorkspaceRecoveryInstance } from "./workspace-recovery.types";
 
@@ -134,6 +135,7 @@ const restorePreviousWorkspaceRequested =
           instance.exportAttempts.filter((attempt) => attempt.state.status === "completed").length,
         0,
       );
+
       operation.complete({
         activeInstanceId,
         activeInstanceRestored,

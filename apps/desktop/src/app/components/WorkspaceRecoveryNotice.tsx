@@ -1,7 +1,8 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
 
-import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
+import { Button } from "@/components/ui/button";
+
 import {
   dismissWorkspaceRecoveryNotice,
   getWorkspaceRecoveryCandidate,
@@ -9,8 +10,8 @@ import {
   subscribeToWorkspaceRecovery,
 } from "@/app/store/recovery/workspace-recovery";
 import { restorePreviousWorkspaceRequested } from "@/app/store/recovery/workspace-recovery-thunks";
+import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectEditingInstances } from "@/app/store/slices/editing-instances-slice";
-import { Button } from "@/components/ui/button";
 
 function WorkspaceRecoveryNotice() {
   const { t } = useTranslation();
@@ -21,30 +22,34 @@ function WorkspaceRecoveryNotice() {
     getWorkspaceRecoveryCandidate,
     () => null,
   );
+
   const dismissed = useSyncExternalStore(
     subscribeToWorkspaceRecovery,
     isWorkspaceRecoveryNoticeDismissed,
     () => true,
   );
+
   const [consumed, setConsumed] = useState(false);
   const [restoring, setRestoring] = useState(false);
 
   useEffect(() => {
-    if (instances.length > 0) setConsumed(true);
+    if (instances.length === 0) return;
+    const timer = window.setTimeout(() => setConsumed(true), 0);
+    return () => window.clearTimeout(timer);
   }, [instances.length]);
 
   if (!candidate || dismissed || consumed || instances.length > 0) return null;
 
   return (
     <aside
-      aria-label={t("app.workspaceRecovery.title")}
+      aria-label={t("app.messages.workspaceRecovery.title")}
       className="fixed right-5 bottom-5 z-50 grid w-[min(24rem,calc(100vw-2.5rem))] gap-3 rounded-xl border bg-popover p-4 text-popover-foreground shadow-xl"
       role="status"
     >
       <div className="grid gap-1">
-        <strong className="text-sm">{t("app.workspaceRecovery.title")}</strong>
+        <strong className="text-sm">{t("app.messages.workspaceRecovery.title")}</strong>
         <p className="text-sm text-muted-foreground">
-          {t("app.workspaceRecovery.description", { count: candidate.instances.length })}
+          {t("app.messages.workspaceRecovery.description", { count: candidate.instances.length })}
         </p>
       </div>
       <div className="flex justify-end gap-2">
@@ -56,7 +61,7 @@ function WorkspaceRecoveryNotice() {
           type="button"
           variant="ghost"
         >
-          {t("app.workspaceRecovery.dismiss")}
+          {t("app.actions.dismiss")}
         </Button>
         <Button
           disabled={restoring}
@@ -67,7 +72,7 @@ function WorkspaceRecoveryNotice() {
           }}
           type="button"
         >
-          {t("app.workspaceRecovery.restore")}
+          {t("app.actions.restore")}
         </Button>
       </div>
     </aside>
