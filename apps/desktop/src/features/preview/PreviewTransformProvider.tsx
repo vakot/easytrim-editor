@@ -56,7 +56,9 @@ function PreviewTransformProvider({ children }: PropsWithChildren) {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{t("preview.dialogs.reset.title")}</AlertDialogTitle>
-            <AlertDialogDescription>{t("preview.dialogs.reset.description")}</AlertDialogDescription>
+            <AlertDialogDescription>
+              {t("preview.dialogs.reset.description")}
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t("common.actions.cancel")}</AlertDialogCancel>

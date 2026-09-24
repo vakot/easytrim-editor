@@ -8,7 +8,8 @@ const QueueDeleteSourceContext = createContext<QueueDeleteSourceContextValue | n
 
 function useQueueDeleteSource(): QueueDeleteSourceContextValue {
   const context = useContext(QueueDeleteSourceContext);
-  if (!context) throw new Error("useQueueDeleteSource must be used within QueueDeleteSourceProvider");
+  if (!context)
+    throw new Error("useQueueDeleteSource must be used within QueueDeleteSourceProvider");
   return context;
 }
 

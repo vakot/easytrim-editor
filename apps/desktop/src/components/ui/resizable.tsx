@@ -386,8 +386,7 @@ function usePanelCommand(panelId: PanelId | PanelId[]) {
   const collapsedCount = panelStates.filter(({ panel }) => panel.isCollapsed).length;
   const isCollapsed = isAvailable && collapsedCount === panelStates.length;
   const isReset =
-    isAvailable &&
-    panelStates.every(({ panel }) => panel.isCollapsed === panel.isDefaultCollapsed);
+    isAvailable && panelStates.every(({ panel }) => panel.isCollapsed === panel.isDefaultCollapsed);
 
   const toggle = () => {
     panelStates.forEach(({ panel }) => {
