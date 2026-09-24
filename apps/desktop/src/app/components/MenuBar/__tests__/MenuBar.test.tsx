@@ -751,7 +751,7 @@ describe("MenuBarTest", () => {
 
     expect(screen.getByRole("menuitemradio", { name: /English/ })).toHaveTextContent("EN");
     expect(screen.getByRole("menuitemradio", { name: /Slov/ })).toHaveTextContent("SK");
-    expect(screen.getByRole("menuitemradio", { name: /Russian/ })).toHaveTextContent("RU");
+    expect(screen.getByRole("menuitemradio", { name: /Русский/ })).toHaveTextContent("RU");
     expect(screen.getByRole("menuitemradio", { name: /English/ })).toHaveAttribute(
       "aria-checked",
       "true",
@@ -760,7 +760,7 @@ describe("MenuBarTest", () => {
       "aria-checked",
       "false",
     );
-    expect(screen.getByRole("menuitemradio", { name: /Russian/ })).toHaveAttribute(
+    expect(screen.getByRole("menuitemradio", { name: /Русский/ })).toHaveAttribute(
       "aria-checked",
       "false",
     );
