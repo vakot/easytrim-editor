@@ -8,15 +8,22 @@ import {
   FileOutputIcon,
   FolderInput,
   FolderOpenIcon,
+  LayoutTemplate,
+  List,
+  ListTree,
   LoaderCircle,
   Magnet,
   Merge,
   Monitor,
   Moon,
+  PanelBottom,
+  PanelLeft,
+  PanelsLeftBottom,
   Play,
   RefreshCw,
   Repeat,
   RotateCcw,
+  ScanText,
   ScissorsIcon,
   ScrollText,
   Sun,
@@ -79,10 +86,14 @@ const primaryColorIcons = {
   ),
 } satisfies Record<string, CommandIcon>;
 
+const LayoutDensityDefaultIcon: CommandIcon = ({ "aria-hidden": ariaHidden }) => (
+  <LayoutTemplate aria-hidden={ariaHidden} className="-scale-x-100 -rotate-90" />
+);
+
 const commandIcons: Record<ApplicationCommandId, CommandIcon> = {
-  "activity-feed-view-branch": FileOutputIcon,
-  "activity-feed-view-compact": FileOutputIcon,
-  "activity-feed-view-default": FileOutputIcon,
+  "activity-feed-view-branch": ListTree,
+  "activity-feed-view-compact": ScanText,
+  "activity-feed-view-default": List,
   "check-for-updates": RefreshCw,
   "close-file": XIcon,
   "crop-preview": ScissorsIcon,
@@ -93,8 +104,8 @@ const commandIcons: Record<ApplicationCommandId, CommandIcon> = {
   "language-en": FileOutputIcon,
   "language-ru": FileOutputIcon,
   "language-sk": FileOutputIcon,
-  "layout-density-compact": FileOutputIcon,
-  "layout-density-default": FileOutputIcon,
+  "layout-density-compact": PanelsLeftBottom,
+  "layout-density-default": LayoutDensityDefaultIcon,
   "open-changelog": ScrollText,
   "open-file": FileInputIcon,
   "open-folder": FolderOpenIcon,
@@ -127,8 +138,8 @@ const commandIcons: Record<ApplicationCommandId, CommandIcon> = {
   "theme-dark": Moon,
   "theme-light": Sun,
   "theme-system": Monitor,
-  "toggle-bottom-panel": FileOutputIcon,
-  "toggle-left-panel": FileOutputIcon,
+  "toggle-bottom-panel": PanelBottom,
+  "toggle-left-panel": PanelLeft,
 };
 
 const CheckingIcon: CommandIcon = ({ "aria-hidden": ariaHidden }) => (
