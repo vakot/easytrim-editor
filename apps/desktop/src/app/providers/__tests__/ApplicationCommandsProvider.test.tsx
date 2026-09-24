@@ -172,6 +172,12 @@ describe("ApplicationCommandsProvider", () => {
       "data-variant",
       "destructive",
     );
+    for (const commandId of ["open-file", "open-folder", "close-file", "delete-file"]) {
+      expect(screen.getByRole("button", { name: commandId })).toHaveAttribute(
+        "data-section",
+        "File",
+      );
+    }
     expect(screen.getByRole("button", { name: "theme-system" })).toHaveAttribute(
       "data-section",
       "Appearance / Theme",

@@ -60,7 +60,6 @@ export const sk = {
         queue: "Front",
         queueOnFinishedApplication: "Front / Po dokončení / Aplikácia",
         queueOnFinishedSource: "Front / Po dokončení / Zdroj",
-        source: "Úpravy / Zdroj",
       },
       explorer: "Prieskumník",
       activityFeed: "Prehľad aktivít",

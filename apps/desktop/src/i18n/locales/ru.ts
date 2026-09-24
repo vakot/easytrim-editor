@@ -58,7 +58,6 @@ export const ru = {
         queue: "Очередь",
         queueOnFinishedApplication: "Очередь / После завершения / Приложение",
         queueOnFinishedSource: "Очередь / После завершения / Источник",
-        source: "Редактирование / Источник",
       },
       explorer: "Проводник",
       activityFeed: "Лента активности",

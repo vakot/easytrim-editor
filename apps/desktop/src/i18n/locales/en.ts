@@ -58,7 +58,6 @@ export const en = {
         queue: "Queue",
         queueOnFinishedApplication: "Queue / On finished / Application",
         queueOnFinishedSource: "Queue / On finished / Source",
-        source: "Editing / Source",
       },
       explorer: "Explorer",
       activityFeed: "Activity Feed",
