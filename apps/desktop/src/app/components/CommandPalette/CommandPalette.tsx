@@ -93,7 +93,8 @@ function CommandPalette() {
   function executeCommand(command: ApplicationCommand<ApplicationCommandId>) {
     if (!command.enabled || command.pending) return;
     void executeApplicationCommand(command.id, "palette");
-    if (command.closePaletteOnSelect ?? command.checked === undefined) {
+    const keepOpen = command.keepOpen ?? command.checked !== undefined;
+    if (!keepOpen) {
       handleOpenChange(false);
     }
   }

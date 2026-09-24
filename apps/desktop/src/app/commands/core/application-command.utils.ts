@@ -88,7 +88,7 @@ function materializeApplicationCommands<Id extends string>(
   assertUniqueCommandIds(definitions.map(({ definition }) => definition));
   return definitions.map(({ definition, group }) => ({
     checked: definition.checked,
-    closePaletteOnSelect: definition.closePaletteOnSelect,
+    keepOpen: definition.keepOpen,
     enabled: definition.enabled,
     group,
     icon: definition.icon,

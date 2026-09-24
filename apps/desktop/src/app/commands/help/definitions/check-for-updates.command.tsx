@@ -21,7 +21,7 @@ function useCheckForUpdatesCommand() {
   }, [availableVersion, isInstalling, status]);
 
   return {
-    closePaletteOnSelect: false,
+    keepOpen: true,
     enabled: status !== "checking" && !isInstalling,
     icon,
     async run() {

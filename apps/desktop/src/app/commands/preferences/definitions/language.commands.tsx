@@ -21,7 +21,7 @@ function useLanguageCommands() {
 
   return languageOptions.map(({ code, label }) => ({
     checked: i18n.resolvedLanguage === code,
-    closePaletteOnSelect: false,
+    keepOpen: true,
     enabled: true,
     icon: <FileOutputIcon aria-hidden="true" />,
     async run() {

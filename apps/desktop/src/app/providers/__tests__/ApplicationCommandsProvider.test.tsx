@@ -127,9 +127,9 @@ function RuntimeProbe() {
       {commands.map((command) => (
         <button
           data-checked={command.checked}
-          data-close-palette={command.closePaletteOnSelect}
           data-group={command.group.label}
           data-has-icon={Boolean(command.icon)}
+          data-keep-open={command.keepOpen}
           data-label={command.label}
           data-pending={command.pending}
           data-variant={command.variant}
@@ -266,7 +266,7 @@ describe("ApplicationCommandsProvider", () => {
     const view = renderRuntime();
     const update = screen.getByRole("button", { name: "check-for-updates" });
     expect(update).toHaveAttribute("data-variant", "default");
-    expect(update).toHaveAttribute("data-close-palette", "false");
+    expect(update).toHaveAttribute("data-keep-open", "true");
 
     mocks.updateStatus = "up-to-date";
     view.rerender(

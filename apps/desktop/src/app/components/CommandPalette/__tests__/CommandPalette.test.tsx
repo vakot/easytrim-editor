@@ -23,7 +23,7 @@ function createCommand(
   label: string,
   variant: ApplicationCommand["variant"],
   icon: ApplicationCommand["icon"],
-  options: Pick<ApplicationCommand, "checked" | "closePaletteOnSelect"> = {},
+  options: Pick<ApplicationCommand, "checked" | "keepOpen"> = {},
 ): ApplicationCommand {
   return {
     enabled: true,
@@ -43,7 +43,7 @@ describe("CommandPalette semantic icons", () => {
     mocks.commands = [
       createCommand("reset-preferences", "Reset to default", "destructive", <RotateCcw />),
       createCommand("check-for-updates", "Up to date", "success", <CheckCircle2 />, {
-        closePaletteOnSelect: false,
+        keepOpen: true,
       }),
     ];
     mocks.executeCommand.mockClear();
@@ -73,7 +73,7 @@ describe("CommandPalette semantic icons", () => {
     mocks.commands = [
       ...mocks.commands.filter((command) => command.id !== "check-for-updates"),
       createCommand("check-for-updates", "Update", "default", <CheckCircle2 />, {
-        closePaletteOnSelect: false,
+        keepOpen: true,
       }),
     ];
     view.rerender(<CommandPalette />);
@@ -99,6 +99,21 @@ describe("CommandPalette semantic icons", () => {
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(mocks.executeCommand).toHaveBeenCalledWith("preference-loop-playback", "palette");
     expect(mocks.executeCommand).toHaveBeenCalledWith("theme-dark", "palette");
+  });
+
+  it("closes the palette when keepOpen explicitly overrides a checked command", async () => {
+    mocks.commands = [
+      createCommand("theme-dark", "Dark", "default", <CheckCircle2 />, {
+        checked: true,
+        keepOpen: false,
+      }),
+    ];
+    render(<CommandPalette />);
+    fireEvent.keyDown(window, { code: "KeyH", ctrlKey: true });
+
+    fireEvent.click(await screen.findByRole("option", { name: "Dark" }));
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
   it("closes the palette after action clicks even when the action returns a Promise", async () => {

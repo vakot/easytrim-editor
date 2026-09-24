@@ -20,12 +20,12 @@ interface ApplicationCommandGroupMetadata {
 
 interface ApplicationCommand<Id extends string = string> {
   checked?: boolean;
-  /** Overrides the default palette dismissal behavior based on whether this command is checked. */
-  closePaletteOnSelect?: boolean;
   enabled: boolean;
   group: ApplicationCommandGroupMetadata;
   icon: ReactNode;
   id: Id;
+  /** Checked configuration commands stay open by default; this overrides that behavior. */
+  keepOpen?: boolean;
   label: string;
   pending: boolean;
   searchTerms: readonly string[];
