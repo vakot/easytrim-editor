@@ -103,7 +103,7 @@ function SourceListEmptyAction({
 }: {
   description: string;
   icon: ReactNode;
-  keys: readonly string[];
+  keys?: readonly string[];
   label: string;
   onClick: () => void;
 }) {
@@ -115,11 +115,13 @@ function SourceListEmptyAction({
           {icon}
           {label}
         </span>
-        <KbdGroup aria-label={keys.join(" + ")}>
-          {keys.map((key) => (
-            <Kbd key={key}>{key}</Kbd>
-          ))}
-        </KbdGroup>
+        {keys ? (
+          <KbdGroup aria-label={keys.join(" + ")}>
+            {keys.map((key) => (
+              <Kbd key={key}>{key}</Kbd>
+            ))}
+          </KbdGroup>
+        ) : null}
       </Button>
     </div>
   );

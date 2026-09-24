@@ -3,8 +3,10 @@ import type { ReactElement, ReactNode } from "react";
 import { Provider } from "react-redux";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
+import { ResizablePanelContextProvider } from "@/components/ui/resizable";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
+import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";
 import { sourceSelected } from "@/app/store/actions/source-actions";
 import {
   previewFailed,
@@ -14,6 +16,10 @@ import {
 } from "@/app/store/slices/preview-slice";
 import { selectSourceSelection } from "@/app/store/slices/source-slice";
 import { type AppStore, createAppStore } from "@/app/store/store";
+import { ChangelogProvider } from "@/features/changelog";
+import { QueueDeleteSourceProvider } from "@/features/export";
+import { PreviewTransformProvider } from "@/features/preview";
+import { SourceDeleteProvider } from "@/features/source";
 
 import { VideoPreviewEmpty } from "../components/VideoPreviewEmpty";
 import { VideoPreview } from "../VideoPreview";
@@ -44,6 +50,15 @@ const playback = vi.hoisted(() => {
 vi.mock("@/app/hooks/usePlayback", () => ({
   usePlayback: () => playback,
 }));
+vi.mock("@/app/hooks/useAppUpdates", () => ({
+  useAppUpdates: () => ({
+    availableVersion: null,
+    checkForUpdates: vi.fn(),
+    installUpdate: vi.fn(),
+    isInstalling: false,
+    status: "idle",
+  }),
+}));
 
 function readyPreview(url: string): Extract<PreviewState, { status: "ready" }> {
   return {
@@ -55,7 +70,19 @@ function readyPreview(url: string): Extract<PreviewState, { status: "ready" }> {
 function TooltipTestProvider({ children, store }: { children: ReactNode; store: AppStore }) {
   return (
     <Provider store={store}>
-      <TooltipProvider delayDuration={0}>{children}</TooltipProvider>
+      <TooltipProvider delayDuration={0}>
+        <SourceDeleteProvider>
+          <QueueDeleteSourceProvider>
+            <PreviewTransformProvider>
+              <ChangelogProvider>
+                <ResizablePanelContextProvider>
+                  <ApplicationCommandsProvider>{children}</ApplicationCommandsProvider>
+                </ResizablePanelContextProvider>
+              </ChangelogProvider>
+            </PreviewTransformProvider>
+          </QueueDeleteSourceProvider>
+        </SourceDeleteProvider>
+      </TooltipProvider>
     </Provider>
   );
 }

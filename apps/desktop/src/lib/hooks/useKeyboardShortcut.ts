@@ -5,7 +5,15 @@ import { isEditableTarget } from "@/lib/hotkeys.utils";
 type KeyboardPredicate = (event: KeyboardEvent) => boolean;
 type KeyboardHandler = (event: KeyboardEvent) => void | Promise<void>;
 
-function useKeyboardShortcut(predicate: KeyboardPredicate, handler: KeyboardHandler) {
+interface KeyboardShortcutOptions {
+  allowEditableTarget?: boolean;
+}
+
+function useKeyboardShortcut(
+  predicate: KeyboardPredicate,
+  handler: KeyboardHandler,
+  { allowEditableTarget = false }: KeyboardShortcutOptions = {},
+) {
   const predicateRef = useRef(predicate);
   const handlerRef = useRef(handler);
 
@@ -19,8 +27,7 @@ function useKeyboardShortcut(predicate: KeyboardPredicate, handler: KeyboardHand
       if (
         !predicateRef.current(event) ||
         event.altKey ||
-        event.metaKey ||
-        isEditableTarget(event.target)
+        (!allowEditableTarget && isEditableTarget(event.target))
       ) {
         return;
       }
@@ -32,7 +39,7 @@ function useKeyboardShortcut(predicate: KeyboardPredicate, handler: KeyboardHand
 
     window.addEventListener("keydown", handleKeyDown, true);
     return () => window.removeEventListener("keydown", handleKeyDown, true);
-  }, []);
+  }, [allowEditableTarget]);
 }
 
 export { useKeyboardShortcut };

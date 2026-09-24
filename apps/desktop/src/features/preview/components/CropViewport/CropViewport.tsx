@@ -1,11 +1,14 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { useAppSelector } from "@/app/store/redux-hooks";
+import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
+  cropReset,
   selectFlipHorizontal,
   selectFlipVertical,
   selectRotationDegrees,
 } from "@/app/store/slices/crop-slice";
+import { commitActiveEditingInstanceDraft } from "@/app/store/thunks/source-media-thunks";
+import { usePreviewTransform } from "@/features/preview";
 
 import { CropSelection } from "./components/CropSelection";
 import { CropSnapMarkers } from "./components/CropSnapMarkers";
@@ -16,6 +19,8 @@ import { useCropViewport } from "./hooks/useCropViewport";
 
 function CropViewport() {
   const viewport = useCropViewport();
+  const dispatch = useAppDispatch();
+  const { registerHandlers } = usePreviewTransform();
   const flipHorizontal = useAppSelector(selectFlipHorizontal);
   const flipVertical = useAppSelector(selectFlipVertical);
   const rotationDegrees = useAppSelector(selectRotationDegrees);
@@ -32,17 +37,6 @@ function CropViewport() {
     setPreviewRotationDegrees(nextPreviewRotation);
   }, [rotationDegrees]);
 
-  if (!viewport.isPreviewReady) return null;
-
-  const previewTransform = [
-    viewport.sourceRenderScale < 1 ? `scale(${1 / viewport.sourceRenderScale})` : null,
-    `rotate(${previewRotationDegrees}deg)`,
-    flipHorizontal ? "scaleX(-1)" : null,
-    flipVertical ? "scaleY(-1)" : null,
-  ]
-    .filter(Boolean)
-    .join(" ");
-
   const {
     containerRef,
     cropSelection,
@@ -55,11 +49,37 @@ function CropViewport() {
     viewportTransition,
   } = viewport;
 
+  const openCrop = useCallback(
+    () => cropSelection.open(viewportFrame),
+    [cropSelection, viewportFrame],
+  );
+
+  const resetTransform = useCallback(() => {
+    cropSelection.clearDrag();
+    dispatch(cropReset());
+    dispatch(commitActiveEditingInstanceDraft());
+  }, [cropSelection, dispatch]);
+
+  const transformHandlers = useMemo(
+    () => ({ openCrop, resetTransform }),
+    [openCrop, resetTransform],
+  );
+
+  useEffect(() => registerHandlers(transformHandlers), [registerHandlers, transformHandlers]);
+
+  if (!viewport.isPreviewReady) return null;
+
+  const previewTransform = [
+    viewport.sourceRenderScale < 1 ? `scale(${1 / viewport.sourceRenderScale})` : null,
+    `rotate(${previewRotationDegrees}deg)`,
+    flipHorizontal ? "scaleX(-1)" : null,
+    flipVertical ? "scaleY(-1)" : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <CropViewportContextMenu
-      onCropOpen={() => cropSelection.open(viewportFrame)}
-      onReset={cropSelection.clearDrag}
-    >
+    <CropViewportContextMenu>
       <CropViewportTooltip
         containerRef={containerRef}
         cropSelection={cropSelection}

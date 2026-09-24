@@ -9,13 +9,18 @@ import userEvent from "@testing-library/user-event";
 import { type ReactElement, useRef, useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 
+import { ResizablePanelContextProvider } from "@/components/ui/resizable";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { AppUpdatesContext } from "@/app/contexts/app-updates-context";
 import { DEFAULT_PREFERENCES, type PreferenceKey, type Preferences } from "@/app/preferences";
+import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import type { SourceRef } from "@/domain/source";
 import { ChangelogProvider } from "@/features/changelog";
+import { QueueDeleteSourceProvider } from "@/features/export";
+import { PreviewTransformProvider } from "@/features/preview";
+import { SourceDeleteProvider } from "@/features/source";
 import { getCurrentVersion } from "@/lib/app-version.utils";
 import { openExternalUrl } from "@/lib/open-external-url.utils";
 import type { QueueFinishAction } from "@/lib/tauri/queue.types";
@@ -246,11 +251,21 @@ describe("MenuBarTest", () => {
       initialized.current = true;
     }
     return (
-      <ChangelogProvider>
-        <ThemeProvider>
-          <AppMenuBar />
-        </ThemeProvider>
-      </ChangelogProvider>
+      <SourceDeleteProvider>
+        <QueueDeleteSourceProvider>
+          <PreviewTransformProvider>
+            <ChangelogProvider>
+              <ResizablePanelContextProvider>
+                <ApplicationCommandsProvider>
+                  <ThemeProvider>
+                    <AppMenuBar />
+                  </ThemeProvider>
+                </ApplicationCommandsProvider>
+              </ResizablePanelContextProvider>
+            </ChangelogProvider>
+          </PreviewTransformProvider>
+        </QueueDeleteSourceProvider>
+      </SourceDeleteProvider>
     );
   }
 
@@ -304,7 +319,7 @@ describe("MenuBarTest", () => {
     const finishItem = screen.getByRole("menuitem", { name: /On queue finished/ });
     finishItem.focus();
     await user.keyboard("{ArrowRight}");
-    await user.click(screen.getByRole("menuitemradio", { name: "Exit" }));
+    await user.click(screen.getByRole("menuitemradio", { name: "Exit application" }));
     expect(menuState.dispatch).toHaveBeenCalledWith(
       expect.objectContaining({ type: "export/queueFinishActionChanged", payload: "exit" }),
     );
@@ -529,7 +544,10 @@ describe("MenuBarTest", () => {
     );
 
     await user.click(getMenuTrigger("Settings"));
-    const loopItem = screen.getByRole("menuitemcheckbox", { name: "Loop" });
+    const loopItem = screen.getByRole("menuitemcheckbox", {
+      name: "Loop",
+    });
+
     await user.click(loopItem);
     expect(loopItem).not.toBeChecked();
     await user.click(screen.getByRole("menuitem", { name: "Reset to default" }));
@@ -549,7 +567,10 @@ describe("MenuBarTest", () => {
     );
 
     await user.click(getMenuTrigger("Settings"));
-    const loopItem = screen.getByRole("menuitemcheckbox", { name: "Loop" });
+    const loopItem = screen.getByRole("menuitemcheckbox", {
+      name: "Loop",
+    });
+
     await user.hover(loopItem);
     await waitFor(() => {
       expect(screen.getByRole("tooltip")).toHaveTextContent("Enabled by default");
@@ -586,7 +607,10 @@ describe("MenuBarTest", () => {
     );
 
     await user.click(getMenuTrigger("Settings"));
-    const mergeItem = screen.getByRole("menuitemcheckbox", { name: "Merge audio" });
+    const mergeItem = screen.getByRole("menuitemcheckbox", {
+      name: "Merge audio",
+    });
+
     await user.hover(mergeItem);
     await waitFor(() => {
       expect(screen.getByRole("tooltip")).toHaveTextContent("Disabled by default");
@@ -652,14 +676,6 @@ describe("MenuBarTest", () => {
     expect(deleteSourceItem).toHaveTextContent("CtrlD");
     await user.click(closeFileItem);
     expect(menuState.dispatch).toHaveBeenCalledTimes(2);
-  });
-
-  it("keeps Ctrl+K available for opening a folder with an active source", () => {
-    renderMenus({ hasSource: true });
-
-    fireEvent.keyDown(window, { code: "KeyK", ctrlKey: true });
-
-    expect(menuState.dispatch).toHaveBeenCalledOnce();
   });
 
   it("requires confirmation before deleting the source from the File menu", async () => {

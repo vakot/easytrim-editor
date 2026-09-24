@@ -23,35 +23,19 @@ import {
   MenubarTrigger,
 } from "@/components/ui/menubar";
 
+import {
+  ApplicationCommandLabel,
+  ApplicationCommandMenuItem,
+} from "@/app/components/ApplicationCommandMenuItem";
 import type { UpdateStatus } from "@/app/contexts/app-updates-context";
 import { useAppUpdates } from "@/app/hooks/useAppUpdates";
 import { GithubIcon, KofiIcon } from "@/components/brand-icons";
-import { useChangelogDialog } from "@/features/changelog";
-import { getCurrentVersion } from "@/lib/app-version.utils";
-import { openExternalUrl } from "@/lib/open-external-url.utils";
-import { revealDiagnosticLogs } from "@/lib/tauri/diagnostics";
-import { requestWindowShutdown } from "@/lib/tauri/window";
-
-const PROJECT_PAGE_URL = "https://github.com/vakot/easytrim-editor";
-const SUPPORT_PROJECT_URL = "https://ko-fi.com/vakot";
 
 function MenuBarHelp() {
   const { t } = useTranslation();
-  const { openChangelog } = useChangelogDialog();
-  const currentVersion = getCurrentVersion();
-  const {
-    availableVersion,
-    checkForUpdates,
-    installUpdate,
-    isInstalling,
-    status: updateStatus,
-  } = useAppUpdates();
+  const { availableVersion, status: updateStatus } = useAppUpdates();
 
-  const { icon: updateIcon, label: updateLabel } = getUpdateDetails(
-    updateStatus,
-    availableVersion,
-    t,
-  );
+  const { icon: updateIcon } = getUpdateDetails(updateStatus, availableVersion, t);
 
   return (
     <MenubarMenu value="help">
@@ -62,67 +46,61 @@ function MenuBarHelp() {
       </MenubarTrigger>
       <MenubarContent>
         <MenubarGroup>
-          <MenubarItem inset onSelect={openChangelog}>
-            <MenubarIcon>
-              <ScrollText aria-hidden="true" />
-            </MenubarIcon>
-            {t("support.actions.changelog")}
-          </MenubarItem>
-          <MenubarItem
-            disabled={updateStatus === "checking" || isInstalling}
-            inset
-            keepOpen
-            onSelect={() => {
-              if (updateStatus === "available") {
-                void requestWindowShutdown(installUpdate);
-                return;
-              }
-
-              void checkForUpdates();
-            }}
-            variant={updateStatus === "up-to-date" ? "success" : "default"}
-          >
-            <MenubarIcon>{updateIcon}</MenubarIcon>
-            {updateLabel}
-          </MenubarItem>
-          <MenubarItem inset onSelect={() => void openExternalUrl(PROJECT_PAGE_URL)}>
-            <MenubarIcon>
-              <GithubIcon aria-hidden="true" />
-            </MenubarIcon>
-            {t("support.actions.projectPage")}
-          </MenubarItem>
+          <ApplicationCommandMenuItem asChild commandId="open-changelog">
+            <MenubarItem inset>
+              <MenubarIcon>
+                <ScrollText aria-hidden="true" />
+              </MenubarIcon>
+              <ApplicationCommandLabel />
+            </MenubarItem>
+          </ApplicationCommandMenuItem>
+          <ApplicationCommandMenuItem asChild commandId="check-for-updates">
+            <MenubarItem inset keepOpen>
+              <MenubarIcon>{updateIcon}</MenubarIcon>
+              <ApplicationCommandLabel />
+            </MenubarItem>
+          </ApplicationCommandMenuItem>
+          <ApplicationCommandMenuItem asChild commandId="open-project-page">
+            <MenubarItem inset>
+              <MenubarIcon>
+                <GithubIcon aria-hidden="true" />
+              </MenubarIcon>
+              <ApplicationCommandLabel />
+            </MenubarItem>
+          </ApplicationCommandMenuItem>
         </MenubarGroup>
         <MenubarSeparator />
         <MenubarGroup>
-          <MenubarItem inset onSelect={() => void revealDiagnosticLogs()}>
-            <MenubarIcon>
-              <FolderInput aria-hidden="true" />
-            </MenubarIcon>
-            {t("support.actions.showLogs")}
-          </MenubarItem>
+          <ApplicationCommandMenuItem asChild commandId="show-logs">
+            <MenubarItem inset>
+              <MenubarIcon>
+                <FolderInput aria-hidden="true" />
+              </MenubarIcon>
+              <ApplicationCommandLabel />
+            </MenubarItem>
+          </ApplicationCommandMenuItem>
         </MenubarGroup>
         <MenubarSeparator />
         <MenubarGroup>
-          <MenubarItem inset onSelect={() => void openExternalUrl(SUPPORT_PROJECT_URL)}>
-            <MenubarIcon>
-              <KofiIcon aria-hidden="true" />
-            </MenubarIcon>
-            {t("support.actions.projectSupport")}
-          </MenubarItem>
+          <ApplicationCommandMenuItem asChild commandId="support-project">
+            <MenubarItem inset>
+              <MenubarIcon>
+                <KofiIcon aria-hidden="true" />
+              </MenubarIcon>
+              <ApplicationCommandLabel />
+            </MenubarItem>
+          </ApplicationCommandMenuItem>
         </MenubarGroup>
         <MenubarSeparator />
         <MenubarGroup>
-          <MenubarItem
-            inset
-            onSelect={() =>
-              void openExternalUrl(`${PROJECT_PAGE_URL}/releases/tag/v${currentVersion}`)
-            }
-          >
-            <MenubarIcon>
-              <ExternalLink aria-hidden="true" />
-            </MenubarIcon>
-            {t("app.labels.version", { version: currentVersion })}
-          </MenubarItem>
+          <ApplicationCommandMenuItem asChild commandId="open-release-page">
+            <MenubarItem inset>
+              <MenubarIcon>
+                <ExternalLink aria-hidden="true" />
+              </MenubarIcon>
+              <ApplicationCommandLabel />
+            </MenubarItem>
+          </ApplicationCommandMenuItem>
         </MenubarGroup>
       </MenubarContent>
     </MenubarMenu>

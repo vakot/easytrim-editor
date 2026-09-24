@@ -9,9 +9,11 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { AppShutdownGuard } from "@/app/components/AppShutdownGuard";
+import { CommandPalette } from "@/app/components/CommandPalette";
 import { DiagnosticsRecoveryDialog } from "@/app/components/DiagnosticsRecoveryDialog";
 import { NativeDialogOverlay } from "@/app/components/NativeDialogOverlay";
 import { AppLayout } from "@/app/layout";
+import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";
 import { AppUpdatesProvider } from "@/app/providers/AppUpdatesProvider";
 import { EditorContractsProvider } from "@/app/providers/EditorContractsProvider";
 import { LayoutDensityProvider } from "@/app/providers/LayoutDensityProvider";
@@ -22,8 +24,9 @@ import { loadQueueFinishActions } from "@/app/store/thunks/export-thunks";
 import { ThemeProvider } from "@/app/theme/ThemeProvider";
 import { ActivityToasts } from "@/features/activity";
 import { ChangelogProvider } from "@/features/changelog";
-import { ExportDialog } from "@/features/export";
-import { SourceDropOverlay } from "@/features/source";
+import { ExportDialog, QueueDeleteSourceProvider } from "@/features/export";
+import { PreviewTransformProvider } from "@/features/preview";
+import { SourceDeleteProvider, SourceDropOverlay } from "@/features/source";
 
 function EasyTrimEditorApp() {
   const { t } = useTranslation();
@@ -38,33 +41,44 @@ function EasyTrimEditorApp() {
   return (
     <TooltipProvider>
       <ChangelogProvider>
-        <AppShutdownGuard />
+        <SourceDeleteProvider>
+          <QueueDeleteSourceProvider>
+            <PreviewTransformProvider>
+              <AppShutdownGuard />
 
-        <AppUpdatesProvider>
-          <EditorContractsProvider>
-            <ResizablePanelContextProvider>
-              <AppLayout />
+              <AppUpdatesProvider>
+                <EditorContractsProvider>
+                  <ResizablePanelContextProvider>
+                    <ApplicationCommandsProvider>
+                      <AppLayout />
+                      <CommandPalette />
 
-              <Toaster />
-              <ActivityToasts />
-              <ExportDialog />
-              <DiagnosticsRecoveryDialog />
-              <SourceDropOverlay />
-              <NativeDialogOverlay />
+                      <Toaster />
+                      <ActivityToasts />
+                      <ExportDialog />
+                      <DiagnosticsRecoveryDialog />
+                      <SourceDropOverlay />
+                      <NativeDialogOverlay />
 
-              {dropListenerError ? (
-                <Alert
-                  className="fixed top-20 left-1/2 z-50 w-auto -translate-x-1/2"
-                  variant="destructive"
-                >
-                  <AlertDescription>
-                    {t("app.messages.dragUnavailable", { message: dropListenerError.message })}
-                  </AlertDescription>
-                </Alert>
-              ) : null}
-            </ResizablePanelContextProvider>
-          </EditorContractsProvider>
-        </AppUpdatesProvider>
+                      {dropListenerError ? (
+                        <Alert
+                          className="fixed top-20 left-1/2 z-50 w-auto -translate-x-1/2"
+                          variant="destructive"
+                        >
+                          <AlertDescription>
+                            {t("app.messages.dragUnavailable", {
+                              message: dropListenerError.message,
+                            })}
+                          </AlertDescription>
+                        </Alert>
+                      ) : null}
+                    </ApplicationCommandsProvider>
+                  </ResizablePanelContextProvider>
+                </EditorContractsProvider>
+              </AppUpdatesProvider>
+            </PreviewTransformProvider>
+          </QueueDeleteSourceProvider>
+        </SourceDeleteProvider>
       </ChangelogProvider>
     </TooltipProvider>
   );

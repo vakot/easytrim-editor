@@ -29,34 +29,24 @@ import {
 } from "@/components/ui/menubar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-import type { PreferenceKey } from "@/app/preferences";
-import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
+import type { ApplicationCommandId } from "@/app/commands/application-commands";
 import {
-  preferenceChanged,
-  preferencesReset,
-  selectPreferences,
-} from "@/app/store/slices/preferences-slice";
-import { isSupportedLanguage, type SupportedLanguage } from "@/i18n/resources";
-
-const DEFAULT_PREFERENCE_KEYS = new Set<PreferenceKey>([
-  "snapPlaybackEnabledDefault",
-  "loopPlaybackEnabledDefault",
-  "segmentPlaybackEnabledDefault",
-  "mergeAudioEnabledDefault",
-]);
+  ApplicationCommandLabel,
+  ApplicationCommandMenuItem,
+} from "@/app/components/ApplicationCommandMenuItem";
+import { useApplicationCommand } from "@/app/hooks/useApplicationCommands";
+import { isSupportedLanguage } from "@/i18n/resources";
 
 interface PreferenceMenuItemProps {
   children: ReactNode;
+  commandId: ApplicationCommandId;
   icon: ReactNode;
-  preferenceKey: PreferenceKey;
 }
 
-function PreferenceMenuItem({ children, icon, preferenceKey }: PreferenceMenuItemProps) {
+function PreferenceMenuItem({ children, commandId, icon }: PreferenceMenuItemProps) {
   const { t } = useTranslation();
-  const dispatch = useAppDispatch();
-  const preferences = useAppSelector(selectPreferences);
-  const isEnabled = preferences[preferenceKey];
-  const isDefaultPreference = DEFAULT_PREFERENCE_KEYS.has(preferenceKey);
+  const { checked: isEnabled } = useApplicationCommand(commandId);
+  const isDefaultPreference = commandId !== "preference-auto-start-queue";
   const tooltip = isDefaultPreference
     ? isEnabled
       ? t("settings.tooltips.enabledByDefault")
@@ -67,18 +57,14 @@ function PreferenceMenuItem({ children, icon, preferenceKey }: PreferenceMenuIte
 
   return (
     <Tooltip preserveOnTrigger>
-      <TooltipTrigger asChild>
-        <MenubarCheckboxItem
-          checked={isEnabled}
-          keepOpen
-          onSelect={() => {
-            dispatch(preferenceChanged({ key: preferenceKey, enabled: !isEnabled }));
-          }}
-        >
-          <MenubarIcon side="right">{icon}</MenubarIcon>
-          {children}
-        </MenubarCheckboxItem>
-      </TooltipTrigger>
+      <ApplicationCommandMenuItem asChild commandId={commandId}>
+        <TooltipTrigger asChild>
+          <MenubarCheckboxItem inset keepOpen>
+            <MenubarIcon side="right">{icon}</MenubarIcon>
+            <ApplicationCommandLabel>{children}</ApplicationCommandLabel>
+          </MenubarCheckboxItem>
+        </TooltipTrigger>
+      </ApplicationCommandMenuItem>
       <TooltipContent side="right">{tooltip}</TooltipContent>
     </Tooltip>
   );
@@ -86,18 +72,7 @@ function PreferenceMenuItem({ children, icon, preferenceKey }: PreferenceMenuIte
 
 function MenuBarSettings() {
   const { i18n, t } = useTranslation();
-  const dispatch = useAppDispatch();
   const currentLanguage = isSupportedLanguage(i18n.resolvedLanguage) ? i18n.resolvedLanguage : "en";
-  const languageLabels: Record<SupportedLanguage, string> = {
-    en: t("settings.options.languages.english"),
-    ru: t("settings.options.languages.russian"),
-    sk: t("settings.options.languages.slovak"),
-  };
-
-  const resetPreferences = () => {
-    dispatch(preferencesReset());
-  };
-
   return (
     <MenubarMenu value="settings">
       <MenubarTrigger asChild>
@@ -108,8 +83,8 @@ function MenuBarSettings() {
       <MenubarContent>
         <MenubarGroup>
           <PreferenceMenuItem
+            commandId="preference-auto-start-queue"
             icon={<Play aria-hidden="true" className="size-3" />}
-            preferenceKey="autoStartQueueEnabled"
           >
             {t("settings.labels.autoStartQueue")}
           </PreferenceMenuItem>
@@ -117,20 +92,20 @@ function MenuBarSettings() {
         <MenubarSeparator />
         <MenubarGroup>
           <PreferenceMenuItem
+            commandId="preference-snap-playback"
             icon={<Magnet aria-hidden="true" className="size-3" />}
-            preferenceKey="snapPlaybackEnabledDefault"
           >
             {t("settings.labels.snap")}
           </PreferenceMenuItem>
           <PreferenceMenuItem
+            commandId="preference-loop-playback"
             icon={<Repeat aria-hidden="true" className="size-3" />}
-            preferenceKey="loopPlaybackEnabledDefault"
           >
             {t("settings.labels.loop")}
           </PreferenceMenuItem>
           <PreferenceMenuItem
+            commandId="preference-segment-playback"
             icon={<BetweenVerticalStart aria-hidden="true" className="size-3" />}
-            preferenceKey="segmentPlaybackEnabledDefault"
           >
             {t("settings.labels.followSegment")}
           </PreferenceMenuItem>
@@ -138,20 +113,22 @@ function MenuBarSettings() {
         <MenubarSeparator />
         <MenubarGroup>
           <PreferenceMenuItem
+            commandId="preference-merge-audio"
             icon={<Merge aria-hidden="true" className="size-3" />}
-            preferenceKey="mergeAudioEnabledDefault"
           >
             {t("settings.labels.mergeAudio")}
           </PreferenceMenuItem>
         </MenubarGroup>
         <MenubarSeparator />
         <MenubarGroup>
-          <MenubarItem inset keepOpen onSelect={() => resetPreferences()} variant="destructive">
-            <MenubarIcon>
-              <RotateCcw aria-hidden="true" />
-            </MenubarIcon>
-            {t("settings.actions.reset")}
-          </MenubarItem>
+          <ApplicationCommandMenuItem asChild commandId="reset-preferences">
+            <MenubarItem inset keepOpen variant="destructive">
+              <MenubarIcon>
+                <RotateCcw aria-hidden="true" />
+              </MenubarIcon>
+              <ApplicationCommandLabel />
+            </MenubarItem>
+          </ApplicationCommandMenuItem>
         </MenubarGroup>
         <MenubarSeparator />
         <MenubarGroup>
@@ -164,17 +141,18 @@ function MenuBarSettings() {
               <MenubarShortcut>{currentLanguage.toUpperCase()}</MenubarShortcut>
             </MenubarSubTrigger>
             <MenubarSubContent>
-              <MenubarRadioGroup
-                onValueChange={(language) =>
-                  void i18n.changeLanguage(language as SupportedLanguage)
-                }
-                value={currentLanguage}
-              >
+              <MenubarRadioGroup value={currentLanguage}>
                 {(["en", "sk", "ru"] as const).map((language) => (
-                  <MenubarRadioItem key={language} value={language}>
-                    {languageLabels[language]}
-                    <MenubarShortcut>{language.toUpperCase()}</MenubarShortcut>
-                  </MenubarRadioItem>
+                  <ApplicationCommandMenuItem
+                    asChild
+                    commandId={`language-${language}`}
+                    key={language}
+                  >
+                    <MenubarRadioItem value={language}>
+                      <ApplicationCommandLabel />
+                      <MenubarShortcut>{language.toUpperCase()}</MenubarShortcut>
+                    </MenubarRadioItem>
+                  </ApplicationCommandMenuItem>
                 ))}
               </MenubarRadioGroup>
             </MenubarSubContent>

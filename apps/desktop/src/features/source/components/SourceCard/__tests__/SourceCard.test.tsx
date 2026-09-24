@@ -12,6 +12,7 @@ import {
 } from "@/app/store/slices/editing-instances-slice";
 import { createAppStore } from "@/app/store/store";
 import { createExportAttempt, type EditingInstance } from "@/domain/editing-instance";
+import { SourceDeleteProvider } from "@/features/source";
 
 import {
   SourceCard,
@@ -44,17 +45,19 @@ function renderSourceCard(source = createSource()) {
 
   return render(
     <Provider store={store}>
-      <TooltipProvider>
-        <SourceCard source={source}>
-          <SourceCardTitle />
-          <SourceCardDescription />
-          <SourceCardMetadata />
-          <SourceCardStatusBadge />
-          <SourceCardActions>
-            <button aria-label="Source actions: holiday.mp4" type="button" />
-          </SourceCardActions>
-        </SourceCard>
-      </TooltipProvider>
+      <SourceDeleteProvider>
+        <TooltipProvider>
+          <SourceCard source={source}>
+            <SourceCardTitle />
+            <SourceCardDescription />
+            <SourceCardMetadata />
+            <SourceCardStatusBadge />
+            <SourceCardActions>
+              <button aria-label="Source actions: holiday.mp4" type="button" />
+            </SourceCardActions>
+          </SourceCard>
+        </TooltipProvider>
+      </SourceDeleteProvider>
     </Provider>,
   );
 }

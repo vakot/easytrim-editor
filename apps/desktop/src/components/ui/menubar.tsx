@@ -57,7 +57,7 @@ function MenubarContent({
   align = "start",
   alignOffset = -4,
   className,
-  sideOffset = 8,
+  sideOffset = 4,
   ...props
 }: React.ComponentProps<typeof MenubarPrimitive.Content>) {
   return (
@@ -125,6 +125,7 @@ function MenubarCheckboxItem({
       className={cn(menuItemVariants({ kind: "checkbox", variant, className }))}
       data-inset={inset}
       data-slot="menubar-checkbox-item"
+      data-variant={variant}
       onSelect={gateKeepOpenHandler(keepOpen, onSelect)}
       {...props}
     >
@@ -156,6 +157,7 @@ function MenubarRadioItem({
       className={cn(menuItemVariants({ kind: "radio", variant, className }))}
       data-inset={inset}
       data-slot="menubar-radio-item"
+      data-variant={variant}
       onSelect={gateKeepOpenHandler(keepOpen, onSelect)}
       {...props}
     >

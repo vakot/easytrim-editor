@@ -27,24 +27,33 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ResizablePanelControl } from "@/components/ui/resizable";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-import { isLayoutDensity } from "@/app/layout/lib/layout-density";
-import type { ActivityFeedView } from "@/app/preferences";
-import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
-  activityFeedViewChanged,
-  layoutDensityChanged,
-  selectActivityFeedView,
-  selectLayoutDensity,
-} from "@/app/store/slices/preferences-slice";
+  ApplicationCommandLabel,
+  ApplicationCommandMenuItem,
+} from "@/app/components/ApplicationCommandMenuItem";
+import { useApplicationCommand, useApplicationCommands } from "@/app/hooks/useApplicationCommands";
 
 function AppLayoutControls() {
   const { t } = useTranslation();
-  const dispatch = useAppDispatch();
-  const layoutDensity = useAppSelector(selectLayoutDensity);
-  const activityFeedView = useAppSelector(selectActivityFeedView);
+  const { executeCommand } = useApplicationCommands();
+  const leftPanel = useApplicationCommand("toggle-left-panel");
+  const bottomPanel = useApplicationCommand("toggle-bottom-panel");
+  const activityFeedDefault = useApplicationCommand("activity-feed-view-default");
+  const activityFeedCompact = useApplicationCommand("activity-feed-view-compact");
+  const activityFeedBranch = useApplicationCommand("activity-feed-view-branch");
+  const layoutDensity = useApplicationCommand("layout-density-default").checked
+    ? "default"
+    : "compact";
+
+  const activityFeedView = activityFeedDefault.checked
+    ? "default"
+    : activityFeedCompact.checked
+      ? "compact"
+      : activityFeedBranch.checked
+        ? "branch"
+        : "default";
 
   return (
     <div
@@ -72,32 +81,23 @@ function AppLayoutControls() {
             <DropdownMenuGroup>
               <DropdownMenuLabel>{t("app.labels.panelsVisibility")}</DropdownMenuLabel>
 
-              <ResizablePanelControl panelId="workspace-sidebar">
-                {({ isAvailable, isCollapsed }) => (
-                  <DropdownMenuCheckboxItem checked={isAvailable && !isCollapsed} inset keepOpen>
-                    {t("app.actions.showPanel", { panel: t("app.labels.leftPanel") })}
-                    <DropdownMenuIcon side="right">
-                      <PanelLeft aria-hidden="true" />
-                    </DropdownMenuIcon>
-                  </DropdownMenuCheckboxItem>
-                )}
-              </ResizablePanelControl>
+              <ApplicationCommandMenuItem asChild commandId="toggle-left-panel">
+                <DropdownMenuCheckboxItem inset keepOpen>
+                  <ApplicationCommandLabel />
+                  <DropdownMenuIcon side="right">
+                    <PanelLeft aria-hidden="true" />
+                  </DropdownMenuIcon>
+                </DropdownMenuCheckboxItem>
+              </ApplicationCommandMenuItem>
 
-              <ResizablePanelControl panelId="editor-stage-timeline">
-                {({ isAvailable, isCollapsed, isDisabled }) => (
-                  <DropdownMenuCheckboxItem
-                    checked={isAvailable && !isCollapsed}
-                    disabled={!isAvailable || isDisabled}
-                    inset
-                    keepOpen
-                  >
-                    {t("app.actions.showPanel", { panel: t("app.labels.bottomPanel") })}
-                    <DropdownMenuIcon side="right">
-                      <PanelBottom aria-hidden="true" />
-                    </DropdownMenuIcon>
-                  </DropdownMenuCheckboxItem>
-                )}
-              </ResizablePanelControl>
+              <ApplicationCommandMenuItem asChild commandId="toggle-bottom-panel">
+                <DropdownMenuCheckboxItem inset keepOpen>
+                  <ApplicationCommandLabel />
+                  <DropdownMenuIcon side="right">
+                    <PanelBottom aria-hidden="true" />
+                  </DropdownMenuIcon>
+                </DropdownMenuCheckboxItem>
+              </ApplicationCommandMenuItem>
             </DropdownMenuGroup>
 
             <DropdownMenuSeparator />
@@ -105,25 +105,24 @@ function AppLayoutControls() {
             <DropdownMenuGroup>
               <DropdownMenuLabel>{t("app.labels.layoutDensity")}</DropdownMenuLabel>
 
-              <DropdownMenuRadioGroup
-                onValueChange={(value) => {
-                  if (isLayoutDensity(value)) dispatch(layoutDensityChanged(value));
-                }}
-                value={layoutDensity}
-              >
-                <DropdownMenuRadioItem inset keepOpen value="default">
-                  {t("app.options.layoutDensities.default")}
-                  <DropdownMenuIcon side="right">
-                    <LayoutTemplate aria-hidden="true" className="-scale-x-100 -rotate-90" />
-                  </DropdownMenuIcon>
-                </DropdownMenuRadioItem>
+              <DropdownMenuRadioGroup value={layoutDensity}>
+                <ApplicationCommandMenuItem asChild commandId="layout-density-default">
+                  <DropdownMenuRadioItem inset keepOpen value="default">
+                    <ApplicationCommandLabel />
+                    <DropdownMenuIcon side="right">
+                      <LayoutTemplate aria-hidden="true" className="-scale-x-100 -rotate-90" />
+                    </DropdownMenuIcon>
+                  </DropdownMenuRadioItem>
+                </ApplicationCommandMenuItem>
 
-                <DropdownMenuRadioItem inset keepOpen value="compact">
-                  {t("app.options.layoutDensities.compact")}
-                  <DropdownMenuIcon side="right">
-                    <PanelsLeftBottom aria-hidden="true" />
-                  </DropdownMenuIcon>
-                </DropdownMenuRadioItem>
+                <ApplicationCommandMenuItem asChild commandId="layout-density-compact">
+                  <DropdownMenuRadioItem inset keepOpen value="compact">
+                    <ApplicationCommandLabel />
+                    <DropdownMenuIcon side="right">
+                      <PanelsLeftBottom aria-hidden="true" />
+                    </DropdownMenuIcon>
+                  </DropdownMenuRadioItem>
+                </ApplicationCommandMenuItem>
               </DropdownMenuRadioGroup>
             </DropdownMenuGroup>
 
@@ -132,51 +131,47 @@ function AppLayoutControls() {
             <DropdownMenuGroup>
               <DropdownMenuLabel>{t("settings.labels.activityFeedView")}</DropdownMenuLabel>
 
-              <DropdownMenuRadioGroup
-                onValueChange={(value) =>
-                  void dispatch(activityFeedViewChanged(value as ActivityFeedView))
-                }
-                value={activityFeedView}
-              >
-                <DropdownMenuRadioItem inset keepOpen value="default">
-                  {t("settings.options.activityFeedViews.default")}
-                  <DropdownMenuIcon side="right">
-                    <List aria-hidden="true" />
-                  </DropdownMenuIcon>
-                </DropdownMenuRadioItem>
+              <DropdownMenuRadioGroup value={activityFeedView ?? "default"}>
+                <ApplicationCommandMenuItem asChild commandId="activity-feed-view-default">
+                  <DropdownMenuRadioItem inset keepOpen value="default">
+                    <ApplicationCommandLabel />
+                    <DropdownMenuIcon side="right">
+                      <List aria-hidden="true" />
+                    </DropdownMenuIcon>
+                  </DropdownMenuRadioItem>
+                </ApplicationCommandMenuItem>
 
-                <DropdownMenuRadioItem inset keepOpen value="compact">
-                  {t("settings.options.activityFeedViews.compact")}
-                  <DropdownMenuIcon side="right">
-                    <ScanText aria-hidden="true" />
-                  </DropdownMenuIcon>
-                </DropdownMenuRadioItem>
+                <ApplicationCommandMenuItem asChild commandId="activity-feed-view-compact">
+                  <DropdownMenuRadioItem inset keepOpen value="compact">
+                    <ApplicationCommandLabel />
+                    <DropdownMenuIcon side="right">
+                      <ScanText aria-hidden="true" />
+                    </DropdownMenuIcon>
+                  </DropdownMenuRadioItem>
+                </ApplicationCommandMenuItem>
 
-                <DropdownMenuRadioItem inset keepOpen value="branch">
-                  {t("settings.options.activityFeedViews.branch")}
-                  <DropdownMenuIcon side="right">
-                    <ListTree aria-hidden="true" />
-                  </DropdownMenuIcon>
-                </DropdownMenuRadioItem>
+                <ApplicationCommandMenuItem asChild commandId="activity-feed-view-branch">
+                  <DropdownMenuRadioItem inset keepOpen value="branch">
+                    <ApplicationCommandLabel />
+                    <DropdownMenuIcon side="right">
+                      <ListTree aria-hidden="true" />
+                    </DropdownMenuIcon>
+                  </DropdownMenuRadioItem>
+                </ApplicationCommandMenuItem>
               </DropdownMenuRadioGroup>
             </DropdownMenuGroup>
 
             <DropdownMenuSeparator />
 
             <DropdownMenuGroup>
-              <ResizablePanelControl
-                mode="reset"
-                panelId={["workspace-sidebar", "editor-stage-timeline"]}
-              >
-                {({ isDisabled }) => (
-                  <DropdownMenuItem disabled={isDisabled} inset keepOpen>
-                    <DropdownMenuIcon>
-                      <RotateCcw aria-hidden="true" className="size-3" />
-                    </DropdownMenuIcon>
-                    {t("app.actions.resetLayout")}
-                  </DropdownMenuItem>
-                )}
-              </ResizablePanelControl>
+              <ApplicationCommandMenuItem asChild commandId="reset-layout">
+                <DropdownMenuItem inset keepOpen>
+                  <DropdownMenuIcon>
+                    <RotateCcw aria-hidden="true" className="size-3" />
+                  </DropdownMenuIcon>
+                  <ApplicationCommandLabel />
+                </DropdownMenuItem>
+              </ApplicationCommandMenuItem>
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -184,53 +179,47 @@ function AppLayoutControls() {
       </Tooltip>
 
       <Tooltip preserveOnTrigger>
-        <ResizablePanelControl panelId="workspace-sidebar">
-          {({ isCollapsed }) => (
-            <TooltipTrigger asChild>
-              <Button
-                aria-label={t("app.tooltips.togglePanel", {
-                  panel: t("app.labels.leftPanel"),
-                })}
-                className="size-7 p-0 text-secondary-foreground"
-                size="icon-sm"
-                variant="ghost"
-              >
-                {isCollapsed ? (
-                  <PanelLeftDashed aria-hidden="true" />
-                ) : (
-                  <PanelLeft aria-hidden="true" />
-                )}
-              </Button>
-            </TooltipTrigger>
-          )}
-        </ResizablePanelControl>
+        <TooltipTrigger asChild>
+          <Button
+            aria-label={t("app.tooltips.togglePanel", {
+              panel: t("app.labels.leftPanel"),
+            })}
+            className="size-7 p-0 text-secondary-foreground"
+            onClick={() => void executeCommand("toggle-left-panel", "button")}
+            size="icon-sm"
+            variant="ghost"
+          >
+            {!leftPanel.checked ? (
+              <PanelLeftDashed aria-hidden="true" />
+            ) : (
+              <PanelLeft aria-hidden="true" />
+            )}
+          </Button>
+        </TooltipTrigger>
         <TooltipContent>
           {t("app.tooltips.togglePanel", { panel: t("app.labels.leftPanel") })}
         </TooltipContent>
       </Tooltip>
 
       <Tooltip preserveOnTrigger>
-        <ResizablePanelControl panelId="editor-stage-timeline">
-          {({ isAvailable, isCollapsed, isDisabled }) => (
-            <TooltipTrigger asChild>
-              <Button
-                aria-label={t("app.tooltips.togglePanel", {
-                  panel: t("app.labels.bottomPanel"),
-                })}
-                className="size-7 p-0 text-secondary-foreground"
-                disabled={!isAvailable || isDisabled}
-                size="icon-sm"
-                variant="ghost"
-              >
-                {isCollapsed ? (
-                  <PanelBottomDashed aria-hidden="true" />
-                ) : (
-                  <PanelBottom aria-hidden="true" />
-                )}
-              </Button>
-            </TooltipTrigger>
-          )}
-        </ResizablePanelControl>
+        <TooltipTrigger asChild>
+          <Button
+            aria-label={t("app.tooltips.togglePanel", {
+              panel: t("app.labels.bottomPanel"),
+            })}
+            className="size-7 p-0 text-secondary-foreground"
+            disabled={!bottomPanel.enabled || bottomPanel.pending}
+            onClick={() => void executeCommand("toggle-bottom-panel", "button")}
+            size="icon-sm"
+            variant="ghost"
+          >
+            {!bottomPanel.checked ? (
+              <PanelBottomDashed aria-hidden="true" />
+            ) : (
+              <PanelBottom aria-hidden="true" />
+            )}
+          </Button>
+        </TooltipTrigger>
         <TooltipContent>
           {t("app.tooltips.togglePanel", { panel: t("app.labels.bottomPanel") })}
         </TooltipContent>

@@ -23,18 +23,6 @@ function VideoPreviewEmpty() {
       separator: undefined,
     },
     {
-      id: "save-lossless-cut",
-      label: t("export.actions.fast"),
-      keys: ["Ctrl", "S"],
-      separator: undefined,
-    },
-    {
-      id: "export-optimized",
-      label: t("export.actions.optimized"),
-      keys: ["Ctrl", "E"],
-      separator: undefined,
-    },
-    {
       id: "play-pause",
       label: t("preview.labels.shortcutPlayPause"),
       keys: ["Space"],
@@ -52,6 +40,12 @@ function VideoPreviewEmpty() {
       keys: ["I", "O"],
       separator: "/",
     },
+    {
+      id: "command-palette",
+      label: t("app.labels.commandPalette"),
+      keys: ["Ctrl", "H"],
+      separator: undefined,
+    },
   ] as const;
 
   return (
@@ -59,7 +53,7 @@ function VideoPreviewEmpty() {
       aria-label={t("preview.accessibility.empty")}
       className={`${styles.preview} grid size-full min-h-0 place-items-center overflow-hidden px-6 py-8`}
     >
-      <div className="grid w-[clamp(10rem,28vw,18rem)] max-w-full justify-items-center gap-10">
+      <div className="grid w-72 max-w-full justify-items-center gap-10">
         <img
           alt=""
           aria-hidden="true"
