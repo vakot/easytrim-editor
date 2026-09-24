@@ -67,11 +67,9 @@ describe("CommandPalette semantic icons", () => {
 
     const dialog = await screen.findByRole("dialog");
 
-    expect(dialog).toHaveClass("sm:max-w-2xl");
-    expect(dialog).toHaveClass("max-h-[min(80dvh,48rem)]");
-    expect(dialog.querySelector('[data-slot="scroll-area"]')).toHaveClass(
-      "max-h-[calc(80dvh_-_4rem)]",
-    );
+    expect(dialog).toHaveClass("sm:max-w-md");
+    expect(dialog).toHaveClass("h-[min(60dvh,32rem)]");
+    expect(dialog.querySelector('[data-slot="scroll-area"]')).toHaveClass("min-h-0", "flex-1");
   });
 
   it("keeps the palette open for Promise actions so their state and label can update", async () => {

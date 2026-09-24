@@ -107,7 +107,7 @@ function CommandPalette() {
   return (
     <CommandPaletteContext.Provider value={{ query, executeCommand }}>
       <CommandDialog
-        className="top-1/2 max-h-[min(60dvh,32rem)] -translate-y-1/2 overflow-hidden rounded-xl! p-0 sm:max-w-md"
+        className="top-1/2 h-[min(60dvh,32rem)] -translate-y-1/2 overflow-hidden rounded-xl! p-0 sm:max-w-md"
         description={t("app.messages.commandPaletteDescription")}
         onOpenChange={handleOpenChange}
         open={open}

@@ -81,7 +81,7 @@ function CommandInput({
 
 function CommandList({ className, ...props }: React.ComponentProps<typeof CommandPrimitive.List>) {
   return (
-    <ScrollArea className="max-h-[calc(80dvh_-_4rem)]" fadeColor="var(--popover)">
+    <ScrollArea className="min-h-0 flex-1" fadeColor="var(--popover)">
       <CommandPrimitive.List
         className={cn("outline-none", className)}
         data-slot="command-list"
