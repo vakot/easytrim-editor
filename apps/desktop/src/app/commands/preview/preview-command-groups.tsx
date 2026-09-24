@@ -7,17 +7,19 @@ import { useFlipCommands } from "./definitions/flip.commands";
 import { useResetTransformCommand } from "./definitions/reset-transform.command";
 import { useRotationCommands } from "./definitions/rotation.commands";
 
-function usePreviewCommandGroup() {
+function usePreviewCommandGroups() {
   const { t } = useTranslation();
   const crop = useCropPreviewCommand();
   const rotations = useRotationCommands();
   const flips = useFlipCommands();
   const reset = useResetTransformCommand();
-  return defineApplicationCommandGroup(
-    "preview-transform",
-    t("app.labels.commandSections.previewTransform"),
-    [crop, ...rotations, ...flips, reset] as const,
-  );
+  return [
+    defineApplicationCommandGroup(
+      "preview-transform",
+      t("app.labels.commandSections.previewTransform"),
+      [crop, ...rotations, ...flips, reset] as const,
+    ),
+  ] as const;
 }
 
-export { usePreviewCommandGroup };
+export { usePreviewCommandGroups };

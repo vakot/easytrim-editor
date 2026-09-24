@@ -9,7 +9,7 @@ import { useOpenReleasePageCommand } from "./definitions/open-release-page.comma
 import { useShowLogsCommand } from "./definitions/show-logs.command";
 import { useSupportProjectCommand } from "./definitions/support-project.command";
 
-function useHelpCommandGroup() {
+function useHelpCommandGroups() {
   const { t } = useTranslation();
   const openChangelog = useOpenChangelogCommand();
   const checkForUpdates = useCheckForUpdatesCommand();
@@ -17,14 +17,16 @@ function useHelpCommandGroup() {
   const showLogs = useShowLogsCommand();
   const supportProject = useSupportProjectCommand();
   const openReleasePage = useOpenReleasePageCommand();
-  return defineApplicationCommandGroup("help", t("app.labels.commandSections.help"), [
-    openChangelog,
-    checkForUpdates,
-    openProjectPage,
-    showLogs,
-    supportProject,
-    openReleasePage,
-  ] as const);
+  return [
+    defineApplicationCommandGroup("help", t("app.labels.commandSections.help"), [
+      openChangelog,
+      checkForUpdates,
+      openProjectPage,
+      showLogs,
+      supportProject,
+      openReleasePage,
+    ] as const),
+  ] as const;
 }
 
-export { useHelpCommandGroup };
+export { useHelpCommandGroups };

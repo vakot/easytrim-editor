@@ -1,1 +1,1 @@
-export { usePreviewCommandGroup } from "./preview-command-group";
+export { usePreviewCommandGroups } from "./preview-command-groups";

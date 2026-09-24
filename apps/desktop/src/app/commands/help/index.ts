@@ -1,1 +1,1 @@
-export { useHelpCommandGroup } from "./help-command-group";
+export { useHelpCommandGroups } from "./help-command-groups";
