@@ -52,7 +52,8 @@ type ApplicationCommandId =
   | "toggle-left-panel";
 
 type ApplicationCommandSectionId =
-  | "appearance"
+  | "appearance-color"
+  | "appearance-theme"
   | "audio"
   | "export"
   | "file"

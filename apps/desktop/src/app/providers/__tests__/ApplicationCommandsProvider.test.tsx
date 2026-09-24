@@ -126,6 +126,7 @@ function RuntimeProbe() {
         <button
           data-checked={command.checked}
           data-pending={command.pending}
+          data-section={command.section.label}
           data-variant={command.variant}
           disabled={!command.enabled || command.pending}
           key={command.id}
@@ -170,6 +171,14 @@ describe("ApplicationCommandsProvider", () => {
     expect(screen.getByRole("button", { name: "delete-file" })).toHaveAttribute(
       "data-variant",
       "destructive",
+    );
+    expect(screen.getByRole("button", { name: "theme-system" })).toHaveAttribute(
+      "data-section",
+      "Appearance / Theme",
+    );
+    expect(screen.getByRole("button", { name: "primary-color-amber" })).toHaveAttribute(
+      "data-section",
+      "Appearance / Color",
     );
 
     fireEvent.click(screen.getByRole("button", { name: "delete-file" }));

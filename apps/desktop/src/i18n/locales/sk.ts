@@ -41,7 +41,8 @@ export const sk = {
     labels: {
       commandPalette: "Paleta príkazov",
       commandSections: {
-        appearance: "Vzhľad",
+        appearanceColor: "Vzhľad / Farba",
+        appearanceTheme: "Vzhľad / Téma",
         audio: "Zvuk",
         export: "Export",
         file: "Súbor",

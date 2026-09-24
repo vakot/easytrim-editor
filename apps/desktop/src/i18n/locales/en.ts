@@ -39,7 +39,8 @@ export const en = {
     labels: {
       commandPalette: "Command Palette",
       commandSections: {
-        appearance: "Appearance",
+        appearanceColor: "Appearance / Color",
+        appearanceTheme: "Appearance / Theme",
         audio: "Audio",
         export: "Export",
         file: "File",

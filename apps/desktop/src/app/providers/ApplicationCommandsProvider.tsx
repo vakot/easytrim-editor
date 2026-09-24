@@ -171,7 +171,14 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
   const sections = useMemo(
     () =>
       ({
-        appearance: { id: "appearance", label: t("app.labels.commandSections.appearance") },
+        appearanceColor: {
+          id: "appearance-color",
+          label: t("app.labels.commandSections.appearanceColor"),
+        },
+        appearanceTheme: {
+          id: "appearance-theme",
+          label: t("app.labels.commandSections.appearanceTheme"),
+        },
         audio: { id: "audio", label: t("app.labels.commandSections.audio") },
         export: { id: "export", label: t("app.labels.commandSections.export") },
         file: { id: "file", label: t("app.labels.commandSections.file") },
@@ -348,7 +355,7 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
         id: `theme-${theme}` as ApplicationCommandId,
         label: themeLabels[theme],
         searchTerms: commandSearchTerms(`${themeLabels[theme]}|theme|appearance`),
-        section: sections.appearance,
+        section: sections.appearanceTheme,
         variant: "default" as const,
       })),
       ...PRIMARY_COLORS.map((color) => ({
@@ -360,7 +367,7 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
         id: `primary-color-${color}` as ApplicationCommandId,
         label: colorLabels[color],
         searchTerms: commandSearchTerms(`${colorLabels[color]}|color|accent`),
-        section: sections.appearance,
+        section: sections.appearanceColor,
         variant: "default" as const,
       })),
       ...(

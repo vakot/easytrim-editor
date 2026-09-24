@@ -39,7 +39,8 @@ export const ru = {
     labels: {
       commandPalette: "Палитра команд",
       commandSections: {
-        appearance: "Внешний вид",
+        appearanceColor: "Внешний вид / Цвет",
+        appearanceTheme: "Внешний вид / Тема",
         audio: "Аудио",
         export: "Экспорт",
         file: "Файл",
