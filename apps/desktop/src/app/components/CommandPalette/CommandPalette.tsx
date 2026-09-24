@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/command";
 import { Highlight } from "@/components/ui/highlight";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
+import { menuVariantIconClassNames } from "@/components/ui/menu";
 
 import type { ApplicationCommandId } from "@/app/commands";
 import { COMMAND_PALETTE_SHORTCUT } from "@/app/commands/core/application-command.shortcuts";
@@ -35,10 +36,8 @@ import { isApplicationInteractionBlocked } from "@/lib/hotkeys.utils";
 
 const commandVariantClassNames = {
   default: undefined,
-  destructive:
-    "text-destructive data-selected:bg-destructive/10 data-selected:text-destructive dark:data-selected:bg-destructive/20",
-  success:
-    "text-success data-selected:bg-success/10 data-selected:text-success dark:data-selected:bg-success/20",
+  destructive: `text-destructive data-selected:bg-destructive/10 data-selected:text-destructive dark:data-selected:bg-destructive/20 ${menuVariantIconClassNames.destructive}`,
+  success: `text-success data-selected:bg-success/10 data-selected:text-success dark:data-selected:bg-success/20 ${menuVariantIconClassNames.success}`,
 } satisfies Record<ApplicationCommandVariant, string | undefined>;
 
 type CommandPaletteGroupMatches = {
