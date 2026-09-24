@@ -30,7 +30,7 @@ const INSTALL_COMMAND = "winget install --id Gyan.FFmpeg --exact";
 
 const MotionButton = motion.create(Button);
 
-const triggerButtonVariants = cva("", {
+const triggerButtonVariants = cva("gap-0 border-l! px-1", {
   variants: {
     variant: {
       outline: "",
@@ -44,11 +44,10 @@ const triggerButtonVariants = cva("", {
 });
 
 interface MediaToolsStatusProps {
-  grouped?: boolean;
   presentation?: "compact" | "startup";
 }
 
-function MediaToolsStatus({ grouped = false, presentation = "compact" }: MediaToolsStatusProps) {
+function MediaToolsStatus({ presentation = "compact" }: MediaToolsStatusProps) {
   const capabilities = useAppSelector(selectCapabilities);
   const state = getMediaToolsState(capabilities);
 
@@ -56,11 +55,10 @@ function MediaToolsStatus({ grouped = false, presentation = "compact" }: MediaTo
     <Popover>
       <MediaToolsStatusTrigger
         capabilities={capabilities}
-        grouped={grouped}
         presentation={presentation}
         state={state}
       />
-      <PopoverContent align="center" className="w-88 max-w-[calc(100vw-1rem)] p-4" sideOffset={4}>
+      <PopoverContent align="center" className="w-88 max-w-[calc(100vw-1rem)]" sideOffset={4}>
         <MediaToolsStatusContent capabilities={capabilities} state={state} />
       </PopoverContent>
     </Popover>
@@ -69,12 +67,10 @@ function MediaToolsStatus({ grouped = false, presentation = "compact" }: MediaTo
 
 function MediaToolsStatusTrigger({
   capabilities,
-  grouped,
   presentation,
   state,
 }: {
   capabilities: ReturnType<typeof selectCapabilities>;
-  grouped: boolean;
   presentation: NonNullable<MediaToolsStatusProps["presentation"]>;
   state: MediaToolsState;
 }) {
@@ -99,19 +95,16 @@ function MediaToolsStatusTrigger({
     <PopoverTrigger asChild>
       <MotionButton
         animate={{
-          borderBottomLeftRadius: grouped ? 0 : "var(--radius-lg)",
-          borderLeftWidth: grouped ? 0 : 1,
-          borderTopLeftRadius: grouped ? 0 : "var(--radius-lg)",
           minWidth: iconOnly ? 24 : 0,
-          paddingLeft: iconOnly ? 4 : 8,
-          paddingRight: iconOnly ? 4 : 8,
+          borderTopLeftRadius: presentation === "compact" ? 0 : "min(var(--radius-md),10px)",
+          borderBottomLeftRadius: presentation === "compact" ? 0 : "min(var(--radius-md),10px)",
         }}
         aria-label={ready && presentation === "compact" ? t("app.status.toolsReady") : statusText}
-        className={`${triggerButtonVariants({ variant })} transition-none`}
+        className={triggerButtonVariants({ variant })}
         data-no-drag="true"
         initial={false}
         size="xs"
-        transition={{ duration: shouldReduceMotion ? 0 : 0.24, ease: "easeOut" }}
+        transition={{ duration: shouldReduceMotion ? 0 : 0.3, ease: "easeOut" }}
         variant={variant}
       >
         {checking ? (
@@ -124,11 +117,16 @@ function MediaToolsStatusTrigger({
           <CircleX aria-hidden="true" className="size-3.5" />
         )}
         <motion.span
-          animate={{ opacity: iconOnly ? 0 : 1, width: iconOnly ? 0 : "auto" }}
+          animate={{
+            opacity: iconOnly ? 0 : 1,
+            width: iconOnly ? 0 : "auto",
+            visibility: iconOnly ? 0 : 1,
+            marginLeft: iconOnly ? 0 : 6,
+          }}
           aria-hidden={iconOnly}
           className="min-w-0 shrink-0 overflow-hidden whitespace-nowrap"
           initial={false}
-          transition={{ duration: shouldReduceMotion ? 0 : 0.24, ease: "easeOut" }}
+          transition={{ duration: shouldReduceMotion ? 0 : 0.3, ease: "easeOut" }}
         >
           {statusText}
         </motion.span>

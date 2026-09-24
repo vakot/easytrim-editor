@@ -40,7 +40,7 @@ describe("AppCommandCenter", () => {
     expect(screen.getByRole("button", { name: "Media tools ready" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Search commands…" })).not.toBeInTheDocument();
 
-    act(() => vi.advanceTimersByTime(799));
+    act(() => vi.advanceTimersByTime(899));
     expect(screen.queryByRole("button", { name: "Search commands…" })).not.toBeInTheDocument();
 
     act(() => vi.advanceTimersByTime(1));
