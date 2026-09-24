@@ -11,6 +11,7 @@ export type ActivityKind =
   | "files-closed"
   | "files-imported"
   | "folders-imported"
+  | "workspace-restored"
   | "render";
 export type ActivityStatus = "cancelled" | "completed" | "failed" | "interrupted" | "pending";
 export type ActivityAction =
@@ -59,6 +60,7 @@ interface ActivityProjectionLabels {
   rendering: string;
   renderInterrupted: string;
   renderStarted: string;
+  workspaceRestored: (restored: number, total: number) => string;
 }
 interface ActivitySessionLabels {
   now: string;
@@ -95,6 +97,7 @@ const ACTIVITY_EVENT_CONFIG = {
   "source.import.completed": (event, labels) => projectImportTerminal(event, labels),
   "source.import.failed": (event, labels) => projectImportTerminal(event, labels),
   "source.import.cancelled": (event, labels) => projectImportTerminal(event, labels),
+  "workspace.recovery.completed": (event, labels) => projectWorkspaceRecovery(event, labels),
 } satisfies Record<string, ActivityEventProjector>;
 
 function projectActivityEvent(
@@ -330,6 +333,21 @@ function projectImportTerminal(
     status: importStatus(event),
     title,
   };
+}
+
+function projectWorkspaceRecovery(
+  event: DiagnosticEvent,
+  labels: ActivityProjectionLabels,
+): ActivityEntry | null {
+  const restored = diagnosticNumber(event.data?.restoredSourceCount);
+  const total = diagnosticNumber(event.data?.sourceCount);
+  if (restored === undefined || total === undefined) return null;
+  return createActivityEntry(
+    event,
+    "workspace-restored",
+    labels.workspaceRestored(restored, total),
+    { status: "completed" },
+  );
 }
 
 function projectExportStart(

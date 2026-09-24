@@ -106,6 +106,21 @@ function createActivityToast(
   t: TFunction,
   onAction: (action: NonNullable<ActivityEntry["action"]>) => void,
 ): ActivityToast {
+  if (entry.kind === "workspace-restored") {
+    const restored = numberValue(entry.data?.restoredSourceCount) ?? 0;
+    const total = numberValue(entry.data?.sourceCount) ?? restored;
+    const complete = restored === total;
+    return {
+      description: complete
+        ? t("app.messages.workspaceRecovery.toastDescription", { count: restored })
+        : t("app.messages.workspaceRecovery.toastPartialDescription", { restored, total }),
+      title: complete
+        ? t("app.messages.workspaceRecovery.toastTitle")
+        : t("app.messages.workspaceRecovery.toastPartialTitle"),
+      variant: "success",
+    };
+  }
+
   const instanceId = stringValue(entry.snapshotId) ?? stringValue(entry.data?.instanceId);
   const instance = instances.find((candidate) => candidate.id === instanceId);
   const attemptId = stringValue(entry.data?.attemptId);
@@ -136,6 +151,10 @@ function isToastable(status: ActivityStatus): boolean {
 
 function stringValue(value: DiagnosticValue | undefined): string | undefined {
   return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
+function numberValue(value: DiagnosticValue | undefined): number | undefined {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0 ? value : undefined;
 }
 
 export {

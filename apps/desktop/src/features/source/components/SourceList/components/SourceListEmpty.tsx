@@ -1,5 +1,6 @@
 import { FileVideo2, FolderCode, FolderOpen, Upload } from "lucide-react";
 import type { ReactNode } from "react";
+import { useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,13 @@ import {
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { Separator } from "@/components/ui/separator";
 
-import { useAppDispatch } from "@/app/store/redux-hooks";
+import {
+  getWorkspaceRecoveryCandidate,
+  subscribeToWorkspaceRecovery,
+} from "@/app/store/recovery/workspace-recovery";
+import { restorePreviousWorkspaceRequested } from "@/app/store/recovery/workspace-recovery-thunks";
+import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
+import { selectEditingInstances } from "@/app/store/slices/editing-instances-slice";
 import { chooseSourceRequested } from "@/app/store/thunks/source-media-thunks";
 import { cn } from "@/lib/class-names.utils";
 
@@ -23,6 +30,12 @@ import styles from "./SourceListEmpty.module.css";
 function SourceListEmpty() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
+  const hasWorkspaceInstances = useAppSelector(selectEditingInstances).length > 0;
+  const recoveryCandidate = useSyncExternalStore(
+    subscribeToWorkspaceRecovery,
+    getWorkspaceRecoveryCandidate,
+    () => null,
+  );
 
   return (
     <section
@@ -64,6 +77,19 @@ function SourceListEmpty() {
               }
             />
           </div>
+
+          {recoveryCandidate && !hasWorkspaceInstances ? (
+            <Button
+              className="h-auto justify-center p-0 text-primary"
+              onClick={() => void dispatch(restorePreviousWorkspaceRequested())}
+              type="button"
+              variant="link"
+            >
+              {t("source.messages.restorePreviousSession", {
+                count: recoveryCandidate.instances.length,
+              })}
+            </Button>
+          ) : null}
 
           <div className={cn(styles.hideOnShortContainer, "flex w-full items-center gap-2")}>
             <Separator className="flex-1" />

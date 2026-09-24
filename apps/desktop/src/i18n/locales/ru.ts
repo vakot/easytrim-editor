@@ -25,6 +25,7 @@ export const ru = {
       checkForUpdates: "Проверить обновления…",
       closeFile: "Закрыть файл",
       deleteFile: "Удалить файл",
+      dismiss: "Скрыть",
       maximize: "Развернуть",
       minimize: "Свернуть",
       open: "Открыть",
@@ -111,6 +112,10 @@ export const ru = {
       renderInterrupted: "Рендеринг прерван",
       renderStarted: "Рендеринг начат",
       rendering: "Рендеринг…",
+      workspaceRestored_one: "Восстановлен {{count}} источник из предыдущего сеанса",
+      workspaceRestored_other: "Восстановлено источников: {{count}} из предыдущего сеанса",
+      workspacePartiallyRestored:
+        "Восстановлено {{restored}} из {{total}} источников из предыдущего сеанса",
       installed: "Установлено",
       missing: "Не найдено",
       toolsFailed: "Не удалось проверить медиатулы",
@@ -142,6 +147,18 @@ export const ru = {
         sourcePath: "Путь источника: {{path}}",
       },
       windowActionFailed: "Не удалось выполнить действие с окном.",
+      workspaceRecovery: {
+        description_one:
+          "EasyTrim завершил работу некорректно. Можно восстановить {{count}} источник.",
+        description_other:
+          "EasyTrim завершил работу некорректно. Можно восстановить источников: {{count}}.",
+        title: "Восстановить предыдущий сеанс?",
+        toastDescription_one: "Восстановлен {{count}} источник",
+        toastDescription_other: "Восстановлено источников: {{count}}",
+        toastPartialDescription: "Восстановлено {{restored}} из {{total}} источников",
+        toastPartialTitle: "Предыдущий сеанс восстановлен частично",
+        toastTitle: "Предыдущий сеанс восстановлен",
+      },
     },
     tooltips: {
       customizeLayout: "Настроить расположение",
@@ -321,6 +338,8 @@ export const ru = {
       noSearchResults: "Нет импортированных источников, соответствующих поиску.",
       openFileDescription: "Выберите один видеофайл, чтобы начать монтаж.",
       openFolderDescription: "Импортируйте все поддерживаемые видео из папки.",
+      restorePreviousSession_one: "Восстановить предыдущий сеанс · {{count}} источник",
+      restorePreviousSession_other: "Восстановить предыдущий сеанс · источников: {{count}}",
       previewUnavailable: "Предпросмотр недоступен",
     },
     dialogs: {

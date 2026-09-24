@@ -67,6 +67,10 @@ function useActivityFeed() {
       renderInterrupted: t("app.status.renderInterrupted"),
       renderStarted: t("app.status.renderStarted"),
       rendering: t("app.status.rendering"),
+      workspaceRestored: (restored, total) =>
+        restored === total
+          ? t("app.status.workspaceRestored", { count: restored })
+          : t("app.status.workspacePartiallyRestored", { restored, total }),
     }),
     [t],
   );

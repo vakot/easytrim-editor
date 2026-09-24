@@ -19,12 +19,14 @@ vi.mock("@/lib/tauri/window", () => windowActions);
 
 describe("AppShutdownGuard", () => {
   let shouldPreventClose: (() => boolean) | undefined;
+  let onCloseRequested: (() => void) | undefined;
   let onShutdownRequested: ((continuation?: () => void | Promise<void>) => void) | undefined;
 
   beforeEach(() => {
     vi.clearAllMocks();
     shutdownState.hasProcessableExports = false;
     shouldPreventClose = undefined;
+    onCloseRequested = undefined;
     onShutdownRequested = undefined;
     windowActions.listenForWindowShutdownRequests.mockImplementation(
       (shutdownRequested: (continuation?: () => void | Promise<void>) => void) => {
@@ -33,21 +35,41 @@ describe("AppShutdownGuard", () => {
       },
     );
     windowActions.listenForWindowCloseRequests.mockImplementation(
-      async (preventClose: () => boolean) => {
+      async (preventClose: () => boolean, closeRequested: () => void) => {
         shouldPreventClose = preventClose;
+        onCloseRequested = closeRequested;
         return windowActions.unlisten;
       },
     );
   });
 
-  it("allows close requests when the queue has no processable exports", async () => {
+  it("clears recovery only after accepting a close request with no active exports", async () => {
+    localStorage.setItem("easytrim:workspace-recovery:current", "current");
+    localStorage.setItem("easytrim:workspace-recovery:candidate", "candidate");
     render(<AppShutdownGuard />);
 
     await waitFor(() => expect(shouldPreventClose).toBeDefined());
-    expect(shouldPreventClose?.()).toBe(false);
-    onShutdownRequested?.();
+    expect(shouldPreventClose?.()).toBe(true);
+    onCloseRequested?.();
     await waitFor(() => expect(windowActions.closeWindow).toHaveBeenCalledOnce());
+    expect(localStorage.getItem("easytrim:workspace-recovery:current")).toBeNull();
+    expect(localStorage.getItem("easytrim:workspace-recovery:candidate")).toBeNull();
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+  });
+
+  it("keeps recovery when the user cancels a close confirmation", async () => {
+    shutdownState.hasProcessableExports = true;
+    localStorage.setItem("easytrim:workspace-recovery:current", "current");
+    localStorage.setItem("easytrim:workspace-recovery:candidate", "candidate");
+    const user = userEvent.setup();
+    render(<AppShutdownGuard />);
+
+    onShutdownRequested?.();
+    await waitFor(() => expect(screen.getByRole("alertdialog")).toBeInTheDocument());
+    await user.click(screen.getByRole("button", { name: "Back" }));
+
+    expect(localStorage.getItem("easytrim:workspace-recovery:current")).toBe("current");
+    expect(localStorage.getItem("easytrim:workspace-recovery:candidate")).toBe("candidate");
   });
 
   it("confirms before closing while exports are queued or rendering", async () => {
