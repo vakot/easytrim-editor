@@ -68,7 +68,6 @@ function AppLayoutControls() {
               <Button
                 aria-label={t("app.accessibility.layoutControls")}
                 className="text-secondary-foreground"
-                onClick={() => void executeCommand("toggle-left-panel", "button")}
                 size="icon-sm"
                 type="button"
                 variant="ghost"
