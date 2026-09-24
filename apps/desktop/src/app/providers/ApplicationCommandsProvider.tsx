@@ -161,7 +161,7 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
   } as const;
 
   const preferenceLabels = {
-    autoStartQueueEnabled: t("settings.options.commandLabels.autoStartQueue"),
+    autoStartQueueEnabled: t("settings.labels.autoStartQueue"),
     loopPlaybackEnabledDefault: t("settings.options.commandLabels.loop"),
     mergeAudioEnabledDefault: t("settings.options.commandLabels.mergeAudio"),
     segmentPlaybackEnabledDefault: t("settings.options.commandLabels.followSegment"),

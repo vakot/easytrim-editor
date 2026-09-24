@@ -515,7 +515,7 @@ describe("MenuBarTest", () => {
       "Enable snap playback by default",
       "Enable loop playback by default",
       "Follow segment by default",
-      "Auto-start Queue by default",
+      "Auto-start Queue",
       "Merge audio by default",
     ]) {
       expect(screen.getByRole("menuitemcheckbox", { name: label })).toBeInTheDocument();
@@ -534,9 +534,9 @@ describe("MenuBarTest", () => {
     expect(
       screen.getByRole("menuitemcheckbox", { name: "Follow segment by default" }),
     ).toContainElement(settingsMenu!.querySelector(".lucide-between-vertical-start"));
-    expect(
-      screen.getByRole("menuitemcheckbox", { name: "Auto-start Queue by default" }),
-    ).toContainElement(settingsMenu!.querySelector(".lucide-play"));
+    expect(screen.getByRole("menuitemcheckbox", { name: "Auto-start Queue" })).toContainElement(
+      settingsMenu!.querySelector(".lucide-play"),
+    );
   });
 
   it("resets preference defaults", async () => {

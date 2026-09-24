@@ -182,7 +182,6 @@ export const sk = {
     },
     options: {
       commandLabels: {
-        autoStartQueue: "Automaticky spúšťať front predvolene",
         followSegment: "Predvolene sledovať segment",
         loop: "Predvolene zapnúť opakovanie",
         mergeAudio: "Predvolene zlúčiť zvuk",

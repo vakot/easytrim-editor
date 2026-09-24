@@ -182,7 +182,6 @@ export const ru = {
     },
     options: {
       commandLabels: {
-        autoStartQueue: "Автозапуск очереди по умолчанию",
         followSegment: "Следовать за сегментом по умолчанию",
         loop: "Включать повтор по умолчанию",
         mergeAudio: "Объединять аудио по умолчанию",

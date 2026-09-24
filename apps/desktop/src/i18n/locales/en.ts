@@ -181,7 +181,6 @@ export const en = {
     },
     options: {
       commandLabels: {
-        autoStartQueue: "Auto-start Queue by default",
         followSegment: "Follow segment by default",
         loop: "Enable loop playback by default",
         mergeAudio: "Merge audio by default",

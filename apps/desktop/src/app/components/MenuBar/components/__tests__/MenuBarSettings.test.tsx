@@ -83,7 +83,7 @@ describe("MenuBarSettings Redux integration", () => {
     const user = userEvent.setup();
     const store = renderSettings();
     const autoStartQueueItem = screen.getByRole("menuitemcheckbox", {
-      name: "Auto-start Queue by default",
+      name: "Auto-start Queue",
     });
 
     expect(autoStartQueueItem).toBeChecked();
