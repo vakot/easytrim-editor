@@ -11,6 +11,7 @@ function useResetTransformCommand() {
   return {
     enabled: isAvailable,
     icon: <RotateCcw aria-hidden="true" />,
+    surfaces: ["menu"] as const,
     run: requestReset,
     id: "reset-transform" as const,
     label,

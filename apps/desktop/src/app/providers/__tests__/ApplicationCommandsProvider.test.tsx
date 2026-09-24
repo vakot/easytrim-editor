@@ -132,6 +132,7 @@ function RuntimeProbe() {
           data-keep-open={command.keepOpen}
           data-label={command.label}
           data-pending={command.pending}
+          data-surfaces={command.surfaces?.join(",")}
           data-variant={command.variant}
           disabled={!command.enabled || command.pending}
           key={command.id}
@@ -248,6 +249,12 @@ describe("ApplicationCommandsProvider", () => {
       "data-group",
       "Preferences",
     );
+    for (const commandId of ["reset-preferences", "reset-layout", "reset-transform"]) {
+      expect(screen.getByRole("button", { name: commandId })).toHaveAttribute(
+        "data-surfaces",
+        "menu",
+      );
+    }
     expect(screen.getByRole("button", { name: "crop-preview" })).toHaveAttribute(
       "data-group",
       "Preview / Transform",
@@ -331,5 +338,13 @@ describe("ApplicationCommandsProvider", () => {
     expect(mocks.dispatch).not.toHaveBeenCalled();
 
     state.importWorkflow.isNativeDialogOpen = false;
+  });
+
+  it("does not execute menu-only commands from the palette surface", () => {
+    renderRuntime();
+
+    fireEvent.click(screen.getByRole("button", { name: "reset-preferences" }));
+
+    expect(mocks.dispatch).not.toHaveBeenCalled();
   });
 });

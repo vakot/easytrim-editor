@@ -12,6 +12,7 @@ function useResetLayoutCommand() {
   return {
     enabled: panels.isAvailable && !panels.isReset,
     icon: <RotateCcw aria-hidden="true" />,
+    surfaces: ["menu"] as const,
     run: panels.reset,
     id: "reset-layout" as const,
     label,

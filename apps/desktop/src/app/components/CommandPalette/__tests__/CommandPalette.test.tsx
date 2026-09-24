@@ -23,7 +23,7 @@ function createCommand(
   label: string,
   variant: ApplicationCommand["variant"],
   icon: ApplicationCommand["icon"],
-  options: Pick<ApplicationCommand, "checked" | "keepOpen"> = {},
+  options: Pick<ApplicationCommand, "checked" | "keepOpen" | "surfaces"> = {},
 ): ApplicationCommand {
   return {
     enabled: true,
@@ -133,5 +133,18 @@ describe("CommandPalette semantic icons", () => {
     fireEvent.click(await screen.findByRole("option", { name: "Reset to default" }));
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("does not include menu-only commands in the palette", async () => {
+    mocks.commands = [
+      createCommand("reset-preferences", "Reset to default", "destructive", <RotateCcw />, {
+        surfaces: ["menu"],
+      }),
+    ];
+    render(<CommandPalette />);
+    fireEvent.keyDown(window, { code: "KeyH", ctrlKey: true });
+
+    expect(screen.queryByRole("option", { name: "Reset to default" })).not.toBeInTheDocument();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 });

@@ -10,6 +10,7 @@ import {
   filterApplicationCommands,
   getShortcutAriaValue,
   getShortcutDisplayKeys,
+  isApplicationCommandAvailableOnSurface,
   isShortcutEvent,
   materializeApplicationCommands,
 } from "../core/application-command.utils";
@@ -81,6 +82,14 @@ describe("application command search", () => {
     expect(matches[1]?.command).toMatchObject({ enabled: false });
   });
 
+  it("limits surface-scoped commands while leaving unspecified commands available everywhere", () => {
+    const menuOnlyCommand = { surfaces: ["menu"] as const };
+
+    expect(isApplicationCommandAvailableOnSurface(menuOnlyCommand, "menu")).toBe(true);
+    expect(isApplicationCommandAvailableOnSurface(menuOnlyCommand, "palette")).toBe(false);
+    expect(isApplicationCommandAvailableOnSurface({}, "palette")).toBe(true);
+  });
+
   it("preserves semantic variants and checked state when materializing definitions", () => {
     const definition: ApplicationCommandDefinition = {
       checked: true,
@@ -90,6 +99,7 @@ describe("application command search", () => {
       label: "Delete File",
       run: vi.fn(),
       searchTerms: [],
+      surfaces: ["menu"],
       variant: "destructive",
     };
 
@@ -103,6 +113,7 @@ describe("application command search", () => {
         checked: true,
         group: { id: "source", label: "Source" },
         pending: false,
+        surfaces: ["menu"],
         variant: "destructive",
       }),
     ]);

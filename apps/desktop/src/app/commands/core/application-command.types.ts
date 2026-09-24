@@ -30,6 +30,8 @@ interface ApplicationCommand<Id extends string = string> {
   pending: boolean;
   searchTerms: readonly string[];
   shortcut?: ApplicationShortcut;
+  /** Surfaces where the command is available; omitted means all surfaces. */
+  surfaces?: readonly ApplicationCommandSurface[];
   variant: ApplicationCommandVariant;
 }
 

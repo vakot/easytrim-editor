@@ -27,6 +27,7 @@ import {
   filterApplicationCommands,
   getShortcutAriaValue,
   getShortcutDisplayKeys,
+  isApplicationCommandAvailableOnSurface,
   isShortcutEvent,
 } from "@/app/commands/core/application-command.utils";
 import { ApplicationCommandIcon } from "@/app/components/ApplicationCommandMenuItem";
@@ -51,7 +52,11 @@ function CommandPalette() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const { commands, executeCommand: executeApplicationCommand } = useApplicationCommands();
-  const matches = filterApplicationCommands(commands, query);
+  const paletteCommands = commands.filter((command) =>
+    isApplicationCommandAvailableOnSurface(command, "palette"),
+  );
+
+  const matches = filterApplicationCommands(paletteCommands, query);
   const groups = groupCommandMatches(matches);
 
   useKeyboardShortcut(

@@ -9,6 +9,7 @@ import {
 } from "@/app/commands/core/application-command.types";
 import {
   commandsById,
+  isApplicationCommandAvailableOnSurface,
   materializeApplicationCommands,
 } from "@/app/commands/core/application-command.utils";
 import { ApplicationCommandsContext } from "@/app/contexts/application-commands-context";
@@ -31,7 +32,13 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
   const executeCommand = useCallback(
     async (id: ApplicationCommandId, surface: ApplicationCommandSurface) => {
       const definition = definitionsById[id];
-      if (!definition || !definition.enabled || pendingIdsRef.current.has(id)) return;
+      if (
+        !definition ||
+        !isApplicationCommandAvailableOnSurface(definition, surface) ||
+        !definition.enabled ||
+        pendingIdsRef.current.has(id)
+      )
+        return;
 
       pendingIdsRef.current.add(id);
       setPendingIds(new Set(pendingIdsRef.current));

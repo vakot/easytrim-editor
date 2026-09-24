@@ -12,6 +12,7 @@ function useResetPreferencesCommand() {
   return {
     enabled: true,
     icon: <RotateCcw aria-hidden="true" />,
+    surfaces: ["menu"] as const,
     run() {
       dispatch(preferencesReset());
     },

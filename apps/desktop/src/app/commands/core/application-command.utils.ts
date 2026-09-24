@@ -4,6 +4,7 @@ import type {
   ApplicationCommandGroup,
   ApplicationCommandGroupMetadata,
   ApplicationCommandMatch,
+  ApplicationCommandSurface,
   ApplicationShortcut,
   ShortcutPlatform,
 } from "@/app/commands/core/application-command.types";
@@ -16,6 +17,13 @@ function defineApplicationCommandGroup<
 
 function commandSearchTerms(value: string): string[] {
   return value.split("|").map((term) => term.trim());
+}
+
+function isApplicationCommandAvailableOnSurface(
+  command: Pick<ApplicationCommand, "surfaces">,
+  surface: ApplicationCommandSurface,
+): boolean {
+  return command.surfaces?.includes(surface) ?? true;
 }
 
 function filterApplicationCommands<Id extends string>(
@@ -97,6 +105,7 @@ function materializeApplicationCommands<Id extends string>(
     pending: pendingIds.has(definition.id),
     searchTerms: definition.searchTerms,
     shortcut: definition.shortcut,
+    surfaces: definition.surfaces,
     variant: definition.variant,
   }));
 }
@@ -131,6 +140,7 @@ export {
   filterApplicationCommands,
   getShortcutAriaValue,
   getShortcutDisplayKeys,
+  isApplicationCommandAvailableOnSurface,
   isShortcutEvent,
   materializeApplicationCommands,
 };
