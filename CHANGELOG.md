@@ -24,6 +24,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- Kept the selected source region visible when rotating a cropped preview.
 - Truncated long export filenames in source cards so they stay within the card width.
 - Matched destructive and success icon colors in the Command Palette to the shared menu styles.
 
