@@ -21,6 +21,7 @@ import {
   selectPrimaryColorKey,
   selectThemePreference,
   themePreferenceChanged,
+  viewSettingsReset,
 } from "@/app/store/slices/preferences-slice";
 import type { RootState } from "@/app/store/store";
 
@@ -86,6 +87,25 @@ describe("preferences Redux domain", () => {
     expect(presetState).toMatchObject({ primaryColor: "blue", customPrimaryColor: "#efbf04" });
     expect(customState).toMatchObject({ primaryColor: "#123456", customPrimaryColor: "#123456" });
     expect(nextPresetState).toMatchObject({ primaryColor: "rose", customPrimaryColor: "#123456" });
+  });
+
+  it("resets only theme and color view settings", () => {
+    const initialState: Preferences = {
+      ...DEFAULT_PREFERENCES,
+      theme: "dark",
+      primaryColor: "blue",
+      customPrimaryColor: "#123456",
+      deleteSourceOnRenderFinish: true,
+    };
+
+    const state = preferencesReducer(initialState, viewSettingsReset());
+
+    expect(state).toEqual({
+      ...initialState,
+      theme: DEFAULT_PREFERENCES.theme,
+      primaryColor: DEFAULT_PREFERENCES.primaryColor,
+      customPrimaryColor: DEFAULT_PREFERENCES.customPrimaryColor,
+    });
   });
 
   it("resets defaults while preserving view and queue preferences", () => {

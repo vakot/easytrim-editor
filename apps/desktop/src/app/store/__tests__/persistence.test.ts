@@ -2,6 +2,7 @@ import type { Persistor, Storage as PersistStorage } from "redux-persist";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { DEFAULT_PREFERENCES } from "@/app/preferences";
+import { queueSettingsReset } from "@/app/store/actions/queue-actions";
 import { persistConfig, resolveReduxPersistStorage } from "@/app/store/persistence";
 import {
   createEditorToolsStateFromPreferences,
@@ -272,6 +273,25 @@ describe("Redux Persist store integration", () => {
       theme: "dark",
       primaryColor: "blue",
       deleteSourceOnRenderFinish: true,
+    });
+  });
+
+  it("resets both queue settings while preserving unrelated preferences", async () => {
+    const { persistor, storage, store } = await createPersistedTestStore();
+
+    store.dispatch(queueFinishActionChanged("exit"));
+    store.dispatch(preferenceChanged({ key: "deleteSourceOnRenderFinish", enabled: true }));
+    store.dispatch(preferenceChanged({ key: "loopPlaybackEnabledDefault", enabled: false }));
+    store.dispatch(queueSettingsReset());
+    await persistor.flush();
+
+    expect(store.getState().export.queueFinishAction).toBe("nothing");
+    expect(store.getState().preferences.deleteSourceOnRenderFinish).toBe(false);
+    expect(store.getState().preferences.loopPlaybackEnabledDefault).toBe(false);
+    const persistedRoot = await readPersistedRoot(storage);
+    expect(JSON.parse(String(persistedRoot.preferences))).toMatchObject({
+      deleteSourceOnRenderFinish: false,
+      loopPlaybackEnabledDefault: false,
     });
   });
 

@@ -1,5 +1,6 @@
 import { createSelector, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
+import { queueSettingsReset } from "@/app/store/actions/queue-actions";
 import { sourceCleared } from "@/app/store/actions/source-actions";
 import { selectExportQueueById } from "@/app/store/slices/editing-instances-slice";
 import type { AppError } from "@/lib/tauri/media.types";
@@ -84,6 +85,11 @@ const exportSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
+    builder.addCase(queueSettingsReset, (state) => {
+      state.queueFinishAction = state.availableQueueFinishActions.includes("nothing")
+        ? "nothing"
+        : (state.availableQueueFinishActions[0] ?? "nothing");
+    });
     builder.addCase(sourceCleared, (state) => {
       state.optimizedDialogOpen = false;
       state.optimizedPlanRequestId = null;

@@ -189,7 +189,7 @@ describe("ApplicationCommandsProvider", () => {
 
     expect(
       screen.getAllByRole("button").filter((button) => button.hasAttribute("data-group")),
-    ).toHaveLength(49);
+    ).toHaveLength(51);
     expect(
       screen
         .getAllByRole("button")
@@ -211,6 +211,14 @@ describe("ApplicationCommandsProvider", () => {
     expect(screen.getByRole("button", { name: "theme-system" })).toHaveAttribute(
       "data-checked",
       "true",
+    );
+    expect(screen.getByRole("button", { name: "reset-view-settings" })).toHaveAttribute(
+      "data-group",
+      "Appearance / Theme",
+    );
+    expect(screen.getByRole("button", { name: "reset-queue-settings" })).toHaveAttribute(
+      "data-group",
+      "Queue",
     );
     expect(screen.getByRole("button", { name: "language-en" })).toHaveAttribute(
       "data-label",

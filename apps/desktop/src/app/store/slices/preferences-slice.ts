@@ -11,6 +11,7 @@ import {
   type PreferenceKey,
   type Preferences,
 } from "@/app/preferences";
+import { queueSettingsReset } from "@/app/store/actions/queue-actions";
 import {
   type CustomPrimaryColor,
   isCustomPrimaryColor,
@@ -43,6 +44,11 @@ const preferencesSlice = createSlice({
     layoutReset: (state) => {
       state.activityFeedView = DEFAULT_PREFERENCES.activityFeedView;
       state.layoutDensity = DEFAULT_PREFERENCES.layoutDensity;
+    },
+    viewSettingsReset: (state) => {
+      state.theme = DEFAULT_PREFERENCES.theme;
+      state.primaryColor = DEFAULT_PREFERENCES.primaryColor;
+      state.customPrimaryColor = DEFAULT_PREFERENCES.customPrimaryColor;
     },
     themePreferenceChanged: (state, action: PayloadAction<ThemePreference>) => {
       state.theme = action.payload;
@@ -78,6 +84,11 @@ const preferencesSlice = createSlice({
       state.deleteSourceOnRenderFinish = deleteSourceOnRenderFinish;
     },
   },
+  extraReducers: (builder) => {
+    builder.addCase(queueSettingsReset, (state) => {
+      state.deleteSourceOnRenderFinish = DEFAULT_PREFERENCES.deleteSourceOnRenderFinish;
+    });
+  },
 });
 
 const {
@@ -90,6 +101,7 @@ const {
   preferencesReset,
   primaryColorChanged,
   themePreferenceChanged,
+  viewSettingsReset,
 } = preferencesSlice.actions;
 
 const preferencesReducer = preferencesSlice.reducer;
@@ -165,4 +177,5 @@ export {
   selectSnapPlaybackEnabledDefault,
   selectThemePreference,
   themePreferenceChanged,
+  viewSettingsReset,
 };
