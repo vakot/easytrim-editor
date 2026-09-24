@@ -200,6 +200,18 @@ describe("ApplicationCommandsProvider", () => {
       "data-checked",
       "true",
     );
+    expect(screen.getByRole("button", { name: "language-en" })).toHaveAttribute(
+      "data-label",
+      "English",
+    );
+    expect(screen.getByRole("button", { name: "language-sk" })).toHaveAttribute(
+      "data-label",
+      "Slovenčina",
+    );
+    expect(screen.getByRole("button", { name: "language-ru" })).toHaveAttribute(
+      "data-label",
+      "Русский",
+    );
     expect(screen.getByRole("button", { name: "primary-color-amber" })).toHaveAttribute(
       "data-group",
       "Appearance / Color",
