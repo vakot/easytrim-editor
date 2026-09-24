@@ -66,8 +66,8 @@ function PreferenceMenuItem({ children, commandId }: PreferenceMenuItemProps) {
 }
 
 function MenuBarSettings() {
-  const { i18n, t } = useTranslation();
-  const currentLanguage = isSupportedLanguage(i18n.resolvedLanguage) ? i18n.resolvedLanguage : "en";
+  const { t } = useTranslation();
+
   return (
     <MenubarMenu value="settings">
       <MenubarTrigger asChild>
@@ -76,71 +76,83 @@ function MenuBarSettings() {
         </Button>
       </MenubarTrigger>
       <MenubarContent>
-        <MenubarGroup>
-          <PreferenceMenuItem commandId="preference-auto-start-queue">
-            {t("settings.labels.autoStartQueue")}
-          </PreferenceMenuItem>
-        </MenubarGroup>
-        <MenubarSeparator />
-        <MenubarGroup>
-          <PreferenceMenuItem commandId="preference-snap-playback">
-            {t("settings.labels.snap")}
-          </PreferenceMenuItem>
-          <PreferenceMenuItem commandId="preference-loop-playback">
-            {t("settings.labels.loop")}
-          </PreferenceMenuItem>
-          <PreferenceMenuItem commandId="preference-segment-playback">
-            {t("settings.labels.followSegment")}
-          </PreferenceMenuItem>
-        </MenubarGroup>
-        <MenubarSeparator />
-        <MenubarGroup>
-          <PreferenceMenuItem commandId="preference-merge-audio">
-            {t("settings.labels.mergeAudio")}
-          </PreferenceMenuItem>
-        </MenubarGroup>
-        <MenubarSeparator />
-        <MenubarGroup>
-          <ApplicationCommandMenuItem asChild commandId="reset-preferences">
-            <MenubarItem inset keepOpen variant="destructive">
-              <MenubarIcon>
-                <ApplicationCommandIcon />
-              </MenubarIcon>
-              <ApplicationCommandLabel />
-            </MenubarItem>
-          </ApplicationCommandMenuItem>
-        </MenubarGroup>
-        <MenubarSeparator />
-        <MenubarGroup>
-          <MenubarSub>
-            <MenubarSubTrigger inset>
-              <MenubarIcon>
-                <Languages aria-hidden="true" />
-              </MenubarIcon>
-              {t("settings.labels.language")}
-              <MenubarShortcut>{currentLanguage.toUpperCase()}</MenubarShortcut>
-            </MenubarSubTrigger>
-            <MenubarSubContent>
-              <MenubarRadioGroup value={currentLanguage}>
-                {(["en", "sk", "ru"] as const).map((language) => (
-                  <ApplicationCommandMenuItem
-                    asChild
-                    commandId={getLanguageCommandId(language)}
-                    key={language}
-                  >
-                    <MenubarRadioItem value={language}>
-                      <ApplicationCommandLabel />
-                      <MenubarShortcut>{language.toUpperCase()}</MenubarShortcut>
-                    </MenubarRadioItem>
-                  </ApplicationCommandMenuItem>
-                ))}
-              </MenubarRadioGroup>
-            </MenubarSubContent>
-          </MenubarSub>
-        </MenubarGroup>
+        <MenuBarSettingsContent />
       </MenubarContent>
     </MenubarMenu>
   );
 }
 
-export { MenuBarSettings };
+function MenuBarSettingsContent() {
+  const { i18n, t } = useTranslation();
+
+  const currentLanguage = isSupportedLanguage(i18n.resolvedLanguage) ? i18n.resolvedLanguage : "en";
+
+  return (
+    <>
+      <MenubarGroup>
+        <PreferenceMenuItem commandId="preference-auto-start-queue">
+          {t("settings.labels.autoStartQueue")}
+        </PreferenceMenuItem>
+      </MenubarGroup>
+      <MenubarSeparator />
+      <MenubarGroup>
+        <PreferenceMenuItem commandId="preference-snap-playback">
+          {t("settings.labels.snap")}
+        </PreferenceMenuItem>
+        <PreferenceMenuItem commandId="preference-loop-playback">
+          {t("settings.labels.loop")}
+        </PreferenceMenuItem>
+        <PreferenceMenuItem commandId="preference-segment-playback">
+          {t("settings.labels.followSegment")}
+        </PreferenceMenuItem>
+      </MenubarGroup>
+      <MenubarSeparator />
+      <MenubarGroup>
+        <PreferenceMenuItem commandId="preference-merge-audio">
+          {t("settings.labels.mergeAudio")}
+        </PreferenceMenuItem>
+      </MenubarGroup>
+      <MenubarSeparator />
+      <MenubarGroup>
+        <ApplicationCommandMenuItem asChild commandId="reset-preferences">
+          <MenubarItem inset keepOpen variant="destructive">
+            <MenubarIcon>
+              <ApplicationCommandIcon />
+            </MenubarIcon>
+            <ApplicationCommandLabel />
+          </MenubarItem>
+        </ApplicationCommandMenuItem>
+      </MenubarGroup>
+      <MenubarSeparator />
+      <MenubarGroup>
+        <MenubarSub>
+          <MenubarSubTrigger inset>
+            <MenubarIcon>
+              <Languages aria-hidden="true" />
+            </MenubarIcon>
+            {t("settings.labels.language")}
+            <MenubarShortcut>{currentLanguage.toUpperCase()}</MenubarShortcut>
+          </MenubarSubTrigger>
+          <MenubarSubContent>
+            <MenubarRadioGroup value={currentLanguage}>
+              {(["en", "sk", "ru"] as const).map((language) => (
+                <ApplicationCommandMenuItem
+                  asChild
+                  commandId={getLanguageCommandId(language)}
+                  key={language}
+                >
+                  <MenubarRadioItem value={language}>
+                    <ApplicationCommandLabel />
+                    <MenubarShortcut>{language.toUpperCase()}</MenubarShortcut>
+                  </MenubarRadioItem>
+                </ApplicationCommandMenuItem>
+              ))}
+            </MenubarRadioGroup>
+          </MenubarSubContent>
+        </MenubarSub>
+      </MenubarGroup>
+    </>
+  );
+}
+
+export { MenuBarSettings, MenuBarSettingsContent };

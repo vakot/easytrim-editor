@@ -31,9 +31,6 @@ import {
 
 function MenuBarQueue() {
   const { t } = useTranslation();
-  const queueFinishAction = useAppSelector(selectQueueFinishAction);
-  const availableQueueFinishActions = useAppSelector(selectAvailableQueueFinishActions);
-  const selectedActionCommand = useApplicationCommand(getQueueFinishCommandId(queueFinishAction));
 
   return (
     <>
@@ -44,50 +41,64 @@ function MenuBarQueue() {
           </Button>
         </MenubarTrigger>
         <MenubarContent>
-          <MenubarGroup>
-            <Tooltip preserveOnTrigger>
-              <TooltipTrigger asChild>
-                <ApplicationCommandMenuItem asChild commandId="delete-source-on-render-finish">
-                  <MenubarCheckboxItem keepOpen variant="destructive">
-                    <ApplicationCommandLabel />
-                  </MenubarCheckboxItem>
-                </ApplicationCommandMenuItem>
-              </TooltipTrigger>
-              <TooltipContent side="right">
-                {t("queue.tooltips.deleteSourceOnRenderFinish")}
-              </TooltipContent>
-            </Tooltip>
-            <MenubarSub>
-              <MenubarSubTrigger inset variant="destructive">
-                <MenubarIcon>
-                  <ApplicationCommandIcon className="size-3" command={selectedActionCommand} />
-                </MenubarIcon>
-                {t("queue.labels.onFinish")}
-              </MenubarSubTrigger>
-              <MenubarSubContent>
-                <MenubarRadioGroup value={queueFinishAction}>
-                  {availableQueueFinishActions.map((action) => (
-                    <ApplicationCommandMenuItem
-                      asChild
-                      commandId={getQueueFinishCommandId(action)}
-                      key={action}
-                    >
-                      <MenubarRadioItem inset value={action}>
-                        <ApplicationCommandLabel />
-                        <MenubarIcon side="right">
-                          <ApplicationCommandIcon className="size-3" />
-                        </MenubarIcon>
-                      </MenubarRadioItem>
-                    </ApplicationCommandMenuItem>
-                  ))}
-                </MenubarRadioGroup>
-              </MenubarSubContent>
-            </MenubarSub>
-          </MenubarGroup>
+          <MenuBarQueueContent />
         </MenubarContent>
       </MenubarMenu>
     </>
   );
 }
 
-export { MenuBarQueue };
+function MenuBarQueueContent() {
+  const { t } = useTranslation();
+
+  const queueFinishAction = useAppSelector(selectQueueFinishAction);
+  const availableQueueFinishActions = useAppSelector(selectAvailableQueueFinishActions);
+  const selectedActionCommand = useApplicationCommand(getQueueFinishCommandId(queueFinishAction));
+
+  return (
+    <>
+      <MenubarGroup>
+        <Tooltip preserveOnTrigger>
+          <TooltipTrigger asChild>
+            <ApplicationCommandMenuItem asChild commandId="delete-source-on-render-finish">
+              <MenubarCheckboxItem keepOpen variant="destructive">
+                <ApplicationCommandLabel />
+              </MenubarCheckboxItem>
+            </ApplicationCommandMenuItem>
+          </TooltipTrigger>
+          <TooltipContent side="right">
+            {t("queue.tooltips.deleteSourceOnRenderFinish")}
+          </TooltipContent>
+        </Tooltip>
+        <MenubarSub>
+          <MenubarSubTrigger inset variant="destructive">
+            <MenubarIcon>
+              <ApplicationCommandIcon className="size-3" command={selectedActionCommand} />
+            </MenubarIcon>
+            {t("queue.labels.onFinish")}
+          </MenubarSubTrigger>
+          <MenubarSubContent>
+            <MenubarRadioGroup value={queueFinishAction}>
+              {availableQueueFinishActions.map((action) => (
+                <ApplicationCommandMenuItem
+                  asChild
+                  commandId={getQueueFinishCommandId(action)}
+                  key={action}
+                >
+                  <MenubarRadioItem inset value={action}>
+                    <ApplicationCommandLabel />
+                    <MenubarIcon side="right">
+                      <ApplicationCommandIcon className="size-3" />
+                    </MenubarIcon>
+                  </MenubarRadioItem>
+                </ApplicationCommandMenuItem>
+              ))}
+            </MenubarRadioGroup>
+          </MenubarSubContent>
+        </MenubarSub>
+      </MenubarGroup>
+    </>
+  );
+}
+
+export { MenuBarQueue, MenuBarQueueContent };

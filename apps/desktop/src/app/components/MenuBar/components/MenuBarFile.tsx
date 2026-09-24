@@ -27,53 +27,61 @@ function MenuBarFile() {
         </Button>
       </MenubarTrigger>
       <MenubarContent>
-        <MenubarGroup>
-          <ApplicationCommandMenuItem asChild commandId="open-file">
-            <MenubarItem>
-              <ApplicationCommandLabel />
-              <ApplicationCommandShortcut />
-            </MenubarItem>
-          </ApplicationCommandMenuItem>
-          <ApplicationCommandMenuItem asChild commandId="open-folder">
-            <MenubarItem>
-              <ApplicationCommandLabel />
-              <ApplicationCommandShortcut />
-            </MenubarItem>
-          </ApplicationCommandMenuItem>
-          <ApplicationCommandMenuItem asChild commandId="close-file">
-            <MenubarItem>
-              <ApplicationCommandLabel />
-              <ApplicationCommandShortcut />
-            </MenubarItem>
-          </ApplicationCommandMenuItem>
-        </MenubarGroup>
-        <MenubarSeparator />
-        <MenubarGroup>
-          <ApplicationCommandMenuItem asChild commandId="save-lossless-cut">
-            <MenubarItem>
-              <ApplicationCommandLabel />
-              <ApplicationCommandShortcut />
-            </MenubarItem>
-          </ApplicationCommandMenuItem>
-          <ApplicationCommandMenuItem asChild commandId="optimized-export">
-            <MenubarItem>
-              <ApplicationCommandLabel />
-              <ApplicationCommandShortcut />
-            </MenubarItem>
-          </ApplicationCommandMenuItem>
-        </MenubarGroup>
-        <MenubarSeparator />
-        <MenubarGroup>
-          <ApplicationCommandMenuItem asChild commandId="delete-file">
-            <MenubarItem>
-              <ApplicationCommandLabel />
-              <ApplicationCommandShortcut />
-            </MenubarItem>
-          </ApplicationCommandMenuItem>
-        </MenubarGroup>
+        <MenuBarFileContent />
       </MenubarContent>
     </MenubarMenu>
   );
 }
 
-export { MenuBarFile };
+function MenuBarFileContent() {
+  return (
+    <>
+      <MenubarGroup>
+        <ApplicationCommandMenuItem asChild commandId="open-file">
+          <MenubarItem>
+            <ApplicationCommandLabel />
+            <ApplicationCommandShortcut />
+          </MenubarItem>
+        </ApplicationCommandMenuItem>
+        <ApplicationCommandMenuItem asChild commandId="open-folder">
+          <MenubarItem>
+            <ApplicationCommandLabel />
+            <ApplicationCommandShortcut />
+          </MenubarItem>
+        </ApplicationCommandMenuItem>
+        <ApplicationCommandMenuItem asChild commandId="close-file">
+          <MenubarItem>
+            <ApplicationCommandLabel />
+            <ApplicationCommandShortcut />
+          </MenubarItem>
+        </ApplicationCommandMenuItem>
+      </MenubarGroup>
+      <MenubarSeparator />
+      <MenubarGroup>
+        <ApplicationCommandMenuItem asChild commandId="save-lossless-cut">
+          <MenubarItem>
+            <ApplicationCommandLabel />
+            <ApplicationCommandShortcut />
+          </MenubarItem>
+        </ApplicationCommandMenuItem>
+        <ApplicationCommandMenuItem asChild commandId="optimized-export">
+          <MenubarItem>
+            <ApplicationCommandLabel />
+            <ApplicationCommandShortcut />
+          </MenubarItem>
+        </ApplicationCommandMenuItem>
+      </MenubarGroup>
+      <MenubarSeparator />
+      <MenubarGroup>
+        <ApplicationCommandMenuItem asChild commandId="delete-file">
+          <MenubarItem>
+            <ApplicationCommandLabel />
+            <ApplicationCommandShortcut />
+          </MenubarItem>
+        </ApplicationCommandMenuItem>
+      </MenubarGroup>
+    </>
+  );
+}
+
+export { MenuBarFile, MenuBarFileContent };
