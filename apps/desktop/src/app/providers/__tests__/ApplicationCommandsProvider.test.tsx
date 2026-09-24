@@ -216,6 +216,10 @@ describe("ApplicationCommandsProvider", () => {
       "data-section",
       "Preview / Transform",
     );
+    expect(screen.getByRole("button", { name: "reset-layout" })).toHaveAttribute(
+      "data-variant",
+      "destructive",
+    );
 
     fireEvent.click(screen.getByRole("button", { name: "delete-file" }));
 

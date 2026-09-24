@@ -567,7 +567,7 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
         label: t("app.actions.resetLayout"),
         searchTerms: commandSearchTerms(`${t("app.actions.resetLayout")}|layout|panels`),
         section: sections.layout,
-        variant: "default",
+        variant: "destructive",
       },
       {
         enabled: isPreviewAvailable,
