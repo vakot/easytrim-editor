@@ -60,7 +60,7 @@ describe("MediaToolsStatus", () => {
     const trigger = screen.getByRole("button", { name: "Media tools ready" });
     fireEvent.click(trigger);
 
-    expect(trigger.querySelector('[aria-hidden="true"]')).toHaveClass("bg-success", "size-2");
+    expect(trigger.querySelector('svg[aria-hidden="true"]')).toHaveClass("lucide-circle-check");
     expect(screen.getByText("ffmpeg version 7.1")).toBeInTheDocument();
     expect(screen.getByText("ffprobe version 7.1")).toBeInTheDocument();
     expect(screen.getByText("C:/Tools/ffmpeg.exe")).toBeInTheDocument();

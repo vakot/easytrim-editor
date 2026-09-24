@@ -3,6 +3,7 @@ import type { TFunction } from "i18next";
 import {
   Check,
   CircleAlert,
+  CircleCheck,
   CircleX,
   Clipboard,
   ExternalLink,
@@ -105,7 +106,7 @@ function MediaToolsStatusTrigger({
         {checking ? (
           <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
         ) : ready ? (
-          <span aria-hidden="true" className="size-2 rounded-full bg-success" />
+          <CircleCheck aria-hidden="true" className="size-3.5" />
         ) : partial ? (
           <CircleAlert aria-hidden="true" className="size-3.5" />
         ) : (
