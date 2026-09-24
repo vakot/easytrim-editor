@@ -1,1 +1,5 @@
-export { MediaToolsStatus } from "./components/MediaToolsStatus";
+export {
+  MediaToolsStatus,
+  MediaToolsStatusContent,
+  MediaToolsStatusTrigger,
+} from "./components/MediaToolsStatus";

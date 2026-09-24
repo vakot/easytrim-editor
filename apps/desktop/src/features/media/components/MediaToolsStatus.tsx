@@ -12,7 +12,7 @@ import {
   RotateCw,
 } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
-import { useState } from "react";
+import { createContext, useContext, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
@@ -43,40 +43,29 @@ const triggerButtonVariants = cva("shrink-0 gap-0 border-l! px-2 transition-colo
 });
 
 interface MediaToolsStatusProps {
-  presentation?: "compact" | "default";
+  children?: React.ReactNode;
 }
 
-function MediaToolsStatus({ presentation = "default" }: MediaToolsStatusProps) {
+function MediaToolsStatus({ children }: MediaToolsStatusProps) {
   const capabilities = useAppSelector(selectCapabilities);
   const state = getMediaToolsState(capabilities);
 
   const [open, setOpen] = useState(false);
 
   return (
-    <Popover onOpenChange={setOpen} open={open}>
-      <MediaToolsStatusTrigger
-        capabilities={capabilities}
-        presentation={presentation}
-        state={state}
-      />
-
-      <PopoverContent align="center" className="w-88 max-w-[calc(100vw-1rem)]" sideOffset={4}>
-        <MediaToolsStatusContent capabilities={capabilities} state={state} />
-      </PopoverContent>
-    </Popover>
+    <MediaToolsStatusContext.Provider value={{ capabilities, state }}>
+      <Popover onOpenChange={setOpen} open={open}>
+        {children}
+      </Popover>
+    </MediaToolsStatusContext.Provider>
   );
 }
 
-function MediaToolsStatusTrigger({
-  capabilities,
-  presentation,
-  state,
-}: {
-  capabilities: ReturnType<typeof selectCapabilities>;
-  presentation: NonNullable<MediaToolsStatusProps["presentation"]>;
-  state: MediaToolsState;
-}) {
+function MediaToolsStatusTrigger({ presentation }: { presentation: "compact" | "default" }) {
   const { t } = useTranslation();
+
+  const { capabilities, state } = useMediaToolsStatus();
+
   const { checking, partial, ready, unavailable } = state;
   const shouldReduceMotion = useReducedMotion();
 
@@ -133,117 +122,117 @@ function MediaToolsStatusTrigger({
   );
 }
 
-function MediaToolsStatusContent({
-  capabilities,
-  state,
-}: {
-  capabilities: ReturnType<typeof selectCapabilities>;
-  state: MediaToolsState;
-}) {
+function MediaToolsStatusContent({ className }: { className?: string }) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const [rechecked, setRechecked] = useState(false);
 
+  const { capabilities, state } = useMediaToolsStatus();
+
   const { checking, partial, ready, unavailable } = state;
 
   return (
-    <div className="grid min-w-0 gap-3">
-      <div className="grid gap-1">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="font-semibold">{t("app.labels.mediaTools")}</h2>
-          <span
-            className={
-              ready
-                ? "text-xs text-success"
-                : unavailable || capabilities.status === "failed"
-                  ? "text-xs text-destructive"
-                  : "text-xs text-muted-foreground"
-            }
-          >
-            {getStatusText(state, t)}
-          </span>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          {capabilities.status === "failed"
-            ? capabilities.error.message
-            : ready
-              ? t("app.messages.mediaToolsReady")
-              : t("app.messages.mediaToolsUnavailable")}
-        </p>
-      </div>
-
-      {capabilities.status === "ready" ? (
-        <ul className="grid min-w-0 gap-2">
-          <BinaryRow capability={capabilities.value.ffmpeg} label="FFmpeg" />
-          <BinaryRow capability={capabilities.value.ffprobe} label="FFprobe" />
-        </ul>
-      ) : null}
-
-      {unavailable ? (
-        <section className="grid gap-2 border-t pt-3">
-          <div className="grid gap-1">
-            <h3 className="text-xs font-medium">{t("app.labels.installMediaTools")}</h3>
-            <p className="text-xs text-muted-foreground">
-              {partial ? t("app.messages.mediaToolsTogether") : t("app.messages.installMediaTools")}
-            </p>
-          </div>
-          <div className="flex min-w-0 items-center gap-2 rounded-md border bg-muted/50 px-2 py-1.5">
-            <code className="min-w-0 flex-1 truncate font-mono text-xs" title={INSTALL_COMMAND}>
-              {INSTALL_COMMAND}
-            </code>
-            <Button
-              aria-label={t("app.actions.copyInstallCommand")}
-              onClick={() =>
-                void copyText(
-                  INSTALL_COMMAND,
-                  t("app.messages.copied"),
-                  t("app.messages.copyFailed"),
-                )
+    <PopoverContent align="center" className={className} sideOffset={4}>
+      <div className="grid min-w-0 gap-3">
+        <div className="grid gap-1">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="font-semibold">{t("app.labels.mediaTools")}</h2>
+            <span
+              className={
+                ready
+                  ? "text-xs text-success"
+                  : unavailable || capabilities.status === "failed"
+                    ? "text-xs text-destructive"
+                    : "text-xs text-muted-foreground"
               }
-              size="xs"
-              variant="ghost"
             >
-              <Clipboard aria-hidden="true" />
-              {t("app.actions.copy")}
-            </Button>
+              {getStatusText(state, t)}
+            </span>
           </div>
-          {rechecked && unavailable ? (
-            <p className="text-xs text-muted-foreground">{t("app.messages.mediaToolsRestart")}</p>
-          ) : null}
-        </section>
-      ) : null}
+          <p className="text-xs text-muted-foreground">
+            {capabilities.status === "failed"
+              ? capabilities.error.message
+              : ready
+                ? t("app.messages.mediaToolsReady")
+                : t("app.messages.mediaToolsUnavailable")}
+          </p>
+        </div>
 
-      <Separator />
+        {capabilities.status === "ready" ? (
+          <ul className="grid min-w-0 gap-2">
+            <BinaryRow capability={capabilities.value.ffmpeg} label="FFmpeg" />
+            <BinaryRow capability={capabilities.value.ffprobe} label="FFprobe" />
+          </ul>
+        ) : null}
 
-      <div className="flex items-center justify-between gap-2">
         {unavailable ? (
+          <section className="grid gap-2 border-t pt-3">
+            <div className="grid gap-1">
+              <h3 className="text-xs font-medium">{t("app.labels.installMediaTools")}</h3>
+              <p className="text-xs text-muted-foreground">
+                {partial
+                  ? t("app.messages.mediaToolsTogether")
+                  : t("app.messages.installMediaTools")}
+              </p>
+            </div>
+            <div className="flex min-w-0 items-center gap-2 rounded-md border bg-muted/50 px-2 py-1.5">
+              <code className="min-w-0 flex-1 truncate font-mono text-xs" title={INSTALL_COMMAND}>
+                {INSTALL_COMMAND}
+              </code>
+              <Button
+                aria-label={t("app.actions.copyInstallCommand")}
+                onClick={() =>
+                  void copyText(
+                    INSTALL_COMMAND,
+                    t("app.messages.copied"),
+                    t("app.messages.copyFailed"),
+                  )
+                }
+                size="xs"
+                variant="ghost"
+              >
+                <Clipboard aria-hidden="true" />
+                {t("app.actions.copy")}
+              </Button>
+            </div>
+            {rechecked && unavailable ? (
+              <p className="text-xs text-muted-foreground">{t("app.messages.mediaToolsRestart")}</p>
+            ) : null}
+          </section>
+        ) : null}
+
+        <Separator />
+
+        <div className="flex items-center justify-between gap-2">
+          {unavailable ? (
+            <Button
+              onClick={() => void openExternalUrl("https://ffmpeg.org/download.html")}
+              size="xs"
+              variant="link"
+            >
+              {t("app.actions.ffmpegDownloads")}
+              <ExternalLink aria-hidden="true" />
+            </Button>
+          ) : (
+            <span />
+          )}
           <Button
-            onClick={() => void openExternalUrl("https://ffmpeg.org/download.html")}
+            disabled={checking}
+            onClick={() => {
+              setRechecked(true);
+              void dispatch(
+                checkMediaCapabilitiesRequested({ type: "button", id: "media-tools.recheck" }),
+              );
+            }}
             size="xs"
-            variant="link"
+            variant="outline"
           >
-            {t("app.actions.ffmpegDownloads")}
-            <ExternalLink aria-hidden="true" />
+            <RotateCw aria-hidden="true" className={checking ? "animate-spin" : undefined} />
+            {checking ? t("app.status.checking") : t("app.actions.recheck")}
           </Button>
-        ) : (
-          <span />
-        )}
-        <Button
-          disabled={checking}
-          onClick={() => {
-            setRechecked(true);
-            void dispatch(
-              checkMediaCapabilitiesRequested({ type: "button", id: "media-tools.recheck" }),
-            );
-          }}
-          size="xs"
-          variant="outline"
-        >
-          <RotateCw aria-hidden="true" className={checking ? "animate-spin" : undefined} />
-          {checking ? t("app.status.checking") : t("app.actions.recheck")}
-        </Button>
+        </div>
       </div>
-    </div>
+    </PopoverContent>
   );
 }
 
@@ -317,6 +306,21 @@ type MediaToolsState = {
   unavailable: boolean;
 };
 
+const MediaToolsStatusContext = createContext<{
+  capabilities: ReturnType<typeof selectCapabilities>;
+  state: MediaToolsState;
+} | null>(null);
+
+function useMediaToolsStatus() {
+  const context = useContext(MediaToolsStatusContext);
+  if (!context) {
+    throw new Error(
+      "MediaToolsStatusTrigger and MediaToolsStatusContent should be used within MediaToolsStatus",
+    );
+  }
+  return context;
+}
+
 function getMediaToolsState(capabilities: ReturnType<typeof selectCapabilities>): MediaToolsState {
   const ready = capabilities.status === "ready" && allAvailable(capabilities.value);
   const partial =
@@ -354,4 +358,4 @@ function allAvailable(capabilities: MediaCapabilities): boolean {
   return capabilities.ffmpeg.available && capabilities.ffprobe.available;
 }
 
-export { MediaToolsStatus };
+export { MediaToolsStatus, MediaToolsStatusContent, MediaToolsStatusTrigger };

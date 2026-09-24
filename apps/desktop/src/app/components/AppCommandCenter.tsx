@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
+import { PopoverAnchor } from "@/components/ui/popover";
 
 import { COMMAND_PALETTE_SHORTCUT } from "@/app/commands/core/application-command.shortcuts";
 import {
@@ -15,7 +16,11 @@ import {
 import { useCommandPalette } from "@/app/contexts/command-palette-context";
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectCapabilities } from "@/app/store/slices/source-slice";
-import { MediaToolsStatus } from "@/features/media";
+import {
+  MediaToolsStatus,
+  MediaToolsStatusContent,
+  MediaToolsStatusTrigger,
+} from "@/features/media";
 import { cn } from "@/lib/class-names.utils";
 
 const MotionButton = motion.create(Button);
@@ -37,10 +42,15 @@ function AppCommandCenter() {
   }, [capabilities.status, shouldReduceMotion, startupComplete]);
 
   return (
-    <ButtonGroup className="w-full max-w-lg justify-center">
-      {startupComplete && <AppCommandCenterTrigger />}
-      <MediaToolsStatus presentation={startupComplete ? "compact" : "default"} />
-    </ButtonGroup>
+    <MediaToolsStatus>
+      <PopoverAnchor asChild>
+        <ButtonGroup className="w-full max-w-lg justify-center">
+          {startupComplete && <AppCommandCenterTrigger />}
+          <MediaToolsStatusTrigger presentation={startupComplete ? "compact" : "default"} />
+          <MediaToolsStatusContent className="w-(--radix-popover-trigger-width) max-w-lg" />
+        </ButtonGroup>
+      </PopoverAnchor>
+    </MediaToolsStatus>
   );
 }
 

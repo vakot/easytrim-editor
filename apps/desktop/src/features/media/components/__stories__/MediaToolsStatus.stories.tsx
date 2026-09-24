@@ -1,9 +1,10 @@
 import "@/i18n/config";
 
 import type { Meta, StoryObj } from "@storybook/react";
-import type { ComponentProps } from "react";
 import { useEffect, useMemo } from "react";
 import { Provider } from "react-redux";
+
+import { ButtonGroup } from "@/components/ui/button-group";
 
 import {
   capabilitiesChecking,
@@ -13,22 +14,26 @@ import {
 import { createAppStore } from "@/app/store/store";
 import type { MediaCapabilities } from "@/lib/tauri/media.types";
 
-import { MediaToolsStatus } from "../MediaToolsStatus";
+import {
+  MediaToolsStatus,
+  MediaToolsStatusContent,
+  MediaToolsStatusTrigger,
+} from "../MediaToolsStatus";
 
 type MediaToolsStoryState = "checking" | "ready" | "partial" | "unavailable" | "failed";
 
 type MediaToolsStatusStoryArgs = {
-  presentation: NonNullable<ComponentProps<typeof MediaToolsStatus>["presentation"]>;
+  presentation: "compact" | "default";
   state: MediaToolsStoryState;
 };
 
 const meta = {
-  component: MediaToolsStatus,
-  args: { presentation: "compact", state: "ready" },
+  component: MediaToolsStatusStory,
+  args: { presentation: "default", state: "ready" },
   argTypes: {
     presentation: {
       control: "select",
-      options: ["compact", "startup"],
+      options: ["compact", "default"],
     },
     state: {
       control: "select",
@@ -97,9 +102,12 @@ function MediaToolsStatusStory({ presentation, state }: MediaToolsStatusStoryArg
 
   return (
     <Provider store={store}>
-      <div className="flex h-10 items-center rounded-lg border bg-background px-1">
-        <MediaToolsStatus presentation={presentation} />
-      </div>
+      <MediaToolsStatus>
+        <ButtonGroup className="h-10 items-center rounded-lg border bg-background px-1">
+          <MediaToolsStatusTrigger presentation={presentation} />
+          <MediaToolsStatusContent />
+        </ButtonGroup>
+      </MediaToolsStatus>
     </Provider>
   );
 }

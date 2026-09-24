@@ -13,7 +13,11 @@ import { capabilitiesFailed, capabilitiesReady } from "@/app/store/slices/source
 import { createAppStore } from "@/app/store/store";
 import type { MediaCapabilities } from "@/lib/tauri/media.types";
 
-import { MediaToolsStatus } from "../MediaToolsStatus";
+import {
+  MediaToolsStatus,
+  MediaToolsStatusContent,
+  MediaToolsStatusTrigger,
+} from "../MediaToolsStatus";
 
 const readyCapabilities: MediaCapabilities = {
   ffmpeg: {
@@ -35,7 +39,10 @@ function renderStatus(capabilities?: MediaCapabilities) {
     store,
     ...render(
       <Provider store={store}>
-        <MediaToolsStatus />
+        <MediaToolsStatus>
+          <MediaToolsStatusTrigger presentation="default" />
+          <MediaToolsStatusContent />
+        </MediaToolsStatus>
       </Provider>,
     ),
   };
@@ -92,7 +99,10 @@ describe("MediaToolsStatus", () => {
     store.dispatch(capabilitiesFailed({ code: "internal", message: "Capability check failed." }));
     render(
       <Provider store={store}>
-        <MediaToolsStatus />
+        <MediaToolsStatus>
+          <MediaToolsStatusTrigger presentation="default" />
+          <MediaToolsStatusContent />
+        </MediaToolsStatus>
       </Provider>,
     );
     fireEvent.click(screen.getByRole("button", { name: "Media tools check failed" }));
