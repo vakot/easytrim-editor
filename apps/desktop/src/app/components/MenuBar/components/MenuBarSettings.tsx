@@ -59,7 +59,7 @@ function PreferenceMenuItem({ children, commandId, icon }: PreferenceMenuItemPro
     <Tooltip preserveOnTrigger>
       <ApplicationCommandMenuItem asChild commandId={commandId}>
         <TooltipTrigger asChild>
-          <MenubarCheckboxItem keepOpen>
+          <MenubarCheckboxItem inset keepOpen>
             <MenubarIcon side="right">{icon}</MenubarIcon>
             <ApplicationCommandLabel>{children}</ApplicationCommandLabel>
           </MenubarCheckboxItem>
