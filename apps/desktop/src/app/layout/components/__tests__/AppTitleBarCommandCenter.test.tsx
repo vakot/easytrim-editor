@@ -1,6 +1,6 @@
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import { Provider } from "react-redux";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CommandPaletteProvider } from "@/app/providers/CommandPaletteProvider";
 import { capabilitiesChecking, capabilitiesReady } from "@/app/store/slices/source-slice";
@@ -15,7 +15,15 @@ const capabilities: MediaCapabilities = {
 };
 
 describe("AppTitleBarCommandCenter", () => {
-  it("shows startup status first and keeps Search visible through later checks", async () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("shows startup status first and keeps Search visible through later checks", () => {
     const store = createAppStore();
     render(
       <Provider store={store}>
@@ -29,12 +37,16 @@ describe("AppTitleBarCommandCenter", () => {
     expect(screen.queryByRole("button", { name: "Search commands…" })).not.toBeInTheDocument();
 
     act(() => store.dispatch(capabilitiesReady(capabilities)));
-    expect(await screen.findByRole("button", { name: "Media tools ready" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Media tools ready" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Search commands…" })).not.toBeInTheDocument();
 
-    const search = await screen.findByRole("button", { name: "Search commands…" });
+    act(() => vi.advanceTimersByTime(799));
+    expect(screen.queryByRole("button", { name: "Search commands…" })).not.toBeInTheDocument();
+
+    act(() => vi.advanceTimersByTime(1));
+    const search = screen.getByRole("button", { name: "Search commands…" });
     act(() => store.dispatch(capabilitiesChecking()));
-    await waitFor(() => expect(search).toBeInTheDocument());
+    expect(search).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Checking media tools…" })).toBeInTheDocument();
   });
 });

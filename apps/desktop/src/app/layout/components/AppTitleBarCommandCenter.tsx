@@ -63,6 +63,7 @@ function AppTitleBarCommandCenter() {
           </KbdGroup>
         </span>
       </Button>
+
       <MediaToolsStatus />
     </ButtonGroup>
   );
