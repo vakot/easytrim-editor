@@ -6,11 +6,11 @@ import { commandSearchTerms } from "@/app/commands/core/application-command.util
 type Language = "en" | "sk" | "ru";
 
 // Always show each language's native name; never translate these labels for the active language.
-const languageNames = {
-  en: "English",
-  sk: "Slovenčina",
-  ru: "Русский",
-} satisfies Record<Language, string>;
+const languageOptions = [
+  { code: "en", label: "English" },
+  { code: "sk", label: "Slovenčina" },
+  { code: "ru", label: "Русский" },
+] as const satisfies readonly { code: Language; label: string }[];
 
 function getLanguageCommandId(language: Language) {
   return `language-${language}` as const;
@@ -19,16 +19,16 @@ function getLanguageCommandId(language: Language) {
 function useLanguageCommands() {
   const { i18n } = useTranslation();
 
-  return (["en", "sk", "ru"] as const).map((language) => ({
-    checked: i18n.resolvedLanguage === language,
+  return languageOptions.map(({ code, label }) => ({
+    checked: i18n.resolvedLanguage === code,
     enabled: true,
     icon: <FileOutputIcon aria-hidden="true" />,
     async run() {
-      await i18n.changeLanguage(language);
+      await i18n.changeLanguage(code);
     },
-    id: getLanguageCommandId(language),
-    label: languageNames[language],
-    searchTerms: commandSearchTerms(`${languageNames[language]}|language`),
+    id: getLanguageCommandId(code),
+    label,
+    searchTerms: commandSearchTerms(`${label}|language`),
     variant: "default" as const,
   }));
 }
