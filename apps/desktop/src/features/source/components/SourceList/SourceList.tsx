@@ -66,7 +66,7 @@ function SourceList({ children }: SourceListProps) {
       }}
     >
       <Tabs
-        className="min-h-0 flex-1"
+        className="min-h-0 min-w-0 flex-1"
         onValueChange={(value) => setTab(value as SourceListTab)}
         value={tab}
       >

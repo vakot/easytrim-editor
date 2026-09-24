@@ -27,16 +27,16 @@ function SourceListContent() {
 
   return (
     <InfiniteScroll hasMore={hasMore} isLoading={isLoading} next={next}>
-      <TabsContent value="none">
+      <TabsContent className="min-w-0" value="none">
         <SourceListNone sources={visibleSources} />
       </TabsContent>
-      <TabsContent value="folder">
+      <TabsContent className="min-w-0" value="folder">
         <SourceListFolder sources={visibleSources} />
       </TabsContent>
-      <TabsContent value="time">
+      <TabsContent className="min-w-0" value="time">
         <SourceListTime sources={visibleSources} />
       </TabsContent>
-      <TabsContent value="imported">
+      <TabsContent className="min-w-0" value="imported">
         <SourceListImported sources={visibleSources} />
       </TabsContent>
     </InfiniteScroll>
