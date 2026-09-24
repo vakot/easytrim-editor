@@ -53,14 +53,20 @@ const preferencesSlice = createSlice({
       state.customPrimaryColor = action.payload;
       state.primaryColor = action.payload;
     },
+    changelogVersionSeen: (state, action: PayloadAction<string>) => {
+      state.lastSeenChangelogVersion = action.payload;
+    },
     preferencesReset: (state) => {
+      const lastSeenChangelogVersion = state.lastSeenChangelogVersion;
       Object.assign(state, DEFAULT_PREFERENCES);
+      state.lastSeenChangelogVersion = lastSeenChangelogVersion;
     },
   },
 });
 
 const {
   activityFeedViewChanged,
+  changelogVersionSeen,
   customPrimaryColorChanged,
   layoutDensityChanged,
   preferenceChanged,
@@ -105,8 +111,12 @@ const selectPrimaryColorKey = (state: RootState): PrimaryColorKey => {
 const selectCustomPrimaryColor = (state: RootState): CustomPrimaryColor =>
   selectPreferences(state).customPrimaryColor;
 
+const selectLastSeenChangelogVersion = (state: RootState): string | null =>
+  selectPreferences(state).lastSeenChangelogVersion;
+
 export {
   activityFeedViewChanged,
+  changelogVersionSeen,
   customPrimaryColorChanged,
   layoutDensityChanged,
   preferenceChanged,
@@ -117,6 +127,7 @@ export {
   selectAutoStartQueueEnabled,
   selectCustomPrimaryColor,
   selectDeleteSourceOnRenderFinish,
+  selectLastSeenChangelogVersion,
   selectLayoutDensity,
   selectMergeAudioEnabledDefault,
   selectPreferences,

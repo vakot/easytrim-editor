@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+
+- Added an in-app changelog and What's New view for released EasyTrim updates.
+
 ## [1.10.4]
 
 ### Fixed

@@ -508,6 +508,26 @@ export const en = {
       projectPage: "Project Page",
       projectSupport: "Support the Project",
       showLogs: "Show logs",
+      viewOnGitHub: "View on GitHub",
+    },
+    labels: {
+      categories: {
+        added: "Added",
+        changed: "Changed",
+        deprecated: "Deprecated",
+        fixed: "Fixed",
+        removed: "Removed",
+        security: "Security",
+      },
+      historyTitle: "Changelog",
+      whatsNewTitle: "What’s New",
+    },
+    messages: {
+      emptyChangelog: "No released changes are available yet.",
+      emptyChangelogDescription:
+        "Released updates will appear here when they are included in your installed version.",
+      historyDescription: "Released changes included in this version of EasyTrim.",
+      whatsNewDescription: "Here’s what changed since you last opened EasyTrim.",
     },
   },
   units: {

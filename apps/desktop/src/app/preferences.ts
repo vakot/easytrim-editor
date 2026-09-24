@@ -14,6 +14,7 @@ interface Preferences {
   autoStartQueueEnabled: boolean;
   customPrimaryColor: CustomPrimaryColor;
   deleteSourceOnRenderFinish: boolean;
+  lastSeenChangelogVersion: string | null;
   layoutDensity: LayoutDensity;
   loopPlaybackEnabledDefault: boolean;
   mergeAudioEnabledDefault: boolean;
@@ -39,6 +40,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   theme: "system",
   primaryColor: DEFAULT_PRIMARY_COLOR,
   customPrimaryColor: DEFAULT_CUSTOM_PRIMARY_COLOR,
+  lastSeenChangelogVersion: null,
 };
 
 export type { Preferences };

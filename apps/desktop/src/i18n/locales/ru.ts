@@ -510,6 +510,26 @@ export const ru = {
       projectPage: "Страница проекта",
       projectSupport: "Поддержать проект",
       showLogs: "Показать журналы",
+      viewOnGitHub: "Открыть на GitHub",
+    },
+    labels: {
+      categories: {
+        added: "Добавлено",
+        changed: "Изменено",
+        deprecated: "Устарело",
+        fixed: "Исправлено",
+        removed: "Удалено",
+        security: "Безопасность",
+      },
+      historyTitle: "Список изменений",
+      whatsNewTitle: "Что нового",
+    },
+    messages: {
+      emptyChangelog: "Выпущенных изменений пока нет.",
+      emptyChangelogDescription:
+        "Выпущенные обновления появятся здесь, когда войдут в установленную версию.",
+      historyDescription: "Выпущенные изменения, включённые в эту версию EasyTrim.",
+      whatsNewDescription: "Изменения с момента последнего открытия EasyTrim.",
     },
   },
   units: {
