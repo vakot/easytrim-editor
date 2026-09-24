@@ -147,6 +147,26 @@ function RuntimeProbe() {
       >
         open-file-menu
       </button>
+      <button
+        onClick={(event) => {
+          event.currentTarget.dataset.isPromise = String(
+            executeCommand("reset-layout", "palette").isPromise,
+          );
+        }}
+        type="button"
+      >
+        inspect-sync-execution
+      </button>
+      <button
+        onClick={(event) => {
+          event.currentTarget.dataset.isPromise = String(
+            executeCommand("open-file", "palette").isPromise,
+          );
+        }}
+        type="button"
+      >
+        inspect-async-execution
+      </button>
     </div>
   );
 }
@@ -244,6 +264,12 @@ describe("ApplicationCommandsProvider", () => {
       "destructive",
     );
 
+    fireEvent.click(screen.getByRole("button", { name: "inspect-sync-execution" }));
+    expect(screen.getByRole("button", { name: "inspect-sync-execution" })).toHaveAttribute(
+      "data-is-promise",
+      "false",
+    );
+
     fireEvent.click(screen.getByRole("button", { name: "delete-file" }));
 
     expect(mocks.requestSourceDelete).toHaveBeenCalledWith({ sourceIds: ["source-1"] });
@@ -278,7 +304,11 @@ describe("ApplicationCommandsProvider", () => {
     const command = screen.getByRole("button", { name: "open-file" });
     const menuCommand = screen.getByRole("button", { name: "open-file-menu" });
 
-    fireEvent.click(command);
+    fireEvent.click(screen.getByRole("button", { name: "inspect-async-execution" }));
+    expect(screen.getByRole("button", { name: "inspect-async-execution" })).toHaveAttribute(
+      "data-is-promise",
+      "true",
+    );
     fireEvent.click(command);
 
     expect(command).toBeDisabled();

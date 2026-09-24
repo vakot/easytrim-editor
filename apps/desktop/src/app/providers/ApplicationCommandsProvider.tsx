@@ -4,6 +4,7 @@ import { type ApplicationCommandId, useApplicationCommandGroups } from "@/app/co
 import {
   type ApplicationCommand,
   type ApplicationCommandDefinition,
+  type ApplicationCommandExecution,
   type ApplicationCommandSurface,
   commandOrigin,
 } from "@/app/commands/core/application-command.types";
@@ -29,24 +30,44 @@ function ApplicationCommandsProvider({ children }: { children: ReactNode }) {
   const definitionsById = useMemo(() => commandsById(definitions), [definitions]);
 
   const executeCommand = useCallback(
-    async (id: ApplicationCommandId, surface: ApplicationCommandSurface) => {
+    (id: ApplicationCommandId, surface: ApplicationCommandSurface): ApplicationCommandExecution => {
       const definition = definitionsById[id];
-      if (!definition || !definition.enabled || pendingIdsRef.current.has(id)) return;
+      if (!definition || !definition.enabled || pendingIdsRef.current.has(id)) {
+        return { completion: Promise.resolve(), isPromise: false };
+      }
 
       pendingIdsRef.current.add(id);
       setPendingIds(new Set(pendingIdsRef.current));
 
+      const clearPending = () => {
+        pendingIdsRef.current.delete(id);
+        setPendingIds(new Set(pendingIdsRef.current));
+      };
+
       try {
         const result = definition.run({ surface });
-        if (result && typeof result.then === "function") await result;
+        if (result && typeof result.then === "function") {
+          const completion = Promise.resolve(result)
+            .catch((error: unknown) => {
+              diagnostics.error("application.command.failed", error, {
+                data: { commandId: id, surface },
+                origin: commandOrigin(id, surface),
+              });
+            })
+            .finally(clearPending);
+
+          return { completion, isPromise: true };
+        }
+
+        clearPending();
+        return { completion: Promise.resolve(), isPromise: false };
       } catch (error: unknown) {
         diagnostics.error("application.command.failed", error, {
           data: { commandId: id, surface },
           origin: commandOrigin(id, surface),
         });
-      } finally {
-        pendingIdsRef.current.delete(id);
-        setPendingIds(new Set(pendingIdsRef.current));
+        clearPending();
+        return { completion: Promise.resolve(), isPromise: false };
       }
     },
     [definitionsById],

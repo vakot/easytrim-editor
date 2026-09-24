@@ -35,6 +35,11 @@ interface ApplicationCommandExecutionContext {
   surface: ApplicationCommandSurface;
 }
 
+interface ApplicationCommandExecution {
+  completion: Promise<void>;
+  isPromise: boolean;
+}
+
 interface ApplicationCommandDefinition<Id extends string = string> extends Omit<
   ApplicationCommand<Id>,
   "group" | "pending"
@@ -68,6 +73,7 @@ function commandOrigin(commandId: string, surface: ApplicationCommandSurface) {
 export type {
   ApplicationCommand,
   ApplicationCommandDefinition,
+  ApplicationCommandExecution,
   ApplicationCommandExecutionContext,
   ApplicationCommandGroup,
   ApplicationCommandGroupMetadata,

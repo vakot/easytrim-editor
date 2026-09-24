@@ -92,8 +92,9 @@ function CommandPalette() {
 
   function executeCommand(command: ApplicationCommand<ApplicationCommandId>) {
     if (!command.enabled || command.pending) return;
-    handleOpenChange(false);
-    void executeApplicationCommand(command.id, "palette");
+    const execution = executeApplicationCommand(command.id, "palette");
+    if (!execution.isPromise) handleOpenChange(false);
+    void execution.completion;
   }
 
   return (

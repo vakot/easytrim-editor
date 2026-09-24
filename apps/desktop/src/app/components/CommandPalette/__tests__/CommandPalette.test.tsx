@@ -6,7 +6,7 @@ import type { ApplicationCommand } from "@/app/commands/core/application-command
 
 const mocks = vi.hoisted(() => ({
   commands: [] as ApplicationCommand[],
-  executeCommand: vi.fn(() => Promise.resolve()),
+  executeCommand: vi.fn(() => ({ completion: Promise.resolve(), isPromise: true })),
 }));
 
 vi.mock("@/app/hooks/useApplicationCommands", () => ({
@@ -43,6 +43,7 @@ describe("CommandPalette semantic icons", () => {
       createCommand("check-for-updates", "Up to date", "success", <CheckCircle2 />),
     ];
     mocks.executeCommand.mockClear();
+    mocks.executeCommand.mockReturnValue({ completion: Promise.resolve(), isPromise: true });
   });
 
   it("colors destructive and success icons with the shared menu variant styles", async () => {
@@ -54,5 +55,33 @@ describe("CommandPalette semantic icons", () => {
 
     expect(destructiveItem).toHaveClass("[&_svg]:text-destructive!");
     expect(successItem).toHaveClass("[&_svg]:text-success!");
+  });
+
+  it("keeps the palette open for Promise actions so their state and label can update", async () => {
+    const view = render(<CommandPalette />);
+    fireEvent.keyDown(window, { code: "KeyH", ctrlKey: true });
+
+    fireEvent.click(await screen.findByRole("option", { name: "Up to date" }));
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(mocks.executeCommand).toHaveBeenCalledWith("check-for-updates", "palette");
+
+    mocks.commands = [
+      ...mocks.commands.filter((command) => command.id !== "check-for-updates"),
+      createCommand("check-for-updates", "Update", "default", <CheckCircle2 />),
+    ];
+    view.rerender(<CommandPalette />);
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Update" })).toBeInTheDocument();
+  });
+
+  it("closes the palette after synchronous actions", async () => {
+    mocks.executeCommand.mockReturnValue({ completion: Promise.resolve(), isPromise: false });
+    render(<CommandPalette />);
+    fireEvent.keyDown(window, { code: "KeyH", ctrlKey: true });
+
+    fireEvent.click(await screen.findByRole("option", { name: "Reset to default" }));
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 });
