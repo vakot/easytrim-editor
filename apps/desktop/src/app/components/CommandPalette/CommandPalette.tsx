@@ -12,6 +12,7 @@ import {
   CommandSeparator,
   CommandShortcut,
 } from "@/components/ui/command";
+import type { HighlightRange } from "@/components/ui/highlight";
 import { Highlight } from "@/components/ui/highlight";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { menuVariantIconClassNames } from "@/components/ui/menu";
@@ -42,7 +43,7 @@ const commandVariantClassNames = {
 
 type CommandPaletteGroupMatches = {
   groupLabel: string;
-  groupMatched: boolean;
+  groupMatchRanges: ReadonlyArray<HighlightRange>;
   matches: ApplicationCommandMatch<ApplicationCommandId>[];
 };
 
@@ -104,7 +105,7 @@ function CommandPalette() {
   }
 
   return (
-    <CommandPaletteContext.Provider value={{ query, executeCommand }}>
+    <CommandPaletteContext.Provider value={{ executeCommand }}>
       <CommandDialog
         className="top-1/2 h-[min(60dvh,32rem)] -translate-y-1/2 overflow-hidden rounded-xl! p-0 sm:max-w-md"
         description={t("app.messages.commandPaletteDescription")}
@@ -149,12 +150,10 @@ function CommandPaletteEmpty() {
 }
 
 function CommandPaletteGroup({ group }: { group: CommandPaletteGroupMatches }) {
-  const { query } = useCommandPaletteState();
-
   return (
     <div>
       <CommandGroup
-        heading={<Highlight query={group.groupMatched ? query : ""}>{group.groupLabel}</Highlight>}
+        heading={<Highlight ranges={group.groupMatchRanges}>{group.groupLabel}</Highlight>}
       >
         {group.matches.map((match) => (
           <CommandPaletteItem key={match.command.id} match={match} />
@@ -167,7 +166,7 @@ function CommandPaletteGroup({ group }: { group: CommandPaletteGroupMatches }) {
 function CommandPaletteItem({ match }: { match: ApplicationCommandMatch<ApplicationCommandId> }) {
   const { command } = match;
 
-  const { executeCommand, query } = useCommandPaletteState();
+  const { executeCommand } = useCommandPaletteState();
 
   return (
     <CommandItem
@@ -180,7 +179,7 @@ function CommandPaletteItem({ match }: { match: ApplicationCommandMatch<Applicat
     >
       <ApplicationCommandIcon command={command} />
       <span>
-        <Highlight query={match.labelMatched ? query : ""}>{command.label}</Highlight>
+        <Highlight ranges={match.labelMatchRanges}>{command.label}</Highlight>
       </span>
       {command.shortcut ? (
         <CommandShortcut aria-label={getShortcutAriaValue(command.shortcut)}>
@@ -197,7 +196,6 @@ function CommandPaletteItem({ match }: { match: ApplicationCommandMatch<Applicat
 
 const CommandPaletteContext = createContext<{
   executeCommand: (command: ApplicationCommand<ApplicationCommandId>) => void;
-  query: string;
 } | null>(null);
 
 function useCommandPaletteState() {
@@ -215,17 +213,29 @@ function groupCommandMatches(matches: readonly ApplicationCommandMatch<Applicati
     const current = groups.get(match.command.group.id);
     if (current) {
       current.matches.push(match);
-      current.groupMatched ||= match.groupMatched;
+      current.groupMatchRanges = mergeRanges(current.groupMatchRanges, match.groupMatchRanges);
     } else {
       groups.set(match.command.group.id, {
         matches: [match],
         groupLabel: match.command.group.label,
-        groupMatched: match.groupMatched,
+        groupMatchRanges: match.groupMatchRanges,
       });
     }
   }
 
   return groups;
+}
+
+function mergeRanges(
+  first: ReadonlyArray<readonly [number, number]>,
+  second: ReadonlyArray<readonly [number, number]>,
+) {
+  return [...first, ...second]
+    .filter(
+      (range, index, ranges) =>
+        ranges.findIndex(([start, end]) => start === range[0] && end === range[1]) === index,
+    )
+    .sort(([firstStart], [secondStart]) => firstStart - secondStart);
 }
 
 export { CommandPalette };

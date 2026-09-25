@@ -1,3 +1,5 @@
+import Fuse, { type IFuseOptions } from "fuse.js";
+
 import type {
   ApplicationCommand,
   ApplicationCommandDefinition,
@@ -30,24 +32,44 @@ function filterApplicationCommands<Id extends string>(
   commands: readonly ApplicationCommand<Id>[],
   query: string,
 ): ApplicationCommandMatch<Id>[] {
-  const normalizedQuery = normalizeSearchValue(query);
+  const normalizedQuery = query.trim();
+  if (!normalizedQuery) {
+    return commands.map((command) => ({
+      command,
+      groupMatched: false,
+      groupMatchRanges: [],
+      labelMatched: false,
+      labelMatchRanges: [],
+      searchTermMatched: false,
+    }));
+  }
 
-  return commands.flatMap((command) => {
-    if (!normalizedQuery) {
-      return [{ command, labelMatched: false, searchTermMatched: false, groupMatched: false }];
-    }
+  return new Fuse(commands, commandSearchOptions)
+    .search(normalizedQuery)
+    .map(({ item: command, matches }) => {
+      const labelMatchRanges = matches?.find(({ key }) => key === "label")?.indices ?? [];
+      const groupMatchRanges = matches?.find(({ key }) => key === "group.label")?.indices ?? [];
+      const searchTermMatched = matches?.some(({ key }) => key === "searchTerms") ?? false;
 
-    const labelMatched = normalizeSearchValue(command.label).includes(normalizedQuery);
-    const groupMatched = normalizeSearchValue(command.group.label).includes(normalizedQuery);
-    const searchTermMatched = command.searchTerms.some((term) =>
-      normalizeSearchValue(term).includes(normalizedQuery),
-    );
-
-    return labelMatched || groupMatched || searchTermMatched
-      ? [{ command, labelMatched, searchTermMatched, groupMatched }]
-      : [];
-  });
+      return {
+        command,
+        groupMatched: groupMatchRanges.length > 0,
+        groupMatchRanges,
+        labelMatched: labelMatchRanges.length > 0,
+        labelMatchRanges,
+        searchTermMatched,
+      };
+    });
 }
+
+const commandSearchOptions = {
+  includeMatches: true,
+  ignoreLocation: true,
+  keys: ["label", "group.label", "searchTerms"],
+  threshold: 0.3,
+  tokenMatch: "all",
+  useTokenSearch: true,
+} satisfies IFuseOptions<ApplicationCommand>;
 
 function getShortcutDisplayKeys(
   shortcut: ApplicationShortcut,
@@ -121,10 +143,6 @@ function assertUniqueCommandIds(commands: readonly { id: string }[]): void {
 function commandsById<Id extends string, T extends { id: Id }>(commands: readonly T[]) {
   assertUniqueCommandIds(commands);
   return Object.fromEntries(commands.map((command) => [command.id, command])) as Record<Id, T>;
-}
-
-function normalizeSearchValue(value: string): string {
-  return value.trim().toLocaleLowerCase();
 }
 
 function getShortcutPlatform(): ShortcutPlatform {

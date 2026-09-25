@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 
+import type { HighlightRange } from "@/components/ui/highlight";
+
 import type { DiagnosticOrigin } from "@/lib/tauri/diagnostics.types";
 
 type ApplicationCommandSurface = "button" | "hotkey" | "menu" | "palette";
@@ -58,7 +60,9 @@ interface ApplicationCommandGroup<
 interface ApplicationCommandMatch<Id extends string = string> {
   command: ApplicationCommand<Id>;
   groupMatched: boolean;
+  groupMatchRanges: ReadonlyArray<HighlightRange>;
   labelMatched: boolean;
+  labelMatchRanges: ReadonlyArray<HighlightRange>;
   searchTermMatched: boolean;
 }
 
