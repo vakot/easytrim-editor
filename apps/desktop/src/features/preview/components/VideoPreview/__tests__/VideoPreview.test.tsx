@@ -407,7 +407,7 @@ describe("VideoPreview", () => {
     });
   });
 
-  it("mounts the crop selection at its final normalized crop rectangle", () => {
+  it("moves the crop selection from the visible crop to its source rect with the video", () => {
     const store = createAppStore();
     store.dispatch(
       cropChanged({
@@ -420,13 +420,23 @@ describe("VideoPreview", () => {
 
     openCropTool(viewport);
 
-    expect(container.querySelector("[data-crop-selection]")).toHaveStyle({
-      left: "25%",
-      top: "10%",
-      width: "50%",
-      height: "60%",
+    const selection = container.querySelector("[data-crop-selection]");
+    const rotatingOutput = container.querySelector("[data-rotating-output]");
+    expect(selection).toHaveStyle({
+      left: "0%",
+      top: "0%",
+      width: "100%",
+      height: "100%",
       opacity: "0",
     });
+    expect(selection).toHaveAttribute("data-source-crop-x", "0.25");
+    expect(selection).toHaveAttribute("data-source-crop-y", "0.1");
+    expect(selection).toHaveAttribute("data-source-crop-width", "0.5");
+    expect(selection).toHaveAttribute("data-source-crop-height", "0.6");
+    expect(rotatingOutput).toContainElement(container.querySelector("[data-crop-clip]"));
+    expect(rotatingOutput).toContainElement(
+      container.querySelector("[data-crop-selection-coordinate-space]"),
+    );
     expect(container.querySelector('[aria-label="Video crop preview"]')).toHaveStyle({
       "--preview-transition-duration": "300ms",
     });
@@ -660,6 +670,7 @@ describe("VideoPreview", () => {
   });
 
   it.each([
+    ["no flips", false, false],
     ["horizontal", true, false],
     ["vertical", false, true],
     ["both", true, true],
@@ -681,12 +692,12 @@ describe("VideoPreview", () => {
 
       openCropTool(viewport);
 
-      expect(container.querySelector("[data-crop-selection]")).toHaveStyle({
-        left: "0%",
-        top: "50%",
-        width: "100%",
-        height: "50%",
-      });
+      const selection = container.querySelector("[data-crop-selection]");
+      expect(selection).toHaveStyle({ left: "0%", top: "0%", width: "100%", height: "100%" });
+      expect(selection).toHaveAttribute("data-source-crop-x", "0.5");
+      expect(selection).toHaveAttribute("data-source-crop-y", "0");
+      expect(selection).toHaveAttribute("data-source-crop-width", "0.5");
+      expect(selection).toHaveAttribute("data-source-crop-height", "1");
       expect(container.querySelector("[data-flip-layer]")).toHaveAttribute(
         "data-flip-horizontal",
         String(horizontal),
@@ -695,17 +706,19 @@ describe("VideoPreview", () => {
         "data-flip-vertical",
         String(vertical),
       );
-      expect(container.querySelector("[data-flip-layer]")).toContainElement(
+      const rotatingOutput = container.querySelector("[data-rotating-output]");
+      expect(rotatingOutput).toContainElement(container.querySelector("[data-crop-clip]"));
+      expect(rotatingOutput).toContainElement(
         container.querySelector("[data-crop-selection-coordinate-space]"),
       );
 
       const visibleTopLeftHandle = horizontal
         ? vertical
-          ? "bottom right"
-          : "top right"
-        : vertical
           ? "bottom left"
-          : "top left";
+          : "top left"
+        : vertical
+          ? "bottom right"
+          : "top right";
 
       expect(
         screen.getByRole("button", { name: `Resize crop from ${visibleTopLeftHandle}` }),

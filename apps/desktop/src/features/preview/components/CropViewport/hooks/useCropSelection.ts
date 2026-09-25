@@ -3,7 +3,6 @@ import {
   type RefObject,
   useCallback,
   useEffect,
-  useRef,
   useState,
 } from "react";
 
@@ -51,7 +50,6 @@ function useCropSelection(
   const crop = useAppSelector(selectCrop);
   const [isOpen, setIsOpen] = useState(false);
   const [drag, setDrag] = useState<DragState | null>(null);
-  const selectionRef = useRef<HTMLDivElement>(null);
 
   const open = useCallback(() => {
     setIsOpen(true);
@@ -157,7 +155,6 @@ function useCropSelection(
     isOpen,
     moveDrag,
     open,
-    selectionRef,
     startDrag,
   };
 }

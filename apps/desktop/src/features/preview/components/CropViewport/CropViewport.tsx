@@ -80,7 +80,6 @@ function CropViewport() {
   const geometry = previewGeometryFor(sourceWidth, sourceHeight, resolved.crop, resolved.rotation);
   const cropIsOpen = resolved.cropIsOpen;
   const transformTransition = previewTransitionFor(isDragging || reduceMotion, reduceMotion);
-  const selectionFadeTransition = previewTransitionFor(false, reduceMotion);
   const previewAspect = geometry === null ? 1 : previewFrameAspectFor(geometry, cropIsOpen);
   const startCropDrag = useCallback(
     (event: PointerEvent<HTMLElement>, handle: CropHandle) => {
@@ -186,27 +185,27 @@ function CropViewport() {
                   transition={transformTransition}
                 />
               </div>
+              <div
+                className="absolute inset-0"
+                data-crop-selection-coordinate-space
+                ref={sourceFrameRef}
+              >
+                <AnimatePresence initial={false}>
+                  {cropIsOpen ? (
+                    <CropSelection
+                      crop={resolved.crop}
+                      flipHorizontal={resolved.flipHorizontal}
+                      flipVertical={resolved.flipVertical}
+                      isDragging={isDragging}
+                      key="crop-selection"
+                      onPointerDown={startCropDrag}
+                      rotation={resolved.rotation}
+                      transition={transformTransition}
+                    />
+                  ) : null}
+                </AnimatePresence>
+              </div>
             </motion.div>
-            <div
-              className="absolute inset-0"
-              data-crop-selection-coordinate-space
-              ref={sourceFrameRef}
-            >
-              <AnimatePresence initial={false}>
-                {cropIsOpen ? (
-                  <CropSelection
-                    crop={resolved.crop}
-                    fadeTransition={selectionFadeTransition}
-                    flipHorizontal={resolved.flipHorizontal}
-                    flipVertical={resolved.flipVertical}
-                    isDragging={isDragging}
-                    key="crop-selection"
-                    onPointerDown={startCropDrag}
-                    selectionRef={cropSelection.selectionRef}
-                  />
-                ) : null}
-              </AnimatePresence>
-            </div>
           </motion.div>
           <CropSnapMarkers transition={transformTransition} visible={cropIsOpen && isEditing} />
         </PreviewFrame>

@@ -23,7 +23,7 @@ function PreviewFrame({ aspectRatio, children, cropEditing, transition }: Previe
         data-crop-editing={cropEditing}
         data-preview-frame
         initial={false}
-        layout="size"
+        layout
         transition={transition}
       >
         {children}
