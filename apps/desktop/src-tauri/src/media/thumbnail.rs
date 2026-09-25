@@ -1,73 +1,239 @@
 use std::{
     ffi::{OsStr, OsString},
-    fs, io,
-    path::Path,
+    fs::{self, File, FileTimes, OpenOptions},
+    io::{self, Read, Write},
+    path::{Path, PathBuf},
     process,
     sync::atomic::{AtomicU64, Ordering},
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
+use image::{DynamicImage, RgbImage, codecs::jpeg::JpegEncoder, imageops::FilterType};
+use sha2::{Digest, Sha256};
+
 use crate::{
     error::AppError,
-    media::probe::inspect_media_cancellable,
     process::{ProcessOutput, run_bounded_cancellable},
-    state::PreviewArtifact,
+    state::{ImportedThumbnailArtifact, PreviewArtifact},
 };
 
 #[cfg(windows)]
-use super::windows_thumbnail::cached_thumbnail;
+use super::windows_thumbnail::{cached_thumbnail, extract_thumbnail};
 
-const THUMBNAIL_WIDTH: u32 = 480;
+pub const THUMBNAIL_WIDTH: u32 = 640;
+pub const THUMBNAIL_HEIGHT: u32 = 360;
+
 const THUMBNAIL_TIMEOUT: Duration = Duration::from_secs(60);
 const THUMBNAIL_STDOUT_LIMIT: usize = 16 * 1024;
 const THUMBNAIL_STDERR_LIMIT: usize = 128 * 1024;
+const THUMBNAIL_CACHE_MAX_BYTES: u64 = 512 * 1024 * 1024;
+const THUMBNAIL_CACHE_MAX_FILES: usize = 4_096;
+const STALE_CACHE_TEMP_MAX_AGE: Duration = Duration::from_secs(60 * 60);
 static NEXT_DIRECTORY_ID: AtomicU64 = AtomicU64::new(0);
 
 pub fn generate_thumbnail(
     source_path: &Path,
-    video_stream_index: Option<u32>,
-) -> Result<PreviewArtifact, AppError> {
+    cache_directory: &Path,
+) -> Result<ImportedThumbnailArtifact, AppError> {
+    let key = thumbnail_cache_key(source_path)?;
+    let cached_path = cache_directory.join(format!("{key}.jpg"));
+    if is_usable_cache_entry(&cached_path) {
+        touch_cache_entry(&cached_path);
+        return Ok(ImportedThumbnailArtifact::from_cache(cached_path));
+    }
+
     #[cfg(windows)]
-    let cached = cached_thumbnail(source_path);
-    #[cfg(not(windows))]
-    let cached = None;
+    {
+        if let Some(bytes) = cached_thumbnail(source_path) {
+            if let Some(path) = write_cached_thumbnail(cache_directory, &key, &bytes) {
+                return Ok(ImportedThumbnailArtifact::from_cache(path));
+            }
+            return write_temporary_thumbnail(&bytes);
+        }
 
-    use_cache_or_fallback(cached, || {
-        let video_stream_index = resolve_video_stream_index(video_stream_index, || {
-            Ok(inspect_media_cancellable(source_path, || false)?
-                .video
-                .stream_index)
-        })?;
-        generate_ffmpeg_thumbnail(source_path, video_stream_index)
-    })
+        if let Some(bytes) = extract_thumbnail(source_path) {
+            if let Some(path) = write_cached_thumbnail(cache_directory, &key, &bytes) {
+                return Ok(ImportedThumbnailArtifact::from_cache(path));
+            }
+            return write_temporary_thumbnail(&bytes);
+        }
+    }
+
+    let artifact = generate_ffmpeg_thumbnail(source_path)?;
+    let mut bytes = Vec::new();
+    if File::open(artifact.path())
+        .and_then(|mut file| file.read_to_end(&mut bytes))
+        .is_ok()
+    {
+        if let Some(path) = write_cached_thumbnail(cache_directory, &key, &bytes) {
+            return Ok(ImportedThumbnailArtifact::from_cache(path));
+        }
+    }
+
+    Ok(ImportedThumbnailArtifact::from_temporary(artifact))
 }
 
-fn resolve_video_stream_index(
-    video_stream_index: Option<u32>,
-    probe: impl FnOnce() -> Result<u32, AppError>,
-) -> Result<u32, AppError> {
-    match video_stream_index {
-        Some(index) => Ok(index),
-        None => probe(),
+fn thumbnail_cache_key(source_path: &Path) -> Result<String, AppError> {
+    let canonical_path = fs::canonicalize(source_path)
+        .map_err(|_| AppError::io_failed("The source file is no longer available."))?;
+    let metadata = fs::metadata(&canonical_path)
+        .map_err(|_| AppError::io_failed("The source file metadata is unavailable."))?;
+    let modified_nanos = metadata
+        .modified()
+        .ok()
+        .and_then(|modified| modified.duration_since(UNIX_EPOCH).ok())
+        .map_or(0, |duration| duration.as_nanos());
+
+    let mut hasher = Sha256::new();
+    hasher.update(canonical_path.to_string_lossy().as_bytes());
+    hasher.update(metadata.len().to_le_bytes());
+    hasher.update(modified_nanos.to_le_bytes());
+    hasher.update(THUMBNAIL_WIDTH.to_le_bytes());
+    hasher.update(THUMBNAIL_HEIGHT.to_le_bytes());
+
+    Ok(format!("{:x}", hasher.finalize()))
+}
+
+fn is_usable_cache_entry(path: &Path) -> bool {
+    if !path.is_file() || !fs::metadata(path).is_ok_and(|metadata| metadata.len() > 0) {
+        return false;
+    }
+
+    image::ImageReader::open(path)
+        .ok()
+        .and_then(|reader| reader.into_dimensions().ok())
+        .is_some_and(|(width, height)| width == THUMBNAIL_WIDTH && height == THUMBNAIL_HEIGHT)
+}
+
+fn touch_cache_entry(path: &Path) {
+    if let Ok(file) = OpenOptions::new().write(true).open(path) {
+        let times = FileTimes::new().set_modified(SystemTime::now());
+        let _ = file.set_times(times);
     }
 }
 
-fn use_cache_or_fallback<T, E>(
-    cached: Option<T>,
-    fallback: impl FnOnce() -> Result<T, E>,
-) -> Result<T, E> {
-    match cached {
-        Some(thumbnail) => Ok(thumbnail),
-        None => fallback(),
+fn write_cached_thumbnail(cache_directory: &Path, key: &str, bytes: &[u8]) -> Option<PathBuf> {
+    if bytes.is_empty() || fs::create_dir_all(cache_directory).is_err() {
+        return None;
+    }
+
+    let cache_path = cache_directory.join(format!("{key}.jpg"));
+    if is_usable_cache_entry(&cache_path) {
+        touch_cache_entry(&cache_path);
+        return Some(cache_path);
+    }
+
+    let sequence = NEXT_DIRECTORY_ID.fetch_add(1, Ordering::Relaxed);
+    let temporary_path = cache_directory.join(format!("{key}-{}-{sequence}.tmp", process::id()));
+    let write_result = OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&temporary_path)
+        .and_then(|mut file| {
+            file.write_all(bytes)?;
+            file.sync_all()
+        });
+
+    if write_result.is_err() {
+        let _ = fs::remove_file(temporary_path);
+        return None;
+    }
+
+    match fs::rename(&temporary_path, &cache_path) {
+        Ok(()) => {}
+        Err(_) if is_usable_cache_entry(&cache_path) => {
+            let _ = fs::remove_file(temporary_path);
+        }
+        Err(_) => {
+            let _ = fs::remove_file(temporary_path);
+            return None;
+        }
+    }
+
+    trim_thumbnail_cache(cache_directory);
+    Some(cache_path)
+}
+
+fn trim_thumbnail_cache(cache_directory: &Path) {
+    trim_thumbnail_cache_with_limits(
+        cache_directory,
+        THUMBNAIL_CACHE_MAX_BYTES,
+        THUMBNAIL_CACHE_MAX_FILES,
+    );
+}
+
+fn trim_thumbnail_cache_with_limits(cache_directory: &Path, max_bytes: u64, max_files: usize) {
+    let Ok(entries) = fs::read_dir(cache_directory) else {
+        return;
+    };
+
+    let mut entries = entries
+        .flatten()
+        .filter_map(|entry| {
+            let path = entry.path();
+            let metadata = entry.metadata().ok()?;
+            if !metadata.is_file() {
+                return None;
+            }
+
+            if path.extension().is_some_and(|extension| extension == "tmp") {
+                let modified = metadata.modified().unwrap_or(UNIX_EPOCH);
+                return modified
+                    .elapsed()
+                    .is_ok_and(|age| age >= STALE_CACHE_TEMP_MAX_AGE)
+                    .then_some((path, metadata.len(), modified));
+            }
+            if path.extension().is_none_or(|extension| extension != "jpg") {
+                return None;
+            }
+
+            Some((
+                path,
+                metadata.len(),
+                metadata.modified().unwrap_or(UNIX_EPOCH),
+            ))
+        })
+        .collect::<Vec<_>>();
+    entries.sort_by_key(|(_, _, modified)| *modified);
+
+    let mut total_bytes = entries.iter().map(|(_, size, _)| *size).sum::<u64>();
+    let mut file_count = entries.len();
+    for (path, size, _) in entries {
+        if total_bytes <= max_bytes && file_count <= max_files {
+            break;
+        }
+        if fs::remove_file(path).is_ok() {
+            total_bytes = total_bytes.saturating_sub(size);
+            file_count = file_count.saturating_sub(1);
+        }
     }
 }
 
-fn generate_ffmpeg_thumbnail(
-    source_path: &Path,
-    video_stream_index: u32,
-) -> Result<PreviewArtifact, AppError> {
+fn write_temporary_thumbnail(bytes: &[u8]) -> Result<ImportedThumbnailArtifact, AppError> {
     let artifact = create_artifact("jpg")?;
-    let arguments = thumbnail_arguments(source_path, video_stream_index, artifact.path());
+    fs::write(artifact.path(), bytes)
+        .map_err(|_| AppError::io_failed("The thumbnail could not be saved temporarily."))?;
+    Ok(ImportedThumbnailArtifact::from_temporary(artifact))
+}
+
+pub(super) fn encode_rgb_thumbnail(image: RgbImage) -> Result<Vec<u8>, AppError> {
+    encode_thumbnail(DynamicImage::ImageRgb8(image))
+}
+
+fn encode_thumbnail(image: DynamicImage) -> Result<Vec<u8>, AppError> {
+    let image = image.resize_to_fill(THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT, FilterType::Lanczos3);
+    let mut bytes = Vec::new();
+    JpegEncoder::new_with_quality(&mut bytes, 85)
+        .encode_image(&image)
+        .map_err(|_| {
+            AppError::preview_failed("The thumbnail could not be encoded.", None::<String>)
+        })?;
+    Ok(bytes)
+}
+
+fn generate_ffmpeg_thumbnail(source_path: &Path) -> Result<PreviewArtifact, AppError> {
+    let artifact = create_artifact("jpg")?;
+    let arguments = thumbnail_arguments(source_path, artifact.path());
     let output = run_bounded_cancellable(
         OsStr::new("ffmpeg"),
         &arguments,
@@ -91,11 +257,7 @@ fn generate_ffmpeg_thumbnail(
     ))
 }
 
-fn thumbnail_arguments(
-    source_path: &Path,
-    video_stream_index: u32,
-    output_path: &Path,
-) -> Vec<OsString> {
+fn thumbnail_arguments(source_path: &Path, output_path: &Path) -> Vec<OsString> {
     vec![
         OsString::from("-hide_banner"),
         OsString::from("-nostdin"),
@@ -107,23 +269,23 @@ fn thumbnail_arguments(
         OsString::from("-filter_complex_threads"),
         OsString::from("1"),
         OsString::from("-n"),
-        OsString::from("-ss"),
-        OsString::from("0"),
         OsString::from("-i"),
         source_path.as_os_str().to_owned(),
         OsString::from("-map"),
-        OsString::from(format!("0:{video_stream_index}")),
+        OsString::from("0:v:0"),
         OsString::from("-frames:v"),
         OsString::from("1"),
         OsString::from("-vf"),
-        OsString::from(format!("scale=w='min({THUMBNAIL_WIDTH},iw)':h=-2")),
+        OsString::from(format!(
+            "scale={THUMBNAIL_WIDTH}:{THUMBNAIL_HEIGHT}:force_original_aspect_ratio=increase,crop={THUMBNAIL_WIDTH}:{THUMBNAIL_HEIGHT}"
+        )),
         OsString::from("-an"),
         OsString::from("-sn"),
         OsString::from("-dn"),
         OsString::from("-c:v"),
         OsString::from("mjpeg"),
         OsString::from("-q:v"),
-        OsString::from("5"),
+        OsString::from("4"),
         OsString::from("-f"),
         OsString::from("image2"),
         OsString::from("-update"),
@@ -196,49 +358,41 @@ fn diagnostics(
 
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
+    use std::{
+        fs,
+        path::Path,
+        time::{Duration, SystemTime, UNIX_EPOCH},
+    };
 
-    use super::{resolve_video_stream_index, thumbnail_arguments, use_cache_or_fallback};
+    use image::{Rgb, RgbImage};
 
-    #[test]
-    fn provided_video_stream_metadata_skips_thumbnail_probe() {
-        let probe_called = std::cell::Cell::new(false);
-        let stream_index = resolve_video_stream_index(Some(3), || {
-            probe_called.set(true);
-            Ok(0)
-        })
-        .expect("provided stream index is used");
+    use super::{
+        THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH, encode_rgb_thumbnail, is_usable_cache_entry,
+        thumbnail_arguments, thumbnail_cache_key, trim_thumbnail_cache_with_limits,
+        write_cached_thumbnail,
+    };
 
-        assert_eq!(stream_index, 3);
-        assert!(!probe_called.get());
+    struct TestDirectory(std::path::PathBuf);
+
+    impl TestDirectory {
+        fn new() -> Self {
+            let path = std::env::temp_dir()
+                .join(format!("easytrim-thumbnail-test-{}", uuid::Uuid::new_v4()));
+            fs::create_dir(&path).expect("create thumbnail test directory");
+            Self(path)
+        }
+    }
+
+    impl Drop for TestDirectory {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.0);
+        }
     }
 
     #[test]
-    fn cached_thumbnail_avoids_fallback_generation() {
-        let fallback_called = std::cell::Cell::new(false);
-        let result = use_cache_or_fallback(Some("cached"), || {
-            fallback_called.set(true);
-            Ok::<_, ()>("generated")
-        })
-        .expect("cached thumbnail is returned");
-
-        assert_eq!(result, "cached");
-        assert!(!fallback_called.get());
-    }
-
-    #[test]
-    fn cache_miss_uses_fallback_generation() {
-        let result = use_cache_or_fallback(None, || Ok::<_, ()>("generated"))
-            .expect("fallback thumbnail is returned");
-
-        assert_eq!(result, "generated");
-    }
-
-    #[test]
-    fn extracts_one_bounded_jpeg_frame_from_the_probed_video_stream() {
+    fn ffmpeg_generates_one_video_frame_cropped_to_fixed_16_by_9_size() {
         let arguments = thumbnail_arguments(
             Path::new("C:\\Media\\clip.mp4"),
-            2,
             Path::new("C:\\Temp\\thumbnail.jpg"),
         );
         let arguments = arguments
@@ -246,13 +400,91 @@ mod tests {
             .map(|argument| argument.to_string_lossy().into_owned())
             .collect::<Vec<_>>();
 
-        assert!(arguments.windows(2).any(|pair| pair == ["-map", "0:2"]));
+        assert!(arguments.windows(2).any(|pair| pair == ["-map", "0:v:0"]));
         assert!(arguments.windows(2).any(|pair| pair == ["-frames:v", "1"]));
         assert!(arguments.windows(2).any(|pair| pair == ["-c:v", "mjpeg"]));
-        assert!(
-            arguments
-                .iter()
-                .any(|argument| argument.ends_with("thumbnail.jpg"))
-        );
+        assert!(arguments.iter().any(|argument| {
+            argument.contains("scale=640:360:force_original_aspect_ratio=increase,crop=640:360")
+        }));
+    }
+
+    #[test]
+    fn shell_thumbnail_encoding_centers_and_crops_to_640_by_360() {
+        let mut image = RgbImage::new(800, 360);
+        for (x, _, pixel) in image.enumerate_pixels_mut() {
+            *pixel = if x < 200 || x >= 600 {
+                Rgb([255, 0, 0])
+            } else {
+                Rgb([0, 0, 255])
+            };
+        }
+
+        let encoded = encode_rgb_thumbnail(image).expect("thumbnail encodes");
+        let decoded = image::load_from_memory(&encoded).expect("encoded thumbnail decodes");
+        assert_eq!(decoded.width(), THUMBNAIL_WIDTH);
+        assert_eq!(decoded.height(), THUMBNAIL_HEIGHT);
+        let center = decoded.to_rgb8().get_pixel(320, 180).0;
+        assert!(center[2] > center[0]);
+    }
+
+    #[test]
+    fn app_cache_accepts_only_fixed_size_thumbnails() {
+        let directory = TestDirectory::new();
+        let valid_path = directory.0.join("valid.jpg");
+        let invalid_path = directory.0.join("invalid.jpg");
+        let valid = encode_rgb_thumbnail(RgbImage::new(1, 1)).expect("encode test thumbnail");
+        fs::write(&valid_path, valid).expect("write valid cached thumbnail");
+        fs::write(&invalid_path, b"not a thumbnail").expect("write invalid cached thumbnail");
+
+        assert!(is_usable_cache_entry(&valid_path));
+        assert!(!is_usable_cache_entry(&invalid_path));
+    }
+
+    #[test]
+    fn cache_key_changes_when_size_or_modified_time_changes() {
+        let directory = TestDirectory::new();
+        let path = directory.0.join("clip.mp4");
+        fs::write(&path, b"one").expect("write fixture");
+        let initial = thumbnail_cache_key(&path).expect("initial key");
+
+        fs::write(&path, b"a longer fixture").expect("update fixture size");
+        let changed_size = thumbnail_cache_key(&path).expect("size key");
+        assert_ne!(initial, changed_size);
+
+        let file = fs::OpenOptions::new()
+            .write(true)
+            .open(&path)
+            .expect("open fixture");
+        file.set_times(std::fs::FileTimes::new().set_modified(SystemTime::now()))
+            .expect("update fixture time");
+        let changed_time = thumbnail_cache_key(&path).expect("time key");
+        assert_ne!(changed_size, changed_time);
+    }
+
+    #[test]
+    fn cache_reuses_entries_and_trims_oldest_files_when_over_limit() {
+        let directory = TestDirectory::new();
+        let first = write_cached_thumbnail(&directory.0, &"a".repeat(64), b"first")
+            .expect("first cache entry");
+        let second = write_cached_thumbnail(&directory.0, &"b".repeat(64), b"second")
+            .expect("second cache entry");
+
+        assert_eq!(fs::read(&first).expect("read first"), b"first");
+        assert_eq!(fs::read(&second).expect("read second"), b"second");
+        fs::OpenOptions::new()
+            .write(true)
+            .open(&first)
+            .expect("open first cache entry")
+            .set_times(std::fs::FileTimes::new().set_modified(UNIX_EPOCH + Duration::from_secs(1)))
+            .expect("age first cache entry");
+        fs::OpenOptions::new()
+            .write(true)
+            .open(&second)
+            .expect("open second cache entry")
+            .set_times(std::fs::FileTimes::new().set_modified(UNIX_EPOCH + Duration::from_secs(2)))
+            .expect("age second cache entry");
+        trim_thumbnail_cache_with_limits(&directory.0, 8, 1);
+        assert!(!first.exists());
+        assert!(second.exists());
     }
 }

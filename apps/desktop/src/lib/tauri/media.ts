@@ -62,14 +62,6 @@ async function inspectMedia(sourcePath: string): Promise<MediaInfo> {
   }
 }
 
-async function inspectImportedSource(sourcePath: string): Promise<MediaInfo> {
-  try {
-    return parseMediaInfo(await invoke<unknown>("inspect_imported_source", { sourcePath }));
-  } catch (error: unknown) {
-    throw normalizeAppError(error);
-  }
-}
-
 async function activateSourcePath(sourcePath: string, media?: MediaInfo): Promise<SourceRef> {
   try {
     return parseSourceRef(
@@ -218,15 +210,11 @@ async function prepareSourcePreview(sourcePath: string): Promise<PreviewDescript
   }
 }
 
-async function prepareImportedSourceThumbnail(
-  sourcePath: string,
-  videoStreamIndex?: number,
-): Promise<ThumbnailDescriptor> {
+async function prepareImportedSourceThumbnail(sourcePath: string): Promise<ThumbnailDescriptor> {
   try {
     return parseThumbnailDescriptor(
       await invoke<unknown>("prepare_imported_source_thumbnail", {
         sourcePath,
-        ...(videoStreamIndex === undefined ? {} : { videoStreamIndex }),
       }),
     );
   } catch (error: unknown) {
@@ -346,7 +334,6 @@ export {
   checkMediaCapabilities,
   chooseOutputPath,
   chooseSource,
-  inspectImportedSource,
   inspectMedia,
   listenForSourceDrops,
   moveSourceToTrash,

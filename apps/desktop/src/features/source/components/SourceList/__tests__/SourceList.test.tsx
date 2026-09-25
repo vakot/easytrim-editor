@@ -5,7 +5,6 @@ import { Provider } from "react-redux";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const openFileLocation = vi.hoisted(() => vi.fn());
-const prepareMetadata = vi.hoisted(() => vi.fn());
 const prepareThumbnails = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/tauri/media", async (importOriginal) => ({
@@ -15,7 +14,6 @@ vi.mock("@/lib/tauri/media", async (importOriginal) => ({
 
 vi.mock("@/app/store/thunks/source-media-thunks", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/app/store/thunks/source-media-thunks")>()),
-  prepareImportedSourceMetadataRequested: prepareMetadata,
   prepareImportedSourceThumbnailsRequested: prepareThumbnails,
 }));
 
@@ -82,7 +80,6 @@ vi.mock("../../SourceCard", () => {
 describe("source queue controls", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    prepareMetadata.mockReturnValue({ type: "test/metadata" });
     prepareThumbnails.mockReturnValue({ type: "test/thumbnail" });
   });
 
@@ -96,12 +93,12 @@ describe("source queue controls", () => {
       </Provider>,
     );
 
-    const preparedSources = prepareMetadata.mock.calls.flatMap(([sources]) => sources);
+    const preparedSources = prepareThumbnails.mock.calls.flatMap(([sources]) => sources);
     expect(preparedSources.length).toBeLessThan(20);
     expect(preparedSources.map((source) => source.id)).not.toContain("source-499");
   });
 
-  it("requests metadata and thumbnails when a virtual row mounts", () => {
+  it("requests thumbnail preparation when a virtual row mounts", () => {
     const store = createAppStore();
     const [instance] = createSourceInstances(1);
     if (!instance) throw new Error("Expected source fixture");
@@ -113,7 +110,6 @@ describe("source queue controls", () => {
       </Provider>,
     );
 
-    expect(prepareMetadata).toHaveBeenCalledWith([instance]);
     expect(prepareThumbnails).toHaveBeenCalledWith([instance]);
   });
 

@@ -25,7 +25,6 @@ import {
 import { selectSourceExportQueueState } from "@/app/store/slices/export-slice";
 import { cancelExportAttemptRequested } from "@/app/store/thunks/export-thunks";
 import {
-  prepareImportedSourceMetadataRequested,
   prepareImportedSourceThumbnailsRequested,
   restoreExportAttemptRequested,
 } from "@/app/store/thunks/source-media-thunks";
@@ -65,7 +64,6 @@ function SourceListItem({
   const duration = shouldReduceMotion ? 0 : 0.16;
 
   useEffect(() => {
-    dispatch(prepareImportedSourceMetadataRequested([source]));
     dispatch(prepareImportedSourceThumbnailsRequested([source]));
   }, [dispatch, source]);
 

@@ -90,6 +90,32 @@ pub type PreviewArtifact = TemporaryMediaArtifact;
 pub type AudioPreviewArtifact = TemporaryMediaArtifact;
 pub type WaveformArtifact = TemporaryMediaArtifact;
 
+#[derive(Debug)]
+pub struct ImportedThumbnailArtifact {
+    path: PathBuf,
+    _temporary_artifact: Option<PreviewArtifact>,
+}
+
+impl ImportedThumbnailArtifact {
+    pub fn from_cache(path: PathBuf) -> Self {
+        Self {
+            path,
+            _temporary_artifact: None,
+        }
+    }
+
+    pub fn from_temporary(artifact: PreviewArtifact) -> Self {
+        Self {
+            path: artifact.path().to_owned(),
+            _temporary_artifact: Some(artifact),
+        }
+    }
+
+    pub fn path(&self) -> &Path {
+        &self.path
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct WaveformSource {
     pub source: ActiveSource,
@@ -139,7 +165,7 @@ pub struct AppState {
     outputs: Mutex<HashMap<String, PathBuf>>,
     operations: Mutex<HashMap<String, Arc<AtomicBool>>>,
     export_sources: Mutex<HashMap<PathBuf, RetainedExportSource>>,
-    imported_thumbnail_artifacts: Mutex<HashMap<u64, PreviewArtifact>>,
+    imported_thumbnail_artifacts: Mutex<HashMap<u64, ImportedThumbnailArtifact>>,
 }
 
 #[derive(Clone, Debug)]
@@ -517,7 +543,10 @@ impl AppState {
         Err(AppError::source_replaced())
     }
 
-    pub fn register_imported_thumbnail(&self, artifact: PreviewArtifact) -> Result<u64, AppError> {
+    pub fn register_imported_thumbnail(
+        &self,
+        artifact: ImportedThumbnailArtifact,
+    ) -> Result<u64, AppError> {
         // Thumbnail tokens use their own namespace and are only resolved for the
         // thumbnail variant, so they can remain within JavaScript's safe integer range.
         let token = self.next_imported_thumbnail.fetch_add(1, Ordering::Relaxed) + 1;
@@ -670,7 +699,7 @@ mod tests {
         let artifact = PreviewArtifact::new(directory, thumbnail_path.clone())
             .expect("thumbnail artifact creates");
         let thumbnail_token = state
-            .register_imported_thumbnail(artifact)
+            .register_imported_thumbnail(super::ImportedThumbnailArtifact::from_temporary(artifact))
             .expect("thumbnail registers");
 
         state

@@ -37,12 +37,18 @@ function normalizeAppError(error: unknown): AppError {
 function parseSourceRef(value: unknown): SourceRef {
   const source = requireRecord(value, "source reference");
   const createdAtMicros = optionalInteger(source.createdAtMicros, "source creation time");
+  const fileSizeBytes = optionalInteger(source.fileSizeBytes, "source file size");
   const updatedAtMicros = optionalInteger(source.updatedAtMicros, "source update time");
+
+  if (fileSizeBytes !== undefined && fileSizeBytes < 0) {
+    throw invalidResponse("source file size");
+  }
 
   return {
     displayName: requireString(source.displayName, "display name"),
     sourcePath: requireString(source.sourcePath, "source path"),
     ...(createdAtMicros === undefined ? {} : { createdAtMicros }),
+    ...(fileSizeBytes === undefined ? {} : { fileSizeBytes }),
     ...(updatedAtMicros === undefined ? {} : { updatedAtMicros }),
   };
 }

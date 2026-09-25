@@ -19,7 +19,6 @@ import {
   activateSourcePath,
   checkMediaCapabilities,
   chooseSource,
-  inspectImportedSource,
   inspectMedia,
   listenForSourceDrops,
   moveSourceToTrash,
@@ -69,12 +68,14 @@ describe("media IPC adapter", () => {
       parseSourceRef({
         createdAtMicros: 1_735_804_800_000_000,
         displayName: "clip.mp4",
+        fileSizeBytes: 128,
         sourcePath: "C:/Media/clip.mp4",
         updatedAtMicros: 1_735_804_900_000_000,
       }),
     ).toEqual({
       createdAtMicros: 1_735_804_800_000_000,
       displayName: "clip.mp4",
+      fileSizeBytes: 128,
       sourcePath: "C:/Media/clip.mp4",
       updatedAtMicros: 1_735_804_900_000_000,
     });
@@ -187,28 +188,6 @@ describe("media IPC adapter", () => {
     await expect(inspectMedia("C:/Media/clip.mp4")).rejects.toEqual({
       code: "internal",
       message: "The native application returned an invalid duration.",
-    });
-  });
-
-  it("inspects an imported source without activating it", async () => {
-    const importedMedia = {
-      audioStreams: [],
-      chapters: [],
-      durationMicros: 1,
-      formatName: "mp4",
-      video: {
-        codecName: "h264",
-        height: 1,
-        streamIndex: 0,
-        width: 1,
-      },
-    } satisfies MediaInfo;
-
-    mocks.invoke.mockResolvedValue(importedMedia);
-
-    await expect(inspectImportedSource("C:/Media/second.mp4")).resolves.toEqual(importedMedia);
-    expect(mocks.invoke).toHaveBeenCalledWith("inspect_imported_source", {
-      sourcePath: "C:/Media/second.mp4",
     });
   });
 

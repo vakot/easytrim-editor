@@ -1,13 +1,10 @@
 import { FileVideo, LoaderCircle, Play } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import { Badge } from "@/components/ui/badge";
-
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectImportedSourceThumbnail } from "@/app/store/slices/preview-slice";
 import { cn } from "@/lib/class-names.utils";
 
-import { formatDuration } from "../../../lib/media-formatters.utils";
 import { useSourceCardData } from "../hooks/useSourceCardData";
 
 function SourceCardThumbnail({
@@ -28,8 +25,6 @@ function SourceCardThumbnail({
     !thumbnailUrl &&
     source.sourceAvailability === "available" &&
     (thumbnail === undefined || thumbnail.status === "loading");
-
-  const durationMicros = source.media?.durationMicros;
 
   return (
     <div
@@ -69,15 +64,6 @@ function SourceCardThumbnail({
           </span>
         </span>
       )}
-
-      {durationMicros !== undefined ? (
-        <Badge
-          className="absolute right-2 bottom-2 border-0 bg-black/75 px-1.5 font-medium text-white"
-          size="sm"
-        >
-          {formatDuration(durationMicros)}
-        </Badge>
-      ) : null}
 
       {children}
     </div>

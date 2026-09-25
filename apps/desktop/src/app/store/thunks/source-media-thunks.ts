@@ -29,7 +29,6 @@ import {
   activeEditingInstanceChanged,
   editingInstanceClosed,
   editingInstanceExportAttemptRemoved,
-  editingInstanceMediaUpdated,
   editingInstanceOptimizedSettingsChanged,
   editingInstancesAdded,
   editingInstancesClosed,
@@ -77,7 +76,6 @@ import {
   activateSourcePath,
   checkMediaCapabilities,
   chooseSource as chooseSourceDialog,
-  inspectImportedSource,
   inspectMedia,
   moveSourceToTrash,
   prepareAudioPreviews,
@@ -180,82 +178,6 @@ const ingestSources =
     operation.complete(importResultData(result));
   };
 
-const METADATA_CONCURRENCY = 2;
-const metadataQueue: Array<{ instanceId: string; sourcePath: string }> = [];
-const metadataRequestsInFlight = new Set<string>();
-let activeMetadataRequests = 0;
-
-function drainMetadataQueue(dispatch: AppDispatch, getState: () => RootState) {
-  if (foregroundSourcePreparationCount > 0) return;
-
-  while (activeMetadataRequests < METADATA_CONCURRENCY && metadataQueue.length > 0) {
-    const request = metadataQueue.shift();
-    if (!request) return;
-
-    const current = selectEditingInstanceById(getState(), request.instanceId);
-    if (
-      !current ||
-      current.sourceAvailability !== "available" ||
-      current.id === selectActiveInstanceId(getState()) ||
-      current.media !== undefined ||
-      normalizeSourceKey(current.snapshot.source.sourcePath) !==
-        normalizeSourceKey(request.sourcePath)
-    ) {
-      metadataRequestsInFlight.delete(request.instanceId);
-      continue;
-    }
-
-    activeMetadataRequests += 1;
-    void inspectImportedSource(request.sourcePath)
-      .then((media) => {
-        const latest = selectEditingInstanceById(getState(), request.instanceId);
-        if (
-          latest &&
-          latest.sourceAvailability === "available" &&
-          latest.id !== selectActiveInstanceId(getState()) &&
-          latest.media === undefined &&
-          normalizeSourceKey(latest.snapshot.source.sourcePath) ===
-            normalizeSourceKey(request.sourcePath)
-        ) {
-          dispatch(editingInstanceMediaUpdated({ id: request.instanceId, media }));
-        }
-      })
-      .catch(() => {
-        // Metadata supplements the imported card and may be unavailable.
-      })
-      .finally(() => {
-        activeMetadataRequests -= 1;
-        metadataRequestsInFlight.delete(request.instanceId);
-        drainMetadataQueue(dispatch, getState);
-      });
-  }
-}
-
-const prepareImportedSourceMetadataRequested =
-  (instances: EditingInstance[]): AppThunk<void> =>
-  (dispatch, getState) => {
-    for (const instance of instances) {
-      const current = selectEditingInstanceById(getState(), instance.id);
-      if (
-        !current ||
-        current.sourceAvailability !== "available" ||
-        current.id === selectActiveInstanceId(getState()) ||
-        current.media !== undefined ||
-        metadataRequestsInFlight.has(instance.id)
-      )
-        continue;
-
-      const sourcePath = instance.snapshot.source.sourcePath;
-      if (normalizeSourceKey(current.snapshot.source.sourcePath) !== normalizeSourceKey(sourcePath))
-        continue;
-
-      metadataRequestsInFlight.add(instance.id);
-      metadataQueue.push({ instanceId: instance.id, sourcePath });
-    }
-
-    drainMetadataQueue(dispatch, getState);
-  };
-
 const THUMBNAIL_CONCURRENCY = 2;
 const thumbnailQueue: Array<{ instanceId: string; sourcePath: string }> = [];
 const thumbnailRequestsInFlight = new Set<string>();
@@ -281,8 +203,7 @@ function drainThumbnailQueue(dispatch: AppDispatch, getState: () => RootState) {
     }
 
     activeThumbnailRequests += 1;
-    const videoStreamIndex = current.media?.video.streamIndex;
-    void prepareImportedSourceThumbnail(request.sourcePath, videoStreamIndex)
+    void prepareImportedSourceThumbnail(request.sourcePath)
       .then((thumbnail) => {
         const latest = selectEditingInstanceById(getState(), request.instanceId);
         if (
@@ -333,7 +254,6 @@ function beginForegroundSourcePreparation(
     foregroundSourcePreparationCount = Math.max(0, foregroundSourcePreparationCount - 1);
     if (foregroundSourcePreparationCount > 0) return;
 
-    drainMetadataQueue(dispatch, getState);
     drainThumbnailQueue(dispatch, getState);
   };
 }
@@ -1139,7 +1059,6 @@ export {
   ingestSources,
   leaveActiveEditingInstance,
   navigateToEditingInstance,
-  prepareImportedSourceMetadataRequested,
   prepareImportedSourceThumbnailsRequested,
   prepareSourceWaveforms,
   restoreActiveEditingInstanceRequested,

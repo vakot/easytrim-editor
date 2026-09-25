@@ -1,12 +1,11 @@
 use std::{
     ffi::c_void,
-    fs::File,
-    io::Write,
     os::windows::ffi::OsStrExt,
     path::Path,
     ptr::{null, null_mut},
 };
 
+use image::RgbImage;
 use windows_sys::{
     Win32::{
         Foundation::SIZE,
@@ -20,12 +19,11 @@ use windows_sys::{
     core::GUID,
 };
 
-use crate::state::PreviewArtifact;
-
 const IMAGE_FACTORY_ID: GUID = GUID::from_u128(0xBCC18B79_BA16_442F_80C4_8A59C30C463B);
 const THUMBNAIL_CACHE_ONLY_FLAGS: u32 = 0x10 | 0x08;
-const SHELL_THUMBNAIL_WIDTH: i32 = 480;
-const SHELL_THUMBNAIL_HEIGHT: i32 = 270;
+const THUMBNAIL_EXTRACTION_FLAGS: u32 = 0x08;
+const SHELL_THUMBNAIL_WIDTH: i32 = 640;
+const SHELL_THUMBNAIL_HEIGHT: i32 = 360;
 
 #[repr(C)]
 struct ImageFactory {
@@ -49,19 +47,26 @@ struct ImageFactoryVtable {
     ) -> i32,
 }
 
-pub(super) fn cached_thumbnail(source_path: &Path) -> Option<PreviewArtifact> {
-    // Cache-only plus thumbnail-only prevents shell extraction and generic file icons.
+pub(super) fn cached_thumbnail(source_path: &Path) -> Option<Vec<u8>> {
+    get_encoded_thumbnail(source_path, THUMBNAIL_CACHE_ONLY_FLAGS)
+}
+
+pub(super) fn extract_thumbnail(source_path: &Path) -> Option<Vec<u8>> {
+    get_encoded_thumbnail(source_path, THUMBNAIL_EXTRACTION_FLAGS)
+}
+
+fn get_encoded_thumbnail(source_path: &Path, flags: u32) -> Option<Vec<u8>> {
     let initialized = unsafe { CoInitializeEx(null(), COINIT_MULTITHREADED as u32) } >= 0;
     if !initialized {
         return None;
     }
 
-    let thumbnail = get_cached_thumbnail(source_path);
+    let thumbnail = get_thumbnail(source_path, flags);
     unsafe { CoUninitialize() };
     thumbnail
 }
 
-fn get_cached_thumbnail(source_path: &Path) -> Option<PreviewArtifact> {
+fn get_thumbnail(source_path: &Path, flags: u32) -> Option<Vec<u8>> {
     let source_path = source_path
         .as_os_str()
         .encode_wide()
@@ -86,29 +91,20 @@ fn get_cached_thumbnail(source_path: &Path) -> Option<PreviewArtifact> {
         cy: SHELL_THUMBNAIL_HEIGHT,
     };
     let mut bitmap = null_mut();
-    let result = unsafe {
-        ((*(*factory).vtable).get_image)(
-            factory,
-            &requested_size,
-            THUMBNAIL_CACHE_ONLY_FLAGS,
-            &mut bitmap,
-        )
-    };
+    let result =
+        unsafe { ((*(*factory).vtable).get_image)(factory, &requested_size, flags, &mut bitmap) };
     unsafe { ((*(*factory).vtable).release)(factory) };
     if result < 0 || bitmap.is_null() {
         return None;
     }
 
-    let artifact = super::thumbnail::create_artifact("bmp").ok();
-    let saved = artifact
-        .as_ref()
-        .is_some_and(|artifact| save_bitmap(bitmap, artifact.path()).is_ok());
+    let encoded =
+        bitmap_to_rgb(bitmap).and_then(|image| super::thumbnail::encode_rgb_thumbnail(image).ok());
     unsafe { DeleteObject(bitmap.cast()) };
-
-    saved.then_some(artifact).flatten()
+    encoded
 }
 
-fn save_bitmap(bitmap: HBITMAP, path: &Path) -> std::io::Result<()> {
+fn bitmap_to_rgb(bitmap: HBITMAP) -> Option<RgbImage> {
     let mut dimensions = BITMAP::default();
     let bitmap_info_size = std::mem::size_of::<BITMAP>() as i32;
     if unsafe {
@@ -121,9 +117,7 @@ fn save_bitmap(bitmap: HBITMAP, path: &Path) -> std::io::Result<()> {
         || dimensions.bmWidth <= 0
         || dimensions.bmHeight <= 0
     {
-        return Err(std::io::Error::other(
-            "The shell thumbnail bitmap is invalid.",
-        ));
+        return None;
     }
 
     let width = dimensions.bmWidth as u32;
@@ -131,8 +125,7 @@ fn save_bitmap(bitmap: HBITMAP, path: &Path) -> std::io::Result<()> {
     let image_size = width
         .checked_mul(height)
         .and_then(|pixels| pixels.checked_mul(4))
-        .filter(|size| *size <= 64 * 1024 * 1024)
-        .ok_or_else(|| std::io::Error::other("The shell thumbnail bitmap is too large."))?;
+        .filter(|size| *size <= 64 * 1024 * 1024)?;
     let mut info = BITMAPINFO {
         bmiHeader: BITMAPINFOHEADER {
             biSize: std::mem::size_of::<BITMAPINFOHEADER>() as u32,
@@ -149,7 +142,7 @@ fn save_bitmap(bitmap: HBITMAP, path: &Path) -> std::io::Result<()> {
     let mut pixels = vec![0; image_size as usize];
     let dc = unsafe { CreateCompatibleDC(null_mut()) };
     if dc.is_null() {
-        return Err(std::io::Error::last_os_error());
+        return None;
     }
     let scan_lines = unsafe {
         GetDIBits(
@@ -164,22 +157,12 @@ fn save_bitmap(bitmap: HBITMAP, path: &Path) -> std::io::Result<()> {
     };
     unsafe { DeleteDC(dc) };
     if scan_lines != height as i32 {
-        return Err(std::io::Error::last_os_error());
+        return None;
     }
 
-    let file_size = 54_u32 + image_size;
-    let mut file = File::create(path)?;
-    file.write_all(b"BM")?;
-    file.write_all(&file_size.to_le_bytes())?;
-    file.write_all(&[0; 4])?;
-    file.write_all(&54_u32.to_le_bytes())?;
-    file.write_all(&40_u32.to_le_bytes())?;
-    file.write_all(&(width as i32).to_le_bytes())?;
-    file.write_all(&(-(height as i32)).to_le_bytes())?;
-    file.write_all(&1_u16.to_le_bytes())?;
-    file.write_all(&32_u16.to_le_bytes())?;
-    file.write_all(&BI_RGB.to_le_bytes())?;
-    file.write_all(&image_size.to_le_bytes())?;
-    file.write_all(&[0; 16])?;
-    file.write_all(&pixels)
+    let mut rgb = Vec::with_capacity((width * height * 3) as usize);
+    for bgra in pixels.chunks_exact(4) {
+        rgb.extend_from_slice(&[bgra[2], bgra[1], bgra[0]]);
+    }
+    RgbImage::from_raw(width, height, rgb)
 }
