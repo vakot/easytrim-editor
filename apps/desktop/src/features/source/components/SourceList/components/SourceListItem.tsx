@@ -116,7 +116,7 @@ function SourceListItemExtra({ source }: { source: EditingInstance }) {
   const duration = shouldReduceMotion ? 0 : 0.16;
 
   return (
-    <AnimatePresence initial={false}>
+    <AnimatePresence>
       {isVisible ? (
         <motion.div
           animate={{ height: "auto", opacity: 1 }}

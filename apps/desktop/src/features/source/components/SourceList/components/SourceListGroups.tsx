@@ -122,7 +122,7 @@ function SourceListGrid({ sources }: { sources: EditingInstance[] }) {
 
   return (
     <ul className="flex flex-col gap-2" data-slot="imported-sources-grid">
-      <AnimatePresence initial={false}>
+      <AnimatePresence>
         {sources.map((source) => (
           <SourceListItem key={source.id} search={search} source={source} />
         ))}
