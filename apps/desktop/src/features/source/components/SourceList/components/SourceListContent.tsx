@@ -5,6 +5,7 @@ import { TabsContent } from "@/components/ui/tabs";
 import { InfiniteScroll } from "@/components/infinite-scroll";
 
 import { useSourceListData } from "../contexts/SourceListContext";
+import { SourceListThumbnailDemandProvider } from "../contexts/SourceListThumbnailDemandProvider";
 
 import {
   SourceListFolder,
@@ -26,20 +27,22 @@ function SourceListContent() {
   }
 
   return (
-    <InfiniteScroll hasMore={hasMore} next={next}>
-      <TabsContent className="min-w-0" value="none">
-        <SourceListNone sources={visibleSources} />
-      </TabsContent>
-      <TabsContent className="min-w-0" value="folder">
-        <SourceListFolder sources={visibleSources} />
-      </TabsContent>
-      <TabsContent className="min-w-0" value="time">
-        <SourceListTime sources={visibleSources} />
-      </TabsContent>
-      <TabsContent className="min-w-0" value="imported">
-        <SourceListImported sources={visibleSources} />
-      </TabsContent>
-    </InfiniteScroll>
+    <SourceListThumbnailDemandProvider>
+      <InfiniteScroll hasMore={hasMore} next={next}>
+        <TabsContent className="min-w-0" value="none">
+          <SourceListNone sources={visibleSources} />
+        </TabsContent>
+        <TabsContent className="min-w-0" value="folder">
+          <SourceListFolder sources={visibleSources} />
+        </TabsContent>
+        <TabsContent className="min-w-0" value="time">
+          <SourceListTime sources={visibleSources} />
+        </TabsContent>
+        <TabsContent className="min-w-0" value="imported">
+          <SourceListImported sources={visibleSources} />
+        </TabsContent>
+      </InfiniteScroll>
+    </SourceListThumbnailDemandProvider>
   );
 }
 

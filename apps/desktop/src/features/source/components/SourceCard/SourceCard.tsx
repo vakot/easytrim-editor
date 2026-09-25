@@ -16,6 +16,7 @@ import { SourceCardStatusBadge } from "./components/SourceCardStatusBadge";
 import { SourceCardThumbnail } from "./components/SourceCardThumbnail";
 import { SourceCardTitle } from "./components/SourceCardTitle";
 import { SourceCardContext } from "./contexts/SourceCardContext";
+import { SourceCardStatusContext } from "./contexts/SourceCardStatusContext";
 import { getSourceCardStatus, getSourceCardVariant } from "./lib/source-card.utils";
 import {
   createSelectSourceCardActive,
@@ -55,23 +56,25 @@ const SourceCard = memo(function SourceCard({ children, className, source }: Sou
 
   return (
     <SourceCardContext.Provider value={source}>
-      <SourceCardContextMenu>
-        <Card
-          aria-checked={active}
-          aria-label={displayName}
-          className={cn(sourceCardVariants({ variant }), className)}
-          data-active={active ? "true" : "false"}
-          data-source-id={source.id}
-          hoverable
-          onClick={() => void dispatch(navigateToEditingInstance(source.id))}
-          // TODO: on button confirm (selected by Tab and Enter should also act as onClick)
-          role="checkbox"
-          tabIndex={0}
-          variant={variant}
-        >
-          {children}
-        </Card>
-      </SourceCardContextMenu>
+      <SourceCardStatusContext.Provider value={{ active, sourceStatus }}>
+        <SourceCardContextMenu>
+          <Card
+            aria-checked={active}
+            aria-label={displayName}
+            className={cn(sourceCardVariants({ variant }), className)}
+            data-active={active ? "true" : "false"}
+            data-source-id={source.id}
+            hoverable
+            onClick={() => void dispatch(navigateToEditingInstance(source.id))}
+            // TODO: on button confirm (selected by Tab and Enter should also act as onClick)
+            role="checkbox"
+            tabIndex={0}
+            variant={variant}
+          >
+            {children}
+          </Card>
+        </SourceCardContextMenu>
+      </SourceCardStatusContext.Provider>
     </SourceCardContext.Provider>
   );
 });

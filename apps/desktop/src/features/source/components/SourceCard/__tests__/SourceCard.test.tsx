@@ -1,10 +1,12 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { Profiler } from "react";
 import { Provider } from "react-redux";
 import { describe, expect, it } from "vitest";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 
+import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
 import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";
 import {
   activeEditingInstanceChanged,
@@ -13,6 +15,7 @@ import {
 import { createAppStore } from "@/app/store/store";
 import { createExportAttempt, type EditingInstance } from "@/domain/editing-instance";
 import { SourceDeleteProvider } from "@/features/source";
+import { media } from "@/test/source.fixtures";
 
 import {
   SourceCard,
@@ -86,6 +89,62 @@ describe("SourceCard", () => {
     await user.click(screen.getByRole("button", { name: "Source actions: holiday.mp4" }));
 
     expect(screen.getByRole("menuitem", { name: "Restore" })).toBeInTheDocument();
+  });
+
+  it("updates only the previously active and active cards on selection and status changes", () => {
+    const store = createAppStore();
+    const sources = ["one", "two", "other"].map((id) => ({
+      ...createSource(),
+      id,
+      snapshot: createDefaultEditorSnapshot(
+        { displayName: `${id}.mp4`, sourcePath: `C:/Media/${id}.mp4` },
+        false,
+      ),
+    }));
+
+    store.dispatch(editingInstancesAdded(sources));
+    store.dispatch(activeEditingInstanceChanged("one"));
+    const renders = new Map<string, number>();
+
+    render(
+      <Provider store={store}>
+        {sources.map((source) => (
+          <Profiler
+            id={source.id}
+            key={source.id}
+            onRender={(id) => renders.set(id, (renders.get(id) ?? 0) + 1)}
+          >
+            <SourceCard source={source}>
+              <SourceCardStatusBadge />
+            </SourceCard>
+          </Profiler>
+        ))}
+      </Provider>,
+    );
+
+    const initial = new Map(renders);
+    act(() => store.dispatch(activeEditingInstanceChanged("two")));
+    expect(renders.get("one")).toBe((initial.get("one") ?? 0) + 1);
+    expect(renders.get("two")).toBe((initial.get("two") ?? 0) + 1);
+    expect(renders.get("other")).toBe(initial.get("other"));
+
+    const afterSelection = new Map(renders);
+    act(() =>
+      store.dispatch(sourceSelected({ loadToken: 1, source: sources[1]!.snapshot.source })),
+    );
+    expect(renders.get("one")).toBe(afterSelection.get("one"));
+    expect(renders.get("two")).toBe((afterSelection.get("two") ?? 0) + 1);
+    expect(renders.get("other")).toBe(afterSelection.get("other"));
+
+    const afterLoading = new Map(renders);
+    act(() =>
+      store.dispatch(
+        sourceReady({ loadToken: 1, media: media(sources[1]!.snapshot.source.sourcePath) }),
+      ),
+    );
+    expect(renders.get("one")).toBe(afterLoading.get("one"));
+    expect(renders.get("two")).toBe((afterLoading.get("two") ?? 0) + 1);
+    expect(renders.get("other")).toBe(afterLoading.get("other"));
   });
 
   it("does not expose export progress on the original source card", () => {

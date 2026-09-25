@@ -215,6 +215,28 @@ describe("source queue controls", () => {
     expect(releaseThumbnails).toHaveBeenCalledTimes(2);
   });
 
+  it("uses one shared thumbnail observer for all mounted source rows", () => {
+    installIntersectionObserver();
+    const store = createAppStore();
+    store.dispatch(editingInstancesAdded(createSourceInstances(25)));
+
+    render(
+      <div data-slot="scroll-area-viewport">
+        <Provider store={store}>
+          <SourceList />
+        </Provider>
+      </div>,
+    );
+
+    const rowObservers = TestIntersectionObserver.instances.filter((observer) =>
+      [...observer.observed].some((element) => element.matches("li")),
+    );
+
+    expect(rowObservers).toHaveLength(1);
+    expect(rowObservers[0]?.observed.size).toBe(12);
+    expect(TestIntersectionObserver.instances).toHaveLength(2);
+  });
+
   it("does not recreate thumbnail demand observation for unrelated editor state", () => {
     installIntersectionObserver();
     const store = createAppStore();
@@ -366,6 +388,8 @@ describe("source queue controls", () => {
     act(() => store.dispatch(editingInstanceClosed(instances[0]!.id)));
 
     expect(card).toBeInTheDocument();
+    expect(row.style.height).toBe("");
+    expect(row).not.toHaveClass("overflow-hidden");
     expect(viewport.scrollTop).toBe(240);
     await waitFor(() => expect(card).not.toBeInTheDocument());
   });

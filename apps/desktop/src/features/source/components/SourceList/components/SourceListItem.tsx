@@ -52,8 +52,9 @@ import {
   RestoreSource,
   StartSourceExport,
 } from "../../SourceMenuActions";
+import { useRegisterSourceThumbnailDemand } from "../hooks/useRegisterSourceThumbnailDemand";
 
-const SOURCE_THUMBNAIL_DEMAND_ROOT_MARGIN = "600px 0px";
+import styles from "./SourceListItem.module.css";
 
 const SourceListItem = memo(function SourceListItem({
   match,
@@ -75,6 +76,7 @@ const SourceListItem = memo(function SourceListItem({
   const source = selectedSource ?? lastKnownSource;
   const sourceRef = useRef(source);
   const itemRef = useRef<HTMLLIElement>(null);
+  const registerThumbnailDemand = useRegisterSourceThumbnailDemand();
   const shouldReduceMotion = useReducedMotion() === true;
   const duration = shouldReduceMotion ? 0 : 0.16;
   const sourcePath = source?.snapshot.source.sourcePath;
@@ -86,55 +88,27 @@ const SourceListItem = memo(function SourceListItem({
 
   useEffect(() => {
     const element = itemRef.current;
-    let hasThumbnailDemand = false;
+    if (!element || !sourcePath || sourceAvailability !== "available" || !registerThumbnailDemand)
+      return;
 
     const requestThumbnail = () => {
-      if (hasThumbnailDemand) return;
-      hasThumbnailDemand = true;
       const latestSource = sourceRef.current;
       if (latestSource) dispatch(prepareImportedSourceThumbnailsRequested([latestSource]));
     };
 
-    const releaseThumbnail = () => {
-      if (!hasThumbnailDemand) return;
-      hasThumbnailDemand = false;
-      dispatch(releaseImportedSourceThumbnailDemand(sourceId));
-    };
+    const releaseThumbnail = () => dispatch(releaseImportedSourceThumbnailDemand(sourceId));
 
-    if (!element || !sourcePath || sourceAvailability !== "available") return;
-
-    if (typeof IntersectionObserver === "undefined") {
-      requestThumbnail();
-      return releaseThumbnail;
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry?.isIntersecting) requestThumbnail();
-        else releaseThumbnail();
-      },
-      {
-        root: element.closest<HTMLElement>("[data-slot='scroll-area-viewport']"),
-        rootMargin: SOURCE_THUMBNAIL_DEMAND_ROOT_MARGIN,
-      },
-    );
-
-    observer.observe(element);
-
-    return () => {
-      observer.disconnect();
-      releaseThumbnail();
-    };
-  }, [dispatch, sourceAvailability, sourceId, sourcePath]);
+    return registerThumbnailDemand(element, requestThumbnail, releaseThumbnail);
+  }, [dispatch, registerThumbnailDemand, sourceAvailability, sourceId, sourcePath]);
 
   if (!source) return null;
 
   return (
     <motion.li
-      animate={{ height: "auto", opacity: 1, y: 0 }}
-      className="flex w-full min-w-0 flex-col overflow-hidden"
-      exit={{ height: 0, opacity: 0, y: shouldReduceMotion ? 0 : -4 }}
-      initial={shouldReduceMotion ? false : { height: 0, opacity: 0, y: 4 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={cn(styles.sourceListItem, "flex w-full min-w-0 flex-col")}
+      exit={{ opacity: 0, y: shouldReduceMotion ? 0 : -4 }}
+      initial={shouldReduceMotion ? false : { opacity: 0, y: 4 }}
       ref={itemRef}
       transition={{ duration, ease: "easeOut" }}
     >
