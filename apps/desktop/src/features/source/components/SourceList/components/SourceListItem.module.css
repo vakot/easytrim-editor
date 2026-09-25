@@ -8,8 +8,7 @@
 }
 
 .isClosing {
-  opacity: 0;
-  transform: translateY(-4px);
+  animation: source-row-exit 160ms ease-out both;
 }
 
 .isEntering {
@@ -28,9 +27,27 @@
   }
 }
 
+@keyframes source-row-exit {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sourceListItem {
     transition: none;
+  }
+
+  .isClosing {
+    animation: none;
+    opacity: 0;
+    transform: translateY(-4px);
   }
 
   .isEntering {

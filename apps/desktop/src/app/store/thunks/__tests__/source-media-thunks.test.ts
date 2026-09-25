@@ -12,13 +12,18 @@ vi.mock("@/lib/tauri/media", async (importOriginal) => ({
   ...native,
 }));
 
+import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
 import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";
 import {
+  activeEditingInstanceChanged,
+  editingInstancesAdded,
   selectActiveEditingInstance,
   selectImportedEditingInstances,
 } from "@/app/store/slices/editing-instances-slice";
+import { selectPreview } from "@/app/store/slices/preview-slice";
+import { selectSourceStatus } from "@/app/store/slices/source-slice";
 import { createAppStore } from "@/app/store/store";
-import { ingestSources } from "@/app/store/thunks/source-media-thunks";
+import { ingestSources, navigateToEditingInstance } from "@/app/store/thunks/source-media-thunks";
 import { firstSource, media, secondSource } from "@/test/source.fixtures";
 
 beforeEach(() => {
@@ -36,6 +41,42 @@ beforeEach(() => {
 });
 
 describe("source import workflow", () => {
+  it("publishes active loading state before deferred source activation", () => {
+    vi.useFakeTimers();
+    try {
+      const store = createAppStore();
+      store.dispatch(
+        editingInstancesAdded([
+          {
+            id: "first",
+            origin: "source-import",
+            snapshot: createDefaultEditorSnapshot(firstSource, false),
+            sourceAvailability: "available",
+            exportAttempts: [],
+          },
+          {
+            id: "second",
+            origin: "source-import",
+            snapshot: createDefaultEditorSnapshot(secondSource, false),
+            sourceAvailability: "available",
+            exportAttempts: [],
+          },
+        ]),
+      );
+      store.dispatch(activeEditingInstanceChanged("first"));
+      store.dispatch(sourceSelected({ loadToken: 1, source: firstSource }));
+      store.dispatch(sourceReady({ loadToken: 1, media: media(firstSource.sourcePath) }));
+
+      expect(store.dispatch(navigateToEditingInstance("second"))).toBe(true);
+      expect(store.getState().editingInstances.activeInstanceId).toBe("second");
+      expect(selectSourceStatus(store.getState())).toBe("loading-source");
+      expect(selectPreview(store.getState())).toMatchObject({ kind: "source", status: "loading" });
+    } finally {
+      vi.clearAllTimers();
+      vi.useRealTimers();
+    }
+  });
+
   it("does not inspect media when imported sources are added", () => {
     const store = createAppStore();
 

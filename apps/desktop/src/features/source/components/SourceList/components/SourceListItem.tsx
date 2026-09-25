@@ -14,11 +14,13 @@ import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Highlight } from "@/components/ui/highlight";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
+  selectActiveInstanceId,
   selectEditingInstanceById,
   selectExportQueueById,
 } from "@/app/store/slices/editing-instances-slice";
@@ -26,15 +28,21 @@ import { selectSourceExportQueueState } from "@/app/store/slices/export-slice";
 import { cancelExportAttemptRequested } from "@/app/store/thunks/export-thunks";
 import {
   closeEditingInstancesRequested,
+  navigateToEditingInstance,
   prepareImportedSourceThumbnailsRequested,
   releaseImportedSourceThumbnailDemand,
   restoreExportAttemptRequested,
 } from "@/app/store/thunks/source-media-thunks";
-import type { EditingInstance, ExportAttempt, ExportAttemptState } from "@/domain/editing-instance";
+import type {
+  EditingInstance,
+  EditingInstanceListEntry,
+  ExportAttempt,
+  ExportAttemptState,
+} from "@/domain/editing-instance";
 import { cn } from "@/lib/class-names.utils";
 import { openFileLocation } from "@/lib/tauri/media";
 
-import { formatSourcePath } from "../../../lib/media-formatters.utils";
+import { formatBytes, formatSourcePath } from "../../../lib/media-formatters.utils";
 import { getRevealLabel } from "../../../lib/source.utils";
 import type { SourceSearchResult } from "../../../lib/source-search.utils";
 import {
@@ -56,16 +64,21 @@ import styles from "./SourceListItem.module.css";
 
 const SourceListItem = memo(function SourceListItem({
   isAdded,
+  isExiting,
+  isScrolling,
   match,
   onAdditionAnimationStart,
-  sourceId,
+  source: sourceEntry,
 }: {
   isAdded: boolean;
+  isExiting: boolean;
+  isScrolling: boolean;
   match: SourceSearchResult | undefined;
   onAdditionAnimationStart: (sourceId: string) => boolean;
-  sourceId: string;
+  source: EditingInstanceListEntry;
 }) {
   const dispatch = useAppDispatch();
+  const sourceId = sourceEntry.id;
   const selectSource = useCallback(
     (state: Parameters<typeof selectEditingInstanceById>[0]) =>
       selectEditingInstanceById(state, sourceId),
@@ -74,18 +87,14 @@ const SourceListItem = memo(function SourceListItem({
 
   const selectedSource = useAppSelector(selectSource);
   const [lastKnownSource, setLastKnownSource] = useState(selectedSource);
-  const [isClosing, setIsClosing] = useState(false);
   const [isEntering, setIsEntering] = useState(false);
   if (selectedSource && selectedSource !== lastKnownSource) setLastKnownSource(selectedSource);
   const source = selectedSource ?? lastKnownSource;
   const sourceRef = useRef(source);
   const itemRef = useRef<HTMLDivElement>(null);
-  const sourcePath = source?.snapshot.source.sourcePath;
+  const sourcePath = sourceEntry.sourcePath;
   const sourceAvailability = source?.sourceAvailability;
-  const handleClose = useCallback(() => {
-    setIsClosing(true);
-    window.setTimeout(() => void dispatch(closeEditingInstancesRequested([sourceId])), 160);
-  }, [dispatch, sourceId]);
+  const active = useAppSelector((state) => selectActiveInstanceId(state) === sourceId);
 
   useEffect(() => {
     sourceRef.current = source;
@@ -100,24 +109,30 @@ const SourceListItem = memo(function SourceListItem({
 
   useEffect(() => {
     const element = itemRef.current;
+    if (isExiting || isScrolling) return;
     if (!element || !sourcePath || sourceAvailability !== "available") return;
     const latestSource = sourceRef.current;
     if (latestSource) dispatch(prepareImportedSourceThumbnailsRequested([latestSource]));
     return () => dispatch(releaseImportedSourceThumbnailDemand(sourceId));
-  }, [dispatch, sourceAvailability, sourceId, sourcePath]);
+  }, [dispatch, isExiting, isScrolling, sourceAvailability, sourceId, sourcePath]);
 
-  if (!source) return null;
+  const handleClose = useCallback(
+    () => void dispatch(closeEditingInstancesRequested([sourceId])),
+    [dispatch, sourceId],
+  );
+
+  if (isExiting) {
+    return <SourceListItemTombstone source={sourceEntry} />;
+  }
+
+  if (!source || isScrolling) {
+    return <SourceListItemShell active={active} match={match} source={sourceEntry} />;
+  }
 
   return (
     <div
-      className={cn(
-        styles.sourceListItem,
-        "h-18 w-full min-w-0",
-        isClosing && styles.isClosing,
-        isEntering && styles.isEntering,
-      )}
+      className={cn(styles.sourceListItem, "h-18 w-full min-w-0", isEntering && styles.isEntering)}
       data-entering={isEntering ? "true" : undefined}
-      data-exiting={isClosing ? "true" : undefined}
       onAnimationEnd={() => setIsEntering(false)}
       ref={itemRef}
     >
@@ -129,24 +144,119 @@ const SourceListItem = memo(function SourceListItem({
 function areSourceListItemPropsEqual(
   previous: {
     isAdded: boolean;
+    isExiting: boolean;
+    isScrolling: boolean;
     match: SourceSearchResult | undefined;
     onAdditionAnimationStart: (sourceId: string) => boolean;
-    sourceId: string;
+    source: EditingInstanceListEntry;
   },
   next: {
     isAdded: boolean;
+    isExiting: boolean;
+    isScrolling: boolean;
     match: SourceSearchResult | undefined;
     onAdditionAnimationStart: (sourceId: string) => boolean;
-    sourceId: string;
+    source: EditingInstanceListEntry;
   },
 ): boolean {
   return (
-    previous.sourceId === next.sourceId &&
+    previous.source.id === next.source.id &&
+    areListEntriesEqual(previous.source, next.source) &&
     previous.isAdded === next.isAdded &&
+    previous.isExiting === next.isExiting &&
+    previous.isScrolling === next.isScrolling &&
     previous.onAdditionAnimationStart === next.onAdditionAnimationStart &&
     areSearchRangesEqual(previous.match, next.match)
   );
 }
+
+function areListEntriesEqual(left: EditingInstanceListEntry, right: EditingInstanceListEntry) {
+  return (
+    left.displayName === right.displayName &&
+    left.fileSizeBytes === right.fileSizeBytes &&
+    left.sourceAvailability === right.sourceAvailability &&
+    left.sourcePath === right.sourcePath &&
+    left.updatedAtMicros === right.updatedAtMicros
+  );
+}
+
+function SourceListItemTombstone({ source }: { source: EditingInstanceListEntry }) {
+  return (
+    <div
+      className={cn(styles.sourceListItem, "h-18 w-full min-w-0", styles.isClosing)}
+      data-exiting="true"
+      data-testid={source.id}
+    >
+      <div className="flex h-full min-w-0 items-center gap-2 overflow-hidden rounded-xl border border-foreground/10 bg-card p-2 text-card-foreground ring-1 ring-foreground/10">
+        <div className="h-[54px] w-24 shrink-0 rounded-md bg-muted" />
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-sm font-medium" title={source.displayName}>
+            {source.displayName}
+          </div>
+          <div className="truncate text-xs text-muted-foreground" title={source.sourcePath}>
+            {formatSourcePath(source.sourcePath)}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const SourceListItemShell = memo(function SourceListItemShell({
+  active,
+  match,
+  source,
+}: {
+  active: boolean;
+  match: SourceSearchResult | undefined;
+  source: EditingInstanceListEntry;
+}) {
+  const { i18n, t } = useTranslation();
+  const dispatch = useAppDispatch();
+  const updatedAt = source.updatedAtMicros
+    ? new Date(source.updatedAtMicros / 1_000).toLocaleDateString(i18n.resolvedLanguage)
+    : t("common.status.unknown");
+
+  return (
+    <Card
+      aria-checked={active}
+      aria-label={source.displayName}
+      className={cn(
+        "h-full min-h-0 min-w-0 flex-row items-center gap-2 overflow-hidden p-2",
+        active && "border-primary/45 bg-primary/5 ring-2 ring-primary/45",
+      )}
+      data-active={active ? "true" : "false"}
+      data-source-id={source.id}
+      data-testid={source.id}
+      onClick={() => void dispatch(navigateToEditingInstance(source.id))}
+      role="checkbox"
+      tabIndex={0}
+    >
+      <div className="h-[54px] w-24 shrink-0 rounded-md bg-muted" />
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <div
+            className="truncate text-sm font-medium whitespace-nowrap"
+            title={source.displayName}
+          >
+            <Highlight ranges={match?.displayNameRanges}>{source.displayName}</Highlight>
+          </div>
+          <div
+            className="truncate text-xs whitespace-nowrap text-muted-foreground"
+            title={source.sourcePath}
+          >
+            <Highlight ranges={match?.sourcePathRanges}>
+              {formatSourcePath(source.sourcePath)}
+            </Highlight>
+          </div>
+        </div>
+        <div className="hidden max-w-32 shrink-0 truncate text-xs whitespace-nowrap text-muted-foreground sm:flex">
+          {formatBytes(source.fileSizeBytes, t("common.status.unknown"))} · {updatedAt}
+        </div>
+      </div>
+    </Card>
+  );
+});
 
 function areSearchRangesEqual(
   left: SourceSearchResult | undefined,

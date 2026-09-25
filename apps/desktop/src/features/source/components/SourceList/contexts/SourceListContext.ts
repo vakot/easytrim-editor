@@ -6,10 +6,16 @@ import type { SourceSearchResult } from "../../../lib/source-search.utils";
 
 type SourceListTab = "none" | "folder" | "time" | "imported";
 
+type SourceListPresentationEntry = {
+  entry: EditingInstanceListEntry;
+  isExiting: boolean;
+};
+
 type SourceListState = {
   addedSourceIds: ReadonlySet<string>;
   consumeSourceAddition: (sourceId: string) => boolean;
   matchesBySourceId: ReadonlyMap<string, SourceSearchResult>;
+  presentationSources: readonly SourceListPresentationEntry[];
   search: string;
   setSearch: (value: string) => void;
   sources: EditingInstanceListEntry[];
@@ -29,4 +35,4 @@ function useSourceListData() {
 }
 
 export { SourceListContext, useSourceListData };
-export type { SourceListState, SourceListTab };
+export type { SourceListPresentationEntry, SourceListState, SourceListTab };

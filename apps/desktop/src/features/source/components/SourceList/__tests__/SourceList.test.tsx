@@ -73,18 +73,30 @@ afterEach(() => {
 });
 
 class VirtualListResizeObserver implements ResizeObserver {
+  static callbacks: ResizeObserverCallback[] = [];
+
   constructor(private readonly callback: ResizeObserverCallback) {}
 
   disconnect() {}
 
   observe(target: Element) {
+    VirtualListResizeObserver.callbacks.push(this.callback);
     this.callback(
-      [{ target, contentRect: { width: 900, height: 600 } } as ResizeObserverEntry],
+      [{ target, contentRect: { width: 900, height: 600 } } as unknown as ResizeObserverEntry],
       this,
     );
   }
 
   unobserve() {}
+
+  static emit(rect: { height: number; width: number }) {
+    for (const callback of VirtualListResizeObserver.callbacks) {
+      callback(
+        [{ target: document.body, contentRect: rect } as unknown as ResizeObserverEntry],
+        {} as ResizeObserver,
+      );
+    }
+  }
 }
 
 function createSourceInstances(count: number): EditingInstance[] {
@@ -124,6 +136,7 @@ vi.mock("../../SourceCard", () => {
 describe("source queue controls", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    VirtualListResizeObserver.callbacks = [];
     vi.stubGlobal("ResizeObserver", VirtualListResizeObserver);
     Object.defineProperty(HTMLElement.prototype, "offsetHeight", {
       configurable: true,
@@ -167,6 +180,24 @@ describe("source queue controls", () => {
     expect(screen.getByTestId("source-0")).toBeInTheDocument();
     expect(screen.queryByTestId("source-1399")).not.toBeInTheDocument();
     expect(prepareThumbnails).toHaveBeenCalled();
+  });
+
+  it("ignores width-only viewport resize for the fixed vertical range", () => {
+    const store = createAppStore();
+    store.dispatch(editingInstancesAdded(createSourceInstances(1400)));
+    const { container } = render(
+      <div data-slot="scroll-area-viewport" style={{ height: 500, overflow: "auto" }}>
+        <Provider store={store}>
+          <SourceList />
+        </Provider>
+      </div>,
+    );
+
+    const before = new Map(cardRenderCounts);
+    act(() => VirtualListResizeObserver.emit({ height: 600, width: 1200 }));
+
+    expect(container.querySelectorAll("[data-virtual-index]").length).toBeLessThan(30);
+    expect(new Map(cardRenderCounts)).toEqual(before);
   });
 
   it("renders the destination range after a fast scrollbar jump", async () => {
@@ -284,7 +315,10 @@ describe("source queue controls", () => {
     const countsAfterReady = new Map(cardRenderCounts);
 
     act(() => store.dispatch(editingInstanceClosed("source-0")));
-    expect(screen.queryByTestId("source-0")).not.toBeInTheDocument();
+    expect(screen.getByTestId("source-0").closest("[data-exiting]")).toHaveAttribute(
+      "data-exiting",
+      "true",
+    );
     expect(searcherSpy).toHaveBeenCalledTimes(initialSearcherCalls + 1);
     expect(cardRenderCounts.get("source-1")).toBe(countsAfterReady.get("source-1"));
     expect(container.querySelectorAll("[layout]")).toHaveLength(0);
@@ -316,8 +350,9 @@ describe("source queue controls", () => {
     await user.click(within(row).getByRole("button", { name: /Source actions/ }));
     await user.click(screen.getByRole("button", { name: "Close File" }));
 
-    expect(card).toBeInTheDocument();
-    expect(card.closest("[data-exiting]")).toHaveAttribute("data-exiting", "true");
+    const tombstone = screen.getByTestId("source-0");
+    expect(tombstone).toBeInTheDocument();
+    expect(tombstone.closest("[data-exiting]")).toHaveAttribute("data-exiting", "true");
     expect(row).toHaveStyle({ height: "72px" });
     expect(viewport.scrollTop).toBe(0);
   });

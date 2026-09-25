@@ -4,6 +4,7 @@ import {
   sourceErrorReported,
   sourceFailed,
   sourceReady,
+  sourceSelected,
 } from "@/app/store/actions/source-actions";
 import {
   createDefaultEditorSnapshot,
@@ -665,12 +666,12 @@ const restoreActiveEditingInstanceRequested =
   };
 
 const activateEditingInstanceRequested =
-  (instance: EditingInstance): AppThunk<Promise<boolean>> =>
+  (instance: EditingInstance, requestedLoadToken?: number): AppThunk<Promise<boolean>> =>
   async (dispatch, getState) => {
     if (selectEditingInstanceById(getState(), instance.id)?.draftAvailable === false) return false;
     if (instance.optimizedArguments !== undefined)
       dispatch(exportArgumentsChanged(instance.optimizedArguments));
-    const loadToken = ++sourceLoadSequence;
+    const loadToken = requestedLoadToken ?? ++sourceLoadSequence;
     queueRestoreSequence += 1;
     dispatch(
       editingInstanceActivated({
@@ -709,24 +710,40 @@ const navigateToEditingInstance =
       return false;
     }
 
-    dispatch(leaveActiveEditingInstance());
     const operation = diagnostics.startOperation("snapshot.switch", {
       origin,
       snapshotId: id ?? undefined,
     });
 
     if (target) {
-      void dispatch(activateEditingInstanceRequested(target)).then(
-        (restored) => {
-          if (restored) operation.complete({ itemId: target.id });
-          else
-            operation.fail(new Error("Snapshot restoration did not complete."), {
-              itemId: target.id,
-            });
-        },
-        (error: unknown) => operation.fail(error, { itemId: target.id }),
-      );
+      dispatch(commitActiveEditingInstanceDraft());
+      const loadToken = ++sourceLoadSequence;
+      queueRestoreSequence += 1;
+      dispatch(activeEditingInstanceChanged(target.id));
+      dispatch(sourceSelected({ loadToken, source: target.snapshot.source }));
+
+      // Publish the urgent active/loading state first. Source preparation and
+      // the full activation reducer path can then run after the browser paints
+      // the selection response.
+      window.setTimeout(() => {
+        if (selectActiveInstanceId(getState()) !== target.id) {
+          operation.cancel({ reason: "source_replaced" });
+          return;
+        }
+
+        void dispatch(activateEditingInstanceRequested(target, loadToken)).then(
+          (restored) => {
+            if (restored) operation.complete({ itemId: target.id });
+            else
+              operation.fail(new Error("Snapshot restoration did not complete."), {
+                itemId: target.id,
+              });
+          },
+          (error: unknown) => operation.fail(error, { itemId: target.id }),
+        );
+      }, 0);
     } else {
+      dispatch(leaveActiveEditingInstance());
       queueRestoreSequence += 1;
       dispatch(sourceCleared());
       dispatch(activeEditingInstanceChanged(null));

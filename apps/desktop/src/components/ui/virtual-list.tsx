@@ -9,7 +9,7 @@ interface VirtualListProps<T> {
   getItemKey: (index: number) => string;
   items: readonly T[];
   overscan?: number;
-  renderItem: (item: T, index: number) => ReactNode;
+  renderItem: (item: T, index: number, isScrolling: boolean) => ReactNode;
 }
 
 function VirtualList<T>({
@@ -33,6 +33,20 @@ function VirtualList<T>({
       null,
     initialRect: { height: 720, width: 0 },
     overscan,
+    observeElementRect: (instance, callback) => {
+      const element = instance.scrollElement;
+      if (!element) return;
+
+      let observedHeight: number | undefined;
+      const resizeObserver = new ResizeObserver(([entry]) => {
+        if (!entry || entry.contentRect.height === observedHeight) return;
+        observedHeight = entry.contentRect.height;
+        callback({ height: entry.contentRect.height, width: entry.contentRect.width });
+      });
+
+      resizeObserver.observe(element);
+      return () => resizeObserver.disconnect();
+    },
   });
 
   return (
@@ -59,7 +73,7 @@ function VirtualList<T>({
               transform: `translateY(${virtualItem.start}px)`,
             }}
           >
-            {renderItem(item, virtualItem.index)}
+            {renderItem(item, virtualItem.index, virtualizer.isScrolling)}
           </div>
         );
       })}

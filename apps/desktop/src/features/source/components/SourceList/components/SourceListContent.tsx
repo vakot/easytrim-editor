@@ -25,8 +25,15 @@ const LIST_OVERSCAN = 8;
 
 function SourceListContent() {
   const { i18n, t } = useTranslation();
-  const { addedSourceIds, consumeSourceAddition, matchesBySourceId, search, sources, tab } =
-    useSourceListData();
+  const {
+    addedSourceIds,
+    consumeSourceAddition,
+    matchesBySourceId,
+    presentationSources,
+    search,
+    sources,
+    tab,
+  } = useSourceListData();
 
   const [collapsedGroupKeys, setCollapsedGroupKeys] = useState<ReadonlySet<string>>(
     () => new Set(),
@@ -34,25 +41,32 @@ function SourceListContent() {
 
   const rows = useMemo(() => {
     if (tab === "none") {
-      return sources.map(({ id }) => ({
+      return presentationSources.map(({ entry, isExiting }) => ({
         kind: "source" as const,
-        key: `source:${id}`,
-        sourceId: id,
+        entry,
+        isExiting,
+        key: `source:${entry.id}`,
       }));
     }
 
+    const presentationById = new Map(
+      presentationSources.map((presentation) => [presentation.entry.id, presentation]),
+    );
+
+    const presentationEntries = presentationSources.map(({ entry }) => entry);
+
     const groups =
       tab === "folder"
-        ? groupSourcesByFolder(sources)
+        ? groupSourcesByFolder(presentationEntries)
         : tab === "time"
           ? groupSourcesByUpdatedTime(
-              sources,
+              presentationEntries,
               i18n.language,
               t("common.status.unknown"),
               new Date(),
             )
           : groupSourcesByImportedTime(
-              sources,
+              presentationEntries,
               i18n.language,
               t("common.status.unknown"),
               new Date(),
@@ -61,14 +75,15 @@ function SourceListContent() {
     return groups.flatMap((group) => [
       { kind: "group" as const, group, key: `group:${tab}:${group.key}` },
       ...(!collapsedGroupKeys.has(`${tab}:${group.key}`)
-        ? group.items.map(({ id }) => ({
+        ? group.items.map((entry) => ({
             kind: "source" as const,
-            key: `source:${id}`,
-            sourceId: id,
+            entry,
+            isExiting: presentationById.get(entry.id)?.isExiting ?? false,
+            key: `source:${entry.id}`,
           }))
         : []),
     ]);
-  }, [collapsedGroupKeys, i18n.language, sources, t, tab]);
+  }, [collapsedGroupKeys, i18n.language, presentationSources, t, tab]);
 
   const toggleGroup = (key: string) => {
     setCollapsedGroupKeys((current) => {
@@ -97,7 +112,7 @@ function SourceListContent() {
         getItemKey={(index) => rows[index]?.key ?? `missing:${index}`}
         items={rows}
         overscan={LIST_OVERSCAN}
-        renderItem={(row) =>
+        renderItem={(row, _index, isScrolling) =>
           row.kind === "group" ? (
             <GroupRow
               collapsed={collapsedGroupKeys.has(`${tab}:${row.group.key}`)}
@@ -107,10 +122,12 @@ function SourceListContent() {
             />
           ) : (
             <SourceListItem
-              isAdded={addedSourceIds.has(row.sourceId)}
-              match={matchesBySourceId.get(row.sourceId)}
+              isAdded={addedSourceIds.has(row.entry.id)}
+              isExiting={row.isExiting}
+              isScrolling={isScrolling}
+              match={matchesBySourceId.get(row.entry.id)}
               onAdditionAnimationStart={consumeSourceAddition}
-              sourceId={row.sourceId}
+              source={row.entry}
             />
           )
         }

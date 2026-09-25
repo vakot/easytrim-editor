@@ -1,4 +1,12 @@
-import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import { Tabs } from "@/components/ui/tabs";
 
@@ -7,6 +15,7 @@ import {
   selectSourceListEntries,
   selectSourceSearchEntries,
 } from "@/app/store/slices/editing-instances-slice";
+import type { EditingInstanceListEntry } from "@/domain/editing-instance";
 
 import { createSourceSearcher } from "../../lib/source-search.utils";
 
@@ -15,7 +24,11 @@ import { SourceListContent } from "./components/SourceListContent";
 import { SourceListEmpty } from "./components/SourceListEmpty";
 import { SourceListSearch } from "./components/SourceListSearch";
 import { SourceListTabs } from "./components/SourceListTabs";
-import type { SourceListState, SourceListTab } from "./contexts/SourceListContext";
+import type {
+  SourceListPresentationEntry,
+  SourceListState,
+  SourceListTab,
+} from "./contexts/SourceListContext";
 import { SourceListContext } from "./contexts/SourceListContext";
 
 interface SourceListProps {
@@ -31,6 +44,10 @@ function SourceList({ children }: SourceListProps) {
   const previousSourceIds = useRef(new Set(sources.map(({ id }) => id)));
   const pendingAddedSourceIds = useRef(new Set<string>());
   const [addedSourceIds, setAddedSourceIds] = useState<ReadonlySet<string>>(() => new Set());
+  const previousVisibleSources = useRef<EditingInstanceListEntry[]>([]);
+  const [exitingSources, setExitingSources] = useState<
+    ReadonlyMap<string, { entry: EditingInstanceListEntry; order: number }>
+  >(() => new Map());
 
   useEffect(() => {
     const nextSourceIds = new Set(sources.map(({ id }) => id));
@@ -42,6 +59,7 @@ function SourceList({ children }: SourceListProps) {
     for (const sourceId of added) pendingAddedSourceIds.current.add(sourceId);
     setAddedSourceIds(added);
   }, [sources]);
+
   const consumeSourceAddition = useCallback((sourceId: string) => {
     if (!pendingAddedSourceIds.current.has(sourceId)) return false;
     pendingAddedSourceIds.current.delete(sourceId);
@@ -69,7 +87,54 @@ function SourceList({ children }: SourceListProps) {
     [searchResults],
   );
 
-  if (sources.length === 0) return <SourceListEmpty />;
+  useLayoutEffect(() => {
+    const currentIds = new Set(filteredSources.map(({ id }) => id));
+    const removed = previousVisibleSources.current.flatMap((entry, order) =>
+      currentIds.has(entry.id) || sourcesById.has(entry.id) ? [] : [{ entry, order }],
+    );
+
+    previousVisibleSources.current = filteredSources;
+    if (removed.length === 0) return;
+
+    // The collection changed during the commit; update the presentation model
+    // before the browser paints the collapsed virtual range.
+    setExitingSources((current) => {
+      const next = new Map(current);
+      for (const item of removed) next.set(item.entry.id, item);
+      return next;
+    });
+  }, [filteredSources, sourcesById]);
+
+  useEffect(() => {
+    if (exitingSources.size === 0) return;
+
+    const timeout = window.setTimeout(() => {
+      setExitingSources((current) => {
+        const next = new Map(current);
+        for (const id of exitingSources.keys()) next.delete(id);
+        return next;
+      });
+    }, 160);
+
+    return () => window.clearTimeout(timeout);
+  }, [exitingSources]);
+
+  const presentationSources = useMemo<readonly SourceListPresentationEntry[]>(() => {
+    const currentIds = new Set(filteredSources.map(({ id }) => id));
+    const result: SourceListPresentationEntry[] = filteredSources.map((entry) => ({
+      entry,
+      isExiting: false,
+    }));
+
+    for (const { entry, order } of exitingSources.values()) {
+      if (currentIds.has(entry.id)) continue;
+      result.splice(Math.min(order, result.length), 0, { entry, isExiting: true });
+    }
+
+    return result;
+  }, [exitingSources, filteredSources]);
+
+  if (sources.length === 0 && presentationSources.length === 0) return <SourceListEmpty />;
 
   const child =
     typeof children === "function" ? children({ search, sources: filteredSources, tab }) : children;
@@ -80,6 +145,7 @@ function SourceList({ children }: SourceListProps) {
         addedSourceIds,
         consumeSourceAddition,
         matchesBySourceId,
+        presentationSources,
         search,
         setSearch,
         sources: filteredSources,
