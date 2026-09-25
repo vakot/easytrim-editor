@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.11.0]
+
 ### Added
 
 - Added crash recovery that restores the previous editing workspace, active source, and export history after an unexpected shutdown.
@@ -13,15 +15,18 @@ All notable changes to this project will be documented in this file.
 - Added a searchable global command palette for common file and export actions, available with Ctrl+H on Windows/Linux and Cmd+H on macOS.
 - Expanded the command palette to include help, appearance, settings, queue, layout, and preview actions with shared menu and shortcut behavior.
 - Added an in-app changelog and What's New view for released EasyTrim updates.
+- Added Russian as an available interface language.
 
 ### Changed
 
 - Smoothed preview rotation, crop, flip, and reset transitions.
 - Adapted the empty preview logo for light and dark themes.
 - Expanded Media Tools details with FFmpeg and FFprobe versions, executable paths, and concise installation and recheck guidance when tools are unavailable.
-- Simplified the empty preview's keyboard hints and displayed the Command Palette shortcut separately with the correct platform modifier.
+- Simplified the empty preview's keyboard hints, added the Open Folder shortcut, and displayed the Command Palette shortcut separately with the correct platform modifier.
+- Improved the empty states in the Source Explorer and Activity Feed with clearer guidance.
 - Kept configuration choices and update checks in the Command Palette open, while dismissing it after action commands are selected.
 - Displayed language options using each language's own name instead of translating them into the current app language.
+- Changed the project license to Apache 2.0 with the Commons Clause condition.
 
 ### Fixed
 
