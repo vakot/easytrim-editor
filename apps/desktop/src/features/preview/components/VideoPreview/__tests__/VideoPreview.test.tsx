@@ -488,10 +488,10 @@ describe("VideoPreview", () => {
     fireEvent.click(screen.getByRole("menuitem", { name: "Rotate 90 CW" }));
     expect(store.getState().crop.rotationDegrees).toBe(90);
     expect(container.querySelector("video")).toHaveAttribute("data-presentation-rotation", "90");
-    expect(container.querySelector("[data-rotating-output]")).toContainElement(
-      container.querySelector("[data-flip-layer]"),
-    );
     expect(container.querySelector("[data-flip-layer]")).toContainElement(
+      container.querySelector("[data-rotating-output]"),
+    );
+    expect(container.querySelector("[data-rotating-output]")).toContainElement(
       container.querySelector("[data-crop-mask]"),
     );
     expect(container.querySelector("[data-preview-frame]")).toHaveClass("overflow-visible");
@@ -553,71 +553,72 @@ describe("VideoPreview", () => {
   });
 
   it.each([
-    ["horizontal", true, false],
-    ["vertical", false, true],
-    ["both", true, true],
+    ["no flips", false, false, "Rotate 90 CW", 90, 90],
+    ["horizontal flip", true, false, "Rotate 90 CW", 270, -90],
+    ["vertical flip", false, true, "Rotate 90 CW", 270, -90],
+    ["both flips", true, true, "Rotate 90 CW", 90, 90],
+    ["no flips", false, false, "Rotate 90 CCW", 270, -90],
+    ["horizontal flip", true, false, "Rotate 90 CCW", 90, 90],
+    ["vertical flip", false, true, "Rotate 90 CCW", 90, 90],
+    ["both flips", true, true, "Rotate 90 CCW", 270, -90],
   ] as const)(
-    "keeps clockwise and counter-clockwise rotation direction with %s flips",
-    (_name, horizontal, vertical) => {
+    "%s flip configuration uses its visual-coordinate command delta",
+    (_name, horizontal, vertical, action, expectedRotation, expectedAngle) => {
       const store = createAppStore();
       if (horizontal) store.dispatch(flipToggled("horizontal"));
       if (vertical) store.dispatch(flipToggled("vertical"));
       const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"), store);
       const viewport = container.querySelector('[aria-label="Video crop preview"]')!;
-      const rotatingOutput = container.querySelector<HTMLElement>("[data-rotating-output]");
-      const flipLayer = container.querySelector<HTMLElement>("[data-flip-layer]");
-      const selectionFlipLayer = container.querySelector<HTMLElement>(
-        "[data-crop-selection-flip-layer]",
-      );
+      const rotation = container.querySelector("[data-output-rotation]");
 
-      selectTransformAction(viewport, "Rotate 90 CW");
-
-      expect(store.getState().crop.rotationDegrees).toBe(90);
-      expect(rotatingOutput).toContainElement(flipLayer);
-      expect(rotatingOutput).not.toContainElement(selectionFlipLayer);
-      expect(selectionFlipLayer).toHaveAttribute(
-        "data-crop-selection-flip-horizontal",
-        String(horizontal),
-      );
-      expect(selectionFlipLayer).toHaveAttribute(
-        "data-crop-selection-flip-vertical",
-        String(vertical),
-      );
-      expect(rotatingOutput).toHaveAttribute("data-output-rotation", "90");
-
-      selectTransformAction(viewport, "Rotate 90 CCW");
-
-      expect(store.getState().crop.rotationDegrees).toBe(0);
-      expect(rotatingOutput).toHaveAttribute("data-output-rotation", "0");
+      selectTransformAction(viewport, action);
+      expect(store.getState().crop.rotationDegrees).toBe(expectedRotation);
+      expect(rotation).toHaveAttribute("data-output-rotation", String(expectedAngle));
     },
   );
 
   it.each([
-    ["horizontal", true, false],
-    ["vertical", false, true],
-    ["both", true, true],
-  ] as const)(
-    "keeps continuous 270 to 360 rotation with %s flips",
-    (_name, horizontal, vertical) => {
-      const store = createAppStore();
-      store.dispatch(rotationChanged(270));
-      if (horizontal) store.dispatch(flipToggled("horizontal"));
-      if (vertical) store.dispatch(flipToggled("vertical"));
-      const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"), store);
-      const viewport = container.querySelector('[aria-label="Video crop preview"]')!;
+    ["no flips", false, false],
+    ["horizontal flip", true, false],
+    ["vertical flip", false, true],
+    ["both flips", true, true],
+  ] as const)("keeps Rotate 180 unchanged with %s", (_name, horizontal, vertical) => {
+    const store = createAppStore();
+    if (horizontal) store.dispatch(flipToggled("horizontal"));
+    if (vertical) store.dispatch(flipToggled("vertical"));
+    const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"), store);
+    const viewport = container.querySelector('[aria-label="Video crop preview"]')!;
 
-      selectTransformAction(viewport, "Rotate 90 CW");
+    selectTransformAction(viewport, "Rotate 180");
 
-      expect(store.getState().crop.rotationDegrees).toBe(0);
-      expect(container.querySelector("[data-rotating-output]")).toHaveAttribute(
-        "data-output-rotation",
-        "360",
-      );
-      expect(container.querySelector("[data-rotating-output]")).toContainElement(
-        container.querySelector("[data-flip-layer]"),
-      );
-    },
-  );
+    expect(store.getState().crop.rotationDegrees).toBe(180);
+    expect(container.querySelector("[data-output-rotation]")).toHaveAttribute(
+      "data-output-rotation",
+      "180",
+    );
+  });
+
+  it.each([
+    ["no flips", false, false, "Rotate 90 CW"],
+    ["horizontal flip", true, false, "Rotate 90 CCW"],
+    ["vertical flip", false, true, "Rotate 90 CCW"],
+    ["both flips", true, true, "Rotate 90 CW"],
+  ] as const)("wraps 270 to 360 continuously with %s", (_name, horizontal, vertical, action) => {
+    const store = createAppStore();
+    store.dispatch(rotationChanged(270));
+    if (horizontal) store.dispatch(flipToggled("horizontal"));
+    if (vertical) store.dispatch(flipToggled("vertical"));
+    const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"), store);
+    const viewport = container.querySelector('[aria-label="Video crop preview"]')!;
+
+    selectTransformAction(viewport, action);
+
+    expect(store.getState().crop.rotationDegrees).toBe(0);
+    expect(container.querySelector("[data-output-rotation]")).toHaveAttribute(
+      "data-output-rotation",
+      "360",
+    );
+  });
 
   it("keeps the original right half visible after rotating the normalized crop", () => {
     const store = createAppStore();
@@ -694,7 +695,7 @@ describe("VideoPreview", () => {
         "data-flip-vertical",
         String(vertical),
       );
-      expect(container.querySelector("[data-crop-selection-flip-layer]")).toContainElement(
+      expect(container.querySelector("[data-flip-layer]")).toContainElement(
         container.querySelector("[data-crop-selection-coordinate-space]"),
       );
 

@@ -155,27 +155,27 @@ function CropViewport() {
         >
           <motion.div
             animate={{
-              ...rotationLayerGeometry,
-              rotate: resolved.rotationAngle,
+              scaleX: resolved.flipHorizontal ? -1 : 1,
+              scaleY: resolved.flipVertical ? -1 : 1,
             }}
-            className="absolute top-1/2 left-1/2"
-            data-output-rotation={resolved.rotationAngle}
-            data-rotating-output
+            className="absolute inset-0"
+            data-flip-horizontal={resolved.flipHorizontal}
+            data-flip-layer
+            data-flip-vertical={resolved.flipVertical}
             initial={false}
-            style={{ x: "-50%", y: "-50%", transformOrigin: "50% 50%" }}
+            style={{ transformOrigin: "50% 50%" }}
             transition={transformTransition}
           >
             <motion.div
               animate={{
-                scaleX: resolved.flipHorizontal ? -1 : 1,
-                scaleY: resolved.flipVertical ? -1 : 1,
+                ...rotationLayerGeometry,
+                rotate: resolved.rotationAngle,
               }}
-              className="absolute inset-0"
-              data-flip-horizontal={resolved.flipHorizontal}
-              data-flip-layer
-              data-flip-vertical={resolved.flipVertical}
+              className="absolute top-1/2 left-1/2"
+              data-output-rotation={resolved.rotationAngle}
+              data-rotating-output
               initial={false}
-              style={{ transformOrigin: "50% 50%" }}
+              style={{ x: "-50%", y: "-50%", transformOrigin: "50% 50%" }}
               transition={transformTransition}
             >
               <div
@@ -193,20 +193,6 @@ function CropViewport() {
                 />
               </div>
             </motion.div>
-          </motion.div>
-          <motion.div
-            animate={{
-              scaleX: resolved.flipHorizontal ? -1 : 1,
-              scaleY: resolved.flipVertical ? -1 : 1,
-            }}
-            className="absolute inset-0"
-            data-crop-selection-flip-horizontal={resolved.flipHorizontal}
-            data-crop-selection-flip-layer
-            data-crop-selection-flip-vertical={resolved.flipVertical}
-            initial={false}
-            style={{ transformOrigin: "50% 50%" }}
-            transition={transformTransition}
-          >
             <div
               className="absolute inset-0"
               data-crop-selection-coordinate-space
