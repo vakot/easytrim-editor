@@ -184,7 +184,7 @@ describe("VideoPreview", () => {
     setPreview(store, readyPreview("easytrim-media://preview-1"));
     const { container } = renderPreview(<VideoPreview />, store);
 
-    expect(container.querySelector("[data-preview-frame]")).not.toBeInTheDocument();
+    expect(container.querySelector("[data-preview-output]")).not.toBeInTheDocument();
     expect(container.querySelector("video")).not.toBeInTheDocument();
   });
 
@@ -292,14 +292,14 @@ describe("VideoPreview", () => {
     const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"));
 
     const viewport = container.querySelector('[aria-label="Video crop preview"]')!;
-    const frame = container.querySelector("[data-preview-frame]")!;
-    expect(frame).toHaveAttribute("data-aspect-ratio", "1.7777777777777777");
-    expect(frame).toHaveClass("data-[crop-editing=false]:w-(--preview-normal-width)");
-    expect(
-      (container.querySelector("[data-preview-area]") as HTMLElement).style.getPropertyValue(
-        "--preview-normal-width",
-      ),
-    ).toMatch(/^min\(100cqw, /);
+    const previewViewport = container.querySelector("[data-preview-viewport]")!;
+    const output = container.querySelector("[data-preview-output]")!;
+    expect(previewViewport).toHaveClass("@container-size", "overflow-hidden");
+    expect(output).toHaveAttribute("data-output-aspect-ratio", "1.7777777777777777");
+    expect(output).toHaveAttribute(
+      "data-output-width-target",
+      "min(max(0px, calc(100cqw - 0px)), max(0px, calc(177.77777777777777cqh - 0px)))",
+    );
     expect(container.querySelector("[data-crop-clip]")).toBeInTheDocument();
     expect(container.querySelector("[data-full-rotated-source]")).toHaveAttribute(
       "data-source-geometry",
@@ -308,13 +308,12 @@ describe("VideoPreview", () => {
 
     openCropTool(viewport);
 
-    expect(frame).toHaveAttribute("data-crop-editing", "true");
-    expect(
-      (container.querySelector("[data-preview-area]") as HTMLElement).style.getPropertyValue(
-        "--preview-crop-width",
-      ),
-    ).toMatch(/^min\(max\(0px, calc\(100cqw - 56px\)\)/);
-    expect(frame).toHaveAttribute("data-aspect-ratio", "1.7777777777777777");
+    expect(output).toHaveAttribute("data-crop-editing", "true");
+    expect(output).toHaveAttribute(
+      "data-output-width-target",
+      "min(max(0px, calc(100cqw - 56px)), max(0px, calc(177.77777777777777cqh - 99.55555555555554px)))",
+    );
+    expect(output).toHaveAttribute("data-output-aspect-ratio", "1.7777777777777777");
     expect(container.querySelector("[data-full-rotated-source]")).toHaveAttribute(
       "data-source-geometry",
       "full-rotated-source",
@@ -452,19 +451,20 @@ describe("VideoPreview", () => {
     );
   });
 
-  it("passes final crop-safe geometry as the frame target", () => {
+  it("passes final crop-safe geometry as the output target", () => {
     const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"));
     const viewport = container.querySelector('[aria-label="Video crop preview"]')!;
     vi.spyOn(viewport, "getBoundingClientRect").mockReturnValue(new DOMRect(0, 0, 800, 600));
 
     openCropTool(viewport);
 
-    const frame = container.querySelector("[data-preview-frame]")!;
-    expect(frame).toHaveAttribute("data-crop-editing", "true");
-    expect(container.querySelector("[data-preview-area]")).toHaveStyle({
-      "--preview-crop-width": `min(max(0px, calc(100cqw - 56px)), max(0px, calc(${(16 / 9) * 100}cqh - ${(16 / 9) * 56}px)))`,
-    });
-    expect(frame).not.toHaveStyle({ width: "400px", height: "225px" });
+    const output = container.querySelector("[data-preview-output]")!;
+    expect(output).toHaveAttribute("data-crop-editing", "true");
+    expect(output).toHaveAttribute(
+      "data-output-width-target",
+      `min(max(0px, calc(100cqw - 56px)), max(0px, calc(${(16 / 9) * 100}cqh - ${(16 / 9) * 56}px)))`,
+    );
+    expect(container.querySelector("[data-preview-viewport]")).toHaveClass("overflow-hidden");
   });
 
   it("pauses playback while crop controls are open", () => {
@@ -504,7 +504,13 @@ describe("VideoPreview", () => {
     expect(container.querySelector("[data-rotating-output]")).toContainElement(
       container.querySelector("[data-crop-mask]"),
     );
-    expect(container.querySelector("[data-preview-frame]")).toHaveClass("overflow-visible");
+    expect(container.querySelector("[data-preview-output]")).toHaveClass("overflow-visible");
+    expect(container.querySelector("[data-flip-layer]")?.parentElement).toBe(
+      container.querySelector("[data-preview-output]"),
+    );
+    expect(container.querySelector("[data-crop-snap-markers]")?.parentElement).toBe(
+      container.querySelector("[data-rotating-output]"),
+    );
 
     selectTransformAction(viewport!, "Rotate 90 CW");
     selectTransformAction(viewport!, "Rotate 90 CW");
@@ -644,14 +650,19 @@ describe("VideoPreview", () => {
     const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"), store);
 
     expect(store.getState().crop.value).toEqual({ x: 0, y: 0.5, width: 1, height: 0.5 });
-    expect(container.querySelector("[data-preview-frame]")).toHaveAttribute(
-      "data-aspect-ratio",
+    expect(container.querySelector("[data-preview-output]")).toHaveAttribute(
+      "data-output-aspect-ratio",
       "1.125",
     );
-    expect(container.querySelector("[data-rotating-output]")).toHaveStyle({
-      width: `${100 / 1.125}%`,
-      height: `${1.125 * 100}%`,
-    });
+    expect(container.querySelector("[data-preview-output]")).toHaveAttribute(
+      "data-output-width-target",
+      "min(max(0px, calc(88.88888888888889cqw - 0px)), max(0px, calc(100cqh - 0px)))",
+    );
+    expect(container.querySelector("[data-preview-output]")).toHaveAttribute(
+      "data-output-coordinate-aspect-ratio",
+      String(1 / 1.125),
+    );
+    expect(container.querySelector("[data-rotating-output]")).toHaveClass("absolute", "inset-0");
     expect(container.querySelector("[data-full-rotated-source]")).toHaveAttribute(
       "data-source-geometry",
       "crop-relative-source",
