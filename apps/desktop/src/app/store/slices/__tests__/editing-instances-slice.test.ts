@@ -509,11 +509,15 @@ describe("editing instances slice", () => {
     const listEntries = selectSourceListEntries(root());
     const searchEntries = selectSourceSearchEntries(root());
     const importedIds = selectImportedEditingInstanceIds(root());
+    const topology = selectEditingInstanceTopologyEntries(root());
+    const topologyRecomputations = selectEditingInstanceTopologyEntries.recomputations();
 
     state = editingInstancesReducer(state, activeEditingInstanceChanged("instance-2"));
     expect(selectSourceListEntries(root())).toBe(listEntries);
     expect(selectSourceSearchEntries(root())).toBe(searchEntries);
     expect(selectImportedEditingInstanceIds(root())).toBe(importedIds);
+    expect(selectEditingInstanceTopologyEntries(root())).toBe(topology);
+    expect(selectEditingInstanceTopologyEntries.recomputations()).toBe(topologyRecomputations);
 
     state = editingInstancesReducer(
       state,
@@ -525,6 +529,7 @@ describe("editing instances slice", () => {
     expect(selectSourceListEntries(root())).toBe(listEntries);
     expect(selectSourceSearchEntries(root())).toBe(searchEntries);
     expect(selectImportedEditingInstanceIds(root())).toBe(importedIds);
+    expect(selectEditingInstanceTopologyEntries.recomputations()).toBe(topologyRecomputations);
 
     state = editingInstancesReducer(
       state,
@@ -535,5 +540,6 @@ describe("editing instances slice", () => {
     );
     expect(selectSourceListEntries(root())).not.toBe(listEntries);
     expect(selectSourceSearchEntries(root())).toBe(searchEntries);
+    expect(selectEditingInstanceTopologyEntries.recomputations()).toBe(topologyRecomputations);
   });
 });

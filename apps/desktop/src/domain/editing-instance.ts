@@ -83,6 +83,8 @@ interface EditingInstancesState {
   activeInstanceId: EditingInstanceId | null;
   entities: Record<EditingInstanceId, EditingInstance>;
   ids: EditingInstanceId[];
+  sourceListEntries: EditingInstanceListEntry[];
+  sourceSearchEntries: EditingInstanceSearchEntry[];
 }
 
 export const EMPTY_EXPORT_METRICS: ExportAttemptMetrics = {
