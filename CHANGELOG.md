@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- Animated source tab additions and removals, and kept the selected tab visible when switching sources.
+
 ## [1.11.0]
 
 ### Added
