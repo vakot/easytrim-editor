@@ -1,3 +1,5 @@
+import { AnimatePresence } from "motion/react";
+
 import { Marker, MarkerContent } from "@/components/ui/marker";
 import { RelativeTimestamp } from "@/components/ui/relative-timestamp";
 
@@ -69,15 +71,19 @@ function ActivityFeedGroup({
         </Marker>
       </div>
 
-      {isBranch
-        ? groupActivityEntriesByBranch(group.entries).map((item) =>
+      {isBranch ? (
+        <AnimatePresence initial={false}>
+          {groupActivityEntriesByBranch(group.entries).map((item) =>
             item.kind === "branch" ? (
               <ActivityFeedBranch branch={item.branch} key={item.branch.id} onAction={onAction} />
             ) : (
               <ActivityFeedEntry entry={item.entry} key={item.entry.id} onAction={onAction} />
             ),
-          )
-        : group.entries.map((entry) => (
+          )}
+        </AnimatePresence>
+      ) : (
+        <AnimatePresence initial={false}>
+          {group.entries.map((entry) => (
             <ActivityFeedEntry
               compact={isCompact}
               entry={entry}
@@ -85,6 +91,8 @@ function ActivityFeedGroup({
               onAction={onAction}
             />
           ))}
+        </AnimatePresence>
+      )}
     </div>
   );
 }

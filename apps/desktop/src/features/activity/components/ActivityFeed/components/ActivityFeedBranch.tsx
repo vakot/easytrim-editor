@@ -1,3 +1,4 @@
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -26,13 +27,20 @@ interface ActivityFeedBranchProps {
 }
 
 function ActivityFeedBranch({ branch, onAction }: ActivityFeedBranchProps) {
+  const shouldReduceMotion = useReducedMotion() === true;
   const { t } = useTranslation();
   const normalizedSourcePath = formatSourcePath(branch.path ?? "");
   const filename =
     normalizedSourcePath.split(/[\\/]/).filter(Boolean).pop() ?? t("app.labels.file");
 
   return (
-    <div>
+    <motion.div
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: shouldReduceMotion ? 0 : -4 }}
+      initial={shouldReduceMotion ? false : { opacity: 0, y: 4 }}
+      layout={shouldReduceMotion ? false : "position"}
+      transition={{ duration: shouldReduceMotion ? 0 : 0.16, ease: "easeOut" }}
+    >
       <Marker>
         <ActivityFeedEntryIcon entry={branch.entries[branch.entries.length - 1]} />
 
@@ -49,11 +57,13 @@ function ActivityFeedBranch({ branch, onAction }: ActivityFeedBranchProps) {
       </Marker>
 
       <MarkerGroup className="gap-2 pt-2">
-        {branch.entries.map((entry) => (
-          <ActivityFeedMarkerGroupItem entry={entry} key={entry.id} onAction={onAction} />
-        ))}
+        <AnimatePresence initial={false}>
+          {branch.entries.map((entry) => (
+            <ActivityFeedMarkerGroupItem entry={entry} key={entry.id} onAction={onAction} />
+          ))}
+        </AnimatePresence>
       </MarkerGroup>
-    </div>
+    </motion.div>
   );
 }
 
@@ -63,17 +73,26 @@ interface ActivityFeedMarkerGroupItemProps {
 }
 
 function ActivityFeedMarkerGroupItem({ entry, onAction }: ActivityFeedMarkerGroupItemProps) {
+  const shouldReduceMotion = useReducedMotion() === true;
   const action = entry.action;
   const showAction = !!action && (action.kind === "restore" || onAction);
   const handleAction = action?.kind === "open" && onAction ? () => onAction(action) : undefined;
 
   return (
-    <Marker className="items-center text-xs">
-      <MarkerContent className="flex-row flex-nowrap items-center gap-1">
-        <ActivityFeedEntryTitle className="text-muted-foreground" entry={entry} />
+    <Marker asChild className="items-center text-xs">
+      <motion.div
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: shouldReduceMotion ? 0 : -4 }}
+        initial={shouldReduceMotion ? false : { opacity: 0, y: 4 }}
+        layout={shouldReduceMotion ? false : "position"}
+        transition={{ duration: shouldReduceMotion ? 0 : 0.16, ease: "easeOut" }}
+      >
+        <MarkerContent className="flex-row flex-nowrap items-center gap-1">
+          <ActivityFeedEntryTitle className="text-muted-foreground" entry={entry} />
 
-        {showAction && <ActivityFeedEntryButton compact entry={entry} onClick={handleAction} />}
-      </MarkerContent>
+          {showAction && <ActivityFeedEntryButton compact entry={entry} onClick={handleAction} />}
+        </MarkerContent>
+      </motion.div>
     </Marker>
   );
 }
