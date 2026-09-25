@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import test from "node:test";
 
-import { parseChangelog } from "../generate-changelog.mjs";
+import { isGeneratedChangelogCurrent, parseChangelog } from "../generate-changelog.mjs";
 
 test("parses supported released categories and excludes Unreleased", () => {
   const releases = parseChangelog(
@@ -46,4 +47,17 @@ test("rejects invalid categories and versions", () => {
     () => parseChangelog(`# Changelog\n\n## [1.0]\n\n### Fixed\n\n- Entry\n`),
     /semantic major.minor.patch/,
   );
+});
+
+test("recognizes generated changelog data for the current source", () => {
+  const markdown = "# Changelog\n\n## [1.0.0]\n\n### Added\n\n- A feature\n";
+  const digest = createHash("sha256").update(markdown).digest("hex");
+  const generatedModule = `// Generated from CHANGELOG.md (sha256: ${digest}). Do not edit manually.\n`;
+
+  assert.equal(isGeneratedChangelogCurrent(markdown, generatedModule), true);
+  assert.equal(
+    isGeneratedChangelogCurrent(markdown, generatedModule.replace(digest, "0".repeat(64))),
+    false,
+  );
+  assert.equal(isGeneratedChangelogCurrent(`${markdown} `, generatedModule), false);
 });
