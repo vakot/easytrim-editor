@@ -508,8 +508,8 @@ describe("VideoPreview", () => {
     expect(container.querySelector("[data-flip-layer]")?.parentElement).toBe(
       container.querySelector("[data-preview-output]"),
     );
-    const cropRuler = container.querySelector("[data-crop-snap-markers]")!;
-    const previewViewport = container.querySelector("[data-preview-viewport]");
+    const cropRuler = container.querySelector<HTMLElement>("[data-crop-snap-markers]")!;
+    const previewViewport = container.querySelector<HTMLElement>("[data-preview-viewport]");
     expect(cropRuler.parentElement).toBe(previewViewport);
     expect(previewViewport).toContainElement(cropRuler);
     expect(container.querySelector("[data-flip-layer]")).not.toContainElement(cropRuler);
