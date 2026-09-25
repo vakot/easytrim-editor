@@ -1,6 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import { ChevronRight, Clock3, Folder, FolderOpen, Upload, X } from "lucide-react";
-import { AnimatePresence } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -119,12 +119,24 @@ function SourceListGroups({
 
 function SourceListGrid({ sources }: { sources: EditingInstance[] }) {
   const { search } = useSourceListData();
+  const shouldReduceMotion = useReducedMotion() === true;
+  const duration = shouldReduceMotion ? 0 : 0.16;
 
   return (
     <ul className="flex flex-col gap-2" data-slot="imported-sources-grid">
       <AnimatePresence>
         {sources.map((source) => (
-          <SourceListItem key={source.id} search={search} source={source} />
+          <motion.li
+            animate={{ opacity: 1, y: 0 }}
+            className="flex w-full min-w-0 flex-col"
+            exit={{ opacity: 0, y: shouldReduceMotion ? 0 : -4 }}
+            initial={shouldReduceMotion ? false : { opacity: 0, y: 4 }}
+            key={source.id}
+            layout={shouldReduceMotion ? false : "position"}
+            transition={{ duration, ease: "easeOut" }}
+          >
+            <SourceListItem search={search} source={source} />
+          </motion.li>
         ))}
       </AnimatePresence>
     </ul>
