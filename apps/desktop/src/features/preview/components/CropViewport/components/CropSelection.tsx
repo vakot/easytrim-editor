@@ -9,7 +9,6 @@ import type { CropHandle } from "../../../lib/crop-geometry.utils";
 interface CropSelectionProps {
   crop: CropRect;
   fadeTransition: Transition;
-  geometryTransition: Transition;
   isDragging: boolean;
   onPointerDown: (event: PointerEvent<HTMLElement>, handle: CropHandle) => void;
   selectionRef: RefObject<HTMLDivElement | null>;
@@ -53,7 +52,6 @@ const HANDLES: Array<{ className: string; handle: Exclude<CropHandle, "move"> }>
 function CropSelection({
   crop,
   fadeTransition,
-  geometryTransition,
   isDragging,
   onPointerDown,
   selectionRef,
@@ -73,29 +71,23 @@ function CropSelection({
 
   return (
     <motion.div
-      animate={{
-        left: `${crop.x * 100}%`,
-        top: `${crop.y * 100}%`,
-        width: `${crop.width * 100}%`,
-        height: `${crop.height * 100}%`,
-        opacity: 1,
-      }}
+      animate={{ opacity: 1 }}
       className="absolute border-2 border-primary bg-primary/10"
       data-crop-selection
       data-selection-geometry="normalized"
       exit={{ opacity: 0, pointerEvents: "none" }}
-      initial={{
-        left: `${crop.x * 100}%`,
-        top: `${crop.y * 100}%`,
-        width: `${crop.width * 100}%`,
-        height: `${crop.height * 100}%`,
-        opacity: 0,
-      }}
+      initial={{ opacity: 0 }}
       onClick={(event) => event.stopPropagation()}
       onPointerDown={(event) => onPointerDown(event, "move")}
       ref={selectionRef}
-      style={{ pointerEvents: isPresent ? "auto" : "none" }}
-      transition={{ ...geometryTransition, opacity: fadeTransition }}
+      style={{
+        height: `${crop.height * 100}%`,
+        left: `${crop.x * 100}%`,
+        pointerEvents: isPresent ? "auto" : "none",
+        top: `${crop.y * 100}%`,
+        width: `${crop.width * 100}%`,
+      }}
+      transition={{ opacity: fadeTransition }}
     >
       {isDragging ? (
         <svg

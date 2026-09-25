@@ -32,6 +32,11 @@ interface DragState {
   startY: number;
 }
 
+interface SourceFrameBounds {
+  height: number;
+  width: number;
+}
+
 function useCropSelection(
   previewRef: RefObject<HTMLDivElement | null>,
   sourceFrameRef: RefObject<HTMLDivElement | null>,
@@ -74,16 +79,22 @@ function useCropSelection(
     };
   }, [close, isOpen, previewRef]);
 
-  function startDrag(event: ReactPointerEvent<HTMLElement>, handle: CropHandle) {
+  function startDrag(
+    event: ReactPointerEvent<HTMLElement>,
+    handle: CropHandle,
+    sourceFrameBounds?: SourceFrameBounds,
+  ) {
     event.preventDefault();
     event.stopPropagation();
     const sourceFrame = sourceFrameRef.current?.getBoundingClientRect();
-    if (!sourceFrame || sourceFrame.width <= 0 || sourceFrame.height <= 0) return;
+    const sourceWidth = sourceFrameBounds?.width ?? sourceFrame?.width ?? 0;
+    const sourceHeight = sourceFrameBounds?.height ?? sourceFrame?.height ?? 0;
+    if (sourceWidth <= 0 || sourceHeight <= 0) return;
     event.currentTarget.setPointerCapture(event.pointerId);
     setDrag({
       crop,
-      sourceHeight: sourceFrame.height,
-      sourceWidth: sourceFrame.width,
+      sourceHeight,
+      sourceWidth,
       handle,
       startX: event.clientX,
       startY: event.clientY,

@@ -161,9 +161,8 @@ function CropViewportVideo({
       animate={{
         width: style.width,
         height: style.height,
-        rotate: presentationRotation,
-        x: "-50%",
-        y: "-50%",
+        left: style.left,
+        top: style.top,
       }}
       aria-label={t("preview.accessibility.source")}
       className="absolute max-w-none cursor-pointer"
@@ -189,7 +188,7 @@ function CropViewportVideo({
       preload="auto"
       ref={setVideoElement}
       src={sourceUrl}
-      style={{ left: style.left, top: style.top, transformOrigin: "center center" }}
+      style={{ left: style.left, top: style.top }}
       transition={transition}
     />
   );

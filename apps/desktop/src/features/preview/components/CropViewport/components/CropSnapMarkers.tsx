@@ -1,16 +1,22 @@
+import { motion, type Transition } from "motion/react";
+
 import { QUARTER_SNAP_POINTS } from "@/lib/interaction/snap-points.consts";
 
 interface CropSnapMarkersProps {
+  transition: Transition;
   visible: boolean;
 }
 
-function CropSnapMarkers({ visible }: CropSnapMarkersProps) {
+function CropSnapMarkers({ transition, visible }: CropSnapMarkersProps) {
   return (
-    <div
+    <motion.div
+      animate={{ opacity: visible ? 1 : 0 }}
       aria-hidden="true"
-      className="pointer-events-none absolute inset-0 z-10 opacity-0 transition-opacity duration-(--preview-transition-duration) ease-in-out data-[visible=true]:opacity-100 motion-reduce:transition-none"
+      className="pointer-events-none absolute inset-0 z-10"
       data-crop-snap-markers
       data-visible={visible}
+      initial={false}
+      transition={transition}
     >
       {QUARTER_SNAP_POINTS.map((point) => (
         <span
@@ -43,7 +49,7 @@ function CropSnapMarkers({ visible }: CropSnapMarkersProps) {
           </span>
         </span>
       ))}
-    </div>
+    </motion.div>
   );
 }
 

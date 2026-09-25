@@ -1,5 +1,5 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { type PointerEvent, useCallback, useEffect, useMemo, useRef } from "react";
 
 import { usePlayback } from "@/app/hooks/usePlayback";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
@@ -13,9 +13,12 @@ import {
 import { selectPreview } from "@/app/store/slices/preview-slice";
 import { selectSourceMedia } from "@/app/store/slices/source-slice";
 import { commitActiveEditingInstanceDraft } from "@/app/store/thunks/source-media-thunks";
+import { isQuarterTurn } from "@/domain/rotation";
 import { usePreviewTransform } from "@/features/preview";
 
-import { previewGeometryFor } from "../../lib/preview-geometry";
+import type { CropHandle } from "../../lib/crop-geometry.utils";
+import { previewGeometryFor, sourceCropForRotation } from "../../lib/preview-geometry";
+import { previewFrameAspectFor } from "../../lib/preview-presentation";
 import { previewTransitionFor } from "../../lib/preview-transition";
 
 import { CropSelection } from "./components/CropSelection";
@@ -24,8 +27,8 @@ import { CropViewportContextMenu } from "./components/CropViewportContextMenu";
 import { CropViewportTooltip } from "./components/CropViewportTooltip";
 import { CropViewportVideo } from "./components/CropViewportVideo";
 import { PreviewFrame } from "./components/PreviewFrame";
-import { useContinuousRotation } from "./hooks/useContinuousRotation";
 import { useCropSelection } from "./hooks/useCropSelection";
+import { usePreviewPresentation } from "./hooks/usePreviewPresentation";
 
 function CropViewport() {
   const dispatch = useAppDispatch();
@@ -40,12 +43,29 @@ function CropViewport() {
   const reduceMotion = useReducedMotion() === true;
   const previewRef = useRef<HTMLDivElement>(null);
   const sourceFrameRef = useRef<HTMLDivElement>(null);
+  const frameRef = useRef<HTMLDivElement>(null);
   const cropSelection = useCropSelection(previewRef, sourceFrameRef, rotationDegrees);
-  const geometry = previewGeometryFor(
-    sourceMedia?.video.width ?? 0,
-    sourceMedia?.video.height ?? 0,
-    crop,
-    rotationDegrees,
+  const sourceWidth = sourceMedia?.video.width ?? 0;
+  const sourceHeight = sourceMedia?.video.height ?? 0;
+  const presentationInput = useMemo(
+    () => ({
+      crop,
+      cropIsOpen: cropSelection.isOpen,
+      flipHorizontal,
+      flipVertical,
+      rotation: rotationDegrees,
+    }),
+    [crop, cropSelection.isOpen, flipHorizontal, flipVertical, rotationDegrees],
+  );
+
+  const { finishTransition, presentation } = usePreviewPresentation(
+    presentationInput,
+    sourceWidth,
+    sourceHeight,
+    cropSelection.isDragging,
+    reduceMotion,
+    previewRef,
+    frameRef,
   );
 
   useEffect(() => {
@@ -56,10 +76,23 @@ function CropViewport() {
     if (cropSelection.isOpen) videoRef.current?.pause();
   }, [cropSelection.isOpen, videoRef]);
 
-  const { clearDrag, isDragging, isEditing, isOpen, open, startDrag } = cropSelection;
-  const presentationRotation = useContinuousRotation(rotationDegrees, reduceMotion);
-  const transformTransition = previewTransitionFor(isDragging, reduceMotion);
+  const { clearDrag, isDragging, isEditing, open, startDrag } = cropSelection;
+  const resolved = presentation.status === "transitioning" ? presentation.to : presentation.state;
+  const geometry = previewGeometryFor(sourceWidth, sourceHeight, resolved.crop, resolved.rotation);
+  const cropIsOpen = resolved.cropIsOpen;
+  const transformTransition = previewTransitionFor(isDragging || reduceMotion, reduceMotion);
   const selectionFadeTransition = previewTransitionFor(false, reduceMotion);
+  const startCropDrag = useCallback(
+    (event: PointerEvent<HTMLElement>, handle: CropHandle) => {
+      if (presentation.status === "transitioning") {
+        finishTransition(presentation.id);
+        startDrag(event, handle, presentation.toFrame);
+        return;
+      }
+      startDrag(event, handle);
+    },
+    [finishTransition, presentation, startDrag],
+  );
 
   const resetTransform = useCallback(() => {
     clearDrag();
@@ -76,16 +109,25 @@ function CropViewport() {
 
   if (preview.status !== "ready" || geometry === null) return null;
 
-  const cropIsOpen = isOpen;
-  const sourceVideoStyle = {
-    ...geometry.unrotatedVideoSize,
-    left: "50%",
-    top: "50%",
+  const previewAspect = previewFrameAspectFor(geometry, cropIsOpen);
+  const sourceCrop = cropIsOpen
+    ? { x: 0, y: 0, width: 1, height: 1 }
+    : sourceCropForRotation(resolved.crop, resolved.rotation);
+
+  const sourceGeometry = {
+    width: `${100 / sourceCrop.width}%`,
+    height: `${100 / sourceCrop.height}%`,
+    left: `${(-sourceCrop.x / sourceCrop.width) * 100}%`,
+    top: `${(-sourceCrop.y / sourceCrop.height) * 100}%`,
   };
 
-  const sourceGeometry = cropIsOpen
-    ? { width: "100%", height: "100%", left: "0%", top: "0%" }
-    : geometry.sourceWithinCrop;
+  const quarterTurn = isQuarterTurn(resolved.rotation);
+  const rotationLayerGeometry = quarterTurn
+    ? {
+        width: `${(100 / previewAspect).toString()}%`,
+        height: `${(previewAspect * 100).toString()}%`,
+      }
+    : { width: "100%", height: "100%" };
 
   return (
     <CropViewportContextMenu>
@@ -97,57 +139,73 @@ function CropViewport() {
           style={{ opacity: cropIsOpen ? 0 : undefined }}
         />
         <PreviewFrame
-          aspectRatio={cropIsOpen ? geometry.rotatedAspect : geometry.outputAspect}
+          aspectRatio={previewAspect}
           cropEditing={cropIsOpen}
+          frameRef={frameRef}
+          onTransitionComplete={finishTransition}
+          presentation={presentation}
           transition={transformTransition}
         >
-          <div className="absolute inset-0 overflow-hidden" data-crop-clip>
+          <motion.div
+            animate={{
+              scaleX: cropIsOpen || !resolved.flipHorizontal ? 1 : -1,
+              scaleY: cropIsOpen || !resolved.flipVertical ? 1 : -1,
+            }}
+            className="absolute inset-0"
+            data-flip-horizontal={cropIsOpen ? false : resolved.flipHorizontal}
+            data-flip-layer
+            data-flip-vertical={cropIsOpen ? false : resolved.flipVertical}
+            initial={false}
+            style={{ transformOrigin: "50% 50%" }}
+            transition={transformTransition}
+          >
             <motion.div
-              animate={sourceGeometry}
-              className="absolute"
-              data-full-rotated-source
-              data-source-geometry={cropIsOpen ? "full-rotated-source" : "crop-relative-source"}
+              animate={{
+                ...rotationLayerGeometry,
+                rotate: resolved.rotationAngle,
+              }}
+              className="absolute top-1/2 left-1/2"
+              data-output-rotation={resolved.rotationAngle}
+              data-rotating-output
               initial={false}
-              ref={sourceFrameRef}
+              style={{ x: "-50%", y: "-50%", transformOrigin: "50% 50%" }}
               transition={transformTransition}
             >
-              <motion.div
-                animate={{
-                  rotateY: cropIsOpen || !flipHorizontal ? 0 : 180,
-                  rotateX: cropIsOpen || !flipVertical ? 0 : 180,
-                }}
-                className="absolute inset-0"
-                data-flip-horizontal={cropIsOpen ? false : flipHorizontal}
-                data-flip-layer
-                data-flip-vertical={cropIsOpen ? false : flipVertical}
-                initial={false}
-                style={{ transformOrigin: "50% 50%" }}
-                transition={transformTransition}
+              <div
+                className="absolute inset-0 overflow-hidden"
+                data-crop-clip
+                data-crop-mask
+                data-full-rotated-source
+                data-source-geometry={cropIsOpen ? "full-rotated-source" : "crop-relative-source"}
               >
                 <CropViewportVideo
                   cropIsOpen={cropIsOpen}
-                  presentationRotation={presentationRotation}
-                  style={sourceVideoStyle}
+                  presentationRotation={resolved.rotationAngle}
+                  style={sourceGeometry}
                   transition={transformTransition}
                 />
-              </motion.div>
-              {/* The normalized selection stays in source space so it tracks the crop as the frame opens. */}
-              <AnimatePresence initial={false}>
-                {cropIsOpen ? (
-                  <CropSelection
-                    crop={crop}
-                    fadeTransition={selectionFadeTransition}
-                    geometryTransition={transformTransition}
-                    isDragging={isDragging}
-                    key="crop-selection"
-                    onPointerDown={startDrag}
-                    selectionRef={cropSelection.selectionRef}
-                  />
-                ) : null}
-              </AnimatePresence>
+              </div>
             </motion.div>
+          </motion.div>
+          <div
+            className="absolute inset-0"
+            data-crop-selection-coordinate-space
+            ref={sourceFrameRef}
+          >
+            <AnimatePresence initial={false}>
+              {cropIsOpen ? (
+                <CropSelection
+                  crop={resolved.crop}
+                  fadeTransition={selectionFadeTransition}
+                  isDragging={isDragging}
+                  key="crop-selection"
+                  onPointerDown={startCropDrag}
+                  selectionRef={cropSelection.selectionRef}
+                />
+              ) : null}
+            </AnimatePresence>
           </div>
-          <CropSnapMarkers visible={cropIsOpen && isEditing} />
+          <CropSnapMarkers transition={transformTransition} visible={cropIsOpen && isEditing} />
         </PreviewFrame>
       </CropViewportTooltip>
     </CropViewportContextMenu>

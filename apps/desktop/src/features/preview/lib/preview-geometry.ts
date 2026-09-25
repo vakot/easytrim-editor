@@ -1,5 +1,5 @@
 import type { CropRect } from "@/domain/crop";
-import { isQuarterTurn, type RotationDegrees } from "@/domain/rotation";
+import { isQuarterTurn, rotateCrop, type RotationDegrees } from "@/domain/rotation";
 
 interface PreviewGeometry {
   outputAspect: number;
@@ -47,5 +47,10 @@ function previewGeometryFor(
   };
 }
 
-export { previewGeometryFor };
+function sourceCropForRotation(crop: CropRect, rotation: RotationDegrees): CropRect {
+  const inverseRotation = ((360 - rotation) % 360) as RotationDegrees;
+  return rotateCrop(crop, inverseRotation);
+}
+
+export { previewGeometryFor, sourceCropForRotation };
 export type { PreviewGeometry };

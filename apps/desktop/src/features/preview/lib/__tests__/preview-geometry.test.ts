@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { CropRect } from "@/domain/crop";
 import type { RotationDegrees } from "@/domain/rotation";
 
-import { previewGeometryFor } from "../preview-geometry";
+import { previewGeometryFor, sourceCropForRotation } from "../preview-geometry";
 
 const FULL: CropRect = { x: 0, y: 0, width: 1, height: 1 };
 const ROTATIONS: RotationDegrees[] = [0, 90, 180, 270];
@@ -70,7 +70,30 @@ describe("previewGeometryFor", () => {
         top: "-100%",
       },
     });
+    expect(sourceCropForRotation(rightHalfAfterClockwiseRotation, 90)).toEqual({
+      x: 0.5,
+      y: 0,
+      width: 0.5,
+      height: 1,
+    });
   });
+
+  it.each(ROTATIONS)(
+    "maps crop-mask geometry back to source coordinates at %i degrees",
+    (rotation) => {
+      const crop = { x: 0.2, y: 0.1, width: 0.4, height: 0.6 };
+      const sourceCrop = sourceCropForRotation(crop, rotation);
+      const restoredCrop = sourceCropForRotation(
+        sourceCrop,
+        ((360 - rotation) % 360) as RotationDegrees,
+      );
+
+      expect(restoredCrop.x).toBeCloseTo(crop.x);
+      expect(restoredCrop.y).toBeCloseTo(crop.y);
+      expect(restoredCrop.width).toBeCloseTo(crop.width);
+      expect(restoredCrop.height).toBeCloseTo(crop.height);
+    },
+  );
 
   it("does not depend on preview container pixel dimensions", () => {
     expect(previewGeometryFor(1920, 1080, FULL, 90)).toEqual(
