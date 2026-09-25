@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Added Activity Feed rows that combine consecutive file-close activities and show the latest activity time.
+
 ## [1.11.0]
 
 ### Added
