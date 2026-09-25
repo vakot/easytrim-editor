@@ -248,9 +248,7 @@ export const en = {
   },
   queue: {
     actions: {
-      cancel: "Cancel",
       skip: "Skip",
-      start: "Start queue",
     },
     labels: {
       deleteSource: "Delete source",
@@ -285,7 +283,6 @@ export const en = {
   source: {
     actions: {
       closeAllSources: "Close all open sources",
-      closeGroup: "Close group",
       revealInFileExplorer: "Reveal in File Explorer",
       revealInFileManager: "Reveal in File Manager",
       revealInFinder: "Reveal in Finder",
@@ -294,11 +291,6 @@ export const en = {
     labels: {
       drop: "Drop video to open",
       explorer: "Source explorer",
-      groupBy: "Group by:",
-      groupByFolder: "Folder",
-      groupByImportedAt: "Imported at",
-      groupByNone: "None",
-      groupByUpdatedAt: "Updated at",
       importedSources: "Imported Sources",
       metadata: {
         bitrate: "Bitrate",
@@ -315,14 +307,10 @@ export const en = {
       technicalDetails: "Technical details",
     },
     status: {
-      canceled: "Canceled",
-      completed: "Completed",
       deleted: "Deleted",
       failed: "Failed",
       loading: "Loading…",
-      queued: "Queued",
       ready: "Ready",
-      rendering: "Rendering…",
       missing: "Missing",
     },
     messages: {

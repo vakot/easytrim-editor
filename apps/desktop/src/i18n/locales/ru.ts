@@ -250,9 +250,7 @@ export const ru = {
   },
   queue: {
     actions: {
-      cancel: "Отменить",
       skip: "Пропустить",
-      start: "Запустить очередь",
     },
     labels: {
       deleteSource: "Удалить источник",
@@ -287,7 +285,6 @@ export const ru = {
   source: {
     actions: {
       closeAllSources: "Закрыть все открытые источники",
-      closeGroup: "Закрыть группу",
       revealInFileExplorer: "Показать в Проводнике",
       revealInFileManager: "Показать в файловом менеджере",
       revealInFinder: "Показать в Finder",
@@ -296,11 +293,6 @@ export const ru = {
     labels: {
       drop: "Перетащите видео, чтобы открыть",
       explorer: "Проводник",
-      groupBy: "Группировать по:",
-      groupByFolder: "Папке",
-      groupByImportedAt: "Дате импорта",
-      groupByNone: "Без группировки",
-      groupByUpdatedAt: "Дате изменения",
       importedSources: "Импортированные источники",
       metadata: {
         bitrate: "Битрейт",
@@ -317,14 +309,10 @@ export const ru = {
       technicalDetails: "Технические сведения",
     },
     status: {
-      canceled: "Отменено",
-      completed: "Завершено",
       deleted: "Удалено",
       failed: "Ошибка",
       loading: "Загрузка…",
-      queued: "В очереди",
       ready: "Готово",
-      rendering: "Рендеринг…",
       missing: "Отсутствуют",
     },
     messages: {

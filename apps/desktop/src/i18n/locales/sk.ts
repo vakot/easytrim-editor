@@ -248,9 +248,7 @@ export const sk = {
   },
   queue: {
     actions: {
-      cancel: "Zrušiť",
       skip: "Preskočiť",
-      start: "Spustiť front",
     },
     labels: {
       deleteSource: "Odstrániť zdroj",
@@ -285,7 +283,6 @@ export const sk = {
   source: {
     actions: {
       closeAllSources: "Zavrieť všetky otvorené zdroje",
-      closeGroup: "Zavrieť skupinu",
       revealInFileExplorer: "Zobraziť v Prieskumníkovi súborov",
       revealInFileManager: "Zobraziť v správcovi súborov",
       revealInFinder: "Zobraziť vo Finderi",
@@ -294,11 +291,6 @@ export const sk = {
     labels: {
       drop: "Pustením otvoríte video",
       explorer: "Prieskumník zdrojov",
-      groupBy: "Zoskupiť podľa:",
-      groupByFolder: "Priečinok",
-      groupByImportedAt: "Importované",
-      groupByNone: "Žiadne",
-      groupByUpdatedAt: "Aktualizované",
       importedSources: "Importované zdroje",
       metadata: {
         bitrate: "Dátový tok",
@@ -315,14 +307,10 @@ export const sk = {
       technicalDetails: "Technické podrobnosti",
     },
     status: {
-      canceled: "Zrušené",
-      completed: "Dokončené",
       deleted: "Odstránené",
       failed: "Zlyhalo",
       loading: "Načítava sa…",
-      queued: "Vo fronte",
       ready: "Pripravené",
-      rendering: "Vykresľuje sa…",
       missing: "Chýba",
     },
     messages: {
