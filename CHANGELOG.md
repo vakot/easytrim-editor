@@ -19,6 +19,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Smoothed source item entry and exit transitions and the appearance of extra actions and export details.
 - Smoothed preview rotation, crop, flip, and reset transitions.
 - Adapted the empty preview logo for light and dark themes.
 - Expanded Media Tools details with FFmpeg and FFprobe versions, executable paths, and concise installation and recheck guidance when tools are unavailable.
