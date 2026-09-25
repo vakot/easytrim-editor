@@ -1,49 +1,27 @@
 import { render } from "@testing-library/react";
-import { createRef } from "react";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
-import type { RotationDegrees } from "@/domain/rotation";
-
-import type { PreviewPresentationState } from "../../hooks/usePreviewPresentation";
 import { PreviewFrame } from "../PreviewFrame";
 
-function transition(id: number, rotation: RotationDegrees): PreviewPresentationState {
-  const state = {
-    crop: { x: 0, y: 0, width: 1, height: 1 },
-    cropIsOpen: false,
-    flipHorizontal: false,
-    flipVertical: false,
-    rotation,
-    rotationAngle: rotation,
-  };
-
-  return {
-    from: { ...state, rotation: 0, rotationAngle: 0 },
-    fromFrame: { width: 800, height: 450 },
-    id,
-    status: "transitioning",
-    to: state,
-    toFrame: { width: 450, height: 800 },
-  };
-}
-
 describe("PreviewFrame", () => {
-  it("replaces its completion clock when a transition is interrupted", () => {
-    const props = {
-      aspectRatio: 16 / 9,
-      children: null,
-      cropEditing: false,
-      frameRef: createRef<HTMLDivElement>(),
-      onTransitionComplete: vi.fn(),
-      presentation: transition(1, 90),
-      transition: { duration: 0.3 },
-    };
+  it("expresses the crop-safe contain target through CSS layout values", () => {
+    const { container } = render(
+      <PreviewFrame aspectRatio={16 / 9} cropEditing transition={{ duration: 0.3 }}>
+        <div data-testid="preview-content" />
+      </PreviewFrame>,
+    );
 
-    const { container, rerender } = render(<PreviewFrame {...props} />);
-    const firstClock = container.querySelector("[data-transition-clock]");
+    const frame = container.querySelector("[data-preview-frame]");
+    const previewArea = container.querySelector("[data-preview-area]");
 
-    rerender(<PreviewFrame {...props} presentation={transition(2, 180)} />);
-
-    expect(container.querySelector("[data-transition-clock]")).not.toBe(firstClock);
+    expect(frame).toHaveAttribute("data-aspect-ratio", String(16 / 9));
+    expect(frame).toHaveAttribute("data-crop-editing", "true");
+    expect(previewArea).toHaveStyle({
+      "--preview-aspect-ratio": String(16 / 9),
+      "--preview-crop-width": `min(max(0px, calc(100cqw - 56px)), max(0px, calc(${(16 / 9) * 100}cqh - ${(16 / 9) * 56}px)))`,
+      "--preview-normal-width": `min(100cqw, ${(16 / 9) * 100}cqh)`,
+    });
+    expect(frame).not.toHaveStyle({ width: "400px", height: "225px" });
+    expect(container.querySelector("[data-transition-clock]")).not.toBeInTheDocument();
   });
 });

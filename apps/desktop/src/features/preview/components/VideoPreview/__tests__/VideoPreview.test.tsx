@@ -322,7 +322,7 @@ describe("VideoPreview", () => {
     expect(container.querySelector("[data-crop-selection]")).toBeInTheDocument();
   });
 
-  it("converts crop drag deltas using the measured full-source coordinate frame", () => {
+  it("converts crop drag deltas using the target full-source coordinate frame", () => {
     const store = createAppStore();
     store.dispatch(sourceSelected({ loadToken: 1, source: firstSource }));
     store.dispatch(sourceReady({ loadToken: 1, media: media(firstSource.sourcePath) }));
@@ -344,7 +344,9 @@ describe("VideoPreview", () => {
     fireEvent.pointerMove(viewport, { pointerId: 1, clientX: 140, clientY: 70 });
     fireEvent.pointerUp(viewport, { pointerId: 1, clientX: 140, clientY: 70 });
 
-    expect(store.getState().crop.value).toEqual({ x: 0.2, y: 0.2, width: 0.5, height: 0.5 });
+    expect(store.getState().crop.value?.x).toBeCloseTo(0.25625);
+    expect(store.getState().crop.value?.y).toBeCloseTo(0.23889);
+    expect(store.getState().crop.value).toMatchObject({ width: 0.5, height: 0.5 });
     frameBounds.mockRestore();
   });
 
@@ -372,13 +374,13 @@ describe("VideoPreview", () => {
     fireEvent.pointerMove(viewport, { pointerId: 1, clientX: 140, clientY: 70 });
     fireEvent.pointerUp(viewport, { pointerId: 1, clientX: 140, clientY: 70 });
 
-    expect(store.getState().crop.value?.x).toBeCloseTo(0.2);
-    expect(store.getState().crop.value?.y).toBeCloseTo(0.2);
+    expect(store.getState().crop.value?.x).toBeCloseTo(0.14375);
+    expect(store.getState().crop.value?.y).toBeCloseTo(0.16111);
     expect(store.getState().crop.value).toMatchObject({ width: 0.5, height: 0.5 });
     frameBounds.mockRestore();
   });
 
-  it("finishes a frame transition and rebases crop dragging to its destination bounds", () => {
+  it("uses target frame bounds to map crop dragging during a frame morph", () => {
     const store = createAppStore();
     store.dispatch(
       cropChanged({
@@ -388,16 +390,12 @@ describe("VideoPreview", () => {
     );
     const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"), store);
     const viewport = container.querySelector('[aria-label="Video crop preview"]') as HTMLElement;
-    const frame = container.querySelector("[data-preview-frame]") as HTMLElement;
     vi.spyOn(viewport, "getBoundingClientRect").mockReturnValue(new DOMRect(0, 0, 800, 600));
-    vi.spyOn(frame, "getBoundingClientRect").mockReturnValue(new DOMRect(200, 150, 400, 225));
 
     openCropTool(viewport);
-    expect(frame).toHaveAttribute("data-presentation-status", "transitioning");
 
     const selection = container.querySelector("[data-crop-selection]")!;
     fireEvent.pointerDown(selection, { pointerId: 1, clientX: 100, clientY: 100 });
-    expect(frame).toHaveAttribute("data-presentation-status", "stable");
 
     fireEvent.pointerMove(viewport, { pointerId: 1, clientX: 174.4, clientY: 141.85 });
 
@@ -444,17 +442,19 @@ describe("VideoPreview", () => {
     );
   });
 
-  it("starts frame morphs from the currently rendered bounds", () => {
+  it("passes final crop-safe geometry as the frame target", () => {
     const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"));
     const viewport = container.querySelector('[aria-label="Video crop preview"]')!;
-    const frame = container.querySelector("[data-preview-frame]") as HTMLElement;
     vi.spyOn(viewport, "getBoundingClientRect").mockReturnValue(new DOMRect(0, 0, 800, 600));
-    vi.spyOn(frame, "getBoundingClientRect").mockReturnValue(new DOMRect(200, 150, 400, 225));
 
     openCropTool(viewport);
 
-    expect(frame).toHaveAttribute("data-presentation-status", "transitioning");
-    expect(frame).toHaveStyle({ width: "400px", height: "225px" });
+    const frame = container.querySelector("[data-preview-frame]")!;
+    expect(frame).toHaveAttribute("data-crop-editing", "true");
+    expect(container.querySelector("[data-preview-area]")).toHaveStyle({
+      "--preview-crop-width": `min(max(0px, calc(100cqw - 56px)), max(0px, calc(${(16 / 9) * 100}cqh - ${(16 / 9) * 56}px)))`,
+    });
+    expect(frame).not.toHaveStyle({ width: "400px", height: "225px" });
   });
 
   it("pauses playback while crop controls are open", () => {

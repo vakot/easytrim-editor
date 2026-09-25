@@ -1,16 +1,4 @@
-import type { CropRect } from "@/domain/crop";
-import type { RotationDegrees } from "@/domain/rotation";
-
 import type { PreviewGeometry } from "./preview-geometry";
-
-interface ResolvedPreviewPresentation {
-  crop: CropRect;
-  cropIsOpen: boolean;
-  flipHorizontal: boolean;
-  flipVertical: boolean;
-  rotation: RotationDegrees;
-  rotationAngle: number;
-}
 
 interface PreviewFrameBounds {
   height: number;
@@ -38,4 +26,4 @@ function previewFrameBoundsFor(
 }
 
 export { previewFrameAspectFor, previewFrameBoundsFor };
-export type { PreviewFrameBounds, ResolvedPreviewPresentation };
+export type { PreviewFrameBounds };

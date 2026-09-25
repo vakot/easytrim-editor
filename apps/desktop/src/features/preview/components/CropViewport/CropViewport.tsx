@@ -11,14 +11,14 @@ import {
   selectRotationDegrees,
 } from "@/app/store/slices/crop-slice";
 import { selectPreview } from "@/app/store/slices/preview-slice";
-import { selectSourceMedia } from "@/app/store/slices/source-slice";
+import { selectSourceLoadToken, selectSourceMedia } from "@/app/store/slices/source-slice";
 import { commitActiveEditingInstanceDraft } from "@/app/store/thunks/source-media-thunks";
 import { isQuarterTurn } from "@/domain/rotation";
 import { usePreviewTransform } from "@/features/preview";
 
 import type { CropHandle } from "../../lib/crop-geometry.utils";
 import { previewGeometryFor, sourceCropForRotation } from "../../lib/preview-geometry";
-import { previewFrameAspectFor } from "../../lib/preview-presentation";
+import { previewFrameAspectFor, previewFrameBoundsFor } from "../../lib/preview-presentation";
 import { previewTransitionFor } from "../../lib/preview-transition";
 
 import { CropSelection } from "./components/CropSelection";
@@ -39,11 +39,11 @@ function CropViewport() {
   const flipVertical = useAppSelector(selectFlipVertical);
   const rotationDegrees = useAppSelector(selectRotationDegrees);
   const sourceMedia = useAppSelector(selectSourceMedia);
+  const sourceLoadToken = useAppSelector(selectSourceLoadToken);
   const preview = useAppSelector(selectPreview);
   const reduceMotion = useReducedMotion() === true;
   const previewRef = useRef<HTMLDivElement>(null);
   const sourceFrameRef = useRef<HTMLDivElement>(null);
-  const frameRef = useRef<HTMLDivElement>(null);
   const cropSelection = useCropSelection(
     previewRef,
     sourceFrameRef,
@@ -65,15 +65,7 @@ function CropViewport() {
     [crop, cropSelection.isOpen, flipHorizontal, flipVertical, rotationDegrees],
   );
 
-  const { finishTransition, presentation } = usePreviewPresentation(
-    presentationInput,
-    sourceWidth,
-    sourceHeight,
-    cropSelection.isDragging,
-    reduceMotion,
-    previewRef,
-    frameRef,
-  );
+  const presentation = usePreviewPresentation(presentationInput, sourceLoadToken, reduceMotion);
 
   useEffect(() => {
     onCropToolOpenChange?.(cropSelection.isOpen);
@@ -84,21 +76,27 @@ function CropViewport() {
   }, [cropSelection.isOpen, videoRef]);
 
   const { clearDrag, isDragging, isEditing, open, startDrag } = cropSelection;
-  const resolved = presentation.status === "transitioning" ? presentation.to : presentation.state;
+  const resolved = presentation;
   const geometry = previewGeometryFor(sourceWidth, sourceHeight, resolved.crop, resolved.rotation);
   const cropIsOpen = resolved.cropIsOpen;
   const transformTransition = previewTransitionFor(isDragging || reduceMotion, reduceMotion);
   const selectionFadeTransition = previewTransitionFor(false, reduceMotion);
+  const previewAspect = geometry === null ? 1 : previewFrameAspectFor(geometry, cropIsOpen);
   const startCropDrag = useCallback(
     (event: PointerEvent<HTMLElement>, handle: CropHandle) => {
-      if (presentation.status === "transitioning") {
-        finishTransition(presentation.id);
-        startDrag(event, handle, presentation.toFrame);
-        return;
-      }
-      startDrag(event, handle);
+      const viewportBounds = previewRef.current?.getBoundingClientRect();
+      const frameBounds = viewportBounds
+        ? previewFrameBoundsFor(
+            viewportBounds.width,
+            viewportBounds.height,
+            previewAspect,
+            cropIsOpen,
+          )
+        : undefined;
+
+      startDrag(event, handle, frameBounds);
     },
-    [finishTransition, presentation, startDrag],
+    [cropIsOpen, previewAspect, startDrag],
   );
 
   const resetTransform = useCallback(() => {
@@ -116,7 +114,6 @@ function CropViewport() {
 
   if (preview.status !== "ready" || geometry === null) return null;
 
-  const previewAspect = previewFrameAspectFor(geometry, cropIsOpen);
   const sourceCrop = cropIsOpen
     ? { x: 0, y: 0, width: 1, height: 1 }
     : sourceCropForRotation(resolved.crop, resolved.rotation);
@@ -148,9 +145,6 @@ function CropViewport() {
         <PreviewFrame
           aspectRatio={previewAspect}
           cropEditing={cropIsOpen}
-          frameRef={frameRef}
-          onTransitionComplete={finishTransition}
-          presentation={presentation}
           transition={transformTransition}
         >
           <motion.div
