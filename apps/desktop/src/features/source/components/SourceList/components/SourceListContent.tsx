@@ -14,7 +14,7 @@ import {
 } from "./SourceListGroups";
 
 function SourceListContent() {
-  const { hasMore, isLoading, next, search, sources, visibleSources } = useSourceListData();
+  const { hasMore, next, search, sources, visibleSources } = useSourceListData();
   const { t } = useTranslation();
 
   if (search.trim() && sources.length === 0) {
@@ -26,7 +26,7 @@ function SourceListContent() {
   }
 
   return (
-    <InfiniteScroll hasMore={hasMore} isLoading={isLoading} next={next}>
+    <InfiniteScroll hasMore={hasMore} next={next}>
       <TabsContent className="min-w-0" value="none">
         <SourceListNone sources={visibleSources} />
       </TabsContent>

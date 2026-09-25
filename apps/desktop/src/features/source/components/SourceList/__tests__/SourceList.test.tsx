@@ -2,13 +2,21 @@ import { createEvent, fireEvent, render, screen, within } from "@testing-library
 import userEvent from "@testing-library/user-event";
 import type { PropsWithChildren } from "react";
 import { Provider } from "react-redux";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const openFileLocation = vi.hoisted(() => vi.fn());
+const prepareMetadata = vi.hoisted(() => vi.fn());
+const prepareThumbnails = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/tauri/media", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/tauri/media")>()),
   openFileLocation,
+}));
+
+vi.mock("@/app/store/thunks/source-media-thunks", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/app/store/thunks/source-media-thunks")>()),
+  prepareImportedSourceMetadataRequested: prepareMetadata,
+  prepareImportedSourceThumbnailsRequested: prepareThumbnails,
 }));
 
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -38,6 +46,69 @@ import {
   SourceListTabs,
 } from "../SourceList";
 
+class TestIntersectionObserver {
+  static instances: TestIntersectionObserver[] = [];
+
+  readonly observed = new Set<Element>();
+  readonly root: Element | Document | null;
+  readonly rootMargin: string;
+
+  constructor(
+    private readonly callback: IntersectionObserverCallback,
+    options: IntersectionObserverInit = {},
+  ) {
+    this.root = options.root ?? null;
+    this.rootMargin = options.rootMargin ?? "0px";
+    TestIntersectionObserver.instances.push(this);
+  }
+
+  observe(target: Element) {
+    this.observed.add(target);
+  }
+
+  unobserve(target: Element) {
+    this.observed.delete(target);
+  }
+
+  disconnect() {
+    this.observed.clear();
+  }
+
+  trigger(target: Element) {
+    this.callback(
+      [{ isIntersecting: true, target } as IntersectionObserverEntry],
+      this as unknown as IntersectionObserver,
+    );
+  }
+}
+
+afterEach(() => {
+  TestIntersectionObserver.instances = [];
+  vi.unstubAllGlobals();
+});
+
+function createSourceInstances(count: number): EditingInstance[] {
+  return Array.from({ length: count }, (_, index) => {
+    const source = {
+      ...firstSource,
+      displayName: `source-${index}.mp4`,
+      sourcePath: `C:/Media/source-${index}.mp4`,
+    };
+
+    return {
+      exportAttempts: [],
+      id: `source-${index}`,
+      origin: "source-import",
+      snapshot: createDefaultEditorSnapshot(source, false),
+      sourceAvailability: "available",
+    };
+  });
+}
+
+function installIntersectionObserver() {
+  vi.stubGlobal("IntersectionObserver", TestIntersectionObserver);
+}
+
 vi.mock("../../SourceCard", () => {
   const Container = ({ children }: PropsWithChildren) => <div>{children}</div>;
   return {
@@ -54,6 +125,77 @@ vi.mock("../../SourceCard", () => {
 });
 
 describe("source queue controls", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("does not prepare off-screen cards", () => {
+    installIntersectionObserver();
+    const store = createAppStore();
+    store.dispatch(editingInstancesAdded(createSourceInstances(1)));
+
+    render(
+      <Provider store={store}>
+        <SourceList />
+      </Provider>,
+    );
+
+    expect(prepareMetadata).not.toHaveBeenCalled();
+    expect(prepareThumbnails).not.toHaveBeenCalled();
+  });
+
+  it("enqueues card preparation when a card enters the overscan region", () => {
+    installIntersectionObserver();
+    prepareMetadata.mockReturnValue({ type: "test/metadata" });
+    prepareThumbnails.mockReturnValue({ type: "test/thumbnail" });
+    const store = createAppStore();
+    const [instance] = createSourceInstances(1);
+    if (!instance) throw new Error("Expected source fixture");
+    store.dispatch(editingInstancesAdded([instance]));
+
+    render(
+      <Provider store={store}>
+        <SourceList />
+      </Provider>,
+    );
+
+    const card = screen.getByTestId(instance.id).closest("li");
+    expect(card).not.toBeNull();
+    const cardObserver = TestIntersectionObserver.instances.find((observer) =>
+      observer.observed.has(card!),
+    );
+
+    expect(cardObserver?.rootMargin).toBe("0px 0px 600px 0px");
+    cardObserver?.trigger(card!);
+
+    expect(prepareMetadata).toHaveBeenCalledWith([instance]);
+    expect(prepareThumbnails).toHaveBeenCalledWith([instance]);
+  });
+
+  it("keeps pagination independent from background card preparation", async () => {
+    installIntersectionObserver();
+    const store = createAppStore();
+    store.dispatch(editingInstancesAdded(createSourceInstances(13)));
+
+    const { container } = render(
+      <Provider store={store}>
+        <SourceList />
+      </Provider>,
+    );
+
+    const sentinel = container.querySelector("[data-slot='infinite-scroll-trigger']");
+    expect(sentinel).not.toBeNull();
+    const scrollObserver = TestIntersectionObserver.instances.find((observer) =>
+      observer.observed.has(sentinel!),
+    );
+
+    scrollObserver?.trigger(sentinel!);
+
+    expect(await screen.findByTestId("source-12")).toBeInTheDocument();
+    expect(prepareMetadata).not.toHaveBeenCalled();
+    expect(prepareThumbnails).not.toHaveBeenCalled();
+  });
+
   it("renders file, folder, and drag-and-drop actions when no sources are imported", () => {
     render(
       <Provider store={createAppStore()}>

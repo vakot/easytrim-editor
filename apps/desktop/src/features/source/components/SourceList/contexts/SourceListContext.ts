@@ -8,7 +8,6 @@ type SourceListTab = "none" | "folder" | "time" | "imported";
 
 type SourceListState = {
   hasMore: boolean;
-  isLoading: boolean;
   matchesBySourceId: ReadonlyMap<string, SourceSearchResult>;
   next: () => void;
   search: string;

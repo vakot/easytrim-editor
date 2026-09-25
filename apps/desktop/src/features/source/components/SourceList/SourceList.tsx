@@ -14,7 +14,6 @@ import { SourceListSearch } from "./components/SourceListSearch";
 import { SourceListTabs } from "./components/SourceListTabs";
 import type { SourceListState, SourceListTab } from "./contexts/SourceListContext";
 import { SourceListContext } from "./contexts/SourceListContext";
-import { usePrepareSources } from "./hooks/usePrepareSources";
 
 const SOURCE_LIST_PAGE_SIZE = 12;
 
@@ -43,7 +42,6 @@ function SourceList({ children }: SourceListProps) {
   );
 
   const hasMore = visibleSources.length < filteredSources.length;
-  const isLoading = usePrepareSources(visibleSources);
 
   const next = useCallback(() => {
     setVisibleSourceCount((count) => count + SOURCE_LIST_PAGE_SIZE);
@@ -63,7 +61,6 @@ function SourceList({ children }: SourceListProps) {
     <SourceListContext.Provider
       value={{
         hasMore,
-        isLoading,
         matchesBySourceId,
         next,
         search,

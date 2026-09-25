@@ -10,6 +10,7 @@ import {
   X,
 } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
@@ -23,7 +24,11 @@ import {
 } from "@/app/store/slices/editing-instances-slice";
 import { selectSourceExportQueueState } from "@/app/store/slices/export-slice";
 import { cancelExportAttemptRequested } from "@/app/store/thunks/export-thunks";
-import { restoreExportAttemptRequested } from "@/app/store/thunks/source-media-thunks";
+import {
+  prepareImportedSourceMetadataRequested,
+  prepareImportedSourceThumbnailsRequested,
+  restoreExportAttemptRequested,
+} from "@/app/store/thunks/source-media-thunks";
 import type { EditingInstance, ExportAttempt, ExportAttemptState } from "@/domain/editing-instance";
 import { cn } from "@/lib/class-names.utils";
 import { openFileLocation } from "@/lib/tauri/media";
@@ -48,6 +53,8 @@ import {
   StartSourceExport,
 } from "../../SourceMenuActions";
 
+const SOURCE_PREPARATION_ROOT_MARGIN = "0px 0px 600px 0px";
+
 function SourceListItem({
   match,
   source,
@@ -55,8 +62,32 @@ function SourceListItem({
   match: SourceSearchResult | undefined;
   source: EditingInstance;
 }) {
+  const dispatch = useAppDispatch();
+  const itemRef = useRef<HTMLLIElement>(null);
   const shouldReduceMotion = useReducedMotion() === true;
   const duration = shouldReduceMotion ? 0 : 0.16;
+
+  useEffect(() => {
+    const element = itemRef.current;
+    if (!element || typeof IntersectionObserver === "undefined") return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry?.isIntersecting) return;
+
+        observer.unobserve(element);
+        dispatch(prepareImportedSourceMetadataRequested([source]));
+        dispatch(prepareImportedSourceThumbnailsRequested([source]));
+      },
+      {
+        root: element.closest<HTMLElement>("[data-slot='scroll-area-viewport']"),
+        rootMargin: SOURCE_PREPARATION_ROOT_MARGIN,
+      },
+    );
+
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [dispatch, source]);
 
   return (
     <motion.li
@@ -65,6 +96,7 @@ function SourceListItem({
       exit={{ opacity: 0, y: shouldReduceMotion ? 0 : -4 }}
       initial={shouldReduceMotion ? false : { opacity: 0, y: 4 }}
       layout={shouldReduceMotion ? false : "position"}
+      ref={itemRef}
       transition={{ duration, ease: "easeOut" }}
     >
       <SourceListItemCard match={match} source={source} />
