@@ -1,4 +1,4 @@
-import { type ReactNode, useCallback, useMemo, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Tabs } from "@/components/ui/tabs";
 
@@ -18,8 +18,6 @@ import { SourceListTabs } from "./components/SourceListTabs";
 import type { SourceListState, SourceListTab } from "./contexts/SourceListContext";
 import { SourceListContext } from "./contexts/SourceListContext";
 
-const SOURCE_LIST_PAGE_SIZE = 12;
-
 interface SourceListProps {
   children?:
     ReactNode | ((state: Pick<SourceListState, "search" | "sources" | "tab">) => ReactNode);
@@ -30,7 +28,25 @@ function SourceList({ children }: SourceListProps) {
   const searchEntries = useAppSelector(selectSourceSearchEntries);
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<SourceListTab>("none");
-  const [visibleSourceCount, setVisibleSourceCount] = useState(SOURCE_LIST_PAGE_SIZE);
+  const previousSourceIds = useRef(new Set(sources.map(({ id }) => id)));
+  const pendingAddedSourceIds = useRef(new Set<string>());
+  const [addedSourceIds, setAddedSourceIds] = useState<ReadonlySet<string>>(() => new Set());
+
+  useEffect(() => {
+    const nextSourceIds = new Set(sources.map(({ id }) => id));
+    const added = new Set(
+      [...nextSourceIds].filter((sourceId) => !previousSourceIds.current.has(sourceId)),
+    );
+
+    previousSourceIds.current = nextSourceIds;
+    for (const sourceId of added) pendingAddedSourceIds.current.add(sourceId);
+    setAddedSourceIds(added);
+  }, [sources]);
+  const consumeSourceAddition = useCallback((sourceId: string) => {
+    if (!pendingAddedSourceIds.current.has(sourceId)) return false;
+    pendingAddedSourceIds.current.delete(sourceId);
+    return true;
+  }, []);
 
   const searchSources = useMemo(() => createSourceSearcher(searchEntries), [searchEntries]);
   const searchResults = useMemo(() => searchSources(search), [search, searchSources]);
@@ -53,22 +69,6 @@ function SourceList({ children }: SourceListProps) {
     [searchResults],
   );
 
-  const visibleSources = useMemo(
-    () => filteredSources.slice(0, visibleSourceCount),
-    [filteredSources, visibleSourceCount],
-  );
-
-  const hasMore = visibleSources.length < filteredSources.length;
-
-  const next = useCallback(() => {
-    setVisibleSourceCount((count) => count + SOURCE_LIST_PAGE_SIZE);
-  }, []);
-
-  const handleSearchChange = useCallback((value: string) => {
-    setSearch(value);
-    setVisibleSourceCount(SOURCE_LIST_PAGE_SIZE);
-  }, []);
-
   if (sources.length === 0) return <SourceListEmpty />;
 
   const child =
@@ -77,14 +77,13 @@ function SourceList({ children }: SourceListProps) {
   return (
     <SourceListContext.Provider
       value={{
-        hasMore,
+        addedSourceIds,
+        consumeSourceAddition,
         matchesBySourceId,
-        next,
         search,
-        setSearch: handleSearchChange,
+        setSearch,
         sources: filteredSources,
         tab,
-        visibleSources,
       }}
     >
       <Tabs

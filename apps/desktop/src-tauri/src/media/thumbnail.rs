@@ -20,8 +20,8 @@ use crate::{
 #[cfg(windows)]
 use super::windows_thumbnail::{cached_thumbnail, extract_thumbnail};
 
-pub const THUMBNAIL_WIDTH: u32 = 640;
-pub const THUMBNAIL_HEIGHT: u32 = 360;
+pub const THUMBNAIL_WIDTH: u32 = 96;
+pub const THUMBNAIL_HEIGHT: u32 = 54;
 
 const THUMBNAIL_TIMEOUT: Duration = Duration::from_secs(60);
 const THUMBNAIL_STDOUT_LIMIT: usize = 16 * 1024;
@@ -72,7 +72,6 @@ pub fn generate_thumbnail(
 
     Ok(ImportedThumbnailArtifact::from_temporary(artifact))
 }
-
 fn thumbnail_cache_key(source_path: &Path) -> Result<String, AppError> {
     let canonical_path = fs::canonicalize(source_path)
         .map_err(|_| AppError::io_failed("The source file is no longer available."))?;
@@ -404,12 +403,12 @@ mod tests {
         assert!(arguments.windows(2).any(|pair| pair == ["-frames:v", "1"]));
         assert!(arguments.windows(2).any(|pair| pair == ["-c:v", "mjpeg"]));
         assert!(arguments.iter().any(|argument| {
-            argument.contains("scale=640:360:force_original_aspect_ratio=increase,crop=640:360")
+            argument.contains("scale=96:54:force_original_aspect_ratio=increase,crop=96:54")
         }));
     }
 
     #[test]
-    fn shell_thumbnail_encoding_centers_and_crops_to_640_by_360() {
+    fn shell_thumbnail_encoding_centers_and_crops_to_96_by_54() {
         let mut image = RgbImage::new(800, 360);
         for (x, _, pixel) in image.enumerate_pixels_mut() {
             *pixel = if x < 200 || x >= 600 {
@@ -423,7 +422,7 @@ mod tests {
         let decoded = image::load_from_memory(&encoded).expect("encoded thumbnail decodes");
         assert_eq!(decoded.width(), THUMBNAIL_WIDTH);
         assert_eq!(decoded.height(), THUMBNAIL_HEIGHT);
-        let center = decoded.to_rgb8().get_pixel(320, 180).0;
+        let center = decoded.to_rgb8().get_pixel(48, 27).0;
         assert!(center[2] > center[0]);
     }
 

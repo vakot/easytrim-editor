@@ -22,14 +22,13 @@ use windows_sys::{
 const IMAGE_FACTORY_ID: GUID = GUID::from_u128(0xBCC18B79_BA16_442F_80C4_8A59C30C463B);
 const THUMBNAIL_CACHE_ONLY_FLAGS: u32 = 0x10 | 0x08;
 const THUMBNAIL_EXTRACTION_FLAGS: u32 = 0x08;
-const SHELL_THUMBNAIL_WIDTH: i32 = 640;
-const SHELL_THUMBNAIL_HEIGHT: i32 = 360;
+const SHELL_THUMBNAIL_WIDTH: i32 = 96;
+const SHELL_THUMBNAIL_HEIGHT: i32 = 54;
 
 #[repr(C)]
 struct ImageFactory {
     vtable: *const ImageFactoryVtable,
 }
-
 #[repr(C)]
 struct ImageFactoryVtable {
     query_interface: unsafe extern "system" fn(

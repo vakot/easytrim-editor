@@ -41,7 +41,6 @@ import {
   editingInstanceExportCompleted,
   editingInstanceExportStarted,
   editingInstancesAdded,
-  editingInstanceSnapshotUpdated,
   selectImportedEditingInstances,
   selectSourceSearchEntries,
 } from "@/app/store/slices/editing-instances-slice";
@@ -62,49 +61,30 @@ import {
   SourceListTabs,
 } from "../SourceList";
 
-class TestIntersectionObserver {
-  static instances: TestIntersectionObserver[] = [];
-
-  readonly observed = new Set<Element>();
-  readonly root: Element | Document | null;
-  readonly rootMargin: string;
-
-  constructor(
-    private readonly callback: IntersectionObserverCallback,
-    options: IntersectionObserverInit = {},
-  ) {
-    this.root = options.root ?? null;
-    this.rootMargin = options.rootMargin ?? "0px";
-    TestIntersectionObserver.instances.push(this);
-  }
-
-  observe(target: Element) {
-    this.observed.add(target);
-  }
-
-  unobserve(target: Element) {
-    this.observed.delete(target);
-  }
-
-  disconnect() {
-    this.observed.clear();
-  }
-
-  trigger(target: Element, isIntersecting = true) {
-    this.callback(
-      [{ isIntersecting, target } as IntersectionObserverEntry],
-      this as unknown as IntersectionObserver,
-    );
-  }
-}
+const originalOffsetHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "offsetHeight");
+const originalOffsetWidth = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "offsetWidth");
 
 afterEach(() => {
-  TestIntersectionObserver.instances = [];
   vi.unstubAllGlobals();
+  if (originalOffsetHeight)
+    Object.defineProperty(HTMLElement.prototype, "offsetHeight", originalOffsetHeight);
+  if (originalOffsetWidth)
+    Object.defineProperty(HTMLElement.prototype, "offsetWidth", originalOffsetWidth);
 });
 
-function installIntersectionObserver() {
-  vi.stubGlobal("IntersectionObserver", TestIntersectionObserver);
+class VirtualListResizeObserver implements ResizeObserver {
+  constructor(private readonly callback: ResizeObserverCallback) {}
+
+  disconnect() {}
+
+  observe(target: Element) {
+    this.callback(
+      [{ target, contentRect: { width: 900, height: 600 } } as ResizeObserverEntry],
+      this,
+    );
+  }
+
+  unobserve() {}
 }
 
 function createSourceInstances(count: number): EditingInstance[] {
@@ -144,188 +124,137 @@ vi.mock("../../SourceCard", () => {
 describe("source queue controls", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubGlobal("ResizeObserver", VirtualListResizeObserver);
+    Object.defineProperty(HTMLElement.prototype, "offsetHeight", {
+      configurable: true,
+      get() {
+        return this.matches("[data-slot='scroll-area-viewport'], [data-slot='tabs-content']")
+          ? 600
+          : 0;
+      },
+    });
+    Object.defineProperty(HTMLElement.prototype, "offsetWidth", {
+      configurable: true,
+      get() {
+        return this.matches("[data-slot='scroll-area-viewport'], [data-slot='tabs-content']")
+          ? 900
+          : 0;
+      },
+    });
     cardRenderCounts.clear();
     prepareThumbnails.mockReturnValue({ type: "test/thumbnail" });
     releaseThumbnails.mockReturnValue({ type: "test/release-thumbnail" });
   });
 
-  it("appends a page when the sentinel approaches without waiting for thumbnails", async () => {
-    installIntersectionObserver();
+  it("renders a bounded virtual range with full-list scroll height", () => {
     const store = createAppStore();
-    store.dispatch(editingInstancesAdded(createSourceInstances(25)));
+    store.dispatch(editingInstancesAdded(createSourceInstances(1400)));
 
     const { container } = render(
-      <Provider store={store}>
-        <SourceList />
-      </Provider>,
-    );
-
-    expect(screen.getByTestId("source-11")).toBeInTheDocument();
-    expect(screen.queryByTestId("source-12")).not.toBeInTheDocument();
-    const sentinel = container.querySelector("[data-slot='infinite-scroll-trigger']");
-    expect(sentinel).toBeInTheDocument();
-
-    const observer = TestIntersectionObserver.instances.find((candidate) =>
-      candidate.observed.has(sentinel!),
-    );
-
-    observer?.trigger(sentinel!);
-
-    expect(await screen.findByTestId("source-12")).toBeInTheDocument();
-    expect(screen.queryByTestId("source-24")).not.toBeInTheDocument();
-    expect(prepareThumbnails).not.toHaveBeenCalled();
-  });
-
-  it("requests and releases thumbnail demand as a card enters and leaves the near-viewport range", () => {
-    installIntersectionObserver();
-    const store = createAppStore();
-    const [instance] = createSourceInstances(1);
-    if (!instance) throw new Error("Expected source fixture");
-    store.dispatch(editingInstancesAdded([instance]));
-
-    const { container, unmount } = render(
-      <div data-slot="scroll-area-viewport">
+      <div data-slot="scroll-area-viewport" style={{ height: 500, overflow: "auto" }}>
         <Provider store={store}>
-          <SourceList />
+          <SourceDeleteProvider>
+            <SourceList />
+          </SourceDeleteProvider>
         </Provider>
       </div>,
     );
 
-    const card = screen.getByTestId(instance.id);
-    const row = card.closest("li");
-    if (!row) throw new Error("Expected a SourceList item");
-    const observer = TestIntersectionObserver.instances.find((candidate) =>
-      candidate.observed.has(row),
-    );
-
-    expect(observer?.root).toBe(container.querySelector("[data-slot='scroll-area-viewport']"));
-    expect(observer?.rootMargin).toBe("600px 0px");
-    expect(prepareThumbnails).not.toHaveBeenCalled();
-
-    observer?.trigger(row);
-    expect(prepareThumbnails).toHaveBeenCalledWith([instance]);
-
-    observer?.trigger(row, false);
-    expect(releaseThumbnails).toHaveBeenCalledWith(instance.id);
-
-    observer?.trigger(row);
-    expect(prepareThumbnails).toHaveBeenCalledTimes(2);
-
-    unmount();
-    expect(releaseThumbnails).toHaveBeenCalledTimes(2);
+    expect(container.querySelector("[data-slot='virtual-list']")).toHaveStyle({
+      height: `${1400 * 72}px`,
+    });
+    expect(container.querySelectorAll("[data-virtual-index]").length).toBeLessThan(30);
+    expect(screen.getByTestId("source-0")).toBeInTheDocument();
+    expect(screen.queryByTestId("source-1399")).not.toBeInTheDocument();
+    expect(prepareThumbnails).toHaveBeenCalled();
   });
 
-  it("uses one shared thumbnail observer for all mounted source rows", () => {
-    installIntersectionObserver();
+  it("renders the destination range after a fast scrollbar jump", async () => {
     const store = createAppStore();
-    store.dispatch(editingInstancesAdded(createSourceInstances(25)));
-
-    render(
-      <div data-slot="scroll-area-viewport">
-        <Provider store={store}>
-          <SourceList />
-        </Provider>
-      </div>,
-    );
-
-    const rowObservers = TestIntersectionObserver.instances.filter((observer) =>
-      [...observer.observed].some((element) => element.matches("li")),
-    );
-
-    expect(rowObservers).toHaveLength(1);
-    expect(rowObservers[0]?.observed.size).toBe(12);
-    expect(TestIntersectionObserver.instances).toHaveLength(2);
-  });
-
-  it("does not recreate thumbnail demand observation for unrelated editor state", () => {
-    installIntersectionObserver();
-    const store = createAppStore();
-    const [instance] = createSourceInstances(1);
-    if (!instance) throw new Error("Expected source fixture");
-    store.dispatch(editingInstancesAdded([instance]));
-
-    render(
-      <div data-slot="scroll-area-viewport">
-        <Provider store={store}>
-          <SourceList />
-        </Provider>
-      </div>,
-    );
-
-    const observer = TestIntersectionObserver.instances.find(
-      (candidate) => candidate.observed.size,
-    );
-
-    expect(observer).toBeDefined();
-    store.dispatch(
-      editingInstanceSnapshotUpdated({
-        id: instance.id,
-        snapshot: { ...instance.snapshot, rotation: 90 },
-      }),
-    );
-
-    expect(TestIntersectionObserver.instances).toHaveLength(1);
-    expect(TestIntersectionObserver.instances[0]).toBe(observer);
-  });
-
-  it("renders a bounded initial page in normal document flow", () => {
-    const store = createAppStore();
-    store.dispatch(editingInstancesAdded(createSourceInstances(500)));
-
+    store.dispatch(editingInstancesAdded(createSourceInstances(1400)));
     const { container } = render(
-      <Provider store={store}>
-        <SourceList />
-      </Provider>,
+      <div data-slot="scroll-area-viewport" style={{ height: 500, overflow: "auto" }}>
+        <Provider store={store}>
+          <SourceList />
+        </Provider>
+      </div>,
     );
 
-    expect(screen.getByTestId("source-11")).toBeInTheDocument();
-    expect(screen.queryByTestId("source-12")).not.toBeInTheDocument();
-    expect(container.querySelector("[data-index]")).toBeNull();
-    expect(container.querySelector("[style*='position: absolute']")).toBeNull();
+    const viewport = container.querySelector<HTMLElement>("[data-slot='scroll-area-viewport']");
+    if (!viewport) throw new Error("Expected scroll viewport");
+
+    act(() => {
+      viewport.scrollTop = 72 * 1000;
+      fireEvent.scroll(viewport);
+    });
+
+    expect(await screen.findByTestId("source-1000")).toBeInTheDocument();
+    expect(container.querySelectorAll("[data-virtual-index]").length).toBeLessThan(30);
+    expect(releaseThumbnails).toHaveBeenCalledWith("source-0");
+    expect(screen.getByTestId("source-1000").closest("[data-entering]")).toBeNull();
+  });
+
+  it("animates a newly added source once without animating initial or virtual mounts", async () => {
+    const store = createAppStore();
+    store.dispatch(editingInstancesAdded(createSourceInstances(2)));
+    render(
+      <div data-slot="scroll-area-viewport" style={{ height: 500, overflow: "auto" }}>
+        <Provider store={store}>
+          <SourceList />
+        </Provider>
+      </div>,
+    );
+    expect(screen.getByTestId("source-0").closest("[data-entering]")).toBeNull();
+
+    act(() => {
+      store.dispatch(
+        editingInstancesAdded(
+          createSourceInstances(1).map((source) => ({ ...source, id: "source-new" })),
+        ),
+      );
+    });
+
+    await waitFor(() =>
+      expect(screen.getByTestId("source-new").closest("[data-entering]")).toHaveAttribute(
+        "data-entering",
+        "true",
+      ),
+    );
   });
 
   it("keeps a large loaded list stable during activation, status changes, and removal", async () => {
     vi.stubGlobal("scrollTo", vi.fn());
-    installIntersectionObserver();
     const searcherSpy = vi.spyOn(sourceSearchUtils, "createSourceSearcher");
     const store = createAppStore();
-    const instances = createSourceInstances(500);
+    const instances = createSourceInstances(1400);
     store.dispatch(editingInstancesAdded(instances));
 
     const { container } = render(
-      <Provider store={store}>
-        <SourceList />
-      </Provider>,
+      <div data-slot="scroll-area-viewport" style={{ height: 500, overflow: "auto" }}>
+        <Provider store={store}>
+          <SourceList />
+        </Provider>
+      </div>,
     );
 
-    const sentinel = container.querySelector("[data-slot='infinite-scroll-trigger']");
-    if (!sentinel) throw new Error("Expected the InfiniteScroll sentinel");
-    const sentinelObserver = TestIntersectionObserver.instances.find((candidate) =>
-      candidate.observed.has(sentinel),
-    );
-
-    if (!sentinelObserver) throw new Error("Expected the InfiniteScroll observer");
-    for (let batch = 0; batch < 50 && !screen.queryByTestId("source-499"); batch += 1) {
-      act(() => {
-        sentinelObserver.trigger(sentinel, false);
-        sentinelObserver.trigger(sentinel);
-      });
-    }
-    expect(screen.getByTestId("source-499")).toBeInTheDocument();
-    expect(cardRenderCounts.size).toBe(500);
+    const visibleIds = [...cardRenderCounts.keys()];
+    expect(visibleIds.length).toBeLessThan(30);
 
     const initialSearcherCalls = searcherSpy.mock.calls.length;
     const initialRenderCounts = new Map(cardRenderCounts);
     const initialSearchEntries = selectSourceSearchEntries(store.getState());
     expect(initialSearcherCalls).toBe(1);
     expect(container.querySelectorAll("[layout]")).toHaveLength(0);
+    expect(
+      [...container.querySelectorAll<HTMLElement>("[data-virtual-index]")].every(
+        (row) => row.style.height === "72px",
+      ),
+    ).toBe(true);
 
     act(() => store.dispatch(activeEditingInstanceChanged("source-5")));
     expect(searcherSpy).toHaveBeenCalledTimes(initialSearcherCalls);
-    for (let index = 0; index < 12; index += 1) {
-      expect(cardRenderCounts.get(`source-${index}`)).toBe(
-        initialRenderCounts.get(`source-${index}`),
-      );
+    for (const id of visibleIds) {
+      if (id !== "source-5") expect(cardRenderCounts.get(id)).toBe(initialRenderCounts.get(id));
     }
     const countsAfterActivation = new Map(cardRenderCounts);
 
@@ -344,28 +273,24 @@ describe("source queue controls", () => {
     });
     expect(selectSourceSearchEntries(store.getState())).toBe(initialSearchEntries);
     expect(searcherSpy).toHaveBeenCalledTimes(initialSearcherCalls);
-    for (let index = 0; index < 12; index += 1) {
-      if (index !== 5) {
-        expect(cardRenderCounts.get(`source-${index}`)).toBe(
-          countsAfterActivation.get(`source-${index}`),
-        );
-      }
+    expect(
+      [...container.querySelectorAll<HTMLElement>("[data-virtual-index]")].every(
+        (row) => row.style.height === "72px",
+      ),
+    ).toBe(true);
+    for (const id of visibleIds) {
+      if (id !== "source-5") expect(cardRenderCounts.get(id)).toBe(countsAfterActivation.get(id));
     }
     const countsAfterReady = new Map(cardRenderCounts);
 
     act(() => store.dispatch(editingInstanceClosed("source-0")));
-    expect(await screen.findByTestId("source-11")).toBeInTheDocument();
+    expect(screen.queryByTestId("source-0")).not.toBeInTheDocument();
     expect(searcherSpy).toHaveBeenCalledTimes(initialSearcherCalls + 1);
-    for (let index = 1; index < 12; index += 1) {
-      expect(
-        cardRenderCounts.get(`source-${index}`),
-        `source-${index} rendered after deletion`,
-      ).toBe(countsAfterReady.get(`source-${index}`));
-    }
+    expect(cardRenderCounts.get("source-1")).toBe(countsAfterReady.get("source-1"));
     expect(container.querySelectorAll("[layout]")).toHaveLength(0);
   });
 
-  it("keeps the source removal exit animation in the rendered list", async () => {
+  it("keeps virtual rows fixed-height and animates an explicit source close", async () => {
     const store = createAppStore();
     const instances = createSourceInstances(2);
     store.dispatch(editingInstancesAdded(instances));
@@ -373,25 +298,28 @@ describe("source queue controls", () => {
     const { container } = render(
       <div data-slot="scroll-area-viewport" style={{ height: 400, overflow: "auto" }}>
         <Provider store={store}>
-          <SourceList />
+          <SourceDeleteProvider>
+            <SourceList />
+          </SourceDeleteProvider>
         </Provider>
       </div>,
     );
 
     const card = screen.getByTestId("source-0");
-    const row = card.closest("li");
+    const row = card.closest<HTMLElement>("[data-virtual-index]");
     if (!row) throw new Error("Expected the source list item");
     const viewport = container.querySelector<HTMLElement>("[data-slot='scroll-area-viewport']");
     if (!viewport) throw new Error("Expected the SourceList scroll viewport");
-    viewport.scrollTop = 240;
+    expect(row).toHaveStyle({ height: "72px" });
 
-    act(() => store.dispatch(editingInstanceClosed(instances[0]!.id)));
+    const user = userEvent.setup();
+    await user.click(within(row).getByRole("button", { name: /Source actions/ }));
+    await user.click(screen.getByRole("button", { name: "Close File" }));
 
     expect(card).toBeInTheDocument();
-    expect(row.style.height).toBe("");
-    expect(row).not.toHaveClass("overflow-hidden");
-    expect(viewport.scrollTop).toBe(240);
-    await waitFor(() => expect(card).not.toBeInTheDocument());
+    expect(card.closest("[data-exiting]")).toHaveAttribute("data-exiting", "true");
+    expect(row).toHaveStyle({ height: "72px" });
+    expect(viewport.scrollTop).toBe(0);
   });
 
   it("renders file, folder, and drag-and-drop actions when no sources are imported", () => {
@@ -582,6 +510,11 @@ describe("source queue controls", () => {
     );
 
     await user.click(screen.getByRole("tab", { name: "Folder" }));
+    expect(
+      [...document.querySelectorAll<HTMLElement>("[data-virtual-index]")].some(
+        (row) => row.style.height === "36px",
+      ),
+    ).toBe(true);
     await user.click(screen.getByRole("button", { name: "Close group" }));
     expect(selectImportedEditingInstances(store.getState())).toHaveLength(2);
     await user.click(
@@ -636,13 +569,13 @@ describe("source queue controls", () => {
         </SourceDeleteProvider>
       </Provider>,
     );
-    const sourceA = within(screen.getByTestId("a").closest("li")!);
-    const sourceB = within(screen.getByTestId("b").closest("li")!);
+    const sourceA = within(screen.getByTestId("a").closest("[data-virtual-index]")!);
+    const sourceB = within(screen.getByTestId("b").closest("[data-virtual-index]")!);
     await user.click(sourceB.getByRole("button", { name: "Start queue" }));
     expect(selectSourceQueueStarted(store.getState(), "b")).toBe(true);
     expect(selectSourceQueueStarted(store.getState(), "a")).toBe(false);
     expect(sourceA.getByRole("button", { name: "Start queue" })).toBeEnabled();
-    await user.click(sourceB.getByText("Cancel", { selector: "button" }));
+    await user.click(sourceB.getByRole("button", { name: "Cancel" }));
     expect(selectSourceQueueStarted(store.getState(), "b")).toBe(false);
     expect(sourceB.getByRole("button", { name: "Start queue" })).toBeEnabled();
     expect(store.getState().editingInstances.entities.b?.exportAttempts[0]?.state.status).toBe(
@@ -693,6 +626,7 @@ describe("source queue controls", () => {
       </Provider>,
     );
 
+    await user.click(screen.getByRole("button", { name: /Source actions/ }));
     await user.click(screen.getByRole("button", { name: "Cancel" }));
     expect(store.getState().editingInstances.entities.first?.exportAttempts[0]?.state.status).toBe(
       "canceled",
@@ -755,7 +689,8 @@ describe("source queue controls", () => {
       </Provider>,
     );
 
-    await user.click(screen.getByRole("button", { name: /Reveal in/ }));
+    await user.click(screen.getByRole("button", { name: /Source actions/ }));
+    await user.click(screen.getAllByRole("button", { name: /Reveal in/ })[0]!);
     expect(openFileLocation).toHaveBeenCalledWith("C:/Exports/first.mp4");
   });
 });

@@ -1,4 +1,39 @@
 .sourceListItem {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 14rem;
+  contain: layout paint;
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity 160ms ease-out,
+    transform 160ms ease-out;
+}
+
+.isClosing {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+.isEntering {
+  animation: source-row-enter 160ms ease-out both;
+}
+
+@keyframes source-row-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sourceListItem {
+    transition: none;
+  }
+
+  .isEntering {
+    animation: none;
+  }
 }

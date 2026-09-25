@@ -20,6 +20,18 @@ class ResizeObserverMock implements ResizeObserver {
 }
 
 window.ResizeObserver = ResizeObserverMock;
+Object.defineProperty(HTMLElement.prototype, "offsetHeight", {
+  configurable: true,
+  get() {
+    return this.matches("[data-slot='scroll-area-viewport'], [data-slot='tabs-content']") ? 600 : 0;
+  },
+});
+Object.defineProperty(HTMLElement.prototype, "offsetWidth", {
+  configurable: true,
+  get() {
+    return this.matches("[data-slot='scroll-area-viewport'], [data-slot='tabs-content']") ? 900 : 0;
+  },
+});
 Element.prototype.hasPointerCapture = () => true;
 Element.prototype.setPointerCapture = () => undefined;
 Element.prototype.releasePointerCapture = () => undefined;

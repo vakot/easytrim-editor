@@ -9,13 +9,13 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { memo, type MouseEvent, useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Highlight } from "@/components/ui/highlight";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
@@ -25,6 +25,7 @@ import {
 import { selectSourceExportQueueState } from "@/app/store/slices/export-slice";
 import { cancelExportAttemptRequested } from "@/app/store/thunks/export-thunks";
 import {
+  closeEditingInstancesRequested,
   prepareImportedSourceThumbnailsRequested,
   releaseImportedSourceThumbnailDemand,
   restoreExportAttemptRequested,
@@ -38,7 +39,6 @@ import { getRevealLabel } from "../../../lib/source.utils";
 import type { SourceSearchResult } from "../../../lib/source-search.utils";
 import {
   SourceCard,
-  SourceCardActions,
   SourceCardDescription,
   SourceCardMetadata,
   SourceCardStatusBadge,
@@ -47,20 +47,22 @@ import {
 } from "../../SourceCard";
 import {
   CancelSourceExport,
-  CloseSource,
   DeleteSource,
   RestoreSource,
   StartSourceExport,
 } from "../../SourceMenuActions";
-import { useRegisterSourceThumbnailDemand } from "../hooks/useRegisterSourceThumbnailDemand";
 
 import styles from "./SourceListItem.module.css";
 
 const SourceListItem = memo(function SourceListItem({
+  isAdded,
   match,
+  onAdditionAnimationStart,
   sourceId,
 }: {
+  isAdded: boolean;
   match: SourceSearchResult | undefined;
+  onAdditionAnimationStart: (sourceId: string) => boolean;
   sourceId: string;
 }) {
   const dispatch = useAppDispatch();
@@ -72,57 +74,78 @@ const SourceListItem = memo(function SourceListItem({
 
   const selectedSource = useAppSelector(selectSource);
   const [lastKnownSource, setLastKnownSource] = useState(selectedSource);
+  const [isClosing, setIsClosing] = useState(false);
+  const [isEntering, setIsEntering] = useState(false);
   if (selectedSource && selectedSource !== lastKnownSource) setLastKnownSource(selectedSource);
   const source = selectedSource ?? lastKnownSource;
   const sourceRef = useRef(source);
-  const itemRef = useRef<HTMLLIElement>(null);
-  const registerThumbnailDemand = useRegisterSourceThumbnailDemand();
-  const shouldReduceMotion = useReducedMotion() === true;
-  const duration = shouldReduceMotion ? 0 : 0.16;
+  const itemRef = useRef<HTMLDivElement>(null);
   const sourcePath = source?.snapshot.source.sourcePath;
   const sourceAvailability = source?.sourceAvailability;
+  const handleClose = useCallback(() => {
+    setIsClosing(true);
+    window.setTimeout(() => void dispatch(closeEditingInstancesRequested([sourceId])), 160);
+  }, [dispatch, sourceId]);
 
   useEffect(() => {
     sourceRef.current = source;
   }, [source]);
 
   useEffect(() => {
+    // This one-time state transition marks only a real collection addition;
+    // virtual range mount/unmounts never set isAdded.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (isAdded && onAdditionAnimationStart(sourceId)) setIsEntering(true);
+  }, [isAdded, onAdditionAnimationStart, sourceId]);
+
+  useEffect(() => {
     const element = itemRef.current;
-    if (!element || !sourcePath || sourceAvailability !== "available" || !registerThumbnailDemand)
-      return;
-
-    const requestThumbnail = () => {
-      const latestSource = sourceRef.current;
-      if (latestSource) dispatch(prepareImportedSourceThumbnailsRequested([latestSource]));
-    };
-
-    const releaseThumbnail = () => dispatch(releaseImportedSourceThumbnailDemand(sourceId));
-
-    return registerThumbnailDemand(element, requestThumbnail, releaseThumbnail);
-  }, [dispatch, registerThumbnailDemand, sourceAvailability, sourceId, sourcePath]);
+    if (!element || !sourcePath || sourceAvailability !== "available") return;
+    const latestSource = sourceRef.current;
+    if (latestSource) dispatch(prepareImportedSourceThumbnailsRequested([latestSource]));
+    return () => dispatch(releaseImportedSourceThumbnailDemand(sourceId));
+  }, [dispatch, sourceAvailability, sourceId, sourcePath]);
 
   if (!source) return null;
 
   return (
-    <motion.li
-      animate={{ opacity: 1, y: 0 }}
-      className={cn(styles.sourceListItem, "flex w-full min-w-0 flex-col")}
-      exit={{ opacity: 0, y: shouldReduceMotion ? 0 : -4 }}
-      initial={shouldReduceMotion ? false : { opacity: 0, y: 4 }}
+    <div
+      className={cn(
+        styles.sourceListItem,
+        "h-18 w-full min-w-0",
+        isClosing && styles.isClosing,
+        isEntering && styles.isEntering,
+      )}
+      data-entering={isEntering ? "true" : undefined}
+      data-exiting={isClosing ? "true" : undefined}
+      onAnimationEnd={() => setIsEntering(false)}
       ref={itemRef}
-      transition={{ duration, ease: "easeOut" }}
     >
-      <SourceListItemCard match={match} source={source} />
-      <SourceListItemExtra source={source} />
-    </motion.li>
+      <SourceListItemCard match={match} onClose={handleClose} source={source} />
+    </div>
   );
 }, areSourceListItemPropsEqual);
 
 function areSourceListItemPropsEqual(
-  previous: { match: SourceSearchResult | undefined; sourceId: string },
-  next: { match: SourceSearchResult | undefined; sourceId: string },
+  previous: {
+    isAdded: boolean;
+    match: SourceSearchResult | undefined;
+    onAdditionAnimationStart: (sourceId: string) => boolean;
+    sourceId: string;
+  },
+  next: {
+    isAdded: boolean;
+    match: SourceSearchResult | undefined;
+    onAdditionAnimationStart: (sourceId: string) => boolean;
+    sourceId: string;
+  },
 ): boolean {
-  return previous.sourceId === next.sourceId && areSearchRangesEqual(previous.match, next.match);
+  return (
+    previous.sourceId === next.sourceId &&
+    previous.isAdded === next.isAdded &&
+    previous.onAdditionAnimationStart === next.onAdditionAnimationStart &&
+    areSearchRangesEqual(previous.match, next.match)
+  );
 }
 
 function areSearchRangesEqual(
@@ -150,29 +173,34 @@ function areRangesEqual(
 
 const SourceListItemCard = memo(function SourceListItemCard({
   match,
+  onClose,
   source,
 }: {
   match: SourceSearchResult | undefined;
+  onClose: () => void;
   source: EditingInstance;
 }) {
   const { t } = useTranslation();
 
   return (
-    <SourceCard className="flex min-w-0 flex-row gap-2 p-2" source={source}>
-      <SourceCardThumbnail className="w-6/11 shrink-0 rounded-md shadow">
+    <SourceCard
+      className="h-full min-h-0 min-w-0 flex-row items-center gap-2 overflow-hidden p-2"
+      source={source}
+    >
+      <SourceCardThumbnail className="h-[54px] w-24 shrink-0 rounded-md shadow">
         <SourceCardStatusBadge className="absolute top-2 left-2" />
       </SourceCardThumbnail>
 
-      <div className="relative flex min-w-0 flex-1 flex-col gap-2">
-        <div className="flex min-w-0 flex-col gap-1" data-slot="card-header">
-          <SourceCardTitle className="line-clamp-2 wrap-break-word whitespace-normal">
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5" data-slot="card-header">
+          <SourceCardTitle className="truncate text-sm whitespace-nowrap">
             {({ source: cardSource }) => (
               <Highlight ranges={match?.displayNameRanges}>
                 {cardSource.snapshot.source.displayName}
               </Highlight>
             )}
           </SourceCardTitle>
-          <SourceCardDescription className="line-clamp-2 wrap-anywhere whitespace-normal">
+          <SourceCardDescription className="truncate text-xs whitespace-nowrap">
             {({ source: cardSource }) => (
               <Highlight ranges={match?.sourcePathRanges}>
                 {formatSourcePath(cardSource.snapshot.source.sourcePath)}
@@ -181,58 +209,153 @@ const SourceListItemCard = memo(function SourceListItemCard({
           </SourceCardDescription>
         </div>
 
-        <SourceCardMetadata />
-
-        <SourceCardActions className="invisible absolute right-0 bottom-0 transition-none group-hover/source-card:visible">
-          <Button
-            aria-label={`${t("source.actions.sourceActions")}: ${source.snapshot.source.displayName}`}
-            className="transition-none"
-            size="icon-sm"
-            variant="secondary"
-          >
-            <MoreHorizontal aria-hidden="true" />
-          </Button>
-        </SourceCardActions>
+        <SourceCardMetadata className="hidden max-w-32 shrink-0 truncate whitespace-nowrap sm:flex" />
+        <SourceListItemRowAction onClose={onClose} source={source} />
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              aria-label={`${t("source.actions.sourceActions")}: ${source.snapshot.source.displayName}`}
+              className="shrink-0 transition-none"
+              onClick={(event) => event.stopPropagation()}
+              size="icon-sm"
+              variant="secondary"
+            >
+              {source.exportAttempts.length > 0 ? (
+                <span aria-hidden="true" className="text-xs tabular-nums">
+                  {source.exportAttempts.length}
+                </span>
+              ) : (
+                <MoreHorizontal aria-hidden="true" />
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="max-h-[min(70vh,32rem)] overflow-y-auto p-2">
+            <ul className="flex min-w-0 flex-col overflow-hidden rounded-md border">
+              <SourceListItemExports sourceId={source.id} />
+              <li className={cn(sourceListItemExtraClassName, "flex gap-1")}>
+                <SourceListItemActions source={source} />
+              </li>
+              <li className={cn(sourceListItemExtraClassName, "flex gap-1")}>
+                <Button
+                  className="flex-1"
+                  onClick={() => void openFileLocation(source.snapshot.source.sourcePath)}
+                  size="xs"
+                  variant="ghost"
+                >
+                  <ExternalLink aria-hidden="true" />
+                  {getRevealLabel(t)}
+                </Button>
+                <DeleteSource source={source}>
+                  <Button size="xs" variant="destructive">
+                    <Trash2 aria-hidden="true" />
+                    {t("app.actions.deleteFile")}
+                  </Button>
+                </DeleteSource>
+              </li>
+              <li className={cn(sourceListItemExtraClassName, "flex gap-1")}>
+                <Button className="flex-1" onClick={onClose} size="xs" variant="ghost">
+                  <X aria-hidden="true" />
+                  {t("app.actions.closeFile")}
+                </Button>
+              </li>
+            </ul>
+          </PopoverContent>
+        </Popover>
       </div>
     </SourceCard>
   );
 });
 
-const sourceListItemExtraClassName = "min-w-0 min-h-8 border-t bg-muted/50 p-1 first:border-t-0";
-
-const SourceListItemExtra = memo(function SourceListItemExtra({
+function SourceListItemRowAction({
+  onClose,
   source,
 }: {
+  onClose: () => void;
   source: EditingInstance;
 }) {
-  const shouldReduceMotion = useReducedMotion() === true;
-  const isVisible = source.sourceAvailability === "deleted" || source.exportAttempts.length > 0;
-  const duration = shouldReduceMotion ? 0 : 0.16;
-
-  return (
-    <AnimatePresence initial={false}>
-      {isVisible ? (
-        <motion.div
-          animate={{ height: "auto", opacity: 1 }}
-          className="overflow-hidden"
-          exit={{ height: 0, opacity: 0 }}
-          initial={shouldReduceMotion ? false : { height: 0, opacity: 0 }}
-          key="source-list-item-extra"
-          transition={{ duration, ease: "easeOut" }}
-        >
-          <div className="mt-px w-full min-w-0 px-3">
-            <ul className="flex w-full min-w-0 flex-col overflow-hidden rounded-b-lg border border-t-0">
-              <SourceListItemExports sourceId={source.id} />
-              <li className={cn(sourceListItemExtraClassName, "flex gap-1")}>
-                <SourceListItemActions source={source} />
-              </li>
-            </ul>
-          </div>
-        </motion.div>
-      ) : null}
-    </AnimatePresence>
+  const { t } = useTranslation();
+  const { hasQueuedExports, isRunning } = useAppSelector((state) =>
+    selectSourceExportQueueState(state, source.id),
   );
-});
+
+  const stopCardActivation = (event: MouseEvent<HTMLButtonElement>) => event.stopPropagation();
+
+  if (source.sourceAvailability === "deleted") {
+    return (
+      <div className="flex shrink-0 items-center gap-1">
+        <RestoreSource event="click" source={source}>
+          <Button
+            aria-label={t("app.actions.restore")}
+            onClick={stopCardActivation}
+            size="icon-sm"
+            title={t("app.actions.restore")}
+            variant="success"
+          >
+            <RotateCcw aria-hidden="true" />
+          </Button>
+        </RestoreSource>
+        <Button
+          aria-label={t("app.actions.closeFile")}
+          onClick={(event) => {
+            stopCardActivation(event);
+            onClose();
+          }}
+          size="icon-sm"
+          title={t("app.actions.closeFile")}
+          variant="ghost"
+        >
+          <X aria-hidden="true" />
+        </Button>
+      </div>
+    );
+  }
+
+  if (isRunning) {
+    return (
+      <div className="flex shrink-0 items-center gap-1">
+        <Badge className="whitespace-nowrap" variant="outline">
+          {t("source.status.rendering")}
+        </Badge>
+        <CancelSourceExport event="click" source={source}>
+          <Button
+            aria-label={t("queue.actions.cancel")}
+            onClick={stopCardActivation}
+            size="icon-sm"
+            title={t("queue.actions.cancel")}
+            variant="destructive"
+          >
+            <X aria-hidden="true" />
+          </Button>
+        </CancelSourceExport>
+      </div>
+    );
+  }
+
+  if (hasQueuedExports) {
+    return (
+      <div className="flex shrink-0 items-center gap-1">
+        <Badge className="whitespace-nowrap" variant="outline">
+          {t("source.status.queued")}
+        </Badge>
+        <StartSourceExport event="click" source={source}>
+          <Button
+            aria-label={t("queue.actions.start")}
+            onClick={stopCardActivation}
+            size="icon-sm"
+            title={t("queue.actions.start")}
+            variant="secondary"
+          >
+            <Play aria-hidden="true" />
+          </Button>
+        </StartSourceExport>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+const sourceListItemExtraClassName = "min-w-0 min-h-8 border-t bg-muted/50 p-1 first:border-t-0";
 
 function SourceListItemExports({ sourceId }: { sourceId: string }) {
   const items = useAppSelector((state) => selectExportQueueById(state, sourceId));
@@ -357,12 +480,6 @@ function SourceListItemActions({ source }: { source: EditingInstance }) {
             {t("app.actions.restore")}
           </Button>
         </RestoreSource>
-        <CloseSource event="click" source={source}>
-          <Button size="xs" variant="ghost">
-            <X aria-hidden="true" />
-            {t("app.actions.closeFile")}
-          </Button>
-        </CloseSource>
       </>
     );
   }
@@ -398,12 +515,6 @@ function SourceListItemActions({ source }: { source: EditingInstance }) {
             {t("app.actions.deleteFile")}
           </Button>
         </DeleteSource>
-        <CloseSource event="click" source={source}>
-          <Button size="xs" variant="ghost">
-            <X aria-hidden="true" />
-            {t("app.actions.closeFile")}
-          </Button>
-        </CloseSource>
       </>
     );
   }
