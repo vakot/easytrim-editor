@@ -62,6 +62,7 @@ function PreviewFrame({
             className="pointer-events-none absolute size-0"
             data-transition-clock
             initial={{ opacity: 0 }}
+            key={presentation.id}
             onAnimationComplete={() => onTransitionComplete(presentation.id)}
             transition={transition}
           />

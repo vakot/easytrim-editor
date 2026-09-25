@@ -205,4 +205,45 @@ describe("usePreviewPresentation", () => {
       state: { rotation: 90, rotationAngle: 90 },
     });
   });
+
+  it("ignores completion from a transition replaced before it finished", () => {
+    const viewportRef = { current: makeElement(800, 600) };
+    const frameRef = { current: makeElement(800, 450) };
+    const { rerender, result } = renderHook(
+      ({ cropIsOpen, rotation }) =>
+        usePreviewPresentation(
+          { ...input(rotation), cropIsOpen },
+          1920,
+          1080,
+          false,
+          false,
+          viewportRef,
+          frameRef,
+        ),
+      { initialProps: { cropIsOpen: false, rotation: 0 as RotationDegrees } },
+    );
+
+    rerender({ cropIsOpen: true, rotation: 0 });
+    const firstTransition = result.current.presentation;
+    expect(firstTransition.status).toBe("transitioning");
+    if (firstTransition.status !== "transitioning") return;
+
+    rerender({ cropIsOpen: true, rotation: 90 });
+    const replacementTransition = result.current.presentation;
+    expect(replacementTransition.status).toBe("transitioning");
+    if (replacementTransition.status !== "transitioning") return;
+    expect(replacementTransition.id).not.toBe(firstTransition.id);
+
+    act(() => result.current.finishTransition(firstTransition.id));
+    expect(result.current.presentation).toMatchObject({
+      id: replacementTransition.id,
+      status: "transitioning",
+    });
+
+    act(() => result.current.finishTransition(replacementTransition.id));
+    expect(result.current.presentation).toMatchObject({
+      state: { cropIsOpen: true, rotation: 90 },
+      status: "stable",
+    });
+  });
 });
