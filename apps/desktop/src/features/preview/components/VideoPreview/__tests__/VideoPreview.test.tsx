@@ -508,9 +508,13 @@ describe("VideoPreview", () => {
     expect(container.querySelector("[data-flip-layer]")?.parentElement).toBe(
       container.querySelector("[data-preview-output]"),
     );
-    expect(container.querySelector("[data-crop-snap-markers]")?.parentElement).toBe(
-      container.querySelector("[data-rotating-output]"),
-    );
+    const cropRuler = container.querySelector("[data-crop-snap-markers]")!;
+    const previewViewport = container.querySelector("[data-preview-viewport]");
+    expect(cropRuler.parentElement).toBe(previewViewport);
+    expect(previewViewport).toContainElement(cropRuler);
+    expect(container.querySelector("[data-flip-layer]")).not.toContainElement(cropRuler);
+    expect(container.querySelector("[data-rotating-output]")).not.toContainElement(cropRuler);
+    expect(cropRuler).toHaveAttribute("data-output-aspect-ratio", "0.5625");
 
     selectTransformAction(viewport!, "Rotate 90 CW");
     selectTransformAction(viewport!, "Rotate 90 CW");
