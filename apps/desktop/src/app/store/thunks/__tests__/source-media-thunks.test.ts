@@ -4,6 +4,7 @@ const native = vi.hoisted(() => ({
   activateSourcePath: vi.fn(),
   inspectImportedSource: vi.fn(),
   inspectMedia: vi.fn(),
+  prepareImportedSourceThumbnail: vi.fn(),
   prepareSourcePreview: vi.fn(),
 }));
 

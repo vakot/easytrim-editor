@@ -28,7 +28,15 @@ wait-timeout = "0.2.1"
 which = "8.0.0"
 
 [target.'cfg(windows)'.dependencies]
-windows-sys = { version = "0.61.2", features = ["Win32_Storage_FileSystem"] }
+windows-sys = {
+    version = "0.61.2",
+    features = [
+        "Win32_Graphics_Gdi",
+        "Win32_Storage_FileSystem",
+        "Win32_System_Com",
+        "Win32_UI_Shell",
+    ],
+}
 
 [target.'cfg(any(target_os = "macos", windows, target_os = "linux"))'.dependencies]
 tauri-plugin-window-state = "2.4.1"

@@ -14,16 +14,60 @@ use crate::{
     state::PreviewArtifact,
 };
 
+#[cfg(windows)]
+use super::windows_thumbnail::cached_thumbnail;
+
 const THUMBNAIL_WIDTH: u32 = 480;
 const THUMBNAIL_TIMEOUT: Duration = Duration::from_secs(60);
 const THUMBNAIL_STDOUT_LIMIT: usize = 16 * 1024;
 const THUMBNAIL_STDERR_LIMIT: usize = 128 * 1024;
 static NEXT_DIRECTORY_ID: AtomicU64 = AtomicU64::new(0);
 
-pub fn generate_thumbnail(source_path: &Path) -> Result<PreviewArtifact, AppError> {
-    let media = inspect_media_cancellable(source_path, || false)?;
-    let artifact = create_artifact()?;
-    let arguments = thumbnail_arguments(source_path, media.video.stream_index, artifact.path());
+pub fn generate_thumbnail(
+    source_path: &Path,
+    video_stream_index: Option<u32>,
+) -> Result<PreviewArtifact, AppError> {
+    #[cfg(windows)]
+    let cached = cached_thumbnail(source_path);
+    #[cfg(not(windows))]
+    let cached = None;
+
+    use_cache_or_fallback(cached, || {
+        let video_stream_index = resolve_video_stream_index(video_stream_index, || {
+            Ok(inspect_media_cancellable(source_path, || false)?
+                .video
+                .stream_index)
+        })?;
+        generate_ffmpeg_thumbnail(source_path, video_stream_index)
+    })
+}
+
+fn resolve_video_stream_index(
+    video_stream_index: Option<u32>,
+    probe: impl FnOnce() -> Result<u32, AppError>,
+) -> Result<u32, AppError> {
+    match video_stream_index {
+        Some(index) => Ok(index),
+        None => probe(),
+    }
+}
+
+fn use_cache_or_fallback<T, E>(
+    cached: Option<T>,
+    fallback: impl FnOnce() -> Result<T, E>,
+) -> Result<T, E> {
+    match cached {
+        Some(thumbnail) => Ok(thumbnail),
+        None => fallback(),
+    }
+}
+
+fn generate_ffmpeg_thumbnail(
+    source_path: &Path,
+    video_stream_index: u32,
+) -> Result<PreviewArtifact, AppError> {
+    let artifact = create_artifact("jpg")?;
+    let arguments = thumbnail_arguments(source_path, video_stream_index, artifact.path());
     let output = run_bounded_cancellable(
         OsStr::new("ffmpeg"),
         &arguments,
@@ -88,7 +132,7 @@ fn thumbnail_arguments(
     ]
 }
 
-fn create_artifact() -> Result<PreviewArtifact, AppError> {
+pub(super) fn create_artifact(extension: &str) -> Result<PreviewArtifact, AppError> {
     let timestamp = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap_or_default()
@@ -103,7 +147,10 @@ fn create_artifact() -> Result<PreviewArtifact, AppError> {
         ));
         match fs::create_dir(&directory) {
             Ok(()) => {
-                return PreviewArtifact::new(directory.clone(), directory.join("thumbnail.jpg"));
+                return PreviewArtifact::new(
+                    directory.clone(),
+                    directory.join(format!("thumbnail.{extension}")),
+                );
             }
             Err(error) if error.kind() == io::ErrorKind::AlreadyExists => {}
             Err(_) => {
@@ -151,7 +198,41 @@ fn diagnostics(
 mod tests {
     use std::path::Path;
 
-    use super::thumbnail_arguments;
+    use super::{resolve_video_stream_index, thumbnail_arguments, use_cache_or_fallback};
+
+    #[test]
+    fn provided_video_stream_metadata_skips_thumbnail_probe() {
+        let probe_called = std::cell::Cell::new(false);
+        let stream_index = resolve_video_stream_index(Some(3), || {
+            probe_called.set(true);
+            Ok(0)
+        })
+        .expect("provided stream index is used");
+
+        assert_eq!(stream_index, 3);
+        assert!(!probe_called.get());
+    }
+
+    #[test]
+    fn cached_thumbnail_avoids_fallback_generation() {
+        let fallback_called = std::cell::Cell::new(false);
+        let result = use_cache_or_fallback(Some("cached"), || {
+            fallback_called.set(true);
+            Ok::<_, ()>("generated")
+        })
+        .expect("cached thumbnail is returned");
+
+        assert_eq!(result, "cached");
+        assert!(!fallback_called.get());
+    }
+
+    #[test]
+    fn cache_miss_uses_fallback_generation() {
+        let result = use_cache_or_fallback(None, || Ok::<_, ()>("generated"))
+            .expect("fallback thumbnail is returned");
+
+        assert_eq!(result, "generated");
+    }
 
     #[test]
     fn extracts_one_bounded_jpeg_frame_from_the_probed_video_stream() {

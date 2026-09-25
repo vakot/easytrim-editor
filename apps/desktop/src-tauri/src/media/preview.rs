@@ -202,6 +202,7 @@ fn content_type(path: &Path) -> &'static str {
         Some("mkv") => "video/x-matroska",
         Some("mov") => "video/quicktime",
         Some("jpg" | "jpeg") => "image/jpeg",
+        Some("bmp") => "image/bmp",
         Some("png") => "image/png",
         Some("m4a") => "audio/mp4",
         Some("ts" | "mts" | "m2ts") => "video/mp2t",
@@ -303,6 +304,11 @@ mod tests {
     fn serves_jpeg_thumbnails_with_an_image_content_type() {
         assert_eq!(content_type(Path::new("thumbnail.jpg")), "image/jpeg");
         assert_eq!(content_type(Path::new("thumbnail.jpeg")), "image/jpeg");
+    }
+
+    #[test]
+    fn serves_shell_cache_thumbnails_with_a_bitmap_content_type() {
+        assert_eq!(content_type(Path::new("thumbnail.bmp")), "image/bmp");
     }
 
     #[test]

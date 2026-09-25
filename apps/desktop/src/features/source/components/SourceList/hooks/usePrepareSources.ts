@@ -29,10 +29,10 @@ function usePrepareSources(instances: EditingInstance[]) {
 
     let isMounted = true;
 
-    void Promise.all([
-      dispatch(prepareImportedSourceMetadataRequested(preparedInstances)),
-      dispatch(prepareImportedSourceThumbnailsRequested(preparedInstances)),
-    ]).finally(() => {
+    const metadataRequest = dispatch(prepareImportedSourceMetadataRequested(preparedInstances));
+    dispatch(prepareImportedSourceThumbnailsRequested(preparedInstances));
+
+    void metadataRequest.finally(() => {
       if (isMounted) setCompletedPreparationKey(preparationKey);
     });
 

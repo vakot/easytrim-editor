@@ -234,65 +234,91 @@ const prepareImportedSourceMetadataRequested =
   };
 
 const THUMBNAIL_CONCURRENCY = 2;
+const thumbnailQueue: Array<{ instanceId: string; sourcePath: string }> = [];
 const thumbnailRequestsInFlight = new Set<string>();
+let activeThumbnailRequests = 0;
 
-const prepareImportedSourceThumbnailsRequested =
-  (instances: EditingInstance[]): AppThunk<Promise<void>> =>
-  async (dispatch, getState) => {
-    const importedThumbnails = selectImportedSourceThumbnails(getState());
-    const instancesToPrepare = instances.filter(
-      (instance) =>
-        selectEditingInstanceById(getState(), instance.id)?.sourceAvailability === "available" &&
-        importedThumbnails[instance.id] === undefined &&
-        !thumbnailRequestsInFlight.has(instance.id),
-    );
+function drainThumbnailQueue(dispatch: AppDispatch, getState: () => RootState) {
+  while (activeThumbnailRequests < THUMBNAIL_CONCURRENCY && thumbnailQueue.length > 0) {
+    const request = thumbnailQueue.shift();
+    if (!request) return;
 
-    for (const instance of instancesToPrepare) {
-      thumbnailRequestsInFlight.add(instance.id);
+    const current = selectEditingInstanceById(getState(), request.instanceId);
+    if (
+      !current ||
+      current.sourceAvailability !== "available" ||
+      normalizeSourceKey(current.snapshot.source.sourcePath) !==
+        normalizeSourceKey(request.sourcePath) ||
+      selectImportedSourceThumbnails(getState())[request.instanceId]?.status !== "loading"
+    ) {
+      thumbnailRequestsInFlight.delete(request.instanceId);
+      continue;
     }
 
-    let nextIndex = 0;
-    const worker = async () => {
-      while (nextIndex < instancesToPrepare.length) {
-        const instance = instancesToPrepare[nextIndex++];
-        if (!instance) return;
-        const sourcePath = instance.snapshot.source.sourcePath;
-
-        dispatch(importedThumbnailLoading({ instanceId: instance.id }));
-
-        try {
-          const thumbnail = await prepareImportedSourceThumbnail(sourcePath);
-          const current = selectEditingInstanceById(getState(), instance.id);
-          if (
-            current &&
-            normalizeSourceKey(current.snapshot.source.sourcePath) ===
-              normalizeSourceKey(sourcePath)
-          ) {
-            dispatch(importedThumbnailReady({ instanceId: instance.id, thumbnail }));
-          }
-        } catch (error: unknown) {
-          const current = selectEditingInstanceById(getState(), instance.id);
-          if (
-            current &&
-            normalizeSourceKey(current.snapshot.source.sourcePath) ===
-              normalizeSourceKey(sourcePath)
-          ) {
-            dispatch(
-              importedThumbnailFailed({
-                error: normalizeAppError(error),
-                instanceId: instance.id,
-              }),
-            );
-          }
-        } finally {
-          thumbnailRequestsInFlight.delete(instance.id);
+    activeThumbnailRequests += 1;
+    const videoStreamIndex = current.media?.video.streamIndex;
+    void prepareImportedSourceThumbnail(request.sourcePath, videoStreamIndex)
+      .then((thumbnail) => {
+        const latest = selectEditingInstanceById(getState(), request.instanceId);
+        if (
+          latest &&
+          latest.sourceAvailability === "available" &&
+          normalizeSourceKey(latest.snapshot.source.sourcePath) ===
+            normalizeSourceKey(request.sourcePath) &&
+          selectImportedSourceThumbnails(getState())[request.instanceId]?.status === "loading"
+        ) {
+          dispatch(importedThumbnailReady({ instanceId: request.instanceId, thumbnail }));
         }
-      }
-    };
+      })
+      .catch((error: unknown) => {
+        const latest = selectEditingInstanceById(getState(), request.instanceId);
+        if (
+          latest &&
+          latest.sourceAvailability === "available" &&
+          normalizeSourceKey(latest.snapshot.source.sourcePath) ===
+            normalizeSourceKey(request.sourcePath) &&
+          selectImportedSourceThumbnails(getState())[request.instanceId]?.status === "loading"
+        ) {
+          dispatch(
+            importedThumbnailFailed({
+              error: normalizeAppError(error),
+              instanceId: request.instanceId,
+            }),
+          );
+        }
+      })
+      .finally(() => {
+        activeThumbnailRequests -= 1;
+        thumbnailRequestsInFlight.delete(request.instanceId);
+        drainThumbnailQueue(dispatch, getState);
+      });
+  }
+}
 
-    await Promise.all(
-      Array.from({ length: Math.min(THUMBNAIL_CONCURRENCY, instancesToPrepare.length) }, worker),
-    );
+const prepareImportedSourceThumbnailsRequested =
+  (instances: EditingInstance[]): AppThunk<void> =>
+  (dispatch, getState) => {
+    const importedThumbnails = selectImportedSourceThumbnails(getState());
+    for (const instance of instances) {
+      const current = selectEditingInstanceById(getState(), instance.id);
+      if (
+        !current ||
+        current.sourceAvailability !== "available" ||
+        importedThumbnails[instance.id] !== undefined ||
+        thumbnailRequestsInFlight.has(instance.id)
+      )
+        continue;
+
+      const sourcePath = instance.snapshot.source.sourcePath;
+      if (normalizeSourceKey(current.snapshot.source.sourcePath) !== normalizeSourceKey(sourcePath))
+        continue;
+
+      thumbnailRequestsInFlight.add(instance.id);
+      dispatch(importedThumbnailLoading({ instanceId: instance.id }));
+      thumbnailQueue.push({ instanceId: instance.id, sourcePath });
+    }
+
+    drainThumbnailQueue(dispatch, getState);
   };
 
 function normalizeSourceImportResult(input: SourceImportResult | SourceRef[]): SourceImportResult {

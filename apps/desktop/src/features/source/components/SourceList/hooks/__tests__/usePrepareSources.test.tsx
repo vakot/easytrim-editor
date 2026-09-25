@@ -50,7 +50,7 @@ describe("usePrepareSources", () => {
     vi.clearAllMocks();
   });
 
-  it("stays loading until metadata and thumbnails are both prepared", async () => {
+  it("allows more sources to load as soon as metadata is prepared", async () => {
     const metadata = createDeferred<void>();
     const thumbnails = createDeferred<void>();
     const metadataRequest = {};
@@ -70,9 +70,9 @@ describe("usePrepareSources", () => {
     expect(screen.getByTestId("loading")).toHaveTextContent("true");
 
     metadata.resolve();
-    await waitFor(() => expect(screen.getByTestId("loading")).toHaveTextContent("true"));
+    await waitFor(() => expect(screen.getByTestId("loading")).toHaveTextContent("false"));
+    expect(dispatch).toHaveBeenCalledWith(thumbnailRequest);
 
     thumbnails.resolve();
-    await waitFor(() => expect(screen.getByTestId("loading")).toHaveTextContent("false"));
   });
 });
