@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -115,26 +116,55 @@ function parseChangelog(markdown) {
     );
 }
 
-function renderGeneratedModule(releases) {
-  return `// Generated from CHANGELOG.md. Do not edit manually.\ntype ChangelogCategory = "Added" | "Changed" | "Fixed" | "Deprecated" | "Removed" | "Security";\n\ninterface GeneratedChangelogRelease {\n  sections: readonly { category: ChangelogCategory; entries: readonly string[] }[];\n  version: string;\n}\n\nexport const CHANGELOG: readonly GeneratedChangelogRelease[] = ${JSON.stringify(releases, null, 2)};\n`;
+function changelogDigest(markdown) {
+  return createHash("sha256").update(markdown).digest("hex");
 }
 
-async function generateChangelog() {
+function isGeneratedChangelogCurrent(markdown, generatedModule) {
+  const header = `// Generated from CHANGELOG.md (sha256: ${changelogDigest(markdown)}). Do not edit manually.`;
+  return generatedModule.startsWith(`${header}\n`);
+}
+
+function renderGeneratedModule(releases, markdown) {
+  const header = `// Generated from CHANGELOG.md (sha256: ${changelogDigest(markdown)}). Do not edit manually.`;
+  return `${header}\ntype ChangelogCategory = "Added" | "Changed" | "Fixed" | "Deprecated" | "Removed" | "Security";\n\ninterface GeneratedChangelogRelease {\n  sections: readonly { category: ChangelogCategory; entries: readonly string[] }[];\n  version: string;\n}\n\nexport const CHANGELOG: readonly GeneratedChangelogRelease[] = ${JSON.stringify(releases, null, 2)};\n`;
+}
+
+async function generateChangelog({ force = false } = {}) {
   const markdown = await readFile(changelogPath, "utf8");
+  if (!force) {
+    const generatedModule = await readFile(outputPath, "utf8").catch((error) => {
+      if (error.code === "ENOENT") return null;
+      throw error;
+    });
+
+    if (generatedModule && isGeneratedChangelogCurrent(markdown, generatedModule)) return null;
+  }
+
   const releases = parseChangelog(markdown);
   await mkdir(path.dirname(outputPath), { recursive: true });
-  await writeFile(outputPath, renderGeneratedModule(releases), "utf8");
+  await writeFile(outputPath, renderGeneratedModule(releases, markdown), "utf8");
   return releases;
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   try {
-    const releases = await generateChangelog();
-    console.log(`Generated changelog data for ${releases.length} released versions.`);
+    const releases = await generateChangelog({
+      force: process.argv.includes("--force"),
+    });
+
+    if (releases) console.log(`Generated changelog data for ${releases.length} released versions.`);
   } catch (error) {
     console.error(`changelog:generate: ${error instanceof Error ? error.message : String(error)}`);
     process.exitCode = 1;
   }
 }
 
-export { CATEGORY_NAMES, compareVersions, generateChangelog, parseChangelog, parseVersion };
+export {
+  CATEGORY_NAMES,
+  compareVersions,
+  generateChangelog,
+  isGeneratedChangelogCurrent,
+  parseChangelog,
+  parseVersion,
+};
