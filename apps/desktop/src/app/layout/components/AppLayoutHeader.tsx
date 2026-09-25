@@ -22,7 +22,7 @@ function AppLayoutHeader() {
         <MenuBar />
       </div>
 
-      <div className="max-w-lg flex-1/2">
+      <div className="max-w-md flex-1/2">
         <AppCommandCenter />
       </div>
 
