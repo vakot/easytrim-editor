@@ -15,8 +15,6 @@ import { SourceListTabs } from "./components/SourceListTabs";
 import type { SourceListState, SourceListTab } from "./contexts/SourceListContext";
 import { SourceListContext } from "./contexts/SourceListContext";
 
-const SOURCE_LIST_PAGE_SIZE = 12;
-
 interface SourceListProps {
   children?:
     ReactNode | ((state: Pick<SourceListState, "search" | "sources" | "tab">) => ReactNode);
@@ -26,7 +24,6 @@ function SourceList({ children }: SourceListProps) {
   const sources = useAppSelector(selectImportedEditingInstances);
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<SourceListTab>("none");
-  const [visibleSourceCount, setVisibleSourceCount] = useState(SOURCE_LIST_PAGE_SIZE);
 
   const searchSources = useMemo(() => createSourceSearcher(sources), [sources]);
   const searchResults = useMemo(() => searchSources(search), [search, searchSources]);
@@ -36,20 +33,8 @@ function SourceList({ children }: SourceListProps) {
     [searchResults],
   );
 
-  const visibleSources = useMemo(
-    () => filteredSources.slice(0, visibleSourceCount),
-    [filteredSources, visibleSourceCount],
-  );
-
-  const hasMore = visibleSources.length < filteredSources.length;
-
-  const next = useCallback(() => {
-    setVisibleSourceCount((count) => count + SOURCE_LIST_PAGE_SIZE);
-  }, []);
-
   const handleSearchChange = useCallback((value: string) => {
     setSearch(value);
-    setVisibleSourceCount(SOURCE_LIST_PAGE_SIZE);
   }, []);
 
   if (sources.length === 0) return <SourceListEmpty />;
@@ -60,14 +45,11 @@ function SourceList({ children }: SourceListProps) {
   return (
     <SourceListContext.Provider
       value={{
-        hasMore,
         matchesBySourceId,
-        next,
         search,
         setSearch: handleSearchChange,
         sources: filteredSources,
         tab,
-        visibleSources,
       }}
     >
       <Tabs

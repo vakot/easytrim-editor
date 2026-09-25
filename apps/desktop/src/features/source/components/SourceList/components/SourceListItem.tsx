@@ -10,7 +10,7 @@ import {
   X,
 } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
@@ -53,8 +53,6 @@ import {
   StartSourceExport,
 } from "../../SourceMenuActions";
 
-const SOURCE_PREPARATION_ROOT_MARGIN = "0px 0px 600px 0px";
-
 function SourceListItem({
   match,
   source,
@@ -63,45 +61,27 @@ function SourceListItem({
   source: EditingInstance;
 }) {
   const dispatch = useAppDispatch();
-  const itemRef = useRef<HTMLLIElement>(null);
   const shouldReduceMotion = useReducedMotion() === true;
   const duration = shouldReduceMotion ? 0 : 0.16;
 
   useEffect(() => {
-    const element = itemRef.current;
-    if (!element || typeof IntersectionObserver === "undefined") return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry?.isIntersecting) return;
-
-        observer.unobserve(element);
-        dispatch(prepareImportedSourceMetadataRequested([source]));
-        dispatch(prepareImportedSourceThumbnailsRequested([source]));
-      },
-      {
-        root: element.closest<HTMLElement>("[data-slot='scroll-area-viewport']"),
-        rootMargin: SOURCE_PREPARATION_ROOT_MARGIN,
-      },
-    );
-
-    observer.observe(element);
-    return () => observer.disconnect();
+    dispatch(prepareImportedSourceMetadataRequested([source]));
+    dispatch(prepareImportedSourceThumbnailsRequested([source]));
   }, [dispatch, source]);
 
   return (
-    <motion.li
+    <motion.div
       animate={{ opacity: 1, y: 0 }}
       className="flex w-full min-w-0 flex-col"
       exit={{ opacity: 0, y: shouldReduceMotion ? 0 : -4 }}
       initial={shouldReduceMotion ? false : { opacity: 0, y: 4 }}
       layout={shouldReduceMotion ? false : "position"}
-      ref={itemRef}
+      role="listitem"
       transition={{ duration, ease: "easeOut" }}
     >
       <SourceListItemCard match={match} source={source} />
       <SourceListItemExtra source={source} />
-    </motion.li>
+    </motion.div>
   );
 }
 

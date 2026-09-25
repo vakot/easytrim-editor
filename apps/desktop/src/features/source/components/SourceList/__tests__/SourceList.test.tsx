@@ -2,7 +2,7 @@ import { createEvent, fireEvent, render, screen, within } from "@testing-library
 import userEvent from "@testing-library/user-event";
 import type { PropsWithChildren } from "react";
 import { Provider } from "react-redux";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const openFileLocation = vi.hoisted(() => vi.fn());
 const prepareMetadata = vi.hoisted(() => vi.fn());
@@ -46,47 +46,6 @@ import {
   SourceListTabs,
 } from "../SourceList";
 
-class TestIntersectionObserver {
-  static instances: TestIntersectionObserver[] = [];
-
-  readonly observed = new Set<Element>();
-  readonly root: Element | Document | null;
-  readonly rootMargin: string;
-
-  constructor(
-    private readonly callback: IntersectionObserverCallback,
-    options: IntersectionObserverInit = {},
-  ) {
-    this.root = options.root ?? null;
-    this.rootMargin = options.rootMargin ?? "0px";
-    TestIntersectionObserver.instances.push(this);
-  }
-
-  observe(target: Element) {
-    this.observed.add(target);
-  }
-
-  unobserve(target: Element) {
-    this.observed.delete(target);
-  }
-
-  disconnect() {
-    this.observed.clear();
-  }
-
-  trigger(target: Element) {
-    this.callback(
-      [{ isIntersecting: true, target } as IntersectionObserverEntry],
-      this as unknown as IntersectionObserver,
-    );
-  }
-}
-
-afterEach(() => {
-  TestIntersectionObserver.instances = [];
-  vi.unstubAllGlobals();
-});
-
 function createSourceInstances(count: number): EditingInstance[] {
   return Array.from({ length: count }, (_, index) => {
     const source = {
@@ -103,10 +62,6 @@ function createSourceInstances(count: number): EditingInstance[] {
       sourceAvailability: "available",
     };
   });
-}
-
-function installIntersectionObserver() {
-  vi.stubGlobal("IntersectionObserver", TestIntersectionObserver);
 }
 
 vi.mock("../../SourceCard", () => {
@@ -127,12 +82,13 @@ vi.mock("../../SourceCard", () => {
 describe("source queue controls", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    prepareMetadata.mockReturnValue({ type: "test/metadata" });
+    prepareThumbnails.mockReturnValue({ type: "test/thumbnail" });
   });
 
-  it("does not prepare off-screen cards", () => {
-    installIntersectionObserver();
+  it("does not prepare sources outside the virtualized range", () => {
     const store = createAppStore();
-    store.dispatch(editingInstancesAdded(createSourceInstances(1)));
+    store.dispatch(editingInstancesAdded(createSourceInstances(500)));
 
     render(
       <Provider store={store}>
@@ -140,14 +96,12 @@ describe("source queue controls", () => {
       </Provider>,
     );
 
-    expect(prepareMetadata).not.toHaveBeenCalled();
-    expect(prepareThumbnails).not.toHaveBeenCalled();
+    const preparedSources = prepareMetadata.mock.calls.flatMap(([sources]) => sources);
+    expect(preparedSources.length).toBeLessThan(20);
+    expect(preparedSources.map((source) => source.id)).not.toContain("source-499");
   });
 
-  it("enqueues card preparation when a card enters the overscan region", () => {
-    installIntersectionObserver();
-    prepareMetadata.mockReturnValue({ type: "test/metadata" });
-    prepareThumbnails.mockReturnValue({ type: "test/thumbnail" });
+  it("requests metadata and thumbnails when a virtual row mounts", () => {
     const store = createAppStore();
     const [instance] = createSourceInstances(1);
     if (!instance) throw new Error("Expected source fixture");
@@ -159,23 +113,13 @@ describe("source queue controls", () => {
       </Provider>,
     );
 
-    const card = screen.getByTestId(instance.id).closest("li");
-    expect(card).not.toBeNull();
-    const cardObserver = TestIntersectionObserver.instances.find((observer) =>
-      observer.observed.has(card!),
-    );
-
-    expect(cardObserver?.rootMargin).toBe("0px 0px 600px 0px");
-    cardObserver?.trigger(card!);
-
     expect(prepareMetadata).toHaveBeenCalledWith([instance]);
     expect(prepareThumbnails).toHaveBeenCalledWith([instance]);
   });
 
-  it("keeps pagination independent from background card preparation", async () => {
-    installIntersectionObserver();
+  it("virtualizes the complete source collection without mounting every card", () => {
     const store = createAppStore();
-    store.dispatch(editingInstancesAdded(createSourceInstances(13)));
+    store.dispatch(editingInstancesAdded(createSourceInstances(500)));
 
     const { container } = render(
       <Provider store={store}>
@@ -183,17 +127,19 @@ describe("source queue controls", () => {
       </Provider>,
     );
 
-    const sentinel = container.querySelector("[data-slot='infinite-scroll-trigger']");
-    expect(sentinel).not.toBeNull();
-    const scrollObserver = TestIntersectionObserver.instances.find((observer) =>
-      observer.observed.has(sentinel!),
+    expect(
+      container.querySelectorAll("[data-slot='imported-sources-grid'] [data-index]").length,
+    ).toBeLessThan(20);
+    expect(screen.queryByTestId("source-499")).not.toBeInTheDocument();
+    const virtualContent = container.querySelector(
+      "[data-slot='imported-sources-grid'] > div > div",
     );
 
-    scrollObserver?.trigger(sentinel!);
-
-    expect(await screen.findByTestId("source-12")).toBeInTheDocument();
-    expect(prepareMetadata).not.toHaveBeenCalled();
-    expect(prepareThumbnails).not.toHaveBeenCalled();
+    expect(
+      Number.parseFloat(
+        virtualContent?.getAttribute("style")?.match(/height: ([\d.]+)px/)?.[1] ?? "0",
+      ),
+    ).toBeGreaterThan(50_000);
   });
 
   it("renders file, folder, and drag-and-drop actions when no sources are imported", () => {
@@ -438,8 +384,8 @@ describe("source queue controls", () => {
         </SourceDeleteProvider>
       </Provider>,
     );
-    const sourceA = within(screen.getByTestId("a").closest("li")!);
-    const sourceB = within(screen.getByTestId("b").closest("li")!);
+    const sourceA = within(screen.getByTestId("a").closest("[data-index]")!);
+    const sourceB = within(screen.getByTestId("b").closest("[data-index]")!);
     await user.click(sourceB.getByRole("button", { name: "Start queue" }));
     expect(selectSourceQueueStarted(store.getState(), "b")).toBe(true);
     expect(selectSourceQueueStarted(store.getState(), "a")).toBe(false);

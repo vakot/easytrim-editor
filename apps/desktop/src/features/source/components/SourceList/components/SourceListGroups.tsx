@@ -1,13 +1,12 @@
 import type { LucideIcon } from "lucide-react";
 import { ChevronRight, Clock3, Folder, FolderOpen, Upload, X } from "lucide-react";
-import { AnimatePresence } from "motion/react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { RelativeTimestamp } from "@/components/ui/relative-timestamp";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { VirtualList } from "@/components/ui/virtual-list";
 
 import type { EditingInstance } from "@/domain/editing-instance";
 import { useRelativeTimeNow } from "@/lib/hooks/use-relative-time";
@@ -23,114 +22,32 @@ import { useSourceListData } from "../contexts/SourceListContext";
 
 import { SourceListItem } from "./SourceListItem";
 
-type SourceGroupIcon =
-  | LucideIcon
-  | {
-      closed: LucideIcon;
-      open: LucideIcon;
-    };
+type SourceGroupIcon = LucideIcon | { closed: LucideIcon; open: LucideIcon };
+type SourceRow = { kind: "source"; source: EditingInstance };
+type GroupRow = {
+  collapsed: boolean;
+  group: SourceGroup<EditingInstance>;
+  icon: SourceGroupIcon;
+  kind: "group";
+};
+type ListRow = SourceRow | GroupRow;
+const DEFAULT_GROUP_ICON: SourceGroupIcon = { closed: Folder, open: FolderOpen };
+
+const SOURCE_ROW_ESTIMATE = 128;
+const GROUP_ROW_ESTIMATE = 36;
 
 function SourceListNone({ sources }: { sources: EditingInstance[] }) {
-  return <SourceListGrid sources={sources} />;
+  return (
+    <SourceListVirtualRows
+      dataSlot="imported-sources-grid"
+      rows={sources.map((source) => ({ kind: "source", source }))}
+    />
+  );
 }
 
 function SourceListFolder({ sources }: { sources: EditingInstance[] }) {
-  const folders = groupSourcesByFolder(sources);
-
-  return <SourceListGroups dataSlot="imported-sources-folders" groups={folders} />;
-}
-
-function SourceListGroup({
-  group,
-  icon,
-}: {
-  group: SourceGroup<EditingInstance>;
-  icon: SourceGroupIcon;
-}) {
-  const [open, setOpen] = useState(true);
-  const Icon = "open" in icon ? (open ? icon.open : icon.closed) : icon;
-  const { t } = useTranslation();
-  const closeLabel = t("source.actions.closeGroup");
-
-  return (
-    <li>
-      <Collapsible defaultOpen onOpenChange={setOpen}>
-        <div className="sticky top-0 z-10 flex gap-2 bg-card ring-2 ring-card">
-          <CollapsibleTrigger asChild>
-            <Button className="flex-1 justify-baseline" size="sm" variant="ghost">
-              <ChevronRight className="transition-transform group-data-open/button:rotate-90" />
-              <Icon className="size-3.5 shrink-0" />
-              {group.timestampMicros === undefined ? (
-                <span className="truncate" title={group.label}>
-                  {group.label}
-                </span>
-              ) : (
-                <RelativeTimestamp timestamp={group.timestampMicros} />
-              )}
-            </Button>
-          </CollapsibleTrigger>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="inline-flex">
-                <CloseSources sources={group.items}>
-                  <Button aria-label={closeLabel} size="icon-sm" variant="destructive">
-                    <X aria-hidden="true" />
-                  </Button>
-                </CloseSources>
-              </span>
-            </TooltipTrigger>
-
-            <TooltipContent>{closeLabel}</TooltipContent>
-          </Tooltip>
-        </div>
-
-        <CollapsibleContent className="mt-2">
-          <SourceListGrid sources={group.items} />
-        </CollapsibleContent>
-      </Collapsible>
-    </li>
-  );
-}
-
-function SourceListGroups({
-  dataSlot,
-  groups,
-  icon,
-}: {
-  dataSlot: string;
-  groups: SourceGroup<EditingInstance>[];
-  icon?: SourceGroupIcon;
-}) {
-  return (
-    <ul className="flex flex-col gap-2" data-slot={dataSlot}>
-      {groups.map((group) => (
-        <SourceListGroup
-          group={group}
-          icon={icon ?? { closed: Folder, open: FolderOpen }}
-          key={group.key}
-        />
-      ))}
-    </ul>
-  );
-}
-
-function SourceListGrid({ sources }: { sources: EditingInstance[] }) {
-  const { matchesBySourceId } = useSourceListData();
-
-  return (
-    <ul className="flex flex-col gap-2" data-slot="imported-sources-grid">
-      <AnimatePresence initial={false}>
-        {sources.map((source) => (
-          <SourceListItem
-            key={source.id}
-            match={matchesBySourceId.get(source.id)}
-            source={source}
-          />
-        ))}
-      </AnimatePresence>
-    </ul>
-  );
+  const groups = groupSourcesByFolder(sources);
+  return <SourceListGroupedRows dataSlot="imported-sources-folders" groups={groups} />;
 }
 
 function SourceListTime({ sources }: { sources: EditingInstance[] }) {
@@ -143,7 +60,9 @@ function SourceListTime({ sources }: { sources: EditingInstance[] }) {
     new Date(now),
   );
 
-  return <SourceListGroups dataSlot="imported-sources-time-groups" groups={groups} icon={Clock3} />;
+  return (
+    <SourceListGroupedRows dataSlot="imported-sources-time-groups" groups={groups} icon={Clock3} />
+  );
 }
 
 function SourceListImported({ sources }: { sources: EditingInstance[] }) {
@@ -157,15 +76,138 @@ function SourceListImported({ sources }: { sources: EditingInstance[] }) {
   );
 
   return (
-    <SourceListGroups dataSlot="imported-sources-import-groups" groups={groups} icon={Upload} />
+    <SourceListGroupedRows
+      dataSlot="imported-sources-import-groups"
+      groups={groups}
+      icon={Upload}
+    />
   );
 }
 
-export {
-  SourceListFolder,
-  SourceListGrid,
-  SourceListGroups,
-  SourceListImported,
-  SourceListNone,
-  SourceListTime,
-};
+function SourceListGroupedRows({
+  dataSlot,
+  groups,
+  icon = DEFAULT_GROUP_ICON,
+}: {
+  dataSlot: string;
+  groups: SourceGroup<EditingInstance>[];
+  icon?: SourceGroupIcon;
+}) {
+  const [collapsedGroups, setCollapsedGroups] = useState<ReadonlySet<string>>(() => new Set());
+  const rows = useMemo(() => {
+    const flattenedRows: ListRow[] = [];
+
+    for (const group of groups) {
+      const collapsed = collapsedGroups.has(group.key);
+      flattenedRows.push({ collapsed, kind: "group", group, icon });
+      if (collapsed) continue;
+      for (const source of group.items) flattenedRows.push({ kind: "source", source });
+    }
+
+    return flattenedRows;
+  }, [collapsedGroups, groups, icon]);
+
+  const toggleGroup = (key: string) => {
+    setCollapsedGroups((current) => {
+      const next = new Set(current);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  return <SourceListVirtualRows dataSlot={dataSlot} onToggleGroup={toggleGroup} rows={rows} />;
+}
+
+function SourceListVirtualRows({
+  dataSlot,
+  onToggleGroup,
+  rows,
+}: {
+  dataSlot: string;
+  onToggleGroup?: (key: string) => void;
+  rows: ListRow[];
+}) {
+  const { matchesBySourceId } = useSourceListData();
+
+  return (
+    <div data-slot={dataSlot} role="list">
+      <VirtualList
+        estimateSize={(index) =>
+          rows[index]?.kind === "group" ? GROUP_ROW_ESTIMATE : SOURCE_ROW_ESTIMATE
+        }
+        getItemKey={(row) =>
+          row.kind === "group" ? `group:${row.group.key}` : `source:${row.source.id}`
+        }
+        items={rows}
+        renderItem={(row) =>
+          row.kind === "group" ? (
+            <SourceListGroupHeader
+              collapsed={row.collapsed}
+              group={row.group}
+              icon={row.icon}
+              onToggle={() => onToggleGroup?.(row.group.key)}
+            />
+          ) : (
+            <SourceListItem match={matchesBySourceId.get(row.source.id)} source={row.source} />
+          )
+        }
+      />
+    </div>
+  );
+}
+
+function SourceListGroupHeader({
+  collapsed,
+  group,
+  icon,
+  onToggle,
+}: {
+  collapsed: boolean;
+  group: SourceGroup<EditingInstance>;
+  icon: SourceGroupIcon;
+  onToggle: () => void;
+}) {
+  const Icon = "open" in icon ? (collapsed ? icon.closed : icon.open) : icon;
+  const { t } = useTranslation();
+  const closeLabel = t("source.actions.closeGroup");
+
+  return (
+    <div className="flex gap-2 bg-card ring-2 ring-card" role="listitem">
+      <Button
+        aria-expanded={!collapsed}
+        className="flex-1 justify-baseline"
+        onClick={onToggle}
+        size="sm"
+        variant="ghost"
+      >
+        <ChevronRight
+          className={collapsed ? "transition-transform" : "rotate-90 transition-transform"}
+        />
+        <Icon className="size-3.5 shrink-0" />
+        {group.timestampMicros === undefined ? (
+          <span className="truncate" title={group.label}>
+            {group.label}
+          </span>
+        ) : (
+          <RelativeTimestamp timestamp={group.timestampMicros} />
+        )}
+      </Button>
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="inline-flex">
+            <CloseSources sources={group.items}>
+              <Button aria-label={closeLabel} size="icon-sm" variant="destructive">
+                <X aria-hidden="true" />
+              </Button>
+            </CloseSources>
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>{closeLabel}</TooltipContent>
+      </Tooltip>
+    </div>
+  );
+}
+
+export { SourceListFolder, SourceListImported, SourceListNone, SourceListTime };
