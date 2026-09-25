@@ -1,30 +1,26 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  cropSelectionFadeTransitionFor,
-  previewTransformTransitionFor,
-} from "../preview-transition";
+import { PREVIEW_TRANSITION_DURATION, previewTransitionFor } from "../preview-transition";
 
 describe("preview presentation transitions", () => {
   it("keeps crop pointer movement immediate", () => {
-    expect(previewTransformTransitionFor(true, false).duration).toBe(0);
+    expect(previewTransitionFor(true, false).duration).toBe(0);
   });
 
   it("disables all transitions when reduced motion is requested", () => {
-    expect(previewTransformTransitionFor(false, true).duration).toBe(0);
-    expect(cropSelectionFadeTransitionFor(true).duration).toBe(0);
+    expect(previewTransitionFor(false, true).duration).toBe(0);
   });
 
-  it("uses monotonic tweens for transforms and a shorter selection fade", () => {
-    expect(previewTransformTransitionFor(false, false)).toMatchObject({
-      duration: 0.24,
+  it("uses one 300ms tween for every animated Preview layer", () => {
+    expect(PREVIEW_TRANSITION_DURATION).toBe(0.3);
+    expect(previewTransitionFor(false, false)).toMatchObject({
+      duration: PREVIEW_TRANSITION_DURATION,
       ease: "easeInOut",
       type: "tween",
     });
-    expect(cropSelectionFadeTransitionFor(false)).toMatchObject({
-      duration: 0.2,
-      ease: "easeOut",
-      type: "tween",
-    });
+  });
+
+  it("keeps initial and source mounts immediate", () => {
+    expect(previewTransitionFor(true, false).duration).toBe(0);
   });
 });

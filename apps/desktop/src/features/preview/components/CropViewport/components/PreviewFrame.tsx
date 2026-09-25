@@ -1,6 +1,8 @@
 import { motion, type Transition } from "motion/react";
 import type { CSSProperties, ReactNode } from "react";
 
+import { PREVIEW_TRANSITION_DURATION } from "../../../lib/preview-transition";
+
 interface PreviewFrameProps {
   aspectRatio: number;
   children: ReactNode;
@@ -15,6 +17,7 @@ function PreviewFrame({ aspectRatio, children, cropEditing, transition }: Previe
     "--preview-normal-width": normalWidth,
     "--preview-crop-width": cropEditingWidth,
     "--preview-aspect-ratio": aspectRatio,
+    "--preview-transition-duration": `${PREVIEW_TRANSITION_DURATION * 1000}ms`,
   } as CSSProperties;
 
   return (

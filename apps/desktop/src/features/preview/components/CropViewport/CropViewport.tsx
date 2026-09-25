@@ -16,10 +16,7 @@ import { commitActiveEditingInstanceDraft } from "@/app/store/thunks/source-medi
 import { usePreviewTransform } from "@/features/preview";
 
 import { previewGeometryFor } from "../../lib/preview-geometry";
-import {
-  cropSelectionFadeTransitionFor,
-  previewTransformTransitionFor,
-} from "../../lib/preview-transition";
+import { previewTransitionFor } from "../../lib/preview-transition";
 
 import { CropSelection } from "./components/CropSelection";
 import { CropSnapMarkers } from "./components/CropSnapMarkers";
@@ -61,8 +58,8 @@ function CropViewport() {
 
   const { clearDrag, isDragging, isEditing, isOpen, open, startDrag } = cropSelection;
   const presentationRotation = useContinuousRotation(rotationDegrees, reduceMotion);
-  const transformTransition = previewTransformTransitionFor(isDragging, reduceMotion);
-  const selectionFadeTransition = cropSelectionFadeTransitionFor(reduceMotion);
+  const transformTransition = previewTransitionFor(isDragging, reduceMotion);
+  const selectionFadeTransition = previewTransitionFor(false, reduceMotion);
 
   const resetTransform = useCallback(() => {
     clearDrag();
@@ -95,7 +92,7 @@ function CropViewport() {
       <CropViewportTooltip containerRef={previewRef} cropSelection={cropSelection}>
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 z-10 border border-primary/70 bg-primary/5 opacity-0 ring-1 ring-primary/20 transition-opacity duration-200 ease-in-out group-hover:opacity-100 group-focus-visible:opacity-100 motion-reduce:transition-none layout-default:rounded-md"
+          className="pointer-events-none absolute inset-0 z-10 border border-primary/70 bg-primary/5 opacity-0 ring-1 ring-primary/20 transition-opacity duration-(--preview-transition-duration) ease-in-out group-hover:opacity-100 group-focus-visible:opacity-100 motion-reduce:transition-none layout-default:rounded-md"
           data-crop-preview-affordance
           style={{ opacity: cropIsOpen ? 0 : undefined }}
         />

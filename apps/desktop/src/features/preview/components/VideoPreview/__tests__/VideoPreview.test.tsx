@@ -367,6 +367,15 @@ describe("VideoPreview", () => {
       height: "60%",
       opacity: "0",
     });
+    expect(container.querySelector("[data-preview-area]")).toHaveStyle({
+      "--preview-transition-duration": "300ms",
+    });
+    expect(container.querySelector("[data-crop-preview-affordance]")).toHaveClass(
+      "duration-(--preview-transition-duration)",
+    );
+    expect(container.querySelector("[data-crop-snap-markers]")).toHaveClass(
+      "duration-(--preview-transition-duration)",
+    );
     expect(container.querySelector("[data-full-rotated-source]")).toContainElement(
       container.querySelector("[data-crop-selection]"),
     );

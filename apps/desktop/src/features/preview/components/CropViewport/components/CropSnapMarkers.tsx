@@ -8,7 +8,7 @@ function CropSnapMarkers({ visible }: CropSnapMarkersProps) {
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none absolute inset-0 z-10 opacity-0 transition-opacity duration-200 ease-out data-[visible=true]:opacity-100 motion-reduce:transition-none"
+      className="pointer-events-none absolute inset-0 z-10 opacity-0 transition-opacity duration-(--preview-transition-duration) ease-in-out data-[visible=true]:opacity-100 motion-reduce:transition-none"
       data-crop-snap-markers
       data-visible={visible}
     >
