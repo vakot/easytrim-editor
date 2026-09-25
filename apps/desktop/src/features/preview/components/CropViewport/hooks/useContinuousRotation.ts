@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useState } from "react";
 
 import type { RotationDegrees } from "@/domain/rotation";
 
@@ -9,18 +9,10 @@ import {
 
 function useContinuousRotation(rotation: RotationDegrees, reduceMotion: boolean): number {
   const [presentation, setPresentation] = useState(() => initialRotationPresentation(rotation));
-  const presentationRef = useRef(presentation);
 
-  useLayoutEffect(() => {
-    const nextPresentation = advanceRotationPresentation(
-      presentationRef.current,
-      rotation,
-      reduceMotion,
-    );
-
-    presentationRef.current = nextPresentation;
-    setPresentation(nextPresentation);
-  }, [reduceMotion, rotation]);
+  if (presentation.rotation !== rotation || (reduceMotion && presentation.angle !== rotation)) {
+    setPresentation(advanceRotationPresentation(presentation, rotation, reduceMotion));
+  }
 
   return presentation.angle;
 }

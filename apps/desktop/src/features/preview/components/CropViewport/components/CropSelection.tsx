@@ -1,4 +1,4 @@
-import { motion, type Transition } from "motion/react";
+import { motion, type Transition, useIsPresent } from "motion/react";
 import type { PointerEvent, RefObject } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -8,10 +8,11 @@ import type { CropHandle } from "../../../lib/crop-geometry.utils";
 
 interface CropSelectionProps {
   crop: CropRect;
+  fadeTransition: Transition;
+  geometryTransition: Transition;
   isDragging: boolean;
   onPointerDown: (event: PointerEvent<HTMLElement>, handle: CropHandle) => void;
   selectionRef: RefObject<HTMLDivElement | null>;
-  transition: Transition;
 }
 
 const HANDLES: Array<{ className: string; handle: Exclude<CropHandle, "move"> }> = [
@@ -51,12 +52,14 @@ const HANDLES: Array<{ className: string; handle: Exclude<CropHandle, "move"> }>
 
 function CropSelection({
   crop,
+  fadeTransition,
+  geometryTransition,
   isDragging,
   onPointerDown,
   selectionRef,
-  transition,
 }: CropSelectionProps) {
   const { t } = useTranslation();
+  const isPresent = useIsPresent();
   const handleLabels: Record<Exclude<CropHandle, "move">, string> = {
     bottom: t("preview.accessibility.crop.bottom"),
     "bottom-left": t("preview.accessibility.crop.bottomLeft"),
@@ -79,12 +82,20 @@ function CropSelection({
       }}
       className="absolute border-2 border-primary bg-primary/10"
       data-crop-selection
+      data-selection-geometry="normalized"
       exit={{ opacity: 0, pointerEvents: "none" }}
-      initial={{ opacity: 0 }}
+      initial={{
+        left: `${crop.x * 100}%`,
+        top: `${crop.y * 100}%`,
+        width: `${crop.width * 100}%`,
+        height: `${crop.height * 100}%`,
+        opacity: 0,
+      }}
       onClick={(event) => event.stopPropagation()}
       onPointerDown={(event) => onPointerDown(event, "move")}
       ref={selectionRef}
-      transition={transition}
+      style={{ pointerEvents: isPresent ? "auto" : "none" }}
+      transition={{ ...geometryTransition, opacity: fadeTransition }}
     >
       {isDragging ? (
         <svg

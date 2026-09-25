@@ -25,16 +25,16 @@ const SNAP_REACH_PX = 12;
 
 interface DragState {
   crop: CropRect;
-  frameHeight: number;
-  frameWidth: number;
   handle: CropHandle;
+  sourceHeight: number;
+  sourceWidth: number;
   startX: number;
   startY: number;
 }
 
 function useCropSelection(
   previewRef: RefObject<HTMLDivElement | null>,
-  cropFrameRef: RefObject<HTMLDivElement | null>,
+  sourceFrameRef: RefObject<HTMLDivElement | null>,
   rotationDegrees: RotationDegrees,
 ) {
   const dispatch = useAppDispatch();
@@ -77,13 +77,13 @@ function useCropSelection(
   function startDrag(event: ReactPointerEvent<HTMLElement>, handle: CropHandle) {
     event.preventDefault();
     event.stopPropagation();
-    const frame = cropFrameRef.current?.getBoundingClientRect();
-    if (!frame || frame.width <= 0 || frame.height <= 0) return;
+    const sourceFrame = sourceFrameRef.current?.getBoundingClientRect();
+    if (!sourceFrame || sourceFrame.width <= 0 || sourceFrame.height <= 0) return;
     event.currentTarget.setPointerCapture(event.pointerId);
     setDrag({
       crop,
-      frameHeight: frame.height,
-      frameWidth: frame.width,
+      sourceHeight: sourceFrame.height,
+      sourceWidth: sourceFrame.width,
       handle,
       startX: event.clientX,
       startY: event.clientY,
@@ -92,8 +92,8 @@ function useCropSelection(
 
   function moveDrag(event: ReactPointerEvent<HTMLDivElement>) {
     if (!drag) return;
-    const deltaX = (event.clientX - drag.startX) / drag.frameWidth;
-    const deltaY = (event.clientY - drag.startY) / drag.frameHeight;
+    const deltaX = (event.clientX - drag.startX) / drag.sourceWidth;
+    const deltaY = (event.clientY - drag.startY) / drag.sourceHeight;
     const movedCrop =
       drag.handle === "move"
         ? moveCrop(drag.crop, deltaX, deltaY)
@@ -101,8 +101,8 @@ function useCropSelection(
 
     const nextCrop = event.shiftKey
       ? snapCropToGuides(movedCrop, drag.handle, {
-          x: SNAP_REACH_PX / drag.frameWidth,
-          y: SNAP_REACH_PX / drag.frameHeight,
+          x: SNAP_REACH_PX / drag.sourceWidth,
+          y: SNAP_REACH_PX / drag.sourceHeight,
         })
       : movedCrop;
 
