@@ -54,9 +54,11 @@ import {
 } from "../../SourceMenuActions";
 
 function SourceListItem({
+  animation = "none",
   match,
   source,
 }: {
+  animation?: "entering" | "exiting" | "none";
   match: SourceSearchResult | undefined;
   source: EditingInstance;
 }) {
@@ -73,9 +75,14 @@ function SourceListItem({
 
   return (
     <motion.div
-      animate={{ opacity: 1, y: 0 }}
+      animate={
+        animation === "exiting"
+          ? { opacity: 0, y: shouldReduceMotion ? 0 : -4 }
+          : { opacity: 1, y: 0 }
+      }
       className="flex w-full min-w-0 flex-col"
-      initial={false}
+      data-source-animation={animation}
+      initial={animation === "entering" && !shouldReduceMotion ? { opacity: 0, y: 4 } : false}
       layout={shouldReduceMotion ? false : "position"}
       role="listitem"
       transition={{ duration, ease: "easeOut" }}

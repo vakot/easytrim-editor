@@ -1,4 +1,12 @@
-import { act, createEvent, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import {
+  act,
+  createEvent,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { PropsWithChildren } from "react";
 import { Provider } from "react-redux";
@@ -114,7 +122,7 @@ describe("source queue controls", () => {
     expect(prepareThumbnails).toHaveBeenCalledWith([instance]);
   });
 
-  it("virtualizes the complete source collection without mounting every card", () => {
+  it("keeps the exposed source range progressive while virtualizing mounted cards", () => {
     const store = createAppStore();
     store.dispatch(editingInstancesAdded(createSourceInstances(500)));
 
@@ -132,11 +140,12 @@ describe("source queue controls", () => {
       "[data-slot='imported-sources-grid'] > div > div",
     );
 
-    expect(
-      Number.parseFloat(
-        virtualContent?.getAttribute("style")?.match(/height: ([\d.]+)px/)?.[1] ?? "0",
-      ),
-    ).toBeGreaterThan(50_000);
+    const exposedHeight = Number.parseFloat(
+      virtualContent?.getAttribute("style")?.match(/height: ([\d.]+)px/)?.[1] ?? "0",
+    );
+
+    expect(exposedHeight).toBeGreaterThan(2_000);
+    expect(exposedHeight).toBeLessThan(10_000);
   });
 
   it("does not animate virtual row mounts", () => {

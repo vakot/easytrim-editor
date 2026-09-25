@@ -7,6 +7,7 @@ import type { SourceSearchResult } from "../../../lib/source-search.utils";
 type SourceListTab = "none" | "folder" | "time" | "imported";
 
 type SourceListState = {
+  allSourceIds: ReadonlySet<string>;
   matchesBySourceId: ReadonlyMap<string, SourceSearchResult>;
   search: string;
   setSearch: (value: string) => void;

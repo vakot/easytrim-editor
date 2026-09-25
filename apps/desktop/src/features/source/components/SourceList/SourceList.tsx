@@ -33,6 +33,8 @@ function SourceList({ children }: SourceListProps) {
     [searchResults],
   );
 
+  const allSourceIds = useMemo(() => new Set(sources.map(({ id }) => id)), [sources]);
+
   const handleSearchChange = useCallback((value: string) => {
     setSearch(value);
   }, []);
@@ -45,6 +47,7 @@ function SourceList({ children }: SourceListProps) {
   return (
     <SourceListContext.Provider
       value={{
+        allSourceIds,
         matchesBySourceId,
         search,
         setSearch: handleSearchChange,

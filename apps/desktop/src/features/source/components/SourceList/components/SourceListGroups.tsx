@@ -1,7 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import { ChevronRight, Clock3, Folder, FolderOpen, Upload, X } from "lucide-react";
-import { motion, useReducedMotion } from "motion/react";
-import { useMemo, useState } from "react";
+import { useReducedMotion } from "motion/react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -32,10 +32,19 @@ type GroupRow = {
   kind: "group";
 };
 type ListRow = SourceRow | GroupRow;
+type PresentedRow = { animation: "entering" | "exiting" | "none"; row: ListRow };
 const DEFAULT_GROUP_ICON: SourceGroupIcon = { closed: Folder, open: FolderOpen };
 
 const SOURCE_ROW_ESTIMATE = 128;
 const GROUP_ROW_ESTIMATE = 36;
+const INITIAL_EXPOSED_ROW_COUNT = 32;
+const EXPOSED_ROW_BATCH_SIZE = 32;
+const EXPOSED_RANGE_THRESHOLD = 8;
+const SOURCE_ROW_TRANSITION_DURATION = 0.16;
+
+function getRowKey(row: ListRow) {
+  return row.kind === "group" ? `group:${row.group.key}` : `source:${row.source.id}`;
+}
 
 function SourceListNone({ sources }: { sources: EditingInstance[] }) {
   return (
@@ -129,68 +138,206 @@ function SourceListVirtualRows({
   onToggleGroup?: (key: string) => void;
   rows: ListRow[];
 }) {
-  const { matchesBySourceId } = useSourceListData();
+  const { allSourceIds, matchesBySourceId } = useSourceListData();
   const shouldReduceMotion = useReducedMotion() === true;
-  const currentRowKeys = useMemo(
-    () =>
-      new Set(
-        rows.map((row) =>
-          row.kind === "group" ? `group:${row.group.key}` : `source:${row.source.id}`,
-        ),
-      ),
-    [rows],
+  const duration = shouldReduceMotion ? 0 : SOURCE_ROW_TRANSITION_DURATION;
+  const [presentedRows, setPresentedRows] = useState<PresentedRow[]>(() =>
+    rows.map((row) => ({ animation: "none", row })),
   );
 
-  const duration = shouldReduceMotion ? 0 : 0.16;
+  const [exposedCount, setExposedCount] = useState(() =>
+    Math.min(rows.length, INITIAL_EXPOSED_ROW_COUNT),
+  );
+
+  const presentationRef = useRef(presentedRows);
+  const exposedCountRef = useRef(exposedCount);
+  const previousSourceIdsRef = useRef(new Set(allSourceIds));
+  const timersRef = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+  const exitingKeys = useMemo(
+    () =>
+      presentedRows
+        .filter(({ animation }) => animation === "exiting")
+        .map(({ row }) => getRowKey(row)),
+    [presentedRows],
+  );
+
+  const enteringKeys = useMemo(
+    () =>
+      presentedRows
+        .filter(({ animation }) => animation === "entering")
+        .map(({ row }) => getRowKey(row)),
+    [presentedRows],
+  );
+
+  useLayoutEffect(() => {
+    presentationRef.current = presentedRows;
+  }, [presentedRows]);
+
+  useLayoutEffect(() => {
+    exposedCountRef.current = exposedCount;
+  }, [exposedCount]);
+
+  useLayoutEffect(() => {
+    const previousSourceIds = previousSourceIdsRef.current;
+    const addedSourceIds = new Set([...allSourceIds].filter((id) => !previousSourceIds.has(id)));
+    const removedSourceIds = new Set([...previousSourceIds].filter((id) => !allSourceIds.has(id)));
+    previousSourceIdsRef.current = new Set(allSourceIds);
+
+    const current = presentationRef.current;
+    const previousByKey = new Map(current.map((entry) => [getRowKey(entry.row), entry]));
+    const nextKeys = new Set(rows.map(getRowKey));
+    const nextExposedCount = Math.min(
+      Math.max(exposedCountRef.current, INITIAL_EXPOSED_ROW_COUNT),
+      rows.length,
+    );
+
+    const next = rows.map((row, index): PresentedRow => {
+      const key = getRowKey(row);
+      const previous = previousByKey.get(key);
+      if (previous) {
+        const reappeared = row.kind === "source" && addedSourceIds.has(row.source.id);
+        return {
+          animation: reappeared
+            ? "entering"
+            : previous.animation === "exiting"
+              ? "none"
+              : previous.animation,
+          row,
+        };
+      }
+
+      const shouldAnimateAddition =
+        row.kind === "source" && addedSourceIds.has(row.source.id) && index < nextExposedCount;
+
+      return { animation: shouldAnimateAddition ? "entering" : "none", row };
+    });
+
+    for (const [previousIndex, previous] of current.entries()) {
+      const { row } = previous;
+      if (
+        row.kind === "source" &&
+        !nextKeys.has(getRowKey(row)) &&
+        (removedSourceIds.has(row.source.id) || previous.animation === "exiting")
+      ) {
+        const followingKey = current
+          .slice(previousIndex + 1)
+          .map(({ row: followingRow }) => getRowKey(followingRow))
+          .find((key) => next.some(({ row: nextRow }) => getRowKey(nextRow) === key));
+
+        const insertionIndex = followingKey
+          ? next.findIndex(({ row: nextRow }) => getRowKey(nextRow) === followingKey)
+          : -1;
+
+        const exitingRow = { ...previous, animation: "exiting" as const };
+        if (insertionIndex >= 0) next.splice(insertionIndex, 0, exitingRow);
+        else next.push(exitingRow);
+      }
+    }
+
+    presentationRef.current = next;
+    setPresentedRows(next);
+    setExposedCount(nextExposedCount);
+  }, [allSourceIds, rows]);
+
+  const handleVirtualRangeChange = useCallback(
+    (range: { endIndex: number; startIndex: number } | null) => {
+      if (!range) return;
+
+      setExposedCount((current) => {
+        if (range.endIndex < current - EXPOSED_RANGE_THRESHOLD) return current;
+        const rowCount = presentedRows.length;
+        if (current >= rowCount) return current;
+        return Math.min(current + EXPOSED_ROW_BATCH_SIZE, rowCount);
+      });
+    },
+    [presentedRows.length],
+  );
+
+  useEffect(() => {
+    const exiting = new Set(exitingKeys);
+    const entering = new Set(enteringKeys);
+
+    for (const [key, timer] of timersRef.current) {
+      if (!exiting.has(key) && !entering.has(key)) {
+        clearTimeout(timer);
+        timersRef.current.delete(key);
+      }
+    }
+
+    for (const key of exiting) {
+      if (timersRef.current.has(key)) continue;
+      timersRef.current.set(
+        key,
+        setTimeout(() => {
+          timersRef.current.delete(key);
+          setPresentedRows((current) => current.filter(({ row }) => getRowKey(row) !== key));
+        }, duration * 1000),
+      );
+    }
+
+    for (const key of entering) {
+      if (timersRef.current.has(key)) continue;
+      timersRef.current.set(
+        key,
+        setTimeout(() => {
+          timersRef.current.delete(key);
+          setPresentedRows((current) =>
+            current.map((entry) =>
+              getRowKey(entry.row) === key && entry.animation === "entering"
+                ? { ...entry, animation: "none" }
+                : entry,
+            ),
+          );
+        }, duration * 1000),
+      );
+    }
+  }, [duration, enteringKeys, exitingKeys]);
+
+  useEffect(
+    () => () => {
+      for (const timer of timersRef.current.values()) clearTimeout(timer);
+    },
+    [],
+  );
+
+  const exposedRows = useMemo(
+    () => presentedRows.slice(0, exposedCount),
+    [exposedCount, presentedRows],
+  );
+
+  const getPresentedRowKey = useCallback((entry: PresentedRow) => getRowKey(entry.row), []);
+  const estimatePresentedRowSize = useCallback(
+    (index: number) =>
+      exposedRows[index]?.row.kind === "group" ? GROUP_ROW_ESTIMATE : SOURCE_ROW_ESTIMATE,
+    [exposedRows],
+  );
 
   return (
     <div data-slot={dataSlot} role="list">
       <VirtualList
-        estimateSize={(index) =>
-          rows[index]?.kind === "group" ? GROUP_ROW_ESTIMATE : SOURCE_ROW_ESTIMATE
-        }
-        getItemKey={(row) =>
-          row.kind === "group" ? `group:${row.group.key}` : `source:${row.source.id}`
-        }
-        items={rows}
-        presenceData={currentRowKeys}
-        renderItem={(row) =>
-          row.kind === "group" ? (
-            <SourceListGroupHeader
-              collapsed={row.collapsed}
-              group={row.group}
-              icon={row.icon}
-              onToggle={() => onToggleGroup?.(row.group.key)}
-            />
-          ) : (
-            <SourceListItem match={matchesBySourceId.get(row.source.id)} source={row.source} />
-          )
-        }
-        renderVirtualItem={({ index, item, key, measureRef, style }, content) => {
-          const rowKey = item.kind === "group" ? `group:${item.group.key}` : `source:${item.source.id}`;
+        estimateSize={estimatePresentedRowSize}
+        getItemKey={getPresentedRowKey}
+        items={exposedRows}
+        onVirtualRangeChange={handleVirtualRangeChange}
+        renderItem={(entry) => {
+          const row = entry.row;
+          if (row.kind === "group") {
+            return (
+              <SourceListGroupHeader
+                collapsed={row.collapsed}
+                group={row.group}
+                icon={row.icon}
+                onToggle={() => onToggleGroup?.(row.group.key)}
+              />
+            );
+          }
 
           return (
-            <motion.div
-              className="absolute top-0 left-0 box-content w-full pb-2"
-              data-index={index}
-              exit="exit"
-              initial={false}
-              key={key}
-              ref={measureRef}
-              style={style}
-              variants={{
-                exit: (presentKeys: ReadonlySet<string>) =>
-                  presentKeys.has(rowKey)
-                    ? { opacity: 1, transition: { duration: 0 }, y: 0 }
-                    : {
-                        opacity: 0,
-                        transition: { duration, ease: "easeOut" },
-                        y: shouldReduceMotion ? 0 : -4,
-                      },
-              }}
-            >
-              {content}
-            </motion.div>
+            <SourceListItem
+              animation={entry.animation}
+              match={matchesBySourceId.get(row.source.id)}
+              source={row.source}
+            />
           );
         }}
       />
