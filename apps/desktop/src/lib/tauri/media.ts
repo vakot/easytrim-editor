@@ -218,11 +218,15 @@ async function prepareSourcePreview(sourcePath: string): Promise<PreviewDescript
   }
 }
 
-async function prepareImportedSourceThumbnail(sourcePath: string): Promise<ThumbnailDescriptor> {
+async function prepareImportedSourceThumbnail(
+  sourcePath: string,
+  videoStreamIndex?: number,
+): Promise<ThumbnailDescriptor> {
   try {
     return parseThumbnailDescriptor(
       await invoke<unknown>("prepare_imported_source_thumbnail", {
         sourcePath,
+        ...(videoStreamIndex === undefined ? {} : { videoStreamIndex }),
       }),
     );
   } catch (error: unknown) {

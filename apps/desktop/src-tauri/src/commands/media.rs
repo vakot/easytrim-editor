@@ -168,12 +168,15 @@ pub async fn inspect_imported_source(
 #[tauri::command]
 pub async fn prepare_imported_source_thumbnail(
     source_path: PathBuf,
+    video_stream_index: Option<u32>,
     state: State<'_, AppState>,
 ) -> Result<ThumbnailDescriptor, AppError> {
     let source = validate_source(&source_path)?;
-    let thumbnail = tauri::async_runtime::spawn_blocking(move || generate_thumbnail(&source.path))
-        .await
-        .map_err(|_| AppError::internal("Thumbnail preparation stopped unexpectedly."))??;
+    let thumbnail = tauri::async_runtime::spawn_blocking(move || {
+        generate_thumbnail(&source.path, video_stream_index)
+    })
+    .await
+    .map_err(|_| AppError::internal("Thumbnail preparation stopped unexpectedly."))??;
     let media_token = state.register_imported_thumbnail(thumbnail)?;
     Ok(ThumbnailDescriptor {
         media_token,
