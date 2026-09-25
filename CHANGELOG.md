@@ -16,6 +16,10 @@ All notable changes to this project will be documented in this file.
 - Animated source tab additions and removals, and kept the selected tab visible when switching sources.
 - Smoothed collapse and expand transitions for the Source List and Activity Feed panels.
 
+### Fixed
+
+- Kept dialogs within their viewport width by wrapping long filenames, paths, and identifiers.
+
 ## [1.11.0]
 
 ### Added

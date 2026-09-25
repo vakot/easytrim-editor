@@ -67,3 +67,28 @@ export const Destructive: Story = {
     </AlertDialog>
   ),
 };
+
+export const LongContent: Story = {
+  render: () => (
+    <AlertDialog defaultOpen>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>
+            render-output-2026-09-25-super-high-resolution-source-with-a-very-long-filename.mp4
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            C:\Media\Projects\Archive\GeneratedIdentifiers\job_01J8QZ0A7V9Y4K2M6N3P5R8T1W0X9Y7Z6A4B2C8D5E3F1G.mp4
+          </AlertDialogDescription>
+          <AlertDialogDescription>
+            This description contains ordinary text across multiple lines. It should keep normal
+            word wrapping while long unbroken names wrap inside the alert dialog.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction>Delete</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  ),
+};
