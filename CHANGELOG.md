@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Added Activity Feed rows that combine consecutive file-close activities and show the latest activity time.
+
+### Changed
+
+- Animated source tab additions and removals, and kept the selected tab visible when switching sources.
+
 ## [1.11.0]
 
 ### Added

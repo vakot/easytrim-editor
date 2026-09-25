@@ -30,6 +30,13 @@ interface ActivityEntry {
   status: ActivityStatus;
   title: string;
 }
+interface ActivityGroup {
+  count: number;
+  entries: readonly ActivityEntry[];
+  id: string;
+  kind: "files-closed";
+  latestEntryAt: string;
+}
 interface ActivitySessionGroup extends DiagnosticSessionMetadata {
   entries: readonly ActivityEntry[];
   isCurrent: boolean;
@@ -79,8 +86,10 @@ interface ActivityBranch {
   sessionId: string;
   snapshotId: string;
 }
+type ActivityFeedItem =
+  { entry: ActivityEntry; kind: "entry" } | { group: ActivityGroup; kind: "group" };
 export type ActivitySessionItem =
-  { branch: ActivityBranch; kind: "branch" } | { entry: ActivityEntry; kind: "entry" };
+  { entry: ActivityEntry; kind: "entry" } | { branch: ActivityBranch; kind: "branch" };
 type ActivityEventProjector = (
   event: DiagnosticEvent,
   labels: ActivityProjectionLabels,
@@ -167,11 +176,11 @@ function groupActivityEntriesBySession(
 }
 function groupActivityEntriesByBranch(entries: readonly ActivityEntry[]): ActivitySessionItem[] {
   const branches = new Map<string, ActivityBranch>();
-  const standalone: ActivitySessionItem[] = [];
+  const standalone: ActivityEntry[] = [];
 
   for (const entry of entries) {
     if (!entry.snapshotId) {
-      standalone.push({ entry, kind: "entry" });
+      standalone.push(entry);
       continue;
     }
 
@@ -199,9 +208,55 @@ function groupActivityEntriesByBranch(entries: readonly ActivityEntry[]): Activi
     return { branch: { ...branch, entries }, kind: "branch" as const };
   });
 
-  return [...grouped, ...standalone].sort((left, right) =>
-    compareActivityEntries(latestActivityEntry(left), latestActivityEntry(right)),
+  return [...grouped, ...standalone.map((entry) => ({ entry, kind: "entry" as const }))].sort(
+    (left, right) => compareActivityEntries(latestActivityEntry(left), latestActivityEntry(right)),
   );
+}
+function groupActivityEntriesForDisplay(entries: readonly ActivityEntry[]): ActivityFeedItem[] {
+  const items: ActivityFeedItem[] = [];
+
+  for (let index = 0; index < entries.length;) {
+    const entry = entries[index]!;
+    if (entry.kind !== "files-closed") {
+      items.push({ entry, kind: "entry" });
+      index += 1;
+      continue;
+    }
+
+    const closeEntries = [entry];
+    index += 1;
+    while (entries[index]?.kind === "files-closed") {
+      closeEntries.push(entries[index]!);
+      index += 1;
+    }
+
+    const count = closeEntries.reduce((total, closeEntry) => {
+      const entryCount = diagnosticNumber(closeEntry.data?.count);
+      return total + (entryCount && entryCount > 0 ? entryCount : 1);
+    }, 0);
+
+    if (closeEntries.length === 1 && count === 1) {
+      items.push({ entry, kind: "entry" });
+      continue;
+    }
+
+    const latestEntry = closeEntries.reduce((latest, candidate) =>
+      compareActivityEntries(candidate, latest) < 0 ? candidate : latest,
+    );
+
+    items.push({
+      group: {
+        count,
+        entries: closeEntries,
+        id: `files-closed:${closeEntries[0]!.id}:${closeEntries[closeEntries.length - 1]!.id}`,
+        kind: "files-closed",
+        latestEntryAt: latestEntry.startedAt,
+      },
+      kind: "group",
+    });
+  }
+
+  return items;
 }
 function getActivitySessionPresentation(
   group: ActivitySessionGroup,
@@ -741,6 +796,7 @@ export {
   getActivitySessionPresentation,
   groupActivityEntriesByBranch,
   groupActivityEntriesBySession,
+  groupActivityEntriesForDisplay,
   projectActivityEvent,
   projectActivityEvents,
   resolveAvailableActivityActions,
@@ -749,6 +805,7 @@ export {
 export type {
   ActivityBranch,
   ActivityEntry,
+  ActivityGroup,
   ActivityProjectionLabels,
   ActivitySessionGroup,
   ActivitySessionLabels,
