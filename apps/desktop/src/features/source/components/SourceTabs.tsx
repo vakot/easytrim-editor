@@ -32,9 +32,37 @@ function SourceTabs({
   const entries = useAppSelector(selectEditingInstanceTopologyEntries);
   const activeTabRef = useRef<HTMLButtonElement>(null);
   const reduceMotion = useReducedMotion() === true;
+  const previousTabsRef = useRef<{ activeInstanceId: string | null; ids: string[] }>({
+    activeInstanceId: null,
+    ids: [],
+  });
 
   useLayoutEffect(() => {
-    if (orientation !== "horizontal") return;
+    const previousTabs = previousTabsRef.current;
+    const ids = entries.map(({ id }) => id);
+
+    if (activeInstanceId === null) {
+      if (previousTabs.activeInstanceId === null || ids.includes(previousTabs.activeInstanceId)) {
+        previousTabsRef.current = { activeInstanceId: null, ids };
+      }
+      return;
+    }
+
+    const selectedTabMovesLeftAfterRemoval =
+      previousTabs.activeInstanceId !== null &&
+      !ids.includes(previousTabs.activeInstanceId) &&
+      previousTabs.ids.indexOf(activeInstanceId) >
+        previousTabs.ids.indexOf(previousTabs.activeInstanceId);
+
+    previousTabsRef.current = { activeInstanceId, ids };
+
+    if (
+      orientation !== "horizontal" ||
+      previousTabs.activeInstanceId === activeInstanceId ||
+      selectedTabMovesLeftAfterRemoval
+    ) {
+      return;
+    }
 
     const activeTab = activeTabRef.current;
     const scrollViewport = activeTab?.closest<HTMLElement>("[data-slot='scroll-area-viewport']");
@@ -49,7 +77,7 @@ function SourceTabs({
       block: "nearest",
       inline: "nearest",
     });
-  }, [activeInstanceId, orientation, reduceMotion]);
+  }, [activeInstanceId, entries, orientation, reduceMotion]);
 
   const closeInstance = (id: string) => {
     void dispatch(closeActiveEditingInstanceRequested(id));
