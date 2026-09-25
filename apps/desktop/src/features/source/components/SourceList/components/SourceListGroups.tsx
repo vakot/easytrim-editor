@@ -118,13 +118,17 @@ function SourceListGroups({
 }
 
 function SourceListGrid({ sources }: { sources: EditingInstance[] }) {
-  const { search } = useSourceListData();
+  const { matchesBySourceId } = useSourceListData();
 
   return (
     <ul className="flex flex-col gap-2" data-slot="imported-sources-grid">
       <AnimatePresence initial={false}>
         {sources.map((source) => (
-          <SourceListItem key={source.id} search={search} source={source} />
+          <SourceListItem
+            key={source.id}
+            match={matchesBySourceId.get(source.id)}
+            source={source}
+          />
         ))}
       </AnimatePresence>
     </ul>

@@ -2,11 +2,14 @@ import { createContext, useContext } from "react";
 
 import type { EditingInstance } from "@/domain/editing-instance";
 
+import type { SourceSearchResult } from "../../../lib/source-search.utils";
+
 type SourceListTab = "none" | "folder" | "time" | "imported";
 
 type SourceListState = {
   hasMore: boolean;
   isLoading: boolean;
+  matchesBySourceId: ReadonlyMap<string, SourceSearchResult>;
   next: () => void;
   search: string;
   setSearch: (value: string) => void;
