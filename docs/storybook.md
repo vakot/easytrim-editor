@@ -22,7 +22,8 @@ The repository check includes the Storybook typecheck and production build. The 
 
 - Put stories in a nested `__stories__` directory owned by the same immediate parent as the component, mirroring the existing `__tests__` convention.
 - Never place a story beside a production component file.
-- Use lowercase filenames matching the module stem, such as `button.stories.tsx` for `button.tsx`.
+- Match the covered component's filename, such as `Button.stories.tsx` for `Button.tsx`. For
+  non-component modules, preserve the module's filename stem.
 - Keep one story file per module or closely related component family. Do not create a file for every exported subcomponent.
 - Use typed CSF with `Meta`, `StoryObj`, `satisfies`, and the component in the metadata.
 - Prefer `args` for a single component state. Use a typed `render` when a story needs composition, controlled state, providers, or event wiring.

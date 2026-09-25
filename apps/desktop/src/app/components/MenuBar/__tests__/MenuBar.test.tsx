@@ -195,7 +195,7 @@ describe("MenuBarTest", () => {
     ];
     menuState.preferences = overrides.preferences ?? {
       ...DEFAULT_PREFERENCES,
-      lastSeenChangelogVersion: "1.10.4",
+      lastSeenChangelogVersion: getCurrentVersion(),
     };
     menuState.preferences.theme = overrides.themePreference ?? "system";
     menuState.preferences.primaryColor = overrides.primaryColor ?? "amber";
