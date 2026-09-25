@@ -36,15 +36,7 @@ function SourceTabs({
   useLayoutEffect(() => {
     if (orientation !== "horizontal") return;
 
-    const activeTab = activeTabRef.current;
-    const scrollViewport = activeTab?.closest<HTMLElement>("[data-slot='scroll-area-viewport']");
-    if (!activeTab || !scrollViewport) return;
-
-    const tabBounds = activeTab.getBoundingClientRect();
-    const viewportBounds = scrollViewport.getBoundingClientRect();
-    if (tabBounds.left >= viewportBounds.left && tabBounds.right <= viewportBounds.right) return;
-
-    activeTab.scrollIntoView({
+    activeTabRef.current?.scrollIntoView({
       behavior: reduceMotion ? "instant" : "smooth",
       block: "nearest",
       inline: "nearest",
@@ -64,9 +56,7 @@ function SourceTabs({
       orientation={orientation}
       value={activeInstanceId ?? ""}
     >
-      <TabsList
-        className={`relative w-max min-w-full justify-baseline gap-0.5 bg-${background} p-0`}
-      >
+      <TabsList className={`w-max min-w-full justify-baseline gap-0.5 bg-${background} p-0`}>
         <AnimatePresence initial={false} mode="popLayout">
           {entries.map((entry) => (
             <motion.div
