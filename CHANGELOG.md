@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- Smoothed collapse and expand transitions for the Source List and Activity Feed panels.
+
 ## [1.11.0]
 
 ### Added
