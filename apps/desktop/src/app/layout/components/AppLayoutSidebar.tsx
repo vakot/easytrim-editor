@@ -45,7 +45,12 @@ function AppLayoutSidebar() {
         {t("app.labels.explorer")}
       </h3>
 
-      <ResizablePanelGroup id="editor-source" orientation="vertical" persisted>
+      <ResizablePanelGroup
+        className="*:data-panel:transition-[flex-grow,flex-basis] *:data-panel:duration-200 *:data-panel:ease-out has-data-[separator=active]:*:data-panel:transition-none motion-reduce:*:data-panel:transition-none"
+        id="editor-source"
+        orientation="vertical"
+        persisted
+      >
         <ResizablePanel
           className="flex min-h-0 flex-col overflow-hidden! py-1"
           collapsedSize="36px"
