@@ -21,7 +21,7 @@ function SourceCardThumbnail({
   const { t } = useTranslation();
 
   const id = source.id;
-  const { displayName } = source.snapshot.source;
+  const { displayName } = source;
   const thumbnail = useAppSelector((state) => selectImportedSourceThumbnail(state, id));
   const thumbnailUrl = thumbnail?.status === "ready" ? thumbnail.value.url : undefined;
   const thumbnailLoading =
@@ -29,7 +29,7 @@ function SourceCardThumbnail({
     source.sourceAvailability === "available" &&
     (thumbnail === undefined || thumbnail.status === "loading");
 
-  const durationMicros = source.media?.durationMicros;
+  const durationMicros = source.durationMicros;
 
   return (
     <div

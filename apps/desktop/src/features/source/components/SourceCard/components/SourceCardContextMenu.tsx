@@ -24,7 +24,7 @@ function SourceCardContextMenu({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
   const source = useSourceCardData();
 
-  const { sourcePath } = source.snapshot.source;
+  const { sourcePath } = source;
   const showRestore = source.sourceAvailability === "deleted";
   const revealLabel = getRevealLabel(t);
 
@@ -34,7 +34,7 @@ function SourceCardContextMenu({ children }: { children: React.ReactNode }) {
 
       <ContextMenuContent>
         <ContextMenuItem
-          disabled={showRestore}
+          disabled={source.sourceAvailability !== "available"}
           inset
           onSelect={() => void openFileLocation(sourcePath)}
         >

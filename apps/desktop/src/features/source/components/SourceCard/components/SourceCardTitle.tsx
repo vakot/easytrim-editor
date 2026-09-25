@@ -13,7 +13,7 @@ function SourceCardTitle({
   className?: string;
 }) {
   const source = useSourceCardData();
-  const { displayName } = source.snapshot.source;
+  const { displayName } = source;
   const content = children ? children({ source }) : displayName;
 
   return (

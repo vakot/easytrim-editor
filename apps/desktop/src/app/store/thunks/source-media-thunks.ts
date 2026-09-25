@@ -29,6 +29,7 @@ import {
   activeEditingInstanceChanged,
   editingInstanceClosed,
   editingInstanceExportAttemptRemoved,
+  editingInstanceMediaUpdated,
   editingInstanceOptimizedSettingsChanged,
   editingInstancesAdded,
   editingInstancesClosed,
@@ -67,7 +68,7 @@ import {
   selectSourceSelection,
 } from "@/app/store/slices/source-slice";
 import type { AppDispatch, RootState } from "@/app/store/store";
-import type { EditingInstance } from "@/domain/editing-instance";
+import type { EditingInstance, EditingInstanceListEntry } from "@/domain/editing-instance";
 import { createEditorSnapshot, type EditorSnapshot } from "@/domain/editor-snapshot";
 import type { SourceRef } from "@/domain/source";
 import { normalizeSourceKey } from "@/domain/source";
@@ -256,7 +257,11 @@ const releaseImportedSourceThumbnailForInstance =
     const queueIndex = thumbnailQueue.findIndex((request) => request.instanceId === instanceId);
     if (queueIndex >= 0) thumbnailQueue.splice(queueIndex, 1);
     if (!activeThumbnailRequests.has(instanceId)) thumbnailRequestsInFlight.delete(instanceId);
-    removeThumbnailFromRuntime(instanceId, dispatch, getState);
+    if (selectImportedSourceThumbnails(getState())[instanceId]) {
+      removeThumbnailFromRuntime(instanceId, dispatch, getState);
+    } else {
+      thumbnailLastUsed.delete(instanceId);
+    }
   };
 
 function drainThumbnailQueue(dispatch: AppDispatch, getState: () => RootState) {
@@ -348,32 +353,44 @@ function beginForegroundSourcePreparation(
   };
 }
 
+type ThumbnailDemandSource = EditingInstance | EditingInstanceListEntry;
+
+function thumbnailDemandData(source: ThumbnailDemandSource) {
+  if ("sourcePath" in source) return source;
+  return {
+    id: source.id,
+    sourceAvailability: source.sourceAvailability,
+    sourcePath: source.snapshot.source.sourcePath,
+  };
+}
+
 const prepareImportedSourceThumbnailsRequested =
-  (instances: EditingInstance[]): AppThunk<void> =>
+  (instances: ThumbnailDemandSource[]): AppThunk<void> =>
   (dispatch, getState) => {
     const importedThumbnails = selectImportedSourceThumbnails(getState());
-    for (const instance of instances) {
-      const current = selectEditingInstanceById(getState(), instance.id);
+    for (const source of instances) {
+      const demand = thumbnailDemandData(source);
+      const current = selectEditingInstanceById(getState(), demand.id);
       if (!current || current.sourceAvailability !== "available") continue;
 
-      thumbnailDemand.add(instance.id);
+      thumbnailDemand.add(demand.id);
 
-      const currentThumbnail = importedThumbnails[instance.id];
+      const currentThumbnail = importedThumbnails[demand.id];
       if (currentThumbnail?.status === "ready") {
-        touchThumbnail(instance.id);
+        touchThumbnail(demand.id);
         continue;
       }
-      if (currentThumbnail !== undefined || thumbnailRequestsInFlight.has(instance.id)) continue;
+      if (currentThumbnail !== undefined || thumbnailRequestsInFlight.has(demand.id)) continue;
 
-      const sourcePath = instance.snapshot.source.sourcePath;
+      const sourcePath = demand.sourcePath;
       if (normalizeSourceKey(current.snapshot.source.sourcePath) !== normalizeSourceKey(sourcePath))
         continue;
 
       if (!ensureThumbnailPoolRoom(dispatch, getState)) continue;
 
-      thumbnailRequestsInFlight.add(instance.id);
-      dispatch(importedThumbnailLoading({ instanceId: instance.id }));
-      thumbnailQueue.push({ instanceId: instance.id, sourcePath });
+      thumbnailRequestsInFlight.add(demand.id);
+      dispatch(importedThumbnailLoading({ instanceId: demand.id }));
+      thumbnailQueue.push({ instanceId: demand.id, sourcePath });
     }
 
     drainThumbnailQueue(dispatch, getState);
@@ -463,6 +480,8 @@ async function prepareSelectedSource(
     : undefined;
 
   dispatch(sourceReady({ loadToken, media, snapshot: readySnapshot }));
+  const activeInstanceId = selectActiveInstanceId(getState());
+  if (activeInstanceId) dispatch(editingInstanceMediaUpdated({ id: activeInstanceId, media }));
 
   const audioStreamIndexes = media.audioStreams.map((stream) => stream.streamIndex);
   const audioOperation = operation.child("audio.preview", {

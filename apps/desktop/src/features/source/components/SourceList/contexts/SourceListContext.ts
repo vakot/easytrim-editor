@@ -1,20 +1,18 @@
 import { createContext, useContext } from "react";
 
-import type { EditingInstance } from "@/domain/editing-instance";
+import type { EditingInstanceListEntry } from "@/domain/editing-instance";
 
 import type { SourceSearchResult } from "../../../lib/source-search.utils";
 
-type SourceListTab = "none" | "folder" | "time" | "imported";
-
 type SourceListState = {
   hasMore: boolean;
-  isLoading: boolean;
   matchesBySourceId: ReadonlyMap<string, SourceSearchResult>;
   next: () => void;
+  registerThumbnailDemand: (entry: EditingInstanceListEntry, element: HTMLElement | null) => void;
   search: string;
   setSearch: (value: string) => void;
-  sources: EditingInstance[];
-  visibleSources: EditingInstance[];
+  sources: EditingInstanceListEntry[];
+  visibleSources: EditingInstanceListEntry[];
 };
 
 const SourceListContext = createContext<SourceListState | null>(null);
@@ -30,4 +28,4 @@ function useSourceListData() {
 }
 
 export { SourceListContext, useSourceListData };
-export type { SourceListState, SourceListTab };
+export type { SourceListState };

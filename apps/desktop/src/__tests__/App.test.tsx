@@ -28,7 +28,6 @@ const mocks = vi.hoisted(() => ({
   checkMediaCapabilities: vi.fn(),
   chooseSource: vi.fn(),
   activateSourcePath: vi.fn(),
-  inspectImportedSource: vi.fn(),
   inspectMedia: vi.fn(),
   listenForSourceDrops: vi.fn(),
   prepareAudioPreviews: vi.fn(),
@@ -46,7 +45,6 @@ vi.mock("../lib/tauri/media", async (importOriginal) => {
     checkMediaCapabilities: mocks.checkMediaCapabilities,
     chooseSource: mocks.chooseSource,
     activateSourcePath: mocks.activateSourcePath,
-    inspectImportedSource: mocks.inspectImportedSource,
     inspectMedia: mocks.inspectMedia,
     listenForSourceDrops: mocks.listenForSourceDrops,
     prepareAudioPreviews: mocks.prepareAudioPreviews,
@@ -201,7 +199,6 @@ beforeEach(() => {
     sourcePath === replacementSelection.sourcePath ? replacementSelection : selection,
   );
   mocks.inspectMedia.mockResolvedValue(media);
-  mocks.inspectImportedSource.mockResolvedValue(media);
   mocks.prepareAudioPreviews.mockResolvedValue([
     {
       mediaToken: 1,
@@ -1051,7 +1048,6 @@ describe("App", () => {
 
     await openSourcePicker(user);
     await waitFor(() => expect(selectEditingInstances(store.getState())).toHaveLength(2));
-    await waitFor(() => expect(mocks.prepareImportedSourceThumbnail).toHaveBeenCalledTimes(2));
     await waitFor(() =>
       expect(mocks.inspectMedia).toHaveBeenCalledWith(replacementSelection.sourcePath),
     );

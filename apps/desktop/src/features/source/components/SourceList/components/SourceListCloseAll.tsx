@@ -5,13 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
-import { selectImportedEditingInstances } from "@/app/store/slices/editing-instances-slice";
+import { selectSourceListEntries } from "@/app/store/slices/editing-instances-slice";
 
 import { CloseSources } from "../../SourceMenuActions";
 
 function SourceListCloseAll() {
   const { t } = useTranslation();
-  const sources = useAppSelector(selectImportedEditingInstances);
+  const sources = useAppSelector(selectSourceListEntries);
   const label = t("source.actions.closeAllSources");
 
   return (

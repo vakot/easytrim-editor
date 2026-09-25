@@ -2,17 +2,17 @@ import { createEvent, fireEvent, render, screen, within } from "@testing-library
 import userEvent from "@testing-library/user-event";
 import type { PropsWithChildren } from "react";
 import { Provider } from "react-redux";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";
 import {
   editingInstancesAdded,
-  selectImportedEditingInstances,
+  selectSourceListEntries,
 } from "@/app/store/slices/editing-instances-slice";
 import { createAppStore } from "@/app/store/store";
-import type { EditingInstance } from "@/domain/editing-instance";
+import type { EditingInstanceListEntry } from "@/domain/editing-instance";
 import { firstSource, secondSource } from "@/test/source.fixtures";
 
 import { SourceList, SourceListCloseAll, SourceListContent, SourceListSearch } from "../SourceList";
@@ -20,7 +20,7 @@ import { SourceList, SourceListCloseAll, SourceListContent, SourceListSearch } f
 vi.mock("../../SourceCard", () => {
   const Container = ({ children }: PropsWithChildren) => <div>{children}</div>;
   return {
-    SourceCard: ({ children, source }: PropsWithChildren<{ source: EditingInstance }>) => (
+    SourceCard: ({ children, source }: PropsWithChildren<{ source: EditingInstanceListEntry }>) => (
       <div data-testid={source.id}>{children}</div>
     ),
     SourceCardActions: Container,
@@ -33,6 +33,10 @@ vi.mock("../../SourceCard", () => {
 });
 
 describe("source queue controls", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it("renders file, folder, and drag-and-drop actions when no sources are imported", () => {
     render(
       <Provider store={createAppStore()}>
@@ -176,17 +180,91 @@ describe("source queue controls", () => {
     );
 
     await user.click(screen.getByRole("button", { name: "Close all open sources" }));
-    expect(selectImportedEditingInstances(store.getState())).toHaveLength(2);
+    expect(selectSourceListEntries(store.getState())).toHaveLength(2);
 
     const dialog = screen.getByRole("alertdialog");
     await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
-    expect(selectImportedEditingInstances(store.getState())).toHaveLength(2);
+    expect(selectSourceListEntries(store.getState())).toHaveLength(2);
 
     await user.click(screen.getByRole("button", { name: "Close all open sources" }));
     await user.click(
       within(screen.getByRole("alertdialog")).getByRole("button", { name: "Close" }),
     );
 
-    expect(selectImportedEditingInstances(store.getState())).toHaveLength(0);
+    expect(selectSourceListEntries(store.getState())).toHaveLength(0);
+  });
+
+  it("uses one near-viewport observer to request and release thumbnail demand", () => {
+    type ObserverRecord = {
+      callback: IntersectionObserverCallback;
+      observed: Element[];
+      rootMargin?: string;
+      trigger: (element: Element, isIntersecting: boolean) => void;
+    };
+    const observers: ObserverRecord[] = [];
+    class FakeIntersectionObserver {
+      readonly observed: Element[] = [];
+      readonly rootMargin = "600px 0px";
+
+      constructor(readonly callback: IntersectionObserverCallback) {
+        observers.push(this);
+      }
+
+      observe(element: Element) {
+        this.observed.push(element);
+      }
+
+      unobserve(element: Element) {
+        const index = this.observed.indexOf(element);
+        if (index !== -1) this.observed.splice(index, 1);
+      }
+
+      disconnect() {
+        this.observed.length = 0;
+      }
+
+      trigger(element: Element, isIntersecting: boolean) {
+        this.callback(
+          [{ isIntersecting, target: element } as IntersectionObserverEntry],
+          this as unknown as IntersectionObserver,
+        );
+      }
+    }
+    vi.stubGlobal("IntersectionObserver", FakeIntersectionObserver);
+
+    const store = createAppStore();
+    store.dispatch(
+      editingInstancesAdded([
+        {
+          id: "source",
+          origin: "source-import",
+          snapshot: createDefaultEditorSnapshot(firstSource, false),
+          sourceAvailability: "available",
+          exportAttempts: [],
+        },
+      ]),
+    );
+    const dispatchSpy = vi.spyOn(store, "dispatch");
+
+    render(
+      <Provider store={store}>
+        <SourceList>
+          <SourceListContent />
+        </SourceList>
+      </Provider>,
+    );
+
+    expect(observers).toHaveLength(1);
+    expect(observers[0]?.rootMargin).toBe("600px 0px");
+    const cardElement = screen.getByTestId("source");
+    const row = cardElement.parentElement;
+    if (!row) throw new Error("Expected source row");
+    expect(observers[0]?.observed).toContain(row);
+
+    observers[0]?.trigger(row, true);
+    observers[0]?.trigger(row, false);
+    expect(dispatchSpy.mock.calls.filter(([action]) => typeof action === "function")).toHaveLength(
+      2,
+    );
   });
 });

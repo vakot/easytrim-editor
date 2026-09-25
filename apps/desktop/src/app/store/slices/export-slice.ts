@@ -1,8 +1,7 @@
-import { createSelector, createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 import { queueSettingsReset } from "@/app/store/actions/queue-actions";
 import { sourceCleared } from "@/app/store/actions/source-actions";
-import { selectExportQueueById } from "@/app/store/slices/editing-instances-slice";
 import type { AppError } from "@/lib/tauri/media.types";
 import type { QueueFinishAction } from "@/lib/tauri/queue.types";
 
@@ -118,15 +117,6 @@ const exportReducer = exportSlice.reducer;
 const selectSourceQueueStarted = (state: RootState, instanceId: string): boolean =>
   state.export.startedSourceIds.includes(instanceId);
 
-const selectSourceExportQueueState = createSelector(
-  [selectExportQueueById, selectSourceQueueStarted],
-  (items, started) => ({
-    hasExports: items.length > 0,
-    hasQueuedExports: items.some(({ attempt }) => attempt.state.status === "queued"),
-    isRunning: started || items.some(({ attempt }) => attempt.state.status === "rendering"),
-  }),
-);
-
 const selectQueueFinishAction = (state: RootState): QueueFinishAction =>
   state.export.queueFinishAction;
 
@@ -160,6 +150,5 @@ export {
   selectExportLaunchError,
   selectOptimizedExportDialogOpen,
   selectQueueFinishAction,
-  selectSourceExportQueueState,
   selectSourceQueueStarted,
 };

@@ -248,12 +248,30 @@ export const en = {
   },
   queue: {
     actions: {
+      cancel: "Cancel export",
+      restore: "Restore edit",
+      revealOutput: "Reveal output",
+      retry: "Retry",
+      start: "Start queue",
       skip: "Skip",
     },
     labels: {
       deleteSource: "Delete source",
       onFinish: "On queue finished",
+      renderQueue: "Render Queue",
+      routeFastCut: "Fast Cut",
+      routeOptimized: "Optimized render",
       title: "Queue",
+    },
+    status: {
+      canceled: "Canceled",
+      completed: "Completed",
+      failed: "Failed",
+      queued: "Queued",
+      rendering: "Rendering…",
+    },
+    messages: {
+      empty: "Export attempts will appear here.",
     },
     tooltips: {
       deleteSourceOnRenderFinish: "Delete the source after a successful render",
@@ -308,9 +326,7 @@ export const en = {
     },
     status: {
       deleted: "Deleted",
-      failed: "Failed",
       loading: "Loading…",
-      ready: "Ready",
       missing: "Missing",
     },
     messages: {

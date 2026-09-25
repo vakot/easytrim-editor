@@ -1,7 +1,7 @@
 import { createContext } from "react";
 
-import type { EditingInstance } from "@/domain/editing-instance";
+import type { EditingInstanceListEntry } from "@/domain/editing-instance";
 
-const SourceCardContext = createContext<EditingInstance | null>(null);
+const SourceCardContext = createContext<EditingInstanceListEntry | null>(null);
 
 export { SourceCardContext };

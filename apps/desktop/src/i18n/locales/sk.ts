@@ -248,12 +248,30 @@ export const sk = {
   },
   queue: {
     actions: {
+      cancel: "Zrušiť export",
+      restore: "Obnoviť úpravu",
+      revealOutput: "Zobraziť výstup",
+      retry: "Opakovať",
+      start: "Spustiť front",
       skip: "Preskočiť",
     },
     labels: {
       deleteSource: "Odstrániť zdroj",
       onFinish: "Po dokončení frontu",
+      renderQueue: "Front vykresľovania",
+      routeFastCut: "Rýchly strih",
+      routeOptimized: "Optimalizované vykreslenie",
       title: "Front",
+    },
+    status: {
+      canceled: "Zrušené",
+      completed: "Dokončené",
+      failed: "Zlyhalo",
+      queued: "Vo fronte",
+      rendering: "Vykresľuje sa…",
+    },
+    messages: {
+      empty: "Exporty sa zobrazia tu.",
     },
     tooltips: {
       deleteSourceOnRenderFinish: "Po úspešnom vykreslení odstráni zdroj",
@@ -308,9 +326,7 @@ export const sk = {
     },
     status: {
       deleted: "Odstránené",
-      failed: "Zlyhalo",
       loading: "Načítava sa…",
-      ready: "Pripravené",
       missing: "Chýba",
     },
     messages: {

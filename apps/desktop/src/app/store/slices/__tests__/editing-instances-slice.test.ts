@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";
 import { createExportAttempt, type EditingInstance } from "@/domain/editing-instance";
 import { createEditorSnapshot } from "@/domain/editor-snapshot";
-import { firstSource, secondSource } from "@/test/source.fixtures";
+import { firstSource, media, secondSource } from "@/test/source.fixtures";
 
 import {
   activeEditingInstanceChanged,
@@ -17,6 +17,7 @@ import {
   editingInstanceExportRequeued,
   editingInstanceExportRestored,
   editingInstanceExportStarted,
+  editingInstanceMediaUpdated,
   editingInstancesAdded,
   editingInstancesClosed,
   editingInstanceSnapshotUpdated,
@@ -31,7 +32,6 @@ import {
   selectExportQueueById,
   selectHasProcessableExports,
   selectHasQueuedOrRenderingExportByInstanceId,
-  selectImportedEditingInstanceIds,
   selectImportedEditingInstances,
   selectSourceListEntries,
   selectSourceSearchEntries,
@@ -71,6 +71,42 @@ function attempt(id: string, snapshot = baseSnapshot, capturedAt = 10) {
 }
 
 describe("editing instances slice", () => {
+  it("keeps filesystem metadata in the lightweight source entry and caches duration separately", () => {
+    const snapshot = createDefaultEditorSnapshot(
+      {
+        ...firstSource,
+        fileSizeBytes: 12_345,
+        updatedAtMicros: 1_700_000_000_000_000,
+      },
+      false,
+    );
+
+    let state = editingInstancesReducer(
+      undefined,
+      editingInstancesAdded([instance("source", snapshot)]),
+    );
+
+    const root = () => ({ editingInstances: state }) as never;
+
+    expect(selectSourceListEntries(root())).toEqual([
+      expect.objectContaining({
+        fileSizeBytes: 12_345,
+        sourcePath: firstSource.sourcePath,
+        updatedAtMicros: 1_700_000_000_000_000,
+      }),
+    ]);
+    expect(selectSourceListEntries(root())[0]).not.toHaveProperty("durationMicros");
+
+    state = editingInstancesReducer(
+      state,
+      editingInstanceMediaUpdated({ id: "source", media: media(firstSource.sourcePath) }),
+    );
+
+    expect(selectSourceListEntries(root())[0]).toEqual(
+      expect.objectContaining({ durationMicros: 5_000_000, fileSizeBytes: 12_345 }),
+    );
+  });
+
   it("keeps all attempts for one instance visible", () => {
     let state = editingInstancesReducer(undefined, editingInstancesAdded([instance("source")]));
     for (const id of ["one", "two", "three"]) {
@@ -508,14 +544,12 @@ describe("editing instances slice", () => {
     const root = () => ({ editingInstances: state }) as never;
     const listEntries = selectSourceListEntries(root());
     const searchEntries = selectSourceSearchEntries(root());
-    const importedIds = selectImportedEditingInstanceIds(root());
     const topology = selectEditingInstanceTopologyEntries(root());
     const topologyRecomputations = selectEditingInstanceTopologyEntries.recomputations();
 
     state = editingInstancesReducer(state, activeEditingInstanceChanged("instance-2"));
     expect(selectSourceListEntries(root())).toBe(listEntries);
     expect(selectSourceSearchEntries(root())).toBe(searchEntries);
-    expect(selectImportedEditingInstanceIds(root())).toBe(importedIds);
     expect(selectEditingInstanceTopologyEntries(root())).toBe(topology);
     expect(selectEditingInstanceTopologyEntries.recomputations()).toBe(topologyRecomputations);
 
@@ -528,7 +562,6 @@ describe("editing instances slice", () => {
     );
     expect(selectSourceListEntries(root())).toBe(listEntries);
     expect(selectSourceSearchEntries(root())).toBe(searchEntries);
-    expect(selectImportedEditingInstanceIds(root())).toBe(importedIds);
     expect(selectEditingInstanceTopologyEntries.recomputations()).toBe(topologyRecomputations);
 
     state = editingInstancesReducer(

@@ -2,7 +2,7 @@ import { AnimatePresence } from "motion/react";
 import { useTranslation } from "react-i18next";
 
 import { InfiniteScroll } from "@/components/infinite-scroll";
-import type { EditingInstance } from "@/domain/editing-instance";
+import type { EditingInstanceListEntry } from "@/domain/editing-instance";
 
 import { useSourceListData } from "../contexts/SourceListContext";
 
@@ -13,7 +13,7 @@ interface SourceListContentProps {
 }
 
 function SourceListContent({ className }: SourceListContentProps) {
-  const { hasMore, isLoading, next, search, sources, visibleSources } = useSourceListData();
+  const { hasMore, next, search, sources, visibleSources } = useSourceListData();
   const { t } = useTranslation();
 
   if (search.trim() && sources.length === 0) {
@@ -25,13 +25,13 @@ function SourceListContent({ className }: SourceListContentProps) {
   }
 
   return (
-    <InfiniteScroll className={className} hasMore={hasMore} isLoading={isLoading} next={next}>
+    <InfiniteScroll className={className} hasMore={hasMore} next={next}>
       <SourceListItems sources={visibleSources} />
     </InfiniteScroll>
   );
 }
 
-function SourceListItems({ sources }: { sources: EditingInstance[] }) {
+function SourceListItems({ sources }: { sources: EditingInstanceListEntry[] }) {
   const { matchesBySourceId } = useSourceListData();
 
   return (

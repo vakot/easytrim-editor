@@ -250,12 +250,30 @@ export const ru = {
   },
   queue: {
     actions: {
+      cancel: "Отменить экспорт",
+      restore: "Восстановить монтаж",
+      revealOutput: "Показать результат",
+      retry: "Повторить",
+      start: "Запустить очередь",
       skip: "Пропустить",
     },
     labels: {
       deleteSource: "Удалить источник",
       onFinish: "После завершения очереди",
+      renderQueue: "Очередь рендеринга",
+      routeFastCut: "Быстрая нарезка",
+      routeOptimized: "Оптимизированный рендер",
       title: "Очередь",
+    },
+    status: {
+      canceled: "Отменено",
+      completed: "Завершено",
+      failed: "Ошибка",
+      queued: "В очереди",
+      rendering: "Рендеринг…",
+    },
+    messages: {
+      empty: "Экспорты появятся здесь.",
     },
     tooltips: {
       deleteSourceOnRenderFinish: "Удалить источник после успешного рендеринга",
@@ -310,9 +328,7 @@ export const ru = {
     },
     status: {
       deleted: "Удалено",
-      failed: "Ошибка",
       loading: "Загрузка…",
-      ready: "Готово",
       missing: "Отсутствуют",
     },
     messages: {

@@ -5,9 +5,8 @@ import { Card } from "@/components/ui/card";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectActiveInstanceId } from "@/app/store/slices/editing-instances-slice";
-import { selectSourceStatus } from "@/app/store/slices/source-slice";
 import { navigateToEditingInstance } from "@/app/store/thunks/source-media-thunks";
-import type { EditingInstance } from "@/domain/editing-instance";
+import type { EditingInstanceListEntry } from "@/domain/editing-instance";
 import { cn } from "@/lib/class-names.utils";
 
 import { SourceCardActions } from "./components/SourceCardActions";
@@ -19,11 +18,12 @@ import { SourceCardThumbnail } from "./components/SourceCardThumbnail";
 import { SourceCardTitle } from "./components/SourceCardTitle";
 import { SourceCardContext } from "./contexts/SourceCardContext";
 import { getSourceCardStatus, getSourceCardVariant } from "./lib/source-card.utils";
+import type { SourceCardSource } from "./types";
 
 interface SourceCardProps {
   children: ReactNode;
   className?: string;
-  source: EditingInstance;
+  source: SourceCardSource;
 }
 
 const sourceCardVariants = cva("group/source-card cursor-pointer border ring-0", {
@@ -44,24 +44,24 @@ const sourceCardVariants = cva("group/source-card cursor-pointer border ring-0",
 const SourceCard = memo(function SourceCard({ children, className, source }: SourceCardProps) {
   const dispatch = useAppDispatch();
   const activeInstanceId = useAppSelector(selectActiveInstanceId);
-  const sourceStatus = useAppSelector(selectSourceStatus);
+  const sourceEntry = toSourceListEntry(source);
 
-  const active = source.id === activeInstanceId;
-  const { displayName } = source.snapshot.source;
-  const status = getSourceCardStatus(source, active, sourceStatus);
+  const active = sourceEntry.id === activeInstanceId;
+  const { displayName } = sourceEntry;
+  const status = getSourceCardStatus(sourceEntry);
   const variant = getSourceCardVariant(status, active);
 
   return (
-    <SourceCardContext.Provider value={source}>
+    <SourceCardContext.Provider value={sourceEntry}>
       <SourceCardContextMenu>
         <Card
           aria-checked={active}
           aria-label={displayName}
           className={cn(sourceCardVariants({ variant }), className)}
           data-active={active ? "true" : "false"}
-          data-source-id={source.id}
+          data-source-id={sourceEntry.id}
           hoverable
-          onClick={() => void dispatch(navigateToEditingInstance(source.id))}
+          onClick={() => void dispatch(navigateToEditingInstance(sourceEntry.id))}
           // TODO: on button confirm (selected by Tab and Enter should also act as onClick)
           role="checkbox"
           tabIndex={0}
@@ -73,6 +73,25 @@ const SourceCard = memo(function SourceCard({ children, className, source }: Sou
     </SourceCardContext.Provider>
   );
 });
+
+function toSourceListEntry(source: SourceCardSource): EditingInstanceListEntry {
+  if ("sourcePath" in source) return source;
+  const sourceRef = source.snapshot.source;
+  return {
+    displayName: sourceRef.displayName,
+    ...(source.media?.durationMicros === undefined
+      ? {}
+      : { durationMicros: source.media.durationMicros }),
+    ...(sourceRef.fileSizeBytes === undefined ? {} : { fileSizeBytes: sourceRef.fileSizeBytes }),
+    id: source.id,
+    ...(source.importedAtMicros === undefined ? {} : { importedAtMicros: source.importedAtMicros }),
+    sourceAvailability: source.sourceAvailability,
+    sourcePath: sourceRef.sourcePath,
+    ...(sourceRef.updatedAtMicros === undefined
+      ? {}
+      : { updatedAtMicros: sourceRef.updatedAtMicros }),
+  };
+}
 
 export {
   SourceCard,

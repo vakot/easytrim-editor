@@ -1,20 +1,12 @@
 import type { TFunction } from "i18next";
 
-import type { SourceStatus } from "@/app/store/slices/source-slice";
-import type { EditingInstance } from "@/domain/editing-instance";
+import type { EditingInstanceListEntry } from "@/domain/editing-instance";
 
 import type { SourceCardBadgeVariant, SourceCardStatus, SourceCardVariant } from "../types";
 
-function getSourceCardStatus(
-  instance: EditingInstance,
-  active: boolean,
-  sourceStatus: SourceStatus,
-): SourceCardStatus {
+function getSourceCardStatus(instance: EditingInstanceListEntry): SourceCardStatus {
   if (instance.sourceAvailability === "deleted") return "deleted";
   if (instance.sourceAvailability === "missing") return "missing";
-
-  if (active && sourceStatus === "failed") return "failed";
-  if (active && sourceStatus === "loading-source") return "loading";
   return "ready";
 }
 
@@ -23,11 +15,9 @@ function getSourceCardVariant(status: SourceCardStatus, active: boolean): Source
 
   switch (status) {
     case "deleted":
-    case "failed":
       return "destructive";
     case "ready":
       return "default";
-    case "loading":
     case "missing":
       return "warning";
   }
@@ -36,11 +26,9 @@ function getSourceCardVariant(status: SourceCardStatus, active: boolean): Source
 function getSourceCardBadgeVariant(status: SourceCardStatus): SourceCardBadgeVariant {
   switch (status) {
     case "deleted":
-    case "failed":
       return "destructive";
     case "ready":
       return "default";
-    case "loading":
     case "missing":
       return "warning";
   }
@@ -50,14 +38,10 @@ function getSourceCardStatusLabel(t: TFunction, status: SourceCardStatus): strin
   switch (status) {
     case "deleted":
       return t("source.status.deleted");
-    case "failed":
-      return t("source.status.failed");
-    case "loading":
-      return t("source.status.loading");
     case "missing":
       return t("source.status.missing");
     case "ready":
-      return t("source.status.ready");
+      return "";
   }
 }
 

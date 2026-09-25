@@ -1,11 +1,11 @@
 import Fuse, { type IFuseOptions } from "fuse.js";
 
-import type { EditingInstance } from "@/domain/editing-instance";
+import type { EditingInstanceSearchEntry } from "@/domain/editing-instance";
 import type { SearchMatchRange } from "@/domain/search.types";
 
 interface SourceSearchResult {
   displayNameRanges: ReadonlyArray<SearchMatchRange>;
-  source: EditingInstance;
+  source: EditingInstanceSearchEntry;
   sourcePathRanges: ReadonlyArray<SearchMatchRange>;
 }
 
@@ -13,15 +13,15 @@ const sourceSearchOptions = {
   includeMatches: true,
   ignoreLocation: true,
   keys: [
-    { name: "snapshot.source.displayName", weight: 2 },
-    { name: "snapshot.source.sourcePath", weight: 1 },
+    { name: "displayName", weight: 2 },
+    { name: "sourcePath", weight: 1 },
   ],
   threshold: 0.3,
   useTokenSearch: true,
   tokenMatch: "all",
-} satisfies IFuseOptions<EditingInstance>;
+} satisfies IFuseOptions<EditingInstanceSearchEntry>;
 
-function createSourceSearcher(sources: EditingInstance[]) {
+function createSourceSearcher(sources: EditingInstanceSearchEntry[]) {
   const fuse = new Fuse(sources, sourceSearchOptions);
 
   return (query: string): SourceSearchResult[] => {
@@ -31,16 +31,13 @@ function createSourceSearcher(sources: EditingInstance[]) {
     }
 
     return fuse.search(normalizedQuery).map((result) => {
-      const nameMatch = result.matches?.find(({ key }) => key === "snapshot.source.displayName");
-      const pathMatch = result.matches?.find(({ key }) => key === "snapshot.source.sourcePath");
+      const nameMatch = result.matches?.find(({ key }) => key === "displayName");
+      const pathMatch = result.matches?.find(({ key }) => key === "sourcePath");
 
       return {
         displayNameRanges: nameMatch?.indices ?? [],
         source: result.item,
-        sourcePathRanges: adjustPathRanges(
-          result.item.snapshot.source.sourcePath,
-          pathMatch?.indices,
-        ),
+        sourcePathRanges: adjustPathRanges(result.item.sourcePath, pathMatch?.indices),
       };
     });
   };

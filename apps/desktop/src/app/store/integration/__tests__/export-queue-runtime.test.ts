@@ -41,11 +41,12 @@ import { firstSource, secondSource } from "@/test/source.fixtures";
 import {
   editingInstanceExportAttemptQueued,
   editingInstancesAdded,
+  selectExportQueueById,
 } from "../../slices/editing-instances-slice";
 import { selectSourceQueueStarted } from "../../slices/export-slice";
 import { preferenceChanged } from "../../slices/preferences-slice";
 import { createAppStore } from "../../store";
-import { cancelSourceExportQueue, startSourceExportQueue } from "../../thunks/export-thunks";
+import { startSourceExportQueue } from "../../thunks/export-thunks";
 import { createDefaultEditorSnapshot } from "../editor-snapshot";
 import {
   cancelAndRequeueExport,
@@ -81,6 +82,15 @@ function createInstance(id: string, sourcePath: string = firstSource.sourcePath)
     snapshot: createDefaultEditorSnapshot({ displayName: `${id}.mp4`, sourcePath }, false),
     sourceAvailability: "available",
   };
+}
+
+async function stopSourceQueue(store: ReturnType<typeof createAppStore>, instanceId: string) {
+  setExportQueueExecutionEnabled(false, store.dispatch, store.getState, instanceId);
+  const active = selectExportQueueById(store.getState(), instanceId).find(
+    ({ attempt }) => attempt.state.status === "rendering",
+  );
+
+  if (active) await cancelAndRequeueExport(instanceId, active.attempt.id, store.getState);
 }
 
 function progress(operationId: string, frame: number): ExportProgress {
@@ -175,7 +185,7 @@ describe("export queue runtime", () => {
     );
     store.dispatch(startSourceExportQueue("a"));
     store.dispatch(startSourceExportQueue("b"));
-    await store.dispatch(cancelSourceExportQueue("b"));
+    await stopSourceQueue(store, "b");
     expect(mocks.cancelOperation).not.toHaveBeenCalled();
     expect(selectSourceQueueStarted(store.getState(), "a")).toBe(true);
     expect(selectSourceQueueStarted(store.getState(), "b")).toBe(false);
@@ -211,7 +221,7 @@ describe("export queue runtime", () => {
       .mockResolvedValue({ displayName: "out", displayPath: "out", operationId: "op" });
     store.dispatch(startSourceExportQueue("a"));
     store.dispatch(startSourceExportQueue("b"));
-    const stopping = store.dispatch(cancelSourceExportQueue("a"));
+    const stopping = stopSourceQueue(store, "a");
     finish();
     await stopping;
     await vi.waitFor(() => expect(mocks.renderFast).toHaveBeenCalledTimes(2));

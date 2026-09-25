@@ -1,11 +1,7 @@
-import { CheckCircle2, CircleAlert, LoaderCircle } from "lucide-react";
+import { CircleAlert } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
-
-import { useAppSelector } from "@/app/store/redux-hooks";
-import { selectActiveInstanceId } from "@/app/store/slices/editing-instances-slice";
-import { selectSourceStatus } from "@/app/store/slices/source-slice";
 
 import { useSourceCardData } from "../hooks/useSourceCardData";
 import {
@@ -15,12 +11,10 @@ import {
 } from "../lib/source-card.utils";
 import type { SourceCardBadgeVariant, SourceCardStatus } from "../types";
 
-const statusIcons: Record<SourceCardStatus, typeof CheckCircle2> = {
+const statusIcons: Record<SourceCardStatus, typeof CircleAlert> = {
   deleted: CircleAlert,
-  failed: CircleAlert,
-  loading: LoaderCircle,
   missing: CircleAlert,
-  ready: CheckCircle2,
+  ready: CircleAlert,
 };
 
 const statusBadgeClassNames: Record<SourceCardBadgeVariant, string> = {
@@ -32,11 +26,7 @@ const statusBadgeClassNames: Record<SourceCardBadgeVariant, string> = {
 function SourceCardStatusBadge({ className }: { className?: string }) {
   const source = useSourceCardData();
   const { t } = useTranslation();
-  const activeInstanceId = useAppSelector(selectActiveInstanceId);
-  const sourceStatus = useAppSelector(selectSourceStatus);
-
-  const active = source.id === activeInstanceId;
-  const status = getSourceCardStatus(source, active, sourceStatus);
+  const status = getSourceCardStatus(source);
   const statusLabel = getSourceCardStatusLabel(t, status);
   const variant = getSourceCardBadgeVariant(status);
   const StatusIcon = statusIcons[status];
@@ -49,10 +39,7 @@ function SourceCardStatusBadge({ className }: { className?: string }) {
       size="xs"
       variant="outline"
     >
-      <StatusIcon
-        aria-hidden="true"
-        className={status === "loading" ? "animate-spin" : undefined}
-      />
+      <StatusIcon aria-hidden="true" className={undefined} />
       {statusLabel}
     </Badge>
   );

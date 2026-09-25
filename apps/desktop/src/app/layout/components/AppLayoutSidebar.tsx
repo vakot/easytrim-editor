@@ -12,6 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 
 import { ActivityFeed } from "@/features/activity";
+import { RenderQueue } from "@/features/export";
 import {
   SourceList,
   SourceListCloseAll,
@@ -45,7 +46,7 @@ function AppLayoutSidebar() {
           className="flex min-h-0 flex-col overflow-hidden! py-1"
           collapsedSize="36px"
           collapsible
-          defaultSize="50"
+          defaultSize="45"
           id="editor-source-imported-sources"
           minSize="300px"
         >
@@ -88,7 +89,43 @@ function AppLayoutSidebar() {
           className="flex min-h-0 flex-col overflow-hidden! py-1"
           collapsedSize="36px"
           collapsible
-          defaultSize="50"
+          defaultSize="25"
+          id="editor-source-render-queue"
+          minSize="180px"
+        >
+          <ResizablePanelControl panelId="editor-source-render-queue">
+            {({ isExpanded }) => (
+              <div className="px-3">
+                <Button
+                  className="w-full justify-baseline px-2 text-secondary-foreground"
+                  size="sm"
+                  variant="ghost"
+                >
+                  <ChevronRight
+                    className={cn("shrink-0 transition-transform", isExpanded && "rotate-90")}
+                  />
+                  {t("queue.labels.renderQueue")}
+                </Button>
+              </div>
+            )}
+          </ResizablePanelControl>
+
+          <div className="mt-2 flex min-h-0 flex-1 flex-col px-3">
+            <ScrollArea className="-mx-2.5 flex-1 px-2.5 before:top-2">
+              <RenderQueue />
+            </ScrollArea>
+          </div>
+        </ResizablePanel>
+
+        <ResizableHandle className="bg-transparent px-3">
+          <Separator />
+        </ResizableHandle>
+
+        <ResizablePanel
+          className="flex min-h-0 flex-col overflow-hidden! py-1"
+          collapsedSize="36px"
+          collapsible
+          defaultSize="30"
           id="editor-source-activity-feed"
           minSize="200px"
         >

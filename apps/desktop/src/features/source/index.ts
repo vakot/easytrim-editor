@@ -8,5 +8,5 @@ export {
 } from "./components/SourceList";
 export { RestoreSource } from "./components/SourceMenuActions";
 export { useSourceDelete } from "./contexts/source-delete-context";
-export { formatBytes, formatSourcePath } from "./lib/media-formatters.utils";
+export { formatBytes, formatDuration, formatSourcePath } from "./lib/media-formatters.utils";
 export { SourceDeleteProvider } from "./SourceDeleteProvider";
