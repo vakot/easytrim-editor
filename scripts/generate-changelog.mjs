@@ -130,9 +130,9 @@ function renderGeneratedModule(releases, markdown) {
   return `${header}\ntype ChangelogCategory = "Added" | "Changed" | "Fixed" | "Deprecated" | "Removed" | "Security";\n\ninterface GeneratedChangelogRelease {\n  sections: readonly { category: ChangelogCategory; entries: readonly string[] }[];\n  version: string;\n}\n\nexport const CHANGELOG: readonly GeneratedChangelogRelease[] = ${JSON.stringify(releases, null, 2)};\n`;
 }
 
-async function generateChangelog({ onlyIfNeeded = false } = {}) {
+async function generateChangelog({ force = false } = {}) {
   const markdown = await readFile(changelogPath, "utf8");
-  if (onlyIfNeeded) {
+  if (!force) {
     const generatedModule = await readFile(outputPath, "utf8").catch((error) => {
       if (error.code === "ENOENT") return null;
       throw error;
@@ -150,7 +150,7 @@ async function generateChangelog({ onlyIfNeeded = false } = {}) {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   try {
     const releases = await generateChangelog({
-      onlyIfNeeded: process.argv.includes("--if-needed"),
+      force: process.argv.includes("--force"),
     });
 
     if (releases) console.log(`Generated changelog data for ${releases.length} released versions.`);

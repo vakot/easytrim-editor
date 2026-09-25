@@ -59,6 +59,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Prepare changelog data
+        run: pnpm changelog:prepare
+
       - name: Build and publish prerelease
         uses: tauri-apps/tauri-action@v0.6.2
         with:
