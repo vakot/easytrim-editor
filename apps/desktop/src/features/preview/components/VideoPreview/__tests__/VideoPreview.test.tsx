@@ -348,6 +348,36 @@ describe("VideoPreview", () => {
     frameBounds.mockRestore();
   });
 
+  it("converts crop drag deltas from the flipped visual space to crop coordinates", () => {
+    const store = createAppStore();
+    store.dispatch(sourceSelected({ loadToken: 1, source: firstSource }));
+    store.dispatch(sourceReady({ loadToken: 1, media: media(firstSource.sourcePath) }));
+    store.dispatch(
+      cropChanged({
+        crop: { x: 0.3, y: 0.3, width: 0.5, height: 0.5 },
+        resolution: { width: 960, height: 540 },
+      }),
+    );
+    store.dispatch(flipToggled("horizontal"));
+    store.dispatch(flipToggled("vertical"));
+    const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"), store);
+    const viewport = container.querySelector('[aria-label="Video crop preview"]')!;
+    openCropTool(viewport);
+    const selection = container.querySelector("[data-crop-selection]")!;
+    const frameBounds = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockReturnValue(new DOMRect(0, 0, 400, 200));
+
+    fireEvent.pointerDown(selection, { pointerId: 1, clientX: 100, clientY: 50 });
+    fireEvent.pointerMove(viewport, { pointerId: 1, clientX: 140, clientY: 70 });
+    fireEvent.pointerUp(viewport, { pointerId: 1, clientX: 140, clientY: 70 });
+
+    expect(store.getState().crop.value?.x).toBeCloseTo(0.2);
+    expect(store.getState().crop.value?.y).toBeCloseTo(0.2);
+    expect(store.getState().crop.value).toMatchObject({ width: 0.5, height: 0.5 });
+    frameBounds.mockRestore();
+  });
+
   it("finishes a frame transition and rebases crop dragging to its destination bounds", () => {
     const store = createAppStore();
     store.dispatch(
@@ -591,12 +621,27 @@ describe("VideoPreview", () => {
       });
       expect(container.querySelector("[data-flip-layer]")).toHaveAttribute(
         "data-flip-horizontal",
-        "false",
+        String(horizontal),
       );
       expect(container.querySelector("[data-flip-layer]")).toHaveAttribute(
         "data-flip-vertical",
-        "false",
+        String(vertical),
       );
+      expect(container.querySelector("[data-flip-layer]")).toContainElement(
+        container.querySelector("[data-crop-selection-coordinate-space]"),
+      );
+
+      const visibleTopLeftHandle = horizontal
+        ? vertical
+          ? "bottom right"
+          : "top right"
+        : vertical
+          ? "bottom left"
+          : "top left";
+
+      expect(
+        screen.getByRole("button", { name: `Resize crop from ${visibleTopLeftHandle}` }),
+      ).toBeInTheDocument();
 
       fireEvent.click(viewport);
       await waitForElementToBeRemoved(() => container.querySelector("[data-crop-selection]"));

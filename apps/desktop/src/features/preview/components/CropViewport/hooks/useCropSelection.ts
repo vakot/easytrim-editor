@@ -25,6 +25,8 @@ const SNAP_REACH_PX = 12;
 
 interface DragState {
   crop: CropRect;
+  flipHorizontal: boolean;
+  flipVertical: boolean;
   handle: CropHandle;
   sourceHeight: number;
   sourceWidth: number;
@@ -41,6 +43,8 @@ function useCropSelection(
   previewRef: RefObject<HTMLDivElement | null>,
   sourceFrameRef: RefObject<HTMLDivElement | null>,
   rotationDegrees: RotationDegrees,
+  flipHorizontal: boolean,
+  flipVertical: boolean,
 ) {
   const dispatch = useAppDispatch();
   const sourceMedia = useAppSelector(selectSourceMedia);
@@ -93,6 +97,8 @@ function useCropSelection(
     event.currentTarget.setPointerCapture(event.pointerId);
     setDrag({
       crop,
+      flipHorizontal,
+      flipVertical,
       sourceHeight,
       sourceWidth,
       handle,
@@ -103,8 +109,12 @@ function useCropSelection(
 
   function moveDrag(event: ReactPointerEvent<HTMLDivElement>) {
     if (!drag) return;
-    const deltaX = (event.clientX - drag.startX) / drag.sourceWidth;
-    const deltaY = (event.clientY - drag.startY) / drag.sourceHeight;
+    const deltaX =
+      ((event.clientX - drag.startX) / drag.sourceWidth) * (drag.flipHorizontal ? -1 : 1);
+
+    const deltaY =
+      ((event.clientY - drag.startY) / drag.sourceHeight) * (drag.flipVertical ? -1 : 1);
+
     const movedCrop =
       drag.handle === "move"
         ? moveCrop(drag.crop, deltaX, deltaY)

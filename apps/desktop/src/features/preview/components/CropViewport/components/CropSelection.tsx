@@ -9,6 +9,8 @@ import type { CropHandle } from "../../../lib/crop-geometry.utils";
 interface CropSelectionProps {
   crop: CropRect;
   fadeTransition: Transition;
+  flipHorizontal: boolean;
+  flipVertical: boolean;
   isDragging: boolean;
   onPointerDown: (event: PointerEvent<HTMLElement>, handle: CropHandle) => void;
   selectionRef: RefObject<HTMLDivElement | null>;
@@ -17,41 +19,43 @@ interface CropSelectionProps {
 const HANDLES: Array<{ className: string; handle: Exclude<CropHandle, "move"> }> = [
   {
     handle: "top-left",
-    className: "-left-2 -top-2 cursor-nwse-resize",
+    className: "-left-2 -top-2",
   },
   {
     handle: "top",
-    className: "-top-2 left-1/2 -translate-x-1/2 cursor-ns-resize",
+    className: "-top-2 left-1/2 -translate-x-1/2",
   },
   {
     handle: "top-right",
-    className: "-right-2 -top-2 cursor-nesw-resize",
+    className: "-right-2 -top-2",
   },
   {
     handle: "right",
-    className: "-right-2 top-1/2 -translate-y-1/2 cursor-ew-resize",
+    className: "-right-2 top-1/2 -translate-y-1/2",
   },
   {
     handle: "bottom-right",
-    className: "-bottom-2 -right-2 cursor-nwse-resize",
+    className: "-bottom-2 -right-2",
   },
   {
     handle: "bottom",
-    className: "-bottom-2 left-1/2 -translate-x-1/2 cursor-ns-resize",
+    className: "-bottom-2 left-1/2 -translate-x-1/2",
   },
   {
     handle: "bottom-left",
-    className: "-bottom-2 -left-2 cursor-nesw-resize",
+    className: "-bottom-2 -left-2",
   },
   {
     handle: "left",
-    className: "-left-2 top-1/2 -translate-y-1/2 cursor-ew-resize",
+    className: "-left-2 top-1/2 -translate-y-1/2",
   },
 ];
 
 function CropSelection({
   crop,
   fadeTransition,
+  flipHorizontal,
+  flipVertical,
   isDragging,
   onPointerDown,
   selectionRef,
@@ -115,17 +119,49 @@ function CropSelection({
           />
         </svg>
       ) : null}
-      {HANDLES.map(({ className, handle }) => (
-        <button
-          aria-label={handleLabels[handle]}
-          className={`absolute z-10 size-4 rounded-full border-2 border-background bg-primary shadow-sm ${className}`}
-          key={handle}
-          onPointerDown={(event) => onPointerDown(event, handle)}
-          type="button"
-        />
-      ))}
+      {HANDLES.map(({ className, handle }) => {
+        const visualHandle = handleAfterFlip(handle, flipHorizontal, flipVertical);
+        return (
+          <button
+            aria-label={handleLabels[visualHandle]}
+            className={`absolute z-10 size-4 rounded-full border-2 border-background bg-primary shadow-sm ${className} ${resizeCursor(visualHandle)}`}
+            key={handle}
+            onPointerDown={(event) => onPointerDown(event, handle)}
+            type="button"
+          />
+        );
+      })}
     </motion.div>
   );
+}
+
+function handleAfterFlip(
+  handle: Exclude<CropHandle, "move">,
+  flipHorizontal: boolean,
+  flipVertical: boolean,
+): Exclude<CropHandle, "move"> {
+  let visualHandle = handle;
+  if (flipHorizontal) {
+    visualHandle = visualHandle
+      .replace("left", "middle")
+      .replace("right", "left")
+      .replace("middle", "right") as typeof handle;
+  }
+  if (flipVertical) {
+    visualHandle = visualHandle
+      .replace("top", "middle")
+      .replace("bottom", "top")
+      .replace("middle", "bottom") as typeof handle;
+  }
+  return visualHandle;
+}
+
+function resizeCursor(handle: Exclude<CropHandle, "move">): string {
+  if (handle === "top" || handle === "bottom") return "cursor-ns-resize";
+  if (handle === "left" || handle === "right") return "cursor-ew-resize";
+  return handle === "top-left" || handle === "bottom-right"
+    ? "cursor-nwse-resize"
+    : "cursor-nesw-resize";
 }
 
 export { CropSelection };
