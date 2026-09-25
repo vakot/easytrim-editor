@@ -90,6 +90,32 @@ pub type PreviewArtifact = TemporaryMediaArtifact;
 pub type AudioPreviewArtifact = TemporaryMediaArtifact;
 pub type WaveformArtifact = TemporaryMediaArtifact;
 
+#[derive(Debug)]
+pub struct ImportedThumbnailArtifact {
+    path: PathBuf,
+    _temporary_artifact: Option<PreviewArtifact>,
+}
+
+impl ImportedThumbnailArtifact {
+    pub fn from_cache(path: PathBuf) -> Self {
+        Self {
+            path,
+            _temporary_artifact: None,
+        }
+    }
+
+    pub fn from_temporary(artifact: PreviewArtifact) -> Self {
+        Self {
+            path: artifact.path().to_owned(),
+            _temporary_artifact: Some(artifact),
+        }
+    }
+
+    pub fn path(&self) -> &Path {
+        &self.path
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct WaveformSource {
     pub source: ActiveSource,
@@ -139,7 +165,7 @@ pub struct AppState {
     outputs: Mutex<HashMap<String, PathBuf>>,
     operations: Mutex<HashMap<String, Arc<AtomicBool>>>,
     export_sources: Mutex<HashMap<PathBuf, RetainedExportSource>>,
-    imported_thumbnail_artifacts: Mutex<HashMap<u64, PreviewArtifact>>,
+    imported_thumbnail_artifacts: Mutex<HashMap<u64, ImportedThumbnailArtifact>>,
 }
 
 #[derive(Clone, Debug)]
@@ -517,7 +543,10 @@ impl AppState {
         Err(AppError::source_replaced())
     }
 
-    pub fn register_imported_thumbnail(&self, artifact: PreviewArtifact) -> Result<u64, AppError> {
+    pub fn register_imported_thumbnail(
+        &self,
+        artifact: ImportedThumbnailArtifact,
+    ) -> Result<u64, AppError> {
         // Thumbnail tokens use their own namespace and are only resolved for the
         // thumbnail variant, so they can remain within JavaScript's safe integer range.
         let token = self.next_imported_thumbnail.fetch_add(1, Ordering::Relaxed) + 1;
@@ -535,6 +564,14 @@ impl AppState {
             .get(&media_token)
             .map(|artifact| artifact.path().to_owned())
             .ok_or_else(AppError::source_replaced)
+    }
+
+    pub fn release_imported_thumbnail(&self, media_token: u64) -> Result<(), AppError> {
+        self.imported_thumbnail_artifacts
+            .lock()
+            .map_err(|_| AppError::internal("The imported thumbnail registry is unavailable."))?
+            .remove(&media_token);
+        Ok(())
     }
 
     pub fn preview_is_ready(&self, load_token: u64) -> Result<bool, AppError> {
@@ -670,7 +707,7 @@ mod tests {
         let artifact = PreviewArtifact::new(directory, thumbnail_path.clone())
             .expect("thumbnail artifact creates");
         let thumbnail_token = state
-            .register_imported_thumbnail(artifact)
+            .register_imported_thumbnail(super::ImportedThumbnailArtifact::from_temporary(artifact))
             .expect("thumbnail registers");
 
         state
@@ -684,6 +721,55 @@ mod tests {
             thumbnail_path
         );
         assert!(thumbnail_token > 0);
+    }
+
+    #[test]
+    fn releasing_imported_thumbnail_removes_its_token_and_temporary_artifact() {
+        let state = AppState::default();
+        let directory = std::env::temp_dir().join(format!(
+            "easytrim-state-thumbnail-release-test-{}",
+            std::process::id()
+        ));
+        std::fs::create_dir_all(&directory).expect("test artifact directory creates");
+        let thumbnail_path = directory.join("thumbnail.jpg");
+        std::fs::write(&thumbnail_path, b"thumbnail").expect("thumbnail file creates");
+        let artifact = PreviewArtifact::new(directory, thumbnail_path.clone())
+            .expect("thumbnail artifact creates");
+        let thumbnail_token = state
+            .register_imported_thumbnail(super::ImportedThumbnailArtifact::from_temporary(artifact))
+            .expect("thumbnail registers");
+
+        state
+            .release_imported_thumbnail(thumbnail_token)
+            .expect("thumbnail releases");
+
+        assert!(state.resolve_thumbnail_path(thumbnail_token).is_err());
+        assert!(!thumbnail_path.exists());
+    }
+
+    #[test]
+    fn releasing_disk_cached_thumbnail_keeps_the_cache_file() {
+        let state = AppState::default();
+        let directory = std::env::temp_dir().join(format!(
+            "easytrim-state-thumbnail-cache-release-test-{}",
+            std::process::id()
+        ));
+        std::fs::create_dir_all(&directory).expect("test cache directory creates");
+        let thumbnail_path = directory.join("thumbnail.jpg");
+        std::fs::write(&thumbnail_path, b"cached thumbnail").expect("cached file creates");
+        let thumbnail_token = state
+            .register_imported_thumbnail(super::ImportedThumbnailArtifact::from_cache(
+                thumbnail_path.clone(),
+            ))
+            .expect("thumbnail registers");
+
+        state
+            .release_imported_thumbnail(thumbnail_token)
+            .expect("thumbnail releases");
+
+        assert!(!state.resolve_thumbnail_path(thumbnail_token).is_ok());
+        assert!(thumbnail_path.exists());
+        let _ = std::fs::remove_dir_all(directory);
     }
 
     #[test]

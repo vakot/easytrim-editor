@@ -2,10 +2,6 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 import { editingInstanceActivated } from "@/app/store/actions/editing-instance-actions";
 import { sourceCleared, sourceFailed, sourceSelected } from "@/app/store/actions/source-actions";
-import {
-  editingInstanceClosed,
-  editingInstancesClosed,
-} from "@/app/store/slices/editing-instances-slice";
 import type { EditingInstanceId } from "@/domain/editing-instance";
 import type {
   AppError,
@@ -72,6 +68,9 @@ const previewSlice = createSlice({
         status: "failed",
       };
     },
+    importedThumbnailRemoved: (state, action: PayloadAction<{ instanceId: EditingInstanceId }>) => {
+      delete state.importedThumbnails[action.payload.instanceId];
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -89,12 +88,6 @@ const previewSlice = createSlice({
           action.payload.loadToken === undefined
             ? { status: "idle" }
             : { status: "failed", error: action.payload.error };
-      })
-      .addCase(editingInstanceClosed, (state, action) => {
-        delete state.importedThumbnails[action.payload];
-      })
-      .addCase(editingInstancesClosed, (state, action) => {
-        for (const instanceId of action.payload) delete state.importedThumbnails[instanceId];
       });
   },
 });
@@ -103,6 +96,7 @@ const {
   importedThumbnailFailed,
   importedThumbnailLoading,
   importedThumbnailReady,
+  importedThumbnailRemoved,
   previewFailed,
   previewLoading,
   previewReady,
@@ -122,6 +116,7 @@ export {
   importedThumbnailFailed,
   importedThumbnailLoading,
   importedThumbnailReady,
+  importedThumbnailRemoved,
   previewFailed,
   previewLoading,
   previewReady,

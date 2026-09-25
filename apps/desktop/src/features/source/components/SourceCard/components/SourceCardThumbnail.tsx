@@ -44,6 +44,9 @@ function SourceCardThumbnail({
             alt={`${displayName} thumbnail`}
             aria-label={`${displayName} thumbnail`}
             className="size-full object-cover transition-transform"
+            decoding="async"
+            fetchPriority="low"
+            loading="lazy"
             src={thumbnailUrl}
           />
           <span

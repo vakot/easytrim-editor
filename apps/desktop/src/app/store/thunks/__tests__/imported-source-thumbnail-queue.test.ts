@@ -1,10 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const prepareThumbnail = vi.hoisted(() => vi.fn());
+const releaseThumbnail = vi.hoisted(() => vi.fn());
+const activateSource = vi.hoisted(() => vi.fn());
+const inspectActiveSource = vi.hoisted(() => vi.fn());
+const prepareActivePreview = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/tauri/media", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/tauri/media")>()),
+  activateSourcePath: activateSource,
+  inspectMedia: inspectActiveSource,
+  prepareSourcePreview: prepareActivePreview,
   prepareImportedSourceThumbnail: prepareThumbnail,
+  releaseImportedSourceThumbnail: releaseThumbnail,
 }));
 
 import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";
@@ -17,13 +25,18 @@ import {
   selectImportedSourceThumbnails,
 } from "@/app/store/slices/preview-slice";
 import { createAppStore } from "@/app/store/store";
-import { prepareImportedSourceThumbnailsRequested } from "@/app/store/thunks/source-media-thunks";
+import {
+  activateEditingInstanceRequested,
+  IMPORTED_THUMBNAIL_POOL_LIMIT,
+  prepareImportedSourceThumbnailsRequested,
+  releaseImportedSourceThumbnailDemand,
+} from "@/app/store/thunks/source-media-thunks";
 import type { EditingInstance } from "@/domain/editing-instance";
 import { firstSource, media } from "@/test/source.fixtures";
 
 const thumbnail = { mediaToken: 1, url: "media://thumbnail" };
 
-function createInstances(count: number, includeMetadata = false): EditingInstance[] {
+function createInstances(count: number): EditingInstance[] {
   return Array.from({ length: count }, (_, index): EditingInstance => {
     const source = {
       ...firstSource,
@@ -34,7 +47,6 @@ function createInstances(count: number, includeMetadata = false): EditingInstanc
     return {
       exportAttempts: [],
       id: `instance-${index}`,
-      ...(includeMetadata ? { media: media(source.sourcePath) } : {}),
       origin: "source-import",
       snapshot: createDefaultEditorSnapshot(source, false),
       sourceAvailability: "available",
@@ -55,6 +67,17 @@ describe("imported source thumbnail queue", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     prepareThumbnail.mockResolvedValue(thumbnail);
+    releaseThumbnail.mockResolvedValue(undefined);
+    activateSource.mockImplementation(async (sourcePath: string) => ({
+      displayName: sourcePath.split("/").at(-1) ?? sourcePath,
+      sourcePath,
+    }));
+    inspectActiveSource.mockImplementation(async (sourcePath: string) => media(sourcePath));
+    prepareActivePreview.mockResolvedValue({
+      kind: "source",
+      mediaToken: 3,
+      url: "media://source",
+    });
   });
 
   it("keeps rapid enqueue batches and duplicate requests within two global workers", async () => {
@@ -93,6 +116,9 @@ describe("imported source thumbnail queue", () => {
       ),
     );
     expect(maximumActive).toBe(2);
+    for (const instance of instances) {
+      store.dispatch(releaseImportedSourceThumbnailDemand(instance.id));
+    }
   });
 
   it("discards a queued request when its source has been closed", async () => {
@@ -114,7 +140,7 @@ describe("imported source thumbnail queue", () => {
   });
 
   it("does no work when an app thumbnail is already available", () => {
-    const [instance] = createInstances(1, true);
+    const [instance] = createInstances(1);
     if (!instance) throw new Error("Expected source fixture");
     const store = createAppStore();
     store.dispatch(editingInstancesAdded([instance]));
@@ -123,22 +149,174 @@ describe("imported source thumbnail queue", () => {
     store.dispatch(prepareImportedSourceThumbnailsRequested([instance]));
 
     expect(prepareThumbnail).not.toHaveBeenCalled();
+    store.dispatch(releaseImportedSourceThumbnailDemand(instance.id));
   });
 
-  it("passes available stream metadata to native thumbnail generation", async () => {
-    const [instance] = createInstances(1, true);
+  it("keeps a ready thumbnail active when its virtual card remounts", async () => {
+    const instances = createInstances(IMPORTED_THUMBNAIL_POOL_LIMIT + 1);
+    const store = createAppStore();
+    store.dispatch(editingInstancesAdded(instances));
+    instances.slice(0, -1).forEach((instance, index) => {
+      store.dispatch(
+        importedThumbnailReady({
+          instanceId: instance.id,
+          thumbnail: { mediaToken: index + 1, url: "media://thumbnail" },
+        }),
+      );
+    });
+    let nextToken = 100;
+    prepareThumbnail.mockImplementation(async () => ({
+      mediaToken: ++nextToken,
+      url: "media://thumbnail",
+    }));
+
+    store.dispatch(prepareImportedSourceThumbnailsRequested([instances[0]!]));
+    store.dispatch(prepareImportedSourceThumbnailsRequested([instances.at(-1)!]));
+
+    await vi.waitFor(() =>
+      expect(selectImportedSourceThumbnails(store.getState())[instances.at(-1)!.id]?.status).toBe(
+        "ready",
+      ),
+    );
+    expect(selectImportedSourceThumbnails(store.getState())[instances[0]!.id]?.status).toBe(
+      "ready",
+    );
+    expect(releaseThumbnail).not.toHaveBeenCalledWith(1);
+
+    for (const instance of instances) {
+      store.dispatch(releaseImportedSourceThumbnailDemand(instance.id));
+    }
+  });
+
+  it("keeps the runtime descriptor pool at its configured limit", async () => {
+    const instances = createInstances(IMPORTED_THUMBNAIL_POOL_LIMIT + 8);
+    const store = createAppStore();
+    store.dispatch(editingInstancesAdded(instances));
+    let nextToken = 10;
+    prepareThumbnail.mockImplementation(async () => ({
+      mediaToken: ++nextToken,
+      url: "media://thumbnail",
+    }));
+
+    store.dispatch(prepareImportedSourceThumbnailsRequested(instances));
+
+    await vi.waitFor(() =>
+      expect(Object.values(selectImportedSourceThumbnails(store.getState())).filter(
+        (state) => state.status === "ready",
+      )).toHaveLength(IMPORTED_THUMBNAIL_POOL_LIMIT),
+    );
+    await vi.waitFor(() =>
+      expect(releaseThumbnail).toHaveBeenCalledTimes(instances.length - IMPORTED_THUMBNAIL_POOL_LIMIT),
+    );
+    expect(Object.keys(selectImportedSourceThumbnails(store.getState()))).toHaveLength(
+      IMPORTED_THUMBNAIL_POOL_LIMIT,
+    );
+
+    for (const instance of instances) {
+      store.dispatch(releaseImportedSourceThumbnailDemand(instance.id));
+    }
+  });
+
+  it("evicts the least recently used unneeded thumbnail and prepares it again when revisited", async () => {
+    const instances = createInstances(IMPORTED_THUMBNAIL_POOL_LIMIT + 1);
+    const store = createAppStore();
+    store.dispatch(editingInstancesAdded(instances));
+    let nextToken = 100;
+    prepareThumbnail.mockImplementation(async () => ({
+      mediaToken: ++nextToken,
+      url: "media://thumbnail",
+    }));
+    store.dispatch(prepareImportedSourceThumbnailsRequested(instances.slice(0, -1)));
+    await vi.waitFor(() =>
+      expect(Object.values(selectImportedSourceThumbnails(store.getState())).filter(
+        (state) => state.status === "ready",
+      )).toHaveLength(IMPORTED_THUMBNAIL_POOL_LIMIT),
+    );
+    store.dispatch(releaseImportedSourceThumbnailDemand(instances[0]!.id));
+
+    store.dispatch(prepareImportedSourceThumbnailsRequested([instances.at(-1)!]));
+    await vi.waitFor(() =>
+      expect(selectImportedSourceThumbnails(store.getState())[instances.at(-1)!.id]?.status).toBe(
+        "ready",
+      ),
+    );
+    expect(selectImportedSourceThumbnails(store.getState())[instances[0]!.id]).toBeUndefined();
+    expect(releaseThumbnail).toHaveBeenCalledWith(101);
+
+    store.dispatch(releaseImportedSourceThumbnailDemand(instances[1]!.id));
+    store.dispatch(prepareImportedSourceThumbnailsRequested([instances[0]!]));
+    await vi.waitFor(() =>
+      expect(prepareThumbnail).toHaveBeenCalledTimes(IMPORTED_THUMBNAIL_POOL_LIMIT + 2),
+    );
+    await vi.waitFor(() =>
+      expect(selectImportedSourceThumbnails(store.getState())[instances[0]!.id]?.status).toBe(
+        "ready",
+      ),
+    );
+    expect(prepareThumbnail).toHaveBeenLastCalledWith(instances[0]!.snapshot.source.sourcePath);
+
+    for (const instance of instances) {
+      store.dispatch(releaseImportedSourceThumbnailDemand(instance.id));
+    }
+  });
+
+  it("releases the active native thumbnail token when a source is closed", async () => {
+    const [instance] = createInstances(1);
     if (!instance) throw new Error("Expected source fixture");
     const store = createAppStore();
     store.dispatch(editingInstancesAdded([instance]));
+    store.dispatch(importedThumbnailReady({ instanceId: instance.id, thumbnail }));
 
-    store.dispatch(prepareImportedSourceThumbnailsRequested([instance]));
+    store.dispatch(editingInstanceClosed(instance.id));
 
-    expect(prepareThumbnail).toHaveBeenCalledWith(
-      instance.snapshot.source.sourcePath,
-      instance.media?.video.streamIndex,
-    );
     await vi.waitFor(() =>
-      expect(selectImportedSourceThumbnails(store.getState())[instance.id]?.status).toBe("ready"),
+      expect(selectImportedSourceThumbnails(store.getState())[instance.id]).toBeUndefined(),
     );
+    expect(releaseThumbnail).toHaveBeenCalledWith(thumbnail.mediaToken);
+  });
+
+  it("pauses background work during active-source preparation and resumes queued work", async () => {
+    const instances = createInstances(41);
+    const store = createAppStore();
+    store.dispatch(editingInstancesAdded(instances));
+    const pendingThumbnails: Array<ReturnType<typeof createDeferred<typeof thumbnail>>> = [];
+    prepareThumbnail.mockImplementation(() => {
+      const request = createDeferred<typeof thumbnail>();
+      pendingThumbnails.push(request);
+      return request.promise;
+    });
+    const activePreview = createDeferred<{ kind: "source"; mediaToken: number; url: string }>();
+    prepareActivePreview.mockReturnValue(activePreview.promise);
+
+    store.dispatch(prepareImportedSourceThumbnailsRequested(instances.slice(0, -1)));
+    expect(prepareThumbnail).toHaveBeenCalledTimes(2);
+
+    const activePreparation = store.dispatch(
+      activateEditingInstanceRequested(instances[instances.length - 1]!),
+    );
+
+    await vi.waitFor(() => expect(inspectActiveSource).toHaveBeenCalledTimes(1));
+    await vi.waitFor(() => expect(prepareActivePreview).toHaveBeenCalledTimes(1));
+
+    pendingThumbnails.shift()?.resolve(thumbnail);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(prepareThumbnail).toHaveBeenCalledTimes(2);
+    store.dispatch(releaseImportedSourceThumbnailDemand(instances[0]!.id));
+
+    prepareThumbnail.mockResolvedValue(thumbnail);
+    activePreview.resolve({ kind: "source", mediaToken: 3, url: "media://source" });
+    await activePreparation;
+    await vi.waitFor(() => expect(prepareThumbnail).toHaveBeenCalledTimes(40));
+    pendingThumbnails.shift()?.resolve(thumbnail);
+    await vi.waitFor(() =>
+      expect(
+        Object.values(selectImportedSourceThumbnails(store.getState())).filter(
+          (state) => state.status === "ready",
+        ),
+      ).toHaveLength(40),
+    );
+    for (const instance of instances) {
+      store.dispatch(releaseImportedSourceThumbnailDemand(instance.id));
+    }
   });
 });

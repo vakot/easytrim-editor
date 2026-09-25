@@ -20,6 +20,21 @@ interface ExportSettings {
 
 export type SourceAvailability = "available" | "deleted" | "missing";
 
+interface EditingInstanceListEntry {
+  displayName: string;
+  fileSizeBytes?: number;
+  id: EditingInstanceId;
+  importedAtMicros?: number;
+  sourceAvailability: SourceAvailability;
+  sourcePath: string;
+  updatedAtMicros?: number;
+}
+
+type EditingInstanceSearchEntry = Pick<
+  EditingInstanceListEntry,
+  "displayName" | "id" | "sourcePath"
+>;
+
 export type ExportAttemptState =
   | { queuedAt: number; status: "queued" }
   | { operationId: string | null; startedAt: number; status: "rendering" }
@@ -68,6 +83,8 @@ interface EditingInstancesState {
   activeInstanceId: EditingInstanceId | null;
   entities: Record<EditingInstanceId, EditingInstance>;
   ids: EditingInstanceId[];
+  sourceListEntries: EditingInstanceListEntry[];
+  sourceSearchEntries: EditingInstanceSearchEntry[];
 }
 
 export const EMPTY_EXPORT_METRICS: ExportAttemptMetrics = {
@@ -103,6 +120,8 @@ export { createExportAttempt };
 
 export type {
   EditingInstance,
+  EditingInstanceListEntry,
+  EditingInstanceSearchEntry,
   EditingInstancesState,
   ExportAttempt,
   ExportAttemptMetrics,

@@ -1,6 +1,7 @@
 interface SourceRef {
   createdAtMicros?: number;
   displayName: string;
+  fileSizeBytes?: number;
   sourcePath: string;
   updatedAtMicros?: number;
 }
