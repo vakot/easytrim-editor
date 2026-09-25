@@ -1,5 +1,14 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { type ReactNode, useCallback, useLayoutEffect, useRef, useState } from "react";
+import { AnimatePresence } from "motion/react";
+import {
+  type CSSProperties,
+  type ReactNode,
+  type Ref,
+  useCallback,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 
 import { cn } from "@/lib/class-names.utils";
 
@@ -9,7 +18,18 @@ type VirtualListProps<TItem> = {
   getItemKey: (item: TItem, index: number) => string | number;
   items: readonly TItem[];
   overscan?: number;
+  presenceData?: unknown;
   renderItem: (item: TItem, index: number) => ReactNode;
+  renderVirtualItem?: (
+    props: {
+      index: number;
+      item: TItem;
+      key: string | number;
+      measureRef: Ref<HTMLDivElement>;
+      style: CSSProperties;
+    },
+    content: ReactNode,
+  ) => ReactNode;
 };
 
 function VirtualList<TItem>({
@@ -18,7 +38,9 @@ function VirtualList<TItem>({
   getItemKey,
   items,
   overscan = 6,
+  presenceData,
   renderItem,
+  renderVirtualItem,
 }: VirtualListProps<TItem>) {
   const listRef = useRef<HTMLDivElement>(null);
   const [scrollMargin, setScrollMargin] = useState(0);
@@ -83,25 +105,51 @@ function VirtualList<TItem>({
     });
   }
 
+  const renderedItems = initialItems.map((virtualItem) => {
+    const item = items[virtualItem.index];
+    if (item === undefined) return null;
+
+    const style: CSSProperties = {
+      translate: `0px ${virtualItem.start - scrollMargin}px`,
+    };
+
+    const content = renderItem(item, virtualItem.index);
+    if (renderVirtualItem) {
+      return renderVirtualItem(
+        {
+          index: virtualItem.index,
+          item,
+          key: String(virtualItem.key),
+          measureRef: virtualizer.measureElement,
+          style,
+        },
+        content,
+      );
+    }
+
+    return (
+      <div
+        className="absolute top-0 left-0 box-content w-full pb-2"
+        data-index={virtualItem.index}
+        key={virtualItem.key}
+        ref={virtualizer.measureElement}
+        style={{ transform: `translateY(${virtualItem.start - scrollMargin}px)` }}
+      >
+        {content}
+      </div>
+    );
+  });
+
   return (
     <div className={cn("relative w-full", className)} ref={listRef}>
       <div className="relative w-full" style={{ height: `${totalSize}px` }}>
-        {initialItems.map((virtualItem) => {
-          const item = items[virtualItem.index];
-          if (item === undefined) return null;
-
-          return (
-            <div
-              className="absolute top-0 left-0 box-content w-full pb-2"
-              data-index={virtualItem.index}
-              key={virtualItem.key}
-              ref={virtualizer.measureElement}
-              style={{ transform: `translateY(${virtualItem.start - scrollMargin}px)` }}
-            >
-              {renderItem(item, virtualItem.index)}
-            </div>
-          );
-        })}
+        {renderVirtualItem ? (
+          <AnimatePresence custom={presenceData} initial={false}>
+            {renderedItems}
+          </AnimatePresence>
+        ) : (
+          renderedItems
+        )}
       </div>
     </div>
   );

@@ -8,7 +8,7 @@ use tauri::{
     AppHandle, Manager, Runtime,
     http::{
         HeaderName, HeaderValue, Method, Request, Response, StatusCode,
-        header::{ACCEPT_RANGES, CONTENT_LENGTH, CONTENT_RANGE, CONTENT_TYPE},
+        header::{ACCEPT_RANGES, CACHE_CONTROL, CONTENT_LENGTH, CONTENT_RANGE, CONTENT_TYPE},
     },
 };
 
@@ -27,7 +27,8 @@ pub fn respond<R: Runtime>(app: &AppHandle<R>, request: Request<Vec<u8>>) -> Res
     };
 
     let state = app.state::<AppState>();
-    let path = if query_parameter(request.uri().query(), "variant") == Some("thumbnail") {
+    let is_thumbnail = query_parameter(request.uri().query(), "variant") == Some("thumbnail");
+    let path = if is_thumbnail {
         state.resolve_thumbnail_path(media_token)
     } else if query_parameter(request.uri().query(), "variant") == Some("waveform") {
         let Some(stream_index) = query_parameter(request.uri().query(), "stream")
@@ -46,15 +47,24 @@ pub fn respond<R: Runtime>(app: &AppHandle<R>, request: Request<Vec<u8>>) -> Res
     } else {
         state.resolve_preview_path(media_token)
     };
-    let Ok(path) = path else {
-        return empty_response(StatusCode::NOT_FOUND);
+    let response = match path {
+        Ok(path) => read_media_response(
+            &path,
+            request.method() == Method::HEAD,
+            request.headers().get("range"),
+        ),
+        Err(_) => empty_response(StatusCode::NOT_FOUND),
     };
+    if is_thumbnail {
+        with_thumbnail_cache_policy(response)
+    } else {
+        response
+    }
+}
 
-    read_media_response(
-        &path,
-        request.method() == Method::HEAD,
-        request.headers().get("range"),
-    )
+fn with_thumbnail_cache_policy(mut response: Response<Vec<u8>>) -> Response<Vec<u8>> {
+    insert_static_header(&mut response, CACHE_CONTROL, "no-store");
+    response
 }
 
 fn query_parameter<'a>(query: Option<&'a str>, name: &str) -> Option<&'a str> {
@@ -309,6 +319,13 @@ mod tests {
     #[test]
     fn serves_shell_cache_thumbnails_with_a_bitmap_content_type() {
         assert_eq!(content_type(Path::new("thumbnail.bmp")), "image/bmp");
+    }
+
+    #[test]
+    fn thumbnail_responses_disable_webview_caching() {
+        let response = super::with_thumbnail_cache_policy(tauri::http::Response::new(vec![1]));
+
+        assert_eq!(response.headers()["cache-control"], "no-store");
     }
 
     #[test]

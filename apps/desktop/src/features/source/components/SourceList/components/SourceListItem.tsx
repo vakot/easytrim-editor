@@ -26,6 +26,7 @@ import { selectSourceExportQueueState } from "@/app/store/slices/export-slice";
 import { cancelExportAttemptRequested } from "@/app/store/thunks/export-thunks";
 import {
   prepareImportedSourceThumbnailsRequested,
+  releaseImportedSourceThumbnailDemand,
   restoreExportAttemptRequested,
 } from "@/app/store/thunks/source-media-thunks";
 import type { EditingInstance, ExportAttempt, ExportAttemptState } from "@/domain/editing-instance";
@@ -65,14 +66,16 @@ function SourceListItem({
 
   useEffect(() => {
     dispatch(prepareImportedSourceThumbnailsRequested([source]));
+    return () => {
+      dispatch(releaseImportedSourceThumbnailDemand(source.id));
+    };
   }, [dispatch, source]);
 
   return (
     <motion.div
       animate={{ opacity: 1, y: 0 }}
       className="flex w-full min-w-0 flex-col"
-      exit={{ opacity: 0, y: shouldReduceMotion ? 0 : -4 }}
-      initial={shouldReduceMotion ? false : { opacity: 0, y: 4 }}
+      initial={false}
       layout={shouldReduceMotion ? false : "position"}
       role="listitem"
       transition={{ duration, ease: "easeOut" }}

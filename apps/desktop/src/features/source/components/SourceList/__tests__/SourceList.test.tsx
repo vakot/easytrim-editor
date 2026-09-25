@@ -1,4 +1,4 @@
-import { createEvent, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, createEvent, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { PropsWithChildren } from "react";
 import { Provider } from "react-redux";
@@ -22,6 +22,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";
 import { enqueueExport } from "@/app/store/integration/export-queue-runtime";
 import {
+  editingInstanceClosed,
   editingInstanceExportAttemptQueued,
   editingInstanceExportCompleted,
   editingInstanceExportStarted,
@@ -136,6 +137,43 @@ describe("source queue controls", () => {
         virtualContent?.getAttribute("style")?.match(/height: ([\d.]+)px/)?.[1] ?? "0",
       ),
     ).toBeGreaterThan(50_000);
+  });
+
+  it("does not animate virtual row mounts", () => {
+    const store = createAppStore();
+    store.dispatch(editingInstancesAdded(createSourceInstances(500)));
+
+    render(
+      <Provider store={store}>
+        <SourceList />
+      </Provider>,
+    );
+
+    const mountedCards = screen.getAllByRole("listitem");
+    expect(mountedCards.length).toBeLessThan(20);
+    expect(mountedCards.every((card) => card.getAttribute("style")?.includes("opacity: 1"))).toBe(
+      true,
+    );
+  });
+
+  it("keeps the short exit animation when a source is actually removed", async () => {
+    const store = createAppStore();
+    const instances = createSourceInstances(2);
+    store.dispatch(editingInstancesAdded(instances));
+
+    render(
+      <Provider store={store}>
+        <SourceList />
+      </Provider>,
+    );
+    const card = screen.getByTestId("source-0");
+    const row = card.closest("[data-index]");
+    if (!row) throw new Error("Expected the source virtual row");
+
+    act(() => store.dispatch(editingInstanceClosed(instances[0]!.id)));
+
+    expect(card).toBeInTheDocument();
+    await waitFor(() => expect(card).not.toBeInTheDocument());
   });
 
   it("renders file, folder, and drag-and-drop actions when no sources are imported", () => {

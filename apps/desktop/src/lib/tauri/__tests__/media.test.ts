@@ -27,6 +27,7 @@ import {
   prepareProxyPreview,
   prepareSourcePreview,
   prepareWaveforms,
+  releaseImportedSourceThumbnail,
   renderFast,
 } from "../media";
 import type { MediaInfo } from "../media.types";
@@ -277,6 +278,16 @@ describe("media IPC adapter", () => {
     });
     expect(mocks.invoke).toHaveBeenNthCalledWith(3, "prepare_proxy_preview", {
       sourcePath: "C:/Media/clip.mp4",
+    });
+  });
+
+  it("releases an imported thumbnail token through its narrow command", async () => {
+    mocks.invoke.mockResolvedValue(undefined);
+
+    await releaseImportedSourceThumbnail(9);
+
+    expect(mocks.invoke).toHaveBeenCalledWith("release_imported_source_thumbnail", {
+      mediaToken: 9,
     });
   });
 

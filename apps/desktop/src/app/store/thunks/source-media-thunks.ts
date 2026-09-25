@@ -53,6 +53,7 @@ import {
   importedThumbnailFailed,
   importedThumbnailLoading,
   importedThumbnailReady,
+  importedThumbnailRemoved,
   previewFailed,
   previewLoading,
   previewReady,
@@ -83,6 +84,7 @@ import {
   prepareProxyPreview,
   prepareSourcePreview,
   prepareWaveforms,
+  releaseImportedSourceThumbnail,
   restoreSourceFromTrash,
 } from "@/lib/tauri/media";
 import type {
@@ -178,15 +180,87 @@ const ingestSources =
     operation.complete(importResultData(result));
   };
 
+export const IMPORTED_THUMBNAIL_POOL_LIMIT = 64;
 const THUMBNAIL_CONCURRENCY = 2;
 const thumbnailQueue: Array<{ instanceId: string; sourcePath: string }> = [];
 const thumbnailRequestsInFlight = new Set<string>();
-let activeThumbnailRequests = 0;
+const activeThumbnailRequests = new Set<string>();
+const thumbnailDemand = new Set<string>();
+const thumbnailLastUsed = new Map<string, number>();
+let activeThumbnailRequestCount = 0;
+let thumbnailAccessSequence = 0;
+
+function touchThumbnail(instanceId: string) {
+  thumbnailLastUsed.set(instanceId, ++thumbnailAccessSequence);
+}
+
+function releaseThumbnailToken(mediaToken: number) {
+  void releaseImportedSourceThumbnail(mediaToken).catch(() => {
+    // Runtime cleanup must not surface an IPC release failure to the SourceList.
+  });
+}
+
+function removeThumbnailFromRuntime(
+  instanceId: string,
+  dispatch: AppDispatch,
+  getState: () => RootState,
+) {
+  const current = selectImportedSourceThumbnails(getState())[instanceId];
+  dispatch(importedThumbnailRemoved({ instanceId }));
+  thumbnailLastUsed.delete(instanceId);
+  if (current?.status === "ready") releaseThumbnailToken(current.value.mediaToken);
+}
+
+function ensureThumbnailPoolRoom(dispatch: AppDispatch, getState: () => RootState) {
+  const importedThumbnails = selectImportedSourceThumbnails(getState());
+  const readyIds = Object.entries(importedThumbnails)
+    .filter(([, thumbnail]) => thumbnail.status === "ready")
+    .map(([instanceId]) => instanceId);
+
+  if (readyIds.length < IMPORTED_THUMBNAIL_POOL_LIMIT) return true;
+
+  const evictionCandidate = readyIds
+    .filter((instanceId) => !thumbnailDemand.has(instanceId))
+    .sort((left, right) => (thumbnailLastUsed.get(left) ?? 0) - (thumbnailLastUsed.get(right) ?? 0))[0];
+
+  if (!evictionCandidate) return false;
+
+  removeThumbnailFromRuntime(evictionCandidate, dispatch, getState);
+  return true;
+}
+
+const releaseImportedSourceThumbnailDemand =
+  (instanceId: string): AppThunk<void> =>
+  (dispatch, getState) => {
+    thumbnailDemand.delete(instanceId);
+    if (!activeThumbnailRequests.has(instanceId)) {
+      const queueIndex = thumbnailQueue.findIndex((request) => request.instanceId === instanceId);
+      if (queueIndex >= 0) {
+        thumbnailQueue.splice(queueIndex, 1);
+        thumbnailRequestsInFlight.delete(instanceId);
+      }
+
+      const thumbnail = selectImportedSourceThumbnails(getState())[instanceId];
+      if (thumbnail?.status === "loading" || thumbnail?.status === "failed") {
+        removeThumbnailFromRuntime(instanceId, dispatch, getState);
+      }
+    }
+  };
+
+const releaseImportedSourceThumbnailForInstance =
+  (instanceId: string): AppThunk<void> =>
+  (dispatch, getState) => {
+    thumbnailDemand.delete(instanceId);
+    const queueIndex = thumbnailQueue.findIndex((request) => request.instanceId === instanceId);
+    if (queueIndex >= 0) thumbnailQueue.splice(queueIndex, 1);
+    if (!activeThumbnailRequests.has(instanceId)) thumbnailRequestsInFlight.delete(instanceId);
+    removeThumbnailFromRuntime(instanceId, dispatch, getState);
+  };
 
 function drainThumbnailQueue(dispatch: AppDispatch, getState: () => RootState) {
   if (foregroundSourcePreparationCount > 0) return;
 
-  while (activeThumbnailRequests < THUMBNAIL_CONCURRENCY && thumbnailQueue.length > 0) {
+  while (activeThumbnailRequestCount < THUMBNAIL_CONCURRENCY && thumbnailQueue.length > 0) {
     const request = thumbnailQueue.shift();
     if (!request) return;
 
@@ -194,6 +268,7 @@ function drainThumbnailQueue(dispatch: AppDispatch, getState: () => RootState) {
     if (
       !current ||
       current.sourceAvailability !== "available" ||
+      !thumbnailDemand.has(request.instanceId) ||
       normalizeSourceKey(current.snapshot.source.sourcePath) !==
         normalizeSourceKey(request.sourcePath) ||
       selectImportedSourceThumbnails(getState())[request.instanceId]?.status !== "loading"
@@ -202,7 +277,8 @@ function drainThumbnailQueue(dispatch: AppDispatch, getState: () => RootState) {
       continue;
     }
 
-    activeThumbnailRequests += 1;
+    activeThumbnailRequestCount += 1;
+    activeThumbnailRequests.add(request.instanceId);
     void prepareImportedSourceThumbnail(request.sourcePath)
       .then((thumbnail) => {
         const latest = selectEditingInstanceById(getState(), request.instanceId);
@@ -213,12 +289,21 @@ function drainThumbnailQueue(dispatch: AppDispatch, getState: () => RootState) {
             normalizeSourceKey(request.sourcePath) &&
           selectImportedSourceThumbnails(getState())[request.instanceId]?.status === "loading"
         ) {
+          if (!ensureThumbnailPoolRoom(dispatch, getState)) {
+            releaseThumbnailToken(thumbnail.mediaToken);
+            removeThumbnailFromRuntime(request.instanceId, dispatch, getState);
+            return;
+          }
           dispatch(importedThumbnailReady({ instanceId: request.instanceId, thumbnail }));
+          touchThumbnail(request.instanceId);
+        } else {
+          releaseThumbnailToken(thumbnail.mediaToken);
         }
       })
       .catch((error: unknown) => {
         const latest = selectEditingInstanceById(getState(), request.instanceId);
         if (
+          thumbnailDemand.has(request.instanceId) &&
           latest &&
           latest.sourceAvailability === "available" &&
           normalizeSourceKey(latest.snapshot.source.sourcePath) ===
@@ -231,10 +316,13 @@ function drainThumbnailQueue(dispatch: AppDispatch, getState: () => RootState) {
               instanceId: request.instanceId,
             }),
           );
+        } else {
+          removeThumbnailFromRuntime(request.instanceId, dispatch, getState);
         }
       })
       .finally(() => {
-        activeThumbnailRequests -= 1;
+        activeThumbnailRequestCount -= 1;
+        activeThumbnailRequests.delete(request.instanceId);
         thumbnailRequestsInFlight.delete(request.instanceId);
         drainThumbnailQueue(dispatch, getState);
       });
@@ -266,15 +354,24 @@ const prepareImportedSourceThumbnailsRequested =
       const current = selectEditingInstanceById(getState(), instance.id);
       if (
         !current ||
-        current.sourceAvailability !== "available" ||
-        importedThumbnails[instance.id] !== undefined ||
-        thumbnailRequestsInFlight.has(instance.id)
+        current.sourceAvailability !== "available"
       )
         continue;
+
+      thumbnailDemand.add(instance.id);
+
+      const currentThumbnail = importedThumbnails[instance.id];
+      if (currentThumbnail?.status === "ready") {
+        touchThumbnail(instance.id);
+        continue;
+      }
+      if (currentThumbnail !== undefined || thumbnailRequestsInFlight.has(instance.id)) continue;
 
       const sourcePath = instance.snapshot.source.sourcePath;
       if (normalizeSourceKey(current.snapshot.source.sourcePath) !== normalizeSourceKey(sourcePath))
         continue;
+
+      if (!ensureThumbnailPoolRoom(dispatch, getState)) continue;
 
       thumbnailRequestsInFlight.add(instance.id);
       dispatch(importedThumbnailLoading({ instanceId: instance.id }));
@@ -1061,6 +1158,8 @@ export {
   navigateToEditingInstance,
   prepareImportedSourceThumbnailsRequested,
   prepareSourceWaveforms,
+  releaseImportedSourceThumbnailDemand,
+  releaseImportedSourceThumbnailForInstance,
   restoreActiveEditingInstanceRequested,
   restoreExportAttemptRequested,
   restoreSourceFileRequested,

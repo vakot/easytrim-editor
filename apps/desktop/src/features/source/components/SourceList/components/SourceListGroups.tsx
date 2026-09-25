@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import { ChevronRight, Clock3, Folder, FolderOpen, Upload, X } from "lucide-react";
+import { motion, useReducedMotion } from "motion/react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -129,6 +130,18 @@ function SourceListVirtualRows({
   rows: ListRow[];
 }) {
   const { matchesBySourceId } = useSourceListData();
+  const shouldReduceMotion = useReducedMotion() === true;
+  const currentRowKeys = useMemo(
+    () =>
+      new Set(
+        rows.map((row) =>
+          row.kind === "group" ? `group:${row.group.key}` : `source:${row.source.id}`,
+        ),
+      ),
+    [rows],
+  );
+
+  const duration = shouldReduceMotion ? 0 : 0.16;
 
   return (
     <div data-slot={dataSlot} role="list">
@@ -140,6 +153,7 @@ function SourceListVirtualRows({
           row.kind === "group" ? `group:${row.group.key}` : `source:${row.source.id}`
         }
         items={rows}
+        presenceData={currentRowKeys}
         renderItem={(row) =>
           row.kind === "group" ? (
             <SourceListGroupHeader
@@ -152,6 +166,33 @@ function SourceListVirtualRows({
             <SourceListItem match={matchesBySourceId.get(row.source.id)} source={row.source} />
           )
         }
+        renderVirtualItem={({ index, item, key, measureRef, style }, content) => {
+          const rowKey = item.kind === "group" ? `group:${item.group.key}` : `source:${item.source.id}`;
+
+          return (
+            <motion.div
+              className="absolute top-0 left-0 box-content w-full pb-2"
+              data-index={index}
+              exit="exit"
+              initial={false}
+              key={key}
+              ref={measureRef}
+              style={style}
+              variants={{
+                exit: (presentKeys: ReadonlySet<string>) =>
+                  presentKeys.has(rowKey)
+                    ? { opacity: 1, transition: { duration: 0 }, y: 0 }
+                    : {
+                        opacity: 0,
+                        transition: { duration, ease: "easeOut" },
+                        y: shouldReduceMotion ? 0 : -4,
+                      },
+              }}
+            >
+              {content}
+            </motion.div>
+          );
+        }}
       />
     </div>
   );

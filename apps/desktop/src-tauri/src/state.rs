@@ -566,6 +566,14 @@ impl AppState {
             .ok_or_else(AppError::source_replaced)
     }
 
+    pub fn release_imported_thumbnail(&self, media_token: u64) -> Result<(), AppError> {
+        self.imported_thumbnail_artifacts
+            .lock()
+            .map_err(|_| AppError::internal("The imported thumbnail registry is unavailable."))?
+            .remove(&media_token);
+        Ok(())
+    }
+
     pub fn preview_is_ready(&self, load_token: u64) -> Result<bool, AppError> {
         let session = self.lock_session()?;
         let source = session
@@ -713,6 +721,55 @@ mod tests {
             thumbnail_path
         );
         assert!(thumbnail_token > 0);
+    }
+
+    #[test]
+    fn releasing_imported_thumbnail_removes_its_token_and_temporary_artifact() {
+        let state = AppState::default();
+        let directory = std::env::temp_dir().join(format!(
+            "easytrim-state-thumbnail-release-test-{}",
+            std::process::id()
+        ));
+        std::fs::create_dir_all(&directory).expect("test artifact directory creates");
+        let thumbnail_path = directory.join("thumbnail.jpg");
+        std::fs::write(&thumbnail_path, b"thumbnail").expect("thumbnail file creates");
+        let artifact = PreviewArtifact::new(directory, thumbnail_path.clone())
+            .expect("thumbnail artifact creates");
+        let thumbnail_token = state
+            .register_imported_thumbnail(super::ImportedThumbnailArtifact::from_temporary(artifact))
+            .expect("thumbnail registers");
+
+        state
+            .release_imported_thumbnail(thumbnail_token)
+            .expect("thumbnail releases");
+
+        assert!(state.resolve_thumbnail_path(thumbnail_token).is_err());
+        assert!(!thumbnail_path.exists());
+    }
+
+    #[test]
+    fn releasing_disk_cached_thumbnail_keeps_the_cache_file() {
+        let state = AppState::default();
+        let directory = std::env::temp_dir().join(format!(
+            "easytrim-state-thumbnail-cache-release-test-{}",
+            std::process::id()
+        ));
+        std::fs::create_dir_all(&directory).expect("test cache directory creates");
+        let thumbnail_path = directory.join("thumbnail.jpg");
+        std::fs::write(&thumbnail_path, b"cached thumbnail").expect("cached file creates");
+        let thumbnail_token = state
+            .register_imported_thumbnail(super::ImportedThumbnailArtifact::from_cache(
+                thumbnail_path.clone(),
+            ))
+            .expect("thumbnail registers");
+
+        state
+            .release_imported_thumbnail(thumbnail_token)
+            .expect("thumbnail releases");
+
+        assert!(!state.resolve_thumbnail_path(thumbnail_token).is_ok());
+        assert!(thumbnail_path.exists());
+        let _ = std::fs::remove_dir_all(directory);
     }
 
     #[test]

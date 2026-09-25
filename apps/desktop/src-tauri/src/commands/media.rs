@@ -138,7 +138,8 @@ pub async fn prepare_imported_source_thumbnail(
     let cache_directory = app
         .path()
         .app_cache_dir()
-        .map_err(|_| AppError::io_failed("The thumbnail cache is unavailable."))?;
+        .map_err(|_| AppError::io_failed("The thumbnail cache is unavailable."))?
+        .join("thumbnails");
     let thumbnail = tauri::async_runtime::spawn_blocking(move || {
         generate_thumbnail(&source.path, &cache_directory)
     })
@@ -149,6 +150,14 @@ pub async fn prepare_imported_source_thumbnail(
         media_token,
         url: thumbnail_url(media_token),
     })
+}
+
+#[tauri::command]
+pub fn release_imported_source_thumbnail(
+    media_token: u64,
+    state: State<'_, AppState>,
+) -> Result<(), AppError> {
+    state.release_imported_thumbnail(media_token)
 }
 
 fn record_ffprobe_event(

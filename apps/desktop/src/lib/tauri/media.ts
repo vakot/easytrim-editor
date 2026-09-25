@@ -222,6 +222,14 @@ async function prepareImportedSourceThumbnail(sourcePath: string): Promise<Thumb
   }
 }
 
+async function releaseImportedSourceThumbnail(mediaToken: number): Promise<void> {
+  try {
+    await invoke("release_imported_source_thumbnail", { mediaToken });
+  } catch (error: unknown) {
+    throw normalizeAppError(error);
+  }
+}
+
 async function prepareAudioPreviews(
   sourcePath: string,
   streamIndexes: number[],
@@ -345,6 +353,7 @@ export {
   prepareSourcePreview,
   prepareWaveforms,
   releaseExportSource,
+  releaseImportedSourceThumbnail,
   renderFast,
   renderOptimized,
   reserveExportSource,

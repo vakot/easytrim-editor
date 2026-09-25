@@ -367,9 +367,9 @@ mod tests {
     use image::{Rgb, RgbImage};
 
     use super::{
-        THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH, encode_rgb_thumbnail, is_usable_cache_entry,
-        thumbnail_arguments, thumbnail_cache_key, trim_thumbnail_cache_with_limits,
-        write_cached_thumbnail,
+        THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH, encode_rgb_thumbnail, generate_thumbnail,
+        is_usable_cache_entry, thumbnail_arguments, thumbnail_cache_key,
+        trim_thumbnail_cache_with_limits, write_cached_thumbnail,
     };
 
     struct TestDirectory(std::path::PathBuf);
@@ -462,6 +462,23 @@ mod tests {
     }
 
     #[test]
+    fn revisiting_an_evicted_runtime_thumbnail_reuses_the_disk_cache() {
+        let directory = TestDirectory::new();
+        let source_path = directory.0.join("clip.mp4");
+        fs::write(&source_path, b"source fixture").expect("source fixture writes");
+        let cache_directory = directory.0.join("thumbnails");
+        let key = thumbnail_cache_key(&source_path).expect("cache key builds");
+        let bytes = encode_rgb_thumbnail(RgbImage::new(1, 1)).expect("thumbnail encodes");
+        let cached_path = write_cached_thumbnail(&cache_directory, &key, &bytes)
+            .expect("disk thumbnail cache writes");
+
+        let thumbnail = generate_thumbnail(&source_path, &cache_directory)
+            .expect("thumbnail reuses the disk cache");
+
+        assert_eq!(thumbnail.path(), cached_path);
+    }
+
+    #[test]
     fn cache_reuses_entries_and_trims_oldest_files_when_over_limit() {
         let directory = TestDirectory::new();
         let first = write_cached_thumbnail(&directory.0, &"a".repeat(64), b"first")
@@ -486,5 +503,21 @@ mod tests {
         trim_thumbnail_cache_with_limits(&directory.0, 8, 1);
         assert!(!first.exists());
         assert!(second.exists());
+    }
+
+    #[test]
+    fn cache_cleanup_only_touches_its_own_directory() {
+        let directory = TestDirectory::new();
+        let thumbnail_cache = directory.0.join("thumbnails");
+        fs::create_dir(&thumbnail_cache).expect("thumbnail cache directory creates");
+        let cached = write_cached_thumbnail(&thumbnail_cache, &"c".repeat(64), b"thumbnail")
+            .expect("cache entry writes");
+        let unrelated = directory.0.join("other-cache-entry.jpg");
+        fs::write(&unrelated, b"unrelated").expect("unrelated cache entry writes");
+
+        trim_thumbnail_cache_with_limits(&thumbnail_cache, 0, 0);
+
+        assert!(!cached.exists());
+        assert!(unrelated.exists());
     }
 }
