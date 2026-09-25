@@ -201,12 +201,16 @@ describe("imported source thumbnail queue", () => {
     store.dispatch(prepareImportedSourceThumbnailsRequested(instances));
 
     await vi.waitFor(() =>
-      expect(Object.values(selectImportedSourceThumbnails(store.getState())).filter(
-        (state) => state.status === "ready",
-      )).toHaveLength(IMPORTED_THUMBNAIL_POOL_LIMIT),
+      expect(
+        Object.values(selectImportedSourceThumbnails(store.getState())).filter(
+          (state) => state.status === "ready",
+        ),
+      ).toHaveLength(IMPORTED_THUMBNAIL_POOL_LIMIT),
     );
     await vi.waitFor(() =>
-      expect(releaseThumbnail).toHaveBeenCalledTimes(instances.length - IMPORTED_THUMBNAIL_POOL_LIMIT),
+      expect(releaseThumbnail).toHaveBeenCalledTimes(
+        instances.length - IMPORTED_THUMBNAIL_POOL_LIMIT,
+      ),
     );
     expect(Object.keys(selectImportedSourceThumbnails(store.getState()))).toHaveLength(
       IMPORTED_THUMBNAIL_POOL_LIMIT,
@@ -228,9 +232,11 @@ describe("imported source thumbnail queue", () => {
     }));
     store.dispatch(prepareImportedSourceThumbnailsRequested(instances.slice(0, -1)));
     await vi.waitFor(() =>
-      expect(Object.values(selectImportedSourceThumbnails(store.getState())).filter(
-        (state) => state.status === "ready",
-      )).toHaveLength(IMPORTED_THUMBNAIL_POOL_LIMIT),
+      expect(
+        Object.values(selectImportedSourceThumbnails(store.getState())).filter(
+          (state) => state.status === "ready",
+        ),
+      ).toHaveLength(IMPORTED_THUMBNAIL_POOL_LIMIT),
     );
     store.dispatch(releaseImportedSourceThumbnailDemand(instances[0]!.id));
 

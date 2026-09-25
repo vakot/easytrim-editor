@@ -64,10 +64,9 @@ pub fn generate_thumbnail(
     if File::open(artifact.path())
         .and_then(|mut file| file.read_to_end(&mut bytes))
         .is_ok()
+        && let Some(path) = write_cached_thumbnail(cache_directory, &key, &bytes)
     {
-        if let Some(path) = write_cached_thumbnail(cache_directory, &key, &bytes) {
-            return Ok(ImportedThumbnailArtifact::from_cache(path));
-        }
+        return Ok(ImportedThumbnailArtifact::from_cache(path));
     }
 
     Ok(ImportedThumbnailArtifact::from_temporary(artifact))
@@ -412,7 +411,7 @@ mod tests {
     fn shell_thumbnail_encoding_centers_and_crops_to_640_by_360() {
         let mut image = RgbImage::new(800, 360);
         for (x, _, pixel) in image.enumerate_pixels_mut() {
-            *pixel = if x < 200 || x >= 600 {
+            *pixel = if !(200..600).contains(&x) {
                 Rgb([255, 0, 0])
             } else {
                 Rgb([0, 0, 255])

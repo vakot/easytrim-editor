@@ -221,7 +221,9 @@ function ensureThumbnailPoolRoom(dispatch: AppDispatch, getState: () => RootStat
 
   const evictionCandidate = readyIds
     .filter((instanceId) => !thumbnailDemand.has(instanceId))
-    .sort((left, right) => (thumbnailLastUsed.get(left) ?? 0) - (thumbnailLastUsed.get(right) ?? 0))[0];
+    .sort(
+      (left, right) => (thumbnailLastUsed.get(left) ?? 0) - (thumbnailLastUsed.get(right) ?? 0),
+    )[0];
 
   if (!evictionCandidate) return false;
 
@@ -352,11 +354,7 @@ const prepareImportedSourceThumbnailsRequested =
     const importedThumbnails = selectImportedSourceThumbnails(getState());
     for (const instance of instances) {
       const current = selectEditingInstanceById(getState(), instance.id);
-      if (
-        !current ||
-        current.sourceAvailability !== "available"
-      )
-        continue;
+      if (!current || current.sourceAvailability !== "available") continue;
 
       thumbnailDemand.add(instance.id);
 
