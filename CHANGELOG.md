@@ -16,6 +16,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Smoothed preview rotation, crop, flip, and reset transitions.
 - Adapted the empty preview logo for light and dark themes.
 - Expanded Media Tools details with FFmpeg and FFprobe versions, executable paths, and concise installation and recheck guidance when tools are unavailable.
 - Simplified the empty preview's keyboard hints and displayed the Command Palette shortcut separately with the correct platform modifier.
@@ -24,6 +25,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- Kept the selected source region visible when rotating a cropped preview.
 - Truncated long export filenames in source cards so they stay within the card width.
 - Matched destructive and success icon colors in the Command Palette to the shared menu styles.
 

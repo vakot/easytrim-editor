@@ -1,3 +1,4 @@
+import { motion, type Transition } from "motion/react";
 import { type CSSProperties, type SyntheticEvent, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -9,20 +10,16 @@ import { diagnostics } from "@/lib/diagnostics";
 
 interface CropViewportVideoProps {
   cropIsOpen: boolean;
-  onSourceMetadata: (width: number, height: number) => void;
-  previewTransform: string;
-  sourceFrame: CSSProperties;
-  transformOrigin: string;
-  viewportTransition: string;
+  presentationRotation: number;
+  style: CSSProperties;
+  transition: Transition;
 }
 
 function CropViewportVideo({
   cropIsOpen,
-  onSourceMetadata,
-  previewTransform,
-  sourceFrame,
-  transformOrigin,
-  viewportTransition,
+  presentationRotation,
+  style,
+  transition,
 }: CropViewportVideoProps) {
   const { t } = useTranslation();
   const {
@@ -98,12 +95,8 @@ function CropViewportVideo({
   }, [onPreviewPlaybackError, previewKind, sourceUrl]);
 
   const onLoadedMetadata = useCallback(
-    (event: SyntheticEvent<HTMLVideoElement>) => {
-      const { videoHeight, videoWidth } = event.currentTarget;
-      onSourceMetadata(videoWidth, videoHeight);
-      onPlaybackLoadedMetadata();
-    },
-    [onPlaybackLoadedMetadata, onSourceMetadata],
+    () => onPlaybackLoadedMetadata(),
+    [onPlaybackLoadedMetadata],
   );
 
   const onPlay = useCallback(
@@ -164,12 +157,20 @@ function CropViewportVideo({
   if (sourceUrl === null || previewKind === null) return null;
 
   return (
-    <video
+    <motion.video
+      animate={{
+        width: style.width,
+        height: style.height,
+        left: style.left,
+        top: style.top,
+      }}
       aria-label={t("preview.accessibility.source")}
-      className={`absolute max-w-none cursor-pointer ${viewportTransition}`}
+      className="absolute max-w-none cursor-pointer"
       crossOrigin="anonymous"
       data-playback-rate={playbackRate}
+      data-presentation-rotation={presentationRotation}
       data-preview-kind={previewKind}
+      initial={false}
       key={sourceUrl}
       loop={nativeLoopEnabled}
       muted={videoMuted}
@@ -187,11 +188,8 @@ function CropViewportVideo({
       preload="auto"
       ref={setVideoElement}
       src={sourceUrl}
-      style={{
-        ...sourceFrame,
-        transform: previewTransform,
-        transformOrigin,
-      }}
+      style={{ left: style.left, top: style.top }}
+      transition={transition}
     />
   );
 }

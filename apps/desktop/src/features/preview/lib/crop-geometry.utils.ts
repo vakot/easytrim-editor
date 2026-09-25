@@ -40,14 +40,10 @@ function resizeCrop(
   return { x: left, y: top, width: right - left, height: bottom - top };
 }
 
-function isFullCrop(crop: CropRect): boolean {
-  return crop.x === 0 && crop.y === 0 && crop.width === 1 && crop.height === 1;
-}
-
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.min(Math.max(value, minimum), maximum);
 }
 
-export { isFullCrop, moveCrop, resizeCrop };
+export { moveCrop, resizeCrop };
 
 export type { CropRect };

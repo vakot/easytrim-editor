@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import {
   type FocusEvent,
   forwardRef,
@@ -13,13 +14,13 @@ import { CursorTooltip } from "@/components/ui/cursor-tooltip";
 
 import { usePlayback } from "@/app/hooks/usePlayback";
 
-import type { Bounds } from "../../../lib/crop-frame.utils";
+import { PREVIEW_TRANSITION_DURATION } from "../../../lib/preview-transition";
 
 interface CropSelectionInteraction {
   close: () => void;
   finishDrag: () => void;
   isOpen: boolean;
-  moveDrag: (event: PointerEvent<HTMLDivElement>, viewport: Bounds) => void;
+  moveDrag: (event: PointerEvent<HTMLDivElement>) => void;
 }
 
 interface CropViewportTooltipProps {
@@ -27,17 +28,20 @@ interface CropViewportTooltipProps {
   containerRef: RefObject<HTMLDivElement | null>;
   cropSelection: CropSelectionInteraction;
   onContextMenu?: MouseEventHandler<HTMLDivElement>;
-  viewport: Bounds;
 }
 
 const CropViewportTooltip = forwardRef<HTMLDivElement, CropViewportTooltipProps>(
   function CropViewportTooltip(
-    { children, containerRef, cropSelection, onContextMenu, viewport },
+    { children, containerRef, cropSelection, onContextMenu },
     forwardedRef,
   ) {
     const { t } = useTranslation();
     const { toggle } = usePlayback();
     const { close, finishDrag, isOpen, moveDrag } = cropSelection;
+    const transitionStyle = {
+      "--preview-transition-duration": `${PREVIEW_TRANSITION_DURATION * 1000}ms`,
+    } as CSSProperties;
+
     const setRefs = useCallback(
       (element: HTMLDivElement | null) => {
         containerRef.current = element;
@@ -64,15 +68,15 @@ const CropViewportTooltip = forwardRef<HTMLDivElement, CropViewportTooltipProps>
 
     const handlePointerMove = useCallback(
       (event: PointerEvent<HTMLDivElement>) => {
-        moveDrag(event, viewport);
+        moveDrag(event);
       },
-      [moveDrag, viewport],
+      [moveDrag],
     );
 
     return (
       <CursorTooltip
         aria-label={t("preview.accessibility.crop.preview")}
-        className="group relative size-full overflow-hidden bg-preview-surface focus-visible:outline-none"
+        className="group relative size-full bg-preview-surface focus-visible:outline-none"
         disabled={isOpen}
         onBlur={handleBlur}
         onClick={handleClick}
@@ -81,6 +85,7 @@ const CropViewportTooltip = forwardRef<HTMLDivElement, CropViewportTooltipProps>
         onPointerMove={handlePointerMove}
         onPointerUp={finishDrag}
         ref={setRefs}
+        style={transitionStyle}
         tabIndex={0}
         tooltipContent={t("preview.tooltips.crop")}
       >

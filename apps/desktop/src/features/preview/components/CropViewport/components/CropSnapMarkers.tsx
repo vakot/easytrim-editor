@@ -1,26 +1,34 @@
+import { motion, type Transition } from "motion/react";
+
 import { QUARTER_SNAP_POINTS } from "@/lib/interaction/snap-points.consts";
 
-import type { CropFrame } from "../../../lib/crop-frame.utils";
-
 interface CropSnapMarkersProps {
-  frame: CropFrame;
+  aspectRatio: number;
+  transition: Transition;
   visible: boolean;
+  widthTarget: string;
 }
 
-function CropSnapMarkers({ frame, visible }: CropSnapMarkersProps) {
+function CropSnapMarkers({ aspectRatio, transition, visible, widthTarget }: CropSnapMarkersProps) {
   return (
-    <div
+    <motion.div
+      animate={{ aspectRatio, opacity: visible ? 1 : 0, width: widthTarget }}
       aria-hidden="true"
-      className="pointer-events-none absolute inset-0 z-10 opacity-0 transition-opacity duration-200 ease-out data-[visible=true]:opacity-100 motion-reduce:transition-none"
+      className="pointer-events-none absolute top-1/2 left-1/2 z-10"
       data-crop-snap-markers
+      data-output-aspect-ratio={aspectRatio}
+      data-output-width-target={widthTarget}
       data-visible={visible}
+      initial={false}
+      style={{ x: "-50%", y: "-50%" }}
+      transition={transition}
     >
       {QUARTER_SNAP_POINTS.map((point) => (
         <span
-          className="absolute h-2 w-px -translate-x-1/2 bg-muted-foreground/70 transition-[left,top] duration-200 ease-out motion-reduce:transition-none"
+          className="absolute h-2 w-px -translate-x-1/2 bg-muted-foreground/70"
           data-crop-snap-marker="top"
           key={`top-${point}`}
-          style={{ left: frame.left + frame.width * point, top: frame.top - 12 }}
+          style={{ left: `${point * 100}%`, top: -12 }}
         >
           <span
             className="absolute bottom-full left-1/2 -translate-x-1/2 pb-0.5 text-[0.625rem] leading-none whitespace-nowrap text-muted-foreground"
@@ -32,10 +40,10 @@ function CropSnapMarkers({ frame, visible }: CropSnapMarkersProps) {
       ))}
       {QUARTER_SNAP_POINTS.map((point) => (
         <span
-          className="absolute h-px w-2 -translate-y-1/2 bg-muted-foreground/70 transition-[left,top] duration-200 ease-out motion-reduce:transition-none"
+          className="absolute h-px w-2 -translate-y-1/2 bg-muted-foreground/70"
           data-crop-snap-marker="left"
           key={`left-${point}`}
-          style={{ left: frame.left - 12, top: frame.top + frame.height * point }}
+          style={{ left: -12, top: `${point * 100}%` }}
         >
           <span
             className="text absolute top-1/2 right-full -translate-y-1/2 rotate-180 pl-0.75 text-[0.625rem] leading-none whitespace-nowrap text-muted-foreground"
@@ -46,7 +54,7 @@ function CropSnapMarkers({ frame, visible }: CropSnapMarkersProps) {
           </span>
         </span>
       ))}
-    </div>
+    </motion.div>
   );
 }
 
