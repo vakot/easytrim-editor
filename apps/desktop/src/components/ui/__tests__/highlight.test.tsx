@@ -27,4 +27,21 @@ describe("Highlight", () => {
     expect(container.querySelector("mark")).not.toBeInTheDocument();
     expect(screen.getByText("clip.mp4")).toBeInTheDocument();
   });
+
+  it("renders explicit inclusive match ranges", () => {
+    render(
+      <Highlight
+        ranges={[
+          [0, 2],
+          [5, 7],
+        ]}
+      >
+        War Thunder
+      </Highlight>,
+    );
+
+    expect(screen.getAllByRole("mark")).toHaveLength(2);
+    expect(screen.getByText("War")).toHaveAttribute("class", expect.stringContaining("bg-primary"));
+    expect(screen.getByText("hun")).toHaveAttribute("class", expect.stringContaining("bg-primary"));
+  });
 });

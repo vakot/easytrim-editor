@@ -30,6 +30,7 @@ import { openFileLocation } from "@/lib/tauri/media";
 
 import { formatSourcePath } from "../../../lib/media-formatters.utils";
 import { getRevealLabel } from "../../../lib/source.utils";
+import type { SourceSearchResult } from "../../../lib/source-search.utils";
 import {
   SourceCard,
   SourceCardActions,
@@ -47,7 +48,13 @@ import {
   StartSourceExport,
 } from "../../SourceMenuActions";
 
-function SourceListItem({ search, source }: { search: string; source: EditingInstance }) {
+function SourceListItem({
+  match,
+  source,
+}: {
+  match: SourceSearchResult | undefined;
+  source: EditingInstance;
+}) {
   const shouldReduceMotion = useReducedMotion() === true;
   const duration = shouldReduceMotion ? 0 : 0.16;
 
@@ -60,13 +67,19 @@ function SourceListItem({ search, source }: { search: string; source: EditingIns
       layout={shouldReduceMotion ? false : "position"}
       transition={{ duration, ease: "easeOut" }}
     >
-      <SourceListItemCard search={search} source={source} />
+      <SourceListItemCard match={match} source={source} />
       <SourceListItemExtra source={source} />
     </motion.li>
   );
 }
 
-function SourceListItemCard({ search, source }: { search: string; source: EditingInstance }) {
+function SourceListItemCard({
+  match,
+  source,
+}: {
+  match: SourceSearchResult | undefined;
+  source: EditingInstance;
+}) {
   const { t } = useTranslation();
 
   return (
@@ -79,12 +92,14 @@ function SourceListItemCard({ search, source }: { search: string; source: Editin
         <div className="flex min-w-0 flex-col gap-1" data-slot="card-header">
           <SourceCardTitle className="line-clamp-2 wrap-break-word whitespace-normal">
             {({ source: cardSource }) => (
-              <Highlight query={search}>{cardSource.snapshot.source.displayName}</Highlight>
+              <Highlight ranges={match?.displayNameRanges}>
+                {cardSource.snapshot.source.displayName}
+              </Highlight>
             )}
           </SourceCardTitle>
           <SourceCardDescription className="line-clamp-2 wrap-anywhere whitespace-normal">
             {({ source: cardSource }) => (
-              <Highlight query={search}>
+              <Highlight ranges={match?.sourcePathRanges}>
                 {formatSourcePath(cardSource.snapshot.source.sourcePath)}
               </Highlight>
             )}

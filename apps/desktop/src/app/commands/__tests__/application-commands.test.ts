@@ -44,6 +44,19 @@ const commands: ApplicationCommand[] = [
   },
 ];
 
+function searchableCommand(id: string, label: string): ApplicationCommand {
+  return {
+    enabled: true,
+    icon: null,
+    id,
+    label,
+    pending: false,
+    searchTerms: [],
+    group: { id: "games", label: "Game Capture" },
+    variant: "default",
+  };
+}
+
 describe("application command search", () => {
   it("matches case-insensitive partial command labels with highlight-compatible metadata", () => {
     const [match] = filterApplicationCommands(commands, "FoLd");
@@ -51,6 +64,7 @@ describe("application command search", () => {
     expect(match?.command.id).toBe("open-folder");
     expect(match).toMatchObject({
       labelMatched: true,
+      labelMatchRanges: [[5, 8]],
       searchTermMatched: false,
       groupMatched: false,
     });
@@ -60,7 +74,11 @@ describe("application command search", () => {
     const matches = filterApplicationCommands(commands, "file");
 
     expect(matches.map(({ command }) => command.id)).toEqual(["open-folder"]);
-    expect(matches[0]).toMatchObject({ labelMatched: false, groupMatched: true });
+    expect(matches[0]).toMatchObject({
+      labelMatched: false,
+      groupMatched: true,
+      groupMatchRanges: [[0, 3]],
+    });
   });
 
   it("matches explicit aliases without claiming a visible label match", () => {
@@ -80,6 +98,27 @@ describe("application command search", () => {
     expect(matches[0]?.command.enabled).toBe(true);
     expect(matches[0]?.command.shortcut).toBeUndefined();
     expect(matches[1]?.command).toMatchObject({ enabled: false });
+  });
+
+  it.each(["fast ren", "fast rendr"])("supports token partial and typo queries: %s", (query) => {
+    const [match] = filterApplicationCommands(commands, query);
+
+    expect(match?.command.id).toBe("save-lossless-cut");
+    expect(match?.searchTermMatched).toBe(true);
+  });
+
+  it("ranks the stronger fuzzy command match first", () => {
+    const stronger = searchableCommand("strong", "War Thunder Enemy destroyed moment 2026");
+    const weaker = searchableCommand("weak", "War Thunder Enemy destroyed moment 2025");
+
+    expect(
+      filterApplicationCommands([weaker, stronger], "war thunder enemy destroyed 2026")[0]?.command
+        .id,
+    ).toBe("strong");
+  });
+
+  it("returns no commands for an unrelated query", () => {
+    expect(filterApplicationCommands(commands, "unrelated zebra")).toEqual([]);
   });
 
   it("limits surface-scoped commands while leaving unspecified commands available everywhere", () => {
