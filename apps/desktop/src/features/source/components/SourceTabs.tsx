@@ -75,7 +75,7 @@ function SourceTabs({
               exit={{ opacity: 0, x: reduceMotion ? 0 : -4 }}
               initial={reduceMotion ? false : { opacity: 0, x: -4 }}
               key={entry.id}
-              layout="position"
+              layout
               transition={{
                 layout: { duration: reduceMotion ? 0 : 0.16, ease: "easeOut" },
                 opacity: { duration: reduceMotion ? 0 : 0.14 },
