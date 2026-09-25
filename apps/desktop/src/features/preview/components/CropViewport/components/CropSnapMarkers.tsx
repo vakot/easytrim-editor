@@ -14,7 +14,7 @@ function CropSnapMarkers({ visible }: CropSnapMarkersProps) {
     >
       {QUARTER_SNAP_POINTS.map((point) => (
         <span
-          className="absolute h-2 w-px -translate-x-1/2 bg-muted-foreground/70 transition-[left,top] duration-200 ease-out motion-reduce:transition-none"
+          className="absolute h-2 w-px -translate-x-1/2 bg-muted-foreground/70"
           data-crop-snap-marker="top"
           key={`top-${point}`}
           style={{ left: `${point * 100}%`, top: -12 }}
@@ -29,7 +29,7 @@ function CropSnapMarkers({ visible }: CropSnapMarkersProps) {
       ))}
       {QUARTER_SNAP_POINTS.map((point) => (
         <span
-          className="absolute h-px w-2 -translate-y-1/2 bg-muted-foreground/70 transition-[left,top] duration-200 ease-out motion-reduce:transition-none"
+          className="absolute h-px w-2 -translate-y-1/2 bg-muted-foreground/70"
           data-crop-snap-marker="left"
           key={`left-${point}`}
           style={{ left: -12, top: `${point * 100}%` }}

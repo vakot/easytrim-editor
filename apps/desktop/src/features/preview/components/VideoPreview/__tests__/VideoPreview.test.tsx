@@ -1,4 +1,11 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  waitForElementToBeRemoved,
+} from "@testing-library/react";
 import type { ReactElement, ReactNode } from "react";
 import { Provider } from "react-redux";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
@@ -105,6 +112,14 @@ function setPreview(store: AppStore, preview: PreviewState) {
 
 function renderVideoPreview(preview: PreviewState, store = createAppStore()) {
   setPreview(store, preview);
+  if (preview.status === "ready" && store.getState().source.media === null) {
+    store.dispatch(
+      sourceReady({
+        loadToken: store.getState().source.loadToken,
+        media: media(firstSource.sourcePath),
+      }),
+    );
+  }
   return renderPreview(<VideoPreview />, store);
 }
 
@@ -164,6 +179,15 @@ describe("VideoPreview", () => {
     );
   });
 
+  it("waits for source dimensions instead of inventing preview geometry", () => {
+    const store = createAppStore();
+    setPreview(store, readyPreview("easytrim-media://preview-1"));
+    const { container } = renderPreview(<VideoPreview />, store);
+
+    expect(container.querySelector("[data-preview-frame]")).not.toBeInTheDocument();
+    expect(container.querySelector("video")).not.toBeInTheDocument();
+  });
+
   it("renders the empty preview when no source is loaded", () => {
     renderPreview(<VideoPreviewEmpty />);
 
@@ -202,7 +226,7 @@ describe("VideoPreview", () => {
     }
   });
 
-  it("keeps crop controls open after a drag and closes them outside the selection", () => {
+  it("keeps crop controls open after a drag and closes them outside the selection", async () => {
     const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"));
 
     const viewport = container.querySelector('[aria-label="Video crop preview"]');
@@ -214,7 +238,7 @@ describe("VideoPreview", () => {
     openCropTool(viewport!);
     expect(container.querySelector("[data-crop-clip]")).toHaveClass("overflow-hidden");
     const handle = screen.getByRole("button", { name: "Resize crop from top left" });
-    expect(handle).toBeVisible();
+    await waitFor(() => expect(handle).toBeVisible());
     expect(screen.getAllByRole("button", { name: /resize crop from/i })).toHaveLength(8);
     expect(container.querySelector("[data-crop-rule-of-thirds]")).not.toBeInTheDocument();
     expect(container.querySelectorAll('[data-crop-snap-marker="top"]')).toHaveLength(5);
@@ -227,10 +251,9 @@ describe("VideoPreview", () => {
       "data-visible",
       "true",
     );
-    expect(container.querySelector('[data-crop-snap-marker="top"]')).toHaveClass(
-      "transition-[left,top]",
-    );
-    expect(container.querySelector("[data-preview-frame]")).toHaveClass("transition-[width]");
+    expect(container.querySelector('[data-crop-snap-marker="top"]')).toHaveStyle({
+      left: "0%",
+    });
     const frameBounds = vi
       .spyOn(HTMLElement.prototype, "getBoundingClientRect")
       .mockReturnValue(new DOMRect(0, 0, 400, 300));
@@ -250,7 +273,13 @@ describe("VideoPreview", () => {
 
     fireEvent.click(viewport!);
     frameBounds.mockRestore();
-    expect(container.querySelector("[data-crop-snap-markers]")).not.toBeInTheDocument();
+    expect(container.querySelector("[data-crop-snap-markers]")).toHaveAttribute(
+      "data-visible",
+      "false",
+    );
+    await waitForElementToBeRemoved(() =>
+      screen.queryByRole("button", { name: "Resize crop from top left" }),
+    );
     expect(
       screen.queryByRole("button", { name: "Resize crop from top left" }),
     ).not.toBeInTheDocument();
@@ -264,23 +293,23 @@ describe("VideoPreview", () => {
     expect(frame).toHaveStyle({ aspectRatio: "1.7777777777777777" });
     expect((frame as HTMLElement).style.width).toMatch(/^min\(100cqw, /);
     expect(container.querySelector("[data-crop-clip]")).toBeInTheDocument();
-    expect(container.querySelector("[data-full-rotated-source]")).toHaveStyle({
-      width: "100%",
-      height: "100%",
-      left: "0%",
-      top: "0%",
-    });
+    expect(container.querySelector("[data-full-rotated-source]")).toHaveAttribute(
+      "data-source-geometry",
+      "crop-relative-source",
+    );
 
     openCropTool(viewport);
 
-    expect(container.querySelector("[data-preview-area]")).toHaveClass("inset-7");
+    expect(container.querySelector("[data-preview-area]")).toHaveAttribute(
+      "data-crop-editing",
+      "true",
+    );
     expect(frame).toHaveStyle({ aspectRatio: "1.7777777777777777" });
-    expect(container.querySelector("[data-crop-selection]")).toHaveStyle({
-      left: "0%",
-      top: "0%",
-      width: "100%",
-      height: "100%",
-    });
+    expect(container.querySelector("[data-full-rotated-source]")).toHaveAttribute(
+      "data-source-geometry",
+      "full-rotated-source",
+    );
+    expect(container.querySelector("[data-crop-selection]")).toBeInTheDocument();
   });
 
   it("converts crop drag deltas using only the measured interaction frame", () => {
@@ -339,9 +368,7 @@ describe("VideoPreview", () => {
 
     fireEvent.click(screen.getByRole("menuitem", { name: "Rotate 90 CW" }));
     expect(store.getState().crop.rotationDegrees).toBe(90);
-    expect(container.querySelector("video")).toHaveStyle({
-      transform: "translate(-50%, -50%) rotate(90deg)",
-    });
+    expect(container.querySelector("video")).toHaveAttribute("data-presentation-rotation", "90");
     expect(container.querySelector("[data-crop-clip]")).toContainElement(
       container.querySelector("[data-flip-layer]"),
     );
@@ -355,21 +382,15 @@ describe("VideoPreview", () => {
 
     selectTransformAction(viewport!, "Rotate 90 CW");
     expect(store.getState().crop.rotationDegrees).toBe(0);
-    expect(container.querySelector("video")).toHaveStyle({
-      transform: "translate(-50%, -50%) rotate(0deg)",
-    });
+    expect(container.querySelector("video")).toHaveAttribute("data-presentation-rotation", "360");
 
     selectTransformAction(viewport!, "Rotate 90 CCW");
     expect(store.getState().crop.rotationDegrees).toBe(270);
-    expect(container.querySelector("video")).toHaveStyle({
-      transform: "translate(-50%, -50%) rotate(270deg)",
-    });
+    expect(container.querySelector("video")).toHaveAttribute("data-presentation-rotation", "270");
 
     selectTransformAction(viewport!, "Rotate 180");
     expect(store.getState().crop.rotationDegrees).toBe(90);
-    expect(container.querySelector("video")).toHaveStyle({
-      transform: "translate(-50%, -50%) rotate(90deg)",
-    });
+    expect(container.querySelector("video")).toHaveAttribute("data-presentation-rotation", "450");
   });
 
   it("applies flips to the preview and keeps a full-turn equivalent in UI state", () => {
@@ -379,15 +400,21 @@ describe("VideoPreview", () => {
     const viewport = container.querySelector('[aria-label="Video crop preview"]')!;
     selectTransformAction(viewport, "Flip horizontally");
     expect(store.getState().crop.flipHorizontal).toBe(true);
-    expect(container.querySelector("[data-flip-layer]")).toHaveStyle({
-      transform: "scaleX(-1) scaleY(1)",
-    });
+    expect(container.querySelector("[data-flip-layer]")).toHaveAttribute(
+      "data-flip-horizontal",
+      "true",
+    );
+    expect(container.querySelector("[data-flip-layer]")).toHaveAttribute(
+      "data-flip-vertical",
+      "false",
+    );
 
     selectTransformAction(viewport, "Flip vertically");
     expect(store.getState().crop.flipVertical).toBe(true);
-    expect(container.querySelector("[data-flip-layer]")).toHaveStyle({
-      transform: "scaleX(-1) scaleY(-1)",
-    });
+    expect(container.querySelector("[data-flip-layer]")).toHaveAttribute(
+      "data-flip-vertical",
+      "true",
+    );
 
     selectTransformAction(viewport, "Rotate 180");
     expect(store.getState().crop).toMatchObject({
@@ -395,9 +422,14 @@ describe("VideoPreview", () => {
       flipVertical: true,
       rotationDegrees: 180,
     });
-    expect(container.querySelector("[data-flip-layer]")).toHaveStyle({
-      transform: "scaleX(-1) scaleY(-1)",
-    });
+    expect(container.querySelector("[data-flip-layer]")).toHaveAttribute(
+      "data-flip-horizontal",
+      "true",
+    );
+    expect(container.querySelector("[data-flip-layer]")).toHaveAttribute(
+      "data-flip-vertical",
+      "true",
+    );
   });
 
   it("keeps the original right half visible after rotating the normalized crop", () => {
@@ -417,18 +449,37 @@ describe("VideoPreview", () => {
     expect(container.querySelector("[data-preview-frame]")).toHaveStyle({
       aspectRatio: "1.125",
     });
-    expect(container.querySelector("[data-full-rotated-source]")).toHaveStyle({
-      width: "100%",
-      height: "200%",
-      left: "0%",
-      top: "-100%",
+    expect(container.querySelector("[data-full-rotated-source]")).toHaveAttribute(
+      "data-source-geometry",
+      "crop-relative-source",
+    );
+    expect(container.querySelector("video")).toHaveAttribute("data-presentation-rotation", "90");
+    expect(container.querySelector("[data-flip-layer]")).toHaveAttribute(
+      "data-flip-horizontal",
+      "true",
+    );
+    expect(container.querySelector("[data-flip-layer]")).toHaveAttribute(
+      "data-flip-vertical",
+      "true",
+    );
+  });
+
+  it("starts each preview source at its own normalized presentation angle", () => {
+    const store = createAppStore();
+    store.dispatch(rotationChanged(270));
+    const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"), store);
+
+    expect(store.getState().crop.rotationDegrees).toBe(270);
+    expect(container.querySelector("video")).toHaveAttribute("data-presentation-rotation", "270");
+
+    act(() => store.dispatch(rotationChanged(0)));
+    expect(container.querySelector("video")).toHaveAttribute("data-presentation-rotation", "360");
+
+    act(() => {
+      store.dispatch(previewReady({ preview: readyPreview("easytrim-media://preview-2").value }));
     });
-    expect(container.querySelector("video")).toHaveStyle({
-      transform: "translate(-50%, -50%) rotate(90deg)",
-    });
-    expect(container.querySelector("[data-flip-layer]")).toHaveStyle({
-      transform: "scaleX(-1) scaleY(-1)",
-    });
+    expect(store.getState().crop.rotationDegrees).toBe(0);
+    expect(container.querySelector("video")).toHaveAttribute("data-presentation-rotation", "0");
   });
 
   it("confirms before resetting preview transformations", () => {
@@ -458,7 +509,7 @@ describe("VideoPreview", () => {
     });
   });
 
-  it("toggles playback on a left click and supports the context menu", () => {
+  it("toggles playback on a left click and supports the context menu", async () => {
     playback.toggle.mockClear();
     const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"));
 
@@ -475,10 +526,12 @@ describe("VideoPreview", () => {
     ).not.toBeInTheDocument();
 
     openCropTool(viewport!);
-    expect(screen.getByRole("button", { name: "Resize crop from top left" })).toBeVisible();
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Resize crop from top left" })).toBeVisible(),
+    );
   });
 
-  it("closes crop controls with Escape or when focus leaves the preview", () => {
+  it("closes crop controls with Escape or when focus leaves the preview", async () => {
     const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"));
 
     const viewport = container.querySelector('[aria-label="Video crop preview"]');
@@ -486,15 +539,15 @@ describe("VideoPreview", () => {
 
     openCropTool(viewport!);
     fireEvent.keyDown(viewport!, { key: "Escape" });
-    expect(
+    await waitForElementToBeRemoved(() =>
       screen.queryByRole("button", { name: "Resize crop from top left" }),
-    ).not.toBeInTheDocument();
+    );
 
     openCropTool(viewport!);
     fireEvent.blur(viewport!, { relatedTarget: document.body });
-    expect(
+    await waitForElementToBeRemoved(() =>
       screen.queryByRole("button", { name: "Resize crop from top left" }),
-    ).not.toBeInTheDocument();
+    );
   });
 
   it("keeps native audio muted when the preview element is replaced", () => {

@@ -1,3 +1,4 @@
+import { motion, type Transition } from "motion/react";
 import { type CSSProperties, type SyntheticEvent, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -9,10 +10,17 @@ import { diagnostics } from "@/lib/diagnostics";
 
 interface CropViewportVideoProps {
   cropIsOpen: boolean;
+  presentationRotation: number;
   style: CSSProperties;
+  transition: Transition;
 }
 
-function CropViewportVideo({ cropIsOpen, style }: CropViewportVideoProps) {
+function CropViewportVideo({
+  cropIsOpen,
+  presentationRotation,
+  style,
+  transition,
+}: CropViewportVideoProps) {
   const { t } = useTranslation();
   const {
     nativeLoopEnabled,
@@ -149,12 +157,21 @@ function CropViewportVideo({ cropIsOpen, style }: CropViewportVideoProps) {
   if (sourceUrl === null || previewKind === null) return null;
 
   return (
-    <video
+    <motion.video
+      animate={{
+        width: style.width,
+        height: style.height,
+        rotate: presentationRotation,
+        x: "-50%",
+        y: "-50%",
+      }}
       aria-label={t("preview.accessibility.source")}
-      className="absolute max-w-none cursor-pointer transition-transform duration-200 ease-out motion-reduce:transition-none"
+      className="absolute max-w-none cursor-pointer"
       crossOrigin="anonymous"
       data-playback-rate={playbackRate}
+      data-presentation-rotation={presentationRotation}
       data-preview-kind={previewKind}
+      initial={false}
       key={sourceUrl}
       loop={nativeLoopEnabled}
       muted={videoMuted}
@@ -172,7 +189,8 @@ function CropViewportVideo({ cropIsOpen, style }: CropViewportVideoProps) {
       preload="auto"
       ref={setVideoElement}
       src={sourceUrl}
-      style={{ ...style, transformOrigin: "center center" }}
+      style={{ left: style.left, top: style.top, transformOrigin: "center center" }}
+      transition={transition}
     />
   );
 }

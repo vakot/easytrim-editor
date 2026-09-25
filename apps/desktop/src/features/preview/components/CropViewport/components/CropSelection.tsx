@@ -1,3 +1,4 @@
+import { motion, type Transition } from "motion/react";
 import type { PointerEvent, RefObject } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -10,6 +11,7 @@ interface CropSelectionProps {
   isDragging: boolean;
   onPointerDown: (event: PointerEvent<HTMLElement>, handle: CropHandle) => void;
   selectionRef: RefObject<HTMLDivElement | null>;
+  transition: Transition;
 }
 
 const HANDLES: Array<{ className: string; handle: Exclude<CropHandle, "move"> }> = [
@@ -47,7 +49,13 @@ const HANDLES: Array<{ className: string; handle: Exclude<CropHandle, "move"> }>
   },
 ];
 
-function CropSelection({ crop, isDragging, onPointerDown, selectionRef }: CropSelectionProps) {
+function CropSelection({
+  crop,
+  isDragging,
+  onPointerDown,
+  selectionRef,
+  transition,
+}: CropSelectionProps) {
   const { t } = useTranslation();
   const handleLabels: Record<Exclude<CropHandle, "move">, string> = {
     bottom: t("preview.accessibility.crop.bottom"),
@@ -60,23 +68,23 @@ function CropSelection({ crop, isDragging, onPointerDown, selectionRef }: CropSe
     "top-right": t("preview.accessibility.crop.topRight"),
   };
 
-  const transition = !isDragging
-    ? "transition-[width,height,left,top] duration-200 ease-out motion-reduce:transition-none"
-    : "";
-
   return (
-    <div
-      className={`absolute border-2 border-primary bg-primary/10 ${transition}`}
+    <motion.div
+      animate={{
+        left: `${crop.x * 100}%`,
+        top: `${crop.y * 100}%`,
+        width: `${crop.width * 100}%`,
+        height: `${crop.height * 100}%`,
+        opacity: 1,
+      }}
+      className="absolute border-2 border-primary bg-primary/10"
       data-crop-selection
+      exit={{ opacity: 0, pointerEvents: "none" }}
+      initial={{ opacity: 0 }}
       onClick={(event) => event.stopPropagation()}
       onPointerDown={(event) => onPointerDown(event, "move")}
       ref={selectionRef}
-      style={{
-        width: `${crop.width * 100}%`,
-        height: `${crop.height * 100}%`,
-        left: `${crop.x * 100}%`,
-        top: `${crop.y * 100}%`,
-      }}
+      transition={transition}
     >
       {isDragging ? (
         <svg
@@ -113,7 +121,7 @@ function CropSelection({ crop, isDragging, onPointerDown, selectionRef }: CropSe
           type="button"
         />
       ))}
-    </div>
+    </motion.div>
   );
 }
 
