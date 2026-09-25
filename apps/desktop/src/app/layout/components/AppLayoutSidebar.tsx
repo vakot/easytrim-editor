@@ -1,9 +1,7 @@
-import { ChevronRight, Clock3, FolderOpen, Layers2, Upload } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -19,16 +17,8 @@ import {
   SourceListCloseAll,
   SourceListContent,
   SourceListSearch,
-  SourceListTabs,
 } from "@/features/source";
 import { cn } from "@/lib/class-names.utils";
-
-const groupByIcons = {
-  none: Layers2,
-  folder: FolderOpen,
-  time: Clock3,
-  imported: Upload,
-};
 
 function AppLayoutSidebar() {
   const { t } = useTranslation();
@@ -75,45 +65,19 @@ function AppLayoutSidebar() {
               </div>
             )}
           </ResizablePanelControl>
-          <div className="mt-2 flex min-h-0 flex-1 px-3">
-            <SourceList>
-              {({ tab }) => {
-                const Icon = groupByIcons[tab];
 
-                return (
-                  <>
-                    <div className="flex gap-2">
-                      <SourceListSearch />
+          <SourceList>
+            <div className="mt-2 grid min-h-0 px-3">
+              <div className="flex gap-2">
+                <SourceListSearch />
+                <SourceListCloseAll />
+              </div>
 
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button size="icon-sm" variant="outline">
-                            <Icon />
-                          </Button>
-                        </PopoverTrigger>
-
-                        <PopoverContent align="end" className="grid w-auto gap-1.5">
-                          <Label>{t("source.labels.groupBy")}</Label>
-                          <SourceListTabs />
-                        </PopoverContent>
-                      </Popover>
-
-                      <SourceListCloseAll />
-                    </div>
-
-                    <ScrollArea
-                      className={cn(
-                        "-mx-2.5 min-h-0 flex-1 px-2.5",
-                        tab !== "none" && "before:top-7",
-                      )}
-                    >
-                      <SourceListContent />
-                    </ScrollArea>
-                  </>
-                );
-              }}
-            </SourceList>
-          </div>
+              <ScrollArea className="-mx-2.5 min-h-0 flex-1 px-2.5">
+                <SourceListContent className="pt-2 pb-1.5" />
+              </ScrollArea>
+            </div>
+          </SourceList>
         </ResizablePanel>
 
         <ResizableHandle className="bg-transparent px-3">

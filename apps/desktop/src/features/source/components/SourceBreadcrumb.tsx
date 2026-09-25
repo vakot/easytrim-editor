@@ -24,7 +24,11 @@ import { getPathDirectories, getRevealLabel } from "../lib/source.utils";
 
 import { SourceDetails } from "./SourceDetails";
 
-function SourceBreadcrumb() {
+interface SourceBreadcrumbProps {
+  className?: string;
+}
+
+function SourceBreadcrumb({ className }: SourceBreadcrumbProps) {
   const activeInstanceId = useAppSelector(selectActiveInstanceId);
   const entries = useAppSelector(selectEditingInstanceTopologyEntries);
   const instance = entries.find((entry) => entry.id === activeInstanceId);
@@ -35,7 +39,7 @@ function SourceBreadcrumb() {
   const directories = getPathDirectories(sourcePath);
 
   return (
-    <Breadcrumb className="min-w-0 px-2 pb-1">
+    <Breadcrumb className={className}>
       <BreadcrumbList className="min-w-0 flex-nowrap overflow-hidden text-xs">
         <SourceBreadcrumbList>
           {directories.map((directory) => (

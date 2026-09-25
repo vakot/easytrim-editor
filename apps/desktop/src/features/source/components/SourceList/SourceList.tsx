@@ -1,7 +1,5 @@
 import { type ReactNode, useCallback, useMemo, useState } from "react";
 
-import { Tabs } from "@/components/ui/tabs";
-
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectImportedEditingInstances } from "@/app/store/slices/editing-instances-slice";
 
@@ -11,22 +9,19 @@ import { SourceListCloseAll } from "./components/SourceListCloseAll";
 import { SourceListContent } from "./components/SourceListContent";
 import { SourceListEmpty } from "./components/SourceListEmpty";
 import { SourceListSearch } from "./components/SourceListSearch";
-import { SourceListTabs } from "./components/SourceListTabs";
-import type { SourceListState, SourceListTab } from "./contexts/SourceListContext";
+import type { SourceListState } from "./contexts/SourceListContext";
 import { SourceListContext } from "./contexts/SourceListContext";
 import { usePrepareSources } from "./hooks/usePrepareSources";
 
 const SOURCE_LIST_PAGE_SIZE = 12;
 
 interface SourceListProps {
-  children?:
-    ReactNode | ((state: Pick<SourceListState, "search" | "sources" | "tab">) => ReactNode);
+  children?: ReactNode | ((state: Pick<SourceListState, "search" | "sources">) => ReactNode);
 }
 
 function SourceList({ children }: SourceListProps) {
   const sources = useAppSelector(selectImportedEditingInstances);
   const [search, setSearch] = useState("");
-  const [tab, setTab] = useState<SourceListTab>("none");
   const [visibleSourceCount, setVisibleSourceCount] = useState(SOURCE_LIST_PAGE_SIZE);
 
   const searchSources = useMemo(() => createSourceSearcher(sources), [sources]);
@@ -57,7 +52,7 @@ function SourceList({ children }: SourceListProps) {
   if (sources.length === 0) return <SourceListEmpty />;
 
   const child =
-    typeof children === "function" ? children({ search, sources: filteredSources, tab }) : children;
+    typeof children === "function" ? children({ search, sources: filteredSources }) : children;
 
   return (
     <SourceListContext.Provider
@@ -69,17 +64,10 @@ function SourceList({ children }: SourceListProps) {
         search,
         setSearch: handleSearchChange,
         sources: filteredSources,
-        tab,
         visibleSources,
       }}
     >
-      <Tabs
-        className="min-h-0 min-w-0 flex-1"
-        onValueChange={(value) => setTab(value as SourceListTab)}
-        value={tab}
-      >
-        {child ?? <SourceListContent />}
-      </Tabs>
+      {child ?? <SourceListContent />}
     </SourceListContext.Provider>
   );
 }
@@ -90,5 +78,4 @@ export {
   SourceListContent,
   type SourceListProps,
   SourceListSearch,
-  SourceListTabs,
 };

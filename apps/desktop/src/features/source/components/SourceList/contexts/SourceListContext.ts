@@ -14,7 +14,6 @@ type SourceListState = {
   search: string;
   setSearch: (value: string) => void;
   sources: EditingInstance[];
-  tab: SourceListTab;
   visibleSources: EditingInstance[];
 };
 
