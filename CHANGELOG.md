@@ -4,8 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Added Activity Feed rows that combine consecutive file-close activities and show the latest activity time.
+
 ### Changed
 
+- Smoothed Activity Feed entry appearance, removal, and reflow in default, compact, and branch views.
+- Animated source tab additions and removals, and kept the selected tab visible when switching sources.
 - Smoothed collapse and expand transitions for the Source List and Activity Feed panels.
 
 ## [1.11.0]
@@ -23,6 +29,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Smoothed source item entry and exit transitions and the appearance of extra actions and export details.
 - Smoothed preview rotation, crop, flip, and reset transitions.
 - Adapted the empty preview logo for light and dark themes.
 - Expanded Media Tools details with FFmpeg and FFprobe versions, executable paths, and concise installation and recheck guidance when tools are unavailable.

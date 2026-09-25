@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import { ChevronRight, Clock3, Folder, FolderOpen, Upload, X } from "lucide-react";
+import { AnimatePresence } from "motion/react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -121,9 +122,11 @@ function SourceListGrid({ sources }: { sources: EditingInstance[] }) {
 
   return (
     <ul className="flex flex-col gap-2" data-slot="imported-sources-grid">
-      {sources.map((source) => (
-        <SourceListItem key={source.id} search={search} source={source} />
-      ))}
+      <AnimatePresence initial={false}>
+        {sources.map((source) => (
+          <SourceListItem key={source.id} search={search} source={source} />
+        ))}
+      </AnimatePresence>
     </ul>
   );
 }

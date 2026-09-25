@@ -35,10 +35,12 @@ semantic meaning.
 
 ## Tests and stories
 
-Tests live in an owning module's `__tests__/` directory and mirror the complete source filename
-stem. Keep shared setup, factories, mocks, and fixtures in `src/test/`. Stories live in a nested
-`__stories__` directory owned by the component's immediate parent, use lowercase module-stem names,
-and use typed CSF. New reusable components should add or update their matching story.
+Tests live in an owning module's `__tests__/` directory and mirror the covered component's name:
+`ComponentName.tsx` uses `ComponentName.test.tsx`. Keep shared setup, factories, mocks, and fixtures
+in `src/test/`. Stories live in a nested `__stories__` directory owned by the component's immediate
+parent, match the covered component's name (`ComponentName.stories.tsx` for `ComponentName.tsx`),
+and use typed CSF. For non-component modules, preserve the module's filename stem. New reusable
+components should add or update their matching story.
 
 ## Styling and tooling
 

@@ -9,6 +9,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
@@ -47,11 +48,21 @@ import {
 } from "../../SourceMenuActions";
 
 function SourceListItem({ search, source }: { search: string; source: EditingInstance }) {
+  const shouldReduceMotion = useReducedMotion() === true;
+  const duration = shouldReduceMotion ? 0 : 0.16;
+
   return (
-    <li className="flex w-full min-w-0 flex-col">
+    <motion.li
+      animate={{ opacity: 1, y: 0 }}
+      className="flex w-full min-w-0 flex-col"
+      exit={{ opacity: 0, y: shouldReduceMotion ? 0 : -4 }}
+      initial={shouldReduceMotion ? false : { opacity: 0, y: 4 }}
+      layout={shouldReduceMotion ? false : "position"}
+      transition={{ duration, ease: "easeOut" }}
+    >
       <SourceListItemCard search={search} source={source} />
       <SourceListItemExtra source={source} />
-    </li>
+    </motion.li>
   );
 }
 
@@ -100,17 +111,32 @@ function SourceListItemCard({ search, source }: { search: string; source: Editin
 const sourceListItemExtraClassName = "min-w-0 min-h-8 border-t bg-muted/50 p-1 first:border-t-0";
 
 function SourceListItemExtra({ source }: { source: EditingInstance }) {
-  if (source.sourceAvailability !== "deleted" && source.exportAttempts.length === 0) return null;
+  const shouldReduceMotion = useReducedMotion() === true;
+  const isVisible = source.sourceAvailability === "deleted" || source.exportAttempts.length > 0;
+  const duration = shouldReduceMotion ? 0 : 0.16;
 
   return (
-    <div className="mt-px w-full min-w-0 px-3">
-      <ul className="flex w-full min-w-0 flex-col overflow-hidden rounded-b-lg border border-t-0">
-        <SourceListItemExports sourceId={source.id} />
-        <li className={cn(sourceListItemExtraClassName, "flex gap-1")}>
-          <SourceListItemActions source={source} />
-        </li>
-      </ul>
-    </div>
+    <AnimatePresence initial={false}>
+      {isVisible ? (
+        <motion.div
+          animate={{ height: "auto", opacity: 1 }}
+          className="overflow-hidden"
+          exit={{ height: 0, opacity: 0 }}
+          initial={shouldReduceMotion ? false : { height: 0, opacity: 0 }}
+          key="source-list-item-extra"
+          transition={{ duration, ease: "easeOut" }}
+        >
+          <div className="mt-px w-full min-w-0 px-3">
+            <ul className="flex w-full min-w-0 flex-col overflow-hidden rounded-b-lg border border-t-0">
+              <SourceListItemExports sourceId={source.id} />
+              <li className={cn(sourceListItemExtraClassName, "flex gap-1")}>
+                <SourceListItemActions source={source} />
+              </li>
+            </ul>
+          </div>
+        </motion.div>
+      ) : null}
+    </AnimatePresence>
   );
 }
 
