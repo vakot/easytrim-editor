@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { EditingInstance } from "@/domain/editing-instance";
 
-import { searchSources } from "../source-search.utils";
+import { createSourceSearcher } from "../source-search.utils";
 
 function source(
   id: string,
@@ -37,21 +37,23 @@ describe("source search", () => {
     source("third", "Enemy destroyed compilation.mp4"),
   ];
 
+  const searchSources = createSourceSearcher(sources);
+
   it.each(["war thunder", "war t 2026", "war thudner", "enemy destroyd"])(
     "finds the featured source for %s",
     (query) => {
-      expect(searchSources(sources, query).map(({ source: result }) => result.id)).toContain("war");
+      expect(searchSources(query).map(({ source: result }) => result.id)).toContain("war");
     },
   );
 
   it("searches display names and full paths and returns ranges for the matched fields", () => {
-    const nameMatch = searchSources([featured], "thunder enemy")[0];
+    const nameMatch = createSourceSearcher([featured])("thunder enemy")[0];
     expect(nameMatch?.displayNameRanges).toEqual([
       [4, 10],
       [12, 16],
     ]);
 
-    const pathMatch = searchSources([featured], "C:/Media")[0];
+    const pathMatch = createSourceSearcher([featured])("C:/Media")[0];
     expect(pathMatch?.sourcePathRanges).toEqual([
       [0, 0],
       [3, 7],
@@ -60,11 +62,13 @@ describe("source search", () => {
 
   it("ranks stronger results before weaker fuzzy matches", () => {
     const candidates = [source("weak", "War thunder reference"), featured];
-    expect(searchSources(candidates, "war thunder enemy destroyed 2026")[0]?.source.id).toBe("war");
+    expect(createSourceSearcher(candidates)("war thunder enemy destroyed 2026")[0]?.source.id).toBe(
+      "war",
+    );
   });
 
   it("keeps the supplied order for a blank query", () => {
-    expect(searchSources(sources, "   ").map(({ source: result }) => result.id)).toEqual([
+    expect(searchSources("   ").map(({ source: result }) => result.id)).toEqual([
       "first",
       "war",
       "third",
@@ -72,6 +76,6 @@ describe("source search", () => {
   });
 
   it("returns no results for an unrelated query", () => {
-    expect(searchSources(sources, "completely unrelated zebra")).toEqual([]);
+    expect(searchSources("completely unrelated zebra")).toEqual([]);
   });
 });

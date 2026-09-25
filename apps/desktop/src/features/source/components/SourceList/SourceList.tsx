@@ -5,7 +5,7 @@ import { Tabs } from "@/components/ui/tabs";
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectImportedEditingInstances } from "@/app/store/slices/editing-instances-slice";
 
-import { searchSources } from "../../lib/source-search.utils";
+import { createSourceSearcher } from "../../lib/source-search.utils";
 
 import { SourceListCloseAll } from "./components/SourceListCloseAll";
 import { SourceListContent } from "./components/SourceListContent";
@@ -29,7 +29,8 @@ function SourceList({ children }: SourceListProps) {
   const [tab, setTab] = useState<SourceListTab>("none");
   const [visibleSourceCount, setVisibleSourceCount] = useState(SOURCE_LIST_PAGE_SIZE);
 
-  const searchResults = useMemo(() => searchSources(sources, search), [search, sources]);
+  const searchSources = useMemo(() => createSourceSearcher(sources), [sources]);
+  const searchResults = useMemo(() => searchSources(search), [search, searchSources]);
   const filteredSources = useMemo(() => searchResults.map(({ source }) => source), [searchResults]);
   const matchesBySourceId = useMemo(
     () => new Map(searchResults.map((result) => [result.source.id, result])),

@@ -1,8 +1,7 @@
 import type { ComponentProps, ReactNode } from "react";
 
+import type { SearchMatchRange } from "@/domain/search.types";
 import { cn } from "@/lib/class-names.utils";
-
-type HighlightRange = readonly [number, number];
 
 function Highlight({
   children,
@@ -13,7 +12,7 @@ function Highlight({
 }: ComponentProps<"mark"> & {
   children: string;
   query?: string;
-  ranges?: ReadonlyArray<HighlightRange>;
+  ranges?: ReadonlyArray<SearchMatchRange>;
 }) {
   const normalizedQuery = query?.trim().toLocaleLowerCase() ?? "";
   const matchRanges = ranges ?? getQueryRanges(children, normalizedQuery);
@@ -45,11 +44,11 @@ function Highlight({
   return parts;
 }
 
-function getQueryRanges(text: string, query: string): HighlightRange[] {
+function getQueryRanges(text: string, query: string): SearchMatchRange[] {
   if (!query) return [];
 
   const normalizedText = text.toLocaleLowerCase();
-  const ranges: HighlightRange[] = [];
+  const ranges: SearchMatchRange[] = [];
   let start = 0;
 
   while (start < text.length) {
@@ -63,4 +62,3 @@ function getQueryRanges(text: string, query: string): HighlightRange[] {
 }
 
 export { Highlight };
-export type { HighlightRange };

@@ -6,7 +6,6 @@ import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Highlight } from "@/components/ui/highlight";
 import { RelativeTimestamp } from "@/components/ui/relative-timestamp";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -50,7 +49,6 @@ function SourceListGroup({
 }) {
   const [open, setOpen] = useState(true);
   const Icon = "open" in icon ? (open ? icon.open : icon.closed) : icon;
-  const { search } = useSourceListData();
   const { t } = useTranslation();
   const closeLabel = t("source.actions.closeGroup");
 
@@ -64,7 +62,7 @@ function SourceListGroup({
               <Icon className="size-3.5 shrink-0" />
               {group.timestampMicros === undefined ? (
                 <span className="truncate" title={group.label}>
-                  <Highlight query={search}>{group.label}</Highlight>
+                  {group.label}
                 </span>
               ) : (
                 <RelativeTimestamp timestamp={group.timestampMicros} />

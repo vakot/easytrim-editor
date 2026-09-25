@@ -12,7 +12,6 @@ import {
   CommandSeparator,
   CommandShortcut,
 } from "@/components/ui/command";
-import type { HighlightRange } from "@/components/ui/highlight";
 import { Highlight } from "@/components/ui/highlight";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { menuVariantIconClassNames } from "@/components/ui/menu";
@@ -33,6 +32,7 @@ import {
 import { ApplicationCommandIcon } from "@/app/components/ApplicationCommandMenuItem";
 import { useCommandPalette } from "@/app/contexts/command-palette-context";
 import { useApplicationCommands } from "@/app/hooks/useApplicationCommands";
+import type { SearchMatchRange } from "@/domain/search.types";
 import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
 
 const commandVariantClassNames = {
@@ -43,7 +43,7 @@ const commandVariantClassNames = {
 
 type CommandPaletteGroupMatches = {
   groupLabel: string;
-  groupMatchRanges: ReadonlyArray<HighlightRange>;
+  groupMatchRanges: ReadonlyArray<SearchMatchRange>;
   matches: ApplicationCommandMatch<ApplicationCommandId>[];
 };
 
@@ -227,8 +227,8 @@ function groupCommandMatches(matches: readonly ApplicationCommandMatch<Applicati
 }
 
 function mergeRanges(
-  first: ReadonlyArray<readonly [number, number]>,
-  second: ReadonlyArray<readonly [number, number]>,
+  first: ReadonlyArray<SearchMatchRange>,
+  second: ReadonlyArray<SearchMatchRange>,
 ) {
   return [...first, ...second]
     .filter(
