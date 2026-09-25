@@ -28,15 +28,20 @@ function ActivityFeedGroupedEntry({ compact = false, group }: ActivityFeedGroupe
   const timestamp = toTimestampMicros(group.latestEntryAt);
   const relativeTime = formatRelativeTime(timestamp, locale, t("common.status.unknown"), now);
   const Icon = group.icon;
+  const groupLength = group.entries.length;
 
   return (
     <Marker className={compact ? "h-6 items-center text-xs" : "min-h-6 items-start text-xs"}>
       <MarkerIcon className="relative">
         <Icon />
-        <Layers2
-          aria-hidden="true"
-          className="absolute -right-0.5 -bottom-0.5 size-2.5 rounded-sm bg-card text-muted-foreground"
-        />
+        {groupLength > 1 && <Icon className="absolute top-1 opacity-60" />}
+        {groupLength > 2 && <Icon className="absolute top-2 opacity-20" />}
+        {groupLength === 1 && (
+          <Layers2
+            aria-hidden="true"
+            className="absolute -right-0.5 -bottom-0.5 size-2.5 rounded-sm bg-card text-muted-foreground"
+          />
+        )}
       </MarkerIcon>
 
       <MarkerContent className={compact ? "flex-row flex-nowrap items-center gap-1" : undefined}>
