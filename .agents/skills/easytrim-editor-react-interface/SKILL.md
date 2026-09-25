@@ -147,7 +147,11 @@ Keep these regions visible without navigation:
 In addition to the shared quality gate, cover:
 
 - place test suites in the owning module folder's `__tests__/` directory and preserve the source
-  filename stem before `.test.ts` or `.test.tsx`;
+  filename stem before `.test.ts` or `.test.tsx`; for a component named `ComponentName.tsx`, use
+  `ComponentName.test.tsx` and place it in that component's `__tests__/` directory;
+- name component stories after the covered component: `ComponentName.stories.tsx` for
+  `ComponentName.tsx`, in the owning `__stories__/` directory; preserve the module stem for stories
+  covering non-component modules;
 
 - picker/drop import and immediate replacement;
 - reducer and timeline coordinate boundaries;

@@ -1,3 +1,4 @@
+import { CircleX } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useTranslation } from "react-i18next";
 
@@ -11,15 +12,17 @@ import {
 
 import { formatSourcePath } from "@/features/source";
 
-import type {
-  ActivityAction,
-  ActivityBranch,
-  ActivityEntry,
+import {
+  type ActivityAction,
+  type ActivityBranch,
+  type ActivityEntry,
+  groupActivityEntriesForDisplay,
 } from "../../../lib/activity-projection";
 
 import { ActivityFeedEntryButton } from "./ActivityFeedEntryButton";
 import { ActivityFeedEntryIcon } from "./ActivityFeedEntryIcon";
 import { ActivityFeedEntryTitle } from "./ActivityFeedEntryTitle";
+import { ActivityFeedGroupedEntry } from "./ActivityFeedGroupedEntry";
 
 interface ActivityFeedBranchProps {
   branch: ActivityBranch;
@@ -29,6 +32,7 @@ interface ActivityFeedBranchProps {
 function ActivityFeedBranch({ branch, onAction }: ActivityFeedBranchProps) {
   const shouldReduceMotion = useReducedMotion() === true;
   const { t } = useTranslation();
+  const items = groupActivityEntriesForDisplay(branch.entries);
   const normalizedSourcePath = formatSourcePath(branch.path ?? "");
   const filename =
     normalizedSourcePath.split(/[\\/]/).filter(Boolean).pop() ?? t("app.labels.file");
@@ -58,9 +62,26 @@ function ActivityFeedBranch({ branch, onAction }: ActivityFeedBranchProps) {
 
       <MarkerGroup className="gap-2 pt-2">
         <AnimatePresence initial={false}>
-          {branch.entries.map((entry) => (
-            <ActivityFeedMarkerGroupItem entry={entry} key={entry.id} onAction={onAction} />
-          ))}
+          {items.map((item) =>
+            item.kind === "group" ? (
+              <ActivityFeedGroupedEntry
+                compact
+                group={{
+                  entries: item.group.entries,
+                  icon: CircleX,
+                  latestEntryAt: item.group.latestEntryAt,
+                  title: t("app.status.closedFiles", { count: item.group.count }),
+                }}
+                key={item.group.id}
+              />
+            ) : (
+              <ActivityFeedMarkerGroupItem
+                entry={item.entry}
+                key={item.entry.id}
+                onAction={onAction}
+              />
+            ),
+          )}
         </AnimatePresence>
       </MarkerGroup>
     </motion.div>
