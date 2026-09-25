@@ -6,7 +6,6 @@ import type { EditingInstance } from "@/domain/editing-instance";
 import { firstSource } from "@/test/source.fixtures";
 
 const dispatch = vi.hoisted(() => vi.fn());
-const prepareMetadata = vi.hoisted(() => vi.fn());
 const prepareThumbnails = vi.hoisted(() => vi.fn());
 
 vi.mock("@/app/store/redux-hooks", () => ({
@@ -14,7 +13,6 @@ vi.mock("@/app/store/redux-hooks", () => ({
 }));
 
 vi.mock("@/app/store/thunks/source-media-thunks", () => ({
-  prepareImportedSourceMetadataRequested: prepareMetadata,
   prepareImportedSourceThumbnailsRequested: prepareThumbnails,
 }));
 
@@ -50,27 +48,20 @@ describe("usePrepareSources", () => {
     vi.clearAllMocks();
   });
 
-  it("stays loading until metadata and thumbnails are both prepared", async () => {
-    const metadata = createDeferred<void>();
+  it("stays loading until thumbnails are prepared", async () => {
     const thumbnails = createDeferred<void>();
-    const metadataRequest = {};
     const thumbnailRequest = {};
 
-    prepareMetadata.mockReturnValue(metadataRequest);
     prepareThumbnails.mockReturnValue(thumbnailRequest);
     dispatch.mockImplementation((request: unknown) => {
-      if (request === metadataRequest) return metadata.promise;
       if (request === thumbnailRequest) return thumbnails.promise;
       throw new Error("Unexpected preparation request");
     });
 
     render(<PreparationProbe instances={[createSource()]} />);
 
-    await waitFor(() => expect(dispatch).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(dispatch).toHaveBeenCalledTimes(1));
     expect(screen.getByTestId("loading")).toHaveTextContent("true");
-
-    metadata.resolve();
-    await waitFor(() => expect(screen.getByTestId("loading")).toHaveTextContent("true"));
 
     thumbnails.resolve();
     await waitFor(() => expect(screen.getByTestId("loading")).toHaveTextContent("false"));
