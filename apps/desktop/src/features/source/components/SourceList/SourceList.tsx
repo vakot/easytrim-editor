@@ -3,7 +3,10 @@ import { type ReactNode, useCallback, useMemo, useState } from "react";
 import { Tabs } from "@/components/ui/tabs";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
-import { selectImportedEditingInstances } from "@/app/store/slices/editing-instances-slice";
+import {
+  selectSourceListEntries,
+  selectSourceSearchEntries,
+} from "@/app/store/slices/editing-instances-slice";
 
 import { createSourceSearcher } from "../../lib/source-search.utils";
 
@@ -23,16 +26,30 @@ interface SourceListProps {
 }
 
 function SourceList({ children }: SourceListProps) {
-  const sources = useAppSelector(selectImportedEditingInstances);
+  const sources = useAppSelector(selectSourceListEntries);
+  const searchEntries = useAppSelector(selectSourceSearchEntries);
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<SourceListTab>("none");
   const [visibleSourceCount, setVisibleSourceCount] = useState(SOURCE_LIST_PAGE_SIZE);
 
-  const searchSources = useMemo(() => createSourceSearcher(sources), [sources]);
+  const searchSources = useMemo(() => createSourceSearcher(searchEntries), [searchEntries]);
   const searchResults = useMemo(() => searchSources(search), [search, searchSources]);
-  const filteredSources = useMemo(() => searchResults.map(({ source }) => source), [searchResults]);
+  const sourcesById = useMemo(
+    () => new Map(sources.map((source) => [source.id, source])),
+    [sources],
+  );
+
+  const filteredSources = useMemo(
+    () =>
+      searchResults.flatMap(({ id }) => {
+        const source = sourcesById.get(id);
+        return source ? [source] : [];
+      }),
+    [searchResults, sourcesById],
+  );
+
   const matchesBySourceId = useMemo(
-    () => new Map(searchResults.map((result) => [result.source.id, result])),
+    () => new Map(searchResults.map((result) => [result.id, result])),
     [searchResults],
   );
 

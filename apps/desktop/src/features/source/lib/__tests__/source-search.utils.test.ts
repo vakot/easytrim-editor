@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { EditingInstance } from "@/domain/editing-instance";
+import type { EditingInstanceSearchEntry } from "@/domain/editing-instance";
 
 import { createSourceSearcher } from "../source-search.utils";
 
@@ -8,19 +8,11 @@ function source(
   id: string,
   displayName: string,
   sourcePath = `C:/Media/${displayName}`,
-): EditingInstance {
+): EditingInstanceSearchEntry {
   return {
-    exportAttempts: [],
+    displayName,
     id,
-    origin: "source-import",
-    snapshot: {
-      audio: { master: { enabled: true, volumePercent: 100 }, mergeAudio: false, tracks: [] },
-      crop: null,
-      rotation: 0,
-      source: { displayName, sourcePath },
-      trim: { kind: "full-source" },
-    },
-    sourceAvailability: "available",
+    sourcePath,
   };
 }
 
@@ -42,7 +34,7 @@ describe("source search", () => {
   it.each(["war thunder", "war t 2026", "war thudner", "enemy destroyd"])(
     "finds the featured source for %s",
     (query) => {
-      expect(searchSources(query).map(({ source: result }) => result.id)).toContain("war");
+      expect(searchSources(query).map(({ id }) => id)).toContain("war");
     },
   );
 
@@ -62,17 +54,11 @@ describe("source search", () => {
 
   it("ranks stronger results before weaker fuzzy matches", () => {
     const candidates = [source("weak", "War thunder reference"), featured];
-    expect(createSourceSearcher(candidates)("war thunder enemy destroyed 2026")[0]?.source.id).toBe(
-      "war",
-    );
+    expect(createSourceSearcher(candidates)("war thunder enemy destroyed 2026")[0]?.id).toBe("war");
   });
 
   it("keeps the supplied order for a blank query", () => {
-    expect(searchSources("   ").map(({ source: result }) => result.id)).toEqual([
-      "first",
-      "war",
-      "third",
-    ]);
+    expect(searchSources("   ").map(({ id }) => id)).toEqual(["first", "war", "third"]);
   });
 
   it("returns no results for an unrelated query", () => {

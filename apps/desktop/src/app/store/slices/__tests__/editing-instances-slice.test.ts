@@ -31,7 +31,10 @@ import {
   selectExportQueueById,
   selectHasProcessableExports,
   selectHasQueuedOrRenderingExportByInstanceId,
+  selectImportedEditingInstanceIds,
   selectImportedEditingInstances,
+  selectSourceListEntries,
+  selectSourceSearchEntries,
 } from "../editing-instances-slice";
 
 const baseSnapshot = createDefaultEditorSnapshot(firstSource, false);
@@ -492,5 +495,45 @@ describe("editing instances slice", () => {
     expect(selectEditingInstanceTopologyEntries(root())).toBe(topology);
     expect(selectHasQueuedOrRenderingExportByInstanceId(root(), "instance-1")).toBe(true);
     expect(selectHasProcessableExports(root())).toBe(true);
+  });
+
+  it("keeps SourceList and search topology stable across activation and editor-only changes", () => {
+    const first = instance("instance-1");
+    const second = instance("instance-2", { ...baseSnapshot, source: secondSource });
+    let state = editingInstancesReducer(
+      initialEditingInstancesState,
+      editingInstancesAdded([first, second]),
+    );
+
+    const root = () => ({ editingInstances: state }) as never;
+    const listEntries = selectSourceListEntries(root());
+    const searchEntries = selectSourceSearchEntries(root());
+    const importedIds = selectImportedEditingInstanceIds(root());
+
+    state = editingInstancesReducer(state, activeEditingInstanceChanged("instance-2"));
+    expect(selectSourceListEntries(root())).toBe(listEntries);
+    expect(selectSourceSearchEntries(root())).toBe(searchEntries);
+    expect(selectImportedEditingInstanceIds(root())).toBe(importedIds);
+
+    state = editingInstancesReducer(
+      state,
+      editingInstanceSnapshotUpdated({
+        id: "instance-2",
+        snapshot: { ...second.snapshot, rotation: 90 },
+      }),
+    );
+    expect(selectSourceListEntries(root())).toBe(listEntries);
+    expect(selectSourceSearchEntries(root())).toBe(searchEntries);
+    expect(selectImportedEditingInstanceIds(root())).toBe(importedIds);
+
+    state = editingInstancesReducer(
+      state,
+      editingInstancesSourceAvailabilityChanged({
+        sourcePath: secondSource.sourcePath,
+        availability: "missing",
+      }),
+    );
+    expect(selectSourceListEntries(root())).not.toBe(listEntries);
+    expect(selectSourceSearchEntries(root())).toBe(searchEntries);
   });
 });

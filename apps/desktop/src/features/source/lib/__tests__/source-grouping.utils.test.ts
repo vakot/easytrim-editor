@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { EditingInstance } from "@/domain/editing-instance";
+import type { EditingInstanceListEntry } from "@/domain/editing-instance";
 
 import {
   getSourceFolderPath,
@@ -14,20 +14,14 @@ function source(
   sourcePath: string,
   updatedAtMicros?: number,
   importedAtMicros?: number,
-): EditingInstance {
+): EditingInstanceListEntry {
   return {
-    exportAttempts: [],
+    displayName: id,
     id,
     ...(importedAtMicros === undefined ? {} : { importedAtMicros }),
-    origin: "source-import",
-    snapshot: {
-      audio: { master: { enabled: true, volumePercent: 100 }, mergeAudio: false, tracks: [] },
-      crop: null,
-      rotation: 0,
-      source: { displayName: id, sourcePath, ...(updatedAtMicros ? { updatedAtMicros } : {}) },
-      trim: { kind: "full-source" },
-    },
     sourceAvailability: "available",
+    sourcePath,
+    ...(updatedAtMicros === undefined ? {} : { updatedAtMicros }),
   };
 }
 

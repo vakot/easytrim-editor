@@ -1,11 +1,9 @@
 import { cva } from "class-variance-authority";
-import { memo, type ReactNode } from "react";
+import { memo, type ReactNode, useMemo } from "react";
 
 import { Card } from "@/components/ui/card";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
-import { selectActiveInstanceId } from "@/app/store/slices/editing-instances-slice";
-import { selectSourceStatus } from "@/app/store/slices/source-slice";
 import { navigateToEditingInstance } from "@/app/store/thunks/source-media-thunks";
 import type { EditingInstance } from "@/domain/editing-instance";
 import { cn } from "@/lib/class-names.utils";
@@ -19,6 +17,10 @@ import { SourceCardThumbnail } from "./components/SourceCardThumbnail";
 import { SourceCardTitle } from "./components/SourceCardTitle";
 import { SourceCardContext } from "./contexts/SourceCardContext";
 import { getSourceCardStatus, getSourceCardVariant } from "./lib/source-card.utils";
+import {
+  createSelectSourceCardActive,
+  createSelectSourceCardStatus,
+} from "./lib/source-card-selectors";
 
 interface SourceCardProps {
   children: ReactNode;
@@ -43,10 +45,10 @@ const sourceCardVariants = cva("group/source-card cursor-pointer border ring-0",
 
 const SourceCard = memo(function SourceCard({ children, className, source }: SourceCardProps) {
   const dispatch = useAppDispatch();
-  const activeInstanceId = useAppSelector(selectActiveInstanceId);
-  const sourceStatus = useAppSelector(selectSourceStatus);
-
-  const active = source.id === activeInstanceId;
+  const selectActive = useMemo(() => createSelectSourceCardActive(source.id), [source.id]);
+  const selectStatus = useMemo(() => createSelectSourceCardStatus(source.id), [source.id]);
+  const active = useAppSelector(selectActive);
+  const sourceStatus = useAppSelector(selectStatus);
   const { displayName } = source.snapshot.source;
   const status = getSourceCardStatus(source, active, sourceStatus);
   const variant = getSourceCardVariant(status, active);

@@ -1,4 +1,4 @@
-import type { EditingInstance } from "@/domain/editing-instance";
+import type { EditingInstanceListEntry } from "@/domain/editing-instance";
 
 import { formatSourcePath } from "./media-formatters.utils";
 
@@ -18,11 +18,13 @@ function getSourceFolderPath(sourcePath: string): string {
   return folderPath || sourcePath.slice(0, separatorIndex + 1);
 }
 
-function groupSourcesByFolder(sources: readonly EditingInstance[]): SourceGroup<EditingInstance>[] {
-  const groups = new Map<string, SourceGroup<EditingInstance>>();
+function groupSourcesByFolder(
+  sources: readonly EditingInstanceListEntry[],
+): SourceGroup<EditingInstanceListEntry>[] {
+  const groups = new Map<string, SourceGroup<EditingInstanceListEntry>>();
 
   for (const source of sources) {
-    const folderPath = getSourceFolderPath(source.snapshot.source.sourcePath);
+    const folderPath = getSourceFolderPath(source.sourcePath);
     const key = normalizeFolderKey(folderPath);
     const group = groups.get(key);
 
@@ -37,14 +39,14 @@ function groupSourcesByFolder(sources: readonly EditingInstance[]): SourceGroup<
 }
 
 function groupSourcesByUpdatedTime(
-  sources: readonly EditingInstance[],
+  sources: readonly EditingInstanceListEntry[],
   locale: string,
   unknownLabel: string,
   now = new Date(),
-): SourceGroup<EditingInstance>[] {
+): SourceGroup<EditingInstanceListEntry>[] {
   return groupSourcesByTimestamp(
     sources,
-    (source) => source.snapshot.source.updatedAtMicros,
+    (source) => source.updatedAtMicros,
     locale,
     unknownLabel,
     now,
@@ -52,12 +54,12 @@ function groupSourcesByUpdatedTime(
 }
 
 function groupSourcesByImportedTime(
-  sources: readonly EditingInstance[],
+  sources: readonly EditingInstanceListEntry[],
   locale: string,
   unknownLabel: string,
   now = new Date(),
-): SourceGroup<EditingInstance>[] {
-  const groups = new Map<string, SourceGroup<EditingInstance>>();
+): SourceGroup<EditingInstanceListEntry>[] {
+  const groups = new Map<string, SourceGroup<EditingInstanceListEntry>>();
 
   for (const source of sources) {
     const importedAtMicros = source.importedAtMicros;
@@ -81,13 +83,13 @@ function groupSourcesByImportedTime(
 }
 
 function groupSourcesByTimestamp(
-  sources: readonly EditingInstance[],
-  getTimestamp: (source: EditingInstance) => number | undefined,
+  sources: readonly EditingInstanceListEntry[],
+  getTimestamp: (source: EditingInstanceListEntry) => number | undefined,
   locale: string,
   unknownLabel: string,
   now: Date,
-): SourceGroup<EditingInstance>[] {
-  const groups = new Map<string, SourceGroup<EditingInstance>>();
+): SourceGroup<EditingInstanceListEntry>[] {
+  const groups = new Map<string, SourceGroup<EditingInstanceListEntry>>();
 
   for (const source of sources) {
     const timestampMicros = getTimestamp(source);
@@ -113,7 +115,7 @@ function getUpdatedTimeGroup(
   locale: string,
   unknownLabel: string,
   now: Date,
-): Pick<SourceGroup<EditingInstance>, "key" | "label"> {
+): Pick<SourceGroup<EditingInstanceListEntry>, "key" | "label"> {
   if (updatedAtMicros === undefined) return { key: "unknown", label: unknownLabel };
 
   const updatedAt = new Date(updatedAtMicros / 1_000);
@@ -157,7 +159,7 @@ function getUpdatedTimeGroup(
 function absoluteDateGroup(
   date: Date,
   locale: string,
-): Pick<SourceGroup<EditingInstance>, "key" | "label"> {
+): Pick<SourceGroup<EditingInstanceListEntry>, "key" | "label"> {
   const dateKey = [date.getFullYear(), date.getMonth(), date.getDate()].join("-");
   return {
     key: `date:${dateKey}`,

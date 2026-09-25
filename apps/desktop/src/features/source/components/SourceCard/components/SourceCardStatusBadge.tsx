@@ -1,11 +1,10 @@
 import { CheckCircle2, CircleAlert, LoaderCircle } from "lucide-react";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
-import { selectActiveInstanceId } from "@/app/store/slices/editing-instances-slice";
-import { selectSourceStatus } from "@/app/store/slices/source-slice";
 
 import { useSourceCardData } from "../hooks/useSourceCardData";
 import {
@@ -13,6 +12,10 @@ import {
   getSourceCardStatus,
   getSourceCardStatusLabel,
 } from "../lib/source-card.utils";
+import {
+  createSelectSourceCardActive,
+  createSelectSourceCardStatus,
+} from "../lib/source-card-selectors";
 import type { SourceCardBadgeVariant, SourceCardStatus } from "../types";
 
 const statusIcons: Record<SourceCardStatus, typeof CheckCircle2> = {
@@ -32,10 +35,10 @@ const statusBadgeClassNames: Record<SourceCardBadgeVariant, string> = {
 function SourceCardStatusBadge({ className }: { className?: string }) {
   const source = useSourceCardData();
   const { t } = useTranslation();
-  const activeInstanceId = useAppSelector(selectActiveInstanceId);
-  const sourceStatus = useAppSelector(selectSourceStatus);
-
-  const active = source.id === activeInstanceId;
+  const selectActive = useMemo(() => createSelectSourceCardActive(source.id), [source.id]);
+  const selectStatus = useMemo(() => createSelectSourceCardStatus(source.id), [source.id]);
+  const active = useAppSelector(selectActive);
+  const sourceStatus = useAppSelector(selectStatus);
   const status = getSourceCardStatus(source, active, sourceStatus);
   const statusLabel = getSourceCardStatusLabel(t, status);
   const variant = getSourceCardBadgeVariant(status);

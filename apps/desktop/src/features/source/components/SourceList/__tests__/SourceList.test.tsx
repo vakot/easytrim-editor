@@ -15,6 +15,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const openFileLocation = vi.hoisted(() => vi.fn());
 const prepareThumbnails = vi.hoisted(() => vi.fn());
 const releaseThumbnails = vi.hoisted(() => vi.fn());
+const cardRenderCounts = vi.hoisted(() => new Map<string, number>());
 
 vi.mock("@/lib/tauri/media", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/tauri/media")>()),
@@ -29,23 +30,29 @@ vi.mock("@/app/store/thunks/source-media-thunks", async (importOriginal) => ({
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 
+import { editingInstanceActivated } from "@/app/store/actions/editing-instance-actions";
+import { sourceReady } from "@/app/store/actions/source-actions";
 import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";
 import { enqueueExport } from "@/app/store/integration/export-queue-runtime";
 import {
+  activeEditingInstanceChanged,
   editingInstanceClosed,
   editingInstanceExportAttemptQueued,
   editingInstanceExportCompleted,
   editingInstanceExportStarted,
   editingInstancesAdded,
+  editingInstanceSnapshotUpdated,
   selectImportedEditingInstances,
+  selectSourceSearchEntries,
 } from "@/app/store/slices/editing-instances-slice";
 import { selectSourceQueueStarted } from "@/app/store/slices/export-slice";
 import { preferenceChanged } from "@/app/store/slices/preferences-slice";
 import { importedThumbnailLoading } from "@/app/store/slices/preview-slice";
 import { createAppStore } from "@/app/store/store";
 import { createExportAttempt, type EditingInstance } from "@/domain/editing-instance";
-import { firstSource, secondSource } from "@/test/source.fixtures";
+import { firstSource, media, secondSource } from "@/test/source.fixtures";
 
+import * as sourceSearchUtils from "../../../lib/source-search.utils";
 import { SourceDeleteProvider } from "../../../SourceDeleteProvider";
 import {
   SourceList,
@@ -121,9 +128,10 @@ function createSourceInstances(count: number): EditingInstance[] {
 vi.mock("../../SourceCard", () => {
   const Container = ({ children }: PropsWithChildren) => <div>{children}</div>;
   return {
-    SourceCard: ({ children, source }: PropsWithChildren<{ source: EditingInstance }>) => (
-      <div data-testid={source.id}>{children}</div>
-    ),
+    SourceCard: ({ children, source }: PropsWithChildren<{ source: EditingInstance }>) => {
+      cardRenderCounts.set(source.id, (cardRenderCounts.get(source.id) ?? 0) + 1);
+      return <div data-testid={source.id}>{children}</div>;
+    },
     SourceCardActions: Container,
     SourceCardDescription: () => null,
     SourceCardMetadata: () => null,
@@ -136,6 +144,7 @@ vi.mock("../../SourceCard", () => {
 describe("source queue controls", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    cardRenderCounts.clear();
     prepareThumbnails.mockReturnValue({ type: "test/thumbnail" });
     releaseThumbnails.mockReturnValue({ type: "test/release-thumbnail" });
   });
@@ -206,6 +215,37 @@ describe("source queue controls", () => {
     expect(releaseThumbnails).toHaveBeenCalledTimes(2);
   });
 
+  it("does not recreate thumbnail demand observation for unrelated editor state", () => {
+    installIntersectionObserver();
+    const store = createAppStore();
+    const [instance] = createSourceInstances(1);
+    if (!instance) throw new Error("Expected source fixture");
+    store.dispatch(editingInstancesAdded([instance]));
+
+    render(
+      <div data-slot="scroll-area-viewport">
+        <Provider store={store}>
+          <SourceList />
+        </Provider>
+      </div>,
+    );
+
+    const observer = TestIntersectionObserver.instances.find(
+      (candidate) => candidate.observed.size,
+    );
+
+    expect(observer).toBeDefined();
+    store.dispatch(
+      editingInstanceSnapshotUpdated({
+        id: instance.id,
+        snapshot: { ...instance.snapshot, rotation: 90 },
+      }),
+    );
+
+    expect(TestIntersectionObserver.instances).toHaveLength(1);
+    expect(TestIntersectionObserver.instances[0]).toBe(observer);
+  });
+
   it("renders a bounded initial page in normal document flow", () => {
     const store = createAppStore();
     store.dispatch(editingInstancesAdded(createSourceInstances(500)));
@@ -219,7 +259,88 @@ describe("source queue controls", () => {
     expect(screen.getByTestId("source-11")).toBeInTheDocument();
     expect(screen.queryByTestId("source-12")).not.toBeInTheDocument();
     expect(container.querySelector("[data-index]")).toBeNull();
-    expect(container.querySelector("[style*='height:']")).toBeNull();
+    expect(container.querySelector("[style*='position: absolute']")).toBeNull();
+  });
+
+  it("keeps a large loaded list stable during activation, status changes, and removal", async () => {
+    vi.stubGlobal("scrollTo", vi.fn());
+    installIntersectionObserver();
+    const searcherSpy = vi.spyOn(sourceSearchUtils, "createSourceSearcher");
+    const store = createAppStore();
+    const instances = createSourceInstances(500);
+    store.dispatch(editingInstancesAdded(instances));
+
+    const { container } = render(
+      <Provider store={store}>
+        <SourceList />
+      </Provider>,
+    );
+
+    const sentinel = container.querySelector("[data-slot='infinite-scroll-trigger']");
+    if (!sentinel) throw new Error("Expected the InfiniteScroll sentinel");
+    const sentinelObserver = TestIntersectionObserver.instances.find((candidate) =>
+      candidate.observed.has(sentinel),
+    );
+
+    if (!sentinelObserver) throw new Error("Expected the InfiniteScroll observer");
+    for (let batch = 0; batch < 50 && !screen.queryByTestId("source-499"); batch += 1) {
+      act(() => {
+        sentinelObserver.trigger(sentinel, false);
+        sentinelObserver.trigger(sentinel);
+      });
+    }
+    expect(screen.getByTestId("source-499")).toBeInTheDocument();
+    expect(cardRenderCounts.size).toBe(500);
+
+    const initialSearcherCalls = searcherSpy.mock.calls.length;
+    const initialRenderCounts = new Map(cardRenderCounts);
+    const initialSearchEntries = selectSourceSearchEntries(store.getState());
+    expect(initialSearcherCalls).toBe(1);
+    expect(container.querySelectorAll("[layout]")).toHaveLength(0);
+
+    act(() => store.dispatch(activeEditingInstanceChanged("source-5")));
+    expect(searcherSpy).toHaveBeenCalledTimes(initialSearcherCalls);
+    for (let index = 0; index < 12; index += 1) {
+      expect(cardRenderCounts.get(`source-${index}`)).toBe(
+        initialRenderCounts.get(`source-${index}`),
+      );
+    }
+    const countsAfterActivation = new Map(cardRenderCounts);
+
+    act(() => {
+      const selectedSource = instances[5]!.snapshot.source;
+      const selectedMedia = media(selectedSource.sourcePath);
+      store.dispatch(
+        editingInstanceActivated({
+          id: "source-5",
+          loadToken: 2,
+          media: selectedMedia,
+          snapshot: instances[5]!.snapshot,
+        }),
+      );
+      store.dispatch(sourceReady({ loadToken: 2, media: selectedMedia }));
+    });
+    expect(selectSourceSearchEntries(store.getState())).toBe(initialSearchEntries);
+    expect(searcherSpy).toHaveBeenCalledTimes(initialSearcherCalls);
+    for (let index = 0; index < 12; index += 1) {
+      if (index !== 5) {
+        expect(cardRenderCounts.get(`source-${index}`)).toBe(
+          countsAfterActivation.get(`source-${index}`),
+        );
+      }
+    }
+    const countsAfterReady = new Map(cardRenderCounts);
+
+    act(() => store.dispatch(editingInstanceClosed("source-0")));
+    expect(await screen.findByTestId("source-11")).toBeInTheDocument();
+    expect(searcherSpy).toHaveBeenCalledTimes(initialSearcherCalls + 1);
+    for (let index = 1; index < 12; index += 1) {
+      expect(
+        cardRenderCounts.get(`source-${index}`),
+        `source-${index} rendered after deletion`,
+      ).toBe(countsAfterReady.get(`source-${index}`));
+    }
+    expect(container.querySelectorAll("[layout]")).toHaveLength(0);
   });
 
   it("keeps the source removal exit animation in the rendered list", async () => {

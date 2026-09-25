@@ -10,7 +10,7 @@ import {
   X,
 } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useEffect, useRef } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
@@ -55,17 +55,34 @@ import {
 
 const SOURCE_THUMBNAIL_DEMAND_ROOT_MARGIN = "600px 0px";
 
-function SourceListItem({
+const SourceListItem = memo(function SourceListItem({
   match,
-  source,
+  sourceId,
 }: {
   match: SourceSearchResult | undefined;
-  source: EditingInstance;
+  sourceId: string;
 }) {
   const dispatch = useAppDispatch();
+  const selectSource = useCallback(
+    (state: Parameters<typeof selectEditingInstanceById>[0]) =>
+      selectEditingInstanceById(state, sourceId),
+    [sourceId],
+  );
+
+  const selectedSource = useAppSelector(selectSource);
+  const [lastKnownSource, setLastKnownSource] = useState(selectedSource);
+  if (selectedSource && selectedSource !== lastKnownSource) setLastKnownSource(selectedSource);
+  const source = selectedSource ?? lastKnownSource;
+  const sourceRef = useRef(source);
   const itemRef = useRef<HTMLLIElement>(null);
   const shouldReduceMotion = useReducedMotion() === true;
   const duration = shouldReduceMotion ? 0 : 0.16;
+  const sourcePath = source?.snapshot.source.sourcePath;
+  const sourceAvailability = source?.sourceAvailability;
+
+  useEffect(() => {
+    sourceRef.current = source;
+  }, [source]);
 
   useEffect(() => {
     const element = itemRef.current;
@@ -74,16 +91,19 @@ function SourceListItem({
     const requestThumbnail = () => {
       if (hasThumbnailDemand) return;
       hasThumbnailDemand = true;
-      dispatch(prepareImportedSourceThumbnailsRequested([source]));
+      const latestSource = sourceRef.current;
+      if (latestSource) dispatch(prepareImportedSourceThumbnailsRequested([latestSource]));
     };
 
     const releaseThumbnail = () => {
       if (!hasThumbnailDemand) return;
       hasThumbnailDemand = false;
-      dispatch(releaseImportedSourceThumbnailDemand(source.id));
+      dispatch(releaseImportedSourceThumbnailDemand(sourceId));
     };
 
-    if (!element || typeof IntersectionObserver === "undefined") {
+    if (!element || !sourcePath || sourceAvailability !== "available") return;
+
+    if (typeof IntersectionObserver === "undefined") {
       requestThumbnail();
       return releaseThumbnail;
     }
@@ -105,15 +125,16 @@ function SourceListItem({
       observer.disconnect();
       releaseThumbnail();
     };
-  }, [dispatch, source]);
+  }, [dispatch, sourceAvailability, sourceId, sourcePath]);
+
+  if (!source) return null;
 
   return (
     <motion.li
-      animate={{ opacity: 1, y: 0 }}
-      className="flex w-full min-w-0 flex-col"
-      exit={{ opacity: 0, y: shouldReduceMotion ? 0 : -4 }}
-      initial={shouldReduceMotion ? false : { opacity: 0, y: 4 }}
-      layout={shouldReduceMotion ? false : "position"}
+      animate={{ height: "auto", opacity: 1, y: 0 }}
+      className="flex w-full min-w-0 flex-col overflow-hidden"
+      exit={{ height: 0, opacity: 0, y: shouldReduceMotion ? 0 : -4 }}
+      initial={shouldReduceMotion ? false : { height: 0, opacity: 0, y: 4 }}
       ref={itemRef}
       transition={{ duration, ease: "easeOut" }}
     >
@@ -121,9 +142,39 @@ function SourceListItem({
       <SourceListItemExtra source={source} />
     </motion.li>
   );
+}, areSourceListItemPropsEqual);
+
+function areSourceListItemPropsEqual(
+  previous: { match: SourceSearchResult | undefined; sourceId: string },
+  next: { match: SourceSearchResult | undefined; sourceId: string },
+): boolean {
+  return previous.sourceId === next.sourceId && areSearchRangesEqual(previous.match, next.match);
 }
 
-function SourceListItemCard({
+function areSearchRangesEqual(
+  left: SourceSearchResult | undefined,
+  right: SourceSearchResult | undefined,
+): boolean {
+  return (
+    areRangesEqual(left?.displayNameRanges ?? [], right?.displayNameRanges ?? []) &&
+    areRangesEqual(left?.sourcePathRanges ?? [], right?.sourcePathRanges ?? [])
+  );
+}
+
+function areRangesEqual(
+  left: ReadonlyArray<readonly [number, number]>,
+  right: ReadonlyArray<readonly [number, number]>,
+): boolean {
+  return (
+    left.length === right.length &&
+    left.every(([start, end], index) => {
+      const range = right[index];
+      return range?.[0] === start && range[1] === end;
+    })
+  );
+}
+
+const SourceListItemCard = memo(function SourceListItemCard({
   match,
   source,
 }: {
@@ -171,11 +222,15 @@ function SourceListItemCard({
       </div>
     </SourceCard>
   );
-}
+});
 
 const sourceListItemExtraClassName = "min-w-0 min-h-8 border-t bg-muted/50 p-1 first:border-t-0";
 
-function SourceListItemExtra({ source }: { source: EditingInstance }) {
+const SourceListItemExtra = memo(function SourceListItemExtra({
+  source,
+}: {
+  source: EditingInstance;
+}) {
   const shouldReduceMotion = useReducedMotion() === true;
   const isVisible = source.sourceAvailability === "deleted" || source.exportAttempts.length > 0;
   const duration = shouldReduceMotion ? 0 : 0.16;
@@ -203,7 +258,7 @@ function SourceListItemExtra({ source }: { source: EditingInstance }) {
       ) : null}
     </AnimatePresence>
   );
-}
+});
 
 function SourceListItemExports({ sourceId }: { sourceId: string }) {
   const items = useAppSelector((state) => selectExportQueueById(state, sourceId));

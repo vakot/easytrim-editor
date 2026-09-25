@@ -5,6 +5,8 @@ import { sourceCleared } from "@/app/store/actions/source-actions";
 import {
   type EditingInstance,
   type EditingInstanceId,
+  type EditingInstanceListEntry,
+  type EditingInstanceSearchEntry,
   type EditingInstancesState,
   EMPTY_EXPORT_METRICS,
   type ExportAttempt,
@@ -23,6 +25,41 @@ interface EditingInstanceTopologyEntry {
   id: EditingInstanceId;
   sourcePath: string;
 }
+
+function createStableListSelector<T>(equals: (left: T, right: T) => boolean) {
+  let previous: T[] = [];
+  return (next: T[]): T[] => {
+    if (
+      previous.length === next.length &&
+      next.every((entry, index) => equals(previous[index]!, entry))
+    )
+      return previous;
+    previous = next;
+    return next;
+  };
+}
+
+const retainListEntries = createStableListSelector<EditingInstanceListEntry>(
+  (left, right) =>
+    left.id === right.id &&
+    left.displayName === right.displayName &&
+    left.sourcePath === right.sourcePath &&
+    left.fileSizeBytes === right.fileSizeBytes &&
+    left.updatedAtMicros === right.updatedAtMicros &&
+    left.importedAtMicros === right.importedAtMicros &&
+    left.sourceAvailability === right.sourceAvailability,
+);
+
+const retainSearchEntries = createStableListSelector<EditingInstanceSearchEntry>(
+  (left, right) =>
+    left.id === right.id &&
+    left.displayName === right.displayName &&
+    left.sourcePath === right.sourcePath,
+);
+
+const retainImportedIds = createStableListSelector<EditingInstanceId>(
+  (left, right) => left === right,
+);
 
 export type ExportQueueItem = {
   attempt: ExportAttempt;
@@ -375,39 +412,93 @@ const selectEditingInstanceIds = (state: RootState): EditingInstanceId[] =>
   selectEditingInstancesState(state).ids;
 
 let lastTopologyEntries: EditingInstanceTopologyEntry[] = [];
-const selectEditingInstanceTopologyEntries = (state: RootState): EditingInstanceTopologyEntry[] => {
-  const ids = selectImportedEditingInstances(state).map(({ id }) => id);
-  const entities = selectEditingInstanceEntities(state);
-  if (
-    lastTopologyEntries.length === ids.length &&
-    ids.every((id, index) => {
-      const instance = entities[id];
-      const previous = lastTopologyEntries[index];
-      const source = instance?.snapshot.source;
-      return (
-        instance?.id === previous?.id &&
-        source?.displayName === previous?.displayName &&
-        source?.sourcePath === previous?.sourcePath
-      );
-    })
-  ) {
-    return lastTopologyEntries;
-  }
+const selectEditingInstanceTopologyEntries = createSelector(
+  [selectEditingInstanceEntities, selectEditingInstanceIds],
+  (entities, ids): EditingInstanceTopologyEntry[] => {
+    const importedIds = ids.filter((id) => entities[id]?.draftAvailable !== false);
+    if (
+      lastTopologyEntries.length === importedIds.length &&
+      importedIds.every((id, index) => {
+        const instance = entities[id];
+        const previous = lastTopologyEntries[index];
+        const source = instance?.snapshot.source;
+        return (
+          instance?.id === previous?.id &&
+          source?.displayName === previous?.displayName &&
+          source?.sourcePath === previous?.sourcePath
+        );
+      })
+    ) {
+      return lastTopologyEntries;
+    }
 
-  lastTopologyEntries = ids.flatMap((id) => {
-    const instance = entities[id];
-    return instance
-      ? [
-          {
-            displayName: instance.snapshot.source.displayName,
-            id,
-            sourcePath: instance.snapshot.source.sourcePath,
-          },
-        ]
-      : [];
-  });
-  return lastTopologyEntries;
-};
+    lastTopologyEntries = importedIds.flatMap((id) => {
+      const instance = entities[id];
+      return instance
+        ? [
+            {
+              displayName: instance.snapshot.source.displayName,
+              id,
+              sourcePath: instance.snapshot.source.sourcePath,
+            },
+          ]
+        : [];
+    });
+    return lastTopologyEntries;
+  },
+);
+
+const selectSourceListEntries = createSelector(
+  [selectEditingInstanceEntities, selectEditingInstanceIds],
+  (entities, ids): EditingInstanceListEntry[] => {
+    const entries: EditingInstanceListEntry[] = [];
+
+    for (const id of ids) {
+      const instance = entities[id];
+      if (!instance || instance.draftAvailable === false) continue;
+      const source = instance.snapshot.source;
+      entries.push({
+        displayName: source.displayName,
+        ...(source.fileSizeBytes === undefined ? {} : { fileSizeBytes: source.fileSizeBytes }),
+        id,
+        ...(instance.importedAtMicros === undefined
+          ? {}
+          : { importedAtMicros: instance.importedAtMicros }),
+        sourceAvailability: instance.sourceAvailability,
+        sourcePath: source.sourcePath,
+        ...(source.updatedAtMicros === undefined
+          ? {}
+          : { updatedAtMicros: source.updatedAtMicros }),
+      });
+    }
+
+    return retainListEntries(entries);
+  },
+);
+
+const selectSourceSearchEntries = createSelector(
+  [selectEditingInstanceEntities, selectEditingInstanceIds],
+  (entities, ids): EditingInstanceSearchEntry[] => {
+    const entries: EditingInstanceSearchEntry[] = [];
+
+    for (const id of ids) {
+      const instance = entities[id];
+      if (!instance || instance.draftAvailable === false) continue;
+      entries.push({
+        displayName: instance.snapshot.source.displayName,
+        id,
+        sourcePath: instance.snapshot.source.sourcePath,
+      });
+    }
+
+    return retainSearchEntries(entries);
+  },
+);
+
+const selectImportedEditingInstanceIds = createSelector(
+  [selectEditingInstanceEntities, selectEditingInstanceIds],
+  (entities, ids) => retainImportedIds(ids.filter((id) => entities[id]?.draftAvailable !== false)),
+);
 
 const selectEditingInstances = createSelector([selectEditingInstancesState], (state) =>
   state.ids
@@ -538,9 +629,12 @@ export {
   selectExportQueueById,
   selectHasProcessableExports,
   selectHasQueuedOrRenderingExportByInstanceId,
+  selectImportedEditingInstanceIds,
   selectImportedEditingInstances,
   selectInstanceIdsBySourceKey,
   selectRenderingAttempt,
+  selectSourceListEntries,
+  selectSourceSearchEntries,
 };
 
 export type { EditingInstanceTopologyEntry };

@@ -9,7 +9,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { RelativeTimestamp } from "@/components/ui/relative-timestamp";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-import type { EditingInstance } from "@/domain/editing-instance";
+import type { EditingInstanceListEntry } from "@/domain/editing-instance";
 import { useRelativeTimeNow } from "@/lib/hooks/use-relative-time";
 
 import {
@@ -30,11 +30,11 @@ type SourceGroupIcon =
       open: LucideIcon;
     };
 
-function SourceListNone({ sources }: { sources: EditingInstance[] }) {
+function SourceListNone({ sources }: { sources: EditingInstanceListEntry[] }) {
   return <SourceListGrid sources={sources} />;
 }
 
-function SourceListFolder({ sources }: { sources: EditingInstance[] }) {
+function SourceListFolder({ sources }: { sources: EditingInstanceListEntry[] }) {
   const folders = groupSourcesByFolder(sources);
 
   return <SourceListGroups dataSlot="imported-sources-folders" groups={folders} />;
@@ -44,7 +44,7 @@ function SourceListGroup({
   group,
   icon,
 }: {
-  group: SourceGroup<EditingInstance>;
+  group: SourceGroup<EditingInstanceListEntry>;
   icon: SourceGroupIcon;
 }) {
   const [open, setOpen] = useState(true);
@@ -99,7 +99,7 @@ function SourceListGroups({
   icon,
 }: {
   dataSlot: string;
-  groups: SourceGroup<EditingInstance>[];
+  groups: SourceGroup<EditingInstanceListEntry>[];
   icon?: SourceGroupIcon;
 }) {
   return (
@@ -115,25 +115,21 @@ function SourceListGroups({
   );
 }
 
-function SourceListGrid({ sources }: { sources: EditingInstance[] }) {
+function SourceListGrid({ sources }: { sources: EditingInstanceListEntry[] }) {
   const { matchesBySourceId } = useSourceListData();
 
   return (
     <ul className="flex flex-col gap-2" data-slot="imported-sources-grid">
       <AnimatePresence initial={false}>
-        {sources.map((source) => (
-          <SourceListItem
-            key={source.id}
-            match={matchesBySourceId.get(source.id)}
-            source={source}
-          />
+        {sources.map(({ id }) => (
+          <SourceListItem key={id} match={matchesBySourceId.get(id)} sourceId={id} />
         ))}
       </AnimatePresence>
     </ul>
   );
 }
 
-function SourceListTime({ sources }: { sources: EditingInstance[] }) {
+function SourceListTime({ sources }: { sources: EditingInstanceListEntry[] }) {
   const { i18n, t } = useTranslation();
   const now = useRelativeTimeNow();
   const groups = groupSourcesByUpdatedTime(
@@ -146,7 +142,7 @@ function SourceListTime({ sources }: { sources: EditingInstance[] }) {
   return <SourceListGroups dataSlot="imported-sources-time-groups" groups={groups} icon={Clock3} />;
 }
 
-function SourceListImported({ sources }: { sources: EditingInstance[] }) {
+function SourceListImported({ sources }: { sources: EditingInstanceListEntry[] }) {
   const { i18n, t } = useTranslation();
   const now = useRelativeTimeNow();
   const groups = groupSourcesByImportedTime(

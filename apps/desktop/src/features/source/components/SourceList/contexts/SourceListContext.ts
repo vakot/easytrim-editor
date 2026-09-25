@@ -1,6 +1,6 @@
 import { createContext, useContext } from "react";
 
-import type { EditingInstance } from "@/domain/editing-instance";
+import type { EditingInstanceListEntry } from "@/domain/editing-instance";
 
 import type { SourceSearchResult } from "../../../lib/source-search.utils";
 
@@ -12,9 +12,9 @@ type SourceListState = {
   next: () => void;
   search: string;
   setSearch: (value: string) => void;
-  sources: EditingInstance[];
+  sources: EditingInstanceListEntry[];
   tab: SourceListTab;
-  visibleSources: EditingInstance[];
+  visibleSources: EditingInstanceListEntry[];
 };
 
 const SourceListContext = createContext<SourceListState | null>(null);
