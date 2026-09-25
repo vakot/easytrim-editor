@@ -1,4 +1,5 @@
 import { CircleX } from "lucide-react";
+import { AnimatePresence } from "motion/react";
 import { useTranslation } from "react-i18next";
 
 import { Marker, MarkerContent } from "@/components/ui/marker";
@@ -82,37 +83,39 @@ function ActivityFeedGroup({
         </Marker>
       </div>
 
-      {activityItems.map((item) => {
-        if (item.kind === "branch") {
-          return (
-            <ActivityFeedBranch branch={item.branch} key={item.branch.id} onAction={onAction} />
-          );
-        }
+      <AnimatePresence initial={false}>
+        {activityItems.map((item) => {
+          if (item.kind === "branch") {
+            return (
+              <ActivityFeedBranch branch={item.branch} key={item.branch.id} onAction={onAction} />
+            );
+          }
 
-        if (item.kind === "group") {
+          if (item.kind === "group") {
+            return (
+              <ActivityFeedGroupedEntry
+                compact={isCompact}
+                group={{
+                  entries: item.group.entries,
+                  icon: CircleX,
+                  latestEntryAt: item.group.latestEntryAt,
+                  title: t("app.status.closedFiles", { count: item.group.count }),
+                }}
+                key={item.group.id}
+              />
+            );
+          }
+
           return (
-            <ActivityFeedGroupedEntry
+            <ActivityFeedEntry
               compact={isCompact}
-              group={{
-                entries: item.group.entries,
-                icon: CircleX,
-                latestEntryAt: item.group.latestEntryAt,
-                title: t("app.status.closedFiles", { count: item.group.count }),
-              }}
-              key={item.group.id}
+              entry={item.entry}
+              key={item.entry.id}
+              onAction={onAction}
             />
           );
-        }
-
-        return (
-          <ActivityFeedEntry
-            compact={isCompact}
-            entry={item.entry}
-            key={item.entry.id}
-            onAction={onAction}
-          />
-        );
-      })}
+        })}
+      </AnimatePresence>
     </div>
   );
 }
