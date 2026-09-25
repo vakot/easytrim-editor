@@ -125,12 +125,8 @@ function CropViewport() {
   };
 
   const quarterTurn = isQuarterTurn(resolved.rotation);
-  const rotationLayerGeometry = quarterTurn
-    ? {
-        width: `${(100 / previewAspect).toString()}%`,
-        height: `${(previewAspect * 100).toString()}%`,
-      }
-    : { width: "100%", height: "100%" };
+  const rotationScaleX = quarterTurn ? 1 / previewAspect : 1;
+  const rotationScaleY = quarterTurn ? previewAspect : 1;
 
   return (
     <CropViewportContextMenu>
@@ -161,14 +157,17 @@ function CropViewport() {
           >
             <motion.div
               animate={{
-                ...rotationLayerGeometry,
                 rotate: resolved.rotationAngle,
+                scaleX: rotationScaleX,
+                scaleY: rotationScaleY,
               }}
-              className="absolute top-1/2 left-1/2"
+              className="absolute inset-0"
               data-output-rotation={resolved.rotationAngle}
+              data-output-scale-x={rotationScaleX}
+              data-output-scale-y={rotationScaleY}
               data-rotating-output
               initial={false}
-              style={{ x: "-50%", y: "-50%", transformOrigin: "50% 50%" }}
+              style={{ transformOrigin: "50% 50%" }}
               transition={transformTransition}
             >
               <div

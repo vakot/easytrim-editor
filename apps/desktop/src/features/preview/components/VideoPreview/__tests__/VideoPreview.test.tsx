@@ -498,6 +498,15 @@ describe("VideoPreview", () => {
     fireEvent.click(screen.getByRole("menuitem", { name: "Rotate 90 CW" }));
     expect(store.getState().crop.rotationDegrees).toBe(90);
     expect(container.querySelector("video")).toHaveAttribute("data-presentation-rotation", "90");
+    expect(container.querySelector("[data-rotating-output]")).toHaveClass("inset-0");
+    expect(container.querySelector("[data-rotating-output]")).toHaveAttribute(
+      "data-output-scale-x",
+      String(1 / (9 / 16)),
+    );
+    expect(container.querySelector("[data-rotating-output]")).toHaveAttribute(
+      "data-output-scale-y",
+      String(9 / 16),
+    );
     expect(container.querySelector("[data-flip-layer]")).toContainElement(
       container.querySelector("[data-rotating-output]"),
     );
@@ -509,10 +518,26 @@ describe("VideoPreview", () => {
     selectTransformAction(viewport!, "Rotate 90 CW");
     selectTransformAction(viewport!, "Rotate 90 CW");
     expect(store.getState().crop.rotationDegrees).toBe(270);
+    expect(container.querySelector("[data-rotating-output]")).toHaveAttribute(
+      "data-output-scale-x",
+      String(1 / (9 / 16)),
+    );
+    expect(container.querySelector("[data-rotating-output]")).toHaveAttribute(
+      "data-output-scale-y",
+      String(9 / 16),
+    );
 
     selectTransformAction(viewport!, "Rotate 90 CW");
     expect(store.getState().crop.rotationDegrees).toBe(0);
     expect(container.querySelector("video")).toHaveAttribute("data-presentation-rotation", "360");
+    expect(container.querySelector("[data-rotating-output]")).toHaveAttribute(
+      "data-output-scale-x",
+      "1",
+    );
+    expect(container.querySelector("[data-rotating-output]")).toHaveAttribute(
+      "data-output-scale-y",
+      "1",
+    );
 
     selectTransformAction(viewport!, "Rotate 90 CCW");
     expect(store.getState().crop.rotationDegrees).toBe(270);
