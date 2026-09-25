@@ -10,7 +10,7 @@ import {
   X,
 } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
@@ -53,43 +53,73 @@ import {
   StartSourceExport,
 } from "../../SourceMenuActions";
 
+const SOURCE_THUMBNAIL_DEMAND_ROOT_MARGIN = "600px 0px";
+
 function SourceListItem({
-  animation = "none",
   match,
   source,
 }: {
-  animation?: "entering" | "exiting" | "none";
   match: SourceSearchResult | undefined;
   source: EditingInstance;
 }) {
   const dispatch = useAppDispatch();
+  const itemRef = useRef<HTMLLIElement>(null);
   const shouldReduceMotion = useReducedMotion() === true;
   const duration = shouldReduceMotion ? 0 : 0.16;
 
   useEffect(() => {
-    dispatch(prepareImportedSourceThumbnailsRequested([source]));
-    return () => {
+    const element = itemRef.current;
+    let hasThumbnailDemand = false;
+
+    const requestThumbnail = () => {
+      if (hasThumbnailDemand) return;
+      hasThumbnailDemand = true;
+      dispatch(prepareImportedSourceThumbnailsRequested([source]));
+    };
+
+    const releaseThumbnail = () => {
+      if (!hasThumbnailDemand) return;
+      hasThumbnailDemand = false;
       dispatch(releaseImportedSourceThumbnailDemand(source.id));
+    };
+
+    if (!element || typeof IntersectionObserver === "undefined") {
+      requestThumbnail();
+      return releaseThumbnail;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) requestThumbnail();
+        else releaseThumbnail();
+      },
+      {
+        root: element.closest<HTMLElement>("[data-slot='scroll-area-viewport']"),
+        rootMargin: SOURCE_THUMBNAIL_DEMAND_ROOT_MARGIN,
+      },
+    );
+
+    observer.observe(element);
+
+    return () => {
+      observer.disconnect();
+      releaseThumbnail();
     };
   }, [dispatch, source]);
 
   return (
-    <motion.div
-      animate={
-        animation === "exiting"
-          ? { opacity: 0, y: shouldReduceMotion ? 0 : -4 }
-          : { opacity: 1, y: 0 }
-      }
+    <motion.li
+      animate={{ opacity: 1, y: 0 }}
       className="flex w-full min-w-0 flex-col"
-      data-source-animation={animation}
-      initial={animation === "entering" && !shouldReduceMotion ? { opacity: 0, y: 4 } : false}
+      exit={{ opacity: 0, y: shouldReduceMotion ? 0 : -4 }}
+      initial={shouldReduceMotion ? false : { opacity: 0, y: 4 }}
       layout={shouldReduceMotion ? false : "position"}
-      role="listitem"
+      ref={itemRef}
       transition={{ duration, ease: "easeOut" }}
     >
       <SourceListItemCard match={match} source={source} />
       <SourceListItemExtra source={source} />
-    </motion.div>
+    </motion.li>
   );
 }
 

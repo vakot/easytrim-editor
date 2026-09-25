@@ -7,12 +7,14 @@ import type { SourceSearchResult } from "../../../lib/source-search.utils";
 type SourceListTab = "none" | "folder" | "time" | "imported";
 
 type SourceListState = {
-  allSourceIds: ReadonlySet<string>;
+  hasMore: boolean;
   matchesBySourceId: ReadonlyMap<string, SourceSearchResult>;
+  next: () => void;
   search: string;
   setSearch: (value: string) => void;
   sources: EditingInstance[];
   tab: SourceListTab;
+  visibleSources: EditingInstance[];
 };
 
 const SourceListContext = createContext<SourceListState | null>(null);

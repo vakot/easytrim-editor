@@ -10,10 +10,11 @@ import {
 import userEvent from "@testing-library/user-event";
 import type { PropsWithChildren } from "react";
 import { Provider } from "react-redux";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const openFileLocation = vi.hoisted(() => vi.fn());
 const prepareThumbnails = vi.hoisted(() => vi.fn());
+const releaseThumbnails = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/tauri/media", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/tauri/media")>()),
@@ -23,6 +24,7 @@ vi.mock("@/lib/tauri/media", async (importOriginal) => ({
 vi.mock("@/app/store/thunks/source-media-thunks", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/app/store/thunks/source-media-thunks")>()),
   prepareImportedSourceThumbnailsRequested: prepareThumbnails,
+  releaseImportedSourceThumbnailDemand: releaseThumbnails,
 }));
 
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -52,6 +54,51 @@ import {
   SourceListSearch,
   SourceListTabs,
 } from "../SourceList";
+
+class TestIntersectionObserver {
+  static instances: TestIntersectionObserver[] = [];
+
+  readonly observed = new Set<Element>();
+  readonly root: Element | Document | null;
+  readonly rootMargin: string;
+
+  constructor(
+    private readonly callback: IntersectionObserverCallback,
+    options: IntersectionObserverInit = {},
+  ) {
+    this.root = options.root ?? null;
+    this.rootMargin = options.rootMargin ?? "0px";
+    TestIntersectionObserver.instances.push(this);
+  }
+
+  observe(target: Element) {
+    this.observed.add(target);
+  }
+
+  unobserve(target: Element) {
+    this.observed.delete(target);
+  }
+
+  disconnect() {
+    this.observed.clear();
+  }
+
+  trigger(target: Element, isIntersecting = true) {
+    this.callback(
+      [{ isIntersecting, target } as IntersectionObserverEntry],
+      this as unknown as IntersectionObserver,
+    );
+  }
+}
+
+afterEach(() => {
+  TestIntersectionObserver.instances = [];
+  vi.unstubAllGlobals();
+});
+
+function installIntersectionObserver() {
+  vi.stubGlobal("IntersectionObserver", TestIntersectionObserver);
+}
 
 function createSourceInstances(count: number): EditingInstance[] {
   return Array.from({ length: count }, (_, index) => {
@@ -90,39 +137,76 @@ describe("source queue controls", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     prepareThumbnails.mockReturnValue({ type: "test/thumbnail" });
+    releaseThumbnails.mockReturnValue({ type: "test/release-thumbnail" });
   });
 
-  it("does not prepare sources outside the virtualized range", () => {
+  it("appends a page when the sentinel approaches without waiting for thumbnails", async () => {
+    installIntersectionObserver();
     const store = createAppStore();
-    store.dispatch(editingInstancesAdded(createSourceInstances(500)));
+    store.dispatch(editingInstancesAdded(createSourceInstances(25)));
 
-    render(
+    const { container } = render(
       <Provider store={store}>
         <SourceList />
       </Provider>,
     );
 
-    const preparedSources = prepareThumbnails.mock.calls.flatMap(([sources]) => sources);
-    expect(preparedSources.length).toBeLessThan(20);
-    expect(preparedSources.map((source) => source.id)).not.toContain("source-499");
+    expect(screen.getByTestId("source-11")).toBeInTheDocument();
+    expect(screen.queryByTestId("source-12")).not.toBeInTheDocument();
+    const sentinel = container.querySelector("[data-slot='infinite-scroll-trigger']");
+    expect(sentinel).toBeInTheDocument();
+
+    const observer = TestIntersectionObserver.instances.find((candidate) =>
+      candidate.observed.has(sentinel!),
+    );
+
+    observer?.trigger(sentinel!);
+
+    expect(await screen.findByTestId("source-12")).toBeInTheDocument();
+    expect(screen.queryByTestId("source-24")).not.toBeInTheDocument();
+    expect(prepareThumbnails).not.toHaveBeenCalled();
   });
 
-  it("requests thumbnail preparation when a virtual row mounts", () => {
+  it("requests and releases thumbnail demand as a card enters and leaves the near-viewport range", () => {
+    installIntersectionObserver();
     const store = createAppStore();
     const [instance] = createSourceInstances(1);
     if (!instance) throw new Error("Expected source fixture");
     store.dispatch(editingInstancesAdded([instance]));
 
-    render(
-      <Provider store={store}>
-        <SourceList />
-      </Provider>,
+    const { container, unmount } = render(
+      <div data-slot="scroll-area-viewport">
+        <Provider store={store}>
+          <SourceList />
+        </Provider>
+      </div>,
     );
 
+    const card = screen.getByTestId(instance.id);
+    const row = card.closest("li");
+    if (!row) throw new Error("Expected a SourceList item");
+    const observer = TestIntersectionObserver.instances.find((candidate) =>
+      candidate.observed.has(row),
+    );
+
+    expect(observer?.root).toBe(container.querySelector("[data-slot='scroll-area-viewport']"));
+    expect(observer?.rootMargin).toBe("600px 0px");
+    expect(prepareThumbnails).not.toHaveBeenCalled();
+
+    observer?.trigger(row);
     expect(prepareThumbnails).toHaveBeenCalledWith([instance]);
+
+    observer?.trigger(row, false);
+    expect(releaseThumbnails).toHaveBeenCalledWith(instance.id);
+
+    observer?.trigger(row);
+    expect(prepareThumbnails).toHaveBeenCalledTimes(2);
+
+    unmount();
+    expect(releaseThumbnails).toHaveBeenCalledTimes(2);
   });
 
-  it("keeps the exposed source range progressive while virtualizing mounted cards", () => {
+  it("renders a bounded initial page in normal document flow", () => {
     const store = createAppStore();
     store.dispatch(editingInstancesAdded(createSourceInstances(500)));
 
@@ -132,56 +216,36 @@ describe("source queue controls", () => {
       </Provider>,
     );
 
-    expect(
-      container.querySelectorAll("[data-slot='imported-sources-grid'] [data-index]").length,
-    ).toBeLessThan(20);
-    expect(screen.queryByTestId("source-499")).not.toBeInTheDocument();
-    const virtualContent = container.querySelector(
-      "[data-slot='imported-sources-grid'] > div > div",
-    );
-
-    const exposedHeight = Number.parseFloat(
-      virtualContent?.getAttribute("style")?.match(/height: ([\d.]+)px/)?.[1] ?? "0",
-    );
-
-    expect(exposedHeight).toBeGreaterThan(2_000);
-    expect(exposedHeight).toBeLessThan(10_000);
+    expect(screen.getByTestId("source-11")).toBeInTheDocument();
+    expect(screen.queryByTestId("source-12")).not.toBeInTheDocument();
+    expect(container.querySelector("[data-index]")).toBeNull();
+    expect(container.querySelector("[style*='height:']")).toBeNull();
   });
 
-  it("does not animate virtual row mounts", () => {
-    const store = createAppStore();
-    store.dispatch(editingInstancesAdded(createSourceInstances(500)));
-
-    render(
-      <Provider store={store}>
-        <SourceList />
-      </Provider>,
-    );
-
-    const mountedCards = screen.getAllByRole("listitem");
-    expect(mountedCards.length).toBeLessThan(20);
-    expect(mountedCards.every((card) => card.getAttribute("style")?.includes("opacity: 1"))).toBe(
-      true,
-    );
-  });
-
-  it("keeps the short exit animation when a source is actually removed", async () => {
+  it("keeps the source removal exit animation in the rendered list", async () => {
     const store = createAppStore();
     const instances = createSourceInstances(2);
     store.dispatch(editingInstancesAdded(instances));
 
-    render(
-      <Provider store={store}>
-        <SourceList />
-      </Provider>,
+    const { container } = render(
+      <div data-slot="scroll-area-viewport" style={{ height: 400, overflow: "auto" }}>
+        <Provider store={store}>
+          <SourceList />
+        </Provider>
+      </div>,
     );
+
     const card = screen.getByTestId("source-0");
-    const row = card.closest("[data-index]");
-    if (!row) throw new Error("Expected the source virtual row");
+    const row = card.closest("li");
+    if (!row) throw new Error("Expected the source list item");
+    const viewport = container.querySelector<HTMLElement>("[data-slot='scroll-area-viewport']");
+    if (!viewport) throw new Error("Expected the SourceList scroll viewport");
+    viewport.scrollTop = 240;
 
     act(() => store.dispatch(editingInstanceClosed(instances[0]!.id)));
 
     expect(card).toBeInTheDocument();
+    expect(viewport.scrollTop).toBe(240);
     await waitFor(() => expect(card).not.toBeInTheDocument());
   });
 
@@ -427,8 +491,8 @@ describe("source queue controls", () => {
         </SourceDeleteProvider>
       </Provider>,
     );
-    const sourceA = within(screen.getByTestId("a").closest("[data-index]")!);
-    const sourceB = within(screen.getByTestId("b").closest("[data-index]")!);
+    const sourceA = within(screen.getByTestId("a").closest("li")!);
+    const sourceB = within(screen.getByTestId("b").closest("li")!);
     await user.click(sourceB.getByRole("button", { name: "Start queue" }));
     expect(selectSourceQueueStarted(store.getState(), "b")).toBe(true);
     expect(selectSourceQueueStarted(store.getState(), "a")).toBe(false);
