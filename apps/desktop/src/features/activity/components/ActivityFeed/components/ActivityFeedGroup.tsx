@@ -1,3 +1,6 @@
+import { CircleX } from "lucide-react";
+import { useTranslation } from "react-i18next";
+
 import { Marker, MarkerContent } from "@/components/ui/marker";
 import { RelativeTimestamp } from "@/components/ui/relative-timestamp";
 
@@ -5,15 +8,20 @@ import { cn } from "@/lib/class-names.utils";
 
 import {
   type ActivityAction,
+  type ActivityEntry,
+  type ActivityGroup,
   type ActivitySessionGroup,
+  type ActivitySessionItem,
   type ActivitySessionLabels,
   getActivitySessionPresentation,
   groupActivityEntriesByBranch,
+  groupActivityEntriesForDisplay,
 } from "../../../lib/activity-projection";
 import { toTimestampMicros } from "../lib/activity-feed.utils";
 
 import { ActivityFeedBranch } from "./ActivityFeedBranch";
 import { ActivityFeedEntry } from "./ActivityFeedEntry";
+import { ActivityFeedGroupedEntry } from "./ActivityFeedGroupedEntry";
 
 interface ActivityFeedGroupProps {
   currentAppVersion: string;
@@ -42,6 +50,7 @@ function ActivityFeedGroup({
   onAction,
   sessionLabels,
 }: ActivityFeedGroupProps) {
+  const { t } = useTranslation();
   const presentation = getActivitySessionPresentation(
     group,
     currentAppVersion,
@@ -49,6 +58,10 @@ function ActivityFeedGroup({
     locale,
     sessionLabels,
   );
+
+  const activityItems = isBranch
+    ? groupBranchActivityEntriesForDisplay(groupActivityEntriesByBranch(group.entries))
+    : groupActivityEntriesForDisplay(group.entries);
 
   return (
     <div className={cn("flex flex-col", isCompact ? "gap-1" : isBranch ? "gap-5" : "gap-3")}>
@@ -69,24 +82,65 @@ function ActivityFeedGroup({
         </Marker>
       </div>
 
-      {isBranch
-        ? groupActivityEntriesByBranch(group.entries).map((item) =>
-            item.kind === "branch" ? (
-              <ActivityFeedBranch branch={item.branch} key={item.branch.id} onAction={onAction} />
-            ) : (
-              <ActivityFeedEntry entry={item.entry} key={item.entry.id} onAction={onAction} />
-            ),
-          )
-        : group.entries.map((entry) => (
-            <ActivityFeedEntry
+      {activityItems.map((item) => {
+        if (item.kind === "branch") {
+          return (
+            <ActivityFeedBranch branch={item.branch} key={item.branch.id} onAction={onAction} />
+          );
+        }
+
+        if (item.kind === "group") {
+          return (
+            <ActivityFeedGroupedEntry
               compact={isCompact}
-              entry={entry}
-              key={entry.id}
-              onAction={onAction}
+              group={{
+                entries: item.group.entries,
+                icon: CircleX,
+                latestEntryAt: item.group.latestEntryAt,
+                title: t("app.status.closedFiles", { count: item.group.count }),
+              }}
+              key={item.group.id}
             />
-          ))}
+          );
+        }
+
+        return (
+          <ActivityFeedEntry
+            compact={isCompact}
+            entry={item.entry}
+            key={item.entry.id}
+            onAction={onAction}
+          />
+        );
+      })}
     </div>
   );
+}
+
+type ActivityFeedDisplayItem = ActivitySessionItem | { group: ActivityGroup; kind: "group" };
+
+function groupBranchActivityEntriesForDisplay(
+  items: readonly ActivitySessionItem[],
+): ActivityFeedDisplayItem[] {
+  const groupedItems: ActivityFeedDisplayItem[] = [];
+  let standaloneEntries: ActivityEntry[] = [];
+
+  function appendStandaloneEntries() {
+    groupedItems.push(...groupActivityEntriesForDisplay(standaloneEntries));
+    standaloneEntries = [];
+  }
+
+  for (const item of items) {
+    if (item.kind === "branch") {
+      appendStandaloneEntries();
+      groupedItems.push(item);
+    } else {
+      standaloneEntries.push(item.entry);
+    }
+  }
+
+  appendStandaloneEntries();
+  return groupedItems;
 }
 
 export { ActivityFeedGroup };

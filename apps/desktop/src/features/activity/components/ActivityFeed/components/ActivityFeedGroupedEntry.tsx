@@ -6,9 +6,11 @@ import { Marker, MarkerContent, MarkerIcon, MarkerTitle } from "@/components/ui/
 import { formatRelativeTime } from "@/lib/date-time.utils";
 import { useRelativeTimeNow } from "@/lib/hooks/use-relative-time";
 
+import type { ActivityEntry } from "../../../lib/activity-projection";
 import { toTimestampMicros } from "../lib/activity-feed.utils";
 
 interface GroupedActivity {
+  entries: readonly ActivityEntry[];
   icon: LucideIcon;
   latestEntryAt: string;
   title: string;
