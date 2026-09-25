@@ -88,6 +88,7 @@ function CropViewport() {
   const quarterTurn = isQuarterTurn(resolved.rotation);
   const outputCoordinateAspect = previewOutputCoordinateAspectFor(previewAspect, quarterTurn);
   const outputWidthTarget = previewOutputWidthTargetFor(previewAspect, cropIsOpen, quarterTurn);
+  const cropRulerWidthTarget = previewOutputWidthTargetFor(previewAspect, cropIsOpen, false);
   const startCropDrag = useCallback(
     (event: PointerEvent<HTMLElement>, handle: CropHandle) => {
       const viewportBounds = previewRef.current?.getBoundingClientRect();
@@ -203,13 +204,15 @@ function CropViewport() {
                     ) : null}
                   </AnimatePresence>
                 </div>
-                <CropSnapMarkers
-                  transition={transformTransition}
-                  visible={cropIsOpen && isEditing}
-                />
               </motion.div>
             </motion.div>
           </motion.div>
+          <CropSnapMarkers
+            aspectRatio={previewAspect}
+            transition={transformTransition}
+            visible={cropIsOpen && isEditing}
+            widthTarget={cropRulerWidthTarget}
+          />
           <div
             aria-hidden="true"
             className="pointer-events-none absolute inset-0 z-10 border border-primary/70 bg-primary/5 opacity-0 ring-1 ring-primary/20 transition-opacity duration-(--preview-transition-duration) ease-in-out group-hover:opacity-100 group-focus-visible:opacity-100 motion-reduce:transition-none layout-default:rounded-md"

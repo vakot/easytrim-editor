@@ -3,19 +3,24 @@ import { motion, type Transition } from "motion/react";
 import { QUARTER_SNAP_POINTS } from "@/lib/interaction/snap-points.consts";
 
 interface CropSnapMarkersProps {
+  aspectRatio: number;
   transition: Transition;
   visible: boolean;
+  widthTarget: string;
 }
 
-function CropSnapMarkers({ transition, visible }: CropSnapMarkersProps) {
+function CropSnapMarkers({ aspectRatio, transition, visible, widthTarget }: CropSnapMarkersProps) {
   return (
     <motion.div
-      animate={{ opacity: visible ? 1 : 0 }}
+      animate={{ aspectRatio, opacity: visible ? 1 : 0, width: widthTarget }}
       aria-hidden="true"
-      className="pointer-events-none absolute inset-0 z-10"
+      className="pointer-events-none absolute top-1/2 left-1/2 z-10"
       data-crop-snap-markers
+      data-output-aspect-ratio={aspectRatio}
+      data-output-width-target={widthTarget}
       data-visible={visible}
       initial={false}
+      style={{ x: "-50%", y: "-50%" }}
       transition={transition}
     >
       {QUARTER_SNAP_POINTS.map((point) => (
