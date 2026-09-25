@@ -48,11 +48,21 @@ import {
 } from "../../SourceMenuActions";
 
 function SourceListItem({ search, source }: { search: string; source: EditingInstance }) {
+  const shouldReduceMotion = useReducedMotion() === true;
+  const duration = shouldReduceMotion ? 0 : 0.16;
+
   return (
-    <>
+    <motion.li
+      animate={{ opacity: 1, y: 0 }}
+      className="flex w-full min-w-0 flex-col"
+      exit={{ opacity: 0, y: shouldReduceMotion ? 0 : -4 }}
+      initial={shouldReduceMotion ? false : { opacity: 0, y: 4 }}
+      layout={shouldReduceMotion ? false : "position"}
+      transition={{ duration, ease: "easeOut" }}
+    >
       <SourceListItemCard search={search} source={source} />
       <SourceListItemExtra source={source} />
-    </>
+    </motion.li>
   );
 }
 
