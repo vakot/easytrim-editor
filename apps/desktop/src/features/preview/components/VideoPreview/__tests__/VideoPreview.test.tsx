@@ -488,10 +488,10 @@ describe("VideoPreview", () => {
     fireEvent.click(screen.getByRole("menuitem", { name: "Rotate 90 CW" }));
     expect(store.getState().crop.rotationDegrees).toBe(90);
     expect(container.querySelector("video")).toHaveAttribute("data-presentation-rotation", "90");
-    expect(container.querySelector("[data-flip-layer]")).toContainElement(
-      container.querySelector("[data-rotating-output]"),
-    );
     expect(container.querySelector("[data-rotating-output]")).toContainElement(
+      container.querySelector("[data-flip-layer]"),
+    );
+    expect(container.querySelector("[data-flip-layer]")).toContainElement(
       container.querySelector("[data-crop-mask]"),
     );
     expect(container.querySelector("[data-preview-frame]")).toHaveClass("overflow-visible");
@@ -551,6 +551,73 @@ describe("VideoPreview", () => {
       "true",
     );
   });
+
+  it.each([
+    ["horizontal", true, false],
+    ["vertical", false, true],
+    ["both", true, true],
+  ] as const)(
+    "keeps clockwise and counter-clockwise rotation direction with %s flips",
+    (_name, horizontal, vertical) => {
+      const store = createAppStore();
+      if (horizontal) store.dispatch(flipToggled("horizontal"));
+      if (vertical) store.dispatch(flipToggled("vertical"));
+      const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"), store);
+      const viewport = container.querySelector('[aria-label="Video crop preview"]')!;
+      const rotatingOutput = container.querySelector<HTMLElement>("[data-rotating-output]");
+      const flipLayer = container.querySelector<HTMLElement>("[data-flip-layer]");
+      const selectionFlipLayer = container.querySelector<HTMLElement>(
+        "[data-crop-selection-flip-layer]",
+      );
+
+      selectTransformAction(viewport, "Rotate 90 CW");
+
+      expect(store.getState().crop.rotationDegrees).toBe(90);
+      expect(rotatingOutput).toContainElement(flipLayer);
+      expect(rotatingOutput).not.toContainElement(selectionFlipLayer);
+      expect(selectionFlipLayer).toHaveAttribute(
+        "data-crop-selection-flip-horizontal",
+        String(horizontal),
+      );
+      expect(selectionFlipLayer).toHaveAttribute(
+        "data-crop-selection-flip-vertical",
+        String(vertical),
+      );
+      expect(rotatingOutput).toHaveAttribute("data-output-rotation", "90");
+
+      selectTransformAction(viewport, "Rotate 90 CCW");
+
+      expect(store.getState().crop.rotationDegrees).toBe(0);
+      expect(rotatingOutput).toHaveAttribute("data-output-rotation", "0");
+    },
+  );
+
+  it.each([
+    ["horizontal", true, false],
+    ["vertical", false, true],
+    ["both", true, true],
+  ] as const)(
+    "keeps continuous 270 to 360 rotation with %s flips",
+    (_name, horizontal, vertical) => {
+      const store = createAppStore();
+      store.dispatch(rotationChanged(270));
+      if (horizontal) store.dispatch(flipToggled("horizontal"));
+      if (vertical) store.dispatch(flipToggled("vertical"));
+      const { container } = renderVideoPreview(readyPreview("easytrim-media://preview-1"), store);
+      const viewport = container.querySelector('[aria-label="Video crop preview"]')!;
+
+      selectTransformAction(viewport, "Rotate 90 CW");
+
+      expect(store.getState().crop.rotationDegrees).toBe(0);
+      expect(container.querySelector("[data-rotating-output]")).toHaveAttribute(
+        "data-output-rotation",
+        "360",
+      );
+      expect(container.querySelector("[data-rotating-output]")).toContainElement(
+        container.querySelector("[data-flip-layer]"),
+      );
+    },
+  );
 
   it("keeps the original right half visible after rotating the normalized crop", () => {
     const store = createAppStore();
@@ -627,7 +694,7 @@ describe("VideoPreview", () => {
         "data-flip-vertical",
         String(vertical),
       );
-      expect(container.querySelector("[data-flip-layer]")).toContainElement(
+      expect(container.querySelector("[data-crop-selection-flip-layer]")).toContainElement(
         container.querySelector("[data-crop-selection-coordinate-space]"),
       );
 
