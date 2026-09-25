@@ -47,8 +47,6 @@ function SourceTabs({
     void dispatch(closeActiveEditingInstanceRequested(id));
   };
 
-  if (entries.length === 0) return null;
-
   return (
     <Tabs
       className={cn("gap-0", className)}
@@ -57,7 +55,7 @@ function SourceTabs({
       value={activeInstanceId ?? ""}
     >
       <TabsList className={`w-max min-w-full justify-baseline gap-0.5 bg-${background} p-0`}>
-        <AnimatePresence initial={false} mode="popLayout">
+        <AnimatePresence initial={false}>
           {entries.map((entry) => (
             <motion.div
               animate={{ opacity: 1, x: 0 }}
