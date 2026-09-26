@@ -1,30 +1,15 @@
-import { forwardRef, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { forwardRef } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  type ListProps,
-  type ListRange,
-  type ScrollSeekPlaceholderProps,
-  Virtuoso,
-} from "react-virtuoso";
+import { type ListProps, type ScrollSeekPlaceholderProps, Virtuoso } from "react-virtuoso";
 
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-import { useAppDispatch } from "@/app/store/redux-hooks";
-import {
-  prepareImportedSourceThumbnailsRequested,
-  releaseImportedSourceThumbnailDemand,
-} from "@/app/store/thunks/source-media-thunks";
-import type { EditingInstanceListEntry } from "@/domain/editing-instance";
 import { cn } from "@/lib/class-names.utils";
 
 import { useSourceListData } from "../contexts/SourceListContext";
+import { useSourceListScrollController } from "../hooks/useSourceListScrollController";
 
 import { SourceListItem } from "./SourceListItem";
-
-const THUMBNAIL_VIEWPORT_EXPANSION = 600;
-const SCROLL_SEEK_ENTER_VELOCITY = 900;
-const SCROLL_SEEK_EXIT_VELOCITY = 120;
-const SCROLL_SETTLE_DELAY_MS = 140;
 
 const SourceListVirtualizedList = forwardRef<HTMLDivElement, ListProps<HTMLDivElement>>(
   function SourceListVirtualizedList({ children, style }, ref) {
@@ -73,104 +58,15 @@ interface SourceListContentProps {
 }
 
 function SourceListContent({ className }: SourceListContentProps) {
-  const dispatch = useAppDispatch();
   const { closingSourceIds, matchesBySourceId, search, sources } = useSourceListData();
   const { t } = useTranslation();
-  const demandedIdsRef = useRef(new Set<string>());
-  const rangeRef = useRef<ListRange | null>(null);
-  const scrollSeekingRef = useRef(false);
-  const settleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [scrollParent, setScrollParent] = useState<HTMLElement | null>(null);
-
-  const sourceEntriesById = useMemo(
-    () => new Map(sources.map((source) => [source.id, source])),
-    [sources],
-  );
-
-  const releaseDemand = useCallback(
-    (sourceIds: Iterable<string>) => {
-      for (const sourceId of sourceIds) {
-        if (!demandedIdsRef.current.delete(sourceId)) continue;
-        dispatch(releaseImportedSourceThumbnailDemand(sourceId));
-      }
-    },
-    [dispatch],
-  );
-
-  const updateDemandForRange = useCallback(
-    (range: ListRange) => {
-      rangeRef.current = range;
-      if (scrollSeekingRef.current) return;
-
-      const currentSources = sources;
-      const first = Math.max(0, range.startIndex);
-      const last = Math.min(currentSources.length - 1, range.endIndex);
-      const nextIds = new Set(currentSources.slice(first, last + 1).map(({ id }) => id));
-      releaseDemand([...demandedIdsRef.current].filter((id) => !nextIds.has(id)));
-
-      const newlyDemanded: EditingInstanceListEntry[] = [];
-      for (const sourceId of nextIds) {
-        if (demandedIdsRef.current.has(sourceId)) continue;
-        const source = sourceEntriesById.get(sourceId);
-        if (!source) continue;
-        demandedIdsRef.current.add(sourceId);
-        newlyDemanded.push(source);
-      }
-
-      if (newlyDemanded.length > 0) {
-        dispatch(prepareImportedSourceThumbnailsRequested(newlyDemanded));
-      }
-    },
-    [dispatch, releaseDemand, sourceEntriesById, sources],
-  );
-
-  const handleRangeChanged = useCallback(
-    (range: ListRange) => updateDemandForRange(range),
-    [updateDemandForRange],
-  );
-
-  const handleScrollSeekChange = useCallback(() => {
-    scrollSeekingRef.current = true;
-    releaseDemand(demandedIdsRef.current);
-  }, [releaseDemand]);
-
-  useEffect(() => {
-    if (!scrollParent) return;
-
-    let previousScrollTop = scrollParent.scrollTop;
-    let previousTime = performance.now();
-
-    const handleScroll = () => {
-      const now = performance.now();
-      const elapsed = Math.max(1, now - previousTime);
-      const velocity = ((scrollParent.scrollTop - previousScrollTop) / elapsed) * 1000;
-      previousScrollTop = scrollParent.scrollTop;
-      previousTime = now;
-
-      if (Math.abs(velocity) >= SCROLL_SEEK_ENTER_VELOCITY) handleScrollSeekChange();
-      if (settleTimeoutRef.current) clearTimeout(settleTimeoutRef.current);
-      settleTimeoutRef.current = setTimeout(() => {
-        scrollSeekingRef.current = false;
-        if (rangeRef.current) updateDemandForRange(rangeRef.current);
-      }, SCROLL_SETTLE_DELAY_MS);
-    };
-
-    scrollParent.addEventListener("scroll", handleScroll, { passive: true });
-    return () => scrollParent.removeEventListener("scroll", handleScroll);
-  }, [handleScrollSeekChange, scrollParent, updateDemandForRange]);
-
-  useEffect(() => {
-    const filteredSourceIds = new Set(sources.map(({ id }) => id));
-    releaseDemand([...demandedIdsRef.current].filter((id) => !filteredSourceIds.has(id)));
-  }, [releaseDemand, sources]);
-
-  useEffect(
-    () => () => {
-      if (settleTimeoutRef.current) clearTimeout(settleTimeoutRef.current);
-      releaseDemand(demandedIdsRef.current);
-    },
-    [releaseDemand],
-  );
+  const {
+    customScrollParent,
+    increaseViewportBy,
+    rangeChanged,
+    scrollSeekConfiguration,
+    setScrollParent,
+  } = useSourceListScrollController(sources);
 
   return (
     <ScrollArea className={cn("min-h-0 flex-1", className)} viewportRef={setScrollParent}>
@@ -178,18 +74,15 @@ function SourceListContent({ className }: SourceListContentProps) {
         <div className="text-center text-sm text-muted-foreground" role="status">
           {t("source.messages.noSearchResults")}
         </div>
-      ) : scrollParent ? (
+      ) : customScrollParent ? (
         <Virtuoso
           className="w-full"
           components={virtuosoComponents}
           computeItemKey={(_, source) => source.id}
-          customScrollParent={scrollParent}
+          customScrollParent={customScrollParent}
           data={sources}
           defaultItemHeight={112}
-          increaseViewportBy={{
-            bottom: THUMBNAIL_VIEWPORT_EXPANSION,
-            top: THUMBNAIL_VIEWPORT_EXPANSION,
-          }}
+          increaseViewportBy={increaseViewportBy}
           itemContent={(_, source) => (
             <SourceListItem
               isClosing={closingSourceIds.has(source.id)}
@@ -197,12 +90,8 @@ function SourceListContent({ className }: SourceListContentProps) {
               source={source}
             />
           )}
-          rangeChanged={handleRangeChanged}
-          scrollSeekConfiguration={{
-            change: handleScrollSeekChange,
-            enter: (velocity) => Math.abs(velocity) >= SCROLL_SEEK_ENTER_VELOCITY,
-            exit: (velocity) => Math.abs(velocity) <= SCROLL_SEEK_EXIT_VELOCITY,
-          }}
+          rangeChanged={rangeChanged}
+          scrollSeekConfiguration={scrollSeekConfiguration}
         />
       ) : null}
     </ScrollArea>
