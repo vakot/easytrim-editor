@@ -12,7 +12,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 
 import { ActivityFeed } from "@/features/activity";
-import { ExportQueue, ExportQueueActions, ExportQueueContent } from "@/features/export";
 import {
   SourceList,
   SourceListCloseAll,
@@ -79,45 +78,6 @@ function AppLayoutSidebar() {
               </ScrollArea>
             </div>
           </SourceList>
-        </ResizablePanel>
-
-        <ResizableHandle className="bg-transparent px-3">
-          <Separator />
-        </ResizableHandle>
-
-        <ResizablePanel
-          className="flex min-h-0 flex-col overflow-hidden!"
-          collapsedSize="36px"
-          collapsible
-          defaultSize="25"
-          id="editor-source-render-queue"
-          minSize="180px"
-        >
-          <ResizablePanelControl panelId="editor-source-render-queue">
-            {({ isExpanded }) => (
-              <div className="px-3 py-1">
-                <Button
-                  className="w-full justify-baseline px-2 text-secondary-foreground"
-                  size="sm"
-                  variant="ghost"
-                >
-                  <ChevronRight
-                    className={cn("shrink-0 transition-transform", isExpanded && "rotate-90")}
-                  />
-                  {t("queue.labels.ExportQueue")}
-                </Button>
-              </div>
-            )}
-          </ResizablePanelControl>
-
-          <ExportQueue>
-            <div className="mt-1 grid min-h-0 px-3">
-              <ExportQueueActions />
-              <ScrollArea className="-mx-2.5 min-h-0 flex-1 px-2.5">
-                <ExportQueueContent className="py-2" />
-              </ScrollArea>
-            </div>
-          </ExportQueue>
         </ResizablePanel>
 
         <ResizableHandle className="bg-transparent px-3">
