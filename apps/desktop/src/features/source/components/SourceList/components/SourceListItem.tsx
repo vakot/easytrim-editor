@@ -1,4 +1,5 @@
 import { MoreVertical } from "lucide-react";
+import { motion } from "motion/react";
 
 import { Button } from "@/components/ui/button";
 import { Highlight } from "@/components/ui/highlight";
@@ -16,18 +17,27 @@ import {
   SourceCardThumbnail,
   SourceCardTitle,
 } from "../../SourceCard";
+import { SOURCE_LIST_CLOSE_ANIMATION_DURATION_MS } from "../contexts/SourceListContext";
 
 function SourceListItem({
+  isClosing,
   match,
   source,
 }: {
+  isClosing: boolean;
   match: SourceSearchResult | undefined;
   source: EditingInstanceListEntry;
 }) {
   return (
-    <div className="flex w-full min-w-0 flex-col" role="listitem">
+    <motion.div
+      animate={isClosing ? { opacity: 0, y: -4 } : { opacity: 1, y: 0 }}
+      className="flex w-full min-w-0 flex-col"
+      initial={false}
+      role="listitem"
+      transition={{ duration: SOURCE_LIST_CLOSE_ANIMATION_DURATION_MS / 1000, ease: "easeOut" }}
+    >
       <SourceListItemCard match={match} source={source} />
-    </div>
+    </motion.div>
   );
 }
 

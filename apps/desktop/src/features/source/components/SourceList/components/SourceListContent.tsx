@@ -74,7 +74,7 @@ interface SourceListContentProps {
 
 function SourceListContent({ className }: SourceListContentProps) {
   const dispatch = useAppDispatch();
-  const { matchesBySourceId, search, sources } = useSourceListData();
+  const { closingSourceIds, matchesBySourceId, search, sources } = useSourceListData();
   const { t } = useTranslation();
   const demandedIdsRef = useRef(new Set<string>());
   const rangeRef = useRef<ListRange | null>(null);
@@ -191,7 +191,11 @@ function SourceListContent({ className }: SourceListContentProps) {
             top: THUMBNAIL_VIEWPORT_EXPANSION,
           }}
           itemContent={(_, source) => (
-            <SourceListItem match={matchesBySourceId.get(source.id)} source={source} />
+            <SourceListItem
+              isClosing={closingSourceIds.has(source.id)}
+              match={matchesBySourceId.get(source.id)}
+              source={source}
+            />
           )}
           rangeChanged={handleRangeChanged}
           scrollSeekConfiguration={{
