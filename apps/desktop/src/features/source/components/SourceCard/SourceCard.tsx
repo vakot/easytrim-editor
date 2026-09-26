@@ -62,7 +62,15 @@ const SourceCard = memo(function SourceCard({ children, className, source }: Sou
           data-source-id={sourceEntry.id}
           hoverable
           onClick={() => void dispatch(navigateToEditingInstance(sourceEntry.id))}
-          // TODO: on button confirm (selected by Tab and Enter should also act as onClick)
+          onKeyDown={(event) => {
+            if (event.target !== event.currentTarget) return;
+            if (event.key !== "Enter" && event.key !== " ") return;
+
+            event.preventDefault();
+            if (event.repeat) return;
+
+            void dispatch(navigateToEditingInstance(sourceEntry.id));
+          }}
           role="checkbox"
           tabIndex={0}
           variant={variant}
