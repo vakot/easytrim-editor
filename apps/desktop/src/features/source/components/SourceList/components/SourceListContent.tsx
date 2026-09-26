@@ -15,7 +15,7 @@ const SourceListVirtualizedList = forwardRef<HTMLDivElement, ListProps<HTMLDivEl
   function SourceListVirtualizedList({ children, style }, ref) {
     return (
       <div
-        className="flex flex-col gap-2 py-2"
+        className="flex flex-col gap-2"
         data-slot="imported-sources-grid"
         ref={ref}
         role="list"
@@ -48,7 +48,13 @@ function SourceListScrollSeekPlaceholder({ height }: ScrollSeekPlaceholderProps)
   );
 }
 
+function SourceListEdgeSpacer() {
+  return <div aria-hidden="true" className="h-4" />;
+}
+
 const virtuosoComponents = {
+  Footer: SourceListEdgeSpacer,
+  Header: SourceListEdgeSpacer,
   List: SourceListVirtualizedList,
   ScrollSeekPlaceholder: SourceListScrollSeekPlaceholder,
 };
