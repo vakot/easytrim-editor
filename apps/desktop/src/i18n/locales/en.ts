@@ -258,7 +258,7 @@ export const en = {
     labels: {
       deleteSource: "Delete source",
       onFinish: "On queue finished",
-      renderQueue: "Render Queue",
+      ExportQueue: "Render Queue",
       routeFastCut: "Fast Cut",
       routeOptimized: "Optimized render",
       title: "Queue",

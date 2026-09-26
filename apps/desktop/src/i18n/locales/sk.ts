@@ -258,7 +258,7 @@ export const sk = {
     labels: {
       deleteSource: "Odstrániť zdroj",
       onFinish: "Po dokončení frontu",
-      renderQueue: "Front vykresľovania",
+      ExportQueue: "Front vykresľovania",
       routeFastCut: "Rýchly strih",
       routeOptimized: "Optimalizované vykreslenie",
       title: "Front",

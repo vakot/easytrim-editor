@@ -7,53 +7,16 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
-import {
-  selectExportQueue,
-  selectExportQueueById,
-} from "@/app/store/slices/editing-instances-slice";
+import { selectExportQueueById } from "@/app/store/slices/editing-instances-slice";
 import {
   cancelExportAttemptRequested,
   requeueExportAttemptRequested,
-  startExportQueue,
 } from "@/app/store/thunks/export-thunks";
 import { restoreExportAttemptRequested } from "@/app/store/thunks/source-media-thunks";
 import { formatBytes, formatDuration, formatSourcePath } from "@/features/source";
 import { openFileLocation } from "@/lib/tauri/media";
 
-function RenderQueue() {
-  const { t } = useTranslation();
-  const queue = useAppSelector(selectExportQueue);
-  const hasQueued = queue.some(({ attempt }) => attempt.state.status === "queued");
-  const dispatch = useAppDispatch();
-
-  return (
-    <div className="flex min-h-0 flex-1 flex-col gap-2">
-      {hasQueued ? (
-        <Button className="w-full" onClick={() => void dispatch(startExportQueue())} size="sm">
-          {t("queue.actions.start")}
-        </Button>
-      ) : null}
-
-      {queue.length === 0 ? (
-        <div className="grid flex-1 place-items-center p-4 text-center text-sm text-muted-foreground">
-          {t("queue.messages.empty")}
-        </div>
-      ) : (
-        <ul className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
-          {queue.map((item) => (
-            <RenderQueueItem
-              attemptId={item.attempt.id}
-              instanceId={item.instance.id}
-              key={item.attempt.id}
-            />
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
-
-function RenderQueueItem({ attemptId, instanceId }: { attemptId: string; instanceId: string }) {
+function ExportQueueItem({ attemptId, instanceId }: { attemptId: string; instanceId: string }) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const item = useAppSelector((state) =>
@@ -192,4 +155,4 @@ function RenderQueueItem({ attemptId, instanceId }: { attemptId: string; instanc
   );
 }
 
-export { RenderQueue, RenderQueueItem };
+export { ExportQueueItem };

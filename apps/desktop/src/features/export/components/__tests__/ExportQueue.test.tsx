@@ -14,7 +14,7 @@ import { createAppStore } from "@/app/store/store";
 import { createExportAttempt, type EditingInstance } from "@/domain/editing-instance";
 import { firstSource } from "@/test/source.fixtures";
 
-import { RenderQueue } from "../RenderQueue";
+import { ExportQueue, ExportQueueContent } from "../ExportQueue";
 
 function createSource(): EditingInstance {
   const snapshot = createDefaultEditorSnapshot(firstSource, false);
@@ -53,7 +53,22 @@ function addAttempt(store: ReturnType<typeof createAppStore>) {
   return { attempt, source };
 }
 
-describe("RenderQueue", () => {
+describe("ExportQueue", () => {
+  it("shows an empty state when there are no export attempts", () => {
+    const store = createAppStore();
+
+    render(
+      <Provider store={store}>
+        <ExportQueue>
+          <ExportQueueContent />
+        </ExportQueue>
+      </Provider>,
+    );
+
+    expect(screen.getByRole("heading", { name: "Queue" })).toBeInTheDocument();
+    expect(screen.getByText("Export attempts will appear here.")).toBeInTheDocument();
+  });
+
   it("keeps a queued attempt visible after its source is closed", () => {
     const store = createAppStore();
     const { source } = addAttempt(store);
@@ -61,7 +76,9 @@ describe("RenderQueue", () => {
 
     render(
       <Provider store={store}>
-        <RenderQueue />
+        <ExportQueue>
+          <ExportQueueContent />
+        </ExportQueue>
       </Provider>,
     );
 
@@ -90,7 +107,9 @@ describe("RenderQueue", () => {
 
     render(
       <Provider store={store}>
-        <RenderQueue />
+        <ExportQueue>
+          <ExportQueueContent />
+        </ExportQueue>
       </Provider>,
     );
 
